@@ -2,8 +2,8 @@
 package ga4gh_task
 
 import (
-	"golang.org/x/net/context"
-	"ga4gh-tasks"
+	//"golang.org/x/net/context"
+	//"ga4gh-tasks"
 )
 
 type TaskImpl struct {
@@ -14,6 +14,7 @@ func NewTaskImpl() *TaskImpl {
 	return &TaskImpl{}
 }
 
+/*
 
 func (self *TaskImpl) CreateTask(context.Context, *ga4gh_task_exec.Task) (*ga4gh_task_exec.Task, error) {
 
@@ -43,3 +44,5 @@ func (self *TaskImpl) GetTaskOp(context.Context, *ga4gh_task_exec.TaskOpId) (*ga
 func (self *TaskImpl) CancelTaskOp(context.Context, *ga4gh_task_exec.TaskOpId) (*ga4gh_task_exec.TaskOpId, error) {
 
 }
+
+*/

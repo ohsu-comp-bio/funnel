@@ -1,0 +1,41 @@
+
+syntax = "proto3";
+
+package ga4gh_task_ref;
+
+import "task_execution.proto";
+
+/**
+ * Worker Info
+ */
+message WorkerInfo {
+  string id = 1;         /// UUID of the worker
+  int64  last_ping = 2;  /// Last time contacted
+  string hostname  = 3;
+}
+
+message JobRequest {
+  WorkerInfo worker = 1;
+  ga4gh_task_exec.Resources resources = 2;
+}
+
+message JobResult {
+  ga4gh_task_exec.TaskOp task = 1;
+}
+
+message UpdateStatusRequest {
+    string id = 1;
+    int64 step = 2;
+    ga4gh_task_exec.State state = 3;
+    ga4gh_task_exec.TaskOpLog log = 4;
+    string worker_id = 5;
+}
+
+/**
+ * Scheduler Service
+ */
+service Scheduler {
+  rpc GetJobToRun(JobRequest) returns (JobResult) {};
+  rpc UpdateTaskOpStatus(UpdateStatusRequest) returns (ga4gh_task_exec.TaskOpId) {};
+  rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};
+}

@@ -9,15 +9,21 @@ It is generated from these files:
 	task_execution.proto
 
 It has these top-level messages:
-	FileParameter
+	LocalCopy
+	TaskParameter
 	DockerExecutor
 	Disk
 	Resources
 	Task
 	TaskArgs
 	TaskRunRequest
+	TaskListRequest
+	TaskListResponse
+	TaskOpListRequest
+	TaskOpListResponse
 	TaskId
 	TaskOpId
+	TaskOpLog
 	TaskOp
 */
 package ga4gh_task_exec
@@ -41,43 +47,110 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 const _ = proto.ProtoPackageIsVersion1
 
-// / Mapping long term file storage to path used in docker container
-type FileParameter struct {
-	Path        string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	StoragePath string `protobuf:"bytes,2,opt,name=storagePath" json:"storagePath,omitempty"`
+type State int32
+
+const (
+	State_Unknown     State = 0
+	State_Queued      State = 1
+	State_Running     State = 2
+	State_Paused      State = 3
+	State_Complete    State = 4
+	State_Error       State = 5
+	State_SystemError State = 6
+	State_Canceled    State = 7
+)
+
+var State_name = map[int32]string{
+	0: "Unknown",
+	1: "Queued",
+	2: "Running",
+	3: "Paused",
+	4: "Complete",
+	5: "Error",
+	6: "SystemError",
+	7: "Canceled",
+}
+var State_value = map[string]int32{
+	"Unknown":     0,
+	"Queued":      1,
+	"Running":     2,
+	"Paused":      3,
+	"Complete":    4,
+	"Error":       5,
+	"SystemError": 6,
+	"Canceled":    7,
 }
 
-func (m *FileParameter) Reset()                    { *m = FileParameter{} }
-func (m *FileParameter) String() string            { return proto.CompactTextString(m) }
-func (*FileParameter) ProtoMessage()               {}
-func (*FileParameter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (x State) String() string {
+	return proto.EnumName(State_name, int32(x))
+}
+func (State) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-// / A command line to be executed and the docker container to run it
+// File
+type LocalCopy struct {
+	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
+	Disk string `protobuf:"bytes,2,opt,name=disk" json:"disk,omitempty"`
+}
+
+func (m *LocalCopy) Reset()                    { *m = LocalCopy{} }
+func (m *LocalCopy) String() string            { return proto.CompactTextString(m) }
+func (*LocalCopy) ProtoMessage()               {}
+func (*LocalCopy) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+// Parameters for task
+type TaskParameter struct {
+	Name         string     `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Description  string     `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
+	DefaultValue string     `protobuf:"bytes,3,opt,name=defaultValue" json:"defaultValue,omitempty"`
+	LocalCopy    *LocalCopy `protobuf:"bytes,4,opt,name=localCopy" json:"localCopy,omitempty"`
+}
+
+func (m *TaskParameter) Reset()                    { *m = TaskParameter{} }
+func (m *TaskParameter) String() string            { return proto.CompactTextString(m) }
+func (*TaskParameter) ProtoMessage()               {}
+func (*TaskParameter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *TaskParameter) GetLocalCopy() *LocalCopy {
+	if m != nil {
+		return m.LocalCopy
+	}
+	return nil
+}
+
+// A command line to be executed and the docker container to run it
 type DockerExecutor struct {
+	// Docker Image name
 	ImageName string `protobuf:"bytes,1,opt,name=imageName" json:"imageName,omitempty"`
-	Cmd       string `protobuf:"bytes,2,opt,name=cmd" json:"cmd,omitempty"`
+	// The command to be executed
+	Cmd string `protobuf:"bytes,2,opt,name=cmd" json:"cmd,omitempty"`
 }
 
 func (m *DockerExecutor) Reset()                    { *m = DockerExecutor{} }
 func (m *DockerExecutor) String() string            { return proto.CompactTextString(m) }
 func (*DockerExecutor) ProtoMessage()               {}
-func (*DockerExecutor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*DockerExecutor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-// / Attached disk request.
+// Attached disk request.
 type Disk struct {
-	Name   string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Name of attached disk
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Minium size
 	SizeGb uint32 `protobuf:"varint,2,opt,name=sizeGb" json:"sizeGb,omitempty"`
+	// Source data, this would refer to an existing disk the execution engine
+	// could identify. Leave blank if is to be a newly created disk
 	Source string `protobuf:"bytes,3,opt,name=source" json:"source,omitempty"`
-	// / could identify. Leave blank if is to be a newly created disk
-	AutoDelete bool   `protobuf:"varint,4,opt,name=autoDelete" json:"autoDelete,omitempty"`
-	ReadOnly   bool   `protobuf:"varint,5,opt,name=readOnly" json:"readOnly,omitempty"`
+	// Automatically delete after usage
+	AutoDelete bool `protobuf:"varint,4,opt,name=autoDelete" json:"autoDelete,omitempty"`
+	// mount into docker as read only
+	ReadOnly bool `protobuf:"varint,5,opt,name=readOnly" json:"readOnly,omitempty"`
+	// mount point for disk inside the docker container
 	MountPoint string `protobuf:"bytes,6,opt,name=mountPoint" json:"mountPoint,omitempty"`
 }
 
 func (m *Disk) Reset()                    { *m = Disk{} }
 func (m *Disk) String() string            { return proto.CompactTextString(m) }
 func (*Disk) ProtoMessage()               {}
-func (*Disk) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*Disk) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 type Resources struct {
 	MinimumCpuCores uint32   `protobuf:"varint,1,opt,name=minimumCpuCores" json:"minimumCpuCores,omitempty"`
@@ -90,7 +163,7 @@ type Resources struct {
 func (m *Resources) Reset()                    { *m = Resources{} }
 func (m *Resources) String() string            { return proto.CompactTextString(m) }
 func (*Resources) ProtoMessage()               {}
-func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *Resources) GetDisks() []*Disk {
 	if m != nil {
@@ -99,31 +172,39 @@ func (m *Resources) GetDisks() []*Disk {
 	return nil
 }
 
-// / The description of a task to be run
+// The description of a task to be run
 type Task struct {
-	Name             string            `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	ProjectId        string            `protobuf:"bytes,2,opt,name=projectId" json:"projectId,omitempty"`
-	Description      string            `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
-	InputParameters  []*FileParameter  `protobuf:"bytes,4,rep,name=inputParameters" json:"inputParameters,omitempty"`
-	OutputParameters []*FileParameter  `protobuf:"bytes,5,rep,name=outputParameters" json:"outputParameters,omitempty"`
-	Resources        *Resources        `protobuf:"bytes,6,opt,name=resources" json:"resources,omitempty"`
-	TaskId           string            `protobuf:"bytes,7,opt,name=taskId" json:"taskId,omitempty"`
-	Docker           []*DockerExecutor `protobuf:"bytes,8,rep,name=docker" json:"docker,omitempty"`
+	// user name for task
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// parameter for execution engine to define/store group information
+	ProjectId string `protobuf:"bytes,2,opt,name=projectId" json:"projectId,omitempty"`
+	// free text description of task
+	Description string `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
+	// Files to be copied into system before tasks
+	InputParameters []*TaskParameter `protobuf:"bytes,4,rep,name=inputParameters" json:"inputParameters,omitempty"`
+	// Files to be copied out of the system after tasks
+	OutputParameters []*TaskParameter `protobuf:"bytes,5,rep,name=outputParameters" json:"outputParameters,omitempty"`
+	// Define required system resources to run job
+	Resources *Resources `protobuf:"bytes,6,opt,name=resources" json:"resources,omitempty"`
+	// System defined identifier of task
+	TaskId string `protobuf:"bytes,7,opt,name=taskId" json:"taskId,omitempty"`
+	// An array of docker executions that will be run sequentially
+	Docker []*DockerExecutor `protobuf:"bytes,8,rep,name=docker" json:"docker,omitempty"`
 }
 
 func (m *Task) Reset()                    { *m = Task{} }
 func (m *Task) String() string            { return proto.CompactTextString(m) }
 func (*Task) ProtoMessage()               {}
-func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
-func (m *Task) GetInputParameters() []*FileParameter {
+func (m *Task) GetInputParameters() []*TaskParameter {
 	if m != nil {
 		return m.InputParameters
 	}
 	return nil
 }
 
-func (m *Task) GetOutputParameters() []*FileParameter {
+func (m *Task) GetOutputParameters() []*TaskParameter {
 	if m != nil {
 		return m.OutputParameters
 	}
@@ -144,27 +225,27 @@ func (m *Task) GetDocker() []*DockerExecutor {
 	return nil
 }
 
-// / Arguments for task to be instanced
+// Arguments for task to be instanced
 type TaskArgs struct {
-	ProjectId string                    `protobuf:"bytes,1,opt,name=projectId" json:"projectId,omitempty"`
-	Inputs    map[string]*FileParameter `protobuf:"bytes,2,rep,name=inputs" json:"inputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Outputs   map[string]*FileParameter `protobuf:"bytes,3,rep,name=outputs" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Resources *Resources                `protobuf:"bytes,4,opt,name=resources" json:"resources,omitempty"`
+	ProjectId string            `protobuf:"bytes,1,opt,name=projectId" json:"projectId,omitempty"`
+	Inputs    map[string]string `protobuf:"bytes,2,rep,name=inputs" json:"inputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Outputs   map[string]string `protobuf:"bytes,3,rep,name=outputs" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Resources *Resources        `protobuf:"bytes,4,opt,name=resources" json:"resources,omitempty"`
 }
 
 func (m *TaskArgs) Reset()                    { *m = TaskArgs{} }
 func (m *TaskArgs) String() string            { return proto.CompactTextString(m) }
 func (*TaskArgs) ProtoMessage()               {}
-func (*TaskArgs) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*TaskArgs) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
-func (m *TaskArgs) GetInputs() map[string]*FileParameter {
+func (m *TaskArgs) GetInputs() map[string]string {
 	if m != nil {
 		return m.Inputs
 	}
 	return nil
 }
 
-func (m *TaskArgs) GetOutputs() map[string]*FileParameter {
+func (m *TaskArgs) GetOutputs() map[string]string {
 	if m != nil {
 		return m.Outputs
 	}
@@ -178,18 +259,21 @@ func (m *TaskArgs) GetResources() *Resources {
 	return nil
 }
 
-// / Task run request
+// Task run request
+// Define either a taskId or an ephemeralTask
 type TaskRunRequest struct {
+	// arguments for task instance
 	TaskArgs *TaskArgs `protobuf:"bytes,1,opt,name=taskArgs" json:"taskArgs,omitempty"`
-	// Define either a taskId or an ephemeralTask
-	TaskId        string `protobuf:"bytes,2,opt,name=taskId" json:"taskId,omitempty"`
-	EphemeralTask *Task  `protobuf:"bytes,3,opt,name=ephemeralTask" json:"ephemeralTask,omitempty"`
+	// ID of the task that will be used to create this task instance
+	TaskId string `protobuf:"bytes,2,opt,name=taskId" json:"taskId,omitempty"`
+	// description of a task that be used to create this task instance
+	EphemeralTask *Task `protobuf:"bytes,3,opt,name=ephemeralTask" json:"ephemeralTask,omitempty"`
 }
 
 func (m *TaskRunRequest) Reset()                    { *m = TaskRunRequest{} }
 func (m *TaskRunRequest) String() string            { return proto.CompactTextString(m) }
 func (*TaskRunRequest) ProtoMessage()               {}
-func (*TaskRunRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (*TaskRunRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 func (m *TaskRunRequest) GetTaskArgs() *TaskArgs {
 	if m != nil {
@@ -205,7 +289,73 @@ func (m *TaskRunRequest) GetEphemeralTask() *Task {
 	return nil
 }
 
-// / ID of a Task description
+type TaskListRequest struct {
+	// Required. The name of the project to search for pipelines. Caller must have READ access to this project.
+	ProjectId string `protobuf:"bytes,1,opt,name=projectId" json:"projectId,omitempty"`
+	// Pipelines with names that match this prefix should be returned. If unspecified, all pipelines in the project, up to pageSize, will be returned.
+	NamePrefix string `protobuf:"bytes,2,opt,name=namePrefix" json:"namePrefix,omitempty"`
+	// Number of pipelines to return at once. Defaults to 256, and max is 2048.
+	PageSize uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
+	// Token to use to indicate where to start getting results. If unspecified, returns the first page of results.
+	PageToken string `protobuf:"bytes,4,opt,name=pageToken" json:"pageToken,omitempty"`
+}
+
+func (m *TaskListRequest) Reset()                    { *m = TaskListRequest{} }
+func (m *TaskListRequest) String() string            { return proto.CompactTextString(m) }
+func (*TaskListRequest) ProtoMessage()               {}
+func (*TaskListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+type TaskListResponse struct {
+	Tasks         []*Task `protobuf:"bytes,1,rep,name=tasks" json:"tasks,omitempty"`
+	NextPageToken string  `protobuf:"bytes,2,opt,name=nextPageToken" json:"nextPageToken,omitempty"`
+}
+
+func (m *TaskListResponse) Reset()                    { *m = TaskListResponse{} }
+func (m *TaskListResponse) String() string            { return proto.CompactTextString(m) }
+func (*TaskListResponse) ProtoMessage()               {}
+func (*TaskListResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+
+func (m *TaskListResponse) GetTasks() []*Task {
+	if m != nil {
+		return m.Tasks
+	}
+	return nil
+}
+
+type TaskOpListRequest struct {
+	// Required. The name of the project to search for pipelines. Caller must have READ access to this project.
+	ProjectId string `protobuf:"bytes,1,opt,name=projectId" json:"projectId,omitempty"`
+	// Pipelines with names that match this prefix should be returned. If unspecified, all pipelines in the project, up to pageSize, will be returned.
+	NamePrefix string `protobuf:"bytes,2,opt,name=namePrefix" json:"namePrefix,omitempty"`
+	// Number of pipelines to return at once. Defaults to 256, and max is 2048.
+	PageSize uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
+	// Token to use to indicate where to start getting results. If unspecified, returns the first page of results.
+	PageToken string `protobuf:"bytes,4,opt,name=pageToken" json:"pageToken,omitempty"`
+}
+
+func (m *TaskOpListRequest) Reset()                    { *m = TaskOpListRequest{} }
+func (m *TaskOpListRequest) String() string            { return proto.CompactTextString(m) }
+func (*TaskOpListRequest) ProtoMessage()               {}
+func (*TaskOpListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+
+type TaskOpListResponse struct {
+	TasksOps      []*TaskOp `protobuf:"bytes,1,rep,name=tasksOps" json:"tasksOps,omitempty"`
+	NextPageToken string    `protobuf:"bytes,2,opt,name=nextPageToken" json:"nextPageToken,omitempty"`
+}
+
+func (m *TaskOpListResponse) Reset()                    { *m = TaskOpListResponse{} }
+func (m *TaskOpListResponse) String() string            { return proto.CompactTextString(m) }
+func (*TaskOpListResponse) ProtoMessage()               {}
+func (*TaskOpListResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+
+func (m *TaskOpListResponse) GetTasksOps() []*TaskOp {
+	if m != nil {
+		return m.TasksOps
+	}
+	return nil
+}
+
+// ID of a Task description
 type TaskId struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
 }
@@ -213,9 +363,9 @@ type TaskId struct {
 func (m *TaskId) Reset()                    { *m = TaskId{} }
 func (m *TaskId) String() string            { return proto.CompactTextString(m) }
 func (*TaskId) ProtoMessage()               {}
-func (*TaskId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+func (*TaskId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
 
-// / ID of an instance of a Task
+// ID of an instance of a Task
 type TaskOpId struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
 }
@@ -223,19 +373,42 @@ type TaskOpId struct {
 func (m *TaskOpId) Reset()                    { *m = TaskOpId{} }
 func (m *TaskOpId) String() string            { return proto.CompactTextString(m) }
 func (*TaskOpId) ProtoMessage()               {}
-func (*TaskOpId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+func (*TaskOpId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
 
-// / The description of the running instance of a task
+type TaskOpLog struct {
+	// The command line that was run
+	CommandLine string `protobuf:"bytes,1,opt,name=commandLine" json:"commandLine,omitempty"`
+	// When the command was executed
+	StartTime string `protobuf:"bytes,2,opt,name=startTime" json:"startTime,omitempty"`
+	// When the command completed
+	EndTime string `protobuf:"bytes,3,opt,name=endTime" json:"endTime,omitempty"`
+	// Sample of stdout (not guaranteed to be entire log)
+	Stdout string `protobuf:"bytes,4,opt,name=stdout" json:"stdout,omitempty"`
+	// Sample of stderr (not guaranteed to be entire log)
+	Stderr string `protobuf:"bytes,5,opt,name=stderr" json:"stderr,omitempty"`
+	// Exit code of the program
+	ExitCode int32 `protobuf:"varint,6,opt,name=exitCode" json:"exitCode,omitempty"`
+}
+
+func (m *TaskOpLog) Reset()                    { *m = TaskOpLog{} }
+func (m *TaskOpLog) String() string            { return proto.CompactTextString(m) }
+func (*TaskOpLog) ProtoMessage()               {}
+func (*TaskOpLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+
+// The description of the running instance of a task
 type TaskOp struct {
-	Name     string            `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	TaskOpId string            `protobuf:"bytes,1,opt,name=taskOpId" json:"taskOpId,omitempty"`
 	Metadata map[string]string `protobuf:"bytes,2,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Done     bool              `protobuf:"varint,3,opt,name=done" json:"done,omitempty"`
+	Task     *Task             `protobuf:"bytes,3,opt,name=task" json:"task,omitempty"`
+	TaskArgs *TaskArgs         `protobuf:"bytes,4,opt,name=taskArgs" json:"taskArgs,omitempty"`
+	State    State             `protobuf:"varint,5,opt,name=state,enum=ga4gh_task_exec.State" json:"state,omitempty"`
+	Logs     []*TaskOpLog      `protobuf:"bytes,6,rep,name=logs" json:"logs,omitempty"`
 }
 
 func (m *TaskOp) Reset()                    { *m = TaskOp{} }
 func (m *TaskOp) String() string            { return proto.CompactTextString(m) }
 func (*TaskOp) ProtoMessage()               {}
-func (*TaskOp) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+func (*TaskOp) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
 
 func (m *TaskOp) GetMetadata() map[string]string {
 	if m != nil {
@@ -244,17 +417,45 @@ func (m *TaskOp) GetMetadata() map[string]string {
 	return nil
 }
 
+func (m *TaskOp) GetTask() *Task {
+	if m != nil {
+		return m.Task
+	}
+	return nil
+}
+
+func (m *TaskOp) GetTaskArgs() *TaskArgs {
+	if m != nil {
+		return m.TaskArgs
+	}
+	return nil
+}
+
+func (m *TaskOp) GetLogs() []*TaskOpLog {
+	if m != nil {
+		return m.Logs
+	}
+	return nil
+}
+
 func init() {
-	proto.RegisterType((*FileParameter)(nil), "ga4gh_task_exec.FileParameter")
+	proto.RegisterType((*LocalCopy)(nil), "ga4gh_task_exec.LocalCopy")
+	proto.RegisterType((*TaskParameter)(nil), "ga4gh_task_exec.TaskParameter")
 	proto.RegisterType((*DockerExecutor)(nil), "ga4gh_task_exec.DockerExecutor")
 	proto.RegisterType((*Disk)(nil), "ga4gh_task_exec.Disk")
 	proto.RegisterType((*Resources)(nil), "ga4gh_task_exec.Resources")
 	proto.RegisterType((*Task)(nil), "ga4gh_task_exec.Task")
 	proto.RegisterType((*TaskArgs)(nil), "ga4gh_task_exec.TaskArgs")
 	proto.RegisterType((*TaskRunRequest)(nil), "ga4gh_task_exec.TaskRunRequest")
+	proto.RegisterType((*TaskListRequest)(nil), "ga4gh_task_exec.TaskListRequest")
+	proto.RegisterType((*TaskListResponse)(nil), "ga4gh_task_exec.TaskListResponse")
+	proto.RegisterType((*TaskOpListRequest)(nil), "ga4gh_task_exec.TaskOpListRequest")
+	proto.RegisterType((*TaskOpListResponse)(nil), "ga4gh_task_exec.TaskOpListResponse")
 	proto.RegisterType((*TaskId)(nil), "ga4gh_task_exec.TaskId")
 	proto.RegisterType((*TaskOpId)(nil), "ga4gh_task_exec.TaskOpId")
+	proto.RegisterType((*TaskOpLog)(nil), "ga4gh_task_exec.TaskOpLog")
 	proto.RegisterType((*TaskOp)(nil), "ga4gh_task_exec.TaskOp")
+	proto.RegisterEnum("ga4gh_task_exec.State", State_name, State_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -268,17 +469,21 @@ const _ = grpc.SupportPackageIsVersion2
 // Client API for TaskService service
 
 type TaskServiceClient interface {
-	// / Create a task
+	// Create a task
 	CreateTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*Task, error)
-	// / Delete a task
+	// Delete a task
 	DeleteTask(ctx context.Context, in *TaskId, opts ...grpc.CallOption) (*TaskId, error)
-	// / Get a task by its ID
+	// Get a task by its ID
 	GetTask(ctx context.Context, in *TaskId, opts ...grpc.CallOption) (*Task, error)
-	// / Run a task
+	// List the tasks
+	ListTask(ctx context.Context, in *TaskListRequest, opts ...grpc.CallOption) (*TaskListResponse, error)
+	// Run a task
 	RunTask(ctx context.Context, in *TaskRunRequest, opts ...grpc.CallOption) (*TaskOpId, error)
-	// / Get info about a running task
+	// Get info about a running task
 	GetTaskOp(ctx context.Context, in *TaskOpId, opts ...grpc.CallOption) (*TaskOp, error)
-	// / Cancel a running task
+	// List the TaskOps
+	ListTaskOp(ctx context.Context, in *TaskOpListRequest, opts ...grpc.CallOption) (*TaskOpListResponse, error)
+	// Cancel a running task
 	CancelTaskOp(ctx context.Context, in *TaskOpId, opts ...grpc.CallOption) (*TaskOpId, error)
 }
 
@@ -317,6 +522,15 @@ func (c *taskServiceClient) GetTask(ctx context.Context, in *TaskId, opts ...grp
 	return out, nil
 }
 
+func (c *taskServiceClient) ListTask(ctx context.Context, in *TaskListRequest, opts ...grpc.CallOption) (*TaskListResponse, error) {
+	out := new(TaskListResponse)
+	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/ListTask", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *taskServiceClient) RunTask(ctx context.Context, in *TaskRunRequest, opts ...grpc.CallOption) (*TaskOpId, error) {
 	out := new(TaskOpId)
 	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/RunTask", in, out, c.cc, opts...)
@@ -335,6 +549,15 @@ func (c *taskServiceClient) GetTaskOp(ctx context.Context, in *TaskOpId, opts ..
 	return out, nil
 }
 
+func (c *taskServiceClient) ListTaskOp(ctx context.Context, in *TaskOpListRequest, opts ...grpc.CallOption) (*TaskOpListResponse, error) {
+	out := new(TaskOpListResponse)
+	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/ListTaskOp", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *taskServiceClient) CancelTaskOp(ctx context.Context, in *TaskOpId, opts ...grpc.CallOption) (*TaskOpId, error) {
 	out := new(TaskOpId)
 	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/CancelTaskOp", in, out, c.cc, opts...)
@@ -347,17 +570,21 @@ func (c *taskServiceClient) CancelTaskOp(ctx context.Context, in *TaskOpId, opts
 // Server API for TaskService service
 
 type TaskServiceServer interface {
-	// / Create a task
+	// Create a task
 	CreateTask(context.Context, *Task) (*Task, error)
-	// / Delete a task
+	// Delete a task
 	DeleteTask(context.Context, *TaskId) (*TaskId, error)
-	// / Get a task by its ID
+	// Get a task by its ID
 	GetTask(context.Context, *TaskId) (*Task, error)
-	// / Run a task
+	// List the tasks
+	ListTask(context.Context, *TaskListRequest) (*TaskListResponse, error)
+	// Run a task
 	RunTask(context.Context, *TaskRunRequest) (*TaskOpId, error)
-	// / Get info about a running task
+	// Get info about a running task
 	GetTaskOp(context.Context, *TaskOpId) (*TaskOp, error)
-	// / Cancel a running task
+	// List the TaskOps
+	ListTaskOp(context.Context, *TaskOpListRequest) (*TaskOpListResponse, error)
+	// Cancel a running task
 	CancelTaskOp(context.Context, *TaskOpId) (*TaskOpId, error)
 }
 
@@ -419,6 +646,24 @@ func _TaskService_GetTask_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskService_ListTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).ListTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ga4gh_task_exec.TaskService/ListTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).ListTask(ctx, req.(*TaskListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TaskService_RunTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TaskRunRequest)
 	if err := dec(in); err != nil {
@@ -451,6 +696,24 @@ func _TaskService_GetTaskOp_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TaskServiceServer).GetTaskOp(ctx, req.(*TaskOpId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_ListTaskOp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskOpListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).ListTaskOp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ga4gh_task_exec.TaskService/ListTaskOp",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).ListTaskOp(ctx, req.(*TaskOpListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -490,12 +753,20 @@ var _TaskService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _TaskService_GetTask_Handler,
 		},
 		{
+			MethodName: "ListTask",
+			Handler:    _TaskService_ListTask_Handler,
+		},
+		{
 			MethodName: "RunTask",
 			Handler:    _TaskService_RunTask_Handler,
 		},
 		{
 			MethodName: "GetTaskOp",
 			Handler:    _TaskService_GetTaskOp_Handler,
+		},
+		{
+			MethodName: "ListTaskOp",
+			Handler:    _TaskService_ListTaskOp_Handler,
 		},
 		{
 			MethodName: "CancelTaskOp",
@@ -506,56 +777,78 @@ var _TaskService_serviceDesc = grpc.ServiceDesc{
 }
 
 var fileDescriptor0 = []byte{
-	// 804 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xa4, 0x55, 0xcf, 0x4f, 0xe3, 0x46,
-	0x14, 0x56, 0x7e, 0xdb, 0x2f, 0x71, 0x80, 0x21, 0x15, 0x89, 0x55, 0x95, 0xca, 0x6a, 0x2b, 0x44,
-	0x4b, 0xd2, 0xa6, 0xad, 0x40, 0xdc, 0xaa, 0x40, 0x11, 0x07, 0x08, 0x4a, 0xb9, 0x54, 0x3d, 0xd0,
-	0xc1, 0x1e, 0x05, 0x6f, 0x6c, 0x8f, 0x77, 0x3c, 0x46, 0x0b, 0x68, 0x2f, 0xab, 0x3d, 0xef, 0x65,
-	0xff, 0x80, 0xfd, 0x17, 0xf6, 0x7f, 0xd9, 0xe3, 0x5e, 0xf7, 0x0f, 0xd9, 0x99, 0xb1, 0x93, 0x60,
-	0x12, 0xc3, 0x4a, 0x7b, 0xcc, 0xcc, 0xf7, 0xbe, 0xf7, 0x7d, 0xdf, 0x7b, 0xe3, 0x40, 0x8b, 0xe3,
-	0x68, 0x72, 0x41, 0x5e, 0x10, 0x3b, 0xe6, 0x2e, 0x0d, 0xba, 0x21, 0xa3, 0x9c, 0xa2, 0x95, 0x31,
-	0xfe, 0x63, 0x7c, 0x75, 0x31, 0xbb, 0x33, 0xbf, 0x1d, 0x53, 0x3a, 0xf6, 0x48, 0x0f, 0x87, 0x6e,
-	0x0f, 0x07, 0x01, 0xe5, 0x58, 0xa2, 0xa3, 0x04, 0x6e, 0xf5, 0xc1, 0xf8, 0xdb, 0xf5, 0xc8, 0x19,
-	0x66, 0xd8, 0x27, 0x9c, 0x30, 0xd4, 0x80, 0x72, 0x88, 0xf9, 0x55, 0xbb, 0xf0, 0x7d, 0x61, 0x4b,
-	0x47, 0xeb, 0x50, 0x8f, 0x38, 0x65, 0x78, 0x2c, 0x10, 0xe2, 0xb0, 0x28, 0x0f, 0xad, 0x5f, 0xa1,
-	0x79, 0x40, 0xed, 0x09, 0x61, 0x87, 0xaa, 0x37, 0x65, 0x68, 0x0d, 0x74, 0xd7, 0x17, 0xa0, 0x53,
-	0x41, 0x92, 0x56, 0xd6, 0xa1, 0x64, 0xfb, 0x4e, 0x5a, 0x11, 0x40, 0xf9, 0xc0, 0x8d, 0x26, 0x92,
-	0x3c, 0x98, 0x43, 0x9a, 0x50, 0x8d, 0xdc, 0x5b, 0x72, 0x74, 0xa9, 0x50, 0x86, 0xfa, 0x4d, 0x63,
-	0x66, 0x93, 0x76, 0x49, 0xdd, 0x23, 0x00, 0x2c, 0xe8, 0x0f, 0x88, 0x27, 0x94, 0xb5, 0xcb, 0xe2,
-	0x4c, 0x43, 0xab, 0xa0, 0x31, 0x82, 0x9d, 0x61, 0xe0, 0xdd, 0xb4, 0x2b, 0xea, 0x44, 0xa0, 0x7c,
-	0x1a, 0x07, 0xfc, 0x8c, 0xba, 0x01, 0x6f, 0x57, 0x55, 0xbf, 0xd7, 0x05, 0xd0, 0x47, 0x24, 0x21,
-	0x8b, 0xd0, 0x06, 0xac, 0xf8, 0x6e, 0xe0, 0xfa, 0xb1, 0x3f, 0x08, 0xe3, 0x01, 0x65, 0x24, 0x52,
-	0x02, 0x0c, 0xe9, 0x2e, 0x64, 0x84, 0xf8, 0x21, 0x77, 0x2f, 0x3d, 0xa2, 0x54, 0x68, 0xa8, 0x05,
-	0x8d, 0x14, 0x3d, 0xc2, 0xbe, 0xd0, 0x56, 0x52, 0xd0, 0x1f, 0xa0, 0xe2, 0x08, 0x07, 0x91, 0x90,
-	0x51, 0xda, 0xaa, 0xf7, 0xbf, 0xe9, 0x3e, 0x88, 0xb9, 0xab, 0xfc, 0x19, 0x50, 0xb9, 0xa5, 0x81,
-	0xe0, 0xaf, 0x08, 0x94, 0x6e, 0xbd, 0x2b, 0x42, 0xf9, 0x1c, 0x2f, 0xf8, 0x16, 0x69, 0x89, 0xf0,
-	0x9f, 0x11, 0x9b, 0x1f, 0xa7, 0x01, 0x49, 0x25, 0x0e, 0x89, 0x6c, 0xe6, 0x86, 0x72, 0x38, 0xa9,
-	0xff, 0x5d, 0x58, 0x71, 0x83, 0x30, 0xe6, 0xb3, 0xe1, 0x4c, 0xbb, 0x7f, 0xb7, 0xd0, 0x3d, 0x3b,
-	0xc3, 0x3d, 0x58, 0xa5, 0x31, 0xcf, 0x56, 0x56, 0xbe, 0xa8, 0x72, 0x07, 0x74, 0x36, 0xcd, 0x4d,
-	0x65, 0x59, 0xef, 0x9b, 0x0b, 0x25, 0xf3, 0x64, 0xc5, 0xc4, 0xe4, 0xb1, 0xb0, 0x51, 0x53, 0x8a,
-	0x7b, 0x50, 0x75, 0xd4, 0x66, 0xb4, 0x35, 0xd5, 0x6e, 0x73, 0x31, 0xa6, 0xcc, 0xe2, 0x58, 0x1f,
-	0x8b, 0xa0, 0xc9, 0x84, 0xfe, 0x62, 0xe3, 0x28, 0x9b, 0x4b, 0x12, 0xd5, 0x9f, 0x50, 0x55, 0x11,
-	0x44, 0x22, 0x27, 0x49, 0xf8, 0xe3, 0x02, 0xe1, 0xb4, 0xba, 0x7b, 0xac, 0x70, 0x87, 0x01, 0x67,
-	0x37, 0x22, 0xb9, 0x5a, 0x12, 0x40, 0x24, 0xa2, 0x94, 0x75, 0x3f, 0xe5, 0xd7, 0x0d, 0x13, 0x60,
-	0x52, 0x98, 0xf1, 0x5f, 0x7e, 0xca, 0xbf, 0x79, 0x02, 0xf5, 0xfb, 0x6d, 0xc5, 0xce, 0x4f, 0xc8,
-	0x4d, 0x2a, 0x7d, 0x07, 0x2a, 0xd7, 0xd8, 0x8b, 0x93, 0xb5, 0x7a, 0x32, 0xf9, 0xfd, 0xe2, 0x5e,
-	0xc1, 0x3c, 0x85, 0x46, 0x46, 0xcd, 0x57, 0xf2, 0x59, 0x77, 0xd0, 0x94, 0x36, 0x47, 0x71, 0x30,
-	0x22, 0xcf, 0x63, 0x12, 0x71, 0xf4, 0x33, 0x68, 0x3c, 0x35, 0xae, 0x68, 0xeb, 0xfd, 0x4e, 0x6e,
-	0x32, 0xf7, 0xa6, 0x9b, 0x2c, 0xe9, 0x2f, 0x60, 0x90, 0xf0, 0x8a, 0xf8, 0x84, 0x61, 0x4f, 0x82,
-	0xd4, 0x9a, 0x2e, 0x7b, 0x0b, 0xf2, 0xd2, 0xda, 0x80, 0xea, 0xb9, 0xaa, 0x96, 0xaf, 0x22, 0x51,
-	0xae, 0x8c, 0x58, 0x9d, 0x64, 0xe4, 0xc3, 0x70, 0xf1, 0xea, 0x4d, 0x21, 0x29, 0x1a, 0x86, 0x0f,
-	0x9e, 0xcc, 0x2e, 0x68, 0xc2, 0x16, 0x76, 0x30, 0xc7, 0x8f, 0x6e, 0xc2, 0x30, 0xec, 0x9e, 0xa4,
-	0xb8, 0x24, 0x42, 0x41, 0xe3, 0x88, 0x17, 0xa9, 0xa4, 0x6a, 0x66, 0x0f, 0x8c, 0xec, 0x75, 0x26,
-	0x61, 0xe3, 0x7e, 0xc2, 0xba, 0x4c, 0xb0, 0xff, 0xbe, 0x0c, 0x75, 0xc9, 0xfb, 0x0f, 0x61, 0xd7,
-	0xae, 0x4d, 0xd0, 0x19, 0xc0, 0x40, 0x7c, 0x7f, 0x38, 0x51, 0xcf, 0x7a, 0xb9, 0x73, 0x33, 0x27,
-	0x90, 0xd6, 0xab, 0x0f, 0x9f, 0xde, 0x16, 0x9b, 0x96, 0xde, 0xbb, 0xfe, 0xad, 0x27, 0xef, 0xa2,
-	0xfd, 0xc2, 0x36, 0xfa, 0x17, 0x20, 0xf9, 0xc0, 0x29, 0xc6, 0x8d, 0xa5, 0xa5, 0xc7, 0x8e, 0x99,
-	0x77, 0x61, 0x75, 0x14, 0xeb, 0xfa, 0xf6, 0xda, 0x8c, 0xb5, 0x77, 0xa7, 0x5c, 0xbc, 0x44, 0xe7,
-	0x50, 0x3b, 0x22, 0xfc, 0x71, 0xde, 0x1c, 0xad, 0x29, 0x2b, 0x5a, 0xc2, 0x7a, 0x01, 0x35, 0xb1,
-	0x50, 0x8a, 0x75, 0x73, 0x69, 0xf1, 0x7c, 0xdd, 0xcc, 0x4e, 0xce, 0x90, 0x84, 0xee, 0xb6, 0xea,
-	0x80, 0x2c, 0x63, 0x9e, 0x06, 0x8b, 0x03, 0x99, 0xc8, 0x7f, 0xa0, 0xa7, 0xb2, 0xc5, 0x1a, 0xe4,
-	0x33, 0xe4, 0x44, 0x32, 0x0c, 0x2d, 0x53, 0x51, 0xb7, 0x10, 0x9a, 0x52, 0xd3, 0x70, 0xa6, 0xfe,
-	0x7f, 0x68, 0x0c, 0x70, 0x60, 0x13, 0xef, 0x69, 0xfe, 0x47, 0xc4, 0xa7, 0x1d, 0xb6, 0x97, 0x74,
-	0xb8, 0xac, 0xaa, 0x3f, 0xd6, 0xdf, 0x3f, 0x07, 0x00, 0x00, 0xff, 0xff, 0x36, 0x1d, 0x03, 0xe7,
-	0x9f, 0x07, 0x00, 0x00,
+	// 1158 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x56, 0x5d, 0x6f, 0x1b, 0x45,
+	0x17, 0x7e, 0xfd, 0xed, 0x3d, 0x8e, 0x13, 0x67, 0x9a, 0xbe, 0x75, 0x56, 0x88, 0x96, 0x2d, 0x85,
+	0x12, 0xa8, 0x0d, 0x01, 0xd4, 0xaa, 0x77, 0xc8, 0x89, 0xaa, 0x48, 0x01, 0x87, 0x24, 0x54, 0x42,
+	0x08, 0x85, 0x89, 0x77, 0xea, 0x2c, 0xf6, 0xce, 0x6c, 0x67, 0x67, 0xd3, 0xa4, 0x15, 0x37, 0x88,
+	0x7f, 0xc0, 0x25, 0x17, 0x5c, 0xf2, 0x83, 0xf8, 0x0b, 0xfc, 0x0f, 0x38, 0x33, 0xb3, 0xfe, 0x4a,
+	0x76, 0x63, 0x6e, 0xb8, 0x4a, 0x76, 0xe6, 0x7c, 0x3c, 0xe7, 0x39, 0xcf, 0x39, 0x63, 0xd8, 0x50,
+	0x34, 0x1e, 0x9d, 0xb0, 0x0b, 0x36, 0x48, 0x54, 0x20, 0x78, 0x27, 0x92, 0x42, 0x09, 0xb2, 0x36,
+	0xa4, 0x9f, 0x0d, 0xcf, 0x4e, 0xa6, 0x77, 0xee, 0x5b, 0x43, 0x21, 0x86, 0x63, 0xd6, 0xa5, 0x51,
+	0xd0, 0xa5, 0x9c, 0x0b, 0x45, 0xb5, 0x75, 0x6c, 0xcd, 0xbd, 0xf7, 0xc1, 0xd9, 0x17, 0x03, 0x3a,
+	0xee, 0x89, 0xe8, 0x92, 0xac, 0x40, 0x39, 0xa2, 0xea, 0xac, 0x5d, 0xb8, 0x57, 0x78, 0xe8, 0xe8,
+	0x2f, 0x3f, 0x88, 0x47, 0xed, 0xa2, 0xfe, 0xf2, 0x5e, 0x41, 0xf3, 0x18, 0x63, 0x1e, 0x50, 0x49,
+	0x43, 0xa6, 0x98, 0xd4, 0xd7, 0x1c, 0xff, 0x4d, 0x8d, 0x6f, 0x41, 0xc3, 0x67, 0xf1, 0x40, 0x06,
+	0x91, 0x8e, 0x6e, 0x7d, 0xc8, 0x06, 0xac, 0xf8, 0xec, 0x05, 0x4d, 0xc6, 0xea, 0x39, 0x1d, 0x27,
+	0xac, 0x5d, 0x32, 0xa7, 0x8f, 0xc0, 0x19, 0x4f, 0x52, 0xb6, 0xcb, 0x78, 0xd4, 0xd8, 0x76, 0x3b,
+	0x57, 0x50, 0x77, 0xa6, 0xa0, 0xbc, 0x8f, 0x61, 0x75, 0x47, 0x0c, 0x46, 0x4c, 0xee, 0x9a, 0x4a,
+	0x85, 0x24, 0xeb, 0xe0, 0x04, 0x21, 0x1d, 0xb2, 0xaf, 0x66, 0xe9, 0x1b, 0x50, 0x1a, 0x84, 0x7e,
+	0x0a, 0x95, 0x43, 0x79, 0x07, 0x81, 0x5f, 0x41, 0xb8, 0x0a, 0xd5, 0x38, 0x78, 0xcd, 0x9e, 0x9d,
+	0x1a, 0xab, 0xa6, 0xf9, 0x16, 0x89, 0x1c, 0x4c, 0x60, 0x11, 0x00, 0x8a, 0xe1, 0x77, 0xd8, 0x18,
+	0xcb, 0x33, 0xb8, 0xea, 0xa4, 0x05, 0x75, 0xc9, 0xa8, 0xdf, 0xe7, 0xe3, 0xcb, 0x76, 0xc5, 0x9c,
+	0xa0, 0x55, 0x28, 0x12, 0xae, 0x0e, 0x44, 0xc0, 0x55, 0xbb, 0x6a, 0xf2, 0xfd, 0x52, 0x00, 0xe7,
+	0x90, 0xd9, 0x60, 0x31, 0xb9, 0x03, 0x6b, 0x61, 0xc0, 0x83, 0x30, 0x09, 0x7b, 0x51, 0xd2, 0x13,
+	0x92, 0xc5, 0x06, 0x40, 0x53, 0x53, 0x14, 0x49, 0xc6, 0x42, 0x64, 0xe8, 0x74, 0xcc, 0x0c, 0x8a,
+	0xba, 0xa6, 0x28, 0xb5, 0x3e, 0xa4, 0x21, 0x62, 0x2b, 0x19, 0xd3, 0x77, 0xa1, 0xa2, 0xa9, 0x8f,
+	0x11, 0x46, 0x09, 0xe9, 0xb9, 0x7d, 0x8d, 0x1e, 0x53, 0x5f, 0x13, 0x2a, 0xaf, 0x05, 0xc7, 0xf8,
+	0x15, 0xb4, 0x72, 0xbc, 0xdf, 0x8b, 0x50, 0xd6, 0x2d, 0xba, 0x52, 0x37, 0xb2, 0x85, 0xad, 0xfe,
+	0x91, 0x0d, 0xd4, 0x5e, 0x4a, 0xd0, 0xd5, 0x66, 0xd9, 0xfa, 0x1f, 0xc3, 0x5a, 0xc0, 0xa3, 0x44,
+	0x4d, 0x3b, 0x3c, 0xc9, 0xfe, 0xf6, 0xb5, 0xec, 0x8b, 0x42, 0x78, 0x02, 0x2d, 0x91, 0xa8, 0x45,
+	0xcf, 0xca, 0xbf, 0xf2, 0x44, 0x25, 0xc8, 0x09, 0x6f, 0x86, 0xcb, 0x2c, 0x25, 0xcc, 0x98, 0xc5,
+	0x8e, 0xe9, 0x63, 0x2c, 0xa3, 0x66, 0x10, 0x77, 0xa1, 0xea, 0x1b, 0x65, 0xb4, 0xeb, 0x26, 0xdd,
+	0xdd, 0xeb, 0x34, 0x2d, 0x08, 0xc7, 0xfb, 0xad, 0x08, 0x75, 0x8d, 0xe0, 0x0b, 0x39, 0x8c, 0x17,
+	0x79, 0xb1, 0x54, 0x7d, 0x0e, 0x55, 0x43, 0x41, 0x8c, 0x3c, 0xe9, 0x80, 0x0f, 0x32, 0xf1, 0x6b,
+	0xef, 0xce, 0x9e, 0xb1, 0xdb, 0xe5, 0x4a, 0x5e, 0x22, 0x73, 0x35, 0x4b, 0x40, 0x8c, 0x54, 0x6a,
+	0xbf, 0xf7, 0xf2, 0xfd, 0xfa, 0xd6, 0xd0, 0x3a, 0x2e, 0xd4, 0x5f, 0x5e, 0x56, 0xbf, 0xfb, 0x08,
+	0x1a, 0xf3, 0x69, 0x51, 0xf3, 0x23, 0x76, 0x99, 0x42, 0x47, 0x2d, 0x9c, 0x9b, 0x19, 0x33, 0x1d,
+	0x7e, 0x5a, 0x7c, 0x52, 0x70, 0x3b, 0xb0, 0xb2, 0x90, 0x6d, 0x89, 0xbd, 0xf7, 0x06, 0x56, 0x35,
+	0xcc, 0xc3, 0x84, 0x1f, 0xb2, 0x97, 0x09, 0x8b, 0x15, 0xf9, 0x10, 0xea, 0x2a, 0x05, 0x6e, 0xdc,
+	0x1a, 0xdb, 0x9b, 0xb9, 0x95, 0xcd, 0x75, 0xc7, 0x8a, 0xec, 0x23, 0x68, 0xb2, 0xe8, 0x8c, 0x85,
+	0x4c, 0xd2, 0xb1, 0x36, 0x32, 0x32, 0xcb, 0xd2, 0xb2, 0xbe, 0xf4, 0xbe, 0x87, 0x35, 0xfd, 0x77,
+	0x3f, 0x88, 0xd5, 0x24, 0x7b, 0x46, 0x83, 0x70, 0xfa, 0xb4, 0xb2, 0x0f, 0x24, 0x7b, 0x11, 0x5c,
+	0xa4, 0x79, 0x70, 0x46, 0x23, 0x5c, 0x06, 0x47, 0x38, 0xdb, 0xe9, 0xf4, 0x68, 0x47, 0x3c, 0x39,
+	0x16, 0x23, 0xc6, 0x0d, 0xad, 0x8e, 0xd7, 0x87, 0xd6, 0x2c, 0x7c, 0x1c, 0xe1, 0xfe, 0x63, 0x7a,
+	0xc8, 0x34, 0x08, 0x5d, 0x5a, 0x29, 0x17, 0x18, 0xb9, 0x0d, 0x4d, 0xce, 0x2e, 0x50, 0xdb, 0x93,
+	0x80, 0x76, 0xc7, 0x9c, 0xc0, 0xba, 0xbe, 0xee, 0x47, 0xff, 0x15, 0xe2, 0xe7, 0x40, 0xe6, 0x13,
+	0xa4, 0x98, 0x3f, 0xb0, 0x1d, 0x89, 0xfb, 0xd1, 0x04, 0xf6, 0x9d, 0x4c, 0xd8, 0xfd, 0x28, 0x0f,
+	0xf8, 0x1d, 0xa8, 0x1e, 0x9b, 0x36, 0xcd, 0x24, 0x60, 0x90, 0x7a, 0x9b, 0x76, 0x36, 0xfa, 0xd1,
+	0xf5, 0xab, 0x73, 0x70, 0x52, 0x2c, 0x62, 0xa8, 0x97, 0xc7, 0x40, 0x84, 0x21, 0xe5, 0xfe, 0x7e,
+	0xc0, 0xe7, 0x96, 0x4c, 0xac, 0xa8, 0x54, 0xc7, 0x41, 0x98, 0x4a, 0x8a, 0xac, 0x41, 0x8d, 0x71,
+	0xdf, 0x1c, 0x94, 0xa6, 0x0b, 0x58, 0xf9, 0x38, 0x29, 0xb6, 0xc2, 0xf4, 0x9b, 0x49, 0x69, 0x56,
+	0xab, 0xa1, 0x85, 0x5d, 0x04, 0xaa, 0x27, 0x7c, 0x66, 0x96, 0x41, 0xc5, 0xfb, 0xa3, 0x68, 0xc1,
+	0x62, 0x35, 0x2d, 0x5b, 0xb8, 0x46, 0x97, 0xa6, 0x7c, 0x0c, 0x75, 0xdc, 0x22, 0xd4, 0xa7, 0x8a,
+	0xde, 0x38, 0xae, 0xfd, 0xa8, 0xf3, 0x65, 0x6a, 0x67, 0xe7, 0xe0, 0x3e, 0x94, 0xd5, 0x32, 0x3d,
+	0x2e, 0x48, 0xbf, 0xbc, 0x4c, 0xfa, 0x0f, 0xa0, 0x82, 0xd5, 0xe3, 0xab, 0xa1, 0x0b, 0x59, 0xdd,
+	0xfe, 0xff, 0x35, 0xcb, 0x23, 0x7d, 0x4b, 0x1e, 0x42, 0x79, 0x2c, 0x86, 0x7a, 0xd3, 0x95, 0x32,
+	0x27, 0x7d, 0xca, 0xb1, 0xdb, 0x85, 0xe6, 0x22, 0xe6, 0x25, 0xb3, 0xbb, 0xf5, 0x12, 0x2a, 0x36,
+	0x47, 0x03, 0x6a, 0xdf, 0xf0, 0x11, 0x17, 0xaf, 0x78, 0xeb, 0x7f, 0xa8, 0xbd, 0xea, 0xd7, 0x09,
+	0x4b, 0x98, 0xdf, 0x2a, 0xe8, 0x0b, 0x9c, 0x6c, 0x1e, 0xf0, 0x61, 0xab, 0xa8, 0x2f, 0x0e, 0x68,
+	0x12, 0xe3, 0x45, 0x09, 0x5f, 0x8b, 0x7a, 0x4f, 0x84, 0x91, 0x7e, 0xf5, 0x5a, 0x65, 0xe2, 0x40,
+	0x65, 0x57, 0x4a, 0x21, 0x5b, 0x15, 0x6c, 0x60, 0xe3, 0xe8, 0x32, 0x56, 0x2c, 0xb4, 0x07, 0x55,
+	0x63, 0x49, 0xf9, 0x00, 0x1f, 0x48, 0xbf, 0x55, 0xdb, 0xfe, 0xbb, 0x02, 0x0d, 0x8d, 0xf8, 0x88,
+	0xc9, 0xf3, 0x60, 0xc0, 0xc8, 0x01, 0x40, 0x0f, 0x1f, 0x4b, 0xc5, 0xec, 0xd8, 0x64, 0x56, 0xe7,
+	0xe6, 0x4c, 0xff, 0xc6, 0xcf, 0x7f, 0xfe, 0xf5, 0x6b, 0x71, 0xd5, 0x73, 0xba, 0xe7, 0x9f, 0x74,
+	0x8d, 0xc0, 0x9f, 0x16, 0xb6, 0xc8, 0xb7, 0x00, 0xf6, 0x35, 0x36, 0x11, 0xb3, 0x85, 0xbe, 0xe7,
+	0xbb, 0x79, 0x17, 0xde, 0xa6, 0x89, 0x7a, 0x6b, 0x6b, 0x7d, 0x1a, 0xb5, 0xfb, 0xc6, 0x10, 0xf7,
+	0x13, 0x39, 0x86, 0xda, 0x33, 0xa6, 0x6e, 0x8e, 0x9b, 0x83, 0x35, 0x8d, 0x4a, 0x32, 0xa2, 0x9e,
+	0x42, 0x5d, 0x4f, 0xab, 0x09, 0x7b, 0x2f, 0xd3, 0x7b, 0x6e, 0x5b, 0xb8, 0xef, 0xdc, 0x60, 0x61,
+	0xc7, 0xdd, 0x5b, 0x37, 0xb9, 0x1a, 0x64, 0xc6, 0x0b, 0x39, 0x31, 0x7d, 0x34, 0x29, 0xee, 0x66,
+	0x06, 0x98, 0xed, 0x6f, 0x77, 0x33, 0x47, 0x62, 0xc8, 0x4d, 0xdb, 0x44, 0x26, 0x5e, 0x73, 0xc6,
+	0xb8, 0x4c, 0xb8, 0x66, 0xfd, 0x3b, 0x70, 0x52, 0x6a, 0x70, 0xec, 0xf2, 0x23, 0xb8, 0x79, 0x8b,
+	0xc7, 0x73, 0x4d, 0xe8, 0x0d, 0x42, 0x26, 0xa1, 0x45, 0x34, 0x65, 0x28, 0x00, 0x98, 0x30, 0x84,
+	0xd1, 0xbd, 0xbc, 0x11, 0x98, 0x63, 0xe9, 0xfe, 0x8d, 0x36, 0x29, 0x4f, 0xc4, 0xa4, 0x5c, 0x21,
+	0x30, 0x4b, 0x49, 0x7e, 0x80, 0x15, 0xab, 0xd6, 0xe5, 0xa5, 0xdc, 0xc0, 0x53, 0x5a, 0xcc, 0x56,
+	0x46, 0x31, 0xa7, 0x55, 0xf3, 0x13, 0xfa, 0xd3, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0xf1, 0x39,
+	0xc5, 0x95, 0x89, 0x0b, 0x00, 0x00,
 }

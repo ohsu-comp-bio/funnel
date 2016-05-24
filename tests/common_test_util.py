@@ -10,6 +10,8 @@ import subprocess
 
 WORK_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "test_work" )
 
+def get_abspath(path):
+    return os.path.join(os.path.dirname(__file__), path)
 
 class ServerTest(unittest.TestCase):
 

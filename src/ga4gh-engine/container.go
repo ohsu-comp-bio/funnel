@@ -26,7 +26,7 @@ func NewDockerDirect() *DockerDirect {
 	return &DockerDirect{ client:client }
 }
 
-func (self *DockerDirect) Run(containerName string, args []string, binds[] string, remove bool, stdout *os.File, stderr *os.File) error {
+func (self *DockerDirect) Run(containerName string, args []string, binds[] string, remove bool, stdout *os.File, stderr *os.File) (int, error) {
 
 	create_config := docker.Config{
 		Image:containerName,
@@ -39,7 +39,7 @@ func (self *DockerDirect) Run(containerName string, args []string, binds[] strin
 	})
 	if err != nil {
 		log.Printf("Docker run Error: %s", err)
-		return err
+		return 0, err
 	}
 
 	log.Printf("Starting Docker: %s", strings.Join(args, " "))
@@ -49,11 +49,11 @@ func (self *DockerDirect) Run(containerName string, args []string, binds[] strin
 
 	if err != nil {
 		log.Printf("Docker run Error: %s", err)
-		return err
+		return 0, err
 	}
 
 	log.Printf("Attaching Container: %s", container.ID)
-	self.client.WaitContainer(container.ID)
+	exit_code, err := self.client.WaitContainer(container.ID)
 
 	logOpts := docker.LogsOptions{Container:container.ID, Stdout:false, Stderr:false}
 
@@ -73,5 +73,5 @@ func (self *DockerDirect) Run(containerName string, args []string, binds[] strin
 		log.Printf("docker %s complete", container.ID, err)
 	}
 	self.client.RemoveContainer(docker.RemoveContainerOptions{ID:container.ID,RemoveVolumes:true})
-	return nil
+	return exit_code, nil
 }

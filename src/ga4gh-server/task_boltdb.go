@@ -134,10 +134,20 @@ func (self *TaskBolt) RunTask(ctx context.Context, request *ga4gh_task_exec.Task
 				ch <- nil
 				return fmt.Errorf("Missing Input:%s", input.Name)
 			}
+			disk_found := false
+			for _, res := range request.EphemeralTask.Resources.Disks {
+				if res.Name == input.LocalCopy.Disk {
+					disk_found = true
+				}
+			}
+			if !disk_found {
+				return fmt.Errorf("Required disk %s not found in resources", input.LocalCopy.Disk)
+			}
 		}
 
 
 		taskop := ga4gh_task_exec.TaskOp{
+			TaskArgs: request.TaskArgs,
 			TaskOpId: taskopId.String(),
 			State:ga4gh_task_exec.State_Queued,
 			Task: task,
@@ -152,6 +162,9 @@ func (self *TaskBolt) RunTask(ctx context.Context, request *ga4gh_task_exec.Task
 		ch <- &ga4gh_task_exec.TaskOpId{Value:taskopId.String()}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 	a := <- ch
 	return a, err
 }

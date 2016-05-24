@@ -20,7 +20,7 @@ type FileMapper interface {
 
 	TempFile(jobId string) (f *os.File, err error)
 	GetBindings(jobId string) []string
-	UpdateOutputs(jobId string, stepNum int, stdoutText string, stderrText string)
+	UpdateOutputs(jobId string, stepNum int, exit_code int, stdoutText string, stderrText string)
 
 	FinalizeJob(jobId string)
 }
@@ -98,8 +98,8 @@ func (self *SharedFileMapper) GetBindings(jobId string) []string {
 }
 
 
-func (self *SharedFileMapper) UpdateOutputs(jobId string, jobNum int, stdoutText string, stderrText string) {
-	log := ga4gh_task_exec.TaskOpLog{Stdout:stdoutText, Stderr:stderrText}
+func (self *SharedFileMapper) UpdateOutputs(jobId string, jobNum int, exitCode int, stdoutText string, stderrText string) {
+	log := ga4gh_task_exec.TaskOpLog{Stdout:stdoutText, Stderr:stderrText, ExitCode:int32(exitCode)}
 	a := ga4gh_task_ref.UpdateStatusRequest{Id:jobId, Step:int64(jobNum), Log:&log }
 	(*self.client).UpdateTaskOpStatus(context.Background(), &a)
 }

@@ -21,6 +21,9 @@ func read_file_head(path string) []byte {
 func RunJob(job *ga4gh_task_exec.TaskOp, mapper FileMapper) error {
 
 	for _, input := range job.Task.InputParameters {
+		if job.TaskArgs == nil {
+			return fmt.Errorf("No task arguments found")
+		}
 		srcPath := job.TaskArgs.Inputs[input.Name]
 		mapper.MapInput(job.TaskOpId, srcPath, *input.LocalCopy)
 	}
@@ -50,18 +53,17 @@ func RunJob(job *ga4gh_task_exec.TaskOp, mapper FileMapper) error {
 
 		dclient := NewDockerDirect()
 		cmds, _ := shlex.Split(dockerTask.Cmd)
-		err = dclient.Run(dockerTask.ImageName, cmds, binds, true, stdout, stderr)
+		exit_code, err := dclient.Run(dockerTask.ImageName, cmds, binds, true, stdout, stderr)
 		stdout.Close()
 		stderr.Close()
 
 		stderr_text := read_file_head(stderr_path)
 		stdout_text := read_file_head(stdout_path)
-		mapper.UpdateOutputs(job.TaskOpId, i, string(stdout_text), string(stderr_text))
+		mapper.UpdateOutputs(job.TaskOpId, i, exit_code, string(stdout_text), string(stderr_text))
 		if err != nil {
 			return err
 		}
 	}
-
 
 
 	mapper.FinalizeJob(job.TaskOpId)

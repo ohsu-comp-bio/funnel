@@ -9,22 +9,19 @@ It is generated from these files:
 	task_execution.proto
 
 It has these top-level messages:
-	LocalCopy
 	TaskParameter
 	DockerExecutor
 	Disk
 	Resources
 	Task
-	TaskArgs
-	TaskRunRequest
 	TaskListRequest
 	TaskListResponse
-	TaskOpListRequest
-	TaskOpListResponse
+	JobListRequest
+	JobListResponse
 	TaskId
-	TaskOpId
-	TaskOpLog
-	TaskOp
+	JobId
+	JobLog
+	Job
 */
 package ga4gh_task_exec
 
@@ -86,36 +83,20 @@ func (x State) String() string {
 }
 func (State) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-// File
-type LocalCopy struct {
-	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	Disk string `protobuf:"bytes,2,opt,name=disk" json:"disk,omitempty"`
-}
-
-func (m *LocalCopy) Reset()                    { *m = LocalCopy{} }
-func (m *LocalCopy) String() string            { return proto.CompactTextString(m) }
-func (*LocalCopy) ProtoMessage()               {}
-func (*LocalCopy) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
-
-// Parameters for task
+// Parameters for Task
 type TaskParameter struct {
-	Name         string     `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Description  string     `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
-	DefaultValue string     `protobuf:"bytes,3,opt,name=defaultValue" json:"defaultValue,omitempty"`
-	LocalCopy    *LocalCopy `protobuf:"bytes,4,opt,name=localCopy" json:"localCopy,omitempty"`
+	Name        string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Description string `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
+	Storage     string `protobuf:"bytes,3,opt,name=storage" json:"storage,omitempty"`
+	Path        string `protobuf:"bytes,4,opt,name=path" json:"path,omitempty"`
+	Disk        string `protobuf:"bytes,5,opt,name=disk" json:"disk,omitempty"`
+	Directory   bool   `protobuf:"varint,6,opt,name=directory" json:"directory,omitempty"`
 }
 
 func (m *TaskParameter) Reset()                    { *m = TaskParameter{} }
 func (m *TaskParameter) String() string            { return proto.CompactTextString(m) }
 func (*TaskParameter) ProtoMessage()               {}
-func (*TaskParameter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *TaskParameter) GetLocalCopy() *LocalCopy {
-	if m != nil {
-		return m.LocalCopy
-	}
-	return nil
-}
+func (*TaskParameter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 // A command line to be executed and the docker container to run it
 type DockerExecutor struct {
@@ -128,7 +109,7 @@ type DockerExecutor struct {
 func (m *DockerExecutor) Reset()                    { *m = DockerExecutor{} }
 func (m *DockerExecutor) String() string            { return proto.CompactTextString(m) }
 func (*DockerExecutor) ProtoMessage()               {}
-func (*DockerExecutor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*DockerExecutor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 // Attached disk request.
 type Disk struct {
@@ -150,7 +131,7 @@ type Disk struct {
 func (m *Disk) Reset()                    { *m = Disk{} }
 func (m *Disk) String() string            { return proto.CompactTextString(m) }
 func (*Disk) ProtoMessage()               {}
-func (*Disk) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*Disk) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 type Resources struct {
 	MinimumCpuCores uint32   `protobuf:"varint,1,opt,name=minimumCpuCores" json:"minimumCpuCores,omitempty"`
@@ -163,7 +144,7 @@ type Resources struct {
 func (m *Resources) Reset()                    { *m = Resources{} }
 func (m *Resources) String() string            { return proto.CompactTextString(m) }
 func (*Resources) ProtoMessage()               {}
-func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *Resources) GetDisks() []*Disk {
 	if m != nil {
@@ -181,9 +162,9 @@ type Task struct {
 	// free text description of task
 	Description string `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
 	// Files to be copied into system before tasks
-	InputParameters []*TaskParameter `protobuf:"bytes,4,rep,name=inputParameters" json:"inputParameters,omitempty"`
+	Inputs []*TaskParameter `protobuf:"bytes,4,rep,name=inputs" json:"inputs,omitempty"`
 	// Files to be copied out of the system after tasks
-	OutputParameters []*TaskParameter `protobuf:"bytes,5,rep,name=outputParameters" json:"outputParameters,omitempty"`
+	Outputs []*TaskParameter `protobuf:"bytes,5,rep,name=outputs" json:"outputs,omitempty"`
 	// Define required system resources to run job
 	Resources *Resources `protobuf:"bytes,6,opt,name=resources" json:"resources,omitempty"`
 	// System defined identifier of task
@@ -195,18 +176,18 @@ type Task struct {
 func (m *Task) Reset()                    { *m = Task{} }
 func (m *Task) String() string            { return proto.CompactTextString(m) }
 func (*Task) ProtoMessage()               {}
-func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
-func (m *Task) GetInputParameters() []*TaskParameter {
+func (m *Task) GetInputs() []*TaskParameter {
 	if m != nil {
-		return m.InputParameters
+		return m.Inputs
 	}
 	return nil
 }
 
-func (m *Task) GetOutputParameters() []*TaskParameter {
+func (m *Task) GetOutputs() []*TaskParameter {
 	if m != nil {
-		return m.OutputParameters
+		return m.Outputs
 	}
 	return nil
 }
@@ -225,70 +206,6 @@ func (m *Task) GetDocker() []*DockerExecutor {
 	return nil
 }
 
-// Arguments for task to be instanced
-type TaskArgs struct {
-	ProjectId string            `protobuf:"bytes,1,opt,name=projectId" json:"projectId,omitempty"`
-	Inputs    map[string]string `protobuf:"bytes,2,rep,name=inputs" json:"inputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Outputs   map[string]string `protobuf:"bytes,3,rep,name=outputs" json:"outputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Resources *Resources        `protobuf:"bytes,4,opt,name=resources" json:"resources,omitempty"`
-}
-
-func (m *TaskArgs) Reset()                    { *m = TaskArgs{} }
-func (m *TaskArgs) String() string            { return proto.CompactTextString(m) }
-func (*TaskArgs) ProtoMessage()               {}
-func (*TaskArgs) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-func (m *TaskArgs) GetInputs() map[string]string {
-	if m != nil {
-		return m.Inputs
-	}
-	return nil
-}
-
-func (m *TaskArgs) GetOutputs() map[string]string {
-	if m != nil {
-		return m.Outputs
-	}
-	return nil
-}
-
-func (m *TaskArgs) GetResources() *Resources {
-	if m != nil {
-		return m.Resources
-	}
-	return nil
-}
-
-// Task run request
-// Define either a taskId or an ephemeralTask
-type TaskRunRequest struct {
-	// arguments for task instance
-	TaskArgs *TaskArgs `protobuf:"bytes,1,opt,name=taskArgs" json:"taskArgs,omitempty"`
-	// ID of the task that will be used to create this task instance
-	TaskId string `protobuf:"bytes,2,opt,name=taskId" json:"taskId,omitempty"`
-	// description of a task that be used to create this task instance
-	EphemeralTask *Task `protobuf:"bytes,3,opt,name=ephemeralTask" json:"ephemeralTask,omitempty"`
-}
-
-func (m *TaskRunRequest) Reset()                    { *m = TaskRunRequest{} }
-func (m *TaskRunRequest) String() string            { return proto.CompactTextString(m) }
-func (*TaskRunRequest) ProtoMessage()               {}
-func (*TaskRunRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *TaskRunRequest) GetTaskArgs() *TaskArgs {
-	if m != nil {
-		return m.TaskArgs
-	}
-	return nil
-}
-
-func (m *TaskRunRequest) GetEphemeralTask() *Task {
-	if m != nil {
-		return m.EphemeralTask
-	}
-	return nil
-}
-
 type TaskListRequest struct {
 	// Required. The name of the project to search for pipelines. Caller must have READ access to this project.
 	ProjectId string `protobuf:"bytes,1,opt,name=projectId" json:"projectId,omitempty"`
@@ -303,7 +220,7 @@ type TaskListRequest struct {
 func (m *TaskListRequest) Reset()                    { *m = TaskListRequest{} }
 func (m *TaskListRequest) String() string            { return proto.CompactTextString(m) }
 func (*TaskListRequest) ProtoMessage()               {}
-func (*TaskListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+func (*TaskListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 type TaskListResponse struct {
 	Tasks         []*Task `protobuf:"bytes,1,rep,name=tasks" json:"tasks,omitempty"`
@@ -313,7 +230,7 @@ type TaskListResponse struct {
 func (m *TaskListResponse) Reset()                    { *m = TaskListResponse{} }
 func (m *TaskListResponse) String() string            { return proto.CompactTextString(m) }
 func (*TaskListResponse) ProtoMessage()               {}
-func (*TaskListResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+func (*TaskListResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 func (m *TaskListResponse) GetTasks() []*Task {
 	if m != nil {
@@ -322,7 +239,7 @@ func (m *TaskListResponse) GetTasks() []*Task {
 	return nil
 }
 
-type TaskOpListRequest struct {
+type JobListRequest struct {
 	// Required. The name of the project to search for pipelines. Caller must have READ access to this project.
 	ProjectId string `protobuf:"bytes,1,opt,name=projectId" json:"projectId,omitempty"`
 	// Pipelines with names that match this prefix should be returned. If unspecified, all pipelines in the project, up to pageSize, will be returned.
@@ -333,24 +250,24 @@ type TaskOpListRequest struct {
 	PageToken string `protobuf:"bytes,4,opt,name=pageToken" json:"pageToken,omitempty"`
 }
 
-func (m *TaskOpListRequest) Reset()                    { *m = TaskOpListRequest{} }
-func (m *TaskOpListRequest) String() string            { return proto.CompactTextString(m) }
-func (*TaskOpListRequest) ProtoMessage()               {}
-func (*TaskOpListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+func (m *JobListRequest) Reset()                    { *m = JobListRequest{} }
+func (m *JobListRequest) String() string            { return proto.CompactTextString(m) }
+func (*JobListRequest) ProtoMessage()               {}
+func (*JobListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
-type TaskOpListResponse struct {
-	TasksOps      []*TaskOp `protobuf:"bytes,1,rep,name=tasksOps" json:"tasksOps,omitempty"`
-	NextPageToken string    `protobuf:"bytes,2,opt,name=nextPageToken" json:"nextPageToken,omitempty"`
+type JobListResponse struct {
+	Jobs          []*Job `protobuf:"bytes,1,rep,name=jobs" json:"jobs,omitempty"`
+	NextPageToken string `protobuf:"bytes,2,opt,name=nextPageToken" json:"nextPageToken,omitempty"`
 }
 
-func (m *TaskOpListResponse) Reset()                    { *m = TaskOpListResponse{} }
-func (m *TaskOpListResponse) String() string            { return proto.CompactTextString(m) }
-func (*TaskOpListResponse) ProtoMessage()               {}
-func (*TaskOpListResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+func (m *JobListResponse) Reset()                    { *m = JobListResponse{} }
+func (m *JobListResponse) String() string            { return proto.CompactTextString(m) }
+func (*JobListResponse) ProtoMessage()               {}
+func (*JobListResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
-func (m *TaskOpListResponse) GetTasksOps() []*TaskOp {
+func (m *JobListResponse) GetJobs() []*Job {
 	if m != nil {
-		return m.TasksOps
+		return m.Jobs
 	}
 	return nil
 }
@@ -363,19 +280,19 @@ type TaskId struct {
 func (m *TaskId) Reset()                    { *m = TaskId{} }
 func (m *TaskId) String() string            { return proto.CompactTextString(m) }
 func (*TaskId) ProtoMessage()               {}
-func (*TaskId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+func (*TaskId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
 // ID of an instance of a Task
-type TaskOpId struct {
+type JobId struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
 }
 
-func (m *TaskOpId) Reset()                    { *m = TaskOpId{} }
-func (m *TaskOpId) String() string            { return proto.CompactTextString(m) }
-func (*TaskOpId) ProtoMessage()               {}
-func (*TaskOpId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+func (m *JobId) Reset()                    { *m = JobId{} }
+func (m *JobId) String() string            { return proto.CompactTextString(m) }
+func (*JobId) ProtoMessage()               {}
+func (*JobId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
-type TaskOpLog struct {
+type JobLog struct {
 	// The command line that was run
 	CommandLine string `protobuf:"bytes,1,opt,name=commandLine" json:"commandLine,omitempty"`
 	// When the command was executed
@@ -390,48 +307,40 @@ type TaskOpLog struct {
 	ExitCode int32 `protobuf:"varint,6,opt,name=exitCode" json:"exitCode,omitempty"`
 }
 
-func (m *TaskOpLog) Reset()                    { *m = TaskOpLog{} }
-func (m *TaskOpLog) String() string            { return proto.CompactTextString(m) }
-func (*TaskOpLog) ProtoMessage()               {}
-func (*TaskOpLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+func (m *JobLog) Reset()                    { *m = JobLog{} }
+func (m *JobLog) String() string            { return proto.CompactTextString(m) }
+func (*JobLog) ProtoMessage()               {}
+func (*JobLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
 // The description of the running instance of a task
-type TaskOp struct {
-	TaskOpId string            `protobuf:"bytes,1,opt,name=taskOpId" json:"taskOpId,omitempty"`
+type Job struct {
+	JobId    string            `protobuf:"bytes,1,opt,name=jobId" json:"jobId,omitempty"`
 	Metadata map[string]string `protobuf:"bytes,2,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Task     *Task             `protobuf:"bytes,3,opt,name=task" json:"task,omitempty"`
-	TaskArgs *TaskArgs         `protobuf:"bytes,4,opt,name=taskArgs" json:"taskArgs,omitempty"`
-	State    State             `protobuf:"varint,5,opt,name=state,enum=ga4gh_task_exec.State" json:"state,omitempty"`
-	Logs     []*TaskOpLog      `protobuf:"bytes,6,rep,name=logs" json:"logs,omitempty"`
+	State    State             `protobuf:"varint,4,opt,name=state,enum=ga4gh_task_exec.State" json:"state,omitempty"`
+	Logs     []*JobLog         `protobuf:"bytes,5,rep,name=logs" json:"logs,omitempty"`
 }
 
-func (m *TaskOp) Reset()                    { *m = TaskOp{} }
-func (m *TaskOp) String() string            { return proto.CompactTextString(m) }
-func (*TaskOp) ProtoMessage()               {}
-func (*TaskOp) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
+func (m *Job) Reset()                    { *m = Job{} }
+func (m *Job) String() string            { return proto.CompactTextString(m) }
+func (*Job) ProtoMessage()               {}
+func (*Job) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
 
-func (m *TaskOp) GetMetadata() map[string]string {
+func (m *Job) GetMetadata() map[string]string {
 	if m != nil {
 		return m.Metadata
 	}
 	return nil
 }
 
-func (m *TaskOp) GetTask() *Task {
+func (m *Job) GetTask() *Task {
 	if m != nil {
 		return m.Task
 	}
 	return nil
 }
 
-func (m *TaskOp) GetTaskArgs() *TaskArgs {
-	if m != nil {
-		return m.TaskArgs
-	}
-	return nil
-}
-
-func (m *TaskOp) GetLogs() []*TaskOpLog {
+func (m *Job) GetLogs() []*JobLog {
 	if m != nil {
 		return m.Logs
 	}
@@ -439,22 +348,19 @@ func (m *TaskOp) GetLogs() []*TaskOpLog {
 }
 
 func init() {
-	proto.RegisterType((*LocalCopy)(nil), "ga4gh_task_exec.LocalCopy")
 	proto.RegisterType((*TaskParameter)(nil), "ga4gh_task_exec.TaskParameter")
 	proto.RegisterType((*DockerExecutor)(nil), "ga4gh_task_exec.DockerExecutor")
 	proto.RegisterType((*Disk)(nil), "ga4gh_task_exec.Disk")
 	proto.RegisterType((*Resources)(nil), "ga4gh_task_exec.Resources")
 	proto.RegisterType((*Task)(nil), "ga4gh_task_exec.Task")
-	proto.RegisterType((*TaskArgs)(nil), "ga4gh_task_exec.TaskArgs")
-	proto.RegisterType((*TaskRunRequest)(nil), "ga4gh_task_exec.TaskRunRequest")
 	proto.RegisterType((*TaskListRequest)(nil), "ga4gh_task_exec.TaskListRequest")
 	proto.RegisterType((*TaskListResponse)(nil), "ga4gh_task_exec.TaskListResponse")
-	proto.RegisterType((*TaskOpListRequest)(nil), "ga4gh_task_exec.TaskOpListRequest")
-	proto.RegisterType((*TaskOpListResponse)(nil), "ga4gh_task_exec.TaskOpListResponse")
+	proto.RegisterType((*JobListRequest)(nil), "ga4gh_task_exec.JobListRequest")
+	proto.RegisterType((*JobListResponse)(nil), "ga4gh_task_exec.JobListResponse")
 	proto.RegisterType((*TaskId)(nil), "ga4gh_task_exec.TaskId")
-	proto.RegisterType((*TaskOpId)(nil), "ga4gh_task_exec.TaskOpId")
-	proto.RegisterType((*TaskOpLog)(nil), "ga4gh_task_exec.TaskOpLog")
-	proto.RegisterType((*TaskOp)(nil), "ga4gh_task_exec.TaskOp")
+	proto.RegisterType((*JobId)(nil), "ga4gh_task_exec.JobId")
+	proto.RegisterType((*JobLog)(nil), "ga4gh_task_exec.JobLog")
+	proto.RegisterType((*Job)(nil), "ga4gh_task_exec.Job")
 	proto.RegisterEnum("ga4gh_task_exec.State", State_name, State_value)
 }
 
@@ -469,22 +375,14 @@ const _ = grpc.SupportPackageIsVersion2
 // Client API for TaskService service
 
 type TaskServiceClient interface {
-	// Create a task
-	CreateTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*Task, error)
-	// Delete a task
-	DeleteTask(ctx context.Context, in *TaskId, opts ...grpc.CallOption) (*TaskId, error)
-	// Get a task by its ID
-	GetTask(ctx context.Context, in *TaskId, opts ...grpc.CallOption) (*Task, error)
-	// List the tasks
-	ListTask(ctx context.Context, in *TaskListRequest, opts ...grpc.CallOption) (*TaskListResponse, error)
 	// Run a task
-	RunTask(ctx context.Context, in *TaskRunRequest, opts ...grpc.CallOption) (*TaskOpId, error)
-	// Get info about a running task
-	GetTaskOp(ctx context.Context, in *TaskOpId, opts ...grpc.CallOption) (*TaskOp, error)
+	RunTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*JobId, error)
 	// List the TaskOps
-	ListTaskOp(ctx context.Context, in *TaskOpListRequest, opts ...grpc.CallOption) (*TaskOpListResponse, error)
+	ListJobs(ctx context.Context, in *JobListRequest, opts ...grpc.CallOption) (*JobListResponse, error)
+	// Get info about a running task
+	GetJob(ctx context.Context, in *JobId, opts ...grpc.CallOption) (*Job, error)
 	// Cancel a running task
-	CancelTaskOp(ctx context.Context, in *TaskOpId, opts ...grpc.CallOption) (*TaskOpId, error)
+	CancelJob(ctx context.Context, in *JobId, opts ...grpc.CallOption) (*JobId, error)
 }
 
 type taskServiceClient struct {
@@ -495,44 +393,8 @@ func NewTaskServiceClient(cc *grpc.ClientConn) TaskServiceClient {
 	return &taskServiceClient{cc}
 }
 
-func (c *taskServiceClient) CreateTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*Task, error) {
-	out := new(Task)
-	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/CreateTask", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *taskServiceClient) DeleteTask(ctx context.Context, in *TaskId, opts ...grpc.CallOption) (*TaskId, error) {
-	out := new(TaskId)
-	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/DeleteTask", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *taskServiceClient) GetTask(ctx context.Context, in *TaskId, opts ...grpc.CallOption) (*Task, error) {
-	out := new(Task)
-	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/GetTask", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *taskServiceClient) ListTask(ctx context.Context, in *TaskListRequest, opts ...grpc.CallOption) (*TaskListResponse, error) {
-	out := new(TaskListResponse)
-	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/ListTask", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *taskServiceClient) RunTask(ctx context.Context, in *TaskRunRequest, opts ...grpc.CallOption) (*TaskOpId, error) {
-	out := new(TaskOpId)
+func (c *taskServiceClient) RunTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*JobId, error) {
+	out := new(JobId)
 	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/RunTask", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -540,27 +402,27 @@ func (c *taskServiceClient) RunTask(ctx context.Context, in *TaskRunRequest, opt
 	return out, nil
 }
 
-func (c *taskServiceClient) GetTaskOp(ctx context.Context, in *TaskOpId, opts ...grpc.CallOption) (*TaskOp, error) {
-	out := new(TaskOp)
-	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/GetTaskOp", in, out, c.cc, opts...)
+func (c *taskServiceClient) ListJobs(ctx context.Context, in *JobListRequest, opts ...grpc.CallOption) (*JobListResponse, error) {
+	out := new(JobListResponse)
+	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/ListJobs", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) ListTaskOp(ctx context.Context, in *TaskOpListRequest, opts ...grpc.CallOption) (*TaskOpListResponse, error) {
-	out := new(TaskOpListResponse)
-	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/ListTaskOp", in, out, c.cc, opts...)
+func (c *taskServiceClient) GetJob(ctx context.Context, in *JobId, opts ...grpc.CallOption) (*Job, error) {
+	out := new(Job)
+	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/GetJob", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) CancelTaskOp(ctx context.Context, in *TaskOpId, opts ...grpc.CallOption) (*TaskOpId, error) {
-	out := new(TaskOpId)
-	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/CancelTaskOp", in, out, c.cc, opts...)
+func (c *taskServiceClient) CancelJob(ctx context.Context, in *JobId, opts ...grpc.CallOption) (*JobId, error) {
+	out := new(JobId)
+	err := grpc.Invoke(ctx, "/ga4gh_task_exec.TaskService/CancelJob", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -570,102 +432,22 @@ func (c *taskServiceClient) CancelTaskOp(ctx context.Context, in *TaskOpId, opts
 // Server API for TaskService service
 
 type TaskServiceServer interface {
-	// Create a task
-	CreateTask(context.Context, *Task) (*Task, error)
-	// Delete a task
-	DeleteTask(context.Context, *TaskId) (*TaskId, error)
-	// Get a task by its ID
-	GetTask(context.Context, *TaskId) (*Task, error)
-	// List the tasks
-	ListTask(context.Context, *TaskListRequest) (*TaskListResponse, error)
 	// Run a task
-	RunTask(context.Context, *TaskRunRequest) (*TaskOpId, error)
-	// Get info about a running task
-	GetTaskOp(context.Context, *TaskOpId) (*TaskOp, error)
+	RunTask(context.Context, *Task) (*JobId, error)
 	// List the TaskOps
-	ListTaskOp(context.Context, *TaskOpListRequest) (*TaskOpListResponse, error)
+	ListJobs(context.Context, *JobListRequest) (*JobListResponse, error)
+	// Get info about a running task
+	GetJob(context.Context, *JobId) (*Job, error)
 	// Cancel a running task
-	CancelTaskOp(context.Context, *TaskOpId) (*TaskOpId, error)
+	CancelJob(context.Context, *JobId) (*JobId, error)
 }
 
 func RegisterTaskServiceServer(s *grpc.Server, srv TaskServiceServer) {
 	s.RegisterService(&_TaskService_serviceDesc, srv)
 }
 
-func _TaskService_CreateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Task)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskServiceServer).CreateTask(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ga4gh_task_exec.TaskService/CreateTask",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).CreateTask(ctx, req.(*Task))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TaskService_DeleteTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskId)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskServiceServer).DeleteTask(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ga4gh_task_exec.TaskService/DeleteTask",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).DeleteTask(ctx, req.(*TaskId))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TaskService_GetTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskId)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskServiceServer).GetTask(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ga4gh_task_exec.TaskService/GetTask",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).GetTask(ctx, req.(*TaskId))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TaskService_ListTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskListRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskServiceServer).ListTask(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ga4gh_task_exec.TaskService/ListTask",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).ListTask(ctx, req.(*TaskListRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _TaskService_RunTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskRunRequest)
+	in := new(Task)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -677,61 +459,61 @@ func _TaskService_RunTask_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/ga4gh_task_exec.TaskService/RunTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).RunTask(ctx, req.(*TaskRunRequest))
+		return srv.(TaskServiceServer).RunTask(ctx, req.(*Task))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_GetTaskOp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskOpId)
+func _TaskService_ListJobs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JobListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).GetTaskOp(ctx, in)
+		return srv.(TaskServiceServer).ListJobs(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ga4gh_task_exec.TaskService/GetTaskOp",
+		FullMethod: "/ga4gh_task_exec.TaskService/ListJobs",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).GetTaskOp(ctx, req.(*TaskOpId))
+		return srv.(TaskServiceServer).ListJobs(ctx, req.(*JobListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_ListTaskOp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskOpListRequest)
+func _TaskService_GetJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JobId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).ListTaskOp(ctx, in)
+		return srv.(TaskServiceServer).GetJob(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ga4gh_task_exec.TaskService/ListTaskOp",
+		FullMethod: "/ga4gh_task_exec.TaskService/GetJob",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).ListTaskOp(ctx, req.(*TaskOpListRequest))
+		return srv.(TaskServiceServer).GetJob(ctx, req.(*JobId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_CancelTaskOp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskOpId)
+func _TaskService_CancelJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JobId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).CancelTaskOp(ctx, in)
+		return srv.(TaskServiceServer).CancelJob(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ga4gh_task_exec.TaskService/CancelTaskOp",
+		FullMethod: "/ga4gh_task_exec.TaskService/CancelJob",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).CancelTaskOp(ctx, req.(*TaskOpId))
+		return srv.(TaskServiceServer).CancelJob(ctx, req.(*JobId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -741,114 +523,83 @@ var _TaskService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*TaskServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateTask",
-			Handler:    _TaskService_CreateTask_Handler,
-		},
-		{
-			MethodName: "DeleteTask",
-			Handler:    _TaskService_DeleteTask_Handler,
-		},
-		{
-			MethodName: "GetTask",
-			Handler:    _TaskService_GetTask_Handler,
-		},
-		{
-			MethodName: "ListTask",
-			Handler:    _TaskService_ListTask_Handler,
-		},
-		{
 			MethodName: "RunTask",
 			Handler:    _TaskService_RunTask_Handler,
 		},
 		{
-			MethodName: "GetTaskOp",
-			Handler:    _TaskService_GetTaskOp_Handler,
+			MethodName: "ListJobs",
+			Handler:    _TaskService_ListJobs_Handler,
 		},
 		{
-			MethodName: "ListTaskOp",
-			Handler:    _TaskService_ListTaskOp_Handler,
+			MethodName: "GetJob",
+			Handler:    _TaskService_GetJob_Handler,
 		},
 		{
-			MethodName: "CancelTaskOp",
-			Handler:    _TaskService_CancelTaskOp_Handler,
+			MethodName: "CancelJob",
+			Handler:    _TaskService_CancelJob_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
 }
 
 var fileDescriptor0 = []byte{
-	// 1158 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x56, 0x5d, 0x6f, 0x1b, 0x45,
-	0x17, 0x7e, 0xfd, 0xed, 0x3d, 0x8e, 0x13, 0x67, 0x9a, 0xbe, 0x75, 0x56, 0x88, 0x96, 0x2d, 0x85,
-	0x12, 0xa8, 0x0d, 0x01, 0xd4, 0xaa, 0x77, 0xc8, 0x89, 0xaa, 0x48, 0x01, 0x87, 0x24, 0x54, 0x42,
-	0x08, 0x85, 0x89, 0x77, 0xea, 0x2c, 0xf6, 0xce, 0x6c, 0x67, 0x67, 0xd3, 0xa4, 0x15, 0x37, 0x88,
-	0x7f, 0xc0, 0x25, 0x17, 0x5c, 0xf2, 0x83, 0xf8, 0x0b, 0xfc, 0x0f, 0x38, 0x33, 0xb3, 0xfe, 0x4a,
-	0x76, 0x63, 0x6e, 0xb8, 0x4a, 0x76, 0xe6, 0x7c, 0x3c, 0xe7, 0x39, 0xcf, 0x39, 0x63, 0xd8, 0x50,
-	0x34, 0x1e, 0x9d, 0xb0, 0x0b, 0x36, 0x48, 0x54, 0x20, 0x78, 0x27, 0x92, 0x42, 0x09, 0xb2, 0x36,
-	0xa4, 0x9f, 0x0d, 0xcf, 0x4e, 0xa6, 0x77, 0xee, 0x5b, 0x43, 0x21, 0x86, 0x63, 0xd6, 0xa5, 0x51,
-	0xd0, 0xa5, 0x9c, 0x0b, 0x45, 0xb5, 0x75, 0x6c, 0xcd, 0xbd, 0xf7, 0xc1, 0xd9, 0x17, 0x03, 0x3a,
-	0xee, 0x89, 0xe8, 0x92, 0xac, 0x40, 0x39, 0xa2, 0xea, 0xac, 0x5d, 0xb8, 0x57, 0x78, 0xe8, 0xe8,
-	0x2f, 0x3f, 0x88, 0x47, 0xed, 0xa2, 0xfe, 0xf2, 0x5e, 0x41, 0xf3, 0x18, 0x63, 0x1e, 0x50, 0x49,
-	0x43, 0xa6, 0x98, 0xd4, 0xd7, 0x1c, 0xff, 0x4d, 0x8d, 0x6f, 0x41, 0xc3, 0x67, 0xf1, 0x40, 0x06,
-	0x91, 0x8e, 0x6e, 0x7d, 0xc8, 0x06, 0xac, 0xf8, 0xec, 0x05, 0x4d, 0xc6, 0xea, 0x39, 0x1d, 0x27,
-	0xac, 0x5d, 0x32, 0xa7, 0x8f, 0xc0, 0x19, 0x4f, 0x52, 0xb6, 0xcb, 0x78, 0xd4, 0xd8, 0x76, 0x3b,
-	0x57, 0x50, 0x77, 0xa6, 0xa0, 0xbc, 0x8f, 0x61, 0x75, 0x47, 0x0c, 0x46, 0x4c, 0xee, 0x9a, 0x4a,
-	0x85, 0x24, 0xeb, 0xe0, 0x04, 0x21, 0x1d, 0xb2, 0xaf, 0x66, 0xe9, 0x1b, 0x50, 0x1a, 0x84, 0x7e,
-	0x0a, 0x95, 0x43, 0x79, 0x07, 0x81, 0x5f, 0x41, 0xb8, 0x0a, 0xd5, 0x38, 0x78, 0xcd, 0x9e, 0x9d,
-	0x1a, 0xab, 0xa6, 0xf9, 0x16, 0x89, 0x1c, 0x4c, 0x60, 0x11, 0x00, 0x8a, 0xe1, 0x77, 0xd8, 0x18,
-	0xcb, 0x33, 0xb8, 0xea, 0xa4, 0x05, 0x75, 0xc9, 0xa8, 0xdf, 0xe7, 0xe3, 0xcb, 0x76, 0xc5, 0x9c,
-	0xa0, 0x55, 0x28, 0x12, 0xae, 0x0e, 0x44, 0xc0, 0x55, 0xbb, 0x6a, 0xf2, 0xfd, 0x52, 0x00, 0xe7,
-	0x90, 0xd9, 0x60, 0x31, 0xb9, 0x03, 0x6b, 0x61, 0xc0, 0x83, 0x30, 0x09, 0x7b, 0x51, 0xd2, 0x13,
-	0x92, 0xc5, 0x06, 0x40, 0x53, 0x53, 0x14, 0x49, 0xc6, 0x42, 0x64, 0xe8, 0x74, 0xcc, 0x0c, 0x8a,
-	0xba, 0xa6, 0x28, 0xb5, 0x3e, 0xa4, 0x21, 0x62, 0x2b, 0x19, 0xd3, 0x77, 0xa1, 0xa2, 0xa9, 0x8f,
-	0x11, 0x46, 0x09, 0xe9, 0xb9, 0x7d, 0x8d, 0x1e, 0x53, 0x5f, 0x13, 0x2a, 0xaf, 0x05, 0xc7, 0xf8,
-	0x15, 0xb4, 0x72, 0xbc, 0xdf, 0x8b, 0x50, 0xd6, 0x2d, 0xba, 0x52, 0x37, 0xb2, 0x85, 0xad, 0xfe,
-	0x91, 0x0d, 0xd4, 0x5e, 0x4a, 0xd0, 0xd5, 0x66, 0xd9, 0xfa, 0x1f, 0xc3, 0x5a, 0xc0, 0xa3, 0x44,
-	0x4d, 0x3b, 0x3c, 0xc9, 0xfe, 0xf6, 0xb5, 0xec, 0x8b, 0x42, 0x78, 0x02, 0x2d, 0x91, 0xa8, 0x45,
-	0xcf, 0xca, 0xbf, 0xf2, 0x44, 0x25, 0xc8, 0x09, 0x6f, 0x86, 0xcb, 0x2c, 0x25, 0xcc, 0x98, 0xc5,
-	0x8e, 0xe9, 0x63, 0x2c, 0xa3, 0x66, 0x10, 0x77, 0xa1, 0xea, 0x1b, 0x65, 0xb4, 0xeb, 0x26, 0xdd,
-	0xdd, 0xeb, 0x34, 0x2d, 0x08, 0xc7, 0xfb, 0xad, 0x08, 0x75, 0x8d, 0xe0, 0x0b, 0x39, 0x8c, 0x17,
-	0x79, 0xb1, 0x54, 0x7d, 0x0e, 0x55, 0x43, 0x41, 0x8c, 0x3c, 0xe9, 0x80, 0x0f, 0x32, 0xf1, 0x6b,
-	0xef, 0xce, 0x9e, 0xb1, 0xdb, 0xe5, 0x4a, 0x5e, 0x22, 0x73, 0x35, 0x4b, 0x40, 0x8c, 0x54, 0x6a,
-	0xbf, 0xf7, 0xf2, 0xfd, 0xfa, 0xd6, 0xd0, 0x3a, 0x2e, 0xd4, 0x5f, 0x5e, 0x56, 0xbf, 0xfb, 0x08,
-	0x1a, 0xf3, 0x69, 0x51, 0xf3, 0x23, 0x76, 0x99, 0x42, 0x47, 0x2d, 0x9c, 0x9b, 0x19, 0x33, 0x1d,
-	0x7e, 0x5a, 0x7c, 0x52, 0x70, 0x3b, 0xb0, 0xb2, 0x90, 0x6d, 0x89, 0xbd, 0xf7, 0x06, 0x56, 0x35,
-	0xcc, 0xc3, 0x84, 0x1f, 0xb2, 0x97, 0x09, 0x8b, 0x15, 0xf9, 0x10, 0xea, 0x2a, 0x05, 0x6e, 0xdc,
-	0x1a, 0xdb, 0x9b, 0xb9, 0x95, 0xcd, 0x75, 0xc7, 0x8a, 0xec, 0x23, 0x68, 0xb2, 0xe8, 0x8c, 0x85,
-	0x4c, 0xd2, 0xb1, 0x36, 0x32, 0x32, 0xcb, 0xd2, 0xb2, 0xbe, 0xf4, 0xbe, 0x87, 0x35, 0xfd, 0x77,
-	0x3f, 0x88, 0xd5, 0x24, 0x7b, 0x46, 0x83, 0x70, 0xfa, 0xb4, 0xb2, 0x0f, 0x24, 0x7b, 0x11, 0x5c,
-	0xa4, 0x79, 0x70, 0x46, 0x23, 0x5c, 0x06, 0x47, 0x38, 0xdb, 0xe9, 0xf4, 0x68, 0x47, 0x3c, 0x39,
-	0x16, 0x23, 0xc6, 0x0d, 0xad, 0x8e, 0xd7, 0x87, 0xd6, 0x2c, 0x7c, 0x1c, 0xe1, 0xfe, 0x63, 0x7a,
-	0xc8, 0x34, 0x08, 0x5d, 0x5a, 0x29, 0x17, 0x18, 0xb9, 0x0d, 0x4d, 0xce, 0x2e, 0x50, 0xdb, 0x93,
-	0x80, 0x76, 0xc7, 0x9c, 0xc0, 0xba, 0xbe, 0xee, 0x47, 0xff, 0x15, 0xe2, 0xe7, 0x40, 0xe6, 0x13,
-	0xa4, 0x98, 0x3f, 0xb0, 0x1d, 0x89, 0xfb, 0xd1, 0x04, 0xf6, 0x9d, 0x4c, 0xd8, 0xfd, 0x28, 0x0f,
-	0xf8, 0x1d, 0xa8, 0x1e, 0x9b, 0x36, 0xcd, 0x24, 0x60, 0x90, 0x7a, 0x9b, 0x76, 0x36, 0xfa, 0xd1,
-	0xf5, 0xab, 0x73, 0x70, 0x52, 0x2c, 0x62, 0xa8, 0x97, 0xc7, 0x40, 0x84, 0x21, 0xe5, 0xfe, 0x7e,
-	0xc0, 0xe7, 0x96, 0x4c, 0xac, 0xa8, 0x54, 0xc7, 0x41, 0x98, 0x4a, 0x8a, 0xac, 0x41, 0x8d, 0x71,
-	0xdf, 0x1c, 0x94, 0xa6, 0x0b, 0x58, 0xf9, 0x38, 0x29, 0xb6, 0xc2, 0xf4, 0x9b, 0x49, 0x69, 0x56,
-	0xab, 0xa1, 0x85, 0x5d, 0x04, 0xaa, 0x27, 0x7c, 0x66, 0x96, 0x41, 0xc5, 0xfb, 0xa3, 0x68, 0xc1,
-	0x62, 0x35, 0x2d, 0x5b, 0xb8, 0x46, 0x97, 0xa6, 0x7c, 0x0c, 0x75, 0xdc, 0x22, 0xd4, 0xa7, 0x8a,
-	0xde, 0x38, 0xae, 0xfd, 0xa8, 0xf3, 0x65, 0x6a, 0x67, 0xe7, 0xe0, 0x3e, 0x94, 0xd5, 0x32, 0x3d,
-	0x2e, 0x48, 0xbf, 0xbc, 0x4c, 0xfa, 0x0f, 0xa0, 0x82, 0xd5, 0xe3, 0xab, 0xa1, 0x0b, 0x59, 0xdd,
-	0xfe, 0xff, 0x35, 0xcb, 0x23, 0x7d, 0x4b, 0x1e, 0x42, 0x79, 0x2c, 0x86, 0x7a, 0xd3, 0x95, 0x32,
-	0x27, 0x7d, 0xca, 0xb1, 0xdb, 0x85, 0xe6, 0x22, 0xe6, 0x25, 0xb3, 0xbb, 0xf5, 0x12, 0x2a, 0x36,
-	0x47, 0x03, 0x6a, 0xdf, 0xf0, 0x11, 0x17, 0xaf, 0x78, 0xeb, 0x7f, 0xa8, 0xbd, 0xea, 0xd7, 0x09,
-	0x4b, 0x98, 0xdf, 0x2a, 0xe8, 0x0b, 0x9c, 0x6c, 0x1e, 0xf0, 0x61, 0xab, 0xa8, 0x2f, 0x0e, 0x68,
-	0x12, 0xe3, 0x45, 0x09, 0x5f, 0x8b, 0x7a, 0x4f, 0x84, 0x91, 0x7e, 0xf5, 0x5a, 0x65, 0xe2, 0x40,
-	0x65, 0x57, 0x4a, 0x21, 0x5b, 0x15, 0x6c, 0x60, 0xe3, 0xe8, 0x32, 0x56, 0x2c, 0xb4, 0x07, 0x55,
-	0x63, 0x49, 0xf9, 0x00, 0x1f, 0x48, 0xbf, 0x55, 0xdb, 0xfe, 0xbb, 0x02, 0x0d, 0x8d, 0xf8, 0x88,
-	0xc9, 0xf3, 0x60, 0xc0, 0xc8, 0x01, 0x40, 0x0f, 0x1f, 0x4b, 0xc5, 0xec, 0xd8, 0x64, 0x56, 0xe7,
-	0xe6, 0x4c, 0xff, 0xc6, 0xcf, 0x7f, 0xfe, 0xf5, 0x6b, 0x71, 0xd5, 0x73, 0xba, 0xe7, 0x9f, 0x74,
-	0x8d, 0xc0, 0x9f, 0x16, 0xb6, 0xc8, 0xb7, 0x00, 0xf6, 0x35, 0x36, 0x11, 0xb3, 0x85, 0xbe, 0xe7,
-	0xbb, 0x79, 0x17, 0xde, 0xa6, 0x89, 0x7a, 0x6b, 0x6b, 0x7d, 0x1a, 0xb5, 0xfb, 0xc6, 0x10, 0xf7,
-	0x13, 0x39, 0x86, 0xda, 0x33, 0xa6, 0x6e, 0x8e, 0x9b, 0x83, 0x35, 0x8d, 0x4a, 0x32, 0xa2, 0x9e,
-	0x42, 0x5d, 0x4f, 0xab, 0x09, 0x7b, 0x2f, 0xd3, 0x7b, 0x6e, 0x5b, 0xb8, 0xef, 0xdc, 0x60, 0x61,
-	0xc7, 0xdd, 0x5b, 0x37, 0xb9, 0x1a, 0x64, 0xc6, 0x0b, 0x39, 0x31, 0x7d, 0x34, 0x29, 0xee, 0x66,
-	0x06, 0x98, 0xed, 0x6f, 0x77, 0x33, 0x47, 0x62, 0xc8, 0x4d, 0xdb, 0x44, 0x26, 0x5e, 0x73, 0xc6,
-	0xb8, 0x4c, 0xb8, 0x66, 0xfd, 0x3b, 0x70, 0x52, 0x6a, 0x70, 0xec, 0xf2, 0x23, 0xb8, 0x79, 0x8b,
-	0xc7, 0x73, 0x4d, 0xe8, 0x0d, 0x42, 0x26, 0xa1, 0x45, 0x34, 0x65, 0x28, 0x00, 0x98, 0x30, 0x84,
-	0xd1, 0xbd, 0xbc, 0x11, 0x98, 0x63, 0xe9, 0xfe, 0x8d, 0x36, 0x29, 0x4f, 0xc4, 0xa4, 0x5c, 0x21,
-	0x30, 0x4b, 0x49, 0x7e, 0x80, 0x15, 0xab, 0xd6, 0xe5, 0xa5, 0xdc, 0xc0, 0x53, 0x5a, 0xcc, 0x56,
-	0x46, 0x31, 0xa7, 0x55, 0xf3, 0x13, 0xfa, 0xd3, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0xf1, 0x39,
-	0xc5, 0x95, 0x89, 0x0b, 0x00, 0x00,
+	// 915 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x55, 0xcf, 0x6f, 0x1b, 0x45,
+	0x14, 0xc6, 0x3f, 0x76, 0xbd, 0x7e, 0xae, 0xe3, 0x65, 0x9a, 0x26, 0x96, 0x85, 0x68, 0xb5, 0x80,
+	0x54, 0x45, 0xc2, 0x86, 0xd0, 0x03, 0xea, 0x35, 0x89, 0xaa, 0xa2, 0x94, 0x9a, 0x24, 0xbd, 0x81,
+	0xa2, 0xb1, 0xf7, 0xe1, 0x4e, 0xec, 0x9d, 0xd9, 0xce, 0xce, 0x86, 0x38, 0x88, 0x0b, 0xe2, 0xca,
+	0x89, 0x3f, 0x8d, 0x7f, 0x01, 0x71, 0xe4, 0x6f, 0xe0, 0xcd, 0xec, 0xda, 0x26, 0xb1, 0x8d, 0xb8,
+	0x70, 0xf3, 0xce, 0x7c, 0xf3, 0xde, 0xf7, 0xbe, 0xef, 0x9b, 0x31, 0xec, 0x1a, 0x9e, 0x4d, 0x2f,
+	0xf1, 0x06, 0xc7, 0xb9, 0x11, 0x4a, 0xf6, 0x53, 0xad, 0x8c, 0x62, 0x9d, 0x09, 0x7f, 0x36, 0x79,
+	0x7b, 0xb9, 0xdc, 0xeb, 0x7d, 0x30, 0x51, 0x6a, 0x32, 0xc3, 0x01, 0x4f, 0xc5, 0x80, 0x4b, 0xa9,
+	0x0c, 0xb7, 0xe8, 0xac, 0x80, 0x47, 0x1a, 0xda, 0x17, 0x04, 0x1d, 0x72, 0xcd, 0x13, 0x34, 0xa8,
+	0xd9, 0x03, 0xa8, 0x4b, 0xfa, 0xd9, 0xad, 0x3c, 0xa9, 0x3c, 0x6d, 0xb2, 0x87, 0xd0, 0x8a, 0x31,
+	0x1b, 0x6b, 0x91, 0xda, 0x43, 0xdd, 0xaa, 0x5b, 0xec, 0x40, 0x23, 0x33, 0x4a, 0xf3, 0x09, 0x76,
+	0x6b, 0x6e, 0x81, 0xce, 0xa4, 0xdc, 0xbc, 0xed, 0xd6, 0x17, 0x5f, 0xb1, 0xc8, 0xa6, 0x5d, 0xcf,
+	0x7d, 0xbd, 0x0f, 0xcd, 0x58, 0x68, 0x1c, 0xd3, 0x81, 0x79, 0xd7, 0xa7, 0xa5, 0x20, 0xfa, 0x0c,
+	0x76, 0x8e, 0xd5, 0x78, 0x8a, 0xfa, 0xc4, 0x71, 0x57, 0xda, 0x82, 0x44, 0x42, 0xf5, 0xbe, 0x5e,
+	0x75, 0x6e, 0x41, 0x6d, 0x9c, 0xc4, 0x45, 0xc7, 0x48, 0x42, 0xfd, 0x98, 0x4a, 0xde, 0x23, 0xb7,
+	0x03, 0x7e, 0x26, 0x6e, 0xf1, 0xc5, 0xc8, 0xa1, 0xda, 0xee, 0x5b, 0xe5, 0x7a, 0xbc, 0xa0, 0xc5,
+	0x00, 0x38, 0x95, 0x3f, 0xc6, 0x19, 0x4d, 0xe6, 0xc8, 0x05, 0x2c, 0x84, 0x40, 0x23, 0x8f, 0x5f,
+	0xcb, 0xd9, 0xdc, 0x11, 0x0c, 0x2c, 0x2a, 0x51, 0xb9, 0x34, 0x43, 0x25, 0xa4, 0x71, 0x0c, 0x9b,
+	0xd1, 0x2f, 0x15, 0x68, 0x9e, 0x61, 0x51, 0x2c, 0x63, 0xfb, 0xd0, 0x49, 0x84, 0x14, 0x49, 0x9e,
+	0x1c, 0xa5, 0xf9, 0x91, 0xd2, 0x98, 0x39, 0x02, 0x6d, 0xab, 0x4e, 0xaa, 0x11, 0x13, 0x12, 0x67,
+	0x34, 0x43, 0xc7, 0x22, 0x60, 0xbb, 0xf0, 0xa0, 0x44, 0x9f, 0xf1, 0x84, 0xb8, 0xd5, 0x1c, 0xf4,
+	0x63, 0xf0, 0xac, 0x28, 0x19, 0xd1, 0xa8, 0x3d, 0x6d, 0x1d, 0x3e, 0xea, 0xdf, 0xb3, 0xa9, 0xef,
+	0xe6, 0x6b, 0x83, 0x77, 0xab, 0x24, 0xd5, 0xf7, 0x08, 0xd5, 0x8c, 0x7e, 0xad, 0x42, 0xdd, 0xba,
+	0x73, 0x6f, 0x6e, 0x52, 0x8b, 0xcc, 0xbb, 0x22, 0x4d, 0x5f, 0x96, 0x02, 0xdd, 0xf7, 0xa9, 0x98,
+	0xbf, 0x0f, 0xbe, 0x90, 0x69, 0x6e, 0x16, 0x4d, 0x3f, 0x5c, 0x6b, 0x7a, 0xd7, 0xfa, 0x01, 0x34,
+	0x54, 0x6e, 0xdc, 0x01, 0xef, 0x3f, 0x1d, 0xf8, 0x14, 0x9a, 0x7a, 0xa1, 0x92, 0x53, 0xae, 0x75,
+	0xd8, 0x5b, 0x3b, 0xb2, 0xd2, 0x91, 0xfc, 0xb1, 0xcb, 0x44, 0xba, 0xe1, 0xf8, 0x0d, 0xc0, 0x8f,
+	0x5d, 0x0e, 0xba, 0x81, 0x6b, 0xf7, 0x78, 0x5d, 0x94, 0x3b, 0x31, 0x89, 0xbe, 0x83, 0x8e, 0x25,
+	0x70, 0x2a, 0x32, 0x73, 0x86, 0xef, 0x72, 0xcc, 0xcc, 0x5d, 0x2d, 0x2a, 0x0b, 0xdb, 0xad, 0x58,
+	0x43, 0x8d, 0xdf, 0x8b, 0x9b, 0x52, 0x1f, 0xb2, 0x3d, 0xa5, 0x7c, 0x9d, 0x53, 0x5c, 0x4a, 0x43,
+	0xec, 0x41, 0x5a, 0xb9, 0x50, 0x53, 0x94, 0x45, 0x70, 0xa3, 0xd7, 0x10, 0xae, 0xca, 0x67, 0x29,
+	0x5d, 0x12, 0xb4, 0xbe, 0x59, 0x3a, 0xd6, 0xf1, 0xcd, 0xbe, 0x39, 0x7f, 0x1e, 0x41, 0x5b, 0xe2,
+	0x8d, 0x19, 0x2e, 0x0b, 0x16, 0xb1, 0xfd, 0x16, 0x76, 0xbe, 0x52, 0xa3, 0xff, 0x8b, 0xee, 0x29,
+	0x74, 0x96, 0xd5, 0x4b, 0xb6, 0x11, 0xd4, 0xaf, 0xd4, 0x68, 0x41, 0x76, 0x77, 0x8d, 0x2c, 0xe1,
+	0xb7, 0x71, 0xdd, 0x07, 0xff, 0xc2, 0x99, 0x63, 0x43, 0x78, 0xcd, 0x67, 0x79, 0x99, 0xb6, 0x68,
+	0x0f, 0x3c, 0x3a, 0xb6, 0xbe, 0x9e, 0x81, 0x6f, 0xdb, 0xab, 0x89, 0x0d, 0xdf, 0x58, 0x25, 0x09,
+	0x97, 0xf1, 0xa9, 0x90, 0xff, 0x08, 0x69, 0x66, 0xb8, 0x36, 0x17, 0x22, 0xc1, 0xd5, 0xbb, 0x81,
+	0x32, 0x76, 0x0b, 0xb5, 0xe5, 0x05, 0x36, 0x31, 0x65, 0xae, 0x7c, 0x39, 0x8a, 0x6f, 0xd4, 0xba,
+	0x7c, 0x3b, 0x48, 0x06, 0xbc, 0x11, 0xe6, 0x48, 0xc5, 0xe8, 0xe2, 0xe5, 0x45, 0x7f, 0x55, 0xa0,
+	0x66, 0x87, 0x20, 0x2e, 0x57, 0x96, 0x54, 0xd9, 0xec, 0x19, 0x04, 0x94, 0x48, 0x1e, 0x73, 0xc3,
+	0xa9, 0x97, 0x9d, 0x3d, 0xda, 0x34, 0x7b, 0xff, 0x55, 0x09, 0x3a, 0x91, 0x46, 0xcf, 0xd9, 0x47,
+	0x50, 0xb7, 0xdb, 0x8e, 0xcc, 0x56, 0x6b, 0x3f, 0x01, 0x8f, 0xe6, 0x28, 0xdf, 0x8f, 0x9d, 0xc3,
+	0xbd, 0x35, 0xd4, 0xb9, 0xdd, 0x25, 0x58, 0x7d, 0xa6, 0x26, 0x8b, 0x8b, 0xb3, 0xbf, 0xa9, 0x3b,
+	0x49, 0xd5, 0x1b, 0x40, 0xfb, 0x2e, 0x07, 0x7a, 0xe6, 0xa6, 0x38, 0x2f, 0xc7, 0x58, 0x2a, 0xec,
+	0xf4, 0x7a, 0x5e, 0xfd, 0xb2, 0x72, 0xf0, 0x0e, 0xbc, 0xa2, 0x41, 0x0b, 0x1a, 0x6f, 0xe4, 0x54,
+	0xaa, 0x1f, 0x64, 0xf8, 0x1e, 0x45, 0xc6, 0xff, 0x26, 0xc7, 0x1c, 0xe3, 0xb0, 0x62, 0x37, 0xce,
+	0x72, 0x29, 0x85, 0x9c, 0x84, 0x55, 0xbb, 0x31, 0xe4, 0x79, 0x46, 0x1b, 0x35, 0x7a, 0x34, 0x82,
+	0x23, 0x95, 0xa4, 0xf6, 0xf1, 0x0b, 0xeb, 0xac, 0x09, 0xde, 0x89, 0xd6, 0x4a, 0x87, 0x1e, 0xf9,
+	0xd0, 0x3a, 0x9f, 0x67, 0x06, 0x93, 0x62, 0xc1, 0x77, 0x48, 0x2e, 0xc7, 0xf4, 0x4e, 0xc6, 0x61,
+	0xe3, 0xf0, 0xcf, 0x2a, 0xb4, 0xec, 0xe8, 0xe7, 0xa8, 0xaf, 0xc5, 0x18, 0xd9, 0x2b, 0xd7, 0xa0,
+	0xc8, 0xf9, 0x46, 0x8d, 0x7a, 0x7b, 0x9b, 0xc6, 0x7d, 0x19, 0x47, 0x0f, 0x7f, 0xfe, 0xfd, 0x8f,
+	0xdf, 0xaa, 0xed, 0x28, 0x18, 0x5c, 0x7f, 0x3e, 0xb0, 0xc1, 0x7c, 0x5e, 0x39, 0x60, 0x97, 0x10,
+	0xd8, 0xcc, 0x12, 0x22, 0x63, 0x8f, 0x37, 0xea, 0xb4, 0xba, 0x2f, 0xbd, 0x27, 0xdb, 0x01, 0x45,
+	0xe4, 0xa3, 0xd0, 0xf5, 0x00, 0xb6, 0xec, 0xc1, 0x86, 0xe0, 0xbf, 0x40, 0x5b, 0x9f, 0x6d, 0xe1,
+	0xd5, 0xdb, 0x78, 0x31, 0xa2, 0xae, 0xab, 0xc4, 0x58, 0xb8, 0xa8, 0x34, 0xf8, 0xd1, 0xb9, 0xf1,
+	0x13, 0x7b, 0x03, 0xcd, 0x42, 0x9f, 0x7f, 0x2b, 0xba, 0x4d, 0x84, 0xb2, 0xec, 0xc1, 0x5a, 0xd9,
+	0x91, 0xef, 0xfe, 0x82, 0xbf, 0xf8, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x50, 0x67, 0xc4, 0xbf, 0xc9,
+	0x07, 0x00, 0x00,
 }

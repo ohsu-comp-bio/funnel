@@ -19,15 +19,15 @@ message JobRequest {
   ga4gh_task_exec.Resources resources = 2;
 }
 
-message JobResult {
-  ga4gh_task_exec.TaskOp task = 1;
+message JobResponse {
+  ga4gh_task_exec.Job job = 2;
 }
 
 message UpdateStatusRequest {
     string id = 1;
     int64 step = 2;
     ga4gh_task_exec.State state = 3;
-    ga4gh_task_exec.TaskOpLog log = 4;
+    ga4gh_task_exec.JobLog log = 4;
     string worker_id = 5;
 }
 
@@ -35,7 +35,7 @@ message UpdateStatusRequest {
  * Scheduler Service
  */
 service Scheduler {
-  rpc GetJobToRun(JobRequest) returns (JobResult) {};
-  rpc UpdateTaskOpStatus(UpdateStatusRequest) returns (ga4gh_task_exec.TaskOpId) {};
+  rpc GetJobToRun(JobRequest) returns (JobResponse) {};
+  rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobId) {};
   rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};
 }

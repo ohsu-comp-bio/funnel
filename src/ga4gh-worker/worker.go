@@ -2,6 +2,7 @@
 package main
 
 import (
+	"os"
 	"log"
 	"flag"
 	"ga4gh-engine"
@@ -15,12 +16,20 @@ import (
 
 func main() {
 	agro_server := flag.String("master", "localhost:9090", "Master Server")
-	workdir_arg := flag.String("workdir", "/tmp/ga4gh_task_work", "Workdir")
+	disk_dir_arg := flag.String("disks", "disks", "Disk Dir")
+	storage_dir_arg := flag.String("storage", "storage", "Storage Dir")
 	timeout_arg := flag.Int("timeout", -1, "Timeout in seconds")
 
 	nworker := flag.Int("nworkers", 4, "Worker Count")
 	flag.Parse()
-	work_dir, _ := filepath.Abs(*workdir_arg)
+	storage_dir, _ := filepath.Abs(*storage_dir_arg)
+	if _, err := os.Stat(storage_dir); os.IsNotExist(err) {
+		os.Mkdir(storage_dir, 0700)
+	}
+	disk_dir, _ := filepath.Abs(*disk_dir_arg)
+	if _, err := os.Stat(disk_dir); os.IsNotExist(err) {
+		os.Mkdir(disk_dir, 0700)
+	}
 	log.Println("Connecting GA4GH Task Server")
 	conn, err := grpc.Dial(*agro_server, grpc.WithInsecure())
 	if err != nil {
@@ -29,10 +38,10 @@ func main() {
 	defer conn.Close()
 	sched_client := ga4gh_task_ref.NewSchedulerClient(conn)
 
-	file_client := ga4gh_taskengine.NewSharedFS(&sched_client, *workdir_arg)
+	file_client := ga4gh_taskengine.NewSharedFS(&sched_client, storage_dir, disk_dir )
 
 	u, _ := uuid.NewV4()
-	manager, _ := ga4gh_taskengine.NewLocalManager(*nworker, work_dir, u.String())
+	manager, _ := ga4gh_taskengine.NewLocalManager(*nworker, u.String())
 	if *timeout_arg <= 0 {
 		manager.Run(sched_client, file_client)
 	} else {

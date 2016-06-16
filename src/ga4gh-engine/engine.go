@@ -18,28 +18,23 @@ func read_file_head(path string) []byte {
 }
 
 
-func RunJob(job *ga4gh_task_exec.TaskOp, mapper FileMapper) error {
+func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
-	for _, input := range job.Task.InputParameters {
-		if job.TaskArgs == nil {
-			return fmt.Errorf("No task arguments found")
-		}
-		srcPath := job.TaskArgs.Inputs[input.Name]
-		mapper.MapInput(job.TaskOpId, srcPath, *input.LocalCopy)
+	for _, input := range job.Task.Inputs {
+		mapper.MapInput(job.JobId, input.Storage, input.Disk, input.Path, input.Directory)
 	}
 
-	for _, output := range(job.Task.OutputParameters) {
-		dstPath := job.TaskArgs.Outputs[output.Name]
-		mapper.MapOutput(job.TaskOpId, *output.LocalCopy, dstPath)
+	for _, output := range(job.Task.Outputs) {
+		mapper.MapOutput(job.JobId, output.Storage, output.Disk, output.Path, output.Directory)
 	}
 
 	for i, dockerTask := range job.Task.Docker {
-		stdout, err := mapper.TempFile(job.TaskOpId)
+		stdout, err := mapper.TempFile(job.JobId)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdout log: %s", err)
 			return err
 		}
-		stderr, err := mapper.TempFile(job.TaskOpId)
+		stderr, err := mapper.TempFile(job.JobId)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stderr log: %s", err)
 			return err
@@ -49,7 +44,7 @@ func RunJob(job *ga4gh_task_exec.TaskOp, mapper FileMapper) error {
 		if err != nil {
 			return fmt.Errorf("Error setting up job")
 		}
-		binds := mapper.GetBindings(job.TaskOpId)
+		binds := mapper.GetBindings(job.JobId)
 
 		dclient := NewDockerDirect()
 		cmds, _ := shlex.Split(dockerTask.Cmd)
@@ -59,14 +54,13 @@ func RunJob(job *ga4gh_task_exec.TaskOp, mapper FileMapper) error {
 
 		stderr_text := read_file_head(stderr_path)
 		stdout_text := read_file_head(stdout_path)
-		mapper.UpdateOutputs(job.TaskOpId, i, exit_code, string(stdout_text), string(stderr_text))
+		mapper.UpdateOutputs(job.JobId, i, exit_code, string(stdout_text), string(stderr_text))
 		if err != nil {
 			return err
 		}
 	}
 
-
-	mapper.FinalizeJob(job.TaskOpId)
+	mapper.FinalizeJob(job.JobId)
 
 	return nil
 }

@@ -15,8 +15,8 @@ import (
 
 type FileMapper interface {
 	Job(jobId string)
-	MapInput(jobId string, srcPath string, localCopy ga4gh_task_exec.LocalCopy)
-	MapOutput(jobId string, localCopy ga4gh_task_exec.LocalCopy, dstPath string)
+	MapInput(jobId string, storagePath string, disk string, localPath string, directory bool)
+	MapOutput(jobId string, storagePath string, disk string, localPath string, directory bool)
 
 	TempFile(jobId string) (f *os.File, err error)
 	GetBindings(jobId string) []string
@@ -38,11 +38,15 @@ type FSBinding struct {
 }
 
 
-func NewSharedFS(client *ga4gh_task_ref.SchedulerClient,  workdir string) *SharedFileMapper {
-	if _, err := os.Stat(workdir); os.IsNotExist(err) {
-		os.Mkdir(workdir, 0700)
+func NewSharedFS(client *ga4gh_task_ref.SchedulerClient, storageDir string, diskDir string) *SharedFileMapper {
+	if _, err := os.Stat(storageDir); os.IsNotExist(err) {
+		os.Mkdir(storageDir, 0700)
 	}
-	return &SharedFileMapper{WorkDir: workdir, jobs: make(map[string]JobSharedFileMapper), client:client}
+	if _, err := os.Stat(diskDir); os.IsNotExist(err) {
+		os.Mkdir(diskDir, 0700)
+	}
+
+	return &SharedFileMapper{StorageDir: storageDir, DiskDir: diskDir, jobs: make(map[string]JobSharedFileMapper), client:client}
 }
 
 type JobSharedFileMapper struct {
@@ -52,13 +56,15 @@ type JobSharedFileMapper struct {
 }
 
 type SharedFileMapper struct {
-	WorkDir string
+	StorageDir string
+	DiskDir string
 	client *ga4gh_task_ref.SchedulerClient
 	jobs map[string]JobSharedFileMapper
 }
 
 func (self *SharedFileMapper) Job(jobId string) {
-	w := path.Join(self.WorkDir, jobId)
+	//create a working 'disk' for runtime files
+	w := path.Join(self.DiskDir, jobId)
 	if _, err := os.Stat(w); err != nil {
 		os.Mkdir(w, 0700)
 	}
@@ -66,21 +72,37 @@ func (self *SharedFileMapper) Job(jobId string) {
 	self.jobs[jobId] = a
 }
 
-func (self *SharedFileMapper) MapInput(jobId string, srcPath string, localCopy ga4gh_task_exec.LocalCopy) {
+func (self *SharedFileMapper) MapInput(jobId string, storage string, disk string, mountPath string, directory bool) {
+	//because we're running on a shared file system, there is no need to copy
+	//the 'storage' path to local disk, we can just mount it directly
+	srcPath := path.Join(self.StorageDir, storage)
 	b := FSBinding {
 		HostPath: srcPath,
-		ContainerPath: localCopy.Path,
+		ContainerPath: mountPath,
 		Mode: "rw",
 	}
 	j := self.jobs[jobId]
 	j.Bindings = append(j.Bindings, b)
 }
 
-func (self *SharedFileMapper) MapOutput(jobId string, localCopy ga4gh_task_exec.LocalCopy, dstPath string) {
-	//nothing here yet
+func (self *SharedFileMapper) MapOutput(jobId string, storage string, disk string, mountPath string, directory bool) {
+	var diskDir string
+	diskDir = path.Join(self.DiskDir, disk)
+	if (disk == "") {
+		diskDir = self.jobs[jobId].WorkDir
+	}
+	var hostPath string
+	if (directory) {
+		hostPath, _ = ioutil.TempDir(diskDir, "outdir_" )
+	} else {
+		hostFile, _ := ioutil.TempFile(diskDir, "outfile_")
+		hostPath = hostFile.Name()
+		hostFile.Close()
+	}
+
 	b := FSBinding {
-		HostPath: dstPath,
-		ContainerPath: localCopy.Path,
+		HostPath: hostPath,
+		ContainerPath: mountPath,
 		Mode: "rw",
 	}
 	j := self.jobs[jobId]
@@ -99,9 +121,9 @@ func (self *SharedFileMapper) GetBindings(jobId string) []string {
 
 
 func (self *SharedFileMapper) UpdateOutputs(jobId string, jobNum int, exitCode int, stdoutText string, stderrText string) {
-	log := ga4gh_task_exec.TaskOpLog{Stdout:stdoutText, Stderr:stderrText, ExitCode:int32(exitCode)}
+	log := ga4gh_task_exec.JobLog{Stdout:stdoutText, Stderr:stderrText, ExitCode:int32(exitCode)}
 	a := ga4gh_task_ref.UpdateStatusRequest{Id:jobId, Step:int64(jobNum), Log:&log }
-	(*self.client).UpdateTaskOpStatus(context.Background(), &a)
+	(*self.client).UpdateJobStatus(context.Background(), &a)
 }
 
 

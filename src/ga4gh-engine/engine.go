@@ -21,11 +21,17 @@ func read_file_head(path string) []byte {
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 	for _, input := range job.Task.Inputs {
-		mapper.MapInput(job.JobId, input.Storage, input.Disk, input.Path, input.Directory)
+		err := mapper.MapInput(job.JobId, input.Storage, input.Disk, input.Path, input.Directory)
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, output := range(job.Task.Outputs) {
-		mapper.MapOutput(job.JobId, output.Storage, output.Disk, output.Path, output.Directory)
+		err := mapper.MapOutput(job.JobId, output.Storage, output.Disk, output.Path, output.Directory)
+		if err != nil {
+			return err
+		}
 	}
 
 	for i, dockerTask := range job.Task.Docker {

@@ -15,10 +15,6 @@ class TestTaskREST(ServerTest):
             "name" : "TestEcho",
             "projectId" : "MyProject",
             "description" : "Simple Echo Command",
-            "inputs" : [
-            ],
-            "outputs" : [
-            ],
             "resources" : {},
             "docker" : [
                 {

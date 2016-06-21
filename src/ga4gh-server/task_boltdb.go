@@ -61,13 +61,17 @@ func (self *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (
 	// Check inputs of the task
 	for _, input := range task.GetInputs() {
 		disk_found := false
-		for _, res := range task.Resources.Disks {
-			if res.Name == input.Disk {
-				disk_found = true
+		if input.Disk == "" {
+			disk_found = true
+		} else {
+			for _, res := range task.Resources.Disks {
+				if res.Name == input.Disk {
+					disk_found = true
+				}
 			}
 		}
 		if !disk_found {
-			return nil, fmt.Errorf("Required disk %s not found in resources", input.Disk)
+			return nil, fmt.Errorf("Required disk '%s' not found in resources", input.Disk)
 		}
 	}
 

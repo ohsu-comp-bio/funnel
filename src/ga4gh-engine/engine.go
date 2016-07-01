@@ -2,7 +2,6 @@ package ga4gh_taskengine
 
 import (
 	"os"
-	"github.com/google/shlex"
 	"fmt"
 	"ga4gh-tasks"
 )
@@ -21,14 +20,14 @@ func read_file_head(path string) []byte {
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 	for _, input := range job.Task.Inputs {
-		err := mapper.MapInput(job.JobId, input.Storage, input.Disk, input.Path, input.Directory)
+		err := mapper.MapInput(job.JobId, input.Location, input.Path, input.Directory)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, output := range(job.Task.Outputs) {
-		err := mapper.MapOutput(job.JobId, output.Storage, output.Disk, output.Path, output.Directory)
+		err := mapper.MapOutput(job.JobId, output.Location, output.Path, output.Directory)
 		if err != nil {
 			return err
 		}
@@ -53,8 +52,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		binds := mapper.GetBindings(job.JobId)
 
 		dclient := NewDockerDirect()
-		cmds, _ := shlex.Split(dockerTask.Cmd)
-		exit_code, err := dclient.Run(dockerTask.ImageName, cmds, binds, true, stdout, stderr)
+		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, true, stdout, stderr)
 		stdout.Close()
 		stderr.Close()
 

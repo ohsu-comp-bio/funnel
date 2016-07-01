@@ -20,29 +20,27 @@ class TestFileOP(ServerTest):
                 {
                     "name" : "infile",
                     "description" : "File to be MD5ed",
-                    "storage" : "test_data.1",
+                    "location" : "test_data.1",
                     "path" : "/tmp/test_file"
                 }
             ],
             "outputs" : [
                 {
-                    "storage" : "test_data.out",
+                    "location" : "test_data.out",
                     "path" : "/tmp/test_out"
                 }
             ],
             "resources" : {
-                "disks" : [{
+                "volumes" : [{
                     "name" : "test_disk",
                     "sizeGb" : 5,
-                    "autoDelete" : True,
-                    "readOnly" : True,
                     "mountPoint" : "/tmp"
                 }]
             },
             "docker" : [
                 {
                     "imageName" : "ubuntu",
-                    "cmd" : "md5sum /tmp/test_file > /tmp/test_out"
+                    "cmd" : ["md5sum", "/tmp/test_file"]
                 }
             ]
         }

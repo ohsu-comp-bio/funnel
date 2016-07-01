@@ -19,7 +19,7 @@ class TestTaskREST(ServerTest):
             "docker" : [
                 {
                     "imageName" : "ubuntu",
-                    "cmd" : "echo hello world"
+                    "cmd" : ["echo", "hello", "world"]
                 }
             ]
         }

@@ -15,8 +15,8 @@ import (
 
 type FileMapper interface {
 	Job(jobId string)
-	MapInput(jobId string, storagePath string, disk string, localPath string, directory bool) error
-	MapOutput(jobId string, storagePath string, disk string, localPath string, directory bool) error
+	MapInput(jobId string, storagePath string, localPath string, directory bool) error
+	MapOutput(jobId string, storagePath string, localPath string, directory bool) error
 
 	TempFile(jobId string) (f *os.File, err error)
 	GetBindings(jobId string) []string
@@ -72,7 +72,7 @@ func (self *SharedFileMapper) Job(jobId string) {
 	self.jobs[jobId] = a
 }
 
-func (self *SharedFileMapper) MapInput(jobId string, storage string, disk string, mountPath string, directory bool) error {
+func (self *SharedFileMapper) MapInput(jobId string, storage string, mountPath string, directory bool) error {
 	//because we're running on a shared file system, there is no need to copy
 	//the 'storage' path to local disk, we can just mount it directly
 	srcPath := path.Join(self.StorageDir, storage)
@@ -89,12 +89,13 @@ func (self *SharedFileMapper) MapInput(jobId string, storage string, disk string
 	return nil
 }
 
-func (self *SharedFileMapper) MapOutput(jobId string, storage string, disk string, mountPath string, directory bool) error {
+func (self *SharedFileMapper) MapOutput(jobId string, storage string, mountPath string, directory bool) error {
 	var diskDir string
-	diskDir = path.Join(self.DiskDir, disk)
-	if (disk == "") {
+
+	//diskDir = path.Join(self.DiskDir, disk)
+	//if (disk == "") {
 		diskDir = self.jobs[jobId].WorkDir
-	}
+	//}
 	var hostPath string
 	if (directory) {
 		hostPath, _ = ioutil.TempDir(diskDir, "outdir_" )

@@ -12,7 +12,8 @@ class TestFileOP(ServerTest):
 
     def test_file_mount(self):
         
-        loc = self.copy_to_storage( get_abspath("test_data.1") )
+        in_loc = self.copy_to_storage( get_abspath("test_data.1") )
+        out_loc = "test_data.out"
 
         task = {
             "name" : "TestMD5",
@@ -22,13 +23,13 @@ class TestFileOP(ServerTest):
                 {
                     "name" : "infile",
                     "description" : "File to be MD5ed",
-                    "location" : loc,
+                    "location" : in_loc,
                     "path" : "/tmp/test_file"
                 }
             ],
             "outputs" : [
                 {
-                    "location" : "test_data.out",
+                    "location" : out_loc,
                     "path" : "/tmp/test_out"
                 }
             ],
@@ -60,6 +61,12 @@ class TestFileOP(ServerTest):
                 break
             time.sleep(1)
         print data
+        
+        path = self.get_from_storage(out_loc)
+        with open(path) as handle:
+            t = handle.read()
+            i = t.split()
+            assert(i[0] == "fc69a359565f35bf130a127ae2ebf2da")
 
         #assert 'logs' in data
         #assert data['logs'][0]['stdout'] == "hello world\n"

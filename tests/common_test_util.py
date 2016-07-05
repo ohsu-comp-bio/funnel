@@ -47,4 +47,9 @@ class ServerTest(unittest.TestCase):
         dst = os.path.join( self.storage_dir, os.path.basename(path) )
         shutil.copy(path, dst)
         return os.path.basename(path)
+    
+    def get_from_storage(self, loc):
+        dst = os.path.join( self.storage_dir, loc )
+        return dst
+
 

@@ -19,6 +19,12 @@ func read_file_head(path string) []byte {
 
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
+	mapper.Job(job.JobId)
+
+	for _, disk := range job.Task.Resources.Volumes {
+		mapper.AddVolume(job.JobId, disk.Source, disk.MountPoint)
+	}
+
 	for _, input := range job.Task.Inputs {
 		err := mapper.MapInput(job.JobId, input.Location, input.Path, input.Directory)
 		if err != nil {
@@ -55,6 +61,21 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, true, stdout, stderr)
 		stdout.Close()
 		stderr.Close()
+
+		//If the STDERR is supposed to be added to the volume, copy it in
+		if len(dockerTask.Stderr) > 0 {
+			hstPath := mapper.HostPath(job.JobId, dockerTask.Stderr)
+			if len(hstPath) > 0 {
+				copyFileContents(stderr_path, hstPath)
+			}
+		}
+		//If the STDERR is supposed to be added to the volume, copy it in
+		if len(dockerTask.Stdout) > 0 {
+			hstPath := mapper.HostPath(job.JobId, dockerTask.Stdout)
+			if len(hstPath) > 0 {
+				copyFileContents(stdout_path, hstPath)
+			}
+		}
 
 		stderr_text := read_file_head(stderr_path)
 		stdout_text := read_file_head(stdout_path)

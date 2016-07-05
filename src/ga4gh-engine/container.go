@@ -42,7 +42,7 @@ func (self *DockerDirect) Run(containerName string, args []string, binds[] strin
 		return 0, err
 	}
 
-	log.Printf("Starting Docker: %s", strings.Join(args, " "))
+	log.Printf("Starting Docker (mount: %s): %s", strings.Join(binds, ","), strings.Join(args, " "))
 	err = self.client.StartContainer(container.ID, &docker.HostConfig {
 		Binds: binds,
 	})

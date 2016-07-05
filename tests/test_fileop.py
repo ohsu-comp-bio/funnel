@@ -11,6 +11,8 @@ class TestFileOP(ServerTest):
 
 
     def test_file_mount(self):
+        
+        loc = self.copy_to_storage( get_abspath("test_data.1") )
 
         task = {
             "name" : "TestMD5",
@@ -20,7 +22,7 @@ class TestFileOP(ServerTest):
                 {
                     "name" : "infile",
                     "description" : "File to be MD5ed",
-                    "location" : "test_data.1",
+                    "location" : loc,
                     "path" : "/tmp/test_file"
                 }
             ],
@@ -40,7 +42,8 @@ class TestFileOP(ServerTest):
             "docker" : [
                 {
                     "imageName" : "ubuntu",
-                    "cmd" : ["md5sum", "/tmp/test_file"]
+                    "cmd" : ["md5sum", "/tmp/test_file"],
+                    "stdout" : "/tmp/test_out"
                 }
             ]
         }

@@ -16,15 +16,15 @@ import (
 
 func main() {
 	agro_server := flag.String("master", "localhost:9090", "Master Server")
-	disk_dir_arg := flag.String("disks", "disks", "Disk Dir")
-	storage_dir_arg := flag.String("storage", "storage", "Storage Dir")
+	disk_dir_arg := flag.String("volumes", "volumes", "Volume Dir")
+	volume_dir_arg := flag.String("storage", "storage", "Storage Dir")
 	timeout_arg := flag.Int("timeout", -1, "Timeout in seconds")
 
 	nworker := flag.Int("nworkers", 4, "Worker Count")
 	flag.Parse()
-	storage_dir, _ := filepath.Abs(*storage_dir_arg)
-	if _, err := os.Stat(storage_dir); os.IsNotExist(err) {
-		os.Mkdir(storage_dir, 0700)
+	volume_dir, _ := filepath.Abs(*volume_dir_arg)
+	if _, err := os.Stat(volume_dir); os.IsNotExist(err) {
+		os.Mkdir(volume_dir, 0700)
 	}
 	disk_dir, _ := filepath.Abs(*disk_dir_arg)
 	if _, err := os.Stat(disk_dir); os.IsNotExist(err) {
@@ -38,7 +38,7 @@ func main() {
 	defer conn.Close()
 	sched_client := ga4gh_task_ref.NewSchedulerClient(conn)
 
-	file_client := ga4gh_taskengine.NewSharedFS(&sched_client, storage_dir, disk_dir )
+	file_client := ga4gh_taskengine.NewSharedFS(&sched_client, volume_dir, disk_dir )
 
 	u, _ := uuid.NewV4()
 	manager, _ := ga4gh_taskengine.NewLocalManager(*nworker, u.String())

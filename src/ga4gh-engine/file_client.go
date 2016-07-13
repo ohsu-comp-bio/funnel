@@ -5,6 +5,7 @@ package ga4gh_taskengine
 import (
 	"os"
 	"io"
+	"strings"
 	"ga4gh-tasks"
 	"fmt"
 	"io/ioutil"
@@ -42,15 +43,15 @@ type FSBinding struct {
 }
 
 
-func NewSharedFS(client *ga4gh_task_ref.SchedulerClient, storageDir string, diskDir string) *SharedFileMapper {
+func NewSharedFS(client *ga4gh_task_ref.SchedulerClient, storageDir string, volumeDir string) *SharedFileMapper {
 	if _, err := os.Stat(storageDir); os.IsNotExist(err) {
 		os.Mkdir(storageDir, 0700)
 	}
-	if _, err := os.Stat(diskDir); os.IsNotExist(err) {
-		os.Mkdir(diskDir, 0700)
+	if _, err := os.Stat(volumeDir); os.IsNotExist(err) {
+		os.Mkdir(volumeDir, 0700)
 	}
 
-	return &SharedFileMapper{StorageDir: storageDir, VolumeDir: diskDir, jobs: make(map[string]*JobSharedFileMapper), client:client}
+	return &SharedFileMapper{StorageDir: storageDir, VolumeDir: volumeDir, jobs: make(map[string]*JobSharedFileMapper), client:client}
 }
 
 type JobSharedFileMapper struct {
@@ -136,6 +137,7 @@ func (self *SharedFileMapper) HostPath(jobId string, mountPath string) string {
 }
 
 func (self *SharedFileMapper) MapInput(jobId string, storage string, mountPath string, directory bool) error {
+	storage = strings.TrimPrefix(storage, "fs://")
 	srcPath := path.Join(self.StorageDir, storage)
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
 		return fmt.Errorf("storage file '%s' not found", srcPath)

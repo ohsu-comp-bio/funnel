@@ -23,10 +23,11 @@ var JOBS_LOG = []byte("jobs-log")
 
 type TaskBolt struct {
 	db *bolt.DB
+	service_metadata map[string]string
 }
 
 
-func NewTaskBolt(path string) *TaskBolt {
+func NewTaskBolt(path string, service_metadata map[string]string) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
@@ -44,7 +45,7 @@ func NewTaskBolt(path string) *TaskBolt {
 		}
 		return nil
 	})
-	return &TaskBolt{db:db}
+	return &TaskBolt{db:db, service_metadata:service_metadata}
 }
 
 
@@ -197,7 +198,7 @@ func (self *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.Job
 
 
 func (self *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
-	log.Printf("Job Request")
+	//log.Printf("Job Request")
 	ch := make(chan *ga4gh_task_exec.Task, 1)
 
 	self.db.Update(func (tx *bolt.Tx) error {
@@ -259,4 +260,9 @@ func (self *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.
 func (self *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.WorkerInfo, error) {
 	log.Printf("Worker Ping")
 	return info, nil
+}
+
+
+func (self *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
+	return &ga4gh_task_exec.ServiceInfo{Metadata:self.service_metadata}, nil
 }

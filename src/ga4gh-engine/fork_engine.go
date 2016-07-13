@@ -73,7 +73,7 @@ func (self *ForkManager) watcher(sched ga4gh_task_ref.SchedulerClient, filestore
       log.Printf("Found job: %s", task)
       jobchan <- *task.Job
     } else {
-      log.Printf("No jobs found")
+      //log.Printf("No jobs found")
       if (sleep_size < 20) {
         //  sleep_size += 1
       }

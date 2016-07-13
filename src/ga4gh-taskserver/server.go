@@ -20,15 +20,20 @@ import (
 func main() {
 	http_port := flag.String("port", "8000", "HTTP Port")
 	rpc_port := flag.String("rpc", "9090", "HTTP Port")
+	storage_dir_arg := flag.String("storage", "storage", "Storage Dir")
 	task_db := flag.String("db", "ga4gh_tasks.db", "Task DB File")
+
 	flag.Parse()
   
   	dir, _ := filepath.Abs(os.Args[0])
 	content_dir := filepath.Join(dir, "..", "..", "share")
 
-	//setup GRPC listener
+	//server meta-data
+	storage_dir, _ := filepath.Abs(*storage_dir_arg)
+	meta_data := map[string]string{ "storageType" : "sharedFile", "baseDir" : storage_dir }
 
-	taski := ga4gh_task.NewTaskBolt(*task_db) //ga4gh_task.NewTaskImpl()
+	//setup GRPC listener
+	taski := ga4gh_task.NewTaskBolt(*task_db, meta_data) //ga4gh_task.NewTaskImpl()
 
 	server := ga4gh_task.NewGA4GHServer()
 	server.RegisterTaskServer(taski)

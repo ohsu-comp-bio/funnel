@@ -14,7 +14,10 @@ import (
 	"ga4gh-server"
 	"runtime/debug"
 	"log"
+	"ga4gh-engine"
+	"ga4gh-engine/scaling"
 )
+
 
 
 func main() {
@@ -22,11 +25,17 @@ func main() {
 	rpc_port := flag.String("rpc", "9090", "HTTP Port")
 	storage_dir_arg := flag.String("storage", "storage", "Storage Dir")
 	task_db := flag.String("db", "ga4gh_tasks.db", "Task DB File")
+	scaler_name := flag.String("scaler", "local", "Scaler")
 
 	flag.Parse()
   
   	dir, _ := filepath.Abs(os.Args[0])
 	content_dir := filepath.Join(dir, "..", "..", "share")
+
+	config := map[string]string{}
+
+	//get scaler
+	scaler := ga4gh_engine_scaling.ScalingMethods[*scaler_name](config)
 
 	//server meta-data
 	storage_dir, _ := filepath.Abs(*storage_dir_arg)
@@ -35,11 +44,15 @@ func main() {
 	//setup GRPC listener
 	taski := ga4gh_task.NewTaskBolt(*task_db, meta_data) //ga4gh_task.NewTaskImpl()
 
+	//setup scheduler
+	scheduler := ga4gh_taskengine.Scheduler(taski, scaler)
+
 	server := ga4gh_task.NewGA4GHServer()
 	server.RegisterTaskServer(taski)
-	server.RegisterScheduleServer(taski)
+	server.RegisterScheduleServer(scheduler)
 	server.Start(*rpc_port)
 
+	//setup RESTful proxy
 	grpc_mux := runtime.NewServeMux()
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)

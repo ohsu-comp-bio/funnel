@@ -5,7 +5,7 @@ import (
 	"os"
 	"log"
 	"flag"
-	"ga4gh-engine"
+	"ga4gh-engine/worker"
 	"google.golang.org/grpc"
 	"path/filepath"
 	uuid "github.com/nu7hatch/gouuid"
@@ -38,16 +38,16 @@ func main() {
 	defer conn.Close()
 	sched_client := ga4gh_task_ref.NewSchedulerClient(conn)
 
-	file_client := ga4gh_taskengine.NewSharedFS(&sched_client, storage_dir, volume_dir )
+	file_client := ga4gh_taskengine_worker.NewSharedFS(&sched_client, storage_dir, volume_dir)
 
 	u, _ := uuid.NewV4()
-	manager, _ := ga4gh_taskengine.NewLocalManager(*nworker, u.String())
+	manager, _ := ga4gh_taskengine_worker.NewLocalManager(*nworker, u.String())
 	if *timeout_arg <= 0 {
 		manager.Run(sched_client, file_client)
 	} else {
 		var start_count int32 = 0
 		last_ping := time.Now().Unix()
-		manager.SetStatusCheck( func(status ga4gh_taskengine.EngineStatus) {
+		manager.SetStatusCheck( func(status ga4gh_taskengine_worker.EngineStatus) {
 			if status.JobCount > start_count || status.ActiveJobs > 0 {
 				start_count = status.JobCount
 				last_ping = time.Now().Unix()

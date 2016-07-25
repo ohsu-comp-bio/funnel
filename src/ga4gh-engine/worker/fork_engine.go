@@ -1,5 +1,5 @@
 
-package ga4gh_taskengine
+package ga4gh_taskengine_worker
 
 import (
   	"time"

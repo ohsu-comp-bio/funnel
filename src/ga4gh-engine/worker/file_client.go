@@ -1,13 +1,13 @@
 
 
-package ga4gh_taskengine
+package ga4gh_taskengine_worker
 
 import (
 	"os"
-	"io"
 	"strings"
 	"ga4gh-tasks"
 	"fmt"
+	"log"
 	"io/ioutil"
 	"path"
 	"ga4gh-server/proto"
@@ -91,29 +91,6 @@ func (self *SharedFileMapper) AddVolume(jobId string, source string, mount strin
 
 
 
-func copyFileContents(src, dst string) (err error) {
-	in, err := os.Open(src)
-	if err != nil {
-		return
-	}
-	defer in.Close()
-	out, err := os.Create(dst)
-	if err != nil {
-		return
-	}
-	defer func() {
-		cerr := out.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-	if _, err = io.Copy(out, in); err != nil {
-		return
-	}
-	err = out.Sync()
-	return
-}
-
 func pathMatch(base string, query string) (string, string) {
 	if path.Clean(base) == path.Clean(query) {
 		return query, ""
@@ -188,9 +165,13 @@ func (self *SharedFileMapper) TempFile(jobId string) (f *os.File, err error) {
 func (self *SharedFileMapper) FinalizeJob(jobId string) {
 	for _, out := range self.jobs[jobId].Outputs {
 		hst := self.HostPath(jobId, out.Path)
+		storage := strings.TrimPrefix(out.Location, "fs://")
+		fmt.Printf("copy out %s %s\n", hst, path.Join(self.StorageDir, storage))
 		//copy to storage directory
-		copyFileContents(hst, path.Join(self.StorageDir, out.Location))
+		err := CopyFile(hst, path.Join(self.StorageDir, storage))
+		if err != nil {
+			log.Printf("Error copying output %s to %s", hst, out.Location)
+		}
 	}
-
 }
 

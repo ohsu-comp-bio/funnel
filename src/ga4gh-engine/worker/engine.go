@@ -1,4 +1,4 @@
-package ga4gh_taskengine
+package ga4gh_taskengine_worker
 
 import (
 	"os"
@@ -68,6 +68,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 			if len(hstPath) > 0 {
 				copyFileContents(stderr_path, hstPath)
 			}
+
 		}
 		//If the STDERR is supposed to be added to the volume, copy it in
 		if len(dockerTask.Stdout) > 0 {

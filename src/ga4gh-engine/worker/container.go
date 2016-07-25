@@ -1,5 +1,5 @@
 
-package ga4gh_taskengine
+package ga4gh_taskengine_worker
 
 import (
 	"os"
@@ -38,7 +38,12 @@ func (self *DockerDirect) Run(containerName string, args []string, binds[] strin
 	if _, ok := self.client.InspectImage(containerName); ok != nil {
 		log.Printf("Image %s not found", containerName)
 		tmp := strings.Split(containerName, ":")
-		pull_opt := docker.PullImageOptions{ Repository: tmp[0], Tag: tmp[1] }
+		rep := tmp[0]
+		tag := "latest"
+		if len(tmp) > 1 {
+			tag = tmp[1]
+		}
+		pull_opt := docker.PullImageOptions{ Repository: rep, Tag: tag }
 		if ok := self.client.PullImage( pull_opt, docker.AuthConfiguration{} ); ok != nil {
 			log.Printf("Image not pulled: %s", ok)
 			return -1, ok

@@ -16,6 +16,7 @@ import (
 
 var TASK_BUCKET = []byte("tasks")
 
+var JOBS_QUEUED = []byte("jobs-queued")
 var JOBS_ACTIVE = []byte("jobs-active")
 var JOBS_COMPLETE = []byte("jobs-complete")
 
@@ -33,6 +34,9 @@ func NewTaskBolt(path string, service_metadata map[string]string) *TaskBolt {
 	db.Update(func(tx *bolt.Tx) error {
 		if (tx.Bucket(TASK_BUCKET) == nil) {
 			tx.CreateBucket(TASK_BUCKET)
+		}
+		if (tx.Bucket(JOBS_QUEUED) == nil) {
+			tx.CreateBucket(JOBS_QUEUED)
 		}
 		if (tx.Bucket(JOBS_ACTIVE) == nil) {
 			tx.CreateBucket(JOBS_ACTIVE)
@@ -80,9 +84,8 @@ func (self *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (
 		v, _ := proto.Marshal(task)
 		taskop_b.Put( []byte(taskopId.String()), v )
 
-		active_b := tx.Bucket(JOBS_ACTIVE)
-		active_b.Put([]byte(taskopId.String()), []byte(ga4gh_task_exec.State_Queued.String()))
-
+		queue_b := tx.Bucket(JOBS_QUEUED)
+		queue_b.Put([]byte(taskopId.String()), []byte(ga4gh_task_exec.State_Queued.String()))
 		ch <- &ga4gh_task_exec.JobId{Value:taskopId.String()}
 		return nil
 	})
@@ -98,6 +101,7 @@ func (self *TaskBolt) getTaskJob(task *ga4gh_task_exec.Task) (*ga4gh_task_exec.J
 	ch := make(chan *ga4gh_task_exec.Job, 1)
 	self.db.View(func(tx *bolt.Tx) error {
 		//right now making the assumption that the taskid is the jobid
+		b_q := tx.Bucket(JOBS_QUEUED)
 		b_a := tx.Bucket(JOBS_ACTIVE)
 		b_c := tx.Bucket(JOBS_COMPLETE)
 		b_l := tx.Bucket(JOBS_LOG)
@@ -105,6 +109,10 @@ func (self *TaskBolt) getTaskJob(task *ga4gh_task_exec.Task) (*ga4gh_task_exec.J
 		job := ga4gh_task_exec.Job{}
 		job.Task = task
 		job.JobId = task.TaskId
+		//if its queued
+		if v := b_q.Get([]byte(task.TaskId)); v != nil {
+			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
+		}
 		//if its active
 		if v := b_a.Get([]byte(task.TaskId)); v != nil {
 			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
@@ -186,6 +194,9 @@ func (self *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListR
 // / Cancel a running task
 func (self *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobId) (*ga4gh_task_exec.JobId, error) {
 	self.db.Update(func(tx *bolt.Tx) error {
+		b_q := tx.Bucket(JOBS_QUEUED)
+		b_q.Delete([]byte(taskop.Value))
+
 		b_a := tx.Bucket(JOBS_ACTIVE)
 		b_a.Delete([]byte(taskop.Value))
 
@@ -202,21 +213,21 @@ func (self *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.J
 	ch := make(chan *ga4gh_task_exec.Task, 1)
 
 	self.db.Update(func (tx *bolt.Tx) error {
-		b := tx.Bucket(JOBS_ACTIVE)
+		b_q := tx.Bucket(JOBS_QUEUED)
+		b_a := tx.Bucket(JOBS_ACTIVE)
 		b_op := tx.Bucket(TASK_BUCKET)
 
-		c := b.Cursor()
+		c := b_q.Cursor()
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if (string(v) == ga4gh_task_exec.State_Queued.String()) {
-				log.Printf("Found queued job")
-				v := b_op.Get(k)
-				out := ga4gh_task_exec.Task{}
-				proto.Unmarshal(v, &out)
-				ch <- &out
-				b.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
-				return nil
-			}
+		if k, _ := c.First(); k != nil {
+			log.Printf("Found queued job")
+			v := b_op.Get(k)
+			out := ga4gh_task_exec.Task{}
+			proto.Unmarshal(v, &out)
+			ch <- &out
+			b_q.Delete(k)
+			b_a.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
+			return nil
 		}
 		ch <- nil
 		return nil
@@ -265,4 +276,34 @@ func (self *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.Worke
 
 func (self *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
 	return &ga4gh_task_exec.ServiceInfo{Metadata:self.service_metadata}, nil
+}
+
+func (self *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoRequest, server ga4gh_task_ref.Scheduler_GetQueueInfoServer) error {
+	ch := make(chan *ga4gh_task_exec.Task, 10)
+
+	self.db.View(func(tx *bolt.Tx) error {
+		bt := tx.Bucket(TASK_BUCKET)
+		bq := tx.Bucket(JOBS_QUEUED)
+		c := bq.Cursor()
+		var count int32 = 0
+		for k, v := c.First(); k != nil && count < request.MaxTasks; k, v = c.Next() {
+			if (string(v) == ga4gh_task_exec.State_Queued.String()) {
+				v := bt.Get(k)
+				out := ga4gh_task_exec.Task{}
+				proto.Unmarshal(v, &out)
+				ch <- &out
+			}
+		}
+		close(ch)
+		return nil
+	})
+
+	for m := range ch {
+		inputs := make([]string, 0, len(m.Inputs))
+		for _, i := range m.Inputs {
+			inputs = append(inputs, i.Location)
+		}
+		server.Send(&ga4gh_task_ref.QueuedTaskInfo{Inputs:inputs, Resources:m.Resources})
+	}
+	return nil
 }

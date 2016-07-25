@@ -31,10 +31,21 @@ message UpdateStatusRequest {
     string worker_id = 5;
 }
 
+message QueuedTaskInfoRequest {
+    int32 max_tasks = 1;
+}
+
+message QueuedTaskInfo {
+    repeated string inputs = 1;
+    ga4gh_task_exec.Resources resources = 2;
+}
+
+
 /**
  * Scheduler Service
  */
 service Scheduler {
+  rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc GetJobToRun(JobRequest) returns (JobResponse) {};
   rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobId) {};
   rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};

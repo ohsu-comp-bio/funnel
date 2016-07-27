@@ -12,7 +12,7 @@ server:
 
 proto_build: 
 	cd task-execution-schemas/proto && protoc $(PROTO_INC) \
-		--go_out=Mgoogle/api/annotations.proto=github.com/gengo/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:../../src/ga4gh-tasks/ \
+		--go_out=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:../../src/ga4gh-tasks/ \
 		--grpc-gateway_out=logtostderr=true:../../src/ga4gh-tasks/ \
 		task_execution.proto
 	cd proto && protoc \
@@ -23,5 +23,10 @@ proto_build:
 	
 grpc:
 	go get -u github.com/golang/protobuf/protoc-gen-go
-	go get -u github.com/gengo/grpc-gateway/protoc-gen-swagger
-	go get -u github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway
+	go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+
+depends: grpc
+	go get -d ga4gh-taskserver/
+	go get -d ga4gh-worker/
+	

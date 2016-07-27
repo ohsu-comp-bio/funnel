@@ -30,7 +30,7 @@ package ga4gh_task_exec
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import _ "github.com/gengo/grpc-gateway/third_party/googleapis/google/api"
+import _ "github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api"
 
 import (
 	context "golang.org/x/net/context"
@@ -44,7 +44,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type State int32
 
@@ -419,7 +421,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion2
+const _ = grpc.SupportPackageIsVersion3
 
 // Client API for TaskService service
 
@@ -623,8 +625,11 @@ var _TaskService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _TaskService_CancelJob_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: fileDescriptor0,
 }
+
+func init() { proto.RegisterFile("task_execution.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
 	// 979 bytes of a gzipped FileDescriptorProto

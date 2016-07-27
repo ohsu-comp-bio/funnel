@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/context"
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
-	"github.com/gengo/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"ga4gh-tasks"
 	"ga4gh-server"
 	"runtime/debug"

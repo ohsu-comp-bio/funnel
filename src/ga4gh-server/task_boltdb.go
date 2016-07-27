@@ -24,11 +24,11 @@ var JOBS_LOG = []byte("jobs-log")
 
 type TaskBolt struct {
 	db *bolt.DB
-	service_metadata map[string]string
+	storage_metadata map[string]string
 }
 
 
-func NewTaskBolt(path string, service_metadata map[string]string) *TaskBolt {
+func NewTaskBolt(path string, storage_metadata map[string]string) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
@@ -49,7 +49,7 @@ func NewTaskBolt(path string, service_metadata map[string]string) *TaskBolt {
 		}
 		return nil
 	})
-	return &TaskBolt{db:db, service_metadata:service_metadata}
+	return &TaskBolt{db:db, storage_metadata:storage_metadata}
 }
 
 
@@ -275,7 +275,7 @@ func (self *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.Worke
 
 
 func (self *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
-	return &ga4gh_task_exec.ServiceInfo{Metadata:self.service_metadata}, nil
+	return &ga4gh_task_exec.ServiceInfo{StorageConfig:self.storage_metadata}, nil
 }
 
 func (self *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoRequest, server ga4gh_task_ref.Scheduler_GetQueueInfoServer) error {

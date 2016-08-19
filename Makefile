@@ -4,7 +4,7 @@ export GOPATH
 PATH := ${PATH}:$(shell pwd)/bin
 export PATH
 
-PROTO_INC= -I ./ -I $(GOPATH)/src/github.com/gengo/grpc-gateway/third_party/googleapis/
+PROTO_INC= -I ./ -I $(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
 
 server:
 	go install ga4gh-taskserver

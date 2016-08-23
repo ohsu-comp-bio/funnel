@@ -1,18 +1,16 @@
-
 package main
 
 import (
-	"os"
-	"log"
 	"flag"
 	"ga4gh-engine/worker"
-	"google.golang.org/grpc"
-	"path/filepath"
-	uuid "github.com/nu7hatch/gouuid"
-	"time"
 	"ga4gh-server/proto"
+	uuid "github.com/nu7hatch/gouuid"
+	"google.golang.org/grpc"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
 )
-
 
 func main() {
 	agro_server := flag.String("master", "localhost:9090", "Master Server")
@@ -47,14 +45,14 @@ func main() {
 	} else {
 		var start_count int32 = 0
 		last_ping := time.Now().Unix()
-		manager.SetStatusCheck( func(status ga4gh_taskengine_worker.EngineStatus) {
+		manager.SetStatusCheck(func(status ga4gh_taskengine_worker.EngineStatus) {
 			if status.JobCount > start_count || status.ActiveJobs > 0 {
 				start_count = status.JobCount
 				last_ping = time.Now().Unix()
 			}
-		} )
+		})
 		manager.Start(sched_client, file_client)
-		for time.Now().Unix() - last_ping < int64(*timeout_arg) {
+		for time.Now().Unix()-last_ping < int64(*timeout_arg) {
 			time.Sleep(5 * time.Second)
 		}
 

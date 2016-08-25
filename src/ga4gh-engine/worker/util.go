@@ -7,6 +7,18 @@ import (
 	"path"
 )
 
+func pathMatch(base string, query string) (string, string) {
+	if path.Clean(base) == path.Clean(query) {
+		return query, ""
+	}
+	dir, file := path.Split(query)
+	if len(dir) > 1 {
+		d, p := pathMatch(base, dir)
+		return d, path.Join(p, file)
+	}
+	return "", ""
+}
+
 func copyFileContents(src, dst string) (err error) {
 	in, err := os.Open(src)
 	if err != nil {

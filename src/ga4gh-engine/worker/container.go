@@ -73,6 +73,9 @@ func (self *DockerDirect) Run(containerName string, args []string, binds []strin
 
 	log.Printf("Attaching Container: %s", container.ID)
 	exit_code, err := self.client.WaitContainer(container.ID)
+	if err != nil {
+		log.Printf("Docker run Error: %s", err)
+	}
 
 	logOpts := docker.LogsOptions{Container: container.ID, Stdout: false, Stderr: false}
 

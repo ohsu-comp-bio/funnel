@@ -56,7 +56,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		}
 		binds := mapper.GetBindings(job.JobId)
 
-		dclient := NewDockerDirect()
+		dclient := NewDockerEngine()
 		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
 		stdout.Close()
 		stderr.Close()

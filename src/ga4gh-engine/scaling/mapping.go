@@ -1,10 +1,9 @@
-
 package ga4gh_engine_scaling
-import (
-	"ga4gh-tasks"
-	"ga4gh-server/proto"
-)
 
+import (
+	"ga4gh-server/proto"
+	"ga4gh-tasks"
+)
 
 type Scaler interface {
 	JobAdded(*ga4gh_task_exec.Resources)
@@ -13,13 +12,11 @@ type Scaler interface {
 
 type ScalerInit func(map[string]string) Scaler
 
-
 var ScalingMethods = map[string]ScalerInit{
-	"local" : NewLocalScaler,
+	"local": NewLocalScaler,
 }
 
 type LocalScaler struct {
-
 }
 
 func NewLocalScaler(config map[string]string) Scaler {

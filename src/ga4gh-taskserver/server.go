@@ -1,35 +1,34 @@
 package main
 
 import (
-	"os"
-	"fmt"
 	"flag"
-	"net/http"
-	"path/filepath"
-	"golang.org/x/net/context"
-	"github.com/gorilla/mux"
-	"google.golang.org/grpc"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"ga4gh-tasks"
-	"ga4gh-server"
-	"runtime/debug"
-	"log"
+	"fmt"
 	"ga4gh-engine"
 	"ga4gh-engine/scaling"
+	"ga4gh-server"
+	"ga4gh-tasks"
+	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime/debug"
 )
-
-
 
 func main() {
 	http_port := flag.String("port", "8000", "HTTP Port")
 	rpc_port := flag.String("rpc", "9090", "HTTP Port")
 	storage_dir_arg := flag.String("storage", "storage", "Storage Dir")
+	swift_arg := flag.Bool("swift", false, "Use SWIFT object store")
 	task_db := flag.String("db", "ga4gh_tasks.db", "Task DB File")
 	scaler_name := flag.String("scaler", "local", "Scaler")
 
 	flag.Parse()
-  
-  	dir, _ := filepath.Abs(os.Args[0])
+
+	dir, _ := filepath.Abs(os.Args[0])
 	content_dir := filepath.Join(dir, "..", "..", "share")
 
 	config := map[string]string{}
@@ -39,10 +38,16 @@ func main() {
 
 	//server meta-data
 	storage_dir, _ := filepath.Abs(*storage_dir_arg)
-	meta_data := map[string]string{ "storageType" : "sharedFile", "baseDir" : storage_dir }
+	var meta_data = make(map[string]string)
+	if !*swift_arg {
+		meta_data["storageType"] = "sharedFile"
+		meta_data["baseDir"] = storage_dir
+	} else {
+		meta_data["storageType"] = "swift"
+	}
 
 	//setup GRPC listener
-	taski := ga4gh_task.NewTaskBolt(*task_db, meta_data) //ga4gh_task.NewTaskImpl()
+	taski := ga4gh_task.NewTaskBolt(*task_db, meta_data)
 
 	//setup scheduler
 	scheduler := ga4gh_taskengine.Scheduler(taski, scaler)
@@ -58,9 +63,9 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	log.Println("Proxy connecting to localhost:" + *rpc_port )
-	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpc_mux, "localhost:" + *rpc_port, opts)
-	if (err != nil) {
+	log.Println("Proxy connecting to localhost:" + *rpc_port)
+	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpc_mux, "localhost:"+*rpc_port, opts)
+	if err != nil {
 		fmt.Println("Register Error", err)
 
 	}
@@ -74,12 +79,12 @@ func main() {
 	}
 	// Routes consist of a path and a handler function
 	r.HandleFunc("/",
-		func (w http.ResponseWriter, r *http.Request) {
+		func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(content_dir, "index.html"))
 		})
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(content_dir))))
 
 	r.PathPrefix("/v1/").Handler(grpc_mux)
 	log.Printf("Listening on port: %s\n", *http_port)
-	http.ListenAndServe(":" + *http_port, r)
+	http.ListenAndServe(":"+*http_port, r)
 }

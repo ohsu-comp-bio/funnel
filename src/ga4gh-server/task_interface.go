@@ -1,14 +1,12 @@
-
 package ga4gh_task
 
 import (
-	//"golang.org/x/net/context"
-	//"ga4gh-tasks"
+//"golang.org/x/net/context"
+//"ga4gh-tasks"
 )
 
 type TaskImpl struct {
 }
-
 
 func NewTaskImpl() *TaskImpl {
 	return &TaskImpl{}

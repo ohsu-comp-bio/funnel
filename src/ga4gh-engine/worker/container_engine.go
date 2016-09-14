@@ -31,7 +31,7 @@ func (self *DockerEngine) Run(containerName string, args []string,
 	list, err := self.client.ImageList(context.Background(), types.ImageListOptions{MatchName: containerName})
 
 	if err != nil || len(list) == 0 {
-		log.Printf("Image %s not found", containerName)
+		log.Printf("Image %s not found: %s", containerName, err)
 		pull_opt := types.ImagePullOptions{}
 		r, err := self.client.ImagePull(context.Background(), containerName, pull_opt)
 		if err != nil {

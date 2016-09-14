@@ -84,7 +84,10 @@ func (self *FileMapper) MapInput(jobId string, storage string, mountPath string,
 		if len(base) > 0 {
 			dstPath := path.Join(vol.HostPath, relpath)
 			fmt.Printf("get %s %s\n", storage, dstPath)
-			self.fileSystem.Get(storage, dstPath)
+			err := self.fileSystem.Get(storage, dstPath)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

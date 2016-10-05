@@ -75,7 +75,7 @@ func (self *DockerEngine) Run(containerName string, args []string,
 	if err != nil {
 		log.Printf("docker %s error: %s", container.ID, err)
 	} else {
-		log.Printf("docker %s complete", container.ID, err)
+		log.Printf("docker %s complete", container.ID)
 	}
 
 	if stdout != nil {

@@ -1,13 +1,13 @@
 package ga4gh_taskengine_worker
 
 import (
+	"fmt"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"io"
-	"os"
-	"fmt"
-	"strings"
 	"log"
+	"os"
+	"strings"
 	//"github.com/rackspace/gophercloud/openstack/objectstorage/v1/containers"
 	"github.com/rackspace/gophercloud/openstack/objectstorage/v1/objects"
 	//"github.com/rackspace/gophercloud/pagination"
@@ -74,7 +74,7 @@ func (self *SwiftAccess) Put(storage string, hostPath string, directory bool) er
 	if err != nil {
 		return err
 	}
-	
+
 	storage = strings.TrimPrefix(storage, SWIFT_PROTOCOL)
 	storage_split := strings.SplitN(storage, "/", 2)
 

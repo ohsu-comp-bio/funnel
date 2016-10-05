@@ -1,0 +1,5 @@
+*.pyc
+.idea
+/bin
+/pkg
+/test_tmp

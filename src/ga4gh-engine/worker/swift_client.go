@@ -68,7 +68,7 @@ func (self *SwiftAccess) Get(storage string, hostPath string) error {
 	return nil
 }
 
-func (self *SwiftAccess) Put(storage string, hostPath string, directory bool) error {
+func (self *SwiftAccess) Put(storage string, hostPath string, class string) error {
 	log.Printf("Starting upload of %s", storage)
 	content, err := os.Open(hostPath)
 	if err != nil {
@@ -77,11 +77,16 @@ func (self *SwiftAccess) Put(storage string, hostPath string, directory bool) er
 
 	storage = strings.TrimPrefix(storage, SWIFT_PROTOCOL)
 	storage_split := strings.SplitN(storage, "/", 2)
-
-	// Now execute the upload
-	opts := objects.CreateOpts{}
-	res := objects.Create(self.client, storage_split[0], storage_split[1], content, opts)
-	_, err = res.ExtractHeader()
-	content.Close()
-	return err
+	
+	if class == "File" {
+		// Now execute the upload
+		opts := objects.CreateOpts{}
+		res := objects.Create(self.client, storage_split[0], storage_split[1], content, opts)
+		_, err = res.ExtractHeader()
+		content.Close()
+		return err
+	} else if class == "Directory" {
+		return fmt.Errorf("SWIFT directories not yet supported")
+	}
+	return fmt.Errorf("Unknown element type: %s", class)
 }

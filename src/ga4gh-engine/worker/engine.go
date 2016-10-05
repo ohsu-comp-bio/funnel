@@ -25,14 +25,14 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 	}
 
 	for _, input := range job.Task.Inputs {
-		err := mapper.MapInput(job.JobId, input.Location, input.Path, input.Directory)
+		err := mapper.MapInput(job.JobId, input.Location, input.Path, input.Class)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, output := range job.Task.Outputs {
-		err := mapper.MapOutput(job.JobId, output.Location, output.Path, output.Directory, output.Create)
+		err := mapper.MapOutput(job.JobId, output.Location, output.Path, output.Class, output.Create)
 		if err != nil {
 			return err
 		}

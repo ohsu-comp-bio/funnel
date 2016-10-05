@@ -26,7 +26,7 @@ type JobFileMapper struct {
 
 type FileSystemAccess interface {
 	Get(storage string, path string) error
-	Put(storage string, path string, directory bool) error
+	Put(storage string, path string, class string) error
 }
 
 type EngineStatus struct {
@@ -78,7 +78,7 @@ func (self *FileMapper) HostPath(jobId string, mountPath string) string {
 	return ""
 }
 
-func (self *FileMapper) MapInput(jobId string, storage string, mountPath string, directory bool) error {
+func (self *FileMapper) MapInput(jobId string, storage string, mountPath string, class string) error {
 	for _, vol := range self.jobs[jobId].Bindings {
 		base, relpath := pathMatch(vol.ContainerPath, mountPath)
 		if len(base) > 0 {
@@ -93,17 +93,19 @@ func (self *FileMapper) MapInput(jobId string, storage string, mountPath string,
 	return nil
 }
 
-func (self *FileMapper) MapOutput(jobId string, storage string, mountPath string, directory bool, create bool) error {
-	a := ga4gh_task_exec.TaskParameter{Location: storage, Path: mountPath, Create: create, Directory: directory}
+func (self *FileMapper) MapOutput(jobId string, storage string, mountPath string, class string, create bool) error {
+	a := ga4gh_task_exec.TaskParameter{Location: storage, Path: mountPath, Create: create, Class: class}
 	j := self.jobs[jobId]
 	if create {
 		for _, vol := range self.jobs[jobId].Bindings {
 			base, relpath := pathMatch(vol.ContainerPath, mountPath)
 			if len(base) > 0 {
-				if directory {
+				if class == "Directory" {
 					os.MkdirAll(path.Join(vol.HostPath, relpath), 0777)
-				} else {
+				} else if class == "File" {
 					ioutil.WriteFile(path.Join(vol.HostPath, relpath), []byte{}, 0777)
+				} else {
+					return fmt.Errorf("Unknown class type: %s", class)
 				}
 			}
 		}
@@ -135,6 +137,6 @@ func (self *FileMapper) TempFile(jobId string) (f *os.File, err error) {
 func (self *FileMapper) FinalizeJob(jobId string) {
 	for _, out := range self.jobs[jobId].Outputs {
 		hst := self.HostPath(jobId, out.Path)
-		self.fileSystem.Put(out.Location, hst, out.Directory)
+		self.fileSystem.Put(out.Location, hst, out.Class)
 	}
 }

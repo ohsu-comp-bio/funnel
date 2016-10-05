@@ -26,24 +26,26 @@ func (self *FileStorageAccess) Get(storage string, hostPath string) error {
 	return nil
 }
 
-func (self *FileStorageAccess) Put(location string, hostPath string, directory bool) error {
+func (self *FileStorageAccess) Put(location string, hostPath string, class string) error {
 
 	storage := strings.TrimPrefix(location, "fs://")
 
 	log.Printf("copy out %s %s\n", hostPath, path.Join(self.StorageDir, storage))
 	//copy to storage directory
-	if directory {
+	if class == "Directory" {
 		err := CopyDir(hostPath, path.Join(self.StorageDir, storage))
 		if err != nil {
 			log.Printf("Error copying output directory %s to %s", hostPath, location)
 			return err
 		}
-	} else {
+	} else if class == "File" {
 		err := CopyFile(hostPath, path.Join(self.StorageDir, storage))
 		if err != nil {
 			log.Printf("Error copying output file %s to %s", hostPath, location)
 			return err
 		}
+	} else {
+		return fmt.Errorf("Unknown Class type: %s", class)
 	}
 	return nil
 }

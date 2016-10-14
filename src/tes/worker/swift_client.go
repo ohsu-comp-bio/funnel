@@ -1,4 +1,4 @@
-package ga4gh_taskengine_worker
+package tes_taskengine_worker
 
 import (
 	"fmt"
@@ -77,7 +77,7 @@ func (self *SwiftAccess) Put(storage string, hostPath string, class string) erro
 
 	storage = strings.TrimPrefix(storage, SWIFT_PROTOCOL)
 	storage_split := strings.SplitN(storage, "/", 2)
-	
+
 	if class == "File" {
 		// Now execute the upload
 		opts := objects.CreateOpts{}

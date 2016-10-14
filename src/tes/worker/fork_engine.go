@@ -1,4 +1,4 @@
-package ga4gh_taskengine_worker
+package tes_taskengine_worker
 
 import (
 	"tes/server/proto"

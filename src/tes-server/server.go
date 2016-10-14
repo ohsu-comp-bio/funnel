@@ -39,9 +39,9 @@ func main() {
 	}
 
 	//setup GRPC listener
-	taski := ga4gh_task.NewTaskBolt(*task_db, meta_data)
-	
-	server := ga4gh_task.NewGA4GHServer()
+	taski := tes_server.NewTaskBolt(*task_db, meta_data)
+
+	server := tes_server.NewGA4GHServer()
 	server.RegisterTaskServer(taski)
 	server.RegisterScheduleServer(taski)
 	server.Start(*rpc_port)

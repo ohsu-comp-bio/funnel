@@ -1,4 +1,4 @@
-package ga4gh_task
+package tes_server
 
 import (
 	"fmt"

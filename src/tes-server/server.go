@@ -3,10 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"ga4gh-engine"
-	"ga4gh-engine/scaling"
-	"ga4gh-server"
-	"ga4gh-tasks"
+	"tes/server"
+	"tes/ga4gh"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
@@ -24,17 +22,11 @@ func main() {
 	storage_dir_arg := flag.String("storage", "storage", "Storage Dir")
 	swift_arg := flag.Bool("swift", false, "Use SWIFT object store")
 	task_db := flag.String("db", "ga4gh_tasks.db", "Task DB File")
-	scaler_name := flag.String("scaler", "local", "Scaler")
 
 	flag.Parse()
 
 	dir, _ := filepath.Abs(os.Args[0])
 	content_dir := filepath.Join(dir, "..", "..", "share")
-
-	config := map[string]string{}
-
-	//get scaler
-	scaler := ga4gh_engine_scaling.ScalingMethods[*scaler_name](config)
 
 	//server meta-data
 	storage_dir, _ := filepath.Abs(*storage_dir_arg)
@@ -48,13 +40,10 @@ func main() {
 
 	//setup GRPC listener
 	taski := ga4gh_task.NewTaskBolt(*task_db, meta_data)
-
-	//setup scheduler
-	scheduler := ga4gh_taskengine.Scheduler(taski, scaler)
-
+	
 	server := ga4gh_task.NewGA4GHServer()
 	server.RegisterTaskServer(taski)
-	server.RegisterScheduleServer(scheduler)
+	server.RegisterScheduleServer(taski)
 	server.Start(*rpc_port)
 
 	//setup RESTful proxy

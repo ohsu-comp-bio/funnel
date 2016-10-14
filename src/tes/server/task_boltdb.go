@@ -2,8 +2,8 @@ package ga4gh_task
 
 import (
 	"fmt"
-	"ga4gh-server/proto"
-	"ga4gh-tasks"
+	"tes/server/proto"
+	"tes/ga4gh"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	uuid "github.com/nu7hatch/gouuid"

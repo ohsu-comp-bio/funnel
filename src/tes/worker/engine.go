@@ -2,7 +2,7 @@ package ga4gh_taskengine_worker
 
 import (
 	"fmt"
-	"ga4gh-tasks"
+	"tes/ga4gh"
 	"os"
 )
 

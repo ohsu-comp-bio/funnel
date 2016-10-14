@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"ga4gh-engine/worker"
-	"ga4gh-server/proto"
+	"tes/worker"
+	"tes/server/proto"
 	uuid "github.com/nu7hatch/gouuid"
 	"google.golang.org/grpc"
 	"log"

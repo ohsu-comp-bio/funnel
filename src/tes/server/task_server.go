@@ -1,8 +1,8 @@
 package ga4gh_task
 
 import (
-	"ga4gh-server/proto"
-	"ga4gh-tasks"
+	"tes/server/proto"
+	"tes/ga4gh"
 	"google.golang.org/grpc"
 	"log"
 	"net"

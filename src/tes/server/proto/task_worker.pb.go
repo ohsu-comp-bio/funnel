@@ -21,7 +21,7 @@ package ga4gh_task_ref
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import ga4gh_task_exec "ga4gh-tasks"
+import ga4gh_task_exec "tes/ga4gh"
 
 import (
 	context "golang.org/x/net/context"

@@ -2,8 +2,8 @@ package ga4gh_taskengine_worker
 
 import (
 	"fmt"
-	"ga4gh-server/proto"
-	"ga4gh-tasks"
+	"tes/server/proto"
+	"tes/ga4gh"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"os"

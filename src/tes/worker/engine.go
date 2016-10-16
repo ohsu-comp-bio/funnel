@@ -2,8 +2,8 @@ package tes_taskengine_worker
 
 import (
 	"fmt"
-	"tes/ga4gh"
 	"os"
+	"tes/ga4gh"
 )
 
 const HEADER_SIZE = int64(102400)

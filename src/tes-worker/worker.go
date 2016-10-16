@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
-	"tes/worker"
-	"tes/server/proto"
 	uuid "github.com/nu7hatch/gouuid"
 	"google.golang.org/grpc"
 	"log"
 	"os"
 	"path/filepath"
+	"tes/server/proto"
+	"tes/worker"
 	"time"
 )
 

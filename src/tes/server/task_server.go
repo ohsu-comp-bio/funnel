@@ -1,11 +1,11 @@
 package tes_server
 
 import (
-	"tes/server/proto"
-	"tes/ga4gh"
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"tes/ga4gh"
+	"tes/server/proto"
 )
 
 /// Common GA4GH server, multiple services could be placed into the same server

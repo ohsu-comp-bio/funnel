@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"tes/server"
-	"tes/ga4gh"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
@@ -14,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"tes/ga4gh"
+	"tes/server"
 )
 
 func main() {

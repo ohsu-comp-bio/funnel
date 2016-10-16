@@ -1,12 +1,12 @@
 package tes_taskengine_worker
 
 import (
-	"tes/server/proto"
-	"tes/ga4gh"
 	context "golang.org/x/net/context"
 	"log"
 	"os"
 	"sync/atomic"
+	"tes/ga4gh"
+	"tes/server/proto"
 	"time"
 	//proto "github.com/golang/protobuf/proto"
 )

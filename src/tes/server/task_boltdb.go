@@ -2,14 +2,14 @@ package tes_server
 
 import (
 	"fmt"
-	"tes/server/proto"
-	"tes/ga4gh"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	uuid "github.com/nu7hatch/gouuid"
 	"golang.org/x/net/context"
 	"log"
 	"strings"
+	"tes/ga4gh"
+	"tes/server/proto"
 )
 
 var TASK_BUCKET = []byte("tasks")

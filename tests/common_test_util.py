@@ -20,19 +20,19 @@ class ServerTest(unittest.TestCase):
         if not os.path.exists("./test_tmp"):
             os.mkdir("test_tmp")
         self.task_server = None
-        f, db_path = tempfile.mkstemp(dir="./test_tmp", prefix="ga4hg_task_db.")
+        f, db_path = tempfile.mkstemp(dir="./test_tmp", prefix="tes_task_db.")
         os.close(f)
         self.storage_dir = db_path + ".storage"
         self.volume_dir = db_path + ".volumes"
         os.mkdir(self.storage_dir)
         os.mkdir(self.volume_dir)
-        cmd = ["./bin/ga4gh-taskserver", "-db", db_path]
+        cmd = ["./bin/tes-server", "-db", db_path]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = subprocess.Popen(cmd)
         time.sleep(3)
         
         self.task_worker = None
-        cmd = ["./bin/ga4gh-worker", "-volumes", self.volume_dir, "-storage", self.storage_dir]
+        cmd = ["./bin/tes-worker", "-volumes", self.volume_dir, "-storage", self.storage_dir]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_worker = subprocess.Popen(cmd)
 

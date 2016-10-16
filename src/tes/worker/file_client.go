@@ -2,12 +2,12 @@ package tes_taskengine_worker
 
 import (
 	"fmt"
-	"tes/server/proto"
-	"tes/ga4gh"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"os"
 	"path"
+	"tes/ga4gh"
+	"tes/server/proto"
 )
 
 type FileMapper struct {

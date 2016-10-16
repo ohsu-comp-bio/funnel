@@ -24,12 +24,14 @@ class TestFileOP(ServerTest):
                     "name" : "infile",
                     "description" : "File to be MD5ed",
                     "location" : in_loc,
+                    "class" : "File",
                     "path" : "/tmp/test_file"
                 }
             ],
             "outputs" : [
                 {
                     "location" : out_loc,
+                    "class" : "File",
                     "path" : "/tmp/test_out"
                 }
             ],

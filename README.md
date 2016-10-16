@@ -13,12 +13,12 @@ make
 
 ## Start task server
 ```
-./bin/ga4gh-taskserver
+./bin/tes-server
 ```
 
 ## Start worker
 ```
-./bin/ga4gh-worker
+./bin/tes-worker
 ```
 
 ## Get info about task execution service

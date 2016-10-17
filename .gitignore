@@ -3,3 +3,9 @@
 /bin
 /pkg
 /test_tmp
+ga4gh_tasks.db
+/src/github.com/
+/src/golang.org/
+/src/google.golang.org/
+/storage/
+/volumes/

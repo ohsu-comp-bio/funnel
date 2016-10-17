@@ -26,28 +26,44 @@ Code Structure
 --------------
 
 Main function of taskserver program (client interface and scheduler)
+```
 src/tes-server/
- 
+```
+
 Main function of worker program
+```
 src/tes-worker/
+```
  
 Code related to the worker, include file mapper, local and swift file system clients, docker interfaces and worker thread manager
+```
 src/tes/worker/
+```
  
 The compiled copy of the Task Execution Schema protobuf
+```
 src/tes/ga4gh
+```
  
 BoltDB based implementation of the TES api as well as the scheduler API.
+```
 src/tes/server
+```
  
 The compiled copy of the scheduler API protobuf
+```
 src/tes/server/proto/
+```
  
 Python driven unit/conformance tests
+```
 tests
+```
  
 HTML and angular app for web view
+```
 share
+```
 
 
 Rebuilding Proto code

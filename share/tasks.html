@@ -1,0 +1,41 @@
+<div id="task_info" ng-controller="TaskInfoController">
+<a href="#/">&lt;---</a>
+    <h1>Task {{task_info.id}}</h1>
+
+    <div>Command</div>
+    <div>{{task_info.command}}</div>
+
+    <div>Depends</div>
+    <div>{{task_info.task_depends}}</div>
+
+    <div>Container</div>
+    <div>{{task_info.container}}</div>
+
+    <div>Arguments</div>
+    <div ng-repeat="item in task_info.args" content="item">
+        {{item}}
+    </div>
+
+    <div>Tags</div>
+    <div ng-repeat="item in task_info.tags" content="item">
+        {{item}}
+    </div>
+
+    <div>Requirements</div>
+    <div ng-repeat="item in task_info.requirements" content="item">
+        {{item}}
+    </div>
+
+    <div>State</div>
+    <div>{{task_info.state}}</div>
+
+    <div>Max Retries</div>
+    <div>{{task_info.max_retry}}</div>
+
+
+    <div>Jobs</div>
+    <div ng-repeat="item in task_info.status.runs" content="item">
+        <a href="#/jobs/{{item}}">{{item}}</a>
+    </div>
+
+</div>

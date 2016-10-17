@@ -3,7 +3,8 @@
 import unittest
 import uuid
 import time
-import requests
+import urllib
+import json
 
 from common_test_util import ServerTest, get_abspath
 
@@ -24,12 +25,14 @@ class TestFileOP(ServerTest):
                     "name" : "infile",
                     "description" : "File to be MD5ed",
                     "location" : in_loc,
+                    "class" : "File",
                     "path" : "/tmp/test_file"
                 }
             ],
             "outputs" : [
                 {
                     "location" : out_loc,
+                    "class" : "File",
                     "path" : "/tmp/test_out"
                 }
             ],
@@ -49,14 +52,14 @@ class TestFileOP(ServerTest):
             ]
         }
 
-        r = requests.post("http://localhost:8000/v1/jobs", json=task)
-        data = r.json()
+        u = urllib.urlopen("http://localhost:8000/v1/jobs", json.dumps(task))
+        data = json.loads(u.read())
         print data
         job_id = data['value']
 
         for i in range(10):
-            r = requests.get("http://localhost:8000/v1/jobs/%s" % (job_id))
-            data = r.json()
+            r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
+            data = json.loads(r.read())
             if data["state"] not in ['Queued', "Running"]:
                 break
             time.sleep(1)
@@ -67,8 +70,4 @@ class TestFileOP(ServerTest):
             t = handle.read()
             i = t.split()
             assert(i[0] == "fc69a359565f35bf130a127ae2ebf2da")
-
-        #assert 'logs' in data
-        #assert data['logs'][0]['stdout'] == "hello world\n"
-
 

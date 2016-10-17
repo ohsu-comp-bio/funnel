@@ -1,13 +1,13 @@
-package ga4gh_taskengine_worker
+package tes_taskengine_worker
 
 import (
-	"os"
 	"fmt"
-	"ga4gh-tasks"
+	"os"
+	"tes/ga4gh"
 )
 
-
 const HEADER_SIZE = int64(102400)
+
 func read_file_head(path string) []byte {
 	f, _ := os.Open(path)
 	buffer := make([]byte, HEADER_SIZE)
@@ -15,7 +15,6 @@ func read_file_head(path string) []byte {
 	f.Close()
 	return buffer[:l]
 }
-
 
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
@@ -26,14 +25,14 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 	}
 
 	for _, input := range job.Task.Inputs {
-		err := mapper.MapInput(job.JobId, input.Location, input.Path, input.Directory)
+		err := mapper.MapInput(job.JobId, input.Location, input.Path, input.Class)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, output := range(job.Task.Outputs) {
-		err := mapper.MapOutput(job.JobId, output.Location, output.Path, output.Directory)
+	for _, output := range job.Task.Outputs {
+		err := mapper.MapOutput(job.JobId, output.Location, output.Path, output.Class, output.Create)
 		if err != nil {
 			return err
 		}
@@ -57,8 +56,8 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		}
 		binds := mapper.GetBindings(job.JobId)
 
-		dclient := NewDockerDirect()
-		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, true, stdout, stderr)
+		dclient := NewDockerEngine()
+		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
 		stdout.Close()
 		stderr.Close()
 

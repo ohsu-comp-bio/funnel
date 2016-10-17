@@ -3,7 +3,8 @@
 import unittest
 import uuid
 import time
-import requests
+import urllib
+import json
 
 from common_test_util import ServerTest, get_abspath
 
@@ -24,14 +25,13 @@ class TestTaskREST(ServerTest):
             ]
         }
 
-        r = requests.post("http://localhost:8000/v1/jobs", json=task)
-        data = r.json()
+        u = urllib.urlopen("http://localhost:8000/v1/jobs", json.dumps(task))
+        data = json.loads(u.read())
         job_id = data['value']
         
         while True:
-            r = requests.get("http://localhost:8000/v1/jobs/%s" % (job_id))
-            print r.text
-            data = r.json()
+            r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
+            data = json.loads(r.read())
             if data["state"] not in ['Queued', "Running"]:
                 break
             time.sleep(1)

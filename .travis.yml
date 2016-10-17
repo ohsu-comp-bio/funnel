@@ -1,0 +1,17 @@
+language: python
+sudo: required
+services:
+  - docker
+python:
+  - "2.7"
+os:
+  - linux
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y golang
+install:
+  - make depends
+  - make
+script: nosetests tests
+notifications:
+  email: false

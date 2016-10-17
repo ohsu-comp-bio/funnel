@@ -1,23 +1,22 @@
-
-package ga4gh_task
+package tes_server
 
 import (
+	"google.golang.org/grpc"
 	"log"
 	"net"
-	"google.golang.org/grpc"
-	"ga4gh-tasks"
-	"ga4gh-server/proto"
+	"tes/ga4gh"
+	"tes/server/proto"
 )
 
 /// Common GA4GH server, multiple services could be placed into the same server
 /// For the moment there is just the task server
 type GA4GHServer struct {
-	task ga4gh_task_exec.TaskServiceServer
+	task  ga4gh_task_exec.TaskServiceServer
 	sched ga4gh_task_ref.SchedulerServer
 }
 
 func NewGA4GHServer() *GA4GHServer {
-	return &GA4GHServer {}
+	return &GA4GHServer{}
 }
 
 func (self *GA4GHServer) RegisterTaskServer(task ga4gh_task_exec.TaskServiceServer) {
@@ -28,10 +27,8 @@ func (self *GA4GHServer) RegisterScheduleServer(sched ga4gh_task_ref.SchedulerSe
 	self.sched = sched
 }
 
-
-
 func (self *GA4GHServer) Start(host_port string) {
-	lis, err := net.Listen("tcp", ":" + host_port)
+	lis, err := net.Listen("tcp", ":"+host_port)
 	if err != nil {
 		panic("Cannot open port")
 	}

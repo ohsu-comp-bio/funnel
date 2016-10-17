@@ -25,7 +25,7 @@ type JobFileMapper struct {
 }
 
 type FileSystemAccess interface {
-	Get(storage string, path string) error
+	Get(storage string, path string, class string) error
 	Put(storage string, path string, class string) error
 }
 
@@ -84,7 +84,7 @@ func (self *FileMapper) MapInput(jobId string, storage string, mountPath string,
 		if len(base) > 0 {
 			dstPath := path.Join(vol.HostPath, relpath)
 			fmt.Printf("get %s %s\n", storage, dstPath)
-			err := self.fileSystem.Get(storage, dstPath)
+			err := self.fileSystem.Get(storage, dstPath, class)
 			if err != nil {
 				return err
 			}

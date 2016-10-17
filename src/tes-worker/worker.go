@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"os"
+	"strings"
 	"path/filepath"
 	"tes/server/proto"
 	"tes/worker"
@@ -16,6 +17,7 @@ func main() {
 	agro_server := flag.String("master", "localhost:9090", "Master Server")
 	volume_dir_arg := flag.String("volumes", "volumes", "Volume Dir")
 	storage_dir_arg := flag.String("storage", "storage", "Storage Dir")
+	file_system_arg := flag.String("files", "", "Allowed File Paths")
 	swift_dir_arg := flag.String("swift", "", "Cache Swift items in directory")
 	timeout_arg := flag.Int("timeout", -1, "Timeout in seconds")
 
@@ -43,6 +45,13 @@ func main() {
 		}
 
 		file_client = tes_taskengine_worker.NewSwiftAccess()
+	} else if *file_system_arg != "" {
+		o := []string{}
+		for _, i := range strings.Split(*file_system_arg, ",") {
+			p, _ := filepath.Abs(i)
+			o = append(o, p)
+		}
+		file_client = tes_taskengine_worker.NewFileAccess(o)
 	} else {
 		storage_dir, _ := filepath.Abs(*storage_dir_arg)
 		if _, err := os.Stat(storage_dir); os.IsNotExist(err) {

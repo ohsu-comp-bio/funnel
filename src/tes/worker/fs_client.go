@@ -16,13 +16,19 @@ func NewSharedFS(base string) *FileStorageAccess {
 	return &FileStorageAccess{StorageDir: base}
 }
 
-func (self *FileStorageAccess) Get(storage string, hostPath string) error {
+func (self *FileStorageAccess) Get(storage string, hostPath string, class string) error {
 	storage = strings.TrimPrefix(storage, "fs://")
 	srcPath := path.Join(self.StorageDir, storage)
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
 		return fmt.Errorf("storage file '%s' not found", srcPath)
 	}
-	copyFileContents(srcPath, hostPath)
+	if class == "File" {
+		copyFileContents(srcPath, hostPath)
+	} else if class == "Directory" {
+		CopyDir(srcPath, hostPath)
+	} else {
+		return fmt.Errorf("Unknown element type: %s", class)
+	}
 	return nil
 }
 

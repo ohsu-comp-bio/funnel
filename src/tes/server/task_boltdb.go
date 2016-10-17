@@ -71,6 +71,16 @@ func (self *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (
 		if !disk_found {
 			return nil, fmt.Errorf("Required volume '%s' not found in resources", input.Path)
 		}
+		//Fixing blank value to File by default... Is this too much hand holding?
+		if input.Class == "" {
+			input.Class = "File"
+		}
+	}
+
+	for _, output := range task.GetOutputs() {
+		if output.Class == "" {
+			output.Class = "File"
+		}
 	}
 
 	ch := make(chan *ga4gh_task_exec.JobId, 1)

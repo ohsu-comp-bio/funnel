@@ -20,14 +20,18 @@ func (self DockerCmd) Run(containerName string, args []string,
 
 	log.Printf("Docker Binds: %s", binds)
 
-	docker_args := []string{"run", "--rm", "-i", "-w", workdir}
+	docker_args := []string{"run", "--rm", "-i"}
+
+	if workdir != "" {
+		docker_args = append(docker_args, "-w", workdir)
+	}
 
 	for _, i := range binds {
 		docker_args = append(docker_args, "-v", i)
 	}
 	docker_args = append(docker_args, containerName)
 	docker_args = append(docker_args, args...)
-	log.Printf("Runner docker %s", strings.Join(args, " "))
+	log.Printf("Runner docker %s", strings.Join(docker_args, " "))
 
 	cmd := exec.Command("docker", docker_args...)
 

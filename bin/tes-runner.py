@@ -2,7 +2,7 @@
 
 import json
 import time
-import requests
+import urllib
 import argparse
 
 if __name__ == "__main__":
@@ -14,18 +14,19 @@ if __name__ == "__main__":
     with open(args.task) as handle:
         task = json.loads(handle.read())
     
-    r = requests.post("%s/v1/jobs" % (args.server), json=task)
-    data = r.json()
+    u = urllib.urlopen("%s/v1/jobs" % (args.server), json.dumps(task))
+    data = json.loads(u.read())
+    
     print data
     job_id = data['value']
 
-    for i in range(10):
-        r = requests.get("%s/v1/jobs/%s" % (args.server, job_id))
-        data = r.json()
+    while True:
+        r = urllib.urlopen("%s/v1/jobs/%s" % (args.server, job_id))
+        data = json.loads(r.read())
         if data["state"] not in ['Queued', "Running"]:
             break
         time.sleep(1)
-    print data
+    print json.dumps(data, indent=4)
     
 
 

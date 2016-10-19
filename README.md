@@ -1,3 +1,7 @@
+master: ![master-build-status](https://travis-ci.org/bmeg/task-execution-server.svg?branch=master)
+
+develop: ![develop-build-status](https://travis-ci.org/bmeg/task-execution-server.svg?branch=develop)
+
 # task-execution-server
 
 ## Initial tool install
@@ -38,6 +42,6 @@ pip install pyyaml
 
 ## Run Example workflow
 ```
-python funnel/main.py --tes tes.yaml test/hashsplitter-workflow.cwl --input README.md 
+python funnel/main.py --tes tes.yaml test/hashsplitter-workflow.cwl --input README.md
 
 ```

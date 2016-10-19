@@ -1,4 +1,3 @@
-
 GOPATH := $(shell pwd)
 export GOPATH
 PATH := ${PATH}:$(shell pwd)/bin
@@ -10,17 +9,17 @@ server:
 	go install tes-server
 	go install tes-worker
 
-proto_build: 
+proto_build:
 	cd task-execution-schemas/proto && protoc $(PROTO_INC) \
 		--go_out=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:../../src/tes/ga4gh/ \
 		--grpc-gateway_out=logtostderr=true:../../src/tes/ga4gh/ \
 		task_execution.proto
 	cd proto && protoc \
-	  $(PROTO_INC) \
-	  -I ../task-execution-schemas/proto/ \
-	  --go_out=Mtask_execution.proto=tes/ga4gh,plugins=grpc:../src/tes/server/proto \
+		$(PROTO_INC) \
+		-I ../task-execution-schemas/proto/ \
+		--go_out=Mtask_execution.proto=tes/ga4gh,plugins=grpc:../src/tes/server/proto \
 		task_worker.proto
-	
+
 grpc:
 	go get -u github.com/golang/protobuf/protoc-gen-go
 	go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
@@ -29,4 +28,17 @@ grpc:
 depends: grpc
 	go get -d tes-server/
 	go get -d tes-worker/
-	
+
+golint:
+	go get -v github.com/golang/lint/golint/
+
+tidy: golint
+	@for f in $$(find $(GOPATH)/src/tes* -name '*.go'); \
+	do \
+		gofmt -w $$f; \
+		golint $$f; \
+	done
+	@for d in $(GOPATH)/src/tes*; \
+	do \
+		go tool vet $$d; \
+	done

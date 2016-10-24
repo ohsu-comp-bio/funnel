@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskengineWorker
 
 import (
 	"fmt"
@@ -13,12 +13,18 @@ import (
 	//"github.com/rackspace/gophercloud/pagination"
 )
 
-var SWIFT_PROTOCOL = "swift://"
+// SwiftProtocol documentation
+// TODO: documentation
+var SwiftProtocol = "swift://"
 
+// SwiftAccess documentation
+// TODO: documentation
 type SwiftAccess struct {
 	client *gophercloud.ServiceClient
 }
 
+// NewSwiftAccess documentation
+// TODO: documentation
 func NewSwiftAccess() *SwiftAccess {
 
 	opts, err := openstack.AuthOptionsFromEnv()
@@ -28,31 +34,33 @@ func NewSwiftAccess() *SwiftAccess {
 		panic("Authentication Error")
 	}
 
-	swift_client, err := openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{})
+	swiftClient, err := openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{})
 	if err != nil {
 		panic("Storage Connection Error")
 	}
 
-	return &SwiftAccess{client: swift_client}
+	return &SwiftAccess{client: swiftClient}
 
 }
 
-func (self *SwiftAccess) Get(storage string, hostPath string, class string) error {
+// Get documentation
+// TODO: documentation
+func (swiftAccess *SwiftAccess) Get(storage string, hostPath string, class string) error {
 	log.Printf("Starting download of %s", storage)
-	storage = strings.TrimPrefix(storage, SWIFT_PROTOCOL)
-	storage_split := strings.SplitN(storage, "/", 2)
+	storage = strings.TrimPrefix(storage, SwiftProtocol)
+	storageSplit := strings.SplitN(storage, "/", 2)
 
 	if class == "File" {
 		// Download everything into a DownloadResult struct
 		opts := objects.DownloadOpts{}
-		res := objects.Download(self.client, storage_split[0], storage_split[1], opts)
+		res := objects.Download(swiftAccess.client, storageSplit[0], storageSplit[1], opts)
 
 		file, err := os.Create(hostPath)
 		if err != nil {
 			return err
 		}
 		buffer := make([]byte, 10240)
-		total_len := 0
+		totalLen := 0
 		for {
 			len, err := res.Body.Read(buffer)
 			if err == io.EOF {
@@ -60,12 +68,12 @@ func (self *SwiftAccess) Get(storage string, hostPath string, class string) erro
 			} else if err != nil {
 				return fmt.Errorf("Error reading file")
 			}
-			total_len += len
+			totalLen += len
 			file.Write(buffer[:len])
 		}
 		file.Close()
 		res.Body.Close()
-		log.Printf("Downloaded %d bytes", total_len)
+		log.Printf("Downloaded %d bytes", totalLen)
 		return nil
 	} else if class == "Directory" {
 		return fmt.Errorf("SWIFT directories not yet supported")
@@ -73,20 +81,22 @@ func (self *SwiftAccess) Get(storage string, hostPath string, class string) erro
 	return fmt.Errorf("Unknown element type: %s", class)
 }
 
-func (self *SwiftAccess) Put(storage string, hostPath string, class string) error {
+// Put documentation
+// TODO: documentation
+func (swiftAccess *SwiftAccess) Put(storage string, hostPath string, class string) error {
 	log.Printf("Starting upload of %s", storage)
 	content, err := os.Open(hostPath)
 	if err != nil {
 		return err
 	}
 
-	storage = strings.TrimPrefix(storage, SWIFT_PROTOCOL)
-	storage_split := strings.SplitN(storage, "/", 2)
+	storage = strings.TrimPrefix(storage, SwiftProtocol)
+	storageSplit := strings.SplitN(storage, "/", 2)
 
 	if class == "File" {
 		// Now execute the upload
 		opts := objects.CreateOpts{}
-		res := objects.Create(self.client, storage_split[0], storage_split[1], content, opts)
+		res := objects.Create(swiftAccess.client, storageSplit[0], storageSplit[1], content, opts)
 		_, err = res.ExtractHeader()
 		content.Close()
 		return err

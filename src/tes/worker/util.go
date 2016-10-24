@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskengineWorker
 
 import (
 	"fmt"
@@ -42,6 +42,8 @@ func copyFileContents(src, dst string) (err error) {
 	return nil
 }
 
+// CopyFile documentation
+// TODO: Documentation
 func CopyFile(src, dst string) (err error) {
 	sfi, err := os.Stat(src)
 	if err != nil {
@@ -57,10 +59,10 @@ func CopyFile(src, dst string) (err error) {
 		if !os.IsNotExist(err) {
 			return
 		}
-		dst_d := path.Dir(dst)
-		if _, err := os.Stat(dst_d); err != nil {
-			fmt.Printf("Making %s\n", dst_d)
-			os.MkdirAll(dst_d, 0700)
+		dstD := path.Dir(dst)
+		if _, err := os.Stat(dstD); err != nil {
+			fmt.Printf("Making %s\n", dstD)
+			os.MkdirAll(dstD, 0700)
 		}
 	} else {
 		if !(dfi.Mode().IsRegular()) {
@@ -76,6 +78,8 @@ func CopyFile(src, dst string) (err error) {
 	return
 }
 
+// CopyDir documentation
+// TODO: Documentation
 func CopyDir(source string, dest string) (err error) {
 	// get properties of source dir
 	sourceinfo, err := os.Stat(source)

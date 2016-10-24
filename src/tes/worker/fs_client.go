@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskengineWorker
 
 import (
 	"fmt"
@@ -8,17 +8,23 @@ import (
 	"strings"
 )
 
+// FileStorageAccess documentation
+// TODO: documentation
 type FileStorageAccess struct {
 	StorageDir string
 }
 
+// NewSharedFS documentaiton
+// TODO: documentation
 func NewSharedFS(base string) *FileStorageAccess {
 	return &FileStorageAccess{StorageDir: base}
 }
 
-func (self *FileStorageAccess) Get(storage string, hostPath string, class string) error {
+// Get documentation
+// TODO: documentation
+func (fileStorageAccess *FileStorageAccess) Get(storage string, hostPath string, class string) error {
 	storage = strings.TrimPrefix(storage, "fs://")
-	srcPath := path.Join(self.StorageDir, storage)
+	srcPath := path.Join(fileStorageAccess.StorageDir, storage)
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
 		return fmt.Errorf("storage file '%s' not found", srcPath)
 	}
@@ -32,20 +38,22 @@ func (self *FileStorageAccess) Get(storage string, hostPath string, class string
 	return nil
 }
 
-func (self *FileStorageAccess) Put(location string, hostPath string, class string) error {
+// Put documentation
+// TODO: documentation
+func (fileStorageAccess *FileStorageAccess) Put(location string, hostPath string, class string) error {
 
 	storage := strings.TrimPrefix(location, "fs://")
 
-	log.Printf("copy out %s %s\n", hostPath, path.Join(self.StorageDir, storage))
+	log.Printf("copy out %s %s\n", hostPath, path.Join(fileStorageAccess.StorageDir, storage))
 	//copy to storage directory
 	if class == "Directory" {
-		err := CopyDir(hostPath, path.Join(self.StorageDir, storage))
+		err := CopyDir(hostPath, path.Join(fileStorageAccess.StorageDir, storage))
 		if err != nil {
 			log.Printf("Error copying output directory %s to %s", hostPath, location)
 			return err
 		}
 	} else if class == "File" {
-		err := CopyFile(hostPath, path.Join(self.StorageDir, storage))
+		err := CopyFile(hostPath, path.Join(fileStorageAccess.StorageDir, storage))
 		if err != nil {
 			log.Printf("Error copying output file %s to %s", hostPath, location)
 			return err

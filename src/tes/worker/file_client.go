@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskengineWorker
 
 import (
 	"fmt"
@@ -6,21 +6,29 @@ import (
 	"strings"
 )
 
-var FILE_PROTOCOL = "file://"
+// FileProtocol documentation
+// TODO: documentation
+var FileProtocol = "file://"
 
+// FileAccess documentation
+// TODO: documentation
 type FileAccess struct {
 	Allowed []string
 }
 
+// NewFileAccess documentation
+// TODO: documentation
 func NewFileAccess(allowed []string) *FileAccess {
 	return &FileAccess{Allowed: allowed}
 }
 
-func (self *FileAccess) Get(storage string, hostPath string, class string) error {
+// Get documentation
+// TODO: documentation
+func (fileAccess *FileAccess) Get(storage string, hostPath string, class string) error {
 	log.Printf("Starting download of %s", storage)
-	storage = strings.TrimPrefix(storage, FILE_PROTOCOL)
+	storage = strings.TrimPrefix(storage, FileProtocol)
 	found := false
-	for _, i := range self.Allowed {
+	for _, i := range fileAccess.Allowed {
 		if strings.HasPrefix(storage, i) {
 			found = true
 		}
@@ -39,11 +47,13 @@ func (self *FileAccess) Get(storage string, hostPath string, class string) error
 
 }
 
-func (self *FileAccess) Put(storage string, hostPath string, class string) error {
+// Put documentation
+// TODO: documentation
+func (fileAccess *FileAccess) Put(storage string, hostPath string, class string) error {
 	log.Printf("Starting upload of %s", storage)
-	storage = strings.TrimPrefix(storage, FILE_PROTOCOL)
+	storage = strings.TrimPrefix(storage, FileProtocol)
 	found := false
-	for _, i := range self.Allowed {
+	for _, i := range fileAccess.Allowed {
 		if strings.HasPrefix(storage, i) {
 			found = true
 		}

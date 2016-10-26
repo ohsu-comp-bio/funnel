@@ -45,7 +45,9 @@ type EngineStatus struct {
 // FSBinding documentation
 // TODO: documentation
 type FSBinding struct {
-	HostPath      string
+	// The path in tes worker.
+	HostPath string
+	// The path in Docker.
 	ContainerPath string
 	Mode          string
 }
@@ -71,9 +73,12 @@ func (fileMapper *FileMapper) Job(jobID string) {
 	fileMapper.jobs[jobID] = &a
 }
 
-// AddVolume documentation
-// TODO: documentation
+// AddVolume makes the given `mount` to be the ContainerPath.
 func (fileMapper *FileMapper) AddVolume(jobID string, source string, mount string) {
+	// The reason we use `tmpPath` is that we're pulling the file
+	// from the object store to a temporary path, which will be
+	// used as a working directory. We don't need to store the
+	// intermediate files, so we use a temporary path.
 	tmpPath, _ := ioutil.TempDir(fileMapper.VolumeDir, fmt.Sprintf("job_%s", jobID))
 	b := FSBinding{
 		HostPath:      tmpPath,
@@ -84,8 +89,8 @@ func (fileMapper *FileMapper) AddVolume(jobID string, source string, mount strin
 	j.Bindings = append(j.Bindings, b)
 }
 
-// HostPath documentation
-// TODO: documentation
+// HostPath returns a path from the `HostPath` that is the
+// equidistance from ContainerPath to mountPath.
 func (fileMapper *FileMapper) HostPath(jobID string, mountPath string) string {
 	for _, vol := range fileMapper.jobs[jobID].Bindings {
 		base, relpath := pathMatch(vol.ContainerPath, mountPath)
@@ -96,14 +101,20 @@ func (fileMapper *FileMapper) HostPath(jobID string, mountPath string) string {
 	return ""
 }
 
-// MapInput documentation
-// TODO: documentation
+// MapInput gets the file and put it into fileMapper. `storage` is
+// related to swift object store.
 func (fileMapper *FileMapper) MapInput(jobID string, storage string, mountPath string, class string) error {
 	for _, vol := range fileMapper.jobs[jobID].Bindings {
+		// Finds the relative path to mountPath.
 		base, relpath := pathMatch(vol.ContainerPath, mountPath)
 		if len(base) > 0 {
+			// HostPath is a tmpPath.
+			// dst{ath is destination path.
 			dstPath := path.Join(vol.HostPath, relpath)
 			fmt.Printf("get %s %s\n", storage, dstPath)
+			// Copies storage to dstPath.  While the
+			// result is stored in `err` if `err` is nil,
+			// this operation did not throw an error.
 			err := fileMapper.fileSystem.Get(storage, dstPath, class)
 			if err != nil {
 				return err
@@ -113,13 +124,20 @@ func (fileMapper *FileMapper) MapInput(jobID string, storage string, mountPath s
 	return nil
 }
 
-// MapOutput documentation
-// TODO: documentation
+// MapOutput adds the output directory.
 func (fileMapper *FileMapper) MapOutput(jobID string, storage string, mountPath string, class string, create bool) error {
 	a := ga4gh_task_exec.TaskParameter{Location: storage, Path: mountPath, Create: create, Class: class}
 	j := fileMapper.jobs[jobID]
+	// If create is True, make a directory under the path if class
+	// is "Directory" or make a file under the path if class is
+	// "File".
 	if create {
+		// Iterate through fileMapper.jobs.Bindings returns
+		// volumes, which are file system bindings.
 		for _, vol := range fileMapper.jobs[jobID].Bindings {
+			// If this path is in docker
+			// (vol.ContainerPath), add the output
+			// directory to j.Outputs.
 			base, relpath := pathMatch(vol.ContainerPath, mountPath)
 			if len(base) > 0 {
 				if class == "Directory" {
@@ -136,11 +154,14 @@ func (fileMapper *FileMapper) MapOutput(jobID string, storage string, mountPath 
 	return nil
 }
 
-// GetBindings documentation
-// TODO: documentation
+// GetBindings takes a jobID and returns an array of string.
 func (fileMapper *FileMapper) GetBindings(jobID string) []string {
+	// Makes a slice of string where len is 0, and capacity is 10.
 	out := make([]string, 0, 10)
+	// Goes through each binding. `c` is the binding, and we ignore the index.
 	for _, c := range fileMapper.jobs[jobID].Bindings {
+		// `out` is an argument for docker run later.
+		// `o` is structed as "HostPath:ContainerPath:Mode".
 		o := fmt.Sprintf("%s:%s:%s", c.HostPath, c.ContainerPath, c.Mode)
 		out = append(out, o)
 	}
@@ -155,8 +176,7 @@ func (fileMapper *FileMapper) UpdateOutputs(jobID string, jobNum int, exitCode i
 	(*fileMapper.client).UpdateJobStatus(context.Background(), &a)
 }
 
-// TempFile documentation
-// TODO: documentation
+// TempFile creates a temporary file and returns a pointer to an operating system file.
 func (fileMapper *FileMapper) TempFile(jobID string) (f *os.File, err error) {
 	out, err := ioutil.TempFile(fileMapper.jobs[jobID].WorkDir, "ga4ghtask_")
 	return out, err

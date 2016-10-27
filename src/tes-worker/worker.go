@@ -36,7 +36,7 @@ func main() {
 	defer conn.Close()
 	schedClient := ga4gh_task_ref.NewSchedulerClient(conn)
 
-	var fileClient tesTaskengineWorker.FileSystemAccess
+	var fileClient tesTaskEngineWorker.FileSystemAccess
 
 	if *swiftDirArg != "" {
 		storageDir, _ := filepath.Abs(*swiftDirArg)
@@ -44,31 +44,31 @@ func main() {
 			os.Mkdir(storageDir, 0700)
 		}
 
-		fileClient = tesTaskengineWorker.NewSwiftAccess()
+		fileClient = tesTaskEngineWorker.NewSwiftAccess()
 	} else if *fileSystemArg != "" {
 		o := []string{}
 		for _, i := range strings.Split(*fileSystemArg, ",") {
 			p, _ := filepath.Abs(i)
 			o = append(o, p)
 		}
-		fileClient = tesTaskengineWorker.NewFileAccess(o)
+		fileClient = tesTaskEngineWorker.NewFileAccess(o)
 	} else {
 		storageDir, _ := filepath.Abs(*storageDirArg)
 		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
 			os.Mkdir(storageDir, 0700)
 		}
-		fileClient = tesTaskengineWorker.NewSharedFS(storageDir)
+		fileClient = tesTaskEngineWorker.NewSharedFS(storageDir)
 	}
-	fileMapper := tesTaskengineWorker.NewFileMapper(&schedClient, fileClient, volumeDir)
+	fileMapper := tesTaskEngineWorker.NewFileMapper(&schedClient, fileClient, volumeDir)
 
 	u, _ := uuid.NewV4()
-	manager, _ := tesTaskengineWorker.NewLocalManager(*nworker, u.String())
+	manager, _ := tesTaskEngineWorker.NewLocalManager(*nworker, u.String())
 	if *timeoutArg <= 0 {
 		manager.Run(schedClient, *fileMapper)
 	} else {
 		var startCount int32
 		lastPing := time.Now().Unix()
-		manager.SetStatusCheck(func(status tesTaskengineWorker.EngineStatus) {
+		manager.SetStatusCheck(func(status tesTaskEngineWorker.EngineStatus) {
 			if status.JobCount > startCount || status.ActiveJobs > 0 {
 				startCount = status.JobCount
 				lastPing = time.Now().Unix()

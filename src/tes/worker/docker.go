@@ -16,7 +16,7 @@ type DockerCmd struct {
 }
 
 func (self DockerCmd) Run(containerName string, args []string,
-	binds []string, workdir string, remove bool, stdout *os.File, stderr *os.File) (int, error) {
+	binds []string, workdir string, remove bool, stdin *os.File, stdout *os.File, stderr *os.File) (int, error) {
 
 	log.Printf("Docker Binds: %s", binds)
 
@@ -35,6 +35,9 @@ func (self DockerCmd) Run(containerName string, args []string,
 
 	cmd := exec.Command("docker", docker_args...)
 
+	if stdin != nil {
+		cmd.Stdin = stdin
+	}
 	if stdout != nil {
 		cmd.Stdout = stdout
 	}

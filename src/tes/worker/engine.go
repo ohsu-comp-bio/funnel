@@ -16,6 +16,24 @@ func read_file_head(path string) []byte {
 	return buffer[:l]
 }
 
+func FindHostPath(bindings []FSBinding, containerPath string) string {
+	for _, binding := range bindings {
+		if binding.ContainerPath == containerPath {
+			return binding.HostPath
+		}
+	}
+	return ""
+}
+
+func FindStdin(bindings []FSBinding, containerPath string) (*os.File, error) {
+	stdinPath := FindHostPath(bindings, containerPath)
+	if stdinPath != "" {
+		return os.Open(stdinPath)
+	} else {
+		return nil, nil
+	}
+}
+
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 	mapper.Job(job.JobId)
@@ -39,6 +57,12 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 	}
 
 	for i, dockerTask := range job.Task.Docker {
+		stdin, err := FindStdin(mapper.jobs[job.JobId].Bindings, dockerTask.Stdin)
+		if err != nil {
+			return fmt.Errorf("Error setting up job stdin: %s", err)
+			return err
+		}
+
 		stdout, err := mapper.TempFile(job.JobId)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdout log: %s", err)
@@ -57,7 +81,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		binds := mapper.GetBindings(job.JobId)
 
 		dclient := NewDockerEngine()
-		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
+		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdin, stdout, stderr)
 		stdout.Close()
 		stderr.Close()
 

@@ -50,8 +50,8 @@ func CopyFile(src, dst string) (err error) {
 		return
 	}
 	if !sfi.Mode().IsRegular() {
-		// cannot copy non-regular files (e.g., directories,
-		// symlinks, devices, etc.)
+		// This cannot copy non-regular files (e.g.,
+		// directories, symlinks, devices, etc.)
 		return fmt.Errorf("CopyFile: non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
 	}
 	dfi, err := os.Stat(dst)
@@ -81,13 +81,13 @@ func CopyFile(src, dst string) (err error) {
 // CopyDir documentation
 // TODO: Documentation
 func CopyDir(source string, dest string) (err error) {
-	// get properties of source dir
+	// Gets properties of source directory.
 	sourceinfo, err := os.Stat(source)
 	if err != nil {
 		return err
 	}
 
-	// create dest dir
+	// Creates destination directory.
 	err = os.MkdirAll(dest, sourceinfo.Mode())
 	if err != nil {
 		return err
@@ -99,13 +99,13 @@ func CopyDir(source string, dest string) (err error) {
 		sourcefilepointer := source + "/" + obj.Name()
 		destinationfilepointer := dest + "/" + obj.Name()
 		if obj.IsDir() {
-			// create sub-directories - recursively
+			// Creates sub-directories recursively.
 			err = CopyDir(sourcefilepointer, destinationfilepointer)
 			if err != nil {
 				fmt.Println(err)
 			}
 		} else {
-			// perform copy
+			// Performs copy.
 			err = CopyFile(sourcefilepointer, destinationfilepointer)
 			if err != nil {
 				fmt.Println(err)

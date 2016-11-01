@@ -22,7 +22,7 @@ func NewFileAccess(allowed []string) *FileAccess {
 	return &FileAccess{Allowed: allowed}
 }
 
-// Get documentation
+// Get copies storage into hostPath.
 // TODO: documentation
 func (fileAccess *FileAccess) Get(storage string, hostPath string, class string) error {
 	log.Printf("Starting download of %s", storage)
@@ -47,7 +47,7 @@ func (fileAccess *FileAccess) Get(storage string, hostPath string, class string)
 
 }
 
-// Put documentation
+// Put copies hostPath into storage. (?)
 // TODO: documentation
 func (fileAccess *FileAccess) Put(storage string, hostPath string, class string) error {
 	log.Printf("Starting upload of %s", storage)

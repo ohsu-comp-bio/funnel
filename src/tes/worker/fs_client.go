@@ -20,8 +20,7 @@ func NewSharedFS(base string) *FileStorageAccess {
 	return &FileStorageAccess{StorageDir: base}
 }
 
-// Get documentation
-// TODO: documentation
+// Get copies storage into hostPath.
 func (fileStorageAccess *FileStorageAccess) Get(storage string, hostPath string, class string) error {
 	storage = strings.TrimPrefix(storage, "fs://")
 	srcPath := path.Join(fileStorageAccess.StorageDir, storage)
@@ -45,7 +44,7 @@ func (fileStorageAccess *FileStorageAccess) Put(location string, hostPath string
 	storage := strings.TrimPrefix(location, "fs://")
 
 	log.Printf("copy out %s %s\n", hostPath, path.Join(fileStorageAccess.StorageDir, storage))
-	//copy to storage directory
+	// Copies to storage directory.
 	if class == "Directory" {
 		err := CopyDir(hostPath, path.Join(fileStorageAccess.StorageDir, storage))
 		if err != nil {

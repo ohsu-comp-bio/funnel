@@ -51,7 +51,7 @@ func (swiftAccess *SwiftAccess) Get(storage string, hostPath string, class strin
 	storageSplit := strings.SplitN(storage, "/", 2)
 
 	if class == "File" {
-		// Download everything into a DownloadResult struct
+		// Downloads everything into a DownloadResult struct.
 		opts := objects.DownloadOpts{}
 		res := objects.Download(swiftAccess.client, storageSplit[0], storageSplit[1], opts)
 
@@ -94,7 +94,7 @@ func (swiftAccess *SwiftAccess) Put(storage string, hostPath string, class strin
 	storageSplit := strings.SplitN(storage, "/", 2)
 
 	if class == "File" {
-		// Now execute the upload
+		// Executes the upload.
 		opts := objects.CreateOpts{}
 		res := objects.Create(swiftAccess.client, storageSplit[0], storageSplit[1], content, opts)
 		_, err = res.ExtractHeader()

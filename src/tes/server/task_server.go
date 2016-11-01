@@ -8,10 +8,9 @@ import (
 	"tes/server/proto"
 )
 
-// GA4GHServer that is common
-// Multiple services could be placed into the same server
-// For the moment there is just the task server
-// TODO: documentation
+// GA4GHServer that is common. While multiple services could be
+// placed into the same server, for the moment there is just the task
+// server.
 type GA4GHServer struct {
 	task  ga4gh_task_exec.TaskServiceServer
 	sched ga4gh_task_ref.SchedulerServer

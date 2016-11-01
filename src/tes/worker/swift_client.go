@@ -64,6 +64,8 @@ func (swiftAccess *SwiftAccess) Get(storage string, hostPath string, class strin
 		for {
 			len, err := res.Body.Read(buffer)
 			if err == io.EOF {
+				totalLen += len
+				file.Write(buffer[:len])
 				break
 			} else if err != nil {
 				return fmt.Errorf("Error reading file")

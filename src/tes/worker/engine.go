@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskEngineWorker
 
 import (
 	"fmt"
@@ -6,16 +6,20 @@ import (
 	"tes/ga4gh"
 )
 
-const HEADER_SIZE = int64(102400)
+// HeaderSize documentation
+// TODO: documentation
+const HeaderSize = int64(102400)
 
-func read_file_head(path string) []byte {
+func readFileHead(path string) []byte {
 	f, _ := os.Open(path)
-	buffer := make([]byte, HEADER_SIZE)
+	buffer := make([]byte, HeaderSize)
 	l, _ := f.Read(buffer)
 	f.Close()
 	return buffer[:l]
 }
 
+// RunJob documentation
+// TODO: documentation
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 	mapper.Job(job.JobId)
@@ -42,22 +46,20 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		stdout, err := mapper.TempFile(job.JobId)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdout log: %s", err)
-			return err
 		}
 		stderr, err := mapper.TempFile(job.JobId)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stderr log: %s", err)
-			return err
 		}
-		stdout_path := stdout.Name()
-		stderr_path := stderr.Name()
+		stdoutPath := stdout.Name()
+		stderrPath := stderr.Name()
 		if err != nil {
 			return fmt.Errorf("Error setting up job")
 		}
 		binds := mapper.GetBindings(job.JobId)
 
 		dclient := NewDockerEngine()
-		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
+		exitCode, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
 		stdout.Close()
 		stderr.Close()
 
@@ -65,7 +67,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		if len(dockerTask.Stderr) > 0 {
 			hstPath := mapper.HostPath(job.JobId, dockerTask.Stderr)
 			if len(hstPath) > 0 {
-				copyFileContents(stderr_path, hstPath)
+				copyFileContents(stderrPath, hstPath)
 			}
 
 		}
@@ -73,13 +75,13 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		if len(dockerTask.Stdout) > 0 {
 			hstPath := mapper.HostPath(job.JobId, dockerTask.Stdout)
 			if len(hstPath) > 0 {
-				copyFileContents(stdout_path, hstPath)
+				copyFileContents(stdoutPath, hstPath)
 			}
 		}
 
-		stderr_text := read_file_head(stderr_path)
-		stdout_text := read_file_head(stdout_path)
-		mapper.UpdateOutputs(job.JobId, i, exit_code, string(stdout_text), string(stderr_text))
+		stderrText := readFileHead(stderrPath)
+		stdoutText := readFileHead(stdoutPath)
+		mapper.UpdateOutputs(job.JobId, i, exitCode, string(stdoutText), string(stderrText))
 		if err != nil {
 			return err
 		}

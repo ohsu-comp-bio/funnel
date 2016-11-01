@@ -33,11 +33,8 @@ golint:
 	go get -v github.com/golang/lint/golint/
 
 tidy: golint
-	@for f in $$(find $(GOPATH)/src/tes* -name '*.go'); \
-	do \
-		gofmt -w $$f; \
-		golint $$f; \
-	done
+	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
+	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs golint
 	@for d in $(GOPATH)/src/tes*; \
 	do \
 		go tool vet $$d; \

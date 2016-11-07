@@ -3,3 +3,6 @@
 /bin
 /pkg
 /test_tmp
+/src/github.com
+/src/golang.org
+/src/google.golang.org

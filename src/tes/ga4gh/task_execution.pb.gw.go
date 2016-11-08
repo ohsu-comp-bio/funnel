@@ -67,7 +67,7 @@ func request_TaskService_ListJobs_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func request_TaskService_GetJob_0(ctx context.Context, marshaler runtime.Marshaler, client TaskServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq JobId
+	var protoReq JobID
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -94,7 +94,7 @@ func request_TaskService_GetJob_0(ctx context.Context, marshaler runtime.Marshal
 }
 
 func request_TaskService_CancelJob_0(ctx context.Context, marshaler runtime.Marshaler, client TaskServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq JobId
+	var protoReq JobID
 	var metadata runtime.ServerMetadata
 
 	var (

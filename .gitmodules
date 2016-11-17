@@ -1,9 +1,3 @@
 [submodule "task-execution-schemas"]
 	path = task-execution-schemas
 	url = https://github.com/ga4gh/task-execution-schemas.git
-[submodule "protobuf"]
-	path = protobuf
-	url = https://github.com/golang/protobuf/
-[submodule "grpc-gateway"]
-	path = grpc-gateway
-	url = https://github.com/grpc-ecosystem/grpc-gateway

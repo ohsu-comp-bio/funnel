@@ -67,12 +67,12 @@ func NewTaskBolt(path string, storageMetadata map[string]string) *TaskBolt {
 
 // RunTask documentation
 // TODO: documentation
-func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobId, error) {
+func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
 	log.Println("Recieving Task for Queue", task)
 
 	taskopID, _ := uuid.NewV4()
 
-	task.TaskId = taskopID.String()
+	task.TaskID = taskopID.String()
 	if len(task.Docker) == 0 {
 		return nil, fmt.Errorf("No docker commands found")
 	}
@@ -100,7 +100,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 		}
 	}
 
-	ch := make(chan *ga4gh_task_exec.JobId, 1)
+	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
 		taskopB := tx.Bucket(TaskBucket)
@@ -109,7 +109,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 
 		queueB := tx.Bucket(JobsQueued)
 		queueB.Put([]byte(taskopID.String()), []byte(ga4gh_task_exec.State_Queued.String()))
-		ch <- &ga4gh_task_exec.JobId{Value: taskopID.String()}
+		ch <- &ga4gh_task_exec.JobID{Value: taskopID.String()}
 		return nil
 	})
 	if err != nil {
@@ -130,23 +130,23 @@ func (taskBolt *TaskBolt) getTaskJob(task *ga4gh_task_exec.Task) (*ga4gh_task_ex
 
 		job := ga4gh_task_exec.Job{}
 		job.Task = task
-		job.JobId = task.TaskId
+		job.JobID = task.TaskID
 		//if its queued
-		if v := bQ.Get([]byte(task.TaskId)); v != nil {
+		if v := bQ.Get([]byte(task.TaskID)); v != nil {
 			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
 		}
 		//if its active
-		if v := bA.Get([]byte(task.TaskId)); v != nil {
+		if v := bA.Get([]byte(task.TaskID)); v != nil {
 			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
 		}
 		//if its complete
-		if v := bC.Get([]byte(job.JobId)); v != nil {
+		if v := bC.Get([]byte(job.JobID)); v != nil {
 			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
 		}
 		//if there is logging info
 		out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))
 		for i := range job.Task.Docker {
-			o := bL.Get([]byte(fmt.Sprint(job.JobId, i)))
+			o := bL.Get([]byte(fmt.Sprint(job.JobID, i)))
 			if o != nil {
 				var log ga4gh_task_exec.JobLog
 				proto.Unmarshal(o, &log)
@@ -166,7 +166,7 @@ func (taskBolt *TaskBolt) getTaskJob(task *ga4gh_task_exec.Task) (*ga4gh_task_ex
 // GetJob documentation
 // TODO: documentation
 // Get info about a running task
-func (taskBolt *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobId) (*ga4gh_task_exec.Job, error) {
+func (taskBolt *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
 	log.Printf("Getting Task Info")
 	ch := make(chan *ga4gh_task_exec.Task, 1)
 	taskBolt.db.View(func(tx *bolt.Tx) error {
@@ -220,7 +220,7 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 // CancelJob documentation
 // TODO: documentation
 // Cancel a running task
-func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobId) (*ga4gh_task_exec.JobId, error) {
+func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobID, error) {
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bQ := tx.Bucket(JobsQueued)
 		bQ.Delete([]byte(taskop.Value))
@@ -267,7 +267,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 	}
 
 	job := &ga4gh_task_exec.Job{
-		JobId: a.TaskId,
+		JobID: a.TaskID,
 		Task:  a,
 	}
 
@@ -276,7 +276,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 
 // UpdateJobStatus documentation
 // TODO: documentation
-func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobId, error) {
+func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
 	log.Printf("Set op status")
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
@@ -296,7 +296,7 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		}
 		return nil
 	})
-	return &ga4gh_task_exec.JobId{Value: stat.Id}, nil
+	return &ga4gh_task_exec.JobID{Value: stat.Id}, nil
 }
 
 // WorkerPing documentation

@@ -30,13 +30,13 @@ func (forkManager *ForkManager) worker(inchan chan ga4gh_task_exec.Job) {
 		atomic.AddInt32(&forkManager.status.JobCount, 1)
 		log.Printf("Launch job: %s", job)
 		s := ga4gh_task_exec.State_Running
-		forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobId, State: s})
+		forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: s})
 		err := RunJob(&job, forkManager.files)
 		if err != nil {
 			log.Printf("Job error: %s", err)
-			forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobId, State: ga4gh_task_exec.State_Error})
+			forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: ga4gh_task_exec.State_Error})
 		} else {
-			forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobId, State: ga4gh_task_exec.State_Complete})
+			forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: ga4gh_task_exec.State_Complete})
 		}
 		atomic.AddInt32(&forkManager.status.ActiveJobs, -1)
 	}

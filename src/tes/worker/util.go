@@ -8,12 +8,15 @@ import (
 )
 
 func pathMatch(base string, query string) (string, string) {
-	if path.Clean(base) == path.Clean(query) {
-		return query, ""
+	var normalizedBase = path.Clean(base)
+	var normalizedQuery = path.Clean(query)
+
+	if normalizedBase == normalizedQuery {
+		return normalizedQuery, ""
 	}
-	dir, file := path.Split(query)
+	dir, file := path.Split(normalizedQuery)
 	if len(dir) > 1 {
-		d, p := pathMatch(base, dir)
+		d, p := pathMatch(normalizedBase, dir)
 		return d, path.Join(p, file)
 	}
 	return "", ""

@@ -4,6 +4,7 @@
 ---
 <!-- Thank you for contributing to TES! Please replace each `[ ]` by `[X]` when the step is complete, and replace `__` with appropriate data: -->
 - [ ] `make` does not report any errors
+- [ ] `make tidy` does not report any errors (except for package name related errors)
 - [ ] These changes fix #__ (github issue number if applicable).
 
 <!-- Either: -->

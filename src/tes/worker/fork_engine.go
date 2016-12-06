@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskEngineWorker
 
 import (
 	context "golang.org/x/net/context"
@@ -11,52 +11,54 @@ import (
 	//proto "github.com/golang/protobuf/proto"
 )
 
+// ForkManager documentation
+// TODO: documentation
 type ForkManager struct {
-	procCount  int
-	running    bool
-	files      FileMapper
-	sched      ga4gh_task_ref.SchedulerClient
-	workerId   string
-	ctx        context.Context
-	check_func func(status EngineStatus)
-	status     EngineStatus
+	procCount int
+	running   bool
+	files     FileMapper
+	sched     ga4gh_task_ref.SchedulerClient
+	workerID  string
+	ctx       context.Context
+	checkFunc func(status EngineStatus)
+	status    EngineStatus
 }
 
-func (self *ForkManager) worker(inchan chan ga4gh_task_exec.Job) {
+func (forkManager *ForkManager) worker(inchan chan ga4gh_task_exec.Job) {
 	for job := range inchan {
-		atomic.AddInt32(&self.status.ActiveJobs, 1)
-		atomic.AddInt32(&self.status.JobCount, 1)
+		atomic.AddInt32(&forkManager.status.ActiveJobs, 1)
+		atomic.AddInt32(&forkManager.status.JobCount, 1)
 		log.Printf("Launch job: %s", job)
 		s := ga4gh_task_exec.State_Running
-		self.sched.UpdateJobStatus(self.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobId, State: s})
-		err := RunJob(&job, self.files)
+		forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: s})
+		err := RunJob(&job, forkManager.files)
 		if err != nil {
 			log.Printf("Job error: %s", err)
-			self.sched.UpdateJobStatus(self.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobId, State: ga4gh_task_exec.State_Error})
+			forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: ga4gh_task_exec.State_Error})
 		} else {
-			self.sched.UpdateJobStatus(self.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobId, State: ga4gh_task_exec.State_Complete})
+			forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: ga4gh_task_exec.State_Complete})
 		}
-		atomic.AddInt32(&self.status.ActiveJobs, -1)
+		atomic.AddInt32(&forkManager.status.ActiveJobs, -1)
 	}
 }
 
-func (self *ForkManager) watcher(sched ga4gh_task_ref.SchedulerClient, filestore FileMapper) {
-	self.sched = sched
-	self.files = filestore
+func (forkManager *ForkManager) watcher(sched ga4gh_task_ref.SchedulerClient, filestore FileMapper) {
+	forkManager.sched = sched
+	forkManager.files = filestore
 	hostname, _ := os.Hostname()
 	jobchan := make(chan ga4gh_task_exec.Job, 10)
-	for i := 0; i < self.procCount; i++ {
-		go self.worker(jobchan)
+	for i := 0; i < forkManager.procCount; i++ {
+		go forkManager.worker(jobchan)
 	}
-	var sleep_size int64 = 1
-	for self.running {
-		if self.check_func != nil {
-			self.check_func(self.status)
+	var sleepSize int64 = 1
+	for forkManager.running {
+		if forkManager.checkFunc != nil {
+			forkManager.checkFunc(forkManager.status)
 		}
-		task, err := self.sched.GetJobToRun(self.ctx,
+		task, err := forkManager.sched.GetJobToRun(forkManager.ctx,
 			&ga4gh_task_ref.JobRequest{
 				Worker: &ga4gh_task_ref.WorkerInfo{
-					Id:       self.workerId,
+					Id:       forkManager.workerID,
 					Hostname: hostname,
 					LastPing: time.Now().Unix(),
 				},
@@ -65,37 +67,45 @@ func (self *ForkManager) watcher(sched ga4gh_task_ref.SchedulerClient, filestore
 			log.Print(err)
 		}
 		if task != nil && task.Job != nil {
-			sleep_size = 1
+			sleepSize = 1
 			log.Printf("Found job: %s", task)
 			jobchan <- *task.Job
 		} else {
 			//log.Printf("No jobs found")
-			if sleep_size < 20 {
-				//  sleep_size += 1
+			if sleepSize < 20 {
+				//  sleepSize += 1
 			}
-			time.Sleep(time.Second * time.Duration(sleep_size))
+			time.Sleep(time.Second * time.Duration(sleepSize))
 		}
 	}
 	close(jobchan)
 }
 
-func (self *ForkManager) Start(engine ga4gh_task_ref.SchedulerClient, files FileMapper) {
-	go self.watcher(engine, files)
+// Start documentation
+// TODO: documentation
+func (forkManager *ForkManager) Start(engine ga4gh_task_ref.SchedulerClient, files FileMapper) {
+	go forkManager.watcher(engine, files)
 }
 
-func (self *ForkManager) Run(engine ga4gh_task_ref.SchedulerClient, files FileMapper) {
-	self.watcher(engine, files)
+// Run documentation
+// TODO: documentation
+func (forkManager *ForkManager) Run(engine ga4gh_task_ref.SchedulerClient, files FileMapper) {
+	forkManager.watcher(engine, files)
 }
 
-func (self *ForkManager) SetStatusCheck(check_func func(status EngineStatus)) {
-	self.check_func = check_func
+// SetStatusCheck documentation
+// TODO: documentation
+func (forkManager *ForkManager) SetStatusCheck(checkFunc func(status EngineStatus)) {
+	forkManager.checkFunc = checkFunc
 }
 
-func NewLocalManager(procCount int, workerId string) (*ForkManager, error) {
+// NewLocalManager documentation
+// TODO: documentation
+func NewLocalManager(procCount int, workerID string) (*ForkManager, error) {
 	return &ForkManager{
 		procCount: procCount,
 		running:   true,
-		workerId:  workerId,
+		workerID:  workerID,
 		ctx:       context.Background(),
 	}, nil
 }

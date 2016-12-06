@@ -12,63 +12,80 @@ import (
 	"tes/server/proto"
 )
 
-var TASK_BUCKET = []byte("tasks")
+// TaskBucket documentation
+// TODO: documentation
+var TaskBucket = []byte("tasks")
 
-var JOBS_QUEUED = []byte("jobs-queued")
-var JOBS_ACTIVE = []byte("jobs-active")
-var JOBS_COMPLETE = []byte("jobs-complete")
+// JobsQueued documentation
+// TODO: documentation
+var JobsQueued = []byte("jobs-queued")
 
-var JOBS_LOG = []byte("jobs-log")
+// JobsActive documentation
+// TODO: documentation
+var JobsActive = []byte("jobs-active")
 
+// JobsComplete documentation
+// TODO: documentation
+var JobsComplete = []byte("jobs-complete")
+
+// JobsLog documentation
+// TODO: documentation
+var JobsLog = []byte("jobs-log")
+
+// TaskBolt documentation
+// TODO: documentation
 type TaskBolt struct {
-	db               *bolt.DB
-	storage_metadata map[string]string
+	db              *bolt.DB
+	storageMetadata map[string]string
 }
 
-func NewTaskBolt(path string, storage_metadata map[string]string) *TaskBolt {
+// NewTaskBolt documentation
+// TODO: documentation
+func NewTaskBolt(path string, storageMetadata map[string]string) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
-		if tx.Bucket(TASK_BUCKET) == nil {
-			tx.CreateBucket(TASK_BUCKET)
+		if tx.Bucket(TaskBucket) == nil {
+			tx.CreateBucket(TaskBucket)
 		}
-		if tx.Bucket(JOBS_QUEUED) == nil {
-			tx.CreateBucket(JOBS_QUEUED)
+		if tx.Bucket(JobsQueued) == nil {
+			tx.CreateBucket(JobsQueued)
 		}
-		if tx.Bucket(JOBS_ACTIVE) == nil {
-			tx.CreateBucket(JOBS_ACTIVE)
+		if tx.Bucket(JobsActive) == nil {
+			tx.CreateBucket(JobsActive)
 		}
-		if tx.Bucket(JOBS_COMPLETE) == nil {
-			tx.CreateBucket(JOBS_COMPLETE)
+		if tx.Bucket(JobsComplete) == nil {
+			tx.CreateBucket(JobsComplete)
 		}
-		if tx.Bucket(JOBS_LOG) == nil {
-			tx.CreateBucket(JOBS_LOG)
+		if tx.Bucket(JobsLog) == nil {
+			tx.CreateBucket(JobsLog)
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, storage_metadata: storage_metadata}
+	return &TaskBolt{db: db, storageMetadata: storageMetadata}
 }
 
-// / Run a task
-func (self *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobId, error) {
+// RunTask documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
 	log.Println("Recieving Task for Queue", task)
 
-	taskopId, _ := uuid.NewV4()
+	taskopID, _ := uuid.NewV4()
 
-	task.TaskId = taskopId.String()
+	task.TaskID = taskopID.String()
 	if len(task.Docker) == 0 {
 		return nil, fmt.Errorf("No docker commands found")
 	}
 
 	// Check inputs of the task
 	for _, input := range task.GetInputs() {
-		disk_found := false
+		diskFound := false
 		for _, res := range task.Resources.Volumes {
 			if strings.HasPrefix(input.Path, res.MountPoint) {
-				disk_found = true
+				diskFound = true
 			}
 		}
-		if !disk_found {
+		if !diskFound {
 			return nil, fmt.Errorf("Required volume '%s' not found in resources", input.Path)
 		}
 		//Fixing blank value to File by default... Is this too much hand holding?
@@ -83,16 +100,16 @@ func (self *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (
 		}
 	}
 
-	ch := make(chan *ga4gh_task_exec.JobId, 1)
-	err := self.db.Update(func(tx *bolt.Tx) error {
+	ch := make(chan *ga4gh_task_exec.JobID, 1)
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
-		taskop_b := tx.Bucket(TASK_BUCKET)
+		taskopB := tx.Bucket(TaskBucket)
 		v, _ := proto.Marshal(task)
-		taskop_b.Put([]byte(taskopId.String()), v)
+		taskopB.Put([]byte(taskopID.String()), v)
 
-		queue_b := tx.Bucket(JOBS_QUEUED)
-		queue_b.Put([]byte(taskopId.String()), []byte(ga4gh_task_exec.State_Queued.String()))
-		ch <- &ga4gh_task_exec.JobId{Value: taskopId.String()}
+		queueB := tx.Bucket(JobsQueued)
+		queueB.Put([]byte(taskopID.String()), []byte(ga4gh_task_exec.State_Queued.String()))
+		ch <- &ga4gh_task_exec.JobID{Value: taskopID.String()}
 		return nil
 	})
 	if err != nil {
@@ -102,34 +119,34 @@ func (self *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (
 	return a, err
 }
 
-func (self *TaskBolt) getTaskJob(task *ga4gh_task_exec.Task) (*ga4gh_task_exec.Job, error) {
+func (taskBolt *TaskBolt) getTaskJob(task *ga4gh_task_exec.Task) (*ga4gh_task_exec.Job, error) {
 	ch := make(chan *ga4gh_task_exec.Job, 1)
-	self.db.View(func(tx *bolt.Tx) error {
+	taskBolt.db.View(func(tx *bolt.Tx) error {
 		//right now making the assumption that the taskid is the jobid
-		b_q := tx.Bucket(JOBS_QUEUED)
-		b_a := tx.Bucket(JOBS_ACTIVE)
-		b_c := tx.Bucket(JOBS_COMPLETE)
-		b_l := tx.Bucket(JOBS_LOG)
+		bQ := tx.Bucket(JobsQueued)
+		bA := tx.Bucket(JobsActive)
+		bC := tx.Bucket(JobsComplete)
+		bL := tx.Bucket(JobsLog)
 
 		job := ga4gh_task_exec.Job{}
 		job.Task = task
-		job.JobId = task.TaskId
+		job.JobID = task.TaskID
 		//if its queued
-		if v := b_q.Get([]byte(task.TaskId)); v != nil {
+		if v := bQ.Get([]byte(task.TaskID)); v != nil {
 			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
 		}
 		//if its active
-		if v := b_a.Get([]byte(task.TaskId)); v != nil {
+		if v := bA.Get([]byte(task.TaskID)); v != nil {
 			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
 		}
 		//if its complete
-		if v := b_c.Get([]byte(job.JobId)); v != nil {
+		if v := bC.Get([]byte(job.JobID)); v != nil {
 			job.State = ga4gh_task_exec.State(ga4gh_task_exec.State_value[string(v)])
 		}
 		//if there is logging info
 		out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))
 		for i := range job.Task.Docker {
-			o := b_l.Get([]byte(fmt.Sprint("%s-%d", job.JobId, i)))
+			o := bL.Get([]byte(fmt.Sprint(job.JobID, i)))
 			if o != nil {
 				var log ga4gh_task_exec.JobLog
 				proto.Unmarshal(o, &log)
@@ -146,12 +163,14 @@ func (self *TaskBolt) getTaskJob(task *ga4gh_task_exec.Task) (*ga4gh_task_exec.J
 	return a, nil
 }
 
-// / Get info about a running task
-func (self *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobId) (*ga4gh_task_exec.Job, error) {
+// GetJob documentation
+// TODO: documentation
+// Get info about a running task
+func (taskBolt *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
 	log.Printf("Getting Task Info")
 	ch := make(chan *ga4gh_task_exec.Task, 1)
-	self.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(TASK_BUCKET)
+	taskBolt.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(TaskBucket)
 		v := b.Get([]byte(job.Value))
 		out := ga4gh_task_exec.Task{}
 		proto.Unmarshal(v, &out)
@@ -162,16 +181,18 @@ func (self *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobId) (*
 	if a == nil {
 		return nil, fmt.Errorf("Job Not Found")
 	}
-	b, err := self.getTaskJob(a)
+	b, err := taskBolt.getTaskJob(a)
 	return b, err
 }
 
-func (self *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListRequest) (*ga4gh_task_exec.JobListResponse, error) {
+// ListJobs documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListRequest) (*ga4gh_task_exec.JobListResponse, error) {
 	log.Printf("Getting Task List")
 	ch := make(chan *ga4gh_task_exec.Task, 1)
-	go self.db.View(func(tx *bolt.Tx) error {
-		taskop_b := tx.Bucket(TASK_BUCKET)
-		c := taskop_b.Cursor()
+	go taskBolt.db.View(func(tx *bolt.Tx) error {
+		taskopB := tx.Bucket(TaskBucket)
+		c := taskopB.Cursor()
 		log.Println("Scanning")
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			out := ga4gh_task_exec.Task{}
@@ -182,55 +203,59 @@ func (self *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListR
 		return nil
 	})
 
-	task_array := make([]*ga4gh_task_exec.Job, 0, 10)
+	taskArray := make([]*ga4gh_task_exec.Job, 0, 10)
 	for t := range ch {
-		j, _ := self.getTaskJob(t)
-		task_array = append(task_array, j)
+		j, _ := taskBolt.getTaskJob(t)
+		taskArray = append(taskArray, j)
 	}
 
 	out := ga4gh_task_exec.JobListResponse{
-		Jobs: task_array,
+		Jobs: taskArray,
 	}
 	fmt.Println("Returning", out)
 	return &out, nil
 
 }
 
-// / Cancel a running task
-func (self *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobId) (*ga4gh_task_exec.JobId, error) {
-	self.db.Update(func(tx *bolt.Tx) error {
-		b_q := tx.Bucket(JOBS_QUEUED)
-		b_q.Delete([]byte(taskop.Value))
+// CancelJob documentation
+// TODO: documentation
+// Cancel a running task
+func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobID, error) {
+	taskBolt.db.Update(func(tx *bolt.Tx) error {
+		bQ := tx.Bucket(JobsQueued)
+		bQ.Delete([]byte(taskop.Value))
 
-		b_a := tx.Bucket(JOBS_ACTIVE)
-		b_a.Delete([]byte(taskop.Value))
+		bA := tx.Bucket(JobsActive)
+		bA.Delete([]byte(taskop.Value))
 
-		b_c := tx.Bucket(JOBS_COMPLETE)
-		b_c.Put([]byte(taskop.Value), []byte(ga4gh_task_exec.State_Canceled.String()))
+		bC := tx.Bucket(JobsComplete)
+		bC.Put([]byte(taskop.Value), []byte(ga4gh_task_exec.State_Canceled.String()))
 		return nil
 	})
 	return taskop, nil
 }
 
-func (self *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
+// GetJobToRun documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
 	//log.Printf("Job Request")
 	ch := make(chan *ga4gh_task_exec.Task, 1)
 
-	self.db.Update(func(tx *bolt.Tx) error {
-		b_q := tx.Bucket(JOBS_QUEUED)
-		b_a := tx.Bucket(JOBS_ACTIVE)
-		b_op := tx.Bucket(TASK_BUCKET)
+	taskBolt.db.Update(func(tx *bolt.Tx) error {
+		bQ := tx.Bucket(JobsQueued)
+		bA := tx.Bucket(JobsActive)
+		bOp := tx.Bucket(TaskBucket)
 
-		c := b_q.Cursor()
+		c := bQ.Cursor()
 
 		if k, _ := c.First(); k != nil {
 			log.Printf("Found queued job")
-			v := b_op.Get(k)
+			v := bOp.Get(k)
 			out := ga4gh_task_exec.Task{}
 			proto.Unmarshal(v, &out)
 			ch <- &out
-			b_q.Delete(k)
-			b_a.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
+			bQ.Delete(k)
+			bA.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
 			return nil
 		}
 		ch <- nil
@@ -242,24 +267,26 @@ func (self *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.J
 	}
 
 	job := &ga4gh_task_exec.Job{
-		JobId: a.TaskId,
+		JobID: a.TaskID,
 		Task:  a,
 	}
 
 	return &ga4gh_task_ref.JobResponse{Job: job}, nil
 }
 
-func (self *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobId, error) {
+// UpdateJobStatus documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
 	log.Printf("Set op status")
-	self.db.Update(func(tx *bolt.Tx) error {
-		ba := tx.Bucket(JOBS_ACTIVE)
-		bc := tx.Bucket(JOBS_COMPLETE)
-		b_l := tx.Bucket(JOBS_LOG)
+	taskBolt.db.Update(func(tx *bolt.Tx) error {
+		ba := tx.Bucket(JobsActive)
+		bc := tx.Bucket(JobsComplete)
+		bL := tx.Bucket(JobsLog)
 
 		if stat.Log != nil {
 			log.Printf("Logging stdout:%s", stat.Log.Stdout)
 			d, _ := proto.Marshal(stat.Log)
-			b_l.Put([]byte(fmt.Sprint("%s-%d", stat.Id, stat.Step)), d)
+			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), d)
 		}
 
 		switch stat.State {
@@ -269,26 +296,32 @@ func (self *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.
 		}
 		return nil
 	})
-	return &ga4gh_task_exec.JobId{Value: stat.Id}, nil
+	return &ga4gh_task_exec.JobID{Value: stat.Id}, nil
 }
 
-func (self *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.WorkerInfo, error) {
+// WorkerPing documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.WorkerInfo, error) {
 	log.Printf("Worker Ping")
 	return info, nil
 }
 
-func (self *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
-	return &ga4gh_task_exec.ServiceInfo{StorageConfig: self.storage_metadata}, nil
+// GetServiceInfo documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
+	return &ga4gh_task_exec.ServiceInfo{StorageConfig: taskBolt.storageMetadata}, nil
 }
 
-func (self *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoRequest, server ga4gh_task_ref.Scheduler_GetQueueInfoServer) error {
+// GetQueueInfo documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoRequest, server ga4gh_task_ref.Scheduler_GetQueueInfoServer) error {
 	ch := make(chan *ga4gh_task_exec.Task, 10)
 
-	self.db.View(func(tx *bolt.Tx) error {
-		bt := tx.Bucket(TASK_BUCKET)
-		bq := tx.Bucket(JOBS_QUEUED)
+	taskBolt.db.View(func(tx *bolt.Tx) error {
+		bt := tx.Bucket(TaskBucket)
+		bq := tx.Bucket(JobsQueued)
 		c := bq.Cursor()
-		var count int32 = 0
+		var count int32
 		for k, v := c.First(); k != nil && count < request.MaxTasks; k, v = c.Next() {
 			if string(v) == ga4gh_task_exec.State_Queued.String() {
 				v := bt.Get(k)

@@ -52,6 +52,27 @@ func (m *WorkerInfo) String() string            { return proto.CompactTextString
 func (*WorkerInfo) ProtoMessage()               {}
 func (*WorkerInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *WorkerInfo) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *WorkerInfo) GetLastPing() int64 {
+	if m != nil {
+		return m.LastPing
+	}
+	return 0
+}
+
+func (m *WorkerInfo) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
 type JobRequest struct {
 	Worker    *WorkerInfo                `protobuf:"bytes,1,opt,name=worker" json:"worker,omitempty"`
 	Resources *ga4gh_task_exec.Resources `protobuf:"bytes,2,opt,name=resources" json:"resources,omitempty"`
@@ -105,11 +126,39 @@ func (m *UpdateStatusRequest) String() string            { return proto.CompactT
 func (*UpdateStatusRequest) ProtoMessage()               {}
 func (*UpdateStatusRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
+func (m *UpdateStatusRequest) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *UpdateStatusRequest) GetStep() int64 {
+	if m != nil {
+		return m.Step
+	}
+	return 0
+}
+
+func (m *UpdateStatusRequest) GetState() ga4gh_task_exec.State {
+	if m != nil {
+		return m.State
+	}
+	return ga4gh_task_exec.State_Unknown
+}
+
 func (m *UpdateStatusRequest) GetLog() *ga4gh_task_exec.JobLog {
 	if m != nil {
 		return m.Log
 	}
 	return nil
+}
+
+func (m *UpdateStatusRequest) GetWorkerId() string {
+	if m != nil {
+		return m.WorkerId
+	}
+	return ""
 }
 
 type QueuedTaskInfoRequest struct {
@@ -121,6 +170,13 @@ func (m *QueuedTaskInfoRequest) String() string            { return proto.Compac
 func (*QueuedTaskInfoRequest) ProtoMessage()               {}
 func (*QueuedTaskInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
+func (m *QueuedTaskInfoRequest) GetMaxTasks() int32 {
+	if m != nil {
+		return m.MaxTasks
+	}
+	return 0
+}
+
 type QueuedTaskInfo struct {
 	Inputs    []string                   `protobuf:"bytes,1,rep,name=inputs" json:"inputs,omitempty"`
 	Resources *ga4gh_task_exec.Resources `protobuf:"bytes,2,opt,name=resources" json:"resources,omitempty"`
@@ -130,6 +186,13 @@ func (m *QueuedTaskInfo) Reset()                    { *m = QueuedTaskInfo{} }
 func (m *QueuedTaskInfo) String() string            { return proto.CompactTextString(m) }
 func (*QueuedTaskInfo) ProtoMessage()               {}
 func (*QueuedTaskInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *QueuedTaskInfo) GetInputs() []string {
+	if m != nil {
+		return m.Inputs
+	}
+	return nil
+}
 
 func (m *QueuedTaskInfo) GetResources() *ga4gh_task_exec.Resources {
 	if m != nil {

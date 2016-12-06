@@ -116,6 +116,48 @@ func (m *TaskParameter) String() string            { return proto.CompactTextStr
 func (*TaskParameter) ProtoMessage()               {}
 func (*TaskParameter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *TaskParameter) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetLocation() string {
+	if m != nil {
+		return m.Location
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetClass() string {
+	if m != nil {
+		return m.Class
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetCreate() bool {
+	if m != nil {
+		return m.Create
+	}
+	return false
+}
+
 // A command line to be executed and the docker container to run it
 type DockerExecutor struct {
 	// Docker Image name
@@ -137,6 +179,48 @@ func (m *DockerExecutor) String() string            { return proto.CompactTextSt
 func (*DockerExecutor) ProtoMessage()               {}
 func (*DockerExecutor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *DockerExecutor) GetImageName() string {
+	if m != nil {
+		return m.ImageName
+	}
+	return ""
+}
+
+func (m *DockerExecutor) GetCmd() []string {
+	if m != nil {
+		return m.Cmd
+	}
+	return nil
+}
+
+func (m *DockerExecutor) GetWorkdir() string {
+	if m != nil {
+		return m.Workdir
+	}
+	return ""
+}
+
+func (m *DockerExecutor) GetStdin() string {
+	if m != nil {
+		return m.Stdin
+	}
+	return ""
+}
+
+func (m *DockerExecutor) GetStdout() string {
+	if m != nil {
+		return m.Stdout
+	}
+	return ""
+}
+
+func (m *DockerExecutor) GetStderr() string {
+	if m != nil {
+		return m.Stderr
+	}
+	return ""
+}
+
 // Attached volume request.
 type Volume struct {
 	// Name of attached volume
@@ -156,6 +240,34 @@ func (m *Volume) String() string            { return proto.CompactTextString(m) 
 func (*Volume) ProtoMessage()               {}
 func (*Volume) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
+func (m *Volume) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Volume) GetSizeGb() float64 {
+	if m != nil {
+		return m.SizeGb
+	}
+	return 0
+}
+
+func (m *Volume) GetSource() string {
+	if m != nil {
+		return m.Source
+	}
+	return ""
+}
+
+func (m *Volume) GetMountPoint() string {
+	if m != nil {
+		return m.MountPoint
+	}
+	return ""
+}
+
 type Resources struct {
 	// Minimum number of CPUs
 	MinimumCpuCores uint32 `protobuf:"varint,1,opt,name=minimumCpuCores" json:"minimumCpuCores,omitempty"`
@@ -174,9 +286,37 @@ func (m *Resources) String() string            { return proto.CompactTextString(
 func (*Resources) ProtoMessage()               {}
 func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
+func (m *Resources) GetMinimumCpuCores() uint32 {
+	if m != nil {
+		return m.MinimumCpuCores
+	}
+	return 0
+}
+
+func (m *Resources) GetPreemptible() bool {
+	if m != nil {
+		return m.Preemptible
+	}
+	return false
+}
+
+func (m *Resources) GetMinimumRamGb() float64 {
+	if m != nil {
+		return m.MinimumRamGb
+	}
+	return 0
+}
+
 func (m *Resources) GetVolumes() []*Volume {
 	if m != nil {
 		return m.Volumes
+	}
+	return nil
+}
+
+func (m *Resources) GetZones() []string {
+	if m != nil {
+		return m.Zones
 	}
 	return nil
 }
@@ -206,6 +346,27 @@ func (m *Task) String() string            { return proto.CompactTextString(m) }
 func (*Task) ProtoMessage()               {}
 func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
+func (m *Task) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Task) GetProjectID() string {
+	if m != nil {
+		return m.ProjectID
+	}
+	return ""
+}
+
+func (m *Task) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
 func (m *Task) GetInputs() []*TaskParameter {
 	if m != nil {
 		return m.Inputs
@@ -225,6 +386,13 @@ func (m *Task) GetResources() *Resources {
 		return m.Resources
 	}
 	return nil
+}
+
+func (m *Task) GetTaskID() string {
+	if m != nil {
+		return m.TaskID
+	}
+	return ""
 }
 
 func (m *Task) GetDocker() []*DockerExecutor {
@@ -250,6 +418,34 @@ func (m *TaskListRequest) String() string            { return proto.CompactTextS
 func (*TaskListRequest) ProtoMessage()               {}
 func (*TaskListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
+func (m *TaskListRequest) GetProjectID() string {
+	if m != nil {
+		return m.ProjectID
+	}
+	return ""
+}
+
+func (m *TaskListRequest) GetNamePrefix() string {
+	if m != nil {
+		return m.NamePrefix
+	}
+	return ""
+}
+
+func (m *TaskListRequest) GetPageSize() uint32 {
+	if m != nil {
+		return m.PageSize
+	}
+	return 0
+}
+
+func (m *TaskListRequest) GetPageToken() string {
+	if m != nil {
+		return m.PageToken
+	}
+	return ""
+}
+
 type TaskListResponse struct {
 	Tasks         []*Task `protobuf:"bytes,1,rep,name=tasks" json:"tasks,omitempty"`
 	NextPageToken string  `protobuf:"bytes,2,opt,name=nextPageToken" json:"nextPageToken,omitempty"`
@@ -265,6 +461,13 @@ func (m *TaskListResponse) GetTasks() []*Task {
 		return m.Tasks
 	}
 	return nil
+}
+
+func (m *TaskListResponse) GetNextPageToken() string {
+	if m != nil {
+		return m.NextPageToken
+	}
+	return ""
 }
 
 type JobListRequest struct {
@@ -283,6 +486,34 @@ func (m *JobListRequest) String() string            { return proto.CompactTextSt
 func (*JobListRequest) ProtoMessage()               {}
 func (*JobListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
+func (m *JobListRequest) GetProjectID() string {
+	if m != nil {
+		return m.ProjectID
+	}
+	return ""
+}
+
+func (m *JobListRequest) GetNamePrefix() string {
+	if m != nil {
+		return m.NamePrefix
+	}
+	return ""
+}
+
+func (m *JobListRequest) GetPageSize() uint32 {
+	if m != nil {
+		return m.PageSize
+	}
+	return 0
+}
+
+func (m *JobListRequest) GetPageToken() string {
+	if m != nil {
+		return m.PageToken
+	}
+	return ""
+}
+
 type JobListResponse struct {
 	Jobs          []*Job `protobuf:"bytes,1,rep,name=jobs" json:"jobs,omitempty"`
 	NextPageToken string `protobuf:"bytes,2,opt,name=nextPageToken" json:"nextPageToken,omitempty"`
@@ -300,6 +531,13 @@ func (m *JobListResponse) GetJobs() []*Job {
 	return nil
 }
 
+func (m *JobListResponse) GetNextPageToken() string {
+	if m != nil {
+		return m.NextPageToken
+	}
+	return ""
+}
+
 // ID of a Task description
 type TaskID struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
@@ -310,6 +548,13 @@ func (m *TaskID) String() string            { return proto.CompactTextString(m) 
 func (*TaskID) ProtoMessage()               {}
 func (*TaskID) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
+func (m *TaskID) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 // ID of an instance of a Task
 type JobID struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
@@ -319,6 +564,13 @@ func (m *JobID) Reset()                    { *m = JobID{} }
 func (m *JobID) String() string            { return proto.CompactTextString(m) }
 func (*JobID) ProtoMessage()               {}
 func (*JobID) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+
+func (m *JobID) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
 
 type JobLog struct {
 	// The command line that was run
@@ -340,6 +592,48 @@ func (m *JobLog) String() string            { return proto.CompactTextString(m) 
 func (*JobLog) ProtoMessage()               {}
 func (*JobLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
+func (m *JobLog) GetCmd() []string {
+	if m != nil {
+		return m.Cmd
+	}
+	return nil
+}
+
+func (m *JobLog) GetStartTime() string {
+	if m != nil {
+		return m.StartTime
+	}
+	return ""
+}
+
+func (m *JobLog) GetEndTime() string {
+	if m != nil {
+		return m.EndTime
+	}
+	return ""
+}
+
+func (m *JobLog) GetStdout() string {
+	if m != nil {
+		return m.Stdout
+	}
+	return ""
+}
+
+func (m *JobLog) GetStderr() string {
+	if m != nil {
+		return m.Stderr
+	}
+	return ""
+}
+
+func (m *JobLog) GetExitCode() int32 {
+	if m != nil {
+		return m.ExitCode
+	}
+	return 0
+}
+
 // The description of the running instance of a task
 type Job struct {
 	JobID    string            `protobuf:"bytes,1,opt,name=jobID" json:"jobID,omitempty"`
@@ -354,6 +648,13 @@ func (m *Job) String() string            { return proto.CompactTextString(m) }
 func (*Job) ProtoMessage()               {}
 func (*Job) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
 
+func (m *Job) GetJobID() string {
+	if m != nil {
+		return m.JobID
+	}
+	return ""
+}
+
 func (m *Job) GetMetadata() map[string]string {
 	if m != nil {
 		return m.Metadata
@@ -366,6 +667,13 @@ func (m *Job) GetTask() *Task {
 		return m.Task
 	}
 	return nil
+}
+
+func (m *Job) GetState() State {
+	if m != nil {
+		return m.State
+	}
+	return State_Unknown
 }
 
 func (m *Job) GetLogs() []*JobLog {

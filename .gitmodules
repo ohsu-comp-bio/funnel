@@ -1,3 +1,30 @@
 [submodule "task-execution-schemas"]
 	path = task-execution-schemas
 	url = https://github.com/ga4gh/task-execution-schemas.git
+[submodule "src/vendor/github.com/golang/protobuf"]
+	path = src/vendor/github.com/golang/protobuf
+	url = https://github.com/golang/protobuf
+[submodule "src/vendor/github.com/grpc-ecosystem/grpc-gateway"]
+	path = src/vendor/github.com/grpc-ecosystem/grpc-gateway
+	url = https://github.com/grpc-ecosystem/grpc-gateway
+[submodule "src/vendor/golang.org/x/net"]
+	path = src/vendor/golang.org/x/net
+	url = https://go.googlesource.com/net
+[submodule "src/vendor/google.golang.org/grpc"]
+	path = src/vendor/google.golang.org/grpc
+	url = https://github.com/grpc/grpc-go
+[submodule "src/vendor/github.com/boltdb/bolt"]
+	path = src/vendor/github.com/boltdb/bolt
+	url = https://github.com/boltdb/bolt
+[submodule "src/vendor/github.com/nu7hatch/gouuid"]
+	path = src/vendor/github.com/nu7hatch/gouuid
+	url = https://github.com/nu7hatch/gouuid
+[submodule "src/vendor/github.com/rackspace/gophercloud"]
+	path = src/vendor/github.com/rackspace/gophercloud
+	url = https://github.com/rackspace/gophercloud
+[submodule "src/vendor/github.com/mitchellh/mapstructure"]
+	path = src/vendor/github.com/mitchellh/mapstructure
+	url = https://github.com/mitchellh/mapstructure
+[submodule "src/vendor/github.com/gorilla/mux"]
+	path = src/vendor/github.com/gorilla/mux
+	url = https://github.com/gorilla/mux

@@ -16,6 +16,24 @@ func readFileHead(path string) []byte {
 	return buffer[:l]
 }
 
+func FindHostPath(bindings []FSBinding, containerPath string) string {
+	for _, binding := range bindings {
+		if binding.ContainerPath == containerPath {
+			return binding.HostPath
+		}
+	}
+	return ""
+}
+
+func FindStdin(bindings []FSBinding, containerPath string) (*os.File, error) {
+	stdinPath := FindHostPath(bindings, containerPath)
+	if stdinPath != "" {
+		return os.Open(stdinPath)
+	} else {
+		return nil, nil
+	}
+}
+
 // RunJob runs a job.
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 	// Modifies the filemapper's jobID
@@ -46,6 +64,12 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 	// Loops through Docker Tasks, and label them with i (the index).
 	for i, dockerTask := range job.Task.Docker {
+		stdin, err := FindStdin(mapper.jobs[job.JobID].Bindings, dockerTask.Stdin)
+		if err != nil {
+			return fmt.Errorf("Error setting up job stdin: %s", err)
+			return err
+		}
+
 		// Finds stdout path through mapper.TempFile.
 		// Takes stdout from Tool, and outputs into a file.
 		stdout, err := mapper.TempFile(job.JobID)
@@ -69,11 +93,10 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 		// NewDockerEngine returns a type that has a `Run` method.
 		dclient := NewDockerEngine()
-
 		// ImageName == Docker image name (ex. devian:Wheezy).
 		// cmd = Docker command (ex. `cat`).
 		// workdir = Docker working directory (ex. /mnt/work).
-		exitCode, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
+		exitCode, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdin, stdout, stderr)
 
 		stdout.Close()
 		stderr.Close()

@@ -17,9 +17,8 @@ func NewDockerEngine() *DockerCmd {
 type DockerCmd struct {
 }
 
-// Run runs a docker command.
 func (dockerCmd DockerCmd) Run(containerName string, args []string,
-	binds []string, workdir string, remove bool, stdout *os.File, stderr *os.File) (int, error) {
+	binds []string, workdir string, remove bool, stdin *os.File, stdout *os.File, stderr *os.File) (int, error) {
 
 	log.Printf("Docker Binds: %s", binds)
 	// Creates docker arguments.
@@ -42,6 +41,9 @@ func (dockerCmd DockerCmd) Run(containerName string, args []string,
 	// It will look like: `run --rm -i -w [workdir] -v [bindings] [containername] [args]`
 	cmd := exec.Command("docker", dockerArgs...)
 
+	if stdin != nil {
+		cmd.Stdin = stdin
+	}
 	if stdout != nil {
 		cmd.Stdout = stdout
 	}

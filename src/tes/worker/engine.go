@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskEngineWorker
 
 import (
 	"fmt"
@@ -6,86 +6,126 @@ import (
 	"tes/ga4gh"
 )
 
-const HEADER_SIZE = int64(102400)
+const headerSize = int64(102400)
 
-func read_file_head(path string) []byte {
+func readFileHead(path string) []byte {
 	f, _ := os.Open(path)
-	buffer := make([]byte, HEADER_SIZE)
+	buffer := make([]byte, headerSize)
 	l, _ := f.Read(buffer)
 	f.Close()
 	return buffer[:l]
 }
 
+func FindHostPath(bindings []FSBinding, containerPath string) string {
+	for _, binding := range bindings {
+		if binding.ContainerPath == containerPath {
+			return binding.HostPath
+		}
+	}
+	return ""
+}
+
+func FindStdin(bindings []FSBinding, containerPath string) (*os.File, error) {
+	stdinPath := FindHostPath(bindings, containerPath)
+	if stdinPath != "" {
+		return os.Open(stdinPath)
+	} else {
+		return nil, nil
+	}
+}
+
+// RunJob runs a job.
 func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
+	// Modifies the filemapper's jobID
+	mapper.Job(job.JobID)
 
-	mapper.Job(job.JobId)
-
+	// Iterates through job.Task.Resources.Volumes and add the volume to mapper.
 	for _, disk := range job.Task.Resources.Volumes {
-		mapper.AddVolume(job.JobId, disk.Source, disk.MountPoint)
+		mapper.AddVolume(job.JobID, disk.Source, disk.MountPoint)
 	}
 
+	// MapInput copies the input.Location into input.Path.
 	for _, input := range job.Task.Inputs {
-		err := mapper.MapInput(job.JobId, input.Location, input.Path, input.Class)
+		err := mapper.MapInput(job.JobID, input.Location, input.Path, input.Class)
 		if err != nil {
 			return err
 		}
 	}
 
+	// MapOutput finds where to output the results, and adds that
+	// to Job. It also sets that output path should be the output
+	// location once the job is done.
 	for _, output := range job.Task.Outputs {
-		err := mapper.MapOutput(job.JobId, output.Location, output.Path, output.Class, output.Create)
+		err := mapper.MapOutput(job.JobID, output.Location, output.Path, output.Class, output.Create)
 		if err != nil {
 			return err
 		}
 	}
 
+	// Loops through Docker Tasks, and label them with i (the index).
 	for i, dockerTask := range job.Task.Docker {
-		stdout, err := mapper.TempFile(job.JobId)
+		stdin, err := FindStdin(mapper.jobs[job.JobID].Bindings, dockerTask.Stdin)
+		if err != nil {
+			return fmt.Errorf("Error setting up job stdin: %s", err)
+			return err
+		}
+
+		// Finds stdout path through mapper.TempFile.
+		// Takes stdout from Tool, and outputs into a file.
+		stdout, err := mapper.TempFile(job.JobID)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdout log: %s", err)
-			return err
 		}
-		stderr, err := mapper.TempFile(job.JobId)
+		// Finds stderr path through mapper.TempFile.
+		// Takes stderr from Tool, and outputs into a file.
+		// `stderr` is a stream where systems error is saved.
+		// `err` is Go error.
+		stderr, err := mapper.TempFile(job.JobID)
 		if err != nil {
+			// why two returns? will second return actually return?
 			return fmt.Errorf("Error setting up job stderr log: %s", err)
-			return err
 		}
-		stdout_path := stdout.Name()
-		stderr_path := stderr.Name()
-		if err != nil {
-			return fmt.Errorf("Error setting up job")
-		}
-		binds := mapper.GetBindings(job.JobId)
+		stdoutPath := stdout.Name()
+		stderrPath := stderr.Name()
 
+		// `binds` is a slice of the docker run arguments.
+		binds := mapper.GetBindings(job.JobID)
+
+		// NewDockerEngine returns a type that has a `Run` method.
 		dclient := NewDockerEngine()
-		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
+		// ImageName == Docker image name (ex. devian:Wheezy).
+		// cmd = Docker command (ex. `cat`).
+		// workdir = Docker working directory (ex. /mnt/work).
+		exitCode, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdin, stdout, stderr)
+
 		stdout.Close()
 		stderr.Close()
 
-		//If the STDERR is supposed to be added to the volume, copy it in
+		// If `Stderr` is supposed to be added to the volume, copy it.
 		if len(dockerTask.Stderr) > 0 {
-			hstPath := mapper.HostPath(job.JobId, dockerTask.Stderr)
+			hstPath := mapper.HostPath(job.JobID, dockerTask.Stderr)
 			if len(hstPath) > 0 {
-				copyFileContents(stderr_path, hstPath)
+				copyFileContents(stderrPath, hstPath)
 			}
 
 		}
-		//If the STDERR is supposed to be added to the volume, copy it in
+		//If `Stdout` is supposed to be added to the volume, copy it.
 		if len(dockerTask.Stdout) > 0 {
-			hstPath := mapper.HostPath(job.JobId, dockerTask.Stdout)
+			hstPath := mapper.HostPath(job.JobID, dockerTask.Stdout)
 			if len(hstPath) > 0 {
-				copyFileContents(stdout_path, hstPath)
+				copyFileContents(stdoutPath, hstPath)
 			}
 		}
 
-		stderr_text := read_file_head(stderr_path)
-		stdout_text := read_file_head(stdout_path)
-		mapper.UpdateOutputs(job.JobId, i, exit_code, string(stdout_text), string(stderr_text))
+		stderrText := readFileHead(stderrPath)
+		stdoutText := readFileHead(stdoutPath)
+		mapper.UpdateOutputs(job.JobID, i, exitCode, string(stdoutText), string(stderrText))
 		if err != nil {
 			return err
 		}
 	}
 
-	mapper.FinalizeJob(job.JobId)
+	mapper.FinalizeJob(job.JobID)
 
 	return nil
 }

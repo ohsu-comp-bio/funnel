@@ -1,4 +1,4 @@
-package tes_taskengine_worker
+package tesTaskEngineWorker
 
 import (
 	"log"
@@ -8,48 +8,61 @@ import (
 	"syscall"
 )
 
+// NewDockerEngine creates a type, DockerCmd.
 func NewDockerEngine() *DockerCmd {
 	return &DockerCmd{}
 }
 
+// DockerCmd has an associated method `Run`, and is an empty type.
 type DockerCmd struct {
 }
 
-func (self DockerCmd) Run(containerName string, args []string,
-	binds []string, workdir string, remove bool, stdout *os.File, stderr *os.File) (int, error) {
+func (dockerCmd DockerCmd) Run(containerName string, args []string,
+	binds []string, workdir string, remove bool, stdin *os.File, stdout *os.File, stderr *os.File) (int, error) {
 
 	log.Printf("Docker Binds: %s", binds)
-
-	docker_args := []string{"run", "--rm", "-i"}
+	// Creates docker arguments.
+	dockerArgs := []string{"run", "--rm", "-i"}
 
 	if workdir != "" {
-		docker_args = append(docker_args, "-w", workdir)
+		dockerArgs = append(dockerArgs, "-w", workdir)
 	}
 
 	for _, i := range binds {
-		docker_args = append(docker_args, "-v", i)
+		dockerArgs = append(dockerArgs, "-v", i)
 	}
-	docker_args = append(docker_args, containerName)
-	docker_args = append(docker_args, args...)
-	log.Printf("Runner docker %s", strings.Join(docker_args, " "))
 
-	cmd := exec.Command("docker", docker_args...)
+	// Append the containerName to dockerArgs.
+	dockerArgs = append(dockerArgs, containerName)
+	// Iterates through `args` and append it to dockerArgs.
+	dockerArgs = append(dockerArgs, args...)
+	log.Printf("Runner docker %s", strings.Join(dockerArgs, " "))
+	// exec.Command creates a command line call, `cmd`.
+	// It will look like: `run --rm -i -w [workdir] -v [bindings] [containername] [args]`
+	cmd := exec.Command("docker", dockerArgs...)
 
+	if stdin != nil {
+		cmd.Stdin = stdin
+	}
 	if stdout != nil {
 		cmd.Stdout = stdout
 	}
 	if stderr != nil {
 		cmd.Stderr = stderr
 	}
-	cmd_err := cmd.Run()
+
+	// Runs the command line call `cmd` in the host environment.
+	cmdErr := cmd.Run()
 	exitStatus := 0
-	if exiterr, ok := cmd_err.(*exec.ExitError); ok {
-		if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+	if exiterr, exitOk := cmdErr.(*exec.ExitError); exitOk {
+		// if exitOk is True, do the following.
+		if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
 			exitStatus = status.ExitStatus()
 			log.Printf("Exit Status: %d", exitStatus)
 		}
 	} else {
-		log.Printf("cmd.Run: %v", cmd_err)
+		// if exitOk is False, do the following.
+		log.Printf("cmd.Run: %v", cmdErr)
 	}
 
 	return exitStatus, nil

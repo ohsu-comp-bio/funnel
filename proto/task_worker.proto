@@ -47,6 +47,6 @@ message QueuedTaskInfo {
 service Scheduler {
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc GetJobToRun(JobRequest) returns (JobResponse) {};
-  rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobId) {};
+  rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobID) {};
   rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};
 }

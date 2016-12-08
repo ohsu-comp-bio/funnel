@@ -5,7 +5,7 @@ export PATH
 
 PROTO_INC= -I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
 
-server:
+server: depends
 	go install tes-server
 	go install tes-worker
 

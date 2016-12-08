@@ -16,6 +16,39 @@ import (
 	"tes/server"
 )
 
+func StartHttpProxy(rpcPort string, httpPort string, contentDir string) {
+	//setup RESTful proxy
+	grpcMux := runtime.NewServeMux()
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	log.Println("Proxy connecting to localhost:" + rpcPort)
+	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, "localhost:" + rpcPort, opts)
+	if err != nil {
+		fmt.Println("Register Error", err)
+
+	}
+	r := mux.NewRouter()
+
+	runtime.OtherErrorHandler = func(w http.ResponseWriter, req *http.Request, error string, code int) {
+		fmt.Println(error)
+		fmt.Println(req.URL)
+		debug.PrintStack()
+		http.Error(w, error, code)
+	}
+	// Routes consist of a path and a handler function
+	r.HandleFunc("/",
+		func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, filepath.Join(contentDir, "index.html"))
+		})
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(contentDir))))
+
+	r.PathPrefix("/v1/").Handler(grpcMux)
+	log.Printf("Listening on port: %s\n", httpPort)
+	http.ListenAndServe(":" + httpPort, r)
+}
+
 func main() {
 	httpPort := flag.String("port", "8000", "HTTP Port")
 	rpcPort := flag.String("rpc", "9090", "HTTP Port")
@@ -46,34 +79,5 @@ func main() {
 	server.RegisterScheduleServer(taski)
 	server.Start(*rpcPort)
 
-	//setup RESTful proxy
-	grpcMux := runtime.NewServeMux()
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-	log.Println("Proxy connecting to localhost:" + *rpcPort)
-	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, "localhost:"+*rpcPort, opts)
-	if err != nil {
-		fmt.Println("Register Error", err)
-
-	}
-	r := mux.NewRouter()
-
-	runtime.OtherErrorHandler = func(w http.ResponseWriter, req *http.Request, error string, code int) {
-		fmt.Println(error)
-		fmt.Println(req.URL)
-		debug.PrintStack()
-		http.Error(w, error, code)
-	}
-	// Routes consist of a path and a handler function
-	r.HandleFunc("/",
-		func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join(contentDir, "index.html"))
-		})
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(contentDir))))
-
-	r.PathPrefix("/v1/").Handler(grpcMux)
-	log.Printf("Listening on port: %s\n", *httpPort)
-	http.ListenAndServe(":"+*httpPort, r)
+	StartHttpProxy(*rpcPort, *httpPort, contentDir)
 }

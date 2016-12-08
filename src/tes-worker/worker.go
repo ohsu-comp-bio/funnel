@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	context "golang.org/x/net/context"
 	uuid "github.com/nu7hatch/gouuid"
 	"google.golang.org/grpc"
 	"log"
@@ -16,9 +17,6 @@ import (
 func main() {
 	agroServer := flag.String("master", "localhost:9090", "Master Server")
 	volumeDirArg := flag.String("volumes", "volumes", "Volume Dir")
-	storageDirArg := flag.String("storage", "storage", "Storage Dir")
-	fileSystemArg := flag.String("files", "", "Allowed File Paths")
-	swiftDirArg := flag.String("swift", "", "Cache Swift items in directory")
 	timeoutArg := flag.Int("timeout", -1, "Timeout in seconds")
 
 	nworker := flag.Int("nworkers", 4, "Worker Count")
@@ -35,31 +33,35 @@ func main() {
 	}
 	defer conn.Close()
 	schedClient := ga4gh_task_ref.NewSchedulerClient(conn)
+	
+	config, err := schedClient.GetServerConfig(context.Background(), &ga4gh_task_ref.WorkerInfo{})
 
-	var fileClient tesTaskEngineWorker.FileSystemAccess
-
-	if *swiftDirArg != "" {
-		storageDir, _ := filepath.Abs(*swiftDirArg)
-		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
-			os.Mkdir(storageDir, 0700)
+	fsMap := map[string]tesTaskEngineWorker.FileSystemAccess{}
+	
+	for _, i := range config.Storage {
+		switch i.Protocol {
+		case "swift":
+			fileClient := tesTaskEngineWorker.NewSwiftAccess()
+			fsMap["swift"] = fileClient
+		case "fs":
+			storageDir := i.Config["basedir"]
+			if _, err := os.Stat(storageDir); os.IsNotExist(err) {
+				os.Mkdir(storageDir, 0700)
+			}
+			fileClient := tesTaskEngineWorker.NewSharedFS(storageDir)
+			fsMap["fs"] = fileClient
+		case "file":
+			o := []string{}
+			for _, i := range strings.Split(i.Config["dirs"], ",") {
+				p, _ := filepath.Abs(i)
+				o = append(o, p)
+			}
+			fileClient := tesTaskEngineWorker.NewFileAccess(o)
+			fsMap["file"] = fileClient
 		}
-
-		fileClient = tesTaskEngineWorker.NewSwiftAccess()
-	} else if *fileSystemArg != "" {
-		o := []string{}
-		for _, i := range strings.Split(*fileSystemArg, ",") {
-			p, _ := filepath.Abs(i)
-			o = append(o, p)
-		}
-		fileClient = tesTaskEngineWorker.NewFileAccess(o)
-	} else {
-		storageDir, _ := filepath.Abs(*storageDirArg)
-		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
-			os.Mkdir(storageDir, 0700)
-		}
-		fileClient = tesTaskEngineWorker.NewSharedFS(storageDir)
 	}
-	fileMapper := tesTaskEngineWorker.NewFileMapper(&schedClient, fileClient, volumeDir)
+
+	fileMapper := tesTaskEngineWorker.NewFileMapper(&schedClient, fsMap, volumeDir)
 
 	u, _ := uuid.NewV4()
 	manager, _ := tesTaskEngineWorker.NewLocalManager(*nworker, u.String())

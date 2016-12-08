@@ -3,6 +3,7 @@ package tes_server
 import (
 	"fmt"
 	"github.com/boltdb/bolt"
+	"google.golang.org/grpc/metadata"
 	proto "github.com/golang/protobuf/proto"
 	uuid "github.com/nu7hatch/gouuid"
 	"golang.org/x/net/context"
@@ -15,6 +16,10 @@ import (
 // TaskBucket documentation
 // TODO: documentation
 var TaskBucket = []byte("tasks")
+
+// TaskAuthBucket documentation
+// TODO: documentation
+var TaskAuthBucket = []byte("tasks-auth")
 
 // JobsQueued documentation
 // TODO: documentation
@@ -48,6 +53,9 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 		if tx.Bucket(TaskBucket) == nil {
 			tx.CreateBucket(TaskBucket)
 		}
+		if tx.Bucket(TaskAuthBucket) == nil {
+			tx.CreateBucket(TaskAuthBucket)
+		}
 		if tx.Bucket(JobsQueued) == nil {
 			tx.CreateBucket(JobsQueued)
 		}
@@ -64,6 +72,24 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 	})
 	return &TaskBolt{db: db, serverConfig: config}
 }
+
+// getJWT
+// This function extracts the JWT token from the rpc header and returns the string
+func getJWT(ctx context.Context) string {
+	jwt := ""
+	v, _ := metadata.FromContext(ctx)
+	auth, ok := v["authorization"]
+	if !ok {
+		return jwt
+	}
+	for _, i := range auth {
+			if strings.HasPrefix(i, "JWT ") {
+				jwt = strings.TrimPrefix(i, "JWT ")
+			}
+	}
+	return jwt
+}
+
 
 // RunTask documentation
 // TODO: documentation
@@ -99,6 +125,8 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 			output.Class = "File"
 		}
 	}
+	
+	jwt := getJWT(ctx)
 
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -106,6 +134,9 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 		taskopB := tx.Bucket(TaskBucket)
 		v, _ := proto.Marshal(task)
 		taskopB.Put([]byte(taskopID.String()), v)
+		
+		taskopA := tx.Bucket(TaskAuthBucket)
+		taskopA.Put([]byte(taskopID.String()), []byte(jwt))
 
 		queueB := tx.Bucket(JobsQueued)
 		queueB.Put([]byte(taskopID.String()), []byte(ga4gh_task_exec.State_Queued.String()))
@@ -239,21 +270,32 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 // TODO: documentation
 func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
 	//log.Printf("Job Request")
-	ch := make(chan *ga4gh_task_exec.Task, 1)
+	ch := make(chan *ga4gh_task_ref.JobResponse, 1)
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bQ := tx.Bucket(JobsQueued)
 		bA := tx.Bucket(JobsActive)
 		bOp := tx.Bucket(TaskBucket)
+		bTa := tx.Bucket(TaskAuthBucket)
 
 		c := bQ.Cursor()
 
 		if k, _ := c.First(); k != nil {
 			log.Printf("Found queued job")
 			v := bOp.Get(k)
-			out := ga4gh_task_exec.Task{}
-			proto.Unmarshal(v, &out)
-			ch <- &out
+			task := ga4gh_task_exec.Task{}
+			proto.Unmarshal(v, &task)
+			
+			job := &ga4gh_task_exec.Job{
+				JobID: task.TaskID,
+				Task:  &task,
+			}
+			
+			jwt := string(bTa.Get(k))
+			
+			out := &ga4gh_task_ref.JobResponse{Job: job, Auth:jwt}
+
+			ch <- out
 			bQ.Delete(k)
 			bA.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
 			return nil
@@ -266,12 +308,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 		return &ga4gh_task_ref.JobResponse{}, nil
 	}
 
-	job := &ga4gh_task_exec.Job{
-		JobID: a.TaskID,
-		Task:  a,
-	}
-
-	return &ga4gh_task_ref.JobResponse{Job: job}, nil
+	return a, nil
 }
 
 // UpdateJobStatus documentation
@@ -309,6 +346,10 @@ func (taskBolt *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.W
 // GetServiceInfo documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
+	
+	jwt := getJWT(ctx)
+	log.Printf("JWT: %s", jwt)
+	
 	//BUG: this isn't the best translation, probably lossy. Maybe ServiceInfo data structure schema needs to be refactored
 	out := map[string]string{}
 	for _, i := range taskBolt.serverConfig.Storage {

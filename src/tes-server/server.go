@@ -22,6 +22,7 @@ func main() {
 	httpPort := flag.String("port", "8000", "HTTP Port")
 	rpcPort := flag.String("rpc", "9090", "HTTP Port")
 	storageDirArg := flag.String("storage", "", "Storage Dir")
+	sharedDirArg := flag.String("shared", "", "Shared File System")
 	swiftArg := flag.String("swift", "", "Use SWIFT object store")
 	taskDB := flag.String("db", "ga4gh_tasks.db", "Task DB File")
 	configFile := flag.String("config", "", "Config File")
@@ -43,16 +44,21 @@ func main() {
 	if *storageDirArg != "" {
 		//server meta-data
 		storageDir, _ := filepath.Abs(*storageDirArg)
-		
-		fs := &ga4gh_task_ref.StorageConfig{}
+		fs := &ga4gh_task_ref.StorageConfig{Config:map[string]string{}}
 		fs.Protocol = "fs"
 		fs.Config["basedir"] = storageDir
 		config.Storage = append(config.Storage, fs)
 	}
 	if *swiftArg != "" {
-		fs := &ga4gh_task_ref.StorageConfig{}
+		fs := &ga4gh_task_ref.StorageConfig{Config:map[string]string{}}
 		fs.Protocol = "swift"
 		fs.Config["endpoint"] = *swiftArg
+		config.Storage = append(config.Storage, fs)
+	}
+	if *sharedDirArg != "" {
+		fs := &ga4gh_task_ref.StorageConfig{Config:map[string]string{}}
+		fs.Protocol = "file"
+		fs.Config["dirs"] = *sharedDirArg
 		config.Storage = append(config.Storage, fs)
 	}
 	log.Printf("Config: %v\n", config)

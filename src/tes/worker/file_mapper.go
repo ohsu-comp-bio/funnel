@@ -8,15 +8,16 @@ import (
 	"path"
 	"tes/ga4gh"
 	"tes/server/proto"
+	"strings"
 )
 
 // FileMapper documentation
 // TODO: documentation
 type FileMapper struct {
-	fileSystem FileSystemAccess
-	VolumeDir  string
-	client     *ga4gh_task_ref.SchedulerClient
-	jobs       map[string]*JobFileMapper
+	fileSystems map[string]FileSystemAccess
+	VolumeDir   string
+	client      *ga4gh_task_ref.SchedulerClient
+	jobs        map[string]*JobFileMapper
 }
 
 // JobFileMapper documentation
@@ -54,11 +55,11 @@ type FSBinding struct {
 
 // NewFileMapper documentation
 // TODO: documentation
-func NewFileMapper(client *ga4gh_task_ref.SchedulerClient, fileSystem FileSystemAccess, volumeDir string) *FileMapper {
+func NewFileMapper(client *ga4gh_task_ref.SchedulerClient, fileSystems map[string]FileSystemAccess, volumeDir string) *FileMapper {
 	if _, err := os.Stat(volumeDir); os.IsNotExist(err) {
 		os.Mkdir(volumeDir, 0700)
 	}
-	return &FileMapper{VolumeDir: volumeDir, jobs: make(map[string]*JobFileMapper), client: client, fileSystem: fileSystem}
+	return &FileMapper{VolumeDir: volumeDir, jobs: make(map[string]*JobFileMapper), client: client, fileSystems: fileSystems}
 }
 
 // Job documentation
@@ -101,6 +102,16 @@ func (fileMapper *FileMapper) HostPath(jobID string, mountPath string) string {
 	return ""
 }
 
+
+func (fileMapper *FileMapper) FindFS(url string) (FileSystemAccess, error) {
+	tmp := strings.Split(url, ":")[0]
+	fs, ok := fileMapper.fileSystems[tmp]
+	if !ok {
+		return fs, fmt.Errorf("File System %s not found", tmp)
+	}
+	return fs, nil	
+}
+
 // MapInput gets the file and put it into fileMapper. `storage` is
 // related to swift object store.
 func (fileMapper *FileMapper) MapInput(jobID string, storage string, mountPath string, class string) error {
@@ -112,10 +123,14 @@ func (fileMapper *FileMapper) MapInput(jobID string, storage string, mountPath s
 			// dst{ath is destination path.
 			dstPath := path.Join(vol.HostPath, relpath)
 			fmt.Printf("get %s %s\n", storage, dstPath)
+			fs, err := fileMapper.FindFS(storage)
+			if err != nil {
+				return err
+			}
 			// Copies storage to dstPath.  While the
 			// result is stored in `err` if `err` is nil,
 			// this operation did not throw an error.
-			err := fileMapper.fileSystem.Get(storage, dstPath, class)
+			err = fs.Get(storage, dstPath, class)
 			if err != nil {
 				return err
 			}
@@ -184,9 +199,14 @@ func (fileMapper *FileMapper) TempFile(jobID string) (f *os.File, err error) {
 
 // FinalizeJob documentation
 // TODO: documentation
-func (fileMapper *FileMapper) FinalizeJob(jobID string) {
+func (fileMapper *FileMapper) FinalizeJob(jobID string) error {
 	for _, out := range fileMapper.jobs[jobID].Outputs {
 		hst := fileMapper.HostPath(jobID, out.Path)
-		fileMapper.fileSystem.Put(out.Location, hst, out.Class)
+		fs, err := fileMapper.FindFS(out.Location)
+		if err != nil {
+			return err
+		}
+		fs.Put(out.Location, hst, out.Class)
 	}
+	return nil
 }

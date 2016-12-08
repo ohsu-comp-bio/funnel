@@ -68,7 +68,7 @@ func NewTaskBolt(path string, storageMetadata map[string]string) *TaskBolt {
 // RunTask documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
-	log.Println("Recieving Task for Queue", task)
+	log.Println("Receiving Task for Queue", task)
 
 	taskopID, _ := uuid.NewV4()
 

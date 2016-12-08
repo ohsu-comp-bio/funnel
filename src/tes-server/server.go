@@ -23,7 +23,7 @@ func StartHttpProxy(rpcPort string, httpPort string, contentDir string) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	log.Println("Proxy connecting to localhost:" + rpcPort)
+	log.Println("HTTP proxy connecting to localhost:" + rpcPort)
 	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, "localhost:" + rpcPort, opts)
 	if err != nil {
 		fmt.Println("Register Error", err)
@@ -45,13 +45,13 @@ func StartHttpProxy(rpcPort string, httpPort string, contentDir string) {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(contentDir))))
 
 	r.PathPrefix("/v1/").Handler(grpcMux)
-	log.Printf("Listening on port: %s\n", httpPort)
+	log.Printf("HTTP API listening on port: %s\n", httpPort)
 	http.ListenAndServe(":" + httpPort, r)
 }
 
 func main() {
 	httpPort := flag.String("port", "8000", "HTTP Port")
-	rpcPort := flag.String("rpc", "9090", "HTTP Port")
+	rpcPort := flag.String("rpc", "9090", "TCP+RPC Port")
 	storageDirArg := flag.String("storage", "storage", "Storage Dir")
 	swiftArg := flag.Bool("swift", false, "Use SWIFT object store")
 	taskDB := flag.String("db", "ga4gh_tasks.db", "Task DB File")

@@ -36,12 +36,12 @@ var JobsLog = []byte("jobs-log")
 // TODO: documentation
 type TaskBolt struct {
 	db              *bolt.DB
-	storageMetadata map[string]string
+	serverConfig ga4gh_task_ref.ServerConfig
 }
 
 // NewTaskBolt documentation
 // TODO: documentation
-func NewTaskBolt(path string, storageMetadata map[string]string) *TaskBolt {
+func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
@@ -62,7 +62,7 @@ func NewTaskBolt(path string, storageMetadata map[string]string) *TaskBolt {
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, storageMetadata: storageMetadata}
+	return &TaskBolt{db: db, serverConfig: config}
 }
 
 // RunTask documentation
@@ -309,8 +309,23 @@ func (taskBolt *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.W
 // GetServiceInfo documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
-	return &ga4gh_task_exec.ServiceInfo{StorageConfig: taskBolt.storageMetadata}, nil
+	//BUG: this isn't the best translation, probably lossy. Maybe ServiceInfo data structure schema needs to be refactored
+	out := map[string]string{}
+	for _, i := range taskBolt.serverConfig.Storage {
+		for j, k := range i.Config {
+			out[ fmt.Sprintf("%s.%s", i.Protocol, j) ] = k
+		}
+	}	
+	return &ga4gh_task_exec.ServiceInfo{StorageConfig: out}, nil
 }
+
+
+// GetServiceInfo documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.ServerConfig, error) {
+	return &taskBolt.serverConfig, nil
+}
+
 
 // GetQueueInfo documentation
 // TODO: documentation

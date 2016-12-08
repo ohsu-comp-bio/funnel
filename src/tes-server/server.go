@@ -12,34 +12,53 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"tes"
 	"tes/ga4gh"
 	"tes/server"
+	"tes/server/proto"
 )
 
 func main() {
 	httpPort := flag.String("port", "8000", "HTTP Port")
 	rpcPort := flag.String("rpc", "9090", "HTTP Port")
-	storageDirArg := flag.String("storage", "storage", "Storage Dir")
-	swiftArg := flag.Bool("swift", false, "Use SWIFT object store")
+	storageDirArg := flag.String("storage", "", "Storage Dir")
+	swiftArg := flag.String("swift", "", "Use SWIFT object store")
 	taskDB := flag.String("db", "ga4gh_tasks.db", "Task DB File")
+	configFile := flag.String("config", "", "Config File")
 
 	flag.Parse()
 
 	dir, _ := filepath.Abs(os.Args[0])
 	contentDir := filepath.Join(dir, "..", "..", "share")
-
-	//server meta-data
-	storageDir, _ := filepath.Abs(*storageDirArg)
-	var metaData = make(map[string]string)
-	if !*swiftArg {
-		metaData["storageType"] = "sharedFile"
-		metaData["baseDir"] = storageDir
-	} else {
-		metaData["storageType"] = "swift"
+	
+	config := ga4gh_task_ref.ServerConfig{}
+	if *configFile != "" {
+		var err error
+		config, err = tes.ParseConfigFile(*configFile)
+		if err != nil {
+			log.Println("Failure Reading Config")
+			return
+		}
 	}
+	if *storageDirArg != "" {
+		//server meta-data
+		storageDir, _ := filepath.Abs(*storageDirArg)
+		
+		fs := &ga4gh_task_ref.StorageConfig{}
+		fs.Protocol = "fs"
+		fs.Config["basedir"] = storageDir
+		config.Storage = append(config.Storage, fs)
+	}
+	if *swiftArg != "" {
+		fs := &ga4gh_task_ref.StorageConfig{}
+		fs.Protocol = "swift"
+		fs.Config["endpoint"] = *swiftArg
+		config.Storage = append(config.Storage, fs)
+	}
+	log.Printf("Config: %v\n", config)
 
 	//setup GRPC listener
-	taski := tes_server.NewTaskBolt(*taskDB, metaData)
+	taski := tes_server.NewTaskBolt(*taskDB, config)
 
 	server := tes_server.NewGA4GHServer()
 	server.RegisterTaskServer(taski)

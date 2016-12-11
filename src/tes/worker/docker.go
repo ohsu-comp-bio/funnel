@@ -36,7 +36,7 @@ func (dockerCmd DockerCmd) Run(containerName string, args []string,
 	dockerArgs = append(dockerArgs, containerName)
 	// Iterates through `args` and append it to dockerArgs.
 	dockerArgs = append(dockerArgs, args...)
-	log.Printf("Runner docker %s", strings.Join(dockerArgs, " "))
+	log.Printf("Running command: docker %s", strings.Join(dockerArgs, " "))
 	// exec.Command creates a command line call, `cmd`.
 	// It will look like: `run --rm -i -w [workdir] -v [bindings] [containername] [args]`
 	cmd := exec.Command("docker", dockerArgs...)
@@ -52,18 +52,26 @@ func (dockerCmd DockerCmd) Run(containerName string, args []string,
 	}
 
 	// Runs the command line call `cmd` in the host environment.
-	cmdErr := cmd.Run()
-	exitStatus := 0
-	if exiterr, exitOk := cmdErr.(*exec.ExitError); exitOk {
-		// if exitOk is True, do the following.
-		if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
-			exitStatus = status.ExitStatus()
-			log.Printf("Exit Status: %d", exitStatus)
-		}
-	} else {
-		// if exitOk is False, do the following.
-		log.Printf("cmd.Run: %v", cmdErr)
-	}
+	err := cmd.Run()
+	exitStatus := getExitStatus(err)
+	log.Printf("Exit Status: %d", exitStatus)
 
-	return exitStatus, nil
+	return exitStatus, err
+}
+
+// getExitStatus gets the exit status (i.e. exit code) from the result of an executed command.
+// The exit code is zero if the command completed without error.
+func getExitStatus(err error) int {
+	if err != nil {
+		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
+			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
+				return status.ExitStatus()
+			}
+		} else {
+			log.Printf("Could not determine exit code. Using default -999")
+			return -999
+		}
+	}
+	// The error is nil, the command returned successfully, so exit status is 0.
+	return 0
 }

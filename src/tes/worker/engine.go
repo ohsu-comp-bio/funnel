@@ -65,27 +65,22 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		}
 	}
 
-	// Loops through Docker Tasks, and label them with i (the index).
-	for i, dockerTask := range job.Task.Docker {
+	for stepNum, dockerTask := range job.Task.Docker {
 		stdin, err := FindStdin(mapper.jobs[job.JobID].Bindings, dockerTask.Stdin)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdin: %s", err)
 			return err
 		}
 
-		// Finds stdout path through mapper.TempFile.
-		// Takes stdout from Tool, and outputs into a file.
+		// Create file for job stdout
 		stdout, err := mapper.TempFile(job.JobID)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdout log: %s", err)
 		}
-		// Finds stderr path through mapper.TempFile.
-		// Takes stderr from Tool, and outputs into a file.
-		// `stderr` is a stream where systems error is saved.
-		// `err` is Go error.
+
+		// Create file for job stderr
 		stderr, err := mapper.TempFile(job.JobID)
 		if err != nil {
-			// why two returns? will second return actually return?
 			return fmt.Errorf("Error setting up job stderr log: %s", err)
 		}
 		stdoutPath := stdout.Name()
@@ -112,7 +107,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		stderr.Close()
 
 		// If `Stderr` is supposed to be added to the volume, copy it.
-		if len(dockerTask.Stderr) > 0 {
+		if dockerTask.Stderr != "" {
 			hstPath := mapper.HostPath(job.JobID, dockerTask.Stderr)
 			if len(hstPath) > 0 {
 				copyFileContents(stderrPath, hstPath)
@@ -120,7 +115,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 		}
 		//If `Stdout` is supposed to be added to the volume, copy it.
-		if len(dockerTask.Stdout) > 0 {
+		if dockerTask.Stdout != "" {
 			hstPath := mapper.HostPath(job.JobID, dockerTask.Stdout)
 			if len(hstPath) > 0 {
 				copyFileContents(stdoutPath, hstPath)
@@ -133,7 +128,7 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		// Send the scheduler service a job status update
 		statusReq := &ga4gh_task_ref.UpdateStatusRequest{
 			Id:   job.JobID,
-			Step: int64(i),
+			Step: int64(stepNum),
 			Log: &ga4gh_task_exec.JobLog{
 				Stdout:   string(stdoutText),
 				Stderr:   string(stderrText),

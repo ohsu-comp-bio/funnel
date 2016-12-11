@@ -2,7 +2,10 @@ package tesTaskEngineWorker
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
+	"syscall"
 	"tes/ga4gh"
 )
 
@@ -91,12 +94,19 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		// `binds` is a slice of the docker run arguments.
 		binds := mapper.GetBindings(job.JobID)
 
-		// NewDockerEngine returns a type that has a `Run` method.
-		dclient := NewDockerEngine()
-		// ImageName == Docker image name (ex. devian:Wheezy).
-		// cmd = Docker command (ex. `cat`).
-		// workdir = Docker working directory (ex. /mnt/work).
-		exitCode, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdin, stdout, stderr)
+		dcmd := DockerCmd{
+			ImageName:       dockerTask.ImageName,
+			Cmd:             dockerTask.Cmd,
+			Binds:           binds,
+			Workdir:         dockerTask.Workdir,
+			RemoveContainer: true,
+			Stdin:           stdin,
+			Stdout:          stdout,
+			Stderr:          stderr,
+		}
+		cmdErr := dcmd.Run()
+		exitCode := getExitCode(cmdErr)
+		log.Printf("Exit code: %d", exitCode)
 
 		stdout.Close()
 		stderr.Close()
@@ -119,13 +129,44 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 
 		stderrText := readFileHead(stderrPath)
 		stdoutText := readFileHead(stdoutPath)
-		mapper.UpdateOutputs(job.JobID, i, exitCode, string(stdoutText), string(stderrText))
-		if err != nil {
-			return err
+
+		// Send the scheduler service a job status update
+		statusReq := &ga4gh_task_ref.UpdateStatusRequest{
+			Id:   job.JobID,
+			Step: int64(i),
+			Log: &ga4gh_task_exec.JobLog{
+				Stdout:   string(stdoutText),
+				Stderr:   string(stderrText),
+				ExitCode: int32(exitCode),
+			},
+		}
+		// TODO context should be created at the top-level and passed down
+		ctx := context.Background()
+		sched.UpdateJobStatus(ctx, statusReq)
+
+		if cmdErr != nil {
+			return cmdErr
 		}
 	}
 
 	mapper.FinalizeJob(job.JobID)
 
 	return nil
+}
+
+// getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
+// The exit code is zero if the command completed without error.
+func getExitCode(err error) int {
+	if err != nil {
+		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
+			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
+				return status.ExitStatus()
+			}
+		} else {
+			log.Printf("Could not determine exit code. Using default -999")
+			return -999
+		}
+	}
+	// The error is nil, the command returned successfully, so exit status is 0.
+	return 0
 }

@@ -5,73 +5,53 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 )
 
-// NewDockerEngine creates a type, DockerCmd.
-func NewDockerEngine() *DockerCmd {
-	return &DockerCmd{}
-}
-
-// DockerCmd has an associated method `Run`, and is an empty type.
 type DockerCmd struct {
+	ImageName       string
+	Cmd             []string
+	Binds           []string
+	Workdir         string
+	RemoveContainer bool
+	Stdin           *os.File
+	Stdout          *os.File
+	Stderr          *os.File
 }
 
-func (dockerCmd DockerCmd) Run(containerName string, args []string,
-	binds []string, workdir string, remove bool, stdin *os.File, stdout *os.File, stderr *os.File) (int, error) {
+func (dcmd DockerCmd) Run() error {
+	log.Printf("Docker Binds: %s", dcmd.Binds)
 
-	log.Printf("Docker Binds: %s", binds)
-	// Creates docker arguments.
-	dockerArgs := []string{"run", "--rm", "-i"}
+	// TODO why are we using '-i'?
+	args := []string{"run", "-i"}
 
-	if workdir != "" {
-		dockerArgs = append(dockerArgs, "-w", workdir)
+	if dcmd.RemoveContainer {
+		args = append(args, "--rm")
 	}
 
-	for _, i := range binds {
-		dockerArgs = append(dockerArgs, "-v", i)
+	if dcmd.Workdir != "" {
+		args = append(args, "-w", dcmd.Workdir)
 	}
 
-	// Append the containerName to dockerArgs.
-	dockerArgs = append(dockerArgs, containerName)
-	// Iterates through `args` and append it to dockerArgs.
-	dockerArgs = append(dockerArgs, args...)
-	log.Printf("Running command: docker %s", strings.Join(dockerArgs, " "))
-	// exec.Command creates a command line call, `cmd`.
-	// It will look like: `run --rm -i -w [workdir] -v [bindings] [containername] [args]`
-	cmd := exec.Command("docker", dockerArgs...)
-
-	if stdin != nil {
-		cmd.Stdin = stdin
-	}
-	if stdout != nil {
-		cmd.Stdout = stdout
-	}
-	if stderr != nil {
-		cmd.Stderr = stderr
+	for _, bind := range dcmd.Binds {
+		args = append(args, "-v", bind)
 	}
 
-	// Runs the command line call `cmd` in the host environment.
-	err := cmd.Run()
-	exitStatus := getExitStatus(err)
-	log.Printf("Exit Status: %d", exitStatus)
+	args = append(args, dcmd.ImageName)
+	args = append(args, dcmd.Cmd...)
 
-	return exitStatus, err
-}
+	log.Printf("Running command: docker %s", strings.Join(args, " "))
+	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
+	cmd := exec.Command("docker", args...)
 
-// getExitStatus gets the exit status (i.e. exit code) from the result of an executed command.
-// The exit code is zero if the command completed without error.
-func getExitStatus(err error) int {
-	if err != nil {
-		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
-			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
-				return status.ExitStatus()
-			}
-		} else {
-			log.Printf("Could not determine exit code. Using default -999")
-			return -999
-		}
+	if dcmd.Stdin != nil {
+		cmd.Stdin = dcmd.Stdin
 	}
-	// The error is nil, the command returned successfully, so exit status is 0.
-	return 0
+	if dcmd.Stdout != nil {
+		cmd.Stdout = dcmd.Stdout
+	}
+	if dcmd.Stderr != nil {
+		cmd.Stderr = dcmd.Stderr
+	}
+
+	return cmd.Run()
 }

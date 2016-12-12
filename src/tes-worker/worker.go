@@ -2,82 +2,71 @@ package main
 
 import (
 	"flag"
-	uuid "github.com/nu7hatch/gouuid"
-	"google.golang.org/grpc"
 	"log"
 	"os"
-	"path/filepath"
-	"strings"
-	"tes/server/proto"
-	"tes/worker"
-	"time"
+	"tes/worker/pool"
 )
 
+type WorkerConfig struct {
+	masterAddr string
+	fileConfig pool.FileConfig
+	timeout    int
+	numWorkers int
+	logPath    string
+}
+
 func main() {
-	agroServer := flag.String("master", "localhost:9090", "Master Server")
+	masterArg := flag.String("master", "localhost:9090", "Master Server")
 	volumeDirArg := flag.String("volumes", "volumes", "Volume Dir")
 	storageDirArg := flag.String("storage", "storage", "Storage Dir")
-	fileSystemArg := flag.String("files", "", "Allowed File Paths")
+	allowedDirsArg := flag.String("files", "", "Allowed File Paths")
 	swiftDirArg := flag.String("swift", "", "Cache Swift items in directory")
 	timeoutArg := flag.Int("timeout", -1, "Timeout in seconds")
-
 	nworker := flag.Int("nworkers", 4, "Worker Count")
+	logFileArg := flag.String("logfile", "", "File path to write logs to")
+
 	flag.Parse()
-	volumeDir, _ := filepath.Abs(*volumeDirArg)
-	if _, err := os.Stat(volumeDir); os.IsNotExist(err) {
-		os.Mkdir(volumeDir, 0700)
+
+	config := WorkerConfig{
+		masterAddr: *masterArg,
+		fileConfig: pool.FileConfig{
+			SwiftCacheDir: *swiftDirArg,
+			AllowedDirs:   *allowedDirsArg,
+			SharedDir:     *storageDirArg,
+			VolumeDir:     *volumeDirArg,
+		},
+		timeout:    *timeoutArg,
+		numWorkers: *nworker,
+		logPath:    *logFileArg,
+	}
+	start(config)
+}
+
+func start(config WorkerConfig) {
+	// TODO Good defaults, configuration, and reusable way to configure logging.
+	//      Also, how do we get this to default to /var/log/tes/worker.log
+	//      without having file permission problems?
+	if config.logPath != "" {
+		logFile, err := os.OpenFile(config.logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Println("Can't open log file")
+		} else {
+			log.SetOutput(logFile)
+		}
 	}
 
-	log.Println("Connecting GA4GH Task Server")
-	conn, err := grpc.Dial(*agroServer, grpc.WithInsecure())
-	if err != nil {
-		panic(err)
+	idleTimeout := pool.NoIdleTimeout()
+	if config.timeout != -1 {
+		idleTimeout = pool.IdleTimeoutAfterSeconds(config.timeout)
 	}
-	defer conn.Close()
-	schedClient := ga4gh_task_ref.NewSchedulerClient(conn)
 
-	var fileClient tesTaskEngineWorker.FileSystemAccess
+	slots := make([]*pool.Slot, config.numWorkers)
+	p := pool.NewPool(slots, idleTimeout)
 
-	if *swiftDirArg != "" {
-		storageDir, _ := filepath.Abs(*swiftDirArg)
-		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
-			os.Mkdir(storageDir, 0700)
-		}
-
-		fileClient = tesTaskEngineWorker.NewSwiftAccess()
-	} else if *fileSystemArg != "" {
-		o := []string{}
-		for _, i := range strings.Split(*fileSystemArg, ",") {
-			p, _ := filepath.Abs(i)
-			o = append(o, p)
-		}
-		fileClient = tesTaskEngineWorker.NewFileAccess(o)
-	} else {
-		storageDir, _ := filepath.Abs(*storageDirArg)
-		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
-			os.Mkdir(storageDir, 0700)
-		}
-		fileClient = tesTaskEngineWorker.NewSharedFS(storageDir)
+	for i := 0; i < config.numWorkers; i++ {
+		id := pool.GenSlotId(p.Id, i)
+		slots[i] = pool.NewDefaultSlot(id, config.masterAddr, config.fileConfig)
 	}
-	fileMapper := tesTaskEngineWorker.NewFileMapper(fileClient, volumeDir)
 
-	u, _ := uuid.NewV4()
-	manager, _ := tesTaskEngineWorker.NewLocalManager(*nworker, u.String())
-	if *timeoutArg <= 0 {
-		manager.Run(schedClient, *fileMapper)
-	} else {
-		var startCount int32
-		lastPing := time.Now().Unix()
-		manager.SetStatusCheck(func(status tesTaskEngineWorker.EngineStatus) {
-			if status.JobCount > startCount || status.ActiveJobs > 0 {
-				startCount = status.JobCount
-				lastPing = time.Now().Unix()
-			}
-		})
-		manager.Start(schedClient, *fileMapper)
-		for time.Now().Unix()-lastPing < int64(*timeoutArg) {
-			time.Sleep(5 * time.Second)
-		}
-
-	}
+	p.Start()
 }

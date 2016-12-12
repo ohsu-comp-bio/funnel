@@ -13,11 +13,14 @@ import (
 	"tes/server/proto"
 )
 
+// SchedulerClient is a client for the scheduler gRPC service.
 type SchedulerClient struct {
 	ga4gh_task_ref.SchedulerClient
 	conn *grpc.ClientConn
 }
 
+// NewSchedulerClient returns a new SchedulerClient instance connected to the
+// scheduler at a given address (e.g. "localhost:9090")
 func NewSchedulerClient(address string) (*SchedulerClient, error) {
 	conn, err := NewRpcConnection(address)
 	if err != nil {
@@ -30,6 +33,7 @@ func NewSchedulerClient(address string) (*SchedulerClient, error) {
 	}, nil
 }
 
+// Close the client connection.
 func (sched *SchedulerClient) Close() {
 	sched.conn.Close()
 }

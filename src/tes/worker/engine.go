@@ -1,12 +1,14 @@
 package tesTaskEngineWorker
 
 import (
+  "context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"syscall"
 	"tes/ga4gh"
+  "tes/server/proto"
 )
 
 const headerSize = int64(102400)
@@ -38,7 +40,7 @@ func FindStdin(bindings []FSBinding, containerPath string) (*os.File, error) {
 }
 
 // RunJob runs a job.
-func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
+func RunJob(sched ga4gh_task_ref.SchedulerClient, job *ga4gh_task_exec.Job, mapper FileMapper) error {
 	// Modifies the filemapper's jobID
 	mapper.Job(job.JobID)
 

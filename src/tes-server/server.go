@@ -34,7 +34,7 @@ func main() {
 	server.RegisterScheduleServer(taski)
 	server.Start(*rpcPort)
 
-  // Path to HTML content
+	// Path to HTML content
 	dir, _ := filepath.Abs(os.Args[0])
 	contentDir := filepath.Join(dir, "..", "..", "share")
 

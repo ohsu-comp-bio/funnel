@@ -14,10 +14,10 @@ import (
 )
 
 func HandleError(w http.ResponseWriter, req *http.Request, error string, code int) {
-  fmt.Println(error)
-  fmt.Println(req.URL)
-  debug.PrintStack()
-  http.Error(w, error, code)
+	fmt.Println(error)
+	fmt.Println(req.URL)
+	debug.PrintStack()
+	http.Error(w, error, code)
 }
 
 func StartHttpProxy(rpcPort string, httpPort string, contentDir string) {
@@ -29,7 +29,7 @@ func StartHttpProxy(rpcPort string, httpPort string, contentDir string) {
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 
 	log.Println("HTTP proxy connecting to localhost:" + rpcPort)
-	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, "localhost:" + rpcPort, opts)
+	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, "localhost:"+rpcPort, opts)
 	if err != nil {
 		fmt.Println("Register Error", err)
 
@@ -46,5 +46,5 @@ func StartHttpProxy(rpcPort string, httpPort string, contentDir string) {
 
 	r.PathPrefix("/v1/").Handler(grpcMux)
 	log.Printf("HTTP API listening on port: %s\n", httpPort)
-	http.ListenAndServe(":" + httpPort, r)
+	http.ListenAndServe(":"+httpPort, r)
 }

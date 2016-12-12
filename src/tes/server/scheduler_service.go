@@ -7,10 +7,32 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"log"
 	"tes/ga4gh"
 	"tes/server/proto"
 )
+
+type SchedulerClient struct {
+	ga4gh_task_ref.SchedulerClient
+	conn *grpc.ClientConn
+}
+
+func NewSchedulerClient(address string) (*SchedulerClient, error) {
+	conn, err := NewRpcConnection(address)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SchedulerClient{
+		ga4gh_task_ref.NewSchedulerClient(conn),
+		conn,
+	}, nil
+}
+
+func (sched *SchedulerClient) Close() {
+	sched.conn.Close()
+}
 
 // GetJobToRun documentation
 // TODO: documentation

@@ -69,7 +69,6 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		stdin, err := FindStdin(mapper.jobs[job.JobID].Bindings, dockerTask.Stdin)
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdin: %s", err)
-			return err
 		}
 
 		// Create file for job stdout

@@ -1,14 +1,14 @@
 package tesTaskEngineWorker
 
 import (
-  "context"
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"syscall"
 	"tes/ga4gh"
-  "tes/server/proto"
+	"tes/server/proto"
 )
 
 const headerSize = int64(102400)

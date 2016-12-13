@@ -1,4 +1,4 @@
-package tes_server
+package scheduler
 
 import (
 	"google.golang.org/grpc"

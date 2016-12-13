@@ -15,7 +15,7 @@ type FileMapper struct {
 	fileSystems map[string]FileSystemAccess
 	VolumeDir   string
 	//client      *ga4gh_task_ref.SchedulerClient
-	jobs        map[string]*JobFileMapper
+	jobs map[string]*JobFileMapper
 }
 
 // JobFileMapper documentation

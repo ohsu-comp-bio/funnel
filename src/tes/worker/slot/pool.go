@@ -5,23 +5,8 @@ import (
 	"context"
 	uuid "github.com/nu7hatch/gouuid"
 	"log"
-	"os"
-	"path/filepath"
-	"strings"
-	"tes/worker"
 	"time"
 )
-
-// For brevity
-type Context context.Context
-
-// Used to pass file system configuration to the worker engine.
-type FileConfig struct {
-	SwiftCacheDir string
-	AllowedDirs   string
-	SharedDir     string
-	VolumeDir     string
-}
 
 type PoolId string
 
@@ -62,7 +47,7 @@ func (pool *Pool) Start() {
 
 	// Create and start slots.
 	for _, slot := range pool.slots {
-		go slot.Start(ctx)
+		go slot.Run(ctx)
 	}
 
 	// This tracks the status of concurrent job slots.
@@ -77,7 +62,7 @@ func (pool *Pool) Start() {
 			// Check if the pool is completely idle.
 			isRunning := false
 			for _, slot := range pool.slots {
-				if slot.Status() == Running {
+				if slot.State() == Running {
 					isRunning = true
 				}
 			}
@@ -97,49 +82,4 @@ func (pool *Pool) Start() {
 func GenPoolId() PoolId {
 	u, _ := uuid.NewV4()
 	return PoolId(u.String())
-}
-
-// TODO I'm not sure what the best place for this is, or how/when is best to create
-//      the file mapper/client.
-func getFileClient(config FileConfig) tesTaskEngineWorker.FileSystemAccess {
-
-	if config.VolumeDir != "" {
-		volumeDir, _ := filepath.Abs(config.VolumeDir)
-		if _, err := os.Stat(volumeDir); os.IsNotExist(err) {
-			os.Mkdir(volumeDir, 0700)
-		}
-	}
-
-	// OpenStack Swift object storage
-	if config.SwiftCacheDir != "" {
-		// Mock Swift storage directory to local filesystem.
-		// NOT actual swift.
-		storageDir, _ := filepath.Abs(config.SwiftCacheDir)
-		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
-			os.Mkdir(storageDir, 0700)
-		}
-
-		return tesTaskEngineWorker.NewSwiftAccess()
-
-		// Local filesystem storage
-	} else if config.AllowedDirs != "" {
-		o := []string{}
-		for _, i := range strings.Split(config.AllowedDirs, ",") {
-			p, _ := filepath.Abs(i)
-			o = append(o, p)
-		}
-		return tesTaskEngineWorker.NewFileAccess(o)
-
-		// Shared filesystem storage
-	} else if config.SharedDir != "" {
-		storageDir, _ := filepath.Abs(config.SharedDir)
-		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
-			os.Mkdir(storageDir, 0700)
-		}
-		return tesTaskEngineWorker.NewSharedFS(storageDir)
-
-	} else {
-		// TODO what's a good default? Or error?
-		return tesTaskEngineWorker.NewSharedFS("storage")
-	}
 }

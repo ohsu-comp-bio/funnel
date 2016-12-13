@@ -6,11 +6,21 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"tes/ga4gh"
-	"tes/server"
+	"tes/scheduler"
 	"tes/server/proto"
 )
+
+// Used to pass file system configuration to the worker engine.
+type FileConfig struct {
+	SwiftCacheDir string
+	AllowedDirs   string
+	SharedDir     string
+	VolumeDir     string
+}
 
 const headerSize = int64(102400)
 
@@ -40,17 +50,51 @@ func FindStdin(bindings []FSBinding, containerPath string) (*os.File, error) {
 	}
 }
 
+type Engine interface {
+	RunJob(ctx context.Context, job *ga4gh_task_exec.Job) error
+}
+
+type engine struct {
+	sched  *scheduler.Client
+	mapper *FileMapper
+}
+
+func NewEngine(schedAddr string, fconf FileConfig) (Engine, error) {
+
+	// Get a client for the scheduler service
+	sched, err := scheduler.NewClient(schedAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	fileClient := getFileClient(fconf)
+	mapper := NewFileMapper(fileClient, fconf.VolumeDir)
+	return &engine{sched, mapper}, nil
+}
+
+func (eng *engine) Close() {
+	eng.sched.Close()
+	// TODO does file mapper or anythign else need cleanup?
+}
+
 // RunJob runs a job.
-func RunJob(sched *tes_server.SchedulerClient, job *ga4gh_task_exec.Job, mapper FileMapper) error {
-  // TODO context should be created at the top-level and passed down
-  ctx := context.Background()
+func (eng *engine) RunJob(ctx context.Context, job *ga4gh_task_exec.Job) error {
+	// Tell the scheduler the job is running
+	eng.sched.SetRunning(ctx, job)
+	err := eng.runJob(ctx, job)
+	if err != nil {
+		eng.sched.SetFailed(ctx, job)
+		//BUG: error status not returned to scheduler
+		log.Printf("Failed to run job [%s]: %s", job.JobID, err)
+	} else {
+		eng.sched.SetComplete(ctx, job)
+	}
+	return err
+}
 
-  sched.UpdateJobStatus(ctx, &ga4gh_task_ref.UpdateStatusRequest{
-    Id: job.JobID,
-    State: ga4gh_task_exec.State_Running,
-  })
-
+func (eng *engine) runJob(ctx context.Context, job *ga4gh_task_exec.Job) error {
 	// Modifies the filemapper's jobID
+	mapper := eng.mapper
 	mapper.Job(job.JobID)
 
 	// Iterates through job.Task.Resources.Volumes and add the volume to mapper.
@@ -76,6 +120,7 @@ func RunJob(sched *tes_server.SchedulerClient, job *ga4gh_task_exec.Job, mapper 
 		}
 	}
 
+	// TODO allow context to cancel the step loop
 	for stepNum, dockerTask := range job.Task.Docker {
 		stdin, err := FindStdin(mapper.jobs[job.JobID].Bindings, dockerTask.Stdin)
 		if err != nil {
@@ -145,17 +190,11 @@ func RunJob(sched *tes_server.SchedulerClient, job *ga4gh_task_exec.Job, mapper 
 				ExitCode: int32(exitCode),
 			},
 		}
-
-		if cmdErr != nil {
-      statusReq.State = ga4gh_task_exec.State_Error
-		} else {
-      statusReq.State = ga4gh_task_exec.State_Complete
-    }
-		sched.UpdateJobStatus(ctx, statusReq)
+		eng.sched.UpdateJobStatus(ctx, statusReq)
 
 		if cmdErr != nil {
 			return cmdErr
-    }
+		}
 	}
 
 	mapper.FinalizeJob(job.JobID)
@@ -178,4 +217,49 @@ func getExitCode(err error) int {
 	}
 	// The error is nil, the command returned successfully, so exit status is 0.
 	return 0
+}
+
+// TODO I'm not sure what the best place for this is, or how/when is best to create
+//      the file mapper/client.
+func getFileClient(config FileConfig) FileSystemAccess {
+
+	if config.VolumeDir != "" {
+		volumeDir, _ := filepath.Abs(config.VolumeDir)
+		if _, err := os.Stat(volumeDir); os.IsNotExist(err) {
+			os.Mkdir(volumeDir, 0700)
+		}
+	}
+
+	// OpenStack Swift object storage
+	if config.SwiftCacheDir != "" {
+		// Mock Swift storage directory to local filesystem.
+		// NOT actual swift.
+		storageDir, _ := filepath.Abs(config.SwiftCacheDir)
+		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
+			os.Mkdir(storageDir, 0700)
+		}
+
+		return NewSwiftAccess()
+
+		// Local filesystem storage
+	} else if config.AllowedDirs != "" {
+		o := []string{}
+		for _, i := range strings.Split(config.AllowedDirs, ",") {
+			p, _ := filepath.Abs(i)
+			o = append(o, p)
+		}
+		return NewFileAccess(o)
+
+		// Shared filesystem storage
+	} else if config.SharedDir != "" {
+		storageDir, _ := filepath.Abs(config.SharedDir)
+		if _, err := os.Stat(storageDir); os.IsNotExist(err) {
+			os.Mkdir(storageDir, 0700)
+		}
+		return NewSharedFS(storageDir)
+
+	} else {
+		// TODO what's a good default? Or error?
+		return NewSharedFS("storage")
+	}
 }

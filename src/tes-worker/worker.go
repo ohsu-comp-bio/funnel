@@ -4,12 +4,13 @@ import (
 	"flag"
 	"log"
 	"os"
+	worker "tes/worker"
 	"tes/worker/slot"
 )
 
 type WorkerConfig struct {
 	masterAddr string
-	fileConfig slot.FileConfig
+	fileConfig worker.FileConfig
 	volumeDir  string
 	timeout    int
 	numWorkers int
@@ -27,7 +28,7 @@ func main() {
 
 	config := WorkerConfig{
 		masterAddr: *masterArg,
-		volumeDir: *volumeDirArg,
+		volumeDir:  *volumeDirArg,
 		timeout:    *timeoutArg,
 		numWorkers: *nworker,
 		logPath:    *logFileArg,
@@ -53,12 +54,24 @@ func start(config WorkerConfig) {
 		idleTimeout = slot.IdleTimeoutAfterSeconds(config.timeout)
 	}
 
+	// TODO config changed. what's the right thing to do here?
+	fileConfig := worker.FileConfig{
+		VolumeDir: config.volumeDir,
+	}
+
 	slots := make([]*slot.Slot, config.numWorkers)
 	p := slot.NewPool(slots, idleTimeout)
 
+	eng, err := worker.NewEngine(config.masterAddr, fileConfig)
+	if err != nil {
+		log.Printf("Error creating worker engine: %s", err)
+		return
+	}
+
 	for i := 0; i < config.numWorkers; i++ {
 		id := slot.GenSlotId(p.Id, i)
-		slots[i] = slot.NewDefaultSlot(id, config.masterAddr, config.fileConfig)
+		// TODO handle error
+		slots[i], _ = slot.NewSlot(id, config.masterAddr, eng)
 	}
 
 	p.Start()

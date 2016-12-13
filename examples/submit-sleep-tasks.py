@@ -18,7 +18,7 @@ task = {
     "docker" : [
 	{
 	    "imageName" : "ubuntu",
-	    "cmd" : ["sleep", args.sleep]
+	    "cmd" : ["sleep", str(args.sleep)]
 	}
     ]
 }

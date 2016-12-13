@@ -1,5 +1,5 @@
-// pool organizes concurrent job processing
-package pool
+// slot organizes concurrent job processing
+package slot
 
 import (
 	"context"

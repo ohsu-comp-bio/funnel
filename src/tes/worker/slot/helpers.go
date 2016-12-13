@@ -1,4 +1,4 @@
-package pool
+package slot
 
 import (
 	pbe "tes/ga4gh"

@@ -4,12 +4,12 @@ import (
 	"flag"
 	"log"
 	"os"
-	"tes/worker/pool"
+	"tes/worker/slot"
 )
 
 type WorkerConfig struct {
 	masterAddr string
-	fileConfig pool.FileConfig
+	fileConfig slot.FileConfig
 	timeout    int
 	numWorkers int
 	logPath    string
@@ -29,7 +29,7 @@ func main() {
 
 	config := WorkerConfig{
 		masterAddr: *masterArg,
-		fileConfig: pool.FileConfig{
+		fileConfig: slot.FileConfig{
 			SwiftCacheDir: *swiftDirArg,
 			AllowedDirs:   *allowedDirsArg,
 			SharedDir:     *storageDirArg,
@@ -55,17 +55,17 @@ func start(config WorkerConfig) {
 		}
 	}
 
-	idleTimeout := pool.NoIdleTimeout()
+	idleTimeout := slot.NoIdleTimeout()
 	if config.timeout != -1 {
-		idleTimeout = pool.IdleTimeoutAfterSeconds(config.timeout)
+		idleTimeout = slot.IdleTimeoutAfterSeconds(config.timeout)
 	}
 
-	slots := make([]*pool.Slot, config.numWorkers)
-	p := pool.NewPool(slots, idleTimeout)
+	slots := make([]*slot.Slot, config.numWorkers)
+	p := slot.NewPool(slots, idleTimeout)
 
 	for i := 0; i < config.numWorkers; i++ {
-		id := pool.GenSlotId(p.Id, i)
-		slots[i] = pool.NewDefaultSlot(id, config.masterAddr, config.fileConfig)
+		id := slot.GenSlotId(p.Id, i)
+		slots[i] = slot.NewDefaultSlot(id, config.masterAddr, config.fileConfig)
 	}
 
 	p.Start()

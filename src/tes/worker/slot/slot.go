@@ -76,15 +76,13 @@ func (slot *Slot) Start(ctx Context) {
 	ticker := time.NewTicker(slot.sleepDuration)
 	defer ticker.Stop()
 
-	job := requestJob(ctx, sched, slot.Id)
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
 
 		case <-ticker.C:
-			job = requestJob(ctx, sched, slot.Id)
+			job := requestJob(ctx, sched, slot.Id)
 
 			if job != nil {
 				log.Printf("Got job: %s", job.JobID)

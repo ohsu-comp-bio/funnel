@@ -42,6 +42,14 @@ func FindStdin(bindings []FSBinding, containerPath string) (*os.File, error) {
 
 // RunJob runs a job.
 func RunJob(sched *tes_server.SchedulerClient, job *ga4gh_task_exec.Job, mapper FileMapper) error {
+  // TODO context should be created at the top-level and passed down
+  ctx := context.Background()
+
+  sched.UpdateJobStatus(ctx, &ga4gh_task_ref.UpdateStatusRequest{
+    Id: job.JobID,
+    State: ga4gh_task_exec.State_Running,
+  })
+
 	// Modifies the filemapper's jobID
 	mapper.Job(job.JobID)
 
@@ -137,13 +145,17 @@ func RunJob(sched *tes_server.SchedulerClient, job *ga4gh_task_exec.Job, mapper 
 				ExitCode: int32(exitCode),
 			},
 		}
-		// TODO context should be created at the top-level and passed down
-		ctx := context.Background()
+
+		if cmdErr != nil {
+      statusReq.State = ga4gh_task_exec.State_Error
+		} else {
+      statusReq.State = ga4gh_task_exec.State_Complete
+    }
 		sched.UpdateJobStatus(ctx, statusReq)
 
 		if cmdErr != nil {
 			return cmdErr
-		}
+    }
 	}
 
 	mapper.FinalizeJob(job.JobID)

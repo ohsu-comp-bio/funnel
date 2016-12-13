@@ -2,7 +2,6 @@ package tesTaskEngineWorker
 
 import (
 	"fmt"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -54,11 +53,11 @@ type FSBinding struct {
 
 // NewFileMapper documentation
 // TODO: documentation
-func NewFileMapper(client *ga4gh_task_ref.SchedulerClient, fileSystem FileSystemAccess, volumeDir string) *FileMapper {
+func NewFileMapper(fileSystem FileSystemAccess, volumeDir string) *FileMapper {
 	if _, err := os.Stat(volumeDir); os.IsNotExist(err) {
 		os.Mkdir(volumeDir, 0700)
 	}
-	return &FileMapper{VolumeDir: volumeDir, jobs: make(map[string]*JobFileMapper), client: client, fileSystem: fileSystem}
+	return &FileMapper{VolumeDir: volumeDir, jobs: make(map[string]*JobFileMapper), fileSystem: fileSystem}
 }
 
 // Job documentation
@@ -166,14 +165,6 @@ func (fileMapper *FileMapper) GetBindings(jobID string) []string {
 		out = append(out, o)
 	}
 	return out
-}
-
-// UpdateOutputs documentation
-// TODO: documentation
-func (fileMapper *FileMapper) UpdateOutputs(jobID string, jobNum int, exitCode int, stdoutText string, stderrText string) {
-	log := ga4gh_task_exec.JobLog{Stdout: stdoutText, Stderr: stderrText, ExitCode: int32(exitCode)}
-	a := ga4gh_task_ref.UpdateStatusRequest{Id: jobID, Step: int64(jobNum), Log: &log}
-	(*fileMapper.client).UpdateJobStatus(context.Background(), &a)
 }
 
 // TempFile creates a temporary file and returns a pointer to an operating system file.

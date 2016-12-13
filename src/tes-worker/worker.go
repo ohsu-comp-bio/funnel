@@ -59,7 +59,7 @@ func main() {
 		}
 		fileClient = tesTaskEngineWorker.NewSharedFS(storageDir)
 	}
-	fileMapper := tesTaskEngineWorker.NewFileMapper(&schedClient, fileClient, volumeDir)
+	fileMapper := tesTaskEngineWorker.NewFileMapper(fileClient, volumeDir)
 
 	u, _ := uuid.NewV4()
 	manager, _ := tesTaskEngineWorker.NewLocalManager(*nworker, u.String())

@@ -9,3 +9,4 @@ ga4gh_tasks.db
 /src/google.golang.org/
 /storage/
 /volumes/
+*.sw[op]

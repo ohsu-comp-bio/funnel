@@ -126,6 +126,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 	}
 
 	jwt := getJWT(ctx)
+	log.Printf("JWT: %s", jwt)
 
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -268,10 +269,6 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 // GetServiceInfo documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
-
-	jwt := getJWT(ctx)
-	log.Printf("JWT: %s", jwt)
-
 	//BUG: this isn't the best translation, probably lossy. Maybe ServiceInfo data structure schema needs to be refactored
 	out := map[string]string{}
 	for _, i := range taskBolt.serverConfig.Storage {

@@ -196,3 +196,9 @@ python funnel/main.py --tes tes.yaml test/hashsplitter-workflow.cwl --input READ
 
 ```
 
+## Python examples
+
+There are some example/helper scripts in the `examples/` directory, which might be useful during development. For example, to submit 10 tasks to TES which each sleep for 5 seconds, run:
+```
+python examples/submit-sleep-tasks.py --count 10 --sleep 5
+```

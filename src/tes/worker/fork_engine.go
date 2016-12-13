@@ -31,7 +31,7 @@ func (forkManager *ForkManager) worker(inchan chan ga4gh_task_exec.Job) {
 		log.Printf("Launch job: %s", job)
 		s := ga4gh_task_exec.State_Running
 		forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: s})
-		err := RunJob(&job, forkManager.files)
+		err := RunJob(forkManager.sched, &job, forkManager.files)
 		if err != nil {
 			log.Printf("Job error: %s", err)
 			forkManager.sched.UpdateJobStatus(forkManager.ctx, &ga4gh_task_ref.UpdateStatusRequest{Id: job.JobID, State: ga4gh_task_exec.State_Error})

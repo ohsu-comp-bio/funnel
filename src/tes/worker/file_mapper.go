@@ -2,13 +2,12 @@ package tesTaskEngineWorker
 
 import (
 	"fmt"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"tes/ga4gh"
 	"tes/server/proto"
-	"strings"
 )
 
 // FileMapper documentation
@@ -55,11 +54,12 @@ type FSBinding struct {
 
 // NewFileMapper documentation
 // TODO: documentation
-func NewFileMapper(client *ga4gh_task_ref.SchedulerClient, fileSystems map[string]FileSystemAccess, volumeDir string) *FileMapper {
+
+func NewFileMapper(fileSystem FileSystemAccess, volumeDir string) *FileMapper {
 	if _, err := os.Stat(volumeDir); os.IsNotExist(err) {
 		os.Mkdir(volumeDir, 0700)
 	}
-	return &FileMapper{VolumeDir: volumeDir, jobs: make(map[string]*JobFileMapper), client: client, fileSystems: fileSystems}
+	return &FileMapper{VolumeDir: volumeDir, jobs: make(map[string]*JobFileMapper)}
 }
 
 // Job documentation
@@ -102,14 +102,13 @@ func (fileMapper *FileMapper) HostPath(jobID string, mountPath string) string {
 	return ""
 }
 
-
 func (fileMapper *FileMapper) FindFS(url string) (FileSystemAccess, error) {
 	tmp := strings.Split(url, ":")[0]
 	fs, ok := fileMapper.fileSystems[tmp]
 	if !ok {
 		return fs, fmt.Errorf("File System %s not found", tmp)
 	}
-	return fs, nil	
+	return fs, nil
 }
 
 // MapInput gets the file and put it into fileMapper. `storage` is
@@ -181,14 +180,6 @@ func (fileMapper *FileMapper) GetBindings(jobID string) []string {
 		out = append(out, o)
 	}
 	return out
-}
-
-// UpdateOutputs documentation
-// TODO: documentation
-func (fileMapper *FileMapper) UpdateOutputs(jobID string, jobNum int, exitCode int, stdoutText string, stderrText string) {
-	log := ga4gh_task_exec.JobLog{Stdout: stdoutText, Stderr: stderrText, ExitCode: int32(exitCode)}
-	a := ga4gh_task_ref.UpdateStatusRequest{Id: jobID, Step: int64(jobNum), Log: &log}
-	(*fileMapper.client).UpdateJobStatus(context.Background(), &a)
 }
 
 // TempFile creates a temporary file and returns a pointer to an operating system file.

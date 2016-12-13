@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	context "golang.org/x/net/context"
 	uuid "github.com/nu7hatch/gouuid"
+	context "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
 	"os"
@@ -33,16 +33,17 @@ func main() {
 	}
 	defer conn.Close()
 	schedClient := ga4gh_task_ref.NewSchedulerClient(conn)
-	
+
 	config, err := schedClient.GetServerConfig(context.Background(), &ga4gh_task_ref.WorkerInfo{})
 
 	fsMap := map[string]tesTaskEngineWorker.FileSystemAccess{}
-	
+
 	for _, i := range config.Storage {
 		switch i.Protocol {
 		case "s3":
-			fileClient := tesTaskEngineWorker.NewS3Access()
-			fsMap["s3"] = fileClient
+			//todo: auth info needs to be passed in...
+			//fileClient := tesTaskEngineWorker.NewS3Access()
+			//fsMap["s3"] = fileClient
 		case "fs":
 			storageDir := i.Config["basedir"]
 			if _, err := os.Stat(storageDir); os.IsNotExist(err) {
@@ -61,7 +62,8 @@ func main() {
 		}
 	}
 
-	fileMapper := tesTaskEngineWorker.NewFileMapper(&schedClient, fsMap, volumeDir)
+	//fileMapper := tesTaskEngineWorker.NewFileMapper(fsMap, volumeDir)
+	fileMapper := tesTaskEngineWorker.NewFileMapper(fileClient, volumeDir)
 
 	u, _ := uuid.NewV4()
 	manager, _ := tesTaskEngineWorker.NewLocalManager(*nworker, u.String())

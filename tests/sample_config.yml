@@ -1,6 +1,6 @@
 
 
 Storage:
-  - Protocol: swift
+  - Protocol: s3
     Config:      
-      host: 127.0.0.1
+      endpoint: 127.0.0.1

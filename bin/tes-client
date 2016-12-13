@@ -4,8 +4,8 @@ import py_tes
 import argparse
 import json
 
-def run_run(server, task, secret):
-    tes = py_tes.TES(server, secret=secret)
+def run_run(server, task, token):
+    tes = py_tes.TES(server, secret=token)
 
     with open(args.task) as handle:
         task = json.loads(handle.read())
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser_upload.set_defaults(func=run_upload)
 
     parser_run = subparsers.add_parser('run')
-    parser_run.add_argument("-s", "--secret", default=None)
+    parser_run.add_argument("-t", "--token", default=None)
     parser_run.add_argument("task")
     parser_run.set_defaults(func=run_run)
     

@@ -94,6 +94,7 @@ func (slot *Slot) Start(ctx Context) {
 
 				err := slot.runJob(sched, job)
 				if err != nil {
+					//BUG: error status not returned to scheduler
 					log.Printf("Failed to run job [%s]: %s", job.JobID, err)
 				}
 			}

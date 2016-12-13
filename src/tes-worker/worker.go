@@ -40,9 +40,9 @@ func main() {
 	
 	for _, i := range config.Storage {
 		switch i.Protocol {
-		case "swift":
-			fileClient := tesTaskEngineWorker.NewSwiftAccess()
-			fsMap["swift"] = fileClient
+		case "s3":
+			fileClient := tesTaskEngineWorker.NewS3Access()
+			fsMap["s3"] = fileClient
 		case "fs":
 			storageDir := i.Config["basedir"]
 			if _, err := os.Stat(storageDir); os.IsNotExist(err) {

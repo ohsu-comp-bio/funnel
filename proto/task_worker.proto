@@ -13,6 +13,7 @@ message StorageConfig {
 
 message ServerConfig {
   repeated StorageConfig storage = 1;
+  string secret = 2;
 }
 
 /**

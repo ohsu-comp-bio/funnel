@@ -23,7 +23,7 @@ func main() {
 	rpcPort := flag.String("rpc", "9090", "HTTP Port")
 	storageDirArg := flag.String("storage", "", "Storage Dir")
 	sharedDirArg := flag.String("shared", "", "Shared File System")
-	swiftArg := flag.String("swift", "", "Use SWIFT object store")
+	s3Arg := flag.String("s3", "", "Use S3 object store")
 	taskDB := flag.String("db", "ga4gh_tasks.db", "Task DB File")
 	configFile := flag.String("config", "", "Config File")
 
@@ -49,10 +49,10 @@ func main() {
 		fs.Config["basedir"] = storageDir
 		config.Storage = append(config.Storage, fs)
 	}
-	if *swiftArg != "" {
+	if *s3Arg != "" {
 		fs := &ga4gh_task_ref.StorageConfig{Config:map[string]string{}}
-		fs.Protocol = "swift"
-		fs.Config["endpoint"] = *swiftArg
+		fs.Protocol = "s3"
+		fs.Config["endpoint"] = *s3Arg
 		config.Storage = append(config.Storage, fs)
 	}
 	if *sharedDirArg != "" {

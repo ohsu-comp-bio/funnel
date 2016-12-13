@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 	"tes/ga4gh"
-	"tes/server/proto"
 )
 
 // FileMapper documentation
@@ -15,7 +14,7 @@ import (
 type FileMapper struct {
 	fileSystems map[string]FileSystemAccess
 	VolumeDir   string
-	client      *ga4gh_task_ref.SchedulerClient
+	//client      *ga4gh_task_ref.SchedulerClient
 	jobs        map[string]*JobFileMapper
 }
 
@@ -33,13 +32,6 @@ type JobFileMapper struct {
 type FileSystemAccess interface {
 	Get(storage string, path string, class string) error
 	Put(storage string, path string, class string) error
-}
-
-// EngineStatus documentation
-// TODO: documentation
-type EngineStatus struct {
-	JobCount   int32
-	ActiveJobs int32
 }
 
 // FSBinding documentation

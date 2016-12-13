@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"syscall"
 	"tes/ga4gh"
+	"tes/server"
 	"tes/server/proto"
 )
 
@@ -40,7 +41,7 @@ func FindStdin(bindings []FSBinding, containerPath string) (*os.File, error) {
 }
 
 // RunJob runs a job.
-func RunJob(sched ga4gh_task_ref.SchedulerClient, job *ga4gh_task_exec.Job, mapper FileMapper) error {
+func RunJob(sched *tes_server.SchedulerClient, job *ga4gh_task_exec.Job, mapper FileMapper) error {
 	// Modifies the filemapper's jobID
 	mapper.Job(job.JobID)
 

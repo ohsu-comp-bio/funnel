@@ -6,9 +6,9 @@ import time
 import urllib
 import json
 
-from common_test_util import ServerTest, get_abspath
+from common_test_util import SimpleServerTest, get_abspath
 
-class TestTaskREST(ServerTest):
+class TestTaskREST(SimpleServerTest):
 
     def test_hello_world(self):
 

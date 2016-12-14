@@ -6,15 +6,15 @@ import time
 import urllib
 import json
 
-from common_test_util import SimpleServerTest, get_abspath
+from common_test_util import S3ServerTest, get_abspath
 
-class TestFileOP(SimpleServerTest):
+class TestFileOP(S3ServerTest):
 
 
     def test_file_mount(self):
         
         in_loc = self.copy_to_storage( get_abspath("test_data.1") )
-        out_loc = "test_data.out"
+        out_loc = self.get_storage_url( "test_data.out" )
 
         task = {
             "name" : "TestMD5",

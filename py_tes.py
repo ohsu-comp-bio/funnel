@@ -54,11 +54,29 @@ class TES:
         object_name = n.path
         object_name = re.sub("^/", "", object_name)
         c.fput_object(n.netloc, object_name, path)
+
+    def download_file(self, path, storage):
+        n = urlparse(storage)
+        if n.scheme != "s3":
+            raise Exception("Not S3 URL")
+        c = self.s3connect()
+        object_name = n.path
+        object_name = re.sub("^/", "", object_name)
+        c.fget_object(n.netloc, object_name, path)
+
         
     def list(self, bucket):
         c = self.s3connect()
         for i in c.list_objects(bucket):
             yield "s3://%s/%s" % (bucket, i.object_name)
+    
+    def make_bucket(self, bucket):
+        c = self.s3connect()
+        c.make_bucket(bucket)
+
+    def bucket_exists(self, bucket):
+        c = self.s3connect()
+        c.bucket_exists(bucket)
         
     def submit(self, task):
         encoded = None

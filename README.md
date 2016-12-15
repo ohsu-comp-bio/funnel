@@ -4,6 +4,10 @@ develop: ![develop-build-status](https://travis-ci.org/bmeg/task-execution-serve
 
 # task-execution-server
 
+## Requirements
+- [Protocol Buffers](https://github.com/google/protobuf) if making changes to the schema.
+
+
 ## Initial tool install
 ```
 make depends

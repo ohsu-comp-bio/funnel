@@ -1,6 +1,7 @@
 package tesTaskEngineWorker
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -10,7 +11,7 @@ import (
 type DockerCmd struct {
 	ImageName       string
 	Cmd             []string
-	Binds           []string
+	Volumes         []Volume
 	Workdir         string
 	RemoveContainer bool
 	Stdin           *os.File
@@ -18,10 +19,15 @@ type DockerCmd struct {
 	Stderr          *os.File
 }
 
-func (dcmd DockerCmd) Run() error {
-	log.Printf("Docker Binds: %s", dcmd.Binds)
+// GetVolumes takes a jobID and returns an array of string.
+func formatVolumeArg(v Volume) string {
+	// `o` is structed as "HostPath:ContainerPath:Mode".
+	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
+}
 
-	// TODO why are we using '-i'?
+func (dcmd DockerCmd) Run() error {
+	log.Printf("Docker Volumes: %s", dcmd.Volumes)
+
 	args := []string{"run", "-i"}
 
 	if dcmd.RemoveContainer {
@@ -32,8 +38,9 @@ func (dcmd DockerCmd) Run() error {
 		args = append(args, "-w", dcmd.Workdir)
 	}
 
-	for _, bind := range dcmd.Binds {
-		args = append(args, "-v", bind)
+	for _, vol := range dcmd.Volumes {
+		arg := formatVolumeArg(vol)
+		args = append(args, "-v", arg)
 	}
 
 	args = append(args, dcmd.ImageName)

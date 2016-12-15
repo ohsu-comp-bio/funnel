@@ -4,44 +4,40 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
+	"tes/storage"
 	worker "tes/worker"
 	"tes/worker/slot"
 )
 
-type WorkerConfig struct {
-	masterAddr string
-	fileConfig worker.FileConfig
-	volumeDir  string
-	timeout    int
-	numWorkers int
-	logPath    string
-}
-
 func main() {
 	masterArg := flag.String("master", "localhost:9090", "Master Server")
-	volumeDirArg := flag.String("volumes", "volumes", "Volume Dir")
+	workDirArg := flag.String("workdir", "volumes", "Working Directory")
 	timeoutArg := flag.Int("timeout", -1, "Timeout in seconds")
 	nworker := flag.Int("nworkers", 4, "Worker Count")
 	logFileArg := flag.String("logfile", "", "File path to write logs to")
 
 	flag.Parse()
 
-	config := WorkerConfig{
-		masterAddr: *masterArg,
-		volumeDir:  *volumeDirArg,
-		timeout:    *timeoutArg,
-		numWorkers: *nworker,
-		logPath:    *logFileArg,
+	config := worker.Config{
+		MasterAddr: *masterArg,
+		WorkDir:    *workDirArg,
+		Timeout:    *timeoutArg,
+		NumWorkers: *nworker,
+		LogPath:    *logFileArg,
 	}
 	start(config)
 }
 
-func start(config WorkerConfig) {
+func start(config worker.Config) {
+
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log
 	//      without having file permission problems?
-	if config.logPath != "" {
-		logFile, err := os.OpenFile(config.logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	// Configure logging
+	if config.LogPath != "" {
+		logFile, err := os.OpenFile(config.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			log.Println("Can't open log file")
 		} else {
@@ -49,30 +45,44 @@ func start(config WorkerConfig) {
 		}
 	}
 
-	idleTimeout := slot.NoIdleTimeout()
-	if config.timeout != -1 {
-		idleTimeout = slot.IdleTimeoutAfterSeconds(config.timeout)
-	}
+	// Configure the storage systems
+	allowedDirs := []string{}
+	allowedDirs = append(allowedDirs, "/tmp")
+	store, _ := new(storage.Storage).WithLocal(allowedDirs)
 
-	// TODO config changed. what's the right thing to do here?
-	fileConfig := worker.FileConfig{
-		VolumeDir: config.volumeDir,
-	}
-
-	slots := make([]*slot.Slot, config.numWorkers)
-	p := slot.NewPool(slots, idleTimeout)
-
-	eng, err := worker.NewEngine(config.masterAddr, fileConfig)
+	// Create the job engine
+	eng, err := worker.NewEngine(config.MasterAddr, config.WorkDir, store)
 	if err != nil {
 		log.Printf("Error creating worker engine: %s", err)
 		return
 	}
 
-	for i := 0; i < config.numWorkers; i++ {
-		id := slot.GenSlotId(p.Id, i)
-		// TODO handle error
-		slots[i], _ = slot.NewSlot(id, config.masterAddr, eng)
+	// Configure the slot timeout
+	idleTimeout := slot.NoIdleTimeout()
+	if config.Timeout != -1 {
+		idleTimeout = slot.IdleTimeoutAfterSeconds(config.Timeout)
 	}
 
+	// Create the slot pool
+	slots := make([]*slot.Slot, config.NumWorkers)
+	p := slot.NewPool(slots, idleTimeout)
+
+	// Create the slots
+	for i := 0; i < config.NumWorkers; i++ {
+		id := slot.GenSlotId(p.Id, i)
+		// TODO handle error
+		slots[i], _ = slot.NewSlot(id, config.MasterAddr, eng)
+	}
+
+	// Start the pool
 	p.Start()
+}
+
+func parseAllowedDirs(in string) []string {
+	o := []string{}
+	for _, i := range strings.Split(in, ",") {
+		p, _ := filepath.Abs(i)
+		o = append(o, p)
+	}
+	return o
 }

@@ -6,6 +6,8 @@ import (
 	"tes/server/proto"
 )
 
+// ParseConfigFile parses a TES config file, which is formatted in YAML,
+// and returns a ServerConfig struct.
 func ParseConfigFile(path string) (ga4gh_task_ref.ServerConfig, error) {
 	doc := ga4gh_task_ref.ServerConfig{}
 	source, err := ioutil.ReadFile(path)

@@ -32,6 +32,8 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 			proto.Unmarshal(v, &out)
 			ch <- &out
 			bQ.Delete(k)
+			// TODO the worker is also sending a "Running" status update, which is kind of redundant.
+			//      Which is better?
 			bA.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
 			return nil
 		}

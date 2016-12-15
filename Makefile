@@ -30,6 +30,9 @@ depends:
 golint:
 	go get -v github.com/golang/lint/golint/
 
+serve-doc:
+	godoc --http=:6060
+
 tidy: golint
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
 	@for d in `find ./src/tes -type d | grep -E -v "ga4gh|proto"`; do \

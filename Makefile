@@ -32,8 +32,10 @@ golint:
 
 tidy: golint
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
-	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs golint
-	@for d in $(GOPATH)/src/tes*; \
-	do \
+	@for d in `find ./src/tes -type d | grep -E -v "ga4gh|proto"`; do \
+		echo $$d; \
+		golint $$d; \
+	done
+	@for d in $(GOPATH)/src/tes*; do \
 		go tool vet $$d; \
 	done

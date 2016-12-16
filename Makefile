@@ -33,6 +33,14 @@ golint:
 serve-doc:
 	godoc --http=:6060
 
+add_deps:
+	go get github.com/dpw/vendetta
+	./bin/vendetta src/
+
+prune_deps:
+	go get github.com/dpw/vendetta
+	./bin/vendetta -p src/
+
 tidy: golint
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
 	@for d in `find ./src/tes -type d | grep -E -v "ga4gh|proto"`; do \

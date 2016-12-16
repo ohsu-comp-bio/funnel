@@ -51,8 +51,8 @@ func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
 func (s3 *S3Backend) Put(url string, hostPath string, class string) error {
 	log.Printf("Starting upload of %s", url)
 	path := strings.TrimPrefix(url, S3Protocol)
-  // TODO it's easy to create an error if this starts with a "/"
-  //      maybe just strip it?
+	// TODO it's easy to create an error if this starts with a "/"
+	//      maybe just strip it?
 	split := strings.SplitN(path, "/", 2)
 
 	if class == File {

@@ -16,8 +16,8 @@ import (
 // TODO: documentation
 func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
 	// TODO this gets really verbose. Need logging levels log.Printf("Job Request")
-  var task *ga4gh_task_exec.Task
-  authToken := ""
+	var task *ga4gh_task_exec.Task
+	authToken := ""
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bQ := tx.Bucket(JobsQueued)
@@ -30,7 +30,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 		if k, _ := c.First(); k != nil {
 			log.Printf("Found queued job")
 
-      // Get the task
+			// Get the task
 			v := bOp.Get(k)
 			task = &ga4gh_task_exec.Task{}
 			proto.Unmarshal(v, task)
@@ -38,22 +38,22 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 
 			// TODO the worker is also sending a "Running" status update, which is kind of redundant.
 			//      Which is better?
-      // Update the job state to "Running"
+			// Update the job state to "Running"
 			bA.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
 
-      // Look for an auth token related to this task
-      tok := authBkt.Get([]byte(task.TaskID))
-      if tok != nil {
-        authToken = string(tok)
-      }
+			// Look for an auth token related to this task
+			tok := authBkt.Get([]byte(task.TaskID))
+			if tok != nil {
+				authToken = string(tok)
+			}
 			return nil
 		}
 		return nil
 	})
-  // No task was found. Respond accordingly.
-  if task == nil {
+	// No task was found. Respond accordingly.
+	if task == nil {
 		return &ga4gh_task_ref.JobResponse{}, nil
-  }
+	}
 
 	job := &ga4gh_task_exec.Job{
 		JobID: task.TaskID,

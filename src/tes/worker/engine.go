@@ -3,15 +3,15 @@ package tesTaskEngineWorker
 import (
 	"context"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"log"
 	"os/exec"
 	"path/filepath"
 	"syscall"
-	"tes/scheduler"
-	"tes/storage"
 	pbe "tes/ga4gh"
+	"tes/scheduler"
 	pbr "tes/server/proto"
-  "github.com/dgrijalva/jwt-go"
+	"tes/storage"
 )
 
 // Engine is responsivle for running a job. This includes downloading inputs,
@@ -23,17 +23,17 @@ type Engine interface {
 
 // engine is the internal implementation of a docker job engine.
 type engine struct {
-  // Address of the scheduler, e.g. "localhost:9090"
+	// Address of the scheduler, e.g. "localhost:9090"
 	schedAddr string
-  // Directory to write job files to
+	// Directory to write job files to
 	workDir string
-  // Storage client for downloading/uploading files
-	storage   *storage.Storage
+	// Storage client for downloading/uploading files
+	storage *storage.Storage
 }
 
 type auth struct {
-  Key string
-  Secret string
+	Key    string
+	Secret string
 }
 
 // NewEngine returns a new Engine instance configured with a given scheduler address,
@@ -86,43 +86,43 @@ func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
 }
 
 func (eng *engine) getAuth(tokenstr string) *auth {
-  log.Printf("Parsing token: %s", tokenstr)
-  // TODO there was a temporary error about time vs server time.
-  //      does that have to do with token parsing?
-  // TODO what to do if tokenstr is empty?
-  // Parse takes the token string and a function for looking up the key. The latter is especially
-  // useful if you use multiple keys for your application.  The standard is to use 'kid' in the
-  // head of the token to identify which key to use, but the parsed token (head and claims) is provided
-  // to the callback, providing flexibility.
-  token, err := jwt.Parse(tokenstr, func(token *jwt.Token) (interface{}, error) {
-      // Don't forget to validate the alg is what you expect:
-      if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-          return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-      }
-      // TODO where does secret key come from?
-      //      it's possible we'll have multiple secrets, so need to get the secret
-      //      based on some information in the token
-      // The key must be []byte for HMAC. The docs/API for the jwt lib are pretty bad about
-      // this point, so now you know!
-      return []byte("secret"), nil
-  })
+	log.Printf("Parsing token: %s", tokenstr)
+	// TODO there was a temporary error about time vs server time.
+	//      does that have to do with token parsing?
+	// TODO what to do if tokenstr is empty?
+	// Parse takes the token string and a function for looking up the key. The latter is especially
+	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
+	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
+	// to the callback, providing flexibility.
+	token, err := jwt.Parse(tokenstr, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		// TODO where does secret key come from?
+		//      it's possible we'll have multiple secrets, so need to get the secret
+		//      based on some information in the token
+		// The key must be []byte for HMAC. The docs/API for the jwt lib are pretty bad about
+		// this point, so now you know!
+		return []byte("secret"), nil
+	})
 
-  if err != nil {
-      log.Println("Error parsing auth token")
-      log.Println(err)
-      return nil
-  }
+	if err != nil {
+		log.Println("Error parsing auth token")
+		log.Println(err)
+		return nil
+	}
 
-  claims, ok := token.Claims.(jwt.MapClaims)
-  if ok && token.Valid {
-    // TODO key/error checking here. These claims could be missing.
-    key, _ := claims["S3_ACCESS_KEY_ID"].(string)
-    sec, _ := claims["S3_ACCESS_SECRET"].(string)
-    return &auth{key, sec}
-  } else {
-    log.Println("Error accessing auth token")
-  }
-  return nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		// TODO key/error checking here. These claims could be missing.
+		key, _ := claims["S3_ACCESS_KEY_ID"].(string)
+		sec, _ := claims["S3_ACCESS_SECRET"].(string)
+		return &auth{key, sec}
+	} else {
+		log.Println("Error accessing auth token")
+	}
+	return nil
 }
 
 // runJob calls a series of other functions to process a job:
@@ -133,8 +133,8 @@ func (eng *engine) getAuth(tokenstr string) *auth {
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
-  auth := eng.getAuth(jobR.Auth)
-  job := jobR.Job
+	auth := eng.getAuth(jobR.Auth)
+	job := jobR.Job
 	mapper, merr := eng.getMapper(job)
 	if merr != nil {
 		return merr
@@ -212,15 +212,15 @@ func (eng *engine) getMapper(job *pbe.Job) (*FileMapper, error) {
 // This will check the user authorization against the supported storage systems.
 func (eng *engine) getStorage(job *pbe.Job, au *auth) (*storage.Storage, error) {
 	// TODO catch error
-  if au != nil {
-    return eng.storage.WithS3(
-      "192.168.99.101:9000",
-      au.Key,
-      au.Secret,
-      false)
-  } else {
-    return eng.storage, nil
-  }
+	if au != nil {
+		return eng.storage.WithS3(
+			"192.168.99.101:9000",
+			au.Key,
+			au.Secret,
+			false)
+	} else {
+		return eng.storage, nil
+	}
 }
 
 func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) error {

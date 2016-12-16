@@ -12,9 +12,9 @@ const (
 type Backend interface {
 	Get(url string, path string, class string) error
 	Put(url string, path string, class string) error
-  // Determines whether this backends supports the given request (url/path/class).
-  // A backend normally uses this to match the url prefix (e.g. "s3://")
-  // TODO would it be useful if this included the request type (Get/Put)?
+	// Determines whether this backends supports the given request (url/path/class).
+	// A backend normally uses this to match the url prefix (e.g. "s3://")
+	// TODO would it be useful if this included the request type (Get/Put)?
 	Supports(url string, path string, class string) bool
 }
 

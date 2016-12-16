@@ -11,13 +11,14 @@ import (
 	"tes/storage"
 	pbe "tes/ga4gh"
 	pbr "tes/server/proto"
+  "github.com/dgrijalva/jwt-go"
 )
 
 // Engine is responsivle for running a job. This includes downloading inputs,
 // communicating updates to the scheduler service, running the actual command,
 // and uploading outputs.
 type Engine interface {
-	RunJob(ctx context.Context, job *pbe.Job) error
+	RunJob(ctx context.Context, job *pbr.JobResponse) error
 }
 
 // engine is the internal implementation of a docker job engine.
@@ -28,6 +29,11 @@ type engine struct {
 	workDir string
   // Storage client for downloading/uploading files
 	storage   *storage.Storage
+}
+
+type auth struct {
+  Key string
+  Secret string
 }
 
 // NewEngine returns a new Engine instance configured with a given scheduler address,
@@ -44,7 +50,7 @@ func NewEngine(addr string, wDir string, store *storage.Storage) (Engine, error)
 }
 
 // RunJob runs a job.
-func (eng *engine) RunJob(ctx context.Context, job *pbe.Job) error {
+func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
 	// This is essentially a simple helper for runJob() (below).
 	// This ensures that the job state is always updated in the scheduler,
 	// without having to do it on 15+ different lines in runJob() and others.
@@ -64,19 +70,59 @@ func (eng *engine) RunJob(ctx context.Context, job *pbe.Job) error {
 	}
 
 	// Tell the scheduler the job is running.
-	sched.SetRunning(ctx, job)
+	sched.SetRunning(ctx, job.Job)
 	joberr := eng.runJob(ctx, sched, job)
 
 	// Tell the scheduler whether the job failed or completed.
 	if joberr != nil {
-		sched.SetFailed(ctx, job)
+		sched.SetFailed(ctx, job.Job)
 		//BUG: error status not returned to scheduler
-		log.Printf("Failed to run job: %s", job.JobID)
+		log.Printf("Failed to run job: %s", job.Job.JobID)
 		log.Printf("%s", joberr)
 	} else {
-		sched.SetComplete(ctx, job)
+		sched.SetComplete(ctx, job.Job)
 	}
 	return joberr
+}
+
+func (eng *engine) getAuth(tokenstr string) *auth {
+  log.Printf("Parsing token: %s", tokenstr)
+  // TODO there was a temporary error about time vs server time.
+  //      does that have to do with token parsing?
+  // TODO what to do if tokenstr is empty?
+  // Parse takes the token string and a function for looking up the key. The latter is especially
+  // useful if you use multiple keys for your application.  The standard is to use 'kid' in the
+  // head of the token to identify which key to use, but the parsed token (head and claims) is provided
+  // to the callback, providing flexibility.
+  token, err := jwt.Parse(tokenstr, func(token *jwt.Token) (interface{}, error) {
+      // Don't forget to validate the alg is what you expect:
+      if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+          return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+      }
+      // TODO where does secret key come from?
+      //      it's possible we'll have multiple secrets, so need to get the secret
+      //      based on some information in the token
+      // The key must be []byte for HMAC. The docs/API for the jwt lib are pretty bad about
+      // this point, so now you know!
+      return []byte("secret"), nil
+  })
+
+  if err != nil {
+      log.Println("Error parsing auth token")
+      log.Println(err)
+      return nil
+  }
+
+  claims, ok := token.Claims.(jwt.MapClaims)
+  if ok && token.Valid {
+    // TODO key/error checking here. These claims could be missing.
+    key, _ := claims["S3_ACCESS_KEY_ID"].(string)
+    sec, _ := claims["S3_ACCESS_SECRET"].(string)
+    return &auth{key, sec}
+  } else {
+    log.Println("Error accessing auth token")
+  }
+  return nil
 }
 
 // runJob calls a series of other functions to process a job:
@@ -86,13 +132,15 @@ func (eng *engine) RunJob(ctx context.Context, job *pbe.Job) error {
 // 4. run the job steps
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
-func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, job *pbe.Job) error {
+func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
+  auth := eng.getAuth(jobR.Auth)
+  job := jobR.Job
 	mapper, merr := eng.getMapper(job)
 	if merr != nil {
 		return merr
 	}
 
-	store, serr := eng.getStorage(job)
+	store, serr := eng.getStorage(job, auth)
 	if serr != nil {
 		return serr
 	}
@@ -131,7 +179,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, job *pbe
 // getMapper returns a FileMapper instance with volumes, inputs, and outputs
 // configured for the given job.
 func (eng *engine) getMapper(job *pbe.Job) (*FileMapper, error) {
-	mapper := NewFileMapper(job.JobID, eng.workDir)
+	mapper := NewJobFileMapper(job.JobID, eng.workDir)
 
 	// Iterates through job.Task.Resources.Volumes and add the volume to mapper.
 	for _, vol := range job.Task.Resources.Volumes {
@@ -162,16 +210,22 @@ func (eng *engine) getMapper(job *pbe.Job) (*FileMapper, error) {
 
 // getStorage returns a Storage instance configured for the given job.
 // This will check the user authorization against the supported storage systems.
-func (eng *engine) getStorage(job *pbe.Job) (*storage.Storage, error) {
-	//store, _ := storage.NewProxy(eng.factories)
+func (eng *engine) getStorage(job *pbe.Job, au *auth) (*storage.Storage, error) {
 	// TODO catch error
-	//store.WithS3("localhost:9000", "s3user", "s3pass", "")
-	return eng.storage, nil
+  if au != nil {
+    return eng.storage.WithS3(
+      "192.168.99.101:9000",
+      au.Key,
+      au.Secret,
+      false)
+  } else {
+    return eng.storage, nil
+  }
 }
 
 func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) error {
 	// Validate all the input source URLs
-	for _, input := range mapper.Inputs {
+	//for _, input := range mapper.Inputs {
 	// TODO ?
 	//}
 

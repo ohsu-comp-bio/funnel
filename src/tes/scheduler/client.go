@@ -55,7 +55,7 @@ func (client *Client) SetComplete(ctx context.Context, job *pbe.Job) {
 			Id: job.JobID, State: pbe.State_Complete})
 }
 
-func (client *Client) PollForJob(ctx context.Context, workerID string) *pbe.Job {
+func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobResponse {
 	// Hard-coding this sleep time because I don't see a need for configuration,
 	// but it's easy enough to change that.
 	sleep := time.Second * 2
@@ -83,7 +83,7 @@ func (client *Client) PollForJob(ctx context.Context, workerID string) *pbe.Job 
 }
 
 // requestJob asks the scheduler service for a job. If no job is available, return nil.
-func (client *Client) RequestJob(ctx context.Context, workerID string) *pbe.Job {
+func (client *Client) RequestJob(ctx context.Context, workerID string) *pbr.JobResponse {
 	hostname, _ := os.Hostname()
 	// Ask the scheduler for a task.
 	resp, err := client.GetJobToRun(ctx,
@@ -103,7 +103,7 @@ func (client *Client) RequestJob(ctx context.Context, workerID string) *pbe.Job 
 
 	} else if resp != nil && resp.Job != nil {
 		// A job was found
-		return resp.Job
+		return resp
 	}
 	return nil
 }

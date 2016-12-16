@@ -15,42 +15,52 @@ import (
 // GetJobToRun documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
-	//log.Printf("Job Request")
-	ch := make(chan *ga4gh_task_exec.Task, 1)
+	// TODO this gets really verbose. Need logging levels log.Printf("Job Request")
+  var task *ga4gh_task_exec.Task
+  authToken := ""
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bQ := tx.Bucket(JobsQueued)
 		bA := tx.Bucket(JobsActive)
 		bOp := tx.Bucket(TaskBucket)
+		authBkt := tx.Bucket(TaskAuthBucket)
 
 		c := bQ.Cursor()
 
 		if k, _ := c.First(); k != nil {
 			log.Printf("Found queued job")
+
+      // Get the task
 			v := bOp.Get(k)
-			out := ga4gh_task_exec.Task{}
-			proto.Unmarshal(v, &out)
-			ch <- &out
+			task = &ga4gh_task_exec.Task{}
+			proto.Unmarshal(v, task)
 			bQ.Delete(k)
+
 			// TODO the worker is also sending a "Running" status update, which is kind of redundant.
 			//      Which is better?
+      // Update the job state to "Running"
 			bA.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
+
+      // Look for an auth token related to this task
+      tok := authBkt.Get([]byte(task.TaskID))
+      if tok != nil {
+        authToken = string(tok)
+      }
 			return nil
 		}
-		ch <- nil
 		return nil
 	})
-	a := <-ch
-	if a == nil {
+  // No task was found. Respond accordingly.
+  if task == nil {
 		return &ga4gh_task_ref.JobResponse{}, nil
-	}
+  }
 
 	job := &ga4gh_task_exec.Job{
-		JobID: a.TaskID,
-		Task:  a,
+		JobID: task.TaskID,
+		Task:  task,
 	}
 
-	return &ga4gh_task_ref.JobResponse{Job: job}, nil
+	return &ga4gh_task_ref.JobResponse{Job: job, Auth: authToken}, nil
 }
 
 // UpdateJobStatus documentation

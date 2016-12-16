@@ -154,6 +154,10 @@ Returns Job Body Example:
 
 # task-execution-server
 
+## Requirements
+- [Protocol Buffers](https://github.com/google/protobuf) if making changes to the schema.
+
+
 ## Initial tool install
 ```
 make depends

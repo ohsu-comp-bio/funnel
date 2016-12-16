@@ -20,7 +20,8 @@ class TestTaskREST(SimpleServerTest):
             "docker" : [
                 {
                     "imageName" : "ubuntu",
-                    "cmd" : ["echo", "hello", "world"]
+                    "cmd" : ["echo", "hello", "world"],
+                    "stdout" : "stdout",
                 }
             ]
         }
@@ -38,6 +39,3 @@ class TestTaskREST(SimpleServerTest):
 
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
-
-
-

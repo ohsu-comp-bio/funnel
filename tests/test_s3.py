@@ -52,18 +52,8 @@ class TestFileOP(S3ServerTest):
             ]
         }
 
-        u = urllib.urlopen("http://localhost:8000/v1/jobs", json.dumps(task))
-        data = json.loads(u.read())
-        print data
-        job_id = data['value']
-
-        for i in range(10):
-            r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
-            data = json.loads(r.read())
-            if data["state"] not in ['Queued', "Running"]:
-                break
-            time.sleep(1)
-        print data
+        job_id = self.tes.submit(task)
+        data = self.tes.wait(job_id)
         
         path = self.get_from_storage(out_loc)
         with open(path) as handle:

@@ -116,8 +116,8 @@ func (eng *engine) getAuth(tokenstr string) *auth {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
 		// TODO key/error checking here. These claims could be missing.
-		key, _ := claims["S3_ACCESS_KEY_ID"].(string)
-		sec, _ := claims["S3_ACCESS_SECRET"].(string)
+		key, _ := claims["AWS_ACCESS_KEY_ID"].(string)
+		sec, _ := claims["AWS_SECRET_ACCESS_KEY"].(string)
 		return &auth{key, sec}
 	} else {
 		log.Println("Error accessing auth token")
@@ -213,8 +213,10 @@ func (eng *engine) getMapper(job *pbe.Job) (*FileMapper, error) {
 func (eng *engine) getStorage(job *pbe.Job, au *auth) (*storage.Storage, error) {
 	// TODO catch error
 	if au != nil {
+		log.Printf("S3 auth info: %s %s", au.Key, au.Secret)
 		return eng.storage.WithS3(
-			"192.168.99.101:9000",
+			// TODO hard-coded. Get this from config.
+			"127.0.0.1:9000",
 			au.Key,
 			au.Secret,
 			false)

@@ -23,8 +23,8 @@ class SimpleServerTest(unittest.TestCase):
         self.task_server = None
         f, db_path = tempfile.mkstemp(dir="./test_tmp", prefix="tes_task_db.")
         os.close(f)
-        self.storage_dir = db_path + ".storage"
-        self.volume_dir = db_path + ".volumes"
+        self.storage_dir = os.path.abspath(db_path + ".storage")
+        self.volume_dir = os.path.abspath(db_path + ".volumes")
         os.mkdir(self.storage_dir)
         os.mkdir(self.volume_dir)
         
@@ -34,7 +34,7 @@ class SimpleServerTest(unittest.TestCase):
         time.sleep(3)
         
         self.task_worker = None
-        cmd = ["./bin/tes-worker", "-workdir", self.volume_dir]
+        cmd = ["./bin/tes-worker", "-workdir", self.volume_dir, "-allowed", self.storage_dir]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_worker = subprocess.Popen(cmd)
 
@@ -44,6 +44,9 @@ class SimpleServerTest(unittest.TestCase):
             
         if self.task_worker is not None:
             self.task_worker.kill()
+
+    def storage_path(self, *args):
+        return os.path.join(self.storage_dir, *args)
     
     def copy_to_storage( self, path):
         dst = os.path.join( self.storage_dir, os.path.basename(path) )
@@ -108,6 +111,7 @@ class S3ServerTest(unittest.TestCase):
         self.task_worker = subprocess.Popen(cmd)
         
         tes = py_tes.TES("http://localhost:8000", s3_access_key=S3_ACCESS_KEY, s3_secret_key=S3_SECRET_KEY, secret=API_TOKEN)
+        self.tes = tes
         if not tes.bucket_exists(BUCKET_NAME):
             tes.make_bucket(BUCKET_NAME)
 

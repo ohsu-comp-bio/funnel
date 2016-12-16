@@ -15,17 +15,19 @@ func main() {
 	masterArg := flag.String("master", "localhost:9090", "Master Server")
 	workDirArg := flag.String("workdir", "volumes", "Working Directory")
 	timeoutArg := flag.Int("timeout", -1, "Timeout in seconds")
+	allowedDirsArg := flag.String("allowed", "", "Allowed directories for local FS backend")
 	nworker := flag.Int("nworkers", 4, "Worker Count")
 	logFileArg := flag.String("logfile", "", "File path to write logs to")
 
 	flag.Parse()
 
 	config := worker.Config{
-		MasterAddr: *masterArg,
-		WorkDir:    *workDirArg,
-		Timeout:    *timeoutArg,
-		NumWorkers: *nworker,
-		LogPath:    *logFileArg,
+		MasterAddr:  *masterArg,
+		WorkDir:     *workDirArg,
+		Timeout:     *timeoutArg,
+		NumWorkers:  *nworker,
+		AllowedDirs: parseAllowedDirs(*allowedDirsArg),
+		LogPath:     *logFileArg,
 	}
 	start(config)
 }
@@ -46,9 +48,7 @@ func start(config worker.Config) {
 	}
 
 	// Configure the storage systems
-	allowedDirs := []string{}
-	allowedDirs = append(allowedDirs, "/tmp")
-	store, _ := new(storage.Storage).WithLocal(allowedDirs)
+	store, _ := new(storage.Storage).WithLocal(config.AllowedDirs)
 
 	// Create the job engine
 	eng, err := worker.NewEngine(config.MasterAddr, config.WorkDir, store)

@@ -1,4 +1,4 @@
-package tes_server
+package scheduler
 
 import (
 	"google.golang.org/grpc"
@@ -12,7 +12,6 @@ func NewRpcConnection(address string) (*grpc.ClientConn, error) {
 	//      give up after max retries? Does grpc.Dial already do this?
 	// Create a connection for gRPC clients
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	defer conn.Close()
 
 	if err != nil {
 		log.Printf("Can't open RPC connection to %s", address)

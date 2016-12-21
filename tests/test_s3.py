@@ -6,13 +6,15 @@ import time
 import urllib
 import json
 
-from common_test_util import SimpleServerTest, get_abspath
+from common_test_util import S3ServerTest, get_abspath
 
-class TestFileOP(SimpleServerTest):
+class TestFileOP(S3ServerTest):
+
 
     def test_file_mount(self):
         
-        self.copy_to_storage( get_abspath("test_data.1") )
+        in_loc = self.copy_to_storage( get_abspath("test_data.1") )
+        out_loc = self.get_storage_url( "test_data.out" )
 
         task = {
             "name" : "TestMD5",
@@ -22,14 +24,14 @@ class TestFileOP(SimpleServerTest):
                 {
                     "name" : "infile",
                     "description" : "File to be MD5ed",
-                    "location" : 'file://' + self.storage_path('test_data.1'),
+                    "location" : in_loc,
                     "class" : "File",
                     "path" : "/tmp/test_file"
                 }
             ],
             "outputs" : [
                 {
-                    "location" : 'file://' + self.storage_path('test_data.out'),
+                    "location" : out_loc,
                     "class" : "File",
                     "path" : "/tmp/test_out"
                 }
@@ -50,20 +52,10 @@ class TestFileOP(SimpleServerTest):
             ]
         }
 
-        u = urllib.urlopen("http://localhost:8000/v1/jobs", json.dumps(task))
-        data = json.loads(u.read())
-        print data
-        job_id = data['value']
-
-        for i in range(10):
-            r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
-            data = json.loads(r.read())
-            if data["state"] not in ['Queued', "Running"]:
-                break
-            time.sleep(1)
-        print data
+        job_id = self.tes.submit(task)
+        data = self.tes.wait(job_id)
         
-        path = self.get_from_storage('test_data.out')
+        path = self.get_from_storage(out_loc)
         with open(path) as handle:
             t = handle.read()
             i = t.split()

@@ -1,4 +1,4 @@
-GOPATH := $(shell pwd)
+GOPATH := $(shell pwd)/buildtools:$(shell pwd)
 export GOPATH
 PATH := ${PATH}:$(shell pwd)/bin
 export PATH
@@ -24,16 +24,29 @@ proto_build:
 		task_worker.proto
 
 depends:
-	go get -d tes-server/
-	go get -d tes-worker/
+	go get -d tes-server
+	go get -d tes-worker
 
 golint:
 	go get -v github.com/golang/lint/golint/
 
+serve-doc:
+	godoc --http=:6060
+
+add_deps:
+	go get github.com/dpw/vendetta
+	./buildtools/bin/vendetta src/
+
+prune_deps:
+	go get github.com/dpw/vendetta
+	./buildtools/bin/vendetta -p src/
+
 tidy: golint
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
-	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs golint
-	@for d in $(GOPATH)/src/tes*; \
-	do \
+	@for d in `find ./src/tes -type d | grep -E -v "ga4gh|proto"`; do \
+		echo $$d; \
+		./buildtools/bin/golint $$d; \
+	done
+	@for d in ./src/tes*; do \
 		go tool vet $$d; \
 	done

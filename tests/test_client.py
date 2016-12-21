@@ -6,9 +6,9 @@ import time
 import urllib
 import json
 
-from common_test_util import ServerTest, get_abspath
+from common_test_util import SimpleServerTest, get_abspath
 
-class TestTaskREST(ServerTest):
+class TestTaskREST(SimpleServerTest):
 
     def test_hello_world(self):
 
@@ -20,7 +20,8 @@ class TestTaskREST(ServerTest):
             "docker" : [
                 {
                     "imageName" : "ubuntu",
-                    "cmd" : ["echo", "hello", "world"]
+                    "cmd" : ["echo", "hello", "world"],
+                    "stdout" : "stdout",
                 }
             ]
         }
@@ -38,6 +39,3 @@ class TestTaskREST(ServerTest):
 
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
-
-
-

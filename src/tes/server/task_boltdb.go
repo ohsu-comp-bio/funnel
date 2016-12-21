@@ -6,14 +6,20 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	uuid "github.com/nu7hatch/gouuid"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 	"log"
 	"strings"
 	"tes/ga4gh"
+	"tes/server/proto"
 )
 
 // TaskBucket documentation
 // TODO: documentation
 var TaskBucket = []byte("tasks")
+
+// TaskAuthBucket documentation
+// TODO: documentation
+var TaskAuthBucket = []byte("tasks-auth")
 
 // JobsQueued documentation
 // TODO: documentation
@@ -34,18 +40,21 @@ var JobsLog = []byte("jobs-log")
 // TaskBolt documentation
 // TODO: documentation
 type TaskBolt struct {
-	db              *bolt.DB
-	storageMetadata map[string]string
+	db           *bolt.DB
+	serverConfig ga4gh_task_ref.ServerConfig
 }
 
 // NewTaskBolt documentation
 // TODO: documentation
-func NewTaskBolt(path string, storageMetadata map[string]string) *TaskBolt {
+func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
 		if tx.Bucket(TaskBucket) == nil {
 			tx.CreateBucket(TaskBucket)
+		}
+		if tx.Bucket(TaskAuthBucket) == nil {
+			tx.CreateBucket(TaskAuthBucket)
 		}
 		if tx.Bucket(JobsQueued) == nil {
 			tx.CreateBucket(JobsQueued)
@@ -61,7 +70,24 @@ func NewTaskBolt(path string, storageMetadata map[string]string) *TaskBolt {
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, storageMetadata: storageMetadata}
+	return &TaskBolt{db: db, serverConfig: config}
+}
+
+// getJWT
+// This function extracts the JWT token from the rpc header and returns the string
+func getJWT(ctx context.Context) string {
+	jwt := ""
+	v, _ := metadata.FromContext(ctx)
+	auth, ok := v["authorization"]
+	if !ok {
+		return jwt
+	}
+	for _, i := range auth {
+		if strings.HasPrefix(i, "JWT ") {
+			jwt = strings.TrimPrefix(i, "JWT ")
+		}
+	}
+	return jwt
 }
 
 // RunTask documentation
@@ -99,12 +125,18 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 		}
 	}
 
+	jwt := getJWT(ctx)
+	log.Printf("JWT: %s", jwt)
+
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
 		taskopB := tx.Bucket(TaskBucket)
 		v, _ := proto.Marshal(task)
 		taskopB.Put([]byte(taskopID.String()), v)
+
+		taskopA := tx.Bucket(TaskAuthBucket)
+		taskopA.Put([]byte(taskopID.String()), []byte(jwt))
 
 		queueB := tx.Bucket(JobsQueued)
 		queueB.Put([]byte(taskopID.String()), []byte(ga4gh_task_exec.State_Queued.String()))
@@ -237,5 +269,12 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 // GetServiceInfo documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
-	return &ga4gh_task_exec.ServiceInfo{StorageConfig: taskBolt.storageMetadata}, nil
+	//BUG: this isn't the best translation, probably lossy. Maybe ServiceInfo data structure schema needs to be refactored
+	out := map[string]string{}
+	for _, i := range taskBolt.serverConfig.Storage {
+		for j, k := range i.Config {
+			out[fmt.Sprintf("%s.%s", i.Protocol, j)] = k
+		}
+	}
+	return &ga4gh_task_exec.ServiceInfo{StorageConfig: out}, nil
 }

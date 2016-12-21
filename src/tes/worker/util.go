@@ -1,120 +1,64 @@
 package tesTaskEngineWorker
 
 import (
-	"fmt"
-	"io"
 	"os"
 	"path"
 )
 
-func pathMatch(base string, query string) (string, string) {
-	var normalizedBase = path.Clean(base)
-	var normalizedQuery = path.Clean(query)
+const headerSize = int64(102400)
 
-	if normalizedBase == normalizedQuery {
-		return normalizedQuery, ""
+// exists returns whether the given file or directory exists or not
+func exists(p string) (bool, error) {
+	_, err := os.Stat(p)
+	if err == nil {
+		return true, nil
 	}
-	dir, file := path.Split(normalizedQuery)
-	if len(dir) > 1 {
-		d, p := pathMatch(normalizedBase, dir)
-		return d, path.Join(p, file)
+	if os.IsNotExist(err) {
+		return false, nil
 	}
-	return "", ""
+	return true, err
 }
 
-func copyFileContents(src, dst string) (err error) {
-	in, err := os.Open(src)
+func ensureDir(p string) error {
+	e, err := exists(p)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		cerr := out.Close()
-		if err == nil {
-			err = cerr
+	if !e {
+		// TODO configurable mode?
+		err := os.MkdirAll(p, 0700)
+		if err != nil {
+			return err
 		}
-	}()
-	if _, err = io.Copy(out, in); err != nil {
-		return err
 	}
-	err = out.Sync()
 	return nil
 }
 
-// CopyFile documentation
-// TODO: Documentation
-func CopyFile(src, dst string) (err error) {
-	sfi, err := os.Stat(src)
-	if err != nil {
-		return
-	}
-	if !sfi.Mode().IsRegular() {
-		// This cannot copy non-regular files (e.g.,
-		// directories, symlinks, devices, etc.)
-		return fmt.Errorf("CopyFile: non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
-	}
-	dfi, err := os.Stat(dst)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return
-		}
-		dstD := path.Dir(dst)
-		if _, err := os.Stat(dstD); err != nil {
-			fmt.Printf("Making %s\n", dstD)
-			os.MkdirAll(dstD, 0700)
-		}
-	} else {
-		if !(dfi.Mode().IsRegular()) {
-			return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
-		}
-
-		if os.SameFile(sfi, dfi) {
-			return
-		}
-	}
-
-	err = copyFileContents(src, dst)
-	return
+func ensurePath(p string) error {
+	dir := path.Dir(p)
+	return ensureDir(dir)
 }
 
-// CopyDir documentation
-// TODO: Documentation
-func CopyDir(source string, dest string) (err error) {
-	// Gets properties of source directory.
-	sourceinfo, err := os.Stat(source)
+func ensureFile(p string, class string) error {
+	err := ensurePath(p)
 	if err != nil {
 		return err
 	}
-
-	// Creates destination directory.
-	err = os.MkdirAll(dest, sourceinfo.Mode())
-	if err != nil {
-		return err
-	}
-
-	directory, _ := os.Open(source)
-	objects, err := directory.Readdir(-1)
-	for _, obj := range objects {
-		sourcefilepointer := source + "/" + obj.Name()
-		destinationfilepointer := dest + "/" + obj.Name()
-		if obj.IsDir() {
-			// Creates sub-directories recursively.
-			err = CopyDir(sourcefilepointer, destinationfilepointer)
-			if err != nil {
-				fmt.Println(err)
-			}
-		} else {
-			// Performs copy.
-			err = CopyFile(sourcefilepointer, destinationfilepointer)
-			if err != nil {
-				fmt.Println(err)
-			}
+	if class == "File" {
+		f, err := os.Create(p)
+		if err != nil {
+			return err
 		}
-
+		f.Close()
 	}
-	return
+	return nil
+}
+
+func readFileHead(path string) string {
+	// TODO handle errors?
+	f, _ := os.Open(path)
+	buffer := make([]byte, headerSize)
+	l, _ := f.Read(buffer)
+	f.Close()
+	return string(buffer[:l])
 }

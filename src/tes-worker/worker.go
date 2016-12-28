@@ -28,7 +28,7 @@ func main() {
 
 	flag.Parse()
 
-	tes.LoadConfigOrExit(configFileArg, &config)
+	tes.LoadConfigOrExit(configArg, &config)
 
 	for _, i := range allowedDirsArg {
 		p, _ := filepath.Abs(i)

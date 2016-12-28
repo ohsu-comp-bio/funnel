@@ -27,14 +27,8 @@ func main() {
 	contentDir := filepath.Join(dir, "..", "..", "share")
 
 	config := ga4gh_task_ref.ServerConfig{}
-	if *configFile != "" {
-		var err error
-		config, err = tes.ParseConfigFile(*configFile)
-		if err != nil {
-			log.Println("Failure Reading Config")
-			return
-		}
-	}
+	tes.LoadConfigOrExit(*configFile, &config)
+
 	if *storageDirArg != "" {
 		//server meta-data
 		storageDir, _ := filepath.Abs(*storageDirArg)

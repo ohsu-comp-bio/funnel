@@ -9,3 +9,13 @@ type Config struct {
 	AllowedDirs []string
 	LogPath     string
 }
+
+// NewConfig returns a new worker config instance with default values.
+func NewConfig() Config {
+	return Config{
+		MasterAddr: "localhost:9090",
+		WorkDir:    "volumes",
+		Timeout:    -1,
+		NumWorkers: 4,
+	}
+}

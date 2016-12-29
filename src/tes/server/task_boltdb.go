@@ -233,18 +233,21 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 		return nil
 	})
 
-	jobIDArray := make([]string, 0, 10)
+	jobDescArray := make([]*ga4gh_task_exec.JobDesc, 0, 10)
 
 	for t := range ch {
 		j, _ := taskBolt.getTaskJob(t)
-		jobIDArray = append(jobIDArray, j.JobID)
-		jobStateArray = append(jobStateArray, j.State)
+		jobDesc := ga4gh_task_exec.JobDesc{
+			JobID: j.JobID,
+			State: j.State,
+		}
+		jobDescArray = append(jobDescArray, &jobDesc)
 	}
 
 	out := ga4gh_task_exec.JobListResponse{
-		JobID:    jobIDArray,
-		State: jobStateArray,
+		Jobs: jobDescArray,
 	}
+
 	fmt.Println("Returning", out)
 	return &out, nil
 

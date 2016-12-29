@@ -5,6 +5,17 @@ package ga4gh_task_ref;
 
 import "task_execution.proto";
 
+
+message StorageConfig {
+  string protocol = 1;
+  map<string,string> config = 2;
+}
+
+message ServerConfig {
+  repeated StorageConfig storage = 1;
+  string secret = 2;
+}
+
 /**
  * Worker Info
  */
@@ -20,7 +31,8 @@ message JobRequest {
 }
 
 message JobResponse {
-  ga4gh_task_exec.Job job = 2;
+  ga4gh_task_exec.Job job = 1;
+  string auth = 2;
 }
 
 message UpdateStatusRequest {
@@ -45,6 +57,7 @@ message QueuedTaskInfo {
  * Scheduler Service
  */
 service Scheduler {
+  rpc GetServerConfig(WorkerInfo) returns(ServerConfig) {};
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc GetJobToRun(JobRequest) returns (JobResponse) {};
   rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobID) {};

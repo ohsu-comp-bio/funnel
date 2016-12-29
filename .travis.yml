@@ -9,6 +9,8 @@ os:
 before_install:
   - sudo apt-get update
   - sudo apt-get install -y golang
+  - pip install -r tests/requirements.txt
+  - docker pull minio/minio
 install:
   - make depends
   - make

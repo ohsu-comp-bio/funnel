@@ -1,0 +1,6 @@
+
+
+Storage:
+  - Protocol: s3
+    Config:      
+      endpoint: 127.0.0.1

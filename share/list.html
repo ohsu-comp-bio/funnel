@@ -1,12 +1,11 @@
-
 <h2>Tasks</h2>
 <div id="task_list" ng-controller="JobListController">
     <table ng-repeat="item in jobs" content="item" width="100%">
         <col width="20%">
         <col width="33%">
         <tr>
-            <td><a href="#/jobs/{{item.jobID}}">{{item.jobID}}</a></td>
-            <td>{{item.state}}</td>
+            <td><a href="#/jobs/{{item.jobs.jobID}}">{{item.jobs.jobID}}</a></td>
+            <td>{{item.jobs.state}}</td>
         </tr>
     </table>
 </div>

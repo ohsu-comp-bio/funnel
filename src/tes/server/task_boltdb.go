@@ -216,8 +216,7 @@ func (taskBolt *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobID
 	return b, err
 }
 
-// ListJobs documentation
-// TODO: documentation
+// ListJobs returns a list of jobIDs
 func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListRequest) (*ga4gh_task_exec.JobListResponse, error) {
 	log.Printf("Getting Task List")
 	ch := make(chan *ga4gh_task_exec.Task, 1)
@@ -234,15 +233,21 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 		return nil
 	})
 
-	taskArray := make([]*ga4gh_task_exec.Job, 0, 10)
+	jobDescArray := make([]*ga4gh_task_exec.JobDesc, 0, 10)
+
 	for t := range ch {
 		j, _ := taskBolt.getTaskJob(t)
-		taskArray = append(taskArray, j)
+		jobDesc := ga4gh_task_exec.JobDesc{
+			JobID: j.JobID,
+			State: j.State,
+		}
+		jobDescArray = append(jobDescArray, &jobDesc)
 	}
 
 	out := ga4gh_task_exec.JobListResponse{
-		Jobs: taskArray,
+		Jobs: jobDescArray,
 	}
+
 	fmt.Println("Returning", out)
 	return &out, nil
 

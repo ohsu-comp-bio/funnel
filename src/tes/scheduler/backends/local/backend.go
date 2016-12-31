@@ -1,37 +1,36 @@
-package local
+package scheduler
 
 import (
   "log"
-  "tes/scheduler"
   pbe "tes/ga4gh"
 	uuid "github.com/nu7hatch/gouuid"
 )
 
-type plan struct {
+type localplan struct {
   scheduler.TaskPlan
   startWorker bool
   factory *factory
 }
 
-func (p *plan) Execute() {
+func (p *localplan) Execute() {
   if p.startWorker {
     p.factory.StartWorker(p.WorkerID())
   }
 }
 
 
-func NewBackend() scheduler.Backend {
+func NewLocalScheduler() Scheduler {
 	factory := &factory{}
   // TODO hard-coded
-  return backend{factory, counts{maxWorkers: 10}}
+  return localsched{factory, counts{maxWorkers: 10}}
 }
 
-type backend struct {
+type localsched struct {
   factory *factory
   counts counts
 }
 
-func (b backend) Plan(wl scheduler.Workload) []scheduler.TaskPlan {
+func (l *localsched) Schedule(wl Workload) []TaskPlan {
   log.Println("Planning workload for local backend")
   plans := make([]scheduler.TaskPlan, 0)
   c := b.counts
@@ -77,12 +76,7 @@ func (b backend) Plan(wl scheduler.Workload) []scheduler.TaskPlan {
   return plans
 }
 
-func GenWorkerId() string {
-	u, _ := uuid.NewV4()
-	return u.String()
-}
-
-func (b backend) isSupported(t *pbe.Task) bool {
+func (l *localsched) isSupported(t *pbe.Task) bool {
   // Check resource requirements
   // - compute cpu, ram, etc
   // - storage
@@ -97,7 +91,13 @@ type counts struct {
   idleWorkers int
 }
 
-//...I cannot believe I have to define this.
+func GenWorkerId() string {
+	u, _ := uuid.NewV4()
+	return u.String()
+}
+
+
+//...I cannot believe I have to define these.
 func min(a, b int) int {
     if a < b {
         return a

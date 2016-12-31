@@ -30,16 +30,3 @@ func (LocalWorkerFactory) AddWorkers(howMany int) {
 		log.Printf("%s", err)
 	}
 }
-
-// CondorWorkerFactory is responsible for starting TES workers via HTCondor
-// in response to an autoscaler request.
-type CondorWorkerFactory struct {
-	SchedAddr string
-	condor    *CondorProxyClient
-}
-
-func (f CondorWorkerFactory) AddWorkers(howMany int) {
-	ctx := context.Background()
-	req := &pbc.StartWorkerRequest{f.SchedAddr}
-	f.condor.StartWorker(ctx, req)
-}

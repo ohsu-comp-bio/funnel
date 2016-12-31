@@ -10,6 +10,8 @@ import (
 	"log"
 	"tes/server"
 	"tes/server/proto"
+  "tes/scheduler"
+  "tes/scheduler/backends/local"
 )
 
 func main() {
@@ -52,12 +54,20 @@ func main() {
 	log.Printf("Config: %v\n", config)
 
 	//setup GRPC listener
+  // TODO if another process has the db open, this will block and it is really
+  //      confusing when you don't realize you have the db locked in another
+  //      terminal somewhere. Would be good to timeout on startup here.
 	taski := tes_server.NewTaskBolt(*taskDB, config)
 
 	server := tes_server.NewGA4GHServer()
 	server.RegisterTaskServer(taski)
 	server.RegisterScheduleServer(taski)
 	server.Start(*rpcPort)
+
+
+  sched := scheduler.NewScheduler(taski)
+  backend := local.NewBackend()
+  go scheduler.StartBackend(sched, backend)
 
 	tes_server.StartHttpProxy(*rpcPort, *httpPort, contentDir)
 }

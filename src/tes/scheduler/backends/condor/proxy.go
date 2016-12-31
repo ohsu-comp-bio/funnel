@@ -1,4 +1,4 @@
-package autoscaler
+package condor
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"tes/scheduler"
 )
 
-type CondorProxy struct {
+type Proxy struct {
 	binPath string
 }
 
@@ -24,11 +24,11 @@ type CondorProxy struct {
 // from TES, a simple proxy service will be running on the condor master
 // node, which TES can easily talk to.
 
-func NewCondorProxy(binPath string) *CondorProxy {
-	return &CondorProxy{binPath}
+func NewProxy(binPath string) *Proxy {
+	return &Proxy{binPath}
 }
 
-func (pxy *CondorProxy) Start(port string) {
+func (pxy *Proxy) Start(port string) {
 	// Open a TCP port.
 	// Fail hard if it can't be opened.
 	lis, err := net.Listen("tcp", ":"+port)
@@ -44,7 +44,7 @@ func (pxy *CondorProxy) Start(port string) {
 	grpcServer.Serve(lis)
 }
 
-func (pxy *CondorProxy) StartWorker(ctx context.Context, req *pbc.StartWorkerRequest) (*pbc.StartWorkerResponse, error) {
+func (pxy *Proxy) StartWorker(ctx context.Context, req *pbc.StartWorkerRequest) (*pbc.StartWorkerResponse, error) {
 	log.Println("Start condor worker")
 
 	conf := fmt.Sprintf(`
@@ -69,14 +69,14 @@ func (pxy *CondorProxy) StartWorker(ctx context.Context, req *pbc.StartWorkerReq
 	return &pbc.StartWorkerResponse{}, nil
 }
 
-type CondorProxyClient struct {
+type ProxyClient struct {
 	pbc.CondorProxyClient
 	conn *grpc.ClientConn
 }
 
 // NewClient returns a new Client instance connected to the
 // Condor proxy server at a given address (e.g. "localhost:9090")
-func NewCondorProxyClient(address string) (*CondorProxyClient, error) {
+func NewProxyClient(address string) (*ProxyClient, error) {
 	// TODO NewRpcConnection shouldn't be in scheduler
 	conn, err := scheduler.NewRpcConnection(address)
 	if err != nil {
@@ -85,10 +85,10 @@ func NewCondorProxyClient(address string) (*CondorProxyClient, error) {
 	}
 
 	s := pbc.NewCondorProxyClient(conn)
-	return &CondorProxyClient{s, conn}, nil
+	return &ProxyClient{s, conn}, nil
 }
 
 // Close the client connection.
-func (client *CondorProxyClient) Close() {
+func (client *ProxyClient) Close() {
 	client.conn.Close()
 }

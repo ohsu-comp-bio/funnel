@@ -15,39 +15,27 @@ import (
 // GetJobToRun documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
-	// TODO this gets really verbose. Need logging levels log.Printf("Job Request")
 	var task *ga4gh_task_exec.Task
 	authToken := ""
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		bQ := tx.Bucket(JobsQueued)
-		bA := tx.Bucket(JobsActive)
 		bOp := tx.Bucket(TaskBucket)
+    bw := tx.Bucket(WorkerJobs)
 		authBkt := tx.Bucket(TaskAuthBucket)
 
-		c := bQ.Cursor()
-
-		if k, _ := c.First(); k != nil {
-			log.Printf("Found queued job")
-
+    k := bw.Get([]byte(request.Worker.Id))
+    if k != nil {
 			// Get the task
 			v := bOp.Get(k)
 			task = &ga4gh_task_exec.Task{}
 			proto.Unmarshal(v, task)
-			bQ.Delete(k)
-
-			// TODO the worker is also sending a "Running" status update, which is kind of redundant.
-			//      Which is better?
-			// Update the job state to "Running"
-			bA.Put(k, []byte(ga4gh_task_exec.State_Running.String()))
 
 			// Look for an auth token related to this task
 			tok := authBkt.Get([]byte(task.TaskID))
 			if tok != nil {
 				authToken = string(tok)
 			}
-			return nil
-		}
+    }
 		return nil
 	})
 	// No task was found. Respond accordingly.
@@ -63,6 +51,23 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 	return &ga4gh_task_ref.JobResponse{Job: job, Auth: authToken}, nil
 }
 
+func (taskBolt *TaskBolt) AssignTask(id string, workerID string) error {
+	taskBolt.db.Update(func(tx *bolt.Tx) error {
+		ba := tx.Bucket(JobsActive)
+		bc := tx.Bucket(JobsComplete)
+    bq := tx.Bucket(JobsQueued)
+    bw := tx.Bucket(WorkerJobs)
+    k := []byte(id)
+    w := []byte(workerID)
+    bc.Delete(k)
+    bq.Delete(k)
+    ba.Put(k, w)
+    bw.Put(w, k)
+    return nil
+  })
+  return nil
+}
+
 // UpdateJobStatus documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
@@ -71,6 +76,7 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
 		bL := tx.Bucket(JobsLog)
+    bw := tx.Bucket(WorkerJobs)
 
 		if stat.Log != nil {
 			log.Printf("Logging stdout:%s", stat.Log.Stdout)
@@ -80,7 +86,9 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 
 		switch stat.State {
 		case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error:
+      workerID := ba.Get([]byte(stat.Id))
 			ba.Delete([]byte(stat.Id))
+      bw.Delete([]byte(workerID))
 			bc.Put([]byte(stat.Id), []byte(stat.State.String()))
 		}
 		return nil

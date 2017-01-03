@@ -47,7 +47,7 @@ func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
 	// This backend does none of that...yet.
 	avail := atomic.LoadInt32(&l.available)
 	log.Printf("Available: %d", avail)
-	if avail == 0 {
+	if avail == int32(0) {
 		return sched.RejectedOffer("Pool is full")
 	} else {
 		w := sched.Worker{

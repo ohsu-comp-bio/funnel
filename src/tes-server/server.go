@@ -10,9 +10,9 @@ import (
 	"log"
 	"tes/scheduler"
 	"tes/scheduler/condor"
-	_ "tes/scheduler/dumblocal"
-	_ "tes/scheduler/local"
-	_ "tes/scheduler/openstack"
+	"tes/scheduler/dumblocal"
+	"tes/scheduler/local"
+	"tes/scheduler/openstack"
 	"tes/server"
 	"tes/server/proto"
 )
@@ -24,6 +24,7 @@ func main() {
 	sharedDirArg := flag.String("shared", "", "Shared File System")
 	s3Arg := flag.String("s3", "", "Use S3 object store")
 	taskDB := flag.String("db", "ga4gh_tasks.db", "Task DB File")
+	schedArg := flag.String("sched", "local", "Scheduler")
 	configFile := flag.String("config", "", "Config File")
 
 	flag.Parse()
@@ -67,10 +68,22 @@ func main() {
 	server.RegisterScheduleServer(taski)
 	server.Start(*rpcPort)
 
-	// TODO worker will stay alive if the parent process panics
-	//go scheduler.StartScheduling(taski, local.NewScheduler(4))
-	//go scheduler.StartScheduling(taski, openstack.NewScheduler(4, config.Schedulers.Openstack))
-	go scheduler.StartScheduling(taski, condor.NewScheduler(config.Schedulers.Condor))
+	var sched scheduler.Scheduler
+	switch *schedArg {
+	case "local":
+		// TODO worker will stay alive if the parent process panics
+		sched = local.NewScheduler(4)
+	case "condor":
+		sched = condor.NewScheduler(config.Schedulers.Condor)
+	case "openstack":
+	  sched = openstack.NewScheduler(4, config.Schedulers.Openstack)
+	case "dumblocal":
+	  sched = dumblocal.NewScheduler(4)
+	default:
+		log.Printf("Error: unknown scheduler %s", *schedArg)
+		return
+	}
+	go scheduler.StartScheduling(taski, sched)
 
 	tes_server.StartHttpProxy(*rpcPort, *httpPort, contentDir)
 }

@@ -34,7 +34,7 @@ class SimpleServerTest(unittest.TestCase):
         time.sleep(3)
         
         self.task_worker = None
-        cmd = ["./bin/tes-worker", "-workdir", self.volume_dir, "-allowed", self.storage_dir]
+        cmd = ["./bin/tes-worker", "-workdir", self.volume_dir, "-alloweddirs", self.storage_dir]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_worker = subprocess.Popen(cmd)
 

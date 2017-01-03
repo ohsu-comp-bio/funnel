@@ -38,6 +38,7 @@ var JobsComplete = []byte("jobs-complete")
 var JobsLog = []byte("jobs-log")
 
 var WorkerJobs = []byte("worker-jobs")
+var JobWorker = []byte("job-worker")
 
 // TaskBolt documentation
 // TODO: documentation
@@ -72,6 +73,9 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 		}
 		if tx.Bucket(WorkerJobs) == nil {
 			tx.CreateBucket(WorkerJobs)
+		}
+		if tx.Bucket(JobWorker) == nil {
+			tx.CreateBucket(JobWorker)
 		}
 		return nil
 	})
@@ -285,10 +289,13 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bQ := tx.Bucket(JobsQueued)
 		bQ.Delete([]byte(taskop.Value))
+		bjw := tx.Bucket(JobWorker)
 
 		bA := tx.Bucket(JobsActive)
-		workerID := bA.Get([]byte(taskop.Value))
 		bA.Delete([]byte(taskop.Value))
+
+		workerID := bjw.Get([]byte(taskop.Value))
+		bjw.Delete([]byte(taskop.Value))
 
 		bW := tx.Bucket(WorkerJobs)
 		bW.Delete([]byte(workerID))

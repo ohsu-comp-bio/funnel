@@ -29,6 +29,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 			v := bOp.Get(k)
 			task = &ga4gh_task_exec.Task{}
 			proto.Unmarshal(v, task)
+			// Update the job state to "Running"
 
 			// Look for an auth token related to this task
 			tok := authBkt.Get([]byte(task.TaskID))
@@ -52,16 +53,19 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 }
 
 func (taskBolt *TaskBolt) AssignTask(id string, workerID string) error {
+	running := []byte(ga4gh_task_exec.State_Running.String())
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
 		bq := tx.Bucket(JobsQueued)
 		bw := tx.Bucket(WorkerJobs)
+		bjw := tx.Bucket(JobWorker)
 		k := []byte(id)
 		w := []byte(workerID)
 		bc.Delete(k)
 		bq.Delete(k)
-		ba.Put(k, w)
+		ba.Put(k, running)
+		bjw.Put(k, w)
 		bw.Put(w, k)
 		return nil
 	})
@@ -77,6 +81,7 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		bc := tx.Bucket(JobsComplete)
 		bL := tx.Bucket(JobsLog)
 		bw := tx.Bucket(WorkerJobs)
+		bjw := tx.Bucket(JobWorker)
 
 		if stat.Log != nil {
 			log.Printf("Logging stdout:%s", stat.Log.Stdout)
@@ -86,7 +91,8 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 
 		switch stat.State {
 		case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error:
-			workerID := ba.Get([]byte(stat.Id))
+			workerID := bjw.Get([]byte(stat.Id))
+			bjw.Delete([]byte(stat.Id))
 			ba.Delete([]byte(stat.Id))
 			bw.Delete([]byte(workerID))
 			bc.Put([]byte(stat.Id), []byte(stat.State.String()))

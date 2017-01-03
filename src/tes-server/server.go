@@ -76,9 +76,9 @@ func main() {
 	case "condor":
 		sched = condor.NewScheduler(config.Schedulers.Condor)
 	case "openstack":
-	  sched = openstack.NewScheduler(4, config.Schedulers.Openstack)
+		sched = openstack.NewScheduler(4, config.Schedulers.Openstack)
 	case "dumblocal":
-	  sched = dumblocal.NewScheduler(4)
+		sched = dumblocal.NewScheduler(4)
 	default:
 		log.Printf("Error: unknown scheduler %s", *schedArg)
 		return

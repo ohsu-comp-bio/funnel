@@ -13,8 +13,8 @@ import (
 
 type Config struct {
 	MasterAddr string
-	Slots int
-	BinPath string
+	Slots      int
+	BinPath    string
 }
 
 func NewScheduler(c Config) sched.Scheduler {

@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
-	"tes/scheduler/dumb"
+	dumb "tes/scheduler/dumb"
 )
 
 // TODO config
@@ -19,7 +19,7 @@ func NewScheduler(workers int) sched.Scheduler {
 }
 
 type scheduler struct {
-	dumbsched Scheduler
+	dumbsched dumb.Scheduler
 }
 
 func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
@@ -35,7 +35,7 @@ func (s *scheduler) observe(o sched.Offer) {
 
 	if o.Accepted() {
 		s.dumbsched.DecrementAvailable()
-		runWorker(w)
+		runWorker(o.Worker().ID)
 		s.dumbsched.IncrementAvailable()
 
 	} else if o.Rejected() {
@@ -43,9 +43,9 @@ func (s *scheduler) observe(o sched.Offer) {
 	}
 }
 
-func runWorker() {
+func runWorker(workerID string) {
 	log.Printf("Starting dumblocal worker")
-	cmd := exec.Command(workerCmd, "-numworkers", "1", "-id", w.ID, "-timeout", "0")
+	cmd := exec.Command(workerCmd, "-numworkers", "1", "-id", workerID, "-timeout", "0")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

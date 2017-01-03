@@ -2,14 +2,19 @@ package dumb
 
 import (
 	"log"
-	"os"
-	"os/exec"
 	"sync/atomic"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
 )
 
-func NewScheduler(workers int) sched.Scheduler {
+type Scheduler interface {
+	sched.Scheduler
+	Available() int
+	IncrementAvailable()
+	DecrementAvailable()
+}
+
+func NewScheduler(workers int) Scheduler {
 	return &scheduler{int32(workers)}
 }
 
@@ -29,11 +34,11 @@ func (s *scheduler) Available() int {
 }
 
 func (s *scheduler) IncrementAvailable() {
-	atomic.AddInt32(&s.dumbsched.available, 1)
+	atomic.AddInt32(&s.available, 1)
 }
 
 func (s *scheduler) DecrementAvailable() {
-	atomic.AddInt32(&s.dumbsched.available, -1)
+	atomic.AddInt32(&s.available, -1)
 }
 
 // TODO in a smarter scheduler, this would handle the tricky parts of scheduling:
@@ -47,8 +52,9 @@ func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
 	// A better algorithm would rank the tasks, have a concept of binpacking,
 	// and be able to assign a task to a specific, best-match node.
 	// This backend does none of that...yet.
+	avail := s.Available()
 	log.Printf("Available: %d", avail)
-	if s.Available() == 0 {
+	if avail == 0 {
 		return sched.RejectedOffer("Pool is full")
 	} else {
 		w := sched.Worker{

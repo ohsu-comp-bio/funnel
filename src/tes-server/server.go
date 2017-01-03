@@ -10,6 +10,7 @@ import (
 	"log"
 	"tes/scheduler"
 	_ "tes/scheduler/condor"
+	_ "tes/scheduler/dumblocal"
 	"tes/scheduler/local"
 	"tes/server"
 	"tes/server/proto"

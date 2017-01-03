@@ -2,7 +2,7 @@ package tesTaskEngineWorker
 
 // Worker configuration.
 type Config struct {
-  ID          string
+	ID          string
 	MasterAddr  string
 	WorkDir     string
 	Timeout     int

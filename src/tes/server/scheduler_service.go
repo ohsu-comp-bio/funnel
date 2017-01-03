@@ -20,11 +20,11 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bOp := tx.Bucket(TaskBucket)
-    bw := tx.Bucket(WorkerJobs)
+		bw := tx.Bucket(WorkerJobs)
 		authBkt := tx.Bucket(TaskAuthBucket)
 
-    k := bw.Get([]byte(request.Worker.Id))
-    if k != nil {
+		k := bw.Get([]byte(request.Worker.Id))
+		if k != nil {
 			// Get the task
 			v := bOp.Get(k)
 			task = &ga4gh_task_exec.Task{}
@@ -35,7 +35,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 			if tok != nil {
 				authToken = string(tok)
 			}
-    }
+		}
 		return nil
 	})
 	// No task was found. Respond accordingly.
@@ -55,17 +55,17 @@ func (taskBolt *TaskBolt) AssignTask(id string, workerID string) error {
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
-    bq := tx.Bucket(JobsQueued)
-    bw := tx.Bucket(WorkerJobs)
-    k := []byte(id)
-    w := []byte(workerID)
-    bc.Delete(k)
-    bq.Delete(k)
-    ba.Put(k, w)
-    bw.Put(w, k)
-    return nil
-  })
-  return nil
+		bq := tx.Bucket(JobsQueued)
+		bw := tx.Bucket(WorkerJobs)
+		k := []byte(id)
+		w := []byte(workerID)
+		bc.Delete(k)
+		bq.Delete(k)
+		ba.Put(k, w)
+		bw.Put(w, k)
+		return nil
+	})
+	return nil
 }
 
 // UpdateJobStatus documentation
@@ -76,7 +76,7 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
 		bL := tx.Bucket(JobsLog)
-    bw := tx.Bucket(WorkerJobs)
+		bw := tx.Bucket(WorkerJobs)
 
 		if stat.Log != nil {
 			log.Printf("Logging stdout:%s", stat.Log.Stdout)
@@ -86,9 +86,9 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 
 		switch stat.State {
 		case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error:
-      workerID := ba.Get([]byte(stat.Id))
+			workerID := ba.Get([]byte(stat.Id))
 			ba.Delete([]byte(stat.Id))
-      bw.Delete([]byte(workerID))
+			bw.Delete([]byte(workerID))
 			bc.Put([]byte(stat.Id), []byte(stat.State.String()))
 		}
 		return nil

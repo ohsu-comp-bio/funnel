@@ -70,9 +70,9 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 		if tx.Bucket(JobsLog) == nil {
 			tx.CreateBucket(JobsLog)
 		}
-    if tx.Bucket(WorkerJobs) == nil {
-      tx.CreateBucket(WorkerJobs)
-    }
+		if tx.Bucket(WorkerJobs) == nil {
+			tx.CreateBucket(WorkerJobs)
+		}
 		return nil
 	})
 	return &TaskBolt{db: db, serverConfig: config}
@@ -80,22 +80,22 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 
 // TODO this is duplicating ListJobs? Refactor this before merging.
 func (taskBolt *TaskBolt) ReadQueue(n int) []*ga4gh_task_exec.Task {
-  tasks := make([]*ga4gh_task_exec.Task, 0)
-  taskBolt.db.View(func(tx *bolt.Tx) error {
+	tasks := make([]*ga4gh_task_exec.Task, 0)
+	taskBolt.db.View(func(tx *bolt.Tx) error {
 
-    taskBkt := tx.Bucket(TaskBucket)
+		taskBkt := tx.Bucket(TaskBucket)
 
-    // Iterate over the JobsQueued bucket, reading the first `n` tasks
-    c := tx.Bucket(JobsQueued).Cursor()
-    for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
-      // The values in "JobsQueued" are actually Tasks.
-      task := &ga4gh_task_exec.Task{}
-      proto.Unmarshal(taskBkt.Get(k), task)
-      tasks = append(tasks, task)
-    }
-    return nil
-  })
-  return tasks
+		// Iterate over the JobsQueued bucket, reading the first `n` tasks
+		c := tx.Bucket(JobsQueued).Cursor()
+		for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
+			// The values in "JobsQueued" are actually Tasks.
+			task := &ga4gh_task_exec.Task{}
+			proto.Unmarshal(taskBkt.Get(k), task)
+			tasks = append(tasks, task)
+		}
+		return nil
+	})
+	return tasks
 }
 
 // getJWT
@@ -282,11 +282,11 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 		bQ.Delete([]byte(taskop.Value))
 
 		bA := tx.Bucket(JobsActive)
-    workerID := bA.Get([]byte(taskop.Value))
+		workerID := bA.Get([]byte(taskop.Value))
 		bA.Delete([]byte(taskop.Value))
 
-    bW := tx.Bucket(WorkerJobs)
-    bW.Delete([]byte(workerID))
+		bW := tx.Bucket(WorkerJobs)
+		bW.Delete([]byte(workerID))
 
 		bC := tx.Bucket(JobsComplete)
 		bC.Put([]byte(taskop.Value), []byte(ga4gh_task_exec.State_Canceled.String()))

@@ -3,53 +3,53 @@
 package dumblocal
 
 import (
-  "log"
+	"log"
 	"os"
 	"os/exec"
-  "tes/scheduler/dumb"
-  sched "tes/scheduler"
-  pbe "tes/ga4gh"
+	pbe "tes/ga4gh"
+	sched "tes/scheduler"
+	"tes/scheduler/dumb"
 )
 
 // TODO config
 const workerCmd = "/Users/buchanae/projects/task-execution-server/bin/tes-worker"
 
 func NewScheduler(workers int) sched.Scheduler {
-  return &scheduler{dumb.NewScheduler(workers)}
+	return &scheduler{dumb.NewScheduler(workers)}
 }
 
 type scheduler struct {
-  dumbsched Scheduler
+	dumbsched Scheduler
 }
 
 func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
-  log.Println("Running dumblocal scheduler")
+	log.Println("Running dumblocal scheduler")
 
-  o := s.dumbsched.Schedule(t)
-  go s.observe(o)
-  return o
+	o := s.dumbsched.Schedule(t)
+	go s.observe(o)
+	return o
 }
 
 func (s *scheduler) observe(o sched.Offer) {
-  <-o.Wait()
+	<-o.Wait()
 
-  if o.Accepted() {
-    s.dumbsched.DecrementAvailable()
-    runWorker(w)
-    s.dumbsched.IncrementAvailable()
+	if o.Accepted() {
+		s.dumbsched.DecrementAvailable()
+		runWorker(w)
+		s.dumbsched.IncrementAvailable()
 
-  } else if o.Rejected() {
-    log.Println("Local offer was rejected")
-  }
+	} else if o.Rejected() {
+		log.Println("Local offer was rejected")
+	}
 }
 
 func runWorker() {
-  log.Printf("Starting dumblocal worker")
-  cmd := exec.Command(workerCmd, "-numworkers", "1", "-id", w.ID, "-timeout", "0")
-  cmd.Stdout = os.Stdout
-  cmd.Stderr = os.Stderr
-  err := cmd.Run()
-  if err != nil {
-    log.Printf("%s", err)
-  }
+	log.Printf("Starting dumblocal worker")
+	cmd := exec.Command(workerCmd, "-numworkers", "1", "-id", w.ID, "-timeout", "0")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("%s", err)
+	}
 }

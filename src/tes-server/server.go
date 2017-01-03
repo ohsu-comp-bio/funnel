@@ -8,11 +8,11 @@ import (
 	"tes"
 	//"tes/ga4gh"
 	"log"
+	"tes/scheduler"
+	_ "tes/scheduler/condor"
+	"tes/scheduler/local"
 	"tes/server"
 	"tes/server/proto"
-  "tes/scheduler"
-  "tes/scheduler/local"
-  _ "tes/scheduler/condor"
 )
 
 func main() {
@@ -55,9 +55,9 @@ func main() {
 	log.Printf("Config: %v\n", config)
 
 	//setup GRPC listener
-  // TODO if another process has the db open, this will block and it is really
-  //      confusing when you don't realize you have the db locked in another
-  //      terminal somewhere. Would be good to timeout on startup here.
+	// TODO if another process has the db open, this will block and it is really
+	//      confusing when you don't realize you have the db locked in another
+	//      terminal somewhere. Would be good to timeout on startup here.
 	taski := tes_server.NewTaskBolt(*taskDB, config)
 
 	server := tes_server.NewGA4GHServer()
@@ -65,8 +65,8 @@ func main() {
 	server.RegisterScheduleServer(taski)
 	server.Start(*rpcPort)
 
-  // TODO worker will stay alive if the parent process panics
-  go scheduler.StartScheduling(taski, local.NewScheduler(4))
+	// TODO worker will stay alive if the parent process panics
+	go scheduler.StartScheduling(taski, local.NewScheduler(4))
 
 	tes_server.StartHttpProxy(*rpcPort, *httpPort, contentDir)
 }

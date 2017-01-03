@@ -19,7 +19,7 @@ func main() {
 	var allowedDirsArg csvArg
 	var configArg string
 	flag.StringVar(&configArg, "config", "", "Config File")
-  flag.StringVar(&config.ID, "id", config.ID, "Worker ID")
+	flag.StringVar(&config.ID, "id", config.ID, "Worker ID")
 	flag.StringVar(&config.MasterAddr, "masteraddr", config.MasterAddr, "Master Server")
 	flag.StringVar(&config.WorkDir, "workdir", config.WorkDir, "Working Directory")
 	flag.IntVar(&config.Timeout, "timeout", config.Timeout, "Timeout in seconds")

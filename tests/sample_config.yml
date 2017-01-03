@@ -3,6 +3,10 @@ Storage:
     Config:      
       endpoint: 127.0.0.1
 Schedulers:
+  Condor:
+    MasterAddr: 10.50.50.115:9090
+    Slots: 4
+    BinPath: /home/ubuntu/tes-condor-scheduler/task-execution-server/bin/tes-worker
   Openstack:
     MasterAddr: 10.50.50.123:9090
     KeyPair: Buchanan

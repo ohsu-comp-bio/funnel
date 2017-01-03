@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"tes/scheduler/openstack"
+	"tes/scheduler/condor"
 	pbr "tes/server/proto"
 )
 
@@ -14,6 +15,7 @@ type Config struct {
 	pbr.ServerConfig
 	Schedulers struct {
 		Openstack openstack.Config
+		Condor condor.Config
 	}
 }
 

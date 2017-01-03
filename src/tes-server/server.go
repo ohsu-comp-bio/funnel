@@ -9,10 +9,10 @@ import (
 	//"tes/ga4gh"
 	"log"
 	"tes/scheduler"
-	_ "tes/scheduler/condor"
+	"tes/scheduler/condor"
 	_ "tes/scheduler/dumblocal"
 	_ "tes/scheduler/local"
-	"tes/scheduler/openstack"
+	_ "tes/scheduler/openstack"
 	"tes/server"
 	"tes/server/proto"
 )
@@ -69,7 +69,8 @@ func main() {
 
 	// TODO worker will stay alive if the parent process panics
 	//go scheduler.StartScheduling(taski, local.NewScheduler(4))
-	go scheduler.StartScheduling(taski, openstack.NewScheduler(4, config.Schedulers.Openstack))
+	//go scheduler.StartScheduling(taski, openstack.NewScheduler(4, config.Schedulers.Openstack))
+	go scheduler.StartScheduling(taski, condor.NewScheduler(config.Schedulers.Condor))
 
 	tes_server.StartHttpProxy(*rpcPort, *httpPort, contentDir)
 }

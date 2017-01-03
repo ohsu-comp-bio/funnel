@@ -52,6 +52,7 @@ func (t *timerTimeout) Start() {
 }
 
 func (t *timerTimeout) Stop() {
+  if !t.started { return }
 	if !t.timer.Stop() {
 		// If the timer already finished, drain the channel.
 		<-t.timer.C

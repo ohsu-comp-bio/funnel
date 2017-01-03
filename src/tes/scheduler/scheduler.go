@@ -10,20 +10,30 @@ package scheduler
 //        i.e. there is no room to scale up.
 
 import (
+  "time"
+  "log"
   server "tes/server"
   pbe "tes/ga4gh"
 )
 
-type Workload []*pbe.Task
-
 type Scheduler interface {
-  Schedule(Workload) []TaskPlan
+  // TODO could be <-chan Offer, or Schedule(Workload, chan<- Offer)
+  Schedule(*pbe.Task) Offer
 }
 
-func StartScheduling(db *server.TaskBolt, s Scheduler) {
-  workload := Workload(db.ReadQueue(10))
-  plans := s.Schedule(ctx, workload)
-  if p.State() == Accepted {
-    s.db.AssignTask(p.TaskID(), p.WorkerID())
+func StartScheduling(db *server.TaskBolt, sched Scheduler) {
+  ticker := time.NewTicker(time.Second * 5)
+  defer ticker.Stop()
+  for {
+    <-ticker.C
+    for _, t := range db.ReadQueue(10) {
+      offer := sched.Schedule(t)
+      if offer.Rejected() {
+        log.Println("Rejected")
+      } else {
+        offer.Accept()
+        db.AssignTask(offer.Task().TaskID, offer.Worker().ID)
+      }
+    }
   }
 }

@@ -11,7 +11,7 @@ import (
 	"tes/server"
 	"tes/server/proto"
   "tes/scheduler"
-  "tes/scheduler/backends/local"
+  "tes/scheduler/local"
 )
 
 func main() {
@@ -64,10 +64,8 @@ func main() {
 	server.RegisterScheduleServer(taski)
 	server.Start(*rpcPort)
 
-
-  sched := scheduler.NewScheduler(taski)
-  backend := local.NewBackend()
-  go scheduler.StartBackend(sched, backend)
+  // TODO worker will stay alive if the parent process panics
+  go scheduler.StartScheduling(taski, local.NewScheduler(4))
 
 	tes_server.StartHttpProxy(*rpcPort, *httpPort, contentDir)
 }

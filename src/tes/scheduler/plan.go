@@ -1,17 +1,31 @@
 package scheduler
 
-type State int
-const (
-  Accepted State = iota
-  Rejected
+import (
+  pbe "tes/ga4gh"
 )
 
-type TaskPlan interface {
-  TaskID() string
-  WorkerID() string
-  State() State
-  SetState(State)
-  Execute()
+type Offer interface {
+  Task() *pbe.Task
+  Worker() Worker
+  Accept()
+  Reject()
+  Accepted() bool
+  Rejected() bool
+  RejectWithReason(string)
+  RejectionReason() string
+  Wait() <-chan struct{}
+}
+
+type Resources struct {
+  CPU int
+  RAM float32
+  Disk float32
+}
+
+type Worker struct {
+  ID string
+  Resources
+
   // TODO
   // In the future this could describe to the scheduler
   // the costs/benefits of running this task with this plan,
@@ -31,25 +45,74 @@ type TaskPlan interface {
   //   cluster is prone to having nodes go down.
 }
 
-func NewPlan(id string, workerid string) TaskPlan {
-  return &basePlan{id, workerid, Proposed}
+func NewOffer(t *pbe.Task, w Worker) Offer {
+  return &offer{
+    task: t,
+    worker: w,
+    done: make(chan struct{}),
+  }
 }
 
-type basePlan struct {
-  id string
-  workerID string
-  state State
+func RejectedOffer(reason string) Offer {
+  o := &offer{done: make(chan struct{})}
+  o.RejectWithReason(reason)
+  return o
 }
-func (b *basePlan) TaskID() string {
-  return b.id
+
+type offer struct {
+  task *pbe.Task
+  worker Worker
+  done chan struct{}
+  accepted bool
+  rejected bool
+  reason string
 }
-func (b *basePlan) WorkerID() string {
-  return b.workerID
+
+func (o *offer) Task() *pbe.Task {
+  return o.task
 }
-func (b *basePlan) State() State {
-  return b.state
+
+func (o *offer) Worker() Worker {
+  return o.worker
 }
-func (b *basePlan) SetState(s State) {
-  b.state = s
+
+func (o *offer) Accepted() bool {
+  return o.accepted
 }
-func (b *basePlan) Execute() {}
+
+func (o *offer) Rejected() bool {
+  return o.rejected
+}
+
+func (o *offer) Accept() {
+  select {
+  case <-o.done:
+    return
+  default:
+    o.accepted = true
+    close(o.done)
+  }
+}
+
+func (o *offer) Reject() {
+  select {
+  case <-o.done:
+    return
+  default:
+    o.rejected = true
+    close(o.done)
+  }
+}
+
+func (o *offer) RejectWithReason(r string) {
+  o.reason = r
+  o.Reject()
+}
+
+func (o *offer) RejectionReason() string {
+  return o.reason
+}
+
+func (o *offer) Wait() <-chan struct{} {
+  return o.done
+}

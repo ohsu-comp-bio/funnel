@@ -30,7 +30,7 @@ class TestTaskREST(SimpleServerTest):
         data = json.loads(u.read())
         job_id = data['value']
         
-        while True:
+        for i in range(10):
             r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
             data = json.loads(r.read())
             if data["state"] not in ['Queued', "Running"]:

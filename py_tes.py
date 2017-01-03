@@ -90,8 +90,8 @@ class TES:
         job_id = data['value']
         return job_id
     
-    def wait(self, job_id):
-        while True:
+    def wait(self, job_id, timeout=10):
+        for i in range(timeout):
             req = urllib2.Request("%s/v1/jobs/%s" % (self.url, job_id))
             r = urllib2.urlopen(req)
             data = json.loads(r.read())

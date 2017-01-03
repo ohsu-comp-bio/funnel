@@ -12,6 +12,7 @@ import (
 	"tes/server/proto"
   "tes/scheduler"
   "tes/scheduler/local"
+  _ "tes/scheduler/condor"
 )
 
 func main() {

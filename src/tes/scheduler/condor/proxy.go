@@ -1,5 +1,6 @@
 package condor
 
+/*
 import (
 	"fmt"
 	"golang.org/x/net/context"
@@ -92,3 +93,4 @@ func NewProxyClient(address string) (*ProxyClient, error) {
 func (client *ProxyClient) Close() {
 	client.conn.Close()
 }
+*/

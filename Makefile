@@ -8,7 +8,6 @@ PROTO_INC= -I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/
 server: depends
 	go install tes-server
 	go install tes-worker
-	go install tes-openstack-autoscaler
 
 proto_build:
 	go get ./src/vendor/github.com/golang/protobuf/protoc-gen-go/
@@ -27,7 +26,6 @@ proto_build:
 depends:
 	go get -d tes-server
 	go get -d tes-worker
-	go get -d tes-openstack-autoscaler
 
 golint:
 	go get -v github.com/golang/lint/golint/

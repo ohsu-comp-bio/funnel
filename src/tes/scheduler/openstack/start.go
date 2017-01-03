@@ -1,4 +1,4 @@
-package main
+package openstack
 
 import (
 	"flag"
@@ -10,6 +10,11 @@ import (
   "github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
   "tes"
 )
+
+const startScript = `
+#!/bin/sh
+sudo systemctl start tes.service
+`
 
 func main() {
   config := Config{}
@@ -55,7 +60,7 @@ func start(config Config) {
   tesConfig := []byte(fmt.Sprintf("MasterAddr: %s\n", config.MasterAddr))
   // Write a simple bash script that starts the TES service.
   // This will be run when the VM instance boots.
-  userData := []byte("#!/bin/sh\nsudo systemctl start tes.service")
+  userData := []byte(startScript)
 
   _, serr := servers.Create(client, keypairs.CreateOptsExt{
     servers.CreateOpts{

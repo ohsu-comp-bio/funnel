@@ -7,7 +7,6 @@ import (
 	"os/exec"
   sched "tes/scheduler"
   pbe "tes/ga4gh"
-	uuid "github.com/nu7hatch/gouuid"
 )
 
 // TODO config
@@ -38,7 +37,7 @@ type scheduler struct {
 }
 
 func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
-  log.Println("Running pool scheduler")
+  log.Println("Running local scheduler")
 
   // Make an offer if the current resource count is less than the max.
   // This is just a dumb placeholder for a future scheduler.
@@ -48,9 +47,11 @@ func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
   // This backend does none of that...yet.
   avail := atomic.LoadInt32(&l.available)
   log.Printf("Available: %d", avail)
-  if avail > 0 {
+  if avail == 0 {
+    return sched.RejectedOffer("Pool is full")
+  } else {
     w := sched.Worker{
-      ID: GenWorkerID(),
+      ID: sched.GenWorkerID(),
       Resources: sched.Resources{
         CPU: 1,
         RAM: 1.0,
@@ -61,8 +62,6 @@ func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
     o := sched.NewOffer(t, w)
     go l.observe(o, cw)
     return o
-  } else {
-    return sched.RejectedOffer("Pool is full")
   }
 }
 
@@ -86,11 +85,6 @@ func runWorker(w customworker) {
   if err != nil {
     log.Printf("%s", err)
   }
-}
-
-func GenWorkerID() string {
-	u, _ := uuid.NewV4()
-	return u.String()
 }
 
 //...I cannot believe I have to define these.

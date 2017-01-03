@@ -6,7 +6,16 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"tes/scheduler/openstack"
+	pbr "tes/server/proto"
 )
+
+type Config struct {
+	pbr.ServerConfig
+	Schedulers struct {
+		Openstack openstack.Config
+	}
+}
 
 // ParseConfigFile parses a TES config file, which is formatted in YAML,
 // and returns a ServerConfig struct.

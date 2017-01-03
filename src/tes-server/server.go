@@ -11,7 +11,8 @@ import (
 	"tes/scheduler"
 	_ "tes/scheduler/condor"
 	_ "tes/scheduler/dumblocal"
-	"tes/scheduler/local"
+	_ "tes/scheduler/local"
+	"tes/scheduler/openstack"
 	"tes/server"
 	"tes/server/proto"
 )
@@ -30,7 +31,7 @@ func main() {
 	dir, _ := filepath.Abs(os.Args[0])
 	contentDir := filepath.Join(dir, "..", "..", "share")
 
-	config := ga4gh_task_ref.ServerConfig{}
+	config := tes.Config{}
 	tes.LoadConfigOrExit(*configFile, &config)
 
 	if *storageDirArg != "" {
@@ -59,7 +60,7 @@ func main() {
 	// TODO if another process has the db open, this will block and it is really
 	//      confusing when you don't realize you have the db locked in another
 	//      terminal somewhere. Would be good to timeout on startup here.
-	taski := tes_server.NewTaskBolt(*taskDB, config)
+	taski := tes_server.NewTaskBolt(*taskDB, config.ServerConfig)
 
 	server := tes_server.NewGA4GHServer()
 	server.RegisterTaskServer(taski)
@@ -67,7 +68,8 @@ func main() {
 	server.Start(*rpcPort)
 
 	// TODO worker will stay alive if the parent process panics
-	go scheduler.StartScheduling(taski, local.NewScheduler(4))
+	//go scheduler.StartScheduling(taski, local.NewScheduler(4))
+	go scheduler.StartScheduling(taski, openstack.NewScheduler(4, config.Schedulers.Openstack))
 
 	tes_server.StartHttpProxy(*rpcPort, *httpPort, contentDir)
 }

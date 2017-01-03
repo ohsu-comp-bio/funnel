@@ -1,14 +1,12 @@
 package openstack
 
 import (
-	"flag"
-	"fmt"
+	"github.com/ghodss/yaml"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"log"
-	"tes"
 )
 
 const startScript = `
@@ -16,23 +14,18 @@ const startScript = `
 sudo systemctl start tes.service
 `
 
-func main() {
-	config := Config{}
-	var configArg string
-	flag.StringVar(&configArg, "config", "", "Config File")
-	flag.Parse()
-
-	tes.LoadConfigOrExit(configArg, &config)
-	start(config)
-}
-
 type Config struct {
 	MasterAddr string
 	KeyPair    string
 	Server     servers.CreateOpts
 }
 
-func start(config Config) {
+type workerconfig struct {
+	MasterAddr string
+	ID         string
+}
+
+func start(workerID string, config Config) {
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
 	if aerr != nil {
 		log.Printf("Auth options failed")
@@ -56,8 +49,13 @@ func start(config Config) {
 		return
 	}
 
-	// TODO should use yaml marshal lib
-	tesConfig := []byte(fmt.Sprintf("MasterAddr: %s\n", config.MasterAddr))
+	// Write the worker config YAML file, which gets uploaded to the VM.
+	wc := workerconfig{
+		MasterAddr: config.MasterAddr,
+		ID:         workerID,
+	}
+	wcyml, _ := yaml.Marshal(wc)
+	tesConfig := []byte(wcyml)
 	// Write a simple bash script that starts the TES service.
 	// This will be run when the VM instance boots.
 	userData := []byte(startScript)

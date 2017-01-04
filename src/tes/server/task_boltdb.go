@@ -13,42 +13,39 @@ import (
 	"tes/server/proto"
 )
 
-// TaskBucket documentation
-// TODO: documentation
+// job ID -> ga4gh_task_exec.Task struct
 var TaskBucket = []byte("tasks")
 
-// TaskAuthBucket documentation
-// TODO: documentation
+// job ID -> JWT token string
 var TaskAuthBucket = []byte("tasks-auth")
 
-// JobsQueued documentation
-// TODO: documentation
+// job ID -> job state string
 var JobsQueued = []byte("jobs-queued")
 
-// JobsActive documentation
-// TODO: documentation
+// job ID -> job state string
 var JobsActive = []byte("jobs-active")
 
-// JobsComplete documentation
-// TODO: documentation
+// job ID -> job state string
 var JobsComplete = []byte("jobs-complete")
 
-// JobsLog documentation
-// TODO: documentation
+// job ID -> ga4gh_task_exec.JobLog struct
 var JobsLog = []byte("jobs-log")
 
+// worker ID -> job ID
 var WorkerJobs = []byte("worker-jobs")
+
+// job ID -> worker ID
 var JobWorker = []byte("job-worker")
 
-// TaskBolt documentation
-// TODO: documentation
+// TaskBolt provides handlers for gRPC endpoints.
+// Data is stored/retrieved from the BoltDB key-value database.
 type TaskBolt struct {
 	db           *bolt.DB
 	serverConfig ga4gh_task_ref.ServerConfig
 }
 
-// NewTaskBolt documentation
-// TODO: documentation
+// NewTaskBolt returns a new instance of TaskBolt, accessing the database at
+// the given path, and including the given ServerConfig.
 func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
@@ -82,7 +79,7 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 	return &TaskBolt{db: db, serverConfig: config}
 }
 
-// TODO this is duplicating ListJobs? Refactor this before merging.
+// ReadQueue returns a slice of queued Jobs. Up to "n" jobs are returned.
 func (taskBolt *TaskBolt) ReadQueue(n int) []*ga4gh_task_exec.Job {
 	jobs := make([]*ga4gh_task_exec.Job, 0)
 	taskBolt.db.View(func(tx *bolt.Tx) error {

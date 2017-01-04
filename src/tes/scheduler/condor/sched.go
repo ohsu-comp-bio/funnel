@@ -33,7 +33,7 @@ type scheduler struct {
 	available int32
 }
 
-func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running condor scheduler")
 
 	avail := atomic.LoadInt32(&s.available)
@@ -50,7 +50,7 @@ func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
 				Disk: 10.0,
 			},
 		}
-		o := sched.NewOffer(t, w)
+		o := sched.NewOffer(j, w)
 		go s.observe(o)
 		return o
 	}

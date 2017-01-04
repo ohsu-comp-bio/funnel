@@ -25,14 +25,14 @@ type multisched struct {
 	timeout time.Duration
 }
 
-func (m *multisched) Schedule(task *pbe.Task) Offer {
+func (m *multisched) Schedule(job *pbe.Job) Offer {
 	log.Println("Running multi-scheduler")
 
 	var best Offer
 	// TODO should Schedule get a Context arg?
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
-	offers := m.Broadcast(ctx, task)
+	offers := m.Broadcast(ctx, job)
 
 	for o := range offers {
 		if !o.Rejected() {

@@ -22,10 +22,10 @@ type scheduler struct {
 	dumbsched dumb.Scheduler
 }
 
-func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running dumblocal scheduler")
 
-	o := s.dumbsched.Schedule(t)
+	o := s.dumbsched.Schedule(j)
 	go s.observe(o)
 	return o
 }

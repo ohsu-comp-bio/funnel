@@ -16,10 +16,10 @@ type scheduler struct {
 	conf Config
 }
 
-func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running dumb openstack scheduler")
 
-	o := s.ds.Schedule(t)
+	o := s.ds.Schedule(j)
 	go s.observe(o)
 	return o
 }

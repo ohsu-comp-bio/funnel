@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
-  "path"
-  "path/filepath"
+	"path"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	pbe "tes/ga4gh"
@@ -24,27 +24,27 @@ import (
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
 func NewScheduler(workers int, conf []*pbr.StorageConfig) sched.Scheduler {
-  // TODO HACK: get the path to the worker executable
-  dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-  p := path.Join(dir, "tes-worker")
+	// TODO HACK: get the path to the worker executable
+	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	p := path.Join(dir, "tes-worker")
 	return &scheduler{int32(workers), conf, p}
 }
 
 type scheduler struct {
 	// TODO how does the pool stay updated?
-	available int32
-	conf      []*pbr.StorageConfig
-  workerPath string
+	available  int32
+	conf       []*pbr.StorageConfig
+	workerPath string
 }
 
-func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
+func (l *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running local scheduler")
 
 	// Make an offer if the current resource count is less than the max.
 	// This is just a dumb placeholder for a future scheduler.
 	//
-	// A better algorithm would rank the tasks, have a concept of binpacking,
-	// and be able to assign a task to a specific, best-match node.
+	// A better algorithm would rank the jobs, have a concept of binpacking,
+	// and be able to assign a job to a specific, best-match node.
 	// This backend does none of that...yet.
 	avail := atomic.LoadInt32(&l.available)
 	log.Printf("Available: %d", avail)
@@ -59,7 +59,7 @@ func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
 				Disk: 10.0,
 			},
 		}
-		o := sched.NewOffer(t, w)
+		o := sched.NewOffer(j, w)
 		go l.observe(o)
 		return o
 	}
@@ -86,7 +86,7 @@ func (l *scheduler) runWorker(workerID string) {
 	}
 
 	cmd := exec.Command(
-    l.workerPath,
+		l.workerPath,
 		"-numworkers", "1",
 		"-id", workerID,
 		"-timeout", "1",

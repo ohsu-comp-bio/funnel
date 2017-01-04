@@ -43,7 +43,7 @@ func (s *scheduler) DecrementAvailable() {
 
 // TODO in a smarter scheduler, this would handle the tricky parts of scheduling:
 //      matching a task to the best node
-func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running local scheduler")
 
 	// Make an offer if the current resource count is less than the max.
@@ -65,6 +65,6 @@ func (s *scheduler) Schedule(t *pbe.Task) sched.Offer {
 				Disk: 10.0,
 			},
 		}
-		return sched.NewOffer(t, w)
+		return sched.NewOffer(j, w)
 	}
 }

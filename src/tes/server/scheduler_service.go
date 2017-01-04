@@ -54,7 +54,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 	return &ga4gh_task_ref.JobResponse{Job: job, Auth: authToken}, nil
 }
 
-func (taskBolt *TaskBolt) AssignTask(id string, workerID string) error {
+func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 	running := []byte(ga4gh_task_exec.State_Running.String())
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)

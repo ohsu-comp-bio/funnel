@@ -9,7 +9,7 @@ import (
 )
 
 type Scheduler interface {
-	Schedule(*pbe.Task) Offer
+	Schedule(*pbe.Job) Offer
 }
 
 func StartScheduling(db *server.TaskBolt, sched Scheduler) {
@@ -24,7 +24,7 @@ func StartScheduling(db *server.TaskBolt, sched Scheduler) {
 				log.Printf("Rejected: %s", offer.RejectionReason())
 			} else {
 				offer.Accept()
-				db.AssignTask(offer.Task().TaskID, offer.Worker().ID)
+				db.AssignJob(offer.Job().JobID, offer.Worker().ID)
 			}
 		}
 	}

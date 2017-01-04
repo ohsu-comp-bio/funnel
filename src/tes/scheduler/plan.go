@@ -5,7 +5,7 @@ import (
 )
 
 type Offer interface {
-	Task() *pbe.Task
+	Job() *pbe.Job
 	Worker() Worker
 	Accept()
 	Reject()
@@ -28,7 +28,7 @@ type Worker struct {
 
 	// TODO
 	// In the future this could describe to the scheduler
-	// the costs/benefits of running this task with this plan,
+	// the costs/benefits of running this job with this offer,
 	// for example, it could convey that there is cached data
 	// (data locality is desired).
 	// Other ideas:
@@ -38,16 +38,16 @@ type Worker struct {
 	//   of the cloud instance.
 	// - startup time: maybe this backend needs to start a worker
 	//   and that could take a few minutes
-	// - related task locality: maybe this task is online and related
+	// - related job locality: maybe this job is online and related
 	//   to others, and a shared, local, fast network would be better.
 	// - SLA: maybe this backend can run this, but with the caveat that
-	//   the task could be interrupted (AWS spot?). Or maybe this
+	//   the job could be interrupted (AWS spot?). Or maybe this
 	//   cluster is prone to having nodes go down.
 }
 
-func NewOffer(t *pbe.Task, w Worker) Offer {
+func NewOffer(j *pbe.Job, w Worker) Offer {
 	return &offer{
-		task:   t,
+		job:    j,
 		worker: w,
 		done:   make(chan struct{}),
 	}
@@ -60,7 +60,7 @@ func RejectedOffer(reason string) Offer {
 }
 
 type offer struct {
-	task     *pbe.Task
+	job      *pbe.Job
 	worker   Worker
 	done     chan struct{}
 	accepted bool
@@ -68,8 +68,8 @@ type offer struct {
 	reason   string
 }
 
-func (o *offer) Task() *pbe.Task {
-	return o.task
+func (o *offer) Job() *pbe.Job {
+	return o.job
 }
 
 func (o *offer) Worker() Worker {

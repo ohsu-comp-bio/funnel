@@ -83,23 +83,20 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 }
 
 // TODO this is duplicating ListJobs? Refactor this before merging.
-func (taskBolt *TaskBolt) ReadQueue(n int) []*ga4gh_task_exec.Task {
-	tasks := make([]*ga4gh_task_exec.Task, 0)
+func (taskBolt *TaskBolt) ReadQueue(n int) []*ga4gh_task_exec.Job {
+	jobs := make([]*ga4gh_task_exec.Job, 0)
 	taskBolt.db.View(func(tx *bolt.Tx) error {
 
-		taskBkt := tx.Bucket(TaskBucket)
-
-		// Iterate over the JobsQueued bucket, reading the first `n` tasks
+		// Iterate over the JobsQueued bucket, reading the first `n` jobs
 		c := tx.Bucket(JobsQueued).Cursor()
-		for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
-			// The values in "JobsQueued" are actually Tasks.
-			task := &ga4gh_task_exec.Task{}
-			proto.Unmarshal(taskBkt.Get(k), task)
-			tasks = append(tasks, task)
+		for k, _ := c.First(); k != nil && len(jobs) < n; k, _ = c.Next() {
+			id := string(k)
+			job := taskBolt.getJob(tx, id)
+			jobs = append(jobs, job)
 		}
 		return nil
 	})
-	return tasks
+	return jobs
 }
 
 // getJWT
@@ -204,61 +201,45 @@ func (taskBolt *TaskBolt) getJobState(jobID string) (ga4gh_task_exec.State, erro
 	return a, err
 }
 
-func (taskBolt *TaskBolt) getJob(jobID string) (*ga4gh_task_exec.Job, error) {
-	ch := make(chan *ga4gh_task_exec.Job, 1)
-	taskBolt.db.View(func(tx *bolt.Tx) error {
+func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job {
+	bT := tx.Bucket(TaskBucket)
+	v := bT.Get([]byte(jobID))
+	task := &ga4gh_task_exec.Task{}
+	proto.Unmarshal(v, task)
 
-		bT := tx.Bucket(TaskBucket)
-		v := bT.Get([]byte(jobID))
-		task := &ga4gh_task_exec.Task{}
-		proto.Unmarshal(v, task)
+	job := ga4gh_task_exec.Job{}
+	job.JobID = jobID
+	job.Task = task
+	job.State, _ = taskBolt.getJobState(jobID)
 
-		job := ga4gh_task_exec.Job{}
-		job.JobID = jobID
-		job.Task = task
-		job.State, _ = taskBolt.getJobState(jobID)
-
-		//if there is logging info
-		bL := tx.Bucket(JobsLog)
-		out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))
-		for i := range job.Task.Docker {
-			o := bL.Get([]byte(fmt.Sprint(jobID, i)))
-			if o != nil {
-				var log ga4gh_task_exec.JobLog
-				proto.Unmarshal(o, &log)
-				out[i] = &log
-			} else {
-				out[i] = &ga4gh_task_exec.JobLog{}
-			}
+	//if there is logging info
+	bL := tx.Bucket(JobsLog)
+	out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))
+	for i := range job.Task.Docker {
+		o := bL.Get([]byte(fmt.Sprint(jobID, i)))
+		if o != nil {
+			var log ga4gh_task_exec.JobLog
+			proto.Unmarshal(o, &log)
+			out[i] = &log
+		} else {
+			out[i] = &ga4gh_task_exec.JobLog{}
 		}
-		job.Logs = out
-		ch <- &job
-		return nil
-	})
-	a := <-ch
-	return a, nil
+	}
+	job.Logs = out
+	return &job
 }
 
 // GetJob documentation
 // TODO: documentation
 // Get info about a running task
-func (taskBolt *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
+func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
 	log.Printf("Getting Task Info")
-	ch := make(chan *ga4gh_task_exec.Task, 1)
-	taskBolt.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(TaskBucket)
-		v := b.Get([]byte(job.Value))
-		out := ga4gh_task_exec.Task{}
-		proto.Unmarshal(v, &out)
-		ch <- &out
+	var job *ga4gh_task_exec.Job
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+		job = taskBolt.getJob(tx, id.Value)
 		return nil
 	})
-	a := <-ch
-	if a == nil {
-		return nil, fmt.Errorf("Job Not Found")
-	}
-	b, err := taskBolt.getJob(job.Value)
-	return b, err
+	return job, err
 }
 
 // ListJobs returns a list of jobIDs

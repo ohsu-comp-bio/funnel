@@ -4,18 +4,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync/atomic"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
+	pbr "tes/server/proto"
 )
 
 // TODO config
 const workerCmd = "/Users/buchanae/projects/task-execution-server/bin/tes-worker"
-
-type customworker struct {
-	sched.Worker
-	flavor string
-}
 
 // TODO Questions:
 // - how to efficiently copy/slice a large resource pool?
@@ -27,13 +24,14 @@ type customworker struct {
 //   a task to a resource. Don't want to loop through 1000 resources for every task
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
-func NewScheduler(workers int) sched.Scheduler {
-	return &scheduler{int32(workers)}
+func NewScheduler(workers int, conf []*pbr.StorageConfig) sched.Scheduler {
+	return &scheduler{int32(workers), conf}
 }
 
 type scheduler struct {
 	// TODO how does the pool stay updated?
 	available int32
+	conf      []*pbr.StorageConfig
 }
 
 func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
@@ -58,27 +56,39 @@ func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
 				Disk: 10.0,
 			},
 		}
-		cw := customworker{w, "m1.medium"}
 		o := sched.NewOffer(t, w)
-		go l.observe(o, cw)
+		go l.observe(o)
 		return o
 	}
 }
 
-func (l *scheduler) observe(o sched.Offer, w customworker) {
+func (l *scheduler) observe(o sched.Offer) {
 	<-o.Wait()
 	if o.Accepted() {
 		atomic.AddInt32(&l.available, -1)
-		runWorker(w)
+		l.runWorker(o.Worker().ID)
 		atomic.AddInt32(&l.available, 1)
 	} else if o.Rejected() {
 		log.Println("Local offer was rejected")
 	}
 }
 
-func runWorker(w customworker) {
-	log.Printf("Starting local worker, flavor: %s", w.flavor)
-	cmd := exec.Command(workerCmd, "-numworkers", "1", "-id", w.ID, "-timeout", "0")
+func (l *scheduler) runWorker(workerID string) {
+	log.Printf("Starting local worker")
+	alloweddirs := make([]string, 1)
+	for _, d := range l.conf {
+		if d.Protocol == "fs" {
+			alloweddirs = append(alloweddirs, d.Config["basedir"])
+		}
+	}
+
+	cmd := exec.Command(
+		workerCmd,
+		"-numworkers", "1",
+		"-id", workerID,
+		"-timeout", "0",
+		"-alloweddirs", strings.Join(alloweddirs, ","),
+	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

@@ -72,7 +72,7 @@ func main() {
 	switch *schedArg {
 	case "local":
 		// TODO worker will stay alive if the parent process panics
-		sched = local.NewScheduler(4)
+		sched = local.NewScheduler(4, config.Storage)
 	case "condor":
 		sched = condor.NewScheduler(config.Schedulers.Condor)
 	case "openstack":

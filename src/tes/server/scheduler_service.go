@@ -16,6 +16,7 @@ import (
 // TODO: documentation
 func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
 	var task *ga4gh_task_exec.Task
+	var jobID string
 	authToken := ""
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -28,11 +29,12 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 			// Get the task
 			v := bOp.Get(k)
 			task = &ga4gh_task_exec.Task{}
+			jobID = string(k)
 			proto.Unmarshal(v, task)
 			// Update the job state to "Running"
 
 			// Look for an auth token related to this task
-			tok := authBkt.Get([]byte(task.TaskID))
+			tok := authBkt.Get([]byte(k))
 			if tok != nil {
 				authToken = string(tok)
 			}
@@ -45,7 +47,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 	}
 
 	job := &ga4gh_task_exec.Job{
-		JobID: task.TaskID,
+		JobID: jobID,
 		Task:  task,
 	}
 

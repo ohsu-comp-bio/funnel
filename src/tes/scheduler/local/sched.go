@@ -89,7 +89,7 @@ func (l *scheduler) runWorker(workerID string) {
     l.workerPath,
 		"-numworkers", "1",
 		"-id", workerID,
-		"-timeout", "0",
+		"-timeout", "1",
 		"-alloweddirs", strings.Join(alloweddirs, ","),
 	)
 	cmd.Stdout = os.Stdout

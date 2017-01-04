@@ -4,15 +4,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+  "path"
+  "path/filepath"
 	"strings"
 	"sync/atomic"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
 	pbr "tes/server/proto"
 )
-
-// TODO config
-const workerCmd = "/Users/buchanae/projects/task-execution-server/bin/tes-worker"
 
 // TODO Questions:
 // - how to efficiently copy/slice a large resource pool?
@@ -25,13 +24,17 @@ const workerCmd = "/Users/buchanae/projects/task-execution-server/bin/tes-worker
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
 func NewScheduler(workers int, conf []*pbr.StorageConfig) sched.Scheduler {
-	return &scheduler{int32(workers), conf}
+  // TODO HACK: get the path to the worker executable
+  dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+  p := path.Join(dir, "tes-worker")
+	return &scheduler{int32(workers), conf, p}
 }
 
 type scheduler struct {
 	// TODO how does the pool stay updated?
 	available int32
 	conf      []*pbr.StorageConfig
+  workerPath string
 }
 
 func (l *scheduler) Schedule(t *pbe.Task) sched.Offer {
@@ -83,7 +86,7 @@ func (l *scheduler) runWorker(workerID string) {
 	}
 
 	cmd := exec.Command(
-		workerCmd,
+    l.workerPath,
 		"-numworkers", "1",
 		"-id", workerID,
 		"-timeout", "0",

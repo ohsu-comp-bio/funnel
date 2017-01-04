@@ -12,6 +12,11 @@ type Scheduler interface {
 	Schedule(*pbe.Job) Offer
 }
 
+// StartScheduling starts a scheduling loop, pulling 10 jobs from the database,
+// and sending those to the given scheduler. This happens every 5 seconds.
+//
+// Offers which aren't marked as rejected by the scheduler are accepted
+// and the job is assigned to a worker in the database.
 func StartScheduling(db *server.TaskBolt, sched Scheduler) {
 	ticker := time.NewTicker(time.Second * 5)
 	defer ticker.Stop()
@@ -30,6 +35,7 @@ func StartScheduling(db *server.TaskBolt, sched Scheduler) {
 	}
 }
 
+// GenWorkerID returns a UUID string.
 func GenWorkerID() string {
 	u, _ := uuid.NewV4()
 	return u.String()

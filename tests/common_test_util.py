@@ -33,18 +33,10 @@ class SimpleServerTest(unittest.TestCase):
         self.task_server = subprocess.Popen(cmd)
         time.sleep(3)
         
-        self.task_worker = None
-        cmd = ["./bin/tes-worker", "-workdir", self.volume_dir, "-alloweddirs", self.storage_dir]
-        logging.info("Running %s" % (" ".join(cmd)))
-        self.task_worker = subprocess.Popen(cmd)
-
     def tearDown(self):
         if self.task_server is not None:
             self.task_server.kill()
             
-        if self.task_worker is not None:
-            self.task_worker.kill()
-
     def storage_path(self, *args):
         return os.path.join(self.storage_dir, *args)
     
@@ -105,11 +97,6 @@ class S3ServerTest(unittest.TestCase):
         self.task_server = subprocess.Popen(cmd)
         time.sleep(3)
         
-        self.task_worker = None
-        cmd = ["./bin/tes-worker"]
-        logging.info("Running %s" % (" ".join(cmd)))
-        self.task_worker = subprocess.Popen(cmd)
-        
         tes = py_tes.TES("http://localhost:8000", s3_access_key=S3_ACCESS_KEY, s3_secret_key=S3_SECRET_KEY, secret=API_TOKEN)
         self.tes = tes
         if not tes.bucket_exists(BUCKET_NAME):
@@ -129,9 +116,6 @@ class S3ServerTest(unittest.TestCase):
         if self.task_server is not None:
             self.task_server.kill()
             
-        if self.task_worker is not None:
-            self.task_worker.kill()
-    
     def get_storage_url(self, path):
         dstpath = "s3://%s/%s" % (BUCKET_NAME, os.path.join(self.dir_name, os.path.basename(path)))
         return dstpath

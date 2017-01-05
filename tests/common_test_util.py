@@ -9,15 +9,40 @@ import shutil
 import time
 import socket
 import subprocess
+import logging
+import signal
 
+
+S3_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
+S3_SECRET_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+API_TOKEN="secret"
+BUCKET_NAME="tes-test"
 WORK_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "test_work" )
+
+def popen(*args, **kwargs):
+    kwargs['preexec_fn'] = os.setsid
+    return subprocess.Popen(*args, **kwargs)
+
+def kill(p):
+    try:
+        os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+        p.wait()
+    except OSError:
+        pass
 
 def get_abspath(path):
     return os.path.join(os.path.dirname(__file__), path)
 
+def which(file):
+    for path in os.environ["PATH"].split(":"):
+        p = os.path.join(path, file)
+        if os.path.exists(p):
+            return p
+
 class SimpleServerTest(unittest.TestCase):
 
     def setUp(self):
+        self.addCleanup(self.cleanup)
         if not os.path.exists("./test_tmp"):
             os.mkdir("test_tmp")
         self.task_server = None
@@ -30,21 +55,16 @@ class SimpleServerTest(unittest.TestCase):
         
         cmd = ["./bin/tes-server", "-db", db_path, "-storage", self.storage_dir]
         logging.info("Running %s" % (" ".join(cmd)))
-        self.task_server = subprocess.Popen(cmd)
+        self.task_server = popen(cmd)
         time.sleep(3)
         
-        self.task_worker = None
-        cmd = ["./bin/tes-worker", "-workdir", self.volume_dir, "-allowed", self.storage_dir]
-        logging.info("Running %s" % (" ".join(cmd)))
-        self.task_worker = subprocess.Popen(cmd)
-
-    def tearDown(self):
+    # We're using this instead of tearDown because python doesn't call tearDown
+    # if setUp fails. Since our setUp is complex, that means things don't get
+    # properly cleaned up (e.g. processes are orphaned).
+    def cleanup(self):
         if self.task_server is not None:
-            self.task_server.kill()
+            kill(self.task_server)
             
-        if self.task_worker is not None:
-            self.task_worker.kill()
-
     def storage_path(self, *args):
         return os.path.join(self.storage_dir, *args)
     
@@ -57,22 +77,11 @@ class SimpleServerTest(unittest.TestCase):
         dst = os.path.join( self.storage_dir, loc )
         return dst
 
-
-def which(file):
-    for path in os.environ["PATH"].split(":"):
-        p = os.path.join(path, file)
-        if os.path.exists(p):
-            return p
-
-S3_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
-S3_SECRET_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-API_TOKEN="secret"
-
-BUCKET_NAME="tes-test"
-
 class S3ServerTest(unittest.TestCase):
 
     def setUp(self):
+        self.addCleanup(self.cleanup)
+
         if not os.path.exists("./test_tmp"):
             os.mkdir("test_tmp")
         self.task_server = None
@@ -99,39 +108,34 @@ class S3ServerTest(unittest.TestCase):
             "minio/minio", "server", "/export"
         ]
         logging.info("Running %s" % (" ".join(cmd)))        
-        self.s3_server = subprocess.Popen(cmd)
+        self.s3_server = popen(cmd)
         cmd = ["./bin/tes-server", "-db", db_path, "-s3", "http://localhost:9000"]
         logging.info("Running %s" % (" ".join(cmd)))
-        self.task_server = subprocess.Popen(cmd)
+        self.task_server = popen(cmd)
         time.sleep(3)
-        
-        self.task_worker = None
-        cmd = ["./bin/tes-worker"]
-        logging.info("Running %s" % (" ".join(cmd)))
-        self.task_worker = subprocess.Popen(cmd)
         
         tes = py_tes.TES("http://localhost:8000", s3_access_key=S3_ACCESS_KEY, s3_secret_key=S3_SECRET_KEY, secret=API_TOKEN)
         self.tes = tes
         if not tes.bucket_exists(BUCKET_NAME):
             tes.make_bucket(BUCKET_NAME)
 
-    def tearDown(self):
+    # We're using this instead of tearDown because python doesn't call tearDown
+    # if setUp fails. Since our setUp is complex, that means things don't get
+    # properly cleaned up (e.g. processes are orphaned).
+    def cleanup(self):
         if self.s3_server is not None:
-            self.s3_server.kill()
+            kill(self.s3_server)
             cmd = ["docker", "kill", "tes_minio_test"]
             logging.info("Running %s" % (" ".join(cmd)))
             
             cmd = ["docker", "rm", "-fv", "tes_minio_test"]
             logging.info("Running %s" % (" ".join(cmd)))
             
-            subprocess.Popen(cmd).communicate()
+            popen(cmd).communicate()
         
         if self.task_server is not None:
-            self.task_server.kill()
+            kill(self.task_server)
             
-        if self.task_worker is not None:
-            self.task_worker.kill()
-    
     def get_storage_url(self, path):
         dstpath = "s3://%s/%s" % (BUCKET_NAME, os.path.join(self.dir_name, os.path.basename(path)))
         return dstpath
@@ -149,5 +153,3 @@ class S3ServerTest(unittest.TestCase):
         print "Downloading %s to %s" % (loc, dst)
         tes.download_file(dst, loc)
         return dst
-
-    

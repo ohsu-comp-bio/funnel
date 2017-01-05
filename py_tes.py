@@ -1,4 +1,5 @@
 
+import itertools
 import re
 import os
 import json
@@ -90,8 +91,11 @@ class TES:
         job_id = data['value']
         return job_id
     
-    def wait(self, job_id):
-        while True:
+    def wait(self, job_id, timeout=10):
+        data = {}
+        for i in itertools.count():
+            if timeout > 0 and i == timeout:
+                break
             req = urllib2.Request("%s/v1/jobs/%s" % (self.url, job_id))
             r = urllib2.urlopen(req)
             data = json.loads(r.read())

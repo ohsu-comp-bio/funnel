@@ -2,33 +2,40 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"tes"
 	"tes/storage"
 	worker "tes/worker"
 	"tes/worker/slot"
 )
 
 func main() {
-	masterArg := flag.String("master", "localhost:9090", "Master Server")
-	workDirArg := flag.String("workdir", "volumes", "Working Directory")
-	timeoutArg := flag.Int("timeout", -1, "Timeout in seconds")
-	allowedDirsArg := flag.String("allowed", "", "Allowed directories for local FS backend")
-	nworker := flag.Int("nworkers", 4, "Worker Count")
-	logFileArg := flag.String("logfile", "", "File path to write logs to")
+	config := worker.NewConfig()
+
+	var allowedDirsArg csvArg
+	var configArg string
+	flag.StringVar(&configArg, "config", "", "Config File")
+	flag.StringVar(&config.ID, "id", config.ID, "Worker ID")
+	flag.StringVar(&config.MasterAddr, "masteraddr", config.MasterAddr, "Master Server")
+	flag.StringVar(&config.WorkDir, "workdir", config.WorkDir, "Working Directory")
+	flag.IntVar(&config.Timeout, "timeout", config.Timeout, "Timeout in seconds")
+	flag.Var(&allowedDirsArg, "alloweddirs", "Allowed directories for local FS backend")
+	flag.IntVar(&config.NumWorkers, "numworkers", config.NumWorkers, "Worker Count")
+	flag.StringVar(&config.LogPath, "logpath", config.LogPath, "File path to write logs to")
 
 	flag.Parse()
 
-	config := worker.Config{
-		MasterAddr:  *masterArg,
-		WorkDir:     *workDirArg,
-		Timeout:     *timeoutArg,
-		NumWorkers:  *nworker,
-		AllowedDirs: parseAllowedDirs(*allowedDirsArg),
-		LogPath:     *logFileArg,
+	tes.LoadConfigOrExit(configArg, &config)
+
+	for _, i := range allowedDirsArg {
+		p, _ := filepath.Abs(i)
+		config.AllowedDirs = append(config.AllowedDirs, p)
 	}
+
 	start(config)
 }
 
@@ -69,20 +76,25 @@ func start(config worker.Config) {
 
 	// Create the slots
 	for i := 0; i < config.NumWorkers; i++ {
-		id := slot.GenSlotId(p.Id, i)
 		// TODO handle error
-		slots[i], _ = slot.NewSlot(id, config.MasterAddr, eng)
+		slots[i], _ = slot.NewSlot(config.ID, config.MasterAddr, eng)
 	}
 
 	// Start the pool
 	p.Start()
 }
 
-func parseAllowedDirs(in string) []string {
-	o := []string{}
-	for _, i := range strings.Split(in, ",") {
-		p, _ := filepath.Abs(i)
-		o = append(o, p)
+// csvArg is a helper for allowing comma-separated CLI flags.
+// See example 3 here: https://golang.org/src/flag/example_test.go
+type csvArg []string
+
+func (a *csvArg) String() string {
+	return fmt.Sprint(*a)
+}
+
+func (a *csvArg) Set(str string) error {
+	for _, i := range strings.Split(str, ",") {
+		*a = append(*a, i)
 	}
-	return o
+	return nil
 }

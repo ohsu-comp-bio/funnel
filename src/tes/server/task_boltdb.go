@@ -13,39 +13,39 @@ import (
 	"tes/server/proto"
 )
 
-// TaskBucket documentation
-// TODO: documentation
+// job ID -> ga4gh_task_exec.Task struct
 var TaskBucket = []byte("tasks")
 
-// TaskAuthBucket documentation
-// TODO: documentation
+// job ID -> JWT token string
 var TaskAuthBucket = []byte("tasks-auth")
 
-// JobsQueued documentation
-// TODO: documentation
+// job ID -> job state string
 var JobsQueued = []byte("jobs-queued")
 
-// JobsActive documentation
-// TODO: documentation
+// job ID -> job state string
 var JobsActive = []byte("jobs-active")
 
-// JobsComplete documentation
-// TODO: documentation
+// job ID -> job state string
 var JobsComplete = []byte("jobs-complete")
 
-// JobsLog documentation
-// TODO: documentation
+// job ID -> ga4gh_task_exec.JobLog struct
 var JobsLog = []byte("jobs-log")
 
-// TaskBolt documentation
-// TODO: documentation
+// worker ID -> job ID
+var WorkerJobs = []byte("worker-jobs")
+
+// job ID -> worker ID
+var JobWorker = []byte("job-worker")
+
+// TaskBolt provides handlers for gRPC endpoints.
+// Data is stored/retrieved from the BoltDB key-value database.
 type TaskBolt struct {
 	db           *bolt.DB
 	serverConfig ga4gh_task_ref.ServerConfig
 }
 
-// NewTaskBolt documentation
-// TODO: documentation
+// NewTaskBolt returns a new instance of TaskBolt, accessing the database at
+// the given path, and including the given ServerConfig.
 func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
@@ -68,9 +68,32 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 		if tx.Bucket(JobsLog) == nil {
 			tx.CreateBucket(JobsLog)
 		}
+		if tx.Bucket(WorkerJobs) == nil {
+			tx.CreateBucket(WorkerJobs)
+		}
+		if tx.Bucket(JobWorker) == nil {
+			tx.CreateBucket(JobWorker)
+		}
 		return nil
 	})
 	return &TaskBolt{db: db, serverConfig: config}
+}
+
+// ReadQueue returns a slice of queued Jobs. Up to "n" jobs are returned.
+func (taskBolt *TaskBolt) ReadQueue(n int) []*ga4gh_task_exec.Job {
+	jobs := make([]*ga4gh_task_exec.Job, 0)
+	taskBolt.db.View(func(tx *bolt.Tx) error {
+
+		// Iterate over the JobsQueued bucket, reading the first `n` jobs
+		c := tx.Bucket(JobsQueued).Cursor()
+		for k, _ := c.First(); k != nil && len(jobs) < n; k, _ = c.Next() {
+			id := string(k)
+			job := taskBolt.getJob(tx, id)
+			jobs = append(jobs, job)
+		}
+		return nil
+	})
+	return jobs
 }
 
 // getJWT
@@ -175,61 +198,45 @@ func (taskBolt *TaskBolt) getJobState(jobID string) (ga4gh_task_exec.State, erro
 	return a, err
 }
 
-func (taskBolt *TaskBolt) getJob(jobID string) (*ga4gh_task_exec.Job, error) {
-	ch := make(chan *ga4gh_task_exec.Job, 1)
-	taskBolt.db.View(func(tx *bolt.Tx) error {
+func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job {
+	bT := tx.Bucket(TaskBucket)
+	v := bT.Get([]byte(jobID))
+	task := &ga4gh_task_exec.Task{}
+	proto.Unmarshal(v, task)
 
-		bT := tx.Bucket(TaskBucket)
-		v := bT.Get([]byte(jobID))
-		task := &ga4gh_task_exec.Task{}
-		proto.Unmarshal(v, task)
+	job := ga4gh_task_exec.Job{}
+	job.JobID = jobID
+	job.Task = task
+	job.State, _ = taskBolt.getJobState(jobID)
 
-		job := ga4gh_task_exec.Job{}
-		job.JobID = jobID
-		job.Task = task
-		job.State, _ = taskBolt.getJobState(jobID)
-
-		//if there is logging info
-		bL := tx.Bucket(JobsLog)
-		out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))
-		for i := range job.Task.Docker {
-			o := bL.Get([]byte(fmt.Sprint(jobID, i)))
-			if o != nil {
-				var log ga4gh_task_exec.JobLog
-				proto.Unmarshal(o, &log)
-				out[i] = &log
-			} else {
-				out[i] = &ga4gh_task_exec.JobLog{}
-			}
+	//if there is logging info
+	bL := tx.Bucket(JobsLog)
+	out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))
+	for i := range job.Task.Docker {
+		o := bL.Get([]byte(fmt.Sprint(jobID, i)))
+		if o != nil {
+			var log ga4gh_task_exec.JobLog
+			proto.Unmarshal(o, &log)
+			out[i] = &log
+		} else {
+			out[i] = &ga4gh_task_exec.JobLog{}
 		}
-		job.Logs = out
-		ch <- &job
-		return nil
-	})
-	a := <-ch
-	return a, nil
+	}
+	job.Logs = out
+	return &job
 }
 
 // GetJob documentation
 // TODO: documentation
 // Get info about a running task
-func (taskBolt *TaskBolt) GetJob(ctx context.Context, job *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
+func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
 	log.Printf("Getting Task Info")
-	ch := make(chan *ga4gh_task_exec.Task, 1)
-	taskBolt.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(TaskBucket)
-		v := b.Get([]byte(job.Value))
-		out := ga4gh_task_exec.Task{}
-		proto.Unmarshal(v, &out)
-		ch <- &out
+	var job *ga4gh_task_exec.Job
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+		job = taskBolt.getJob(tx, id.Value)
 		return nil
 	})
-	a := <-ch
-	if a == nil {
-		return nil, fmt.Errorf("Job Not Found")
-	}
-	b, err := taskBolt.getJob(job.Value)
-	return b, err
+	return job, err
 }
 
 // ListJobs returns a list of jobIDs
@@ -269,9 +276,16 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bQ := tx.Bucket(JobsQueued)
 		bQ.Delete([]byte(taskop.Value))
+		bjw := tx.Bucket(JobWorker)
 
 		bA := tx.Bucket(JobsActive)
 		bA.Delete([]byte(taskop.Value))
+
+		workerID := bjw.Get([]byte(taskop.Value))
+		bjw.Delete([]byte(taskop.Value))
+
+		bW := tx.Bucket(WorkerJobs)
+		bW.Delete([]byte(workerID))
 
 		bC := tx.Bucket(JobsComplete)
 		bC.Put([]byte(taskop.Value), []byte(ga4gh_task_exec.State_Canceled.String()))

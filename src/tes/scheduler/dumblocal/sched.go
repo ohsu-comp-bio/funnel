@@ -6,20 +6,23 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
 	dumb "tes/scheduler/dumb"
 )
 
-// TODO config
-const workerCmd = "/Users/buchanae/projects/task-execution-server/bin/tes-worker"
-
 func NewScheduler(workers int) sched.Scheduler {
-	return &scheduler{dumb.NewScheduler(workers)}
+	// TODO HACK: get the path to the worker executable
+	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	p := path.Join(dir, "tes-worker")
+	return &scheduler{dumb.NewScheduler(workers), p}
 }
 
 type scheduler struct {
-	dumbsched dumb.Scheduler
+	dumbsched  dumb.Scheduler
+	workerPath string
 }
 
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
@@ -35,7 +38,7 @@ func (s *scheduler) observe(o sched.Offer) {
 
 	if o.Accepted() {
 		s.dumbsched.DecrementAvailable()
-		runWorker(o.Worker().ID)
+		runWorker(o.Worker().ID, s.workerPath)
 		s.dumbsched.IncrementAvailable()
 
 	} else if o.Rejected() {
@@ -43,9 +46,9 @@ func (s *scheduler) observe(o sched.Offer) {
 	}
 }
 
-func runWorker(workerID string) {
+func runWorker(workerID string, workerPath string) {
 	log.Printf("Starting dumblocal worker")
-	cmd := exec.Command(workerCmd, "-numworkers", "1", "-id", workerID, "-timeout", "0")
+	cmd := exec.Command(workerPath, "-numworkers", "1", "-id", workerID, "-timeout", "0")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

@@ -22,28 +22,28 @@ import (
 // Offers allow multiple systems to coordinate scheduling. For example, the multi-scheduler
 // can accept multiple offers, pick the best one, accept it, and reject the rest.
 type Offer interface {
-  // Job returns the Job struct this offer relates to.
+	// Job returns the Job struct this offer relates to.
 	Job() *pbe.Job
-  // Worker returns the Worker struct this offer relates to.
-  // The scheduler determines the worker to offer for this task.
+	// Worker returns the Worker struct this offer relates to.
+	// The scheduler determines the worker to offer for this task.
 	Worker() Worker
-  // Accept accepts the offer. Accepting a rejected offer has no effect.
+	// Accept accepts the offer. Accepting a rejected offer has no effect.
 	Accept()
-  // Reject rejects the offer. Rejecting an accepted offer has no effect.
+	// Reject rejects the offer. Rejecting an accepted offer has no effect.
 	Reject()
-  // Accepted returns true if the offer was accepted.
-  // This is not the same as !Offer.Rejected() because the offer might be pending.
+	// Accepted returns true if the offer was accepted.
+	// This is not the same as !Offer.Rejected() because the offer might be pending.
 	Accepted() bool
-  // Rejected returns true if the offer was rejected.
-  // This is not the same as !Offer.Accepted() because the offer might be pending.
+	// Rejected returns true if the offer was rejected.
+	// This is not the same as !Offer.Accepted() because the offer might be pending.
 	Rejected() bool
-  // RejectWithReason rejects the offer and give a reason why.
+	// RejectWithReason rejects the offer and give a reason why.
 	RejectWithReason(string)
-  // RejectionReason returns the reason the offer was rejected. Returns an empty
-  // string if the offer wasn't rejected, or was rejected without a reason.
+	// RejectionReason returns the reason the offer was rejected. Returns an empty
+	// string if the offer wasn't rejected, or was rejected without a reason.
 	RejectionReason() string
-  // Wait waits for the Offer to be accepted/rejected. A goroutine can use this
-  // to observe the result of an offer.
+	// Wait waits for the Offer to be accepted/rejected. A goroutine can use this
+	// to observe the result of an offer.
 	Wait() <-chan struct{}
 }
 
@@ -56,7 +56,7 @@ type Resources struct {
 
 // Worker represents a worker node.
 type Worker struct {
-	ID string
+	ID        string
 	Resources Resources
 
 	// TODO
@@ -123,7 +123,7 @@ func (o *offer) Rejected() bool {
 func (o *offer) Accept() {
 	select {
 	case <-o.done:
-    // If the offer is already accepted/rejected, don't do anything.
+		// If the offer is already accepted/rejected, don't do anything.
 		return
 	default:
 		o.accepted = true
@@ -134,7 +134,7 @@ func (o *offer) Accept() {
 func (o *offer) Reject() {
 	select {
 	case <-o.done:
-    // If the offer is already accepted/rejected, don't do anything.
+		// If the offer is already accepted/rejected, don't do anything.
 		return
 	default:
 		o.rejected = true

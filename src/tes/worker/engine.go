@@ -156,7 +156,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 
 	// TODO is it possible to allow context.Done() to kill the current step?
 	for stepNum, step := range job.Task.Docker {
-		dcmd, async_proc, cmd_err := eng.runStep(mapper, step, fmt.Sprintf("%v-%v", job.JobID, int64(stepNum)))
+		dcmd, async_proc, _ := eng.runStep(mapper, step, fmt.Sprintf("%v-%v", job.JobID, int64(stepNum)))
 		
 		done := make(chan error, 1)
 		go func() {
@@ -175,6 +175,16 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		for {
 			select {
 			case cmd_err := <-done:
+				stepLog := eng.finalizeStep(dcmd, cmd_err)
+				// Send the scheduler service a final job status update that includes 
+				// the exit code
+				statusReq := &pbr.UpdateStatusRequest{
+					Id:   job.JobID,
+					Step: int64(stepNum),
+					Log:  stepLog,
+				}
+				sched.UpdateJobStatus(ctx, statusReq)
+				
 				if cmd_err != nil {
 					return cmd_err
 				} else {
@@ -182,7 +192,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					break PollLoop
 				}
 			default:
-				stepLog, metadata := eng.pollStep(dcmd, cmd_err)
+				stepLog, metadata := eng.pollStep(dcmd)
 				// Send the scheduler service a job status update
 				statusReq := &pbr.UpdateStatusRequest{
 					Id:   job.JobID,
@@ -322,7 +332,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id str
 		Port:            "8888:8888",
 		ContainerName:   id,
 		// TODO make RemoveContainer configurable
-		RemoveContainer: false,
+		RemoveContainer: true,
 		Stdin:           nil,
 		Stdout:          nil,
 		Stderr:          nil,
@@ -363,19 +373,38 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id str
 	return dcmd, async_proc, cmdErr
 }
 
-func (eng *engine) pollStep(dcmd *DockerCmd, cmdErr error) (*pbe.JobLog, map[string]string) {
+func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog, map[string]string) {
 	// get container metadata
 	metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0)
 	if mq_err != nil {
 		log.Printf("queryContainerMetadata Error: %s", mq_err)
 	}
 
+	// TODO rethink these messages. You probably don't want head().
+	//
+	// Get the head of the stdout/stderr files, if they exist.
+	stdoutText := ""
+	stderrText := ""
+	if dcmd.Stdout != nil {
+		stdoutText = readFileHead(dcmd.Stdout.Name())
+	}
+	if dcmd.Stderr != nil {
+		stderrText = readFileHead(dcmd.Stderr.Name())
+	}
+
+	steplog := &pbe.JobLog{
+		Stdout:   stdoutText,
+		Stderr:   stderrText,
+	}
+
+	return steplog, metadata
+}
+
+func (eng *engine) finalizeStep(dcmd *DockerCmd, cmdErr error) (*pbe.JobLog) {
 	exitCode := getExitCode(cmdErr)
 	log.Printf("Exit code: %d", exitCode)
 
 	// TODO rethink these messages. You probably don't want head().
-	//      you also don't get this until the step is finished,
-	//      when you really want streaming.
 	//
 	// Get the head of the stdout/stderr files, if they exist.
 	stdoutText := ""
@@ -393,7 +422,7 @@ func (eng *engine) pollStep(dcmd *DockerCmd, cmdErr error) (*pbe.JobLog, map[str
 		ExitCode: exitCode,
 	}
 
-	return steplog, metadata
+	return steplog
 }
 
 func (eng *engine) uploadOutputs(mapper *FileMapper, store *storage.Storage) error {

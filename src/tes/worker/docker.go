@@ -13,6 +13,8 @@ type DockerCmd struct {
 	Cmd             []string
 	Volumes         []Volume
 	Workdir         string
+	Port            string
+	ContainerName   string
 	RemoveContainer bool
 	Stdin           *os.File
 	Stdout          *os.File
@@ -25,13 +27,21 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
 }
 
-func (dcmd DockerCmd) Run() error {
+func (dcmd DockerCmd) Start() (*exec.Cmd, error) {
 	log.Printf("Docker Volumes: %s", dcmd.Volumes)
 
 	args := []string{"run", "-i"}
 
 	if dcmd.RemoveContainer {
 		args = append(args, "--rm")
+	}
+
+	if dcmd.Port != "" {
+		args = append(args, "-p", dcmd.Port)
+	}
+
+	if dcmd.ContainerName != "" {
+		args = append(args, "--name", dcmd.ContainerName)
 	}
 
 	if dcmd.Workdir != "" {
@@ -60,5 +70,5 @@ func (dcmd DockerCmd) Run() error {
 		cmd.Stderr = dcmd.Stderr
 	}
 
-	return cmd.Run()
+	return cmd, cmd.Start()
 }

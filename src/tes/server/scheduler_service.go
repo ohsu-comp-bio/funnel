@@ -3,6 +3,7 @@
 package tes_server
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -77,18 +78,26 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 // UpdateJobStatus documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
-	log.Printf("Set job status")
+	log.Printf("Set job status to: %v", stat.State)
+
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
 		bL := tx.Bucket(JobsLog)
+		bM := tx.Bucket(JobsMetadata)
 		bw := tx.Bucket(WorkerJobs)
 		bjw := tx.Bucket(JobWorker)
 
+		if stat.Metadata != nil {
+			log.Printf("Logging Metadata:%s", stat.Metadata)
+			dM, _ := json.Marshal(stat.Metadata)
+			bM.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dM)
+		}
+
 		if stat.Log != nil {
 			log.Printf("Logging stdout:%s", stat.Log.Stdout)
-			d, _ := proto.Marshal(stat.Log)
-			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), d)
+			dL, _ := proto.Marshal(stat.Log)
+			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)
 		}
 
 		switch stat.State {

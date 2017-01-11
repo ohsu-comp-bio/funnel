@@ -2,12 +2,16 @@ package tesTaskEngineWorker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/jpillora/backoff"
 	"log"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
+	"time"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
 	pbr "tes/server/proto"
@@ -152,19 +156,45 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 
 	// TODO is it possible to allow context.Done() to kill the current step?
 	for stepNum, step := range job.Task.Docker {
-		stepLog, err := eng.runStep(mapper, step)
+		dcmd, async_proc, cmd_err := eng.runStep(mapper, step, fmt.Sprintf("%v-%v", job.JobID, int64(stepNum)))
+		
+		done := make(chan error, 1)
+		go func() {
+			done <- async_proc.Wait()
+		}()
 
-		if stepLog != nil {
-			// Send the scheduler service a job status update
-			statusReq := &pbr.UpdateStatusRequest{
-				Id:   job.JobID,
-				Step: int64(stepNum),
-				Log:  stepLog,
-			}
-			sched.UpdateJobStatus(ctx, statusReq)
+		// Setup polling exponential backoff
+		backoff := backoff.Backoff{
+			Min:    100 * time.Millisecond,
+			Max:    10 * time.Second,
+			Factor: 2,
+			Jitter: false,
 		}
-		if err != nil {
-			return err
+
+	  PollLoop:
+		for {
+			select {
+			case cmd_err := <-done:
+				if cmd_err != nil {
+					return cmd_err
+				} else {
+					log.Print("Process finished gracefully without error")
+					break PollLoop
+				}
+			default:
+				stepLog, metadata := eng.pollStep(dcmd, cmd_err)
+				// Send the scheduler service a job status update
+				statusReq := &pbr.UpdateStatusRequest{
+					Id:   job.JobID,
+					Step: int64(stepNum),
+					Metadata: metadata,
+					Log:  stepLog,
+					State: pbe.State_Running,
+				}
+				sched.UpdateJobStatus(ctx, statusReq)
+			}
+			// TODO fix over-logging status updates
+			time.Sleep(backoff.Duration())
 		}
 	}
 
@@ -241,16 +271,58 @@ func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) er
 	return nil
 }
 
-// The bulk of job running happens here.
-func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.JobLog, error) {
+func (eng *engine) queryContainerMetadata(containerName string, retries int) (map[string]string, error) {
+	// TODO is this the right approach?
+	if retries >= 10 {
+		return map[string]string{}, fmt.Errorf("Error getting metadata for container: %s", containerName)
+	}
+	
+	metadata_query_args := []string{
+		"inspect", 
+		containerName,
+	}
 
-	dcmd := DockerCmd{
+	// Lets just print this once...
+	if retries == 0 {
+		log.Printf("Fetching metadata with command: docker %s", 
+			strings.Join(metadata_query_args, " "))
+	}
+
+	mq_cmd := exec.Command("docker", metadata_query_args...)
+	mq_out, mq_err := mq_cmd.Output()
+	log.Printf("attempt: %d", retries) 
+	if mq_err != nil {
+		// TODO check if this is a sensible default
+		time.Sleep(time.Duration(1)*time.Second)
+		return eng.queryContainerMetadata(containerName, retries + 1)
+	}	
+	var msgMapTemplate []map[string]interface{}
+	err := json.Unmarshal([]byte(mq_out), &msgMapTemplate)
+	if err != nil {
+		fmt.Errorf("Error parsing metadata for container: %v", err)
+	}
+	metadata := map[string]string{}
+	// TODO congifure which fields to keep from docker inspect
+	for k, v := range msgMapTemplate[0] {
+		val, _ := json.Marshal(v)
+		metadata[string(k)] = string(val[:])
+	}
+	return metadata, mq_err
+}
+
+// The bulk of job running happens here.
+func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id string) (*DockerCmd, *exec.Cmd, error) {
+
+	dcmd := &DockerCmd{
 		ImageName: step.ImageName,
 		Cmd:       step.Cmd,
 		Volumes:   mapper.Volumes,
 		Workdir:   step.Workdir,
-		// TODO make this configurable
-		RemoveContainer: true,
+		// TODO make Port configurable
+		Port:            "8888:8888",
+		ContainerName:   id,
+		// TODO make RemoveContainer configurable
+		RemoveContainer: false,
 		Stdin:           nil,
 		Stdout:          nil,
 		Stderr:          nil,
@@ -260,7 +332,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.J
 	if step.Stdin != "" {
 		f, err := mapper.OpenHostFile(step.Stdin)
 		if err != nil {
-			return nil, fmt.Errorf("Error setting up job stdin: %s", err)
+			return nil, nil, fmt.Errorf("Error setting up job stdin: %s", err)
 		}
 		defer f.Close()
 		dcmd.Stdin = f
@@ -270,7 +342,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.J
 	if step.Stdout != "" {
 		f, err := mapper.CreateHostFile(step.Stdout)
 		if err != nil {
-			return nil, fmt.Errorf("Error setting up job stdout: %s", err)
+			return nil, nil, fmt.Errorf("Error setting up job stdout: %s", err)
 		}
 		defer f.Close()
 		dcmd.Stdout = f
@@ -280,13 +352,24 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.J
 	if step.Stderr != "" {
 		f, err := mapper.CreateHostFile(step.Stderr)
 		if err != nil {
-			return nil, fmt.Errorf("Error setting up job stderr: %s", err)
+			return nil, nil, fmt.Errorf("Error setting up job stderr: %s", err)
 		}
 		defer f.Close()
 		dcmd.Stderr = f
 	}
 
-	cmdErr := dcmd.Run()
+	// start docker command async
+	async_proc, cmdErr := dcmd.Start()
+	return dcmd, async_proc, cmdErr
+}
+
+func (eng *engine) pollStep(dcmd *DockerCmd, cmdErr error) (*pbe.JobLog, map[string]string) {
+	// get container metadata
+	metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0)
+	if mq_err != nil {
+		log.Printf("queryContainerMetadata Error: %s", mq_err)
+	}
+
 	exitCode := getExitCode(cmdErr)
 	log.Printf("Exit code: %d", exitCode)
 
@@ -310,10 +393,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.J
 		ExitCode: exitCode,
 	}
 
-	if cmdErr != nil {
-		return steplog, cmdErr
-	}
-	return steplog, nil
+	return steplog, metadata
 }
 
 func (eng *engine) uploadOutputs(mapper *FileMapper, store *storage.Storage) error {

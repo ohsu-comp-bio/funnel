@@ -77,7 +77,7 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 // UpdateJobStatus documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
-	log.Printf("Set job status to: %v", stat.State)
+	log.Printf("Job status: %v", stat.State)
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)

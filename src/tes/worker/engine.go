@@ -156,8 +156,24 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 
 	// TODO is it possible to allow context.Done() to kill the current step?
 	for stepNum, step := range job.Task.Docker {
+		// Start task step asynchronously
 		dcmd, async_proc, _ := eng.runStep(mapper, step, fmt.Sprintf("%v-%v", job.JobID, int64(stepNum)))
-		
+
+		// Get container metadata
+		metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0)
+		if mq_err != nil {
+			fmt.Errorf("queryContainerMetadata Error: %s", mq_err)
+		}
+		// Send the scheduler service an initial job status update that includes 
+		// the metadata
+		statusReq := &pbr.UpdateStatusRequest{
+			Id:   job.JobID,
+			Step: int64(stepNum),
+			Metadata:  metadata,
+		}
+		sched.UpdateJobStatus(ctx, statusReq)
+
+		// Open chanel to track async process
 		done := make(chan error, 1)
 		go func() {
 			done <- async_proc.Wait()
@@ -166,7 +182,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		// Setup polling exponential backoff
 		backoff := backoff.Backoff{
 			Min:    100 * time.Millisecond,
-			Max:    10 * time.Second,
+			Max:    60 * time.Second,
 			Factor: 2,
 			Jitter: false,
 		}
@@ -192,12 +208,13 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					break PollLoop
 				}
 			default:
-				stepLog, metadata := eng.pollStep(dcmd)
-				// Send the scheduler service a job status update
+				log.Print("Polling task...")
+				stepLog := eng.pollStep(dcmd)
+				// Send the scheduler service a job status update with updates 
+				// to stdout and stderr
 				statusReq := &pbr.UpdateStatusRequest{
 					Id:   job.JobID,
 					Step: int64(stepNum),
-					Metadata: metadata,
 					Log:  stepLog,
 					State: pbe.State_Running,
 				}
@@ -376,13 +393,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id str
 	return dcmd, async_proc, cmdErr
 }
 
-func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog, string) {
-	// get container metadata
-	metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0)
-	if mq_err != nil {
-		log.Printf("queryContainerMetadata Error: %s", mq_err)
-	}
-
+func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog) {
 	// TODO rethink these messages. You probably don't want head().
 	//
 	// Get the head of the stdout/stderr files, if they exist.
@@ -400,7 +411,7 @@ func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog, string) {
 		Stderr:   stderrText,
 	}
 
-	return steplog, metadata
+	return steplog
 }
 
 func (eng *engine) finalizeStep(dcmd *DockerCmd, cmdErr error) (*pbe.JobLog) {

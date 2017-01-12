@@ -1,8 +1,13 @@
 server_address: localhost:9090
+db_path: tes_task.db
 Storage:
   - Protocol:
     S3:
-      Endpoint: 127.0.0.1
+      Endpoint: 127.0.0.1:9000
+  - Protocol:
+    Local:
+      AllowedDirs:
+      - /mnt/nfs_share
 Schedulers:
   Local:
     NumWorkers: 4

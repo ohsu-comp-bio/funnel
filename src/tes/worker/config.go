@@ -21,6 +21,16 @@ type Config struct {
 	LogPath    string
 }
 
+func DefaultConfig() Config {
+	return Config{
+		ServerAddress: "localhost:9090",
+		WorkDir:       "tes-work-dir",
+		Timeout:       -1,
+		NumWorkers:    4,
+		LogPath:       "tes-worker-log",
+	}
+}
+
 func (c Config) ToYaml() []byte {
 	// TODO handle error
 	yamlstr, _ := yaml.Marshal(c)

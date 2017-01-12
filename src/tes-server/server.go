@@ -2,12 +2,8 @@ package main
 
 import (
 	"flag"
-	"os"
-	"path/filepath"
-	//"runtime/debug"
-	"tes"
-	//"tes/ga4gh"
 	"log"
+	"tes"
 	"tes/scheduler"
 	"tes/scheduler/condor"
 	"tes/scheduler/dumblocal"
@@ -17,33 +13,34 @@ import (
 )
 
 func main() {
-	httpPort := flag.String("port", "8000", "HTTP Port")
-	rpcPort := flag.String("rpc", "9090", "TCP+RPC Port")
-	taskDB := flag.String("db", "ga4gh_tasks.db", "Task DB File")
-	schedArg := flag.String("sched", "local", "Scheduler")
-	configFile := flag.String("config", "", "Config File")
+	config := tes.DefaultConfig()
+
+	var configArg string
+	flag.StringVar(&configArg, "config", "", "Config File")
+	flag.StringVar(&config.HTTPPort, "http-port", config.HTTPPort, "HTTP Port")
+	flag.StringVar(&config.RPCPort, "rpc-port", config.RPCPort, "RPC Port")
+	flag.StringVar(&config.DBPath, "db-path", config.DBPath, "Database path")
+	flag.StringVar(&config.Scheduler, "scheduler", config.Scheduler, "Name of scheduler to enable")
 
 	flag.Parse()
+	tes.LoadConfigOrExit(configArg, &config)
+	start(config)
+}
 
-	dir, _ := filepath.Abs(os.Args[0])
-	contentDir := filepath.Join(dir, "..", "..", "share")
-
-	config := tes.Config{}
-	tes.LoadConfigOrExit(*configFile, &config)
-
+func start(config tes.Config) {
 	//setup GRPC listener
 	// TODO if another process has the db open, this will block and it is really
 	//      confusing when you don't realize you have the db locked in another
 	//      terminal somewhere. Would be good to timeout on startup here.
-	taski := tes_server.NewTaskBolt(*taskDB, config.ServerConfig)
+	taski := tes_server.NewTaskBolt(config.DBPath, config.ServerConfig)
 
 	server := tes_server.NewGA4GHServer()
 	server.RegisterTaskServer(taski)
 	server.RegisterScheduleServer(taski)
-	server.Start(*rpcPort)
+	server.Start(config.RPCPort)
 
 	var sched scheduler.Scheduler
-	switch *schedArg {
+	switch config.Scheduler {
 	case "local":
 		// TODO worker will stay alive if the parent process panics
 		sched = local.NewScheduler(config)
@@ -54,10 +51,10 @@ func main() {
 	case "dumblocal":
 		sched = dumblocal.NewScheduler(4)
 	default:
-		log.Printf("Error: unknown scheduler %s", *schedArg)
+		log.Printf("Error: unknown scheduler %s", config.Scheduler)
 		return
 	}
 	go scheduler.StartScheduling(taski, sched)
 
-	tes_server.StartHttpProxy(*rpcPort, *httpPort, contentDir)
+	tes_server.StartHttpProxy(config.RPCPort, config.HTTPPort, config.ContentDir)
 }

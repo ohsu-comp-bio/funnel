@@ -7,27 +7,15 @@ import time
 import urllib2
 import argparse
 from urlparse import urlparse
-import jwt
 from minio import Minio
 from minio.error import ResponseError
 
 class TES:
-    def __init__(self, url, s3_access_key=None, s3_secret_key=None, secret=None):
+    def __init__(self, url, s3_endpoint, s3_access_key=None, s3_secret_key=None):
         self.url = url
-        info = self.get_service_info()
-        if 's3.endpoint' in info['storageConfig']:
-            self.s3endpoint = info['storageConfig']['s3.endpoint']
-            if s3_access_key is not None:
-                self.s3_access_key = s3_access_key
-            else:
-                self.s3_access_key = os.environ.get("AWS_ACCESS_KEY_ID", None)
-            if s3_secret_key is not None:
-                self.s3_secret_key = s3_secret_key
-            else:
-                self.s3_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
-        else:
-            self.s3endpoint = None
-        self.secret = secret
+        self.s3_endpoint = s3_endpoint
+        self.s3_access_key = s3_access_key
+        self.s3_secret_key = s3_secret_key
     
     def get_service_info(self):
         req = urllib2.Request("%s/v1/jobs-service" % (self.url))
@@ -35,7 +23,7 @@ class TES:
         return json.loads(u.read())
     
     def s3connect(self):
-        n = urlparse(self.s3endpoint)
+        n = urlparse(self.s3_endpoint)
         tls = None
         if n.scheme == "http":
             tls = False
@@ -80,12 +68,7 @@ class TES:
         c.bucket_exists(bucket)
         
     def submit(self, task):
-        encoded = None
-        if self.secret is not None and self.s3_access_key is not None and self.s3_secret_key is not None:
-            encoded = jwt.encode({'AWS_ACCESS_KEY_ID': self.s3_access_key, 'AWS_SECRET_ACCESS_KEY' : self.s3_secret_key}, self.secret, algorithm='HS256')
         req = urllib2.Request("%s/v1/jobs" % (self.url))
-        if encoded is not None:
-            req.add_header('authorization', "JWT %s" % (encoded))
         u = urllib2.urlopen(req, json.dumps(task))
         data = json.loads(u.read())
         job_id = data['value']

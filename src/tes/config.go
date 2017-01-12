@@ -10,19 +10,58 @@ import (
 	pbr "tes/server/proto"
 )
 
+type Local struct {
+	NumWorkers int
+}
+
+type Openstack struct {
+	NumWorkers int
+	KeyPair    string
+	ConfigPath string
+	Server     os_servers.CreateOpts
+}
+
+type Schedulers struct {
+	Local     Local
+	Openstack Openstack
+}
+
 type Config struct {
 	pbr.ServerConfig
-	Schedulers struct {
-		Local struct {
-			NumWorkers int
-		}
-		Openstack struct {
-			NumWorkers int
-			KeyPair    string
-			ConfigPath string
-			Server     os_servers.CreateOpts
-		}
+	// TODO move this to protobuf?
+	Schedulers Schedulers
+	DBPath     string
+	HTTPPort   string
+	RPCPort    string
+	Scheduler  string
+	ContentDir string
+}
+
+func DefaultConfig() Config {
+	return Config{
+		ServerConfig: pbr.ServerConfig{
+			ServerAddress: "localhost:9090",
+		},
+		DBPath:     "tes_task.db",
+		HTTPPort:   "8000",
+		RPCPort:    "9090",
+		Scheduler:  "local",
+		ContentDir: defaultContentDir(),
+		Schedulers: Schedulers{
+			Local: Local{
+				NumWorkers: 4,
+			},
+		},
 	}
+}
+
+func defaultContentDir() string {
+	// TODO this depends on having the entire repo available
+	//      which prevents us from releasing a single binary.
+	//      Not the worst, but maybe there's a good way to make it optional.
+	// TODO handle error
+	dir, _ := filepath.Abs(os.Args[0])
+	return filepath.Join(dir, "..", "..", "share")
 }
 
 // ParseConfigFile parses a TES config file, which is formatted in YAML,

@@ -10,16 +10,16 @@ import (
 )
 
 func main() {
-	config := worker.Config{}
+	config := worker.DefaultConfig()
 
 	var configArg string
 	flag.StringVar(&configArg, "config", "", "Config File")
 	flag.StringVar(&config.ID, "id", config.ID, "Worker ID")
 	flag.StringVar(&config.ServerAddress, "server-address", config.ServerAddress, "Server address")
-	flag.StringVar(&config.WorkDir, "workdir", config.WorkDir, "Working Directory")
+	flag.StringVar(&config.WorkDir, "work-dir", config.WorkDir, "Working Directory")
 	flag.IntVar(&config.Timeout, "timeout", config.Timeout, "Timeout in seconds")
-	flag.IntVar(&config.NumWorkers, "numworkers", config.NumWorkers, "Worker Count")
-	flag.StringVar(&config.LogPath, "logpath", config.LogPath, "File path to write logs to")
+	flag.IntVar(&config.NumWorkers, "num-workers", config.NumWorkers, "Worker Count")
+	flag.StringVar(&config.LogPath, "log-path", config.LogPath, "File path to write logs to")
 
 	flag.Parse()
 	tes.LoadConfigOrExit(configArg, &config)

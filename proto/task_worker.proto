@@ -6,14 +6,27 @@ package ga4gh_task_ref;
 import "task_execution.proto";
 
 
+message LocalStorage {
+  repeated string allowed_dirs = 1;
+}
+
+message S3Storage {
+  string endpoint = 1;
+  string key = 2;
+  string secret = 3;
+}
+
 message StorageConfig {
-  string protocol = 1;
-  map<string,string> config = 2;
+  oneof protocol {
+    LocalStorage local = 1;
+    S3Storage s3 = 2;
+  }
 }
 
 message ServerConfig {
   repeated StorageConfig storage = 1;
   string secret = 2;
+  string server_address = 3;
 }
 
 /**
@@ -33,6 +46,7 @@ message JobRequest {
 message JobResponse {
   ga4gh_task_exec.Job job = 1;
   string auth = 2;
+  repeated StorageConfig storage = 3;
 }
 
 message UpdateStatusRequest {

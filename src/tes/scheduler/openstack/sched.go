@@ -2,18 +2,22 @@ package openstack
 
 import (
 	"log"
+	"tes"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
 	dumb "tes/scheduler/dumb"
 )
 
-func NewScheduler(workers int, conf Config) sched.Scheduler {
-	return &scheduler{dumb.NewScheduler(workers), conf}
+func NewScheduler(conf tes.Config) sched.Scheduler {
+	return &scheduler{
+		dumb.NewScheduler(conf.Schedulers.Openstack.NumWorkers),
+		conf,
+	}
 }
 
 type scheduler struct {
 	ds   dumb.Scheduler
-	conf Config
+	conf tes.Config
 }
 
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
@@ -29,7 +33,7 @@ func (s *scheduler) observe(o sched.Offer) {
 
 	if o.Accepted() {
 		s.ds.DecrementAvailable()
-		start(o.Worker().ID, s.conf)
+		s.start(o.Worker().ID)
 		// TODO there is nothing to watch the status of openstack workers yet,
 		//      so this scheduler only does N jobs and then stops.
 

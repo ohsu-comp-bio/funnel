@@ -1,6 +1,9 @@
 package storage
 
-import "fmt"
+import (
+	"fmt"
+	pbr "tes/server/proto"
+)
 
 const (
 	File      string = "File"
@@ -81,4 +84,29 @@ func (storage Storage) WithLocal(allow []string) (*Storage, error) {
 	local := NewLocalBackend(allow)
 	stores := append(storage.stores, local)
 	return &Storage{stores}, nil
+}
+
+func (storage Storage) WithConfig(conf *pbr.StorageConfig) (*Storage, error) {
+	var err error
+	var out *Storage
+
+	switch x := conf.Protocol.(type) {
+	case *pbr.StorageConfig_S3:
+		// TODO need config validation to ensure these values actually exist
+		out, err = storage.WithS3(
+			x.S3.Endpoint,
+			x.S3.Key,
+			x.S3.Secret,
+			false, // use SSL?
+		)
+	case *pbr.StorageConfig_Local:
+		out, err = storage.WithLocal(x.Local.AllowedDirs)
+	case nil:
+	default:
+		err = fmt.Errorf("Unknown storage protocol in config: %T", x)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }

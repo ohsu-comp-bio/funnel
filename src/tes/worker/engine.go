@@ -281,10 +281,10 @@ func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) er
 	return nil
 }
 
-func (eng *engine) queryContainerMetadata(containerName string, retries int) (map[string]string, error) {
+func (eng *engine) queryContainerMetadata(containerName string, retries int) (string, error) {
 	// TODO is this the right approach?
 	if retries >= 10 {
-		return map[string]string{}, fmt.Errorf("Error getting metadata for container: %s", containerName)
+		return "", fmt.Errorf("Error getting metadata for container: %s", containerName)
 	}
 	
 	metadata_query_args := []string{
@@ -311,13 +311,16 @@ func (eng *engine) queryContainerMetadata(containerName string, retries int) (ma
 	if err != nil {
 		fmt.Errorf("Error parsing metadata for container: %v", err)
 	}
-	metadata := map[string]string{}
+
 	// TODO congifure which fields to keep from docker inspect
-	for k, v := range msgMapTemplate[0] {
-		val, _ := json.Marshal(v)
-		metadata[string(k)] = string(val[:])
-	}
-	return metadata, mq_err
+	// metadata := map[string]string{}
+	// for k, v := range msgMapTemplate[0] {
+	// 	val, _ := json.Marshal(v)
+	// 	metadata[string(k)] = string(val[:])
+	// }
+	
+	metadata, _ := json.Marshal(msgMapTemplate[0])
+	return string(metadata), mq_err
 }
 
 // The bulk of job running happens here.
@@ -373,7 +376,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id str
 	return dcmd, async_proc, cmdErr
 }
 
-func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog, map[string]string) {
+func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog, string) {
 	// get container metadata
 	metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0)
 	if mq_err != nil {

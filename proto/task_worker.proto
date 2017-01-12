@@ -38,7 +38,7 @@ message JobResponse {
 message UpdateStatusRequest {
   string id = 1;
   int64 step = 2;
-  map<string,string> metadata = 3;
+  string metadata = 3;
   ga4gh_task_exec.State state = 4;
   ga4gh_task_exec.JobLog log = 5;
   string worker_id = 6;

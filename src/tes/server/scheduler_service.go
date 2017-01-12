@@ -3,7 +3,6 @@
 package tes_server
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -88,9 +87,9 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		bw := tx.Bucket(WorkerJobs)
 		bjw := tx.Bucket(JobWorker)
 
-		if stat.Metadata != nil {
+		if stat.Metadata != "" {
 			log.Printf("Logging Metadata:%s", stat.Metadata)
-			dM, _ := json.Marshal(stat.Metadata)
+			dM := []byte(stat.Metadata)
 			bM.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dM)
 		}
 

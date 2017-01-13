@@ -41,7 +41,6 @@ type Config struct {
 
 func DefaultConfig() Config {
 	workDir := "tes-work-dir"
-	os.MkdirAll(workDir, 0755)
 	return Config{
 		ServerConfig: pbr.ServerConfig{
 			ServerAddress: "localhost:9090",

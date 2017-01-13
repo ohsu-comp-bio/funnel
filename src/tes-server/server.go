@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 	"tes"
 	"tes/scheduler"
 	"tes/scheduler/condor"
@@ -28,6 +29,7 @@ func main() {
 }
 
 func start(config tes.Config) {
+	os.MkdirAll(config.WorkDir, 0755)
 	//setup GRPC listener
 	// TODO if another process has the db open, this will block and it is really
 	//      confusing when you don't realize you have the db locked in another

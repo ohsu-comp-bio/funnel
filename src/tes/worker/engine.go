@@ -9,13 +9,12 @@ import (
 	"log"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"syscall"
-	"time"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
 	pbr "tes/server/proto"
 	"tes/storage"
+	"time"
 )
 
 // Engine is responsivle for running a job. This includes downloading inputs,
@@ -160,16 +159,16 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		dcmd, async_proc, _ := eng.runStep(mapper, step, fmt.Sprintf("%v-%v", job.JobID, int64(stepNum)))
 
 		// Get container metadata
-		metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0)
+		metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0, nil)
 		if mq_err != nil {
-			fmt.Errorf("queryContainerMetadata Error: %s", mq_err)
+			log.Printf("queryContainerMetadata Error: %s", mq_err)
 		}
-		// Send the scheduler service an initial job status update that includes 
+		// Send the scheduler service an initial job status update that includes
 		// the metadata
 		statusReq := &pbr.UpdateStatusRequest{
-			Id:   job.JobID,
-			Step: int64(stepNum),
-			Metadata:  metadata,
+			Id:       job.JobID,
+			Step:     int64(stepNum),
+			Metadata: metadata,
 		}
 		sched.UpdateJobStatus(ctx, statusReq)
 
@@ -187,12 +186,12 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 			Jitter: false,
 		}
 
-	  PollLoop:
+	PollLoop:
 		for {
 			select {
 			case cmd_err := <-done:
 				stepLog := eng.finalizeStep(dcmd, cmd_err)
-				// Send the scheduler service a final job status update that includes 
+				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
 					Id:   job.JobID,
@@ -200,7 +199,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					Log:  stepLog,
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
-				
+
 				if cmd_err != nil {
 					return cmd_err
 				} else {
@@ -210,12 +209,12 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 			default:
 				log.Print("Polling task...")
 				stepLog := eng.pollStep(dcmd)
-				// Send the scheduler service a job status update with updates 
+				// Send the scheduler service a job status update with updates
 				// to stdout and stderr
 				statusReq := &pbr.UpdateStatusRequest{
-					Id:   job.JobID,
-					Step: int64(stepNum),
-					Log:  stepLog,
+					Id:    job.JobID,
+					Step:  int64(stepNum),
+					Log:   stepLog,
 					State: pbe.State_Running,
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
@@ -298,50 +297,40 @@ func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) er
 	return nil
 }
 
-func (eng *engine) queryContainerMetadata(containerName string, retries int) (string, error) {
+func (eng *engine) queryContainerMetadata(containerName string, retries int, err error) (string, error) {
 	// TODO is this the right approach?
 	if retries >= 10 {
-		return "", fmt.Errorf("Error getting metadata for container: %s", containerName)
+		return "", fmt.Errorf("Error getting metadata for container: %s", err)
 	}
-	
-	metadata_query_args := []string{
-		"inspect", 
-		containerName,
-	}
+
+	deng := SetupDockerClient()
 
 	// Lets just print this once...
 	if retries == 0 {
-		log.Printf("Fetching metadata with command: docker %s", 
-			strings.Join(metadata_query_args, " "))
+		log.Printf("Fetching container metadata")
 	}
 
-	mq_cmd := exec.Command("docker", metadata_query_args...)
-	mq_out, mq_err := mq_cmd.Output()
-	log.Printf("attempt: %d", retries) 
-	if mq_err != nil {
-		// TODO check if this is a sensible default
-		time.Sleep(time.Duration(1)*time.Second)
-		return eng.queryContainerMetadata(containerName, retries + 1)
-	}	
-	var msgMapTemplate []map[string]interface{}
-	err := json.Unmarshal([]byte(mq_out), &msgMapTemplate)
+	meta, err := deng.client.ContainerInspect(context.Background(), containerName)
+	log.Printf("attempt: %d", retries)
 	if err != nil {
-		fmt.Errorf("Error parsing metadata for container: %v", err)
+		// TODO check if this is a sensible default
+		time.Sleep(time.Duration(1) * time.Second)
+		return eng.queryContainerMetadata(containerName, retries+1, err)
 	}
-
-	// TODO congifure which fields to keep from docker inspect
-	// metadata := map[string]string{}
-	// for k, v := range msgMapTemplate[0] {
-	// 	val, _ := json.Marshal(v)
-	// 	metadata[string(k)] = string(val[:])
-	// }
 	
-	metadata, _ := json.Marshal(msgMapTemplate[0])
+	// TODO congifure which fields to keep from docker inspect
+	// whitelist := []string
+	// for k, v := range meta {
+	//  if k in not in whitelist {
+	//    delete(meta, k)
+	// }
+
+	metadata, _ := json.Marshal(meta)
 	return string(metadata), mq_err
 }
 
 // The bulk of job running happens here.
-func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id string) (*DockerCmd, *exec.Cmd, error) {
+func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor, id string) (*DockerCmd, *exec.Cmd, error) {
 
 	dcmd := &DockerCmd{
 		ImageName: step.ImageName,
@@ -349,8 +338,8 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id str
 		Volumes:   mapper.Volumes,
 		Workdir:   step.Workdir,
 		// TODO make Port configurable
-		Port:            "8888:8888",
-		ContainerName:   id,
+		Port:          "8888:8888",
+		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,
 		Stdin:           nil,
@@ -393,7 +382,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor,  id str
 	return dcmd, async_proc, cmdErr
 }
 
-func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog) {
+func (eng *engine) pollStep(dcmd *DockerCmd) *pbe.JobLog {
 	// TODO rethink these messages. You probably don't want head().
 	//
 	// Get the head of the stdout/stderr files, if they exist.
@@ -407,14 +396,14 @@ func (eng *engine) pollStep(dcmd *DockerCmd) (*pbe.JobLog) {
 	}
 
 	steplog := &pbe.JobLog{
-		Stdout:   stdoutText,
-		Stderr:   stderrText,
+		Stdout: stdoutText,
+		Stderr: stderrText,
 	}
 
 	return steplog
 }
 
-func (eng *engine) finalizeStep(dcmd *DockerCmd, cmdErr error) (*pbe.JobLog) {
+func (eng *engine) finalizeStep(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
 	exitCode := getExitCode(cmdErr)
 	log.Printf("Exit code: %d", exitCode)
 

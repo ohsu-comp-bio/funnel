@@ -34,3 +34,6 @@
 [submodule "src/vendor/github.com/dgrijalva/jwt-go"]
 	path = src/vendor/github.com/dgrijalva/jwt-go
 	url = https://github.com/dgrijalva/jwt-go
+[submodule "src/vendor/github.com/docker"]
+	path = src/vendor/github.com/docker
+	url = https://github.com/docker/docker

@@ -227,7 +227,7 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 	}
 	log.Printf("Getting Task Metadata: %v", metadata)
 	job.Metadata = metadata
-	
+
 	//if there is logging info
 	bL := tx.Bucket(JobsLog)
 	out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))

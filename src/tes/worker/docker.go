@@ -1,10 +1,13 @@
 package tesTaskEngineWorker
 
 import (
+	"context"
 	"fmt"
+	"github.com/docker/docker/client"
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -71,4 +74,30 @@ func (dcmd DockerCmd) Start() (*exec.Cmd, error) {
 	}
 
 	return cmd, cmd.Start()
+}
+
+type DockerEngine struct {
+	client *client.Client
+}
+
+func SetupDockerClient() *DockerEngine {
+	client, err := client.NewEnvClient()
+	if err != nil {
+		log.Printf("Docker Error: %v", err)
+		return nil    
+	}
+
+	if os.Getenv("DOCKER_API_VERSION") == "" {
+		_, err := client.ServerVersion(context.Background())
+		if err != nil {
+			re := regexp.MustCompile(`([0-9\.]+)`)
+			version := re.FindAllString(err.Error(), -1)
+			// Error message example: 
+			//   Error getting metadata for container: Error response from daemon: 
+			//   client is newer than server (client API version: 1.26, server API version: 1.24)
+			log.Printf("DOCKER_API_VERSION: %s", version[1])
+			os.Setenv("DOCKER_API_VERSION", version[1])
+		}
+	}
+	return &DockerEngine{client: client}
 }

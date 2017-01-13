@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"tes"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
@@ -48,6 +50,10 @@ func (s *scheduler) observe(o sched.Offer) {
 
 func (s *scheduler) startWorker(workerID string) {
 	log.Println("Start condor worker")
+	// TODO document that these working dirs need manual cleanup
+	workdir := path.Join(s.conf.WorkDir, "condor-scheduler", workerID)
+	workdir, _ = filepath.Abs(workdir)
+	os.MkdirAll(workdir, 0755)
 
 	workerConf := worker.Config{
 		ID:            workerID,
@@ -55,10 +61,10 @@ func (s *scheduler) startWorker(workerID string) {
 		Timeout:       0,
 		NumWorkers:    1,
 		Storage:       s.conf.Storage,
+		WorkDir:       workdir,
 	}
-
-	confPath, cleanup := workerConf.ToYamlTempFile("worker.conf.yml")
-	defer cleanup()
+	confPath := path.Join(workdir, "worker.conf.yml")
+	workerConf.ToYamlFile(confPath)
 
 	workerPath := sched.DetectWorkerPath()
 
@@ -67,12 +73,13 @@ func (s *scheduler) startWorker(workerID string) {
 		executable = %s
 		arguments = -config worker.conf.yml
 		environment = "PATH=/usr/bin"
-		log = log
-		error = err
-		output = out
+		log = condor-event-log
+		error = tes-worker-stderr
+		output = tes-worker-stdout
     transfer_input_files = %s
+    initial_dir = %s
 		queue
-	`, workerPath, confPath)
+	`, workerPath, confPath, workdir)
 
 	log.Printf("Condor submit config: \n%s", condorConf)
 

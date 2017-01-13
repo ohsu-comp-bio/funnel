@@ -39,7 +39,7 @@ func (c Config) ToYaml() []byte {
 
 func (c Config) ToYamlFile(p string) {
 	// TODO handle error
-	ioutil.WriteFile(p, []byte(c.ToYaml()), 0600)
+	ioutil.WriteFile(p, c.ToYaml(), 0600)
 }
 
 func (c Config) ToYamlTempFile(name string) (string, func()) {

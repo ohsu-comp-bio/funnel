@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	pbr "tes/server/proto"
 )
@@ -39,16 +40,18 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
+	workDir := "tes-work-dir"
+	os.MkdirAll(workDir, 0755)
 	return Config{
 		ServerConfig: pbr.ServerConfig{
 			ServerAddress: "localhost:9090",
 		},
-		DBPath:     "tes_task.db",
+		DBPath:     path.Join(workDir, "tes_task.db"),
 		HTTPPort:   "8000",
 		RPCPort:    "9090",
 		Scheduler:  "local",
 		ContentDir: defaultContentDir(),
-		WorkDir:    "tes-work-dir",
+		WorkDir:    workDir,
 		Schedulers: Schedulers{
 			Local: Local{
 				NumWorkers: 4,

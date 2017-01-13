@@ -78,7 +78,7 @@ func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
 		//BUG: error status not returned to scheduler
 		log.Printf("Failed to run job: %s", job.Job.JobID)
 		log.Printf("%s", joberr)
-	} 
+	}
 	return joberr
 }
 
@@ -157,7 +157,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		log.Printf("Running command: docker %s", strings.Join(dcmd.ExecCmd.Args, " "))
 		// Start task step asynchronously
 		dcmd.ExecCmd.Start()
-		
+
 		// Get container metadata
 		metadata, mq_err := dcmd.GetContainerMetadata()
 		if mq_err != nil {
@@ -176,7 +176,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		// Open chanel to track async process
 		done := make(chan error, 1)
 		go func() {
-			done <- dcmd.ExecCmd.Wait()					 
+			done <- dcmd.ExecCmd.Wait()
 		}()
 
 		jobID := &pbe.JobID{
@@ -194,9 +194,9 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
-					Id:    job.JobID,
-					Step:  int64(stepNum),
-					Log:   stepLog,
+					Id:   job.JobID,
+					Step: int64(stepNum),
+					Log:  stepLog,
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
 
@@ -207,7 +207,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					sched.SetComplete(ctx, job)
 					break PollLoop
 				}
-			case <- tickChan:
+			case <-tickChan:
 				jobDesc, err := sched.GetJobStatus(ctx, jobID)
 				if err != nil {
 					return fmt.Errorf("Error trying to get job status: %v", err)
@@ -318,7 +318,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 
 	dcmd := &DockerCmd{
 		ImageName: step.ImageName,
-		Cmd: step.Cmd,
+		Cmd:       step.Cmd,
 		Volumes:   mapper.Volumes,
 		Workdir:   step.Workdir,
 		// TODO make Port configurable

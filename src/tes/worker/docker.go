@@ -90,31 +90,31 @@ func (dcmd DockerCmd) GetContainerMetadata() (string, error) {
 	for {
 		meta, err := deng.client.ContainerInspect(context.Background(), dcmd.ContainerName)
 		select {
-		case <- timeout:
+		case <-timeout:
 			return "", fmt.Errorf("Error getting metadata for container: %s", err)
 		default:
 			switch {
 			case err == nil:
-			// close the docker client connection
-			deng.client.Close()
+				// close the docker client connection
+				deng.client.Close()
 
-			// TODO congifure which fields to keep from docker inspect
-			// whitelist := []string
-			// for k, v := range meta {
-			//  if k in not in whitelist {
-			//    delete(meta, k)
-			// }
+				// TODO congifure which fields to keep from docker inspect
+				// whitelist := []string
+				// for k, v := range meta {
+				//  if k in not in whitelist {
+				//    delete(meta, k)
+				// }
 
-			metadata, _ := json.Marshal(meta)
-			return string(metadata), err
+				metadata, _ := json.Marshal(meta)
+				return string(metadata), err
 			}
 		}
 	}
 }
 
-func (dcmd DockerCmd) StopContainer() (error) {
+func (dcmd DockerCmd) StopContainer() error {
 	log.Printf("Stoping container %s", dcmd.ContainerName)
-	deng := SetupDockerClient()	
+	deng := SetupDockerClient()
 	// Set timeout
 	timeout := time.Second * 10
 	// Issue stop call
@@ -132,7 +132,7 @@ func SetupDockerClient() *DockerEngine {
 	client, err := client.NewEnvClient()
 	if err != nil {
 		log.Printf("Docker Error: %v", err)
-		return nil    
+		return nil
 	}
 
 	if os.Getenv("DOCKER_API_VERSION") == "" {
@@ -140,8 +140,8 @@ func SetupDockerClient() *DockerEngine {
 		if err != nil {
 			re := regexp.MustCompile(`([0-9\.]+)`)
 			version := re.FindAllString(err.Error(), -1)
-			// Error message example: 
-			//   Error getting metadata for container: Error response from daemon: 
+			// Error message example:
+			//   Error getting metadata for container: Error response from daemon:
 			//   client is newer than server (client API version: 1.26, server API version: 1.24)
 			log.Printf("DOCKER_API_VERSION: %s", version[1])
 			os.Setenv("DOCKER_API_VERSION", version[1])

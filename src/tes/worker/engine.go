@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/jpillora/backoff"
 	"log"
 	"os/exec"
 	"path/filepath"
@@ -156,13 +155,13 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 
 	// TODO is it possible to allow context.Done() to kill the current step?
 	for stepNum, step := range job.Task.Docker {
-		// Start task step asynchronously
 		stepID := fmt.Sprintf("%v-%v", job.JobID, stepNum)
 		dcmd, err := eng.setupDockerCmd(mapper, step, stepID)
 		if err != nil {
 			log.Printf("Error setting up docker command: %v", err)
 		}
 		log.Printf("Running command: docker %s", strings.Join(dcmd.ExecCmd.Args, " "))
+		// Start task step asynchronously
 		dcmd.ExecCmd.Start()
 		
 		// Get container metadata
@@ -185,14 +184,9 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 			done <- dcmd.ExecCmd.Wait()					 
 		}()
 
-		// Setup polling exponential backoff
-		backoff := backoff.Backoff{
-			Min:    100 * time.Millisecond,
-			Max:    60 * time.Second,
-			Factor: 2,
-			Jitter: false,
-		}
-
+		// Ticker for polling rate
+		// TODO figure out a reasonable rate
+		tickChan := time.NewTicker(time.Second * 5).C  
 	PollLoop:
 		for {
 			select {
@@ -213,7 +207,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					log.Print("Process finished gracefully without error")
 					break PollLoop
 				}
-			default:
+			case <- tickChan:
 				log.Print("Polling task...")
 				stepLog := eng.pollStep(dcmd)
 				// Send the scheduler service a job status update with updates
@@ -226,8 +220,6 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
 			}
-			// TODO fix over-logging status updates
-			time.Sleep(backoff.Duration())
 		}
 	}
 
@@ -320,7 +312,7 @@ func (eng *engine) queryContainerMetadata(containerName string, retries int, err
 	meta, err := deng.client.ContainerInspect(context.Background(), containerName)
 	log.Printf("attempt: %d", retries)
 	if err != nil {
-		// TODO check if this is a sensible default
+		// TODO decide if this is a sensible default
 		time.Sleep(time.Duration(1) * time.Second)
 		return eng.queryContainerMetadata(containerName, retries+1, err)
 	}

@@ -60,7 +60,7 @@ func (s *scheduler) startWorker(workerID string) {
 		Timeout:       0,
 		NumWorkers:    1,
 		Storage:       s.conf.Storage,
-		WorkDir:       workdir,
+		WorkDir:       "",
 	}
 	confPath := path.Join(workdir, "worker.conf.yml")
 	workerConf.ToYamlFile(confPath)

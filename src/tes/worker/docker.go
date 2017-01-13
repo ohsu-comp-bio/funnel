@@ -22,6 +22,7 @@ type DockerCmd struct {
 	Stdin           *os.File
 	Stdout          *os.File
 	Stderr          *os.File
+	ExecCmd         *exec.Cmd
 }
 
 // GetVolumes takes a jobID and returns an array of string.
@@ -30,7 +31,7 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
 }
 
-func (dcmd DockerCmd) Start() (*exec.Cmd, error) {
+func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 	log.Printf("Docker Volumes: %s", dcmd.Volumes)
 
 	args := []string{"run", "-i"}
@@ -62,6 +63,7 @@ func (dcmd DockerCmd) Start() (*exec.Cmd, error) {
 	log.Printf("Running command: docker %s", strings.Join(args, " "))
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 	cmd := exec.Command("docker", args...)
+	dcmd.ExecCmd = cmd
 
 	if dcmd.Stdin != nil {
 		cmd.Stdin = dcmd.Stdin
@@ -73,7 +75,7 @@ func (dcmd DockerCmd) Start() (*exec.Cmd, error) {
 		cmd.Stderr = dcmd.Stderr
 	}
 
-	return cmd, cmd.Start()
+	return &dcmd
 }
 
 type DockerEngine struct {

@@ -9,6 +9,7 @@ import (
 	"log"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
@@ -156,8 +157,14 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	// TODO is it possible to allow context.Done() to kill the current step?
 	for stepNum, step := range job.Task.Docker {
 		// Start task step asynchronously
-		dcmd, async_proc, _ := eng.runStep(mapper, step, fmt.Sprintf("%v-%v", job.JobID, int64(stepNum)))
-
+		stepID := fmt.Sprintf("%v-%v", job.JobID, stepNum)
+		dcmd, err := eng.setupDockerCmd(mapper, step, stepID)
+		if err != nil {
+			log.Printf("Error setting up docker command: %v", err)
+		}
+		log.Printf("Running command: docker %s", strings.Join(dcmd.ExecCmd.Args, " "))
+		dcmd.ExecCmd.Start()
+		
 		// Get container metadata
 		metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0, nil)
 		if mq_err != nil {
@@ -175,7 +182,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		// Open chanel to track async process
 		done := make(chan error, 1)
 		go func() {
-			done <- async_proc.Wait()
+			done <- dcmd.ExecCmd.Wait()					 
 		}()
 
 		// Setup polling exponential backoff
@@ -326,15 +333,15 @@ func (eng *engine) queryContainerMetadata(containerName string, retries int, err
 	// }
 
 	metadata, _ := json.Marshal(meta)
-	return string(metadata), mq_err
+	return string(metadata), err
 }
 
 // The bulk of job running happens here.
-func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor, id string) (*DockerCmd, *exec.Cmd, error) {
+func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, id string) (*DockerCmd, error) {
 
 	dcmd := &DockerCmd{
 		ImageName: step.ImageName,
-		Cmd:       step.Cmd,
+		Cmd: step.Cmd,
 		Volumes:   mapper.Volumes,
 		Workdir:   step.Workdir,
 		// TODO make Port configurable
@@ -351,7 +358,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor, id stri
 	if step.Stdin != "" {
 		f, err := mapper.OpenHostFile(step.Stdin)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Error setting up job stdin: %s", err)
+			return nil, fmt.Errorf("Error setting up job stdin: %s", err)
 		}
 		defer f.Close()
 		dcmd.Stdin = f
@@ -361,7 +368,7 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor, id stri
 	if step.Stdout != "" {
 		f, err := mapper.CreateHostFile(step.Stdout)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Error setting up job stdout: %s", err)
+			return nil, fmt.Errorf("Error setting up job stdout: %s", err)
 		}
 		defer f.Close()
 		dcmd.Stdout = f
@@ -371,15 +378,13 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor, id stri
 	if step.Stderr != "" {
 		f, err := mapper.CreateHostFile(step.Stderr)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Error setting up job stderr: %s", err)
+			return nil, fmt.Errorf("Error setting up job stderr: %s", err)
 		}
 		defer f.Close()
 		dcmd.Stderr = f
 	}
 
-	// start docker command async
-	async_proc, cmdErr := dcmd.Start()
-	return dcmd, async_proc, cmdErr
+	return dcmd.SetupCommand(), nil
 }
 
 func (eng *engine) pollStep(dcmd *DockerCmd) *pbe.JobLog {

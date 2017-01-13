@@ -1,8 +1,6 @@
 package condor
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -12,6 +10,7 @@ import (
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
 	worker "tes/worker"
+	"text/template"
 )
 
 func NewScheduler(c tes.Config) sched.Scheduler {
@@ -68,25 +67,32 @@ func (s *scheduler) startWorker(workerID string) {
 
 	workerPath := sched.DetectWorkerPath()
 
-	condorConf := fmt.Sprintf(`
-		universe = vanilla
-		executable = %s
-		arguments = -config worker.conf.yml
-		environment = "PATH=/usr/bin"
-		log = condor-event-log
-		error = tes-worker-stderr
-		output = tes-worker-stdout
-    transfer_input_files = %s
-    initial_dir = %s
-		queue
-	`, workerPath, confPath, workdir)
+	submitPath := path.Join(workdir, "condor.submit")
+	f, _ := os.Create(submitPath)
 
-	log.Printf("Condor submit config: \n%s", condorConf)
+	submitTpl, _ := template.New("condor.submit").Parse(`
+		universe    = vanilla
+		executable  = {{.Executable}}
+		arguments   = -config worker.conf.yml
+		environment = "PATH=/usr/bin"
+		log         = {{.WorkDir}}/condor-event-log
+		error       = {{.WorkDir}}/tes-worker-stderr
+		output      = {{.WorkDir}}/tes-worker-stdout
+    input       = {{.Config}}
+    should_transfer_files   = YES
+    when_to_transfer_output = ON_EXIT
+		queue
+	`)
+	submitTpl.Execute(f, map[string]string{
+		"Executable": workerPath,
+		"WorkDir":    workdir,
+		"Config":     confPath,
+	})
+	f.Close()
 
 	cmd := exec.Command("condor_submit")
-	stdin, _ := cmd.StdinPipe()
-	io.WriteString(stdin, condorConf)
-	stdin.Close()
+	stdin, _ := os.Open(submitPath)
+	cmd.Stdin = stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()

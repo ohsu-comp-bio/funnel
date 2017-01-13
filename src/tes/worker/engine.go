@@ -2,7 +2,6 @@ package tesTaskEngineWorker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"log"
@@ -72,19 +71,14 @@ func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
 		return schederr
 	}
 
-	// Tell the scheduler the job is running.
-	sched.SetRunning(ctx, job.Job)
 	joberr := eng.runJob(ctx, sched, job)
-
-	// Tell the scheduler whether the job failed or completed.
+	// Tell the scheduler if the job failed
 	if joberr != nil {
 		sched.SetFailed(ctx, job.Job)
 		//BUG: error status not returned to scheduler
 		log.Printf("Failed to run job: %s", job.Job.JobID)
 		log.Printf("%s", joberr)
-	} else {
-		sched.SetComplete(ctx, job.Job)
-	}
+	} 
 	return joberr
 }
 
@@ -165,7 +159,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		dcmd.ExecCmd.Start()
 		
 		// Get container metadata
-		metadata, mq_err := eng.queryContainerMetadata(dcmd.ContainerName, 0, nil)
+		metadata, mq_err := dcmd.GetContainerMetadata()
 		if mq_err != nil {
 			log.Printf("queryContainerMetadata Error: %s", mq_err)
 		}
@@ -175,6 +169,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 			Id:       job.JobID,
 			Step:     int64(stepNum),
 			Metadata: metadata,
+			State:    pbe.State_Running,
 		}
 		sched.UpdateJobStatus(ctx, statusReq)
 
@@ -184,9 +179,13 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 			done <- dcmd.ExecCmd.Wait()					 
 		}()
 
+		jobID := &pbe.JobID{
+			Value: job.JobID,
+		}
+
 		// Ticker for polling rate
 		// TODO figure out a reasonable rate
-		tickChan := time.NewTicker(time.Second * 5).C  
+		tickChan := time.NewTicker(time.Second * 5).C
 	PollLoop:
 		for {
 			select {
@@ -195,9 +194,9 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
-					Id:   job.JobID,
-					Step: int64(stepNum),
-					Log:  stepLog,
+					Id:    job.JobID,
+					Step:  int64(stepNum),
+					Log:   stepLog,
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
 
@@ -205,20 +204,38 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					return cmd_err
 				} else {
 					log.Print("Process finished gracefully without error")
+					sched.SetComplete(ctx, job)
 					break PollLoop
 				}
 			case <- tickChan:
-				log.Print("Polling task...")
-				stepLog := eng.pollStep(dcmd)
-				// Send the scheduler service a job status update with updates
-				// to stdout and stderr
-				statusReq := &pbr.UpdateStatusRequest{
-					Id:    job.JobID,
-					Step:  int64(stepNum),
-					Log:   stepLog,
-					State: pbe.State_Running,
+				jobDesc, err := sched.GetJobStatus(ctx, jobID)
+				if err != nil {
+					return fmt.Errorf("Error trying to get job status: %v", err)
 				}
-				sched.UpdateJobStatus(ctx, statusReq)
+				switch jobDesc.State {
+				case pbe.State_Canceled:
+					err := dcmd.StopContainer()
+					if err != nil {
+						return fmt.Errorf("Error trying to stop container: %v", err)
+					} else {
+						log.Print("Successfully canceled job")
+						break PollLoop
+					}
+				case pbe.State_Running:
+					log.Print("Polling task...")
+					stepLog := eng.pollStep(dcmd)
+					// Send the scheduler service a job status update with updates
+					// to stdout and stderr
+					statusReq := &pbr.UpdateStatusRequest{
+						Id:   job.JobID,
+						Step: int64(stepNum),
+						Log:  stepLog,
+					}
+					sched.UpdateJobStatus(ctx, statusReq)
+					continue
+				default:
+					return fmt.Errorf("Job improperly acquired status: %v", jobDesc.State)
+				}
 			}
 		}
 	}
@@ -294,38 +311,6 @@ func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) er
 		}
 	}
 	return nil
-}
-
-func (eng *engine) queryContainerMetadata(containerName string, retries int, err error) (string, error) {
-	// TODO is this the right approach?
-	if retries >= 10 {
-		return "", fmt.Errorf("Error getting metadata for container: %s", err)
-	}
-
-	deng := SetupDockerClient()
-
-	// Lets just print this once...
-	if retries == 0 {
-		log.Printf("Fetching container metadata")
-	}
-
-	meta, err := deng.client.ContainerInspect(context.Background(), containerName)
-	log.Printf("attempt: %d", retries)
-	if err != nil {
-		// TODO decide if this is a sensible default
-		time.Sleep(time.Duration(1) * time.Second)
-		return eng.queryContainerMetadata(containerName, retries+1, err)
-	}
-	
-	// TODO congifure which fields to keep from docker inspect
-	// whitelist := []string
-	// for k, v := range meta {
-	//  if k in not in whitelist {
-	//    delete(meta, k)
-	// }
-
-	metadata, _ := json.Marshal(meta)
-	return string(metadata), err
 }
 
 // The bulk of job running happens here.

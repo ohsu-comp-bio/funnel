@@ -2,6 +2,7 @@ package tesTaskEngineWorker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/docker/docker/client"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type DockerCmd struct {
@@ -78,6 +80,50 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 	return &dcmd
 }
 
+func (dcmd DockerCmd) GetContainerMetadata() (string, error) {
+	log.Printf("Fetching container metadata")
+	deng := SetupDockerClient()
+
+	// Set timeout
+	timeout := time.After(time.Second * 10)
+
+	for {
+		meta, err := deng.client.ContainerInspect(context.Background(), dcmd.ContainerName)
+		select {
+		case <- timeout:
+			return "", fmt.Errorf("Error getting metadata for container: %s", err)
+		default:
+			switch {
+			case err == nil:
+			// close the docker client connection
+			deng.client.Close()
+
+			// TODO congifure which fields to keep from docker inspect
+			// whitelist := []string
+			// for k, v := range meta {
+			//  if k in not in whitelist {
+			//    delete(meta, k)
+			// }
+
+			metadata, _ := json.Marshal(meta)
+			return string(metadata), err
+			}
+		}
+	}
+}
+
+func (dcmd DockerCmd) StopContainer() (error) {
+	log.Printf("Stoping container %s", dcmd.ContainerName)
+	deng := SetupDockerClient()	
+	// Set timeout
+	timeout := time.Second * 10
+	// Issue stop call
+	err := deng.client.ContainerStop(context.Background(), dcmd.ContainerName, &timeout)
+	// close the docker client connection
+	deng.client.Close()
+	return err
+}
+
 type DockerEngine struct {
 	client *client.Client
 }
@@ -99,6 +145,7 @@ func SetupDockerClient() *DockerEngine {
 			//   client is newer than server (client API version: 1.26, server API version: 1.24)
 			log.Printf("DOCKER_API_VERSION: %s", version[1])
 			os.Setenv("DOCKER_API_VERSION", version[1])
+			return SetupDockerClient()
 		}
 	}
 	return &DockerEngine{client: client}

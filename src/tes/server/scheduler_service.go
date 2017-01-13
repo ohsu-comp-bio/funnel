@@ -77,7 +77,6 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 // UpdateJobStatus documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
-	log.Printf("Job status: %v", stat.State)
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
@@ -101,11 +100,14 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 
 		switch stat.State {
 		case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error:
+			log.Printf("Job status: %v", stat.State)
 			workerID := bjw.Get([]byte(stat.Id))
 			bjw.Delete([]byte(stat.Id))
 			ba.Delete([]byte(stat.Id))
 			bw.Delete([]byte(workerID))
 			bc.Put([]byte(stat.Id), []byte(stat.State.String()))
+		case ga4gh_task_exec.State_Running:
+			log.Printf("Job status: %v", stat.State)
 		}
 		return nil
 	})
@@ -160,4 +162,20 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoReq
 // TODO: documentation
 func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.ServerConfig, error) {
 	return &taskBolt.serverConfig, nil
+}
+
+// GetJobStatus documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) GetJobStatus(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
+	log.Printf("Getting Task Info")
+	var job *ga4gh_task_exec.Job
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+		job = taskBolt.getJob(tx, id.Value)
+		return nil
+	})
+	jobDesc := &ga4gh_task_exec.JobDesc{
+		JobID: job.JobID,
+		State: job.State,
+	}
+	return jobDesc, err
 }

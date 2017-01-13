@@ -77,7 +77,7 @@ func (slot *Slot) Run(ctx context.Context) {
 		default:
 			// This blocks until a job is available, or the context is canceled.
 			// It's possible to return nil (if the context is canceled), so we
-			// have to check the retun value below.
+			// have to check the return value below.
 			job := slot.sched.PollForJob(ctx, slot.Id)
 			if job != nil {
 				// Set the slot state to running

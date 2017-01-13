@@ -63,4 +63,5 @@ service Scheduler {
   rpc GetJobToRun(JobRequest) returns (JobResponse) {};
   rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobID) {};
   rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};
+  rpc GetJobStatus(ga4gh_task_exec.JobID) returns (ga4gh_task_exec.JobDesc) {};
 }

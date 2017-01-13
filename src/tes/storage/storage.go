@@ -90,21 +90,20 @@ func (storage Storage) WithConfig(conf *pbr.StorageConfig) (*Storage, error) {
 	var err error
 	var out *Storage
 
-	switch x := conf.Protocol.(type) {
-	case *pbr.StorageConfig_S3:
+	if conf.Local != nil {
+		out, err = storage.WithLocal(conf.Local.AllowedDirs)
+	}
+
+	if conf.S3 != nil {
 		// TODO need config validation to ensure these values actually exist
 		out, err = storage.WithS3(
-			x.S3.Endpoint,
-			x.S3.Key,
-			x.S3.Secret,
+			conf.S3.Endpoint,
+			conf.S3.Key,
+			conf.S3.Secret,
 			false, // use SSL?
 		)
-	case *pbr.StorageConfig_Local:
-		out, err = storage.WithLocal(x.Local.AllowedDirs)
-	case nil:
-	default:
-		err = fmt.Errorf("Unknown storage protocol in config: %T", x)
 	}
+
 	if err != nil {
 		return nil, err
 	}

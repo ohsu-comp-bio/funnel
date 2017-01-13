@@ -35,6 +35,7 @@ type Config struct {
 	RPCPort    string
 	Scheduler  string
 	ContentDir string
+	WorkDir    string
 }
 
 func DefaultConfig() Config {
@@ -47,6 +48,7 @@ func DefaultConfig() Config {
 		RPCPort:    "9090",
 		Scheduler:  "local",
 		ContentDir: defaultContentDir(),
+		WorkDir:    "tes-work-dir",
 		Schedulers: Schedulers{
 			Local: Local{
 				NumWorkers: 4,

@@ -306,11 +306,12 @@ func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_e
 	//     For example, you can't have multiple S3 endpoints
 	out := map[string]string{}
 	for _, i := range taskBolt.serverConfig.Storage {
-		switch x := i.Protocol.(type) {
-		case *ga4gh_task_ref.StorageConfig_S3:
-			out["S3.Endpoint"] = x.S3.Endpoint
-		case *ga4gh_task_ref.StorageConfig_Local:
-			out["Local.AllowedDirs"] = strings.Join(x.Local.AllowedDirs, ",")
+		if i.Local != nil {
+			out["Local.AllowedDirs"] = strings.Join(i.Local.AllowedDirs, ",")
+		}
+
+		if i.S3 != nil {
+			out["S3.Endpoint"] = i.S3.Endpoint
 		}
 	}
 	return &ga4gh_task_exec.ServiceInfo{StorageConfig: out}, nil

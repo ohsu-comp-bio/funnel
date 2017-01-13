@@ -75,6 +75,7 @@ func (s *scheduler) observe(o sched.Offer) {
 
 func (s *scheduler) runWorker(workerID string) {
 	log.Printf("Starting local worker")
+	log.Printf("Storage: %s", s.conf.Storage)
 
 	workerConf := worker.Config{
 		ID:            workerID,
@@ -82,6 +83,7 @@ func (s *scheduler) runWorker(workerID string) {
 		Timeout:       1,
 		NumWorkers:    1,
 		Storage:       s.conf.Storage,
+		WorkDir:       s.conf.WorkDir,
 	}
 
 	confPath, cleanup := workerConf.ToYamlTempFile("worker.conf.yml")

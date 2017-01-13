@@ -16,7 +16,7 @@ import yaml
 import py_tes
 
 
-S3_ENDPOINT = "http://localhost:9000"
+S3_ENDPOINT = "localhost:9000"
 S3_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
 S3_SECRET_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 BUCKET_NAME="tes-test"
@@ -43,8 +43,8 @@ def which(file):
             return p
 
 def temp_config(config):
-    configFile = tempfile.NamedTemporaryFile()
-    yaml.dump(server_config, configFile)
+    configFile = tempfile.NamedTemporaryFile(delete=False)
+    yaml.dump(config, configFile)
     return configFile
 
 
@@ -62,15 +62,18 @@ class SimpleServerTest(unittest.TestCase):
 
         # Build server config file (YAML)
         configFile = temp_config({
-            "server_address": "localhost:9090",
-            "db_path": db_path,
-            "Storage": [
-                {"protocol": "Local", "AllowedDirs", [self.storage_dir]}
-            ]
+            "ServerAddress": "localhost:9090",
+            "DBPath": db_path,
+            "WorkDir": "test_tmp",
+            "Storage": [{
+                "local": {
+                    "allowed_dirs": [self.storage_dir]
+                }
+            }]
         })
         
         # Start server
-        cmd = ["./bin/tes-server", "-config" configFile.name]
+        cmd = ["./bin/tes-server", "-config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
         time.sleep(3)
@@ -129,23 +132,27 @@ class S3ServerTest(unittest.TestCase):
 
         # Build server config file (YAML)
         configFile = temp_config({
-            "server_address": "localhost:9090",
-            "db_path": db_path,
-            "Storage": [
-                {"protocol": "S3", "Endpoint": S3_ENDPOINT,
-                 "Key": S3_ACCESS_KEY, "Secret": S3_SECRET_KEY},
-            ]
+            "ServerAddress": "localhost:9090",
+            "DBPath": db_path,
+            "WorkDir": "test_tmp",
+            "Storage": [{
+                "S3": {
+                    "Endpoint": S3_ENDPOINT,
+                    "Key": S3_ACCESS_KEY,
+                    "Secret": S3_SECRET_KEY,
+                }
+            }]
         })
 
         # Start server
         cmd = ["./bin/tes-server", "-config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
-        time.sleep(3)
+        time.sleep(5)
         
         # TES client
         self.tes = py_tes.TES("http://localhost:8000",
-            S3_ENDPOINT,
+            "http://" + S3_ENDPOINT,
             S3_ACCESS_KEY,
             S3_SECRET_KEY)
 

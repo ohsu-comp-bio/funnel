@@ -17,10 +17,8 @@ message S3Storage {
 }
 
 message StorageConfig {
-  oneof protocol {
-    LocalStorage local = 1;
-    S3Storage s3 = 2;
-  }
+  LocalStorage local = 1;
+  S3Storage s3 = 2;
 }
 
 message ServerConfig {
@@ -45,6 +43,7 @@ message JobRequest {
 
 message JobResponse {
   ga4gh_task_exec.Job job = 1;
+  string auth = 2;
   repeated StorageConfig storage = 3;
 }
 

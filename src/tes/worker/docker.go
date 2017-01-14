@@ -1,6 +1,7 @@
 package tesTaskEngineWorker
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -62,7 +62,6 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 	args = append(args, dcmd.ImageName)
 	args = append(args, dcmd.Cmd...)
 
-	log.Printf("Running command: docker %s", strings.Join(args, " "))
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 	cmd := exec.Command("docker", args...)
 	dcmd.ExecCmd = cmd
@@ -70,12 +69,34 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 	if dcmd.Stdin != nil {
 		cmd.Stdin = dcmd.Stdin
 	}
-	if dcmd.Stdout != nil {
-		cmd.Stdout = dcmd.Stdout
+
+	stdoutReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Printf("Error creating StdoutPipe for Cmd", err)
 	}
-	if dcmd.Stderr != nil {
-		cmd.Stderr = dcmd.Stderr
+
+	stdoutScanner := bufio.NewScanner(stdoutReader)
+	go func() {
+		for stdoutScanner.Scan() {
+			s := stdoutScanner.Text()
+			log.Printf("Stdout: %s\n", s)
+			dcmd.Stdout.WriteString(s + "/n")
+		}
+	}()
+
+	stderrReader, err := cmd.StderrPipe()
+	if err != nil {
+		log.Printf("Error creating StderrPipe for Cmd", err)
 	}
+
+	stderrScanner := bufio.NewScanner(stderrReader)
+	go func() {
+		for stderrScanner.Scan() {
+			e := stderrScanner.Text()
+			log.Printf("Stderr: %s\n", e)
+			dcmd.Stderr.WriteString(e + "/n")
+		}
+	}()
 
 	return &dcmd
 }

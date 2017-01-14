@@ -70,7 +70,7 @@ func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
 	if schederr != nil {
 		return schederr
 	}
-
+	sched.SetRunning(ctx, job.Job)
 	joberr := eng.runJob(ctx, sched, job)
 	// Tell the scheduler if the job failed
 	if joberr != nil {
@@ -152,24 +152,24 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		stepID := fmt.Sprintf("%v-%v", job.JobID, stepNum)
 		dcmd, err := eng.setupDockerCmd(mapper, step, stepID)
 		if err != nil {
-			log.Printf("Error setting up docker command: %v", err)
+			return fmt.Errorf("Error setting up docker command: %v", err)
 		}
-		log.Printf("Running command: docker %s", strings.Join(dcmd.ExecCmd.Args, " "))
+		log.Printf("Running command: %s", strings.Join(dcmd.ExecCmd.Args, " "))
 		// Start task step asynchronously
 		dcmd.ExecCmd.Start()
 
 		// Get container metadata
 		metadata, mq_err := dcmd.GetContainerMetadata()
 		if mq_err != nil {
-			log.Printf("queryContainerMetadata Error: %s", mq_err)
+			return fmt.Errorf("queryContainerMetadata Error: %s", mq_err)
 		}
+		log.Printf("Metadata: %s", metadata)
 		// Send the scheduler service an initial job status update that includes
 		// the metadata
 		statusReq := &pbr.UpdateStatusRequest{
 			Id:       job.JobID,
 			Step:     int64(stepNum),
 			Metadata: metadata,
-			State:    pbe.State_Running,
 		}
 		sched.UpdateJobStatus(ctx, statusReq)
 
@@ -190,7 +190,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		for {
 			select {
 			case cmd_err := <-done:
-				stepLog := eng.finalizeStep(dcmd, cmd_err)
+				stepLog := eng.finalizeLogs(dcmd, cmd_err)
 				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
@@ -201,7 +201,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				sched.UpdateJobStatus(ctx, statusReq)
 
 				if cmd_err != nil {
-					return cmd_err
+					return fmt.Errorf("Docker cmd error: %v", cmd_err)
 				} else {
 					log.Print("Process finished gracefully without error")
 					sched.SetComplete(ctx, job)
@@ -222,8 +222,8 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 						break PollLoop
 					}
 				case pbe.State_Running:
-					log.Print("Polling task...")
-					stepLog := eng.pollStep(dcmd)
+					log.Print("Waiting for task to finish...")
+					stepLog := eng.updateLogs(dcmd)
 					// Send the scheduler service a job status update with updates
 					// to stdout and stderr
 					statusReq := &pbr.UpdateStatusRequest{
@@ -337,7 +337,6 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		if err != nil {
 			return nil, fmt.Errorf("Error setting up job stdin: %s", err)
 		}
-		defer f.Close()
 		dcmd.Stdin = f
 	}
 
@@ -347,7 +346,6 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		if err != nil {
 			return nil, fmt.Errorf("Error setting up job stdout: %s", err)
 		}
-		defer f.Close()
 		dcmd.Stdout = f
 	}
 
@@ -357,14 +355,13 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		if err != nil {
 			return nil, fmt.Errorf("Error setting up job stderr: %s", err)
 		}
-		defer f.Close()
 		dcmd.Stderr = f
 	}
 
 	return dcmd.SetupCommand(), nil
 }
 
-func (eng *engine) pollStep(dcmd *DockerCmd) *pbe.JobLog {
+func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 	// TODO rethink these messages. You probably don't want head().
 	//
 	// Get the head of the stdout/stderr files, if they exist.
@@ -385,28 +382,11 @@ func (eng *engine) pollStep(dcmd *DockerCmd) *pbe.JobLog {
 	return steplog
 }
 
-func (eng *engine) finalizeStep(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
+func (eng *engine) finalizeLogs(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
 	exitCode := getExitCode(cmdErr)
 	log.Printf("Exit code: %d", exitCode)
-
-	// TODO rethink these messages. You probably don't want head().
-	//
-	// Get the head of the stdout/stderr files, if they exist.
-	stdoutText := ""
-	stderrText := ""
-	if dcmd.Stdout != nil {
-		stdoutText = readFileHead(dcmd.Stdout.Name())
-	}
-	if dcmd.Stderr != nil {
-		stderrText = readFileHead(dcmd.Stderr.Name())
-	}
-
-	steplog := &pbe.JobLog{
-		Stdout:   stdoutText,
-		Stderr:   stderrText,
-		ExitCode: exitCode,
-	}
-
+	steplog := eng.updateLogs(dcmd)
+	steplog.ExitCode = exitCode
 	return steplog
 }
 

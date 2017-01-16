@@ -1,36 +1,109 @@
-<div id="job_info" ng-controller="JobInfoController">
-    <a href="/#/">&lt;---</a>
-    <h1>Job {{job_info.jobID}}</h1>
+<div ng-controller="JobInfoController">
+  <div class="board">
+    <h4>Job {{job.jobID}}</h4>
 
-    <div>{{job_info.task.name}}</div>
-    <div>{{job_info.task.description}}</div>
+    <table class="job-desc-table">
+      <tbody>
+        <tr>
+          <td>Name</td>
+          <td>{{ job.task.name }}</td>
+        </tr>
+        <tr>
+          <td>Project ID</td>
+          <td>{{ job.task.projectID }}</td>
+        </tr>
+        <tr>
+          <td>Description</td>
+          <td>{{ job.task.description }}</td>
+        </tr>
+        <tr>
+          <td>State</td>
+          <td>{{ job.state }}</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div>
-      <div>Commands</div>
-      <div ng-repeat="item in job_info.task.docker" content="item">
-          <div>Container: {{item.imageName}}</div>
-          <div>Container: {{item.cmd}}</div>
-      </div>
-    </div>
+    <h5>Commands</h5>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Command</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="cmd in job.task.docker">
+          <td>{{ cmd.imageName }}</td>
+          <td><code>{{ cmdStr(cmd.cmd) }}</code></td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div>Requirements</div>
-    <div ng-repeat="item in job_info.task.resources" content="item">
+    <h5>Inputs</h5>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>URL</th>
+          <th>Container Path</th>
+          <th>Class</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="input in job.task.inputs">
+          <td>{{ input.name }}</td>
+          <td>{{ input.description }}</td>
+          <td>{{ input.location }}</td>
+          <td>{{ input.path }}</td>
+          <td>{{ input.class }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h5>Outputs</h5>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>URL</th>
+          <th>Container Path</th>
+          <th>Class</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="output in job.task.outputs">
+          <td>{{ output.name }}</td>
+          <td>{{ output.description }}</td>
+          <td>{{ output.location }}</td>
+          <td>{{ output.path }}</td>
+          <td>{{ output.class }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h5>Resources</h5>
+    <div ng-repeat="item in job.task.resources">
         {{item}}
     </div>
 
-    <div>State: {{job_info.state}}</div>
 
-    <div>
-      <div>Logs</div>
-      <div ng-repeat="item in job_info.task.logs" content="item">
-        <div>ExitCode</div>
-        <pre>{{item.exitCode}}</pre>
+    <h5>Logs</h5>
+    <div ng-repeat="item in job.task.logs">
+      <div>ExitCode</div>
+      <pre>{{item.exitCode}}</pre>
 
-        <div>STDERR</div>
-        <pre>{{item.stderr}}</pre>
+      <div>STDERR</div>
+      <pre>{{item.stderr}}</pre>
 
-        <div>STDOUT</div>
-        <pre>{{item.stdout}}</pre>
-      </div>
+      <div>STDOUT</div>
+      <pre>{{item.stdout}}</pre>
     </div>
+
+    <h5>API</h5>
+    <div>
+      <code>curl localhost:8000/v1/jobs/{{ job.jobID }}</code>
+    </div>
+  </div>
 </div>

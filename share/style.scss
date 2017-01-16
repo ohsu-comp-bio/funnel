@@ -1,0 +1,73 @@
+@import "material-design-lite";
+
+.layout {
+  @extend .mdl-layout, .mdl-layout--fixed-drawer, .mdl-layout--fixed-header;
+
+  header {
+    @extend .mdl-layout__header, .mdl-color--grey-100, .mdl-color-text--grey-600;
+
+    .header-row {
+      @extend .mdl-layout__header-row;
+
+      .header-title {
+        @extend .mdl-layout-title;
+      }
+      .header-spacer {
+        @extend .mdl-layout-spacer;
+      }
+    }
+  }
+
+  .layout-title {
+    @extend .mdl-layout-title;
+  }
+
+  .drawer {
+    @extend .mdl-layout__drawer, .mdl-color--blue-grey-900, .mdl-color-text--blue-grey-50;
+
+    nav {
+      @extend .mdl-navigation, .mdl-color--blue-grey-800;
+
+      a {
+        @extend .mdl-navigation__link;
+      }
+    }
+  }
+}
+
+
+main {
+  @extend .mdl-layout__content;
+
+  .board {
+    @extend .mdl-color--white, .mdl-shadow--2dp, .mdl-cell, .mdl-cell--12-col;
+  }
+}
+
+.board {
+  padding: 10px;
+  h4 {
+    margin: 0;
+    margin-bottom: 20px;
+  }
+}
+
+.job-desc-table {
+  @extend .mdl-data-table;
+  min-width: 600px;
+  td {
+    text-align: left;
+  }
+  td:first-child {
+    font-weight: bold;
+  }
+}
+
+.job-list-table, .data-table {
+  @extend .mdl-data-table;
+  width: 100%;
+
+  th, td {
+    text-align: left;
+  }
+}

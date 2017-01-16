@@ -11,3 +11,4 @@ ga4gh_tasks.db
 /storage/
 /volumes/
 *.sw[op]
+node_modules

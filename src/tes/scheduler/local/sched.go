@@ -4,13 +4,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
-	"strings"
 	"sync/atomic"
+	"tes"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
-	pbr "tes/server/proto"
+	worker "tes/worker"
 )
 
 // TODO Questions:
@@ -23,21 +21,20 @@ import (
 //   a task to a resource. Don't want to loop through 1000 resources for every task
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
-func NewScheduler(workers int, conf []*pbr.StorageConfig) sched.Scheduler {
-	// TODO HACK: get the path to the worker executable
-	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-	p := path.Join(dir, "tes-worker")
-	return &scheduler{int32(workers), conf, p}
+func NewScheduler(conf tes.Config) sched.Scheduler {
+	return &scheduler{
+		conf,
+		int32(conf.Schedulers.Local.NumWorkers),
+	}
 }
 
 type scheduler struct {
 	// TODO how does the pool stay updated?
-	available  int32
-	conf       []*pbr.StorageConfig
-	workerPath string
+	conf      tes.Config
+	available int32
 }
 
-func (l *scheduler) Schedule(j *pbe.Job) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running local scheduler")
 
 	// Make an offer if the current resource count is less than the max.
@@ -46,7 +43,7 @@ func (l *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	// A better algorithm would rank the jobs, have a concept of binpacking,
 	// and be able to assign a job to a specific, best-match node.
 	// This backend does none of that...yet.
-	avail := atomic.LoadInt32(&l.available)
+	avail := atomic.LoadInt32(&s.available)
 	log.Printf("Available: %d", avail)
 	if avail == int32(0) {
 		return sched.RejectedOffer("Pool is full")
@@ -60,38 +57,45 @@ func (l *scheduler) Schedule(j *pbe.Job) sched.Offer {
 			},
 		}
 		o := sched.NewOffer(j, w)
-		go l.observe(o)
+		go s.observe(o)
 		return o
 	}
 }
 
-func (l *scheduler) observe(o sched.Offer) {
+func (s *scheduler) observe(o sched.Offer) {
 	<-o.Wait()
 	if o.Accepted() {
-		atomic.AddInt32(&l.available, -1)
-		l.runWorker(o.Worker().ID)
-		atomic.AddInt32(&l.available, 1)
+		atomic.AddInt32(&s.available, -1)
+		s.runWorker(o.Worker().ID)
+		atomic.AddInt32(&s.available, 1)
 	} else if o.Rejected() {
 		log.Println("Local offer was rejected")
 	}
 }
 
-func (l *scheduler) runWorker(workerID string) {
+func (s *scheduler) runWorker(workerID string) {
 	log.Printf("Starting local worker")
-	alloweddirs := make([]string, 1)
-	for _, d := range l.conf {
-		if d.Protocol == "fs" {
-			alloweddirs = append(alloweddirs, d.Config["basedir"])
-		}
+	log.Printf("Storage: %s", s.conf.Storage)
+
+	workerConf := worker.Config{
+		ID:            workerID,
+		ServerAddress: s.conf.ServerAddress,
+		Timeout:       1,
+		NumWorkers:    1,
+		Storage:       s.conf.Storage,
+		WorkDir:       s.conf.WorkDir,
 	}
 
+	confPath, cleanup := workerConf.ToYamlTempFile("worker.conf.yml")
+	defer cleanup()
+
+	workerPath := sched.DetectWorkerPath()
+
 	cmd := exec.Command(
-		l.workerPath,
-		"-numworkers", "1",
-		"-id", workerID,
-		"-timeout", "1",
-		"-alloweddirs", strings.Join(alloweddirs, ","),
+		workerPath,
+		"-config", confPath,
 	)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

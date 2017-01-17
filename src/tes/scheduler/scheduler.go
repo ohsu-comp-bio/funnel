@@ -28,6 +28,7 @@ func StartScheduling(db *server.TaskBolt, sched Scheduler) {
 			if offer.Rejected() {
 				log.Printf("Rejected: %s", offer.RejectionReason())
 			} else {
+				log.Printf("Assigning job -> worker: %s -> %s", offer.Job().JobID, offer.Worker().ID)
 				offer.Accept()
 				db.AssignJob(offer.Job().JobID, offer.Worker().ID)
 			}

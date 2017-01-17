@@ -314,14 +314,24 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 	return taskop, nil
 }
 
-// GetServiceInfo documentation
-// TODO: documentation
+// GetServiceInfo provides an endpoint for TES clients to get information about this server.
+// Could include:
+// - resource availability
+// - support storage systems
+// - versions
+// - etc.
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_exec.ServiceInfoRequest) (*ga4gh_task_exec.ServiceInfo, error) {
-	//BUG: this isn't the best translation, probably lossy. Maybe ServiceInfo data structure schema needs to be refactored
+	//BUG: this isn't the best translation, probably lossy.
+	//     Maybe ServiceInfo data structure schema needs to be refactored
+	//     For example, you can't have multiple S3 endpoints
 	out := map[string]string{}
 	for _, i := range taskBolt.serverConfig.Storage {
-		for j, k := range i.Config {
-			out[fmt.Sprintf("%s.%s", i.Protocol, j)] = k
+		if i.Local != nil {
+			out["Local.AllowedDirs"] = strings.Join(i.Local.AllowedDirs, ",")
+		}
+
+		if i.S3 != nil {
+			out["S3.Endpoint"] = i.S3.Endpoint
 		}
 	}
 	return &ga4gh_task_exec.ServiceInfo{StorageConfig: out}, nil

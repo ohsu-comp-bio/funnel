@@ -3,7 +3,6 @@ package tesTaskEngineWorker
 import (
 	"context"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"log"
 	"os/exec"
 	"path/filepath"
@@ -16,7 +15,7 @@ import (
 	"time"
 )
 
-// Engine is responsivle for running a job. This includes downloading inputs,
+// Engine is responsible for running a job. This includes downloading inputs,
 // communicating updates to the scheduler service, running the actual command,
 // and uploading outputs.
 type Engine interface {
@@ -25,34 +24,25 @@ type Engine interface {
 
 // engine is the internal implementation of a docker job engine.
 type engine struct {
-	// Address of the scheduler, e.g. "localhost:9090"
-	schedAddr string
-	// Directory to write job files to
-	workDir string
-	// Storage client for downloading/uploading files
-	storage *storage.Storage
-}
-
-type auth struct {
-	Key    string
-	Secret string
+	conf Config
 }
 
 // NewEngine returns a new Engine instance configured with a given scheduler address,
 // working directory, and storage client.
 //
 // If the working directory can't be initialized, this returns an error.
-func NewEngine(addr string, wDir string, store *storage.Storage) (Engine, error) {
-	dir, err := filepath.Abs(wDir)
+func NewEngine(conf Config) (Engine, error) {
+	dir, err := filepath.Abs(conf.WorkDir)
 	if err != nil {
 		return nil, err
 	}
 	ensureDir(dir)
-	return &engine{addr, dir, store}, nil
+
+	return &engine{conf}, nil
 }
 
 // RunJob runs a job.
-func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
+func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 	// This is essentially a simple helper for runJob() (below).
 	// This ensures that the job state is always updated in the scheduler,
 	// without having to do it on 15+ different lines in runJob() and others.
@@ -61,7 +51,7 @@ func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
 	// New code should probably go in runJob()
 
 	// Get a client for the scheduler service
-	sched, schederr := scheduler.NewClient(eng.schedAddr)
+	sched, schederr := scheduler.NewClient(eng.conf.ServerAddress)
 	defer sched.Close()
 	// TODO if we're here then we have a serious problem. We have already
 	//      told the scheduler that we're running the job, but now we can't
@@ -70,56 +60,18 @@ func (eng *engine) RunJob(ctx context.Context, job *pbr.JobResponse) error {
 	if schederr != nil {
 		return schederr
 	}
+
+	// Tell the scheduler the job is running.
 	sched.SetRunning(ctx, job.Job)
 	joberr := eng.runJob(ctx, sched, job)
+
 	// Tell the scheduler if the job failed
 	if joberr != nil {
-		sched.SetFailed(ctx, job.Job)
-		//BUG: error status not returned to scheduler
-		log.Printf("Failed to run job: %s", job.Job.JobID)
+		sched.SetFailed(ctx, jobR.Job)
+		log.Printf("Failed to run job: %s", jobR.Job.JobID)
 		log.Printf("%s", joberr)
 	}
 	return joberr
-}
-
-func (eng *engine) getAuth(tokenstr string) *auth {
-	log.Printf("Parsing token: %s", tokenstr)
-	// TODO there was a temporary error about time vs server time.
-	//      does that have to do with token parsing?
-	// TODO what to do if tokenstr is empty?
-	// Parse takes the token string and a function for looking up the key. The latter is especially
-	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
-	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
-	// to the callback, providing flexibility.
-	token, err := jwt.Parse(tokenstr, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		// TODO where does secret key come from?
-		//      it's possible we'll have multiple secrets, so need to get the secret
-		//      based on some information in the token
-		// The key must be []byte for HMAC. The docs/API for the jwt lib are pretty bad about
-		// this point, so now you know!
-		return []byte("secret"), nil
-	})
-
-	if err != nil {
-		log.Println("Error parsing auth token")
-		log.Println(err)
-		return nil
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if ok && token.Valid {
-		// TODO key/error checking here. These claims could be missing.
-		key, _ := claims["AWS_ACCESS_KEY_ID"].(string)
-		sec, _ := claims["AWS_SECRET_ACCESS_KEY"].(string)
-		return &auth{key, sec}
-	} else {
-		log.Println("Error accessing auth token")
-	}
-	return nil
 }
 
 // runJob calls a series of other functions to process a job:
@@ -130,14 +82,14 @@ func (eng *engine) getAuth(tokenstr string) *auth {
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
-	auth := eng.getAuth(jobR.Auth)
 	job := jobR.Job
 	mapper, merr := eng.getMapper(job)
 	if merr != nil {
 		return merr
 	}
 
-	store, serr := eng.getStorage(job, auth)
+	// TODO catch error
+	store, serr := eng.getStorage(jobR)
 	if serr != nil {
 		return serr
 	}
@@ -251,7 +203,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 // getMapper returns a FileMapper instance with volumes, inputs, and outputs
 // configured for the given job.
 func (eng *engine) getMapper(job *pbe.Job) (*FileMapper, error) {
-	mapper := NewJobFileMapper(job.JobID, eng.workDir)
+	mapper := NewJobFileMapper(job.JobID, eng.conf.WorkDir)
 
 	// Iterates through job.Task.Resources.Volumes and add the volume to mapper.
 	for _, vol := range job.Task.Resources.Volumes {
@@ -281,20 +233,25 @@ func (eng *engine) getMapper(job *pbe.Job) (*FileMapper, error) {
 }
 
 // getStorage returns a Storage instance configured for the given job.
-// This will check the user authorization against the supported storage systems.
-func (eng *engine) getStorage(job *pbe.Job, au *auth) (*storage.Storage, error) {
-	// TODO catch error
-	if au != nil {
-		log.Printf("S3 auth info: %s %s", au.Key, au.Secret)
-		return eng.storage.WithS3(
-			// TODO hard-coded. Get this from config.
-			"127.0.0.1:9000",
-			au.Key,
-			au.Secret,
-			false)
-	} else {
-		return eng.storage, nil
+func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
+	var err error
+	storage := new(storage.Storage)
+
+	for _, conf := range eng.conf.Storage {
+		storage, err = storage.WithConfig(conf)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	for _, conf := range jobR.Storage {
+		storage, err = storage.WithConfig(conf)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return storage, nil
 }
 
 func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) error {

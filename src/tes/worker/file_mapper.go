@@ -5,6 +5,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	pbe "tes/ga4gh"
 )
@@ -42,6 +43,8 @@ type Volume struct {
 //     NewJobFileMapper("123", "/path/to/workdir")
 func NewJobFileMapper(jobID string, baseDir string) *FileMapper {
 	dir := path.Join(baseDir, jobID)
+	// TODO error handling
+	dir, _ = filepath.Abs(dir)
 	return &FileMapper{dir: dir}
 }
 
@@ -85,10 +88,8 @@ func (mapper *FileMapper) AddVolume(source string, mountPoint string) error {
 func (mapper *FileMapper) HostPath(src string) (string, error) {
 	p := path.Join(mapper.dir, src)
 	p = path.Clean(p)
-	// TODO should do security check on the path. Something like "../../../" could get to points
-	//      on the system which should be disallowed.
 	if !mapper.IsSubpath(p, mapper.dir) {
-		return "", fmt.Errorf("Invalid path: %s", src)
+		return "", fmt.Errorf("Invalid path: %s is not a valid subpath of %s", p, mapper.dir)
 	}
 	return p, nil
 }

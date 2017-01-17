@@ -1,6 +1,9 @@
 package storage
 
-import "fmt"
+import (
+	"fmt"
+	pbr "tes/server/proto"
+)
 
 const (
 	File      string = "File"
@@ -81,4 +84,28 @@ func (storage Storage) WithLocal(allow []string) (*Storage, error) {
 	local := NewLocalBackend(allow)
 	stores := append(storage.stores, local)
 	return &Storage{stores}, nil
+}
+
+func (storage Storage) WithConfig(conf *pbr.StorageConfig) (*Storage, error) {
+	var err error
+	var out *Storage
+
+	if conf.Local != nil {
+		out, err = storage.WithLocal(conf.Local.AllowedDirs)
+	}
+
+	if conf.S3 != nil {
+		// TODO need config validation to ensure these values actually exist
+		out, err = storage.WithS3(
+			conf.S3.Endpoint,
+			conf.S3.Key,
+			conf.S3.Secret,
+			false, // use SSL?
+		)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }

@@ -1,5 +1,4 @@
 
-import py_tes
 import unittest
 import os
 import tempfile
@@ -12,10 +11,14 @@ import subprocess
 import logging
 import signal
 
+import yaml
 
+import py_tes
+
+
+S3_ENDPOINT = "localhost:9000"
 S3_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
 S3_SECRET_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-API_TOKEN="secret"
 BUCKET_NAME="tes-test"
 WORK_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "test_work" )
 
@@ -39,6 +42,12 @@ def which(file):
         if os.path.exists(p):
             return p
 
+def temp_config(config):
+    configFile = tempfile.NamedTemporaryFile(delete=False)
+    yaml.dump(config, configFile)
+    return configFile
+
+
 class SimpleServerTest(unittest.TestCase):
 
     def setUp(self):
@@ -49,11 +58,22 @@ class SimpleServerTest(unittest.TestCase):
         f, db_path = tempfile.mkstemp(dir="./test_tmp", prefix="tes_task_db.")
         os.close(f)
         self.storage_dir = os.path.abspath(db_path + ".storage")
-        self.volume_dir = os.path.abspath(db_path + ".volumes")
         os.mkdir(self.storage_dir)
-        os.mkdir(self.volume_dir)
+
+        # Build server config file (YAML)
+        configFile = temp_config({
+            "ServerAddress": "localhost:9090",
+            "DBPath": db_path,
+            "WorkDir": "test_tmp",
+            "Storage": [{
+                "local": {
+                    "allowed_dirs": [self.storage_dir]
+                }
+            }]
+        })
         
-        cmd = ["./bin/tes-server", "-db", db_path, "-storage", self.storage_dir]
+        # Start server
+        cmd = ["./bin/tes-server", "-config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
         time.sleep(3)
@@ -77,6 +97,7 @@ class SimpleServerTest(unittest.TestCase):
         dst = os.path.join( self.storage_dir, loc )
         return dst
 
+
 class S3ServerTest(unittest.TestCase):
 
     def setUp(self):
@@ -88,10 +109,8 @@ class S3ServerTest(unittest.TestCase):
         f, db_path = tempfile.mkstemp(dir="./test_tmp", prefix="tes_task_db.")
         os.close(f)
         self.storage_dir = db_path + ".storage"
-        self.volume_dir = db_path + ".volumes"
         self.output_dir = db_path + ".output"
         os.mkdir(self.storage_dir)
-        os.mkdir(self.volume_dir)
         os.mkdir(self.output_dir)
         
         self.dir_name = os.path.basename(db_path)
@@ -107,17 +126,38 @@ class S3ServerTest(unittest.TestCase):
             "-v", "%s:/export" % (self.storage_dir),
             "minio/minio", "server", "/export"
         ]
+
         logging.info("Running %s" % (" ".join(cmd)))        
         self.s3_server = popen(cmd)
-        cmd = ["./bin/tes-server", "-db", db_path, "-s3", "http://localhost:9000"]
+
+        # Build server config file (YAML)
+        configFile = temp_config({
+            "ServerAddress": "localhost:9090",
+            "DBPath": db_path,
+            "WorkDir": "test_tmp",
+            "Storage": [{
+                "S3": {
+                    "Endpoint": S3_ENDPOINT,
+                    "Key": S3_ACCESS_KEY,
+                    "Secret": S3_SECRET_KEY,
+                }
+            }]
+        })
+
+        # Start server
+        cmd = ["./bin/tes-server", "-config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
-        time.sleep(3)
+        time.sleep(5)
         
-        tes = py_tes.TES("http://localhost:8000", s3_access_key=S3_ACCESS_KEY, s3_secret_key=S3_SECRET_KEY, secret=API_TOKEN)
-        self.tes = tes
-        if not tes.bucket_exists(BUCKET_NAME):
-            tes.make_bucket(BUCKET_NAME)
+        # TES client
+        self.tes = py_tes.TES("http://localhost:8000",
+            "http://" + S3_ENDPOINT,
+            S3_ACCESS_KEY,
+            S3_SECRET_KEY)
+
+        if not self.tes.bucket_exists(BUCKET_NAME):
+            self.tes.make_bucket(BUCKET_NAME)
 
     # We're using this instead of tearDown because python doesn't call tearDown
     # if setUp fails. Since our setUp is complex, that means things don't get
@@ -142,14 +182,12 @@ class S3ServerTest(unittest.TestCase):
     
     def copy_to_storage( self, path):
         dstpath = "s3://%s/%s" % (BUCKET_NAME, os.path.join(self.dir_name, os.path.basename(path)))
-        tes = py_tes.TES("http://localhost:8000", s3_access_key=S3_ACCESS_KEY, s3_secret_key=S3_SECRET_KEY, secret=API_TOKEN)
         print "uploading:", dstpath
-        tes.upload_file(path, dstpath)
+        self.tes.upload_file(path, dstpath)
         return dstpath
     
     def get_from_storage(self, loc):
-        tes = py_tes.TES("http://localhost:8000", s3_access_key=S3_ACCESS_KEY, s3_secret_key=S3_SECRET_KEY, secret=API_TOKEN)
         dst = os.path.join(self.output_dir, os.path.basename(loc))
         print "Downloading %s to %s" % (loc, dst)
-        tes.download_file(dst, loc)
+        self.tes.download_file(dst, loc)
         return dst

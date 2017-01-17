@@ -7,6 +7,7 @@ import (
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"log"
+	worker "tes/worker"
 )
 
 const startScript = `
@@ -14,18 +15,7 @@ const startScript = `
 sudo systemctl start tes.service
 `
 
-type Config struct {
-	MasterAddr string
-	KeyPair    string
-	Server     servers.CreateOpts
-}
-
-type workerconfig struct {
-	MasterAddr string
-	ID         string
-}
-
-func start(workerID string, config Config) {
+func (s *scheduler) start(workerID string) {
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
 	if aerr != nil {
 		log.Printf("Auth options failed")
@@ -50,36 +40,34 @@ func start(workerID string, config Config) {
 	}
 
 	// Write the worker config YAML file, which gets uploaded to the VM.
-	wc := workerconfig{
-		MasterAddr: config.MasterAddr,
-		ID:         workerID,
+	workerConf := worker.Config{
+		ID:            workerID,
+		Timeout:       -1,
+		ServerAddress: s.conf.ServerAddress,
+		Storage:       s.conf.Storage,
 	}
-	wcyml, _ := yaml.Marshal(wc)
-	tesConfig := []byte(wcyml)
-	// Write a simple bash script that starts the TES service.
-	// This will be run when the VM instance boots.
-	userData := []byte(startScript)
+	workerConfYaml, _ := yaml.Marshal(workerConf)
 
+	osconf := s.conf.Schedulers.Openstack
 	_, serr := servers.Create(client, keypairs.CreateOptsExt{
 		servers.CreateOpts{
-			Name:       config.Server.Name,
-			FlavorName: config.Server.FlavorName,
-			ImageName:  config.Server.ImageName,
-			Networks:   config.Server.Networks,
+			Name:       osconf.Server.Name,
+			FlavorName: osconf.Server.FlavorName,
+			ImageName:  osconf.Server.ImageName,
+			Networks:   osconf.Server.Networks,
 			// Personality defines files that will be copied to the VM instance on boot.
 			// We use this to upload TES worker config.
 			Personality: []*servers.File{
 				&servers.File{
-					// TODO the worker should probably have a list of standard places it
-					//      looks for config files, and this should be written to one
-					//      of those standard paths.
-					Path:     "/home/ubuntu/tes.config.yaml",
-					Contents: tesConfig,
+					Path:     osconf.ConfigPath,
+					Contents: []byte(workerConfYaml),
 				},
 			},
-			UserData: userData,
+			// Write a simple bash script that starts the TES service.
+			// This will be run when the VM instance boots.
+			UserData: []byte(startScript),
 		},
-		config.KeyPair,
+		osconf.KeyPair,
 	}).Extract()
 
 	if serr != nil {

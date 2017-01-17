@@ -8,6 +8,8 @@
         <tr>
           <th>ID</th>
           <th>State</th>
+          <th>Name</th>
+          <th>Description</th>
         </tr>
       </thead>
 
@@ -17,6 +19,8 @@
             <a href="#/jobs/{{job.jobID}}">{{ shortID(job.jobID) }}</a>
           </td>
           <td>{{job.state}}</td>
+          <td>{{job.task.name}}</td>
+          <td>{{job.task.description}}</td>
         </tr>
       </tbody>
     </table>

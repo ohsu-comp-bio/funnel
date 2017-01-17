@@ -251,10 +251,22 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 		c := taskopB.Cursor()
 		log.Println("Scanning")
 
-		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+		for k, v := c.First(); k != nil; k, v = c.Next() {
 			jobID := string(k)
 			jobState, _ := taskBolt.getJobState(jobID)
-			job := &ga4gh_task_exec.JobDesc{JobID: jobID, State: jobState}
+
+			task := &ga4gh_task_exec.Task{}
+			proto.Unmarshal(v, task)
+
+			job := &ga4gh_task_exec.JobDesc{
+				JobID: jobID,
+				State: jobState,
+				Task: &ga4gh_task_exec.TaskDesc{
+					Name:        task.Name,
+					ProjectID:   task.ProjectID,
+					Description: task.Description,
+				},
+			}
 			jobs = append(jobs, job)
 		}
 		return nil

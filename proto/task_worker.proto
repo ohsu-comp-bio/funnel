@@ -53,7 +53,6 @@ message UpdateStatusRequest {
   ga4gh_task_exec.State state = 3;
   ga4gh_task_exec.JobLog log = 4;
   string worker_id = 5;
-  string metadata = 6;
 }
 
 message QueuedTaskInfoRequest {

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"syscall"
 	pbe "tes/ga4gh"
@@ -62,8 +63,8 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 	}
 
 	// Tell the scheduler the job is running.
-	sched.SetRunning(ctx, job.Job)
-	joberr := eng.runJob(ctx, sched, job)
+	sched.SetRunning(ctx, jobR.Job)
+	joberr := eng.runJob(ctx, sched, jobR)
 
 	// Tell the scheduler if the job failed
 	if joberr != nil {
@@ -106,29 +107,16 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		if err != nil {
 			return fmt.Errorf("Error setting up docker command: %v", err)
 		}
-		log.Printf("Running command: %s", strings.Join(dcmd.ExecCmd.Args, " "))
+		log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
 		// Start task step asynchronously
-		dcmd.ExecCmd.Start()
+		dcmd.Cmd.Start()
 
-		// Get container metadata
-		metadata, mq_err := dcmd.GetContainerMetadata()
-		if mq_err != nil {
-			return fmt.Errorf("queryContainerMetadata Error: %s", mq_err)
-		}
-		log.Printf("Metadata: %s", metadata)
-		// Send the scheduler service an initial job status update that includes
-		// the metadata
-		statusReq := &pbr.UpdateStatusRequest{
-			Id:       job.JobID,
-			Step:     int64(stepNum),
-			Metadata: metadata,
-		}
-		sched.UpdateJobStatus(ctx, statusReq)
+		stepLog := &pbe.JobLog{}
 
 		// Open chanel to track async process
 		done := make(chan error, 1)
 		go func() {
-			done <- dcmd.ExecCmd.Wait()
+			done <- dcmd.Cmd.Wait()
 		}()
 
 		jobID := &pbe.JobID{
@@ -142,7 +130,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		for {
 			select {
 			case cmd_err := <-done:
-				stepLog := eng.finalizeLogs(dcmd, cmd_err)
+				stepLog = eng.finalizeLogs(dcmd, cmd_err)
 				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
@@ -160,7 +148,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					break PollLoop
 				}
 			case <-tickChan:
-				jobDesc, err := sched.GetJobStatus(ctx, jobID)
+				jobDesc, err := sched.GetJobState(ctx, jobID)
 				if err != nil {
 					return fmt.Errorf("Error trying to get job status: %v", err)
 				}
@@ -175,15 +163,19 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					}
 				case pbe.State_Running:
 					log.Print("Waiting for task to finish...")
-					stepLog := eng.updateLogs(dcmd)
-					// Send the scheduler service a job status update with updates
-					// to stdout and stderr
-					statusReq := &pbr.UpdateStatusRequest{
-						Id:   job.JobID,
-						Step: int64(stepNum),
-						Log:  stepLog,
+					stepLogUpdate := eng.updateLogs(dcmd)
+					if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
+						log.Print("Updating Job Logs...")
+						stepLog = stepLogUpdate
+						// Send the scheduler service a job status update with updates
+						// to stdout and stderr
+						statusReq := &pbr.UpdateStatusRequest{
+							Id:   job.JobID,
+							Step: int64(stepNum),
+							Log:  stepLog,
+						}
+						sched.UpdateJobStatus(ctx, statusReq)
 					}
-					sched.UpdateJobStatus(ctx, statusReq)
 					continue
 				default:
 					return fmt.Errorf("Job improperly acquired status: %v", jobDesc.State)
@@ -275,17 +267,16 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 
 	dcmd := &DockerCmd{
 		ImageName: step.ImageName,
-		Cmd:       step.Cmd,
+		CmdString: step.Cmd,
 		Volumes:   mapper.Volumes,
 		Workdir:   step.Workdir,
-		// TODO make Port configurable
-		Port:          "8888:8888",
 		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,
 		Stdin:           nil,
 		Stdout:          nil,
 		Stderr:          nil,
+		Log:             map[string][]string{},
 	}
 
 	// Find the path for job stdin
@@ -319,16 +310,12 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 }
 
 func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
-	// TODO rethink these messages. You probably don't want head().
-	//
-	// Get the head of the stdout/stderr files, if they exist.
 	stdoutText := ""
 	stderrText := ""
-	if dcmd.Stdout != nil {
-		stdoutText = readFileHead(dcmd.Stdout.Name())
-	}
-	if dcmd.Stderr != nil {
-		stderrText = readFileHead(dcmd.Stderr.Name())
+
+	if dcmd.Log != nil {
+		stdoutText = strings.Join(dcmd.Log["Stdout"], "\n")
+		stderrText = strings.Join(dcmd.Log["Stderr"], "\n")
 	}
 
 	steplog := &pbe.JobLog{

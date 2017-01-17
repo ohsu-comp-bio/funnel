@@ -31,9 +31,6 @@ var JobsComplete = []byte("jobs-complete")
 // job ID -> ga4gh_task_exec.JobLog struct
 var JobsLog = []byte("jobs-log")
 
-// job ID -> metadata key value pairs
-var JobsMetadata = []byte("jobs-metadata")
-
 // worker ID -> job ID
 var WorkerJobs = []byte("worker-jobs")
 
@@ -70,9 +67,6 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 		}
 		if tx.Bucket(JobsLog) == nil {
 			tx.CreateBucket(JobsLog)
-		}
-		if tx.Bucket(JobsMetadata) == nil {
-			tx.CreateBucket(JobsMetadata)
 		}
 		if tx.Bucket(WorkerJobs) == nil {
 			tx.CreateBucket(WorkerJobs)
@@ -214,18 +208,6 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 	job.JobID = jobID
 	job.Task = task
 	job.State, _ = taskBolt.getJobState(jobID)
-
-	//if there is metadata
-	bM := tx.Bucket(JobsMetadata)
-	metadata := map[string]string{}
-	for i := range job.Task.Docker {
-		container_id := fmt.Sprint(jobID, i)
-		bM_o := bM.Get([]byte(container_id))
-		if bM_o != nil {
-			metadata[container_id] = string(bM_o[:])
-		}
-	}
-	job.Metadata = metadata
 
 	//if there is logging info
 	bL := tx.Bucket(JobsLog)

@@ -82,14 +82,8 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
 		bL := tx.Bucket(JobsLog)
-		bM := tx.Bucket(JobsMetadata)
 		bw := tx.Bucket(WorkerJobs)
 		bjw := tx.Bucket(JobWorker)
-
-		if stat.Metadata != "" {
-			dM := []byte(stat.Metadata)
-			bM.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dM)
-		}
 
 		if stat.Log != nil {
 			dL, _ := proto.Marshal(stat.Log)
@@ -164,16 +158,17 @@ func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_
 
 // GetJobStatus documentation
 // TODO: documentation
-func (taskBolt *TaskBolt) GetJobStatus(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
-	log.Printf("Getting Task Info")
-	var job *ga4gh_task_exec.Job
+func (taskBolt *TaskBolt) GetJobState(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
+	log.Printf("Getting Task State")
+	var state ga4gh_task_exec.State
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
-		job = taskBolt.getJob(tx, id.Value)
+		//TODO address err
+		state, _ = taskBolt.getJobState(id.Value)
 		return nil
 	})
 	jobDesc := &ga4gh_task_exec.JobDesc{
-		JobID: job.JobID,
-		State: job.State,
+		JobID: id.Value,
+		State: state,
 	}
 	return jobDesc, err
 }

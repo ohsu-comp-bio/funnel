@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/client"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"log"
 	"os"
 	"os/exec"
@@ -26,7 +26,7 @@ type DockerCmd struct {
 	Stderr          *os.File
 	Cmd             *exec.Cmd
 	// store last 200 lines of both stdout and stderr
-	Log             map[string][]string
+	Log map[string][]string
 }
 
 // GetVolumes takes a jobID and returns an array of string.
@@ -109,7 +109,7 @@ func UpdateAndTrim(l []string, v string) []string {
 	max := 200
 	l = append(l, v)
 	if len(l) > max {
-		return l[len(l)-max:len(l)]
+		return l[len(l)-max : len(l)]
 	}
 	return l
 }
@@ -160,8 +160,8 @@ func SetupDockerClient() *DockerEngine {
 		return nil
 	}
 
-	// If the api version is not set test if the client can communicate with the 
-	// server; if not infer API version from error message and inform the client 
+	// If the api version is not set test if the client can communicate with the
+	// server; if not infer API version from error message and inform the client
 	// to use that version for future communication
 	if os.Getenv("DOCKER_API_VERSION") == "" {
 		_, err := client.ServerVersion(context.Background())

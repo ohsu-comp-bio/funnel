@@ -266,10 +266,10 @@ func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) er
 func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, id string) (*DockerCmd, error) {
 
 	dcmd := &DockerCmd{
-		ImageName: step.ImageName,
-		CmdString: step.Cmd,
-		Volumes:   mapper.Volumes,
-		Workdir:   step.Workdir,
+		ImageName:     step.ImageName,
+		CmdString:     step.Cmd,
+		Volumes:       mapper.Volumes,
+		Workdir:       step.Workdir,
 		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,

@@ -98,11 +98,11 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 				stdout := []byte(out.Stdout + stat.Log.Stdout)
 				stderr := []byte(out.Stderr + stat.Log.Stderr)
 				if len(stdout) > max {
-					stdout = stdout[len(stdout)-max:len(stdout)]
+					stdout = stdout[len(stdout)-max : len(stdout)]
 				}
 				if len(stderr) > max {
-					stderr = stderr[len(stderr)-max:len(stderr)]
-				}				
+					stderr = stderr[len(stderr)-max : len(stderr)]
+				}
 				out.Stdout = string(stdout)
 				out.Stderr = string(stderr)
 			} else {
@@ -110,7 +110,7 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 			}
 			log.Printf("Log Update: %v", out)
 			dL, _ := proto.Marshal(out)
-			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)	
+			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)
 		}
 
 		switch stat.State {

@@ -284,7 +284,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		CmdString:     step.Cmd,
 		Volumes:       mapper.Volumes,
 		Workdir:       step.Workdir,
-	  PortBindings:  step.PortBindings,
+		PortBindings:  step.PortBindings,
 		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,
@@ -325,7 +325,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 }
 
 func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
-	
+
 	// get container metadata and update jobLog
 	metadata, err := dcmd.InspectContainer()
 	if err != nil {
@@ -356,23 +356,23 @@ func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
 	}
 
 	stepLog := &pbe.JobLog{
-		HostIP: ip,
+		HostIP:       ip,
 		PortBindings: portMap,
 	}
-	
+
 	return stepLog, nil
 }
 
 func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 	stepLog := &pbe.JobLog{}
 
-	if len(dcmd.Log["Stdout"]) > 0 {		
+	if len(dcmd.Log["Stdout"]) > 0 {
 		stdoutText := string(dcmd.Log["Stdout"][:])
 		dcmd.Log["Stdout"] = []byte{}
 		stepLog.Stdout = stdoutText
 	}
 
-	if len(dcmd.Log["Stderr"]) > 0 {		
+	if len(dcmd.Log["Stderr"]) > 0 {
 		stderrText := string(dcmd.Log["Stderr"][:])
 		dcmd.Log["Stderr"] = []byte{}
 		stepLog.Stderr = stderrText

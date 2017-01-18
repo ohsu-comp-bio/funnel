@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	pbe "tes/ga4gh"
 	"time"
 )
 
@@ -19,7 +20,7 @@ type DockerCmd struct {
 	CmdString       []string
 	Volumes         []Volume
 	Workdir         string
-	Port            int
+	PortBindings    []*pbe.PortMapping
 	ContainerName   string
 	RemoveContainer bool
 	Stdin           *os.File
@@ -27,7 +28,7 @@ type DockerCmd struct {
 	Stderr          *os.File
 	Cmd             *exec.Cmd
 	// store last 200 lines of both stdout and stderr
-	Log map[string][]string
+	Log map[string][]byte
 }
 
 // GetVolumes takes a jobID and returns an array of string.
@@ -45,9 +46,13 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.Port != 0 {
-		port := strconv.Itoa(dcmd.Port)
-		args = append(args, "-p", "0:" + port)
+	if dcmd.PortBindings != nil {
+		log.Printf("Docker Port Bindings: %v", dcmd.PortBindings)
+		for i := range dcmd.PortBindings {
+			hostPort := strconv.Itoa(int(dcmd.PortBindings[i].HostBinding))
+			containerPort := strconv.Itoa(int(dcmd.PortBindings[i].ContainerPort))
+			args = append(args, "-p", hostPort + ":" + containerPort)
+		}
 	}
 
 	if dcmd.ContainerName != "" {
@@ -84,7 +89,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		for stdoutScanner.Scan() {
 			s := stdoutScanner.Text()
 			dcmd.Stdout.WriteString(s + "/n")
-			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], s)
+			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], []byte(s + "/n"))
 		}
 	}()
 
@@ -98,19 +103,19 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		for stderrScanner.Scan() {
 			e := stderrScanner.Text()
 			dcmd.Stderr.WriteString(e + "/n")
-			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], e)
+			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], []byte(e + "/n"))
 		}
 	}()
 
 	return &dcmd
 }
 
-func UpdateAndTrim(l []string, v string) []string {
-	// TODO does it make sense to limit these logs to 200 lines?
-	max := 200
-	l = append(l, v)
+func UpdateAndTrim(l []byte, v []byte) []byte {
+	// 10 KB max stored
+	max := 10000
+	l = append(l[:], v[:]...)
 	if len(l) > max {
-		return l[len(l)-max : len(l)]
+		return l[len(l) - max: len(l)]
 	}
 	return l
 }
@@ -129,7 +134,7 @@ func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
 			return nil, fmt.Errorf("Error getting metadata for container: %s", err)
 		default:
 			switch {
-			case err == nil:
+			case err == nil && metadata.State.Running == true:
 				// close the docker client connection
 				deng.client.Close()
 				return &metadata, err

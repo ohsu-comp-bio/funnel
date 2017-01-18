@@ -82,7 +82,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		for stdoutScanner.Scan() {
 			s := stdoutScanner.Text()
 			dcmd.Stdout.WriteString(s + "/n")
-			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], []byte(s + "/n"))
+			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], []byte(s+"/n"))
 		}
 	}()
 
@@ -96,7 +96,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		for stderrScanner.Scan() {
 			e := stderrScanner.Text()
 			dcmd.Stderr.WriteString(e + "/n")
-			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], []byte(e + "/n"))
+			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], []byte(e+"/n"))
 		}
 	}()
 
@@ -108,7 +108,7 @@ func UpdateAndTrim(l []byte, v []byte) []byte {
 	max := 10000
 	l = append(l[:], v[:]...)
 	if len(l) > max {
-		return l[len(l) - max: len(l)]
+		return l[len(l)-max : len(l)]
 	}
 	return l
 }

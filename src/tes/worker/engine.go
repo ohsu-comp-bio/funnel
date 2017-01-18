@@ -308,16 +308,16 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 	return dcmd.SetupCommand(), nil
 }
 
-func (eng *engine) updateLogs(dcmd *DockerCmd) (*pbe.JobLog) {
+func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 	stepLog := &pbe.JobLog{}
 
-	if len(dcmd.Log["Stdout"]) > 0 {		
+	if len(dcmd.Log["Stdout"]) > 0 {
 		stdoutText := string(dcmd.Log["Stdout"][:])
 		dcmd.Log["Stdout"] = []byte{}
 		stepLog.Stdout = stdoutText
 	}
 
-	if len(dcmd.Log["Stderr"]) > 0 {		
+	if len(dcmd.Log["Stderr"]) > 0 {
 		stderrText := string(dcmd.Log["Stderr"][:])
 		dcmd.Log["Stderr"] = []byte{}
 		stepLog.Stderr = stderrText

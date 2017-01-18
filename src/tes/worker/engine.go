@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os/exec"
 	"path/filepath"
 	"reflect"
@@ -321,7 +322,52 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		dcmd.Stderr = f
 	}
 
-	return dcmd.SetupCommand(), nil
+	dcmd, err := dcmd.SetupCommand()
+	if err != nil {
+		return nil, fmt.Errorf("Error setting up job command: %s", err)
+	}
+
+	return dcmd, nil
+}
+
+func externalIP() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 {
+			continue // interface down
+
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue // loopback interface
+
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return "", err
+
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue // not an ipv4 address
+			}
+			return ip.String(), nil
+		}
+	}
+	return "", fmt.Errorf("Error no network connection")
 }
 
 func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
@@ -331,9 +377,11 @@ func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var portMap []*pbe.PortMapping
-	ip := "0.0.0.0"
+	ip, err := externalIP()
+	if err != nil {
+		return nil, err
+	}
 	// extract exposed host port from
 	// https://godoc.org/github.com/docker/go-connections/nat#PortMap
 	for k, v := range metadata.NetworkSettings.Ports {

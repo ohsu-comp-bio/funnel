@@ -37,7 +37,7 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
 }
 
-func (dcmd DockerCmd) SetupCommand() *DockerCmd {
+func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	log.Printf("Docker Volumes: %s", dcmd.Volumes)
 
 	args := []string{"run", "-i"}
@@ -49,7 +49,11 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 	if dcmd.PortBindings != nil {
 		log.Printf("Docker Port Bindings: %v", dcmd.PortBindings)
 		for i := range dcmd.PortBindings {
-			hostPort := strconv.Itoa(int(dcmd.PortBindings[i].HostBinding))
+			hostPortNum := int(dcmd.PortBindings[i].HostBinding)
+			if hostPortNum <= 1024 && hostPortNum != 0 {
+				return nil, fmt.Errorf("Error cannot use restricted ports")
+			}
+			hostPort := strconv.Itoa(hostPortNum)
 			containerPort := strconv.Itoa(int(dcmd.PortBindings[i].ContainerPort))
 			args = append(args, "-p", hostPort+":"+containerPort)
 		}
@@ -81,7 +85,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Printf("Error creating StdoutPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StdoutPipe for Cmd", err)
 	}
 
 	stdoutScanner := bufio.NewScanner(stdoutReader)
@@ -95,7 +99,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
-		log.Printf("Error creating StderrPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StderrPipe for Cmd", err)
 	}
 
 	stderrScanner := bufio.NewScanner(stderrReader)
@@ -107,7 +111,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		}
 	}()
 
-	return &dcmd
+	return &dcmd, nil
 }
 
 func UpdateAndTrim(l []byte, v []byte) []byte {

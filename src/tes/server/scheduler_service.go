@@ -85,9 +85,29 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		bw := tx.Bucket(WorkerJobs)
 		bjw := tx.Bucket(JobWorker)
 
+		// max size (bytes) for stderr and stdout streams to keep in db
+		max := 100000
 		if stat.Log != nil {
+			o := bL.Get([]byte(fmt.Sprint(stat.Id, stat.Step)))
+			if o != nil {
+				var jlog ga4gh_task_exec.JobLog
+				// max bytes to be stored in the db
+				proto.Unmarshal(o, &jlog)
+				out := &jlog
+				stdout := []byte(out.Stdout + stat.Log.Stdout)
+				stderr := []byte(out.Stderr + stat.Log.Stderr)
+				if len(stdout) > max {
+					stdout = stdout[len(stdout)-max:len(stdout)]
+				}
+				if len(stderr) > max {
+					stderr = stderr[len(stderr)-max:len(stderr)]
+				}
+				
+				stat.Log.Stdout = string(stdout)
+				stat.Log.Stderr = string(stderr)
+			}
 			dL, _ := proto.Marshal(stat.Log)
-			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)
+			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)	
 		}
 
 		switch stat.State {

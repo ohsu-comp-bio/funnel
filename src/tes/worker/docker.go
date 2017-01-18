@@ -26,7 +26,7 @@ type DockerCmd struct {
 	Stderr          *os.File
 	Cmd             *exec.Cmd
 	// store last 200 lines of both stdout and stderr
-	Log map[string][]string
+	Log map[string][]byte
 }
 
 // GetVolumes takes a jobID and returns an array of string.
@@ -82,7 +82,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		for stdoutScanner.Scan() {
 			s := stdoutScanner.Text()
 			dcmd.Stdout.WriteString(s + "/n")
-			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], s)
+			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], []byte(s + "/n"))
 		}
 	}()
 
@@ -95,21 +95,20 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 	go func() {
 		for stderrScanner.Scan() {
 			e := stderrScanner.Text()
-			log.Printf("Stderr: %s\n", e)
 			dcmd.Stderr.WriteString(e + "/n")
-			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], e)
+			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], []byte(e + "/n"))
 		}
 	}()
 
 	return &dcmd
 }
 
-func UpdateAndTrim(l []string, v string) []string {
-	// TODO does it make sense to limit these logs to 200 lines?
-	max := 200
-	l = append(l, v)
+func UpdateAndTrim(l []byte, v []byte) []byte {
+	// 10 KB max stored
+	max := 10000
+	l = append(l[:], v[:]...)
 	if len(l) > max {
-		return l[len(l)-max : len(l)]
+		return l[len(l) - max: len(l)]
 	}
 	return l
 }

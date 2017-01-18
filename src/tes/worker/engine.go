@@ -166,13 +166,12 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					stepLogUpdate := eng.updateLogs(dcmd)
 					if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
 						log.Print("Updating Job Logs...")
-						stepLog = stepLogUpdate
 						// Send the scheduler service a job status update with updates
 						// to stdout and stderr
 						statusReq := &pbr.UpdateStatusRequest{
 							Id:   job.JobID,
 							Step: int64(stepNum),
-							Log:  stepLog,
+							Log:  stepLogUpdate,
 						}
 						sched.UpdateJobStatus(ctx, statusReq)
 					}
@@ -276,7 +275,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		Stdin:           nil,
 		Stdout:          nil,
 		Stderr:          nil,
-		Log:             map[string][]string{},
+		Log:             map[string][]byte{},
 	}
 
 	// Find the path for job stdin
@@ -309,21 +308,22 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 	return dcmd.SetupCommand(), nil
 }
 
-func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
-	stdoutText := ""
-	stderrText := ""
+func (eng *engine) updateLogs(dcmd *DockerCmd) (*pbe.JobLog) {
+	stepLog := &pbe.JobLog{}
 
-	if dcmd.Log != nil {
-		stdoutText = strings.Join(dcmd.Log["Stdout"], "\n")
-		stderrText = strings.Join(dcmd.Log["Stderr"], "\n")
+	if len(dcmd.Log["Stdout"]) > 0 {		
+		stdoutText := string(dcmd.Log["Stdout"][:])
+		dcmd.Log["Stdout"] = []byte{}
+		stepLog.Stdout = stdoutText
 	}
 
-	steplog := &pbe.JobLog{
-		Stdout: stdoutText,
-		Stderr: stderrText,
+	if len(dcmd.Log["Stderr"]) > 0 {		
+		stderrText := string(dcmd.Log["Stderr"][:])
+		dcmd.Log["Stderr"] = []byte{}
+		stepLog.Stderr = stderrText
 	}
 
-	return steplog
+	return stepLog
 }
 
 func (eng *engine) finalizeLogs(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {

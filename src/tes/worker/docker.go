@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type DockerCmd struct {
 	CmdString       []string
 	Volumes         []Volume
 	Workdir         string
-	Port            string
+	Port            int
 	ContainerName   string
 	RemoveContainer bool
 	Stdin           *os.File
@@ -44,8 +45,9 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.Port != "" {
-		args = append(args, "-p", dcmd.Port)
+	if dcmd.Port != 0 {
+		port := strconv.Itoa(dcmd.Port)
+		args = append(args, "-p", "0:" + port)
 	}
 
 	if dcmd.ContainerName != "" {
@@ -95,7 +97,6 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 	go func() {
 		for stderrScanner.Scan() {
 			e := stderrScanner.Text()
-			log.Printf("Stderr: %s\n", e)
 			dcmd.Stderr.WriteString(e + "/n")
 			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], e)
 		}

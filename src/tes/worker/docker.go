@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"log"
 	"os"
@@ -93,7 +92,7 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 		for stdoutScanner.Scan() {
 			s := stdoutScanner.Text()
 			dcmd.Stdout.WriteString(s + "\n")
-			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], []byte(s+"\n"))
+			dcmd.Log["Stdout"] = updateAndTrim(dcmd.Log["Stdout"], []byte(s+"\n"))
 		}
 	}()
 
@@ -107,14 +106,14 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 		for stderrScanner.Scan() {
 			e := stderrScanner.Text()
 			dcmd.Stderr.WriteString(e + "\n")
-			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], []byte(e+"\n"))
+			dcmd.Log["Stderr"] = updateAndTrim(dcmd.Log["Stderr"], []byte(e+"\n"))
 		}
 	}()
 
 	return &dcmd, nil
 }
 
-func UpdateAndTrim(l []byte, v []byte) []byte {
+func updateAndTrim(l []byte, v []byte) []byte {
 	// 10 KB max stored
 	max := 10000
 	l = append(l[:], v[:]...)
@@ -127,7 +126,8 @@ func UpdateAndTrim(l []byte, v []byte) []byte {
 func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
 	log.Printf("Fetching container metadata")
 	deng := SetupDockerClient()
-
+	// close the docker client connection
+	defer deng.client.Close()
 	// Set timeout
 	timeout := time.After(time.Second * 10)
 
@@ -139,8 +139,6 @@ func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
 		default:
 			switch {
 			case err == nil && metadata.State.Running == true:
-				// close the docker client connection
-				deng.client.Close()
 				return &metadata, err
 			}
 		}
@@ -149,22 +147,18 @@ func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
 
 func (dcmd DockerCmd) StopContainer() error {
 	log.Printf("Stoping container %s", dcmd.ContainerName)
-	deng := SetupDockerClient()
+	dclient := setupDockerClient()
+	// close the docker client connection
+	defer dclient.Close()
 	// Set timeout
 	timeout := time.Second * 10
 	// Issue stop call
-	err := deng.client.ContainerStop(context.Background(), dcmd.ContainerName, &timeout)
-	// close the docker client connection
-	deng.client.Close()
+	err := dclient.ContainerStop(context.Background(), dcmd.ContainerName, &timeout)
 	return err
 }
 
-type DockerEngine struct {
-	client *client.Client
-}
-
-func SetupDockerClient() *DockerEngine {
-	client, err := client.NewEnvClient()
+func setupDockerClient() *client.Client {
+	dclient, err := client.NewEnvClient()
 	if err != nil {
 		log.Printf("Docker Error: %v", err)
 		return nil
@@ -174,7 +168,7 @@ func SetupDockerClient() *DockerEngine {
 	// server; if not infer API version from error message and inform the client
 	// to use that version for future communication
 	if os.Getenv("DOCKER_API_VERSION") == "" {
-		_, err := client.ServerVersion(context.Background())
+		_, err := dclient.ServerVersion(context.Background())
 		if err != nil {
 			re := regexp.MustCompile(`([0-9\.]+)`)
 			version := re.FindAllString(err.Error(), -1)
@@ -182,8 +176,8 @@ func SetupDockerClient() *DockerEngine {
 			//   Error getting metadata for container: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
 			log.Printf("DOCKER_API_VERSION: %s", version[1])
 			os.Setenv("DOCKER_API_VERSION", version[1])
-			return SetupDockerClient()
+			return setupDockerClient()
 		}
 	}
-	return &DockerEngine{client: client}
+	return dclient
 }

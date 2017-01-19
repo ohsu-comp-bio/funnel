@@ -107,7 +107,6 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 			} else {
 				out = stat.Log
 			}
-			log.Printf("Log Update: %v", out)
 			dL, _ := proto.Marshal(out)
 			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)
 		}

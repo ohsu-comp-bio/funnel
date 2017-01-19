@@ -31,9 +31,12 @@
 [submodule "src/vendor/github.com/minio/minio-go"]
 	path = src/vendor/github.com/minio/minio-go
 	url = https://github.com/minio/minio-go
-[submodule "src/vendor/github.com/dgrijalva/jwt-go"]
-	path = src/vendor/github.com/dgrijalva/jwt-go
-	url = https://github.com/dgrijalva/jwt-go
-[submodule "src/vendor/github.com/docker"]
-	path = src/vendor/github.com/docker
+[submodule "src/vendor/github.com/rackspace/gophercloud"]
+	path = src/vendor/github.com/rackspace/gophercloud
+	url = https://github.com/rackspace/gophercloud
+[submodule "src/vendor/github.com/mitchellh/mapstructure"]
+	path = src/vendor/github.com/mitchellh/mapstructure
+	url = https://github.com/mitchellh/mapstructure
+[submodule "src/vendor/github.com/docker/docker"]
+	path = src/vendor/github.com/docker/docker
 	url = https://github.com/docker/docker

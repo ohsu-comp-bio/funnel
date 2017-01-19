@@ -92,8 +92,8 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	go func() {
 		for stdoutScanner.Scan() {
 			s := stdoutScanner.Text()
-			dcmd.Stdout.WriteString(s + "/n")
-			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], []byte(s+"/n"))
+			dcmd.Stdout.WriteString(s + "\n")
+			dcmd.Log["Stdout"] = UpdateAndTrim(dcmd.Log["Stdout"], []byte(s+"\n"))
 		}
 	}()
 
@@ -106,8 +106,8 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	go func() {
 		for stderrScanner.Scan() {
 			e := stderrScanner.Text()
-			dcmd.Stderr.WriteString(e + "/n")
-			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], []byte(e+"/n"))
+			dcmd.Stderr.WriteString(e + "\n")
+			dcmd.Log["Stderr"] = UpdateAndTrim(dcmd.Log["Stderr"], []byte(e+"\n"))
 		}
 	}()
 

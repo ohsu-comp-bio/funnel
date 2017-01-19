@@ -73,6 +73,11 @@ func (mapper *FileMapper) AddVolume(source string, mountPoint string) error {
 		// TODO should be read only?
 		Mode: "rw",
 	}
+
+  // Ensure that the volume directory exists on the host
+	perr := ensurePath(hostPath)
+	if perr != nil { return err }
+
 	mapper.Volumes = append(mapper.Volumes, v)
 	return nil
 }
@@ -149,7 +154,10 @@ func (mapper *FileMapper) AddInput(input *pbe.TaskParameter) error {
 	if !mapper.IsInVolume(p) {
 		return fmt.Errorf("Input path is required to be in a volume: %s", input.Path)
 	}
-	ensurePath(p)
+
+	perr := ensurePath(p)
+	if perr != nil { return err }
+
 	// Create a TaskParameter for the input with a path mapped to the host
 	hostIn := proto.Clone(input).(*pbe.TaskParameter)
 	hostIn.Path = p

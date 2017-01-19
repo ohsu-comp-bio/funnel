@@ -48,20 +48,20 @@ message JobResponse {
 }
 
 message UpdateStatusRequest {
-    string id = 1;
-    int64 step = 2;
-    ga4gh_task_exec.State state = 3;
-    ga4gh_task_exec.JobLog log = 4;
-    string worker_id = 5;
+  string id = 1;
+  int64 step = 2;
+  ga4gh_task_exec.State state = 3;
+  ga4gh_task_exec.JobLog log = 4;
+  string worker_id = 5;
 }
 
 message QueuedTaskInfoRequest {
-    int32 max_tasks = 1;
+  int32 max_tasks = 1;
 }
 
 message QueuedTaskInfo {
-    repeated string inputs = 1;
-    ga4gh_task_exec.Resources resources = 2;
+  repeated string inputs = 1;
+  ga4gh_task_exec.Resources resources = 2;
 }
 
 
@@ -74,4 +74,5 @@ service Scheduler {
   rpc GetJobToRun(JobRequest) returns (JobResponse) {};
   rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobID) {};
   rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};
+  rpc GetJobState(ga4gh_task_exec.JobID) returns (ga4gh_task_exec.JobDesc) {};
 }

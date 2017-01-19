@@ -10,5 +10,6 @@ ga4gh_tasks.db
 /buildtools/
 /storage/
 /volumes/
+/tes-work-dir/
 *.sw[op]
 node_modules

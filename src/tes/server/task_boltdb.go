@@ -284,6 +284,8 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 // TODO: documentation
 // Cancel a running task
 func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobID, error) {
+	log.Printf("Cancelling job: %s", taskop.Value)
+
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bQ := tx.Bucket(JobsQueued)
 		bQ.Delete([]byte(taskop.Value))

@@ -6,11 +6,14 @@ import (
 	"log"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"syscall"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
 	pbr "tes/server/proto"
 	"tes/storage"
+	"time"
 )
 
 // Engine is responsible for running a job. This includes downloading inputs,
@@ -63,14 +66,11 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 	sched.SetRunning(ctx, jobR.Job)
 	joberr := eng.runJob(ctx, sched, jobR)
 
-	// Tell the scheduler whether the job failed or completed.
+	// Tell the scheduler if the job failed
 	if joberr != nil {
 		sched.SetFailed(ctx, jobR.Job)
-		//BUG: error status not returned to scheduler
 		log.Printf("Failed to run job: %s", jobR.Job.JobID)
 		log.Printf("%s", joberr)
-	} else {
-		sched.SetComplete(ctx, jobR.Job)
 	}
 	return joberr
 }
@@ -102,19 +102,84 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 
 	// TODO is it possible to allow context.Done() to kill the current step?
 	for stepNum, step := range job.Task.Docker {
-		stepLog, err := eng.runStep(mapper, step)
-
-		if stepLog != nil {
-			// Send the scheduler service a job status update
-			statusReq := &pbr.UpdateStatusRequest{
-				Id:   job.JobID,
-				Step: int64(stepNum),
-				Log:  stepLog,
-			}
-			sched.UpdateJobStatus(ctx, statusReq)
-		}
+		stepID := fmt.Sprintf("%v-%v", job.JobID, stepNum)
+		dcmd, err := eng.setupDockerCmd(mapper, step, stepID)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error setting up docker command: %v", err)
+		}
+		log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
+		// Start task step asynchronously
+		dcmd.Cmd.Start()
+
+		stepLog := &pbe.JobLog{}
+
+		// Open chanel to track async process
+		done := make(chan error, 1)
+		go func() {
+			done <- dcmd.Cmd.Wait()
+		}()
+
+		jobID := &pbe.JobID{
+			Value: job.JobID,
+		}
+
+		// Ticker for polling rate
+		// TODO figure out a reasonable rate
+		tickChan := time.NewTicker(time.Second * 5).C
+	PollLoop:
+		for {
+			select {
+			case cmd_err := <-done:
+				stepLog = eng.finalizeLogs(dcmd, cmd_err)
+				// Send the scheduler service a final job status update that includes
+				// the exit code
+				statusReq := &pbr.UpdateStatusRequest{
+					Id:   job.JobID,
+					Step: int64(stepNum),
+					Log:  stepLog,
+				}
+				sched.UpdateJobStatus(ctx, statusReq)
+
+				if cmd_err != nil {
+					return fmt.Errorf("Docker cmd error: %v", cmd_err)
+				} else {
+					log.Print("Process finished gracefully without error")
+					sched.SetComplete(ctx, job)
+					break PollLoop
+				}
+			case <-tickChan:
+				jobDesc, err := sched.GetJobState(ctx, jobID)
+				if err != nil {
+					return fmt.Errorf("Error trying to get job status: %v", err)
+				}
+				switch jobDesc.State {
+				case pbe.State_Canceled:
+					err := dcmd.StopContainer()
+					if err != nil {
+						return fmt.Errorf("Error trying to stop container: %v", err)
+					} else {
+						log.Print("Successfully canceled job")
+						break PollLoop
+					}
+				case pbe.State_Running:
+					log.Print("Waiting for task to finish...")
+					stepLogUpdate := eng.updateLogs(dcmd)
+					if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
+						log.Print("Updating Job Logs...")
+						// Send the scheduler service a job status update with updates
+						// to stdout and stderr
+						statusReq := &pbr.UpdateStatusRequest{
+							Id:   job.JobID,
+							Step: int64(stepNum),
+							Log:  stepLogUpdate,
+						}
+						sched.UpdateJobStatus(ctx, statusReq)
+					}
+					continue
+				default:
+					return fmt.Errorf("Job improperly acquired status: %v", jobDesc.State)
+				}
+			}
 		}
 	}
 
@@ -197,18 +262,20 @@ func (eng *engine) downloadInputs(mapper *FileMapper, store *storage.Storage) er
 }
 
 // The bulk of job running happens here.
-func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.JobLog, error) {
+func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, id string) (*DockerCmd, error) {
 
-	dcmd := DockerCmd{
-		ImageName: step.ImageName,
-		Cmd:       step.Cmd,
-		Volumes:   mapper.Volumes,
-		Workdir:   step.Workdir,
-		// TODO make this configurable
+	dcmd := &DockerCmd{
+		ImageName:     step.ImageName,
+		CmdString:     step.Cmd,
+		Volumes:       mapper.Volumes,
+		Workdir:       step.Workdir,
+		ContainerName: id,
+		// TODO make RemoveContainer configurable
 		RemoveContainer: true,
 		Stdin:           nil,
 		Stdout:          nil,
 		Stderr:          nil,
+		Log:             map[string][]byte{},
 	}
 
 	// Find the path for job stdin
@@ -217,7 +284,6 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.J
 		if err != nil {
 			return nil, fmt.Errorf("Error setting up job stdin: %s", err)
 		}
-		defer f.Close()
 		dcmd.Stdin = f
 	}
 
@@ -227,7 +293,6 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.J
 		if err != nil {
 			return nil, fmt.Errorf("Error setting up job stdout: %s", err)
 		}
-		defer f.Close()
 		dcmd.Stdout = f
 	}
 
@@ -237,38 +302,36 @@ func (eng *engine) runStep(mapper *FileMapper, step *pbe.DockerExecutor) (*pbe.J
 		if err != nil {
 			return nil, fmt.Errorf("Error setting up job stderr: %s", err)
 		}
-		defer f.Close()
 		dcmd.Stderr = f
 	}
 
-	cmdErr := dcmd.Run()
+	return dcmd.SetupCommand(), nil
+}
+
+func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
+	stepLog := &pbe.JobLog{}
+
+	if len(dcmd.Log["Stdout"]) > 0 {
+		stdoutText := string(dcmd.Log["Stdout"][:])
+		dcmd.Log["Stdout"] = []byte{}
+		stepLog.Stdout = stdoutText
+	}
+
+	if len(dcmd.Log["Stderr"]) > 0 {
+		stderrText := string(dcmd.Log["Stderr"][:])
+		dcmd.Log["Stderr"] = []byte{}
+		stepLog.Stderr = stderrText
+	}
+
+	return stepLog
+}
+
+func (eng *engine) finalizeLogs(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
 	exitCode := getExitCode(cmdErr)
 	log.Printf("Exit code: %d", exitCode)
-
-	// TODO rethink these messages. You probably don't want head().
-	//      you also don't get this until the step is finished,
-	//      when you really want streaming.
-	//
-	// Get the head of the stdout/stderr files, if they exist.
-	stdoutText := ""
-	stderrText := ""
-	if dcmd.Stdout != nil {
-		stdoutText = readFileHead(dcmd.Stdout.Name())
-	}
-	if dcmd.Stderr != nil {
-		stderrText = readFileHead(dcmd.Stderr.Name())
-	}
-
-	steplog := &pbe.JobLog{
-		Stdout:   stdoutText,
-		Stderr:   stderrText,
-		ExitCode: exitCode,
-	}
-
-	if cmdErr != nil {
-		return steplog, cmdErr
-	}
-	return steplog, nil
+	steplog := eng.updateLogs(dcmd)
+	steplog.ExitCode = exitCode
+	return steplog
 }
 
 func (eng *engine) uploadOutputs(mapper *FileMapper, store *storage.Storage) error {

@@ -77,7 +77,7 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 // UpdateJobStatus documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
-	log.Printf("Set job status")
+
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
@@ -85,19 +85,41 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		bw := tx.Bucket(WorkerJobs)
 		bjw := tx.Bucket(JobWorker)
 
+		// max size (bytes) for stderr and stdout streams to keep in db
+		max := 100000
 		if stat.Log != nil {
-			log.Printf("Logging stdout:%s", stat.Log.Stdout)
-			d, _ := proto.Marshal(stat.Log)
-			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), d)
+			o := bL.Get([]byte(fmt.Sprint(stat.Id, stat.Step)))
+			if o != nil {
+				var jlog ga4gh_task_exec.JobLog
+				// max bytes to be stored in the db
+				proto.Unmarshal(o, &jlog)
+				out := &jlog
+				stdout := []byte(out.Stdout + stat.Log.Stdout)
+				stderr := []byte(out.Stderr + stat.Log.Stderr)
+				if len(stdout) > max {
+					stdout = stdout[len(stdout)-max : len(stdout)]
+				}
+				if len(stderr) > max {
+					stderr = stderr[len(stderr)-max : len(stderr)]
+				}
+
+				stat.Log.Stdout = string(stdout)
+				stat.Log.Stderr = string(stderr)
+			}
+			dL, _ := proto.Marshal(stat.Log)
+			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)
 		}
 
 		switch stat.State {
 		case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error:
+			log.Printf("Job status: %v", stat.State)
 			workerID := bjw.Get([]byte(stat.Id))
 			bjw.Delete([]byte(stat.Id))
 			ba.Delete([]byte(stat.Id))
 			bw.Delete([]byte(workerID))
 			bc.Put([]byte(stat.Id), []byte(stat.State.String()))
+		case ga4gh_task_exec.State_Running:
+			log.Printf("Job status: %v", stat.State)
 		}
 		return nil
 	})
@@ -152,4 +174,21 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoReq
 // TODO: documentation
 func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.ServerConfig, error) {
 	return &taskBolt.serverConfig, nil
+}
+
+// GetJobStatus documentation
+// TODO: documentation
+func (taskBolt *TaskBolt) GetJobState(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
+	log.Printf("Getting Task State")
+	var state ga4gh_task_exec.State
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+		//TODO address err
+		state, _ = taskBolt.getJobState(id.Value)
+		return nil
+	})
+	jobDesc := &ga4gh_task_exec.JobDesc{
+		JobID: id.Value,
+		State: state,
+	}
+	return jobDesc, err
 }

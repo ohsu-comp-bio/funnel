@@ -75,7 +75,7 @@ func (mapper *FileMapper) AddVolume(source string, mountPoint string) error {
 	}
 
   // Ensure that the volume directory exists on the host
-	perr := ensurePath(hostPath)
+	perr := ensureDir(hostPath)
 	if perr != nil { return perr }
 
 	mapper.Volumes = append(mapper.Volumes, v)

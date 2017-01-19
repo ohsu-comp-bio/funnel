@@ -39,4 +39,4 @@ class TestTaskREST(SimpleServerTest):
             time.sleep(1)
 
         assert 'logs' in data
-        assert data['logs'][0]['stdout'] == "hello world"
+        assert data['logs'][0]['stdout'] == "hello world\n"

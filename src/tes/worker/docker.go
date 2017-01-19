@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"log"
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
+	pbe "tes/ga4gh"
 	"time"
 )
 
@@ -17,6 +20,7 @@ type DockerCmd struct {
 	CmdString       []string
 	Volumes         []Volume
 	Workdir         string
+	PortBindings    []*pbe.PortMapping
 	ContainerName   string
 	RemoveContainer bool
 	Stdin           *os.File
@@ -33,13 +37,26 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
 }
 
-func (dcmd DockerCmd) SetupCommand() *DockerCmd {
+func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	log.Printf("Docker Volumes: %s", dcmd.Volumes)
 
 	args := []string{"run", "-i"}
 
 	if dcmd.RemoveContainer {
 		args = append(args, "--rm")
+	}
+
+	if dcmd.PortBindings != nil {
+		log.Printf("Docker Port Bindings: %v", dcmd.PortBindings)
+		for i := range dcmd.PortBindings {
+			hostPortNum := int(dcmd.PortBindings[i].HostBinding)
+			if hostPortNum <= 1024 && hostPortNum != 0 {
+				return nil, fmt.Errorf("Error cannot use restricted ports")
+			}
+			hostPort := strconv.Itoa(hostPortNum)
+			containerPort := strconv.Itoa(int(dcmd.PortBindings[i].ContainerPort))
+			args = append(args, "-p", hostPort+":"+containerPort)
+		}
 	}
 
 	if dcmd.ContainerName != "" {
@@ -68,7 +85,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Printf("Error creating StdoutPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StdoutPipe for Cmd", err)
 	}
 
 	stdoutScanner := bufio.NewScanner(stdoutReader)
@@ -82,7 +99,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
-		log.Printf("Error creating StderrPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StderrPipe for Cmd", err)
 	}
 
 	stderrScanner := bufio.NewScanner(stderrReader)
@@ -94,7 +111,7 @@ func (dcmd DockerCmd) SetupCommand() *DockerCmd {
 		}
 	}()
 
-	return &dcmd
+	return &dcmd, nil
 }
 
 func updateAndTrim(l []byte, v []byte) []byte {
@@ -105,6 +122,28 @@ func updateAndTrim(l []byte, v []byte) []byte {
 		return l[len(l)-max : len(l)]
 	}
 	return l
+}
+
+func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
+	log.Printf("Fetching container metadata")
+	dclient := setupDockerClient()
+	// close the docker client connection
+	defer dclient.Close()
+	// Set timeout
+	timeout := time.After(time.Second * 10)
+
+	for {
+		metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
+		select {
+		case <-timeout:
+			return nil, fmt.Errorf("Error getting metadata for container: %s", err)
+		default:
+			switch {
+			case err == nil && metadata.State.Running == true:
+				return &metadata, err
+			}
+		}
+	}
 }
 
 func (dcmd DockerCmd) StopContainer() error {

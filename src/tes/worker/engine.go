@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"syscall"
 	pbe "tes/ga4gh"
@@ -108,16 +110,30 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 			return fmt.Errorf("Error setting up docker command: %v", err)
 		}
 		log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
+
 		// Start task step asynchronously
 		dcmd.Cmd.Start()
 
-		stepLog := &pbe.JobLog{}
+		// Send intial log update with hostIP and portBindings
+		initialLog, err := eng.initializeLogs(dcmd)
+		if err != nil {
+			return fmt.Errorf("Error preparing initial logging information: %v", err)
+		}
+		statusReq := &pbr.UpdateStatusRequest{
+			Id:   job.JobID,
+			Step: int64(stepNum),
+			Log:  initialLog,
+		}
+		sched.UpdateJobStatus(ctx, statusReq)
 
 		// Open chanel to track async process
 		done := make(chan error, 1)
 		go func() {
 			done <- dcmd.Cmd.Wait()
 		}()
+
+		// Initialized to allow for DeepEquals comparison during polling
+		stepLog := &pbe.JobLog{}
 
 		jobID := &pbe.JobID{
 			Value: job.JobID,
@@ -130,18 +146,18 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		for {
 			select {
 			case cmd_err := <-done:
-				stepLog = eng.finalizeLogs(dcmd, cmd_err)
+				stepLogUpdate := eng.finalizeLogs(dcmd, cmd_err)
 				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
 					Id:   job.JobID,
 					Step: int64(stepNum),
-					Log:  stepLog,
+					Log:  stepLogUpdate,
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
 
 				if cmd_err != nil {
-					return fmt.Errorf("Docker cmd error: %v", cmd_err)
+					return fmt.Errorf("Docker command error: %v", cmd_err)
 				} else {
 					log.Print("Process finished gracefully without error")
 					sched.SetComplete(ctx, job)
@@ -269,6 +285,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		CmdString:     step.Cmd,
 		Volumes:       mapper.Volumes,
 		Workdir:       step.Workdir,
+		PortBindings:  step.PortBindings,
 		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,
@@ -305,7 +322,93 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		dcmd.Stderr = f
 	}
 
-	return dcmd.SetupCommand(), nil
+	dcmd, err := dcmd.SetupCommand()
+	if err != nil {
+		return nil, fmt.Errorf("Error setting up job command: %s", err)
+	}
+
+	return dcmd, nil
+}
+
+func externalIP() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 {
+			continue // interface down
+
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue // loopback interface
+
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return "", err
+
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue // not an ipv4 address
+			}
+			return ip.String(), nil
+		}
+	}
+	return "", fmt.Errorf("Error no network connection")
+}
+
+func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
+
+	// get container metadata and update jobLog
+	metadata, err := dcmd.InspectContainer()
+	if err != nil {
+		return nil, err
+	}
+	var portMap []*pbe.PortMapping
+	ip, err := externalIP()
+	if err != nil {
+		return nil, err
+	}
+	// extract exposed host port from
+	// https://godoc.org/github.com/docker/go-connections/nat#PortMap
+	for k, v := range metadata.NetworkSettings.Ports {
+		// will end up taking the last binding listed
+		for i := range v {
+			p := strings.Split(string(k), "/")
+			containerPort, err := strconv.Atoi(p[0])
+			if err != nil {
+				return nil, err
+			}
+			hostPort, err := strconv.Atoi(v[i].HostPort)
+			if err != nil {
+				return nil, err
+			}
+			portMap = append(portMap, &pbe.PortMapping{
+				ContainerPort: int32(containerPort),
+				HostBinding:   int32(hostPort),
+			})
+		}
+	}
+
+	stepLog := &pbe.JobLog{
+		HostIP:       ip,
+		PortBindings: portMap,
+	}
+
+	return stepLog, nil
 }
 
 func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {

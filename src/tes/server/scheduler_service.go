@@ -77,7 +77,6 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 // UpdateJobStatus documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
-
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
@@ -88,12 +87,13 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		// max size (bytes) for stderr and stdout streams to keep in db
 		max := 100000
 		if stat.Log != nil {
+			out := &ga4gh_task_exec.JobLog{}
 			o := bL.Get([]byte(fmt.Sprint(stat.Id, stat.Step)))
 			if o != nil {
 				var jlog ga4gh_task_exec.JobLog
 				// max bytes to be stored in the db
 				proto.Unmarshal(o, &jlog)
-				out := &jlog
+				out = &jlog
 				stdout := []byte(out.Stdout + stat.Log.Stdout)
 				stderr := []byte(out.Stderr + stat.Log.Stderr)
 				if len(stdout) > max {
@@ -102,11 +102,12 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 				if len(stderr) > max {
 					stderr = stderr[len(stderr)-max : len(stderr)]
 				}
-
-				stat.Log.Stdout = string(stdout)
-				stat.Log.Stderr = string(stderr)
+				out.Stdout = string(stdout)
+				out.Stderr = string(stderr)
+			} else {
+				out = stat.Log
 			}
-			dL, _ := proto.Marshal(stat.Log)
+			dL, _ := proto.Marshal(out)
 			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)
 		}
 

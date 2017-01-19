@@ -1,11 +1,29 @@
-<h2>Tasks</h2>
-<div id="task_list" ng-controller="JobListController">
-    <table ng-repeat="item in jobs" content="item" width="100%">
-        <col width="20%">
-        <col width="33%">
+<div ng-controller="JobListController" class="job-list-page">
+  <div class="board">
+
+    <h4>Jobs</h4>
+
+    <table class="job-list-table">
+      <thead>
         <tr>
-            <td><a href="#/jobs/{{item.jobs.jobID}}">{{item.jobs.jobID}}</a></td>
-            <td>{{item.jobs.state}}</td>
+          <th>ID</th>
+          <th>State</th>
+          <th>Name</th>
+          <th>Description</th>
         </tr>
+      </thead>
+
+      <tbody>
+        <tr ng-repeat="job in jobs"> 
+          <td>
+            <a href="#/jobs/{{job.jobID}}">{{ shortID(job.jobID) }}</a>
+          </td>
+          <td>{{job.state}}</td>
+          <td>{{job.task.name}}</td>
+          <td>{{job.task.description}}</td>
+        </tr>
+      </tbody>
     </table>
+
+  </div>
 </div>

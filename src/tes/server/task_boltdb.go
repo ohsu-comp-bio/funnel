@@ -119,6 +119,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 	log.Println("Receiving Task for Queue", task)
 
 	jobID, _ := uuid.NewV4()
+	log.Printf("Assigning job ID, %s", jobID)
 
 	if len(task.Docker) == 0 {
 		return nil, fmt.Errorf("No docker commands found")
@@ -242,27 +243,37 @@ func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID)
 // ListJobs returns a list of jobIDs
 func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListRequest) (*ga4gh_task_exec.JobListResponse, error) {
 	log.Printf("Getting Task List")
-	ch := make(chan ga4gh_task_exec.JobDesc, 1)
-	go taskBolt.db.View(func(tx *bolt.Tx) error {
+
+	jobs := make([]*ga4gh_task_exec.JobDesc, 0, 10)
+
+	taskBolt.db.View(func(tx *bolt.Tx) error {
 		taskopB := tx.Bucket(TaskBucket)
 		c := taskopB.Cursor()
 		log.Println("Scanning")
-		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
 			jobID := string(k)
 			jobState, _ := taskBolt.getJobState(jobID)
-			ch <- ga4gh_task_exec.JobDesc{JobID: jobID, State: jobState}
+
+			task := &ga4gh_task_exec.Task{}
+			proto.Unmarshal(v, task)
+
+			job := &ga4gh_task_exec.JobDesc{
+				JobID: jobID,
+				State: jobState,
+				Task: &ga4gh_task_exec.TaskDesc{
+					Name:        task.Name,
+					ProjectID:   task.ProjectID,
+					Description: task.Description,
+				},
+			}
+			jobs = append(jobs, job)
 		}
-		close(ch)
 		return nil
 	})
 
-	jobDescArray := make([]*ga4gh_task_exec.JobDesc, 0, 10)
-	for t := range ch {
-		jobDescArray = append(jobDescArray, &t)
-	}
-
 	out := ga4gh_task_exec.JobListResponse{
-		Jobs: jobDescArray,
+		Jobs: jobs,
 	}
 
 	log.Println("Returning", out)

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"log"
 	"os"
@@ -125,14 +126,14 @@ func updateAndTrim(l []byte, v []byte) []byte {
 
 func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
 	log.Printf("Fetching container metadata")
-	deng := SetupDockerClient()
+	dclient := setupDockerClient()
 	// close the docker client connection
-	defer deng.client.Close()
+	defer dclient.Close()
 	// Set timeout
 	timeout := time.After(time.Second * 10)
 
 	for {
-		metadata, err := deng.client.ContainerInspect(context.Background(), dcmd.ContainerName)
+		metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
 		select {
 		case <-timeout:
 			return nil, fmt.Errorf("Error getting metadata for container: %s", err)

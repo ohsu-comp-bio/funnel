@@ -6,15 +6,13 @@ import time
 import urllib
 import json
 
-from common_test_util import ServerTest, get_abspath
+from common_test_util import SimpleServerTest, get_abspath
 
-class TestFileOP(ServerTest):
-
+class TestFileOP(SimpleServerTest):
 
     def test_file_mount(self):
         
-        in_loc = self.copy_to_storage( get_abspath("test_data.1") )
-        out_loc = "test_data.out"
+        self.copy_to_storage( get_abspath("test_data.1") )
 
         task = {
             "name" : "TestMD5",
@@ -24,14 +22,14 @@ class TestFileOP(ServerTest):
                 {
                     "name" : "infile",
                     "description" : "File to be MD5ed",
-                    "location" : in_loc,
+                    "location" : 'file://' + self.storage_path('test_data.1'),
                     "class" : "File",
                     "path" : "/tmp/test_file"
                 }
             ],
             "outputs" : [
                 {
-                    "location" : out_loc,
+                    "location" : 'file://' + self.storage_path('test_data.out'),
                     "class" : "File",
                     "path" : "/tmp/test_out"
                 }
@@ -65,7 +63,7 @@ class TestFileOP(ServerTest):
             time.sleep(1)
         print data
         
-        path = self.get_from_storage(out_loc)
+        path = self.get_from_storage('test_data.out')
         with open(path) as handle:
             t = handle.read()
             i = t.split()

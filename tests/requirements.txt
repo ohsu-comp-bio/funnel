@@ -1,0 +1,7 @@
+certifi==2015.4.28
+minio==2.0.4
+nose==1.3.7
+PyJWT==1.4.2
+pytz==2016.10
+urllib3==1.19.1
+PyYAML==3.12

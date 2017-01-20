@@ -1,0 +1,21 @@
+server_address: localhost:9090
+db_path: tes_task.db
+Storage:
+  - Protocol:
+    S3:
+      Endpoint: 127.0.0.1:9000
+  - Protocol:
+    Local:
+      AllowedDirs:
+      - /mnt/nfs_share
+Schedulers:
+  Local:
+    NumWorkers: 4
+  Openstack:
+    KeyPair: Buchanan
+    Server:
+      Name: tes-openstack-autoscaler
+      FlavorName: m1.medium
+      ImageName: tes-worker-snapshot
+      Networks:
+        - UUID: 7140e77a-b8c5-4fe8-b942-b11c2af250fb

@@ -50,6 +50,6 @@ func (ga4ghServer *GA4GHServer) Start(hostPort string) {
 		ga4gh_task_ref.RegisterSchedulerServer(grpcServer, ga4ghServer.sched)
 	}
 
-	log.Println("Starting RPC Server on " + hostPort)
+	log.Println("TCP+RPC server listening on " + hostPort)
 	go grpcServer.Serve(lis)
 }

@@ -1,13 +1,17 @@
-app = angular.module('TESApp', ['ngRoute'])
+"use strict";
+var app = angular.module('TESApp', ['ngRoute'])
+
+function shortID(longID) {
+  return longID.split('-')[0];
+}
 
 app.controller('JobListController', function($scope, $http) {
-		"use strict";
 
-		$scope.url = "/v1/jobs";
-		$scope.tasks = [];
+		$scope.jobs = [];
+    $scope.shortID = shortID;
 
 		$scope.fetchContent = function() {
-			$http.get($scope.url).then(function(result){
+			$http.get("/v1/jobs").then(function(result){
 				$scope.jobs = result.data.jobs;
 			});
 		}
@@ -16,7 +20,6 @@ app.controller('JobListController', function($scope, $http) {
 });
 
 app.controller('WorkerListController', function($scope, $http) {
-		"use strict";
 
 		$scope.url = "/v1/jobs-service";
 		$scope.workers = [];
@@ -34,10 +37,14 @@ app.controller('JobInfoController',
     function($scope, $http, $routeParams) {
         $scope.url = "/v1/jobs/" + $routeParams.job_id
 
-        $scope.job_info = {};
+        $scope.job = {};
+        $scope.cmdStr = function(cmd) {
+            return cmd.join(' ');
+        };
         $scope.fetchContent = function() {
             $http.get($scope.url).then(function(result){
-                $scope.job_info = result.data
+            console.log(result.data);
+                $scope.job = result.data
             })
         }
         $scope.fetchContent();
@@ -50,7 +57,7 @@ app.config(['$routeProvider',
            templateUrl: 'static/list.html',
         }).
         when('/jobs/:job_id', {
-           templateUrl: 'static/jobs.html'
+           templateUrl: 'static/job.html'
         })
     }
 ]);

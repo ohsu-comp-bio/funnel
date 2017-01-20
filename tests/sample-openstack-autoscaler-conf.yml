@@ -1,0 +1,8 @@
+MasterAddr: 10.50.50.123:9090
+KeyPair: Buchanan
+Server:
+  Name: tes-openstack-autoscaler
+  FlavorName: m1.medium
+  ImageName: tes-worker-snapshot
+  Networks:
+    - UUID: 7140e77a-b8c5-4fe8-b942-b11c2af250fb

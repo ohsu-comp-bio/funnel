@@ -7,5 +7,9 @@ ga4gh_tasks.db
 /src/github.com/
 /src/golang.org/
 /src/google.golang.org/
+/buildtools/
 /storage/
 /volumes/
+/tes-work-dir/
+*.sw[op]
+node_modules

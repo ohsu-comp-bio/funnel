@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"strconv"
 	"strings"
 	"syscall"
 	pbe "tes/ga4gh"
@@ -120,17 +119,9 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		}()
 
 		// Open channel to track container initialization
-		type initLog struct {
-			Log *pbe.JobLog
-			Err error
-		}
-		init_log := make(chan initLog, 1)
+		metaCh := make(chan []*pbe.PortMapping, 1)
 		go func() {
-			log, err := eng.initializeLogs(dcmd)
-			init := new(initLog)
-			init.Log = log
-			init.Err = err
-			init_log <- *init
+			metaCh <- dcmd.InspectContainer(ctx)
 		}()
 
 		// Initialized to allow for DeepEquals comparison during polling
@@ -146,15 +137,21 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	PollLoop:
 		for {
 			select {
-			case initLog := <-init_log:
-				// Send intial log update with hostIP and portBindings
-				if initLog.Err != nil {
-					return fmt.Errorf("Error preparing initial logging information: %v", err)
+			case portMap := <-metaCh:
+				ip, err := externalIP()
+				if err != nil {
+					return err
 				}
+
+				initLog := &pbe.JobLog{
+					HostIP:       ip,
+					PortBindings: portMap,
+				}
+
 				statusReq := &pbr.UpdateStatusRequest{
 					Id:   job.JobID,
 					Step: int64(stepNum),
-					Log:  initLog.Log,
+					Log:  initLog,
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
 				sched.SetRunning(ctx, job)
@@ -381,47 +378,6 @@ func externalIP() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("Error no network connection")
-}
-
-func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
-
-	// get container metadata and update jobLog
-	metadata, err := dcmd.InspectContainer()
-	if err != nil {
-		return nil, err
-	}
-	var portMap []*pbe.PortMapping
-	ip, err := externalIP()
-	if err != nil {
-		return nil, err
-	}
-	// extract exposed host port from
-	// https://godoc.org/github.com/docker/go-connections/nat#PortMap
-	for k, v := range metadata.NetworkSettings.Ports {
-		// will end up taking the last binding listed
-		for i := range v {
-			p := strings.Split(string(k), "/")
-			containerPort, err := strconv.Atoi(p[0])
-			if err != nil {
-				return nil, err
-			}
-			hostPort, err := strconv.Atoi(v[i].HostPort)
-			if err != nil {
-				return nil, err
-			}
-			portMap = append(portMap, &pbe.PortMapping{
-				ContainerPort: int32(containerPort),
-				HostBinding:   int32(hostPort),
-			})
-		}
-	}
-
-	stepLog := &pbe.JobLog{
-		HostIP:       ip,
-		PortBindings: portMap,
-	}
-
-	return stepLog, nil
 }
 
 func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {

@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	pbe "tes/ga4gh"
 	"time"
 )
@@ -124,17 +124,43 @@ func updateAndTrim(l []byte, v []byte) []byte {
 	return l
 }
 
-func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
+func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.PortMapping {
 	log.Printf("Fetching container metadata")
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()
 	for {
-		metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
-		if err == nil && metadata.State.Running == true {
-			return &metadata, err
-		} else {
-			continue
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
+			if err == nil && metadata.State.Running == true {
+				var portMap []*pbe.PortMapping
+				// extract exposed host port from
+				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
+				for k, v := range metadata.NetworkSettings.Ports {
+					// will end up taking the last binding listed
+					for i := range v {
+						p := strings.Split(string(k), "/")
+						containerPort, err := strconv.Atoi(p[0])
+						//TODO handle errors
+						if err != nil {
+							return nil
+						}
+						hostPort, err := strconv.Atoi(v[i].HostPort)
+						//TODO handle errors
+						if err != nil {
+							return nil
+						}
+						portMap = append(portMap, &pbe.PortMapping{
+							ContainerPort: int32(containerPort),
+							HostBinding:   int32(hostPort),
+						})
+					}
+				}
+				return portMap
+			}
 		}
 	}
 }

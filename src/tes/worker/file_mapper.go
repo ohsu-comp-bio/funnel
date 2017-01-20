@@ -74,9 +74,11 @@ func (mapper *FileMapper) AddVolume(source string, mountPoint string) error {
 		Mode: "rw",
 	}
 
-  // Ensure that the volume directory exists on the host
+	// Ensure that the volume directory exists on the host
 	perr := ensureDir(hostPath)
-	if perr != nil { return perr }
+	if perr != nil {
+		return perr
+	}
 
 	mapper.Volumes = append(mapper.Volumes, v)
 	return nil
@@ -156,7 +158,9 @@ func (mapper *FileMapper) AddInput(input *pbe.TaskParameter) error {
 	}
 
 	perr := ensurePath(p)
-	if perr != nil { return perr }
+	if perr != nil {
+		return perr
+	}
 
 	// Create a TaskParameter for the input with a path mapped to the host
 	hostIn := proto.Clone(input).(*pbe.TaskParameter)

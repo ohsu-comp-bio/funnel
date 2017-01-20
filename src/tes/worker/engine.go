@@ -64,10 +64,9 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 		return schederr
 	}
 
-	// Tell the scheduler the job is running.
-	sched.SetRunning(ctx, jobR.Job)
+	// Tell the scheduler the job is initializing.
+	sched.SetInitializing(ctx, jobR.Job)
 	joberr := eng.runJob(ctx, sched, jobR)
-
 	// Tell the scheduler if the job failed
 	if joberr != nil {
 		sched.SetFailed(ctx, jobR.Job)
@@ -114,22 +113,24 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		// Start task step asynchronously
 		dcmd.Cmd.Start()
 
-		// Send intial log update with hostIP and portBindings
-		initialLog, err := eng.initializeLogs(dcmd)
-		if err != nil {
-			return fmt.Errorf("Error preparing initial logging information: %v", err)
-		}
-		statusReq := &pbr.UpdateStatusRequest{
-			Id:   job.JobID,
-			Step: int64(stepNum),
-			Log:  initialLog,
-		}
-		sched.UpdateJobStatus(ctx, statusReq)
-
-		// Open chanel to track async process
+		// Open channel to track async process
 		done := make(chan error, 1)
 		go func() {
 			done <- dcmd.Cmd.Wait()
+		}()
+
+		// Open channel to track container initialization
+		type initLog struct {
+			Log *pbe.JobLog
+			Err error
+		}
+		init_log := make(chan initLog, 1)
+		go func() {
+			log, err := eng.initializeLogs(dcmd)
+			init := new(initLog)
+			init.Log = log
+			init.Err = err
+			init_log <- *init
 		}()
 
 		// Initialized to allow for DeepEquals comparison during polling
@@ -145,6 +146,18 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	PollLoop:
 		for {
 			select {
+			case initLog := <-init_log:
+				// Send intial log update with hostIP and portBindings
+				if initLog.Err != nil {
+					return fmt.Errorf("Error preparing initial logging information: %v", err)
+				}
+				statusReq := &pbr.UpdateStatusRequest{
+					Id:   job.JobID,
+					Step: int64(stepNum),
+					Log:  initLog.Log,
+				}
+				sched.UpdateJobStatus(ctx, statusReq)
+				sched.SetRunning(ctx, job)
 			case cmd_err := <-done:
 				stepLogUpdate := eng.finalizeLogs(dcmd, cmd_err)
 				// Send the scheduler service a final job status update that includes

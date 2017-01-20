@@ -129,19 +129,12 @@ func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()
-	// Set timeout
-	timeout := time.After(time.Second * 10)
-
 	for {
 		metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
-		select {
-		case <-timeout:
-			return nil, fmt.Errorf("Error getting metadata for container: %s", err)
-		default:
-			switch {
-			case err == nil && metadata.State.Running == true:
-				return &metadata, err
-			}
+		if err == nil && metadata.State.Running == true {
+			return &metadata, err
+		} else {
+			continue
 		}
 	}
 }

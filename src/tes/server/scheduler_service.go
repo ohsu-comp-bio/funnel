@@ -1,6 +1,7 @@
+package server
+
 // TODO put the boltdb implementation in a separate package
 //      so that users can import pluggable backends
-package tes_server
 
 import (
 	"fmt"
@@ -12,8 +13,9 @@ import (
 	"tes/server/proto"
 )
 
-// GetJobToRun documentation
-// TODO: documentation
+// GetJobToRun returns a queued job for a worker to run.
+// This is an RPC endpoint.
+// This is used by workers to request work.
 func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
 	var task *ga4gh_task_exec.Task
 	var jobID string
@@ -54,6 +56,8 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 	return &ga4gh_task_ref.JobResponse{Job: job, Auth: authToken}, nil
 }
 
+// AssignJob assigns a job to a worker.
+// This is NOT an RPC endpoint.
 func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 	running := []byte(ga4gh_task_exec.State_Running.String())
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -74,8 +78,9 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 	return nil
 }
 
-// UpdateJobStatus documentation
-// TODO: documentation
+// UpdateJobStatus updates the status of a job, including state and logs.
+// This is an RPC endpoint.
+// This is used by workers to communicate job updates to the server.
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
@@ -127,15 +132,18 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 	return &ga4gh_task_exec.JobID{Value: stat.Id}, nil
 }
 
-// WorkerPing documentation
-// TODO: documentation
+// WorkerPing tells the server that a worker is alive.
+// This is an RPC endpoint.
+// This is currently unimplemented. TODO
 func (taskBolt *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.WorkerInfo, error) {
 	log.Printf("Worker Ping")
 	return info, nil
 }
 
-// GetQueueInfo documentation
-// TODO: documentation
+// GetQueueInfo returns a stream of queue info
+// This is an RPC endpoint.
+// TODO why doesn't this take Context as the first argument?
+// TODO I don't think this is actually used.
 func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoRequest, server ga4gh_task_ref.Scheduler_GetQueueInfoServer) error {
 	ch := make(chan *ga4gh_task_exec.Task)
 	log.Printf("Getting queue info")
@@ -171,14 +179,14 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoReq
 	return nil
 }
 
-// GetServiceInfo documentation
-// TODO: documentation
+// GetServerConfig returns information about the server configuration.
+// This is an RPC endpoint.
 func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.ServerConfig, error) {
 	return &taskBolt.serverConfig, nil
 }
 
-// GetJobStatus documentation
-// TODO: documentation
+// GetJobState returns the state of a job, given a job ID.
+// This is an RPC endpoint.
 func (taskBolt *TaskBolt) GetJobState(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
 	log.Printf("Getting Task State")
 	var state ga4gh_task_exec.State

@@ -2,10 +2,22 @@ package slot
 
 import "time"
 
-// IdleTimer provides a helper for managing the Pool's idle timeout.
-// The timer will write a value to the Done channel when the idle duration has elapsed.
+// IdleTimeout provides a helper for managing the Pool's idle timeout.
+// Start() and Stop() are used to control the timer, and Done() is used to
+// detect when the timeout has been reached.
 //
-// See Pool.Start() in pool.go for an example.
+//     in := make(chan int)
+//     requestInput(in)
+//     t := IdleTimeoutAfter(time.Second * 10)
+//     for {
+//       select {
+//       case <-t.Done():
+//         // ... code to respond to timeout
+//       case <-in:
+//         // Reset the timeout.
+//         t.Start()
+//       }
+//    }
 type IdleTimeout interface {
 	Done() <-chan time.Time
 	Start()
@@ -37,6 +49,15 @@ type timerTimeout struct {
 	started bool
 }
 
+// Done returns a channel which can be used to wait for the timeout.
+//
+//     t := IdleTimeoutAfter(time.Second * 10)
+//     for {
+//       select {
+//       case <-t.Done():
+//         // ... code to respond to timeout
+//       }
+//    }
 func (t *timerTimeout) Done() <-chan time.Time {
 	if t.timer != nil {
 		return t.timer.C
@@ -44,6 +65,7 @@ func (t *timerTimeout) Done() <-chan time.Time {
 	return nil
 }
 
+// Start resets and starts the timer.
 func (t *timerTimeout) Start() {
 	if !t.started {
 		t.timer = time.NewTimer(t.timeout)
@@ -51,6 +73,7 @@ func (t *timerTimeout) Start() {
 	}
 }
 
+// Stop stops the idle timer and cleans up resources.
 func (t *timerTimeout) Stop() {
 	if !t.started {
 		return
@@ -62,10 +85,14 @@ func (t *timerTimeout) Stop() {
 	t.started = false
 }
 
+// IdleTimeoutAfter is a helper that returns a new IdleTimeout configured
+// for the given duration.
 func IdleTimeoutAfter(d time.Duration) IdleTimeout {
 	return &timerTimeout{d, nil, false}
 }
 
+// IdleTimeoutAfterSeconds is a helper that returns a new IdleTimeout
+// configured for the given number of seconds.
 func IdleTimeoutAfterSeconds(sec int) IdleTimeout {
 	return IdleTimeoutAfter(time.Duration(sec) * time.Second)
 }

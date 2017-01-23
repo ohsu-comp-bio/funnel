@@ -7,6 +7,13 @@ import (
 	sched "tes/scheduler"
 )
 
+// Scheduler extends the core Scheduler interface with additional methods for tracking
+// a count of available workers.
+//
+// TODO this is a bad name and interface.
+// EXPERIMENTAL: I (buchanae) wrote this while exploring the Scheduler interfaces
+// and how they might be composable. This is probably incorrect and poorly named,
+// and ResourcePool might be a better name.
 type Scheduler interface {
 	sched.Scheduler
 	Available() int
@@ -14,6 +21,7 @@ type Scheduler interface {
 	DecrementAvailable()
 }
 
+// NewScheduler returns a new dumb Scheduler instance.
 func NewScheduler(workers int) Scheduler {
 	return &scheduler{int32(workers)}
 }
@@ -27,20 +35,24 @@ type scheduler struct {
 	available int32
 }
 
+// Available returns an integer describing how many worker slots are available.
 // TODO in a smarter scheduler, these would be replaced by the "pool"
 func (s *scheduler) Available() int {
 	avail := atomic.LoadInt32(&s.available)
 	return int(avail)
 }
 
+// IncrementAvailable increments the number of available worker slots.
 func (s *scheduler) IncrementAvailable() {
 	atomic.AddInt32(&s.available, 1)
 }
 
+// DecrementAvailable decrements the number of available worker slots.
 func (s *scheduler) DecrementAvailable() {
 	atomic.AddInt32(&s.available, -1)
 }
 
+// Schedule schedules a job and returns a corresponding Offer.
 // TODO in a smarter scheduler, this would handle the tricky parts of scheduling:
 //      matching a task to the best node
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
@@ -56,15 +68,14 @@ func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Printf("Available: %d", avail)
 	if avail == 0 {
 		return sched.RejectedOffer("Pool is full")
-	} else {
-		w := sched.Worker{
-			ID: sched.GenWorkerID(),
-			Resources: sched.Resources{
-				CPU:  1,
-				RAM:  1.0,
-				Disk: 10.0,
-			},
-		}
-		return sched.NewOffer(j, w)
 	}
+	w := sched.Worker{
+		ID: sched.GenWorkerID(),
+		Resources: sched.Resources{
+			CPU:  1,
+			RAM:  1.0,
+			Disk: 10.0,
+		},
+	}
+	return sched.NewOffer(j, w)
 }

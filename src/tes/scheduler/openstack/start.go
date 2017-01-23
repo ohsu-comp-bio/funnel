@@ -50,7 +50,7 @@ func (s *scheduler) start(workerID string) {
 
 	osconf := s.conf.Schedulers.Openstack
 	_, serr := servers.Create(client, keypairs.CreateOptsExt{
-		servers.CreateOpts{
+		CreateOptsBuilder: servers.CreateOpts{
 			Name:       osconf.Server.Name,
 			FlavorName: osconf.Server.FlavorName,
 			ImageName:  osconf.Server.ImageName,
@@ -67,7 +67,7 @@ func (s *scheduler) start(workerID string) {
 			// This will be run when the VM instance boots.
 			UserData: []byte(startScript),
 		},
-		osconf.KeyPair,
+		KeyName: osconf.KeyPair,
 	}).Extract()
 
 	if serr != nil {

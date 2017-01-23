@@ -19,7 +19,7 @@ type Client struct {
 // NewClient returns a new Client instance connected to the
 // scheduler at a given address (e.g. "localhost:9090")
 func NewClient(address string) (*Client, error) {
-	conn, err := NewRpcConnection(address)
+	conn, err := NewRPCConnection(address)
 	if err != nil {
 		log.Printf("Error connecting to scheduler: %s", err)
 		return nil, err
@@ -29,11 +29,13 @@ func NewClient(address string) (*Client, error) {
 	return &Client{s, conn}, nil
 }
 
-// Close the client connection.
+// Close closes the client connection.
 func (client *Client) Close() {
 	client.conn.Close()
 }
 
+// SetRunning sends an UpdateJobStatus request to the scheduler,
+// setting the job state to Running.
 func (client *Client) SetRunning(ctx context.Context, job *pbe.Job) {
 	// Notify the scheduler that the job is running
 	client.UpdateJobStatus(ctx,
@@ -41,6 +43,8 @@ func (client *Client) SetRunning(ctx context.Context, job *pbe.Job) {
 			Id: job.JobID, State: pbe.State_Running})
 }
 
+// SetFailed sends an UpdateJobStatus request to the scheduler,
+// setting the job state to Failed.
 func (client *Client) SetFailed(ctx context.Context, job *pbe.Job) {
 	// Notify the scheduler that the job failed
 	client.UpdateJobStatus(ctx,
@@ -48,6 +52,8 @@ func (client *Client) SetFailed(ctx context.Context, job *pbe.Job) {
 			Id: job.JobID, State: pbe.State_Error})
 }
 
+// SetComplete sends an UpdateJobStatus request to the scheduler,
+// setting the job state to Complete.
 func (client *Client) SetComplete(ctx context.Context, job *pbe.Job) {
 	// Notify the scheduler that the job is complete
 	client.UpdateJobStatus(ctx,
@@ -55,6 +61,7 @@ func (client *Client) SetComplete(ctx context.Context, job *pbe.Job) {
 			Id: job.JobID, State: pbe.State_Complete})
 }
 
+// PollForJob polls the scheduler for a job assigned to the given worker ID.
 func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobResponse {
 	// Hard-coding this sleep time because I don't see a need for configuration,
 	// but it's easy enough to change that.
@@ -82,7 +89,7 @@ func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobR
 	}
 }
 
-// requestJob asks the scheduler service for a job. If no job is available, return nil.
+// RequestJob asks the scheduler service for a job. If no job is available, return nil.
 func (client *Client) RequestJob(ctx context.Context, workerID string) *pbr.JobResponse {
 	hostname, _ := os.Hostname()
 	// Ask the scheduler for a task.

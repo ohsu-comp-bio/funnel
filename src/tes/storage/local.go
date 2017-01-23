@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Protocol defines the expected prefix of URI matching this storage system.
+// LocalProtocol defines the expected prefix of URL matching this storage system.
 // e.g. "file:///path/to/file" matches the Local storage system.
 const LocalProtocol = "file://"
 
@@ -64,8 +64,9 @@ func (local *LocalBackend) Put(url string, hostPath string, class string) error 
 	return nil
 }
 
-// Determines whether this backend matches the given url
-func (s *LocalBackend) Supports(url string, hostPath string, class string) bool {
+// Supports indicates whether this backend supports the given storage request.
+// For the LocalBackend, the url must start with "file://"
+func (local *LocalBackend) Supports(url string, hostPath string, class string) bool {
 	return strings.HasPrefix(url, LocalProtocol)
 }
 

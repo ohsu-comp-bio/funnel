@@ -145,8 +145,8 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	PollLoop:
 		for {
 			select {
-			case cmd_err := <-done:
-				stepLogUpdate := eng.finalizeLogs(dcmd, cmd_err)
+			case cmdErr := <-done:
+				stepLogUpdate := eng.finalizeLogs(dcmd, cmdErr)
 				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
@@ -156,27 +156,27 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
 
-				if cmd_err != nil {
-					return fmt.Errorf("Docker command error: %v", cmd_err)
-				} else {
-					log.Print("Process finished gracefully without error")
-					sched.SetComplete(ctx, job)
-					break PollLoop
+				if cmdErr != nil {
+					return fmt.Errorf("Docker command error: %v", cmdErr)
 				}
+				log.Println("Process finished gracefully without error")
+				sched.SetComplete(ctx, job)
+				break PollLoop
+
 			case <-tickChan:
 				jobDesc, err := sched.GetJobState(ctx, jobID)
 				if err != nil {
 					return fmt.Errorf("Error trying to get job status: %v", err)
 				}
+
 				switch jobDesc.State {
 				case pbe.State_Canceled:
 					err := dcmd.StopContainer()
 					if err != nil {
 						return fmt.Errorf("Error trying to stop container: %v", err)
-					} else {
-						log.Print("Successfully canceled job")
-						break PollLoop
 					}
+					log.Println("Successfully canceled job")
+					break PollLoop
 				case pbe.State_Running:
 					log.Print("Waiting for task to finish...")
 					stepLogUpdate := eng.updateLogs(dcmd)

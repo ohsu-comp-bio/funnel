@@ -1,4 +1,4 @@
-package tes_server
+package server
 
 import (
 	"google.golang.org/grpc"

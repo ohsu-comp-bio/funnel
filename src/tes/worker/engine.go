@@ -119,7 +119,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		}()
 
 		// Open channel to track container initialization
-		metaCh := make(chan []*pbe.PortMapping, 1)
+		metaCh := make(chan []*pbe.Ports, 1)
 		go func() {
 			metaCh <- dcmd.InspectContainer(ctx)
 		}()
@@ -144,8 +144,8 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				}
 
 				initLog := &pbe.JobLog{
-					HostIP:       ip,
-					PortBindings: portMap,
+					HostIP: ip,
+					Ports:  portMap,
 				}
 
 				statusReq := &pbr.UpdateStatusRequest{
@@ -295,7 +295,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		CmdString:     step.Cmd,
 		Volumes:       mapper.Volumes,
 		Workdir:       step.Workdir,
-		PortBindings:  step.PortBindings,
+		Ports:         step.Ports,
 		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,

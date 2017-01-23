@@ -20,7 +20,7 @@ type DockerCmd struct {
 	CmdString       []string
 	Volumes         []Volume
 	Workdir         string
-	PortBindings    []*pbe.PortMapping
+	Ports           []*pbe.Ports
 	ContainerName   string
 	RemoveContainer bool
 	Stdin           *os.File
@@ -46,15 +46,15 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.PortBindings != nil {
-		log.Printf("Docker Port Bindings: %v", dcmd.PortBindings)
-		for i := range dcmd.PortBindings {
-			hostPortNum := int(dcmd.PortBindings[i].HostBinding)
+	if dcmd.Ports != nil {
+		log.Printf("Docker Port Bindings: %v", dcmd.Ports)
+		for i := range dcmd.Ports {
+			hostPortNum := int(dcmd.Ports[i].Host)
 			if hostPortNum <= 1024 && hostPortNum != 0 {
 				return nil, fmt.Errorf("Error cannot use restricted ports")
 			}
 			hostPort := strconv.Itoa(hostPortNum)
-			containerPort := strconv.Itoa(int(dcmd.PortBindings[i].ContainerPort))
+			containerPort := strconv.Itoa(int(dcmd.Ports[i].Container))
 			args = append(args, "-p", hostPort+":"+containerPort)
 		}
 	}
@@ -124,7 +124,7 @@ func updateAndTrim(l []byte, v []byte) []byte {
 	return l
 }
 
-func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.PortMapping {
+func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 	log.Printf("Fetching container metadata")
 	dclient := setupDockerClient()
 	// close the docker client connection
@@ -136,7 +136,7 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.PortMapping {
 		default:
 			metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
 			if err == nil && metadata.State.Running == true {
-				var portMap []*pbe.PortMapping
+				var portMap []*pbe.Ports
 				// extract exposed host port from
 				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
 				for k, v := range metadata.NetworkSettings.Ports {
@@ -153,9 +153,9 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.PortMapping {
 						if err != nil {
 							return nil
 						}
-						portMap = append(portMap, &pbe.PortMapping{
-							ContainerPort: int32(containerPort),
-							HostBinding:   int32(hostPort),
+						portMap = append(portMap, &pbe.Ports{
+							Container: int32(containerPort),
+							Host:      int32(hostPort),
 						})
 					}
 				}

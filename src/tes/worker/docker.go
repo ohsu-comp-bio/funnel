@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// DockerCmd is responsible for configuring and running a docker container.
 type DockerCmd struct {
 	ImageName       string
 	CmdString       []string
@@ -37,6 +38,8 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
 }
 
+// SetupCommand sets up the command to be run and sets DockerCmd.Cmd.
+// Essentially it prepares commandline arguments for Docker.
 func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	log.Printf("Docker Volumes: %s", dcmd.Volumes)
 
@@ -84,7 +87,7 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating StdoutPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StdoutPipe for Cmd: %s", err)
 	}
 
 	stdoutScanner := bufio.NewScanner(stdoutReader)
@@ -98,7 +101,7 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating StderrPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StderrPipe for Cmd: %s", err)
 	}
 
 	stderrScanner := bufio.NewScanner(stderrReader)
@@ -123,6 +126,7 @@ func updateAndTrim(l []byte, v []byte) []byte {
 	return l
 }
 
+// InspectContainer returns metadata about the container (calls "docker inspect").
 func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 	log.Printf("Fetching container metadata")
 	dclient := setupDockerClient()
@@ -164,8 +168,9 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 	}
 }
 
+// StopContainer stops the container.
 func (dcmd DockerCmd) StopContainer() error {
-	log.Printf("Stoping container %s", dcmd.ContainerName)
+	log.Printf("Stopping container %s", dcmd.ContainerName)
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()

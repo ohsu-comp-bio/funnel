@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// The S3 url protocol
+// S3Protocol defines the expected URL prefix for S3, "s3://"
 const S3Protocol = "s3://"
 
 // S3Backend provides access to an S3 object store.
@@ -68,6 +68,8 @@ func (s3 *S3Backend) Put(url string, hostPath string, class string) error {
 	return fmt.Errorf("Unknown file class: %s", class)
 }
 
+// Supports indicates whether this backend supports the given storage request.
+// For S3, the url must start with "s3://".
 func (s3 *S3Backend) Supports(url string, hostPath string, class string) bool {
 	return strings.HasPrefix(url, S3Protocol)
 }

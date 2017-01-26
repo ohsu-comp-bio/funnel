@@ -21,6 +21,7 @@ import (
 //   a task to a resource. Don't want to loop through 1000 resources for every task
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
+// NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf tes.Config) sched.Scheduler {
 	return &scheduler{
 		conf,
@@ -34,6 +35,7 @@ type scheduler struct {
 	available int32
 }
 
+// Schedule schedules a job and returns a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running local scheduler")
 
@@ -47,19 +49,19 @@ func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Printf("Available: %d", avail)
 	if avail == int32(0) {
 		return sched.RejectedOffer("Pool is full")
-	} else {
-		w := sched.Worker{
-			ID: sched.GenWorkerID(),
-			Resources: sched.Resources{
-				CPU:  1,
-				RAM:  1.0,
-				Disk: 10.0,
-			},
-		}
-		o := sched.NewOffer(j, w)
-		go s.observe(o)
-		return o
 	}
+
+	w := sched.Worker{
+		ID: sched.GenWorkerID(),
+		Resources: sched.Resources{
+			CPU:  1,
+			RAM:  1.0,
+			Disk: 10.0,
+		},
+	}
+	o := sched.NewOffer(j, w)
+	go s.observe(o)
+	return o
 }
 
 func (s *scheduler) observe(o sched.Offer) {

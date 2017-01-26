@@ -34,12 +34,12 @@ func start(config tes.Config) {
 	// TODO if another process has the db open, this will block and it is really
 	//      confusing when you don't realize you have the db locked in another
 	//      terminal somewhere. Would be good to timeout on startup here.
-	taski := tes_server.NewTaskBolt(config.DBPath, config.ServerConfig)
+	taski := server.NewTaskBolt(config.DBPath, config.ServerConfig)
 
-	server := tes_server.NewGA4GHServer()
-	server.RegisterTaskServer(taski)
-	server.RegisterScheduleServer(taski)
-	server.Start(config.RPCPort)
+	s := server.NewGA4GHServer()
+	s.RegisterTaskServer(taski)
+	s.RegisterScheduleServer(taski)
+	s.Start(config.RPCPort)
 
 	var sched scheduler.Scheduler
 	switch config.Scheduler {
@@ -58,5 +58,5 @@ func start(config tes.Config) {
 	}
 	go scheduler.StartScheduling(taski, sched)
 
-	tes_server.StartHttpProxy(config.RPCPort, config.HTTPPort, config.ContentDir)
+	server.StartHTTPProxy(config.RPCPort, config.HTTPPort, config.ContentDir)
 }

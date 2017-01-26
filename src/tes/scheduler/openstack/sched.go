@@ -8,6 +8,7 @@ import (
 	dumb "tes/scheduler/dumb"
 )
 
+// NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf tes.Config) sched.Scheduler {
 	return &scheduler{
 		dumb.NewScheduler(conf.Schedulers.Openstack.NumWorkers),
@@ -20,6 +21,7 @@ type scheduler struct {
 	conf tes.Config
 }
 
+// Schedule schedules a job, returning an Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running dumb openstack scheduler")
 

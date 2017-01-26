@@ -36,7 +36,7 @@ type Volume struct {
 	Mode          string
 }
 
-// NewFileMapper returns a new FileMapper configured to map files for a job.
+// NewJobFileMapper returns a new FileMapper configured to map files for a job.
 //
 // The following example will return a FileMapper that maps into the
 // "/path/to/workdir/123/" directory on the host file system.
@@ -141,7 +141,7 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 	return f, nil
 }
 
-// AppInput adds an input to the mapped files for the given TaskParameter.
+// AddInput adds an input to the mapped files for the given TaskParameter.
 // A copy of the TaskParameter will be added to mapper.Inputs, with the
 // "Path" field updated to the mapped host path.
 //
@@ -206,7 +206,7 @@ func (mapper *FileMapper) IsSubpath(p string, base string) bool {
 	return strings.HasPrefix(p, base)
 }
 
-// InInVolume checks whether a given path is in a mapped volume.
+// IsInVolume checks whether a given path is in a mapped volume.
 func (mapper *FileMapper) IsInVolume(p string) bool {
 	for _, vol := range mapper.Volumes {
 		if mapper.IsSubpath(p, vol.HostPath) {

@@ -1,4 +1,4 @@
-package tes_server
+package server
 
 import (
 	"fmt"
@@ -13,6 +13,8 @@ import (
 	"tes/ga4gh"
 )
 
+// HandleError handles errors in the HTTP stack, logging errors, stack traces,
+// and returning an HTTP error code.
 func HandleError(w http.ResponseWriter, req *http.Request, error string, code int) {
 	fmt.Println(error)
 	fmt.Println(req.URL)
@@ -20,7 +22,10 @@ func HandleError(w http.ResponseWriter, req *http.Request, error string, code in
 	http.Error(w, error, code)
 }
 
-func StartHttpProxy(rpcPort string, httpPort string, contentDir string) {
+// StartHTTPProxy starts the HTTP proxy. It listens requests on the given HTTP port,
+// and proxies the requests off to the given RPC port. The contentDir defines the
+// location of web dashboard static files.
+func StartHTTPProxy(rpcPort string, httpPort string, contentDir string) {
 	//setup RESTful proxy
 	grpcMux := runtime.NewServeMux()
 	ctx := context.Background()

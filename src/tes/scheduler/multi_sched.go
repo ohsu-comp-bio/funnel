@@ -7,12 +7,17 @@ import (
 	"time"
 )
 
-type SchedulerCoordinator interface {
+// MultiScheduler combines the Scheduler and Coordinator interfaces,
+// with the goal of providing an interface that can schedule jobs to multiple
+// scheduler backends, e.g. Google Cloud, AWS, on-premise, etc.
+type MultiScheduler interface {
 	Scheduler
 	Coordinator
 }
 
-func NewSchedulerCoordinator() SchedulerCoordinator {
+// NewMultiScheduler returns a new MultiScheduler instance that
+// coordinates scheduling jobs on multiple backends.
+func NewMultiScheduler() MultiScheduler {
 	return &multisched{
 		Coordinator: NewCoordinator(),
 		// TODO configurable duration, or pass Context to Schedule
@@ -25,6 +30,7 @@ type multisched struct {
 	timeout time.Duration
 }
 
+// Schedule schedules a job on multiple backends.
 func (m *multisched) Schedule(job *pbe.Job) Offer {
 	log.Println("Running multi-scheduler")
 

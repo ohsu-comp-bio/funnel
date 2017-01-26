@@ -1,5 +1,5 @@
-// This is a proof of concept that a scheduler could be composed of another scheduler,
-// and perhaps other composable pieces, such as worker factories and resource pools.
+// Package dumblocal is a proof of concept scheduler showing that a scheduler could
+// reuse other schedulers.
 package dumblocal
 
 import (
@@ -13,6 +13,7 @@ import (
 	dumb "tes/scheduler/dumb"
 )
 
+// NewScheduler returns a new Scheduler instance.
 func NewScheduler(workers int) sched.Scheduler {
 	// TODO HACK: get the path to the worker executable
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -25,6 +26,7 @@ type scheduler struct {
 	workerPath string
 }
 
+// Schedule schedules a job, returning a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running dumblocal scheduler")
 

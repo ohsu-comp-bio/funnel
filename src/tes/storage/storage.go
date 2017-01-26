@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	File      string = "File"
-	Directory        = "Directory"
+	// File represents the file type
+	File string = "File"
+	// Directory represents the directory type
+	Directory = "Directory"
 )
 
 // Backend provides an interface for a storage backend.
@@ -86,6 +88,7 @@ func (storage Storage) WithLocal(allow []string) (*Storage, error) {
 	return &Storage{stores}, nil
 }
 
+// WithConfig returns a new Storage instance with the given additional configuration.
 func (storage Storage) WithConfig(conf *pbr.StorageConfig) (*Storage, error) {
 	var err error
 	var out *Storage

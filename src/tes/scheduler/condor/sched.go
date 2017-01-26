@@ -13,6 +13,7 @@ import (
 	"text/template"
 )
 
+// NewScheduler returns a new HTCondor Scheduler instance.
 func NewScheduler(c tes.Config) sched.Scheduler {
 	return &scheduler{c}
 }
@@ -21,6 +22,7 @@ type scheduler struct {
 	conf tes.Config
 }
 
+// Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Println("Running condor scheduler")
 

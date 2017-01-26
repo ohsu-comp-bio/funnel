@@ -1,4 +1,4 @@
-package tes_server
+package server
 
 import (
 	"fmt"
@@ -13,27 +13,37 @@ import (
 	"tes/server/proto"
 )
 
+// TODO these should probably be unexported names
+
+// TaskBucket defines the name of a bucket which maps
 // job ID -> ga4gh_task_exec.Task struct
 var TaskBucket = []byte("tasks")
 
+// TaskAuthBucket defines the name of a bucket which maps
 // job ID -> JWT token string
 var TaskAuthBucket = []byte("tasks-auth")
 
+// JobsQueued defines the name of a bucket which maps
 // job ID -> job state string
 var JobsQueued = []byte("jobs-queued")
 
+// JobsActive defines the name of a bucket which maps
 // job ID -> job state string
 var JobsActive = []byte("jobs-active")
 
+// JobsComplete defines the name of a bucket which maps
 // job ID -> job state string
 var JobsComplete = []byte("jobs-complete")
 
+// JobsLog defines the name of a bucket which maps
 // job ID -> ga4gh_task_exec.JobLog struct
 var JobsLog = []byte("jobs-log")
 
+// WorkerJobs defines the name of a bucket which maps
 // worker ID -> job ID
 var WorkerJobs = []byte("worker-jobs")
 
+// JobWorker defines the name a bucket which maps
 // job ID -> worker ID
 var JobWorker = []byte("job-worker")
 

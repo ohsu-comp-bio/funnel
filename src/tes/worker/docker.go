@@ -134,7 +134,7 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 		case <-ctx.Done():
 			return nil
 		default:
-			metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
+			metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
 			if err == nil && metadata.State.Running == true {
 				var portMap []*pbe.Ports
 				// extract exposed host port from

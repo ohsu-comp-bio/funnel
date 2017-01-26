@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"strconv"
 	"strings"
 	"syscall"
 	pbe "tes/ga4gh"
@@ -64,10 +63,9 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 		return schederr
 	}
 
-	// Tell the scheduler the job is running.
-	sched.SetRunning(ctx, jobR.Job)
+	// Tell the scheduler the job is initializing.
+	sched.SetInitializing(ctx, jobR.Job)
 	joberr := eng.runJob(ctx, sched, jobR)
-
 	// Tell the scheduler if the job failed
 	if joberr != nil {
 		sched.SetFailed(ctx, jobR.Job)
@@ -114,22 +112,16 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		// Start task step asynchronously
 		dcmd.Cmd.Start()
 
-		// Send intial log update with hostIP and portBindings
-		initialLog, err := eng.initializeLogs(dcmd)
-		if err != nil {
-			return fmt.Errorf("Error preparing initial logging information: %v", err)
-		}
-		statusReq := &pbr.UpdateStatusRequest{
-			Id:   job.JobID,
-			Step: int64(stepNum),
-			Log:  initialLog,
-		}
-		sched.UpdateJobStatus(ctx, statusReq)
-
-		// Open chanel to track async process
+		// Open channel to track async process
 		done := make(chan error, 1)
 		go func() {
 			done <- dcmd.Cmd.Wait()
+		}()
+
+		// Open channel to track container initialization
+		metaCh := make(chan []*pbe.Ports, 1)
+		go func() {
+			metaCh <- dcmd.InspectContainer(ctx)
 		}()
 
 		// Initialized to allow for DeepEquals comparison during polling
@@ -145,6 +137,24 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	PollLoop:
 		for {
 			select {
+			case portMap := <-metaCh:
+				ip, err := externalIP()
+				if err != nil {
+					return err
+				}
+
+				initLog := &pbe.JobLog{
+					HostIP: ip,
+					Ports:  portMap,
+				}
+
+				statusReq := &pbr.UpdateStatusRequest{
+					Id:   job.JobID,
+					Step: int64(stepNum),
+					Log:  initLog,
+				}
+				sched.UpdateJobStatus(ctx, statusReq)
+				sched.SetRunning(ctx, job)
 			case cmd_err := <-done:
 				stepLogUpdate := eng.finalizeLogs(dcmd, cmd_err)
 				// Send the scheduler service a final job status update that includes
@@ -285,7 +295,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		CmdString:     step.Cmd,
 		Volumes:       mapper.Volumes,
 		Workdir:       step.Workdir,
-		PortBindings:  step.PortBindings,
+		Ports:         step.Ports,
 		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,
@@ -368,47 +378,6 @@ func externalIP() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("Error no network connection")
-}
-
-func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
-
-	// get container metadata and update jobLog
-	metadata, err := dcmd.InspectContainer()
-	if err != nil {
-		return nil, err
-	}
-	var portMap []*pbe.PortMapping
-	ip, err := externalIP()
-	if err != nil {
-		return nil, err
-	}
-	// extract exposed host port from
-	// https://godoc.org/github.com/docker/go-connections/nat#PortMap
-	for k, v := range metadata.NetworkSettings.Ports {
-		// will end up taking the last binding listed
-		for i := range v {
-			p := strings.Split(string(k), "/")
-			containerPort, err := strconv.Atoi(p[0])
-			if err != nil {
-				return nil, err
-			}
-			hostPort, err := strconv.Atoi(v[i].HostPort)
-			if err != nil {
-				return nil, err
-			}
-			portMap = append(portMap, &pbe.PortMapping{
-				ContainerPort: int32(containerPort),
-				HostBinding:   int32(hostPort),
-			})
-		}
-	}
-
-	stepLog := &pbe.JobLog{
-		HostIP:       ip,
-		PortBindings: portMap,
-	}
-
-	return stepLog, nil
 }
 
 func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {

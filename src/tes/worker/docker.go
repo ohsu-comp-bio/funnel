@@ -49,13 +49,12 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	if dcmd.Ports != nil {
 		log.Printf("Docker Port Bindings: %v", dcmd.Ports)
 		for i := range dcmd.Ports {
-			hostPortNum := int(dcmd.Ports[i].Host)
-			if hostPortNum <= 1024 && hostPortNum != 0 {
+			hostPort := dcmd.Ports[i].Host
+			containerPort := dcmd.Ports[i].Container
+			if hostPort <= 1024 && hostPort != 0 {
 				return nil, fmt.Errorf("Error cannot use restricted ports")
 			}
-			hostPort := strconv.Itoa(hostPortNum)
-			containerPort := strconv.Itoa(int(dcmd.Ports[i].Container))
-			args = append(args, "-p", hostPort+":"+containerPort)
+			args = append(args, "-p", fmt.Sprintf("%d:%d", hostPort, containerPort))
 		}
 	}
 

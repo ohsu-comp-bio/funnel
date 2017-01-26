@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	pbe "tes/ga4gh"
 	"time"
 )
@@ -21,7 +21,7 @@ type DockerCmd struct {
 	CmdString       []string
 	Volumes         []Volume
 	Workdir         string
-	PortBindings    []*pbe.PortMapping
+	Ports           []*pbe.Ports
 	ContainerName   string
 	RemoveContainer bool
 	Stdin           *os.File
@@ -49,16 +49,15 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.PortBindings != nil {
-		log.Printf("Docker Port Bindings: %v", dcmd.PortBindings)
-		for i := range dcmd.PortBindings {
-			hostPortNum := int(dcmd.PortBindings[i].HostBinding)
-			if hostPortNum <= 1024 && hostPortNum != 0 {
+	if dcmd.Ports != nil {
+		log.Printf("Docker Port Bindings: %v", dcmd.Ports)
+		for i := range dcmd.Ports {
+			hostPort := dcmd.Ports[i].Host
+			containerPort := dcmd.Ports[i].Container
+			if hostPort <= 1024 && hostPort != 0 {
 				return nil, fmt.Errorf("Error cannot use restricted ports")
 			}
-			hostPort := strconv.Itoa(hostPortNum)
-			containerPort := strconv.Itoa(int(dcmd.PortBindings[i].ContainerPort))
-			args = append(args, "-p", hostPort+":"+containerPort)
+			args = append(args, "-p", fmt.Sprintf("%d:%d", hostPort, containerPort))
 		}
 	}
 
@@ -128,23 +127,42 @@ func updateAndTrim(l []byte, v []byte) []byte {
 }
 
 // InspectContainer returns metadata about the container (calls "docker inspect").
-func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
+func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 	log.Printf("Fetching container metadata")
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()
-	// Set timeout
-	timeout := time.After(time.Second * 10)
-
 	for {
-		metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
 		select {
-		case <-timeout:
-			return nil, fmt.Errorf("Error getting metadata for container: %s", err)
+		case <-ctx.Done():
+			return nil
 		default:
-			switch {
-			case err == nil && metadata.State.Running == true:
-				return &metadata, err
+			metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
+			if err == nil && metadata.State.Running == true {
+				var portMap []*pbe.Ports
+				// extract exposed host port from
+				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
+				for k, v := range metadata.NetworkSettings.Ports {
+					// will end up taking the last binding listed
+					for i := range v {
+						p := strings.Split(string(k), "/")
+						containerPort, err := strconv.Atoi(p[0])
+						//TODO handle errors
+						if err != nil {
+							return nil
+						}
+						hostPort, err := strconv.Atoi(v[i].HostPort)
+						//TODO handle errors
+						if err != nil {
+							return nil
+						}
+						portMap = append(portMap, &pbe.Ports{
+							Container: int32(containerPort),
+							Host:      int32(hostPort),
+						})
+					}
+				}
+				return portMap
 			}
 		}
 	}

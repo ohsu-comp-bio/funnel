@@ -34,6 +34,15 @@ func (client *Client) Close() {
 	client.conn.Close()
 }
 
+// SetInitializing sends an UpdateJobStatus request to the scheduler,
+// setting the job state to Initializing.
+func (client *Client) SetInitializing(ctx context.Context, job *pbe.Job) {
+	// Notify the scheduler that the job is running
+	client.UpdateJobStatus(ctx,
+		&pbr.UpdateStatusRequest{
+			Id: job.JobID, State: pbe.State_Initializing})
+}
+
 // SetRunning sends an UpdateJobStatus request to the scheduler,
 // setting the job state to Running.
 func (client *Client) SetRunning(ctx context.Context, job *pbe.Job) {

@@ -294,8 +294,8 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 // TODO: documentation
 // Cancel a running task
 func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobID, error) {
-	job.State, _ = taskBolt.getJobState(taskop.Value)
-	switch job.State {
+	state, _ := taskBolt.getJobState(taskop.Value)
+	switch state {
 	case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error, ga4gh_task_exec.State_Canceled:
 		log.Printf("Cannot cancel a job already in a terminal status: %s", taskop.Value)
 		return taskop, nil

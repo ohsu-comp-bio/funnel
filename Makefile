@@ -27,9 +27,6 @@ depends:
 	go get -d tes-server
 	go get -d tes-worker
 
-golint:
-	go get -v github.com/golang/lint/golint/
-
 serve-doc:
 	godoc --http=:6060
 
@@ -44,10 +41,14 @@ prune_deps:
 tidy: golint
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
 	@find ./* -type f | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
-	@for d in `find ./src/tes -type d | grep -E -v "ga4gh|proto"`; do \
-		echo $$d; \
-		./buildtools/bin/golint $$d; \
-	done
-	@for d in ./src/tes*; do \
-		go tool vet $$d; \
-	done
+
+gometalinter:
+	go get github.com/alecthomas/gometalinter
+	./buildtools/bin/gometalinter --install
+
+reformat:
+	./buildtools/bin/gometalinter --disable-all --enable=gofmt --vendor -s ga4gh -s proto ./src/...
+
+metalint:
+	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/...
+

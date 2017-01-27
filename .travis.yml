@@ -12,9 +12,12 @@ before_install:
   - pip install -r tests/requirements.txt
   - docker pull minio/minio
   - docker pull ubuntu
+  - make gometalinter
 install:
   - make depends
   - make
-script: nosetests tests
+script:
+  - nosetests tests
+  - make metalint
 notifications:
   email: false

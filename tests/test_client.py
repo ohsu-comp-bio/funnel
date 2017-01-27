@@ -29,7 +29,9 @@ class TestTaskREST(SimpleServerTest):
         self.job_id = data['value']
 
         for i in range(10):
-            r = urllib2.urlopen("http://localhost:8000/v1/jobs/%s" % (self.job_id))
+            r = urllib2.urlopen(
+                "http://localhost:8000/v1/jobs/%s" % (self.job_id)
+            )
             data = json.loads(r.read())
             if data["state"] not in ['Queued', "Running"]:
                 break
@@ -42,7 +44,9 @@ class TestTaskREST(SimpleServerTest):
     def state_immutability(self):
         r = urllib2.urlopen("http://localhost:8000/v1/jobs/%s" % (self.job_id))
         old_data = json.loads(r.read())
-        req = urllib2.Request("http://localhost:8000/v1/jobs/%s" % (job_id))
+        req = urllib2.Request(
+            "http://localhost:8000/v1/jobs/%s" % (self.job_id)
+        )
         req.get_method = lambda: 'DELETE'
         response = urllib2.urlopen(req)
         new_data = json.loads(response.read())

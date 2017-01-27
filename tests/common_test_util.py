@@ -185,7 +185,7 @@ class S3ServerTest(unittest.TestCase):
         )
         return dstpath
 
-    def copy_to_storage( self, path):
+    def copy_to_storage(self, path):
         dstpath = "s3://%s/%s" % (
             BUCKET_NAME, os.path.join(self.dir_name, os.path.basename(path))
         )

@@ -11,7 +11,7 @@ class TestFileOP(SimpleServerTest):
 
     def test_file_mount(self):
 
-        self.copy_to_storage( get_abspath("test_data.1") )
+        self.copy_to_storage(get_abspath("test_data.1"))
 
         task = {
             "name": "TestMD5",

@@ -1,19 +1,14 @@
 #!/usr/bin/env python
 
-import unittest
-import uuid
 import time
-import urllib
+import urllib2
 import json
 
-from common_test_util import SimpleServerTest, get_abspath
+from common_test_util import SimpleServerTest
 
 
 class TestTaskREST(SimpleServerTest):
-
-    def test_hello_world(self):
-
-        task = {
+    task = {
             "name": "TestEcho",
             "projectId": "MyProject",
             "description": "Simple Echo Command",
@@ -27,16 +22,28 @@ class TestTaskREST(SimpleServerTest):
             ]
         }
 
-        u = urllib.urlopen("http://localhost:8000/v1/jobs", json.dumps(task))
+    def test_hello_world(self):
+        u = urllib2.urlopen("http://localhost:8000/v1/jobs",
+                            json.dumps(self.task))
         data = json.loads(u.read())
-        job_id = data['value']
+        self.job_id = data['value']
 
         for i in range(10):
-            r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
+            r = urllib2.urlopen("http://localhost:8000/v1/jobs/%s" % (self.job_id))
             data = json.loads(r.read())
             if data["state"] not in ['Queued', "Running"]:
                 break
             time.sleep(1)
 
+        assert data["state"] == "Complete"
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
+
+    def state_immutability(self):
+        r = urllib2.urlopen("http://localhost:8000/v1/jobs/%s" % (self.job_id))
+        old_data = json.loads(r.read())
+        req = urllib2.Request("http://localhost:8000/v1/jobs/%s" % (job_id))
+        req.get_method = lambda: 'DELETE'
+        response = urllib2.urlopen(req)
+        new_data = json.loads(response.read())
+        assert new_data["state"] == old_data["state"]

@@ -16,7 +16,7 @@ install:
   - make depends
   - make
 script: 
-  - flake8 tests py_tes.py
+  - flake8 .
   - nosetests tests
 notifications:
   email: false

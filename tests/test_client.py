@@ -9,18 +9,18 @@ from common_test_util import SimpleServerTest
 
 class TestTaskREST(SimpleServerTest):
     task = {
-            "name": "TestEcho",
-            "projectId": "MyProject",
-            "description": "Simple Echo Command",
-            "resources": {},
-            "docker": [
+        "name": "TestEcho",
+        "projectId": "MyProject",
+        "description": "Simple Echo Command",
+        "resources": {},
+        "docker": [
                 {
                     "imageName": "ubuntu",
                     "cmd": ["echo", "hello", "world"],
                     "stdout": "stdout",
                 }
-            ]
-        }
+        ]
+    }
 
     def test_hello_world(self):
         u = urllib2.urlopen("http://localhost:8000/v1/jobs",

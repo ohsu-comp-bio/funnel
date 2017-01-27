@@ -43,6 +43,7 @@ prune_deps:
 
 tidy: golint
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
+	@find ./* -type f | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
 	@for d in `find ./src/tes -type d | grep -E -v "ga4gh|proto"`; do \
 		echo $$d; \
 		./buildtools/bin/golint $$d; \

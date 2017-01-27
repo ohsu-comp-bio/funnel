@@ -4,15 +4,15 @@ import time
 import urllib
 
 task = {
-    "name" : "TestEcho",
-    "projectId" : "MyProject",
-    "description" : "Simple Echo Command",
-    "resources" : {},
-    "docker" : [
-	{
-	    "imageName" : "ubuntu",
-	    "cmd" : ["echo", "hello", "world"]
-	}
+    "name": "TestEcho",
+    "projectId": "MyProject",
+    "description": "Simple Echo Command",
+    "resources": {},
+    "docker": [
+        {
+            "imageName": "ubuntu",
+            "cmd": ["echo", "hello", "world"]
+        }
     ]
 }
 
@@ -24,7 +24,7 @@ while True:
     r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
     data = json.loads(r.read())
     if data["state"] not in ['Queued', "Running"]:
-	break
+        break
     time.sleep(1)
 
 pprint(data)

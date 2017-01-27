@@ -32,14 +32,18 @@ serve-doc:
 
 add_deps:
 	go get github.com/dpw/vendetta
-	vendetta src/
+	./buildtools/bin/vendetta src/
 
 prune_deps:
 	go get github.com/dpw/vendetta
-	vendetta -p src/
+	./buildtools/bin/vendetta -p src/
+
+gometalinter:
+	go get github.com/alecthomas/gometalinter
+	./buildtools/bin/gometalinter --install
 
 reformat:
-	gometalinter --disable-all --enable=gofmt --vendor -s ga4gh -s proto ./src/...
+	./buildtools/bin/gometalinter --disable-all --enable=gofmt --vendor -s ga4gh -s proto ./src/...
 
 metalint:
-	gometalinter --disable-all --enable=vet --enable=golint --vendor -s ga4gh -s proto ./src/...
+	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --vendor -s ga4gh -s proto ./src/...

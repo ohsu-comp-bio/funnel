@@ -12,6 +12,7 @@ before_install:
   - pip install -r tests/requirements.txt
   - docker pull minio/minio
   - docker pull ubuntu
+  - make gometalinter
 install:
   - make depends
   - make

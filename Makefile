@@ -38,8 +38,8 @@ prune_deps:
 	go get github.com/dpw/vendetta
 	./buildtools/bin/vendetta -p src/
 
-tidy: golint
-	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w
+tidy:
+	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
 	@find ./* -type f | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
 
 gometalinter:

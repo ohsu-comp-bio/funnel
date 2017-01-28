@@ -121,7 +121,7 @@ func updateAndTrim(l []byte, v []byte) []byte {
 	max := 10000
 	l = append(l[:], v[:]...)
 	if len(l) > max {
-		return l[len(l)-max : len(l)]
+		return l[len(l)-max:]
 	}
 	return l
 }

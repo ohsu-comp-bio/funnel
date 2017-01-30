@@ -1,7 +1,5 @@
 import argparse
 import json
-from pprint import pprint
-import time
 import urllib.request as request
 
 import jwt
@@ -13,38 +11,38 @@ parser.add_argument("--sleep", type=int, default=10)
 args = parser.parse_args()
 
 task = {
-    "name" : "TestMD5",
-    "projectId" : "MyProject",
-    "description" : "My Desc",
-    "inputs" : [
+    "name": "TestMD5",
+    "projectId": "MyProject",
+    "description": "My Desc",
+    "inputs": [
         {
-            "name" : "infile",
-            "description" : "File to be MD5ed",
-            "location" : "file:///tmp/test_file",
-            "class" : "File",
-            "path" : "/tmp/test_file"
+            "name": "infile",
+            "description": "File to be MD5ed",
+            "location": "file:///tmp/test_file",
+            "class": "File",
+            "path": "/tmp/test_file"
         }
     ],
-    "outputs" : [
+    "outputs": [
         {
-            "location" : "s3://tmp/test_out_file",
-            "class" : "File",
-            "path" : "/tmp/test_out"
+            "location": "s3://tmp/test_out_file",
+            "class": "File",
+            "path": "/tmp/test_out"
         }
     ],
-    "resources" : {
-        "volumes" : [{
-            "name" : "test_disk",
-            "sizeGb" : 5,
-            "mountPoint" : "/tmp"
+    "resources": {
+        "volumes": [{
+            "name": "test_disk",
+            "sizeGb": 5,
+            "mountPoint": "/tmp"
         }]
     },
-    "docker" : [
+    "docker": [
         {
-            "imageName" : "ubuntu",
-            "cmd" : ["md5sum", "/tmp/test_file"],
-            "stdout" : "/tmp/test_out",
-            "stderr" : "/tmp/test_err",
+            "imageName": "ubuntu",
+            "cmd": ["md5sum", "/tmp/test_file"],
+            "stdout": "/tmp/test_out",
+            "stderr": "/tmp/test_err",
         }
     ]
 }

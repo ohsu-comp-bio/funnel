@@ -58,7 +58,7 @@ func (s *scheduler) start(workerID string) {
 			// Personality defines files that will be copied to the VM instance on boot.
 			// We use this to upload TES worker config.
 			Personality: []*servers.File{
-				&servers.File{
+				{
 					Path:     osconf.ConfigPath,
 					Contents: []byte(workerConfYaml),
 				},

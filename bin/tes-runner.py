@@ -11,17 +11,17 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--token", default=None)
     parser.add_argument("task")
     args = parser.parse_args()
-    
+
     with open(args.task) as handle:
         task = json.loads(handle.read())
-    
+
     req = urllib2.Request("%s/v1/jobs" % (args.server))
     if args.token is not None:
         req.add_header('authorization', "JWT %s" % (args.token))
-    
+
     u = urllib2.urlopen(req, json.dumps(task))
     data = json.loads(u.read())
-    
+
     print data
     job_id = data['value']
 
@@ -35,6 +35,3 @@ if __name__ == "__main__":
             break
         time.sleep(1)
     print json.dumps(data, indent=4)
-    
-
-

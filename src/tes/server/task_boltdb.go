@@ -294,26 +294,32 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 // TODO: documentation
 // Cancel a running task
 func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobID, error) {
-	log.Printf("Cancelling job: %s", taskop.Value)
+	state, _ := taskBolt.getJobState(taskop.Value)
+	switch state {
+	case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error, ga4gh_task_exec.State_Canceled:
+		log.Printf("Cannot cancel a job already in a terminal status: %s", taskop.Value)
+		return taskop, nil
+	default:
+		log.Printf("Cancelling job: %s", taskop.Value)
+		taskBolt.db.Update(func(tx *bolt.Tx) error {
+			bQ := tx.Bucket(JobsQueued)
+			bQ.Delete([]byte(taskop.Value))
+			bjw := tx.Bucket(JobWorker)
 
-	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		bQ := tx.Bucket(JobsQueued)
-		bQ.Delete([]byte(taskop.Value))
-		bjw := tx.Bucket(JobWorker)
+			bA := tx.Bucket(JobsActive)
+			bA.Delete([]byte(taskop.Value))
 
-		bA := tx.Bucket(JobsActive)
-		bA.Delete([]byte(taskop.Value))
+			workerID := bjw.Get([]byte(taskop.Value))
+			bjw.Delete([]byte(taskop.Value))
 
-		workerID := bjw.Get([]byte(taskop.Value))
-		bjw.Delete([]byte(taskop.Value))
+			bW := tx.Bucket(WorkerJobs)
+			bW.Delete([]byte(workerID))
 
-		bW := tx.Bucket(WorkerJobs)
-		bW.Delete([]byte(workerID))
-
-		bC := tx.Bucket(JobsComplete)
-		bC.Put([]byte(taskop.Value), []byte(ga4gh_task_exec.State_Canceled.String()))
-		return nil
-	})
+			bC := tx.Bucket(JobsComplete)
+			bC.Put([]byte(taskop.Value), []byte(ga4gh_task_exec.State_Canceled.String()))
+			return nil
+		})
+	}
 	return taskop, nil
 }
 

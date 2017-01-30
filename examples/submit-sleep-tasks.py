@@ -1,7 +1,5 @@
 import argparse
 import json
-from pprint import pprint
-import time
 import urllib
 
 parser = argparse.ArgumentParser()
@@ -11,15 +9,15 @@ parser.add_argument("--sleep", type=int, default=10)
 args = parser.parse_args()
 
 task = {
-    "name" : "TestEcho",
-    "projectId" : "MyProject",
-    "description" : "Simple Echo Command",
-    "resources" : {},
-    "docker" : [
-	{
-	    "imageName" : "ubuntu",
-	    "cmd" : ["sleep", str(args.sleep)]
-	}
+    "name": "TestEcho",
+    "projectId": "MyProject",
+    "description": "Simple Echo Command",
+    "resources": {},
+    "docker": [
+        {
+            "imageName": "ubuntu",
+            "cmd": ["sleep", str(args.sleep)]
+        }
     ]
 }
 

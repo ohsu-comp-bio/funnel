@@ -43,15 +43,9 @@ func NewEngine(conf Config) (Engine, error) {
 	return &engine{conf}, nil
 }
 
-// RunJob runs a job.
-func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
-	// This is essentially a simple helper for runJob() (below).
-	// This ensures that the job state is always updated in the scheduler,
-	// without having to do it on 15+ different lines in runJob() and others.
-	//
-	// Please try to keep this function as simple as possible.
-	// New code should probably go in runJob()
-
+// RunJob is a wrapper for runJob that polls for Cancel requests
+// TODO documentation
+func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) error {
 	// Get a client for the scheduler service
 	sched, schederr := scheduler.NewClient(eng.conf.ServerAddress)
 	defer sched.Close()
@@ -63,158 +57,172 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 		return schederr
 	}
 
-	// Tell the scheduler the job is initializing.
-	sched.SetInitializing(ctx, jobR.Job)
-	joberr := eng.runJob(ctx, sched, jobR)
-	// Tell the scheduler if the job failed
-	if joberr != nil {
-		sched.SetFailed(ctx, jobR.Job)
-		log.Printf("Failed to run job: %s", jobR.Job.JobID)
-		log.Printf("%s", joberr)
+	jobID := &pbe.JobID{
+		Value: jobR.Job.JobID,
 	}
-	return joberr
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
+	joberr := make(chan error, 1)
+	go func() {
+		joberr <- eng.runJob(ctx, sched, jobR)
+	}()
+
+	// Ticker for State polling
+	tickChan := time.NewTicker(time.Second * 5).C
+	for {
+		select {
+		case joberr := <-joberr:
+			return joberr
+		case <-tickChan:
+			jobDesc, err := sched.GetJobState(ctx, jobID)
+			if err != nil {
+				return fmt.Errorf("Error trying to get job status: %v", err)
+			}
+			switch jobDesc.State {
+			case pbe.State_Canceled:
+				cancel()
+			}
+		}
+	}
 }
 
-// runJob calls a series of other functions to process a job:
-// 1. set up the file mapping between the host and the container
-// 2. set up the storage client
-// 3. download the inputs
-// 4. run the job steps
-// 4a. update the scheduler with job status after each step
-// 5. upload the outputs
+// runJob runs a job
+// TODO documentation
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
-	job := jobR.Job
-	mapper, merr := eng.getMapper(job)
+	// Initialize job
+	sched.SetInitializing(ctx, jobR.Job)
+	mapper, merr := eng.getMapper(jobR.Job)
 	if merr != nil {
-		return merr
+		return fmt.Errorf("Error during mapper initialization: %s", merr)
 	}
 
-	// TODO catch error
 	store, serr := eng.getStorage(jobR)
 	if serr != nil {
-		return serr
+		return fmt.Errorf("Error during store initialization: %s", serr)
 	}
 
 	derr := eng.downloadInputs(mapper, store)
 	if derr != nil {
-		return derr
+		return fmt.Errorf("Error during input provisioning: %s", derr)
 	}
 
-	// TODO is it possible to allow context.Done() to kill the current step?
-	for stepNum, step := range job.Task.Docker {
-		stepID := fmt.Sprintf("%v-%v", job.JobID, stepNum)
-		dcmd, err := eng.setupDockerCmd(mapper, step, stepID)
-		if err != nil {
-			return fmt.Errorf("Error setting up docker command: %v", err)
+	// Run job steps
+	sched.SetRunning(ctx, jobR.Job)
+	for stepNum, step := range jobR.Job.Task.Docker {
+		joberr := eng.runStep(ctx, sched, mapper, jobR.Job.JobID, step, stepNum)
+		if joberr != nil {
+			sched.SetFailed(ctx, jobR.Job)
+			return fmt.Errorf("Error running job: %s", joberr)
 		}
-		log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
+	}
 
-		// Start task step asynchronously
-		dcmd.Cmd.Start()
+	// Finalize job
+	oerr := eng.uploadOutputs(mapper, store)
+	if oerr != nil {
+		sched.SetFailed(ctx, jobR.Job)
+		return fmt.Errorf("Error uploading job outputs: %s", oerr)
+	}
 
-		// Open channel to track async process
-		done := make(chan error, 1)
-		go func() {
-			done <- dcmd.Cmd.Wait()
-		}()
+	// Job is Complete
+	sched.SetComplete(ctx, jobR.Job)
+	log.Println("Job completed without error")
+	return nil
+}
 
-		// Open channel to track container initialization
-		metaCh := make(chan []*pbe.Ports, 1)
-		go func() {
-			metaCh <- dcmd.InspectContainer(ctx)
-		}()
+// runStep
+// TODO documentation
+func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper *FileMapper, id string, step *pbe.DockerExecutor, stepNum int) error {
+	stepID := fmt.Sprintf("%v-%v", id, stepNum)
+	dcmd, err := eng.setupDockerCmd(mapper, step, stepID)
+	if err != nil {
+		return fmt.Errorf("Error setting up docker command: %v", err)
+	}
+	log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
 
-		// Initialized to allow for DeepEquals comparison during polling
-		stepLog := &pbe.JobLog{}
+	// Start task step asynchronously
+	dcmd.Cmd.Start()
 
-		jobID := &pbe.JobID{
-			Value: job.JobID,
-		}
+	// Open channel to track async process
+	done := make(chan error, 1)
+	go func() {
+		done <- dcmd.Cmd.Wait()
+	}()
 
-		// Ticker for polling rate
-		// TODO figure out a reasonable rate
-		tickChan := time.NewTicker(time.Second * 5).C
-	PollLoop:
-		for {
-			select {
-			case portMap := <-metaCh:
-				ip, err := externalIP()
-				if err != nil {
-					return err
-				}
+	// Open channel to track container initialization
+	metaCh := make(chan []*pbe.Ports, 1)
+	go func() {
+		metaCh <- dcmd.InspectContainer(ctx)
+	}()
 
-				initLog := &pbe.JobLog{
-					HostIP: ip,
-					Ports:  portMap,
-				}
+	// Initialized to allow for DeepEquals comparison during polling
+	stepLog := &pbe.JobLog{}
 
+	// Ticker for polling rate
+	tickChan := time.NewTicker(time.Second * 5).C
+
+	for {
+		select {
+
+		// ensure containers are stopped if the context is canceled
+		// handles cancel request
+		case <-ctx.Done():
+			err := dcmd.StopContainer()
+			if err != nil {
+				return err
+			}
+
+		// TODO ensure metadata gets logged
+		case portMap := <-metaCh:
+			ip, err := externalIP()
+			if err != nil {
+				return err
+			}
+
+			// log update with host ip and port mapping
+			initLog := &pbe.JobLog{
+				HostIP: ip,
+				Ports:  portMap,
+			}
+
+			statusReq := &pbr.UpdateStatusRequest{
+				Id:   id,
+				Step: int64(stepNum),
+				Log:  initLog,
+			}
+			sched.UpdateJobStatus(ctx, statusReq)
+
+		// handles docker run failure and success
+		case cmdErr := <-done:
+			stepLogUpdate := eng.finalizeLogs(dcmd, cmdErr)
+			// final log update that includes the exit code
+			statusReq := &pbr.UpdateStatusRequest{
+				Id:   id,
+				Step: int64(stepNum),
+				Log:  stepLogUpdate,
+			}
+			sched.UpdateJobStatus(ctx, statusReq)
+
+			if cmdErr != nil {
+				return fmt.Errorf("Docker command error: %v", cmdErr)
+			}
+			return nil
+
+		// update stdout and stderr in logs every 5 seconds
+		case <-tickChan:
+			stepLogUpdate := eng.updateLogs(dcmd)
+			// check if log update has any new data
+			if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
 				statusReq := &pbr.UpdateStatusRequest{
-					Id:   job.JobID,
-					Step: int64(stepNum),
-					Log:  initLog,
-				}
-				sched.UpdateJobStatus(ctx, statusReq)
-				sched.SetRunning(ctx, job)
-			case cmdErr := <-done:
-				stepLogUpdate := eng.finalizeLogs(dcmd, cmdErr)
-				// Send the scheduler service a final job status update that includes
-				// the exit code
-				statusReq := &pbr.UpdateStatusRequest{
-					Id:   job.JobID,
+					Id:   id,
 					Step: int64(stepNum),
 					Log:  stepLogUpdate,
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
-
-				if cmdErr != nil {
-					return fmt.Errorf("Docker command error: %v", cmdErr)
-				}
-				log.Println("Process finished gracefully without error")
-				sched.SetComplete(ctx, job)
-				break PollLoop
-
-			case <-tickChan:
-				jobDesc, err := sched.GetJobState(ctx, jobID)
-				if err != nil {
-					return fmt.Errorf("Error trying to get job status: %v", err)
-				}
-
-				switch jobDesc.State {
-				case pbe.State_Canceled:
-					err := dcmd.StopContainer()
-					if err != nil {
-						return fmt.Errorf("Error trying to stop container: %v", err)
-					}
-					log.Println("Successfully canceled job")
-					break PollLoop
-				case pbe.State_Running:
-					log.Print("Waiting for task to finish...")
-					stepLogUpdate := eng.updateLogs(dcmd)
-					if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
-						log.Print("Updating Job Logs...")
-						// Send the scheduler service a job status update with updates
-						// to stdout and stderr
-						statusReq := &pbr.UpdateStatusRequest{
-							Id:   job.JobID,
-							Step: int64(stepNum),
-							Log:  stepLogUpdate,
-						}
-						sched.UpdateJobStatus(ctx, statusReq)
-					}
-					continue
-				default:
-					return fmt.Errorf("Job improperly acquired status: %v", jobDesc.State)
-				}
 			}
 		}
 	}
-
-	uerr := eng.uploadOutputs(mapper, store)
-	if uerr != nil {
-		return uerr
-	}
-
-	return nil
 }
 
 // getMapper returns a FileMapper instance with volumes, inputs, and outputs

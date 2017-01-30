@@ -78,6 +78,7 @@ class SimpleServerTest(unittest.TestCase):
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
         time.sleep(3)
+        self.tes = py_tes.TES("http://localhost:8000")
 
     # We're using this instead of tearDown because python doesn't call tearDown
     # if setUp fails. Since our setUp is complex, that means things don't get

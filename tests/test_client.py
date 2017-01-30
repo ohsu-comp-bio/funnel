@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import docker
 import time
 
 from common_test_util import SimpleServerTest
@@ -31,12 +32,23 @@ class TestTaskREST(SimpleServerTest):
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
 
-    def state_immutability(self):
+    def test_state_immutability(self):
         job_id = self._submit_steps("echo hello world")
         data = self.tes.wait(job_id)
-        self.tes.delete(job_id)
-        new_data = self.tes.get(job_id)
+        self.tes.delete_job(job_id)
+        new_data = self.tes.get_job(job_id)
         assert new_data["state"] == data["state"]
+
+    def test_cancel(self):
+        job_id = self._submit_steps("sleep 100")
+        time.sleep(5)
+        self.tes.delete_job(job_id)
+        time.sleep(5)
+        data = self.tes.get_job(job_id)
+        assert data["state"] == "Canceled"
+        time.sleep(10)
+        dclient = docker.from_env()
+        self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
 
     def test_job_log_length(self):
         '''
@@ -45,11 +57,12 @@ class TestTaskREST(SimpleServerTest):
         won't show up in Job.Logs.
         '''
         job_id = self._submit_steps(
-            "sleep 10",
+            "sleep 5",
             "echo end",
         )
-        time.sleep(1)
+        time.sleep(5)
         data = self.tes.get_job(job_id)
+        print data
         assert len(data['logs']) == 1
 
     def test_mark_complete_bug(self):
@@ -65,8 +78,9 @@ class TestTaskREST(SimpleServerTest):
         )
         while True:
             data = self.tes.get_job(job_id)
-            if len(data['logs']) == 2:
-                assert data['state'] == 'Running'
-            elif len(data['logs']) == 3:
-                break
+            if 'logs' in data:
+                if len(data['logs']) == 2:
+                    assert data['state'] == 'Running'
+                elif len(data['logs']) == 3:
+                    break
             time.sleep(1)

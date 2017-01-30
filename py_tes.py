@@ -12,7 +12,7 @@ class TES:
 
     def __init__(self,
                  url,
-                 s3_endpoint,
+                 s3_endpoint=None,
                  s3_access_key=None,
                  s3_secret_key=None):
         self.url = url

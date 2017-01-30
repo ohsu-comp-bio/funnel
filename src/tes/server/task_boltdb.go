@@ -232,6 +232,7 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 			out = append(out, &log)
 		}
 	}
+
 	job.Logs = out
 	return &job
 }

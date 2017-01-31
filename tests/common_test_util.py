@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+import urllib2
 import yaml
 
 
@@ -68,8 +69,7 @@ class SimpleServerTest(unittest.TestCase):
             "WorkDir": "test_tmp",
             "Storage": [{
                 "local": {
-                    "allowed_dirs": [os.path.dirname(__file__),
-                                     self.storage_dir]
+                    "allowed_dirs": [self.storage_dir]
                 }
             }]
         })
@@ -99,6 +99,20 @@ class SimpleServerTest(unittest.TestCase):
     def get_from_storage(self, loc):
         dst = os.path.join(self.storage_dir, loc)
         return dst
+
+    def wait(self, key):
+        """
+        Waits for tes-wait to return <key>
+        """
+        while True:
+            if urllib2.urlopen("http://127.0.0.1:5000/") == key:
+                return
+
+    def resume(self):
+        """
+        Continue from tes-wait
+        """
+        urllib2.urlopen("http://127.0.0.1:5000/shutdown")
 
 
 class S3ServerTest(unittest.TestCase):

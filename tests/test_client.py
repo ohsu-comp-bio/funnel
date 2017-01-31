@@ -31,22 +31,7 @@ class TestTaskREST(SimpleServerTest):
             "name": "TestCase",
             "projectId": "Project ID",
             "description": "Test case.",
-            "inputs": [
-                {
-                    "name": "blocking_util",
-                    "description": "testing util",
-                    "location": "file://" + blocking_util,
-                    "class": "File",
-                    "path": "/tmp/blocking_util.py"
-                }
-            ],
-            "resources": {
-                "volumes": [{
-                    "name": "test_disk",
-                    "sizeGb": 5,
-                    "mountPoint": "/tmp"
-                }]
-            },
+            "resources": {},
             "docker": docker
         }
         print json.dumps(task)
@@ -67,8 +52,8 @@ class TestTaskREST(SimpleServerTest):
         assert new_data["state"] == data["state"]
 
     def test_cancel(self):
-        job_id = self._submit_steps("sleep 100")
-        time.sleep(5)
+        job_id = self._submit_steps("tes-wait step 1")
+        self.wait("step 1")
         self.tes.delete_job(job_id)
         time.sleep(5)
         data = self.tes.get_job(job_id)
@@ -84,18 +69,13 @@ class TestTaskREST(SimpleServerTest):
         won't show up in Job.Logs.
         '''
         job_id = self._submit_steps(
-            "python3 /tmp/blocking_util.py",
-            "echo end"
+            "tes-wait step 1",
+            "echo done"
         )
-        time.sleep(5)
+        self.wait("step 1")
         data = self.tes.get_job(job_id)
         assert len(data['logs']) == 1
-        # send shutdown signal to blocking_util
-        urllib2.urlopen("http://127.0.0.1:5000/shutdown")
-        time.sleep(5)
-        # 2nd step should start now
-        data = self.tes.get_job(job_id)
-        assert len(data['logs']) == 2
+        self.resume()
 
     def test_mark_complete_bug(self):
         '''
@@ -105,14 +85,11 @@ class TestTaskREST(SimpleServerTest):
         '''
         job_id = self._submit_steps(
             "echo step 1",
-            "python3 /tmp/blocking_util.py",
+            "tes-wait step 2",
             "echo step 2",
         )
-        while True:
-            data = self.tes.get_job(job_id)
-            if 'logs' in data:
-                if len(data['logs']) == 2:
-                    assert data['state'] == 'Running'
-                elif len(data['logs']) == 3:
-                    break
-            time.sleep(1)
+        self.wait("step 2")
+        data = self.tes.get_job(job_id)
+        assert 'logs' in data
+        assert data['state'] == 'Running'
+        self.resume()

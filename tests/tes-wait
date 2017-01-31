@@ -4,10 +4,11 @@
 Simple tool to allow for blocking during TES tasks
 """
 
+import argparse
 from flask import Flask, request
 
-
-blocking_app = Flask(__name__)
+global wait_key
+app = Flask(__name__)
 
 
 def shutdown_server():
@@ -17,11 +18,20 @@ def shutdown_server():
     func()
 
 
-@blocking_app.route('/shutdown', methods=['POST', 'GET'])
+@app.route('/shutdown', methods=['POST', 'GET'])
 def shutdown():
     shutdown_server()
     return ""
 
 
+@app.route('/', methods=['GET'])
+def index():
+    return ' '.join(wait_key)
+
+
 if __name__ == "__main__":
-    blocking_app.run(host='0.0.0.0', port=5000)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("wait_key", type=str, nargs='+')
+    args = parser.parse_args()
+    wait_key = args.wait_key
+    app.run(host='0.0.0.0', port=5000)

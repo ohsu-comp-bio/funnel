@@ -1,4 +1,5 @@
 FROM python:3.5
 
 RUN pip install Flask
-COPY ./blocking_util.py /tmp/
+COPY ./tes-wait /bin/
+RUN chmod +x /bin/tes-wait

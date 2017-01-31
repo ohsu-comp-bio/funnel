@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/client"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -41,8 +40,6 @@ func formatVolumeArg(v Volume) string {
 // SetupCommand sets up the command to be run and sets DockerCmd.Cmd.
 // Essentially it prepares commandline arguments for Docker.
 func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
-	log.Printf("Docker Volumes: %s", dcmd.Volumes)
-
 	args := []string{"run", "-i"}
 
 	if dcmd.RemoveContainer {
@@ -50,7 +47,6 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	}
 
 	if dcmd.Ports != nil {
-		log.Printf("Docker Port Bindings: %v", dcmd.Ports)
 		for i := range dcmd.Ports {
 			hostPort := dcmd.Ports[i].Host
 			containerPort := dcmd.Ports[i].Container
@@ -76,6 +72,8 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 
 	args = append(args, dcmd.ImageName)
 	args = append(args, dcmd.CmdString...)
+
+  log.Debug("DockerCmd", "dmcd", dcmd)
 
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 	cmd := exec.Command("docker", args...)
@@ -128,7 +126,7 @@ func updateAndTrim(l []byte, v []byte) []byte {
 
 // InspectContainer returns metadata about the container (calls "docker inspect").
 func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
-	log.Printf("Fetching container metadata")
+	log.Info("Fetching container metadata")
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()
@@ -170,7 +168,7 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 
 // StopContainer stops the container.
 func (dcmd DockerCmd) StopContainer() error {
-	log.Printf("Stopping container %s", dcmd.ContainerName)
+	log.Info("Stopping container", "container", dcmd.ContainerName)
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()
@@ -184,7 +182,7 @@ func (dcmd DockerCmd) StopContainer() error {
 func setupDockerClient() *client.Client {
 	dclient, err := client.NewEnvClient()
 	if err != nil {
-		log.Printf("Docker Error: %v", err)
+    log.Info("Docker error", "err", err)
 		return nil
 	}
 
@@ -198,7 +196,7 @@ func setupDockerClient() *client.Client {
 			version := re.FindAllString(err.Error(), -1)
 			// Error message example:
 			//   Error getting metadata for container: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
-			log.Printf("DOCKER_API_VERSION: %s", version[1])
+			log.Debug("DOCKER_API_VERSION", "version", version[1])
 			os.Setenv("DOCKER_API_VERSION", version[1])
 			return setupDockerClient()
 		}

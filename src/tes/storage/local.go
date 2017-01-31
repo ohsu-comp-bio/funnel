@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -26,7 +25,7 @@ func NewLocalBackend(allowed []string) *LocalBackend {
 
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(url string, hostPath string, class string) error {
-	log.Printf("Starting download of local file: %s", url)
+	log.Info("Starting download", "url", url)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
 	if !isAllowed(path, local.allowedDirs) {
@@ -40,13 +39,13 @@ func (local *LocalBackend) Get(url string, hostPath string, class string) error 
 	} else {
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
-	log.Printf("Finished download of local file: %s", url)
+	log.Info("Finished download", "url", url, "hostPath", hostPath)
 	return nil
 }
 
 // Put copies a file from the hostPath into storage.
 func (local *LocalBackend) Put(url string, hostPath string, class string) error {
-	log.Printf("Starting upload to local file: %s", url)
+	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
 	if !isAllowed(path, local.allowedDirs) {
@@ -60,7 +59,7 @@ func (local *LocalBackend) Put(url string, hostPath string, class string) error 
 	} else {
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
-	log.Printf("Finished upload to local file: %s", url)
+	log.Info("Finished upload", "url", url, "hostPath", hostPath)
 	return nil
 }
 

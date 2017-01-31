@@ -3,15 +3,17 @@
 package dumblocal
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+  "tes/logger"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
 	dumb "tes/scheduler/dumb"
 )
+
+var log logger.Logger = logger.New("dumbsched")
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(workers int) sched.Scheduler {
@@ -28,7 +30,7 @@ type scheduler struct {
 
 // Schedule schedules a job, returning a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Println("Running dumblocal scheduler")
+	log.Debug("Running dumblocal scheduler")
 
 	o := s.dumbsched.Schedule(j)
 	go s.observe(o)
@@ -44,17 +46,17 @@ func (s *scheduler) observe(o sched.Offer) {
 		s.dumbsched.IncrementAvailable()
 
 	} else if o.Rejected() {
-		log.Println("Local offer was rejected")
+		log.Debug("Local offer was rejected")
 	}
 }
 
 func runWorker(workerID string, workerPath string) {
-	log.Printf("Starting dumblocal worker")
+	log.Debug("Starting dumblocal worker")
 	cmd := exec.Command(workerPath, "-numworkers", "1", "-id", workerID, "-timeout", "0")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("%s", err)
+    log.Error("Couldn't start worker", err)
 	}
 }

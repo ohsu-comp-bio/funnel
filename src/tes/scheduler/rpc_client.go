@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"google.golang.org/grpc"
-	"log"
 )
 
 // NewRPCConnection returns a gRPC ClientConn, or an error.
@@ -14,8 +13,10 @@ func NewRPCConnection(address string) (*grpc.ClientConn, error) {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 
 	if err != nil {
-		log.Printf("Can't open RPC connection to %s", address)
-		log.Println(err.Error())
+    log.Error("Couldn't open RPC connection",
+      "error",   err,
+      "address", address,
+    )
 		return nil, err
 	}
 	return conn, nil

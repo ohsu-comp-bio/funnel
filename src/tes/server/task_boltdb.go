@@ -7,7 +7,6 @@ import (
 	uuid "github.com/nu7hatch/gouuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
-	"log"
 	"strings"
 	"tes/ga4gh"
 	"tes/server/proto"
@@ -126,10 +125,10 @@ func getJWT(ctx context.Context) string {
 // RunTask documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
-	log.Println("Receiving Task for Queue", task)
+  log.Debug("RunTask called", "task", task)
 
 	jobID, _ := uuid.NewV4()
-	log.Printf("Assigning job ID, %s", jobID)
+  log.Info("Assigning job", "jobID", jobID)
 
 	if len(task.Docker) == 0 {
 		return nil, fmt.Errorf("No docker commands found")
@@ -159,7 +158,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 	}
 
 	jwt := getJWT(ctx)
-	log.Printf("JWT: %s", jwt)
+  log.Debug("JWT", "token", jwt)
 
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -241,7 +240,7 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 // TODO: documentation
 // Get info about a running task
 func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
-	log.Printf("Getting Task Info")
+  log.Debug("GetJob called")
 	var job *ga4gh_task_exec.Job
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		job = taskBolt.getJob(tx, id.Value)
@@ -252,14 +251,13 @@ func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID)
 
 // ListJobs returns a list of jobIDs
 func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListRequest) (*ga4gh_task_exec.JobListResponse, error) {
-	log.Printf("Getting Task List")
+  log.Debug("ListJobs called")
 
 	jobs := make([]*ga4gh_task_exec.JobDesc, 0, 10)
 
 	taskBolt.db.View(func(tx *bolt.Tx) error {
 		taskopB := tx.Bucket(TaskBucket)
 		c := taskopB.Cursor()
-		log.Println("Scanning")
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			jobID := string(k)
@@ -286,7 +284,6 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 		Jobs: jobs,
 	}
 
-	log.Println("Returning", out)
 	return &out, nil
 }
 
@@ -297,10 +294,10 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 	state, _ := taskBolt.getJobState(taskop.Value)
 	switch state {
 	case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error, ga4gh_task_exec.State_Canceled:
-		log.Printf("Cannot cancel a job already in a terminal status: %s", taskop.Value)
+		log.Info("Cannot cancel a job already in a terminal status", "jobID", taskop.Value)
 		return taskop, nil
 	default:
-		log.Printf("Cancelling job: %s", taskop.Value)
+		log.Info("Cancelling job", "jobID", taskop.Value)
 		taskBolt.db.Update(func(tx *bolt.Tx) error {
 			bQ := tx.Bucket(JobsQueued)
 			bQ.Delete([]byte(taskop.Value))

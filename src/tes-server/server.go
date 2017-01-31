@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"tes"
+  "tes/logger"
 	"tes/scheduler"
 	"tes/scheduler/condor"
 	"tes/scheduler/dumblocal"
@@ -12,6 +12,8 @@ import (
 	"tes/scheduler/openstack"
 	"tes/server"
 )
+
+var log logger.Logger = logger.New("tes-server")
 
 func main() {
 	config := tes.DefaultConfig()
@@ -53,7 +55,8 @@ func start(config tes.Config) {
 	case "dumblocal":
 		sched = dumblocal.NewScheduler(4)
 	default:
-		log.Printf("Error: unknown scheduler %s", config.Scheduler)
+    log.Error("Unknown scheduler",
+      "scheduler", config.Scheduler)
 		return
 	}
 	go scheduler.StartScheduling(taski, sched)

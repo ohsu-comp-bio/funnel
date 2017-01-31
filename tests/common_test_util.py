@@ -105,8 +105,11 @@ class SimpleServerTest(unittest.TestCase):
         Waits for tes-wait to return <key>
         """
         while True:
-            if urllib2.urlopen("http://127.0.0.1:5000/") == key:
-                return
+            try:
+                if urllib2.urlopen("http://127.0.0.1:5000/").read() == key:
+                    return
+            except:
+                break
 
     def resume(self):
         """

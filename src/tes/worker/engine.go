@@ -267,6 +267,10 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		}
 	}
 
+  if storage == nil {
+    return nil, fmt.Errorf("No storage configured")
+  }
+
 	return storage, nil
 }
 

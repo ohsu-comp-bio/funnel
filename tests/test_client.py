@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 
 import docker
+import json
+import os
 import time
+import urllib2
 
 from common_test_util import SimpleServerTest
+
+
+TESTS_DIR = os.path.dirname(__file__)
+blocking_util = os.path.join(TESTS_DIR, "blocking_util.py")
 
 
 class TestTaskREST(SimpleServerTest):
@@ -12,18 +19,38 @@ class TestTaskREST(SimpleServerTest):
         docker = []
         for s in steps:
             docker.append({
-                "imageName": "ubuntu",
+                "imageName": "tes_tests",
                 "cmd": s.split(' '),
                 "stdout": "stdout",
+                "ports": [{
+                    "host": 5000,
+                    "container": 5000
+                }]
             })
-
-        return self.tes.submit({
+        task = {
             "name": "TestCase",
             "projectId": "Project ID",
             "description": "Test case.",
-            "resources": {},
-            "docker": docker,
-        })
+            "inputs": [
+                {
+                    "name": "blocking_util",
+                    "description": "testing util",
+                    "location": "file://" + blocking_util,
+                    "class": "File",
+                    "path": "/tmp/blocking_util.py"
+                }
+            ],
+            "resources": {
+                "volumes": [{
+                    "name": "test_disk",
+                    "sizeGb": 5,
+                    "mountPoint": "/tmp"
+                }]
+            },
+            "docker": docker
+        }
+        print json.dumps(task)
+        return self.tes.submit(task)
 
     def test_hello_world(self):
         '''Test a basic "Hello world" task and expected API result.'''
@@ -57,13 +84,18 @@ class TestTaskREST(SimpleServerTest):
         won't show up in Job.Logs.
         '''
         job_id = self._submit_steps(
-            "sleep 5",
-            "echo end",
+            "python3 /tmp/blocking_util.py",
+            "echo end"
         )
         time.sleep(5)
         data = self.tes.get_job(job_id)
-        print data
         assert len(data['logs']) == 1
+        # send shutdown signal to blocking_util
+        urllib2.urlopen("http://127.0.0.1:5000/shutdown")
+        time.sleep(5)
+        # 2nd step should start now
+        data = self.tes.get_job(job_id)
+        assert len(data['logs']) == 2
 
     def test_mark_complete_bug(self):
         '''
@@ -73,7 +105,7 @@ class TestTaskREST(SimpleServerTest):
         '''
         job_id = self._submit_steps(
             "echo step 1",
-            "sleep 5",
+            "python3 /tmp/blocking_util.py",
             "echo step 2",
         )
         while True:

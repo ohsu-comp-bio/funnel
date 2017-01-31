@@ -68,7 +68,8 @@ class SimpleServerTest(unittest.TestCase):
             "WorkDir": "test_tmp",
             "Storage": [{
                 "local": {
-                    "allowed_dirs": [self.storage_dir]
+                    "allowed_dirs": [os.path.dirname(__file__),
+                                     self.storage_dir]
                 }
             }]
         })

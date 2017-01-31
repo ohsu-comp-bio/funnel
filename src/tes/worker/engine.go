@@ -76,7 +76,7 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 		case joberr := <-joberr:
 			if joberr != nil {
 				sched.SetFailed(ctx, jobR.Job)
-				return fmt.Errorf("Error trying to get job status: %v", joberr)
+				return fmt.Errorf("Error running job: %v", joberr)
 			}
 			sched.SetComplete(ctx, jobR.Job)
 			return nil

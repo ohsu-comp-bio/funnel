@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 	"tes"
-  "tes/logger"
+	"tes/logger"
 	"tes/scheduler"
 	"tes/scheduler/condor"
 	"tes/scheduler/dumblocal"
@@ -55,8 +55,8 @@ func start(config tes.Config) {
 	case "dumblocal":
 		sched = dumblocal.NewScheduler(4)
 	default:
-    log.Error("Unknown scheduler",
-      "scheduler", config.Scheduler)
+		log.Error("Unknown scheduler",
+			"scheduler", config.Scheduler)
 		return
 	}
 	go scheduler.StartScheduling(taski, sched)

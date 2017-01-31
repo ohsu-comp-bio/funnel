@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-  log "tes/logger"
+	log "tes/logger"
 	pbr "tes/server/proto"
 )
 

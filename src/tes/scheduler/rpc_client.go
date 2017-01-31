@@ -13,10 +13,10 @@ func NewRPCConnection(address string) (*grpc.ClientConn, error) {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 
 	if err != nil {
-    log.Error("Couldn't open RPC connection",
-      "error",   err,
-      "address", address,
-    )
+		log.Error("Couldn't open RPC connection",
+			"error", err,
+			"address", address,
+		)
 		return nil, err
 	}
 	return conn, nil

@@ -5,13 +5,14 @@ import (
 	"os/exec"
 	"sync/atomic"
 	"tes"
-  "tes/logger"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 	worker "tes/worker"
 )
 
 var log logger.Logger = logger.New("local-sched")
+
 // TODO Questions:
 // - how to efficiently copy/slice a large resource pool?
 // - how to track shutdown of workers, which free used resources in the pool?
@@ -102,7 +103,7 @@ func (s *scheduler) runWorker(workerID string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-    log.Error("Couldn't start local worker", err)
+		log.Error("Couldn't start local worker", err)
 	}
 }
 

@@ -14,7 +14,7 @@ import (
 // HandleError handles errors in the HTTP stack, logging errors, stack traces,
 // and returning an HTTP error code.
 func HandleError(w http.ResponseWriter, req *http.Request, err string, code int) {
-  log.Error("HTTP handler error", "error", err, "url", req.URL)
+	log.Error("HTTP handler error", "error", err, "url", req.URL)
 	debug.PrintStack()
 	http.Error(w, err, code)
 }
@@ -30,11 +30,11 @@ func StartHTTPProxy(rpcPort string, httpPort string, contentDir string) {
 	defer cancel()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 
-  url := "localhost:" + rpcPort
-  log.Info("HTTP proxy listening gRPC", "url", url)
+	url := "localhost:" + rpcPort
+	log.Info("HTTP proxy listening gRPC", "url", url)
 	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, url, opts)
 	if err != nil {
-    log.Error("Couldn't register Task Service", "error", err)
+		log.Error("Couldn't register Task Service", "error", err)
 	}
 	r := mux.NewRouter()
 
@@ -47,6 +47,6 @@ func StartHTTPProxy(rpcPort string, httpPort string, contentDir string) {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(contentDir))))
 
 	r.PathPrefix("/v1/").Handler(grpcMux)
-  log.Info("HTTP API listening", "port", httpPort)
+	log.Info("HTTP API listening", "port", httpPort)
 	http.ListenAndServe(":"+httpPort, r)
 }

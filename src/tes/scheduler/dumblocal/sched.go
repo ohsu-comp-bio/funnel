@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-  "tes/logger"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 	dumb "tes/scheduler/dumb"
 )
@@ -57,6 +57,6 @@ func runWorker(workerID string, workerPath string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-    log.Error("Couldn't start worker", err)
+		log.Error("Couldn't start worker", err)
 	}
 }

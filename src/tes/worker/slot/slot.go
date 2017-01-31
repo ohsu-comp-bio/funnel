@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
-  "tes/logger"
+	"tes/logger"
 	"tes/scheduler"
 	worker "tes/worker"
 )
@@ -30,7 +30,7 @@ type Slot struct {
 	engine   worker.Engine
 	state    State
 	stateMtx sync.Mutex
-  log      logger.Logger
+	log      logger.Logger
 }
 
 // NewSlot returns a new Slot instance.
@@ -42,13 +42,13 @@ func NewSlot(id string, schedAddr string, engine worker.Engine) (*Slot, error) {
 		return nil, err
 	}
 
-  log := logger.New("slot", "slotID", id)
+	log := logger.New("slot", "slotID", id)
 
 	return &Slot{
 		ID:     id,
 		sched:  sched,
 		engine: engine,
-    log:    log,
+		log:    log,
 	}, nil
 }
 
@@ -83,7 +83,7 @@ func (slot *Slot) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			// The context was canceled (maybe the slot is being shut down) so return.
-      slot.log.Info("Done")
+			slot.log.Info("Done")
 			return
 		default:
 			// This blocks until a job is available, or the context is canceled.

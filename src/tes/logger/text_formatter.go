@@ -3,11 +3,12 @@ package logger
 import (
 	"bytes"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"github.com/kr/pretty"
 	"runtime"
 	"sort"
 	"strings"
 	"time"
-  "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -17,7 +18,8 @@ const (
 	yellow  = 33
 	blue    = 36
 	gray    = 37
-  nsColor = 100
+	debug   = 33
+	nsColor = 100
 )
 
 var (
@@ -58,11 +60,11 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	var b *bytes.Buffer
 	keys := make([]string, 0, len(entry.Data))
 	for k := range entry.Data {
-    if k != "ns" {
-		  keys = append(keys, k)
-    }
+		if k != "ns" {
+			keys = append(keys, k)
+		}
 	}
-  ns := entry.Data["ns"]
+	ns := entry.Data["ns"]
 
 	if !f.DisableSorting {
 		sort.Strings(keys)
@@ -105,7 +107,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	var levelColor int
 	switch entry.Level {
 	case logrus.DebugLevel:
-		levelColor = gray
+		levelColor = debug
 	case logrus.WarnLevel:
 		levelColor = yellow
 	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
@@ -125,8 +127,29 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 	for _, k := range keys {
 		v := entry.Data[k]
-		fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=", levelColor, k)
-		f.appendValue(b, v)
+		switch v.(type) {
+		case string:
+		case int:
+		case int8:
+		case int16:
+		case int32:
+		case int64:
+		case uint8:
+		case uint16:
+		case uint32:
+		case uint64:
+		case complex64:
+		case complex128:
+		case float32:
+		case float64:
+		case bool:
+		case fmt.Stringer:
+		case error:
+		default:
+			v = pretty.Sprint(v)
+		}
+		fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%v", levelColor, k, v)
+		//f.appendValue(b, v)
 	}
 }
 

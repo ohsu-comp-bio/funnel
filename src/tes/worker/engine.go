@@ -68,7 +68,7 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 	// Tell the scheduler if the job failed
 	if joberr != nil {
 		sched.SetFailed(ctx, jobR.Job)
-    log.Error("Failed to run job", "jobID", jobR.Job.JobID, "error", joberr)
+		log.Error("Failed to run job", "jobID", jobR.Job.JobID, "error", joberr)
 	}
 	return joberr
 }
@@ -105,8 +105,8 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		if err != nil {
 			return fmt.Errorf("Error setting up docker command: %v", err)
 		}
-    log.Info("Running command",
-      "command", strings.Join(dcmd.Cmd.Args, " "))
+		log.Info("Running command",
+			"command", strings.Join(dcmd.Cmd.Args, " "))
 
 		// Start task step asynchronously
 		dcmd.Cmd.Start()
@@ -267,9 +267,9 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		}
 	}
 
-  if storage == nil {
-    return nil, fmt.Errorf("No storage configured")
-  }
+	if storage == nil {
+		return nil, fmt.Errorf("No storage configured")
+	}
 
 	return storage, nil
 }

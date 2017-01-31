@@ -125,10 +125,10 @@ func getJWT(ctx context.Context) string {
 // RunTask documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
-  log.Debug("RunTask called", "task", task)
+	log.Debug("RunTask called", "task", task)
 
 	jobID, _ := uuid.NewV4()
-  log.Info("Assigning job", "jobID", jobID)
+	log.Info("Assigning job", "jobID", jobID)
 
 	if len(task.Docker) == 0 {
 		return nil, fmt.Errorf("No docker commands found")
@@ -158,7 +158,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 	}
 
 	jwt := getJWT(ctx)
-  log.Debug("JWT", "token", jwt)
+	log.Debug("JWT", "token", jwt)
 
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -240,7 +240,7 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 // TODO: documentation
 // Get info about a running task
 func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
-  log.Debug("GetJob called")
+	log.Debug("GetJob called")
 	var job *ga4gh_task_exec.Job
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		job = taskBolt.getJob(tx, id.Value)
@@ -251,7 +251,7 @@ func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID)
 
 // ListJobs returns a list of jobIDs
 func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListRequest) (*ga4gh_task_exec.JobListResponse, error) {
-  log.Debug("ListJobs called")
+	log.Debug("ListJobs called")
 
 	jobs := make([]*ga4gh_task_exec.JobDesc, 0, 10)
 

@@ -20,7 +20,7 @@ type Client struct {
 func NewClient(address string) (*Client, error) {
 	conn, err := NewRPCConnection(address)
 	if err != nil {
-    log.Error("Couldn't connect to schduler", err)
+		log.Error("Couldn't connect to schduler", err)
 		return nil, err
 	}
 
@@ -114,7 +114,7 @@ func (client *Client) RequestJob(ctx context.Context, workerID string) *pbr.JobR
 	if err != nil {
 		// An error occurred while asking the scheduler for a job.
 		// TODO should return error?
-    log.Error("Couldn't get job from scheduler", err)
+		log.Error("Couldn't get job from scheduler", err)
 
 	} else if resp != nil && resp.Job != nil {
 		// A job was found

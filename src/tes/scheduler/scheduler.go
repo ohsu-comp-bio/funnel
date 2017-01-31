@@ -36,12 +36,12 @@ func StartScheduling(db *server.TaskBolt, sched Scheduler) {
 		for _, t := range db.ReadQueue(10) {
 			offer := sched.Schedule(t)
 			if offer.Rejected() {
-        log.Debug("Rejected offer", "reason", offer.RejectionReason())
+				log.Debug("Rejected offer", "reason", offer.RejectionReason())
 			} else {
-        log.Debug("Assigning job to worker",
-          "jobID",    offer.Job().JobID,
-          "workerID", offer.Worker().ID,
-        )
+				log.Debug("Assigning job to worker",
+					"jobID", offer.Job().JobID,
+					"workerID", offer.Worker().ID,
+				)
 				offer.Accept()
 				db.AssignJob(offer.Job().JobID, offer.Worker().ID)
 			}

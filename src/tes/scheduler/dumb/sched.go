@@ -2,8 +2,8 @@ package dumb
 
 import (
 	"sync/atomic"
-  "tes/logger"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 )
 

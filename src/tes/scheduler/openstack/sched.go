@@ -2,8 +2,8 @@ package openstack
 
 import (
 	"tes"
-  "tes/logger"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 	dumb "tes/scheduler/dumb"
 )

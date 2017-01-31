@@ -73,7 +73,7 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	args = append(args, dcmd.ImageName)
 	args = append(args, dcmd.CmdString...)
 
-  log.Debug("DockerCmd", "dmcd", dcmd)
+	log.Debug("DockerCmd", "dmcd", dcmd)
 
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 	cmd := exec.Command("docker", args...)
@@ -182,7 +182,7 @@ func (dcmd DockerCmd) StopContainer() error {
 func setupDockerClient() *client.Client {
 	dclient, err := client.NewEnvClient()
 	if err != nil {
-    log.Info("Docker error", "err", err)
+		log.Info("Docker error", "err", err)
 		return nil
 	}
 

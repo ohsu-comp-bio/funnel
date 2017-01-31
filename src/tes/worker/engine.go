@@ -74,7 +74,12 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	for {
 		select {
 		case joberr := <-joberr:
-			return joberr
+			if joberr != nil {
+				sched.SetFailed(ctx, jobR.Job)
+				return fmt.Errorf("Error trying to get job status: %v", joberr)
+			}
+			sched.SetComplete(ctx, jobR.Job)
+			return nil
 		case <-tickChan:
 			jobDesc, err := sched.GetJobState(ctx, jobID)
 			if err != nil {
@@ -95,6 +100,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	sched.SetInitializing(ctx, jobR.Job)
 	mapper, merr := eng.getMapper(jobR.Job)
 	if merr != nil {
+		sched.SetFailed(ctx, jobR.Job)
 		return fmt.Errorf("Error during mapper initialization: %s", merr)
 	}
 
@@ -113,7 +119,6 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	for stepNum, step := range jobR.Job.Task.Docker {
 		joberr := eng.runStep(ctx, sched, mapper, jobR.Job.JobID, step, stepNum)
 		if joberr != nil {
-			sched.SetFailed(ctx, jobR.Job)
 			return fmt.Errorf("Error running job: %s", joberr)
 		}
 	}
@@ -121,12 +126,10 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	// Finalize job
 	oerr := eng.uploadOutputs(mapper, store)
 	if oerr != nil {
-		sched.SetFailed(ctx, jobR.Job)
 		return fmt.Errorf("Error uploading job outputs: %s", oerr)
 	}
 
 	// Job is Complete
-	sched.SetComplete(ctx, jobR.Job)
 	log.Println("Job completed without error")
 	return nil
 }

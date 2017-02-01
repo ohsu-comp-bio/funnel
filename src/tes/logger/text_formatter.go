@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/golang/protobuf/proto"
 	"github.com/kr/pretty"
 	"runtime"
 	"sort"
@@ -127,7 +128,7 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 	}
 	for _, k := range keys {
 		v := entry.Data[k]
-		switch v.(type) {
+		switch x := v.(type) {
 		case string:
 		case int:
 		case int8:
@@ -143,6 +144,8 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		case float32:
 		case float64:
 		case bool:
+		case proto.Message:
+			v = proto.MarshalTextString(x)
 		case fmt.Stringer:
 		case error:
 		default:

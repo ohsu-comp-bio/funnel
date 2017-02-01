@@ -32,11 +32,12 @@ func main() {
 
 func start(config tes.Config) {
 	os.MkdirAll(config.WorkDir, 0755)
-	//setup GRPC listener
-	// TODO if another process has the db open, this will block and it is really
-	//      confusing when you don't realize you have the db locked in another
-	//      terminal somewhere. Would be good to timeout on startup here.
-	taski := server.NewTaskBolt(config.DBPath, config.ServerConfig)
+
+	taski, err := server.NewTaskBolt(config.DBPath, config.ServerConfig)
+	if err != nil {
+		log.Error("Couldn't open database", err)
+		return
+	}
 
 	s := server.NewGA4GHServer()
 	s.RegisterTaskServer(taski)

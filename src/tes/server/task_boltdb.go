@@ -10,6 +10,7 @@ import (
 	"strings"
 	"tes/ga4gh"
 	"tes/server/proto"
+	"time"
 )
 
 // TODO these should probably be unexported names
@@ -55,8 +56,14 @@ type TaskBolt struct {
 
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
 // the given path, and including the given ServerConfig.
-func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
-	db, _ := bolt.Open(path, 0600, nil)
+func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) (*TaskBolt, error) {
+	db, err := bolt.Open(path, 0600, &bolt.Options{
+		Timeout: time.Second * 5,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
 		if tx.Bucket(TaskBucket) == nil {
@@ -85,7 +92,7 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, serverConfig: config}
+	return &TaskBolt{db: db, serverConfig: config}, nil
 }
 
 // ReadQueue returns a slice of queued Jobs. Up to "n" jobs are returned.

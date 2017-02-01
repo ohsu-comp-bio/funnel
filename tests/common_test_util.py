@@ -106,10 +106,11 @@ class SimpleServerTest(unittest.TestCase):
         """
         while True:
             try:
-                if urllib2.urlopen("http://127.0.0.1:5000/").read() == key:
+                r = urllib2.urlopen("http://127.0.0.1:5000/").read()
+                if r == key:
                     return
             except:
-                break
+                continue
 
     def resume(self):
         """

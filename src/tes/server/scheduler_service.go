@@ -188,7 +188,6 @@ func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_
 // GetJobState returns the state of a job, given a job ID.
 // This is an RPC endpoint.
 func (taskBolt *TaskBolt) GetJobState(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
-	log.Printf("Getting Task State")
 	var state ga4gh_task_exec.State
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		//TODO address err

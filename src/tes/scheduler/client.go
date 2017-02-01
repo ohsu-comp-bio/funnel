@@ -72,12 +72,7 @@ func (client *Client) SetComplete(ctx context.Context, job *pbe.Job) {
 
 // PollForJob polls the scheduler for a job assigned to the given worker ID.
 func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobResponse {
-	// Hard-coding this sleep time because I don't see a need for configuration,
-	// but it's easy enough to change that.
-	sleep := time.Second * 2
-	// "ticker" helps us check for jobs every "sleep" (e.g. 2 seconds).
-	ticker := time.NewTicker(sleep)
-	defer ticker.Stop()
+	tickChan := time.NewTicker(time.Millisecond * 10).C
 
 	job := client.RequestJob(ctx, workerID)
 	if job != nil {
@@ -89,7 +84,7 @@ func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobR
 		case <-ctx.Done():
 			return nil
 
-		case <-ticker.C:
+		case <-tickChan:
 			job := client.RequestJob(ctx, workerID)
 			if job != nil {
 				return job

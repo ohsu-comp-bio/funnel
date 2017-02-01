@@ -29,7 +29,7 @@ type Scheduler interface {
 // Offers which aren't marked as rejected by the scheduler are accepted
 // and the job is assigned to a worker in the database.
 func StartScheduling(db *server.TaskBolt, sched Scheduler) {
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(time.Millisecond * 10)
 	defer ticker.Stop()
 
 	for {

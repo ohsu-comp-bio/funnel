@@ -70,7 +70,8 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	}()
 
 	// Ticker for State polling
-	tickChan := time.NewTicker(time.Second * 5).C
+	tickChan := time.NewTicker(time.Millisecond * 10).C
+
 	for {
 		select {
 		case joberr := <-joberr:
@@ -163,7 +164,7 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 	stepLog := &pbe.JobLog{}
 
 	// Ticker for polling rate
-	tickChan := time.NewTicker(time.Second * 5).C
+	tickChan := time.NewTicker(time.Millisecond * 10).C
 
 	for {
 		select {

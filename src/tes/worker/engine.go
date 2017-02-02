@@ -81,6 +81,8 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
+  log := log.WithFields("jobID", jobR.Job.JobID)
+
 	job := jobR.Job
 	mapper, merr := eng.getMapper(job)
 	if merr != nil {

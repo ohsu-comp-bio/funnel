@@ -18,17 +18,19 @@ type Logger interface {
 	Debug(string, ...interface{})
 	Info(string, ...interface{})
 	Error(string, ...interface{})
+  WithFields(...interface{}) Logger
 }
 
 // New returns a new Logger instance.
 func New(ns string, args ...interface{}) Logger {
 	f := fields(args...)
 	f["ns"] = ns
-	return &logger{f}
+  l := logrus.WithFields(f)
+	return &logger{l}
 }
 
 type logger struct {
-	fields map[string]interface{}
+  log *logrus.Entry
 }
 
 func fields(args ...interface{}) map[string]interface{} {
@@ -50,7 +52,7 @@ func fields(args ...interface{}) map[string]interface{} {
 //     log.Debug("Some message here", "key1", value1, "key2", value2)
 func (l *logger) Debug(msg string, args ...interface{}) {
 	f := fields(args...)
-	logrus.WithFields(l.fields).WithFields(f).Debug(msg)
+	logrus.WithFields(f).Debug(msg)
 }
 
 // Info logs an info message
@@ -59,7 +61,7 @@ func (l *logger) Debug(msg string, args ...interface{}) {
 //     log.Info("Some message here", "key1", value1, "key2", value2)
 func (l *logger) Info(msg string, args ...interface{}) {
 	f := fields(args...)
-	logrus.WithFields(l.fields).WithFields(f).Info(msg)
+	logrus.WithFields(f).Info(msg)
 }
 
 // Error logs an error message
@@ -77,7 +79,14 @@ func (l *logger) Error(msg string, args ...interface{}) {
 	} else {
 		f = fields(args...)
 	}
-	logrus.WithFields(l.fields).WithFields(f).Error(msg)
+	logrus.WithFields(f).Error(msg)
+}
+
+// WithFields returns a new Logger instance with the given fields added to all log messages.
+func (l *logger) WithFields(args ...interface{}) Logger {
+  f := fields(args...)
+  n := l.log.WithFields(f)
+  return &logger{n}
 }
 
 // SetOutput sets the output for all loggers.

@@ -49,5 +49,5 @@ metalint:
 	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/...
 
 test:	
-	pip2.7 install -r -q tests/requirements.txt
+	pip2.7 install -q -r tests/requirements.txt
 	nosetests-2.7 tests/

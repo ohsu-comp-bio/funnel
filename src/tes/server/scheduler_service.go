@@ -81,7 +81,7 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 // This is an RPC endpoint.
 // This is used by workers to communicate job updates to the server.
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
-  log := log.WithFields("jobID", stat.Id)
+	log := log.WithFields("jobID", stat.Id)
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)

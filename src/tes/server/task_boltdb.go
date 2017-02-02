@@ -133,7 +133,7 @@ func getJWT(ctx context.Context) string {
 // TODO: documentation
 func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
 	jobID, _ := uuid.NewV4()
-  log := log.WithFields("jobID", jobID)
+	log := log.WithFields("jobID", jobID)
 
 	log.Debug("RunTask called", "task", task)
 
@@ -247,7 +247,7 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 // TODO: documentation
 // Get info about a running task
 func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
-  log := log.WithFields("jobID", id.Value)
+	log := log.WithFields("jobID", id.Value)
 	log.Debug("GetJob called")
 
 	var job *ga4gh_task_exec.Job
@@ -300,7 +300,7 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 // TODO: documentation
 // Cancel a running task
 func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobID, error) {
-  log := log.WithFields("jobID", taskop.Value)
+	log := log.WithFields("jobID", taskop.Value)
 
 	state, _ := taskBolt.getJobState(taskop.Value)
 	switch state {

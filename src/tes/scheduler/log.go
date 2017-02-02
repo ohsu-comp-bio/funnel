@@ -2,4 +2,4 @@ package scheduler
 
 import "tes/logger"
 
-var log logger.Logger = logger.New("sched")
+var log = logger.New("sched")

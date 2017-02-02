@@ -13,7 +13,7 @@ import (
 	"tes/server"
 )
 
-var log logger.Logger = logger.New("tes-server")
+var log = logger.New("tes-server")
 
 func main() {
 	config := tes.DefaultConfig()

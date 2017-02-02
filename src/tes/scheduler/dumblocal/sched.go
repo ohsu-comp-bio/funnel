@@ -13,7 +13,7 @@ import (
 	dumb "tes/scheduler/dumb"
 )
 
-var log logger.Logger = logger.New("dumbsched")
+var log = logger.New("dumbsched")
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(workers int) sched.Scheduler {

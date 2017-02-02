@@ -9,7 +9,7 @@ import (
 	"tes/worker/slot"
 )
 
-var log logger.Logger = logger.New("tes-worker")
+var log = logger.New("tes-worker")
 
 func main() {
 	config := worker.DefaultConfig()
@@ -39,7 +39,7 @@ func start(config worker.Config) {
 		if err != nil {
 			log.Error("Can't open log output file", "path", config.LogPath)
 		} else {
-			log.SetOutput(logFile)
+			logger.SetOutput(logFile)
 		}
 	}
 

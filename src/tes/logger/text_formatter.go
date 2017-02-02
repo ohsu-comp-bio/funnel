@@ -33,7 +33,7 @@ func init() {
 	isTerminal = logrus.IsTerminal()
 }
 
-type TextFormatter struct {
+type textFormatter struct {
 	// Set to true to bypass checking for a TTY before outputting colors.
 	ForceColors bool
 
@@ -57,7 +57,7 @@ type TextFormatter struct {
 	DisableSorting bool
 }
 
-func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	var b *bytes.Buffer
 	keys := make([]string, 0, len(entry.Data))
 	for k := range entry.Data {
@@ -104,7 +104,7 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (f *TextFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys []string, timestampFormat string, ns string) {
+func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys []string, timestampFormat string, ns string) {
 	var levelColor int
 	switch entry.Level {
 	case logrus.DebugLevel:
@@ -168,7 +168,7 @@ func needsQuoting(text string) bool {
 	return false
 }
 
-func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
+func (f *textFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
 
 	b.WriteString(key)
 	b.WriteByte('=')
@@ -176,7 +176,7 @@ func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interf
 	b.WriteByte(' ')
 }
 
-func (f *TextFormatter) appendValue(b *bytes.Buffer, value interface{}) {
+func (f *textFormatter) appendValue(b *bytes.Buffer, value interface{}) {
 	switch value := value.(type) {
 	case string:
 		if !needsQuoting(value) {

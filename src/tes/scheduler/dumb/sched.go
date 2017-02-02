@@ -7,7 +7,7 @@ import (
 	sched "tes/scheduler"
 )
 
-var log logger.Logger = logger.New("dumb-sched")
+var log = logger.New("dumb-sched")
 
 // Scheduler extends the core Scheduler interface with additional methods for tracking
 // a count of available workers.

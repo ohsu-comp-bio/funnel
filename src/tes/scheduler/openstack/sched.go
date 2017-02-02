@@ -8,7 +8,7 @@ import (
 	dumb "tes/scheduler/dumb"
 )
 
-var log logger.Logger = logger.New("openstack-sched")
+var log = logger.New("openstack-sched")
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf tes.Config) sched.Scheduler {

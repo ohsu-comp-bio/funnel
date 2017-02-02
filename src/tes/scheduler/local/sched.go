@@ -11,7 +11,7 @@ import (
 	worker "tes/worker"
 )
 
-var log logger.Logger = logger.New("local-sched")
+var log = logger.New("local-sched")
 
 // TODO Questions:
 // - how to efficiently copy/slice a large resource pool?

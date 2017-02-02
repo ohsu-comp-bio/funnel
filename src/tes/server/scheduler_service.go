@@ -124,7 +124,7 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 			bw.Delete([]byte(workerID))
 			bc.Put([]byte(stat.Id), []byte(stat.State.String()))
 		case ga4gh_task_exec.State_Initializing, ga4gh_task_exec.State_Running:
-			log.Debug("Job state (ignored?)", "state", stat.State)
+			log.Debug("Job state", "state", stat.State)
 		}
 		return nil
 	})

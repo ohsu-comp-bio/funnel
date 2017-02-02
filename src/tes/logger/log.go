@@ -6,20 +6,21 @@ import (
 )
 
 func init() {
-	logrus.SetFormatter(&TextFormatter{
+	logrus.SetFormatter(&textFormatter{
 		DisableTimestamp: true,
 	})
 	// TODO hard-coded level
 	logrus.SetLevel(logrus.DebugLevel)
 }
 
+// Logger is repsonsible for logging messages from code.
 type Logger interface {
 	Debug(string, ...interface{})
 	Info(string, ...interface{})
 	Error(string, ...interface{})
-	SetOutput(io.Writer)
 }
 
+// New returns a new Logger instance.
 func New(ns string, args ...interface{}) Logger {
 	f := fields(args...)
 	f["ns"] = ns
@@ -43,16 +44,32 @@ func fields(args ...interface{}) map[string]interface{} {
 	return f
 }
 
+// Debug logs a debug message.
+//
+// After the first argument, arguments are key-value pairs which are written as structured logs.
+//     log.Debug("Some message here", "key1", value1, "key2", value2)
 func (l *logger) Debug(msg string, args ...interface{}) {
 	f := fields(args...)
 	logrus.WithFields(l.fields).WithFields(f).Debug(msg)
 }
 
+// Info logs an info message
+//
+// After the first argument, arguments are key-value pairs which are written as structured logs.
+//     log.Info("Some message here", "key1", value1, "key2", value2)
 func (l *logger) Info(msg string, args ...interface{}) {
 	f := fields(args...)
 	logrus.WithFields(l.fields).WithFields(f).Info(msg)
 }
 
+// Error logs an error message
+//
+// After the first argument, arguments are key-value pairs which are written as structured logs.
+//     log.Error("Some message here", "key1", value1, "key2", value2)
+//
+// Error has a two-argument version that can be used as a shortcut.
+//     err := startServer()
+//     log.Error("Couldn't start server", err)
 func (l *logger) Error(msg string, args ...interface{}) {
 	var f map[string]interface{}
 	if len(args) == 1 {
@@ -63,18 +80,24 @@ func (l *logger) Error(msg string, args ...interface{}) {
 	logrus.WithFields(l.fields).WithFields(f).Error(msg)
 }
 
-func (l *logger) SetOutput(w io.Writer) {
+// SetOutput sets the output for all loggers.
+func SetOutput(w io.Writer) {
 	logrus.SetOutput(w)
 }
 
 var rootLogger = New("tes")
 
+// Debug logs to the global logger at the Debug level
 func Debug(msg string, args ...interface{}) {
 	rootLogger.Debug(msg, args...)
 }
+
+// Info logs to the global logger at the Info level
 func Info(msg string, args ...interface{}) {
 	rootLogger.Info(msg, args...)
 }
+
+// Error logs to the global logger at the Error level
 func Error(msg string, args ...interface{}) {
 	rootLogger.Error(msg, args...)
 }

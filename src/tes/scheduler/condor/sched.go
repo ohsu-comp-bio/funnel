@@ -13,7 +13,7 @@ import (
 	"text/template"
 )
 
-var log logger.Logger = logger.New("condor-sched")
+var log = logger.New("condor-sched")
 
 // NewScheduler returns a new HTCondor Scheduler instance.
 func NewScheduler(c tes.Config) sched.Scheduler {

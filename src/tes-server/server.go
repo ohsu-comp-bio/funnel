@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
 	"tes"
 	"tes/scheduler"
 	"tes/scheduler/condor"
@@ -30,7 +31,7 @@ func main() {
 
 func start(config tes.Config) {
 	os.MkdirAll(config.WorkDir, 0755)
-	//setup GRPC listener
+	// setup GRPC listener
 	// TODO if another process has the db open, this will block and it is really
 	//      confusing when you don't realize you have the db locked in another
 	//      terminal somewhere. Would be good to timeout on startup here.
@@ -42,7 +43,7 @@ func start(config tes.Config) {
 	s.Start(config.RPCPort)
 
 	var sched scheduler.Scheduler
-	switch config.Scheduler {
+	switch strings.ToLower(config.Scheduler) {
 	case "local":
 		// TODO worker will stay alive if the parent process panics
 		sched = local.NewScheduler(config)
@@ -51,7 +52,7 @@ func start(config tes.Config) {
 	case "openstack":
 		sched = openstack.NewScheduler(config)
 	case "dumblocal":
-		sched = dumblocal.NewScheduler(4)
+		sched = dumblocal.NewScheduler(config)
 	default:
 		log.Printf("Error: unknown scheduler %s", config.Scheduler)
 		return

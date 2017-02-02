@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 	"syscall"
+	"tes"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
 	pbr "tes/server/proto"
@@ -26,14 +27,14 @@ type Engine interface {
 
 // engine is the internal implementation of a docker job engine.
 type engine struct {
-	conf Config
+	conf tes.Worker
 }
 
 // NewEngine returns a new Engine instance configured with a given scheduler address,
 // working directory, and storage client.
 //
 // If the working directory can't be initialized, this returns an error.
-func NewEngine(conf Config) (Engine, error) {
+func NewEngine(conf tes.Worker) (Engine, error) {
 	dir, err := filepath.Abs(conf.WorkDir)
 	if err != nil {
 		return nil, err

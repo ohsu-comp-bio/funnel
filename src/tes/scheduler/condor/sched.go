@@ -9,7 +9,6 @@ import (
 	"tes"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
-	worker "tes/worker"
 	"text/template"
 )
 
@@ -56,14 +55,11 @@ func (s *scheduler) startWorker(workerID string) {
 	workdir, _ = filepath.Abs(workdir)
 	os.MkdirAll(workdir, 0755)
 
-	workerConf := worker.Config{
-		ID:            workerID,
-		ServerAddress: s.conf.ServerAddress,
-		Timeout:       0,
-		NumWorkers:    1,
-		Storage:       s.conf.Storage,
-		WorkDir:       "",
-	}
+	workerConf := s.conf.Worker
+	workerConf.ID = workerID
+	workerConf.ServerAddress = s.conf.ServerAddress
+	workerConf.Storage = s.conf.Storage
+
 	confPath := path.Join(workdir, "worker.conf.yml")
 	workerConf.ToYamlFile(confPath)
 
@@ -75,7 +71,7 @@ func (s *scheduler) startWorker(workerID string) {
 	submitTpl, _ := template.New("condor.submit").Parse(`
 		universe    = vanilla
 		executable  = {{.Executable}}
-		arguments   = -config worker.conf.yml
+		arguments   = -config {{.WorkDir}}/worker.conf.yml
 		environment = "PATH=/usr/bin"
 		log         = {{.WorkDir}}/condor-event-log
 		error       = {{.WorkDir}}/tes-worker-stderr

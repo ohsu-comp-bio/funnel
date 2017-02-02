@@ -52,15 +52,27 @@ class TestTaskREST(SimpleServerTest):
         assert new_data["state"] == data["state"]
 
     def test_cancel(self):
+        dclient = docker.from_env()
         job_id = self._submit_steps("tes-wait step 1")
         self.wait("step 1")
+        # ensure the container was created
+        while True:
+            try:
+                dclient.containers.get(job_id + "-0")
+                break
+            except:
+                continue
         self.tes.delete_job(job_id)
-        time.sleep(5)
+        # ensure docker stops the container within 20 seconds
+        for i in range(10):
+            try:
+                dclient.containers.get(job_id + "-0")
+                time.sleep(2)
+            except:
+                continue
+        self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
         data = self.tes.get_job(job_id)
         assert data["state"] == "Canceled"
-        time.sleep(10)
-        dclient = docker.from_env()
-        self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
 
     def test_job_log_length(self):
         '''

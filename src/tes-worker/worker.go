@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	config := worker.DefaultConfig()
+	config := tes.WorkerDefaultConfig()
 
 	var configArg string
 	flag.StringVar(&configArg, "config", "", "Config File")
@@ -18,7 +18,7 @@ func main() {
 	flag.StringVar(&config.ServerAddress, "server-address", config.ServerAddress, "Server address")
 	flag.StringVar(&config.WorkDir, "work-dir", config.WorkDir, "Working Directory")
 	flag.IntVar(&config.Timeout, "timeout", config.Timeout, "Timeout in seconds")
-	flag.IntVar(&config.NumWorkers, "num-workers", config.NumWorkers, "Worker Count")
+	flag.IntVar(&config.Slots, "num-slots", config.Slots, "Worker Slot Count")
 	flag.StringVar(&config.LogPath, "log-path", config.LogPath, "File path to write logs to")
 
 	flag.Parse()
@@ -26,7 +26,7 @@ func main() {
 	start(config)
 }
 
-func start(config worker.Config) {
+func start(config tes.Worker) {
 
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log
@@ -55,11 +55,11 @@ func start(config worker.Config) {
 	}
 
 	// Create the slot pool
-	slots := make([]*slot.Slot, config.NumWorkers)
+	slots := make([]*slot.Slot, config.Slots)
 	p := slot.NewPool(slots, idleTimeout)
 
 	// Create the slots
-	for i := 0; i < config.NumWorkers; i++ {
+	for i := 0; i < config.Slots; i++ {
 		// TODO handle error
 		slots[i], _ = slot.NewSlot(config.ID, config.ServerAddress, eng)
 	}

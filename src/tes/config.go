@@ -27,18 +27,20 @@ type Openstack struct {
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
 	Local     Local
+	Dumblocal Local
+	Condor    Local
 	Openstack Openstack
 }
 
 // Config describes configuration for TES.
 type Config struct {
 	pbr.ServerConfig
-	// TODO move this to protobuf?
+	Scheduler  string
 	Schedulers Schedulers
+	Worker     Worker
 	DBPath     string
 	HTTPPort   string
 	RPCPort    string
-	Scheduler  string
 	ContentDir string
 	WorkDir    string
 }
@@ -53,15 +55,74 @@ func DefaultConfig() Config {
 		DBPath:     path.Join(workDir, "tes_task.db"),
 		HTTPPort:   "8000",
 		RPCPort:    "9090",
-		Scheduler:  "local",
 		ContentDir: defaultContentDir(),
 		WorkDir:    workDir,
+		Scheduler:  "Local",
 		Schedulers: Schedulers{
 			Local: Local{
 				NumWorkers: 4,
 			},
 		},
+		Worker: WorkerDefaultConfig(),
 	}
+}
+
+// Worker contains worker configuration.
+type Worker struct {
+	ID string	
+	Slots int
+	// Address of the scheduler, e.g. "1.2.3.4:9090"
+	ServerAddress string
+	// Directory to write job files to
+	WorkDir string
+	Timeout int
+	// how often (milliseconds) the worker polls for cancellation requests
+	StatusPollRate int
+	// how often (milliseconds) the worker sends log updates
+	LogUpdateRate int
+	Storage       []*pbr.StorageConfig
+	LogPath       string
+}
+
+// WorkerDefaultConfig returns simple, default worker configuration.
+func WorkerDefaultConfig() Worker {
+	return Worker{
+		Slots:          1,
+		ServerAddress:  "localhost:9090",
+		WorkDir:        "tes-work-dir",
+		Timeout:        -1,
+		StatusPollRate: 5000,
+		LogUpdateRate:  5000,
+		LogPath:        "tes-worker-log",
+	}
+}
+
+// ToYaml formats the configuration into YAML and returns the bytes.
+func (c Worker) ToYaml() []byte {
+	// TODO handle error
+	yamlstr, _ := yaml.Marshal(c)
+	return yamlstr
+}
+
+// ToYamlFile writes the configuration to a YAML file.
+func (c Worker) ToYamlFile(p string) {
+	// TODO handle error
+	ioutil.WriteFile(p, c.ToYaml(), 0600)
+}
+
+// ToYamlTempFile writes the configuration to a YAML temp. file.
+func (c Worker) ToYamlTempFile(name string) (string, func()) {
+	// I'm creating a temp. directory instead of a temp. file so that
+	// the file can have an expected name. This is helpful for the HTCondor scheduler.
+	tmpdir, _ := ioutil.TempDir("", "")
+
+	cleanup := func() {
+		os.RemoveAll(tmpdir)
+	}
+
+	p := filepath.Join(tmpdir, name)
+	c.ToYamlFile(p)
+	return p, cleanup
 }
 
 func defaultContentDir() string {

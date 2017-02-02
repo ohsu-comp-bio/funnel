@@ -8,7 +8,6 @@ import (
 	"tes"
 	pbe "tes/ga4gh"
 	sched "tes/scheduler"
-	worker "tes/worker"
 )
 
 // TODO Questions:
@@ -79,43 +78,21 @@ func (s *scheduler) runWorker(workerID string) {
 	log.Printf("Starting local worker")
 	log.Printf("Storage: %s", s.conf.Storage)
 
-	workerConf := worker.Config{
-		ID:            workerID,
-		ServerAddress: s.conf.ServerAddress,
-		Timeout:       1,
-		NumWorkers:    1,
-		Storage:       s.conf.Storage,
-		WorkDir:       s.conf.WorkDir,
-	}
+	workerConf := s.conf.Worker
+	workerConf.ID = workerID
+	workerConf.ServerAddress = s.conf.ServerAddress
+	workerConf.Storage = s.conf.Storage
 
 	confPath, cleanup := workerConf.ToYamlTempFile("worker.conf.yml")
 	defer cleanup()
 
 	workerPath := sched.DetectWorkerPath()
 
-	cmd := exec.Command(
-		workerPath,
-		"-config", confPath,
-	)
-
+	cmd := exec.Command(workerPath, "-config", confPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("%s", err)
 	}
-}
-
-//...I cannot believe I have to define these.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

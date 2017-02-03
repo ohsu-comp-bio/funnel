@@ -1,17 +1,19 @@
 package condor
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"tes"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 	worker "tes/worker"
 	"text/template"
 )
+
+var log = logger.New("condor-sched")
 
 // NewScheduler returns a new HTCondor Scheduler instance.
 func NewScheduler(c tes.Config) sched.Scheduler {
@@ -24,7 +26,7 @@ type scheduler struct {
 
 // Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Println("Running condor scheduler")
+	log.Debug("Running condor scheduler")
 
 	w := sched.Worker{
 		ID: sched.GenWorkerID(),
@@ -45,12 +47,12 @@ func (s *scheduler) observe(o sched.Offer) {
 	if o.Accepted() {
 		s.startWorker(o.Worker().ID)
 	} else if o.Rejected() {
-		log.Println("Condor offer was rejected")
+		log.Debug("Condor offer was rejected")
 	}
 }
 
 func (s *scheduler) startWorker(workerID string) {
-	log.Println("Start condor worker")
+	log.Debug("Start condor worker")
 	// TODO document that these working dirs need manual cleanup
 	workdir := path.Join(s.conf.WorkDir, "condor-scheduler", workerID)
 	workdir, _ = filepath.Abs(workdir)

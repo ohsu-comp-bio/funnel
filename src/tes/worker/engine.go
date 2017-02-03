@@ -3,7 +3,6 @@ package tesTaskEngineWorker
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os/exec"
 	"path/filepath"
@@ -69,8 +68,7 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 	// Tell the scheduler if the job failed
 	if joberr != nil {
 		sched.SetFailed(ctx, jobR.Job)
-		log.Printf("Failed to run job: %s", jobR.Job.JobID)
-		log.Printf("%s", joberr)
+		log.Error("Failed to run job", "jobID", jobR.Job.JobID, "error", joberr)
 	}
 	return joberr
 }
@@ -83,6 +81,8 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
+	log := log.WithFields("jobID", jobR.Job.JobID)
+
 	job := jobR.Job
 	mapper, merr := eng.getMapper(job)
 	if merr != nil {
@@ -107,7 +107,8 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		if err != nil {
 			return fmt.Errorf("Error setting up docker command: %v", err)
 		}
-		log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
+		log.Info("Running command",
+			"command", strings.Join(dcmd.Cmd.Args, " "))
 
 		// Start task step asynchronously
 		dcmd.Cmd.Start()
@@ -169,7 +170,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				if cmdErr != nil {
 					return fmt.Errorf("Docker command error: %v", cmdErr)
 				}
-				log.Println("Process finished gracefully without error")
+				log.Info("Process finished gracefully without error")
 				sched.SetComplete(ctx, job)
 				break PollLoop
 
@@ -185,13 +186,13 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 					if err != nil {
 						return fmt.Errorf("Error trying to stop container: %v", err)
 					}
-					log.Println("Successfully canceled job")
+					log.Info("Successfully canceled job")
 					break PollLoop
 				case pbe.State_Running:
-					log.Print("Waiting for task to finish...")
+					log.Debug("Waiting for task to finish...")
 					stepLogUpdate := eng.updateLogs(dcmd)
 					if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
-						log.Print("Updating Job Logs...")
+						log.Debug("Updating Job Logs...")
 						// Send the scheduler service a job status update with updates
 						// to stdout and stderr
 						statusReq := &pbr.UpdateStatusRequest{
@@ -266,6 +267,10 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if storage == nil {
+		return nil, fmt.Errorf("No storage configured")
 	}
 
 	return storage, nil
@@ -400,7 +405,7 @@ func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 
 func (eng *engine) finalizeLogs(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
 	exitCode := getExitCode(cmdErr)
-	log.Printf("Exit code: %d", exitCode)
+	log.Info("Exit code", "code", exitCode)
 	steplog := eng.updateLogs(dcmd)
 	steplog.ExitCode = exitCode
 	return steplog
@@ -426,7 +431,7 @@ func getExitCode(err error) int32 {
 				return int32(status.ExitStatus())
 			}
 		} else {
-			log.Printf("Could not determine exit code. Using default -999")
+			log.Info("Could not determine exit code. Using default -999")
 			return -999
 		}
 	}

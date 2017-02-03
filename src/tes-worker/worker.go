@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"tes"
+	"tes/logger"
 	worker "tes/worker"
 	"tes/worker/slot"
 )
+
+var log = logger.New("tes-worker")
 
 func main() {
 	config := worker.DefaultConfig()
@@ -35,16 +37,16 @@ func start(config worker.Config) {
 	if config.LogPath != "" {
 		logFile, err := os.OpenFile(config.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			log.Println("Can't open log file")
+			log.Error("Can't open log output file", "path", config.LogPath)
 		} else {
-			log.SetOutput(logFile)
+			logger.SetOutput(logFile)
 		}
 	}
 
 	// Create the job engine
 	eng, err := worker.NewEngine(config)
 	if err != nil {
-		log.Printf("Error creating worker engine: %s", err)
+		log.Error("Couldn't create engine", err)
 		return
 	}
 

@@ -41,7 +41,7 @@ prune_deps:
 tidy:
 	pip2.7 install -q autopep8
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
-	@find ./* -type f | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
+	@find ./* -type f | grep -E '.*\.py$$' | grep -v "/venv/" | grep -v "/share/node" | xargs autopep8 --in-place --aggressive --aggressive
 
 metalint:
 	go get github.com/alecthomas/gometalinter

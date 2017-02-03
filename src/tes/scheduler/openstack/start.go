@@ -6,7 +6,6 @@ import (
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
-	"log"
 	worker "tes/worker"
 )
 
@@ -18,15 +17,13 @@ sudo systemctl start tes.service
 func (s *scheduler) start(workerID string) {
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
 	if aerr != nil {
-		log.Printf("Auth options failed")
-		log.Println(aerr)
+		log.Error("Auth options failed", aerr)
 		return
 	}
 
 	provider, perr := openstack.AuthenticatedClient(authOpts)
 	if perr != nil {
-		log.Printf("Provider failed")
-		log.Println(perr)
+		log.Error("Provider failed", perr)
 		return
 	}
 
@@ -34,8 +31,7 @@ func (s *scheduler) start(workerID string) {
 		gophercloud.EndpointOpts{Type: "compute", Name: "nova"})
 
 	if cerr != nil {
-		log.Printf("Provider failed")
-		log.Println(cerr)
+		log.Error("Provider failed", cerr)
 		return
 	}
 
@@ -71,7 +67,6 @@ func (s *scheduler) start(workerID string) {
 	}).Extract()
 
 	if serr != nil {
-		log.Printf("Error creating server")
-		log.Println(serr)
+		log.Error("Error creating server", serr)
 	}
 }

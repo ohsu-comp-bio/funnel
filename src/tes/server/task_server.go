@@ -2,7 +2,6 @@ package server
 
 import (
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"tes/ga4gh"
 	"tes/server/proto"
@@ -50,6 +49,6 @@ func (ga4ghServer *GA4GHServer) Start(hostPort string) {
 		ga4gh_task_ref.RegisterSchedulerServer(grpcServer, ga4ghServer.sched)
 	}
 
-	log.Println("TCP+RPC server listening on " + hostPort)
+	log.Info("RPC server listening", "port", hostPort)
 	go grpcServer.Serve(lis)
 }

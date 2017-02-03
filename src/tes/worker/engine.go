@@ -3,7 +3,6 @@ package tesTaskEngineWorker
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os/exec"
 	"path/filepath"
@@ -96,9 +95,11 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 // runJob runs a job
 // TODO documentation
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
+	log := log.WithFields("jobID", jobR.Job.JobID)
 	// Initialize job
 	sched.SetInitializing(ctx, jobR.Job)
 	mapper, merr := eng.getMapper(jobR.Job)
+
 	if merr != nil {
 		sched.SetFailed(ctx, jobR.Job)
 		return fmt.Errorf("Error during mapper initialization: %s", merr)
@@ -130,7 +131,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	}
 
 	// Job is Complete
-	log.Println("Job completed without error")
+	log.Info("Job completed without error")
 	return nil
 }
 
@@ -142,7 +143,7 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 	if err != nil {
 		return fmt.Errorf("Error setting up docker command: %v", err)
 	}
-	log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
+	log.Info("Running command", "cmd", strings.Join(dcmd.Cmd.Args, " "))
 
 	// Start task step asynchronously
 	dcmd.Cmd.Start()
@@ -279,6 +280,10 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		}
 	}
 
+	if storage == nil {
+		return nil, fmt.Errorf("No storage configured")
+	}
+
 	return storage, nil
 }
 
@@ -411,7 +416,7 @@ func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 
 func (eng *engine) finalizeLogs(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
 	exitCode := getExitCode(cmdErr)
-	log.Printf("Exit code: %d", exitCode)
+	log.Info("Exit code", "code", exitCode)
 	steplog := eng.updateLogs(dcmd)
 	steplog.ExitCode = exitCode
 	return steplog
@@ -437,7 +442,7 @@ func getExitCode(err error) int32 {
 				return int32(status.ExitStatus())
 			}
 		} else {
-			log.Printf("Could not determine exit code. Using default -999")
+			log.Info("Could not determine exit code. Using default -999")
 			return -999
 		}
 	}

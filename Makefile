@@ -39,16 +39,15 @@ prune_deps:
 	./buildtools/bin/vendetta -p src/
 
 tidy:
+	pip install -q autopep8
 	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
-	@find ./* -type f | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
-
-gometalinter:
-	go get github.com/alecthomas/gometalinter
-	./buildtools/bin/gometalinter --install
-
-reformat:
-	./buildtools/bin/gometalinter --disable-all --enable=gofmt --vendor -s ga4gh -s proto ./src/...
+	@find ./* -type f | grep -E '.*\.py$$' | grep -v "/venv/" | grep -v "/share/node" | xargs autopep8 --in-place --aggressive --aggressive
 
 metalint:
+	go get github.com/alecthomas/gometalinter
+	./buildtools/bin/gometalinter --install > /dev/null
 	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/...
 
+test:	
+	pip2.7 install -q -r tests/requirements.txt
+	nosetests-2.7 tests/

@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"log"
 	pbe "tes/ga4gh"
 	"time"
 )
@@ -32,7 +31,7 @@ type multisched struct {
 
 // Schedule schedules a job on multiple backends.
 func (m *multisched) Schedule(job *pbe.Job) Offer {
-	log.Println("Running multi-scheduler")
+	log.Debug("Running multi-scheduler")
 
 	var best Offer
 	// TODO should Schedule get a Context arg?

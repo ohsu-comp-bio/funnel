@@ -3,8 +3,8 @@ package slot
 import (
 	"context"
 	uuid "github.com/nu7hatch/gouuid"
-	"log"
 	"sync"
+	"tes/logger"
 	"time"
 )
 
@@ -23,15 +23,18 @@ type Pool struct {
 	// idleTimeout controls how long before the pool shuts down when no jobs are available.
 	idleTimeout IdleTimeout
 	slots       []*Slot
+	log         logger.Logger
 }
 
 // NewPool creates a new Pool instance with default configuration.
 func NewPool(slots []*Slot, idleTimeout IdleTimeout) *Pool {
+	id := GenPoolID()
 	return &Pool{
-		ID:                  GenPoolID(),
+		ID:                  id,
 		statusCheckDuration: time.Second * 2,
 		idleTimeout:         idleTimeout,
 		slots:               slots,
+		log:                 logger.New("pool", "poolID", id),
 	}
 }
 
@@ -41,13 +44,13 @@ func (pool *Pool) Start() {
 	// WaitGroup helps wait for the slots to finish and clean up.
 	var wg sync.WaitGroup
 
-	defer log.Printf("Shutting down pool")
+	defer pool.log.Info("Shutting down")
 
 	// Ticker helps poll slot state
 	ticker := time.NewTicker(pool.statusCheckDuration)
 	defer ticker.Stop()
 
-	log.Printf("Starting pool of %d slots", len(pool.slots))
+	pool.log.Info("Starting", "numSlots", len(pool.slots))
 
 	// Create and start slots.
 	// Do some bookkeeping with the WaitGroup and call slot.Run()
@@ -66,7 +69,7 @@ loop:
 		select {
 		case <-pool.idleTimeout.Done():
 			// Break the loop for shutdown
-			log.Printf("Pool has reached idle timeout")
+			pool.log.Info("Reached idle timeout")
 			break loop
 		case <-ticker.C:
 			// Check if the pool is completely idle.

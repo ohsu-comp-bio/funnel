@@ -4,10 +4,10 @@ import (
 	"github.com/ghodss/yaml"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
+	log "tes/logger"
 	pbr "tes/server/proto"
 )
 
@@ -95,15 +95,13 @@ func LoadConfigOrExit(relpath string, config interface{}) {
 		var abspath string
 		abspath, err = filepath.Abs(relpath)
 		if err != nil {
-			log.Printf("Failure reading config: %s", abspath)
-			log.Println(err)
+			log.Error("Failure reading config", "path", abspath, "error", err)
 			os.Exit(1)
 		}
-		log.Printf("Using config file: %s", abspath)
+		log.Info("Using config file", "path", abspath)
 		err = ParseConfigFile(abspath, &config)
 		if err != nil {
-			log.Printf("Failure reading config: %s", abspath)
-			log.Println(err)
+			log.Error("Failure reading config", "path", abspath, "error", err)
 			os.Exit(1)
 		}
 	}

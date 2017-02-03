@@ -8,7 +8,6 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
-	"log"
 	"tes/ga4gh"
 	"tes/server/proto"
 )
@@ -82,6 +81,8 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 // This is an RPC endpoint.
 // This is used by workers to communicate job updates to the server.
 func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
+	log := log.WithFields("jobID", stat.Id)
+
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		ba := tx.Bucket(JobsActive)
 		bc := tx.Bucket(JobsComplete)
@@ -118,14 +119,14 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 
 		switch stat.State {
 		case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error:
-			log.Printf("Job status: %v", stat.State)
+			log.Debug("Job state change", "state", stat.State)
 			workerID := bjw.Get([]byte(stat.Id))
 			bjw.Delete([]byte(stat.Id))
 			ba.Delete([]byte(stat.Id))
 			bw.Delete([]byte(workerID))
 			bc.Put([]byte(stat.Id), []byte(stat.State.String()))
 		case ga4gh_task_exec.State_Initializing, ga4gh_task_exec.State_Running:
-			log.Printf("Job status: %v", stat.State)
+			log.Debug("Job state", "state", stat.State)
 		}
 		return nil
 	})
@@ -136,7 +137,7 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 // This is an RPC endpoint.
 // This is currently unimplemented. TODO
 func (taskBolt *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.WorkerInfo, error) {
-	log.Printf("Worker Ping")
+	log.Debug("Worker ping")
 	return info, nil
 }
 
@@ -146,7 +147,7 @@ func (taskBolt *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.W
 // TODO I don't think this is actually used.
 func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoRequest, server ga4gh_task_ref.Scheduler_GetQueueInfoServer) error {
 	ch := make(chan *ga4gh_task_exec.Task)
-	log.Printf("Getting queue info")
+	log.Debug("GetQueueInfo called")
 
 	// TODO handle DB errors
 	go taskBolt.db.View(func(tx *bolt.Tx) error {
@@ -188,7 +189,7 @@ func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_
 // GetJobState returns the state of a job, given a job ID.
 // This is an RPC endpoint.
 func (taskBolt *TaskBolt) GetJobState(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
-	log.Printf("Getting Task State")
+	log.Debug("GetJobState called")
 	var state ga4gh_task_exec.State
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		//TODO address err

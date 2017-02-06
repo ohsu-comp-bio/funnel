@@ -5,6 +5,7 @@ import (
 	pbe "tes/ga4gh"
 )
 
+// Coordinator is responsible for coordinating offers from multiple schedulers.
 type Coordinator interface {
 	// TODO could pass Subscription to the Coordinator as an arg, which would allow
 	//      for different types of subscriptions (e.g. buffered)
@@ -15,8 +16,11 @@ type Coordinator interface {
 }
 
 type jobchan chan *pbe.Job
+
+// Subscription is a read-only channel of Jobs to be scheduled.
 type Subscription <-chan *pbe.Job
 
+// NewCoordinator returns a new Coordinator instance.
 func NewCoordinator() Coordinator {
 	return &coordinator{
 		make(chan *broadcast),
@@ -33,20 +37,26 @@ type coordinator struct {
 	offers        chan Offer
 }
 
+// Subscribe returns a new Subscription to this Coordinator.
 func (c *coordinator) Subscribe() Subscription {
 	s := make(chan *pbe.Job)
 	c.subscriptions <- s
 	return s
 }
 
+// Unsubscribe is currently unimplemented.
+// It is meant to remove and clean up a Subscription.
 func (c *coordinator) Unsubscribe(s Subscription) {
 	// TODO
 }
 
+// Submit submits an Offer from schduler backend (subscriber) to this Coordinator.
 func (c *coordinator) Submit(o Offer) {
 	c.offers <- o
 }
 
+// Broadcast broadcasts a Job to all subscribers and returns a channel
+// of Offers from subscribers for that Job.
 func (c *coordinator) Broadcast(ctx context.Context, j *pbe.Job) <-chan Offer {
 	ch := make(chan Offer)
 	cancelctx, cancelfunc := context.WithCancel(ctx)
@@ -59,6 +69,8 @@ func (c *coordinator) Broadcast(ctx context.Context, j *pbe.Job) <-chan Offer {
 	return ch
 }
 
+// Run runs the Coordinator, which starts a loop that communicates jobs and offers
+// to/from subscribers.
 func (c *coordinator) Run() {
 	state := make(map[string]*broadcast)
 	subs := make([]jobchan, 1)

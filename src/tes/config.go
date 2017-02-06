@@ -4,17 +4,19 @@ import (
 	"github.com/ghodss/yaml"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
+	log "tes/logger"
 	pbr "tes/server/proto"
 )
 
+// Local describes configuration for the local scheduler.
 type Local struct {
 	NumWorkers int
 }
 
+// Openstack describes configuration for the openstack scheduler.
 type Openstack struct {
 	NumWorkers int
 	KeyPair    string
@@ -22,11 +24,13 @@ type Openstack struct {
 	Server     os_servers.CreateOpts
 }
 
+// Schedulers describes configuration for all schedulers.
 type Schedulers struct {
 	Local     Local
 	Openstack Openstack
 }
 
+// Config describes configuration for TES.
 type Config struct {
 	pbr.ServerConfig
 	// TODO move this to protobuf?
@@ -39,6 +43,7 @@ type Config struct {
 	WorkDir    string
 }
 
+// DefaultConfig returns configuration with simple defaults.
 func DefaultConfig() Config {
 	workDir := "tes-work-dir"
 	return Config{
@@ -82,21 +87,21 @@ func ParseConfigFile(path string, doc interface{}) error {
 	return nil
 }
 
+// LoadConfigOrExit tries to load the config from the given file.
+// If the file cannot be loaded, os.Exit() is called.
 func LoadConfigOrExit(relpath string, config interface{}) {
 	var err error
 	if relpath != "" {
 		var abspath string
 		abspath, err = filepath.Abs(relpath)
 		if err != nil {
-			log.Printf("Failure reading config: %s", abspath)
-			log.Println(err)
+			log.Error("Failure reading config", "path", abspath, "error", err)
 			os.Exit(1)
 		}
-		log.Printf("Using config file: %s", abspath)
+		log.Info("Using config file", "path", abspath)
 		err = ParseConfigFile(abspath, &config)
 		if err != nil {
-			log.Printf("Failure reading config: %s", abspath)
-			log.Println(err)
+			log.Error("Failure reading config", "path", abspath, "error", err)
 			os.Exit(1)
 		}
 	}

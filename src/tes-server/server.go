@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"tes"
+	"tes/logger"
 	"tes/scheduler"
 	"tes/scheduler/condor"
 	"tes/scheduler/dumblocal"
@@ -12,6 +12,8 @@ import (
 	"tes/scheduler/openstack"
 	"tes/server"
 )
+
+var log = logger.New("tes-server")
 
 func main() {
 	config := tes.DefaultConfig()
@@ -30,16 +32,17 @@ func main() {
 
 func start(config tes.Config) {
 	os.MkdirAll(config.WorkDir, 0755)
-	//setup GRPC listener
-	// TODO if another process has the db open, this will block and it is really
-	//      confusing when you don't realize you have the db locked in another
-	//      terminal somewhere. Would be good to timeout on startup here.
-	taski := tes_server.NewTaskBolt(config.DBPath, config.ServerConfig)
 
-	server := tes_server.NewGA4GHServer()
-	server.RegisterTaskServer(taski)
-	server.RegisterScheduleServer(taski)
-	server.Start(config.RPCPort)
+	taski, err := server.NewTaskBolt(config.DBPath, config.ServerConfig)
+	if err != nil {
+		log.Error("Couldn't open database", err)
+		return
+	}
+
+	s := server.NewGA4GHServer()
+	s.RegisterTaskServer(taski)
+	s.RegisterScheduleServer(taski)
+	s.Start(config.RPCPort)
 
 	var sched scheduler.Scheduler
 	switch config.Scheduler {
@@ -53,10 +56,11 @@ func start(config tes.Config) {
 	case "dumblocal":
 		sched = dumblocal.NewScheduler(4)
 	default:
-		log.Printf("Error: unknown scheduler %s", config.Scheduler)
+		log.Error("Unknown scheduler",
+			"scheduler", config.Scheduler)
 		return
 	}
 	go scheduler.StartScheduling(taski, sched)
 
-	tes_server.StartHttpProxy(config.RPCPort, config.HTTPPort, config.ContentDir)
+	server.StartHTTPProxy(config.RPCPort, config.HTTPPort, config.ContentDir)
 }

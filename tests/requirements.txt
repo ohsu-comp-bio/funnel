@@ -5,3 +5,5 @@ PyJWT==1.4.2
 pytz==2016.10
 urllib3==1.19.1
 PyYAML==3.12
+flake8==3.2.1
+autopep8==1.2.4

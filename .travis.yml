@@ -15,6 +15,9 @@ before_install:
 install:
   - make depends
   - make
-script: nosetests tests
+script: 
+  - make metalint
+  - flake8 .
+  - nosetests tests
 notifications:
   email: false

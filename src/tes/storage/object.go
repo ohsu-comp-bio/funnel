@@ -3,11 +3,10 @@ package storage
 import (
 	"fmt"
 	"github.com/minio/minio-go"
-	"log"
 	"strings"
 )
 
-// The S3 url protocol
+// S3Protocol defines the expected URL prefix for S3, "s3://"
 const S3Protocol = "s3://"
 
 // S3Backend provides access to an S3 object store.
@@ -30,7 +29,7 @@ func NewS3Backend(endpoint string, id string, secret string, SSL bool) (*S3Backe
 
 // Get copies an object from S3 to the host path.
 func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
-	log.Printf("Starting download of %s", url)
+	log.Info("Starting download", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)
 
@@ -39,7 +38,7 @@ func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Successfully saved %s", hostPath)
+		log.Info("Successfully saved", "hostPath", hostPath)
 		return nil
 	} else if class == Directory {
 		return fmt.Errorf("S3 directories not yet supported")
@@ -49,7 +48,7 @@ func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
 
 // Put copies an object (file) from the host path to S3.
 func (s3 *S3Backend) Put(url string, hostPath string, class string) error {
-	log.Printf("Starting upload of %s", url)
+	log.Info("Starting upload", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	// TODO it's easy to create an error if this starts with a "/"
 	//      maybe just strip it?
@@ -60,7 +59,7 @@ func (s3 *S3Backend) Put(url string, hostPath string, class string) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Successfully uploaded %s", hostPath)
+		log.Info("Successfully uploaded", "hostPath", hostPath)
 		return nil
 	} else if class == Directory {
 		return fmt.Errorf("S3 directories not yet supported")
@@ -68,6 +67,8 @@ func (s3 *S3Backend) Put(url string, hostPath string, class string) error {
 	return fmt.Errorf("Unknown file class: %s", class)
 }
 
+// Supports indicates whether this backend supports the given storage request.
+// For S3, the url must start with "s3://".
 func (s3 *S3Backend) Supports(url string, hostPath string, class string) bool {
 	return strings.HasPrefix(url, S3Protocol)
 }

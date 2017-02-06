@@ -1,13 +1,16 @@
 package openstack
 
 import (
-	"log"
 	"tes"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 	dumb "tes/scheduler/dumb"
 )
 
+var log = logger.New("openstack-sched")
+
+// NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf tes.Config) sched.Scheduler {
 	return &scheduler{
 		dumb.NewScheduler(conf.Schedulers.Openstack.NumWorkers),
@@ -20,8 +23,9 @@ type scheduler struct {
 	conf tes.Config
 }
 
+// Schedule schedules a job, returning an Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Println("Running dumb openstack scheduler")
+	log.Debug("Running dumb openstack scheduler")
 
 	o := s.ds.Schedule(j)
 	go s.observe(o)
@@ -38,6 +42,6 @@ func (s *scheduler) observe(o sched.Offer) {
 		//      so this scheduler only does N jobs and then stops.
 
 	} else if o.Rejected() {
-		log.Println("Local offer was rejected")
+		log.Debug("Local offer was rejected")
 	}
 }

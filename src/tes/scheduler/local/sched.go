@@ -1,15 +1,17 @@
 package local
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"sync/atomic"
 	"tes"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 	worker "tes/worker"
 )
+
+var log = logger.New("local-sched")
 
 // TODO Questions:
 // - how to efficiently copy/slice a large resource pool?
@@ -21,6 +23,7 @@ import (
 //   a task to a resource. Don't want to loop through 1000 resources for every task
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
+// NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf tes.Config) sched.Scheduler {
 	return &scheduler{
 		conf,
@@ -34,8 +37,9 @@ type scheduler struct {
 	available int32
 }
 
+// Schedule schedules a job and returns a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Println("Running local scheduler")
+	log.Debug("Running local scheduler")
 
 	// Make an offer if the current resource count is less than the max.
 	// This is just a dumb placeholder for a future scheduler.
@@ -44,22 +48,22 @@ func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	// and be able to assign a job to a specific, best-match node.
 	// This backend does none of that...yet.
 	avail := atomic.LoadInt32(&s.available)
-	log.Printf("Available: %d", avail)
+	log.Debug("Available", "slots", avail)
 	if avail == int32(0) {
 		return sched.RejectedOffer("Pool is full")
-	} else {
-		w := sched.Worker{
-			ID: sched.GenWorkerID(),
-			Resources: sched.Resources{
-				CPU:  1,
-				RAM:  1.0,
-				Disk: 10.0,
-			},
-		}
-		o := sched.NewOffer(j, w)
-		go s.observe(o)
-		return o
 	}
+
+	w := sched.Worker{
+		ID: sched.GenWorkerID(),
+		Resources: sched.Resources{
+			CPU:  1,
+			RAM:  1.0,
+			Disk: 10.0,
+		},
+	}
+	o := sched.NewOffer(j, w)
+	go s.observe(o)
+	return o
 }
 
 func (s *scheduler) observe(o sched.Offer) {
@@ -69,13 +73,12 @@ func (s *scheduler) observe(o sched.Offer) {
 		s.runWorker(o.Worker().ID)
 		atomic.AddInt32(&s.available, 1)
 	} else if o.Rejected() {
-		log.Println("Local offer was rejected")
+		log.Debug("Local offer was rejected")
 	}
 }
 
 func (s *scheduler) runWorker(workerID string) {
-	log.Printf("Starting local worker")
-	log.Printf("Storage: %s", s.conf.Storage)
+	log.Debug("Starting local worker", "storage", s.conf.Storage)
 
 	workerConf := worker.Config{
 		ID:            workerID,
@@ -100,7 +103,7 @@ func (s *scheduler) runWorker(workerID string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("%s", err)
+		log.Error("Couldn't start local worker", err)
 	}
 }
 

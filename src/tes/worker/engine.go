@@ -3,12 +3,10 @@ package tesTaskEngineWorker
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"strconv"
 	"strings"
 	"syscall"
 	pbe "tes/ga4gh"
@@ -64,15 +62,13 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 		return schederr
 	}
 
-	// Tell the scheduler the job is running.
-	sched.SetRunning(ctx, jobR.Job)
+	// Tell the scheduler the job is initializing.
+	sched.SetInitializing(ctx, jobR.Job)
 	joberr := eng.runJob(ctx, sched, jobR)
-
 	// Tell the scheduler if the job failed
 	if joberr != nil {
 		sched.SetFailed(ctx, jobR.Job)
-		log.Printf("Failed to run job: %s", jobR.Job.JobID)
-		log.Printf("%s", joberr)
+		log.Error("Failed to run job", "jobID", jobR.Job.JobID, "error", joberr)
 	}
 	return joberr
 }
@@ -85,6 +81,8 @@ func (eng *engine) RunJob(ctx context.Context, jobR *pbr.JobResponse) error {
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
+	log := log.WithFields("jobID", jobR.Job.JobID)
+
 	job := jobR.Job
 	mapper, merr := eng.getMapper(job)
 	if merr != nil {
@@ -109,27 +107,22 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		if err != nil {
 			return fmt.Errorf("Error setting up docker command: %v", err)
 		}
-		log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
+		log.Info("Running command",
+			"command", strings.Join(dcmd.Cmd.Args, " "))
 
 		// Start task step asynchronously
 		dcmd.Cmd.Start()
 
-		// Send intial log update with hostIP and portBindings
-		initialLog, err := eng.initializeLogs(dcmd)
-		if err != nil {
-			return fmt.Errorf("Error preparing initial logging information: %v", err)
-		}
-		statusReq := &pbr.UpdateStatusRequest{
-			Id:   job.JobID,
-			Step: int64(stepNum),
-			Log:  initialLog,
-		}
-		sched.UpdateJobStatus(ctx, statusReq)
-
-		// Open chanel to track async process
+		// Open channel to track async process
 		done := make(chan error, 1)
 		go func() {
 			done <- dcmd.Cmd.Wait()
+		}()
+
+		// Open channel to track container initialization
+		metaCh := make(chan []*pbe.Ports, 1)
+		go func() {
+			metaCh <- dcmd.InspectContainer(ctx)
 		}()
 
 		// Initialized to allow for DeepEquals comparison during polling
@@ -145,8 +138,26 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	PollLoop:
 		for {
 			select {
-			case cmd_err := <-done:
-				stepLogUpdate := eng.finalizeLogs(dcmd, cmd_err)
+			case portMap := <-metaCh:
+				ip, err := externalIP()
+				if err != nil {
+					return err
+				}
+
+				initLog := &pbe.JobLog{
+					HostIP: ip,
+					Ports:  portMap,
+				}
+
+				statusReq := &pbr.UpdateStatusRequest{
+					Id:   job.JobID,
+					Step: int64(stepNum),
+					Log:  initLog,
+				}
+				sched.UpdateJobStatus(ctx, statusReq)
+				sched.SetRunning(ctx, job)
+			case cmdErr := <-done:
+				stepLogUpdate := eng.finalizeLogs(dcmd, cmdErr)
 				// Send the scheduler service a final job status update that includes
 				// the exit code
 				statusReq := &pbr.UpdateStatusRequest{
@@ -156,32 +167,32 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 				}
 				sched.UpdateJobStatus(ctx, statusReq)
 
-				if cmd_err != nil {
-					return fmt.Errorf("Docker command error: %v", cmd_err)
-				} else {
-					log.Print("Process finished gracefully without error")
-					sched.SetComplete(ctx, job)
-					break PollLoop
+				if cmdErr != nil {
+					return fmt.Errorf("Docker command error: %v", cmdErr)
 				}
+				log.Info("Process finished gracefully without error")
+				sched.SetComplete(ctx, job)
+				break PollLoop
+
 			case <-tickChan:
 				jobDesc, err := sched.GetJobState(ctx, jobID)
 				if err != nil {
 					return fmt.Errorf("Error trying to get job status: %v", err)
 				}
+
 				switch jobDesc.State {
 				case pbe.State_Canceled:
 					err := dcmd.StopContainer()
 					if err != nil {
 						return fmt.Errorf("Error trying to stop container: %v", err)
-					} else {
-						log.Print("Successfully canceled job")
-						break PollLoop
 					}
+					log.Info("Successfully canceled job")
+					break PollLoop
 				case pbe.State_Running:
-					log.Print("Waiting for task to finish...")
+					log.Debug("Waiting for task to finish...")
 					stepLogUpdate := eng.updateLogs(dcmd)
 					if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
-						log.Print("Updating Job Logs...")
+						log.Debug("Updating Job Logs...")
 						// Send the scheduler service a job status update with updates
 						// to stdout and stderr
 						statusReq := &pbr.UpdateStatusRequest{
@@ -258,6 +269,10 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		}
 	}
 
+	if storage == nil {
+		return nil, fmt.Errorf("No storage configured")
+	}
+
 	return storage, nil
 }
 
@@ -285,7 +300,7 @@ func (eng *engine) setupDockerCmd(mapper *FileMapper, step *pbe.DockerExecutor, 
 		CmdString:     step.Cmd,
 		Volumes:       mapper.Volumes,
 		Workdir:       step.Workdir,
-		PortBindings:  step.PortBindings,
+		Ports:         step.Ports,
 		ContainerName: id,
 		// TODO make RemoveContainer configurable
 		RemoveContainer: true,
@@ -370,47 +385,6 @@ func externalIP() (string, error) {
 	return "", fmt.Errorf("Error no network connection")
 }
 
-func (eng *engine) initializeLogs(dcmd *DockerCmd) (*pbe.JobLog, error) {
-
-	// get container metadata and update jobLog
-	metadata, err := dcmd.InspectContainer()
-	if err != nil {
-		return nil, err
-	}
-	var portMap []*pbe.PortMapping
-	ip, err := externalIP()
-	if err != nil {
-		return nil, err
-	}
-	// extract exposed host port from
-	// https://godoc.org/github.com/docker/go-connections/nat#PortMap
-	for k, v := range metadata.NetworkSettings.Ports {
-		// will end up taking the last binding listed
-		for i := range v {
-			p := strings.Split(string(k), "/")
-			containerPort, err := strconv.Atoi(p[0])
-			if err != nil {
-				return nil, err
-			}
-			hostPort, err := strconv.Atoi(v[i].HostPort)
-			if err != nil {
-				return nil, err
-			}
-			portMap = append(portMap, &pbe.PortMapping{
-				ContainerPort: int32(containerPort),
-				HostBinding:   int32(hostPort),
-			})
-		}
-	}
-
-	stepLog := &pbe.JobLog{
-		HostIP:       ip,
-		PortBindings: portMap,
-	}
-
-	return stepLog, nil
-}
-
 func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 	stepLog := &pbe.JobLog{}
 
@@ -431,7 +405,7 @@ func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 
 func (eng *engine) finalizeLogs(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
 	exitCode := getExitCode(cmdErr)
-	log.Printf("Exit code: %d", exitCode)
+	log.Info("Exit code", "code", exitCode)
 	steplog := eng.updateLogs(dcmd)
 	steplog.ExitCode = exitCode
 	return steplog
@@ -457,7 +431,7 @@ func getExitCode(err error) int32 {
 				return int32(status.ExitStatus())
 			}
 		} else {
-			log.Printf("Could not determine exit code. Using default -999")
+			log.Info("Could not determine exit code. Using default -999")
 			return -999
 		}
 	}

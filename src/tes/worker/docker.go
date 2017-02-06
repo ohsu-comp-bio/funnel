@@ -4,23 +4,23 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	pbe "tes/ga4gh"
 	"time"
 )
 
+// DockerCmd is responsible for configuring and running a docker container.
 type DockerCmd struct {
 	ImageName       string
 	CmdString       []string
 	Volumes         []Volume
 	Workdir         string
-	PortBindings    []*pbe.PortMapping
+	Ports           []*pbe.Ports
 	ContainerName   string
 	RemoveContainer bool
 	Stdin           *os.File
@@ -37,25 +37,23 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
 }
 
+// SetupCommand sets up the command to be run and sets DockerCmd.Cmd.
+// Essentially it prepares commandline arguments for Docker.
 func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
-	log.Printf("Docker Volumes: %s", dcmd.Volumes)
-
 	args := []string{"run", "-i"}
 
 	if dcmd.RemoveContainer {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.PortBindings != nil {
-		log.Printf("Docker Port Bindings: %v", dcmd.PortBindings)
-		for i := range dcmd.PortBindings {
-			hostPortNum := int(dcmd.PortBindings[i].HostBinding)
-			if hostPortNum <= 1024 && hostPortNum != 0 {
+	if dcmd.Ports != nil {
+		for i := range dcmd.Ports {
+			hostPort := dcmd.Ports[i].Host
+			containerPort := dcmd.Ports[i].Container
+			if hostPort <= 1024 && hostPort != 0 {
 				return nil, fmt.Errorf("Error cannot use restricted ports")
 			}
-			hostPort := strconv.Itoa(hostPortNum)
-			containerPort := strconv.Itoa(int(dcmd.PortBindings[i].ContainerPort))
-			args = append(args, "-p", hostPort+":"+containerPort)
+			args = append(args, "-p", fmt.Sprintf("%d:%d", hostPort, containerPort))
 		}
 	}
 
@@ -75,6 +73,8 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	args = append(args, dcmd.ImageName)
 	args = append(args, dcmd.CmdString...)
 
+	log.Debug("DockerCmd", "dmcd", dcmd)
+
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 	cmd := exec.Command("docker", args...)
 	dcmd.Cmd = cmd
@@ -85,7 +85,7 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating StdoutPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StdoutPipe for Cmd: %s", err)
 	}
 
 	stdoutScanner := bufio.NewScanner(stdoutReader)
@@ -99,7 +99,7 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating StderrPipe for Cmd", err)
+		return nil, fmt.Errorf("Error creating StderrPipe for Cmd: %s", err)
 	}
 
 	stderrScanner := bufio.NewScanner(stderrReader)
@@ -119,35 +119,56 @@ func updateAndTrim(l []byte, v []byte) []byte {
 	max := 10000
 	l = append(l[:], v[:]...)
 	if len(l) > max {
-		return l[len(l)-max : len(l)]
+		return l[len(l)-max:]
 	}
 	return l
 }
 
-func (dcmd DockerCmd) InspectContainer() (*types.ContainerJSON, error) {
-	log.Printf("Fetching container metadata")
+// InspectContainer returns metadata about the container (calls "docker inspect").
+func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
+	log.Info("Fetching container metadata")
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()
-	// Set timeout
-	timeout := time.After(time.Second * 10)
-
 	for {
-		metadata, err := dclient.ContainerInspect(context.Background(), dcmd.ContainerName)
 		select {
-		case <-timeout:
-			return nil, fmt.Errorf("Error getting metadata for container: %s", err)
+		case <-ctx.Done():
+			return nil
 		default:
-			switch {
-			case err == nil && metadata.State.Running == true:
-				return &metadata, err
+			metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
+			if err == nil && metadata.State.Running == true {
+				var portMap []*pbe.Ports
+				// extract exposed host port from
+				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
+				for k, v := range metadata.NetworkSettings.Ports {
+					// will end up taking the last binding listed
+					for i := range v {
+						p := strings.Split(string(k), "/")
+						containerPort, err := strconv.Atoi(p[0])
+						//TODO handle errors
+						if err != nil {
+							return nil
+						}
+						hostPort, err := strconv.Atoi(v[i].HostPort)
+						//TODO handle errors
+						if err != nil {
+							return nil
+						}
+						portMap = append(portMap, &pbe.Ports{
+							Container: int32(containerPort),
+							Host:      int32(hostPort),
+						})
+					}
+				}
+				return portMap
 			}
 		}
 	}
 }
 
+// StopContainer stops the container.
 func (dcmd DockerCmd) StopContainer() error {
-	log.Printf("Stoping container %s", dcmd.ContainerName)
+	log.Info("Stopping container", "container", dcmd.ContainerName)
 	dclient := setupDockerClient()
 	// close the docker client connection
 	defer dclient.Close()
@@ -161,7 +182,7 @@ func (dcmd DockerCmd) StopContainer() error {
 func setupDockerClient() *client.Client {
 	dclient, err := client.NewEnvClient()
 	if err != nil {
-		log.Printf("Docker Error: %v", err)
+		log.Info("Docker error", "err", err)
 		return nil
 	}
 
@@ -175,7 +196,7 @@ func setupDockerClient() *client.Client {
 			version := re.FindAllString(err.Error(), -1)
 			// Error message example:
 			//   Error getting metadata for container: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
-			log.Printf("DOCKER_API_VERSION: %s", version[1])
+			log.Debug("DOCKER_API_VERSION", "version", version[1])
 			os.Setenv("DOCKER_API_VERSION", version[1])
 			return setupDockerClient()
 		}

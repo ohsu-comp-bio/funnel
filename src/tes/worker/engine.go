@@ -43,8 +43,17 @@ func NewEngine(conf Config) (Engine, error) {
 }
 
 // RunJob is a wrapper for runJob that polls for Cancel requests
-// TODO documentation
 func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) error {
+	// This is essentially a simple helper for runJob() (below).
+ 	// This ensures that the job state is always updated in the scheduler,
+  // without having to do it on 15+ different lines in runJob() and others.
+  //
+  // Please try to keep this function as simple as possible.
+  // New code should probably go in runJob()
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
 	// Get a client for the scheduler service
 	sched, schederr := scheduler.NewClient(eng.conf.ServerAddress)
 	defer sched.Close()
@@ -60,8 +69,7 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 		Value: jobR.Job.JobID,
 	}
 
-	ctx, cancel := context.WithCancel(parentCtx)
-	defer cancel()
+	sched.SetInitializing(ctx, jobR.Job)
 
 	joberr := make(chan error, 1)
 	go func() {
@@ -92,12 +100,16 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	}
 }
 
-// runJob runs a job
-// TODO documentation
+// runJob calls a series of other functions to process a job:
+// 1. set up the file mapping between the host and the container
+// 2. set up the storage client
+// 3. download the inputs
+// 4. run the job steps
+// 4a. update the scheduler with job status after each step
+// 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
 	log := log.WithFields("jobID", jobR.Job.JobID)
 	// Initialize job
-	sched.SetInitializing(ctx, jobR.Job)
 	mapper, merr := eng.getMapper(jobR.Job)
 
 	if merr != nil {
@@ -135,8 +147,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	return nil
 }
 
-// runStep
-// TODO documentation
+// runStep runs a single docker step of a task
 func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper *FileMapper, id string, step *pbe.DockerExecutor, stepNum int) error {
 	stepID := fmt.Sprintf("%v-%v", id, stepNum)
 	dcmd, err := eng.setupDockerCmd(mapper, step, stepID)

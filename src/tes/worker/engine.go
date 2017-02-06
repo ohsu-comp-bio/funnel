@@ -42,14 +42,14 @@ func NewEngine(conf Config) (Engine, error) {
 	return &engine{conf}, nil
 }
 
-// RunJob is a wrapper for runJob that polls for Cancel requests
+// RunJob runs a job
 func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) error {
 	// This is essentially a simple helper for runJob() (below).
- 	// This ensures that the job state is always updated in the scheduler,
-  // without having to do it on 15+ different lines in runJob() and others.
-  //
-  // Please try to keep this function as simple as possible.
-  // New code should probably go in runJob()
+	// This ensures that the job state is always updated in the scheduler,
+	// without having to do it on 15+ different lines in runJob() and others.
+	//
+	// Please try to keep this function as simple as possible.
+	// New code should probably go in runJob()
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()

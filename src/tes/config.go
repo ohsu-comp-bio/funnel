@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	log "tes/logger"
-	pbr "tes/server/proto"
 )
 
 // StorageConfig describes configuration for all storage types

@@ -43,7 +43,7 @@ func NewSlot(conf tes.Worker, engine worker.Engine) (*Slot, error) {
 		return nil, err
 	}
 
-	log := logger.New("slot", "slotID", id)
+	log := logger.New("slot", "slotID", conf.ID)
 
 	return &Slot{
 		ID:     conf.ID,

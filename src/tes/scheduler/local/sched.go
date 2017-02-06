@@ -77,7 +77,7 @@ func (s *scheduler) observe(o sched.Offer) {
 }
 
 func (s *scheduler) runWorker(workerID string) {
-	log.Debug("Starting local worker", "storage", s.conf.Storage)
+	log.Debug("Starting local worker", "storage", s.conf.ServerConfig.Storage)
 
 	workerConf := s.conf.Worker
 	workerConf.ID = workerID

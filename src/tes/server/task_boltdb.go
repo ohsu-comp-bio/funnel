@@ -11,7 +11,6 @@ import (
 	"strings"
 	"tes"
 	"tes/ga4gh"
-	"tes/server/proto"
 	"time"
 )
 

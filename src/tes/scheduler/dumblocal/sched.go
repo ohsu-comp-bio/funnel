@@ -53,7 +53,7 @@ func (s *scheduler) observe(o sched.Offer) {
 
 
 func (s *scheduler) startWorker(workerID string) {
-	log.Printf("Starting dumblocal worker")
+	log.Debug("Starting dumblocal worker")
 	workdir := path.Join(s.conf.WorkDir, "local-scheduler", workerID)
 	workdir, _ = filepath.Abs(workdir)
 	os.MkdirAll(workdir, 0755)

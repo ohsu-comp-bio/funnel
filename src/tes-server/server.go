@@ -22,10 +22,10 @@ func main() {
 	flag.StringVar(&config.HTTPPort, "http-port", config.HTTPPort, "HTTP Port")
 	flag.StringVar(&config.RPCPort, "rpc-port", config.RPCPort, "RPC Port")
 	flag.StringVar(&config.DBPath, "db-path", config.DBPath, "Database path")
+	flag.StringVar(&config.Scheduler, "scheduler", config.Scheduler, "Name of scheduler to enable")
 	flag.Parse()
 
 	tes.LoadConfigOrExit(configArg, &config)
-	log.Printf("%s", config.Storage)
 	start(config)
 }
 
@@ -35,7 +35,7 @@ func start(config tes.Config) {
 	// TODO if another process has the db open, this will block and it is really
 	//      confusing when you don't realize you have the db locked in another
 	//      terminal somewhere. Would be good to timeout on startup here.
-	taski := server.NewTaskBolt(config.DBPath, config)
+	taski := server.NewTaskBolt(config.DBPath, config.ServerConfig)
 
 	s := server.NewGA4GHServer()
 	s.RegisterTaskServer(taski)

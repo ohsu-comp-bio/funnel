@@ -117,6 +117,8 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 		return fmt.Errorf("Error during input provisioning: %s", derr)
 	}
 
+	log.Printf("Store: %s", store)
+
 	// Run job steps
 	sched.SetRunning(ctx, jobR.Job)
 	for stepNum, step := range jobR.Job.Task.Docker {
@@ -274,6 +276,10 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if storage == nil {
+		return nil, fmt.Errorf("No storage configured")
 	}
 
 	return storage, nil

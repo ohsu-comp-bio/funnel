@@ -57,8 +57,8 @@ func (s *scheduler) startWorker(workerID string) {
 
 	workerConf := s.conf.Worker
 	workerConf.ID = workerID
-	workerConf.ServerAddress = s.conf.ServerAddress
-	workerConf.Storage = s.conf.Storage
+	workerConf.ServerAddress = s.conf.ServerConfig.ServerAddress
+	workerConf.Storage = s.conf.ServerConfig.Storage
 
 	confPath := path.Join(workdir, "worker.conf.yml")
 	workerConf.ToYamlFile(confPath)

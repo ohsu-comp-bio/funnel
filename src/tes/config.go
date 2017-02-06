@@ -2,7 +2,6 @@ package tes
 
 import (
 	"github.com/ghodss/yaml"
-	// "gopkg.in/yaml.v2"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
 	"log"
@@ -29,6 +28,13 @@ type S3Storage struct {
 	Secret   string
 }
 
+// ServerConfig describes the configuration of the server
+type ServerConfig struct {
+	Storage       []*StorageConfig
+	Secret        string
+	ServerAddress string
+}
+
 // Local describes configuration for the local scheduler.
 type Local struct {
 	NumWorkers int
@@ -52,9 +58,7 @@ type Schedulers struct {
 
 // Config describes configuration for TES.
 type Config struct {
-	Storage       []*StorageConfig
-	Secret        string
-	ServerAddress string
+	ServerConfig  ServerConfig
 	Scheduler     string
 	Schedulers    Schedulers
 	Worker        Worker
@@ -69,7 +73,9 @@ type Config struct {
 func DefaultConfig() Config {
 	workDir := "tes-work-dir"
 	return Config{
-		ServerAddress: "localhost:9090",
+		ServerConfig: ServerConfig{
+			ServerAddress: "localhost:9090",
+		},
 		DBPath:        path.Join(workDir, "tes_task.db"),
 		HTTPPort:      "8000",
 		RPCPort:       "9090",

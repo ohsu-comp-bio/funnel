@@ -52,12 +52,12 @@ var JobWorker = []byte("job-worker")
 // Data is stored/retrieved from the BoltDB key-value database.
 type TaskBolt struct {
 	db           *bolt.DB
-	serverConfig tes.Config
+	serverConfig tes.ServerConfig
 }
 
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
 // the given path, and including the given ServerConfig.
-func NewTaskBolt(path string, config tes.Config) *TaskBolt {
+func NewTaskBolt(path string, config tes.ServerConfig) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {

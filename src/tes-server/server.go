@@ -25,9 +25,11 @@ func main() {
 	flag.StringVar(&config.RPCPort, "rpc-port", config.RPCPort, "RPC Port")
 	flag.StringVar(&config.DBPath, "db-path", config.DBPath, "Database path")
 	flag.StringVar(&config.Scheduler, "scheduler", config.Scheduler, "Name of scheduler to enable")
+	flag.StringVar(&config.LogLevel, "logging", config.LogLevel, "Level of logging")
 	flag.Parse()
 
 	tes.LoadConfigOrExit(configArg, &config)
+	logger.SetLogLevel(config.LogLevel)
 	start(config)
 }
 

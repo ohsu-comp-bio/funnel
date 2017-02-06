@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"io"
+	"strings"
 )
 
 func init() {
@@ -20,6 +21,26 @@ type Logger interface {
 	Info(string, ...interface{})
 	Error(string, ...interface{})
 	WithFields(...interface{}) Logger
+}
+
+// SetLogLevel sets the level of logging
+func SetLogLevel(l string) {
+	switch strings.ToLower(l) {
+	case "debug":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "info":
+		logrus.SetLevel(logrus.InfoLevel)
+	case "warn":
+		logrus.SetLevel(logrus.WarnLevel)
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	case "fatal":
+		logrus.SetLevel(logrus.FatalLevel)
+	case "panic":
+		logrus.SetLevel(logrus.PanicLevel)
+	default:
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 }
 
 // New returns a new Logger instance.

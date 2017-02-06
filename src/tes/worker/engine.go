@@ -46,11 +46,11 @@ func NewEngine(conf tes.Worker) (Engine, error) {
 // RunJob is a wrapper for runJob that polls for Cancel requests
 func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) error {
 	// This is essentially a simple helper for runJob() (below).
- 	// This ensures that the job state is always updated in the scheduler,
-  // without having to do it on 15+ different lines in runJob() and others.
-  //
-  // Please try to keep this function as simple as possible.
-  // New code should probably go in runJob()
+	// This ensures that the job state is always updated in the scheduler,
+	// without having to do it on 15+ different lines in runJob() and others.
+	//
+	// Please try to keep this function as simple as possible.
+	// New code should probably go in runJob()
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -174,9 +174,6 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 		metaCh <- dcmd.InspectContainer(ctx)
 	}()
 
-	// Initialized to allow for DeepEquals comparison during polling
-	stepLog := &pbe.JobLog{}
-
 	// Ticker for polling rate
 	pollRate := time.Duration(eng.conf.LogUpdateRate)
 	tickChan := time.NewTicker(pollRate * time.Millisecond).C
@@ -232,7 +229,7 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 		case <-tickChan:
 			stepLogUpdate := eng.updateLogs(dcmd)
 			// check if log update has any new data
-			if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
+			if reflect.DeepEqual(stepLogUpdate, &pbe.JobLog{}) == false {
 				statusReq := &pbr.UpdateStatusRequest{
 					Id:   id,
 					Step: int64(stepNum),

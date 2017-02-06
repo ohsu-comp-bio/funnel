@@ -13,7 +13,7 @@ import (
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
 	Local LocalStorage `json:",omitempty"`
-	S3    S3Storage `json:",omitempty"`
+	S3    S3Storage    `json:",omitempty"`
 }
 
 // LocalStorage describes the directories TES can read from and write to
@@ -50,23 +50,24 @@ type Openstack struct {
 
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
-	Local     Local `json:",omitempty"`
-	Dumblocal Local `json:",omitempty"`
-	Condor    Local `json:",omitempty"`
+	Local     Local     `json:",omitempty"`
+	Dumblocal Local     `json:",omitempty"`
+	Condor    Local     `json:",omitempty"`
 	Openstack Openstack `json:",omitempty"`
 }
 
 // Config describes configuration for TES.
 type Config struct {
-	ServerConfig  ServerConfig
-	Scheduler     string
-	Schedulers    Schedulers
-	Worker        Worker
-	DBPath        string
-	HTTPPort      string
-	RPCPort       string
-	ContentDir    string
-	WorkDir       string
+	ServerConfig ServerConfig
+	Scheduler    string
+	Schedulers   Schedulers
+	Worker       Worker
+	DBPath       string
+	HTTPPort     string
+	RPCPort      string
+	ContentDir   string
+	WorkDir      string
+	LogLevel     string
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -76,12 +77,13 @@ func DefaultConfig() Config {
 		ServerConfig: ServerConfig{
 			ServerAddress: "localhost:9090",
 		},
-		DBPath:        path.Join(workDir, "tes_task.db"),
-		HTTPPort:      "8000",
-		RPCPort:       "9090",
-		ContentDir:    defaultContentDir(),
-		WorkDir:       workDir,
-		Scheduler:     "local",
+		DBPath:     path.Join(workDir, "tes_task.db"),
+		HTTPPort:   "8000",
+		RPCPort:    "9090",
+		ContentDir: defaultContentDir(),
+		WorkDir:    workDir,
+		LogLevel:   "debug",
+		Scheduler:  "local",
 		Schedulers: Schedulers{
 			Local: Local{
 				NumWorkers: 4,

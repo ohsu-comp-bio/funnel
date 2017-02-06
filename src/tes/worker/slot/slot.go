@@ -94,7 +94,10 @@ func (slot *Slot) Run(ctx context.Context) {
 				// Set the slot state to running
 				slot.setState(Running)
 				// This blocks until the job is finished.
-				slot.engine.RunJob(ctx, job)
+				err := slot.engine.RunJob(ctx, job)
+				if err != nil {
+					slot.log.Error("Error running job", err)
+				}
 			}
 			// Set the slot state to idle
 			slot.setState(Idle)

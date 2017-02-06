@@ -228,17 +228,17 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 
 	//if there is logging info
 	bL := tx.Bucket(JobsLog)
-	out := make([]*ga4gh_task_exec.JobLog, len(job.Task.Docker), len(job.Task.Docker))
+	out := make([]*ga4gh_task_exec.JobLog, 0)
+
 	for i := range job.Task.Docker {
 		o := bL.Get([]byte(fmt.Sprint(jobID, i)))
 		if o != nil {
 			var log ga4gh_task_exec.JobLog
 			proto.Unmarshal(o, &log)
-			out[i] = &log
-		} else {
-			out[i] = &ga4gh_task_exec.JobLog{}
+			out = append(out, &log)
 		}
 	}
+
 	job.Logs = out
 	return &job
 }

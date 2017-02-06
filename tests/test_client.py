@@ -1,53 +1,86 @@
 #!/usr/bin/env python
 
+import docker
 import time
-import urllib2
-import json
 
 from common_test_util import SimpleServerTest
 
 
 class TestTaskREST(SimpleServerTest):
-    task = {
-        "name": "TestEcho",
-        "projectId": "MyProject",
-        "description": "Simple Echo Command",
-        "resources": {},
-        "docker": [
-                {
-                    "imageName": "ubuntu",
-                    "cmd": ["echo", "hello", "world"],
-                    "stdout": "stdout",
-                }
-        ]
-    }
+
+    def _submit_steps(self, *steps):
+        docker = []
+        for s in steps:
+            docker.append({
+                "imageName": "ubuntu",
+                "cmd": s.split(' '),
+                "stdout": "stdout",
+            })
+
+        return self.tes.submit({
+            "name": "TestCase",
+            "projectId": "Project ID",
+            "description": "Test case.",
+            "resources": {},
+            "docker": docker,
+        })
 
     def test_hello_world(self):
-        u = urllib2.urlopen("http://localhost:8000/v1/jobs",
-                            json.dumps(self.task))
-        data = json.loads(u.read())
-        self.job_id = data['value']
-
-        for i in range(10):
-            r = urllib2.urlopen(
-                "http://localhost:8000/v1/jobs/%s" % (self.job_id)
-            )
-            data = json.loads(r.read())
-            if data["state"] not in ['Queued', "Running"]:
-                break
-            time.sleep(1)
-
-        assert data["state"] == "Complete"
+        '''Test a basic "Hello world" task and expected API result.'''
+        job_id = self._submit_steps("echo hello world")
+        data = self.tes.wait(job_id)
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
 
-    def state_immutability(self):
-        r = urllib2.urlopen("http://localhost:8000/v1/jobs/%s" % (self.job_id))
-        old_data = json.loads(r.read())
-        req = urllib2.Request(
-            "http://localhost:8000/v1/jobs/%s" % (self.job_id)
+    def test_state_immutability(self):
+        job_id = self._submit_steps("echo hello world")
+        data = self.tes.wait(job_id)
+        self.tes.delete_job(job_id)
+        new_data = self.tes.get_job(job_id)
+        assert new_data["state"] == data["state"]
+
+    def test_cancel(self):
+        job_id = self._submit_steps("sleep 100")
+        time.sleep(5)
+        self.tes.delete_job(job_id)
+        time.sleep(5)
+        data = self.tes.get_job(job_id)
+        assert data["state"] == "Canceled"
+        time.sleep(10)
+        dclient = docker.from_env()
+        self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
+
+    def test_job_log_length(self):
+        '''
+        The job logs list should only include entries for steps that have
+        been started or completed, i.e. steps that have yet to be started
+        won't show up in Job.Logs.
+        '''
+        job_id = self._submit_steps(
+            "sleep 5",
+            "echo end",
         )
-        req.get_method = lambda: 'DELETE'
-        response = urllib2.urlopen(req)
-        new_data = json.loads(response.read())
-        assert new_data["state"] == old_data["state"]
+        time.sleep(5)
+        data = self.tes.get_job(job_id)
+        print data
+        assert len(data['logs']) == 1
+
+    def test_mark_complete_bug(self):
+        '''
+        There was a bug + fix where the job was being marked complete after
+        the first step completed, but the correct behavior is to mark the
+        job complete after *all* steps have completed.
+        '''
+        job_id = self._submit_steps(
+            "echo step 1",
+            "sleep 5",
+            "echo step 2",
+        )
+        while True:
+            data = self.tes.get_job(job_id)
+            if 'logs' in data:
+                if len(data['logs']) == 2:
+                    assert data['state'] == 'Running'
+                elif len(data['logs']) == 3:
+                    break
+            time.sleep(1)

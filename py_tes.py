@@ -12,7 +12,7 @@ class TES:
 
     def __init__(self,
                  url,
-                 s3_endpoint,
+                 s3_endpoint=None,
                  s3_access_key=None,
                  s3_secret_key=None):
         self.url = url
@@ -83,10 +83,19 @@ class TES:
         for i in itertools.count():
             if timeout > 0 and i == timeout:
                 break
-            req = urllib2.Request("%s/v1/jobs/%s" % (self.url, job_id))
-            r = urllib2.urlopen(req)
-            data = json.loads(r.read())
-            if data["state"] not in ['Queued', "Running"]:
+            data = self.get_job(job_id)
+            if data["state"] not in ['Queued', "Running", "Initializing"]:
                 break
             time.sleep(1)
         return data
+
+    def get_job(self, job_id):
+        req = urllib2.Request("%s/v1/jobs/%s" % (self.url, job_id))
+        r = urllib2.urlopen(req)
+        return json.loads(r.read())
+
+    def delete_job(self, job_id):
+        req = urllib2.Request("%s/v1/jobs/%s" % (self.url, job_id))
+        req.get_method = lambda: "DELETE"
+        r = urllib2.urlopen(req)
+        return json.loads(r.read())

@@ -1,6 +1,4 @@
-master: ![master-build-status](https://travis-ci.org/bmeg/task-execution-server.svg?branch=master)
-
-develop: ![develop-build-status](https://travis-ci.org/bmeg/task-execution-server.svg?branch=develop)
+master: ![master-build-status](https://travis-ci.org/ohsu-comp-bio/funnel.svg?branch=master)
 
 
 Task Execution Schema (TES)

@@ -7,11 +7,12 @@ import (
 	uuid "github.com/nu7hatch/gouuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
-	"log"
 	"reflect"
 	"strings"
 	"tes"
 	"tes/ga4gh"
+	"tes/server/proto"
+	"time"
 )
 
 // TODO these should probably be unexported names
@@ -57,8 +58,14 @@ type TaskBolt struct {
 
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
 // the given path, and including the given ServerConfig.
-func NewTaskBolt(path string, config tes.ServerConfig) *TaskBolt {
-	db, _ := bolt.Open(path, 0600, nil)
+func NewTaskBolt(path string, config tes.ServerConfig) (*TaskBolt, error) {
+	db, err := bolt.Open(path, 0600, &bolt.Options{
+		Timeout: time.Second * 5,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
 		if tx.Bucket(TaskBucket) == nil {
@@ -87,7 +94,7 @@ func NewTaskBolt(path string, config tes.ServerConfig) *TaskBolt {
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, serverConfig: config}
+	return &TaskBolt{db: db, serverConfig: config}, nil
 }
 
 // ReadQueue returns a slice of queued Jobs. Up to "n" jobs are returned.
@@ -127,10 +134,10 @@ func getJWT(ctx context.Context) string {
 // RunTask documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
-	log.Println("Receiving Task for Queue", task)
-
 	jobID, _ := uuid.NewV4()
-	log.Printf("Assigning job ID, %s", jobID)
+	log := log.WithFields("jobID", jobID)
+
+	log.Debug("RunTask called", "task", task)
 
 	if len(task.Docker) == 0 {
 		return nil, fmt.Errorf("No docker commands found")
@@ -160,7 +167,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 	}
 
 	jwt := getJWT(ctx)
-	log.Printf("JWT: %s", jwt)
+	log.Debug("JWT", "token", jwt)
 
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -242,7 +249,9 @@ func (taskBolt *TaskBolt) getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job
 // TODO: documentation
 // Get info about a running task
 func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
-	log.Printf("Getting Task Info")
+	log := log.WithFields("jobID", id.Value)
+	log.Debug("GetJob called")
+
 	var job *ga4gh_task_exec.Job
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		job = taskBolt.getJob(tx, id.Value)
@@ -253,14 +262,13 @@ func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID)
 
 // ListJobs returns a list of jobIDs
 func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobListRequest) (*ga4gh_task_exec.JobListResponse, error) {
-	log.Printf("Getting Task List")
+	log.Debug("ListJobs called")
 
 	jobs := make([]*ga4gh_task_exec.JobDesc, 0, 10)
 
 	taskBolt.db.View(func(tx *bolt.Tx) error {
 		taskopB := tx.Bucket(TaskBucket)
 		c := taskopB.Cursor()
-		log.Println("Scanning")
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			jobID := string(k)
@@ -287,7 +295,6 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 		Jobs: jobs,
 	}
 
-	log.Println("Returning", out)
 	return &out, nil
 }
 
@@ -295,13 +302,15 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *ga4gh_task_exec.JobL
 // TODO: documentation
 // Cancel a running task
 func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobID, error) {
+	log := log.WithFields("jobID", taskop.Value)
+
 	state, _ := taskBolt.getJobState(taskop.Value)
 	switch state {
 	case ga4gh_task_exec.State_Complete, ga4gh_task_exec.State_Error, ga4gh_task_exec.State_Canceled:
-		log.Printf("Cannot cancel a job already in a terminal status: %s", taskop.Value)
+		log.Info("Cannot cancel a job already in a terminal status")
 		return taskop, nil
 	default:
-		log.Printf("Cancelling job: %s", taskop.Value)
+		log.Info("Cancelling job")
 		taskBolt.db.Update(func(tx *bolt.Tx) error {
 			bQ := tx.Bucket(JobsQueued)
 			bQ.Delete([]byte(taskop.Value))

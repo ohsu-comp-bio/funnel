@@ -3,7 +3,6 @@ package scheduler
 import (
 	"context"
 	"google.golang.org/grpc"
-	"log"
 	"os"
 	"tes"
 	pbe "tes/ga4gh"
@@ -23,7 +22,7 @@ type Client struct {
 func NewClient(conf tes.Worker) (*Client, error) {
 	conn, err := NewRPCConnection(conf.ServerAddress)
 	if err != nil {
-		log.Printf("Error connecting to scheduler: %s", err)
+		log.Error("Couldn't connect to schduler", err)
 		return nil, err
 	}
 
@@ -113,7 +112,7 @@ func (client *Client) RequestJob(ctx context.Context, workerID string) *pbr.JobR
 	if err != nil {
 		// An error occurred while asking the scheduler for a job.
 		// TODO should return error?
-		log.Printf("Error getting job from scheduler: %s", err)
+		log.Error("Couldn't get job from scheduler", err)
 
 	} else if resp != nil && resp.Job != nil {
 		// A job was found

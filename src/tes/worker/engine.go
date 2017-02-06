@@ -3,7 +3,6 @@ package tesTaskEngineWorker
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os/exec"
 	"path/filepath"
@@ -45,8 +44,17 @@ func NewEngine(conf tes.Worker) (Engine, error) {
 }
 
 // RunJob is a wrapper for runJob that polls for Cancel requests
-// TODO documentation
 func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) error {
+	// This is essentially a simple helper for runJob() (below).
+ 	// This ensures that the job state is always updated in the scheduler,
+  // without having to do it on 15+ different lines in runJob() and others.
+  //
+  // Please try to keep this function as simple as possible.
+  // New code should probably go in runJob()
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
 	// Get a client for the scheduler service
 	sched, schederr := scheduler.NewClient(eng.conf)
 	defer sched.Close()
@@ -62,8 +70,7 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 		Value: jobR.Job.JobID,
 	}
 
-	ctx, cancel := context.WithCancel(parentCtx)
-	defer cancel()
+	sched.SetInitializing(ctx, jobR.Job)
 
 	joberr := make(chan error, 1)
 	go func() {
@@ -96,12 +103,18 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	}
 }
 
-// runJob runs a job
-// TODO documentation
+// runJob calls a series of other functions to process a job:
+// 1. set up the file mapping between the host and the container
+// 2. set up the storage client
+// 3. download the inputs
+// 4. run the job steps
+// 4a. update the scheduler with job status after each step
+// 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
+	log := log.WithFields("jobID", jobR.Job.JobID)
 	// Initialize job
-	sched.SetInitializing(ctx, jobR.Job)
 	mapper, merr := eng.getMapper(jobR.Job)
+
 	if merr != nil {
 		sched.SetFailed(ctx, jobR.Job)
 		return fmt.Errorf("Error during mapper initialization: %s", merr)
@@ -135,19 +148,18 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	}
 
 	// Job is Complete
-	log.Println("Job completed without error")
+	log.Info("Job completed without error")
 	return nil
 }
 
-// runStep
-// TODO documentation
+// runStep runs a single docker step of a task
 func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper *FileMapper, id string, step *pbe.DockerExecutor, stepNum int) error {
 	stepID := fmt.Sprintf("%v-%v", id, stepNum)
 	dcmd, err := eng.setupDockerCmd(mapper, step, stepID)
 	if err != nil {
 		return fmt.Errorf("Error setting up docker command: %v", err)
 	}
-	log.Printf("Running command: %s", strings.Join(dcmd.Cmd.Args, " "))
+	log.Info("Running command", "cmd", strings.Join(dcmd.Cmd.Args, " "))
 
 	// Start task step asynchronously
 	dcmd.Cmd.Start()
@@ -276,6 +288,10 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if storage == nil {
+		return nil, fmt.Errorf("No storage configured")
 	}
 
 	if storage == nil {
@@ -414,7 +430,7 @@ func (eng *engine) updateLogs(dcmd *DockerCmd) *pbe.JobLog {
 
 func (eng *engine) finalizeLogs(dcmd *DockerCmd, cmdErr error) *pbe.JobLog {
 	exitCode := getExitCode(cmdErr)
-	log.Printf("Exit code: %d", exitCode)
+	log.Info("Exit code", "code", exitCode)
 	steplog := eng.updateLogs(dcmd)
 	steplog.ExitCode = exitCode
 	return steplog
@@ -440,7 +456,7 @@ func getExitCode(err error) int32 {
 				return int32(status.ExitStatus())
 			}
 		} else {
-			log.Printf("Could not determine exit code. Using default -999")
+			log.Info("Could not determine exit code. Using default -999")
 			return -999
 		}
 	}

@@ -1,14 +1,16 @@
 package local
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"sync/atomic"
 	"tes"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 )
+
+var log = logger.New("local-sched")
 
 // TODO Questions:
 // - how to efficiently copy/slice a large resource pool?
@@ -36,7 +38,7 @@ type scheduler struct {
 
 // Schedule schedules a job and returns a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Println("Running local scheduler")
+	log.Debug("Running local scheduler")
 
 	// Make an offer if the current resource count is less than the max.
 	// This is just a dumb placeholder for a future scheduler.
@@ -45,7 +47,7 @@ func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	// and be able to assign a job to a specific, best-match node.
 	// This backend does none of that...yet.
 	avail := atomic.LoadInt32(&s.available)
-	log.Printf("Available: %d", avail)
+	log.Debug("Available", "slots", avail)
 	if avail == int32(0) {
 		return sched.RejectedOffer("Pool is full")
 	}
@@ -70,13 +72,12 @@ func (s *scheduler) observe(o sched.Offer) {
 		s.runWorker(o.Worker().ID)
 		atomic.AddInt32(&s.available, 1)
 	} else if o.Rejected() {
-		log.Println("Local offer was rejected")
+		log.Debug("Local offer was rejected")
 	}
 }
 
 func (s *scheduler) runWorker(workerID string) {
-	log.Printf("Starting local worker")
-	log.Printf("Storage: %s", s.conf.ServerConfig.Storage)
+	log.Debug("Starting local worker", "storage", s.conf.Storage)
 
 	workerConf := s.conf.Worker
 	workerConf.ID = workerID
@@ -93,6 +94,6 @@ func (s *scheduler) runWorker(workerID string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("%s", err)
+		log.Error("Couldn't start local worker", err)
 	}
 }

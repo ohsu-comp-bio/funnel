@@ -1,11 +1,13 @@
 package dumb
 
 import (
-	"log"
 	"sync/atomic"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
 )
+
+var log = logger.New("dumb-sched")
 
 // Scheduler extends the core Scheduler interface with additional methods for tracking
 // a count of available workers.
@@ -56,7 +58,7 @@ func (s *scheduler) DecrementAvailable() {
 // TODO in a smarter scheduler, this would handle the tricky parts of scheduling:
 //      matching a task to the best node
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Println("Running local scheduler")
+	log.Debug("Running local scheduler")
 
 	// Make an offer if the current resource count is less than the max.
 	// This is just a dumb placeholder for a future scheduler.
@@ -65,7 +67,7 @@ func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	// and be able to assign a task to a specific, best-match node.
 	// This backend does none of that...yet.
 	avail := s.Available()
-	log.Printf("Available: %d", avail)
+	log.Debug("Available", "slots", avail)
 	if avail == 0 {
 		return sched.RejectedOffer("Pool is full")
 	}

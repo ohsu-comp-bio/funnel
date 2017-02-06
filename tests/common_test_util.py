@@ -68,10 +68,16 @@ class SimpleServerTest(unittest.TestCase):
             "DBPath": db_path,
             "WorkDir": "test_tmp",
             "Storage": [{
-                "local": {
-                    "allowed_dirs": [self.storage_dir]
+                "Local": {
+                    "AllowedDirs": [self.storage_dir]
                 }
-            }]
+            }],
+            "Worker": {
+                "Timeout": -1,
+                "StatusPollRate": 10,
+                "LogUpdateRate":  10,
+                "NewJobPollRate": 10
+            }
         })
 
         # Start server

@@ -8,9 +8,10 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 	"log"
+	"reflect"
 	"strings"
+	"tes"
 	"tes/ga4gh"
-	"tes/server/proto"
 )
 
 // TODO these should probably be unexported names
@@ -51,12 +52,12 @@ var JobWorker = []byte("job-worker")
 // Data is stored/retrieved from the BoltDB key-value database.
 type TaskBolt struct {
 	db           *bolt.DB
-	serverConfig ga4gh_task_ref.ServerConfig
+	serverConfig tes.Config
 }
 
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
 // the given path, and including the given ServerConfig.
-func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) *TaskBolt {
+func NewTaskBolt(path string, config tes.Config) *TaskBolt {
 	db, _ := bolt.Open(path, 0600, nil)
 	//Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
@@ -335,11 +336,10 @@ func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_e
 	//     For example, you can't have multiple S3 endpoints
 	out := map[string]string{}
 	for _, i := range taskBolt.serverConfig.Storage {
-		if i.Local != nil {
+		if reflect.DeepEqual(i.Local, tes.LocalStorage{}) {
 			out["Local.AllowedDirs"] = strings.Join(i.Local.AllowedDirs, ",")
 		}
-
-		if i.S3 != nil {
+		if reflect.DeepEqual(i.S3, tes.S3Storage{}) {
 			out["S3.Endpoint"] = i.S3.Endpoint
 		}
 	}

@@ -20,8 +20,8 @@ func main() {
 	flag.IntVar(&config.Timeout, "timeout", config.Timeout, "Timeout in seconds")
 	flag.IntVar(&config.Slots, "num-slots", config.Slots, "Worker Slot Count")
 	flag.StringVar(&config.LogPath, "log-path", config.LogPath, "File path to write logs to")
-
 	flag.Parse()
+
 	tes.LoadConfigOrExit(configArg, &config)
 	start(config)
 }
@@ -61,7 +61,7 @@ func start(config tes.Worker) {
 	// Create the slots
 	for i := 0; i < config.Slots; i++ {
 		// TODO handle error
-		slots[i], _ = slot.NewSlot(config.ID, config.ServerAddress, eng)
+		slots[i], _ = slot.NewSlot(config, eng)
 	}
 
 	// Start the pool

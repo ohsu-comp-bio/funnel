@@ -2,14 +2,32 @@ package tes
 
 import (
 	"github.com/ghodss/yaml"
+	// "gopkg.in/yaml.v2"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
-	pbr "tes/server/proto"
 )
+
+// StorageConfig describes configuration for all storage types
+type StorageConfig struct {
+	Local LocalStorage `json:",omitempty"`
+	S3    S3Storage `json:",omitempty"`
+}
+
+// LocalStorage describes the directories TES can read from and write to
+type LocalStorage struct {
+	AllowedDirs []string
+}
+
+// S3Storage describes the directories TES can read from and write to
+type S3Storage struct {
+	Endpoint string
+	Key      string
+	Secret   string
+}
 
 // Local describes configuration for the local scheduler.
 type Local struct {
@@ -26,38 +44,38 @@ type Openstack struct {
 
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
-	Local     Local
-	Dumblocal Local
-	Condor    Local
-	Openstack Openstack
+	Local     Local `json:",omitempty"`
+	Dumblocal Local `json:",omitempty"`
+	Condor    Local `json:",omitempty"`
+	Openstack Openstack `json:",omitempty"`
 }
 
 // Config describes configuration for TES.
 type Config struct {
-	pbr.ServerConfig
-	Scheduler  string
-	Schedulers Schedulers
-	Worker     Worker
-	DBPath     string
-	HTTPPort   string
-	RPCPort    string
-	ContentDir string
-	WorkDir    string
+	Storage       []*StorageConfig
+	Secret        string
+	ServerAddress string
+	Scheduler     string
+	Schedulers    Schedulers
+	Worker        Worker
+	DBPath        string
+	HTTPPort      string
+	RPCPort       string
+	ContentDir    string
+	WorkDir       string
 }
 
 // DefaultConfig returns configuration with simple defaults.
 func DefaultConfig() Config {
 	workDir := "tes-work-dir"
 	return Config{
-		ServerConfig: pbr.ServerConfig{
-			ServerAddress: "localhost:9090",
-		},
-		DBPath:     path.Join(workDir, "tes_task.db"),
-		HTTPPort:   "8000",
-		RPCPort:    "9090",
-		ContentDir: defaultContentDir(),
-		WorkDir:    workDir,
-		Scheduler:  "Local",
+		ServerAddress: "localhost:9090",
+		DBPath:        path.Join(workDir, "tes_task.db"),
+		HTTPPort:      "8000",
+		RPCPort:       "9090",
+		ContentDir:    defaultContentDir(),
+		WorkDir:       workDir,
+		Scheduler:     "local",
 		Schedulers: Schedulers{
 			Local: Local{
 				NumWorkers: 4,
@@ -69,19 +87,25 @@ func DefaultConfig() Config {
 
 // Worker contains worker configuration.
 type Worker struct {
-	ID string	
+	ID string
+	// How many jobs can a worker accept at a time
 	Slots int
 	// Address of the scheduler, e.g. "1.2.3.4:9090"
 	ServerAddress string
 	// Directory to write job files to
 	WorkDir string
+	// How long (seconds) to wait before tearing down an inactive worker
+	// Default, -1, indicates to tear down the worker immediately after completing
+	// its job
 	Timeout int
-	// how often (milliseconds) the worker polls for cancellation requests
+	// How often (milliseconds) the worker polls for cancellation requests
 	StatusPollRate int
-	// how often (milliseconds) the worker sends log updates
+	// How often (milliseconds) the worker sends log updates
 	LogUpdateRate int
-	Storage       []*pbr.StorageConfig
-	LogPath       string
+	// How often (milliseconds) the scheduler polls for new jobs
+	NewJobPollRate int
+	Storage        []*StorageConfig
+	LogPath        string
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
@@ -93,6 +117,7 @@ func WorkerDefaultConfig() Worker {
 		Timeout:        -1,
 		StatusPollRate: 5000,
 		LogUpdateRate:  5000,
+		NewJobPollRate: 5000,
 		LogPath:        "tes-worker-log",
 	}
 }
@@ -135,7 +160,7 @@ func defaultContentDir() string {
 }
 
 // ParseConfigFile parses a TES config file, which is formatted in YAML,
-// and returns a ServerConfig struct.
+// and returns a Config struct.
 func ParseConfigFile(path string, doc interface{}) error {
 	source, err := ioutil.ReadFile(path)
 	if err != nil {

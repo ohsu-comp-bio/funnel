@@ -48,7 +48,7 @@ func NewEngine(conf tes.Worker) (Engine, error) {
 // TODO documentation
 func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) error {
 	// Get a client for the scheduler service
-	sched, schederr := scheduler.NewClient(eng.conf.ServerAddress)
+	sched, schederr := scheduler.NewClient(eng.conf)
 	defer sched.Close()
 	// TODO if we're here then we have a serious problem. We have already
 	//      told the scheduler that we're running the job, but now we can't
@@ -71,7 +71,8 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	}()
 
 	// Ticker for State polling
-	tickChan := time.NewTicker(time.Millisecond * 10).C
+	pollRate := time.Duration(eng.conf.StatusPollRate)
+	tickChan := time.NewTicker(pollRate * time.Millisecond).C
 
 	for {
 		select {
@@ -165,7 +166,8 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 	stepLog := &pbe.JobLog{}
 
 	// Ticker for polling rate
-	tickChan := time.NewTicker(time.Millisecond * 10).C
+	pollRate := time.Duration(eng.conf.LogUpdateRate)
+	tickChan := time.NewTicker(pollRate * time.Millisecond).C
 
 	for {
 		select {
@@ -268,13 +270,6 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 	storage := new(storage.Storage)
 
 	for _, conf := range eng.conf.Storage {
-		storage, err = storage.WithConfig(conf)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, conf := range jobR.Storage {
 		storage, err = storage.WithConfig(conf)
 		if err != nil {
 			return nil, err

@@ -89,13 +89,6 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	}
 
 	stdoutScanner := bufio.NewScanner(stdoutReader)
-	go func() {
-		for stdoutScanner.Scan() {
-			s := stdoutScanner.Text()
-			dcmd.Stdout.WriteString(s + "\n")
-			dcmd.Log["Stdout"] = updateAndTrim(dcmd.Log["Stdout"], []byte(s+"\n"))
-		}
-	}()
 
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
@@ -103,7 +96,13 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	}
 
 	stderrScanner := bufio.NewScanner(stderrReader)
+
 	go func() {
+		for stdoutScanner.Scan() {
+			s := stdoutScanner.Text()
+			dcmd.Stdout.WriteString(s + "\n")
+			dcmd.Log["Stdout"] = updateAndTrim(dcmd.Log["Stdout"], []byte(s+"\n"))
+		}
 		for stderrScanner.Scan() {
 			e := stderrScanner.Text()
 			dcmd.Stderr.WriteString(e + "\n")

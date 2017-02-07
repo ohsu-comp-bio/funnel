@@ -4,11 +4,10 @@ import (
 	"os"
 	"os/exec"
 	"sync/atomic"
-	"tes"
+	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
-	worker "tes/worker"
 )
 
 var log = logger.New("local-sched")
@@ -24,7 +23,7 @@ var log = logger.New("local-sched")
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
 // NewScheduler returns a new Scheduler instance.
-func NewScheduler(conf tes.Config) sched.Scheduler {
+func NewScheduler(conf config.Config) sched.Scheduler {
 	return &scheduler{
 		conf,
 		int32(conf.Schedulers.Local.NumWorkers),
@@ -33,7 +32,7 @@ func NewScheduler(conf tes.Config) sched.Scheduler {
 
 type scheduler struct {
 	// TODO how does the pool stay updated?
-	conf      tes.Config
+	conf      config.Config
 	available int32
 }
 
@@ -80,43 +79,21 @@ func (s *scheduler) observe(o sched.Offer) {
 func (s *scheduler) runWorker(workerID string) {
 	log.Debug("Starting local worker", "storage", s.conf.Storage)
 
-	workerConf := worker.Config{
-		ID:            workerID,
-		ServerAddress: s.conf.ServerAddress,
-		Timeout:       1,
-		NumWorkers:    1,
-		Storage:       s.conf.Storage,
-		WorkDir:       s.conf.WorkDir,
-	}
+	workerConf := s.conf.Worker
+	workerConf.ID = workerID
+	workerConf.ServerAddress = s.conf.ServerAddress
+	workerConf.Storage = s.conf.Storage
 
 	confPath, cleanup := workerConf.ToYamlTempFile("worker.conf.yml")
 	defer cleanup()
 
 	workerPath := sched.DetectWorkerPath()
 
-	cmd := exec.Command(
-		workerPath,
-		"-config", confPath,
-	)
-
+	cmd := exec.Command(workerPath, "-config", confPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		log.Error("Couldn't start local worker", err)
 	}
-}
-
-//...I cannot believe I have to define these.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

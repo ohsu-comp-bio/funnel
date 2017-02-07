@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"tes/config"
 	"tes/logger"
 	"tes/scheduler"
 	worker "tes/worker"
@@ -34,18 +35,18 @@ type Slot struct {
 }
 
 // NewSlot returns a new Slot instance.
-func NewSlot(id string, schedAddr string, engine worker.Engine) (*Slot, error) {
+func NewSlot(conf config.Worker, engine worker.Engine) (*Slot, error) {
 
 	// Get a client for the scheduler service
-	sched, err := scheduler.NewClient(schedAddr)
+	sched, err := scheduler.NewClient(conf)
 	if err != nil {
 		return nil, err
 	}
 
-	log := logger.New("slot", "slotID", id)
+	log := logger.New("slot", "slotID", conf.ID)
 
 	return &Slot{
-		ID:     id,
+		ID:     conf.ID,
 		sched:  sched,
 		engine: engine,
 		log:    log,

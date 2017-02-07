@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"syscall"
+	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
 	pbr "tes/server/proto"
@@ -25,14 +26,14 @@ type Engine interface {
 
 // engine is the internal implementation of a docker job engine.
 type engine struct {
-	conf Config
+	conf config.Worker
 }
 
 // NewEngine returns a new Engine instance configured with a given scheduler address,
 // working directory, and storage client.
 //
 // If the working directory can't be initialized, this returns an error.
-func NewEngine(conf Config) (Engine, error) {
+func NewEngine(conf config.Worker) (Engine, error) {
 	dir, err := filepath.Abs(conf.WorkDir)
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	defer cancel()
 
 	// Get a client for the scheduler service
-	sched, schederr := scheduler.NewClient(eng.conf.ServerAddress)
+	sched, schederr := scheduler.NewClient(eng.conf)
 	defer sched.Close()
 	// TODO if we're here then we have a serious problem. We have already
 	//      told the scheduler that we're running the job, but now we can't
@@ -77,7 +78,8 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	}()
 
 	// Ticker for State polling
-	tickChan := time.NewTicker(time.Second * 5).C
+	tickChan := time.NewTicker(eng.conf.StatusPollRate * time.Millisecond).C
+
 	for {
 		select {
 		case joberr := <-joberr:
@@ -90,11 +92,13 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 		case <-tickChan:
 			jobDesc, err := sched.GetJobState(ctx, jobID)
 			if err != nil {
+				sched.SetFailed(ctx, jobR.Job)
 				return fmt.Errorf("Error trying to get job status: %v", err)
 			}
 			switch jobDesc.State {
 			case pbe.State_Canceled:
 				cancel()
+				return nil
 			}
 		}
 	}
@@ -108,12 +112,11 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
-	log := log.WithFields("jobID", jobR.Job.JobID)
+	//log := log.WithFields("jobID", jobR.Job.JobID)
+
 	// Initialize job
 	mapper, merr := eng.getMapper(jobR.Job)
-
 	if merr != nil {
-		sched.SetFailed(ctx, jobR.Job)
 		return fmt.Errorf("Error during mapper initialization: %s", merr)
 	}
 
@@ -130,20 +133,29 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	// Run job steps
 	sched.SetRunning(ctx, jobR.Job)
 	for stepNum, step := range jobR.Job.Task.Docker {
-		joberr := eng.runStep(ctx, sched, mapper, jobR.Job.JobID, step, stepNum)
-		if joberr != nil {
-			return fmt.Errorf("Error running job: %s", joberr)
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			joberr := eng.runStep(ctx, sched, mapper, jobR.Job.JobID, step, stepNum)
+			if joberr != nil {
+				return fmt.Errorf("Error running job: %s", joberr)
+			}
 		}
 	}
 
-	// Finalize job
-	oerr := eng.uploadOutputs(mapper, store)
-	if oerr != nil {
-		return fmt.Errorf("Error uploading job outputs: %s", oerr)
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+		// Finalize job
+		oerr := eng.uploadOutputs(mapper, store)
+		if oerr != nil {
+			return fmt.Errorf("Error uploading job outputs: %s", oerr)
+		}
 	}
 
 	// Job is Complete
-	log.Info("Job completed without error")
 	return nil
 }
 
@@ -171,11 +183,8 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 		metaCh <- dcmd.InspectContainer(ctx)
 	}()
 
-	// Initialized to allow for DeepEquals comparison during polling
-	stepLog := &pbe.JobLog{}
-
 	// Ticker for polling rate
-	tickChan := time.NewTicker(time.Second * 5).C
+	tickChan := time.NewTicker(eng.conf.LogUpdateRate * time.Millisecond).C
 
 	for {
 		select {
@@ -187,7 +196,7 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 			if err != nil {
 				return err
 			}
-
+			return nil
 		// TODO ensure metadata gets logged
 		case portMap := <-metaCh:
 			ip, err := externalIP()
@@ -228,7 +237,7 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 		case <-tickChan:
 			stepLogUpdate := eng.updateLogs(dcmd)
 			// check if log update has any new data
-			if reflect.DeepEqual(stepLogUpdate, stepLog) == false {
+			if reflect.DeepEqual(stepLogUpdate, &pbe.JobLog{}) == false {
 				statusReq := &pbr.UpdateStatusRequest{
 					Id:   id,
 					Step: int64(stepNum),
@@ -278,13 +287,6 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 	storage := new(storage.Storage)
 
 	for _, conf := range eng.conf.Storage {
-		storage, err = storage.WithConfig(conf)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, conf := range jobR.Storage {
 		storage, err = storage.WithConfig(conf)
 		if err != nil {
 			return nil, err

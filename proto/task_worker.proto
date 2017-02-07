@@ -5,28 +5,6 @@ package ga4gh_task_ref;
 
 import "task_execution.proto";
 
-
-message LocalStorage {
-  repeated string allowed_dirs = 1;
-}
-
-message S3Storage {
-  string endpoint = 1;
-  string key = 2;
-  string secret = 3;
-}
-
-message StorageConfig {
-  LocalStorage local = 1;
-  S3Storage s3 = 2;
-}
-
-message ServerConfig {
-  repeated StorageConfig storage = 1;
-  string secret = 2;
-  string server_address = 3;
-}
-
 /**
  * Worker Info
  */
@@ -44,7 +22,6 @@ message JobRequest {
 message JobResponse {
   ga4gh_task_exec.Job job = 1;
   string auth = 2;
-  repeated StorageConfig storage = 3;
 }
 
 message UpdateStatusRequest {
@@ -69,7 +46,6 @@ message QueuedTaskInfo {
  * Scheduler Service
  */
 service Scheduler {
-  rpc GetServerConfig(WorkerInfo) returns(ServerConfig) {};
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc GetJobToRun(JobRequest) returns (JobResponse) {};
   rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobID) {};

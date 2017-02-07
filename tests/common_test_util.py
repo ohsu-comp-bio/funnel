@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+import urllib2
 import yaml
 
 
@@ -67,10 +68,16 @@ class SimpleServerTest(unittest.TestCase):
             "DBPath": db_path,
             "WorkDir": "test_tmp",
             "Storage": [{
-                "local": {
-                    "allowed_dirs": [self.storage_dir]
+                "Local": {
+                    "AllowedDirs": [self.storage_dir]
                 }
-            }]
+            }],
+            "Worker": {
+                "Timeout": -1,
+                "StatusPollRate": 10,
+                "LogUpdateRate": 10,
+                "NewJobPollRate": 10
+            }
         })
 
         # Start server
@@ -98,6 +105,24 @@ class SimpleServerTest(unittest.TestCase):
     def get_from_storage(self, loc):
         dst = os.path.join(self.storage_dir, loc)
         return dst
+
+    def wait(self, key):
+        """
+        Waits for tes-wait to return <key>
+        """
+        while True:
+            try:
+                r = urllib2.urlopen("http://127.0.0.1:5000/").read()
+                if r == key:
+                    return
+            except:
+                continue
+
+    def resume(self):
+        """
+        Continue from tes-wait
+        """
+        urllib2.urlopen("http://127.0.0.1:5000/shutdown")
 
 
 class S3ServerTest(unittest.TestCase):

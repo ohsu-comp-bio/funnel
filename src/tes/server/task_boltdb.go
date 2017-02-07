@@ -8,8 +8,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 	"strings"
+	"tes/config"
 	"tes/ga4gh"
-	"tes/server/proto"
 	"time"
 )
 
@@ -51,13 +51,13 @@ var JobWorker = []byte("job-worker")
 // Data is stored/retrieved from the BoltDB key-value database.
 type TaskBolt struct {
 	db           *bolt.DB
-	serverConfig ga4gh_task_ref.ServerConfig
+	serverConfig config.Config
 }
 
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
 // the given path, and including the given ServerConfig.
-func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) (*TaskBolt, error) {
-	db, err := bolt.Open(path, 0600, &bolt.Options{
+func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
+	db, err := bolt.Open(conf.DBPath, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})
 	if err != nil {
@@ -92,7 +92,7 @@ func NewTaskBolt(path string, config ga4gh_task_ref.ServerConfig) (*TaskBolt, er
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, serverConfig: config}, nil
+	return &TaskBolt{db: db, serverConfig: conf}, nil
 }
 
 // ReadQueue returns a slice of queued Jobs. Up to "n" jobs are returned.
@@ -343,11 +343,10 @@ func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_e
 	//     For example, you can't have multiple S3 endpoints
 	out := map[string]string{}
 	for _, i := range taskBolt.serverConfig.Storage {
-		if i.Local != nil {
+		if i.Local.Valid() {
 			out["Local.AllowedDirs"] = strings.Join(i.Local.AllowedDirs, ",")
 		}
-
-		if i.S3 != nil {
+		if i.S3.Valid() {
 			out["S3.Endpoint"] = i.S3.Endpoint
 		}
 	}

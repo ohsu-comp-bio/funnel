@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 
 import docker
+import json
+import os
 import time
+import urllib2
 
 from common_test_util import SimpleServerTest
+
+
+TESTS_DIR = os.path.dirname(__file__)
+blocking_util = os.path.join(TESTS_DIR, "blocking_util.py")
 
 
 class TestTaskREST(SimpleServerTest):
@@ -12,18 +19,23 @@ class TestTaskREST(SimpleServerTest):
         docker = []
         for s in steps:
             docker.append({
-                "imageName": "ubuntu",
+                "imageName": "tes-wait",
                 "cmd": s.split(' '),
                 "stdout": "stdout",
+                "ports": [{
+                    "host": 5000,
+                    "container": 5000
+                }]
             })
-
-        return self.tes.submit({
+        task = {
             "name": "TestCase",
             "projectId": "Project ID",
             "description": "Test case.",
             "resources": {},
-            "docker": docker,
-        })
+            "docker": docker
+        }
+        print json.dumps(task)
+        return self.tes.submit(task)
 
     def test_hello_world(self):
         '''Test a basic "Hello world" task and expected API result.'''
@@ -40,15 +52,30 @@ class TestTaskREST(SimpleServerTest):
         assert new_data["state"] == data["state"]
 
     def test_cancel(self):
-        job_id = self._submit_steps("sleep 100")
-        time.sleep(5)
+        dclient = docker.from_env()
+        job_id = self._submit_steps("tes-wait step 1", "tes-wait step 2")
+        self.wait("step 1")
+        # ensure the container was created
+        while True:
+            try:
+                dclient.containers.get(job_id + "-0")
+                break
+            except:
+                continue
         self.tes.delete_job(job_id)
-        time.sleep(5)
+        # ensure docker stops the container within 20 seconds
+        for i in range(10):
+            try:
+                dclient.containers.get(job_id + "-0")
+                time.sleep(2)
+            except:
+                continue
+        # make sure the first container was stopped
+        self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
+        # make sure the second container was never started
+        self.assertRaises(Exception, dclient.containers.get, job_id + "-1")
         data = self.tes.get_job(job_id)
         assert data["state"] == "Canceled"
-        time.sleep(10)
-        dclient = docker.from_env()
-        self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
 
     def test_job_log_length(self):
         '''
@@ -57,13 +84,13 @@ class TestTaskREST(SimpleServerTest):
         won't show up in Job.Logs.
         '''
         job_id = self._submit_steps(
-            "sleep 5",
-            "echo end",
+            "tes-wait step 1",
+            "echo done"
         )
-        time.sleep(5)
+        self.wait("step 1")
         data = self.tes.get_job(job_id)
-        print data
         assert len(data['logs']) == 1
+        self.resume()
 
     def test_mark_complete_bug(self):
         '''
@@ -73,14 +100,11 @@ class TestTaskREST(SimpleServerTest):
         '''
         job_id = self._submit_steps(
             "echo step 1",
-            "sleep 5",
+            "tes-wait step 2",
             "echo step 2",
         )
-        while True:
-            data = self.tes.get_job(job_id)
-            if 'logs' in data:
-                if len(data['logs']) == 2:
-                    assert data['state'] == 'Running'
-                elif len(data['logs']) == 3:
-                    break
-            time.sleep(1)
+        self.wait("step 2")
+        data = self.tes.get_job(job_id)
+        assert 'logs' in data
+        assert data['state'] == 'Running'
+        self.resume()

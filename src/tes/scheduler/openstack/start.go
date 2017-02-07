@@ -6,7 +6,6 @@ import (
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
-	worker "tes/worker"
 )
 
 const startScript = `
@@ -36,12 +35,10 @@ func (s *scheduler) start(workerID string) {
 	}
 
 	// Write the worker config YAML file, which gets uploaded to the VM.
-	workerConf := worker.Config{
-		ID:            workerID,
-		Timeout:       -1,
-		ServerAddress: s.conf.ServerAddress,
-		Storage:       s.conf.Storage,
-	}
+	workerConf := s.conf.Worker
+	workerConf.ID = workerID
+	workerConf.ServerAddress = s.conf.ServerAddress
+	workerConf.Storage = s.conf.Storage
 	workerConfYaml, _ := yaml.Marshal(workerConf)
 
 	osconf := s.conf.Schedulers.Openstack

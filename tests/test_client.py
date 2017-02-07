@@ -19,7 +19,7 @@ class TestTaskREST(SimpleServerTest):
         docker = []
         for s in steps:
             docker.append({
-                "imageName": "tes_tests",
+                "imageName": "tes-wait",
                 "cmd": s.split(' '),
                 "stdout": "stdout",
                 "ports": [{

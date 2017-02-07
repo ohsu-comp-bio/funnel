@@ -39,7 +39,6 @@ func (l S3Storage) Valid() bool {
 	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
 }
 
-
 // LocalScheduler describes configuration for the local scheduler.
 type LocalScheduler struct {
 	NumWorkers int
@@ -131,7 +130,7 @@ func WorkerDefaultConfig() Worker {
 		StatusPollRate: 5000,
 		LogUpdateRate:  5000,
 		NewJobPollRate: 5000,
-		LogLevel:      "debug",
+		LogLevel:       "debug",
 	}
 }
 

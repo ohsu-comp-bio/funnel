@@ -98,6 +98,7 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 			switch jobDesc.State {
 			case pbe.State_Canceled:
 				cancel()
+				return nil
 			}
 		}
 	}
@@ -111,7 +112,8 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 // 4a. update the scheduler with job status after each step
 // 5. upload the outputs
 func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pbr.JobResponse) error {
-	log := log.WithFields("jobID", jobR.Job.JobID)
+	//log := log.WithFields("jobID", jobR.Job.JobID)
+
 	// Initialize job
 	mapper, merr := eng.getMapper(jobR.Job)
 	if merr != nil {
@@ -131,20 +133,29 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	// Run job steps
 	sched.SetRunning(ctx, jobR.Job)
 	for stepNum, step := range jobR.Job.Task.Docker {
-		joberr := eng.runStep(ctx, sched, mapper, jobR.Job.JobID, step, stepNum)
-		if joberr != nil {
-			return fmt.Errorf("Error running job: %s", joberr)
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			joberr := eng.runStep(ctx, sched, mapper, jobR.Job.JobID, step, stepNum)
+			if joberr != nil {
+				return fmt.Errorf("Error running job: %s", joberr)
+			}
 		}
 	}
 
-	// Finalize job
-	oerr := eng.uploadOutputs(mapper, store)
-	if oerr != nil {
-		return fmt.Errorf("Error uploading job outputs: %s", oerr)
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+		// Finalize job
+		oerr := eng.uploadOutputs(mapper, store)
+		if oerr != nil {
+			return fmt.Errorf("Error uploading job outputs: %s", oerr)
+		}
 	}
 
 	// Job is Complete
-	log.Info("Job completed without error")
 	return nil
 }
 
@@ -185,7 +196,7 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 			if err != nil {
 				return err
 			}
-
+			return nil
 		// TODO ensure metadata gets logged
 		case portMap := <-metaCh:
 			ip, err := externalIP()

@@ -53,7 +53,7 @@ class TestTaskREST(SimpleServerTest):
 
     def test_cancel(self):
         dclient = docker.from_env()
-        job_id = self._submit_steps("tes-wait step 1")
+        job_id = self._submit_steps("tes-wait step 1", "tes-wait step 2")
         self.wait("step 1")
         # ensure the container was created
         while True:
@@ -70,7 +70,10 @@ class TestTaskREST(SimpleServerTest):
                 time.sleep(2)
             except:
                 continue
+        # make sure the first container was stopped
         self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
+        # make sure the second container was never started
+        self.assertRaises(Exception, dclient.containers.get, job_id + "-1")
         data = self.tes.get_job(job_id)
         assert data["state"] == "Canceled"
 

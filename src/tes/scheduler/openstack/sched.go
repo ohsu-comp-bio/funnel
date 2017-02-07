@@ -1,7 +1,7 @@
 package openstack
 
 import (
-	"tes"
+	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
@@ -11,7 +11,7 @@ import (
 var log = logger.New("openstack-sched")
 
 // NewScheduler returns a new Scheduler instance.
-func NewScheduler(conf tes.Config) sched.Scheduler {
+func NewScheduler(conf config.Config) sched.Scheduler {
 	return &scheduler{
 		dumb.NewScheduler(conf.Schedulers.Openstack.NumWorkers),
 		conf,
@@ -20,7 +20,7 @@ func NewScheduler(conf tes.Config) sched.Scheduler {
 
 type scheduler struct {
 	ds   dumb.Scheduler
-	conf tes.Config
+	conf config.Config
 }
 
 // Schedule schedules a job, returning an Offer.

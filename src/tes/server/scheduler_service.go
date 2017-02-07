@@ -8,7 +8,7 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
-	"tes"
+	"tes/config"
 	"tes/ga4gh"
 	"tes/server/proto"
 )
@@ -183,7 +183,7 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoReq
 
 // GetServerConfig returns information about the server configuration.
 // This is an RPC endpoint.
-func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*tes.ServerConfig, error) {
+func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*config.Config, error) {
 	return &taskBolt.serverConfig, nil
 }
 

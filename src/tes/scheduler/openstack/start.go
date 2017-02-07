@@ -37,8 +37,8 @@ func (s *scheduler) start(workerID string) {
 	// Write the worker config YAML file, which gets uploaded to the VM.
 	workerConf := s.conf.Worker
 	workerConf.ID = workerID
-	workerConf.ServerAddress = s.conf.ServerConfig.ServerAddress
-	workerConf.Storage = s.conf.ServerConfig.Storage
+	workerConf.ServerAddress = s.conf.ServerAddress
+	workerConf.Storage = s.conf.Storage
 	workerConfYaml, _ := yaml.Marshal(workerConf)
 
 	osconf := s.conf.Schedulers.Openstack

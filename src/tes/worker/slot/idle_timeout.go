@@ -93,6 +93,6 @@ func IdleTimeoutAfter(d time.Duration) IdleTimeout {
 
 // IdleTimeoutAfterSeconds is a helper that returns a new IdleTimeout
 // configured for the given number of seconds.
-func IdleTimeoutAfterSeconds(sec int) IdleTimeout {
-	return IdleTimeoutAfter(time.Duration(sec) * time.Second)
+func IdleTimeoutAfterSeconds(sec time.Duration) IdleTimeout {
+	return IdleTimeoutAfter(sec * time.Second)
 }

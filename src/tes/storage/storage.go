@@ -2,8 +2,7 @@ package storage
 
 import (
 	"fmt"
-	"reflect"
-	"tes"
+	"tes/config"
 )
 
 const (
@@ -90,18 +89,18 @@ func (storage Storage) WithLocal(allow []string) (*Storage, error) {
 }
 
 // WithConfig returns a new Storage instance with the given additional configuration.
-func (storage Storage) WithConfig(conf *tes.StorageConfig) (*Storage, error) {
+func (storage Storage) WithConfig(conf *config.StorageConfig) (*Storage, error) {
 	var err error
 	var out *Storage
 
-	if reflect.DeepEqual(conf.Local, tes.LocalStorage{}) {
+	if conf.Local.Valid() {
 		out, err = storage.WithLocal(conf.Local.AllowedDirs)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if reflect.DeepEqual(conf.S3, tes.S3Storage{}) {
+	if conf.S3.Valid() {
 		out, err = storage.WithS3(
 			conf.S3.Endpoint,
 			conf.S3.Key,

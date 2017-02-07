@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"sync/atomic"
-	"tes"
+	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
@@ -23,7 +23,7 @@ var log = logger.New("local-sched")
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
 // NewScheduler returns a new Scheduler instance.
-func NewScheduler(conf tes.Config) sched.Scheduler {
+func NewScheduler(conf config.Config) sched.Scheduler {
 	return &scheduler{
 		conf,
 		int32(conf.Schedulers.Local.NumWorkers),
@@ -32,7 +32,7 @@ func NewScheduler(conf tes.Config) sched.Scheduler {
 
 type scheduler struct {
 	// TODO how does the pool stay updated?
-	conf      tes.Config
+	conf      config.Config
 	available int32
 }
 
@@ -77,12 +77,12 @@ func (s *scheduler) observe(o sched.Offer) {
 }
 
 func (s *scheduler) runWorker(workerID string) {
-	log.Debug("Starting local worker", "storage", s.conf.ServerConfig.Storage)
+	log.Debug("Starting local worker", "storage", s.conf.Storage)
 
 	workerConf := s.conf.Worker
 	workerConf.ID = workerID
-	workerConf.ServerAddress = s.conf.ServerConfig.ServerAddress
-	workerConf.Storage = s.conf.ServerConfig.Storage
+	workerConf.ServerAddress = s.conf.ServerAddress
+	workerConf.Storage = s.conf.Storage
 
 	confPath, cleanup := workerConf.ToYamlTempFile("worker.conf.yml")
 	defer cleanup()

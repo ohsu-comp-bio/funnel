@@ -4,7 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 	"os"
-	"tes"
+	"tes/config"
 	pbe "tes/ga4gh"
 	pbr "tes/server/proto"
 	"time"
@@ -14,12 +14,12 @@ import (
 type Client struct {
 	pbr.SchedulerClient
 	conn           *grpc.ClientConn
-	NewJobPollRate int
+	NewJobPollRate time.Duration
 }
 
 // NewClient returns a new Client instance connected to the
 // scheduler at a given address (e.g. "localhost:9090")
-func NewClient(conf tes.Worker) (*Client, error) {
+func NewClient(conf config.Worker) (*Client, error) {
 	conn, err := NewRPCConnection(conf.ServerAddress)
 	if err != nil {
 		log.Error("Couldn't connect to schduler", err)
@@ -74,7 +74,7 @@ func (client *Client) SetComplete(ctx context.Context, job *pbe.Job) {
 // PollForJob polls the scheduler for a job assigned to the given worker ID.
 func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobResponse {
 
-	tickChan := time.NewTicker(time.Duration(client.NewJobPollRate) * time.Millisecond).C
+	tickChan := time.NewTicker(client.NewJobPollRate * time.Millisecond).C
 
 	job := client.RequestJob(ctx, workerID)
 	if job != nil {

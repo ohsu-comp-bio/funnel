@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"os"
-	"tes"
+	"tes/config"
 	"tes/logger"
 	worker "tes/worker"
 	"tes/worker/slot"
@@ -12,39 +12,40 @@ import (
 var log = logger.New("tes-worker")
 
 func main() {
-	config := tes.WorkerDefaultConfig()
+	conf := config.WorkerDefaultConfig()
 
-	var configArg string
-	flag.StringVar(&configArg, "config", "", "Config File")
-	flag.StringVar(&config.ID, "id", config.ID, "Worker ID")
-	flag.StringVar(&config.ServerAddress, "server-address", config.ServerAddress, "Server address")
-	flag.StringVar(&config.WorkDir, "work-dir", config.WorkDir, "Working Directory")
-	flag.IntVar(&config.Timeout, "timeout", config.Timeout, "Timeout in seconds")
-	flag.IntVar(&config.Slots, "num-slots", config.Slots, "Worker Slot Count")
-	flag.StringVar(&config.LogPath, "log-path", config.LogPath, "File path to write logs to")
+	var confArg string
+	flag.StringVar(&confArg, "config", "", "Config File")
+	flag.StringVar(&conf.ID, "id", conf.ID, "Worker ID")
+	flag.StringVar(&conf.ServerAddress, "server-address", conf.ServerAddress, "Server address")
+	flag.StringVar(&conf.WorkDir, "work-dir", conf.WorkDir, "Working Directory")
+	flag.DurationVar(&conf.Timeout, "timeout", conf.Timeout, "Timeout in seconds")
+	flag.IntVar(&conf.Slots, "num-slots", conf.Slots, "Worker Slot Count")
+	flag.StringVar(&conf.LogPath, "log-path", conf.LogPath, "File path to write logs to")
 	flag.Parse()
 
-	tes.LoadConfigOrExit(configArg, &config)
-	start(config)
+	config.LoadConfigOrExit(confArg, &conf)
+	logger.SetLevel(conf.LogLevel)
+	start(conf)
 }
 
-func start(config tes.Worker) {
+func start(conf config.Worker) {
 
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log
 	//      without having file permission problems?
 	// Configure logging
-	if config.LogPath != "" {
-		logFile, err := os.OpenFile(config.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if conf.LogPath != "" {
+		logFile, err := os.OpenFile(conf.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			log.Error("Can't open log output file", "path", config.LogPath)
+			log.Error("Can't open log output file", "path", conf.LogPath)
 		} else {
 			logger.SetOutput(logFile)
 		}
 	}
 
 	// Create the job engine
-	eng, err := worker.NewEngine(config)
+	eng, err := worker.NewEngine(conf)
 	if err != nil {
 		log.Error("Couldn't create engine", err)
 		return
@@ -52,18 +53,18 @@ func start(config tes.Worker) {
 
 	// Configure the slot timeout
 	idleTimeout := slot.NoIdleTimeout()
-	if config.Timeout != -1 {
-		idleTimeout = slot.IdleTimeoutAfterSeconds(config.Timeout)
+	if conf.Timeout != -1 {
+		idleTimeout = slot.IdleTimeoutAfterSeconds(conf.Timeout)
 	}
 
 	// Create the slot pool
-	slots := make([]*slot.Slot, config.Slots)
+	slots := make([]*slot.Slot, conf.Slots)
 	p := slot.NewPool(slots, idleTimeout)
 
 	// Create the slots
-	for i := 0; i < config.Slots; i++ {
+	for i := 0; i < conf.Slots; i++ {
 		// TODO handle error
-		slots[i], _ = slot.NewSlot(config, eng)
+		slots[i], _ = slot.NewSlot(conf, eng)
 	}
 
 	// Start the pool

@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"syscall"
-	"tes"
+	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
 	pbr "tes/server/proto"
@@ -26,14 +26,14 @@ type Engine interface {
 
 // engine is the internal implementation of a docker job engine.
 type engine struct {
-	conf tes.Worker
+	conf config.Worker
 }
 
 // NewEngine returns a new Engine instance configured with a given scheduler address,
 // working directory, and storage client.
 //
 // If the working directory can't be initialized, this returns an error.
-func NewEngine(conf tes.Worker) (Engine, error) {
+func NewEngine(conf config.Worker) (Engine, error) {
 	dir, err := filepath.Abs(conf.WorkDir)
 	if err != nil {
 		return nil, err
@@ -78,8 +78,7 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 	}()
 
 	// Ticker for State polling
-	pollRate := time.Duration(eng.conf.StatusPollRate)
-	tickChan := time.NewTicker(pollRate * time.Millisecond).C
+	tickChan := time.NewTicker(eng.conf.StatusPollRate * time.Millisecond).C
 
 	for {
 		select {
@@ -93,6 +92,7 @@ func (eng *engine) RunJob(parentCtx context.Context, jobR *pbr.JobResponse) erro
 		case <-tickChan:
 			jobDesc, err := sched.GetJobState(ctx, jobID)
 			if err != nil {
+				sched.SetFailed(ctx, jobR.Job)
 				return fmt.Errorf("Error trying to get job status: %v", err)
 			}
 			switch jobDesc.State {
@@ -114,9 +114,7 @@ func (eng *engine) runJob(ctx context.Context, sched *scheduler.Client, jobR *pb
 	log := log.WithFields("jobID", jobR.Job.JobID)
 	// Initialize job
 	mapper, merr := eng.getMapper(jobR.Job)
-
 	if merr != nil {
-		sched.SetFailed(ctx, jobR.Job)
 		return fmt.Errorf("Error during mapper initialization: %s", merr)
 	}
 
@@ -175,8 +173,7 @@ func (eng *engine) runStep(ctx context.Context, sched *scheduler.Client, mapper 
 	}()
 
 	// Ticker for polling rate
-	pollRate := time.Duration(eng.conf.LogUpdateRate)
-	tickChan := time.NewTicker(pollRate * time.Millisecond).C
+	tickChan := time.NewTicker(eng.conf.LogUpdateRate * time.Millisecond).C
 
 	for {
 		select {
@@ -283,10 +280,6 @@ func (eng *engine) getStorage(jobR *pbr.JobResponse) (*storage.Storage, error) {
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if storage == nil {
-		return nil, fmt.Errorf("No storage configured")
 	}
 
 	if storage == nil {

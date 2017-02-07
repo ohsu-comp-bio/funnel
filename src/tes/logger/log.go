@@ -23,8 +23,8 @@ type Logger interface {
 	WithFields(...interface{}) Logger
 }
 
-// SetLogLevel sets the level of logging
-func SetLogLevel(l string) {
+// SetLevel sets the level of logging
+func SetLevel(l string) {
 	switch strings.ToLower(l) {
 	case "debug":
 		logrus.SetLevel(logrus.DebugLevel)
@@ -34,12 +34,8 @@ func SetLogLevel(l string) {
 		logrus.SetLevel(logrus.WarnLevel)
 	case "error":
 		logrus.SetLevel(logrus.ErrorLevel)
-	case "fatal":
-		logrus.SetLevel(logrus.FatalLevel)
-	case "panic":
-		logrus.SetLevel(logrus.PanicLevel)
 	default:
-		logrus.SetLevel(logrus.DebugLevel)
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 }
 

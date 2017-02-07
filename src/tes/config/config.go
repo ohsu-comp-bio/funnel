@@ -1,4 +1,4 @@
-package tes
+package config
 
 import (
 	"github.com/ghodss/yaml"
@@ -8,17 +8,23 @@ import (
 	"path"
 	"path/filepath"
 	log "tes/logger"
+	"time"
 )
 
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
-	Local LocalStorage `json:",omitempty"`
-	S3    S3Storage    `json:",omitempty"`
+	Local LocalStorage
+	S3    S3Storage
 }
 
 // LocalStorage describes the directories TES can read from and write to
 type LocalStorage struct {
 	AllowedDirs []string
+}
+
+// Valid validates the LocalStorage configuration
+func (l LocalStorage) Valid() bool {
+	return len(l.AllowedDirs) > 0
 }
 
 // S3Storage describes the directories TES can read from and write to
@@ -28,20 +34,19 @@ type S3Storage struct {
 	Secret   string
 }
 
-// ServerConfig describes the configuration of the server
-type ServerConfig struct {
-	Storage       []*StorageConfig
-	Secret        string
-	ServerAddress string
+// Valid validates the LocalStorage configuration
+func (l S3Storage) Valid() bool {
+	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
 }
 
-// Local describes configuration for the local scheduler.
-type Local struct {
+
+// LocalScheduler describes configuration for the local scheduler.
+type LocalScheduler struct {
 	NumWorkers int
 }
 
-// Openstack describes configuration for the openstack scheduler.
-type Openstack struct {
+// OpenstackScheduler describes configuration for the openstack scheduler.
+type OpenstackScheduler struct {
 	NumWorkers int
 	KeyPair    string
 	ConfigPath string
@@ -50,42 +55,41 @@ type Openstack struct {
 
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
-	Local     Local     `json:",omitempty"`
-	Dumblocal Local     `json:",omitempty"`
-	Condor    Local     `json:",omitempty"`
-	Openstack Openstack `json:",omitempty"`
+	Local     LocalScheduler
+	Dumblocal LocalScheduler
+	Condor    LocalScheduler
+	Openstack OpenstackScheduler
 }
 
 // Config describes configuration for TES.
 type Config struct {
-	ServerConfig ServerConfig
-	Scheduler    string
-	Schedulers   Schedulers
-	Worker       Worker
-	DBPath       string
-	HTTPPort     string
-	RPCPort      string
-	ContentDir   string
-	WorkDir      string
-	LogLevel     string
+	Storage       []*StorageConfig
+	ServerAddress string
+	Scheduler     string
+	Schedulers    Schedulers
+	Worker        Worker
+	DBPath        string
+	HTTPPort      string
+	RPCPort       string
+	ContentDir    string
+	WorkDir       string
+	LogLevel      string
 }
 
 // DefaultConfig returns configuration with simple defaults.
 func DefaultConfig() Config {
 	workDir := "tes-work-dir"
 	return Config{
-		ServerConfig: ServerConfig{
-			ServerAddress: "localhost:9090",
-		},
-		DBPath:     path.Join(workDir, "tes_task.db"),
-		HTTPPort:   "8000",
-		RPCPort:    "9090",
-		ContentDir: defaultContentDir(),
-		WorkDir:    workDir,
-		LogLevel:   "debug",
-		Scheduler:  "local",
+		ServerAddress: "localhost:9090",
+		DBPath:        path.Join(workDir, "tes_task.db"),
+		HTTPPort:      "8000",
+		RPCPort:       "9090",
+		ContentDir:    defaultContentDir(),
+		WorkDir:       workDir,
+		LogLevel:      "debug",
+		Scheduler:     "local",
 		Schedulers: Schedulers{
-			Local: Local{
+			Local: LocalScheduler{
 				NumWorkers: 4,
 			},
 		},
@@ -105,15 +109,16 @@ type Worker struct {
 	// How long (seconds) to wait before tearing down an inactive worker
 	// Default, -1, indicates to tear down the worker immediately after completing
 	// its job
-	Timeout int
+	Timeout time.Duration
 	// How often (milliseconds) the worker polls for cancellation requests
-	StatusPollRate int
+	StatusPollRate time.Duration
 	// How often (milliseconds) the worker sends log updates
-	LogUpdateRate int
+	LogUpdateRate time.Duration
 	// How often (milliseconds) the scheduler polls for new jobs
-	NewJobPollRate int
+	NewJobPollRate time.Duration
 	Storage        []*StorageConfig
 	LogPath        string
+	LogLevel       string
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
@@ -126,7 +131,7 @@ func WorkerDefaultConfig() Worker {
 		StatusPollRate: 5000,
 		LogUpdateRate:  5000,
 		NewJobPollRate: 5000,
-		LogPath:        "tes-worker-log",
+		LogLevel:      "debug",
 	}
 }
 

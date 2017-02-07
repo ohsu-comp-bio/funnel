@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"tes"
+	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
@@ -15,12 +15,12 @@ import (
 var log = logger.New("condor-sched")
 
 // NewScheduler returns a new HTCondor Scheduler instance.
-func NewScheduler(c tes.Config) sched.Scheduler {
+func NewScheduler(c config.Config) sched.Scheduler {
 	return &scheduler{c}
 }
 
 type scheduler struct {
-	conf tes.Config
+	conf config.Config
 }
 
 // Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
@@ -59,8 +59,8 @@ func (s *scheduler) startWorker(workerID string) {
 
 	workerConf := s.conf.Worker
 	workerConf.ID = workerID
-	workerConf.ServerAddress = s.conf.ServerConfig.ServerAddress
-	workerConf.Storage = s.conf.ServerConfig.Storage
+	workerConf.ServerAddress = s.conf.ServerAddress
+	workerConf.Storage = s.conf.Storage
 
 	confPath := path.Join(workdir, "worker.conf.yml")
 	workerConf.ToYamlFile(confPath)

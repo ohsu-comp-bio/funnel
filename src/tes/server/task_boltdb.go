@@ -161,16 +161,19 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+		idBytes := []byte(jobID.String())
 
 		taskopB := tx.Bucket(TaskBucket)
 		v, _ := proto.Marshal(task)
-		taskopB.Put([]byte(jobID.String()), v)
+		taskopB.Put(idBytes, v)
+
+		tx.Bucket(JobState).Put(idBytes, []byte(ga4gh_task_exec.State_Queued.String()))
 
 		taskopA := tx.Bucket(TaskAuthBucket)
-		taskopA.Put([]byte(jobID.String()), []byte(jwt))
+		taskopA.Put(idBytes, []byte(jwt))
 
 		queueB := tx.Bucket(JobsQueued)
-		queueB.Put([]byte(jobID.String()), []byte{})
+		queueB.Put(idBytes, []byte{})
 		ch <- &ga4gh_task_exec.JobID{Value: jobID.String()}
 		return nil
 	})

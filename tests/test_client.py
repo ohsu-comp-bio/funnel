@@ -9,7 +9,6 @@ from common_test_util import SimpleServerTest
 
 
 TESTS_DIR = os.path.dirname(__file__)
-blocking_util = os.path.join(TESTS_DIR, "blocking_util.py")
 
 
 class TestTaskREST(SimpleServerTest):
@@ -53,22 +52,12 @@ class TestTaskREST(SimpleServerTest):
     def test_cancel(self):
         dclient = docker.from_env()
         job_id = self._submit_steps("tes-wait step 1", "tes-wait step 2")
-        self.wait("step 1")
+        self.wait("step 1", timeout=20)
         # ensure the container was created
-        while True:
-            try:
-                dclient.containers.get(job_id + "-0")
-                break
-            except:
-                continue
+        self.wait_for_container(job_id + "-0")
         self.tes.delete_job(job_id)
         # ensure docker stops the container within 20 seconds
-        for i in range(10):
-            try:
-                dclient.containers.get(job_id + "-0")
-                time.sleep(2)
-            except:
-                continue
+        self.wait_for_container_stop(job_id + "-0", timeout=20)
         # make sure the first container was stopped
         self.assertRaises(Exception, dclient.containers.get, job_id + "-0")
         # make sure the second container was never started

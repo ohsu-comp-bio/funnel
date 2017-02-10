@@ -11,6 +11,7 @@ import unittest
 import requests
 import polling
 import yaml
+import docker
 
 
 S3_ENDPOINT = "localhost:9000"
@@ -108,14 +109,38 @@ class SimpleServerTest(unittest.TestCase):
         dst = os.path.join(self.storage_dir, loc)
         return dst
 
-    def wait(self, key):
+    def wait_for_container(self, name, timeout=5):
+        dclient = docker.from_env()
+        def on_poll():
+            try:
+                dclient.containers.get(name)
+                return True
+            except:
+                return False
+        polling.poll(on_poll, timeout=timeout, step=0.1)
+
+    def wait_for_container_stop(self, name, timeout=5):
+        dclient = docker.from_env()
+        def on_poll():
+            try:
+                dclient.containers.get(name)
+                return False
+            except:
+                return True
+        polling.poll(on_poll, timeout=timeout, step=0.1)
+
+    def wait(self, key, timeout=5):
         """
         Waits for tes-wait to return <key>
         """
-        polling.poll(
-            lambda: requests.get("http://127.0.0.1:5000/").text == key,
-            timeout=10,
-            step=0.1)
+        def on_poll():
+            try:
+                r = requests.get("http://127.0.0.1:5000/")
+                return r.status_code == 200 and r.text == key
+            except requests.ConnectionError:
+                return False
+
+        polling.poll(on_poll, timeout=timeout, step=0.1)
 
     def resume(self):
         """

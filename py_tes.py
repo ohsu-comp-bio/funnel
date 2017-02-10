@@ -6,6 +6,7 @@ import time
 import urllib2
 from urlparse import urlparse
 from minio import Minio
+import requests
 
 
 class TES:
@@ -90,12 +91,7 @@ class TES:
         return data
 
     def get_job(self, job_id):
-        req = urllib2.Request("%s/v1/jobs/%s" % (self.url, job_id))
-        r = urllib2.urlopen(req)
-        return json.loads(r.read())
+        return requests.get("%s/v1/jobs/%s" % (self.url, job_id)).json()
 
     def delete_job(self, job_id):
-        req = urllib2.Request("%s/v1/jobs/%s" % (self.url, job_id))
-        req.get_method = lambda: "DELETE"
-        r = urllib2.urlopen(req)
-        return json.loads(r.read())
+        return requests.delete("%s/v1/jobs/%s" % (self.url, job_id)).json()

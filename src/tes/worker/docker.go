@@ -64,8 +64,6 @@ func (dcmd DockerCmd) Run() error {
 	args = append(args, dcmd.ImageName)
 	args = append(args, dcmd.Cmd...)
 
-	log.Debug("DockerCmd", "dmcd", dcmd)
-
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 	log.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)

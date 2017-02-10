@@ -18,19 +18,19 @@ import (
 // This is an RPC endpoint.
 // This is used by workers to request work.
 func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
-  log.Debug("GetJobToRun called", "workerID", request.Worker.Id)
+	log.Debug("GetJobToRun called", "workerID", request.Worker.Id)
 
-  var task *ga4gh_task_exec.Task
+	var task *ga4gh_task_exec.Task
 	var jobID, authToken string
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 		worker, werr := getWorker(tx, request.Worker.Id)
-    if werr != nil {
-      return werr
-    }
+		if werr != nil {
+			return werr
+		}
 
 		if len(worker.QueuedJobs) == 0 {
-      log.Debug("Worker has empty job queue", "worker", worker)
+			log.Debug("Worker has empty job queue", "workerID", worker.Id)
 			return nil
 		}
 
@@ -43,7 +43,7 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 		authBkt := tx.Bucket(TaskAuthBucket)
 
 		// Get the task
-    task = &ga4gh_task_exec.Task{}
+		task = &ga4gh_task_exec.Task{}
 		v := bOp.Get([]byte(jobID))
 		proto.Unmarshal(v, task)
 
@@ -55,9 +55,9 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 		return nil
 	})
 
-  if err != nil {
-    return nil, err
-  }
+	if err != nil {
+		return nil, err
+	}
 
 	// No task was found. Respond accordingly.
 	if task == nil {
@@ -73,20 +73,19 @@ func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_r
 }
 
 func getWorker(tx *bolt.Tx, id string) (*Worker, error) {
-  pb := &ga4gh_task_ref.Worker{
-    Id: id,
-  }
-  worker := &Worker{pb}
+	pb := &ga4gh_task_ref.Worker{
+		Id: id,
+	}
+	worker := &Worker{pb}
 
 	data := tx.Bucket(Workers).Get([]byte(id))
 	if data != nil {
-	  proto.Unmarshal(data, pb)
+		proto.Unmarshal(data, pb)
 	}
 	return worker, nil
 }
 
 func putWorker(tx *bolt.Tx, worker *Worker) error {
-  log.Debug("Put worker", "worker", worker)
 	bw := tx.Bucket(Workers)
 	data, _ := proto.Marshal(worker.Worker)
 	bw.Put([]byte(worker.Id), data)
@@ -96,12 +95,12 @@ func putWorker(tx *bolt.Tx, worker *Worker) error {
 // AssignJob assigns a job to a worker.
 // This is NOT an RPC endpoint.
 func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
-  return taskBolt.db.Update(func(tx *bolt.Tx) error {
+	return taskBolt.db.Update(func(tx *bolt.Tx) error {
 		// Append job id to worker's queued jobs
 		worker, werr := getWorker(tx, workerID)
-    if werr != nil {
-      return werr
-    }
+		if werr != nil {
+			return werr
+		}
 		worker.QueuedJobs = append(worker.QueuedJobs, id)
 		putWorker(tx, worker)
 
@@ -265,9 +264,9 @@ func (taskBolt *TaskBolt) JobComplete(ctx context.Context, req *ga4gh_task_ref.J
 		workerID := tx.Bucket(JobWorker).Get([]byte(req.Id))
 		// Remove job from worker
 		worker, werr := getWorker(tx, string(workerID))
-    if werr != nil {
-      return werr
-    }
+		if werr != nil {
+			return werr
+		}
 		worker.RemoveJob(req.Id)
 		putWorker(tx, worker)
 		return nil

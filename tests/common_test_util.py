@@ -72,6 +72,7 @@ class SimpleServerTest(unittest.TestCase):
                     "AllowedDirs": [self.storage_dir]
                 }
             }],
+            "LogLevel": "info",
             "Worker": {
                 "Timeout": -1,
                 "StatusPollRate": 10,

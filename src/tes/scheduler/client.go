@@ -37,7 +37,7 @@ func (client *Client) Close() {
 // PollForJob polls the scheduler for a job assigned to the given worker ID.
 func (client *Client) PollForJobs(ctx context.Context, workerID string, ch chan<- *pbr.JobResponse) {
 
-  log.Debug("Job poll rate", "rate", client.NewJobPollRate)
+	log.Debug("Job poll rate", "rate", client.NewJobPollRate)
 	tickChan := time.NewTicker(client.NewJobPollRate).C
 
 	// TODO want ticker that fires immediately

@@ -22,6 +22,7 @@ type stepRunner struct {
 }
 
 func (s *stepRunner) Run(ctx context.Context) error {
+	log.Debug("Running step", "jobID", s.JobID, "stepNum", s.Num)
 
 	// Send update for host IP address.
 	s.update(&pbe.JobLog{

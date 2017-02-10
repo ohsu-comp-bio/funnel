@@ -67,6 +67,7 @@ type jobRunner struct {
 }
 
 func (r *jobRunner) Run(ctx context.Context) error {
+	r.log.Debug("JobRunner.Run", "jobID", r.job.JobID)
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
 	// The steps are:
@@ -107,12 +108,15 @@ func (r *jobRunner) Run(ctx context.Context) error {
 	*/
 
 	// Validate and prepare the step commands
-	stepRunners := make([]stepRunner, len(r.steps))
+	stepRunners := make([]*stepRunner, 0, len(r.steps))
 	for i, step := range r.steps {
-		s := stepRunner{
-			JobID: r.job.JobID,
-			Conf:  r.conf,
-			Num:   i,
+		s := &stepRunner{
+			JobID:   r.job.JobID,
+			Conf:    r.conf,
+			Num:     i,
+			Log:     r.log.WithFields("step", i),
+			Updates: r.updates,
+			IP:      r.ip,
 			Cmd: &DockerCmd{
 				ImageName:     step.ImageName,
 				Cmd:           step.Cmd,
@@ -123,9 +127,6 @@ func (r *jobRunner) Run(ctx context.Context) error {
 				// TODO make RemoveContainer configurable
 				RemoveContainer: true,
 			},
-			Log:     r.log.WithFields("step", i),
-			Updates: r.updates,
-			IP:      r.ip,
 		}
 
 		// Opens stdin/out/err files and updates those fields on "cmd".
@@ -185,7 +186,7 @@ func (r *jobRunner) Run(ctx context.Context) error {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *jobRunner) openStepLogs(s stepRunner, step *pbe.DockerExecutor) error {
+func (r *jobRunner) openStepLogs(s *stepRunner, step *pbe.DockerExecutor) error {
 
 	// Find the path for job stdin
 	var err error

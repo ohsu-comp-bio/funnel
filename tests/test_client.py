@@ -3,7 +3,6 @@
 import docker
 import json
 import os
-import time
 
 from common_test_util import SimpleServerTest
 

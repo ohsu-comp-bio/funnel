@@ -85,8 +85,7 @@ func (t *timerTimeout) Stop() {
 	t.started = false
 }
 
-// IdleTimeoutAfter is a helper that returns a new IdleTimeout configured
-// for the given duration.
+// NewIdleTimeout returns an IdleTimeout instance for the given duration.
 func NewIdleTimeout(d time.Duration) IdleTimeout {
 	return &timerTimeout{d, nil, false}
 }

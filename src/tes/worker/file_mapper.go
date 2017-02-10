@@ -48,8 +48,7 @@ func NewJobFileMapper(jobID string, baseDir string) *FileMapper {
 	return &FileMapper{dir: dir}
 }
 
-// getMapper returns a FileMapper instance with volumes, inputs, and outputs
-// configured for the given job.
+// MapTask adds all the volumes, inputs, and outputs in the given Task to the FileMapper.
 func (mapper *FileMapper) MapTask(task *pbe.Task) error {
 
 	// Add all the volumes to the mapper

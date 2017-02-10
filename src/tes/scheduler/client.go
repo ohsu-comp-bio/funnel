@@ -34,7 +34,8 @@ func (client *Client) Close() {
 	client.conn.Close()
 }
 
-// PollForJob polls the scheduler for a job assigned to the given worker ID.
+// PollForJobs polls the scheduler for a job assigned to the given worker ID
+// and writes responses to the given "ch" channel
 func (client *Client) PollForJobs(ctx context.Context, workerID string, ch chan<- *pbr.JobResponse) {
 
 	log.Debug("Job poll rate", "rate", client.NewJobPollRate)

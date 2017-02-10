@@ -112,7 +112,6 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 		tx.Bucket(JobWorker).Put([]byte(id), []byte(workerID))
 		return nil
 	})
-	return nil
 }
 
 func transitionJobState(tx *bolt.Tx, id string, state ga4gh_task_exec.State) error {
@@ -230,10 +229,12 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 	return &ga4gh_task_exec.JobID{Value: stat.Id}, nil
 }
 
+// Worker helps access the worker data structure.
 type Worker struct {
 	*ga4gh_task_ref.Worker
 }
 
+// RemoveJob removes a job from the worker's job lists.
 func (w *Worker) RemoveJob(id string) {
 	// Remove job from w job lists
 	for i, jobID := range w.ActiveJobs {

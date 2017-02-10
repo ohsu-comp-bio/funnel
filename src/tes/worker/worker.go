@@ -18,6 +18,8 @@ type result struct {
 	Err error
 }
 
+// Worker handles polling the scheduler for jobs, creating job runners,
+// tracking them, and communicating updates back to the scheduler.
 type Worker struct {
 	ID      string
 	conf    config.Worker
@@ -27,6 +29,7 @@ type Worker struct {
 	updates updateChan
 }
 
+// NewWorker returns a new Worker instance with the given config.
 func NewWorker(conf config.Worker) (*Worker, error) {
 	sched, err := scheduler.NewClient(conf)
 	if err != nil {
@@ -48,6 +51,7 @@ func (w *Worker) Close() {
 	w.sched.Close()
 }
 
+// Run runs the worker.
 func (w *Worker) Run(pctx context.Context) {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
@@ -128,7 +132,7 @@ func (w *Worker) jobContext(parent context.Context, jobID string) context.Contex
 				return
 
 			case <-ticker.C:
-				resp, err := w.sched.GetJobState(ctx, &pbe.JobID{jobID})
+				resp, err := w.sched.GetJobState(ctx, &pbe.JobID{Value: jobID})
 				if err != nil {
 					w.log.Error("Couldn't get job state. Recovering.", err)
 				} else if resp.State == pbe.State_Canceled {

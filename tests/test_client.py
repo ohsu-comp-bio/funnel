@@ -4,7 +4,6 @@ import docker
 import json
 import os
 import time
-import urllib2
 
 from common_test_util import SimpleServerTest
 

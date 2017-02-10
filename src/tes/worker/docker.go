@@ -28,8 +28,7 @@ type DockerCmd struct {
 	Stderr          io.Writer
 }
 
-// SetupCommand sets up the command to be run and sets DockerCmd.Cmd.
-// Essentially it prepares commandline arguments for Docker.
+// Run runs the Docker command and blocks until done.
 func (dcmd DockerCmd) Run() error {
 	args := []string{"run", "-i"}
 
@@ -117,7 +116,7 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*pbe.Ports, error) {
 	}
 }
 
-// StopContainer stops the container.
+// Stop stops the container.
 func (dcmd DockerCmd) Stop() error {
 	log.Info("Stopping container", "container", dcmd.ContainerName)
 	dclient := setupDockerClient()

@@ -186,11 +186,10 @@ func getJobState(tx *bolt.Tx, id string) ga4gh_task_exec.State {
 	s := tx.Bucket(JobState).Get(idBytes)
 	if s == nil {
 		return ga4gh_task_exec.State_Unknown
-	} else {
-		// map the string into the protobuf enum
-		v := ga4gh_task_exec.State_value[string(s)]
-		return ga4gh_task_exec.State(v)
 	}
+	// map the string into the protobuf enum
+	v := ga4gh_task_exec.State_value[string(s)]
+	return ga4gh_task_exec.State(v)
 }
 
 func getJob(tx *bolt.Tx, jobID string) *ga4gh_task_exec.Job {

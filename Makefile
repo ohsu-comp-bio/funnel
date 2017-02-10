@@ -5,7 +5,7 @@ export PATH
 
 PROTO_INC= -I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
 
-server: depends proto_build
+server: depends
 	go install tes-server
 	go install tes-worker
 
@@ -49,5 +49,6 @@ metalint:
 	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/...
 
 test:	
+	docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/
 	pip2.7 install -q -r tests/requirements.txt
 	nosetests-2.7 tests/

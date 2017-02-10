@@ -8,3 +8,5 @@ PyYAML==3.12
 flake8==3.2.1
 autopep8==1.2.4
 docker==2.0.2
+polling==0.3.0
+requests==2.13.0

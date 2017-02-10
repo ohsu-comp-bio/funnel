@@ -8,7 +8,8 @@ import subprocess
 import tempfile
 import time
 import unittest
-import urllib2
+import requests
+import polling
 import yaml
 
 
@@ -111,19 +112,16 @@ class SimpleServerTest(unittest.TestCase):
         """
         Waits for tes-wait to return <key>
         """
-        while True:
-            try:
-                r = urllib2.urlopen("http://127.0.0.1:5000/").read()
-                if r == key:
-                    return
-            except:
-                continue
+        polling.poll(
+            lambda: requests.get("http://127.0.0.1:5000/").text == key,
+            timeout=10,
+            step=0.1)
 
     def resume(self):
         """
         Continue from tes-wait
         """
-        urllib2.urlopen("http://127.0.0.1:5000/shutdown")
+        requests.get("http://127.0.0.1:5000/shutdown")
 
 
 class S3ServerTest(unittest.TestCase):

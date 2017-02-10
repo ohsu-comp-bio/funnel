@@ -17,8 +17,7 @@ install:
   - make depends
   - make
 script: 
-  - make metalint
-  - flake8 .
+  - make lint
   - nosetests tests
 notifications:
   email: false

@@ -1,7 +1,6 @@
 
 import re
 import json
-import time
 import urllib2
 from urlparse import urlparse
 from minio import Minio

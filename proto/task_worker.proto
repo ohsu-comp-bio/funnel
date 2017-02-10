@@ -27,7 +27,6 @@ message JobResponse {
 message UpdateStatusRequest {
   string id = 1;
   int64 step = 2;
-  ga4gh_task_exec.State state = 3;
   ga4gh_task_exec.JobLog log = 4;
   string worker_id = 5;
 }
@@ -41,6 +40,21 @@ message QueuedTaskInfo {
   ga4gh_task_exec.Resources resources = 2;
 }
 
+message JobCompleteRequest {
+  string id = 1;
+  // TODO this could be inferred from the job logs exit code
+  bool failed = 2;
+}
+
+message JobCompleteResponse {
+}
+
+message Worker {
+  string id = 1;
+  repeated string active_jobs = 2;
+  repeated string queued_jobs = 3;
+}
+
 
 /**
  * Scheduler Service
@@ -49,6 +63,7 @@ service Scheduler {
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc GetJobToRun(JobRequest) returns (JobResponse) {};
   rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobID) {};
+  rpc JobComplete(JobCompleteRequest) returns (JobCompleteResponse) {};
   rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};
   rpc GetJobState(ga4gh_task_exec.JobID) returns (ga4gh_task_exec.JobDesc) {};
 }

@@ -5,7 +5,6 @@ import (
 	"google.golang.org/grpc"
 	"os"
 	"tes/config"
-	pbe "tes/ga4gh"
 	pbr "tes/server/proto"
 	"time"
 )
@@ -35,61 +34,27 @@ func (client *Client) Close() {
 	client.conn.Close()
 }
 
-// SetInitializing sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Initializing.
-func (client *Client) SetInitializing(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job is running
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Initializing})
-}
-
-// SetRunning sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Running.
-func (client *Client) SetRunning(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job is running
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Running})
-}
-
-// SetFailed sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Failed.
-func (client *Client) SetFailed(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job failed
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Error})
-}
-
-// SetComplete sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Complete.
-func (client *Client) SetComplete(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job is complete
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Complete})
-}
-
 // PollForJob polls the scheduler for a job assigned to the given worker ID.
-func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobResponse {
+func (client *Client) PollForJobs(ctx context.Context, workerID string, ch chan<- *pbr.JobResponse) {
 
-	tickChan := time.NewTicker(client.NewJobPollRate * time.Millisecond).C
+  log.Debug("Job poll rate", "rate", client.NewJobPollRate)
+	tickChan := time.NewTicker(client.NewJobPollRate).C
 
+	// TODO want ticker that fires immediately
 	job := client.RequestJob(ctx, workerID)
 	if job != nil {
-		return job
+		ch <- job
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 
 		case <-tickChan:
 			job := client.RequestJob(ctx, workerID)
 			if job != nil {
-				return job
+				ch <- job
 			}
 		}
 	}

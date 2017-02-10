@@ -1,4 +1,4 @@
-package slot
+package util
 
 import "time"
 
@@ -87,12 +87,6 @@ func (t *timerTimeout) Stop() {
 
 // IdleTimeoutAfter is a helper that returns a new IdleTimeout configured
 // for the given duration.
-func IdleTimeoutAfter(d time.Duration) IdleTimeout {
+func NewIdleTimeout(d time.Duration) IdleTimeout {
 	return &timerTimeout{d, nil, false}
-}
-
-// IdleTimeoutAfterSeconds is a helper that returns a new IdleTimeout
-// configured for the given number of seconds.
-func IdleTimeoutAfterSeconds(sec time.Duration) IdleTimeout {
-	return IdleTimeoutAfter(sec * time.Second)
 }

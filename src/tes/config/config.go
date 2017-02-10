@@ -99,8 +99,6 @@ func DefaultConfig() Config {
 // Worker contains worker configuration.
 type Worker struct {
 	ID string
-	// How many jobs can a worker accept at a time
-	Slots int
 	// Address of the scheduler, e.g. "1.2.3.4:9090"
 	ServerAddress string
 	// Directory to write job files to
@@ -115,6 +113,7 @@ type Worker struct {
 	LogUpdateRate time.Duration
 	// How often (milliseconds) the scheduler polls for new jobs
 	NewJobPollRate time.Duration
+	LogTailSize    int64
 	Storage        []*StorageConfig
 	LogPath        string
 	LogLevel       string
@@ -123,13 +122,14 @@ type Worker struct {
 // WorkerDefaultConfig returns simple, default worker configuration.
 func WorkerDefaultConfig() Worker {
 	return Worker{
-		Slots:          1,
-		ServerAddress:  "localhost:9090",
-		WorkDir:        "tes-work-dir",
-		Timeout:        -1,
-		StatusPollRate: 5000,
-		LogUpdateRate:  5000,
-		NewJobPollRate: 5000,
+		ServerAddress: "localhost:9090",
+		WorkDir:       "tes-work-dir",
+		Timeout:       -1,
+		// TODO these get reset to zero when not found in yaml?
+		StatusPollRate: time.Second * 5,
+		LogUpdateRate:  time.Second * 5,
+		NewJobPollRate: time.Second * 5,
+		LogTailSize:    10000,
 		LogLevel:       "debug",
 	}
 }

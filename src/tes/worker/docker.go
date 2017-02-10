@@ -1,10 +1,10 @@
-package tesTaskEngineWorker
+package worker
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"github.com/docker/docker/client"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
@@ -17,29 +17,20 @@ import (
 // DockerCmd is responsible for configuring and running a docker container.
 type DockerCmd struct {
 	ImageName       string
-	CmdString       []string
+	Cmd             []string
 	Volumes         []Volume
 	Workdir         string
 	Ports           []*pbe.Ports
 	ContainerName   string
 	RemoveContainer bool
-	Stdin           *os.File
-	Stdout          *os.File
-	Stderr          *os.File
-	Cmd             *exec.Cmd
-	// store last 200 lines of both stdout and stderr
-	Log map[string][]byte
-}
-
-// GetVolumes takes a jobID and returns an array of string.
-func formatVolumeArg(v Volume) string {
-	// `o` is structed as "HostPath:ContainerPath:Mode".
-	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
+	Stdin           io.Reader
+	Stdout          io.Writer
+	Stderr          io.Writer
 }
 
 // SetupCommand sets up the command to be run and sets DockerCmd.Cmd.
 // Essentially it prepares commandline arguments for Docker.
-func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
+func (dcmd DockerCmd) Run() error {
 	args := []string{"run", "-i"}
 
 	if dcmd.RemoveContainer {
@@ -50,8 +41,9 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 		for i := range dcmd.Ports {
 			hostPort := dcmd.Ports[i].Host
 			containerPort := dcmd.Ports[i].Container
+			// TODO move to validation?
 			if hostPort <= 1024 && hostPort != 0 {
-				return nil, fmt.Errorf("Error cannot use restricted ports")
+				return fmt.Errorf("Error cannot use restricted ports")
 			}
 			args = append(args, "-p", fmt.Sprintf("%d:%d", hostPort, containerPort))
 		}
@@ -71,60 +63,22 @@ func (dcmd DockerCmd) SetupCommand() (*DockerCmd, error) {
 	}
 
 	args = append(args, dcmd.ImageName)
-	args = append(args, dcmd.CmdString...)
+	args = append(args, dcmd.Cmd...)
 
 	log.Debug("DockerCmd", "dmcd", dcmd)
 
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
+	log.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)
-	dcmd.Cmd = cmd
 
 	if dcmd.Stdin != nil {
 		cmd.Stdin = dcmd.Stdin
 	}
-
-	stdoutReader, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("Error creating StdoutPipe for Cmd: %s", err)
-	}
-
-	stdoutScanner := bufio.NewScanner(stdoutReader)
-
-	stderrReader, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("Error creating StderrPipe for Cmd: %s", err)
-	}
-
-	stderrScanner := bufio.NewScanner(stderrReader)
-
-	go func() {
-		for stdoutScanner.Scan() {
-			s := stdoutScanner.Text()
-			dcmd.Stdout.WriteString(s + "\n")
-			dcmd.Log["Stdout"] = updateAndTrim(dcmd.Log["Stdout"], []byte(s+"\n"))
-		}
-		for stderrScanner.Scan() {
-			e := stderrScanner.Text()
-			dcmd.Stderr.WriteString(e + "\n")
-			dcmd.Log["Stderr"] = updateAndTrim(dcmd.Log["Stderr"], []byte(e+"\n"))
-		}
-	}()
-
-	return &dcmd, nil
+	return cmd.Run()
 }
 
-func updateAndTrim(l []byte, v []byte) []byte {
-	// 10 KB max stored
-	max := 10000
-	l = append(l[:], v[:]...)
-	if len(l) > max {
-		return l[len(l)-max:]
-	}
-	return l
-}
-
-// InspectContainer returns metadata about the container (calls "docker inspect").
-func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
+// Inspect returns metadata about the container (calls "docker inspect").
+func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*pbe.Ports, error) {
 	log.Info("Fetching container metadata")
 	dclient := setupDockerClient()
 	// close the docker client connection
@@ -132,7 +86,7 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return nil, nil
 		default:
 			metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
 			if err == nil && metadata.State.Running == true {
@@ -144,14 +98,12 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 					for i := range v {
 						p := strings.Split(string(k), "/")
 						containerPort, err := strconv.Atoi(p[0])
-						//TODO handle errors
 						if err != nil {
-							return nil
+							return nil, err
 						}
 						hostPort, err := strconv.Atoi(v[i].HostPort)
-						//TODO handle errors
 						if err != nil {
-							return nil
+							return nil, err
 						}
 						portMap = append(portMap, &pbe.Ports{
 							Container: int32(containerPort),
@@ -159,14 +111,14 @@ func (dcmd DockerCmd) InspectContainer(ctx context.Context) []*pbe.Ports {
 						})
 					}
 				}
-				return portMap
+				return portMap, nil
 			}
 		}
 	}
 }
 
 // StopContainer stops the container.
-func (dcmd DockerCmd) StopContainer() error {
+func (dcmd DockerCmd) Stop() error {
 	log.Info("Stopping container", "container", dcmd.ContainerName)
 	dclient := setupDockerClient()
 	// close the docker client connection
@@ -174,6 +126,7 @@ func (dcmd DockerCmd) StopContainer() error {
 	// Set timeout
 	timeout := time.Second * 10
 	// Issue stop call
+	// TODO is context.Background right?
 	err := dclient.ContainerStop(context.Background(), dcmd.ContainerName, &timeout)
 	return err
 }
@@ -201,4 +154,10 @@ func setupDockerClient() *client.Client {
 		}
 	}
 	return dclient
+}
+
+// GetVolumes takes a jobID and returns an array of string.
+func formatVolumeArg(v Volume) string {
+	// `o` is structed as "HostPath:ContainerPath:Mode".
+	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
 }

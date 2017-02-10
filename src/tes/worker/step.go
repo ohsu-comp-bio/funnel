@@ -7,8 +7,6 @@ import (
 	pbe "tes/ga4gh"
 	"tes/logger"
 	pbr "tes/server/proto"
-	"tes/util/ring"
-	"time"
 )
 
 type stepRunner struct {
@@ -36,7 +34,11 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 	// tailLogs modifies the cmd Stdout/err fields, so should be called before Run.
 	done := make(chan error, 1)
-	go s.tailLogs(subctx)
+
+	stdout, stderr := s.logTails()
+	defer stdout.Flush()
+	defer stderr.Flush()
+
 	go func() {
 		done <- s.Cmd.Run()
 	}()
@@ -47,6 +49,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 		// Likely the job was canceled.
 		s.Cmd.Stop()
 		return ctx.Err()
+
 	case result := <-done:
 		s.update(&pbe.JobLog{
 			ExitCode: getExitCode(result),
@@ -55,41 +58,20 @@ func (s *stepRunner) Run(ctx context.Context) error {
 	}
 }
 
-// tailLogs starts a ticker and loop that sends updates of step stdout/err logs.
-// This modifies "dcmd" to replace the Stdout/err fields with wrapped io.Writers.
-func (s *stepRunner) tailLogs(ctx context.Context) {
-	ticker := time.NewTicker(s.Conf.LogUpdateRate)
-	defer ticker.Stop()
-
-	var err error
-	var stdoutTail, stderrTail *ring.Buffer
-	stdoutTail, err = ring.NewBuffer(s.Conf.LogTailSize)
-	stderrTail, err = ring.NewBuffer(s.Conf.LogTailSize)
-	if err != nil {
-		s.Log.Error("Can't create stdout/err tail buffer.", err)
-		return
-	}
-
+func (s *stepRunner) logTails() (*tailer, *tailer) {
+	stdout, _ := newTailer(s.Conf.LogTailSize, func(c string) {
+		s.update(&pbe.JobLog{Stdout: c})
+	})
+	stderr, _ := newTailer(s.Conf.LogTailSize, func(c string) {
+		s.update(&pbe.JobLog{Stderr: c})
+	})
 	if s.Cmd.Stdout != nil {
-		s.Cmd.Stdout = io.MultiWriter(stdoutTail, s.Cmd.Stdout)
+		s.Cmd.Stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
 	}
 	if s.Cmd.Stderr != nil {
-		s.Cmd.Stderr = io.MultiWriter(stderrTail, s.Cmd.Stderr)
+		s.Cmd.Stderr = io.MultiWriter(s.Cmd.Stderr, stderr)
 	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			s.update(&pbe.JobLog{
-				Stdout: string(stdoutTail.Bytes()),
-				Stderr: string(stderrTail.Bytes()),
-			})
-			stdoutTail.Reset()
-			stderrTail.Reset()
-		}
-	}
+	return stdout, stderr
 }
 
 // inspectContainer calls Inspect on the DockerCmd, and sends an update with the results.

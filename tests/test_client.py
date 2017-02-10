@@ -39,6 +39,7 @@ class TestTaskREST(SimpleServerTest):
         '''Test a basic "Hello world" task and expected API result.'''
         job_id = self._submit_steps("echo hello world")
         data = self.tes.wait(job_id)
+        print data
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
 

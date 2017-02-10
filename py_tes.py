@@ -1,5 +1,4 @@
 
-import itertools
 import re
 import json
 import time
@@ -7,6 +6,10 @@ import urllib2
 from urlparse import urlparse
 from minio import Minio
 import requests
+import polling
+import logging
+
+logging.getLogger("requests").setLevel(logging.WARNING)
 
 
 class TES:
@@ -80,15 +83,13 @@ class TES:
         return job_id
 
     def wait(self, job_id, timeout=10):
-        data = {}
-        for i in itertools.count():
-            if timeout > 0 and i == timeout:
-                break
-            data = self.get_job(job_id)
-            if data["state"] not in ['Queued', "Running", "Initializing"]:
-                break
-            time.sleep(1)
-        return data
+        def check_success(data):
+            return data["state"] not in ['Queued', "Running", "Initializing"]
+        return polling.poll(
+            lambda: self.get_job(job_id),
+            check_success=check_success,
+            timeout=timeout,
+            step=0.1)
 
     def get_job(self, job_id):
         return requests.get("%s/v1/jobs/%s" % (self.url, job_id)).json()

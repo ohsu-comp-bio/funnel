@@ -111,6 +111,7 @@ class SimpleServerTest(unittest.TestCase):
 
     def wait_for_container(self, name, timeout=5):
         dclient = docker.from_env()
+
         def on_poll():
             try:
                 dclient.containers.get(name)
@@ -121,6 +122,7 @@ class SimpleServerTest(unittest.TestCase):
 
     def wait_for_container_stop(self, name, timeout=5):
         dclient = docker.from_env()
+
         def on_poll():
             try:
                 dclient.containers.get(name)

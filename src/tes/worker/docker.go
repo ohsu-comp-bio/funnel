@@ -71,6 +71,12 @@ func (dcmd DockerCmd) Run() error {
 	if dcmd.Stdin != nil {
 		cmd.Stdin = dcmd.Stdin
 	}
+	if dcmd.Stdout != nil {
+		cmd.Stdout = dcmd.Stdout
+	}
+	if dcmd.Stderr != nil {
+		cmd.Stderr = dcmd.Stderr
+	}
 	return cmd.Run()
 }
 

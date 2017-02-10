@@ -131,6 +131,10 @@ func recoverLogErr() {
 
 func fields(args ...interface{}) map[string]interface{} {
 	f := make(map[string]interface{}, len(args)/2)
+	if len(args) == 1 {
+		f["unknown"] = args[0]
+		return f
+	}
 	for i := 0; i < len(args); i += 2 {
 		k := args[i].(string)
 		v := args[i+1]

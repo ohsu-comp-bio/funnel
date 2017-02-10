@@ -26,7 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import (
 	"fmt"
-	"sync"
 )
 
 // Buffer implements a circular buffer. It is a fixed size,
@@ -38,7 +37,6 @@ type Buffer struct {
 	size        int64
 	writeCursor int64
 	written     int64
-	mtx         sync.Mutex
 }
 
 // NewBuffer creates a new buffer of a given size. The size
@@ -58,9 +56,6 @@ func NewBuffer(size int64) (*Buffer, error) {
 // Write writes up to len(buf) bytes to the internal ring,
 // overriding older data if necessary.
 func (b *Buffer) Write(buf []byte) (int, error) {
-	b.mtx.Lock()
-	defer b.mtx.Unlock()
-
 	// Account for total bytes written
 	n := len(buf)
 	b.written += int64(n)
@@ -96,9 +91,6 @@ func (b *Buffer) TotalWritten() int64 {
 // Bytes provides a slice of the bytes written. This
 // slice should not be written to.
 func (b *Buffer) Bytes() []byte {
-	b.mtx.Lock()
-	defer b.mtx.Unlock()
-
 	switch {
 	case b.written >= b.size && b.writeCursor == 0:
 		return b.data
@@ -114,9 +106,6 @@ func (b *Buffer) Bytes() []byte {
 
 // Reset resets the buffer so it has no content.
 func (b *Buffer) Reset() {
-	b.mtx.Lock()
-	defer b.mtx.Unlock()
-
 	b.writeCursor = 0
 	b.written = 0
 }

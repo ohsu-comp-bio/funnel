@@ -77,9 +77,9 @@ class SimpleServerTest(unittest.TestCase):
             "LogLevel": "info",
             "Worker": {
                 "Timeout": -1,
-                "StatusPollRate": 10,
-                "LogUpdateRate": 10,
-                "NewJobPollRate": 10
+                "StatusPollRate": 100000000,
+                "LogUpdateRate": 100000000,
+                "NewJobPollRate": 100000000
             }
         })
 

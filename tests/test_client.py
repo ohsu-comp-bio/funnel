@@ -3,6 +3,8 @@
 import docker
 import json
 import os
+import time
+import shlex
 
 from common_test_util import SimpleServerTest
 
@@ -12,12 +14,15 @@ TESTS_DIR = os.path.dirname(__file__)
 
 class TestTaskREST(SimpleServerTest):
 
+    def dumps(self, d):
+        return json.dumps(d, indent=2, sort_keys=True)
+
     def _submit_steps(self, *steps):
         docker = []
         for s in steps:
             docker.append({
                 "imageName": "tes-wait",
-                "cmd": s.split(' '),
+                "cmd": shlex.split(s),
                 "stdout": "stdout",
                 "ports": [{
                     "host": 5000,
@@ -31,16 +36,45 @@ class TestTaskREST(SimpleServerTest):
             "resources": {},
             "docker": docker
         }
-        print json.dumps(task)
+        print 'submitted task', self.dumps(task)
         return self.tes.submit(task)
 
     def test_hello_world(self):
         '''Test a basic "Hello world" task and expected API result.'''
         job_id = self._submit_steps("echo hello world")
         data = self.tes.wait(job_id)
-        print data
+        print self.dumps(data)
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
+
+    def test_single_char_log(self):
+        '''
+        Test that the streaming logs pick up a single character.
+
+        This ensures that the streaming works even when a small
+        amount of logs are written.
+        '''
+        job_id = self._submit_steps("bash -c 'echo a; tes-wait step 1'")
+        self.wait("step 1")
+        time.sleep(0.1)
+        data = self.tes.get_job(job_id)
+        print self.dumps(data)
+        assert 'logs' in data
+        assert data['logs'][0]['stdout'] == "a\n"
+        self.resume()
+
+    def test_port_log(self):
+        '''
+        Ensure that ports are logged and returned correctly.
+        '''
+        job_id = self._submit_steps("echo", "tes-wait step 2")
+        self.wait("step 2")
+        time.sleep(0.1)
+        data = self.tes.get_job(job_id)
+        print self.dumps(data)
+        assert 'logs' in data
+        assert data['logs'][0]['ports'][0]['host'] == 5000
+        self.resume()
 
     def test_state_immutability(self):
         job_id = self._submit_steps("echo hello world")

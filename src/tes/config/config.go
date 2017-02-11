@@ -73,6 +73,7 @@ type Config struct {
 	ContentDir    string
 	WorkDir       string
 	LogLevel      string
+	MaxJobLogSize int
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -92,7 +93,8 @@ func DefaultConfig() Config {
 				NumWorkers: 4,
 			},
 		},
-		Worker: WorkerDefaultConfig(),
+		Worker:        WorkerDefaultConfig(),
+		MaxJobLogSize: 10000,
 	}
 }
 

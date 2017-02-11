@@ -7,6 +7,7 @@ import (
 	pbe "tes/ga4gh"
 	"tes/logger"
 	pbr "tes/server/proto"
+	"time"
 )
 
 type stepRunner struct {
@@ -39,22 +40,31 @@ func (s *stepRunner) Run(ctx context.Context) error {
 	defer stdout.Flush()
 	defer stderr.Flush()
 
+	ticker := time.NewTicker(s.Conf.LogUpdateRate)
+	defer ticker.Stop()
+
 	go func() {
 		done <- s.Cmd.Run()
 	}()
 	go s.inspectContainer(subctx)
 
-	select {
-	case <-ctx.Done():
-		// Likely the job was canceled.
-		s.Cmd.Stop()
-		return ctx.Err()
+	for {
+		select {
+		case <-ctx.Done():
+			// Likely the job was canceled.
+			s.Cmd.Stop()
+			return ctx.Err()
 
-	case result := <-done:
-		s.update(&pbe.JobLog{
-			ExitCode: getExitCode(result),
-		})
-		return result
+		case <-ticker.C:
+			stdout.Flush()
+			stderr.Flush()
+
+		case result := <-done:
+			s.update(&pbe.JobLog{
+				ExitCode: getExitCode(result),
+			})
+			return result
+		}
 	}
 }
 
@@ -81,7 +91,6 @@ func (s *stepRunner) inspectContainer(ctx context.Context) {
 		s.Log.Error("Error inspecting container", err)
 		return
 	}
-
 	s.update(&pbe.JobLog{
 		Ports: ports,
 	})

@@ -92,7 +92,14 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*pbe.Ports, error) {
 			return nil, nil
 		default:
 			metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
-			if err == nil && metadata.State.Running == true {
+			if client.IsErrContainerNotFound(err) {
+				break
+			}
+			if err != nil {
+				log.Error("Error inspecting container", err)
+				break
+			}
+			if metadata.State.Running == true {
 				var portMap []*pbe.Ports
 				// extract exposed host port from
 				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
@@ -112,6 +119,7 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*pbe.Ports, error) {
 							Container: int32(containerPort),
 							Host:      int32(hostPort),
 						})
+						log.Debug("Found port mapping:", "host", hostPort, "container", containerPort)
 					}
 				}
 				return portMap, nil
@@ -137,7 +145,7 @@ func (dcmd DockerCmd) Stop() error {
 func setupDockerClient() *client.Client {
 	dclient, err := client.NewEnvClient()
 	if err != nil {
-		log.Info("Docker error", "err", err)
+		log.Error("Docker error", err)
 		return nil
 	}
 

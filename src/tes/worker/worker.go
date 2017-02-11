@@ -78,6 +78,7 @@ func (w *Worker) trackJobs(ctx context.Context) {
 
 		// "w.updates" contains job updates, e.g. stdout/err updates.
 		case up := <-w.updates:
+			w.log.Info("Sending update", "data", up)
 			w.sched.UpdateJobStatus(ctx, up)
 
 		case <-timeout.Done():

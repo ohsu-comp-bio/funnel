@@ -45,8 +45,8 @@ var Workers = []byte("workers")
 // TaskBolt provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
 type TaskBolt struct {
-	db           *bolt.DB
-	serverConfig config.Config
+	db   *bolt.DB
+	conf config.Config
 }
 
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
@@ -84,7 +84,7 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, serverConfig: conf}, nil
+	return &TaskBolt{db: db, conf: conf}, nil
 }
 
 // ReadQueue returns a slice of queued Jobs. Up to "n" jobs are returned.
@@ -301,7 +301,7 @@ func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *ga4gh_task_e
 	//     Maybe ServiceInfo data structure schema needs to be refactored
 	//     For example, you can't have multiple S3 endpoints
 	out := map[string]string{}
-	for _, i := range taskBolt.serverConfig.Storage {
+	for _, i := range taskBolt.conf.Storage {
 		if i.Local.Valid() {
 			out["Local.AllowedDirs"] = strings.Join(i.Local.AllowedDirs, ",")
 		}

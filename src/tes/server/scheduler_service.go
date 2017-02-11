@@ -197,31 +197,37 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 		bL := tx.Bucket(JobsLog)
 
 		// max size (bytes) for stderr and stdout streams to keep in db
-		// TODO make configurable
-		max := 100000
+		max := taskBolt.conf.MaxJobLogSize
+		key := []byte(fmt.Sprint(stat.Id, stat.Step))
+
 		if stat.Log != nil {
-			out := &ga4gh_task_exec.JobLog{}
-			o := bL.Get([]byte(fmt.Sprint(stat.Id, stat.Step)))
+			// Check if there is an existing job log
+			o := bL.Get(key)
 			if o != nil {
-				var jlog ga4gh_task_exec.JobLog
+				// There is an existing log in the DB, load it
+				existing := &ga4gh_task_exec.JobLog{}
 				// max bytes to be stored in the db
-				proto.Unmarshal(o, &jlog)
-				out = &jlog
-				stdout := []byte(out.Stdout + stat.Log.Stdout)
-				stderr := []byte(out.Stderr + stat.Log.Stderr)
-				if len(stdout) > max {
-					stdout = stdout[len(stdout)-max:]
-				}
-				if len(stderr) > max {
-					stderr = stderr[len(stderr)-max:]
-				}
-				out.Stdout = string(stdout)
-				out.Stderr = string(stderr)
-			} else {
-				out = stat.Log
+				proto.Unmarshal(o, existing)
+
+				stdout := []byte(existing.Stdout + stat.Log.Stdout)
+				stderr := []byte(existing.Stderr + stat.Log.Stderr)
+
+				// Trim the stdout/err logs to the max size if needed
+				stdout = stdout[:max]
+				stderr = stderr[:max]
+
+				stat.Log.Stdout = string(stdout)
+				stat.Log.Stderr = string(stderr)
+
+				// Merge the updates into the existing.
+				proto.Merge(existing, stat.Log)
+				// existing is updated, so set that to stat.Log which will get saved below.
+				stat.Log = existing
 			}
-			dL, _ := proto.Marshal(out)
-			bL.Put([]byte(fmt.Sprint(stat.Id, stat.Step)), dL)
+
+			// Save the updated log
+			logbytes, _ := proto.Marshal(stat.Log)
+			tx.Bucket(JobsLog).Put(key, logbytes)
 		}
 
 		return nil
@@ -325,7 +331,7 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoReq
 // GetServerConfig returns information about the server configuration.
 // This is an RPC endpoint.
 func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*config.Config, error) {
-	return &taskBolt.serverConfig, nil
+	return &taskBolt.conf, nil
 }
 
 // GetJobState returns the state of a job, given a job ID.

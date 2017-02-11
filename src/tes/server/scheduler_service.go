@@ -213,8 +213,12 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 				stderr := []byte(existing.Stderr + stat.Log.Stderr)
 
 				// Trim the stdout/err logs to the max size if needed
-				stdout = stdout[:max]
-				stderr = stderr[:max]
+				if len(stdout) > max {
+					stdout = stdout[:max]
+				}
+				if len(stderr) > max {
+					stderr = stderr[:max]
+				}
 
 				stat.Log.Stdout = string(stdout)
 				stat.Log.Stderr = string(stderr)

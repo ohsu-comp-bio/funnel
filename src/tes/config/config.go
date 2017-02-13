@@ -74,6 +74,7 @@ type Config struct {
 	WorkDir       string
 	LogLevel      string
 	MaxJobLogSize int
+	ScheduleRate  time.Duration
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -93,6 +94,7 @@ func DefaultConfig() Config {
 		},
 		Worker:        WorkerDefaultConfig(),
 		MaxJobLogSize: 10000,
+		ScheduleRate:  time.Second,
 	}
 }
 

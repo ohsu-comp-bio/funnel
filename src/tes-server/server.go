@@ -7,7 +7,7 @@ import (
 	"tes/config"
 	"tes/logger"
 	"tes/scheduler"
-	"tes/scheduler/condor"
+	//"tes/scheduler/condor"
 	"tes/scheduler/local"
 	"tes/server"
 )
@@ -50,18 +50,17 @@ func start(conf config.Config) {
 	case "local":
 		// TODO worker will stay alive if the parent process panics
 		sched = local.NewScheduler(conf)
-	case "condor":
-		sched = condor.NewScheduler(conf)
-	case "openstack":
-		sched = openstack.NewScheduler(conf)
-	case "dumblocal":
-		sched = dumblocal.NewScheduler(conf)
+	//case "condor":
+	//sched = condor.NewScheduler(conf)
+	//case "openstack":
+	//sched = openstack.NewScheduler(conf)
 	default:
 		log.Error("Unknown scheduler",
 			"scheduler", conf.Scheduler)
 		return
 	}
-	go scheduler.StartScheduling(taski, sched, conf.Worker.NewJobPollRate)
+	go scheduler.StartScheduling(taski, sched, conf.ScheduleRate)
 
+	// TODO if port 8000 is already busy, does this lock up silently?
 	server.StartHTTPProxy(conf.RPCPort, conf.HTTPPort, conf.ContentDir)
 }

@@ -15,6 +15,13 @@ func getWorker(tx *bolt.Tx, id string) (*pbr.Worker, error) {
 	if data != nil {
 		proto.Unmarshal(data, worker)
 	}
+
+	if worker.Assigned == nil {
+		worker.Assigned = map[string]bool{}
+	}
+	if worker.Active == nil {
+		worker.Active = map[string]bool{}
+	}
 	return worker, nil
 }
 

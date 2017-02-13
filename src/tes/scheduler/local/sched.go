@@ -1,7 +1,6 @@
 package local
 
 import (
-	"os"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -45,50 +44,52 @@ var log = logger.New("local")
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
-	return &scheduler{conf, worker}
+	w := NewLocalWorker(conf)
+	go w.Run()
+	s := &scheduler{conf, w}
+	return s
 }
 
 type scheduler struct {
 	conf   config.Config
-	worker sched.Worker
-	avail  Resources
+	worker *localWorker
 }
 
 // Schedule schedules a job and returns a corresponding Offer.
-func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 	log.Debug("Running local scheduler")
-
-	if avail == int32(0) {
-		log.Debug("Worker is full")
-		return nil
-	}
-
-	return sched.NewOffer(j, w)
+	return sched.NewOffer(j, s.worker.Worker)
 }
 
-// TODO start a single local worker on startup
-//      even need a separate process? Can this be inprocess?
-func (s *scheduler) runWorker(ctx context.Context) {
-	log.Debug("Starting local worker", "storage", s.conf.Storage)
+func NewLocalWorker(conf config.Config) *localWorker {
+	id := sched.GenWorkerID()
+	w := &localWorker{
+		Worker: sched.Worker{
+			ID: id,
+			Resources: sched.Resources{
+				CPU:  1,
+				RAM:  5.0,
+				Disk: 5.0,
+			},
+		},
+	}
+	w.Conf = conf.Worker
+	w.Conf.ID = id
+	w.Conf.ServerAddress = "localhost:9090"
+	w.Conf.Storage = conf.Storage
+	return w
+}
 
-	workerConf := s.conf.Worker
-	workerConf.ID = sched.GenWorkerID()
-	workerConf.ServerAddress = "localhost:9090"
-	workerConf.Storage = s.conf.Storage
+type localWorker struct {
+	sched.Worker
+	Conf config.Worker
+}
 
-	w, err := worker.NewWorker(conf)
+func (w *localWorker) Run() {
+	log.Debug("Starting local worker", "storage", w.Conf.Storage)
+
+	err := worker.Run(w.Conf)
 	if err != nil {
 		log.Error("Can't create worker", err)
-	}
-	ctx := context.Background()
-	w.Run(ctx)
-
-	w := sched.Worker{
-		ID: sched.GenWorkerID(),
-		Resources: sched.Resources{
-			CPU:  1,
-			RAM:  1.0,
-			Disk: 10.0,
-		},
 	}
 }

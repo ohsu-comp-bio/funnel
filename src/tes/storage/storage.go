@@ -118,5 +118,10 @@ func (storage Storage) WithConfig(conf *config.StorageConfig) (*Storage, error) 
 		}
 	}
 
+	// If the configuration did nothing, return the initial storage instance
+	if out == nil {
+		return &storage, nil
+	}
+
 	return out, nil
 }

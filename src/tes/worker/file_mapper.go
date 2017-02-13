@@ -45,7 +45,12 @@ func NewJobFileMapper(jobID string, baseDir string) *FileMapper {
 	dir := path.Join(baseDir, jobID)
 	// TODO error handling
 	dir, _ = filepath.Abs(dir)
-	return &FileMapper{dir: dir}
+	return &FileMapper{
+		Volumes: []Volume{},
+		Inputs:  []*pbe.TaskParameter{},
+		Outputs: []*pbe.TaskParameter{},
+		dir:     dir,
+	}
 }
 
 // MapTask adds all the volumes, inputs, and outputs in the given Task to the FileMapper.

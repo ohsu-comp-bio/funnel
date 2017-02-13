@@ -15,6 +15,8 @@ import (
 func newJobRunner(conf config.Worker, a *pbr.Assignment, up updateChan) *jobRunner {
 	return &jobRunner{
 		Assignment: a,
+		mapper:     NewJobFileMapper(a.Job.JobID, conf.WorkDir),
+		store:      &storage.Storage{},
 		conf:       conf,
 		updates:    up,
 		log:        logger.New("runner", "workerID", conf.ID, "jobID", a.Job.JobID),
@@ -151,7 +153,6 @@ func (r *jobRunner) prepareDir() error {
 // Prepare file mapper, which maps task file URLs to host filesystem paths
 func (r *jobRunner) prepareMapper() error {
 	// Map task paths to working dir paths
-	r.mapper = NewJobFileMapper(r.Assignment.Job.JobID, r.conf.WorkDir)
 	return r.mapper.MapTask(r.Assignment.Job.Task)
 }
 
@@ -166,17 +167,12 @@ func (r *jobRunner) prepareIP() error {
 // This provides download/upload for inputs/outputs.
 func (r *jobRunner) prepareStorage() error {
 	var err error
-	storage := new(storage.Storage)
 
 	for _, conf := range r.conf.Storage {
-		storage, err = storage.WithConfig(conf)
+		r.store, err = r.store.WithConfig(conf)
 		if err != nil {
 			return err
 		}
-	}
-
-	if storage == nil {
-		return fmt.Errorf("No storage configured")
 	}
 
 	return nil
@@ -211,9 +207,15 @@ func (r *jobRunner) step(ctx context.Context, stepfunc func() error) {
 	case <-ctx.Done():
 		r.setResult(ctx.Err())
 	default:
+		// If the runner is already complete (perhaps because a previous step failed)
+		// skip the step.
 		if !r.Complete() {
+			// Run the step
 			err := stepfunc()
+			// If the step failed, set the runner to failed. All the following steps
+			// will be skipped.
 			if err != nil {
+				r.log.Error("Job runner failed", err)
 				r.setResult(err)
 			}
 		}
@@ -223,8 +225,11 @@ func (r *jobRunner) step(ctx context.Context, stepfunc func() error) {
 func (r *jobRunner) setResult(err error) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
-	r.complete = true
-	r.err = err
+	// Don't set the result twice
+	if !r.complete {
+		r.complete = true
+		r.err = err
+	}
 }
 
 func (r *jobRunner) Err() error {

@@ -50,6 +50,7 @@ func Run(conf config.Worker) error {
 				Resources: conf.Resources,
 				// TODO
 				Hostname: "unknown",
+				States:   map[string]pbe.State{},
 			}
 			complete := []string{}
 

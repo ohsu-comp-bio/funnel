@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"tes/config"
 )
@@ -15,8 +16,8 @@ const (
 // Backend provides an interface for a storage backend.
 // New storage backends must support this interface.
 type Backend interface {
-	Get(url string, path string, class string) error
-	Put(url string, path string, class string) error
+	Get(ctx context.Context, url string, path string, class string) error
+	Put(ctx context.Context, url string, path string, class string) error
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
 	// TODO would it be useful if this included the request type (Get/Put)?
@@ -35,23 +36,28 @@ type Storage struct {
 // Get downloads a file from a storage system at the given "url".
 // The file is downloaded to the given local "path".
 // "class" is either "File" or "Directory".
-func (storage Storage) Get(url string, path string, class string) error {
+func (storage Storage) Get(ctx context.Context, url string, path string, class string) error {
 	store, err := storage.findBackend(url, path, class)
 	if err != nil {
 		return err
 	}
-	return store.Get(url, path, class)
+	return store.Get(ctx, url, path, class)
 }
 
 // Put uploads a file to a storage system at the given "url".
 // The file is uploaded from the given local "path".
 // "class" is either "File" or "Directory".
-func (storage Storage) Put(url string, path string, class string) error {
+func (storage Storage) Put(ctx context.Context, url string, path string, class string) error {
 	store, err := storage.findBackend(url, path, class)
 	if err != nil {
 		return err
 	}
-	return store.Put(url, path, class)
+	return store.Put(ctx, url, path, class)
+}
+
+func (storage Storage) Supports(url string, path string, class string) bool {
+	b, _ := storage.findBackend(url, path, class)
+	return b != nil
 }
 
 // findBackend tries to find a backend that matches the given url/path/class.

@@ -5,31 +5,44 @@ package ga4gh_task_ref;
 
 import "task_execution.proto";
 
-/**
- * Worker Info
- */
-message WorkerInfo {
-  string id = 1;         /// UUID of the worker
-  int64  last_ping = 2;  /// Last time contacted
-  string hostname  = 3;
+message Worker {
+  string id = 1;
+  map<string,bool> active = 2;
+  map<string,bool> assigned = 4;
+  ga4gh_task_exec.Resources resources = 5;
+  int64 last_ping = 6;
 }
 
-message JobRequest {
-  WorkerInfo worker = 1;
-  ga4gh_task_exec.Resources resources = 2;
-}
-
-message JobResponse {
+message Assignment {
   ga4gh_task_exec.Job job = 1;
   string auth = 2;
 }
 
-message UpdateStatusRequest {
+message UpdateWorkerRequest {
+  // ID of the worker
+  string id = 1;
+  // Description of CPU, RAM, etc.
+  ga4gh_task_exec.Resources resources = 2;
+  // Hostname of the worker host.
+  string hostname  = 3;
+  // States of all jobs in the worker: job ID -> State
+  map<string, ga4gh_task_exec.State> states = 4;
+}
+
+message UpdateWorkerResponse {
+  // New jobs which have been assigned to this worker.
+  repeated Assignment assigned = 3;
+  // IDs of jobs assigned to this worker that were canceled.
+  repeated string canceled = 4;
+}
+
+message UpdateJobLogsRequest {
   string id = 1;
   int64 step = 2;
   ga4gh_task_exec.JobLog log = 4;
   string worker_id = 5;
 }
+message UpdateJobLogsResponse {}
 
 message QueuedTaskInfoRequest {
   int32 max_tasks = 1;
@@ -40,30 +53,12 @@ message QueuedTaskInfo {
   ga4gh_task_exec.Resources resources = 2;
 }
 
-message JobCompleteRequest {
-  string id = 1;
-  // TODO this could be inferred from the job logs exit code
-  bool failed = 2;
-}
-
-message JobCompleteResponse {
-}
-
-message Worker {
-  string id = 1;
-  repeated string active_jobs = 2;
-  repeated string queued_jobs = 3;
-}
-
 
 /**
  * Scheduler Service
  */
 service Scheduler {
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
-  rpc GetJobToRun(JobRequest) returns (JobResponse) {};
-  rpc UpdateJobStatus(UpdateStatusRequest) returns (ga4gh_task_exec.JobID) {};
-  rpc JobComplete(JobCompleteRequest) returns (JobCompleteResponse) {};
-  rpc WorkerPing(WorkerInfo) returns (WorkerInfo) {};
-  rpc GetJobState(ga4gh_task_exec.JobID) returns (ga4gh_task_exec.JobDesc) {};
+  rpc UpdateJobLogs(UpdateJobLogsRequest) returns (UpdateJobLogsResponse) {};
+  rpc UpdateWorker(UpdateWorkerRequest) returns (UpdateWorkerResponse) {};
 }

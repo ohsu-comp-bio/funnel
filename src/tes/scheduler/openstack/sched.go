@@ -5,7 +5,6 @@ import (
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
-	dumb "tes/scheduler/dumb"
 )
 
 var log = logger.New("openstack-sched")
@@ -13,21 +12,16 @@ var log = logger.New("openstack-sched")
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
 	return &scheduler{
-		dumb.NewScheduler(conf.Schedulers.Openstack.NumWorkers),
 		conf,
 	}
 }
 
 type scheduler struct {
-	ds   dumb.Scheduler
 	conf config.Config
 }
 
 // Schedule schedules a job, returning an Offer.
 func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Debug("Running dumb openstack scheduler")
-
-	o := s.ds.Schedule(j)
 	go s.observe(o)
 	return o
 }

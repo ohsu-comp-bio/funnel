@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -24,7 +25,7 @@ func NewLocalBackend(allowed []string) *LocalBackend {
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(url string, hostPath string, class string) error {
+func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string) error {
 	log.Info("Starting download", "url", url)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -44,7 +45,7 @@ func (local *LocalBackend) Get(url string, hostPath string, class string) error 
 }
 
 // Put copies a file from the hostPath into storage.
-func (local *LocalBackend) Put(url string, hostPath string, class string) error {
+func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class string) error {
 	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 

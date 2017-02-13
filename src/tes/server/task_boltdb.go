@@ -34,10 +34,6 @@ var JobState = []byte("jobs-state")
 // job ID -> ga4gh_task_exec.JobLog struct
 var JobsLog = []byte("jobs-log")
 
-// JobWorker defines the name a bucket which maps
-// job ID -> worker ID
-var JobWorker = []byte("job-worker")
-
 // Workers maps:
 // worker ID -> ga4gh_task_ref.Worker struct
 var Workers = []byte("workers")
@@ -78,9 +74,6 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 		}
 		if tx.Bucket(Workers) == nil {
 			tx.CreateBucket(Workers)
-		}
-		if tx.Bucket(JobWorker) == nil {
-			tx.CreateBucket(JobWorker)
 		}
 		return nil
 	})

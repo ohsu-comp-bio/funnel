@@ -7,141 +7,104 @@ import (
 	"tes/logger"
 	"tes/scheduler"
 	pbr "tes/server/proto"
-	"tes/util"
 	"time"
 )
 
-type updateChan chan *pbr.UpdateStatusRequest
+type updateChan chan *pbr.UpdateJobLogsRequest
 
-type result struct {
-	Job *pbe.Job
-	Err error
-}
+func Run(conf config.Worker) error {
+	log := logger.New("worker", "workerID", conf.ID)
+	log.Info("Running worker")
+	defer log.Info("Shutting down")
 
-// Worker handles polling the scheduler for jobs, creating job runners,
-// tracking them, and communicating updates back to the scheduler.
-type Worker struct {
-	ID      string
-	conf    config.Worker
-	log     logger.Logger
-	jobs    chan *pbr.JobResponse
-	sched   *scheduler.Client
-	updates updateChan
-}
-
-// NewWorker returns a new Worker instance with the given config.
-func NewWorker(conf config.Worker) (*Worker, error) {
 	sched, err := scheduler.NewClient(conf)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer sched.Close()
 
-	return &Worker{
-		ID:      conf.ID,
-		conf:    conf,
-		log:     logger.New("worker", "workerID", conf.ID),
-		sched:   sched,
-		jobs:    make(chan *pbr.JobResponse),
-		updates: make(updateChan),
-	}, nil
-}
+	runners := map[string]*jobRunner{}
+	updates := make(updateChan)
 
-// Close cleans up worker resources.
-func (w *Worker) Close() {
-	w.sched.Close()
-}
+	ticker := time.NewTicker(conf.UpdateRate)
+	defer ticker.Stop()
 
-// Run runs the worker.
-func (w *Worker) Run(pctx context.Context) {
-	ctx, cancel := context.WithCancel(pctx)
-	defer cancel()
-
-	w.log.Info("Running worker")
-	defer w.log.Info("Shutting down")
-
-	go w.sched.PollForJobs(ctx, w.ID, w.jobs)
-	w.trackJobs(ctx)
-}
-
-func (w *Worker) trackJobs(ctx context.Context) {
-	runningJobs := 0
-	done := make(chan bool)
-	// timeout controls how long before the worker shuts down
-	// when no jobs are available.
-	timeout := util.NewIdleTimeout(w.conf.Timeout)
-
-	// If no jobs are found for awhile, the worker will shut down.
 	for {
 		select {
-		case <-ctx.Done():
-			return
-
-		// "w.updates" contains job updates, e.g. stdout/err updates.
-		case up := <-w.updates:
-			w.log.Info("Sending update", "data", up)
-			w.sched.UpdateJobStatus(ctx, up)
-
-		case <-timeout.Done():
-			w.log.Info("Reached idle timeout")
-			return
-
-		// "jobs" is written to when a new job is assigned by the scheduler.
-		case job := <-w.jobs:
-			log.Debug("Worker got job", "job", job)
-			go func() {
-				w.runJob(ctx, job)
-				done <- true
-			}()
-			runningJobs++
-			timeout.Stop()
-
-			// "done" is written to when a job finishes
-		case <-done:
-			runningJobs--
-			if runningJobs == 0 {
-				timeout.Start()
+		// "updates" contains job log, e.g. stdout/err updates.
+		case up := <-updates:
+			log.Debug("Sending update", "data", up)
+			ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
+			_, err := sched.UpdateJobLogs(ctx, up)
+			if err != nil {
+				log.Error("Job log update failed", err)
 			}
-		}
-	}
-}
+			cleanup()
+			// TODO what if request times out? How to avoid losing update?
 
-// runJob handles creating and calling the job runner and communicating
-// job state with the scheduler, including watching for cancelation signals.
-func (w *Worker) runJob(pctx context.Context, resp *pbr.JobResponse) {
-	job := resp.Job
-	ctx := w.jobContext(pctx, job.JobID)
-	err := runJob(ctx, resp, w.conf, w.updates)
-	failed := err != nil
-	w.sched.JobComplete(ctx, &pbr.JobCompleteRequest{
-		Id:     job.JobID,
-		Failed: failed,
-	})
-}
+		// Ping the server every tick and receive updates,
+		// including new jobs and canceled jobs.
+		case <-ticker.C:
+			req := &pbr.UpdateWorkerRequest{
+				Id:        conf.ID,
+				Resources: conf.Resources,
+				// TODO
+				Hostname: "unknown",
+			}
+			complete := []string{}
 
-// jobContext returns a context object that will be canceled when the job
-// is canceled by the scheduler.
-func (w *Worker) jobContext(parent context.Context, jobID string) context.Context {
-	ctx, cancel := context.WithCancel(parent)
+			for id, runner := range runners {
+				state := runner.State()
+				switch state {
+				case pbe.State_Canceled, pbe.State_Error, pbe.State_Complete:
+					req.States[id] = state
+					complete = append(complete, id)
 
-	go func() {
-		ticker := time.NewTicker(w.conf.StatusPollRate)
-		defer ticker.Stop()
+				case pbe.State_Running, pbe.State_Initializing:
+					req.States[id] = state
+				default:
+					log.Error("Unexpected job runner state. Defaulting to Initialzing",
+						"state", state)
+					req.States[id] = pbe.State_Initializing
+				}
+			}
 
-		for {
-			select {
-			case <-parent.Done():
-				return
+			// TODO is it possible to get a stale response from the network in gRPC?
+			// TODO configurable timeout?
+			ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
+			resp, err := sched.UpdateWorker(ctx, req)
+			cleanup()
 
-			case <-ticker.C:
-				resp, err := w.sched.GetJobState(ctx, &pbe.JobID{Value: jobID})
-				if err != nil {
-					w.log.Error("Couldn't get job state. Recovering.", err)
-				} else if resp.State == pbe.State_Canceled {
-					cancel()
-					return
+			if err != nil {
+				log.Error("Couldn't get worker update. Recovering.", err)
+				break
+			}
+
+			for _, id := range complete {
+				delete(runners, id)
+			}
+
+			for _, id := range resp.Canceled {
+				// Idempotency.
+				// Protect against network communication quirks and failures,
+				// ensure the job exists.
+				if r := runners[id]; r != nil {
+					r.Cancel()
+				}
+			}
+
+			for _, a := range resp.Assigned {
+				log.Debug("Worker received assignment", "assignment", a)
+				// Idempotency.
+				// Protect against network communication quirks and failures,
+				// ensure the job only gets started once.
+				id := a.Job.JobID
+				if runners[id] == nil {
+					r := newJobRunner(conf, a, updates)
+					runners[id] = r
+					go r.Run()
 				}
 			}
 		}
-	}()
-	return ctx
+	}
 }

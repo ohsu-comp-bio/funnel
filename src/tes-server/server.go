@@ -8,9 +8,7 @@ import (
 	"tes/logger"
 	"tes/scheduler"
 	"tes/scheduler/condor"
-	"tes/scheduler/dumblocal"
 	"tes/scheduler/local"
-	"tes/scheduler/openstack"
 	"tes/server"
 )
 

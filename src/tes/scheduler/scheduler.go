@@ -51,5 +51,5 @@ func StartScheduling(db *server.TaskBolt, sched Scheduler, pollRate time.Duratio
 // GenWorkerID returns a UUID string.
 func GenWorkerID() string {
 	u, _ := uuid.NewV4()
-	return u.String()
+	return "worker-" + u.String()
 }

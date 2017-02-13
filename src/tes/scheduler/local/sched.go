@@ -2,55 +2,86 @@ package local
 
 import (
 	"os"
-	"os/exec"
-	"sync/atomic"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
+	"tes/worker"
 )
 
-var log = logger.New("local-sched")
+var log = logger.New("local")
 
 // TODO Questions:
-// - how to efficiently copy/slice a large resource pool?
-// - how to track shutdown of workers, which free used resources in the pool?
+
+// - how to track job finished, which adds new available resources?
+
 // - how to re-evaluate the resource pool after a worker is created (autoscale)?
+//   - is the pool in-memory only? do workers register? do they get stored in the db?
+//   - if the scheduler died and restarted, would it need to rebuild its knowledge of
+//     the cluster?
+
+// - possible to keep cluster state in memory? rebuild on failure?
+//   - but how would failure capture assigned jobs?
+
 // - if two jobs consume parts of the same autoscale resource, how does res.Consume()
 //   ensure the resource is only started once?
+
+// - how to efficiently copy/slice a large resource pool?
 // - how to index resources so that scheduler can easily and efficiently match
 //   a task to a resource. Don't want to loop through 1000 resources for every task
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
 
+// - have a concept of stale resources? Could help with dead workers
+
+// - build a picture of cluster state from a log of events on every schedule?
+
+// - reserved resources are maybe a critical concept. these are resources to which
+//   a job has been assigned, but which are not yet in use (because the worker
+//   hasn't picked up and started the job)
+// - with reserved resources, there needs to be a way to transition those resources
+//   to "active"
+
+// - for condor, rebuilding cluster state on startup means querying condor_status
+
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
-	return &scheduler{
-		conf,
-		int32(conf.Schedulers.Local.NumWorkers),
-	}
+	return &scheduler{conf, worker}
 }
 
 type scheduler struct {
-	// TODO how does the pool stay updated?
-	conf      config.Config
-	available int32
+	conf   config.Config
+	worker sched.Worker
+	avail  Resources
 }
 
 // Schedule schedules a job and returns a corresponding Offer.
-func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running local scheduler")
 
-	// Make an offer if the current resource count is less than the max.
-	// This is just a dumb placeholder for a future scheduler.
-	//
-	// A better algorithm would rank the jobs, have a concept of binpacking,
-	// and be able to assign a job to a specific, best-match node.
-	// This backend does none of that...yet.
-	avail := atomic.LoadInt32(&s.available)
-	log.Debug("Available", "slots", avail)
 	if avail == int32(0) {
-		return sched.RejectedOffer("Pool is full")
+		log.Debug("Worker is full")
+		return nil
 	}
+
+	return sched.NewOffer(j, w)
+}
+
+// TODO start a single local worker on startup
+//      even need a separate process? Can this be inprocess?
+func (s *scheduler) runWorker(ctx context.Context) {
+	log.Debug("Starting local worker", "storage", s.conf.Storage)
+
+	workerConf := s.conf.Worker
+	workerConf.ID = sched.GenWorkerID()
+	workerConf.ServerAddress = "localhost:9090"
+	workerConf.Storage = s.conf.Storage
+
+	w, err := worker.NewWorker(conf)
+	if err != nil {
+		log.Error("Can't create worker", err)
+	}
+	ctx := context.Background()
+	w.Run(ctx)
 
 	w := sched.Worker{
 		ID: sched.GenWorkerID(),
@@ -59,41 +90,5 @@ func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
 			RAM:  1.0,
 			Disk: 10.0,
 		},
-	}
-	o := sched.NewOffer(j, w)
-	go s.observe(o)
-	return o
-}
-
-func (s *scheduler) observe(o sched.Offer) {
-	<-o.Wait()
-	if o.Accepted() {
-		atomic.AddInt32(&s.available, -1)
-		s.runWorker(o.Worker().ID)
-		atomic.AddInt32(&s.available, 1)
-	} else if o.Rejected() {
-		log.Debug("Local offer was rejected")
-	}
-}
-
-func (s *scheduler) runWorker(workerID string) {
-	log.Debug("Starting local worker", "storage", s.conf.Storage)
-
-	workerConf := s.conf.Worker
-	workerConf.ID = workerID
-	workerConf.ServerAddress = s.conf.ServerAddress
-	workerConf.Storage = s.conf.Storage
-
-	confPath, cleanup := workerConf.ToYamlTempFile("worker.conf.yml")
-	defer cleanup()
-
-	workerPath := sched.DetectWorkerPath()
-
-	cmd := exec.Command(workerPath, "-config", confPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Error("Couldn't start local worker", err)
 	}
 }

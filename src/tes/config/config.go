@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	pbe "tes/ga4gh"
 	log "tes/logger"
 	"time"
 )
@@ -41,7 +42,6 @@ func (l S3Storage) Valid() bool {
 
 // LocalScheduler describes configuration for the local scheduler.
 type LocalScheduler struct {
-	NumWorkers int
 }
 
 // OpenstackScheduler describes configuration for the openstack scheduler.
@@ -89,9 +89,7 @@ func DefaultConfig() Config {
 		LogLevel:      "debug",
 		Scheduler:     "local",
 		Schedulers: Schedulers{
-			Local: LocalScheduler{
-				NumWorkers: 4,
-			},
+			Local: LocalScheduler{},
 		},
 		Worker:        WorkerDefaultConfig(),
 		MaxJobLogSize: 10000,
@@ -109,16 +107,15 @@ type Worker struct {
 	// Default, -1, indicates to tear down the worker immediately after completing
 	// its job
 	Timeout time.Duration
-	// How often (milliseconds) the worker polls for cancellation requests
-	StatusPollRate time.Duration
-	// How often (milliseconds) the worker sends log updates
+	// How often the worker sends update requests to the server
+	UpdateRate time.Duration
+	// How often the worker sends job log updates
 	LogUpdateRate time.Duration
-	// How often (milliseconds) the scheduler polls for new jobs
-	NewJobPollRate time.Duration
-	LogTailSize    int64
-	Storage        []*StorageConfig
-	LogPath        string
-	LogLevel       string
+	LogTailSize   int64
+	Storage       []*StorageConfig
+	LogPath       string
+	LogLevel      string
+	Resources     *pbe.Resources
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
@@ -128,11 +125,10 @@ func WorkerDefaultConfig() Worker {
 		WorkDir:       "tes-work-dir",
 		Timeout:       -1,
 		// TODO these get reset to zero when not found in yaml?
-		StatusPollRate: time.Second * 5,
-		LogUpdateRate:  time.Second * 5,
-		NewJobPollRate: time.Second * 5,
-		LogTailSize:    10000,
-		LogLevel:       "debug",
+		UpdateRate:    time.Second * 5,
+		LogUpdateRate: time.Second * 5,
+		LogTailSize:   10000,
+		LogLevel:      "debug",
 	}
 }
 

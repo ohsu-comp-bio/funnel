@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"os"
 	"tes/config"
@@ -43,10 +42,8 @@ func start(conf config.Worker) {
 		}
 	}
 
-	w, err := worker.NewWorker(conf)
+	err := worker.Run(conf)
 	if err != nil {
 		log.Error("Can't create worker", err)
 	}
-	ctx := context.Background()
-	w.Run(ctx)
 }

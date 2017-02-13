@@ -9,87 +9,97 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
-	"tes/config"
-	"tes/ga4gh"
-	"tes/server/proto"
+	pbe "tes/ga4gh"
+	pbr "tes/server/proto"
+	"time"
 )
 
-// GetJobToRun returns a queued job for a worker to run.
-// This is an RPC endpoint.
-// This is used by workers to request work.
-func (taskBolt *TaskBolt) GetJobToRun(ctx context.Context, request *ga4gh_task_ref.JobRequest) (*ga4gh_task_ref.JobResponse, error) {
-	log.Debug("GetJobToRun called", "workerID", request.Worker.Id)
+func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorkerRequest) (*pbr.UpdateWorkerResponse, error) {
 
-	var task *ga4gh_task_exec.Task
-	var jobID, authToken string
+	resp := &pbr.UpdateWorkerResponse{}
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		worker, werr := getWorker(tx, request.Worker.Id)
+
+		// Get worker
+		worker, werr := getWorker(tx, req.Id)
 		if werr != nil {
 			return werr
 		}
 
-		if len(worker.QueuedJobs) == 0 {
-			log.Debug("Worker has empty job queue", "workerID", worker.Id)
-			return nil
+		// Update worker metadata
+		worker.LastPing = time.Now().Unix()
+		worker.Resources = req.Resources
+
+		// Reconcile worker's job states with database
+		for jobID, state := range req.States {
+			switch state {
+
+			case pbe.State_Initializing, pbe.State_Running:
+				// The worker has acknowledged receiving the job, so remove it from Assigned.
+				delete(worker.Assigned, jobID)
+				worker.Active[jobID] = true
+				// If the job was canceled, add that signal to the response.
+				//
+				// Don't remove canceled jobs from the worker right away. Wait until
+				// the next update, which acknowledges the worker has received the cancel.
+				canceled := getJobState(tx, jobID) == pbe.State_Canceled
+				if canceled {
+					resp.Canceled = append(resp.Canceled, jobID)
+				}
+
+			// Terminal states. Update state in database.
+			case pbe.State_Error, pbe.State_Complete, pbe.State_Canceled:
+				delete(worker.Assigned, jobID)
+				delete(worker.Active, jobID)
+
+			default:
+				log.Error("Unknown job state during worker update", "state", state)
+				continue
+			}
+
+			err := transitionJobState(tx, jobID, state)
+			// TODO what's the proper behavior of an error?
+			//      this is just ignoring the error, but it will happen again on the next update.
+			//      need to resolve the conflicting states.
+			//      Additionally, returning an error here will fail the db transaction,
+			//      preventing all updates to this worker for all jobs.
+			if err != nil {
+				return err
+			}
 		}
 
-		// Shift job from queued to active
-		jobID, worker.QueuedJobs = worker.QueuedJobs[0], worker.QueuedJobs[1:]
-		worker.ActiveJobs = append(worker.ActiveJobs, jobID)
+		// New jobs have been assigned, add these to the update response.
+		//
+		// Don't remove these from worker.Assigned right away. It's possible that
+		// the worker won't receive the update response. Wait until the worker sends
+		// and update including the jobID.
+		for jobID := range worker.Assigned {
+			resp.Assigned = append(resp.Assigned, &pbr.Assignment{
+				Job:  getJob(tx, jobID),
+				Auth: getJobAuth(tx, jobID),
+			})
+		}
+
+		// Save the worker
 		putWorker(tx, worker)
-
-		bOp := tx.Bucket(TaskBucket)
-		authBkt := tx.Bucket(TaskAuthBucket)
-
-		// Get the task
-		task = &ga4gh_task_exec.Task{}
-		v := bOp.Get([]byte(jobID))
-		proto.Unmarshal(v, task)
-
-		// Look for an auth token related to this task
-		tok := authBkt.Get([]byte(jobID))
-		if tok != nil {
-			authToken = string(tok)
-		}
 		return nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
-
-	// No task was found. Respond accordingly.
-	if task == nil {
-		return &ga4gh_task_ref.JobResponse{}, nil
-	}
-
-	job := &ga4gh_task_exec.Job{
-		JobID: jobID,
-		Task:  task,
-	}
-
-	return &ga4gh_task_ref.JobResponse{Job: job, Auth: authToken}, nil
+	return resp, nil
 }
 
-func getWorker(tx *bolt.Tx, id string) (*Worker, error) {
-	pb := &ga4gh_task_ref.Worker{
-		Id: id,
-	}
-	worker := &Worker{pb}
-
-	data := tx.Bucket(Workers).Get([]byte(id))
+// Look for an auth token related to the given job ID.
+func getJobAuth(tx *bolt.Tx, jobID string) string {
+	idBytes := []byte(jobID)
+	var auth string
+	data := tx.Bucket(TaskAuthBucket).Get(idBytes)
 	if data != nil {
-		proto.Unmarshal(data, pb)
+		auth = string(data)
 	}
-	return worker, nil
-}
-
-func putWorker(tx *bolt.Tx, worker *Worker) error {
-	bw := tx.Bucket(Workers)
-	data, _ := proto.Marshal(worker.Worker)
-	bw.Put([]byte(worker.Id), data)
-	return nil
+	return auth
 }
 
 // AssignJob assigns a job to a worker.
@@ -101,37 +111,42 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 		if werr != nil {
 			return werr
 		}
-		worker.QueuedJobs = append(worker.QueuedJobs, id)
+		worker.Assigned[id] = true
 		putWorker(tx, worker)
 
-		err := transitionJobState(tx, id, ga4gh_task_exec.State_Running)
+		// TODO do we want an "Assigned" state?
+		err := transitionJobState(tx, id, pbe.State_Initializing)
 		if err != nil {
 			return err
 		}
-		// Link job to worker
-		tx.Bucket(JobWorker).Put([]byte(id), []byte(workerID))
 		return nil
 	})
 }
 
-func transitionJobState(tx *bolt.Tx, id string, state ga4gh_task_exec.State) error {
+func transitionJobState(tx *bolt.Tx, id string, state pbe.State) error {
 	idBytes := []byte(id)
 
 	var (
-		Unknown      = ga4gh_task_exec.State_Unknown
-		Queued       = ga4gh_task_exec.State_Queued
-		Running      = ga4gh_task_exec.State_Running
-		Paused       = ga4gh_task_exec.State_Paused
-		Complete     = ga4gh_task_exec.State_Complete
-		Error        = ga4gh_task_exec.State_Error
-		SystemError  = ga4gh_task_exec.State_SystemError
-		Canceled     = ga4gh_task_exec.State_Canceled
-		Initializing = ga4gh_task_exec.State_Initializing
+		Unknown      = pbe.State_Unknown
+		Queued       = pbe.State_Queued
+		Running      = pbe.State_Running
+		Paused       = pbe.State_Paused
+		Complete     = pbe.State_Complete
+		Error        = pbe.State_Error
+		SystemError  = pbe.State_SystemError
+		Canceled     = pbe.State_Canceled
+		Initializing = pbe.State_Initializing
 	)
 
 	current := getJobState(tx, id)
 
-	if current == Complete || current == Error || current == SystemError || current == Canceled {
+	switch current {
+	// Current state matches target state. Do nothing.
+	case state:
+		return nil
+
+	// Current state is a terminal state, can't do that.
+	case Complete, Error, SystemError, Canceled:
 		err := errors.New("Invalid state change")
 		log.Error("Cannot change state of a job already in a terminal state",
 			"error", err,
@@ -140,13 +155,11 @@ func transitionJobState(tx *bolt.Tx, id string, state ga4gh_task_exec.State) err
 		return err
 	}
 
-	if current == state {
-		return nil
-	}
-
 	switch state {
 	case Canceled, Complete, Error, SystemError:
-		clearJob(tx, id)
+		idBytes := []byte(id)
+		// Remove from queue
+		tx.Bucket(JobsQueued).Delete(idBytes)
 
 	case Running, Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
@@ -172,45 +185,29 @@ func transitionJobState(tx *bolt.Tx, id string, state ga4gh_task_exec.State) err
 	return nil
 }
 
-// clearJob helps remove a job from the various job state tracking buckets,
-// e.g. JobsQueued, JobsWorkers, Worker.ActiveJobs, etc.
-// Use this when you need to put a job into a terminal state and need to clean
-// up it's state in all these buckets.
-func clearJob(tx *bolt.Tx, id string) {
-	idBytes := []byte(id)
-	// Remove from queue
-	tx.Bucket(JobsQueued).Delete(idBytes)
-	// Remove from job ID -> worker mapping
-	workerID := tx.Bucket(JobWorker).Get(idBytes)
-	tx.Bucket(JobWorker).Delete(idBytes)
-	// Remove from worker
-	worker, _ := getWorker(tx, string(workerID))
-	worker.RemoveJob(id)
-	putWorker(tx, worker)
-}
-
 // UpdateJobStatus updates the status of a job, including state and logs.
 // This is an RPC endpoint.
 // This is used by workers to communicate job updates to the server.
-func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_ref.UpdateStatusRequest) (*ga4gh_task_exec.JobID, error) {
+func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbr.UpdateJobLogsRequest) (*pbr.UpdateJobLogsResponse, error) {
+
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bL := tx.Bucket(JobsLog)
 
 		// max size (bytes) for stderr and stdout streams to keep in db
 		max := taskBolt.conf.MaxJobLogSize
-		key := []byte(fmt.Sprint(stat.Id, stat.Step))
+		key := []byte(fmt.Sprint(req.Id, req.Step))
 
-		if stat.Log != nil {
+		if req.Log != nil {
 			// Check if there is an existing job log
 			o := bL.Get(key)
 			if o != nil {
 				// There is an existing log in the DB, load it
-				existing := &ga4gh_task_exec.JobLog{}
+				existing := &pbe.JobLog{}
 				// max bytes to be stored in the db
 				proto.Unmarshal(o, existing)
 
-				stdout := []byte(existing.Stdout + stat.Log.Stdout)
-				stderr := []byte(existing.Stderr + stat.Log.Stderr)
+				stdout := []byte(existing.Stdout + req.Log.Stdout)
+				stderr := []byte(existing.Stderr + req.Log.Stderr)
 
 				// Trim the stdout/err logs to the max size if needed
 				if len(stdout) > max {
@@ -220,85 +217,31 @@ func (taskBolt *TaskBolt) UpdateJobStatus(ctx context.Context, stat *ga4gh_task_
 					stderr = stderr[:max]
 				}
 
-				stat.Log.Stdout = string(stdout)
-				stat.Log.Stderr = string(stderr)
+				req.Log.Stdout = string(stdout)
+				req.Log.Stderr = string(stderr)
 
 				// Merge the updates into the existing.
-				proto.Merge(existing, stat.Log)
-				// existing is updated, so set that to stat.Log which will get saved below.
-				stat.Log = existing
+				proto.Merge(existing, req.Log)
+				// existing is updated, so set that to req.Log which will get saved below.
+				req.Log = existing
 			}
 
 			// Save the updated log
-			logbytes, _ := proto.Marshal(stat.Log)
+			logbytes, _ := proto.Marshal(req.Log)
 			tx.Bucket(JobsLog).Put(key, logbytes)
 		}
 
 		return nil
 	})
-	return &ga4gh_task_exec.JobID{Value: stat.Id}, nil
-}
-
-// Worker helps access the worker data structure.
-type Worker struct {
-	*ga4gh_task_ref.Worker
-}
-
-// RemoveJob removes a job from the worker's job lists.
-func (w *Worker) RemoveJob(id string) {
-	// Remove job from w job lists
-	for i, jobID := range w.ActiveJobs {
-		if jobID == id {
-			w.ActiveJobs = append(w.ActiveJobs[:i], w.ActiveJobs[i+1:]...)
-			break
-		}
-	}
-	// Remove job from w job lists
-	for i, jobID := range w.QueuedJobs {
-		if jobID == id {
-			w.QueuedJobs = append(w.QueuedJobs[:i], w.QueuedJobs[i+1:]...)
-			break
-		}
-	}
-}
-
-// JobComplete is used by the worker to notify the scheduler that the job is complete.
-func (taskBolt *TaskBolt) JobComplete(ctx context.Context, req *ga4gh_task_ref.JobCompleteRequest) (*ga4gh_task_ref.JobCompleteResponse, error) {
-	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		if req.Failed {
-			transitionJobState(tx, req.Id, ga4gh_task_exec.State_Error)
-		} else {
-			transitionJobState(tx, req.Id, ga4gh_task_exec.State_Complete)
-		}
-
-		// Look up worker ID
-		workerID := tx.Bucket(JobWorker).Get([]byte(req.Id))
-		// Remove job from worker
-		worker, werr := getWorker(tx, string(workerID))
-		if werr != nil {
-			return werr
-		}
-		worker.RemoveJob(req.Id)
-		putWorker(tx, worker)
-		return nil
-	})
-	return &ga4gh_task_ref.JobCompleteResponse{}, nil
-}
-
-// WorkerPing tells the server that a worker is alive.
-// This is an RPC endpoint.
-// This is currently unimplemented. TODO
-func (taskBolt *TaskBolt) WorkerPing(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*ga4gh_task_ref.WorkerInfo, error) {
-	log.Debug("Worker ping")
-	return info, nil
+	return &pbr.UpdateJobLogsResponse{}, nil
 }
 
 // GetQueueInfo returns a stream of queue info
 // This is an RPC endpoint.
 // TODO why doesn't this take Context as the first argument?
 // TODO I don't think this is actually used.
-func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoRequest, server ga4gh_task_ref.Scheduler_GetQueueInfoServer) error {
-	ch := make(chan *ga4gh_task_exec.Task)
+func (taskBolt *TaskBolt) GetQueueInfo(request *pbr.QueuedTaskInfoRequest, server pbr.Scheduler_GetQueueInfoServer) error {
+	ch := make(chan *pbe.Task)
 	log.Debug("GetQueueInfo called")
 
 	// TODO handle DB errors
@@ -310,9 +253,9 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoReq
 		c := bq.Cursor()
 		var count int32
 		for k, v := c.First(); k != nil && count < request.MaxTasks; k, v = c.Next() {
-			if string(v) == ga4gh_task_exec.State_Queued.String() {
+			if string(v) == pbe.State_Queued.String() {
 				v := bt.Get(k)
-				out := ga4gh_task_exec.Task{}
+				out := pbe.Task{}
 				proto.Unmarshal(v, &out)
 				ch <- &out
 			}
@@ -326,30 +269,8 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *ga4gh_task_ref.QueuedTaskInfoReq
 		for _, i := range m.Inputs {
 			inputs = append(inputs, i.Location)
 		}
-		server.Send(&ga4gh_task_ref.QueuedTaskInfo{Inputs: inputs, Resources: m.Resources})
+		server.Send(&pbr.QueuedTaskInfo{Inputs: inputs, Resources: m.Resources})
 	}
 
 	return nil
-}
-
-// GetServerConfig returns information about the server configuration.
-// This is an RPC endpoint.
-func (taskBolt *TaskBolt) GetServerConfig(ctx context.Context, info *ga4gh_task_ref.WorkerInfo) (*config.Config, error) {
-	return &taskBolt.conf, nil
-}
-
-// GetJobState returns the state of a job, given a job ID.
-// This is an RPC endpoint.
-func (taskBolt *TaskBolt) GetJobState(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error) {
-	log.Debug("GetJobState called")
-	var state ga4gh_task_exec.State
-	err := taskBolt.db.View(func(tx *bolt.Tx) error {
-		state = getJobState(tx, id.Value)
-		return nil
-	})
-	jobDesc := &ga4gh_task_exec.JobDesc{
-		JobID: id.Value,
-		State: state,
-	}
-	return jobDesc, err
 }

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"github.com/minio/minio-go"
 	"strings"
@@ -28,7 +29,7 @@ func NewS3Backend(endpoint string, id string, secret string, SSL bool) (*S3Backe
 }
 
 // Get copies an object from S3 to the host path.
-func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
+func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class string) error {
 	log.Info("Starting download", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)
@@ -47,7 +48,7 @@ func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
 }
 
 // Put copies an object (file) from the host path to S3.
-func (s3 *S3Backend) Put(url string, hostPath string, class string) error {
+func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class string) error {
 	log.Info("Starting upload", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	// TODO it's easy to create an error if this starts with a "/"

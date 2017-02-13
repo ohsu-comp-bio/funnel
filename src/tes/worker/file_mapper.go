@@ -1,4 +1,4 @@
-package tesTaskEngineWorker
+package worker
 
 import (
 	"fmt"
@@ -46,6 +46,36 @@ func NewJobFileMapper(jobID string, baseDir string) *FileMapper {
 	// TODO error handling
 	dir, _ = filepath.Abs(dir)
 	return &FileMapper{dir: dir}
+}
+
+// MapTask adds all the volumes, inputs, and outputs in the given Task to the FileMapper.
+func (mapper *FileMapper) MapTask(task *pbe.Task) error {
+
+	// Add all the volumes to the mapper
+	for _, vol := range task.Resources.Volumes {
+		err := mapper.AddVolume(vol.Source, vol.MountPoint)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add all the inputs to the mapper
+	for _, input := range task.Inputs {
+		err := mapper.AddInput(input)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add all the outputs to the mapper
+	for _, output := range task.Outputs {
+		err := mapper.AddOutput(output)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // AddVolume adds a mapped volume to the mapper. A corresponding Volume record

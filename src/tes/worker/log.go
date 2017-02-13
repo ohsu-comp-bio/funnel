@@ -1,4 +1,4 @@
-package tesTaskEngineWorker
+package worker
 
 import "tes/logger"
 

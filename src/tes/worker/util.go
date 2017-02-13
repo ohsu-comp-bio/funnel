@@ -1,8 +1,12 @@
-package tesTaskEngineWorker
+package worker
 
 import (
+	"fmt"
+	"net"
 	"os"
+	"os/exec"
 	"path"
+	"syscall"
 )
 
 const headerSize = int64(102400)
@@ -54,11 +58,59 @@ func ensureFile(p string, class string) error {
 	return nil
 }
 
-func readFileHead(path string) string {
-	// TODO handle errors?
-	f, _ := os.Open(path)
-	buffer := make([]byte, headerSize)
-	l, _ := f.Read(buffer)
-	f.Close()
-	return string(buffer[:l])
+func externalIP() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 {
+			continue // interface down
+
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue // loopback interface
+
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return "", err
+
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue // not an ipv4 address
+			}
+			return ip.String(), nil
+		}
+	}
+	return "", fmt.Errorf("Error no network connection")
+}
+
+// getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
+// The exit code is zero if the command completed without error.
+func getExitCode(err error) int32 {
+	if err != nil {
+		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
+			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
+				return int32(status.ExitStatus())
+			}
+		} else {
+			log.Info("Could not determine exit code. Using default -999")
+			return -999
+		}
+	}
+	// The error is nil, the command returned successfully, so exit status is 0.
+	return 0
 }

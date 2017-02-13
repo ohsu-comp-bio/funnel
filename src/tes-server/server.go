@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"os"
-	"tes"
+	"strings"
+	"tes/config"
 	"tes/logger"
 	"tes/scheduler"
 	"tes/scheduler/condor"
@@ -16,24 +17,26 @@ import (
 var log = logger.New("tes-server")
 
 func main() {
-	config := tes.DefaultConfig()
+	conf := config.DefaultConfig()
 
-	var configArg string
-	flag.StringVar(&configArg, "config", "", "Config File")
-	flag.StringVar(&config.HTTPPort, "http-port", config.HTTPPort, "HTTP Port")
-	flag.StringVar(&config.RPCPort, "rpc-port", config.RPCPort, "RPC Port")
-	flag.StringVar(&config.DBPath, "db-path", config.DBPath, "Database path")
-	flag.StringVar(&config.Scheduler, "scheduler", config.Scheduler, "Name of scheduler to enable")
-
+	var confArg string
+	flag.StringVar(&confArg, "config", "", "Config File")
+	flag.StringVar(&conf.HTTPPort, "http-port", conf.HTTPPort, "HTTP Port")
+	flag.StringVar(&conf.RPCPort, "rpc-port", conf.RPCPort, "RPC Port")
+	flag.StringVar(&conf.DBPath, "db-path", conf.DBPath, "Database path")
+	flag.StringVar(&conf.Scheduler, "scheduler", conf.Scheduler, "Name of scheduler to enable")
+	flag.StringVar(&conf.LogLevel, "logging", conf.LogLevel, "Level of logging")
 	flag.Parse()
-	tes.LoadConfigOrExit(configArg, &config)
-	start(config)
+
+	config.LoadConfigOrExit(confArg, &conf)
+	logger.SetLevel(conf.LogLevel)
+	start(conf)
 }
 
-func start(config tes.Config) {
-	os.MkdirAll(config.WorkDir, 0755)
+func start(conf config.Config) {
+	os.MkdirAll(conf.WorkDir, 0755)
 
-	taski, err := server.NewTaskBolt(config.DBPath, config.ServerConfig)
+	taski, err := server.NewTaskBolt(conf)
 	if err != nil {
 		log.Error("Couldn't open database", err)
 		return
@@ -42,25 +45,25 @@ func start(config tes.Config) {
 	s := server.NewGA4GHServer()
 	s.RegisterTaskServer(taski)
 	s.RegisterScheduleServer(taski)
-	s.Start(config.RPCPort)
+	s.Start(conf.RPCPort)
 
 	var sched scheduler.Scheduler
-	switch config.Scheduler {
+	switch strings.ToLower(conf.Scheduler) {
 	case "local":
 		// TODO worker will stay alive if the parent process panics
-		sched = local.NewScheduler(config)
+		sched = local.NewScheduler(conf)
 	case "condor":
-		sched = condor.NewScheduler(config)
+		sched = condor.NewScheduler(conf)
 	case "openstack":
-		sched = openstack.NewScheduler(config)
+		sched = openstack.NewScheduler(conf)
 	case "dumblocal":
-		sched = dumblocal.NewScheduler(4)
+		sched = dumblocal.NewScheduler(conf)
 	default:
 		log.Error("Unknown scheduler",
-			"scheduler", config.Scheduler)
+			"scheduler", conf.Scheduler)
 		return
 	}
-	go scheduler.StartScheduling(taski, sched)
+	go scheduler.StartScheduling(taski, sched, conf.Worker.NewJobPollRate)
 
-	server.StartHTTPProxy(config.RPCPort, config.HTTPPort, config.ContentDir)
+	server.StartHTTPProxy(conf.RPCPort, conf.HTTPPort, conf.ContentDir)
 }

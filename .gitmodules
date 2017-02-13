@@ -40,3 +40,12 @@
 [submodule "src/vendor/github.com/docker/docker"]
 	path = src/vendor/github.com/docker/docker
 	url = https://github.com/docker/docker
+[submodule "src/vendor/github.com/Sirupsen/logrus"]
+	path = src/vendor/github.com/Sirupsen/logrus
+	url = https://github.com/Sirupsen/logrus
+[submodule "src/vendor/github.com/kr/pretty"]
+	path = src/vendor/github.com/kr/pretty
+	url = https://github.com/kr/pretty
+[submodule "src/vendor/github.com/kr/text"]
+	path = src/vendor/github.com/kr/text
+	url = https://github.com/kr/text

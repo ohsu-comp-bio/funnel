@@ -4,7 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 	"os"
-	pbe "tes/ga4gh"
+	"tes/config"
 	pbr "tes/server/proto"
 	"time"
 )
@@ -12,20 +12,21 @@ import (
 // Client is a client for the scheduler gRPC service.
 type Client struct {
 	pbr.SchedulerClient
-	conn *grpc.ClientConn
+	conn           *grpc.ClientConn
+	NewJobPollRate time.Duration
 }
 
 // NewClient returns a new Client instance connected to the
 // scheduler at a given address (e.g. "localhost:9090")
-func NewClient(address string) (*Client, error) {
-	conn, err := NewRPCConnection(address)
+func NewClient(conf config.Worker) (*Client, error) {
+	conn, err := NewRPCConnection(conf.ServerAddress)
 	if err != nil {
 		log.Error("Couldn't connect to schduler", err)
 		return nil, err
 	}
 
 	s := pbr.NewSchedulerClient(conn)
-	return &Client{s, conn}, nil
+	return &Client{s, conn, conf.NewJobPollRate}, nil
 }
 
 // Close closes the client connection.
@@ -33,65 +34,28 @@ func (client *Client) Close() {
 	client.conn.Close()
 }
 
-// SetInitializing sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Initializing.
-func (client *Client) SetInitializing(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job is running
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Initializing})
-}
+// PollForJobs polls the scheduler for a job assigned to the given worker ID
+// and writes responses to the given "ch" channel
+func (client *Client) PollForJobs(ctx context.Context, workerID string, ch chan<- *pbr.JobResponse) {
 
-// SetRunning sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Running.
-func (client *Client) SetRunning(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job is running
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Running})
-}
+	log.Debug("Job poll rate", "rate", client.NewJobPollRate)
+	tickChan := time.NewTicker(client.NewJobPollRate).C
 
-// SetFailed sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Failed.
-func (client *Client) SetFailed(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job failed
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Error})
-}
-
-// SetComplete sends an UpdateJobStatus request to the scheduler,
-// setting the job state to Complete.
-func (client *Client) SetComplete(ctx context.Context, job *pbe.Job) {
-	// Notify the scheduler that the job is complete
-	client.UpdateJobStatus(ctx,
-		&pbr.UpdateStatusRequest{
-			Id: job.JobID, State: pbe.State_Complete})
-}
-
-// PollForJob polls the scheduler for a job assigned to the given worker ID.
-func (client *Client) PollForJob(ctx context.Context, workerID string) *pbr.JobResponse {
-	// Hard-coding this sleep time because I don't see a need for configuration,
-	// but it's easy enough to change that.
-	sleep := time.Second * 2
-	// "ticker" helps us check for jobs every "sleep" (e.g. 2 seconds).
-	ticker := time.NewTicker(sleep)
-	defer ticker.Stop()
-
+	// TODO want ticker that fires immediately
 	job := client.RequestJob(ctx, workerID)
 	if job != nil {
-		return job
+		ch <- job
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 
-		case <-ticker.C:
+		case <-tickChan:
 			job := client.RequestJob(ctx, workerID)
 			if job != nil {
-				return job
+				ch <- job
 			}
 		}
 	}

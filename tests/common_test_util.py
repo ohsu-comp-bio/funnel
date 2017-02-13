@@ -8,7 +8,10 @@ import subprocess
 import tempfile
 import time
 import unittest
+import requests
+import polling
 import yaml
+import docker
 
 
 S3_ENDPOINT = "localhost:9000"
@@ -67,10 +70,17 @@ class SimpleServerTest(unittest.TestCase):
             "DBPath": db_path,
             "WorkDir": "test_tmp",
             "Storage": [{
-                "local": {
-                    "allowed_dirs": [self.storage_dir]
+                "Local": {
+                    "AllowedDirs": [self.storage_dir]
                 }
-            }]
+            }],
+            "LogLevel": "info",
+            "Worker": {
+                "Timeout": -1,
+                "StatusPollRate": 100000000,
+                "LogUpdateRate": 100000000,
+                "NewJobPollRate": 100000000
+            }
         })
 
         # Start server
@@ -98,6 +108,47 @@ class SimpleServerTest(unittest.TestCase):
     def get_from_storage(self, loc):
         dst = os.path.join(self.storage_dir, loc)
         return dst
+
+    def wait_for_container(self, name, timeout=5):
+        dclient = docker.from_env()
+
+        def on_poll():
+            try:
+                dclient.containers.get(name)
+                return True
+            except:
+                return False
+        polling.poll(on_poll, timeout=timeout, step=0.1)
+
+    def wait_for_container_stop(self, name, timeout=5):
+        dclient = docker.from_env()
+
+        def on_poll():
+            try:
+                dclient.containers.get(name)
+                return False
+            except:
+                return True
+        polling.poll(on_poll, timeout=timeout, step=0.1)
+
+    def wait(self, key, timeout=5):
+        """
+        Waits for tes-wait to return <key>
+        """
+        def on_poll():
+            try:
+                r = requests.get("http://127.0.0.1:5000/")
+                return r.status_code == 200 and r.text == key
+            except requests.ConnectionError:
+                return False
+
+        polling.poll(on_poll, timeout=timeout, step=0.1)
+
+    def resume(self):
+        """
+        Continue from tes-wait
+        """
+        requests.get("http://127.0.0.1:5000/shutdown")
 
 
 class S3ServerTest(unittest.TestCase):

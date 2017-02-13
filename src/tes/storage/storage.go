@@ -2,7 +2,7 @@ package storage
 
 import (
 	"fmt"
-	pbr "tes/server/proto"
+	"tes/config"
 )
 
 const (
@@ -89,26 +89,28 @@ func (storage Storage) WithLocal(allow []string) (*Storage, error) {
 }
 
 // WithConfig returns a new Storage instance with the given additional configuration.
-func (storage Storage) WithConfig(conf *pbr.StorageConfig) (*Storage, error) {
+func (storage Storage) WithConfig(conf *config.StorageConfig) (*Storage, error) {
 	var err error
 	var out *Storage
 
-	if conf.Local != nil {
+	if conf.Local.Valid() {
 		out, err = storage.WithLocal(conf.Local.AllowedDirs)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if conf.S3 != nil {
-		// TODO need config validation to ensure these values actually exist
+	if conf.S3.Valid() {
 		out, err = storage.WithS3(
 			conf.S3.Endpoint,
 			conf.S3.Key,
 			conf.S3.Secret,
 			false, // use SSL?
 		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if err != nil {
-		return nil, err
-	}
 	return out, nil
 }

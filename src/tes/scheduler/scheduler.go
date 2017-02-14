@@ -19,30 +19,28 @@ import (
 // the HTCondor returns an accepted Offer. A central scheduler can then determine
 // that the job should be assigned to the HTCondor cluster.
 type Scheduler interface {
-	Schedule(*pbe.Job) Offer
+	Schedule(*pbe.Job) *Worker
 }
+
+type fitPred func(*pbe.Job, *Worker) bool
 
 // StartScheduling starts a scheduling loop, pulling 10 jobs from the database,
 // and sending those to the given scheduler. This happens every 5 seconds.
-//
-// Offers which aren't marked as rejected by the scheduler are accepted
-// and the job is assigned to a worker in the database.
 func StartScheduling(db *server.TaskBolt, sched Scheduler, pollRate time.Duration) {
 	tickChan := time.NewTicker(pollRate).C
 
 	for {
 		<-tickChan
-		for _, t := range db.ReadQueue(10) {
-			offer := sched.Schedule(t)
-			if offer.Rejected() {
-				log.Debug("Rejected offer", "reason", offer.RejectionReason())
-			} else {
+		for _, job := range db.ReadQueue(10) {
+			worker := sched.Schedule(job)
+			if worker != nil {
 				log.Debug("Assigning job to worker",
-					"jobID", offer.Job().JobID,
-					"workerID", offer.Worker().ID,
+					"jobID", job.JobID,
+					"workerID", worker.ID,
 				)
-				offer.Accept()
-				db.AssignJob(offer.Job().JobID, offer.Worker().ID)
+				db.AssignJob(job.JobID, worker.ID)
+			} else {
+				log.Info("No worker could be scheduled for job", "jobID", job.JobID)
 			}
 		}
 	}
@@ -52,4 +50,58 @@ func StartScheduling(db *server.TaskBolt, sched Scheduler, pollRate time.Duratio
 func GenWorkerID() string {
 	u, _ := uuid.NewV4()
 	return "worker-" + u.String()
+}
+
+func ResourcesFit(j *pbe.Job, w *Worker) bool {
+	req := j.Task.Resources
+
+	// If the task didn't include resource requirements,
+	// assume it fits.
+	//
+	// TODO think about whether this is the desired behavior
+	if req == nil {
+		return true
+	}
+	switch {
+	case w.Available.CPUs < req.MinimumCpuCores:
+		return false
+	case w.Available.RAM < req.MinimumRamGb:
+		return false
+		// TODO check volumes
+	}
+	return true
+}
+
+// TODO should have a predicate which understands authorization
+//      - storage
+//      - other auth resources?
+//      - does storage need to be scheduler specific?
+
+// TODO other predicate ideas
+// - preemptible
+// - zones
+// - port checking
+// - disk conflict
+// - labels/selectors
+// - host name
+
+func Fit(job *pbe.Job, workers []*Worker) []*Worker {
+	fit := []*Worker{}
+	predicates := []fitPred{
+		ResourcesFit,
+	}
+
+	for _, w := range workers {
+		fits := true
+		for _, pred := range predicates {
+			if ok := pred(job, w); !ok {
+				fits = false
+				break
+			}
+		}
+		if fits {
+			fit = append(fit, w)
+		}
+	}
+	return fit
 }

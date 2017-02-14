@@ -1,6 +1,7 @@
 package local
 
 import (
+	"sort"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -46,30 +47,62 @@ var log = logger.New("local")
 func NewScheduler(conf config.Config) sched.Scheduler {
 	w := NewLocalWorker(conf)
 	go w.Run()
-	s := &scheduler{conf, w}
-	return s
+
+	workers := []*sched.Worker{}
+	workers = append(workers, w.Worker)
+
+	t := &tracker{workers}
+	return &scheduler{conf, t}
 }
 
 type scheduler struct {
-	conf   config.Config
-	worker *localWorker
+	conf    config.Config
+	tracker *tracker
 }
 
-// Schedule schedules a job and returns a corresponding Offer.
-func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) *sched.Worker {
 	log.Debug("Running local scheduler")
-	return sched.NewOffer(j, s.worker.Worker)
+
+	// TODO all resource tracking will break when the resources message is nil
+
+	workers := s.tracker.Get()
+	fit := sched.Fit(j, workers)
+
+	if len(fit) == 0 {
+		return nil
+	}
+
+	for _, x := range fit {
+		x.CalcScores(j)
+	}
+
+	// TODO explore how a scheduler could have custom scores
+	//      probably just a custom worker with sched.Worker embedded
+	sort.Sort(sched.ByScore(fit))
+	w := fit[0]
+
+	return w
+}
+
+// tracker helps poll the database for updated worker information.
+// TODO consider making an interface for this, which a condor track would implement
+type tracker struct {
+	workers []*sched.Worker
+}
+
+func (t *tracker) Get() []*sched.Worker {
+	return t.workers
 }
 
 func NewLocalWorker(conf config.Config) *localWorker {
 	id := sched.GenWorkerID()
 	w := &localWorker{
-		Worker: sched.Worker{
+		&sched.Worker{
 			ID: id,
 			Resources: sched.Resources{
-				CPU:  1,
-				RAM:  5.0,
-				Disk: 5.0,
+				CPUs: 2,
+				RAM:  10.0,
+				//Disk: 10.0,
 			},
 		},
 	}
@@ -81,8 +114,7 @@ func NewLocalWorker(conf config.Config) *localWorker {
 }
 
 type localWorker struct {
-	sched.Worker
-	Conf config.Worker
+	*sched.Worker
 }
 
 func (w *localWorker) Run() {

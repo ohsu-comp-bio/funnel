@@ -112,6 +112,9 @@ func (w *Worker) runJob(pctx context.Context, resp *pbr.JobResponse) {
 	ctx := w.jobContext(pctx, job.JobID)
 	err := runJob(ctx, resp, w.conf, w.updates)
 	failed := err != nil
+	if failed {
+		w.log.Error("Job failed to run.", err)
+	}
 	w.sched.JobComplete(ctx, &pbr.JobCompleteRequest{
 		Id:     job.JobID,
 		Failed: failed,

@@ -30,7 +30,12 @@ func ensureDir(p string) error {
 	}
 	if !e {
 		// TODO configurable mode?
-		err := os.MkdirAll(p, 0700)
+		err := os.MkdirAll(p, 0777)
+		if err != nil {
+			return err
+		}
+		// explict chmod called to address system umask settings
+		err = os.Chmod(p, 0777)
 		if err != nil {
 			return err
 		}

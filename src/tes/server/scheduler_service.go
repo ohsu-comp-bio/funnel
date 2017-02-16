@@ -91,6 +91,30 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 	return resp, nil
 }
 
+func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest) (*pbr.GetWorkersResponse, error) {
+	resp := &pbr.GetWorkersResponse{}
+	resp.Workers = []*pbr.Worker{}
+
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+
+		bucket := tx.Bucket(Workers)
+		c := bucket.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			worker := &pbr.Worker{}
+			proto.Unmarshal(v, worker)
+			resp.Workers = append(resp.Workers, worker)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 // Look for an auth token related to the given job ID.
 func getJobAuth(tx *bolt.Tx, jobID string) string {
 	idBytes := []byte(jobID)

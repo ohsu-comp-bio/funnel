@@ -1,11 +1,11 @@
 package local
 
 import (
-	"sort"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
+	pbr "tes/server/proto"
 	"tes/worker"
 )
 
@@ -48,61 +48,57 @@ func NewScheduler(conf config.Config) sched.Scheduler {
 	w := NewLocalWorker(conf)
 	go w.Run()
 
-	workers := []*sched.Worker{}
-	workers = append(workers, w.Worker)
-
-	t := &tracker{workers}
+	t := sched.NewTracker(conf.Worker)
+	go t.Run()
 	return &scheduler{conf, t}
 }
 
 type scheduler struct {
 	conf    config.Config
-	tracker *tracker
+	tracker *sched.Tracker
 }
 
-func (s *scheduler) Schedule(j *pbe.Job) *sched.Worker {
+func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running local scheduler")
+	weights := s.conf.Schedulers.Local.Weights
 
 	// TODO all resource tracking will break when the resources message is nil
 
-	workers := s.tracker.Get()
-	fit := sched.Fit(j, workers)
+	workers := s.tracker.Workers()
+	offers := []*sched.Offer{}
 
-	if len(fit) == 0 {
+	for _, w := range workers {
+		// Filter out workers that don't match the job request
+		// e.g. because they don't have enough resources, ports, etc.
+		if !sched.Match(w, j, sched.DefaultPredicates) {
+			continue
+		}
+
+		sc := sched.DefaultScores(w, j)
+		sc = sc.Weighted(weights)
+
+		offer := sched.NewOffer(w, j, sc)
+		offers = append(offers, offer)
+	}
+
+	// No matching workers were found.
+	if len(offers) == 0 {
 		return nil
 	}
 
-	for _, x := range fit {
-		x.CalcScores(j)
-	}
-
-	// TODO explore how a scheduler could have custom scores
-	//      probably just a custom worker with sched.Worker embedded
-	sort.Sort(sched.ByScore(fit))
-	w := fit[0]
-
-	return w
-}
-
-// tracker helps poll the database for updated worker information.
-// TODO consider making an interface for this, which a condor track would implement
-type tracker struct {
-	workers []*sched.Worker
-}
-
-func (t *tracker) Get() []*sched.Worker {
-	return t.workers
+	sched.SortByAverageScore(offers)
+	return offers[0]
 }
 
 func NewLocalWorker(conf config.Config) *localWorker {
 	id := sched.GenWorkerID()
 	w := &localWorker{
-		&sched.Worker{
-			ID: id,
-			Resources: sched.Resources{
-				CPUs: 2,
-				RAM:  10.0,
-				//Disk: 10.0,
+		Worker: &pbr.Worker{
+			Id: id,
+			// TODO hard-coded resources
+			Resources: &pbr.Resources{
+				Cpus: 2,
+				Ram:  10.0,
 			},
 		},
 	}
@@ -114,7 +110,8 @@ func NewLocalWorker(conf config.Config) *localWorker {
 }
 
 type localWorker struct {
-	*sched.Worker
+	*pbr.Worker
+	Conf config.Worker
 }
 
 func (w *localWorker) Run() {

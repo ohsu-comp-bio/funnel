@@ -5,12 +5,20 @@ package ga4gh_task_ref;
 
 import "task_execution.proto";
 
+message Resources {
+	// TODO doesn't say anything about size of CPU.
+	//      does that matter these days?
+  uint32 cpus = 1;
+  double ram = 2;
+}
+
 message Worker {
   string id = 1;
   map<string,bool> active = 2;
   map<string,bool> assigned = 4;
-  ga4gh_task_exec.Resources resources = 5;
-  int64 last_ping = 6;
+  Resources resources = 5;
+  Resources available = 6;
+  int64 last_ping = 7;
 }
 
 message Assignment {
@@ -22,7 +30,7 @@ message UpdateWorkerRequest {
   // ID of the worker
   string id = 1;
   // Description of CPU, RAM, etc.
-  ga4gh_task_exec.Resources resources = 2;
+  Resources resources = 2;
   // Hostname of the worker host.
   string hostname  = 3;
   // States of all jobs in the worker: job ID -> State
@@ -53,6 +61,12 @@ message QueuedTaskInfo {
   ga4gh_task_exec.Resources resources = 2;
 }
 
+message GetWorkersRequest {
+}
+
+message GetWorkersResponse {
+  repeated Worker workers = 1;
+}
 
 /**
  * Scheduler Service
@@ -61,4 +75,5 @@ service Scheduler {
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc UpdateJobLogs(UpdateJobLogsRequest) returns (UpdateJobLogsResponse) {};
   rpc UpdateWorker(UpdateWorkerRequest) returns (UpdateWorkerResponse) {};
+  rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {};
 }

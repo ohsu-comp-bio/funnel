@@ -7,10 +7,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	pbe "tes/ga4gh"
 	log "tes/logger"
+	pbr "tes/server/proto"
 	"time"
 )
+
+// All fields should be float32 type
+type Weights map[string]float32
 
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
@@ -42,6 +45,7 @@ func (l S3Storage) Valid() bool {
 
 // LocalScheduler describes configuration for the local scheduler.
 type LocalScheduler struct {
+	Weights Weights
 }
 
 // OpenstackScheduler describes configuration for the openstack scheduler.
@@ -113,11 +117,12 @@ type Worker struct {
 	UpdateRate time.Duration
 	// How often the worker sends job log updates
 	LogUpdateRate time.Duration
+	TrackerRate   time.Duration
 	LogTailSize   int64
 	Storage       []*StorageConfig
 	LogPath       string
 	LogLevel      string
-	Resources     *pbe.Resources
+	Resources     *pbr.Resources
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
@@ -129,6 +134,7 @@ func WorkerDefaultConfig() Worker {
 		// TODO these get reset to zero when not found in yaml?
 		UpdateRate:    time.Second * 5,
 		LogUpdateRate: time.Second * 5,
+		TrackerRate:   time.Second * 5,
 		LogTailSize:   10000,
 		LogLevel:      "debug",
 	}

@@ -46,7 +46,8 @@ func Run(conf config.Worker) error {
 		// including new jobs and canceled jobs.
 		case <-ticker.C:
 			req := &pbr.UpdateWorkerRequest{
-				Id:        conf.ID,
+				Id: conf.ID,
+				// TODO how does this even build?
 				Resources: conf.Resources,
 				// TODO
 				Hostname: "unknown",
@@ -86,7 +87,6 @@ func Run(conf config.Worker) error {
 			}
 
 			for _, id := range resp.Canceled {
-				// Idempotency.
 				// Protect against network communication quirks and failures,
 				// ensure the job exists.
 				if r := runners[id]; r != nil {
@@ -96,11 +96,11 @@ func Run(conf config.Worker) error {
 
 			for _, a := range resp.Assigned {
 				log.Debug("Worker received assignment", "assignment", a)
-				// Idempotency.
 				// Protect against network communication quirks and failures,
 				// ensure the job only gets started once.
 				id := a.Job.JobID
 				if runners[id] == nil {
+					// Start the job runner
 					r := newJobRunner(conf, a, updates)
 					runners[id] = r
 					go r.Run()

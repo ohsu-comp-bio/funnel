@@ -59,7 +59,7 @@ func start(conf config.Config) {
 			"scheduler", conf.Scheduler)
 		return
 	}
-	go scheduler.StartScheduling(taski, sched, conf.ScheduleRate)
+	go scheduler.Start(taski, sched, conf.ScheduleRate)
 
 	// TODO if port 8000 is already busy, does this lock up silently?
 	server.StartHTTPProxy(conf.RPCPort, conf.HTTPPort, conf.ContentDir)

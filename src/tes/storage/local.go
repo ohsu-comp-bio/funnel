@@ -5,7 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
+	"syscall"
 )
 
 // LocalProtocol defines the expected prefix of URL matching this storage system.
@@ -97,6 +99,12 @@ func copyFile(source string, dest string) (err error) {
 		return err
 	}
 	defer sf.Close()
+	dstD := path.Dir(dest)
+	// make parent dirs if they dont exist
+	if _, err := os.Stat(dstD); err != nil {
+		_ = syscall.Umask(0000)
+		os.MkdirAll(dstD, 0777)
+	}
 	df, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -109,11 +117,8 @@ func copyFile(source string, dest string) (err error) {
 	if cerr != nil {
 		return cerr
 	}
-	si, err := os.Stat(source)
-	if err != nil {
-		return err
-	}
-	err = os.Chmod(source, si.Mode())
+	// ensure readable output files
+	err = os.Chmod(dest, 0666)
 	if err != nil {
 		return err
 	}
@@ -141,14 +146,13 @@ func copyDir(source string, dest string) (err error) {
 	}
 
 	// create dest dir
-
-	err = os.MkdirAll(dest, fi.Mode())
+	_ = syscall.Umask(0000)
+	err = os.MkdirAll(dest, 0777)
 	if err != nil {
 		return err
 	}
 
 	entries, err := ioutil.ReadDir(source)
-
 	for _, entry := range entries {
 		sfp := source + "/" + entry.Name()
 		dfp := dest + "/" + entry.Name()

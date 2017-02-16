@@ -109,6 +109,14 @@ func copyFile(source string, dest string) (err error) {
 	if cerr != nil {
 		return cerr
 	}
+	si, err := os.Stat(source)
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(source, si.Mode())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

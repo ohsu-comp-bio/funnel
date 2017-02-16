@@ -45,8 +45,7 @@ var log = logger.New("local")
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
-	w := NewLocalWorker(conf)
-	go w.Run()
+	go runLocalWorker(conf)
 
 	t := sched.NewTracker(conf.Worker)
 	go t.Run()
@@ -90,34 +89,22 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	return offers[0]
 }
 
-func NewLocalWorker(conf config.Config) *localWorker {
+func runLocalWorker(conf config.Config) {
 	id := sched.GenWorkerID()
-	w := &localWorker{
-		Worker: &pbr.Worker{
-			Id: id,
-			// TODO hard-coded resources
-			Resources: &pbr.Resources{
-				Cpus: 2,
-				Ram:  10.0,
-			},
-		},
+	// TODO hard-coded resources
+	res := &pbr.Resources{
+		Cpus: 4,
+		Ram:  10.0,
 	}
-	w.Conf = conf.Worker
-	w.Conf.ID = id
-	w.Conf.ServerAddress = "localhost:9090"
-	w.Conf.Storage = conf.Storage
-	return w
-}
 
-type localWorker struct {
-	*pbr.Worker
-	Conf config.Worker
-}
+	w := config.WorkerDefaultConfig()
+	w.ID = id
+	w.ServerAddress = "localhost:9090"
+	w.Storage = conf.Storage
+	w.Resources = res
+	log.Debug("Starting local worker", "storage", w.Storage)
 
-func (w *localWorker) Run() {
-	log.Debug("Starting local worker", "storage", w.Conf.Storage)
-
-	err := worker.Run(w.Conf)
+	err := worker.Run(w)
 	if err != nil {
 		log.Error("Can't create worker", err)
 	}

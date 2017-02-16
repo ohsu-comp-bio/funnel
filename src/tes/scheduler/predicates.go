@@ -8,7 +8,7 @@ import (
 type Predicate func(*pbe.Job, *pbr.Worker) bool
 
 func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
-	req := j.Task.Resources
+	req := j.Task.GetResources()
 
 	// If the task didn't include resource requirements,
 	// assume it fits.
@@ -18,9 +18,9 @@ func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 		return true
 	}
 	switch {
-	case w.Available.Cpus < req.MinimumCpuCores:
+	case w.GetAvailable().GetCpus() < req.GetMinimumCpuCores():
 		return false
-	case w.Available.Ram < req.MinimumRamGb:
+	case w.GetAvailable().GetRam() < req.GetMinimumRamGb():
 		return false
 		// TODO check volumes
 	}

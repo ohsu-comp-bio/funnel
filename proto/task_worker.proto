@@ -12,6 +12,12 @@ message Resources {
   double ram = 2;
 }
 
+enum WorkerState {
+  Unknown = 0;
+  Alive = 1;
+  Dead = 2;
+}
+
 message Worker {
   string id = 1;
   map<string,bool> active = 2;
@@ -19,6 +25,7 @@ message Worker {
   Resources resources = 5;
   Resources available = 6;
   int64 last_ping = 7;
+  WorkerState state = 8;
 }
 
 message Assignment {

@@ -28,7 +28,13 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 
 		// Update worker metadata
 		worker.LastPing = time.Now().Unix()
+		// TODO allow worker to say if it's dead?
+		worker.State = pbr.WorkerState_Alive
 		worker.Resources = req.Resources
+
+		// Track all active/assigned job IDs, so we can calculate the
+		// available worker resources below.
+		jobIDs := []string{}
 
 		// Reconcile worker's job states with database
 		for jobID, state := range req.States {
@@ -38,6 +44,7 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 				// The worker has acknowledged receiving the job, so remove it from Assigned.
 				delete(worker.Assigned, jobID)
 				worker.Active[jobID] = true
+				jobIDs = append(jobIDs, jobID)
 				// If the job was canceled, add that signal to the response.
 				//
 				// Don't remove canceled jobs from the worker right away. Wait until
@@ -74,11 +81,34 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 		// the worker won't receive the update response. Wait until the worker sends
 		// and update including the jobID.
 		for jobID := range worker.Assigned {
+			jobIDs = append(jobIDs, jobID)
 			resp.Assigned = append(resp.Assigned, &pbr.Assignment{
 				Job:  getJob(tx, jobID),
 				Auth: getJobAuth(tx, jobID),
 			})
 		}
+
+		// Calculate available resources
+		avail := pbr.Resources{
+			Cpus: worker.GetResources().GetCpus(),
+			Ram:  worker.GetResources().GetRam(),
+		}
+		for _, jobID := range jobIDs {
+			j := getJob(tx, jobID)
+			res := j.Task.GetResources()
+
+			avail.Cpus -= res.GetMinimumCpuCores()
+			avail.Ram -= res.GetMinimumRamGb()
+
+			if avail.Cpus < 0 {
+				avail.Cpus = 0
+			}
+			if avail.Ram < 0.0 {
+				avail.Ram = 0.0
+			}
+		}
+		log.Debug("Available", "avail", avail, "worker", worker)
+		worker.Available = &avail
 
 		// Save the worker
 		putWorker(tx, worker)
@@ -89,6 +119,43 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 		return nil, err
 	}
 	return resp, nil
+}
+
+// This is not an RPC endpoint
+func (taskBolt *TaskBolt) CheckWorkers() error {
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(Workers)
+		c := bucket.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			worker := &pbr.Worker{}
+			proto.Unmarshal(v, worker)
+
+			if worker.LastPing == 0 {
+				// Worker has never sent an update
+				continue
+			}
+
+			lastPing := time.Unix(worker.LastPing, 0)
+			d := time.Since(lastPing)
+
+			if d > (time.Second * 60) {
+				// The worker is stale/dead
+				worker.State = pbr.WorkerState_Dead
+			} else {
+				worker.State = pbr.WorkerState_Alive
+			}
+			// TODO when to delete workers from the database?
+			//      should workers send "delete me" requests?
+			//      is dead worker deletion an automatic garbage collection process?
+			putWorker(tx, worker)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest) (*pbr.GetWorkersResponse, error) {
@@ -103,7 +170,10 @@ func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersReq
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			worker := &pbr.Worker{}
 			proto.Unmarshal(v, worker)
-			resp.Workers = append(resp.Workers, worker)
+			// TODO allow request to select which states it wants
+			if worker.State == pbr.WorkerState_Alive {
+				resp.Workers = append(resp.Workers, worker)
+			}
 		}
 		return nil
 	})

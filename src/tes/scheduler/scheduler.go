@@ -42,6 +42,7 @@ func Start(db *server.TaskBolt, sched Scheduler, pollRate time.Duration) {
 
 	for {
 		<-tickChan
+		db.CheckWorkers()
 		for _, job := range db.ReadQueue(10) {
 			offer := sched.Schedule(job)
 			if offer != nil {

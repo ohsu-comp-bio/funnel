@@ -16,6 +16,7 @@ func getWorker(tx *bolt.Tx, id string) (*pbr.Worker, error) {
 		proto.Unmarshal(data, worker)
 	}
 
+	// TODO use protbuf getters
 	if worker.Assigned == nil {
 		worker.Assigned = map[string]bool{}
 	}

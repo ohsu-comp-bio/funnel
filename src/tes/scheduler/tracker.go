@@ -31,7 +31,11 @@ func (t *Tracker) Run() {
 
 	for {
 		<-ticker.C
-		resp, _ := client.GetWorkers(context.Background(), nil)
+		resp, err := client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
+		if err != nil {
+			log.Error("Failed GetWorkers request. Recovering.", err)
+			continue
+		}
 		t.mtx.Lock()
 		t.workers = resp.Workers
 		t.mtx.Unlock()

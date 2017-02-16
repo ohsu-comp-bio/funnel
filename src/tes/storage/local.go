@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
+	"syscall"
 )
 
 // LocalProtocol defines the expected prefix of URL matching this storage system.
@@ -34,9 +36,15 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	}
 
 	if class == File {
-		copyFile(path, hostPath)
+		err := copyFile(path, hostPath)
+		if err != nil {
+			return err
+		}
 	} else if class == Directory {
-		copyDir(path, hostPath)
+		err := copyDir(path, hostPath)
+		if err != nil {
+			return err
+		}
 	} else {
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
@@ -54,9 +62,15 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 	}
 
 	if class == File {
-		copyFile(hostPath, path)
+		err := copyFile(hostPath, path)
+		if err != nil {
+			return err
+		}
 	} else if class == Directory {
-		copyDir(hostPath, path)
+		err := copyDir(hostPath, path)
+		if err != nil {
+			return err
+		}
 	} else {
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
@@ -79,95 +93,82 @@ func isAllowed(path string, allowedDirs []string) bool {
 	return false
 }
 
-func copyFileContents(src, dst string) (err error) {
-	in, err := os.Open(src)
+// Copies file source to destination dest.
+func copyFile(source string, dest string) (err error) {
+	sf, err := os.Open(source)
 	if err != nil {
 		return err
 	}
-	defer in.Close()
-	out, err := os.Create(dst)
+	defer sf.Close()
+	dstD := path.Dir(dest)
+	// make parent dirs if they dont exist
+	if _, err := os.Stat(dstD); err != nil {
+		_ = syscall.Umask(0000)
+		os.MkdirAll(dstD, 0777)
+	}
+	df, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		cerr := out.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-	if _, err = io.Copy(out, in); err != nil {
+	_, err = io.Copy(df, sf)
+	cerr := df.Close()
+	if err != nil {
 		return err
 	}
-	err = out.Sync()
+	if cerr != nil {
+		return cerr
+	}
+	// ensure readable output files
+	err = os.Chmod(dest, 0666)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func copyFile(src, dst string) (err error) {
-	sfi, err := os.Stat(src)
-	if err != nil {
-		return
-	}
-	if !sfi.Mode().IsRegular() {
-		// This cannot copy non-regular files (e.g.,
-		// directories, symlinks, devices, etc.)
-		return fmt.Errorf("CopyFile: non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
-	}
-	dfi, err := os.Stat(dst)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return
-		}
-		dstD := path.Dir(dst)
-		if _, err := os.Stat(dstD); err != nil {
-			fmt.Printf("Making %s\n", dstD)
-			os.MkdirAll(dstD, 0700)
-		}
-	} else {
-		if !(dfi.Mode().IsRegular()) {
-			return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
-		}
-
-		if os.SameFile(sfi, dfi) {
-			return
-		}
-	}
-
-	err = copyFileContents(src, dst)
-	return
-}
-
+// Recursively copies a directory tree, attempting to preserve permissions.
+// Source directory must exist, destination directory must *not* exist.
 func copyDir(source string, dest string) (err error) {
-	// Gets properties of source directory.
-	sourceinfo, err := os.Stat(source)
+	// get properties of source dir
+	fi, err := os.Stat(source)
 	if err != nil {
 		return err
 	}
 
-	// Creates destination directory.
-	err = os.MkdirAll(dest, sourceinfo.Mode())
+	if !fi.IsDir() {
+		return fmt.Errorf("Source is not a directory")
+	}
+
+	// ensure dest dir does not already exist
+
+	_, err = os.Open(dest)
+	if !os.IsNotExist(err) {
+		return fmt.Errorf("Destination already exists")
+	}
+
+	// create dest dir
+	_ = syscall.Umask(0000)
+	err = os.MkdirAll(dest, 0777)
 	if err != nil {
 		return err
 	}
 
-	directory, _ := os.Open(source)
-	objects, err := directory.Readdir(-1)
-	for _, obj := range objects {
-		sourcefilepointer := source + "/" + obj.Name()
-		destinationfilepointer := dest + "/" + obj.Name()
-		if obj.IsDir() {
-			// Creates sub-directories recursively.
-			err = copyDir(sourcefilepointer, destinationfilepointer)
+	entries, err := ioutil.ReadDir(source)
+	for _, entry := range entries {
+		sfp := source + "/" + entry.Name()
+		dfp := dest + "/" + entry.Name()
+		if entry.IsDir() {
+			err = copyDir(sfp, dfp)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 		} else {
-			// Performs copy.
-			err = copyFile(sourcefilepointer, destinationfilepointer)
+			// perform copy
+			err = copyFile(sfp, dfp)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 		}
-
 	}
-	return
+	return nil
 }

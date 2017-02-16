@@ -58,6 +58,13 @@ message UpdateWorkerResponse {
   repeated string canceled = 4;
 }
 
+message WorkerGoneRequest {
+  // ID of the worker
+  string id = 1;
+}
+
+message WorkerGoneResponse {}
+
 message UpdateJobLogsRequest {
   string id = 1;
   int64 step = 2;
@@ -90,4 +97,5 @@ service Scheduler {
   rpc UpdateJobLogs(UpdateJobLogsRequest) returns (UpdateJobLogsResponse) {};
   rpc UpdateWorker(UpdateWorkerRequest) returns (UpdateWorkerResponse) {};
   rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {};
+  rpc WorkerGone(WorkerGoneRequest) returns (WorkerGoneResponse) {};
 }

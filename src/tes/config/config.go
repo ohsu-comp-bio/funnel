@@ -123,6 +123,8 @@ type Worker struct {
 	LogPath       string
 	LogLevel      string
 	Resources     *pbr.Resources
+	// Timeout duration for UpdateWorker() and UpdateJobLogs() RPC calls
+	UpdateTimeout time.Duration
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
@@ -137,6 +139,7 @@ func WorkerDefaultConfig() Worker {
 		TrackerRate:   time.Second * 5,
 		LogTailSize:   10000,
 		LogLevel:      "debug",
+		UpdateTimeout: time.Second,
 	}
 }
 

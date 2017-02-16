@@ -17,15 +17,23 @@ func Run(conf config.Worker) error {
 	log.Info("Running worker")
 	defer log.Info("Shutting down")
 
-	sched, err := scheduler.NewClient(conf)
+	sched, err := newSchedClient(conf)
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		// Tell the scheduler that the worker is gone.
+		sched.WorkerGone()
+	}()
 	defer sched.Close()
 
+	// Tracks active job runners
 	runners := map[string]*jobRunner{}
+	// Allows job/step runners to send log updates
 	updates := make(updateChan)
 
+	// Ticker controls how often the worker make an UpdateWorker() RPC
 	ticker := time.NewTicker(conf.UpdateRate)
 	defer ticker.Stop()
 
@@ -33,14 +41,14 @@ func Run(conf config.Worker) error {
 		select {
 		// "updates" contains job log, e.g. stdout/err updates.
 		case up := <-updates:
-			log.Debug("Sending update", "data", up)
-			ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
-			_, err := sched.UpdateJobLogs(ctx, up)
+			// UpdateJobLogs() is more lightweight than UpdateWorker(),
+			// which is why it happens separately and at a different rate.
+			err := sched.UpdateJobLogs(up)
 			if err != nil {
+				// TODO if the request failed, the job update is lost and the logs
+				//      are corrupted. Cache logs to prevent this?
 				log.Error("Job log update failed", err)
 			}
-			cleanup()
-			// TODO what if request times out? How to avoid losing update?
 
 		// Ping the server every tick and receive updates,
 		// including new jobs and canceled jobs.
@@ -71,21 +79,18 @@ func Run(conf config.Worker) error {
 				}
 			}
 
-			// TODO is it possible to get a stale response from the network in gRPC?
-			// TODO configurable timeout?
-			ctx, cleanup := context.WithTimeout(context.Background(), time.Second)
-			resp, err := sched.UpdateWorker(ctx, req)
-			cleanup()
-
+			resp, err := sched.UpdateWorker(req)
 			if err != nil {
 				log.Error("Couldn't get worker update. Recovering.", err)
 				break
 			}
 
+			// Clean up tracked job runners from jobs that are complete
 			for _, id := range complete {
 				delete(runners, id)
 			}
 
+			// If the server sent "cancel" signals for jobs, call runner.Cancel()
 			for _, id := range resp.Canceled {
 				// Protect against network communication quirks and failures,
 				// ensure the job exists.
@@ -94,6 +99,7 @@ func Run(conf config.Worker) error {
 				}
 			}
 
+			// Start new job runners for any assigned jobs.
 			for _, a := range resp.GetAssigned() {
 				log.Debug("Worker received assignment", "assignment", a)
 				// Protect against network communication quirks and failures,
@@ -108,4 +114,42 @@ func Run(conf config.Worker) error {
 			}
 		}
 	}
+}
+
+// Defines some helpers for RPC calls in the code above
+type schedClient struct {
+	*scheduler.Client
+	conf config.Worker
+}
+
+func newSchedClient(conf config.Worker) (*schedClient, error) {
+	sched, err := scheduler.NewClient(conf)
+	if err != nil {
+		return nil, err
+	}
+	return &schedClient{sched, conf}, nil
+}
+
+func (c *schedClient) UpdateWorker(req *pbr.UpdateWorkerRequest) (*pbr.UpdateWorkerResponse, error) {
+	// TODO is it possible to get a stale response from the network in gRPC?
+	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
+	resp, err := c.Client.UpdateWorker(ctx, req)
+	cleanup()
+	return resp, err
+}
+
+func (c *schedClient) UpdateJobLogs(up *pbr.UpdateJobLogsRequest) error {
+	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
+	_, err := c.Client.UpdateJobLogs(ctx, up)
+	cleanup()
+	return err
+}
+
+func (c *schedClient) WorkerGone() {
+	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
+	// Errors are ignored because the worker is shutting down anyway
+	c.Client.WorkerGone(ctx, &pbr.WorkerGoneRequest{
+		Id: c.conf.ID,
+	})
+	cleanup()
 }

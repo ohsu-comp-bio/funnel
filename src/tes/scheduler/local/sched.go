@@ -75,7 +75,7 @@ func runLocalWorker(conf config.Config) {
 	res := &pbr.Resources{
 		Cpus: 4,
 		Ram:  10.0,
-    Disk: 100.0,
+		Disk: 100.0,
 	}
 
 	w := config.WorkerDefaultConfig()

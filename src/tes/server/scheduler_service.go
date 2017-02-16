@@ -92,7 +92,7 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 		avail := pbr.Resources{
 			Cpus: worker.GetResources().GetCpus(),
 			Ram:  worker.GetResources().GetRam(),
-      Disk: worker.GetResources().GetDisk(),
+			Disk: worker.GetResources().GetDisk(),
 		}
 		for _, jobID := range jobIDs {
 			j := getJob(tx, jobID)
@@ -132,6 +132,11 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 			worker := &pbr.Worker{}
 			proto.Unmarshal(v, worker)
 
+			if worker.State == pbr.WorkerState_Gone {
+				tx.Bucket(Workers).Delete(k)
+				continue
+			}
+
 			if worker.LastPing == 0 {
 				// Worker has never sent an update
 				continue
@@ -147,7 +152,6 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 				worker.State = pbr.WorkerState_Alive
 			}
 			// TODO when to delete workers from the database?
-			//      should workers send "delete me" requests?
 			//      is dead worker deletion an automatic garbage collection process?
 			putWorker(tx, worker)
 		}
@@ -157,6 +161,22 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 		return err
 	}
 	return nil
+}
+
+func (taskBolt *TaskBolt) WorkerGone(ctx context.Context, req *pbr.WorkerGoneRequest) (*pbr.WorkerGoneResponse, error) {
+
+	resp := &pbr.WorkerGoneResponse{}
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+		// Get worker
+		worker, werr := getWorker(tx, req.Id)
+		if werr != nil {
+			return werr
+		}
+		worker.State = pbr.WorkerState_Gone
+		putWorker(tx, worker)
+		return nil
+	})
+	return resp, err
 }
 
 func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest) (*pbr.GetWorkersResponse, error) {

@@ -11,12 +11,12 @@ func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 	req := j.Task.GetResources()
 
 	switch {
-  case w.GetPreemptible() && !req.GetPreemptible():
-    return false
-  case w.GetAvailable().GetCpus() <= 0:
-    return false
-  case w.GetAvailable().GetRam() <= 0.0:
-    return false
+	case w.GetPreemptible() && !req.GetPreemptible():
+		return false
+	case w.GetAvailable().GetCpus() <= 0:
+		return false
+	case w.GetAvailable().GetRam() <= 0.0:
+		return false
 	case w.GetAvailable().GetCpus() < req.GetMinimumCpuCores():
 		return false
 	case w.GetAvailable().GetRam() < req.GetMinimumRamGb():
@@ -28,58 +28,58 @@ func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 
 func VolumesFit(j *pbe.Job, w *pbr.Worker) bool {
 	req := j.Task.GetResources()
-  vol := req.GetVolumes()
+	vol := req.GetVolumes()
 
-  // Total size (GB) of all requested volumes
-  var tot float64
-  for _, v := range vol {
-    tot += v.GetSizeGb()
-  }
+	// Total size (GB) of all requested volumes
+	var tot float64
+	for _, v := range vol {
+		tot += v.GetSizeGb()
+	}
 
-  return tot < w.GetAvailable().GetDisk()
+	return tot < w.GetAvailable().GetDisk()
 }
 
 func PortsFit(j *pbe.Job, w *pbr.Worker) bool {
-  // Get the set of active ports on the worker
-  active := map[int32]bool{}
-  for _, p := range w.ActivePorts {
-    active[p] = true
-  }
-  // Loop through the requested ports, fail if they are active.
-  for _, d := range j.Task.Docker {
-    for _, p := range d.Ports {
-      h := p.GetHost()
-      if h == 0 {
-        // "0" means "assign a random port, so skip checking this one.
-        continue
-      }
-      if b := active[h]; b {
-        return false
-      }
-    }
-  }
-  return true
+	// Get the set of active ports on the worker
+	active := map[int32]bool{}
+	for _, p := range w.ActivePorts {
+		active[p] = true
+	}
+	// Loop through the requested ports, fail if they are active.
+	for _, d := range j.Task.Docker {
+		for _, p := range d.Ports {
+			h := p.GetHost()
+			if h == 0 {
+				// "0" means "assign a random port, so skip checking this one.
+				continue
+			}
+			if b := active[h]; b {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
-  if w.Zone == "" {
-    // Worker doesn't have a set zone, so don't bother checking.
-    return true
-  }
+	if w.Zone == "" {
+		// Worker doesn't have a set zone, so don't bother checking.
+		return true
+	}
 
-  for _, z := range j.Task.GetResources().Zones {
-    if z == w.Zone {
-      return true
-    }
-  }
-  return false
+	for _, z := range j.Task.GetResources().Zones {
+		if z == w.Zone {
+			return true
+		}
+	}
+	return false
 }
 
 var DefaultPredicates = []Predicate{
 	ResourcesFit,
-  VolumesFit,
-  PortsFit,
-  ZonesFit,
+	VolumesFit,
+	PortsFit,
+	ZonesFit,
 }
 
 // TODO should have a predicate which understands authorization

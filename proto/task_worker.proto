@@ -10,22 +10,29 @@ message Resources {
 	//      does that matter these days?
   uint32 cpus = 1;
   double ram = 2;
+  double disk = 3;
 }
 
 enum WorkerState {
   Unknown = 0;
   Alive = 1;
   Dead = 2;
+  Gone = 3;
 }
 
 message Worker {
   string id = 1;
+  // TODO maybe map<> type in the protobuf schema is bad style.
+  //      could easily convert to a map in the Go code.
   map<string,bool> active = 2;
   map<string,bool> assigned = 4;
   Resources resources = 5;
   Resources available = 6;
   int64 last_ping = 7;
   WorkerState state = 8;
+  bool preemptible = 9;
+  repeated int32 active_ports = 10;
+  string zone = 11;
 }
 
 message Assignment {

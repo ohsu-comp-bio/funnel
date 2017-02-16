@@ -94,7 +94,7 @@ func Run(conf config.Worker) error {
 				}
 			}
 
-			for _, a := range resp.Assigned {
+			for _, a := range resp.GetAssigned() {
 				log.Debug("Worker received assignment", "assignment", a)
 				// Protect against network communication quirks and failures,
 				// ensure the job only gets started once.

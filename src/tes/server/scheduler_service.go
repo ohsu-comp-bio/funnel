@@ -92,6 +92,7 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 		avail := pbr.Resources{
 			Cpus: worker.GetResources().GetCpus(),
 			Ram:  worker.GetResources().GetRam(),
+      Disk: worker.GetResources().GetDisk(),
 		}
 		for _, jobID := range jobIDs {
 			j := getJob(tx, jobID)

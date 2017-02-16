@@ -177,8 +177,8 @@ type Ports struct {
 	// Exposed port on container
 	Container int32 `protobuf:"varint,1,opt,name=container" json:"container,omitempty"`
 	// OPTIONAL
-	// Must be greater than 1024;
-	// Defaults to 0
+	// Must be greater than 1024, less than 65535.
+	// Defaults to 0, which assigns a random port.
 	Host int32 `protobuf:"varint,2,opt,name=host" json:"host,omitempty"`
 }
 
@@ -354,7 +354,7 @@ type Resources struct {
 	// Volumes to be mounted into the docker container
 	Volumes []*Volume `protobuf:"bytes,4,rep,name=volumes" json:"volumes,omitempty"`
 	// OPTIONAL
-	// optional scheduling information for systems where multiple compute zones are avalible
+	// optional scheduling information for systems where multiple compute zones are available
 	Zones []string `protobuf:"bytes,5,rep,name=zones" json:"zones,omitempty"`
 }
 

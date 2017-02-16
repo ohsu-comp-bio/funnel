@@ -53,3 +53,9 @@ test:
 	docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/
 	pip2.7 install -q -r tests/requirements.txt
 	nosetests-2.7 tests/
+
+web:
+	cd share && \
+	npm install && \
+	sass style.scss style.css && \
+	cd ..

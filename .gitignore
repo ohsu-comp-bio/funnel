@@ -13,3 +13,7 @@ ga4gh_tasks.db
 /tes-work-dir/
 *.sw[op]
 node_modules
+bower_components
+.sass-cache/
+style.css
+style.css.map

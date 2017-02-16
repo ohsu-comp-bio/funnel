@@ -1,0 +1,26 @@
+{
+  "name": "funnel",
+  "version": "1.0.0",
+  "description": "Funnel Web App",
+  "main": "app.js",
+  "dependencies": {
+    "angular": "^1.4.9",
+    "angular-route": "^1.4.9",
+    "material-design-lite": "^1.3.0",
+    "ng-table": "^3.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "None"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ohsu-comp-bio/funnel.git"
+  },
+  "author": "Adam Struck <strucka@ohsu.edu>",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/ohsu-comp-bio/funnel/issues"
+  },
+  "homepage": "https://github.com/ohsu-comp-bio/funnel#readme"
+}

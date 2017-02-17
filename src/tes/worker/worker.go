@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	proto "github.com/golang/protobuf/proto"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
 	"tes/config"
@@ -162,13 +163,11 @@ func (c *schedClient) WorkerGone() {
 // Resources are determined by inspecting the host, but they
 // can be overridden by config.
 func resources(conf *pbr.Resources) *pbr.Resources {
-	res := &pbr.Resources{}
+	res := proto.Clone(conf).(*pbr.Resources)
 	cpuinfo, _ := pscpu.Info()
 	vmeminfo, _ := psmem.VirtualMemory()
 
-	if conf.Cpus != 0 {
-		res.Cpus = conf.Cpus
-	} else {
+	if conf.Cpus == 0 {
 		// TODO is cores the best metric? with hyperthreading,
 		//      runtime.NumCPU() and pscpu.Counts() return 8
 		//      on my 4-core mac laptop
@@ -177,9 +176,7 @@ func resources(conf *pbr.Resources) *pbr.Resources {
 		}
 	}
 
-	if conf.Ram != 0.0 {
-		res.Ram = conf.Ram
-	} else {
+	if conf.Ram == 0.0 {
 		res.Ram = float64(vmeminfo.Total) /
 			float64(1024) / float64(1024) / float64(1024)
 	}

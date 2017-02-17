@@ -41,8 +41,6 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running local scheduler")
 	weights := s.conf.Schedulers.Local.Weights
 
-	// TODO all resource tracking will break when the resources message is nil
-
 	workers := s.tracker.Workers()
 	offers := []*sched.Offer{}
 

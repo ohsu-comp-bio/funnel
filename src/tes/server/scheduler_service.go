@@ -37,6 +37,7 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 
 		// Reconcile worker's job states with database
 		for jobID, state := range req.States {
+			current := getJobState(tx, jobID)
 			switch state {
 
 			case pbe.State_Initializing, pbe.State_Running:
@@ -49,13 +50,13 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 				//
 				// Don't remove canceled jobs from the worker right away. Wait until
 				// the next update, which acknowledges the worker has received the cancel.
-				canceled := getJobState(tx, jobID) == pbe.State_Canceled
-				if canceled {
+				if current == pbe.State_Canceled {
 					resp.Canceled = append(resp.Canceled, jobID)
 				} else {
 					err := transitionJobState(tx, jobID, state)
 					// TODO what's the proper behavior of an error?
-					//      this is just ignoring the error, but it will happen again on the next update.
+					//      this is just ignoring the error, but it will happen again
+					//      on the next update.
 					//      need to resolve the conflicting states.
 					//      Additionally, returning an error here will fail the db transaction,
 					//      preventing all updates to this worker for all jobs.
@@ -68,6 +69,13 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 			case pbe.State_Error, pbe.State_Complete, pbe.State_Canceled:
 				delete(worker.Assigned, jobID)
 				delete(worker.Active, jobID)
+				if state != current {
+					// TODO what's the proper behavior of an error? see above
+					err := transitionJobState(tx, jobID, state)
+					if err != nil {
+						return nil
+					}
+				}
 
 			default:
 				log.Error("Unknown job state during worker update", "state", state)

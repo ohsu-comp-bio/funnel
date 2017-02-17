@@ -220,7 +220,6 @@ func loadJobLogs(tx *bolt.Tx, job *ga4gh_task_exec.Job) {
 
 // GetJob gets a job, which describes a running task
 func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
-	log.Debug("GetJob called", "jobID", id.Value)
 
 	var job *ga4gh_task_exec.Job
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {

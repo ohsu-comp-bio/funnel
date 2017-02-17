@@ -7,7 +7,7 @@ import (
 	"tes/config"
 	"tes/logger"
 	"tes/scheduler"
-	//"tes/scheduler/condor"
+	"tes/scheduler/condor"
 	"tes/scheduler/local"
 	"tes/server"
 )
@@ -50,8 +50,8 @@ func start(conf config.Config) {
 	case "local":
 		// TODO worker will stay alive if the parent process panics
 		sched = local.NewScheduler(conf)
-	//case "condor":
-	//sched = condor.NewScheduler(conf)
+	case "condor":
+		sched = condor.NewScheduler(conf)
 	//case "openstack":
 	//sched = openstack.NewScheduler(conf)
 	default:

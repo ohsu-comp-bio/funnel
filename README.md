@@ -1,4 +1,4 @@
-![master-build-status](https://travis-ci.org/ohsu-comp-bio/funnel.svg?branch=master)
+[![Build Status](https://travis-ci.org/ohsu-comp-bio/funnel.svg?branch=master)](https://travis-ci.org/ohsu-comp-bio/funnel)
 [![Gitter](https://badges.gitter.im/ohsu-comp-bio/funnel.svg)](https://gitter.im/ohsu-comp-bio/funnel?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Funnel (alpha)

@@ -62,7 +62,7 @@ This section describes the HTTP/gRPC APIs and related schemas available. These a
   "endTime" : "2016-09-18T23:38:00Z",
   "stdout": "f6913671da6018ff8afcb1517983ab24  test_file",
   "stderr": "",
-  "exitCode" = 0
+  "exitCode": 0,
 }
 ```
 

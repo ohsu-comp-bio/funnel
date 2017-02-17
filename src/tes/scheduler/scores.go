@@ -7,13 +7,16 @@ import (
 	pbr "tes/server/proto"
 )
 
+// Scores describe how well a job fits a worker.
 type Scores map[string]float32
 
+// Scores keys
 const (
 	CPU = "cpu"
 	RAM = "ram"
 )
 
+// Average returns the average of the scores.
 func (s Scores) Average() float32 {
 	var tot float32
 	for _, v := range s {
@@ -22,6 +25,8 @@ func (s Scores) Average() float32 {
 	return tot / float32(len(s))
 }
 
+// Weighted returns a new Scores instance with each score multiplied
+// by the given weights. Weights default to 0.0
 func (s Scores) Weighted(w config.Weights) Scores {
 	out := Scores{}
 	for k, v := range s {
@@ -30,6 +35,7 @@ func (s Scores) Weighted(w config.Weights) Scores {
 	return out
 }
 
+// DefaultScores returns a default set of scores.
 func DefaultScores(w *pbr.Worker, j *pbe.Job) Scores {
 	req := j.Task.Resources
 	tot := w.Resources
@@ -41,6 +47,8 @@ func DefaultScores(w *pbr.Worker, j *pbe.Job) Scores {
 	return s
 }
 
+// SortByAverageScore sorts the given offers by their average score.
+// This modifies the offers list in place.
 func SortByAverageScore(offers []*Offer) {
 	// Pre-calculate the averages scores so that we're not re-calculating
 	// many times during sort

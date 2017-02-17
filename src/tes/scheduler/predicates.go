@@ -5,8 +5,10 @@ import (
 	pbr "tes/server/proto"
 )
 
+// Predicate is a function that checks whether a job fits a worker.
 type Predicate func(*pbe.Job, *pbr.Worker) bool
 
+// ResourcesFit determines whether a job fits a worker's resources.
 func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 	req := j.Task.GetResources()
 
@@ -26,6 +28,8 @@ func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 	return true
 }
 
+// VolumesFit determines whether a job's volumes fit a worker
+// by checking that the worker has enough disk space available.
 func VolumesFit(j *pbe.Job, w *pbr.Worker) bool {
 	req := j.Task.GetResources()
 	vol := req.GetVolumes()
@@ -39,6 +43,8 @@ func VolumesFit(j *pbe.Job, w *pbr.Worker) bool {
 	return tot < w.GetAvailable().GetDisk()
 }
 
+// PortsFit determines whether a job's ports fit a worker
+// by checking that the worker has the requested ports available.
 func PortsFit(j *pbe.Job, w *pbr.Worker) bool {
 	// Get the set of active ports on the worker
 	active := map[int32]bool{}
@@ -61,6 +67,7 @@ func PortsFit(j *pbe.Job, w *pbr.Worker) bool {
 	return true
 }
 
+// ZonesFit determines whether a job's zones fit a worker.
 func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
 	if w.Zone == "" {
 		// Worker doesn't have a set zone, so don't bother checking.
@@ -75,6 +82,8 @@ func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
 	return false
 }
 
+// DefaultPredicates is a list of Predicate functions that check
+// the whether a job fits a worker.
 var DefaultPredicates = []Predicate{
 	ResourcesFit,
 	VolumesFit,
@@ -90,6 +99,7 @@ var DefaultPredicates = []Predicate{
 //        for example, if it requests access to storage that isn't available?
 //        maybe set a max. time allowed to be unscheduled before notification
 
+// Match checks whether a job fits a worker using the given Predicate list.
 func Match(worker *pbr.Worker, job *pbe.Job, predicates []Predicate) bool {
 	for _, pred := range predicates {
 		if ok := pred(job, worker); !ok {

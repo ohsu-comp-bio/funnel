@@ -70,7 +70,7 @@ class SimpleServerTest(unittest.TestCase):
         os.mkdir(self.storage_dir)
 
         # Build server config file (YAML)
-        rate = config_seconds(0.1)
+        rate = config_seconds(0.05)
         configFile = temp_config({
             "ServerAddress": "localhost:9090",
             "DBPath": db_path,

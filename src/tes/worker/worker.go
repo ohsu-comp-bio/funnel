@@ -15,6 +15,8 @@ import (
 
 type updateChan chan *pbr.UpdateJobLogsRequest
 
+// Run runs a worker with the given config. This is responsible for communication
+// with the server and starting job runners
 func Run(conf config.Worker) error {
 	log := logger.New("worker", "workerID", conf.ID)
 	log.Info("Running worker")

@@ -55,6 +55,7 @@ func (storage Storage) Put(ctx context.Context, url string, path string, class s
 	return store.Put(ctx, url, path, class)
 }
 
+// Supports indicates whether the storage supports the given request.
 func (storage Storage) Supports(url string, path string, class string) bool {
 	b, _ := storage.findBackend(url, path, class)
 	return b != nil

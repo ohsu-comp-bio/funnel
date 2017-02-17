@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-// All fields should be float32 type
+// Weights describes the scheduler score weights.
+// All fields should be float32 type.
 type Weights map[string]float32
 
 // StorageConfig describes configuration for all storage types

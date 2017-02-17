@@ -21,12 +21,16 @@ type Scheduler interface {
 	Schedule(*pbe.Job) *Offer
 }
 
+// Offer describes a worker offered by a scheduler for a job.
+// The Scores describe how well the job fits this worker,
+// which could be used by other a scheduler to pick the best offer.
 type Offer struct {
 	JobID    string
 	WorkerID string
 	Scores   Scores
 }
 
+// NewOffer returns a new Offer instance.
 func NewOffer(w *pbr.Worker, j *pbe.Job, s Scores) *Offer {
 	return &Offer{
 		JobID:    j.JobID,

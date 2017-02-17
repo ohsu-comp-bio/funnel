@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// UpdateWorker is an RPC endpoint that is used by workers to send heartbeats
+// and status updates, such as completed jobs. The server responds with updated
+// information for the worker, such as canceled jobs.
 func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorkerRequest) (*pbr.UpdateWorkerResponse, error) {
 
 	resp := &pbr.UpdateWorkerResponse{}
@@ -129,6 +132,7 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 	return resp, nil
 }
 
+// CheckWorkers is used by the scheduler to check for dead/gone workers.
 // This is not an RPC endpoint
 func (taskBolt *TaskBolt) CheckWorkers() error {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -170,6 +174,8 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 	return nil
 }
 
+// WorkerGone is an API endpoint that allows workers to let the server know
+// they are shutting down.
 func (taskBolt *TaskBolt) WorkerGone(ctx context.Context, req *pbr.WorkerGoneRequest) (*pbr.WorkerGoneResponse, error) {
 
 	resp := &pbr.WorkerGoneResponse{}
@@ -186,6 +192,7 @@ func (taskBolt *TaskBolt) WorkerGone(ctx context.Context, req *pbr.WorkerGoneReq
 	return resp, err
 }
 
+// GetWorkers is an API endpoint that returns a list of workers.
 func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest) (*pbr.GetWorkersResponse, error) {
 	resp := &pbr.GetWorkersResponse{}
 	resp.Workers = []*pbr.Worker{}
@@ -307,8 +314,7 @@ func transitionJobState(tx *bolt.Tx, id string, state pbe.State) error {
 	return nil
 }
 
-// UpdateJobStatus updates the status of a job, including state and logs.
-// This is an RPC endpoint.
+// UpdateJobLogs is an API endpoint that updates the logs of a job.
 // This is used by workers to communicate job updates to the server.
 func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbr.UpdateJobLogsRequest) (*pbr.UpdateJobLogsResponse, error) {
 

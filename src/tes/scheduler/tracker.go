@@ -10,6 +10,8 @@ import (
 
 // tracker helps poll the database for updated worker information.
 // TODO consider making an interface for this, which a condor tracker would implement
+
+// NewTracker returns a new Tracker instance.
 func NewTracker(conf config.Worker) *Tracker {
 	return &Tracker{
 		conf:    conf,
@@ -17,12 +19,16 @@ func NewTracker(conf config.Worker) *Tracker {
 	}
 }
 
+// Tracker helps a scheduler track the state of workers by polling the server
+// for updates. The scheduler uses the Workers() method to get the latest
+// response.
 type Tracker struct {
 	conf    config.Worker
 	workers []*pbr.Worker
 	mtx     sync.Mutex
 }
 
+// Run starts polling the server with calls to GetWorkers()
 func (t *Tracker) Run() {
 	client, _ := NewClient(t.conf)
 	defer client.Close()
@@ -42,6 +48,7 @@ func (t *Tracker) Run() {
 	}
 }
 
+// Workers returns the most recent set of workers received from the server.
 func (t *Tracker) Workers() []*pbr.Worker {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()

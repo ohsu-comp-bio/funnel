@@ -11,7 +11,8 @@ task = {
     "docker": [
         {
             "imageName": "ubuntu",
-            "cmd": ["echo", "hello", "world"]
+            "cmd": ["echo", "hello", "world"],
+            "stdout": "stdout",
         }
     ]
 }
@@ -23,7 +24,7 @@ job_id = data['value']
 while True:
     r = urllib.urlopen("http://localhost:8000/v1/jobs/%s" % (job_id))
     data = json.loads(r.read())
-    if data["state"] not in ['Queued', "Running"]:
+    if data["state"] not in ['Queued', 'Initializing', "Running"]:
         break
     time.sleep(1)
 

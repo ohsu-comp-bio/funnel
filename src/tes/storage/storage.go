@@ -6,6 +6,12 @@ import (
 	"tes/config"
 )
 
+// NOTE!
+// It's important that Storage instances be immutable!
+// We dont want storage authentication to be accidentally shared between jobs.
+// If they are mutable, there's more chance that storage config can leak
+// between separate processes.
+
 const (
 	// File represents the file type
 	File string = "File"
@@ -30,7 +36,7 @@ type Backend interface {
 // For a given storage url, the storage backend is usually determined by the url prefix,
 // e.g. "s3://my-bucket/file" will access the S3 backend.
 type Storage struct {
-	stores []Backend
+	backends []Backend
 }
 
 // Get downloads a file from a storage system at the given "url".
@@ -64,7 +70,7 @@ func (storage Storage) Supports(url string, path string, class string) bool {
 // findBackend tries to find a backend that matches the given url/path/class.
 // This is how a url gets matched to a backend, for example by the url prefix "s3://".
 func (storage Storage) findBackend(url string, path string, class string) (Backend, error) {
-	for _, store := range storage.stores {
+	for _, store := range storage.backends {
 		if store.Supports(url, path, class) {
 			return store, nil
 		}
@@ -72,27 +78,10 @@ func (storage Storage) findBackend(url string, path string, class string) (Backe
 	return nil, fmt.Errorf("Could not find matching storage system for %s", url)
 }
 
-// Backend config functions below
-// It's important that these create a new Storage instance, because we don't
-// want storage authentication to be accidentally shared between jobs, so
-// a job-specific Storage instance should be configured and destroyed for each job.
-
-// WithS3 returns a new child Storage instance with the given
-// S3 backend config added.
-func (storage Storage) WithS3(en string, id string, sc string, ssl bool) (*Storage, error) {
-	s3, err := NewS3Backend(en, id, sc, ssl)
-	if err != nil {
-		return nil, err
-	}
-	stores := append(storage.stores, s3)
-	return &Storage{stores}, nil
-}
-
-// WithLocal returns a new child Storage instance with the given local backend config added.
-func (storage Storage) WithLocal(allow []string) (*Storage, error) {
-	local := NewLocalBackend(allow)
-	stores := append(storage.stores, local)
-	return &Storage{stores}, nil
+// WithBackend returns a new child Storage instance with the given backend added.
+func (storage Storage) WithBackend(b Backend) (*Storage, error) {
+	backends := append(storage.backends, b)
+	return &Storage{backends}, nil
 }
 
 // WithConfig returns a new Storage instance with the given additional configuration.
@@ -101,22 +90,31 @@ func (storage Storage) WithConfig(conf *config.StorageConfig) (*Storage, error) 
 	var out *Storage
 
 	if conf.Local.Valid() {
-		out, err = storage.WithLocal(conf.Local.AllowedDirs)
+		local, err := NewLocalBackend(conf.Local)
 		if err != nil {
 			return nil, err
 		}
+		out, err = storage.WithBackend(local)
 	}
 
 	if conf.S3.Valid() {
-		out, err = storage.WithS3(
-			conf.S3.Endpoint,
-			conf.S3.Key,
-			conf.S3.Secret,
-			false, // use SSL?
-		)
+		s3, err := NewS3Backend(conf.S3)
 		if err != nil {
 			return nil, err
 		}
+		out, err = storage.WithBackend(s3)
+	}
+
+	if conf.GS.Valid() {
+		gs, nerr := NewGSBackend(conf.GS)
+		if nerr != nil {
+			return nil, nerr
+		}
+		out, err = storage.WithBackend(gs)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	// If the configuration did nothing, return the initial storage instance

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/minio/minio-go"
 	"strings"
+	"tes/config"
 )
 
 // S3Protocol defines the expected URL prefix for S3, "s3://"
@@ -17,10 +18,11 @@ type S3Backend struct {
 
 // NewS3Backend creates an S3Backend client instance, give an endpoint URL
 // and a set of authentication credentials.
-func NewS3Backend(endpoint string, id string, secret string, SSL bool) (*S3Backend, error) {
+func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
 
 	// Initialize minio client object.
-	client, err := minio.New(endpoint, id, secret, SSL)
+	// TODO SSL config and support
+	client, err := minio.New(conf.Endpoint, conf.Key, conf.Secret, false)
 	// TODO client needs to be closed?
 	if err != nil {
 		return nil, err

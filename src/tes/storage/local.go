@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 	"syscall"
+	"tes/config"
 )
 
 // LocalProtocol defines the expected prefix of URL matching this storage system.
@@ -22,8 +23,8 @@ type LocalBackend struct {
 
 // NewLocalBackend returns a LocalBackend instance, configured to limit
 // file system access to the given allowed directories.
-func NewLocalBackend(allowed []string) *LocalBackend {
-	return &LocalBackend{allowed}
+func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
+	return &LocalBackend{conf.AllowedDirs}, nil
 }
 
 // Get copies a file from storage into the given hostPath.

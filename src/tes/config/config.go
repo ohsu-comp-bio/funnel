@@ -20,11 +20,21 @@ type Weights map[string]float32
 type StorageConfig struct {
 	Local LocalStorage
 	S3    S3Storage
+	GS    GSStorage
 }
 
 // LocalStorage describes the directories TES can read from and write to
 type LocalStorage struct {
 	AllowedDirs []string
+}
+
+// GSStorage describes configuration for the Google Cloud storage backend.
+type GSStorage struct {
+	AccountFile string
+}
+
+func (g GSStorage) Valid() bool {
+	return true
 }
 
 // Valid validates the LocalStorage configuration

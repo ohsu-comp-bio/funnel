@@ -185,7 +185,7 @@ func (taskBolt *TaskBolt) SetWorkerState(ctx context.Context, req *pbr.SetWorker
 		if werr != nil {
 			return werr
 		}
-		worker.State = pbr.WorkerState_Gone
+		worker.State = req.State
 		putWorker(tx, worker)
 		return nil
 	})

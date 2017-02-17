@@ -1,7 +1,11 @@
-api
+# API
 
-Example Task Message
-```
+***Docs are possibly out dated***
+
+This section describes the HTTP/gRPC APIs and related schemas available. These are described in Protobufs and gRPC in the [proto](../proto) and [task-execution-schemas](../task-execution-schemas) directories.
+
+###Example Task Message
+```json
 {
     "name" : "TestMD5",
 	"projectId" : "MyProject",
@@ -37,8 +41,8 @@ Example Task Message
 }
 ```
 
-Example Task Message:
-```
+### Example Task Message:
+```json
 {
   "jobId" : "6E57CA6B-0BC7-44FB-BA2C-0CBFEC629C63",
   "metadata" : { Custom service metadata },
@@ -50,8 +54,8 @@ Example Task Message:
 }
 ```
 
-Example Job Log Message:
-```
+### Example Job Log Message:
+```json
 {
   "cmd" : ["md5sum", "/tmp/test_file"],
   "startTime" : "2016-09-18T23:08:27Z",
@@ -62,29 +66,33 @@ Example Job Log Message:
 }
 ```
 
-Example Task Conversation:
-
-Get meta-data about service
+### Get meta-data about service
 ```
 GET /v1/jobs-service
 ```
 Returns (from reference server)
+```json
 {"storageConfig":{"baseDir":"/var/run/task-execution-server/storage","storageType":"sharedFile"}}
+```
 
 
-Post Job
+### Post Job
 ```
 POST /v1/jobs {JSON body message above}
+```
+
 Return:
+```json
 { "value" : "{job uuid}"}
 ```
 
-Get Job Info
+### Get Job Info
 ```
 GET /v1/jobs/{job uuid}
 ```
+
 Returns Job Body Example:
-```
+```json
 {
    "jobId" : "06b170b4-6ae8-4f11-7fc6-4417f1778b74",
    "logs" : [

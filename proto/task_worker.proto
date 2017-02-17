@@ -6,10 +6,10 @@ package ga4gh_task_ref;
 import "task_execution.proto";
 
 message Resources {
-	// TODO doesn't say anything about size of CPU.
-	//      does that matter these days?
   uint32 cpus = 1;
+  // In GB
   double ram = 2;
+  // In GB
   double disk = 3;
 }
 

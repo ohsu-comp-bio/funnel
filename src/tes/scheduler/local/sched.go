@@ -73,8 +73,6 @@ func runLocalWorker(conf config.Config) {
 	id := sched.GenWorkerID()
 	// TODO hard-coded resources
 	res := &pbr.Resources{
-		Cpus: 4,
-		Ram:  10.0,
 		Disk: 100.0,
 	}
 

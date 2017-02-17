@@ -2,6 +2,8 @@ package worker
 
 import (
 	"context"
+	pscpu "github.com/shirou/gopsutil/cpu"
+	psmem "github.com/shirou/gopsutil/mem"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -21,6 +23,9 @@ func Run(conf config.Worker) error {
 	if err != nil {
 		return err
 	}
+
+	res := resources(conf.Resources)
+	log.Debug("Worker resources", "res", res)
 
 	defer func() {
 		// Tell the scheduler that the worker is gone.
@@ -54,9 +59,8 @@ func Run(conf config.Worker) error {
 		// including new jobs and canceled jobs.
 		case <-ticker.C:
 			req := &pbr.UpdateWorkerRequest{
-				Id: conf.ID,
-				// TODO how does this even build?
-				Resources: conf.Resources,
+				Id:        conf.ID,
+				Resources: res,
 				// TODO
 				Hostname: "unknown",
 				States:   map[string]pbe.State{},
@@ -152,4 +156,33 @@ func (c *schedClient) WorkerGone() {
 		Id: c.conf.ID,
 	})
 	cleanup()
+}
+
+// resources helps determine the amount of resources to report.
+// Resources are determined by inspecting the host, but they
+// can be overridden by config.
+func resources(conf *pbr.Resources) *pbr.Resources {
+	res := &pbr.Resources{}
+	cpuinfo, _ := pscpu.Info()
+	vmeminfo, _ := psmem.VirtualMemory()
+
+	if conf.Cpus != 0 {
+		res.Cpus = conf.Cpus
+	} else {
+		// TODO is cores the best metric? with hyperthreading,
+		//      runtime.NumCPU() and pscpu.Counts() return 8
+		//      on my 4-core mac laptop
+		for _, cpu := range cpuinfo {
+			res.Cpus += uint32(cpu.Cores)
+		}
+	}
+
+	if conf.Ram != 0.0 {
+		res.Ram = conf.Ram
+	} else {
+		res.Ram = float64(vmeminfo.Total) /
+			float64(1024) / float64(1024) / float64(1024)
+	}
+
+	return res
 }

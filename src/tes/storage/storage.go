@@ -43,22 +43,22 @@ type Storage struct {
 // The file is downloaded to the given local "path".
 // "class" is either "File" or "Directory".
 func (storage Storage) Get(ctx context.Context, url string, path string, class string) error {
-	store, err := storage.findBackend(url, path, class)
+	backend, err := storage.findBackend(url, path, class)
 	if err != nil {
 		return err
 	}
-	return store.Get(ctx, url, path, class)
+	return backend.Get(ctx, url, path, class)
 }
 
 // Put uploads a file to a storage system at the given "url".
 // The file is uploaded from the given local "path".
 // "class" is either "File" or "Directory".
 func (storage Storage) Put(ctx context.Context, url string, path string, class string) error {
-	store, err := storage.findBackend(url, path, class)
+	backend, err := storage.findBackend(url, path, class)
 	if err != nil {
 		return err
 	}
-	return store.Put(ctx, url, path, class)
+	return backend.Put(ctx, url, path, class)
 }
 
 // Supports indicates whether the storage supports the given request.
@@ -70,9 +70,9 @@ func (storage Storage) Supports(url string, path string, class string) bool {
 // findBackend tries to find a backend that matches the given url/path/class.
 // This is how a url gets matched to a backend, for example by the url prefix "s3://".
 func (storage Storage) findBackend(url string, path string, class string) (Backend, error) {
-	for _, store := range storage.backends {
-		if store.Supports(url, path, class) {
-			return store, nil
+	for _, backend := range storage.backends {
+		if backend.Supports(url, path, class) {
+			return backend, nil
 		}
 	}
 	return nil, fmt.Errorf("Could not find matching storage system for %s", url)

@@ -31,10 +31,11 @@ type LocalStorage struct {
 // GSStorage describes configuration for the Google Cloud storage backend.
 type GSStorage struct {
 	AccountFile string
+	FromEnv     bool
 }
 
 func (g GSStorage) Valid() bool {
-	return true
+	return g.FromEnv || g.AccountFile != ""
 }
 
 // Valid validates the LocalStorage configuration

@@ -4,6 +4,8 @@ master: ![master-build-status](https://travis-ci.org/ohsu-comp-bio/funnel.svg?br
 Task Execution Schema (TES)
 ===========================
 
+[![Join the chat at https://gitter.im/ohsu-comp-bio/funnel](https://badges.gitter.im/ohsu-comp-bio/funnel.svg)](https://gitter.im/ohsu-comp-bio/funnel?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 The Task Execution Schema proposal can be found at https://github.com/ga4gh/task-execution-schemas
 The Protocol Buffer Based Schema can be found at https://github.com/ga4gh/task-execution-schemas/blob/master/proto/task_execution.proto

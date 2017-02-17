@@ -28,7 +28,6 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 
 		// Update worker metadata
 		worker.LastPing = time.Now().Unix()
-		// TODO allow worker to say if it's dead?
 		worker.State = pbr.WorkerState_Alive
 		worker.Resources = req.Resources
 
@@ -45,6 +44,7 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 				delete(worker.Assigned, jobID)
 				worker.Active[jobID] = true
 				jobIDs = append(jobIDs, jobID)
+
 				// If the job was canceled, add that signal to the response.
 				//
 				// Don't remove canceled jobs from the worker right away. Wait until
@@ -52,6 +52,16 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 				canceled := getJobState(tx, jobID) == pbe.State_Canceled
 				if canceled {
 					resp.Canceled = append(resp.Canceled, jobID)
+				} else {
+					err := transitionJobState(tx, jobID, state)
+					// TODO what's the proper behavior of an error?
+					//      this is just ignoring the error, but it will happen again on the next update.
+					//      need to resolve the conflicting states.
+					//      Additionally, returning an error here will fail the db transaction,
+					//      preventing all updates to this worker for all jobs.
+					if err != nil {
+						return err
+					}
 				}
 
 			// Terminal states. Update state in database.
@@ -62,16 +72,6 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 			default:
 				log.Error("Unknown job state during worker update", "state", state)
 				continue
-			}
-
-			err := transitionJobState(tx, jobID, state)
-			// TODO what's the proper behavior of an error?
-			//      this is just ignoring the error, but it will happen again on the next update.
-			//      need to resolve the conflicting states.
-			//      Additionally, returning an error here will fail the db transaction,
-			//      preventing all updates to this worker for all jobs.
-			if err != nil {
-				return err
 			}
 		}
 
@@ -108,7 +108,6 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 				avail.Ram = 0.0
 			}
 		}
-		log.Debug("Available", "avail", avail, "worker", worker)
 		worker.Available = &avail
 
 		// Save the worker

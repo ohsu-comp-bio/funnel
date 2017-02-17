@@ -1,4 +1,3 @@
-
 import logging
 import os
 import py_tes
@@ -52,6 +51,12 @@ def temp_config(config):
     return configFile
 
 
+def config_seconds(sec):
+    # The funnel config is currently parsed as nanoseconds
+    # this helper makes that manageale
+    return int(sec * 1000000000)
+
+
 class SimpleServerTest(unittest.TestCase):
 
     def setUp(self):
@@ -65,6 +70,7 @@ class SimpleServerTest(unittest.TestCase):
         os.mkdir(self.storage_dir)
 
         # Build server config file (YAML)
+        rate = config_seconds(0.1)
         configFile = temp_config({
             "ServerAddress": "localhost:9090",
             "DBPath": db_path,
@@ -74,26 +80,30 @@ class SimpleServerTest(unittest.TestCase):
                     "AllowedDirs": [self.storage_dir]
                 }
             }],
-            "LogLevel": "info",
+            "LogLevel": "debug",
             "Worker": {
                 "Timeout": -1,
-                "StatusPollRate": 100000000,
-                "LogUpdateRate": 100000000,
-                "NewJobPollRate": 100000000
-            }
+                "StatusPollRate": rate,
+                "LogUpdateRate": rate,
+                "NewJobPollRate": rate,
+                "UpdateRate": rate,
+                "TrackerRate": rate,
+            },
+            "ScheduleRate": rate,
         })
 
         # Start server
         cmd = ["./bin/tes-server", "-config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
-        time.sleep(3)
+        signal.signal(signal.SIGINT, self.cleanup)
+        time.sleep(1)
         self.tes = py_tes.TES("http://localhost:8000")
 
     # We're using this instead of tearDown because python doesn't call tearDown
     # if setUp fails. Since our setUp is complex, that means things don't get
     # properly cleaned up (e.g. processes are orphaned).
-    def cleanup(self):
+    def cleanup(self, *args):
         if self.task_server is not None:
             kill(self.task_server)
 
@@ -222,6 +232,8 @@ class S3ServerTest(unittest.TestCase):
             kill(self.s3_server)
             cmd = ["docker", "kill", "tes_minio_test"]
             logging.info("Running %s" % (" ".join(cmd)))
+
+            popen(cmd).communicate()
 
             cmd = ["docker", "rm", "-fv", "tes_minio_test"]
             logging.info("Running %s" % (" ".join(cmd)))

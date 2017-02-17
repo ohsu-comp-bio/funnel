@@ -78,7 +78,7 @@ func runLocalWorker(conf config.Config) {
 		Disk: 100.0,
 	}
 
-	w := config.WorkerDefaultConfig()
+	w := conf.Worker
 	w.ID = id
 	w.ServerAddress = "localhost:9090"
 	w.Storage = conf.Storage

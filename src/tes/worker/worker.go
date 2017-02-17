@@ -155,8 +155,9 @@ func (c *schedClient) UpdateJobLogs(up *pbr.UpdateJobLogsRequest) error {
 func (c *schedClient) WorkerGone() {
 	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
 	// Errors are ignored because the worker is shutting down anyway
-	c.Client.WorkerGone(ctx, &pbr.WorkerGoneRequest{
-		Id: c.conf.ID,
+	c.Client.SetWorkerState(ctx, &pbr.SetWorkerStateRequest{
+		Id:    c.conf.ID,
+		State: pbr.WorkerState_Gone,
 	})
 	cleanup()
 }

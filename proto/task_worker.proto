@@ -18,6 +18,7 @@ enum WorkerState {
   Alive = 1;
   Dead = 2;
   Gone = 3;
+  Initializing = 4;
 }
 
 message Worker {
@@ -49,6 +50,7 @@ message UpdateWorkerRequest {
   string hostname  = 3;
   // States of all jobs in the worker: job ID -> State
   map<string, ga4gh_task_exec.State> states = 4;
+  WorkerState state = 5;
 }
 
 message UpdateWorkerResponse {
@@ -58,12 +60,13 @@ message UpdateWorkerResponse {
   repeated string canceled = 4;
 }
 
-message WorkerGoneRequest {
+message SetWorkerStateRequest {
   // ID of the worker
   string id = 1;
+  WorkerState state = 2;
 }
 
-message WorkerGoneResponse {}
+message SetWorkerStateResponse {}
 
 message UpdateJobLogsRequest {
   string id = 1;
@@ -97,5 +100,5 @@ service Scheduler {
   rpc UpdateJobLogs(UpdateJobLogsRequest) returns (UpdateJobLogsResponse) {};
   rpc UpdateWorker(UpdateWorkerRequest) returns (UpdateWorkerResponse) {};
   rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {};
-  rpc WorkerGone(WorkerGoneRequest) returns (WorkerGoneResponse) {};
+  rpc SetWorkerState(SetWorkerStateRequest) returns (SetWorkerStateResponse) {};
 }

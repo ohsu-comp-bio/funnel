@@ -22,15 +22,13 @@ const prefix = "condor-"
 
 // NewScheduler returns a new HTCondor Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
-	known := map[string]bool{}
-	s := &scheduler{conf, known}
+	s := &scheduler{conf}
 	go s.track()
 	return s
 }
 
 type scheduler struct {
-	conf  config.Config
-	known map[string]bool
+	conf config.Config
 }
 
 // track helps the scheduler know when a job has been assigned to a condor worker,
@@ -47,22 +45,32 @@ func (s *scheduler) track() {
 	for {
 		<-ticker.C
 
-		// reset the set of known workers so that dead/gone workers are removed.
-		known := s.known
-		s.known = map[string]bool{}
-
+		// TODO allow GetWorkers() to include query for prefix and state
 		resp, err := client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
 		if err != nil {
 			log.Error("Failed GetWorkers request. Recovering.", err)
 			continue
 		}
 		for _, w := range resp.Workers {
-			if strings.HasPrefix(w.Id, prefix) {
-				// Only start a worker if we haven't already seen this worker ID before.
-				if ok := !known[w.Id]; ok {
-					s.startWorker(w.Id)
+
+			if strings.HasPrefix(w.Id, prefix) &&
+				w.State == pbr.WorkerState_Unknown &&
+				len(w.Assigned) > 0 {
+
+				s.startWorker(w.Id)
+
+				_, err := client.SetWorkerState(context.Background(), &pbr.SetWorkerStateRequest{
+					Id:    w.Id,
+					State: pbr.WorkerState_Initializing,
+				})
+
+				if err != nil {
+					// TODO how to handle error? On the next loop, we'll accidentally start
+					//      the worker again, because the state will be Unknown still.
+					//
+					//      keep a local list of failed workers?
+					log.Error("Can't set worker state to initialzing.", err)
 				}
-				s.known[w.Id] = true
 			}
 		}
 	}
@@ -72,6 +80,7 @@ func (s *scheduler) track() {
 func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running condor scheduler")
 
+	// TODO could we call condor_submit --dry-run to test if a job would succeed?
 	w := &pbr.Worker{
 		Id: prefix + sched.GenWorkerID(),
 	}

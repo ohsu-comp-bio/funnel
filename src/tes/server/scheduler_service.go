@@ -174,11 +174,11 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 	return nil
 }
 
-// WorkerGone is an API endpoint that allows workers to let the server know
+// SetWorkerState is an API endpoint that allows workers to let the server know
 // they are shutting down.
-func (taskBolt *TaskBolt) WorkerGone(ctx context.Context, req *pbr.WorkerGoneRequest) (*pbr.WorkerGoneResponse, error) {
+func (taskBolt *TaskBolt) SetWorkerState(ctx context.Context, req *pbr.SetWorkerStateRequest) (*pbr.SetWorkerStateResponse, error) {
 
-	resp := &pbr.WorkerGoneResponse{}
+	resp := &pbr.SetWorkerStateResponse{}
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 		// Get worker
 		worker, werr := getWorker(tx, req.Id)

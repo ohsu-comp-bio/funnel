@@ -12,7 +12,7 @@ Funnel...
 
 ## Prerequisites
 
-- [Go 1.8](https://golang.org/)
+- [Go 1.7](https://golang.org/)
 - Make
 - [Docker](https://docker.io/) (tested with v1.12)
 - [Protocol Buffers](https://github.com/google/protobuf) if making changes to the schema.

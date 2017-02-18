@@ -8,6 +8,7 @@ import (
 	"tes/logger"
 	"tes/scheduler"
 	"tes/scheduler/condor"
+	"tes/scheduler/gce"
 	"tes/scheduler/local"
 	"tes/server"
 )
@@ -52,6 +53,8 @@ func start(conf config.Config) {
 		sched = local.NewScheduler(conf)
 	case "condor":
 		sched = condor.NewScheduler(conf)
+	case "gce":
+		sched = gce.NewScheduler(conf)
 	//case "openstack":
 	//sched = openstack.NewScheduler(conf)
 	default:

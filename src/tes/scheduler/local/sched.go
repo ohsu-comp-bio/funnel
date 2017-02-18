@@ -12,12 +12,6 @@ import (
 var log = logger.New("local")
 
 // TODO Questions:
-
-// - how to re-evaluate the resource pool after a worker is created (autoscale)?
-
-// - if two jobs consume parts of the same autoscale resource, how does res.Consume()
-//   ensure the resource is only started once?
-
 // - how to index resources so that scheduler can easily and efficiently match
 //   a task to a resource. Don't want to loop through 1000 resources for every task
 //   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.

@@ -125,7 +125,6 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 		return nil
 
 	} else if class == Directory {
-		return fmt.Errorf("GS directories not yet supported")
 		err := filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
 			if !f.IsDir() {
 				// TODO

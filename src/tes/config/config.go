@@ -34,6 +34,7 @@ type GSStorage struct {
 	FromEnv     bool
 }
 
+// Valid validates the GSStorage configuration.
 func (g GSStorage) Valid() bool {
 	return g.FromEnv || g.AccountFile != ""
 }
@@ -68,12 +69,23 @@ type OpenstackScheduler struct {
 	Server     os_servers.CreateOpts
 }
 
+// GCEScheduler describes configuration for the Google Cloud scheduler.
+type GCEScheduler struct {
+	AccountFile string
+	Project     string
+	Zone        string
+	Template    string
+	Weights     Weights
+	MaxWorkers  int
+}
+
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
 	Local     LocalScheduler
 	Dumblocal LocalScheduler
 	Condor    LocalScheduler
 	Openstack OpenstackScheduler
+	GCE       GCEScheduler
 }
 
 // Config describes configuration for TES.

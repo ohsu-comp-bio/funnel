@@ -17,7 +17,7 @@ cat <<CONFYML > $HOME/worker.config.yml
 %s
 CONFYML
 
-$HOME/task-execution-server/bin/tes-worker -config $HOME/worker.config.yml
+$HOME/funnel/bin/tes-worker -config $HOME/worker.config.yml
 `
 
 func (s *scheduler) startWorker(workerID string) {

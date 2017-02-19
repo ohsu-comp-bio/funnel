@@ -39,10 +39,10 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	offers := []*sched.Offer{}
 
 	for _, w := range workers {
-    if w.State != pbr.WorkerState_Alive {
-      // Ignore workers that aren't alive
-      continue
-    }
+		if w.State != pbr.WorkerState_Alive {
+			// Ignore workers that aren't alive
+			continue
+		}
 
 		// Filter out workers that don't match the job request
 		// e.g. because they don't have enough resources, ports, etc.

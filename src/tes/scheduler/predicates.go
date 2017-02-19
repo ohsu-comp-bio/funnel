@@ -14,19 +14,19 @@ func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 
 	switch {
 	case w.GetPreemptible() && !req.GetPreemptible():
-    log.Debug("Fail preemptible")
+		log.Debug("Fail preemptible")
 		return false
 	case w.GetAvailable().GetCpus() <= 0:
-    log.Debug("Fail zero cpus")
+		log.Debug("Fail zero cpus")
 		return false
 	case w.GetAvailable().GetRam() <= 0.0:
-    log.Debug("Fail zero ram")
+		log.Debug("Fail zero ram")
 		return false
 	case w.GetAvailable().GetCpus() < req.GetMinimumCpuCores():
-    log.Debug("Fail cpus")
+		log.Debug("Fail cpus")
 		return false
 	case w.GetAvailable().GetRam() < req.GetMinimumRamGb():
-    log.Debug("Fail ram")
+		log.Debug("Fail ram")
 		return false
 		// TODO check volumes
 	}
@@ -45,15 +45,15 @@ func VolumesFit(j *pbe.Job, w *pbr.Worker) bool {
 		tot += v.GetSizeGb()
 	}
 
-  if tot == 0.0 {
-    return true
-  }
+	if tot == 0.0 {
+		return true
+	}
 
-  f := tot < w.GetAvailable().GetDisk()
-  if !f {
-    log.Debug("Failed volumes", "tot", tot, "avail", w.GetAvailable().GetDisk())
-  }
-  return f
+	f := tot < w.GetAvailable().GetDisk()
+	if !f {
+		log.Debug("Failed volumes", "tot", tot, "avail", w.GetAvailable().GetDisk())
+	}
+	return f
 }
 
 // PortsFit determines whether a job's ports fit a worker
@@ -87,17 +87,17 @@ func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
 		return true
 	}
 
-  if len(j.Task.GetResources().Zones) == 0 {
-    // Request doesn't specify any zones, so don't bother checking.
-    return true
-  }
+	if len(j.Task.GetResources().Zones) == 0 {
+		// Request doesn't specify any zones, so don't bother checking.
+		return true
+	}
 
 	for _, z := range j.Task.GetResources().Zones {
 		if z == w.Zone {
 			return true
 		}
 	}
-  log.Debug("Failed zones")
+	log.Debug("Failed zones")
 	return false
 }
 

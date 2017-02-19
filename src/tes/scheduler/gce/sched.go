@@ -32,7 +32,7 @@ var log = logger.New("gce")
 const prefix = "gce-"
 
 func genWorkerID() string {
-  return prefix + sched.GenWorkerID()
+	return prefix + sched.GenWorkerID()
 }
 
 // NewScheduler returns a new Google Cloud Engine Scheduler instance.
@@ -68,7 +68,7 @@ func (s *scheduler) track() {
 
 	for {
 		<-ticker.C
-    log.Debug("TICK")
+		log.Debug("TICK")
 
 		workers := []*pbr.Worker{}
 
@@ -80,17 +80,17 @@ func (s *scheduler) track() {
 		}
 
 		for _, w := range resp.Workers {
-      log.Debug("Checking worker", "id", w.Id, "state", w.State)
+			log.Debug("Checking worker", "id", w.Id, "state", w.State)
 
-      if w.State == pbr.WorkerState_Dead || w.State == pbr.WorkerState_Gone {
-        continue
-      }
+			if w.State == pbr.WorkerState_Dead || w.State == pbr.WorkerState_Gone {
+				continue
+			}
 
 			if strings.HasPrefix(w.Id, prefix) &&
 				w.State == pbr.WorkerState_Unknown &&
 				len(w.Assigned) > 0 {
 
-        log.Debug("Starting worker", "id", w.Id)
+				log.Debug("Starting worker", "id", w.Id)
 				s.startWorker(w.Id)
 
 				_, err := client.SetWorkerState(context.Background(), &pbr.SetWorkerStateRequest{
@@ -126,7 +126,7 @@ func (s *scheduler) track() {
 			})
 		}
 
-    // log.Debug("Updated workers in track", workers)
+		// log.Debug("Updated workers in track", workers)
 		s.mtx.Lock()
 		s.workers = workers
 		s.mtx.Unlock()
@@ -143,15 +143,15 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	copy(workers, s.workers)
 	s.mtx.Unlock()
 
-  log.Debug("GCE sched workers", len(workers))
+	log.Debug("GCE sched workers", len(workers))
 	offers := []*sched.Offer{}
 
 	for _, w := range workers {
 		// Filter out workers that don't match the job request
 		// e.g. because they don't have enough resources, ports, etc.
 		if !sched.Match(w, j, sched.DefaultPredicates) {
-      // TODO allow easily debugging why a worker doesn't fit
-      log.Debug("Worker doesn't fit")
+			// TODO allow easily debugging why a worker doesn't fit
+			log.Debug("Worker doesn't fit")
 			continue
 		}
 

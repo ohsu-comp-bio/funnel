@@ -31,6 +31,10 @@ var log = logger.New("gce")
 
 const prefix = "gce-"
 
+func genWorkerID() string {
+  return prefix + sched.GenWorkerID()
+}
+
 // NewScheduler returns a new Google Cloud Engine Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
 	workers := []*pbr.Worker{}
@@ -64,6 +68,7 @@ func (s *scheduler) track() {
 
 	for {
 		<-ticker.C
+    log.Debug("TICK")
 
 		workers := []*pbr.Worker{}
 
@@ -75,20 +80,23 @@ func (s *scheduler) track() {
 		}
 
 		for _, w := range resp.Workers {
+      log.Debug("Checking worker", "id", w.Id, "state", w.State)
+
+      if w.State == pbr.WorkerState_Dead || w.State == pbr.WorkerState_Gone {
+        continue
+      }
 
 			if strings.HasPrefix(w.Id, prefix) &&
 				w.State == pbr.WorkerState_Unknown &&
 				len(w.Assigned) > 0 {
 
+        log.Debug("Starting worker", "id", w.Id)
 				s.startWorker(w.Id)
 
 				_, err := client.SetWorkerState(context.Background(), &pbr.SetWorkerStateRequest{
 					Id:    w.Id,
 					State: pbr.WorkerState_Initializing,
 				})
-				w.State = pbr.WorkerState_Initializing
-
-				workers = append(workers, w)
 
 				if err != nil {
 					// TODO how to handle error? On the next loop, we'll accidentally start
@@ -97,6 +105,9 @@ func (s *scheduler) track() {
 					//      keep a local list of failed workers?
 					log.Error("Can't set worker state to initialzing.", err)
 				}
+
+				w.State = pbr.WorkerState_Initializing
+				workers = append(workers, w)
 			}
 		}
 
@@ -108,13 +119,14 @@ func (s *scheduler) track() {
 				Ram:  8.0,
 			}
 			workers = append(workers, &pbr.Worker{
-				Id:        sched.GenWorkerID(),
+				Id:        genWorkerID(),
 				Resources: res,
 				Available: res,
 				Zone:      s.conf.Schedulers.GCE.Zone,
 			})
 		}
 
+    // log.Debug("Updated workers in track", workers)
 		s.mtx.Lock()
 		s.workers = workers
 		s.mtx.Unlock()
@@ -126,17 +138,20 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running gce scheduler")
 	weights := s.conf.Schedulers.GCE.Weights
 
-	workers := []*pbr.Worker{}
 	s.mtx.Lock()
+	workers := make([]*pbr.Worker, len(s.workers))
 	copy(workers, s.workers)
 	s.mtx.Unlock()
 
+  log.Debug("GCE sched workers", len(workers))
 	offers := []*sched.Offer{}
 
 	for _, w := range workers {
 		// Filter out workers that don't match the job request
 		// e.g. because they don't have enough resources, ports, etc.
 		if !sched.Match(w, j, sched.DefaultPredicates) {
+      // TODO allow easily debugging why a worker doesn't fit
+      log.Debug("Worker doesn't fit")
 			continue
 		}
 

@@ -10,14 +10,10 @@ import (
 	"tes/config"
 )
 
-const startupScriptTpl = `
+const startupScript = `
 #!/bin/bash
 
-cat <<CONFYML > $HOME/worker.config.yml
-%s
-CONFYML
-
-$HOME/funnel/bin/tes-worker -config $HOME/worker.config.yml
+start-funnel
 `
 
 func (s *scheduler) startWorker(workerID string) {
@@ -50,6 +46,10 @@ func (s *scheduler) startWorker(workerID string) {
 				Key:   "tes-server-address",
 				Value: &s.conf.ServerAddress,
 			},
+			&compute.MetadataItems{
+				Key:   "startup-script",
+				Value: startupScript,
+			},
 		),
 	}
 
@@ -57,31 +57,8 @@ func (s *scheduler) startWorker(workerID string) {
 		disk.InitializeParams.DiskType = localize(zone, "diskTypes", disk.InitializeParams.DiskType)
 	}
 
-	/*
-		    w := s.conf.Worker
-		    w.ID = workerID
-		    w.Timeout = 0
-		    w.Storage = s.conf.Storage
-
-				workerConf := worker.Config{
-					ID:            workerID,
-					ServerAddress: s.conf.ServerAddress,
-					Timeout:       -1,
-					NumWorkers:    1,
-					WorkDir:       "",
-				}
-
-				// TODO document that these working dirs need manual cleanup
-				//workdir := path.Join(s.conf.WorkDir, "gcp-scheduler", workerID)
-				workdir, _ = filepath.Abs(workdir)
-				os.MkdirAll(workdir, 0755)
-				confPath := path.Join(workdir, "worker.conf.yaml")
-				workerConf.ToYamlFile(confPath)
-				startupScript := fmt.Sprintf(startupScriptTpl, string(workerConf.ToYaml()))
-	*/
-
 	instance := compute.Instance{
-		Name:              "tes-worker-" + workerID,
+		Name:              workerID,
 		CanIpForward:      props.CanIpForward,
 		Description:       props.Description,
 		Disks:             props.Disks,

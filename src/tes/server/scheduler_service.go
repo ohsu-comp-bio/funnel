@@ -206,9 +206,7 @@ func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersReq
 			worker := &pbr.Worker{}
 			proto.Unmarshal(v, worker)
 			// TODO allow request to select which states it wants
-			if worker.State == pbr.WorkerState_Alive {
-				resp.Workers = append(resp.Workers, worker)
-			}
+		  resp.Workers = append(resp.Workers, worker)
 		}
 		return nil
 	})
@@ -241,6 +239,7 @@ func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
 			return werr
 		}
 		worker.Assigned[id] = true
+    log.Debug("Assigning", "id", id, "worker", workerID)
 		putWorker(tx, worker)
 
 		// TODO do we want an "Assigned" state?

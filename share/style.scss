@@ -73,6 +73,7 @@ main {
 
 .job-list-table {
   table-layout: fixed;
+  display: block;
   
   td { 
     &:nth-child(1) {

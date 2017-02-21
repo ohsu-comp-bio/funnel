@@ -16,6 +16,7 @@ Funnel...
 - Make
 - [Docker](https://docker.io/) (tested with v1.12)
 - [Protocol Buffers](https://github.com/google/protobuf) if making changes to the schema.
+- [NodeJS](https://nodejs.org) and [npm](https://www.npmjs.com/) for web dashboard development.
 
 ## Submodules
 
@@ -26,15 +27,15 @@ Funnel has git submodules. Make sure to run `git submodule update --init --recur
 Most commands run through `make`. Binaries are built to `./bin`.
 Unfortunately this project isn't "go get-able" yet.
 
-`make` builds the code
-`make test` runs the test suite
-`make proto_build` regenerates code from protobuf schemas (requires protoc)
-`make tidy` reformats code
-`make lint` checks code style and other 
-`make add_deps` uses [vendetta](github.com/dpw/vendetta) to vendor Go dependencies
-`make serve-doc` runs a godoc server on `localhost:6060`
+- `make` builds the code
+- `make test` runs the test suite
+- `make proto_build` regenerates code from protobuf schemas (requires protoc)
+- `make tidy` reformats code
+- `make lint` checks code style and other 
+- `make add_deps` uses [vendetta](github.com/dpw/vendetta) to vendor Go dependencies
+- `make serve-doc` runs a godoc server on `localhost:6060`
 
-There are probably other commands. Check out the Makefile.
+There are probably other commands. Check out the [Makefile](../Makefile).
 
 ## Source
 

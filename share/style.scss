@@ -75,7 +75,7 @@ main {
   table-layout: fixed;
   display: block;
   
-  td { 
+  td, th { 
     &:nth-child(1) {
       width: 10%;
     }

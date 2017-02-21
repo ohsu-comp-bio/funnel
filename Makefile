@@ -57,5 +57,5 @@ test:
 web:
 	cd share && \
 	npm install && \
-	sass style.scss style.css && \
+	./node_modules/node-sass/bin/node-sass style.scss style.css && \
 	cd ..

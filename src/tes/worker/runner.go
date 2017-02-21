@@ -12,22 +12,21 @@ import (
 	"tes/storage"
 )
 
-func newJobRunner(conf config.Worker, a *pbr.Assignment, up updateChan) *jobRunner {
+func newJobRunner(conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) *jobRunner {
 	return &jobRunner{
-		Assignment: a,
-		mapper:     NewJobFileMapper(a.Job.JobID, conf.WorkDir),
-		store:      &storage.Storage{},
-		conf:       conf,
-		updates:    up,
-		log:        logger.New("runner", "workerID", conf.ID, "jobID", a.Job.JobID),
+		wrapper: j,
+		mapper:  NewJobFileMapper(j.Job.JobID, conf.WorkDir),
+		store:   &storage.Storage{},
+		conf:    conf,
+		updates: up,
+		log:     logger.New("runner", "workerID", conf.ID, "jobID", j.Job.JobID),
 	}
 }
 
 type jobRunner struct {
-	Job        *pbe.Job
-	Assignment *pbr.Assignment
+	wrapper    *pbr.JobWrapper
 	conf       config.Worker
-	updates    updateChan
+	updates    logUpdateChan
 	log        logger.Logger
 	mapper     *FileMapper
 	store      *storage.Storage
@@ -41,10 +40,10 @@ type jobRunner struct {
 
 // TODO document behavior of slow consumer of updates
 func (r *jobRunner) Run() {
-	r.log.Debug("JobRunner.Run", "jobID", r.Assignment.Job.JobID)
+	r.log.Debug("JobRunner.Run")
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
-	job := r.Assignment.Job
+	job := r.wrapper.Job
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
 	// The steps are:
@@ -153,7 +152,7 @@ func (r *jobRunner) prepareDir() error {
 // Prepare file mapper, which maps task file URLs to host filesystem paths
 func (r *jobRunner) prepareMapper() error {
 	// Map task paths to working dir paths
-	return r.mapper.MapTask(r.Assignment.Job.Task)
+	return r.mapper.MapTask(r.wrapper.Job.Task)
 }
 
 // Grab the IP address of this host. Used to send job metadata updates.
@@ -254,6 +253,9 @@ func (r *jobRunner) Complete() bool {
 }
 
 func (r *jobRunner) State() pbe.State {
+	if r == nil {
+		return pbe.State_Unknown
+	}
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	switch {

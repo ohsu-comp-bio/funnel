@@ -17,141 +17,55 @@ package gce
 
 import (
 	"context"
-	"strings"
-	"sync"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
 	pbr "tes/server/proto"
-	"time"
 )
 
 var log = logger.New("gce")
 
-const prefix = "gce-"
-
-func genWorkerID() string {
-	return prefix + sched.GenWorkerID()
-}
-
 // NewScheduler returns a new Google Cloud Engine Scheduler instance.
-func NewScheduler(conf config.Config) sched.Scheduler {
-	workers := []*pbr.Worker{}
-	s := &scheduler{
-		conf:    conf,
-		workers: workers,
+func NewScheduler(conf config.Config) (sched.Scheduler, error) {
+	client, err := sched.NewClient(conf.Worker)
+	if err != nil {
+		log.Error("Can't connect scheduler client", err)
+		return nil, err
 	}
-	go s.track()
-	return s
+
+	s := &scheduler{
+		conf:   conf,
+		client: client,
+		// Available worker types are described using GCE instance templates.
+		templates: []*pbr.Worker{},
+	}
+
+	// Factory watches for new workers in the Funnel database
+	// and provisions new GCE VMs as necessary.
+	//f, _ := newFactory(conf)
+	//go f.Run()
+
+	return s, nil
 }
 
 type scheduler struct {
-	conf    config.Config
-	workers []*pbr.Worker
-	mtx     sync.Mutex
-}
-
-// track helps the scheduler know when a job has been assigned to a gce worker,
-// so that the worker can be provisioned.
-//
-// This polls the server, looking for jobs which are assigned to a worker with
-// a "gce-worker-" ID prefix. When such a worker is found, if it has an
-// assigned (inactive) job, a worker is provisioned.
-//
-// TODO this code is completely duplicated with the condor scheduler backend
-func (s *scheduler) track() {
-	client, _ := sched.NewClient(s.conf.Worker)
-	defer client.Close()
-
-	ticker := time.NewTicker(s.conf.Worker.TrackerRate)
-
-	for {
-		<-ticker.C
-		log.Debug("TICK")
-
-		workers := []*pbr.Worker{}
-
-		// TODO allow GetWorkers() to include query for prefix and state
-		resp, err := client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
-		if err != nil {
-			log.Error("Failed GetWorkers request. Recovering.", err)
-			continue
-		}
-
-		for _, w := range resp.Workers {
-			log.Debug("Checking worker", "id", w.Id, "state", w.State)
-
-			if w.State == pbr.WorkerState_Dead || w.State == pbr.WorkerState_Gone {
-				continue
-			}
-
-			if strings.HasPrefix(w.Id, prefix) &&
-				w.State == pbr.WorkerState_Unknown &&
-				len(w.Assigned) > 0 {
-
-				log.Debug("Starting worker", "id", w.Id)
-				s.startWorker(w.Id)
-
-				_, err := client.SetWorkerState(context.Background(), &pbr.SetWorkerStateRequest{
-					Id:    w.Id,
-					State: pbr.WorkerState_Initializing,
-				})
-
-				if err != nil {
-					// TODO how to handle error? On the next loop, we'll accidentally start
-					//      the worker again, because the state will be Unknown still.
-					//
-					//      keep a local list of failed workers?
-					log.Error("Can't set worker state to initialzing.", err)
-				}
-
-				w.State = pbr.WorkerState_Initializing
-				workers = append(workers, w)
-			}
-		}
-
-		// Fill in available but un-provisioned workers
-		for i := len(workers); i < s.conf.Schedulers.GCE.MaxWorkers; i++ {
-			res := &pbr.Resources{
-				// TODO pull from template
-				Cpus: 8,
-				Ram:  8.0,
-			}
-			workers = append(workers, &pbr.Worker{
-				Id:        genWorkerID(),
-				Resources: res,
-				Available: res,
-				Zone:      s.conf.Schedulers.GCE.Zone,
-			})
-		}
-
-		// log.Debug("Updated workers in track", workers)
-		s.mtx.Lock()
-		s.workers = workers
-		s.mtx.Unlock()
-	}
+	conf      config.Config
+	client    *sched.Client
+	templates []*pbr.Worker
 }
 
 // Schedule schedules a job on a Google Cloud VM worker instance.
 func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running gce scheduler")
+
 	weights := s.conf.Schedulers.GCE.Weights
-
-	s.mtx.Lock()
-	workers := make([]*pbr.Worker, len(s.workers))
-	copy(workers, s.workers)
-	s.mtx.Unlock()
-
-	log.Debug("GCE sched workers", len(workers))
 	offers := []*sched.Offer{}
 
-	for _, w := range workers {
-		// Filter out workers that don't match the job request
-		// e.g. because they don't have enough resources, ports, etc.
+	for _, w := range s.getWorkers() {
+		// Filter out workers that don't match the job request.
+		// Checks CPU, RAM, disk space, ports, etc.
 		if !sched.Match(w, j, sched.DefaultPredicates) {
-			// TODO allow easily debugging why a worker doesn't fit
-			log.Debug("Worker doesn't fit")
 			continue
 		}
 
@@ -169,4 +83,89 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 
 	sched.SortByAverageScore(offers)
 	return offers[0]
+}
+
+// getWorkers returns a list of all GCE workers which are not dead/gone.
+// Also appends extra entries for unprovisioned workers.
+func (s *scheduler) getWorkers() []*pbr.Worker {
+
+	req := &pbr.GetWorkersRequest{}
+	resp, err := s.client.GetWorkers(context.Background(), req)
+	workers := []*pbr.Worker{}
+
+	if err != nil {
+		log.Error("Failed GetWorkers request. Recovering.", err)
+		return workers
+	}
+
+	// Find all workers with GCE prefix in ID, that are not Dead/Gone.
+	for _, w := range resp.Workers {
+		if w.Gce != nil && w.State != pbr.WorkerState_Dead && w.State != pbr.WorkerState_Gone {
+			workers = append(workers, w)
+		}
+	}
+
+	// Include unprovisioned workers.
+	for _, tpl := range s.templates {
+		workers = append(workers, &pbr.Worker{
+			Id:        sched.GenWorkerID(),
+			Resources: tpl.Resources,
+			Available: tpl.Resources,
+			// TODO can I pull zone from the template?
+			Zone: s.conf.Schedulers.GCE.Zone,
+			Gce: &pbr.GCEWorkerInfo{
+				Template: tpl.Id,
+			},
+		})
+	}
+
+	return workers
+}
+
+// getTemplates queries the GCE API to get details about GCE instance templates.
+// If the API client fails to connect, this returns an empty list.
+func getTemplates(conf config.Config) []*pbr.Worker {
+	templates := []*pbr.Worker{}
+	project := conf.Schedulers.GCE.Project
+
+	// TODO mockable for testing
+	svc, serr := service(context.Background(), conf)
+	if serr != nil {
+		return templates
+	}
+
+	machineTypes := map[string]pbr.Resources{}
+
+	// Get the machine types available to the project + zone
+	resp, err := svc.MachineTypes.List(project, conf.Schedulers.GCE.Zone).Do()
+	if err != nil {
+		log.Error("Couldn't get GCE machine list.")
+		// TODO return error?
+		return templates
+	}
+
+	for _, m := range resp.Items {
+		machineTypes[m.Name] = pbr.Resources{
+			Cpus: uint32(m.GuestCpus),
+			Ram:  float64(m.MemoryMb) / float64(1024),
+		}
+	}
+
+	for _, t := range conf.Schedulers.GCE.Templates {
+		// Get the instance template from the GCE API
+		tpl, err := svc.InstanceTemplates.Get(project, t).Do()
+		if err != nil {
+			log.Error("Couldn't get GCE template. Skipping.", "error", err, "template", t)
+			continue
+		}
+		// Map the machine type ID string to a pbr.Resources struct
+		res := machineTypes[tpl.Properties.MachineType]
+		// TODO is there always at least one disk? Is the first the best choice?
+		//      how to know which to pick if there are multiple?
+		res.Disk = float64(tpl.Properties.Disks[0].InitializeParams.DiskSizeGb)
+		templates = append(templates, &pbr.Worker{
+			Resources: &res,
+		})
+	}
+	return templates
 }

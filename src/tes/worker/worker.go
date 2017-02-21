@@ -2,187 +2,190 @@ package worker
 
 import (
 	"context"
-	proto "github.com/golang/protobuf/proto"
-	pscpu "github.com/shirou/gopsutil/cpu"
-	psmem "github.com/shirou/gopsutil/mem"
+	"errors"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
-	"tes/scheduler"
 	pbr "tes/server/proto"
 	"time"
 )
 
-type updateChan chan *pbr.UpdateJobLogsRequest
+type logUpdateChan chan *pbr.UpdateJobLogsRequest
 
-// Run runs a worker with the given config. This is responsible for communication
-// with the server and starting job runners
-func Run(conf config.Worker) error {
-	log := logger.New("worker", "workerID", conf.ID)
-	log.Info("Running worker")
-	defer log.Info("Shutting down")
-
-	sched, err := newSchedClient(conf)
-	if err != nil {
-		return err
-	}
-
-	res := resources(conf.Resources)
-	log.Debug("Worker resources", "res", res)
-
-	defer func() {
-		// Tell the scheduler that the worker is gone.
-		sched.WorkerGone()
-	}()
-	defer sched.Close()
-
-	// Tracks active job runners
-	runners := map[string]*jobRunner{}
-	// Allows job/step runners to send log updates
-	updates := make(updateChan)
-
-	// Ticker controls how often the worker make an UpdateWorker() RPC
-	ticker := time.NewTicker(conf.UpdateRate)
-	defer ticker.Stop()
-
-	for {
-		select {
-		// "updates" contains job log, e.g. stdout/err updates.
-		case up := <-updates:
-			// UpdateJobLogs() is more lightweight than UpdateWorker(),
-			// which is why it happens separately and at a different rate.
-			err := sched.UpdateJobLogs(up)
-			if err != nil {
-				// TODO if the request failed, the job update is lost and the logs
-				//      are corrupted. Cache logs to prevent this?
-				log.Error("Job log update failed", err)
-			}
-
-		// Ping the server every tick and receive updates,
-		// including new jobs and canceled jobs.
-		case <-ticker.C:
-			req := &pbr.UpdateWorkerRequest{
-				Id:        conf.ID,
-				Resources: res,
-				// TODO
-				Hostname: "unknown",
-				States:   map[string]pbe.State{},
-			}
-			complete := []string{}
-
-			for id, runner := range runners {
-				state := runner.State()
-				switch state {
-				case pbe.State_Canceled, pbe.State_Error, pbe.State_Complete:
-					req.States[id] = state
-					complete = append(complete, id)
-
-				case pbe.State_Running, pbe.State_Initializing:
-					req.States[id] = state
-				default:
-					log.Error("Unexpected job runner state. Defaulting to Initialzing",
-						"state", state)
-					req.States[id] = pbe.State_Initializing
-				}
-			}
-
-			resp, err := sched.UpdateWorker(req)
-			if err != nil {
-				log.Error("Couldn't get worker update. Recovering.", err)
-				break
-			}
-
-			// Clean up tracked job runners from jobs that are complete
-			for _, id := range complete {
-				delete(runners, id)
-			}
-
-			// If the server sent "cancel" signals for jobs, call runner.Cancel()
-			for _, id := range resp.Canceled {
-				// Protect against network communication quirks and failures,
-				// ensure the job exists.
-				if r := runners[id]; r != nil {
-					r.Cancel()
-				}
-			}
-
-			// Start new job runners for any assigned jobs.
-			for _, a := range resp.GetAssigned() {
-				log.Debug("Worker received assignment", "assignment", a)
-				// Protect against network communication quirks and failures,
-				// ensure the job only gets started once.
-				id := a.Job.JobID
-				if runners[id] == nil {
-					// Start the job runner
-					r := newJobRunner(conf, a, updates)
-					runners[id] = r
-					go r.Run()
-				}
-			}
-		}
-	}
+type Worker interface {
+	Start()
 }
 
-// Defines some helpers for RPC calls in the code above
-type schedClient struct {
-	*scheduler.Client
+type worker struct {
 	conf config.Worker
+	// Channel for job updates from job runners: stdout/err, ports, etc.
+	logUpdates logUpdateChan
+	sched      *schedClient
+	log        logger.Logger
+	resources  *pbr.Resources
 }
 
-func newSchedClient(conf config.Worker) (*schedClient, error) {
-	sched, err := scheduler.NewClient(conf)
+func NewWorker(conf config.Worker) (Worker, error) {
+	sched, err := newSchedClient(conf)
 	if err != nil {
 		return nil, err
 	}
-	return &schedClient{sched, conf}, nil
+
+	log := logger.New("worker", "workerID", conf.ID)
+	res := detectResources(conf.Resources)
+	logUpdates := make(logUpdateChan)
+	return &worker{conf, logUpdates, sched, log, res}, nil
 }
 
-func (c *schedClient) UpdateWorker(req *pbr.UpdateWorkerRequest) (*pbr.UpdateWorkerResponse, error) {
-	// TODO is it possible to get a stale response from the network in gRPC?
-	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
-	resp, err := c.Client.UpdateWorker(ctx, req)
-	cleanup()
-	return resp, err
+// Run runs a worker with the given config. This is responsible for communication
+// with the server and starting job runners
+func (w *worker) Start() {
+	w.log.Info("Starting worker")
+	// TODO need a way to shut the worker down.
+	go w.watchLogs()
+	go w.watchJobs()
 }
 
-func (c *schedClient) UpdateJobLogs(up *pbr.UpdateJobLogsRequest) error {
-	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
-	_, err := c.Client.UpdateJobLogs(ctx, up)
-	cleanup()
-	return err
-}
+// TODO need a way to shut the worker down.
+// TODO Close isn't correct. Wouldn't actually stop internal goroutines.
+//func (w *worker) Close() {
+// Tell the scheduler that the worker is gone.
+//w.sched.WorkerGone()
+//w.sched.Close()
+//}
 
-func (c *schedClient) WorkerGone() {
-	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
-	// Errors are ignored because the worker is shutting down anyway
-	c.Client.SetWorkerState(ctx, &pbr.SetWorkerStateRequest{
-		Id:    c.conf.ID,
-		State: pbr.WorkerState_Gone,
-	})
-	cleanup()
-}
-
-// resources helps determine the amount of resources to report.
-// Resources are determined by inspecting the host, but they
-// can be overridden by config.
-func resources(conf *pbr.Resources) *pbr.Resources {
-	res := proto.Clone(conf).(*pbr.Resources)
-	cpuinfo, _ := pscpu.Info()
-	vmeminfo, _ := psmem.VirtualMemory()
-
-	if conf.Cpus == 0 {
-		// TODO is cores the best metric? with hyperthreading,
-		//      runtime.NumCPU() and pscpu.Counts() return 8
-		//      on my 4-core mac laptop
-		for _, cpu := range cpuinfo {
-			res.Cpus += uint32(cpu.Cores)
+func (w *worker) watchLogs() {
+	for {
+		up := <-w.logUpdates
+		// UpdateJobLogs() is more lightweight than UpdateWorker(),
+		// which is why it happens separately and at a different rate.
+		err := w.sched.UpdateJobLogs(up)
+		if err != nil {
+			// TODO if the request failed, the job update is lost and the logs
+			//      are corrupted. Cache logs to prevent this?
+			w.log.Error("Job log update failed", err)
 		}
 	}
+}
 
-	if conf.Ram == 0.0 {
-		res.Ram = float64(vmeminfo.Total) /
-			float64(1024) / float64(1024) / float64(1024)
+func (w *worker) watchJobs() {
+	// Tracks active job runners: job ID -> jobRunner instance
+	runners := map[string]*jobRunner{}
+
+	ticker := time.NewTicker(w.conf.UpdateRate)
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C
+		r, _ := w.sched.GetWorker(context.Background(), &pbr.GetWorkerRequest{Id: w.conf.ID})
+
+		// Reconcile server state with worker state.
+		rerr := w.reconcile(runners, r.Jobs)
+		if rerr != nil {
+			// TODO what's the best behavior here?
+			log.Error("Couldn't reconcile worker state.", rerr)
+			continue
+		}
+
+		// Worker data has been updated. Send back to server for database update.
+		r.LastPing = time.Now().Unix()
+		r.Resources = w.resources
+		r.State = pbr.WorkerState_Alive
+		_, err := w.sched.UpdateWorker(r)
+		if err != nil {
+			log.Error("Couldn't save worker update. Recovering.", err)
+		}
+	}
+}
+
+// reconcile merges the server state with the worker state:
+// - identifies new jobs and starts new runners for them
+// - identifies canceled jobs and cancels existing runners
+// - updates pbr.Job structs with current job state (running, complete, error, etc)
+func (w *worker) reconcile(runners map[string]*jobRunner, jobs map[string]*pbr.JobWrapper) error {
+	var (
+		Unknown  = pbe.State_Unknown
+		Canceled = pbe.State_Canceled
+	)
+
+	// Combine job IDs from response with job IDs from runners so we can reconcile
+	// both sets below.
+	jobIDs := []string{}
+	for jobID := range runners {
+		jobIDs = append(jobIDs, jobID)
+	}
+	for jobID := range jobs {
+		jobIDs = append(jobIDs, jobID)
 	}
 
-	return res
+	for _, jobID := range jobIDs {
+		wrapper := jobs[jobID]
+		job := wrapper.Job
+		runner := runners[jobID]
+		jobSt := job.GetState()
+		runSt := runner.State()
+
+		switch {
+		case jobSt == runSt:
+			// States match, do nothing.
+
+		case isActive(jobSt) && runSt == Unknown:
+			// Job needs to be started.
+			r := newJobRunner(w.conf, wrapper, w.logUpdates)
+			runners[jobID] = r
+			go r.Run()
+
+		case isActive(jobSt) && runSt != Unknown:
+			// Job is running, update state.
+			job.State = runSt
+			if isComplete(runSt) {
+				delete(runners, jobID)
+			}
+
+		case jobSt == Canceled:
+			// Job is canceled.
+			// runner.Cancel() is idempotent, so blindly cancel and delete.
+			runner.Cancel()
+			delete(runners, jobID)
+
+		case jobSt == Unknown && runSt != Unknown:
+			// Edge case. There's a runner for a non-existant job. Delete it.
+			// TODO is it better to leave it? Continue in absence of explicit command principle?
+			runner.Cancel()
+			delete(runners, jobID)
+		case isComplete(jobSt) && isActive(runSt):
+			// Edge case. The job is complete but the runner is still running.
+			// This shouldn't happen but it's better to check for it anyway.
+			runner.Cancel()
+			delete(runners, jobID)
+		case isActive(jobSt) && runSt == Canceled:
+			// Edge case. Server says running but runner says canceled.
+			// Not sure how this would happen.
+			fallthrough
+		case isComplete(jobSt) && runSt == Unknown:
+			// Edge case. Job is complete and there's no runner. Do nothing.
+			fallthrough
+		case isComplete(jobSt) && runSt == Canceled:
+			// Edge case. Job is complete and the runner is canceled. Do nothing.
+			// This shouldn't happen but it's better to check for it anyway.
+			//
+			// Log so that these unexpected cases can be explored.
+			log.Error("Edge case during worker reconciliation. Recovering.",
+				"job", job, "runner", runner)
+
+		default:
+			log.Error("Unhandled case during worker reconciliation.",
+				"job", job, "runner", runner)
+			return errors.New("Unhandled case during worker reconciliation")
+		}
+	}
+	return nil
+}
+
+func isActive(s pbe.State) bool {
+	return s == pbe.State_Queued || s == pbe.State_Initializing || s == pbe.State_Running
+}
+
+func isComplete(s pbe.State) bool {
+	return s == pbe.State_Complete || s == pbe.State_Error || s == pbe.State_SystemError
 }

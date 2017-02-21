@@ -1,7 +1,9 @@
 package scheduler
 
 import (
+	"context"
 	uuid "github.com/nu7hatch/gouuid"
+	"tes/config"
 	pbe "tes/ga4gh"
 	server "tes/server"
 	pbr "tes/server/proto"
@@ -25,36 +27,36 @@ type Scheduler interface {
 // The Scores describe how well the job fits this worker,
 // which could be used by other a scheduler to pick the best offer.
 type Offer struct {
-	JobID    string
-	WorkerID string
-	Scores   Scores
+	JobID  string
+	Worker *pbr.Worker
+	Scores Scores
 }
 
 // NewOffer returns a new Offer instance.
 func NewOffer(w *pbr.Worker, j *pbe.Job, s Scores) *Offer {
 	return &Offer{
-		JobID:    j.JobID,
-		WorkerID: w.Id,
-		Scores:   s,
+		JobID:  j.JobID,
+		Worker: w,
+		Scores: s,
 	}
 }
 
-// Start starts a scheduling loop, pulling 10 jobs from the database,
-// and sending those to the given scheduler. This happens every 5 seconds.
-func Start(db *server.TaskBolt, sched Scheduler, pollRate time.Duration) {
-	tickChan := time.NewTicker(pollRate).C
+// Start starts a scheduling loop, pulling conf.ScheduleChunk jobs from the database,
+// and sending those to the given scheduler.
+func Start(db *server.TaskBolt, sched Scheduler, conf config.Config) {
+	tickChan := time.NewTicker(conf.ScheduleRate).C
 
 	for {
 		<-tickChan
 		db.CheckWorkers()
-		for _, job := range db.ReadQueue(10) {
+		for _, job := range db.ReadQueue(conf.ScheduleChunk) {
 			offer := sched.Schedule(job)
 			if offer != nil {
 				log.Debug("Assigning job to worker",
 					"jobID", job.JobID,
-					"workerID", offer.WorkerID,
+					"workerID", offer.Worker.Id,
 				)
-				db.AssignJob(job.JobID, offer.WorkerID)
+				db.UpdateWorker(context.Background(), offer.Worker)
 			} else {
 				log.Info("No worker could be scheduled for job", "jobID", job.JobID)
 			}

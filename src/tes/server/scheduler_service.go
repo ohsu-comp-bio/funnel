@@ -17,9 +17,7 @@ import (
 // UpdateWorker is an RPC endpoint that is used by workers to send heartbeats
 // and status updates, such as completed jobs. The server responds with updated
 // information for the worker, such as canceled jobs.
-func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorkerRequest) (*pbr.UpdateWorkerResponse, error) {
-
-	resp := &pbr.UpdateWorkerResponse{}
+func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.Worker) (*pbr.UpdateWorkerResponse, error) {
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
@@ -29,107 +27,87 @@ func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.UpdateWorke
 			return werr
 		}
 
-		// Update worker metadata
-		worker.LastPing = time.Now().Unix()
-		worker.State = pbr.WorkerState_Alive
-		worker.Resources = req.Resources
+		if worker.Version != 0 && req.Version != 0 && worker.Version != req.Version {
+			return errors.New("Version outdated")
+		}
 
-		// Track all active/assigned job IDs, so we can calculate the
-		// available worker resources below.
-		jobIDs := []string{}
+		if req.LastPing != 0 {
+			worker.LastPing = req.LastPing
+		}
+
+		worker.State = req.GetState()
+
+		if req.Resources != nil {
+			worker.Resources = req.Resources
+		}
 
 		// Reconcile worker's job states with database
-		for jobID, state := range req.States {
-			current := getJobState(tx, jobID)
-			switch state {
-
-			case pbe.State_Initializing, pbe.State_Running:
-				// The worker has acknowledged receiving the job, so remove it from Assigned.
-				delete(worker.Assigned, jobID)
-				worker.Active[jobID] = true
-				jobIDs = append(jobIDs, jobID)
-
-				// If the job was canceled, add that signal to the response.
-				//
-				// Don't remove canceled jobs from the worker right away. Wait until
-				// the next update, which acknowledges the worker has received the cancel.
-				if current == pbe.State_Canceled {
-					resp.Canceled = append(resp.Canceled, jobID)
-				} else {
-					err := transitionJobState(tx, jobID, state)
-					// TODO what's the proper behavior of an error?
-					//      this is just ignoring the error, but it will happen again
-					//      on the next update.
-					//      need to resolve the conflicting states.
-					//      Additionally, returning an error here will fail the db transaction,
-					//      preventing all updates to this worker for all jobs.
-					if err != nil {
-						return err
-					}
-				}
-
-			// Terminal states. Update state in database.
-			case pbe.State_Error, pbe.State_Complete, pbe.State_Canceled:
-				delete(worker.Assigned, jobID)
-				delete(worker.Active, jobID)
-				if state != current {
-					// TODO what's the proper behavior of an error? see above
-					err := transitionJobState(tx, jobID, state)
-					if err != nil {
-						return nil
-					}
-				}
-
-			default:
-				log.Error("Unknown job state during worker update", "state", state)
-				continue
+		for _, wrapper := range req.Jobs {
+			job := wrapper.Job
+			if isComplete(job.State) {
+				delete(req.Jobs, job.JobID)
+			}
+			// TODO make/test transition to self a noop
+			err := transitionJobState(tx, job.JobID, job.State)
+			// TODO what's the proper behavior of an error?
+			//      this is just ignoring the error, but it will happen again
+			//      on the next update.
+			//      need to resolve the conflicting states.
+			//      Additionally, returning an error here will fail the db transaction,
+			//      preventing all updates to this worker for all jobs.
+			if err != nil {
+				return err
 			}
 		}
 
-		// New jobs have been assigned, add these to the update response.
-		//
-		// Don't remove these from worker.Assigned right away. It's possible that
-		// the worker won't receive the update response. Wait until the worker sends
-		// and update including the jobID.
-		for jobID := range worker.Assigned {
-			jobIDs = append(jobIDs, jobID)
-			resp.Assigned = append(resp.Assigned, &pbr.Assignment{
-				Job:  getJob(tx, jobID),
-				Auth: getJobAuth(tx, jobID),
-			})
-		}
-
-		// Calculate available resources
-		avail := pbr.Resources{
-			Cpus: worker.GetResources().GetCpus(),
-			Ram:  worker.GetResources().GetRam(),
-			Disk: worker.GetResources().GetDisk(),
-		}
-		for _, jobID := range jobIDs {
-			j := getJob(tx, jobID)
-			res := j.Task.GetResources()
-
-			avail.Cpus -= res.GetMinimumCpuCores()
-			avail.Ram -= res.GetMinimumRamGb()
-
-			if avail.Cpus < 0 {
-				avail.Cpus = 0
-			}
-			if avail.Ram < 0.0 {
-				avail.Ram = 0.0
-			}
-		}
-		worker.Available = &avail
-
-		// Save the worker
+		updateAvailableResources(tx, worker)
+		worker.Version = time.Now().Unix()
 		putWorker(tx, worker)
 		return nil
 	})
 
-	if err != nil {
-		return nil, err
+	resp := &pbr.UpdateWorkerResponse{}
+	return resp, err
+}
+
+func isComplete(s pbe.State) bool {
+	return s == pbe.State_Complete || s == pbe.State_Error || s == pbe.State_SystemError
+}
+
+// TODO include active ports. maybe move Available out of the protobuf message
+//      and expect this helper to be used?
+func updateAvailableResources(tx *bolt.Tx, worker *pbr.Worker) {
+	// Calculate available resources
+	a := pbr.Resources{
+		Cpus: worker.GetResources().GetCpus(),
+		Ram:  worker.GetResources().GetRam(),
+		Disk: worker.GetResources().GetDisk(),
 	}
-	return resp, nil
+	for jobID := range worker.Jobs {
+		j := getJob(tx, jobID)
+		res := j.Task.GetResources()
+
+		a.Cpus -= res.GetMinimumCpuCores()
+		a.Ram -= res.GetMinimumRamGb()
+
+		if a.Cpus < 0 {
+			a.Cpus = 0
+		}
+		if a.Ram < 0.0 {
+			a.Ram = 0.0
+		}
+	}
+	worker.Available = &a
+}
+
+func (taskBolt *TaskBolt) GetWorker(ctx context.Context, req *pbr.GetWorkerRequest) (*pbr.Worker, error) {
+	var worker *pbr.Worker
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+		var werr error
+		worker, werr = getWorker(tx, req.Id)
+		return werr
+	})
+	return worker, err
 }
 
 // CheckWorkers is used by the scheduler to check for dead/gone workers.
@@ -174,24 +152,6 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 	return nil
 }
 
-// SetWorkerState is an API endpoint that allows workers to let the server know
-// they are shutting down.
-func (taskBolt *TaskBolt) SetWorkerState(ctx context.Context, req *pbr.SetWorkerStateRequest) (*pbr.SetWorkerStateResponse, error) {
-
-	resp := &pbr.SetWorkerStateResponse{}
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		// Get worker
-		worker, werr := getWorker(tx, req.Id)
-		if werr != nil {
-			return werr
-		}
-		worker.State = req.State
-		putWorker(tx, worker)
-		return nil
-	})
-	return resp, err
-}
-
 // GetWorkers is an API endpoint that returns a list of workers.
 func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest) (*pbr.GetWorkersResponse, error) {
 	resp := &pbr.GetWorkersResponse{}
@@ -227,28 +187,6 @@ func getJobAuth(tx *bolt.Tx, jobID string) string {
 		auth = string(data)
 	}
 	return auth
-}
-
-// AssignJob assigns a job to a worker.
-// This is NOT an RPC endpoint.
-func (taskBolt *TaskBolt) AssignJob(id string, workerID string) error {
-	return taskBolt.db.Update(func(tx *bolt.Tx) error {
-		// Append job id to worker's queued jobs
-		worker, werr := getWorker(tx, workerID)
-		if werr != nil {
-			return werr
-		}
-		worker.Assigned[id] = true
-		log.Debug("Assigning", "id", id, "worker", workerID)
-		putWorker(tx, worker)
-
-		// TODO do we want an "Assigned" state?
-		err := transitionJobState(tx, id, pbe.State_Initializing)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
 }
 
 func transitionJobState(tx *bolt.Tx, id string, state pbe.State) error {

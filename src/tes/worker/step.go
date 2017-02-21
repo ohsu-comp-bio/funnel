@@ -16,7 +16,7 @@ type stepRunner struct {
 	Num     int
 	Cmd     *DockerCmd
 	Log     logger.Logger
-	Updates updateChan
+	Updates logUpdateChan
 	IP      string
 }
 

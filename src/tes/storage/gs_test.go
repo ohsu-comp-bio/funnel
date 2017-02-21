@@ -2,7 +2,7 @@ package storage
 
 import (
 	"os"
-	"tes"
+	"tes/config"
 	"testing"
 )
 

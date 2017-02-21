@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -18,28 +19,38 @@ var log = logger.New("local")
 // - have a concept of stale resources? Could help with dead workers
 
 // NewScheduler returns a new Scheduler instance.
-func NewScheduler(conf config.Config) sched.Scheduler {
-	go runLocalWorker(conf)
+func NewScheduler(conf config.Config) (sched.Scheduler, error) {
+	id := sched.GenWorkerID()
+	err := startWorker(id, conf)
+	if err != nil {
+		return nil, err
+	}
 
-	t := sched.NewTracker(conf.Worker)
-	go t.Run()
-	return &scheduler{conf, t}
+	client, _ := sched.NewClient(conf.Worker)
+	return &scheduler{conf, client, id}, nil
 }
 
 type scheduler struct {
-	conf    config.Config
-	tracker *sched.Tracker
+	conf     config.Config
+	client   *sched.Client
+	workerID string
 }
 
 func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running local scheduler")
-	weights := s.conf.Schedulers.Local.Weights
 
-	workers := s.tracker.Workers()
+	weights := s.conf.Schedulers.Local.Weights
+	resp, rerr := s.client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
+
+	if rerr != nil {
+		log.Error("Error getting workers. Recovering.", rerr)
+		return nil
+	}
+
 	offers := []*sched.Offer{}
 
-	for _, w := range workers {
-		if w.State != pbr.WorkerState_Alive {
+	for _, w := range resp.Workers {
+		if w.Id != s.workerID || w.State != pbr.WorkerState_Alive {
 			// Ignore workers that aren't alive
 			continue
 		}
@@ -62,26 +73,27 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 		return nil
 	}
 
-	sched.SortByAverageScore(offers)
 	return offers[0]
 }
 
-func runLocalWorker(conf config.Config) {
-	id := sched.GenWorkerID()
+func startWorker(id string, conf config.Config) error {
 	// TODO hard-coded resources
 	res := &pbr.Resources{
 		Disk: 100.0,
 	}
 
-	w := conf.Worker
-	w.ID = id
-	w.ServerAddress = "localhost:9090"
-	w.Storage = conf.Storage
-	w.Resources = res
-	log.Debug("Starting local worker", "storage", w.Storage)
+	c := conf.Worker
+	c.ID = id
+	c.ServerAddress = "localhost:9090"
+	c.Storage = conf.Storage
+	c.Resources = res
+	log.Debug("Starting local worker", "storage", c.Storage)
 
-	err := worker.Run(w)
+	w, err := worker.NewWorker(c)
 	if err != nil {
 		log.Error("Can't create worker", err)
+		return err
 	}
+	w.Start()
+	return nil
 }

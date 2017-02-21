@@ -7,7 +7,7 @@ import (
 	"tes/config"
 	"tes/logger"
 	"tes/scheduler"
-	"tes/scheduler/condor"
+	//"tes/scheduler/condor"
 	"tes/scheduler/gce"
 	"tes/scheduler/local"
 	"tes/server"
@@ -35,9 +35,9 @@ func main() {
 func start(conf config.Config) {
 	os.MkdirAll(conf.WorkDir, 0755)
 
-	taski, err := server.NewTaskBolt(conf)
-	if err != nil {
-		log.Error("Couldn't open database", err)
+	taski, dberr := server.NewTaskBolt(conf)
+	if dberr != nil {
+		log.Error("Couldn't open database", dberr)
 		return
 	}
 
@@ -47,22 +47,28 @@ func start(conf config.Config) {
 	s.Start(conf.RPCPort)
 
 	var sched scheduler.Scheduler
+	var err error
 	switch strings.ToLower(conf.Scheduler) {
 	case "local":
 		// TODO worker will stay alive if the parent process panics
-		sched = local.NewScheduler(conf)
-	case "condor":
-		sched = condor.NewScheduler(conf)
+		sched, err = local.NewScheduler(conf)
+	//case "condor":
+	//sched = condor.NewScheduler(conf)
 	case "gce":
-		sched = gce.NewScheduler(conf)
+		sched, err = gce.NewScheduler(conf)
 	//case "openstack":
 	//sched = openstack.NewScheduler(conf)
 	default:
-		log.Error("Unknown scheduler",
-			"scheduler", conf.Scheduler)
+		log.Error("Unknown scheduler", "scheduler", conf.Scheduler)
 		return
 	}
-	go scheduler.Start(taski, sched, conf.ScheduleRate)
+
+	if err != nil {
+		log.Error("Couldn't create scheduler", err)
+		return
+	}
+
+	go scheduler.Start(taski, sched, conf)
 
 	// TODO if port 8000 is already busy, does this lock up silently?
 	server.StartHTTPProxy(conf.RPCPort, conf.HTTPPort, conf.ContentDir)

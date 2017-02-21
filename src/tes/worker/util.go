@@ -2,11 +2,14 @@ package worker
 
 import (
 	"fmt"
+	pscpu "github.com/shirou/gopsutil/cpu"
+	psmem "github.com/shirou/gopsutil/mem"
 	"net"
 	"os"
 	"os/exec"
 	"path"
 	"syscall"
+	pbr "tes/server/proto"
 )
 
 const headerSize = int64(102400)
@@ -114,4 +117,33 @@ func getExitCode(err error) int32 {
 	}
 	// The error is nil, the command returned successfully, so exit status is 0.
 	return 0
+}
+
+// detectResources helps determine the amount of resources to report.
+// Resources are determined by inspecting the host, but they
+// can be overridden by config.
+func detectResources(conf *pbr.Resources) *pbr.Resources {
+	res := &pbr.Resources{
+		Cpus: conf.Cpus,
+		Ram:  conf.Ram,
+		Disk: conf.Disk,
+	}
+	cpuinfo, _ := pscpu.Info()
+	vmeminfo, _ := psmem.VirtualMemory()
+
+	if conf.Cpus == 0 {
+		// TODO is cores the best metric? with hyperthreading,
+		//      runtime.NumCPU() and pscpu.Counts() return 8
+		//      on my 4-core mac laptop
+		for _, cpu := range cpuinfo {
+			res.Cpus += uint32(cpu.Cores)
+		}
+	}
+
+	if conf.Ram == 0.0 {
+		res.Ram = float64(vmeminfo.Total) /
+			float64(1024) / float64(1024) / float64(1024)
+	}
+
+	return res
 }

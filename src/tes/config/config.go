@@ -74,9 +74,8 @@ type GCEScheduler struct {
 	AccountFile string
 	Project     string
 	Zone        string
-	Template    string
+	Templates   []string
 	Weights     Weights
-	MaxWorkers  int
 }
 
 // Schedulers describes configuration for all schedulers.
@@ -103,6 +102,7 @@ type Config struct {
 	LogLevel      string
 	MaxJobLogSize int
 	ScheduleRate  time.Duration
+	ScheduleChunk int
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -123,6 +123,7 @@ func DefaultConfig() Config {
 		Worker:        WorkerDefaultConfig(),
 		MaxJobLogSize: 10000,
 		ScheduleRate:  time.Second,
+		ScheduleChunk: 10,
 	}
 }
 

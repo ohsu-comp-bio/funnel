@@ -1,7 +1,7 @@
 <div ng-controller="JobInfoController">
   <div class="board">
     <h4>Job {{job.jobID}}</h4>
-    <button class="btn-cancel" ng-click=cancelJob(job.jobID) ng-disabled="job.state == 'Complete' || job.state == 'Error'">
+    <button class="btn-cancel" ng-click=cancelJob(job.jobID) ng-disabled="job.state == 'Complete' || job.state == 'Error' || job.state == 'Canceled'">
       Cancel
     </button>
     <br>

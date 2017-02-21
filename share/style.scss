@@ -56,8 +56,6 @@ main {
   @extend .mdl-data-table;
   width: 100%;
   table-layout: auto;
-  display: block;
-  overflow: auto;
 
   td {
     text-align: left;

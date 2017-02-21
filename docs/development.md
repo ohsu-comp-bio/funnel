@@ -34,6 +34,7 @@ Unfortunately this project isn't "go get-able" yet.
 - `make lint` checks code style and other 
 - `make add_deps` uses [vendetta](github.com/dpw/vendetta) to vendor Go dependencies
 - `make serve-doc` runs a godoc server on `localhost:6060`
+- `make web` builds the web dashboard CSS.
 
 There are probably other commands. Check out the [Makefile](../Makefile).
 

@@ -56,6 +56,8 @@ main {
   @extend .mdl-data-table;
   width: 100%;
   table-layout: auto;
+  display: block;
+  overflow: auto;
 
   td {
     text-align: left;
@@ -68,6 +70,28 @@ main {
 
   th {
     text-align: left;
+  }
+}
+
+.job-list-table {
+  table-layout: fixed;
+  
+  td { 
+    &:nth-child(1) {
+      width: 10%;
+    }
+    &:nth-child(2) {
+      width: 10%;
+    }
+    &:nth-child(3) {
+      width: 35%;
+    }
+    &:nth-child(4) {
+      width: 35%;
+    }
+    &:nth-child(5) {
+      width: 5%;
+    }
   }
 }
 
@@ -84,10 +108,6 @@ th.header.sortable.sort-asc,
 th.header.sortable.sort-desc {
   background-color: transparent;
 }
-
-// .filter {
-
-// }
 
 .ng-table-pager {
   margin: 20px 0 20px 0;
@@ -128,12 +148,12 @@ th.header.sortable.sort-desc {
     background-color: #FFFFFF;
   }
 
-  &:focus:hover {
+  &:focus:hover:enabled {
     background-color: #FF3D00;
     border-color: #FF3D00;
   }
 
-  &:hover {
+  &:hover:enabled {
     background-color: #FF3D00;
     border-color: #FF3D00;
   }

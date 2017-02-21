@@ -9,7 +9,7 @@
         <td data-title="'State'" filter="{state: 'text'}" sortable="'state'">{{job.state}}</td>
         <td data-title="'Name'" filter="{'task.name': 'text'}" sortable="'task.name'">{{job.task.name}}</td>
         <td data-title="'Description'" filter="{'task.description': 'text'}" sortable="'task.description'">{{job.task.description}}</td>
-        <td><button class="btn-cancel mdl-button--icon" ng-click=cancelJob(job.jobID)><i class="material-icons">clear</i></button></td>
+        <td><button class="btn-cancel mdl-button--icon" ng-disabled="job.state == 'Complete' || job.state == 'Error'" ng-click=cancelJob(job.jobID)><i class="material-icons">clear</i></button></td>
       </tr>
     </table> 
 

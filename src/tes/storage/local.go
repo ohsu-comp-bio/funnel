@@ -29,7 +29,7 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string) error {
-	log.Info("Starting download", "url", url)
+	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
 	if !isAllowed(path, local.allowedDirs) {
@@ -143,14 +143,15 @@ func copyDir(source string, dest string) (err error) {
 	// ensure dest dir does not already exist
 
 	_, err = os.Open(dest)
-	if !os.IsNotExist(err) {
-		return fmt.Errorf("Destination already exists")
-	}
-
-	// create dest dir
-	_ = syscall.Umask(0000)
-	err = os.MkdirAll(dest, 0777)
-	if err != nil {
+	if os.IsNotExist(err) {
+		// create dest dir
+		_ = syscall.Umask(0000)
+		err = os.MkdirAll(dest, 0777)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		log.Error("copyDir os.Open error", err)
 		return err
 	}
 

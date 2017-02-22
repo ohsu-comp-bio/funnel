@@ -1,4 +1,4 @@
-@import "material-design-lite";
+@import "node_modules/material-design-lite/src/material-design-lite";
 
 .layout {
   @extend .mdl-layout, .mdl-layout--fixed-drawer, .mdl-layout--fixed-header;
@@ -46,28 +46,158 @@ main {
 
 .board {
   padding: 10px;
+
   h4 {
-    margin: 0;
+    margin: 0px;
     margin-bottom: 20px;
   }
 }
 
-.job-desc-table {
+.job-list-table, .job-desc-table, .data-table {
   @extend .mdl-data-table;
-  min-width: 600px;
+  width: 100%;
+  table-layout: fixed;
+
   td {
     text-align: left;
+    white-space: pre-wrap; /* css-3 */
+    white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+    white-space: -pre-wrap; /* Opera 4-6 */
+    white-space: -o-pre-wrap; /* Opera 7 */
+    word-wrap: break-word; /* Internet Explorer 5.5+ */
   }
-  td:first-child {
-    font-weight: bold;
+
+  th {
+    text-align: left;
   }
 }
 
-.job-list-table, .data-table {
-  @extend .mdl-data-table;
-  width: 100%;
+.job-list-table {
 
-  th, td {
-    text-align: left;
+  td, th { 
+    &:nth-child(1) {
+      width: 10%;
+    }
+    &:nth-child(2) {
+      width: 10%;
+    }
+    &:nth-child(3) {
+      width: 30%;
+    }
+    &:nth-child(4) {
+      width: 30%;
+    }
+    &:nth-child(5) {
+      width: 5%;
+    }
   }
+}
+
+.job-desc-table {
+  td { 
+    &:nth-child(1) {
+      width: 10%;
+      font-weight: bold;
+    }
+  }
+}
+
+th.header.sortable.sort-asc,
+th.header.sortable.sort-desc {
+  background-color: transparent;
+}
+
+.ng-table-pager {
+  margin: 20px 0 20px 0;
+  height: 50px
+}
+
+.btn-group {
+  background: transparent;
+  display: inline-block;
+  float: right;
+}
+
+.btn {
+  @extend .mdl-button;
+  background: transparent;
+  border-style: solid;  
+  border-width: 1px;
+  border-color: #ddd;
+  border-radius: 0;
+
+  &:not(:last-child) {
+    border-right: none;
+  }
+}
+
+.btn-cancel, .mdl-button--icon, .mdl-button--raised {
+  @extend .mdl-button;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #ddd;
+  background-color: #FFFFFF;
+
+  &:active {
+    background-color: #FFFFFF;
+  }
+
+  &:focus:not(:active) {
+    background-color: #FFFFFF;
+  }
+
+  &:focus:hover:enabled {
+    background-color: #FF3D00;
+    border-color: #FF3D00;
+  }
+
+  &:hover:enabled {
+    background-color: #FF3D00;
+    border-color: #FF3D00;
+  }
+}
+
+.pagination {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  display: inline-block;
+}
+
+.pagination li {
+  display: inline;
+}
+
+.pagination li:first-child a {
+  color: #000000;
+  border-left-width: 1px;
+}
+
+.pagination a {
+  float: left;
+  padding: 0 14px;
+  line-height: 34px;
+  color: #000000;
+  text-decoration: none;
+  border: 1px solid #ddd;
+  border-left-width: 0;
+}
+
+.pagination a:hover {
+  background-color: #F5F5F5;
+  color: #000000;
+  cursor: pointer;
+}
+
+.pagination .active a, 
+.pagination .active a:hover {
+  background-color: #ddd;
+  color: #000000;
+  cursor: default;
+}
+
+.pagination .disabled a {
+  color: #fff;
+  background-color: transparent;
+  cursor: default;
 }

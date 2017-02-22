@@ -3,27 +3,15 @@
 
     <h4>Jobs</h4>
 
-    <table class="job-list-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>State</th>
-          <th>Name</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr ng-repeat="job in jobs"> 
-          <td>
-            <a href="#/jobs/{{job.jobID}}">{{ shortID(job.jobID) }}</a>
-          </td>
-          <td>{{job.state}}</td>
-          <td>{{job.task.name}}</td>
-          <td>{{job.task.description}}</td>
-        </tr>
-      </tbody>
-    </table>
+    <table ng-table="tableParams" class="job-list-table">
+      <tr ng-repeat="job in $data"> 
+        <td data-title="'ID'" filter="{jobID: 'text'}" sortable="'jobID'"><a href="#/jobs/{{job.jobID}}">{{ shortID(job.jobID) }}</a></td>
+        <td data-title="'State'" filter="{state: 'text'}" sortable="'state'">{{job.state}}</td>
+        <td data-title="'Name'" filter="{'task.name': 'text'}" sortable="'task.name'">{{job.task.name}}</td>
+        <td data-title="'Description'" filter="{'task.description': 'text'}" sortable="'task.description'">{{job.task.description}}</td>
+        <td><button class="btn-cancel mdl-button--icon" ng-disabled="job.state == 'Complete' || job.state == 'Error' || job.state == 'Canceled'" ng-click=cancelJob(job.jobID)><i class="material-icons">clear</i></button></td>
+      </tr>
+    </table> 
 
   </div>
 </div>

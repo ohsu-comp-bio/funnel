@@ -46,6 +46,7 @@ main {
 
 .board {
   padding: 10px;
+
   h4 {
     margin: 0px;
     margin-bottom: 20px;
@@ -55,7 +56,9 @@ main {
 .job-list-table, .job-desc-table, .data-table {
   @extend .mdl-data-table;
   width: 100%;
-  table-layout: auto;
+  table-layout: fixed;
+  display: block;
+  overflow-x: auto;
 
   td {
     text-align: left;
@@ -72,9 +75,7 @@ main {
 }
 
 .job-list-table {
-  table-layout: fixed;
-  display: block;
-  
+
   td, th { 
     &:nth-child(1) {
       width: 10%;

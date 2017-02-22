@@ -44,7 +44,7 @@ func start(conf config.Config) {
 	s := server.NewGA4GHServer()
 	s.RegisterTaskServer(taski)
 	s.RegisterScheduleServer(taski)
-	s.Start(conf.RPCPort)
+	go s.Start(conf.RPCPort)
 
 	var sched scheduler.Scheduler
 	var err error
@@ -68,7 +68,7 @@ func start(conf config.Config) {
 		return
 	}
 
-	go scheduler.Start(taski, sched, conf)
+	go scheduler.ScheduleLoop(taski, sched, conf)
 
 	// TODO if port 8000 is already busy, does this lock up silently?
 	server.StartHTTPProxy(conf.RPCPort, conf.HTTPPort, conf.ContentDir)

@@ -27,6 +27,7 @@ message GCEWorkerInfo {
 
 message Worker {
   string id = 1;
+  // Job ID -> JobWrapper
   map<string, JobWrapper> jobs = 2;
   Resources resources = 5;
   Resources available = 6;

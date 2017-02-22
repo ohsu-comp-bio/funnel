@@ -28,7 +28,6 @@ func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 	case w.GetAvailable().GetRam() < req.GetMinimumRamGb():
 		log.Debug("Fail ram")
 		return false
-		// TODO check volumes
 	}
 	return true
 }
@@ -49,7 +48,7 @@ func VolumesFit(j *pbe.Job, w *pbr.Worker) bool {
 		return true
 	}
 
-	f := tot < w.GetAvailable().GetDisk()
+	f := tot <= w.GetAvailable().GetDisk()
 	if !f {
 		log.Debug("Failed volumes", "tot", tot, "avail", w.GetAvailable().GetDisk())
 	}
@@ -65,7 +64,7 @@ func PortsFit(j *pbe.Job, w *pbr.Worker) bool {
 		active[p] = true
 	}
 	// Loop through the requested ports, fail if they are active.
-	for _, d := range j.Task.Docker {
+	for _, d := range j.GetTask().GetDocker() {
 		for _, p := range d.Ports {
 			h := p.GetHost()
 			if h == 0 {

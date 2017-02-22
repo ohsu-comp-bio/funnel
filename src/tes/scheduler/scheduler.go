@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"context"
 	uuid "github.com/nu7hatch/gouuid"
 	"tes/config"
 	pbe "tes/ga4gh"
@@ -41,25 +40,32 @@ func NewOffer(w *pbr.Worker, j *pbe.Job, s Scores) *Offer {
 	}
 }
 
-// Start starts a scheduling loop, pulling conf.ScheduleChunk jobs from the database,
+// ScheduleLoop starts a scheduling loop, pulling conf.ScheduleChunk jobs from the database,
 // and sending those to the given scheduler.
-func Start(db *server.TaskBolt, sched Scheduler, conf config.Config) {
+//
+// TODO make a way to stop this loop
+func ScheduleLoop(db *server.TaskBolt, sched Scheduler, conf config.Config) {
 	tickChan := time.NewTicker(conf.ScheduleRate).C
 
 	for {
 		<-tickChan
-		db.CheckWorkers()
-		for _, job := range db.ReadQueue(conf.ScheduleChunk) {
-			offer := sched.Schedule(job)
-			if offer != nil {
-				log.Debug("Assigning job to worker",
-					"jobID", job.JobID,
-					"workerID", offer.Worker.Id,
-				)
-				db.UpdateWorker(context.Background(), offer.Worker)
-			} else {
-				log.Info("No worker could be scheduled for job", "jobID", job.JobID)
-			}
+		Schedule(db, sched, conf)
+	}
+}
+
+// Schedule runs a single job scheduling tick.
+func Schedule(db *server.TaskBolt, sched Scheduler, conf config.Config) {
+	db.CheckWorkers()
+	for _, job := range db.ReadQueue(conf.ScheduleChunk) {
+		offer := sched.Schedule(job)
+		if offer != nil {
+			log.Debug("Assigning job to worker",
+				"jobID", job.JobID,
+				"workerID", offer.Worker.Id,
+			)
+			db.AssignJob(job, offer.Worker)
+		} else {
+			log.Info("No worker could be scheduled for job", "jobID", job.JobID)
 		}
 	}
 }

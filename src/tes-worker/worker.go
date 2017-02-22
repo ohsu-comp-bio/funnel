@@ -47,5 +47,5 @@ func start(conf config.Worker) {
 		log.Error("Can't create worker", err)
 		return
 	}
-	w.Start()
+	w.Run()
 }

@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"fmt"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
 	"net"
@@ -99,7 +98,7 @@ func externalIP() (string, error) {
 			return ip.String(), nil
 		}
 	}
-	return "", fmt.Errorf("Error no network connection")
+	return "", nil
 }
 
 // getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
@@ -124,14 +123,14 @@ func getExitCode(err error) int32 {
 // can be overridden by config.
 func detectResources(conf *pbr.Resources) *pbr.Resources {
 	res := &pbr.Resources{
-		Cpus: conf.Cpus,
-		Ram:  conf.Ram,
-		Disk: conf.Disk,
+		Cpus: conf.GetCpus(),
+		Ram:  conf.GetRam(),
+		Disk: conf.GetDisk(),
 	}
 	cpuinfo, _ := pscpu.Info()
 	vmeminfo, _ := psmem.VirtualMemory()
 
-	if conf.Cpus == 0 {
+	if conf.GetCpus() == 0 {
 		// TODO is cores the best metric? with hyperthreading,
 		//      runtime.NumCPU() and pscpu.Counts() return 8
 		//      on my 4-core mac laptop
@@ -140,7 +139,7 @@ func detectResources(conf *pbr.Resources) *pbr.Resources {
 		}
 	}
 
-	if conf.Ram == 0.0 {
+	if conf.GetRam() == 0.0 {
 		res.Ram = float64(vmeminfo.Total) /
 			float64(1024) / float64(1024) / float64(1024)
 	}

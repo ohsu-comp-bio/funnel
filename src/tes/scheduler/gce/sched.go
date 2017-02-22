@@ -111,8 +111,7 @@ func (s *scheduler) getWorkers() []*pbr.Worker {
 			Id:        sched.GenWorkerID(),
 			Resources: tpl.Resources,
 			Available: tpl.Resources,
-			// TODO can I pull zone from the template?
-			Zone: s.conf.Schedulers.GCE.Zone,
+			Zone:      s.conf.Schedulers.GCE.Zone,
 			Gce: &pbr.GCEWorkerInfo{
 				Template: tpl.Id,
 			},

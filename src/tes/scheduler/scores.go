@@ -37,13 +37,13 @@ func (s Scores) Weighted(w config.Weights) Scores {
 
 // DefaultScores returns a default set of scores.
 func DefaultScores(w *pbr.Worker, j *pbe.Job) Scores {
-	req := j.Task.Resources
-	tot := w.Resources
-	avail := w.Available
+	req := j.GetTask().GetResources()
+	tot := w.GetResources()
+	avail := w.GetAvailable()
 	s := Scores{}
 
-	s[CPU] = float32(avail.Cpus+req.MinimumCpuCores) / float32(tot.Cpus)
-	s[RAM] = float32(avail.Ram + req.MinimumRamGb/tot.Ram)
+	s[CPU] = float32(avail.GetCpus()+req.GetMinimumCpuCores()) / float32(tot.GetCpus())
+	s[RAM] = float32(avail.GetRam() + req.GetMinimumRamGb()/tot.GetRam())
 	return s
 }
 

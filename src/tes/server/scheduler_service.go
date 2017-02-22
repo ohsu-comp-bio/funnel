@@ -14,64 +14,101 @@ import (
 	"time"
 )
 
+// State variables for convenience
+const (
+	Unknown      = pbe.State_Unknown
+	Queued       = pbe.State_Queued
+	Running      = pbe.State_Running
+	Paused       = pbe.State_Paused
+	Complete     = pbe.State_Complete
+	Error        = pbe.State_Error
+	SystemError  = pbe.State_SystemError
+	Canceled     = pbe.State_Canceled
+	Initializing = pbe.State_Initializing
+)
+
 // UpdateWorker is an RPC endpoint that is used by workers to send heartbeats
 // and status updates, such as completed jobs. The server responds with updated
 // information for the worker, such as canceled jobs.
 func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.Worker) (*pbr.UpdateWorkerResponse, error) {
-
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-
-		// Get worker
-		worker, werr := getWorker(tx, req.Id)
-		if werr != nil {
-			return werr
-		}
-
-		if worker.Version != 0 && req.Version != 0 && worker.Version != req.Version {
-			return errors.New("Version outdated")
-		}
-
-		if req.LastPing != 0 {
-			worker.LastPing = req.LastPing
-		}
-
-		worker.State = req.GetState()
-
-		if req.Resources != nil {
-			worker.Resources = req.Resources
-		}
-
-		// Reconcile worker's job states with database
-		for _, wrapper := range req.Jobs {
-			job := wrapper.Job
-			if isComplete(job.State) {
-				delete(req.Jobs, job.JobID)
-			}
-			// TODO make/test transition to self a noop
-			err := transitionJobState(tx, job.JobID, job.State)
-			// TODO what's the proper behavior of an error?
-			//      this is just ignoring the error, but it will happen again
-			//      on the next update.
-			//      need to resolve the conflicting states.
-			//      Additionally, returning an error here will fail the db transaction,
-			//      preventing all updates to this worker for all jobs.
-			if err != nil {
-				return err
-			}
-		}
-
-		updateAvailableResources(tx, worker)
-		worker.Version = time.Now().Unix()
-		putWorker(tx, worker)
-		return nil
+		return updateWorker(tx, req)
 	})
-
 	resp := &pbr.UpdateWorkerResponse{}
 	return resp, err
 }
 
-func isComplete(s pbe.State) bool {
-	return s == pbe.State_Complete || s == pbe.State_Error || s == pbe.State_SystemError
+func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
+	// Get worker
+	worker := getWorker(tx, req.Id)
+
+	if worker.Version != 0 && req.Version != 0 && worker.Version != req.Version {
+		return errors.New("Version outdated")
+	}
+
+	if req.LastPing != 0 {
+		worker.LastPing = req.LastPing
+	}
+
+	worker.State = req.GetState()
+
+	if req.Resources != nil {
+		worker.Resources = req.Resources
+	}
+
+	// Reconcile worker's job states with database
+	for _, wrapper := range req.Jobs {
+		// TODO need a test to ensure that completed job is deleted from worker
+		// TODO test transition to self a noop
+		job := wrapper.Job
+		err := transitionJobState(tx, job.JobID, job.State)
+		// TODO what's the proper behavior of an error?
+		//      this is just ignoring the error, but it will happen again
+		//      on the next update.
+		//      need to resolve the conflicting states.
+		//      Additionally, returning an error here will fail the db transaction,
+		//      preventing all updates to this worker for all jobs.
+		if err != nil {
+			return err
+		}
+
+		// If the worker has acknowledged that the job is complete,
+		// unlink the job from the worker.
+		switch job.State {
+		case Canceled, Complete, Error, SystemError:
+			key := append([]byte(req.Id), []byte(job.JobID)...)
+			tx.Bucket(WorkerJobs).Delete(key)
+		}
+	}
+
+	// TODO move to on-demand helper. i.e. don't store in DB
+	updateAvailableResources(tx, worker)
+	worker.Version = time.Now().Unix()
+	putWorker(tx, worker)
+	return nil
+}
+
+// AssignJob assigns a job to a worker. This updates the job state to Initializing,
+// and updates the worker (calls UpdateWorker()).
+func (taskBolt *TaskBolt) AssignJob(j *pbe.Job, w *pbr.Worker) {
+	taskBolt.db.Update(func(tx *bolt.Tx) error {
+		err := updateWorker(tx, w)
+		if err != nil {
+			return err
+		}
+		// TODO this is important! write a test for this line.
+		//      when a job is assigned, its state is immediately Initializing
+		//      even before the worker has received it.
+		transitionJobState(tx, j.JobID, pbe.State_Initializing)
+		jobIDBytes := []byte(j.JobID)
+		workerIDBytes := []byte(w.Id)
+		// TODO the database needs tests for this stuff. Getting errors during dev
+		//      because it's easy to forget to link everything.
+		key := append(workerIDBytes, jobIDBytes...)
+		tx.Bucket(WorkerJobs).Put(key, jobIDBytes)
+		tx.Bucket(JobWorker).Put(jobIDBytes, workerIDBytes)
+		return nil
+	})
 }
 
 // TODO include active ports. maybe move Available out of the protobuf message
@@ -100,12 +137,12 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbr.Worker) {
 	worker.Available = &a
 }
 
+// GetWorker gets a worker
 func (taskBolt *TaskBolt) GetWorker(ctx context.Context, req *pbr.GetWorkerRequest) (*pbr.Worker, error) {
 	var worker *pbr.Worker
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
-		var werr error
-		worker, werr = getWorker(tx, req.Id)
-		return werr
+		worker = getWorker(tx, req.Id)
+		return nil
 	})
 	return worker, err
 }
@@ -162,10 +199,8 @@ func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersReq
 		bucket := tx.Bucket(Workers)
 		c := bucket.Cursor()
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			worker := &pbr.Worker{}
-			proto.Unmarshal(v, worker)
-			// TODO allow request to select which states it wants
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+			worker := getWorker(tx, string(k))
 			resp.Workers = append(resp.Workers, worker)
 		}
 		return nil
@@ -191,28 +226,15 @@ func getJobAuth(tx *bolt.Tx, jobID string) string {
 
 func transitionJobState(tx *bolt.Tx, id string, state pbe.State) error {
 	idBytes := []byte(id)
-
-	var (
-		Unknown      = pbe.State_Unknown
-		Queued       = pbe.State_Queued
-		Running      = pbe.State_Running
-		Paused       = pbe.State_Paused
-		Complete     = pbe.State_Complete
-		Error        = pbe.State_Error
-		SystemError  = pbe.State_SystemError
-		Canceled     = pbe.State_Canceled
-		Initializing = pbe.State_Initializing
-	)
-
 	current := getJobState(tx, id)
 
 	switch current {
-	// Current state matches target state. Do nothing.
 	case state:
+		// Current state matches target state. Do nothing.
 		return nil
 
-	// Current state is a terminal state, can't do that.
 	case Complete, Error, SystemError, Canceled:
+		// Current state is a terminal state, can't do that.
 		err := errors.New("Invalid state change")
 		log.Error("Cannot change state of a job already in a terminal state",
 			"error", err,
@@ -223,7 +245,6 @@ func transitionJobState(tx *bolt.Tx, id string, state pbe.State) error {
 
 	switch state {
 	case Canceled, Complete, Error, SystemError:
-		idBytes := []byte(id)
 		// Remove from queue
 		tx.Bucket(JobsQueued).Delete(idBytes)
 

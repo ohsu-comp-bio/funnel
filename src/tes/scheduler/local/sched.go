@@ -1,7 +1,8 @@
 package local
 
 import (
-	"context"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -11,12 +12,6 @@ import (
 )
 
 var log = logger.New("local")
-
-// TODO Questions:
-// - how to index resources so that scheduler can easily and efficiently match
-//   a task to a resource. Don't want to loop through 1000 resources for every task
-//   to find the best match. 1000 tasks and 10000 resources would be 10 million iterations.
-// - have a concept of stale resources? Could help with dead workers
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf config.Config) (sched.Scheduler, error) {
@@ -30,9 +25,13 @@ func NewScheduler(conf config.Config) (sched.Scheduler, error) {
 	return &scheduler{conf, client, id}, nil
 }
 
+type clientI interface {
+	GetWorkers(context.Context, *pbr.GetWorkersRequest, ...grpc.CallOption) (*pbr.GetWorkersResponse, error)
+}
+
 type scheduler struct {
 	conf     config.Config
-	client   *sched.Client
+	client   clientI
 	workerID string
 }
 
@@ -94,6 +93,6 @@ func startWorker(id string, conf config.Config) error {
 		log.Error("Can't create worker", err)
 		return err
 	}
-	w.Start()
+	go w.Run()
 	return nil
 }

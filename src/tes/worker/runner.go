@@ -1,10 +1,8 @@
 package worker
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
-	"sync"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -12,8 +10,9 @@ import (
 	"tes/storage"
 )
 
-func newJobRunner(conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) *jobRunner {
-	return &jobRunner{
+func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) {
+	r := &jobRunner{
+		ctrl:    ctrl,
 		wrapper: j,
 		mapper:  NewJobFileMapper(j.Job.JobID, conf.WorkDir),
 		store:   &storage.Storage{},
@@ -21,28 +20,23 @@ func newJobRunner(conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) *jobR
 		updates: up,
 		log:     logger.New("runner", "workerID", conf.ID, "jobID", j.Job.JobID),
 	}
+	go r.Run()
 }
 
 type jobRunner struct {
-	wrapper    *pbr.JobWrapper
-	conf       config.Worker
-	updates    logUpdateChan
-	log        logger.Logger
-	mapper     *FileMapper
-	store      *storage.Storage
-	ip         string
-	cancelFunc context.CancelFunc
-	running    bool
-	complete   bool
-	err        error
-	mtx        sync.Mutex
+	ctrl    JobControl
+	wrapper *pbr.JobWrapper
+	conf    config.Worker
+	updates logUpdateChan
+	log     logger.Logger
+	mapper  *FileMapper
+	store   *storage.Storage
+	ip      string
 }
 
 // TODO document behavior of slow consumer of updates
 func (r *jobRunner) Run() {
 	r.log.Debug("JobRunner.Run")
-	ctx, cancel := context.WithCancel(context.Background())
-	r.cancelFunc = cancel
 	job := r.wrapper.Job
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
@@ -52,25 +46,28 @@ func (r *jobRunner) Run() {
 	// 3. run the steps (docker)
 	// 4. upload the outputs
 
-	r.step(ctx, r.prepareDir)
-	r.step(ctx, r.prepareMapper)
-	r.step(ctx, r.prepareStorage)
-	r.step(ctx, r.prepareIP)
-	r.step(ctx, r.validateInputs)
-	r.step(ctx, r.validateOutputs)
+	r.step("prepareDir", r.prepareDir)
+	r.step("prepareMapper", r.prepareMapper)
+	r.step("prepareStorage", r.prepareStorage)
+	// TODO prepareIP can fail when there is no network connection,
+	//      but should just return no IP. Fix and test.
+	r.step("prepareIP", r.prepareIP)
+	r.step("validateInputs", r.validateInputs)
+	r.step("validateOutputs", r.validateOutputs)
 
 	// Download inputs
 	for _, input := range r.mapper.Inputs {
-		r.step(ctx, func() error {
-			return r.store.Get(ctx, input.Location, input.Path, input.Class)
+		r.step("store.Get", func() error {
+			return r.store.Get(r.ctrl.Context(), input.Location, input.Path, input.Class)
 		})
 	}
 
-	r.setRunning()
+	r.ctrl.SetRunning()
 
 	// Run steps
 	for i, d := range job.Task.Docker {
-		r.step(ctx, func() error {
+		stepName := fmt.Sprintf("step-%d", i)
+		r.step(stepName, func() error {
 			s := &stepRunner{
 				JobID:   job.JobID,
 				Conf:    r.conf,
@@ -96,18 +93,18 @@ func (r *jobRunner) Run() {
 				s.Log.Error("Couldn't prepare log files", err)
 				return err
 			}
-			return s.Run(ctx)
+			return s.Run(r.ctrl.Context())
 		})
 	}
 
 	// Upload outputs
 	for _, output := range r.mapper.Outputs {
-		r.step(ctx, func() error {
-			return r.store.Put(ctx, output.Location, output.Path, output.Class)
+		r.step("store.Put", func() error {
+			return r.store.Put(r.ctrl.Context(), output.Location, output.Path, output.Class)
 		})
 	}
 
-	r.setResult(nil)
+	r.ctrl.SetResult(nil)
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
@@ -201,81 +198,17 @@ func (r *jobRunner) validateOutputs() error {
 //
 // Every operation in the runner needs to check if the context is done,
 // and handle errors appropriately. This helper removes that duplicated, verbose code.
-func (r *jobRunner) step(ctx context.Context, stepfunc func() error) {
-	select {
-	case <-ctx.Done():
-		r.setResult(ctx.Err())
-	default:
-		// If the runner is already complete (perhaps because a previous step failed)
-		// skip the step.
-		if !r.Complete() {
-			// Run the step
-			err := stepfunc()
-			// If the step failed, set the runner to failed. All the following steps
-			// will be skipped.
-			if err != nil {
-				r.log.Error("Job runner failed", err)
-				r.setResult(err)
-			}
+func (r *jobRunner) step(name string, stepfunc func() error) {
+	// If the runner is already complete (perhaps because a previous step failed)
+	// skip the step.
+	if !r.ctrl.Complete() {
+		// Run the step
+		err := stepfunc()
+		// If the step failed, set the runner to failed. All the following steps
+		// will be skipped.
+		if err != nil {
+			r.log.Error("Job runner step failed", "error", err, "step", name)
+			r.ctrl.SetResult(err)
 		}
-	}
-}
-
-func (r *jobRunner) setResult(err error) {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	// Don't set the result twice
-	if !r.complete {
-		r.complete = true
-		r.err = err
-	}
-}
-
-func (r *jobRunner) Err() error {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	return r.err
-}
-
-func (r *jobRunner) Cancel() {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-
-	if r.cancelFunc != nil {
-		r.cancelFunc()
-	}
-}
-
-func (r *jobRunner) Complete() bool {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	return r.complete
-}
-
-func (r *jobRunner) State() pbe.State {
-	if r == nil {
-		return pbe.State_Unknown
-	}
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	switch {
-	case r.err == context.Canceled:
-		return pbe.State_Canceled
-	case r.err != nil:
-		return pbe.State_Error
-	case r.complete:
-		return pbe.State_Complete
-	case r.running:
-		return pbe.State_Running
-	default:
-		return pbe.State_Initializing
-	}
-}
-
-func (r *jobRunner) setRunning() {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	if !r.complete {
-		r.running = true
 	}
 }

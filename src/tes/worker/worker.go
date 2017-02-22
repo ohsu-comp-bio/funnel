@@ -10,21 +10,16 @@ import (
 	"time"
 )
 
+type runJobFunc func(JobControl, config.Worker, *pbr.JobWrapper, logUpdateChan)
 type logUpdateChan chan *pbr.UpdateJobLogsRequest
 
+// Worker represents a worker which processes jobs
+// TODO better docs or just remove this interface?
 type Worker interface {
-	Start()
+	Run()
 }
 
-type worker struct {
-	conf config.Worker
-	// Channel for job updates from job runners: stdout/err, ports, etc.
-	logUpdates logUpdateChan
-	sched      *schedClient
-	log        logger.Logger
-	resources  *pbr.Resources
-}
-
+// NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (Worker, error) {
 	sched, err := newSchedClient(conf)
 	if err != nil {
@@ -34,16 +29,40 @@ func NewWorker(conf config.Worker) (Worker, error) {
 	log := logger.New("worker", "workerID", conf.ID)
 	res := detectResources(conf.Resources)
 	logUpdates := make(logUpdateChan)
-	return &worker{conf, logUpdates, sched, log, res}, nil
+	// Tracks active job ctrls: job ID -> JobControl instance
+	ctrls := map[string]JobControl{}
+	return &worker{conf, logUpdates, sched, log, res, runJob, ctrls}, nil
+}
+
+type worker struct {
+	conf config.Worker
+	// Channel for job updates from job runners: stdout/err, ports, etc.
+	logUpdates logUpdateChan
+	sched      *schedClient
+	log        logger.Logger
+	resources  *pbr.Resources
+	// runJob is here so it can be mocked during testing
+	runJob runJobFunc
+	ctrls  map[string]JobControl
 }
 
 // Run runs a worker with the given config. This is responsible for communication
 // with the server and starting job runners
-func (w *worker) Start() {
+func (w *worker) Run() {
 	w.log.Info("Starting worker")
 	// TODO need a way to shut the worker down.
-	go w.watchLogs()
-	go w.watchJobs()
+
+	ticker := time.NewTicker(w.conf.UpdateRate)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case up := <-w.logUpdates:
+			w.updateLogs(up)
+		case <-ticker.C:
+			w.checkJobs()
+		}
+	}
 }
 
 // TODO need a way to shut the worker down.
@@ -54,128 +73,126 @@ func (w *worker) Start() {
 //w.sched.Close()
 //}
 
-func (w *worker) watchLogs() {
-	for {
-		up := <-w.logUpdates
-		// UpdateJobLogs() is more lightweight than UpdateWorker(),
-		// which is why it happens separately and at a different rate.
-		err := w.sched.UpdateJobLogs(up)
-		if err != nil {
-			// TODO if the request failed, the job update is lost and the logs
-			//      are corrupted. Cache logs to prevent this?
-			w.log.Error("Job log update failed", err)
-		}
+func (w *worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
+	// UpdateJobLogs() is more lightweight than UpdateWorker(),
+	// which is why it happens separately and at a different rate.
+	err := w.sched.UpdateJobLogs(up)
+	if err != nil {
+		// TODO if the request failed, the job update is lost and the logs
+		//      are corrupted. Cache logs to prevent this?
+		w.log.Error("Job log update failed", err)
 	}
 }
 
-func (w *worker) watchJobs() {
-	// Tracks active job runners: job ID -> jobRunner instance
-	runners := map[string]*jobRunner{}
+func (w *worker) checkJobs() {
+	r, _ := w.sched.GetWorker(context.TODO(), &pbr.GetWorkerRequest{Id: w.conf.ID})
 
-	ticker := time.NewTicker(w.conf.UpdateRate)
-	defer ticker.Stop()
+	// Reconcile server state with worker state.
+	rerr := w.reconcile(r.Jobs)
+	if rerr != nil {
+		// TODO what's the best behavior here?
+		log.Error("Couldn't reconcile worker state.", rerr)
+		return
+	}
 
-	for {
-		<-ticker.C
-		r, _ := w.sched.GetWorker(context.Background(), &pbr.GetWorkerRequest{Id: w.conf.ID})
-
-		// Reconcile server state with worker state.
-		rerr := w.reconcile(runners, r.Jobs)
-		if rerr != nil {
-			// TODO what's the best behavior here?
-			log.Error("Couldn't reconcile worker state.", rerr)
-			continue
-		}
-
-		// Worker data has been updated. Send back to server for database update.
-		r.LastPing = time.Now().Unix()
-		r.Resources = w.resources
-		r.State = pbr.WorkerState_Alive
-		_, err := w.sched.UpdateWorker(r)
-		if err != nil {
-			log.Error("Couldn't save worker update. Recovering.", err)
-		}
+	// Worker data has been updated. Send back to server for database update.
+	r.LastPing = time.Now().Unix()
+	r.Resources = w.resources
+	r.State = pbr.WorkerState_Alive
+	_, err := w.sched.UpdateWorker(r)
+	if err != nil {
+		log.Error("Couldn't save worker update. Recovering.", err)
 	}
 }
 
+// TODO this is trying to re-run jobs on failure
 // reconcile merges the server state with the worker state:
 // - identifies new jobs and starts new runners for them
 // - identifies canceled jobs and cancels existing runners
 // - updates pbr.Job structs with current job state (running, complete, error, etc)
-func (w *worker) reconcile(runners map[string]*jobRunner, jobs map[string]*pbr.JobWrapper) error {
+func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 	var (
 		Unknown  = pbe.State_Unknown
 		Canceled = pbe.State_Canceled
 	)
 
-	// Combine job IDs from response with job IDs from runners so we can reconcile
+	// Combine job IDs from response with job IDs from ctrls so we can reconcile
 	// both sets below.
-	jobIDs := []string{}
-	for jobID := range runners {
-		jobIDs = append(jobIDs, jobID)
+	jobIDs := map[string]bool{}
+	for jobID := range w.ctrls {
+		jobIDs[jobID] = true
 	}
 	for jobID := range jobs {
-		jobIDs = append(jobIDs, jobID)
+		jobIDs[jobID] = true
 	}
 
-	for _, jobID := range jobIDs {
+	for jobID := range jobIDs {
 		wrapper := jobs[jobID]
 		job := wrapper.Job
-		runner := runners[jobID]
+		ctrl := w.ctrls[jobID]
 		jobSt := job.GetState()
-		runSt := runner.State()
+		runSt := pbe.State_Unknown
+		if ctrl != nil {
+			runSt = ctrl.State()
+		}
 
 		switch {
+		case jobSt == Unknown && runSt == Unknown:
+			// Edge case. Shouldn't be here, but log just in case.
+			fallthrough
+		case isActive(jobSt) && runSt == Canceled:
+			// Edge case. Server says running but ctrl says canceled.
+			// Not sure how this would happen.
+			fallthrough
+		case isComplete(jobSt) && runSt == Unknown:
+			// Edge case. Job is complete and there's no ctrl. Do nothing.
+			fallthrough
+		case isComplete(jobSt) && runSt == Canceled:
+			// Edge case. Job is complete and the ctrl is canceled. Do nothing.
+			// This shouldn't happen but it's better to check for it anyway.
+			//
+			// Log so that these unexpected cases can be explored.
+			log.Error("Edge case during worker reconciliation. Recovering.",
+				"jobst", jobSt, "runst", runSt)
+
 		case jobSt == runSt:
 			// States match, do nothing.
 
 		case isActive(jobSt) && runSt == Unknown:
 			// Job needs to be started.
-			r := newJobRunner(w.conf, wrapper, w.logUpdates)
-			runners[jobID] = r
-			go r.Run()
+			ctrl := NewJobControl()
+			w.runJob(ctrl, w.conf, wrapper, w.logUpdates)
+			w.ctrls[jobID] = ctrl
+			job.State = ctrl.State()
 
 		case isActive(jobSt) && runSt != Unknown:
 			// Job is running, update state.
 			job.State = runSt
 			if isComplete(runSt) {
-				delete(runners, jobID)
+				delete(w.ctrls, jobID)
 			}
 
 		case jobSt == Canceled:
 			// Job is canceled.
-			// runner.Cancel() is idempotent, so blindly cancel and delete.
-			runner.Cancel()
-			delete(runners, jobID)
+			// ctrl.Cancel() is idempotent, so blindly cancel and delete.
+			ctrl.Cancel()
+			delete(w.ctrls, jobID)
 
 		case jobSt == Unknown && runSt != Unknown:
-			// Edge case. There's a runner for a non-existant job. Delete it.
+			// Edge case. There's a ctrl for a non-existant job. Delete it.
 			// TODO is it better to leave it? Continue in absence of explicit command principle?
-			runner.Cancel()
-			delete(runners, jobID)
+			ctrl.Cancel()
+			delete(w.ctrls, jobID)
 		case isComplete(jobSt) && isActive(runSt):
-			// Edge case. The job is complete but the runner is still running.
+			// Edge case. The job is complete but the ctrl is still running.
 			// This shouldn't happen but it's better to check for it anyway.
-			runner.Cancel()
-			delete(runners, jobID)
-		case isActive(jobSt) && runSt == Canceled:
-			// Edge case. Server says running but runner says canceled.
-			// Not sure how this would happen.
-			fallthrough
-		case isComplete(jobSt) && runSt == Unknown:
-			// Edge case. Job is complete and there's no runner. Do nothing.
-			fallthrough
-		case isComplete(jobSt) && runSt == Canceled:
-			// Edge case. Job is complete and the runner is canceled. Do nothing.
-			// This shouldn't happen but it's better to check for it anyway.
-			//
-			// Log so that these unexpected cases can be explored.
-			log.Error("Edge case during worker reconciliation. Recovering.",
-				"job", job, "runner", runner)
+			// TODO better to update job state?
+			ctrl.Cancel()
+			delete(w.ctrls, jobID)
 
 		default:
 			log.Error("Unhandled case during worker reconciliation.",
-				"job", job, "runner", runner)
+				"job", job, "ctrl", ctrl)
 			return errors.New("Unhandled case during worker reconciliation")
 		}
 	}

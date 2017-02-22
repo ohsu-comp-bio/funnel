@@ -57,8 +57,6 @@ main {
   @extend .mdl-data-table;
   width: 100%;
   table-layout: fixed;
-  display: block;
-  overflow-x: auto;
 
   td {
     text-align: left;
@@ -84,10 +82,10 @@ main {
       width: 10%;
     }
     &:nth-child(3) {
-      width: 35%;
+      width: 30%;
     }
     &:nth-child(4) {
-      width: 35%;
+      width: 30%;
     }
     &:nth-child(5) {
       width: 5%;

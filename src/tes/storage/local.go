@@ -29,13 +29,12 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string) error {
-	log.Info("Starting download", "url", url, "hostPath", hostPath)
+	log.Info("Starting download", "url", url, "hostPath", hostPath, "class", class)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
 	if !isAllowed(path, local.allowedDirs) {
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", path)
 	}
-
 	switch class {
 	case File:
 		err := copyFile(path, hostPath)
@@ -72,12 +71,12 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 	switch class {
 	// Outputs are always copied
 	case File, ReadOnlyFile:
-		err := copyFile(path, hostPath)
+		err := copyFile(hostPath, path)
 		if err != nil {
 			return err
 		}
 	case Directory:
-		err := copyDir(path, hostPath)
+		err := copyDir(hostPath, path)
 		if err != nil {
 			return err
 		}
@@ -208,10 +207,10 @@ func checkDest(dest string) error {
 		if !os.IsNotExist(err) {
 			return err
 		}
-	} 
-
-	if !(dfi.Mode().IsRegular()) {
-		return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
+	} else {
+		if !(dfi.Mode().IsRegular()) {
+			return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
+		}
 	}
 
 	return nil

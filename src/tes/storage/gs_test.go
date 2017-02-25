@@ -12,7 +12,7 @@ func authed(t *testing.T) *GSBackend {
 	if accountFile == "" {
 		t.Skip("No Google Cloud account file. Set TES_TEST_GS_ACCOUNT_FILE")
 	}
-	conf := tes.GoogleStorageConfig{
+	conf := config.GoogleStorageConfig{
 		AccountFile: accountFile,
 	}
 
@@ -26,7 +26,7 @@ func authed(t *testing.T) *GSBackend {
 }
 
 func TestAnonymousGet(t *testing.T) {
-	conf := tes.GoogleStorageConfig{}
+	conf := config.GoogleStorageConfig{}
 	gs, err := NewGSBackend(conf)
 	if err != nil {
 		t.Error(err)

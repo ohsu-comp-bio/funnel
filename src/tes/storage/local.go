@@ -36,19 +36,26 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", path)
 	}
 
-	if class == File {
+	switch class {
+	case File:
 		err := copyFile(path, hostPath)
 		if err != nil {
 			return err
 		}
-	} else if class == Directory {
+	case ReadOnlyFile:
+		err := linkFile(path, hostPath)
+		if err != nil {
+			return err
+		}
+	case Directory:
 		err := copyDir(path, hostPath)
 		if err != nil {
 			return err
 		}
-	} else {
+	default:
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
+
 	log.Info("Finished download", "url", url, "hostPath", hostPath)
 	return nil
 }
@@ -62,19 +69,22 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
 	}
 
-	if class == File {
-		err := copyFile(hostPath, path)
+	switch class {
+	// Outputs are always copied
+	case File, ReadOnlyFile:
+		err := copyFile(path, hostPath)
 		if err != nil {
 			return err
 		}
-	} else if class == Directory {
-		err := copyDir(hostPath, path)
+	case Directory:
+		err := copyDir(path, hostPath)
 		if err != nil {
 			return err
 		}
-	} else {
+	default:
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
+
 	log.Info("Finished upload", "url", url, "hostPath", hostPath)
 	return nil
 }
@@ -96,17 +106,19 @@ func isAllowed(path string, allowedDirs []string) bool {
 
 // Copies file source to destination dest.
 func copyFile(source string, dest string) (err error) {
+	same := checkSame(source, dest)
+	if same {
+		return nil
+	}
+	err = precheck(source, dest)
+	if err != nil {
+		return err
+	}
 	sf, err := os.Open(source)
 	if err != nil {
 		return err
 	}
 	defer sf.Close()
-	dstD := path.Dir(dest)
-	// make parent dirs if they dont exist
-	if _, err := os.Stat(dstD); err != nil {
-		_ = syscall.Umask(0000)
-		os.MkdirAll(dstD, 0777)
-	}
 	df, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -119,12 +131,99 @@ func copyFile(source string, dest string) (err error) {
 	if cerr != nil {
 		return cerr
 	}
-	// ensure readable output files
+	// ensure readable files
 	err = os.Chmod(dest, 0666)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+
+// Hard links file source to destination dest.
+func linkFile(source string, dest string) error {
+	same := checkSame(source, dest)
+	if same {
+		return nil
+	}
+	err := precheck(source, dest)
+	if err != nil {
+		return err
+	}
+	df, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	err = os.Link(source, dest)
+	cerr := df.Close()
+	if err != nil {
+		log.Debug("Failed to link file; attempting copy", "source", source, "dest", dest)
+		err := copyFile(source, dest)
+		if err !=  nil {
+			return err
+		}
+		return nil
+	}
+	if cerr != nil {
+		return cerr
+	}
+	return nil
+}
+
+func precheck(source string, dest string) error {
+	err := checkSrc(source)
+	if err != nil {
+		return err
+	}
+	err = checkDest(dest)
+	if err != nil {
+		return err
+	}
+	dstD := path.Dir(dest)
+	// make parent dirs if they dont exist
+	_, err = os.Stat(dstD)
+	if err != nil {
+		_ = syscall.Umask(0000)
+		os.MkdirAll(dstD, 0777)
+	}
+	return nil
+}
+
+func checkSrc(source string) error {
+	sfi, err := os.Stat(source)
+	if err != nil {
+		return err
+	}
+	if !sfi.Mode().IsRegular() {
+		// cannot copy non-regular files (e.g., directories, symlinks, devices, etc.)
+		return fmt.Errorf("CopyFile: non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
+	}
+
+	return nil
+}
+
+func checkDest(dest string) error {
+	dfi, err := os.Stat(dest)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	} 
+
+	if !(dfi.Mode().IsRegular()) {
+		return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
+	}
+
+	return nil
+}
+
+func checkSame(source string, dest string) bool {
+	sfi, _ := os.Stat(source)
+	dfi, _ := os.Stat(dest)
+	if os.SameFile(sfi, dfi) {
+		return true
+	}
+	return false
 }
 
 // Recursively copies a directory tree, attempting to preserve permissions.

@@ -15,6 +15,8 @@ import (
 const (
 	// File represents the file type
 	File string = "File"
+	// ReadOnlyFile represents a file in a read only volume
+	ReadOnlyFile string = "ReadOnlyFile"
 	// Directory represents the directory type
 	Directory = "Directory"
 )
@@ -41,7 +43,7 @@ type Storage struct {
 
 // Get downloads a file from a storage system at the given "url".
 // The file is downloaded to the given local "path".
-// "class" is either "File" or "Directory".
+// "class" is either "File", "ReadOnlyFile" or "Directory".
 func (storage Storage) Get(ctx context.Context, url string, path string, class string) error {
 	backend, err := storage.findBackend(url, path, class)
 	if err != nil {

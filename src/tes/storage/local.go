@@ -138,7 +138,6 @@ func copyFile(source string, dest string) (err error) {
 	return nil
 }
 
-
 // Hard links file source to destination dest.
 func linkFile(source string, dest string) error {
 	same := checkSame(source, dest)
@@ -149,22 +148,14 @@ func linkFile(source string, dest string) error {
 	if err != nil {
 		return err
 	}
-	df, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
 	err = os.Link(source, dest)
-	cerr := df.Close()
 	if err != nil {
-		log.Debug("Failed to link file; attempting copy", "source", source, "dest", dest)
+		log.Debug("Failed to link file; attempting copy", "linkErr", err, "source", source, "dest", dest)
 		err := copyFile(source, dest)
-		if err !=  nil {
+		if err != nil {
 			return err
 		}
 		return nil
-	}
-	if cerr != nil {
-		return cerr
 	}
 	return nil
 }
@@ -182,6 +173,9 @@ func precheck(source string, dest string) error {
 	// make parent dirs if they dont exist
 	_, err = os.Stat(dstD)
 	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
 		_ = syscall.Umask(0000)
 		os.MkdirAll(dstD, 0777)
 	}
@@ -189,15 +183,25 @@ func precheck(source string, dest string) error {
 }
 
 func checkSrc(source string) error {
-	sfi, err := os.Stat(source)
+	sfi, err := os.Lstat(source)
 	if err != nil {
 		return err
 	}
-	if !sfi.Mode().IsRegular() {
-		// cannot copy non-regular files (e.g., directories, symlinks, devices, etc.)
-		return fmt.Errorf("CopyFile: non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
+	switch mode := sfi.Mode(); {
+	case mode.IsRegular():
+		return nil
+	case mode&os.ModeSymlink != 0:
+		_, err := os.Stat(source)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("Symlink (%s) could not be resolved", source)
+			}
+			return err
+		}
+	case !mode.IsRegular():
+		// cannot copy non-regular files (e.g., directories, devices, etc.)
+		return fmt.Errorf("non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
 	}
-
 	return nil
 }
 
@@ -209,10 +213,9 @@ func checkDest(dest string) error {
 		}
 	} else {
 		if !(dfi.Mode().IsRegular()) {
-			return fmt.Errorf("CopyFile: non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
+			return fmt.Errorf("non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
 		}
 	}
-
 	return nil
 }
 

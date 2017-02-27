@@ -59,9 +59,9 @@ func (mapper *FileMapper) MapTask(task *pbe.Task) error {
 	// Add all the volumes to the mapper
 	for _, vol := range task.Resources.Volumes {
 		switch vol.Readonly {
-		case true: 
+		case true:
 			err = mapper.AddVolume(vol.Source, vol.MountPoint, "ro")
-		case false: 
+		case false:
 			err = mapper.AddVolume(vol.Source, vol.MountPoint, "rw")
 		}
 		if err != nil {
@@ -110,7 +110,7 @@ func (mapper *FileMapper) AddVolume(source string, mountPoint string, mode strin
 	v := Volume{
 		HostPath:      hostPath,
 		ContainerPath: mountPoint,
-		Mode: mode,
+		Mode:          mode,
 	}
 
 	// Ensure that the volume directory exists on the host

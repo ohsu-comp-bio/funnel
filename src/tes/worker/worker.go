@@ -127,13 +127,23 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 	}
 
 	for jobID := range jobIDs {
-		wrapper := jobs[jobID]
-		job := wrapper.Job
-		ctrl := w.ctrls[jobID]
-		jobSt := job.GetState()
+		jobSt := pbe.State_Unknown
 		runSt := pbe.State_Unknown
+
+		ctrl := w.ctrls[jobID]
 		if ctrl != nil {
 			runSt = ctrl.State()
+		}
+
+		wrapper := jobs[jobID]
+		var job *pbe.Job
+		if wrapper != nil {
+			job = wrapper.Job
+			jobSt = job.GetState()
+		}
+
+		if isComplete(jobSt) {
+			delete(w.ctrls, jobID)
 		}
 
 		switch {
@@ -168,18 +178,14 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 		case isActive(jobSt) && runSt != Unknown:
 			// Job is running, update state.
 			job.State = runSt
-			if isComplete(runSt) {
-				delete(w.ctrls, jobID)
-			}
 
-		case jobSt == Canceled:
+		case jobSt == Canceled && runSt != Unknown:
 			// Job is canceled.
 			// ctrl.Cancel() is idempotent, so blindly cancel and delete.
 			ctrl.Cancel()
-			delete(w.ctrls, jobID)
 
 		case jobSt == Unknown && runSt != Unknown:
-			// Edge case. There's a ctrl for a non-existant job. Delete it.
+			// Edge case. There's a ctrl for a non-existent job. Delete it.
 			// TODO is it better to leave it? Continue in absence of explicit command principle?
 			ctrl.Cancel()
 			delete(w.ctrls, jobID)
@@ -188,7 +194,6 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 			// This shouldn't happen but it's better to check for it anyway.
 			// TODO better to update job state?
 			ctrl.Cancel()
-			delete(w.ctrls, jobID)
 
 		default:
 			log.Error("Unhandled case during worker reconciliation.",

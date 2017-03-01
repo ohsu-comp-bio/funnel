@@ -18,6 +18,8 @@ import (
 
 var log = logger.New("condor")
 
+// prefix is a string prefixed to condor worker IDs, so that condor
+// workers can be identified by track() below.
 const prefix = "condor-"
 
 // NewScheduler returns a new HTCondor Scheduler instance.
@@ -31,51 +33,6 @@ type scheduler struct {
 	conf config.Config
 }
 
-// track helps the scheduler know when a job has been assigned to a condor worker,
-// so that the worker can be submitted/started via condor. This polls the server
-// looking for jobs which are assigned to a worker with a "condor-worker-" ID prefix.
-// When such a worker is found, if it has an assigned (inactive) job, a worker is
-// started via condor_submit.
-func (s *scheduler) track() {
-	client, _ := sched.NewClient(s.conf.Worker)
-	defer client.Close()
-
-	ticker := time.NewTicker(s.conf.Worker.TrackerRate)
-
-	for {
-		<-ticker.C
-
-		// TODO allow GetWorkers() to include query for prefix and state
-		resp, err := client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
-		if err != nil {
-			log.Error("Failed GetWorkers request. Recovering.", err)
-			continue
-		}
-		for _, w := range resp.Workers {
-
-			if strings.HasPrefix(w.Id, prefix) &&
-				w.State == pbr.WorkerState_Unknown &&
-				len(w.Assigned) > 0 {
-
-				s.startWorker(w.Id)
-
-				_, err := client.SetWorkerState(context.Background(), &pbr.SetWorkerStateRequest{
-					Id:    w.Id,
-					State: pbr.WorkerState_Initializing,
-				})
-
-				if err != nil {
-					// TODO how to handle error? On the next loop, we'll accidentally start
-					//      the worker again, because the state will be Unknown still.
-					//
-					//      keep a local list of failed workers?
-					log.Error("Can't set worker state to initialzing.", err)
-				}
-			}
-		}
-	}
-}
-
 // Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
 func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running condor scheduler")
@@ -87,6 +44,47 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	return sched.NewOffer(w, j, sched.Scores{})
 }
 
+// track helps the scheduler know when a job has been assigned to a condor worker,
+// so that the worker can be submitted/started via condor. This polls the server
+// looking for jobs which are assigned to a worker with a "condor-" ID prefix.
+// When such a worker is found, if it has an assigned (inactive) job, a worker is
+// started via condor_submit.
+func (s *scheduler) track() {
+	client, _ := sched.NewClient(s.conf.Worker)
+	defer client.Close()
+
+	ticker := time.NewTicker(s.conf.Worker.TrackerRate)
+
+	for {
+		<-ticker.C
+
+		resp, err := client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
+		if err != nil {
+			log.Error("Failed GetWorkers request. Recovering.", err)
+			continue
+		}
+
+		for _, w := range resp.Workers {
+
+			if strings.HasPrefix(w.Id, prefix) &&
+				w.State == pbr.WorkerState_Uninitialized {
+
+				w.State = pbr.WorkerState_Initializing
+				_, err := client.UpdateWorker(context.TODO(), w)
+
+				if err != nil {
+					log.Error("Can't set worker state to initialzing. Skipping start.", err)
+					continue
+				}
+
+				// TODO there could be an error starting the worker.
+				s.startWorker(w.Id)
+			}
+		}
+	}
+}
+
+// startWorker submits a job via "condor_submit" to start a new worker.
 func (s *scheduler) startWorker(workerID string) {
 	log.Debug("Starting condor worker")
 

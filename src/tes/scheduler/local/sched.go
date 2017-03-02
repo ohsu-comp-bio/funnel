@@ -37,42 +37,32 @@ type scheduler struct {
 
 func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running local scheduler")
-
 	weights := s.conf.Schedulers.Local.Weights
+	workers := s.getWorkers()
+	return sched.DefaultScheduleAlgorithm(j, workers, weights)
+}
+
+// getWorkers gets a list of active, local workers.
+//
+// This is a bit redundant in the local scheduler, because there is only
+// ever one worker, but it demonstrates the pattern of a scheduler backend,
+// and give the scheduler a chance to get an updated worker state.
+func (s *scheduler) getWorkers() []*pbr.Worker {
+	workers := []*pbr.Worker{}
 	resp, rerr := s.client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
 
 	if rerr != nil {
 		log.Error("Error getting workers. Recovering.", rerr)
-		return nil
+		return workers
 	}
-
-	offers := []*sched.Offer{}
 
 	for _, w := range resp.Workers {
 		if w.Id != s.workerID || w.State != pbr.WorkerState_Alive {
 			// Ignore workers that aren't alive
 			continue
 		}
-
-		// Filter out workers that don't match the job request
-		// e.g. because they don't have enough resources, ports, etc.
-		if !sched.Match(w, j, sched.DefaultPredicates) {
-			continue
-		}
-
-		sc := sched.DefaultScores(w, j)
-		sc = sc.Weighted(weights)
-
-		offer := sched.NewOffer(w, j, sc)
-		offers = append(offers, offer)
 	}
-
-	// No matching workers were found.
-	if len(offers) == 0 {
-		return nil
-	}
-
-	return offers[0]
+	return workers
 }
 
 func startWorker(id string, conf config.Config) error {

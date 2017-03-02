@@ -70,6 +70,12 @@ func start(conf config.Config) {
 
 	go scheduler.ScheduleLoop(taski, sched, conf)
 
+	// If the scheduler implements the Scaler interface,
+	// start a scaler loop
+	if s, ok := sched.(scheduler.Scaler); ok {
+		go scheduler.ScaleLoop(taski, s, conf)
+	}
+
 	// TODO if port 8000 is already busy, does this lock up silently?
 	server.StartHTTPProxy(conf.RPCPort, conf.HTTPPort, conf.ContentDir)
 }

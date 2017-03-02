@@ -1,7 +1,6 @@
 package condor
 
 import (
-	"context"
 	"os"
 	"os/exec"
 	"path"
@@ -13,20 +12,17 @@ import (
 	sched "tes/scheduler"
 	pbr "tes/server/proto"
 	"text/template"
-	"time"
 )
 
 var log = logger.New("condor")
 
 // prefix is a string prefixed to condor worker IDs, so that condor
-// workers can be identified by track() below.
+// workers can be identified by ShouldStartWorker() below.
 const prefix = "condor-"
 
 // NewScheduler returns a new HTCondor Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
-	s := &scheduler{conf}
-	go s.track()
-	return s
+	return &scheduler{conf}
 }
 
 type scheduler struct {
@@ -44,62 +40,27 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	return sched.NewOffer(w, j, sched.Scores{})
 }
 
-// track helps the scheduler know when a job has been assigned to a condor worker,
-// so that the worker can be submitted/started via condor. This polls the server
-// looking for jobs which are assigned to a worker with a "condor-" ID prefix.
-// When such a worker is found, if it has an assigned (inactive) job, a worker is
-// started via condor_submit.
-func (s *scheduler) track() {
-	client, _ := sched.NewClient(s.conf.Worker)
-	defer client.Close()
-
-	ticker := time.NewTicker(s.conf.Worker.TrackerRate)
-
-	for {
-		<-ticker.C
-
-		resp, err := client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
-		if err != nil {
-			log.Error("Failed GetWorkers request. Recovering.", err)
-			continue
-		}
-
-		for _, w := range resp.Workers {
-
-			if strings.HasPrefix(w.Id, prefix) &&
-				w.State == pbr.WorkerState_Uninitialized {
-
-				w.State = pbr.WorkerState_Initializing
-				_, err := client.UpdateWorker(context.TODO(), w)
-
-				if err != nil {
-					log.Error("Can't set worker state to initialzing. Skipping start.", err)
-					continue
-				}
-
-				// TODO there could be an error starting the worker.
-				s.startWorker(w.Id)
-			}
-		}
-	}
+func (s *scheduler) ShouldStartWorker(w *pbr.Worker) bool {
+	return strings.HasPrefix(w.Id, prefix) &&
+		w.State == pbr.WorkerState_Uninitialized
 }
 
-// startWorker submits a job via "condor_submit" to start a new worker.
-func (s *scheduler) startWorker(workerID string) {
+// StartWorker submits a job via "condor_submit" to start a new worker.
+func (s *scheduler) StartWorker(w *pbr.Worker) error {
 	log.Debug("Starting condor worker")
 
 	// TODO document that these working dirs need manual cleanup
-	workdir := path.Join(s.conf.WorkDir, "condor-scheduler", workerID)
+	workdir := path.Join(s.conf.WorkDir, w.Id)
 	workdir, _ = filepath.Abs(workdir)
 	os.MkdirAll(workdir, 0755)
 
-	w := s.conf.Worker
-	w.ID = workerID
-	w.Timeout = 0
-	w.Storage = s.conf.Storage
+	c := s.conf.Worker
+	c.ID = w.Id
+	c.Timeout = 0
+	c.Storage = s.conf.Storage
 
 	confPath := path.Join(workdir, "worker.conf.yml")
-	w.ToYamlFile(confPath)
+	c.ToYamlFile(confPath)
 
 	workerPath := sched.DetectWorkerPath()
 
@@ -132,4 +93,7 @@ func (s *scheduler) startWorker(workerID string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
+
+	// TODO better error checking
+	return nil
 }

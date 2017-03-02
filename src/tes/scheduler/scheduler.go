@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	uuid "github.com/nu7hatch/gouuid"
 	"tes/config"
 	pbe "tes/ga4gh"
@@ -20,6 +21,11 @@ import (
 // of schedulers, and to combine offers from multiple schedulers.
 type Scheduler interface {
 	Schedule(*pbe.Job) *Offer
+}
+
+type Scaler interface {
+	StartWorker(*pbr.Worker) error
+	ShouldStartWorker(*pbr.Worker) bool
 }
 
 // Offer describes a worker offered by a scheduler for a job.
@@ -74,4 +80,84 @@ func Schedule(db *server.TaskBolt, sched Scheduler, conf config.Config) {
 func GenWorkerID() string {
 	u, _ := uuid.NewV4()
 	return "worker-" + u.String()
+}
+
+// DefaultScheduleAlgorithm implements a simple scheduling algorithm
+// that is (currently) common across a few scheduler backends.
+// Given a job, list of workers, and weights, it returns the best Offer or nil.
+func DefaultScheduleAlgorithm(j *pbe.Job, workers []*pbr.Worker, weights config.Weights) *Offer {
+
+	offers := []*Offer{}
+	for _, w := range workers {
+		// Filter out workers that don't match the job request.
+		// Checks CPU, RAM, disk space, ports, etc.
+		if !Match(w, j, DefaultPredicates) {
+			continue
+		}
+
+		sc := DefaultScores(w, j)
+		sc = sc.Weighted(weights)
+
+		offer := NewOffer(w, j, sc)
+		offers = append(offers, offer)
+	}
+
+	// No matching workers were found.
+	if len(offers) == 0 {
+		return nil
+	}
+
+	SortByAverageScore(offers)
+	return offers[0]
+}
+
+// ScaleLoop calls Scale in a ticker loop. The separation of the two
+// is mostly useful for testing.
+func ScaleLoop(db *server.TaskBolt, s Scaler, conf config.Config) {
+	ticker := time.NewTicker(conf.Worker.TrackerRate)
+
+	for {
+		<-ticker.C
+		Scale(db, s)
+	}
+}
+
+// Scale implements some common logic for allowing scheduler backends
+// to poll the database, looking for workers that need to be started
+// and shutdown.
+func Scale(db *server.TaskBolt, s Scaler) {
+
+	resp, err := db.GetWorkers(context.TODO(), &pbr.GetWorkersRequest{})
+	if err != nil {
+		log.Error("Failed GetWorkers request. Recovering.", err)
+		return
+	}
+
+	for _, w := range resp.Workers {
+
+		if !s.ShouldStartWorker(w) {
+			continue
+		}
+
+		serr := s.StartWorker(w)
+		if serr != nil {
+			log.Error("Error starting worker", serr)
+			continue
+		}
+
+		// TODO should the Scaler instance handle this? Is it possible
+		//      that Initializing is the wrong state in some cases?
+		w.State = pbr.WorkerState_Initializing
+		_, err := db.UpdateWorker(context.TODO(), w)
+
+		if err != nil {
+			// TODO an error here would likely result in multiple workers
+			//      being started unintentionally. Not sure what the best
+			//      solution is. Possibly a list of failed workers.
+			//
+			//      If the scheduler and database API live on the same server,
+			//      this *should* be very unlikely.
+			log.Error("Error marking worker as initializing", err)
+		}
+	}
 }

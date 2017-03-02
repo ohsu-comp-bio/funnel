@@ -7,6 +7,9 @@ import (
 	"google.golang.org/api/compute/v1"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
 	"tes/config"
 	pbr "tes/server/proto"
 )
@@ -122,8 +125,14 @@ func (s *gceClient) StartWorker(w *pbr.Worker) error {
 		return terr
 	}
 
-	// TODO
-	confYaml := ""
+	c := s.conf.Worker
+	c.ID = w.Id
+	c.Timeout = -1
+	c.Storage = s.conf.Storage
+	workdir := path.Join(s.conf.WorkDir, w.Id)
+	workdir, _ = filepath.Abs(workdir)
+	os.MkdirAll(workdir, 0755)
+	confYaml := string(c.ToYaml())
 
 	// Add the funnel config yaml string to the template metadata
 	props := tpl.Properties

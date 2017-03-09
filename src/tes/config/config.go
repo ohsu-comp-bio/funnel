@@ -90,7 +90,7 @@ type Schedulers struct {
 // Config describes configuration for TES.
 type Config struct {
 	Storage       []*StorageConfig
-	ServerAddress string
+	HostName        string
 	Scheduler     string
 	Schedulers    Schedulers
 	Worker        Worker
@@ -112,15 +112,17 @@ type Config struct {
 // DefaultConfig returns configuration with simple defaults.
 func DefaultConfig() Config {
 	workDir := "tes-work-dir"
-	return Config{
-		ServerAddress: "localhost:9090",
-		DBPath:        path.Join(workDir, "tes_task.db"),
-		HTTPPort:      "8000",
-		RPCPort:       "9090",
-		ContentDir:    defaultContentDir(),
-		WorkDir:       workDir,
-		LogLevel:      "debug",
-		Scheduler:     "local",
+	hostName := "localhost"
+	rpcPort := "9090"
+	c := Config{
+		HostName:   hostName,
+		DBPath:     path.Join(workDir, "tes_task.db"),
+		HTTPPort:   "8000",
+		RPCPort:    rpcPort,
+		ContentDir: defaultContentDir(),
+		WorkDir:    workDir,
+		LogLevel:   "debug",
+		Scheduler:  "local",
 		Schedulers: Schedulers{
 			Local: LocalScheduler{},
 			GCE: GCEScheduler{
@@ -129,13 +131,14 @@ func DefaultConfig() Config {
 				},
 			},
 		},
-		Worker:            WorkerDefaultConfig(),
 		MaxJobLogSize:     10000,
 		ScheduleRate:      time.Second,
 		ScheduleChunk:     10,
 		WorkerPingTimeout: time.Minute,
 		WorkerInitTimeout: time.Minute * 5,
 	}
+	c.Worker = WorkerDefaultConfig(c)
+	return c
 }
 
 // Worker contains worker configuration.
@@ -165,19 +168,28 @@ type Worker struct {
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
-func WorkerDefaultConfig() Worker {
+func WorkerDefaultConfig(c Config) Worker {
 	return Worker{
-		ServerAddress: "localhost:9090",
-		WorkDir:       "tes-work-dir",
+		ServerAddress: c.HostName + ":" + c.RPCPort,
+		WorkDir:       c.WorkDir,
 		Timeout:       -1,
 		// TODO these get reset to zero when not found in yaml?
 		UpdateRate:    time.Second * 5,
 		LogUpdateRate: time.Second * 5,
 		TrackerRate:   time.Second * 5,
 		LogTailSize:   10000,
+		Storage:       c.Storage,
 		LogLevel:      "debug",
 		UpdateTimeout: time.Second,
 	}
+}
+
+// WorkerInheritConfigVals is a utility to help ensure the Worker inherits the proper config values from the parent Config
+func WorkerInheritConfigVals(c Config) Worker {
+	c.Worker.ServerAddress = c.HostName + ":" + c.RPCPort
+	c.Worker.WorkDir = c.WorkDir
+	c.Worker.Storage = c.Storage
+	return c.Worker
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.

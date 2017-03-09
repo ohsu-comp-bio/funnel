@@ -64,3 +64,6 @@
 [submodule "src/vendor/github.com/shirou/gopsutil"]
 	path = src/vendor/github.com/shirou/gopsutil
 	url = https://github.com/shirou/gopsutil
+[submodule "src/vendor/github.com/imdario/mergo"]
+	path = src/vendor/github.com/imdario/mergo
+	url = https://github.com/imdario/mergo

@@ -69,8 +69,6 @@ func startWorker(id string, conf config.Config) error {
 
 	c := conf.Worker
 	c.ID = id
-	c.ServerAddress = "localhost:9090"
-	c.Storage = conf.Storage
 	c.Resources = res
 	log.Debug("Starting local worker", "storage", c.Storage)
 

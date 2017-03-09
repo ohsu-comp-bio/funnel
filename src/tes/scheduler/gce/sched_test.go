@@ -53,7 +53,7 @@ func TestSchedToExisting(t *testing.T) {
 	gce := new(gce_mocks.GCEClient)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
-  defer srv.Close()
+	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
 	existing := worker("existing", pbr.WorkerState_Alive)
@@ -103,7 +103,7 @@ func TestSchedStartWorker(t *testing.T) {
 	gce := new(gce_mocks.GCEClient)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
-  defer srv.Close()
+	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
 	existing := worker("existing", pbr.WorkerState_Alive)
@@ -158,7 +158,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	gce := new(gce_mocks.GCEClient)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
-  defer srv.Close()
+	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
 	existing := worker("existing", pbr.WorkerState_Alive)
@@ -187,11 +187,11 @@ func TestPreferExistingWorker(t *testing.T) {
 	expected := workers[0]
 	log.Debug("Workers", workers)
 
-  if expected.Id != "existing" {
-    t.Error("Job was scheduled to the wrong worker")
-  }
+	if expected.Id != "existing" {
+		t.Error("Job was scheduled to the wrong worker")
+	}
 
-  // Nothing should be scaled in this test, but safer to call Scale anyway
+	// Nothing should be scaled in this test, but safer to call Scale anyway
 	scheduler.Scale(srv.DB, s)
 	gce.AssertExpectations(t)
 }

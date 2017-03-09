@@ -18,6 +18,12 @@ Funnel...
 - [Protocol Buffers](https://github.com/google/protobuf) if making changes to the schema.
 - [NodeJS](https://nodejs.org) and [npm](https://www.npmjs.com/) for web dashboard development.
 
+## GOPATH
+
+Funnel isn't go-gettable and the layout doesn't work with Go cleanly (yet).
+
+Run ``export GOPATH=$GOPATH:`pwd` `` from the repo root to get the funnel code in your GOPATH.
+
 ## Submodules
 
 Funnel has git submodules. Make sure to run `git submodule update --init --recursive`. Running `make` will do this for you.
@@ -40,11 +46,41 @@ There are probably other commands. Check out the [Makefile](../Makefile).
 
 ## Source
 
-- `src/tes`: majority of the code. The subdir names should be fairly obvious.
-- `proto`: the internal, Funnel-specific protobuf + gRPC schemas.
-- `task-execution-schemas/proto`: the GA4GH Protobuf + gRPC schemas.
-- `share`: javascript/css/html for web dashboard.
+- `src/tes`: majority of the code.
+  - `config`: configuration parsing/loading
+  - `ga4gh`: generated protobuf/gRPC files from [task-execution-schemas](../task-execution-schemas/proto/)
+  - `logger`: custom logging code
+  - `scheduler`: scheduler logic and scheduler backends
+  - `server`: database and server API
+  - `storage`: filesystem support, used by worker during upload/download, e.g. local, Google Cloud Storage, S3, etc.
+  - `worker`: worker process and state management, job runner, docker command executor, file mapper, etc.
+- `src/tes-server`: tes-server CLI binary
+- `src/tes-worker`: tes-worker CLI binary
+- `proto`: the internal, Funnel-specific protobuf + gRPC schemas
+- `task-execution-schemas/proto`: the GA4GH Protobuf + gRPC schemas
+- `share`: javascript/css/html for web dashboard
 
+## Go Tests
+
+Useful testing commands (first, see the GOPATH section above):
+
+Run all tests: `go test tes/...`
+
+Run the scheduler tests: `go test tes/scheduler/...`
+
+Run the worker tests matching "\*Cancel\*": `go test tes/worker -run Cancel`
+
+You get the idea. See to `go test` docs for more.
+
+### Mocking
+
+There are some helpful mocks in the code. The [testify](https://github.com/stretchr/testify) and [mockery](https://github.com/vektra/mockery) tools have been useful.
+
+There's also a mock server for testing in [src/tes/server/mocks/server.go](./src/tes/server/mocks/server.go).
+
+## Python Tests
+
+There are integration tests written in python. These are heavyweight integration tests which start funnel server and workers processes and run docker containers. Usually these are run with `make test`.
 
 ## Vendoring
 

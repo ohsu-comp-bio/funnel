@@ -2,7 +2,6 @@ package local
 
 import (
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -25,14 +24,9 @@ func NewScheduler(conf config.Config) (sched.Scheduler, error) {
 	return &scheduler{conf, client, id}, nil
 }
 
-// TODO should probably avoid this. It hides what's actually going on
-type clientI interface {
-	GetWorkers(context.Context, *pbr.GetWorkersRequest, ...grpc.CallOption) (*pbr.GetWorkersResponse, error)
-}
-
 type scheduler struct {
 	conf     config.Config
-	client   clientI
+	client   sched.Client
 	workerID string
 }
 
@@ -62,6 +56,7 @@ func (s *scheduler) getWorkers() []*pbr.Worker {
 			// Ignore workers that aren't alive
 			continue
 		}
+		workers = append(workers, w)
 	}
 	return workers
 }

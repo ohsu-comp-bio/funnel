@@ -6,6 +6,8 @@ import (
 	pbr "tes/server/proto"
 )
 
+// Database represents the interface to the database used by the scheduler, scaler, etc.
+// Mostly, this exists so it can be mocked during testing.
 type Database interface {
 	ReadQueue(n int) []*pbe.Job
 	AssignJob(*pbe.Job, *pbr.Worker)

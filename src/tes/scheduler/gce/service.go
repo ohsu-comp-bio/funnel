@@ -11,13 +11,16 @@ import (
 	pbr "tes/server/proto"
 )
 
-type GCEClient interface {
+// Client is the interface used by the scheduler, which is expected to
+// communicate with Google Cloud Platform APIs. Mostly, this exists for
+// testing. It's easier to mock this small, specific interface.
+type Client interface {
 	Template(project, id string) (*pbr.Resources, error)
 	StartWorker(project, zone, id string, conf config.Worker) error
 }
 
 // service creates a Google Compute service client
-func newGCEClient(ctx context.Context, conf config.Config) (GCEClient, error) {
+func newClient(ctx context.Context, conf config.Config) (Client, error) {
 	var client *http.Client
 	if conf.Schedulers.GCE.AccountFile != "" {
 		// Pull the client configuration (e.g. auth) from a given account file.

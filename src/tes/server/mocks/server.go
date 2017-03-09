@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+// NewMockServer starts a test server. This creates a database in a temp. file
+// and starts a gRPC server on a random port.
 func NewMockServer() *MockServer {
 	// Write the database to a temporary file
 	f, _ := ioutil.TempFile("", "funnel-test-db-")
@@ -57,6 +59,7 @@ func NewMockServer() *MockServer {
 	}
 }
 
+// MockServer is a server to use during testing.
 type MockServer struct {
 	DB     *server.TaskBolt
 	Client scheduler.Client
@@ -64,14 +67,17 @@ type MockServer struct {
 	Conf   config.Config
 }
 
+// Close cleans up the mock server resources
 func (m *MockServer) Close() {
 	m.srv.Stop()
 }
 
+// AddWorker adds the given worker to the database (calling db.UpdateWorker)
 func (m *MockServer) AddWorker(w *pbr.Worker) {
 	m.DB.UpdateWorker(context.Background(), w)
 }
 
+// RunTask adds a task to the database (calling db.RunTask)
 func (m *MockServer) RunTask(t *pbe.Task) {
 	_, err := m.DB.RunTask(context.Background(), t)
 	if err != nil {
@@ -79,6 +85,7 @@ func (m *MockServer) RunTask(t *pbe.Task) {
 	}
 }
 
+// RunHelloWorld adds a simple hello world task to the database queue.
 func (m *MockServer) RunHelloWorld() {
 	m.RunTask(&pbe.Task{
 		Name: "Hello world",
@@ -93,6 +100,7 @@ func (m *MockServer) RunHelloWorld() {
 	})
 }
 
+// GetWorkers calls db.GetWorkers.
 func (m *MockServer) GetWorkers() []*pbr.Worker {
 	resp, _ := m.DB.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
 	return resp.Workers

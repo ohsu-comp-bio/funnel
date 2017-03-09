@@ -50,7 +50,7 @@ func TestSchedToExisting(t *testing.T) {
 	// Mock config
 	conf := basicConf()
 	// Mock the GCE API so actual API calls aren't needed
-	gce := new(gce_mocks.GCEClient)
+	gce := new(gce_mocks.Client)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
@@ -100,7 +100,7 @@ func TestSchedStartWorker(t *testing.T) {
 	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
 
 	// Mock the GCE API so actual API calls aren't needed
-	gce := new(gce_mocks.GCEClient)
+	gce := new(gce_mocks.Client)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
@@ -155,7 +155,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
 
 	// Mock the GCE API so actual API calls aren't needed
-	gce := new(gce_mocks.GCEClient)
+	gce := new(gce_mocks.Client)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()

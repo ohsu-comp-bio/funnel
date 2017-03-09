@@ -34,7 +34,7 @@ func NewScheduler(conf config.Config) (sched.Scheduler, error) {
 		return nil, err
 	}
 
-	gce, gerr := newGCEClient(context.TODO(), conf)
+	gce, gerr := newClient(context.TODO(), conf)
 	if gerr != nil {
 		log.Error("Can't connect GCE client", gerr)
 		return nil, gerr
@@ -52,7 +52,7 @@ func NewScheduler(conf config.Config) (sched.Scheduler, error) {
 type gceScheduler struct {
 	conf   config.Config
 	client sched.Client
-	gce    GCEClient
+	gce    Client
 }
 
 // Schedule schedules a job on a Google Cloud VM worker instance.

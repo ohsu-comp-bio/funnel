@@ -23,8 +23,14 @@ type Scheduler interface {
 	Schedule(*pbe.Job) *Offer
 }
 
+// Scaler represents a service that can start worker instances, for example
+// the Google Cloud Scheduler backend.
 type Scaler interface {
+	// StartWorker is where the work is done to start a worker instance,
+	// for example, calling out to Google Cloud APIs.
 	StartWorker(*pbr.Worker) error
+	// ShouldStartWorker allows scalers to filter out workers they are interested in.
+	// If "true" is returned, Scaler.StartWorker() will be called with this worker.
 	ShouldStartWorker(*pbr.Worker) bool
 }
 
@@ -46,7 +52,10 @@ func NewOffer(w *pbr.Worker, j *pbe.Job, s Scores) *Offer {
 	}
 }
 
-// Schedule runs a single job scheduling tick.
+// ScheduleChunk does a scheduling iteration. It checks the health of workers
+// in the database, gets a chunk of tasks from the queue (configurable by config.ScheduleChunk),
+// and calls the given scheduler. If the scheduler returns a valid offer, the
+// job is assigned to the offered worker.
 func ScheduleChunk(db server.Database, sched Scheduler, conf config.Config) {
 	db.CheckWorkers()
 	for _, job := range db.ReadQueue(conf.ScheduleChunk) {
@@ -109,11 +118,9 @@ func Scale(db server.Database, s Scaler) {
 	}
 }
 
-// ScheduleLoop starts a scheduling loop, pulling conf.ScheduleChunk jobs from the database,
-// and sending those to the given scheduler.
+// ScheduleLoop calls ScheduleChunk every config.ScheduleRate, in a loop.
 //
 // TODO make a way to stop this loop
-// TODO move to tes-server
 func ScheduleLoop(db server.Database, sched Scheduler, conf config.Config) {
 	tickChan := time.NewTicker(conf.ScheduleRate).C
 
@@ -123,11 +130,11 @@ func ScheduleLoop(db server.Database, sched Scheduler, conf config.Config) {
 	}
 }
 
-// TODO move to tes-server
-// ScaleLoop calls Scale in a ticker loop. The separation of the two
-// is mostly useful for testing.
+// ScaleLoop calls Scale every config.ScheduleRate, in a loop
+//
+// TODO make a way to stop this loop
 func ScaleLoop(db server.Database, s Scaler, conf config.Config) {
-	ticker := time.NewTicker(conf.Worker.TrackerRate)
+	ticker := time.NewTicker(conf.ScheduleRate)
 
 	for {
 		<-ticker.C

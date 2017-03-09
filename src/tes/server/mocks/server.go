@@ -52,12 +52,18 @@ func NewMockServer() *MockServer {
 	return &MockServer{
 		DB:     db,
 		Client: client,
+    srv: server,
 	}
 }
 
 type MockServer struct {
 	DB     *server.TaskBolt
 	Client scheduler.Client
+  srv    *grpc.Server
+}
+
+func (m *MockServer) Close() {
+  m.srv.Stop()
 }
 
 func (m *MockServer) AddWorker(w *pbr.Worker) {

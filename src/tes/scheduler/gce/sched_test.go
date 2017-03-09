@@ -43,7 +43,8 @@ func worker(id string, s pbr.WorkerState) *pbr.Worker {
 }
 
 // TestSchedToExisting tests the case where an existing worker has capacity
-// available for the task.
+// available for the task. In this case, there are no instance templates,
+// so the scheduler will not create any new workers.
 func TestSchedToExisting(t *testing.T) {
 
 	// Mock config
@@ -52,6 +53,7 @@ func TestSchedToExisting(t *testing.T) {
 	gce := new(gce_mocks.GCEClient)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
+  defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
 	existing := worker("existing", pbr.WorkerState_Alive)
@@ -101,6 +103,7 @@ func TestSchedStartWorker(t *testing.T) {
 	gce := new(gce_mocks.GCEClient)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
+  defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
 	existing := worker("existing", pbr.WorkerState_Alive)
@@ -136,6 +139,59 @@ func TestSchedStartWorker(t *testing.T) {
 	wconf.ID = expected.Id
 	gce.On("StartWorker", "test-proj", "test-zone", "test-tpl", wconf).Return(nil)
 
+	scheduler.Scale(srv.DB, s)
+	gce.AssertExpectations(t)
+}
+
+// TestPreferExistingWorker tests the case where there is an existing worker
+// AND instance templates available. The existing worker has capacity for the task,
+// and the task should be scheduled to the existing worker.
+func TestPreferExistingWorker(t *testing.T) {
+
+	// Mock config
+	conf := basicConf()
+	// Add an instance template to the config. The scheduler uses these templates
+	// to start new worker instances.
+	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
+
+	// Mock the GCE API so actual API calls aren't needed
+	gce := new(gce_mocks.GCEClient)
+	// Mock the server/database so we can easily control available workers
+	srv := server_mocks.NewMockServer()
+  defer srv.Close()
+
+	// Represents a worker that is alive but at full capacity
+	existing := worker("existing", pbr.WorkerState_Alive)
+	existing.Resources.Cpus = 10.0
+	srv.AddWorker(existing)
+
+	srv.RunHelloWorld()
+
+	// The GCE scheduler under test
+	s := &gceScheduler{conf, srv.Client, gce}
+
+	// Mock an instance template response with 1 cpu/ram/disk
+	gce.On("Template", "test-proj", "test-tpl").Return(&pbr.Resources{
+		Cpus: 10.0,
+		Ram:  1.0,
+		Disk: 1.0,
+	}, nil)
+
+	scheduler.ScheduleChunk(srv.DB, s, conf)
+	workers := srv.GetWorkers()
+
+	if len(workers) != 1 {
+		t.Error("Expected no new workers to be created")
+	}
+
+	expected := workers[0]
+	log.Debug("Workers", workers)
+
+  if expected.Id != "existing" {
+    t.Error("Job was scheduled to the wrong worker")
+  }
+
+  // Nothing should be scaled in this test, but safer to call Scale anyway
 	scheduler.Scale(srv.DB, s)
 	gce.AssertExpectations(t)
 }

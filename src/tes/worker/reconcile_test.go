@@ -81,25 +81,39 @@ func TestReconcileJobError(t *testing.T) {
 }
 
 func TestReconcileCancelJob(t *testing.T) {
+	// Set up worker with no-op runner
 	jobs := map[string]*pbr.JobWrapper{}
 	w := worker{
 		runJob: noopRunJob,
 		ctrls:  map[string]JobControl{},
 	}
+
+	// Add a job
 	j := &pbe.Job{
 		JobID: "job-1",
 		State: pbe.State_Queued,
 	}
 	addJob(jobs, j)
+
+	// Reconcile worker state, which registers job with worker
 	w.reconcile(jobs)
 
+	// Cancel job
 	j.State = pbe.State_Canceled
 	ctrl := w.ctrls["job-1"]
+
+	// Reconcile again. Worker should react to job being canceled.
 	w.reconcile(jobs)
 
 	if ctrl.State() != pbe.State_Canceled {
 		t.Error("Expected runner state to be canceled")
 	}
+
+	// Delete canceled job. This is emulating what would happen with
+	// the server. The worker won't delete a canceled job controller
+	// until the server deletes the job first.
+	delete(jobs, "job-1")
+	w.reconcile(jobs)
 
 	if w.ctrls["job-1"] != nil {
 		t.Error("Expected job ctrl to be cleaned up")
@@ -161,8 +175,11 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected job 3 state to be init")
 	}
 
+	// Set job-1 to complete
 	w.ctrls["job-1"].SetResult(nil)
+	// Cancel job-2
 	jobs["job-2"].Job.State = pbe.State_Canceled
+	// Set job-3 to error
 	w.ctrls["job-3"].SetResult(errors.New("Job 3 error"))
 
 	j2ctrl := w.ctrls["job-2"]
@@ -175,6 +192,12 @@ func TestReconcileMultiple(t *testing.T) {
 	if j2ctrl.State() != pbe.State_Canceled {
 		t.Error("Expected job 2 controller to be canceled state")
 	}
+
+	// Delete canceled job. This is emulating what would happen with
+	// the server. The worker won't delete a canceled job controller
+	// until the server deletes the job first.
+	delete(jobs, "job-2")
+	w.reconcile(jobs)
 
 	if w.ctrls["job-2"] != nil {
 		t.Error("Expected job 2 ctrl to be cleaned up")

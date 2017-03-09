@@ -53,6 +53,7 @@ func NewMockServer() *MockServer {
 		DB:     db,
 		Client: client,
 		srv:    server,
+		Conf:   conf,
 	}
 }
 
@@ -60,6 +61,7 @@ type MockServer struct {
 	DB     *server.TaskBolt
 	Client scheduler.Client
 	srv    *grpc.Server
+	Conf   config.Config
 }
 
 func (m *MockServer) Close() {

@@ -1,17 +1,15 @@
 package worker
 
 import (
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"io/ioutil"
-	"net"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/scheduler"
 	"tes/server"
+	server_mocks "tes/server/mocks"
 	pbr "tes/server/proto"
 )
 
+// mockScheduler is a mock scheduler that assigns every job to a single worker.
 type mockScheduler struct {
 	worker *pbr.Worker
 }
@@ -21,83 +19,46 @@ func (m *mockScheduler) Schedule(j *pbe.Job) *scheduler.Offer {
 }
 
 func newMockSchedulerServer() *mockSchedulerServer {
-	// Write the database to a temporary file
-	f, _ := ioutil.TempFile("", "funnel-test-db-")
-
-	// TODO random port would be better
-	conf := config.DefaultConfig()
-	conf.ServerAddress = "localhost:9932"
-	conf.RPCPort = "9932"
-	conf.DBPath = f.Name()
-
-	// Create database
-	db, dberr := server.NewTaskBolt(conf)
-	if dberr != nil {
-		panic("Couldn't open database")
-	}
-
-	// Listen on TCP port for RPC
-	server := grpc.NewServer()
-	lis, err := net.Listen("tcp", ":"+conf.RPCPort)
-	if err != nil {
-		panic("Cannot open port")
-	}
+	srv := server_mocks.NewMockServer()
 
 	wconf := config.WorkerDefaultConfig()
-	wconf.ServerAddress = "localhost:9932"
+	wconf.ServerAddress = srv.Conf.ServerAddress
 	wconf.ID = "test-worker"
+
+	// Create a worker
 	x, werr := NewWorker(wconf)
 	if werr != nil {
 		panic(werr)
 	}
 	w := x.(*worker)
+	// Stub the job runner so it's a no-op runner
+	// i.e. ensure docker run, file copying, etc. doesn't actually happen
 	w.runJob = noopRunJob
 
+	// Create a mock scheduler with a single worker
 	sched := &mockScheduler{&pbr.Worker{
 		Id:    "test-worker",
 		State: pbr.WorkerState_Alive,
 		Jobs:  map[string]*pbr.JobWrapper{},
 	}}
 
-	m := mockSchedulerServer{db, server, sched, conf, w}
-	pbr.RegisterSchedulerServer(server, m)
-	go server.Serve(lis)
-
+	m := mockSchedulerServer{srv.DB, srv, sched, srv.Conf, w}
 	return &m
 }
 
 type mockSchedulerServer struct {
 	db     *server.TaskBolt
-	server *grpc.Server
+	server *server_mocks.MockServer
 	sched  *mockScheduler
 	conf   config.Config
 	worker *worker
 }
 
 func (m *mockSchedulerServer) Flush() {
-	scheduler.Schedule(m.db, m.sched, m.conf)
+	scheduler.ScheduleChunk(m.db, m.sched, m.conf)
 	m.worker.checkJobs()
 }
 
-func (m *mockSchedulerServer) Stop() {
-	m.server.Stop()
-}
-
-func (m mockSchedulerServer) UpdateWorker(ctx context.Context, req *pbr.Worker) (*pbr.UpdateWorkerResponse, error) {
-	log.Debug("UpdateWorker", req)
-	return m.db.UpdateWorker(ctx, req)
-}
-func (m mockSchedulerServer) GetWorker(ctx context.Context, req *pbr.GetWorkerRequest) (*pbr.Worker, error) {
-	resp, err := m.db.GetWorker(ctx, req)
-	log.Debug("GetWorker", "resp", resp)
-	return resp, err
-}
-func (m mockSchedulerServer) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest) (*pbr.GetWorkersResponse, error) {
-	return m.db.GetWorkers(ctx, req)
-}
-func (m mockSchedulerServer) UpdateJobLogs(ctx context.Context, req *pbr.UpdateJobLogsRequest) (*pbr.UpdateJobLogsResponse, error) {
-	return m.db.UpdateJobLogs(ctx, req)
-}
-func (m mockSchedulerServer) GetQueueInfo(request *pbr.QueuedTaskInfoRequest, server pbr.Scheduler_GetQueueInfoServer) error {
-	return nil
+func (m *mockSchedulerServer) Close() {
+	m.server.Close()
 }

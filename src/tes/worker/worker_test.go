@@ -15,7 +15,7 @@ func init() {
 
 func TestBasicWorker(t *testing.T) {
 	srv := newMockSchedulerServer()
-	defer srv.Stop()
+	defer srv.Close()
 	ctx := context.Background()
 	var err error
 
@@ -63,7 +63,7 @@ func TestBasicWorker(t *testing.T) {
 
 func TestScheduledJobRemovedFromQueue(t *testing.T) {
 	srv := newMockSchedulerServer()
-	defer srv.Stop()
+	defer srv.Close()
 	ctx := context.Background()
 	var err error
 

@@ -1,15 +1,10 @@
 package gce
 
 import (
-	. "github.com/stretchr/testify/mock"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"tes/config"
-	pbe "tes/ga4gh"
 	"tes/logger"
 	"tes/scheduler"
 	gce_mocks "tes/scheduler/gce/mocks"
-	sched_mocks "tes/scheduler/mocks"
 	server_mocks "tes/server/mocks"
 	pbr "tes/server/proto"
 	"testing"
@@ -17,7 +12,6 @@ import (
 
 func init() {
 	logger.ForceColors()
-
 }
 
 func basicConf() config.Config {
@@ -78,57 +72,43 @@ func TestSchedBasic(t *testing.T) {
 // a job to that unintialized worker. The scaler then calls the GCE API to
 // start the worker.
 func TestSchedStartWorker(t *testing.T) {
-	// Represents a worker that is alive but at full capacity
-	existing := worker("existing", pbr.WorkerState_Alive)
-	existing.Available.Cpus = 0.0
 
-	j := &pbe.Job{}
-	queue := []*pbe.Job{j}
+  // Mock config
 	conf := basicConf()
-	var expected *pbr.Worker
-
 	// Set a different server address to test that it gets passed on to the worker
 	conf.ServerAddress = "other:9090"
 
-	// Set up mocks
-	db := new(server_mocks.Database)
+  // Mock the GCE API so actual API calls aren't needed
 	gce := new(gce_mocks.GCEClient)
-	sched := new(sched_mocks.Client)
+  // Mock the server/database so we can easily control available workers
+  srv := server_mocks.NewMockServer()
+
+	// Represents a worker that is alive but at full capacity
+	existing := worker("existing", pbr.WorkerState_Alive)
+	existing.Resources.Cpus = 0.0
+  srv.AddWorker(existing)
+
+  srv.RunHelloWorld()
 
 	// The GCE scheduler under test
-	s := &gceScheduler{conf, sched, gce}
+	s := &gceScheduler{conf, srv.Client, gce}
 
-	// Mock the expected calls, and set the return values
+  // Mock an instance template response with 1 cpu/ram/disk
 	gce.On("Template", "test-proj", "test-tpl").Return(&pbr.Resources{
 		Cpus: 1.0,
 		Ram:  1.0,
 		Disk: 1.0,
 	}, nil)
 
-	sched.On("GetWorkers", Anything, Anything, Anything).Return(&pbr.GetWorkersResponse{
-		Workers: []*pbr.Worker{existing},
-	}, nil)
+	scheduler.ScheduleChunk(srv.DB, s, conf)
+  workers := srv.GetWorkers()
 
-	db.On("CheckWorkers").Return(nil)
-	db.On("ReadQueue", conf.ScheduleChunk).Return(queue)
-	db.On("AssignJob", j, Anything).Run(func(args Arguments) {
-		expected = args[1].(*pbr.Worker)
-	})
+  if len(workers) != 2 {
+    t.Error("Expected new worker to be added to database")
+  }
 
-	// Run the scheduling code and check the expectations
-	scheduler.ScheduleChunk(db, s, conf)
-	db.AssertExpectations(t)
-
-	/*
-	 * Now test the scaler
-	 */
-
-	db.On("GetWorkers", Anything, Anything).Return(&pbr.GetWorkersResponse{
-		// TODO would prefer that the mock wrapped an actual database.
-		//      this is assuming the workers were previously written to the database,
-		//      but test coverage would be better without that assumption.
-		Workers: []*pbr.Worker{existing, expected},
-	}, nil)
+  expected := workers[1]
+  log.Debug("Workers", workers)
 
 	// Expected worker config
 	wconf := conf.Worker
@@ -136,9 +116,8 @@ func TestSchedStartWorker(t *testing.T) {
 	wconf.ServerAddress = conf.ServerAddress
 	wconf.ID = expected.Id
 	gce.On("StartWorker", "test-proj", "test-zone", "test-tpl", wconf).Return(nil)
-	db.On("UpdateWorker", Anything, expected).Return(nil, nil)
 
-	scheduler.Scale(db, s)
+	scheduler.Scale(srv.DB, s)
 	gce.AssertExpectations(t)
 }
 

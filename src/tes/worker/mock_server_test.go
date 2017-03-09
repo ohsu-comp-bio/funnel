@@ -21,22 +21,22 @@ func (m *mockScheduler) Schedule(j *pbe.Job) *scheduler.Offer {
 }
 
 func newMockSchedulerServer() *mockSchedulerServer {
-  // Write the database to a temporary file
+	// Write the database to a temporary file
 	f, _ := ioutil.TempFile("", "funnel-test-db-")
 
-  // TODO random port would be better
+	// TODO random port would be better
 	conf := config.DefaultConfig()
 	conf.ServerAddress = "localhost:9932"
 	conf.RPCPort = "9932"
 	conf.DBPath = f.Name()
 
-  // Create database
+	// Create database
 	db, dberr := server.NewTaskBolt(conf)
 	if dberr != nil {
 		panic("Couldn't open database")
 	}
 
-  // Listen on TCP port for RPC
+	// Listen on TCP port for RPC
 	server := grpc.NewServer()
 	lis, err := net.Listen("tcp", ":"+conf.RPCPort)
 	if err != nil {

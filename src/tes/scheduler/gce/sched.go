@@ -70,10 +70,10 @@ func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
 
 		sc := sched.DefaultScores(w, j)
 		/*
-		    TODO
-		    if w.State == pbr.WorkerState_Alive {
-				  sc["startup time"] = 1.0
-		    }
+			    TODO
+			    if w.State == pbr.WorkerState_Alive {
+					  sc["startup time"] = 1.0
+			    }
 		*/
 		sc = sc.Weighted(s.conf.Schedulers.GCE.Weights)
 

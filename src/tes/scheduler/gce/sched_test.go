@@ -16,7 +16,6 @@ func init() {
 
 func basicConf() config.Config {
 	conf := config.DefaultConfig()
-	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
 	conf.Schedulers.GCE.Project = "test-proj"
 	conf.Schedulers.GCE.Zone = "test-zone"
 	return conf
@@ -43,28 +42,45 @@ func worker(id string, s pbr.WorkerState) *pbr.Worker {
 	}
 }
 
-/*
-func TestSchedBasic(t *testing.T) {
+// TestSchedToExisting tests the case where an existing worker has capacity
+// available for the task.
+func TestSchedToExisting(t *testing.T) {
+
+	// Mock config
+	conf := basicConf()
+	// Mock the GCE API so actual API calls aren't needed
+	gce := new(gce_mocks.GCEClient)
+	// Mock the server/database so we can easily control available workers
+	srv := server_mocks.NewMockServer()
+
+	// Represents a worker that is alive but at full capacity
 	existing := worker("existing", pbr.WorkerState_Alive)
-	template := worker("template", pbr.WorkerState_Uninitialized)
+	existing.Resources.Cpus = 0.0
+	srv.AddWorker(existing)
+	srv.RunHelloWorld()
 
-	conf := config.DefaultConfig()
-	gcemock, tesmock := newMocks()
-	gcemock.templates = append(gcemock.templates, template)
-	tesmock.workers = append(tesmock.workers, existing)
+	// The GCE scheduler under test
+	s := &gceScheduler{conf, srv.Client, gce}
 
-	s := gceScheduler{conf, tesmock, gcemock}
-	j := &pbe.Job{}
-	r := s.Schedule(j)
-	if r == nil {
-		t.Error("Job was not scheduled")
+	scheduler.ScheduleChunk(srv.DB, s, conf)
+	workers := srv.GetWorkers()
+
+	if len(workers) != 1 {
+		t.Error("Expected a single worker")
 	}
-	if r.Worker.Id != "existing" {
-		log.Debug("Worker", r.Worker)
-		t.Error("Job was scheduled to wrong worker")
+
+	log.Debug("Workers", workers)
+	w := workers[0]
+
+	if w.Id != "existing" {
+		t.Error("Job scheduled to unexpected worker")
 	}
+
+	// Not really needed for this test, but safer anyway
+	scheduler.Scale(srv.DB, s)
+	// Basically asserts that no GCE APIs were called. None are needed in this case.
+	gce.AssertExpectations(t)
 }
-*/
 
 // TestSchedStartWorker tests the case where the scheduler wants to start a new
 // GCE worker instance from a instance template defined in the configuration.
@@ -73,27 +89,30 @@ func TestSchedBasic(t *testing.T) {
 // start the worker.
 func TestSchedStartWorker(t *testing.T) {
 
-  // Mock config
+	// Mock config
 	conf := basicConf()
 	// Set a different server address to test that it gets passed on to the worker
 	conf.ServerAddress = "other:9090"
+	// Add an instance template to the config. The scheduler uses these templates
+	// to start new worker instances.
+	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
 
-  // Mock the GCE API so actual API calls aren't needed
+	// Mock the GCE API so actual API calls aren't needed
 	gce := new(gce_mocks.GCEClient)
-  // Mock the server/database so we can easily control available workers
-  srv := server_mocks.NewMockServer()
+	// Mock the server/database so we can easily control available workers
+	srv := server_mocks.NewMockServer()
 
 	// Represents a worker that is alive but at full capacity
 	existing := worker("existing", pbr.WorkerState_Alive)
 	existing.Resources.Cpus = 0.0
-  srv.AddWorker(existing)
+	srv.AddWorker(existing)
 
-  srv.RunHelloWorld()
+	srv.RunHelloWorld()
 
 	// The GCE scheduler under test
 	s := &gceScheduler{conf, srv.Client, gce}
 
-  // Mock an instance template response with 1 cpu/ram/disk
+	// Mock an instance template response with 1 cpu/ram/disk
 	gce.On("Template", "test-proj", "test-tpl").Return(&pbr.Resources{
 		Cpus: 1.0,
 		Ram:  1.0,
@@ -101,14 +120,14 @@ func TestSchedStartWorker(t *testing.T) {
 	}, nil)
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
-  workers := srv.GetWorkers()
+	workers := srv.GetWorkers()
 
-  if len(workers) != 2 {
-    t.Error("Expected new worker to be added to database")
-  }
+	if len(workers) != 2 {
+		t.Error("Expected new worker to be added to database")
+	}
 
-  expected := workers[1]
-  log.Debug("Workers", workers)
+	expected := workers[1]
+	log.Debug("Workers", workers)
 
 	// Expected worker config
 	wconf := conf.Worker
@@ -120,31 +139,3 @@ func TestSchedStartWorker(t *testing.T) {
 	scheduler.Scale(srv.DB, s)
 	gce.AssertExpectations(t)
 }
-
-/*
-func TestGetWorkers(t *testing.T) {
-	existing := worker("existing", pbr.WorkerState_Alive)
-	existing.Available.Cpus = 0.0
-	template := worker("template", pbr.WorkerState_Uninitialized)
-
-	conf := config.DefaultConfig()
-	gcemock, tesmock := newMocks()
-	gcemock.templates = append(gcemock.templates, template)
-	tesmock.workers = append(tesmock.workers, existing)
-
-	s := gceScheduler{conf, tesmock, gcemock}
-	r := s.getWorkers()
-
-	if len(r) != 2 {
-		t.Error("Expected 2 workers")
-	}
-	if r[0] != existing {
-		log.Debug("Worker", r[0])
-		t.Error("Unexpected worker")
-	}
-  if r[1].Id != "template" {
-		log.Debug("Worker", r[1])
-		t.Error("Unexpected second worker")
-	}
-}
-*/

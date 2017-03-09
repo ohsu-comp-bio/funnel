@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/imdario/mergo"
 	"os"
 	"strings"
 	"tes/config"
@@ -17,18 +18,29 @@ import (
 var log = logger.New("tes-server")
 
 func main() {
-	conf := config.DefaultConfig()
-
+	var cliconf config.Config
 	var confArg string
 	flag.StringVar(&confArg, "config", "", "Config File")
-	flag.StringVar(&conf.HTTPPort, "http-port", conf.HTTPPort, "HTTP Port")
-	flag.StringVar(&conf.RPCPort, "rpc-port", conf.RPCPort, "RPC Port")
-	flag.StringVar(&conf.DBPath, "db-path", conf.DBPath, "Database path")
-	flag.StringVar(&conf.Scheduler, "scheduler", conf.Scheduler, "Name of scheduler to enable")
-	flag.StringVar(&conf.LogLevel, "logging", conf.LogLevel, "Level of logging")
+	flag.StringVar(&cliconf.HostName, "hostname", cliconf.HostName, "Host name or IP")
+	flag.StringVar(&cliconf.HTTPPort, "http-port", cliconf.HTTPPort, "HTTP Port")
+	flag.StringVar(&cliconf.RPCPort, "rpc-port", cliconf.RPCPort, "RPC Port")
+	flag.StringVar(&cliconf.DBPath, "db-path", cliconf.DBPath, "Database path")
+	flag.StringVar(&cliconf.Scheduler, "scheduler", cliconf.Scheduler, "Name of scheduler to enable")
+	flag.StringVar(&cliconf.LogLevel, "logging", cliconf.LogLevel, "Level of logging")
 	flag.Parse()
 
+	conf := config.DefaultConfig()
 	config.LoadConfigOrExit(confArg, &conf)
+
+	// file vals <- cli val
+	err := mergo.MergeWithOverwrite(&conf, cliconf)
+	if err != nil {
+		panic(err)
+	}
+
+	// make sure the proper defaults are set
+	conf.Worker = config.WorkerInheritConfigVals(conf)
+
 	logger.SetLevel(conf.LogLevel)
 	start(conf)
 }
@@ -78,5 +90,5 @@ func start(conf config.Config) {
 	}
 
 	// TODO if port 8000 is already busy, does this lock up silently?
-	server.StartHTTPProxy(conf.RPCPort, conf.HTTPPort, conf.ContentDir)
+	server.StartHTTPProxy(conf.HostName + ":" + conf.RPCPort, conf.HTTPPort, conf.ContentDir)
 }

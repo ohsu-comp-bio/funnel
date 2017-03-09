@@ -64,9 +64,7 @@ func (s *scheduler) getWorkers() []*pbr.Worker {
 func startWorker(id string, conf config.Config) error {
 	c := conf.Worker
 	c.ID = id
-	c.ServerAddress = "localhost:9090"
-	c.Storage = conf.Storage
-	c.Resources = conf.Worker.Resources
+
 	log.Debug("Starting local worker", "storage", c.Storage)
 
 	w, err := worker.NewWorker(c)

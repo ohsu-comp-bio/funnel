@@ -150,10 +150,7 @@ func (s *gceScheduler) StartWorker(w *pbr.Worker) error {
 	// Write the funnel worker config yaml to a string
 	c := s.conf.Worker
 	c.ID = w.Id
-	// TODO this should be set as a worker default config somewhere else
-	c.ServerAddress = s.conf.ServerAddress
 	c.Timeout = -1
-	c.Storage = s.conf.Storage
 
 	project := s.conf.Schedulers.GCE.Project
 	zone := s.conf.Schedulers.GCE.Zone

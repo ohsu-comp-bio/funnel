@@ -25,6 +25,7 @@ func NewScheduler(conf config.Config) (sched.Scheduler, error) {
 	return &scheduler{conf, client, id}, nil
 }
 
+// TODO should probably avoid this. It hides what's actually going on
 type clientI interface {
 	GetWorkers(context.Context, *pbr.GetWorkersRequest, ...grpc.CallOption) (*pbr.GetWorkersResponse, error)
 }

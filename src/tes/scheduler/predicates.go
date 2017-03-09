@@ -86,12 +86,12 @@ func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
 		return true
 	}
 
-	if len(j.Task.GetResources().Zones) == 0 {
+	if len(j.GetTask().GetResources().GetZones()) == 0 {
 		// Request doesn't specify any zones, so don't bother checking.
 		return true
 	}
 
-	for _, z := range j.Task.GetResources().Zones {
+	for _, z := range j.GetTask().GetResources().GetZones() {
 		if z == w.Zone {
 			return true
 		}

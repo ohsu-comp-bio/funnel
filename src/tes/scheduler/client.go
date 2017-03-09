@@ -7,14 +7,18 @@ import (
 )
 
 // Client is a client for the scheduler gRPC service.
-type Client struct {
+type Client interface {
 	pbr.SchedulerClient
+}
+
+type client struct {
+	Client
 	conn *grpc.ClientConn
 }
 
 // NewClient returns a new Client instance connected to the
 // scheduler at a given address (e.g. "localhost:9090")
-func NewClient(conf config.Worker) (*Client, error) {
+func NewClient(conf config.Worker) (Client, error) {
 	conn, err := NewRPCConnection(conf.ServerAddress)
 	if err != nil {
 		log.Error("Couldn't connect to schduler", err)
@@ -22,10 +26,10 @@ func NewClient(conf config.Worker) (*Client, error) {
 	}
 
 	s := pbr.NewSchedulerClient(conn)
-	return &Client{s, conn}, nil
+	return &client{s, conn}, nil
 }
 
 // Close closes the client connection.
-func (client *Client) Close() {
+func (client *client) Close() {
 	client.conn.Close()
 }

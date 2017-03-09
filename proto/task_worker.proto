@@ -4,6 +4,7 @@ syntax = "proto3";
 package ga4gh_task_ref;
 
 import "task_execution.proto";
+import "google/api/annotations.proto";
 
 message Resources {
   uint32 cpus = 1;
@@ -21,10 +22,6 @@ enum WorkerState {
   Initializing = 4;
 }
 
-message GCEWorkerInfo {
-  string template = 1;
-}
-
 message Worker {
   string id = 1;
   // Job ID -> JobWrapper
@@ -37,11 +34,12 @@ message Worker {
   // TODO where does this get updated?
   repeated int32 active_ports = 10;
   string zone = 11;
-  GCEWorkerInfo gce = 12;
   // Hostname of the worker host.
   // TODO
   string hostname  = 13;
+  // Version of the record in the database. Used to prevent write conflicts.
   int64 version = 14;
+  map<string,string> metadata = 15;
 }
 
 // TODO is there a nice way to avoid this wrapper? Maybe protobuf extensions?
@@ -88,6 +86,16 @@ service Scheduler {
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc UpdateJobLogs(UpdateJobLogsRequest) returns (UpdateJobLogsResponse) {};
   rpc UpdateWorker(Worker) returns (UpdateWorkerResponse) {};
-  rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {};
-  rpc GetWorker(GetWorkerRequest) returns (Worker) {};
+
+  rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {
+    option (google.api.http) = {
+      get: "/v1/funnel/workers"
+    };
+  };
+
+  rpc GetWorker(GetWorkerRequest) returns (Worker) {
+    option (google.api.http) = {
+      get: "/v1/funnel/worker/{id}"
+    };
+  };
 }

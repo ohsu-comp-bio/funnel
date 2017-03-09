@@ -9,7 +9,7 @@ import (
 
 // Defines some helpers for RPC calls in the code above
 type schedClient struct {
-	*scheduler.Client
+	scheduler.Client
 	conf config.Worker
 }
 

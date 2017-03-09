@@ -46,21 +46,8 @@ func NewOffer(w *pbr.Worker, j *pbe.Job, s Scores) *Offer {
 	}
 }
 
-// ScheduleLoop starts a scheduling loop, pulling conf.ScheduleChunk jobs from the database,
-// and sending those to the given scheduler.
-//
-// TODO make a way to stop this loop
-func ScheduleLoop(db *server.TaskBolt, sched Scheduler, conf config.Config) {
-	tickChan := time.NewTicker(conf.ScheduleRate).C
-
-	for {
-		<-tickChan
-		Schedule(db, sched, conf)
-	}
-}
-
 // Schedule runs a single job scheduling tick.
-func Schedule(db *server.TaskBolt, sched Scheduler, conf config.Config) {
+func ScheduleChunk(db server.Database, sched Scheduler, conf config.Config) {
 	db.CheckWorkers()
 	for _, job := range db.ReadQueue(conf.ScheduleChunk) {
 		offer := sched.Schedule(job)
@@ -82,50 +69,10 @@ func GenWorkerID() string {
 	return "worker-" + u.String()
 }
 
-// DefaultScheduleAlgorithm implements a simple scheduling algorithm
-// that is (currently) common across a few scheduler backends.
-// Given a job, list of workers, and weights, it returns the best Offer or nil.
-func DefaultScheduleAlgorithm(j *pbe.Job, workers []*pbr.Worker, weights config.Weights) *Offer {
-
-	offers := []*Offer{}
-	for _, w := range workers {
-		// Filter out workers that don't match the job request.
-		// Checks CPU, RAM, disk space, ports, etc.
-		if !Match(w, j, DefaultPredicates) {
-			continue
-		}
-
-		sc := DefaultScores(w, j)
-		sc = sc.Weighted(weights)
-
-		offer := NewOffer(w, j, sc)
-		offers = append(offers, offer)
-	}
-
-	// No matching workers were found.
-	if len(offers) == 0 {
-		return nil
-	}
-
-	SortByAverageScore(offers)
-	return offers[0]
-}
-
-// ScaleLoop calls Scale in a ticker loop. The separation of the two
-// is mostly useful for testing.
-func ScaleLoop(db *server.TaskBolt, s Scaler, conf config.Config) {
-	ticker := time.NewTicker(conf.Worker.TrackerRate)
-
-	for {
-		<-ticker.C
-		Scale(db, s)
-	}
-}
-
 // Scale implements some common logic for allowing scheduler backends
 // to poll the database, looking for workers that need to be started
 // and shutdown.
-func Scale(db *server.TaskBolt, s Scaler) {
+func Scale(db server.Database, s Scaler) {
 
 	resp, err := db.GetWorkers(context.TODO(), &pbr.GetWorkersRequest{})
 	if err != nil {
@@ -159,5 +106,31 @@ func Scale(db *server.TaskBolt, s Scaler) {
 			//      this *should* be very unlikely.
 			log.Error("Error marking worker as initializing", err)
 		}
+	}
+}
+
+// ScheduleLoop starts a scheduling loop, pulling conf.ScheduleChunk jobs from the database,
+// and sending those to the given scheduler.
+//
+// TODO make a way to stop this loop
+// TODO move to tes-server
+func ScheduleLoop(db server.Database, sched Scheduler, conf config.Config) {
+	tickChan := time.NewTicker(conf.ScheduleRate).C
+
+	for {
+		<-tickChan
+		ScheduleChunk(db, sched, conf)
+	}
+}
+
+// TODO move to tes-server
+// ScaleLoop calls Scale in a ticker loop. The separation of the two
+// is mostly useful for testing.
+func ScaleLoop(db server.Database, s Scaler, conf config.Config) {
+	ticker := time.NewTicker(conf.Worker.TrackerRate)
+
+	for {
+		<-ticker.C
+		Scale(db, s)
 	}
 }

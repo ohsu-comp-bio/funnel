@@ -5,6 +5,7 @@ import (
 	"os"
 	"tes/config"
 	"tes/logger"
+	"tes/scheduler"
 	"tes/worker"
 )
 
@@ -41,6 +42,12 @@ func start(conf config.Worker) {
 			logger.SetOutput(logFile)
 		}
 	}
+
+	if conf.ID == "" {
+		conf.ID = scheduler.GenWorkerID()
+	}
+
+	log.Debug("WORKER CONFIG", conf)
 
 	w, err := worker.NewWorker(conf)
 	if err != nil {

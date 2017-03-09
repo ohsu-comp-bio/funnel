@@ -81,6 +81,10 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 		}
 	}
 
+	for k, v := range req.Metadata {
+		worker.Metadata[k] = v
+	}
+
 	// TODO move to on-demand helper. i.e. don't store in DB
 	updateAvailableResources(tx, worker)
 	worker.Version = time.Now().Unix()
@@ -163,6 +167,8 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 				continue
 			}
 
+			// TODO but want to mark workers that never initialized
+			//      as dead
 			if worker.LastPing == 0 {
 				// Worker has never sent an update
 				continue

@@ -119,6 +119,11 @@ func DefaultConfig() Config {
 		Scheduler:     "local",
 		Schedulers: Schedulers{
 			Local: LocalScheduler{},
+			GCE: GCEScheduler{
+				Weights: Weights{
+					"startup time": 1.0,
+				},
+			},
 		},
 		Worker:        WorkerDefaultConfig(),
 		MaxJobLogSize: 10000,
@@ -150,6 +155,7 @@ type Worker struct {
 	Resources     *pbr.Resources
 	// Timeout duration for UpdateWorker() and UpdateJobLogs() RPC calls
 	UpdateTimeout time.Duration
+	Metadata      map[string]string
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.

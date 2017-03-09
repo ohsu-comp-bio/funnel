@@ -99,6 +99,15 @@ func (w *worker) checkJobs() {
 	r.LastPing = time.Now().Unix()
 	r.Resources = w.resources
 	r.State = pbr.WorkerState_Alive
+
+	// Merge metadata
+	if r.Metadata == nil {
+		r.Metadata = map[string]string{}
+	}
+	for k, v := range w.conf.Metadata {
+		r.Metadata[k] = v
+	}
+
 	_, err := w.sched.UpdateWorker(r)
 	if err != nil {
 		log.Error("Couldn't save worker update. Recovering.", err)

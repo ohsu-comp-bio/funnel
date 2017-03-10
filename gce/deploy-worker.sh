@@ -17,5 +17,7 @@ $RUN 'mkdir ~/funnel'
 $COPY bin/linux_amd64/tes-worker gce $NAME:~/funnel/
 $RUN 'sudo mv ~/funnel /opt/'
 $RUN 'sudo cp /opt/funnel/gce/funnel-worker.service /etc/systemd/system/multi-user.target.wants/'
+$RUN 'sudo apt update'
+$RUN 'sudo apt install docker.io'
 $RUN 'sudo systemctl daemon-reload'
 $RUN 'sudo systemctl start funnel-worker.service'

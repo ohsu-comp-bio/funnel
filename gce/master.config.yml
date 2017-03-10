@@ -1,6 +1,7 @@
 DBPath: /opt/funnel/funnel.db
 ContentDir: /opt/funnel/share
 WorkDir: /mnt/disks/shared/funnel-work-dir
+ServerAddress: funnel-master:9090
 HTTPPort: 80
 Scheduler: gce
 Schedulers:

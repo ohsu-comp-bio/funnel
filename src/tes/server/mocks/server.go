@@ -78,16 +78,17 @@ func (m *MockServer) AddWorker(w *pbr.Worker) {
 }
 
 // RunTask adds a task to the database (calling db.RunTask)
-func (m *MockServer) RunTask(t *pbe.Task) {
-	_, err := m.DB.RunTask(context.Background(), t)
+func (m *MockServer) RunTask(t *pbe.Task) string {
+	ret, err := m.DB.RunTask(context.Background(), t)
 	if err != nil {
 		panic(err)
 	}
+	return ret.Value
 }
 
 // RunHelloWorld adds a simple hello world task to the database queue.
-func (m *MockServer) RunHelloWorld() {
-	m.RunTask(&pbe.Task{
+func (m *MockServer) RunHelloWorld() string {
+	return m.RunTask(&pbe.Task{
 		Name: "Hello world",
 		Docker: []*pbe.DockerExecutor{
 			{

@@ -48,7 +48,7 @@ func newMockSchedulerServer() *mockSchedulerServer {
 
 type mockSchedulerServer struct {
 	db     *server.TaskBolt
-	server *server_mocks.MockServer
+	Server *server_mocks.MockServer
 	sched  *mockScheduler
 	conf   config.Config
 	worker *worker
@@ -60,5 +60,5 @@ func (m *mockSchedulerServer) Flush() {
 }
 
 func (m *mockSchedulerServer) Close() {
-	m.server.Close()
+	m.Server.Close()
 }

@@ -1,18 +1,11 @@
 package gce
 
 // TODO
-// - how to re-evaluate the resource pool after a worker is created (autoscale)?
 // - resource tracking via GCP APIs
-// - matching requirements to existing VMs
 // - provisioning limits, e.g. don't create more than 100 VMs, or
 //   maybe use N VCPUs max, across all VMs
 // - act on failed machines?
 // - know how to shutdown machines
-
-// TODO outside of scheduler for SMC RNA
-// - client that organizes SMCRNA tasks and submits
-// - dashboard for tracking jobs
-// - resource tracking via TES worker stats collection
 
 import (
 	"context"

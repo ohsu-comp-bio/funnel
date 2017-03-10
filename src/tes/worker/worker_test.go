@@ -1,35 +1,28 @@
 package worker
 
 import (
+	"errors"
 	"golang.org/x/net/context"
 	pbe "tes/ga4gh"
-	"testing"
-	//"tes/config"
-	//pbr "tes/server/proto"
 	"tes/logger"
+	"testing"
 )
 
 func init() {
 	logger.ForceColors()
 }
 
+// Test the flow of a job being scheduled to a worker, run, completed, etc.
 func TestBasicWorker(t *testing.T) {
+	// Set up
 	srv := newMockSchedulerServer()
 	defer srv.Close()
 	ctx := context.Background()
-	var err error
 
-	jid, err := srv.db.RunTask(ctx, &pbe.Task{
-		Name: "test-task",
-		Docker: []*pbe.DockerExecutor{
-			{},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	jobID := jid.Value
+	// Run task
+	jobID := srv.Server.RunHelloWorld()
 
+	// Schedule and sync worker
 	srv.Flush()
 	ctrl := srv.worker.ctrls[jobID]
 
@@ -41,19 +34,23 @@ func TestBasicWorker(t *testing.T) {
 		t.Error("Expected runner state to be init")
 	}
 
+	// Set job to running and sync worker
 	ctrl.SetRunning()
 	srv.Flush()
 
-	r, err := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
+	// Check job state in DB
+	r, _ := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
 
 	if r.State != pbe.State_Running {
 		t.Error("Expected job state in DB to be running")
 	}
 
+	// Set job to complete and sync worker
 	ctrl.SetResult(nil)
 	srv.Flush()
 
-	q, err := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
+	// Check for complete state in database
+	q, _ := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
 
 	if q.State != pbe.State_Complete {
 		t.Error("Expected job state in DB to be running")
@@ -61,26 +58,55 @@ func TestBasicWorker(t *testing.T) {
 	log.Debug("TEST", "jobID", jobID, "r", r)
 }
 
+// Test a scheduled job is removed from the job queue.
+// TODO doesn't this belong more in the scheduler?
 func TestScheduledJobRemovedFromQueue(t *testing.T) {
 	srv := newMockSchedulerServer()
 	defer srv.Close()
-	ctx := context.Background()
-	var err error
 
-	_, err = srv.db.RunTask(ctx, &pbe.Task{
-		Name: "test-task",
-		Docker: []*pbe.DockerExecutor{
-			{},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
+	srv.Server.RunHelloWorld()
 	srv.Flush()
 
 	res := srv.db.ReadQueue(10)
 	if len(res) != 0 {
 		t.Error("Expected job queue to be empty")
+	}
+}
+
+// Test the case where a job fails.
+func TestJobFail(t *testing.T) {
+	// Set up
+	srv := newMockSchedulerServer()
+	defer srv.Close()
+	ctx := context.Background()
+
+	// Run task
+	jobID := srv.Server.RunHelloWorld()
+
+	// Schedule and sync worker
+	srv.Flush()
+	ctrl := srv.worker.ctrls[jobID]
+
+	// Set failed and sync
+	ctrl.SetResult(errors.New("TEST"))
+	srv.Flush()
+
+	// Check job state in DB
+	r, _ := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
+
+	if r.State != pbe.State_Error {
+		t.Error("Expected job state in DB to be running")
+	}
+
+	// Sync worker. The worker should remove the job controller for the
+	// failed job.
+	srv.Flush()
+	// There was a bug where the worker was re-running failed jobs.
+	// Do a few syncs just to make sure.
+	srv.Flush()
+	srv.Flush()
+
+	if len(srv.worker.ctrls) != 0 {
+		t.Error("Expected job control to be cleaned up.")
 	}
 }

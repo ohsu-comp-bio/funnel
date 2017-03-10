@@ -14,7 +14,6 @@ type runJobFunc func(JobControl, config.Worker, *pbr.JobWrapper, logUpdateChan)
 type logUpdateChan chan *pbr.UpdateJobLogsRequest
 
 // Worker represents a worker which processes jobs
-// TODO better docs or just remove this interface?
 type Worker interface {
 	Run()
 }
@@ -50,7 +49,6 @@ type worker struct {
 // with the server and starting job runners
 func (w *worker) Run() {
 	w.log.Info("Starting worker")
-	// TODO need a way to shut the worker down.
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
 	defer ticker.Stop()

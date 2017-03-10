@@ -3,6 +3,7 @@ package gce
 import (
 	"context"
 	"fmt"
+	"github.com/mitchellh/copystructure"
 	"google.golang.org/api/compute/v1"
 	"tes/config"
 	pbr "tes/server/proto"
@@ -66,8 +67,9 @@ func (s *gceClient) Template(project, zone, id string) (*pbr.Resources, error) {
 		return nil, fmt.Errorf("Unknown machine type: %s", tpl.Properties.MachineType)
 	}
 
-	// Copy the struct so we don't modify the cached machine type data
+	// Copy the structure so that the cached data isn't corrupted
 	res := x
+
 	// TODO is there always at least one disk? Is the first the best choice?
 	//      how to know which to pick if there are multiple?
 	res.Disk = float64(tpl.Properties.Disks[0].InitializeParams.DiskSizeGb)
@@ -164,7 +166,14 @@ func (s *gceClient) template(project, id string) (*compute.InstanceTemplate, err
 		tpl = res
 		s.templates[id] = tpl
 	}
-	return tpl, nil
+	// Deep copy structure so that cached data isn't corrupted
+	ri, cperr := copystructure.Copy(tpl)
+	if cperr != nil {
+		log.Error("Couldn't deep copy template struct", cperr)
+		return nil, cperr
+	}
+	r := ri.(*compute.InstanceTemplate)
+	return r, nil
 }
 
 func localize(zone, resourceType, val string) string {

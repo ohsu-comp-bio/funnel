@@ -1,6 +1,7 @@
 package storage
 
 import (
+  "context"
 	"os"
 	"tes/config"
 	"testing"
@@ -12,7 +13,7 @@ func authed(t *testing.T) *GSBackend {
 	if accountFile == "" {
 		t.Skip("No Google Cloud account file. Set TES_TEST_GS_ACCOUNT_FILE")
 	}
-	conf := tes.GoogleStorageConfig{
+	conf := config.GSStorage{
 		AccountFile: accountFile,
 	}
 
@@ -26,41 +27,45 @@ func authed(t *testing.T) *GSBackend {
 }
 
 func TestAnonymousGet(t *testing.T) {
-	conf := tes.GoogleStorageConfig{}
+  ctx := context.Background()
+	conf := config.GSStorage{}
 	gs, err := NewGSBackend(conf)
 	if err != nil {
 		t.Error(err)
 	}
 
 	// TODO this doesn't create the output path yet
-	gerr := gs.Get("gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", "File")
+	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", "File")
 	if gerr != nil {
 		t.Error(gerr)
 	}
 }
 
 func TestGet(t *testing.T) {
+  ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Get("gs://uspto-pair/applications/05900016.zip", "_test_download/downloaded", "File")
+	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/downloaded", "File")
 	if gerr != nil {
 		t.Error(gerr)
 	}
 }
 
 func TestPut(t *testing.T) {
+  ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Put("gs://ohsu-cromwell-testing.appspot.com/go_test_put", "_test_files/for_put", "File")
+	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com/go_test_put", "_test_files/for_put", "File")
 	if gerr != nil {
 		t.Error(gerr)
 	}
 }
 
 func TestTrimSlashes(t *testing.T) {
+  ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Put("gs://ohsu-cromwell-testing.appspot.com///go_test_put", "_test_files/for_put", "File")
+	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com///go_test_put", "_test_files/for_put", "File")
 	if gerr != nil {
 		t.Error(gerr)
 	}

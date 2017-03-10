@@ -3,70 +3,48 @@ package gce
 import (
 	"context"
 	"fmt"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
-	"io/ioutil"
-	"net/http"
 	"tes/config"
 	pbr "tes/server/proto"
 )
 
-// Client is the interface used by the scheduler, which is expected to
-// communicate with Google Cloud Platform APIs. Mostly, this exists for
-// testing. It's easier to mock this small, specific interface.
+// Client is the interface the scheduler/scaler uses to interact with the GCE API.
+// Mainly, the scheduler needs to be able to look up an instance template,
+// or start a worker instance.
 type Client interface {
-	Template(project, id string) (*pbr.Resources, error)
+	Template(project, zone, id string) (*pbr.Resources, error)
 	StartWorker(project, zone, id string, conf config.Worker) error
 }
 
-// service creates a Google Compute service client
-func newClient(ctx context.Context, conf config.Config) (Client, error) {
-	var client *http.Client
-	if conf.Schedulers.GCE.AccountFile != "" {
-		// Pull the client configuration (e.g. auth) from a given account file.
-		// This is likely downloaded from Google Cloud manually via IAM & Admin > Service accounts.
-		bytes, rerr := ioutil.ReadFile(conf.Schedulers.GCE.AccountFile)
-		if rerr != nil {
-			return nil, rerr
-		}
+func newClient(wrapper Wrapper) Client {
+  return &gceClient{
+    templates: map[string]*compute.InstanceTemplate{},
+    wrapper: wrapper,
+  }
+}
 
-		config, tserr := google.JWTConfigFromJSON(bytes, compute.ComputeScope)
-		if tserr != nil {
-			return nil, tserr
-		}
-		client = config.Client(ctx)
-	} else {
-		// Pull the information (auth and other config) from the environment,
-		// which is useful when this code is running in a Google Compute instance.
-		client, _ = google.DefaultClient(ctx, compute.ComputeScope)
-		// TODO catch error
-	}
-
-	svc, cerr := compute.New(client)
-	if cerr != nil {
-		return nil, cerr
-	}
-
-	return &gceClient{
-		conf: conf,
-		svc:  svc,
-	}, nil
+// Helper for creating a wrapper before creating a client
+func newClientFromConfig(conf config.Config) (Client, error) {
+  w, err := newWrapper(context.Background(), conf)
+  if err != nil {
+    return nil, err
+  }
+  return newClient(w), nil
 }
 
 type gceClient struct {
 	templates    map[string]*compute.InstanceTemplate
 	machineTypes map[string]pbr.Resources
-	conf         config.Config
-	svc          *compute.Service
+  wrapper      Wrapper
 }
 
 // Templates queries the GCE API to get details about GCE instance templates.
 // If the API client fails to connect, this returns an empty list.
-func (s *gceClient) Template(project, id string) (*pbr.Resources, error) {
+func (s *gceClient) Template(project, zone, id string) (*pbr.Resources, error) {
 
 	// TODO expire cache?
 	if s.machineTypes == nil {
-		err := s.loadMachineTypes(project)
+		err := s.loadMachineTypes(project, zone)
 		if err != nil {
 			log.Error("Couldn't load GCE machine types", err)
 			return nil, err
@@ -96,23 +74,6 @@ func (s *gceClient) Template(project, id string) (*pbr.Resources, error) {
 	return &res, nil
 }
 
-func (s *gceClient) template(project, id string) (*compute.InstanceTemplate, error) {
-	// TODO expire cache?
-	// Get the template from the cache, or call out to the GCE API
-	tpl, exists := s.templates[id]
-	if !exists {
-		// Get the instance template from the GCE API
-		res, err := s.svc.InstanceTemplates.Get(project, id).Do()
-		if err != nil {
-			log.Error("Couldn't get GCE template", "error", err, "template", id)
-			return nil, err
-		}
-		tpl = res
-		s.templates[id] = tpl
-	}
-	return tpl, nil
-}
-
 // StartWorker calls out to GCE APIs to create a VM instance
 // with a Funnel worker.
 func (s *gceClient) StartWorker(project, zone, template string, conf config.Worker) error {
@@ -133,6 +94,7 @@ func (s *gceClient) StartWorker(project, zone, template string, conf config.Work
 	metadata := compute.Metadata{
 		Items: append(props.Metadata.Items,
 			&compute.MetadataItems{
+        // TODO move to conf.Metadata
 				Key:   "funnel-config",
 				Value: &confYaml,
 			},
@@ -159,7 +121,7 @@ func (s *gceClient) StartWorker(project, zone, template string, conf config.Work
 		Metadata:          &metadata,
 	}
 
-	op, ierr := s.svc.Instances.Insert(project, zone, &instance).Do()
+	op, ierr := s.wrapper.InsertInstance(project, zone, &instance)
 	if ierr != nil {
 		log.Error("Couldn't insert GCE VM instance", ierr)
 		return ierr
@@ -169,10 +131,10 @@ func (s *gceClient) StartWorker(project, zone, template string, conf config.Work
 	return nil
 }
 
-func (s *gceClient) loadMachineTypes(project string) error {
+func (s *gceClient) loadMachineTypes(project, zone string) error {
 	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 	// Get the machine types available to the project + zone
-	resp, err := s.svc.MachineTypes.List(project, s.conf.Schedulers.GCE.Zone).Do()
+  resp, err := s.wrapper.ListMachineTypes(project, zone)
 	if err != nil {
 		log.Error("Couldn't get GCE machine list.", err)
 		return err
@@ -186,6 +148,23 @@ func (s *gceClient) loadMachineTypes(project string) error {
 		}
 	}
 	return nil
+}
+
+func (s *gceClient) template(project, id string) (*compute.InstanceTemplate, error) {
+	// TODO expire cache?
+	// Get the template from the cache, or call out to the GCE API
+	tpl, exists := s.templates[id]
+	if !exists {
+		// Get the instance template from the GCE API
+    res, err := s.wrapper.GetInstanceTemplate(project, id)
+		if err != nil {
+			log.Error("Couldn't get GCE template", "error", err, "template", id)
+			return nil, err
+		}
+		tpl = res
+		s.templates[id] = tpl
+	}
+	return tpl, nil
 }
 
 func localize(zone, resourceType, val string) string {

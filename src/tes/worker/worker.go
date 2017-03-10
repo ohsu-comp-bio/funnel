@@ -112,7 +112,6 @@ func (w *worker) checkJobs() {
 	}
 }
 
-// TODO this is trying to re-run jobs on failure
 // reconcile merges the server state with the worker state:
 // - identifies new jobs and starts new runners for them
 // - identifies canceled jobs and cancels existing runners

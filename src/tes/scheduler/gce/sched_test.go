@@ -116,7 +116,7 @@ func TestSchedStartWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-tpl").Return(&pbr.Resources{
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
 		Cpus: 1.0,
 		Ram:  1.0,
 		Disk: 1.0,
@@ -171,7 +171,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-tpl").Return(&pbr.Resources{
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
 		Cpus: 10.0,
 		Ram:  1.0,
 		Disk: 1.0,

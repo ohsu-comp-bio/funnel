@@ -11,9 +11,9 @@ GOOS=linux GOARCH=amd64 make
 
 NAME='funnel-master'
 
-#gcloud compute instances create $NAME \
-#  --scopes https://www.googleapis.com/auth/cloud-platform \
-#  --tags http-server,https-server
+gcloud compute instances create $NAME \
+  --scopes https://www.googleapis.com/auth/cloud-platform \
+  --tags http-server,https-server
 
 
 RUN="gcloud compute ssh $NAME --command"

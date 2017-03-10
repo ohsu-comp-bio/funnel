@@ -1,12 +1,12 @@
 package gce
 
 import (
+	"context"
+	"golang.org/x/oauth2/google"
 	. "google.golang.org/api/compute/v1"
-  "context"
-  "golang.org/x/oauth2/google"
-  "tes/config"
-  "net/http"
-  "io/ioutil"
+	"io/ioutil"
+	"net/http"
+	"tes/config"
 )
 
 // Wrapper represents a simpler version of the Google Cloud Compute Service
@@ -14,9 +14,9 @@ import (
 // and hard to test against, so this wrapper simplifies things down to only what
 // funnel needs.
 type Wrapper interface {
-  InsertInstance(project, zone string, instance *Instance) (*Operation, error)
-  ListMachineTypes(project, zone string) (*MachineTypeList, error)
-  GetInstanceTemplate(project, id string) (*InstanceTemplate, error)
+	InsertInstance(project, zone string, instance *Instance) (*Operation, error)
+	ListMachineTypes(project, zone string) (*MachineTypeList, error)
+	GetInstanceTemplate(project, id string) (*InstanceTemplate, error)
 }
 
 func newWrapper(ctx context.Context, conf config.Config) (Wrapper, error) {
@@ -46,21 +46,21 @@ func newWrapper(ctx context.Context, conf config.Config) (Wrapper, error) {
 		return nil, cerr
 	}
 
-  return &wrapper{svc}, nil
+	return &wrapper{svc}, nil
 }
 
 type wrapper struct {
-  svc *Service
+	svc *Service
 }
 
 func (w *wrapper) InsertInstance(project, zone string, instance *Instance) (*Operation, error) {
-  return w.svc.Instances.Insert(project, zone, instance).Do()
+	return w.svc.Instances.Insert(project, zone, instance).Do()
 }
 
 func (w *wrapper) ListMachineTypes(project, zone string) (*MachineTypeList, error) {
-  return w.svc.MachineTypes.List(project, zone).Do()
+	return w.svc.MachineTypes.List(project, zone).Do()
 }
 
 func (w *wrapper) GetInstanceTemplate(project, id string) (*InstanceTemplate, error) {
-  return w.svc.InstanceTemplates.Get(project, id).Do()
+	return w.svc.InstanceTemplates.Get(project, id).Do()
 }

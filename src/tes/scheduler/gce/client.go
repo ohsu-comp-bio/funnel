@@ -17,25 +17,25 @@ type Client interface {
 }
 
 func newClient(wrapper Wrapper) Client {
-  return &gceClient{
-    templates: map[string]*compute.InstanceTemplate{},
-    wrapper: wrapper,
-  }
+	return &gceClient{
+		templates: map[string]*compute.InstanceTemplate{},
+		wrapper:   wrapper,
+	}
 }
 
 // Helper for creating a wrapper before creating a client
 func newClientFromConfig(conf config.Config) (Client, error) {
-  w, err := newWrapper(context.Background(), conf)
-  if err != nil {
-    return nil, err
-  }
-  return newClient(w), nil
+	w, err := newWrapper(context.Background(), conf)
+	if err != nil {
+		return nil, err
+	}
+	return newClient(w), nil
 }
 
 type gceClient struct {
 	templates    map[string]*compute.InstanceTemplate
 	machineTypes map[string]pbr.Resources
-  wrapper      Wrapper
+	wrapper      Wrapper
 }
 
 // Templates queries the GCE API to get details about GCE instance templates.
@@ -94,7 +94,7 @@ func (s *gceClient) StartWorker(project, zone, template string, conf config.Work
 	metadata := compute.Metadata{
 		Items: append(props.Metadata.Items,
 			&compute.MetadataItems{
-        // TODO move to conf.Metadata
+				// TODO move to conf.Metadata
 				Key:   "funnel-config",
 				Value: &confYaml,
 			},
@@ -134,7 +134,7 @@ func (s *gceClient) StartWorker(project, zone, template string, conf config.Work
 func (s *gceClient) loadMachineTypes(project, zone string) error {
 	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 	// Get the machine types available to the project + zone
-  resp, err := s.wrapper.ListMachineTypes(project, zone)
+	resp, err := s.wrapper.ListMachineTypes(project, zone)
 	if err != nil {
 		log.Error("Couldn't get GCE machine list.", err)
 		return err
@@ -156,7 +156,7 @@ func (s *gceClient) template(project, id string) (*compute.InstanceTemplate, err
 	tpl, exists := s.templates[id]
 	if !exists {
 		// Get the instance template from the GCE API
-    res, err := s.wrapper.GetInstanceTemplate(project, id)
+		res, err := s.wrapper.GetInstanceTemplate(project, id)
 		if err != nil {
 			log.Error("Couldn't get GCE template", "error", err, "template", id)
 			return nil, err

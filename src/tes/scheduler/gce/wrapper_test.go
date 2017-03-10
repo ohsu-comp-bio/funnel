@@ -1,12 +1,12 @@
 package gce
 
 import (
-  "testing"
+	. "google.golang.org/api/compute/v1"
 	"tes/logger"
-  . "google.golang.org/api/compute/v1"
 	"tes/scheduler"
 	gce_mocks "tes/scheduler/gce/mocks"
 	server_mocks "tes/server/mocks"
+	"testing"
 )
 
 func init() {
@@ -26,8 +26,8 @@ func TestWrapper(t *testing.T) {
 	// to start new worker instances.
 	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
 
-  // Mock the GCE API wrapper
-  wpr := new(gce_mocks.Wrapper)
+	// Mock the GCE API wrapper
+	wpr := new(gce_mocks.Wrapper)
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
@@ -35,39 +35,39 @@ func TestWrapper(t *testing.T) {
 	srv.RunHelloWorld()
 
 	// The GCE scheduler under test
-  client := newClient(wpr)
+	client := newClient(wpr)
 	s := &gceScheduler{conf, srv.Client, client}
 
-  wpr.On("ListMachineTypes", "test-proj", "test-zone").Return(&MachineTypeList{
-    Items: []*MachineType{
-      &MachineType{
-        Name: "test-mt",
-        GuestCpus: 3,
-        MemoryMb: 12,
-      },
-    },
-  }, nil)
+	wpr.On("ListMachineTypes", "test-proj", "test-zone").Return(&MachineTypeList{
+		Items: []*MachineType{
+			{
+				Name:      "test-mt",
+				GuestCpus: 3,
+				MemoryMb:  12,
+			},
+		},
+	}, nil)
 
-  wpr.On("GetInstanceTemplate", "test-proj", "test-tpl").Return(&InstanceTemplate{
-    Properties: &InstanceProperties{
-      MachineType: "test-mt",
-      Disks: []*AttachedDisk{
-        &AttachedDisk{
-          InitializeParams: &AttachedDiskInitializeParams{
-            DiskSizeGb: 14,
-          },
-        },
-      },
-      Metadata: &Metadata{},
-    },
-  }, nil)
+	wpr.On("GetInstanceTemplate", "test-proj", "test-tpl").Return(&InstanceTemplate{
+		Properties: &InstanceProperties{
+			MachineType: "test-mt",
+			Disks: []*AttachedDisk{
+				{
+					InitializeParams: &AttachedDiskInitializeParams{
+						DiskSizeGb: 14,
+					},
+				},
+			},
+			Metadata: &Metadata{},
+		},
+	}, nil)
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	if len(workers) != 1 {
 		t.Error("Expected a single worker")
-    return
+		return
 	}
 
 	log.Debug("Workers", workers)
@@ -77,38 +77,38 @@ func TestWrapper(t *testing.T) {
 		t.Error("Worker has incorrect template")
 	}
 
-  workerConf := conf.Worker
-  workerConf.ID = w.Id
-  workerConf.ServerAddress = conf.ServerAddress
-  confYaml := string(workerConf.ToYaml())
-  expected := &Instance{
-    // TODO test that these fields get passed through from the template correctly.
-    //      i.e. mock a more complex template
-    CanIpForward: false,
-    CpuPlatform: "",
-    CreationTimestamp: "",
-    Description: "",
-    Disks: []*AttachedDisk{
-      &AttachedDisk{
-        InitializeParams: &AttachedDiskInitializeParams{
-          DiskSizeGb: 14,
-          DiskType: "zones/test-zone/diskTypes/", // TODO??? this must be wrong
-        },
-      },
-    },
-    Name: w.Id,
-    MachineType: "zones/test-zone/machineTypes/test-mt",
-    Metadata: &Metadata{
-      Items: []*MetadataItems{
-        &MetadataItems{
-          Key: "funnel-config",
-          Value: &confYaml,
-        },
-      },
-    },
-  }
-  wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
+	workerConf := conf.Worker
+	workerConf.ID = w.Id
+	workerConf.ServerAddress = conf.ServerAddress
+	confYaml := string(workerConf.ToYaml())
+	expected := &Instance{
+		// TODO test that these fields get passed through from the template correctly.
+		//      i.e. mock a more complex template
+		CanIpForward:      false,
+		CpuPlatform:       "",
+		CreationTimestamp: "",
+		Description:       "",
+		Disks: []*AttachedDisk{
+			{
+				InitializeParams: &AttachedDiskInitializeParams{
+					DiskSizeGb: 14,
+					DiskType:   "zones/test-zone/diskTypes/", // TODO??? this must be wrong
+				},
+			},
+		},
+		Name:        w.Id,
+		MachineType: "zones/test-zone/machineTypes/test-mt",
+		Metadata: &Metadata{
+			Items: []*MetadataItems{
+				{
+					Key:   "funnel-config",
+					Value: &confYaml,
+				},
+			},
+		},
+	}
+	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
 	scheduler.Scale(srv.DB, s)
-  wpr.AssertExpectations(t)
+	wpr.AssertExpectations(t)
 }

@@ -47,8 +47,6 @@ func start(conf config.Worker) {
 		conf.ID = scheduler.GenWorkerID()
 	}
 
-	log.Debug("WORKER CONFIG", conf)
-
 	w, err := worker.NewWorker(conf)
 	if err != nil {
 		log.Error("Can't create worker", err)

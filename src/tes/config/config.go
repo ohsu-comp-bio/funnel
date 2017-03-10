@@ -103,6 +103,10 @@ type Config struct {
 	MaxJobLogSize int
 	ScheduleRate  time.Duration
 	ScheduleChunk int
+	// How long to wait for a worker ping before marking it as dead
+	WorkerPingTimeout time.Duration
+	// How long to wait for worker initialization before marking it dead
+	WorkerInitTimeout time.Duration
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -125,10 +129,12 @@ func DefaultConfig() Config {
 				},
 			},
 		},
-		Worker:        WorkerDefaultConfig(),
-		MaxJobLogSize: 10000,
-		ScheduleRate:  time.Second,
-		ScheduleChunk: 10,
+		Worker:            WorkerDefaultConfig(),
+		MaxJobLogSize:     10000,
+		ScheduleRate:      time.Second,
+		ScheduleChunk:     10,
+		WorkerPingTimeout: time.Minute,
+		WorkerInitTimeout: time.Minute * 5,
 	}
 }
 

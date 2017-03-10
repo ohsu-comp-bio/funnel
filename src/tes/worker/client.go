@@ -35,6 +35,10 @@ func (c *schedClient) UpdateJobLogs(up *pbr.UpdateJobLogsRequest) error {
 	return err
 }
 
+func (c *schedClient) Close() {
+	c.Client.Close()
+}
+
 /*
 func (c *schedClient) WorkerGone() {
 	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)

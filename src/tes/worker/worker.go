@@ -99,7 +99,6 @@ func (w *worker) checkJobs() {
 	}
 
 	// Worker data has been updated. Send back to server for database update.
-	r.LastPing = time.Now().Unix()
 	r.Resources = w.resources
 	r.State = pbr.WorkerState_Alive
 

@@ -46,10 +46,7 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 		return errors.New("Version outdated")
 	}
 
-	if req.LastPing != 0 {
-		worker.LastPing = req.LastPing
-	}
-
+	worker.LastPing = time.Now().Unix()
 	worker.State = req.GetState()
 
 	if req.Resources != nil {
@@ -58,7 +55,6 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 
 	// Reconcile worker's job states with database
 	for _, wrapper := range req.Jobs {
-		// TODO need a test to ensure that completed job is deleted from worker
 		// TODO test transition to self a noop
 		job := wrapper.Job
 		err := transitionJobState(tx, job.JobID, job.State)
@@ -176,17 +172,25 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 				continue
 			}
 
-			// TODO but want to mark workers that never initialized
-			//      as dead
 			if worker.LastPing == 0 {
-				// Worker has never sent an update
+				// This shouldn't be happening, because workers should be
+				// created with LastPing, but give it the benefit of the doubt
+				// and leave it alone.
 				continue
 			}
 
 			lastPing := time.Unix(worker.LastPing, 0)
 			d := time.Since(lastPing)
 
-			if d > (time.Second * 60) {
+			if worker.State == pbr.WorkerState_Uninitialized ||
+				worker.State == pbr.WorkerState_Initializing {
+
+				// The worker is initializing, which has a more liberal timeout.
+				if d > taskBolt.conf.WorkerInitTimeout {
+					// Looks like the worker failed to initialize. Mark it dead
+					worker.State = pbr.WorkerState_Dead
+				}
+			} else if d > taskBolt.conf.WorkerPingTimeout {
 				// The worker is stale/dead
 				worker.State = pbr.WorkerState_Dead
 			} else {

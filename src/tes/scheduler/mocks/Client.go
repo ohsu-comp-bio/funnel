@@ -10,6 +10,11 @@ type Client struct {
 	mock.Mock
 }
 
+// Close provides a mock function with given fields:
+func (_m *Client) Close() {
+	_m.Called()
+}
+
 // GetQueueInfo provides a mock function with given fields: ctx, in, opts
 func (_m *Client) GetQueueInfo(ctx context.Context, in *ga4gh_task_ref.QueuedTaskInfoRequest, opts ...grpc.CallOption) (ga4gh_task_ref.Scheduler_GetQueueInfoClient, error) {
 	ret := _m.Called(ctx, in, opts)

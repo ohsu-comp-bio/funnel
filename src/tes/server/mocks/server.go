@@ -18,12 +18,17 @@ import (
 // NewMockServer starts a test server. This creates a database in a temp. file
 // and starts a gRPC server on a random port.
 func NewMockServer() *MockServer {
+	conf := config.DefaultConfig()
+	return MockServerFromConfig(conf)
+}
+
+// MockServerFromConfig starts a test server with the given config.
+func MockServerFromConfig(conf config.Config) *MockServer {
 	// Write the database to a temporary file
 	f, _ := ioutil.TempFile("", "funnel-test-db-")
 
 	// Configuration
 	port := randomPort()
-	conf := config.DefaultConfig()
 	conf.ServerAddress = "localhost:" + port
 	conf.Worker.ServerAddress = conf.ServerAddress
 	conf.RPCPort = port
@@ -69,7 +74,8 @@ type MockServer struct {
 
 // Close cleans up the mock server resources
 func (m *MockServer) Close() {
-	m.srv.Stop()
+	m.Client.Close()
+	m.srv.GracefulStop()
 }
 
 // AddWorker adds the given worker to the database (calling db.UpdateWorker)

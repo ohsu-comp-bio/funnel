@@ -9,10 +9,11 @@ import (
 // Client is a client for the scheduler gRPC service.
 type Client interface {
 	pbr.SchedulerClient
+	Close()
 }
 
 type client struct {
-	Client
+	pbr.SchedulerClient
 	conn *grpc.ClientConn
 }
 

@@ -100,6 +100,18 @@ func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
 	return false
 }
 
+// NotDead returns true if the worker state is not Dead or Gone.
+func NotDead(j *pbe.Job, w *pbr.Worker) bool {
+	return w.State != pbr.WorkerState_Dead && w.State != pbr.WorkerState_Gone
+}
+
+func WorkerHasTag(tag string) Predicate {
+	return func(j *pbe.Job, w *pbr.Worker) bool {
+		_, ok := w.Metadata[tag]
+		return ok
+	}
+}
+
 // DefaultPredicates is a list of Predicate functions that check
 // the whether a job fits a worker.
 var DefaultPredicates = []Predicate{
@@ -107,6 +119,7 @@ var DefaultPredicates = []Predicate{
 	VolumesFit,
 	PortsFit,
 	ZonesFit,
+	NotDead,
 }
 
 // TODO should have a predicate which understands authorization

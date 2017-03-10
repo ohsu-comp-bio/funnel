@@ -56,11 +56,12 @@ func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running GCE scheduler")
 
 	offers := []*sched.Offer{}
+	predicates := append(sched.DefaultPredicates, sched.WorkerHasTag("gce"))
 
 	for _, w := range s.getWorkers() {
 		// Filter out workers that don't match the job request.
 		// Checks CPU, RAM, disk space, ports, etc.
-		if !sched.Match(w, j, sched.DefaultPredicates) {
+		if !sched.Match(w, j, predicates) {
 			continue
 		}
 
@@ -101,16 +102,7 @@ func (s *gceScheduler) getWorkers() []*pbr.Worker {
 		return workers
 	}
 
-	// Find all GCE workers that are not Dead/Gone.
-	for _, w := range resp.Workers {
-		// Only include workers with a "gce" key in their metadata
-		_, isGce := w.Metadata["gce"]
-
-		if isGce && w.State != pbr.WorkerState_Dead && w.State != pbr.WorkerState_Gone {
-			workers = append(workers, w)
-		}
-	}
-
+	workers = resp.Workers
 	project := s.conf.Schedulers.GCE.Project
 	zone := s.conf.Schedulers.GCE.Zone
 

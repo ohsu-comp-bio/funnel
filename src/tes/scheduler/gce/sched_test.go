@@ -195,3 +195,68 @@ func TestPreferExistingWorker(t *testing.T) {
 	scheduler.Scale(srv.DB, s)
 	gce.AssertExpectations(t)
 }
+
+// Test submit multiple jobs at once when no workers exist. Multiple workers
+// should be started.
+func TestSchedStartMultipleWorker(t *testing.T) {
+
+	// Mock config
+	conf := basicConf()
+	// Add an instance template to the config. The scheduler uses these templates
+	// to start new worker instances.
+	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
+
+	// Mock the GCE API so actual API calls aren't needed
+	gce := new(gce_mocks.Client)
+	// Mock the server/database so we can easily control available workers
+	srv := server_mocks.NewMockServer()
+	defer srv.Close()
+
+	srv.RunHelloWorld()
+	srv.RunHelloWorld()
+	srv.RunHelloWorld()
+	srv.RunHelloWorld()
+
+	// The GCE scheduler under test
+	s := &gceScheduler{conf, srv.Client, gce}
+
+	// Mock an instance template response with 1 cpu/ram/disk
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
+		Cpus: 1.0,
+		Ram:  1.0,
+		Disk: 1.0,
+	}, nil)
+
+	scheduler.ScheduleChunk(srv.DB, s, conf)
+	workers := srv.GetWorkers()
+
+	if len(workers) != 4 {
+		log.Debug("WORKERS", workers)
+		t.Error("Expected multiple workers")
+	}
+}
+
+// Test that assigning a job to a worker correctly updates the available resources.
+func TestUpdateAvailableResources(t *testing.T) {
+
+	conf := basicConf()
+	srv := server_mocks.NewMockServer()
+	defer srv.Close()
+
+	existing := worker("existing", pbr.WorkerState_Alive)
+	srv.AddWorker(existing)
+	srv.RunHelloWorld()
+	s := &gceScheduler{conf, srv.Client, new(gce_mocks.Client)}
+
+	scheduler.ScheduleChunk(srv.DB, s, conf)
+	workers := srv.GetWorkers()
+
+	if len(workers) != 1 || workers[0].Id != "existing" {
+		log.Debug("WORKERS", workers)
+		t.Error("Expected a single, existing worker")
+	}
+
+	if workers[0].Available.Cpus != 0 {
+		t.Error("Expected available cpu count to be 0")
+	}
+}

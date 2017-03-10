@@ -64,6 +64,7 @@ func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
 			continue
 		}
 
+		log.Debug("AVAIL WORKER", w)
 		sc := sched.DefaultScores(w, j)
 		/*
 			    TODO?

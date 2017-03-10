@@ -96,10 +96,6 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 // and updates the worker (calls UpdateWorker()).
 func (taskBolt *TaskBolt) AssignJob(j *pbe.Job, w *pbr.Worker) {
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		err := updateWorker(tx, w)
-		if err != nil {
-			return err
-		}
 		// TODO this is important! write a test for this line.
 		//      when a job is assigned, its state is immediately Initializing
 		//      even before the worker has received it.
@@ -111,6 +107,11 @@ func (taskBolt *TaskBolt) AssignJob(j *pbe.Job, w *pbr.Worker) {
 		key := append(workerIDBytes, jobIDBytes...)
 		tx.Bucket(WorkerJobs).Put(key, jobIDBytes)
 		tx.Bucket(JobWorker).Put(jobIDBytes, workerIDBytes)
+
+		err := updateWorker(tx, w)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 }
@@ -126,6 +127,7 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbr.Worker) {
 	}
 	for jobID := range worker.Jobs {
 		j := getJob(tx, jobID)
+		log.Debug("UPD AVIL", a)
 		res := j.Task.GetResources()
 
 		a.Cpus -= res.GetMinimumCpuCores()

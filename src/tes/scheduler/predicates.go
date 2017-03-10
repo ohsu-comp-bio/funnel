@@ -105,6 +105,8 @@ func NotDead(j *pbe.Job, w *pbr.Worker) bool {
 	return w.State != pbr.WorkerState_Dead && w.State != pbr.WorkerState_Gone
 }
 
+// WorkerHasTag returns a predicate function which returns true
+// if the worker has the given tag (key in Metadata field).
 func WorkerHasTag(tag string) Predicate {
 	return func(j *pbe.Job, w *pbr.Worker) bool {
 		_, ok := w.Metadata[tag]

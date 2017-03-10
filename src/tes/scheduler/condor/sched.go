@@ -18,6 +18,7 @@ var log = logger.New("condor")
 
 // prefix is a string prefixed to condor worker IDs, so that condor
 // workers can be identified by ShouldStartWorker() below.
+// TODO move to worker metadata to be consistent with GCE
 const prefix = "condor-"
 
 // NewScheduler returns a new HTCondor Scheduler instance.

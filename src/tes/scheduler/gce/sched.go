@@ -87,8 +87,8 @@ func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
 	return offers[0]
 }
 
-// getWorkers returns a list of all GCE workers which are not dead/gone.
-// Also appends extra entries for unprovisioned workers.
+// getWorkers returns a list of all GCE workers and appends a set of
+// uninitialized workers, which the scheduler can use to create new worker VMs.
 func (s *gceScheduler) getWorkers() []*pbr.Worker {
 
 	// Get the workers from the funnel server

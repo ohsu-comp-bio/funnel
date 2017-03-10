@@ -2,9 +2,12 @@ package worker
 
 import (
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
+	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
+	sched_mocks "tes/scheduler/mocks"
 	"testing"
 )
 
@@ -109,4 +112,26 @@ func TestJobFail(t *testing.T) {
 	if len(srv.worker.ctrls) != 0 {
 		t.Error("Expected job control to be cleaned up.")
 	}
+}
+
+// Mainly exercising a panic bug caused by an unhandled
+// error from client.GetWorker().
+func TestGetWorkerFail(t *testing.T) {
+	// Create worker
+	conf := config.WorkerDefaultConfig()
+	wi, err := NewWorker(conf)
+	if err != nil {
+		t.Error(err)
+	}
+	w := wi.(*worker)
+
+	// Override worker client with new mock
+	m := new(sched_mocks.Client)
+	s := &schedClient{m, conf}
+	w.sched = s
+
+	// Set GetWorker to return an error
+	m.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("TEST"))
+	// checkJobs calls GetWorker
+	w.checkJobs()
 }

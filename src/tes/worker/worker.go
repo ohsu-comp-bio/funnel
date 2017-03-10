@@ -83,7 +83,12 @@ func (w *worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
 }
 
 func (w *worker) checkJobs() {
-	r, _ := w.sched.GetWorker(context.TODO(), &pbr.GetWorkerRequest{Id: w.conf.ID})
+	r, gerr := w.sched.GetWorker(context.TODO(), &pbr.GetWorkerRequest{Id: w.conf.ID})
+
+	if gerr != nil {
+		log.Error("Couldn't reconcile worker state.", gerr)
+		return
+	}
 
 	// Reconcile server state with worker state.
 	rerr := w.reconcile(r.Jobs)

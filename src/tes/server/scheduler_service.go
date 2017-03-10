@@ -127,10 +127,17 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbr.Worker) {
 	}
 	for jobID := range worker.Jobs {
 		j := getJob(tx, jobID)
-		log.Debug("UPD AVIL", a)
 		res := j.Task.GetResources()
 
-		a.Cpus -= res.GetMinimumCpuCores()
+		// Cpus are represented by an unsigned int, and if we blindly
+		// subtract it will rollover to a very large number. So check first.
+		rcpus := res.GetMinimumCpuCores()
+		if rcpus >= a.Cpus {
+			a.Cpus = 0
+		} else {
+			a.Cpus -= rcpus
+		}
+
 		a.Ram -= res.GetMinimumRamGb()
 
 		if a.Cpus < 0 {

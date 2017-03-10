@@ -53,7 +53,7 @@ type gceScheduler struct {
 
 // Schedule schedules a job on a Google Cloud VM worker instance.
 func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
-	log.Debug("Running gce scheduler")
+	log.Debug("Running GCE scheduler")
 
 	offers := []*sched.Offer{}
 
@@ -64,7 +64,6 @@ func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
 			continue
 		}
 
-		log.Debug("AVAIL WORKER", w)
 		sc := sched.DefaultScores(w, j)
 		/*
 			    TODO?

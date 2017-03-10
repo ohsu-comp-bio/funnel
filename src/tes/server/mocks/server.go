@@ -101,6 +101,21 @@ func (m *MockServer) RunHelloWorld() string {
 	})
 }
 
+// HelloWorldTask returns a simple hello world task.
+func (m *MockServer) HelloWorldTask() *pbe.Task {
+	return &pbe.Task{
+		Name: "Hello world",
+		Docker: []*pbe.DockerExecutor{
+			{
+				Cmd: []string{"echo", "hello world"},
+			},
+		},
+		Resources: &pbe.Resources{
+			MinimumCpuCores: 1,
+		},
+	}
+}
+
 // GetWorkers calls db.GetWorkers.
 func (m *MockServer) GetWorkers() []*pbr.Worker {
 	resp, _ := m.DB.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})

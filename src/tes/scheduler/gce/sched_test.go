@@ -260,3 +260,46 @@ func TestUpdateAvailableResources(t *testing.T) {
 		t.Error("Expected available cpu count to be 0")
 	}
 }
+
+// Try to reproduce a bug where available CPUs seems to overflow
+func TestUpdateAvailableResourcesB(t *testing.T) {
+
+	conf := basicConf()
+	srv := server_mocks.NewMockServer()
+	defer srv.Close()
+
+	existingA := worker("existing-A", pbr.WorkerState_Alive)
+	existingA.Resources.Cpus = 8.0
+	srv.AddWorker(existingA)
+
+	existingB := worker("existing-B", pbr.WorkerState_Alive)
+	existingB.Resources.Cpus = 8.0
+	srv.AddWorker(existingB)
+
+	ta := srv.HelloWorldTask()
+	tb := srv.HelloWorldTask()
+	tc := srv.HelloWorldTask()
+	ta.Resources.MinimumCpuCores = 4
+	tb.Resources.MinimumCpuCores = 4
+	tc.Resources.MinimumCpuCores = 4
+	srv.RunTask(ta)
+	srv.RunTask(tb)
+	srv.RunTask(tc)
+
+	s := &gceScheduler{conf, srv.Client, new(gce_mocks.Client)}
+
+	scheduler.ScheduleChunk(srv.DB, s, conf)
+	workers := srv.GetWorkers()
+
+	log.Debug("WORKERS", workers)
+
+	if len(workers) != 2 {
+		t.Error("Expected a single, existing worker")
+	}
+
+	tot := workers[0].Available.Cpus + workers[1].Available.Cpus
+
+	if tot != 4 {
+		t.Error("Expected total available cpu count to be 4")
+	}
+}

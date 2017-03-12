@@ -9,7 +9,7 @@ app.controller('JobListController', function($scope, NgTableParams, $http) {
   $scope.shortID = shortID;
 
   $http.get($scope.url).then(function(result) {
-	  var jobs = result.data.jobs;
+	  var jobs = result.data.jobs || [];
     $scope.tableParams = new NgTableParams(
       {
         count: 25
@@ -32,16 +32,14 @@ app.controller('JobListController', function($scope, NgTableParams, $http) {
 
 app.controller('WorkerListController', function($scope, $http) {
 
-	$scope.url = "/v1/jobs-service";
+	$scope.url = "/v1/funnel/workers";
 	$scope.workers = [];
 
-	$scope.fetchContent = function() {
-		$http.get($scope.url).then(function(result) {
-			$scope.workers = result.data;
-		});
-	}
-
-	$scope.fetchContent();
+  $http.get($scope.url).then(function(result) {
+    var workers = result.data.workers || [];
+console.log(workers)
+    $scope.workers = workers;
+  });
 });
 
 app.controller('JobInfoController', function($scope, $http, $routeParams) {
@@ -72,9 +70,12 @@ app.config(
      $routeProvider.when('/', {
        templateUrl: 'static/list.html',
      }).
-       when('/jobs/:job_id', {
-         templateUrl: 'static/job.html'
-       })
+     when('/jobs/:job_id', {
+       templateUrl: 'static/job.html'
+     }).
+     when('/workers/', {
+       templateUrl: 'static/worker-list.html'
+     })
    }
   ]
 );

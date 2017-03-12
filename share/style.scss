@@ -53,6 +53,7 @@ main {
   }
 }
 
+.worker-list-table,
 .job-list-table, .job-desc-table, .data-table {
   @extend .mdl-data-table;
   width: 100%;

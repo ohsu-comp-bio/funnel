@@ -14,7 +14,7 @@ import (
 // or start a worker instance.
 type Client interface {
 	Template(project, zone, id string) (*pbr.Resources, error)
-	StartWorker(project, zone, id string, conf config.Worker) error
+	StartWorker(project, zone, template string, conf config.Worker) error
 }
 
 func newClient(wrapper Wrapper) Client {

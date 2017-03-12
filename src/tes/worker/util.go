@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"syscall"
+	"tes/config"
 	pbr "tes/server/proto"
 )
 
@@ -145,4 +146,9 @@ func detectResources(conf *pbr.Resources) *pbr.Resources {
 	}
 
 	return res
+}
+
+// NoopJobRunner is useful during testing for creating a worker with a JobRunner
+// that doesn't do anything.
+func NoopJobRunner(l JobControl, c config.Worker, j *pbr.JobWrapper, u logUpdateChan) {
 }

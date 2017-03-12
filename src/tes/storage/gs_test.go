@@ -31,7 +31,7 @@ func TestAnonymousGet(t *testing.T) {
 	conf := config.GSStorage{}
 	gs, err := NewGSBackend(conf)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	// TODO this doesn't create the output path yet

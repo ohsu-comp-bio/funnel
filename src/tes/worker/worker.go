@@ -10,16 +10,10 @@ import (
 	"time"
 )
 
-type runJobFunc func(JobControl, config.Worker, *pbr.JobWrapper, logUpdateChan)
 type logUpdateChan chan *pbr.UpdateJobLogsRequest
 
-// Worker represents a worker which processes jobs
-type Worker interface {
-	Run()
-}
-
 // NewWorker returns a new Worker instance
-func NewWorker(conf config.Worker) (Worker, error) {
+func NewWorker(conf config.Worker) (*Worker, error) {
 	sched, err := newSchedClient(conf)
 	if err != nil {
 		return nil, err
@@ -30,24 +24,24 @@ func NewWorker(conf config.Worker) (Worker, error) {
 	logUpdates := make(logUpdateChan)
 	// Tracks active job ctrls: job ID -> JobControl instance
 	ctrls := map[string]JobControl{}
-	return &worker{conf, logUpdates, sched, log, res, runJob, ctrls}, nil
+	return &Worker{conf, logUpdates, sched, log, res, runJob, ctrls}, nil
 }
 
-type worker struct {
+// Worker is a worker...
+type Worker struct {
 	conf config.Worker
 	// Channel for job updates from job runners: stdout/err, ports, etc.
 	logUpdates logUpdateChan
 	sched      *schedClient
 	log        logger.Logger
 	resources  *pbr.Resources
-	// runJob is here so it can be mocked during testing
-	runJob runJobFunc
-	ctrls  map[string]JobControl
+	JobRunner  JobRunner
+	Ctrls      map[string]JobControl
 }
 
 // Run runs a worker with the given config. This is responsible for communication
 // with the server and starting job runners
-func (w *worker) Run() {
+func (w *Worker) Run() {
 	w.log.Info("Starting worker")
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
@@ -58,31 +52,14 @@ func (w *worker) Run() {
 		case up := <-w.logUpdates:
 			w.updateLogs(up)
 		case <-ticker.C:
-			w.checkJobs()
+			w.Sync()
 		}
 	}
 }
 
-// TODO need a way to shut the worker down.
-// TODO Close isn't correct. Wouldn't actually stop internal goroutines.
-//func (w *worker) Close() {
-// Tell the scheduler that the worker is gone.
-//w.sched.WorkerGone()
-//w.sched.Close()
-//}
-
-func (w *worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
-	// UpdateJobLogs() is more lightweight than UpdateWorker(),
-	// which is why it happens separately and at a different rate.
-	err := w.sched.UpdateJobLogs(up)
-	if err != nil {
-		// TODO if the request failed, the job update is lost and the logs
-		//      are corrupted. Cache logs to prevent this?
-		w.log.Error("Job log update failed", err)
-	}
-}
-
-func (w *worker) checkJobs() {
+// Sync syncs the worker's state with the server. It reports job state changes,
+// handles signals from the server (new job, cancel job, etc), reports resources, etc.
+func (w *Worker) Sync() {
 	r, gerr := w.sched.GetWorker(context.TODO(), &pbr.GetWorkerRequest{Id: w.conf.ID})
 
 	if gerr != nil {
@@ -116,11 +93,30 @@ func (w *worker) checkJobs() {
 	}
 }
 
+// TODO need a way to shut the worker down.
+// TODO Close isn't correct. Wouldn't actually stop internal goroutines.
+//func (w *worker) Close() {
+// Tell the scheduler that the worker is gone.
+//w.sched.WorkerGone()
+//w.sched.Close()
+//}
+
+func (w *Worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
+	// UpdateJobLogs() is more lightweight than UpdateWorker(),
+	// which is why it happens separately and at a different rate.
+	err := w.sched.UpdateJobLogs(up)
+	if err != nil {
+		// TODO if the request failed, the job update is lost and the logs
+		//      are corrupted. Cache logs to prevent this?
+		w.log.Error("Job log update failed", err)
+	}
+}
+
 // reconcile merges the server state with the worker state:
 // - identifies new jobs and starts new runners for them
 // - identifies canceled jobs and cancels existing runners
 // - updates pbr.Job structs with current job state (running, complete, error, etc)
-func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
+func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 	var (
 		Unknown  = pbe.State_Unknown
 		Canceled = pbe.State_Canceled
@@ -129,7 +125,7 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 	// Combine job IDs from response with job IDs from ctrls so we can reconcile
 	// both sets below.
 	jobIDs := map[string]bool{}
-	for jobID := range w.ctrls {
+	for jobID := range w.Ctrls {
 		jobIDs[jobID] = true
 	}
 	for jobID := range jobs {
@@ -140,7 +136,7 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 		jobSt := pbe.State_Unknown
 		runSt := pbe.State_Unknown
 
-		ctrl := w.ctrls[jobID]
+		ctrl := w.Ctrls[jobID]
 		if ctrl != nil {
 			runSt = ctrl.State()
 		}
@@ -153,7 +149,7 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 		}
 
 		if isComplete(jobSt) {
-			delete(w.ctrls, jobID)
+			delete(w.Ctrls, jobID)
 		}
 
 		switch {
@@ -181,8 +177,8 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 		case isActive(jobSt) && runSt == Unknown:
 			// Job needs to be started.
 			ctrl := NewJobControl()
-			w.runJob(ctrl, w.conf, wrapper, w.logUpdates)
-			w.ctrls[jobID] = ctrl
+			w.JobRunner(ctrl, w.conf, wrapper, w.logUpdates)
+			w.Ctrls[jobID] = ctrl
 			job.State = ctrl.State()
 
 		case isActive(jobSt) && runSt != Unknown:
@@ -198,7 +194,8 @@ func (w *worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 			// Edge case. There's a ctrl for a non-existent job. Delete it.
 			// TODO is it better to leave it? Continue in absence of explicit command principle?
 			ctrl.Cancel()
-			delete(w.ctrls, jobID)
+			delete(w.Ctrls, jobID)
+
 		case isComplete(jobSt) && isActive(runSt):
 			// Edge case. The job is complete but the ctrl is still running.
 			// This shouldn't happen but it's better to check for it anyway.

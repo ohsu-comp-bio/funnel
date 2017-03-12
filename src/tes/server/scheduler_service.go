@@ -50,7 +50,19 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 	worker.State = req.GetState()
 
 	if req.Resources != nil {
-		worker.Resources = req.Resources
+		if worker.Resources == nil {
+			worker.Resources = &pbr.Resources{}
+		}
+		// Merge resources
+		if req.Resources.Cpus > 0 {
+			worker.Resources.Cpus = req.Resources.Cpus
+		}
+		if req.Resources.Ram > 0 {
+			worker.Resources.Ram = req.Resources.Ram
+		}
+		if req.Resources.Disk > 0 {
+			worker.Resources.Disk = req.Resources.Disk
+		}
 	}
 
 	// Reconcile worker's job states with database

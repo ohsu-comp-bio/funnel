@@ -15,6 +15,12 @@ import (
 	"time"
 )
 
+func init() {
+	// nanoseconds are important because the tests run faster than a millisecond
+	// which can cause port conflicts
+	rand.Seed(time.Now().UTC().UnixNano())
+}
+
 // NewMockServer starts a test server. This creates a database in a temp. file
 // and starts a gRPC server on a random port.
 func NewMockServer() *MockServer {
@@ -44,7 +50,7 @@ func MockServerFromConfig(conf config.Config) *MockServer {
 	server := grpc.NewServer()
 	lis, err := net.Listen("tcp", ":"+conf.RPCPort)
 	if err != nil {
-		panic("Cannot open port")
+		panic("Cannot open port: " + conf.RPCPort)
 	}
 
 	// Create client
@@ -94,17 +100,7 @@ func (m *MockServer) RunTask(t *pbe.Task) string {
 
 // RunHelloWorld adds a simple hello world task to the database queue.
 func (m *MockServer) RunHelloWorld() string {
-	return m.RunTask(&pbe.Task{
-		Name: "Hello world",
-		Docker: []*pbe.DockerExecutor{
-			{
-				Cmd: []string{"echo", "hello world"},
-			},
-		},
-		Resources: &pbe.Resources{
-			MinimumCpuCores: 1,
-		},
-	})
+	return m.RunTask(m.HelloWorldTask())
 }
 
 // HelloWorldTask returns a simple hello world task.
@@ -118,6 +114,13 @@ func (m *MockServer) HelloWorldTask() *pbe.Task {
 		},
 		Resources: &pbe.Resources{
 			MinimumCpuCores: 1,
+			Volumes: []*pbe.Volume{
+				{
+					Name:       "test-vol",
+					SizeGb:     10.0,
+					MountPoint: "/tmp",
+				},
+			},
 		},
 	}
 }
@@ -128,10 +131,21 @@ func (m *MockServer) GetWorkers() []*pbr.Worker {
 	return resp.Workers
 }
 
+// CompleteJob marks a job as completed
+func (m *MockServer) CompleteJob(jobID string) {
+	for _, w := range m.GetWorkers() {
+		if j, ok := w.Jobs[jobID]; ok {
+			j.Job.State = pbe.State_Complete
+			m.DB.UpdateWorker(context.Background(), w)
+			return
+		}
+	}
+	panic("No such job found: " + jobID)
+}
+
 func randomPort() string {
 	min := 10000
-	max := 11000
-	rand.Seed(time.Now().Unix())
+	max := 20000
 	n := rand.Intn(max-min) + min
 	return fmt.Sprintf("%d", n)
 }

@@ -27,7 +27,7 @@ func TestBasicWorker(t *testing.T) {
 
 	// Schedule and sync worker
 	srv.Flush()
-	ctrl := srv.worker.ctrls[jobID]
+	ctrl := srv.worker.Ctrls[jobID]
 
 	if ctrl == nil {
 		t.Error("Expected controller for job")
@@ -88,7 +88,7 @@ func TestJobFail(t *testing.T) {
 
 	// Schedule and sync worker
 	srv.Flush()
-	ctrl := srv.worker.ctrls[jobID]
+	ctrl := srv.worker.Ctrls[jobID]
 
 	// Set failed and sync
 	ctrl.SetResult(errors.New("TEST"))
@@ -109,7 +109,7 @@ func TestJobFail(t *testing.T) {
 	srv.Flush()
 	srv.Flush()
 
-	if len(srv.worker.ctrls) != 0 {
+	if len(srv.worker.Ctrls) != 0 {
 		t.Error("Expected job control to be cleaned up.")
 	}
 }
@@ -119,11 +119,10 @@ func TestJobFail(t *testing.T) {
 func TestGetWorkerFail(t *testing.T) {
 	// Create worker
 	conf := config.WorkerDefaultConfig()
-	wi, err := NewWorker(conf)
+	w, err := NewWorker(conf)
 	if err != nil {
 		t.Error(err)
 	}
-	w := wi.(*worker)
 
 	// Override worker client with new mock
 	m := new(sched_mocks.Client)
@@ -132,6 +131,5 @@ func TestGetWorkerFail(t *testing.T) {
 
 	// Set GetWorker to return an error
 	m.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("TEST"))
-	// checkJobs calls GetWorker
-	w.checkJobs()
+	w.Sync()
 }

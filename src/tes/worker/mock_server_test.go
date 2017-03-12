@@ -26,14 +26,13 @@ func newMockSchedulerServer() *mockSchedulerServer {
 	wconf.ID = "test-worker"
 
 	// Create a worker
-	x, werr := NewWorker(wconf)
+	w, werr := NewWorker(wconf)
 	if werr != nil {
 		panic(werr)
 	}
-	w := x.(*worker)
 	// Stub the job runner so it's a no-op runner
 	// i.e. ensure docker run, file copying, etc. doesn't actually happen
-	w.runJob = noopRunJob
+	w.JobRunner = NoopJobRunner
 
 	// Create a mock scheduler with a single worker
 	sched := &mockScheduler{&pbr.Worker{
@@ -51,12 +50,12 @@ type mockSchedulerServer struct {
 	Server *server_mocks.MockServer
 	sched  *mockScheduler
 	conf   config.Config
-	worker *worker
+	worker *Worker
 }
 
 func (m *mockSchedulerServer) Flush() {
 	scheduler.ScheduleChunk(m.db, m.sched, m.conf)
-	m.worker.checkJobs()
+	m.worker.Sync()
 }
 
 func (m *mockSchedulerServer) Close() {

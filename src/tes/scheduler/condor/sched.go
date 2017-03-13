@@ -18,6 +18,7 @@ var log = logger.New("condor")
 
 // prefix is a string prefixed to condor worker IDs, so that condor
 // workers can be identified by ShouldStartWorker() below.
+// TODO move to worker metadata to be consistent with GCE
 const prefix = "condor-"
 
 // NewScheduler returns a new HTCondor Scheduler instance.
@@ -57,7 +58,6 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 	c := s.conf.Worker
 	c.ID = w.Id
 	c.Timeout = 0
-	c.Storage = s.conf.Storage
 
 	confPath := path.Join(workdir, "worker.conf.yml")
 	c.ToYamlFile(confPath)

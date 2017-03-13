@@ -1,17 +1,24 @@
 package local
 
 import (
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
+	. "github.com/stretchr/testify/mock"
 	"tes/config"
 	pbe "tes/ga4gh"
+	"tes/logger"
 	sched "tes/scheduler"
+	sched_mocks "tes/scheduler/mocks"
 	pbr "tes/server/proto"
 	"testing"
 )
 
+func init() {
+	logger.ForceColors()
+}
+
 func simpleWorker() *pbr.Worker {
 	return &pbr.Worker{
+		// This ID MUST match the ID set in setup()
+		// because the local scheduler is built to have only a single worker
 		Id: "test-worker-id",
 		Resources: &pbr.Resources{
 			Cpus: 1.0,
@@ -28,18 +35,15 @@ func simpleWorker() *pbr.Worker {
 	}
 }
 
-type mockClient struct {
-	Workers []*pbr.Worker
-}
-
-func (mc *mockClient) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest, opts ...grpc.CallOption) (*pbr.GetWorkersResponse, error) {
-	resp := &pbr.GetWorkersResponse{Workers: mc.Workers}
-	return resp, nil
-}
-
-func setup() (*mockClient, *scheduler) {
+func setup(workers []*pbr.Worker) (*sched_mocks.Client, *scheduler) {
 	conf := config.Config{}
-	mc := &mockClient{}
+	mc := new(sched_mocks.Client)
+
+	// Mock in test workers
+	mc.On("GetWorkers", Anything, Anything, Anything).Return(&pbr.GetWorkersResponse{
+		Workers: workers,
+	}, nil)
+
 	s := &scheduler{
 		conf,
 		mc,
@@ -49,7 +53,7 @@ func setup() (*mockClient, *scheduler) {
 }
 
 func TestNoWorkers(t *testing.T) {
-	_, s := setup()
+	_, s := setup([]*pbr.Worker{})
 	j := &pbe.Job{}
 	o := s.Schedule(j)
 	if o != nil {
@@ -58,8 +62,10 @@ func TestNoWorkers(t *testing.T) {
 }
 
 func TestSingleWorker(t *testing.T) {
-	mc, s := setup()
-	mc.Workers = append(mc.Workers, simpleWorker())
+	_, s := setup([]*pbr.Worker{
+		simpleWorker(),
+	})
+
 	j := &pbe.Job{}
 	o := s.Schedule(j)
 	if o == nil {
@@ -73,10 +79,11 @@ func TestSingleWorker(t *testing.T) {
 
 // Test that the scheduler ignores workers it doesn't own.
 func TestIgnoreOtherWorkers(t *testing.T) {
-	mc, s := setup()
 	other := simpleWorker()
 	other.Id = "other-worker"
-	mc.Workers = append(mc.Workers, other)
+
+	_, s := setup([]*pbr.Worker{other})
+
 	j := &pbe.Job{}
 	o := s.Schedule(j)
 	if o != nil {
@@ -86,13 +93,12 @@ func TestIgnoreOtherWorkers(t *testing.T) {
 
 // Test that scheduler ignores workers without the "Alive" state
 func TestIgnoreNonAliveWorkers(t *testing.T) {
-	mc, s := setup()
-	w := simpleWorker()
 	j := &pbe.Job{}
-	mc.Workers = append(mc.Workers, w)
 
 	for name, val := range pbr.WorkerState_value {
+		w := simpleWorker()
 		w.State = pbr.WorkerState(val)
+		_, s := setup([]*pbr.Worker{w})
 		o := s.Schedule(j)
 
 		if name == "Alive" {
@@ -112,8 +118,10 @@ func TestIgnoreNonAliveWorkers(t *testing.T) {
 // Test whether the scheduler correctly filters workers based on
 // cpu, ram, disk, etc.
 func TestMatch(t *testing.T) {
-	mc, s := setup()
-	mc.Workers = append(mc.Workers, simpleWorker())
+	_, s := setup([]*pbr.Worker{
+		simpleWorker(),
+	})
+
 	var o *sched.Offer
 	var j *pbe.Job
 

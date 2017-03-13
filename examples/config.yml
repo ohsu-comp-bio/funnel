@@ -1,0 +1,13 @@
+HostName: localhost
+HTTPPort: 8000
+RPCPort: 9090
+Storage:
+  - Local:
+      AllowedDirs:
+        - /Users/strucka/
+        - /tmp/
+DBPath: tes-work-dir/tes_task.db    
+Worker:
+  Timeout: 1
+  WorkDir: tes-work-dir
+

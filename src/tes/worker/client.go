@@ -9,7 +9,7 @@ import (
 
 // Defines some helpers for RPC calls in the code above
 type schedClient struct {
-	*scheduler.Client
+	scheduler.Client
 	conf config.Worker
 }
 
@@ -33,6 +33,10 @@ func (c *schedClient) UpdateJobLogs(up *pbr.UpdateJobLogsRequest) error {
 	_, err := c.Client.UpdateJobLogs(ctx, up)
 	cleanup()
 	return err
+}
+
+func (c *schedClient) Close() {
+	c.Client.Close()
 }
 
 /*

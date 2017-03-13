@@ -1,0 +1,33 @@
+{
+    "name" : "TestEcho",
+    "projectId" : "MyProject",
+    "description" : "Simple Echo Command",
+    "resources" : {
+	"minimumCpuCores": 2,
+        "volumes": [
+	    {
+		"name": "test_disk",
+		"sizeGb": 5,
+		"mountPoint": "/tmp"
+            }
+	]
+    },
+    "docker" : [
+	{
+	    "imageName" : "tes-wait",
+	    "ports": [
+		{
+		    "host": 0,
+		    "container": 8888
+		}
+	    ],
+	    "cmd" : [
+		"bash",
+		"-c",
+		"echo foo && sleep 10 && echo bar"
+	    ],
+	    "stdout" : "stdout",
+	    "stderr" : "stderr"
+	}
+    ]
+}

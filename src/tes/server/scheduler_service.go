@@ -46,19 +46,27 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 		return errors.New("Version outdated")
 	}
 
-	if req.LastPing != 0 {
-		worker.LastPing = req.LastPing
-	}
-
+	worker.LastPing = time.Now().Unix()
 	worker.State = req.GetState()
 
 	if req.Resources != nil {
-		worker.Resources = req.Resources
+		if worker.Resources == nil {
+			worker.Resources = &pbr.Resources{}
+		}
+		// Merge resources
+		if req.Resources.Cpus > 0 {
+			worker.Resources.Cpus = req.Resources.Cpus
+		}
+		if req.Resources.Ram > 0 {
+			worker.Resources.Ram = req.Resources.Ram
+		}
+		if req.Resources.Disk > 0 {
+			worker.Resources.Disk = req.Resources.Disk
+		}
 	}
 
 	// Reconcile worker's job states with database
 	for _, wrapper := range req.Jobs {
-		// TODO need a test to ensure that completed job is deleted from worker
 		// TODO test transition to self a noop
 		job := wrapper.Job
 		err := transitionJobState(tx, job.JobID, job.State)
@@ -81,6 +89,10 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 		}
 	}
 
+	for k, v := range req.Metadata {
+		worker.Metadata[k] = v
+	}
+
 	// TODO move to on-demand helper. i.e. don't store in DB
 	updateAvailableResources(tx, worker)
 	worker.Version = time.Now().Unix()
@@ -92,10 +104,6 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 // and updates the worker (calls UpdateWorker()).
 func (taskBolt *TaskBolt) AssignJob(j *pbe.Job, w *pbr.Worker) {
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		err := updateWorker(tx, w)
-		if err != nil {
-			return err
-		}
 		// TODO this is important! write a test for this line.
 		//      when a job is assigned, its state is immediately Initializing
 		//      even before the worker has received it.
@@ -107,6 +115,11 @@ func (taskBolt *TaskBolt) AssignJob(j *pbe.Job, w *pbr.Worker) {
 		key := append(workerIDBytes, jobIDBytes...)
 		tx.Bucket(WorkerJobs).Put(key, jobIDBytes)
 		tx.Bucket(JobWorker).Put(jobIDBytes, workerIDBytes)
+
+		err := updateWorker(tx, w)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 }
@@ -124,7 +137,15 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbr.Worker) {
 		j := getJob(tx, jobID)
 		res := j.Task.GetResources()
 
-		a.Cpus -= res.GetMinimumCpuCores()
+		// Cpus are represented by an unsigned int, and if we blindly
+		// subtract it will rollover to a very large number. So check first.
+		rcpus := res.GetMinimumCpuCores()
+		if rcpus >= a.Cpus {
+			a.Cpus = 0
+		} else {
+			a.Cpus -= rcpus
+		}
+
 		a.Ram -= res.GetMinimumRamGb()
 
 		if a.Cpus < 0 {
@@ -164,14 +185,24 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 			}
 
 			if worker.LastPing == 0 {
-				// Worker has never sent an update
+				// This shouldn't be happening, because workers should be
+				// created with LastPing, but give it the benefit of the doubt
+				// and leave it alone.
 				continue
 			}
 
 			lastPing := time.Unix(worker.LastPing, 0)
 			d := time.Since(lastPing)
 
-			if d > (time.Second * 60) {
+			if worker.State == pbr.WorkerState_Uninitialized ||
+				worker.State == pbr.WorkerState_Initializing {
+
+				// The worker is initializing, which has a more liberal timeout.
+				if d > taskBolt.conf.WorkerInitTimeout {
+					// Looks like the worker failed to initialize. Mark it dead
+					worker.State = pbr.WorkerState_Dead
+				}
+			} else if d > taskBolt.conf.WorkerPingTimeout {
 				// The worker is stale/dead
 				worker.State = pbr.WorkerState_Dead
 			} else {

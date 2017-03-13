@@ -31,6 +31,11 @@ func getWorker(tx *bolt.Tx, id string) *pbr.Worker {
 		}
 		worker.Jobs[jobID] = wrapper
 	}
+
+	if worker.Metadata == nil {
+		worker.Metadata = map[string]string{}
+	}
+
 	return worker
 }
 

@@ -11,9 +11,9 @@ func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 
 	var err error
 	jobs := map[string]*pbr.JobWrapper{}
-	w := worker{
-		runJob: noopRunJob,
-		ctrls:  map[string]JobControl{},
+	w := Worker{
+		JobRunner: NoopJobRunner,
+		Ctrls:     map[string]JobControl{},
 	}
 
 	err = w.reconcile(jobs)
@@ -21,7 +21,7 @@ func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 	if err != nil {
 		t.Error("Unexpected error on empty reconcile")
 	}
-	if len(w.ctrls) != 0 {
+	if len(w.Ctrls) != 0 {
 		t.Error("Unexpected runner created on empty reconcile")
 	}
 
@@ -33,11 +33,11 @@ func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 
 	w.reconcile(jobs)
 
-	if _, exists := w.ctrls["job-1"]; !exists {
+	if _, exists := w.Ctrls["job-1"]; !exists {
 		t.Error("Expected runner to be created for new job")
 	}
 
-	ctrl := w.ctrls["job-1"]
+	ctrl := w.Ctrls["job-1"]
 
 	if j.State != pbe.State_Initializing {
 		t.Error("Expected job just started to be in initializing state.")
@@ -61,9 +61,9 @@ func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 func TestReconcileJobError(t *testing.T) {
 
 	jobs := map[string]*pbr.JobWrapper{}
-	w := worker{
-		runJob: noopRunJob,
-		ctrls:  map[string]JobControl{},
+	w := Worker{
+		JobRunner: NoopJobRunner,
+		Ctrls:     map[string]JobControl{},
 	}
 	j := &pbe.Job{
 		JobID: "job-1",
@@ -71,7 +71,7 @@ func TestReconcileJobError(t *testing.T) {
 	}
 	addJob(jobs, j)
 	w.reconcile(jobs)
-	ctrl := w.ctrls["job-1"]
+	ctrl := w.Ctrls["job-1"]
 	ctrl.SetResult(errors.New("Test job error"))
 	w.reconcile(jobs)
 
@@ -81,27 +81,41 @@ func TestReconcileJobError(t *testing.T) {
 }
 
 func TestReconcileCancelJob(t *testing.T) {
+	// Set up worker with no-op runner
 	jobs := map[string]*pbr.JobWrapper{}
-	w := worker{
-		runJob: noopRunJob,
-		ctrls:  map[string]JobControl{},
+	w := Worker{
+		JobRunner: NoopJobRunner,
+		Ctrls:     map[string]JobControl{},
 	}
+
+	// Add a job
 	j := &pbe.Job{
 		JobID: "job-1",
 		State: pbe.State_Queued,
 	}
 	addJob(jobs, j)
+
+	// Reconcile worker state, which registers job with worker
 	w.reconcile(jobs)
 
+	// Cancel job
 	j.State = pbe.State_Canceled
-	ctrl := w.ctrls["job-1"]
+	ctrl := w.Ctrls["job-1"]
+
+	// Reconcile again. Worker should react to job being canceled.
 	w.reconcile(jobs)
 
 	if ctrl.State() != pbe.State_Canceled {
 		t.Error("Expected runner state to be canceled")
 	}
 
-	if w.ctrls["job-1"] != nil {
+	// Delete canceled job. This is emulating what would happen with
+	// the server. The worker won't delete a canceled job controller
+	// until the server deletes the job first.
+	delete(jobs, "job-1")
+	w.reconcile(jobs)
+
+	if w.Ctrls["job-1"] != nil {
 		t.Error("Expected job ctrl to be cleaned up")
 	}
 }
@@ -109,9 +123,9 @@ func TestReconcileCancelJob(t *testing.T) {
 func TestReconcileMultiple(t *testing.T) {
 
 	jobs := map[string]*pbr.JobWrapper{}
-	w := worker{
-		runJob: noopRunJob,
-		ctrls:  map[string]JobControl{},
+	w := Worker{
+		JobRunner: NoopJobRunner,
+		Ctrls:     map[string]JobControl{},
 	}
 
 	w.reconcile(jobs)
@@ -123,7 +137,7 @@ func TestReconcileMultiple(t *testing.T) {
 
 	w.reconcile(jobs)
 
-	if _, exists := w.ctrls["job-1"]; !exists {
+	if _, exists := w.Ctrls["job-1"]; !exists {
 		t.Error("Expected runner to be created for new job")
 	}
 
@@ -131,7 +145,7 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected job just started to be in initializing state.")
 	}
 
-	w.ctrls["job-1"].SetRunning()
+	w.Ctrls["job-1"].SetRunning()
 	w.reconcile(jobs)
 
 	if jobs["job-1"].Job.State != pbe.State_Running {
@@ -149,7 +163,7 @@ func TestReconcileMultiple(t *testing.T) {
 
 	w.reconcile(jobs)
 
-	if len(w.ctrls) != 3 {
+	if len(w.Ctrls) != 3 {
 		t.Error("Expected runner to be created for new job")
 	}
 
@@ -161,11 +175,14 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected job 3 state to be init")
 	}
 
-	w.ctrls["job-1"].SetResult(nil)
+	// Set job-1 to complete
+	w.Ctrls["job-1"].SetResult(nil)
+	// Cancel job-2
 	jobs["job-2"].Job.State = pbe.State_Canceled
-	w.ctrls["job-3"].SetResult(errors.New("Job 3 error"))
+	// Set job-3 to error
+	w.Ctrls["job-3"].SetResult(errors.New("Job 3 error"))
 
-	j2ctrl := w.ctrls["job-2"]
+	j2ctrl := w.Ctrls["job-2"]
 	w.reconcile(jobs)
 
 	if jobs["job-1"].Job.State != pbe.State_Complete {
@@ -176,7 +193,13 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected job 2 controller to be canceled state")
 	}
 
-	if w.ctrls["job-2"] != nil {
+	// Delete canceled job. This is emulating what would happen with
+	// the server. The worker won't delete a canceled job controller
+	// until the server deletes the job first.
+	delete(jobs, "job-2")
+	w.reconcile(jobs)
+
+	if w.Ctrls["job-2"] != nil {
 		t.Error("Expected job 2 ctrl to be cleaned up")
 	}
 
@@ -189,9 +212,9 @@ func TestReconcileMultiple(t *testing.T) {
 // and the job state is not Queued (normal case), but is Initializing or Running
 func TestStraightToRunning(t *testing.T) {
 	jobs := map[string]*pbr.JobWrapper{}
-	w := worker{
-		runJob: noopRunJob,
-		ctrls:  map[string]JobControl{},
+	w := Worker{
+		JobRunner: NoopJobRunner,
+		Ctrls:     map[string]JobControl{},
 	}
 
 	addJob(jobs, &pbe.Job{
@@ -205,10 +228,10 @@ func TestStraightToRunning(t *testing.T) {
 
 	w.reconcile(jobs)
 
-	if _, exists := w.ctrls["job-1"]; !exists {
+	if _, exists := w.Ctrls["job-1"]; !exists {
 		t.Error("Expected runner to be created for new job 1")
 	}
-	if _, exists := w.ctrls["job-2"]; !exists {
+	if _, exists := w.Ctrls["job-2"]; !exists {
 		t.Error("Expected runner to be created for new job 2")
 	}
 

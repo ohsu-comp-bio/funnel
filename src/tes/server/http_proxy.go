@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"tes/ga4gh"
+	pbr "tes/server/proto"
 )
 
 // HandleError handles errors in the HTTP stack, logging errors, stack traces,
@@ -22,7 +23,7 @@ func HandleError(w http.ResponseWriter, req *http.Request, err string, code int)
 // StartHTTPProxy starts the HTTP proxy. It listens requests on the given HTTP port,
 // and proxies the requests off to the given RPC port. The contentDir defines the
 // location of web dashboard static files.
-func StartHTTPProxy(rpcPort string, httpPort string, contentDir string) {
+func StartHTTPProxy(serverAddress string, httpPort string, contentDir string) {
 	//setup RESTful proxy
 	grpcMux := runtime.NewServeMux()
 	ctx := context.Background()
@@ -30,11 +31,15 @@ func StartHTTPProxy(rpcPort string, httpPort string, contentDir string) {
 	defer cancel()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 
-	url := "localhost:" + rpcPort
+	url := serverAddress
 	log.Info("HTTP proxy listening gRPC", "url", url)
 	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, url, opts)
 	if err != nil {
 		log.Error("Couldn't register Task Service", "error", err)
+	}
+	serr := pbr.RegisterSchedulerHandlerFromEndpoint(ctx, grpcMux, url, opts)
+	if serr != nil {
+		log.Error("Couldn't register Scheduler service HTTP proxy", "error", err)
 	}
 	r := mux.NewRouter()
 

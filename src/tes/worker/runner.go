@@ -10,6 +10,11 @@ import (
 	"tes/storage"
 )
 
+// JobRunner is a function that does the work of running a job on a worker,
+// including download inputs, executing commands, uploading outputs, etc.
+type JobRunner func(JobControl, config.Worker, *pbr.JobWrapper, logUpdateChan)
+
+// Default JobRunner
 func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) {
 	r := &jobRunner{
 		ctrl:    ctrl,
@@ -23,6 +28,7 @@ func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdate
 	go r.Run()
 }
 
+// jobRunner helps collect data used across many helper methods.
 type jobRunner struct {
 	ctrl    JobControl
 	wrapper *pbr.JobWrapper
@@ -34,7 +40,7 @@ type jobRunner struct {
 	ip      string
 }
 
-// TODO document behavior of slow consumer of updates
+// TODO document behavior of slow consumer of job log updates
 func (r *jobRunner) Run() {
 	r.log.Debug("JobRunner.Run")
 	job := r.wrapper.Job

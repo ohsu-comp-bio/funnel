@@ -86,18 +86,32 @@ func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
 		return true
 	}
 
-	if len(j.Task.GetResources().Zones) == 0 {
+	if len(j.GetTask().GetResources().GetZones()) == 0 {
 		// Request doesn't specify any zones, so don't bother checking.
 		return true
 	}
 
-	for _, z := range j.Task.GetResources().Zones {
+	for _, z := range j.GetTask().GetResources().GetZones() {
 		if z == w.Zone {
 			return true
 		}
 	}
 	log.Debug("Failed zones")
 	return false
+}
+
+// NotDead returns true if the worker state is not Dead or Gone.
+func NotDead(j *pbe.Job, w *pbr.Worker) bool {
+	return w.State != pbr.WorkerState_Dead && w.State != pbr.WorkerState_Gone
+}
+
+// WorkerHasTag returns a predicate function which returns true
+// if the worker has the given tag (key in Metadata field).
+func WorkerHasTag(tag string) Predicate {
+	return func(j *pbe.Job, w *pbr.Worker) bool {
+		_, ok := w.Metadata[tag]
+		return ok
+	}
 }
 
 // DefaultPredicates is a list of Predicate functions that check
@@ -107,6 +121,7 @@ var DefaultPredicates = []Predicate{
 	VolumesFit,
 	PortsFit,
 	ZonesFit,
+	NotDead,
 }
 
 // TODO should have a predicate which understands authorization

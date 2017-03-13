@@ -2,33 +2,42 @@ package main
 
 import (
 	"flag"
+	"github.com/imdario/mergo"
 	"os"
 	"tes/config"
 	"tes/logger"
+	"tes/scheduler"
 	"tes/worker"
 )
 
 var log = logger.New("tes-worker")
 
 func main() {
-	conf := config.WorkerDefaultConfig()
-
+	var cliconf config.Worker
 	var confArg string
 	flag.StringVar(&confArg, "config", "", "Config File")
-	flag.StringVar(&conf.ID, "id", conf.ID, "Worker ID")
-	flag.StringVar(&conf.ServerAddress, "server-address", conf.ServerAddress, "Server address")
-	flag.StringVar(&conf.WorkDir, "work-dir", conf.WorkDir, "Working Directory")
-	flag.DurationVar(&conf.Timeout, "timeout", conf.Timeout, "Timeout in seconds")
-	flag.StringVar(&conf.LogPath, "log-path", conf.LogPath, "File path to write logs to")
+	flag.StringVar(&cliconf.ID, "id", cliconf.ID, "Worker ID")
+	flag.StringVar(&cliconf.ServerAddress, "server-address", cliconf.ServerAddress, "Server address")
+	flag.StringVar(&cliconf.WorkDir, "work-dir", cliconf.WorkDir, "Working Directory")
+	flag.DurationVar(&cliconf.Timeout, "timeout", cliconf.Timeout, "Timeout in seconds")
+	flag.StringVar(&cliconf.LogPath, "log-path", cliconf.LogPath, "File path to write logs to")
 	flag.Parse()
 
+	dconf := config.DefaultConfig()
+	conf := config.WorkerDefaultConfig(dconf)
 	config.LoadConfigOrExit(confArg, &conf)
+
+	// file vals <- cli val
+	err := mergo.MergeWithOverwrite(&conf, cliconf)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.SetLevel(conf.LogLevel)
 	start(conf)
 }
 
 func start(conf config.Worker) {
-	logger.SetLevel(conf.LogLevel)
-
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log
 	//      without having file permission problems?
@@ -40,6 +49,10 @@ func start(conf config.Worker) {
 		} else {
 			logger.SetOutput(logFile)
 		}
+	}
+
+	if conf.ID == "" {
+		conf.ID = scheduler.GenWorkerID()
 	}
 
 	w, err := worker.NewWorker(conf)

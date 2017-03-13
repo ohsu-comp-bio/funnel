@@ -2,7 +2,6 @@ package local
 
 import (
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -25,13 +24,9 @@ func NewScheduler(conf config.Config) (sched.Scheduler, error) {
 	return &scheduler{conf, client, id}, nil
 }
 
-type clientI interface {
-	GetWorkers(context.Context, *pbr.GetWorkersRequest, ...grpc.CallOption) (*pbr.GetWorkersResponse, error)
-}
-
 type scheduler struct {
 	conf     config.Config
-	client   clientI
+	client   sched.Client
 	workerID string
 }
 
@@ -61,6 +56,7 @@ func (s *scheduler) getWorkers() []*pbr.Worker {
 			// Ignore workers that aren't alive
 			continue
 		}
+		workers = append(workers, w)
 	}
 	return workers
 }
@@ -73,8 +69,6 @@ func startWorker(id string, conf config.Config) error {
 
 	c := conf.Worker
 	c.ID = id
-	c.ServerAddress = "localhost:9090"
-	c.Storage = conf.Storage
 	c.Resources = res
 	log.Debug("Starting local worker", "storage", c.Storage)
 

@@ -61,12 +61,12 @@ type LocalScheduler struct {
 	Weights Weights
 }
 
-// OpenstackScheduler describes configuration for the openstack scheduler.
-type OpenstackScheduler struct {
-	NumWorkers int
+// OpenStackScheduler describes configuration for the openstack scheduler.
+type OpenStackScheduler struct {
 	KeyPair    string
 	ConfigPath string
 	Server     os_servers.CreateOpts
+	Weights    Weights
 }
 
 // GCEScheduler describes configuration for the Google Cloud scheduler.
@@ -83,7 +83,7 @@ type Schedulers struct {
 	Local     LocalScheduler
 	Dumblocal LocalScheduler
 	Condor    LocalScheduler
-	Openstack OpenstackScheduler
+	OpenStack OpenStackScheduler
 	GCE       GCEScheduler
 }
 

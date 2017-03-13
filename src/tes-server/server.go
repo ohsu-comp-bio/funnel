@@ -10,6 +10,7 @@ import (
 	"tes/scheduler/condor"
 	"tes/scheduler/gce"
 	"tes/scheduler/local"
+	"tes/scheduler/openstack"
 	"tes/server"
 )
 
@@ -56,8 +57,8 @@ func start(conf config.Config) {
 		sched = condor.NewScheduler(conf)
 	case "gce":
 		sched, err = gce.NewScheduler(conf)
-	//case "openstack":
-	//sched = openstack.NewScheduler(conf)
+	case "openstack":
+		sched, err = openstack.NewScheduler(conf)
 	default:
 		log.Error("Unknown scheduler", "scheduler", conf.Scheduler)
 		return

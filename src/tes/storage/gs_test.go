@@ -13,7 +13,7 @@ func authed(t *testing.T) *GSBackend {
 	if accountFile == "" {
 		t.Skip("No Google Cloud account file. Set TES_TEST_GS_ACCOUNT_FILE")
 	}
-	
+
 	conf := config.GSStorage{
 		AccountFile: accountFile,
 	}

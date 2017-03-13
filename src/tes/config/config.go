@@ -90,7 +90,7 @@ type Schedulers struct {
 // Config describes configuration for TES.
 type Config struct {
 	Storage       []*StorageConfig
-	HostName        string
+	HostName      string
 	Scheduler     string
 	Schedulers    Schedulers
 	Worker        Worker

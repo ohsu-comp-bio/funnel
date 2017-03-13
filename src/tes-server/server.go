@@ -89,5 +89,5 @@ func start(conf config.Config) {
 	}
 
 	// TODO if port 8000 is already busy, does this lock up silently?
-	server.StartHTTPProxy(conf.HostName + ":" + conf.RPCPort, conf.HTTPPort, conf.ContentDir)
+	server.StartHTTPProxy(conf.HostName+":"+conf.RPCPort, conf.HTTPPort, conf.ContentDir)
 }

@@ -1,88 +1,54 @@
 package scheduler
 
 import (
-	"context"
 	"google.golang.org/grpc"
-	"os"
 	"tes/config"
 	pbr "tes/server/proto"
-	"time"
 )
 
 // Client is a client for the scheduler gRPC service.
-type Client struct {
+type Client interface {
 	pbr.SchedulerClient
-	conn           *grpc.ClientConn
-	NewJobPollRate time.Duration
+	Close()
+}
+
+type client struct {
+	pbr.SchedulerClient
+	conn *grpc.ClientConn
 }
 
 // NewClient returns a new Client instance connected to the
 // scheduler at a given address (e.g. "localhost:9090")
-func NewClient(conf config.Worker) (*Client, error) {
+func NewClient(conf config.Worker) (Client, error) {
 	conn, err := NewRPCConnection(conf.ServerAddress)
 	if err != nil {
-		log.Error("Couldn't connect to schduler", err)
+		log.Error("Couldn't connect to scheduler", err)
 		return nil, err
 	}
 
 	s := pbr.NewSchedulerClient(conn)
-	return &Client{s, conn, conf.NewJobPollRate}, nil
+	return &client{s, conn}, nil
 }
 
 // Close closes the client connection.
-func (client *Client) Close() {
+func (client *client) Close() {
 	client.conn.Close()
 }
 
-// PollForJobs polls the scheduler for a job assigned to the given worker ID
-// and writes responses to the given "ch" channel
-func (client *Client) PollForJobs(ctx context.Context, workerID string, ch chan<- *pbr.JobResponse) {
-
-	log.Debug("Job poll rate", "rate", client.NewJobPollRate)
-	tickChan := time.NewTicker(client.NewJobPollRate).C
-
-	// TODO want ticker that fires immediately
-	job := client.RequestJob(ctx, workerID)
-	if job != nil {
-		ch <- job
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-
-		case <-tickChan:
-			job := client.RequestJob(ctx, workerID)
-			if job != nil {
-				ch <- job
-			}
-		}
-	}
-}
-
-// RequestJob asks the scheduler service for a job. If no job is available, return nil.
-func (client *Client) RequestJob(ctx context.Context, workerID string) *pbr.JobResponse {
-	hostname, _ := os.Hostname()
-	// Ask the scheduler for a task.
-	resp, err := client.GetJobToRun(ctx,
-		&pbr.JobRequest{
-			Worker: &pbr.WorkerInfo{
-				Id:       workerID,
-				Hostname: hostname,
-				// TODO what is last ping for? Why is it the current time?
-				LastPing: time.Now().Unix(),
-			},
-		})
+// NewRPCConnection returns a gRPC ClientConn, or an error.
+// Use this for getting a connection for gRPC clients.
+func NewRPCConnection(address string) (*grpc.ClientConn, error) {
+	// TODO if this can't connect initially, should it retry?
+	//      give up after max retries? Does grpc.Dial already do this?
+	// Create a connection for gRPC clients
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
 
 	if err != nil {
-		// An error occurred while asking the scheduler for a job.
-		// TODO should return error?
-		log.Error("Couldn't get job from scheduler", err)
-
-	} else if resp != nil && resp.Job != nil {
-		// A job was found
-		return resp
+		log.Error("Couldn't open RPC connection",
+			"error", err,
+			"address", address,
+		)
+		return nil, err
 	}
-	return nil
+	return conn, nil
 }

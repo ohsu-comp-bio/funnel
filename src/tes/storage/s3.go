@@ -1,9 +1,11 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"github.com/minio/minio-go"
 	"strings"
+	"tes/config"
 )
 
 // S3Protocol defines the expected URL prefix for S3, "s3://"
@@ -16,10 +18,11 @@ type S3Backend struct {
 
 // NewS3Backend creates an S3Backend client instance, give an endpoint URL
 // and a set of authentication credentials.
-func NewS3Backend(endpoint string, id string, secret string, SSL bool) (*S3Backend, error) {
+func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
 
 	// Initialize minio client object.
-	client, err := minio.New(endpoint, id, secret, SSL)
+	// TODO SSL config and support
+	client, err := minio.New(conf.Endpoint, conf.Key, conf.Secret, false)
 	// TODO client needs to be closed?
 	if err != nil {
 		return nil, err
@@ -28,7 +31,7 @@ func NewS3Backend(endpoint string, id string, secret string, SSL bool) (*S3Backe
 }
 
 // Get copies an object from S3 to the host path.
-func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
+func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class string) error {
 	log.Info("Starting download", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)
@@ -47,7 +50,7 @@ func (s3 *S3Backend) Get(url string, hostPath string, class string) error {
 }
 
 // Put copies an object (file) from the host path to S3.
-func (s3 *S3Backend) Put(url string, hostPath string, class string) error {
+func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class string) error {
 	log.Info("Starting upload", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	// TODO it's easy to create an error if this starts with a "/"

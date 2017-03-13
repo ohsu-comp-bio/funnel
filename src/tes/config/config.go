@@ -8,18 +8,35 @@ import (
 	"path"
 	"path/filepath"
 	log "tes/logger"
+	pbr "tes/server/proto"
 	"time"
 )
+
+// Weights describes the scheduler score weights.
+// All fields should be float32 type.
+type Weights map[string]float32
 
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
 	Local LocalStorage
 	S3    S3Storage
+	GS    GSStorage
 }
 
 // LocalStorage describes the directories TES can read from and write to
 type LocalStorage struct {
 	AllowedDirs []string
+}
+
+// GSStorage describes configuration for the Google Cloud storage backend.
+type GSStorage struct {
+	AccountFile string
+	FromEnv     bool
+}
+
+// Valid validates the GSStorage configuration.
+func (g GSStorage) Valid() bool {
+	return g.FromEnv || g.AccountFile != ""
 }
 
 // Valid validates the LocalStorage configuration
@@ -41,7 +58,7 @@ func (l S3Storage) Valid() bool {
 
 // LocalScheduler describes configuration for the local scheduler.
 type LocalScheduler struct {
-	NumWorkers int
+	Weights Weights
 }
 
 // OpenstackScheduler describes configuration for the openstack scheduler.
@@ -52,18 +69,28 @@ type OpenstackScheduler struct {
 	Server     os_servers.CreateOpts
 }
 
+// GCEScheduler describes configuration for the Google Cloud scheduler.
+type GCEScheduler struct {
+	AccountFile string
+	Project     string
+	Zone        string
+	Templates   []string
+	Weights     Weights
+}
+
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
 	Local     LocalScheduler
 	Dumblocal LocalScheduler
 	Condor    LocalScheduler
 	Openstack OpenstackScheduler
+	GCE       GCEScheduler
 }
 
 // Config describes configuration for TES.
 type Config struct {
 	Storage       []*StorageConfig
-	ServerAddress string
+	HostName      string
 	Scheduler     string
 	Schedulers    Schedulers
 	Worker        Worker
@@ -74,28 +101,44 @@ type Config struct {
 	WorkDir       string
 	LogLevel      string
 	MaxJobLogSize int
+	ScheduleRate  time.Duration
+	ScheduleChunk int
+	// How long to wait for a worker ping before marking it as dead
+	WorkerPingTimeout time.Duration
+	// How long to wait for worker initialization before marking it dead
+	WorkerInitTimeout time.Duration
 }
 
 // DefaultConfig returns configuration with simple defaults.
 func DefaultConfig() Config {
 	workDir := "tes-work-dir"
-	return Config{
-		ServerAddress: "localhost:9090",
-		DBPath:        path.Join(workDir, "tes_task.db"),
-		HTTPPort:      "8000",
-		RPCPort:       "9090",
-		ContentDir:    defaultContentDir(),
-		WorkDir:       workDir,
-		LogLevel:      "debug",
-		Scheduler:     "local",
+	hostName := "localhost"
+	rpcPort := "9090"
+	c := Config{
+		HostName:   hostName,
+		DBPath:     path.Join(workDir, "tes_task.db"),
+		HTTPPort:   "8000",
+		RPCPort:    rpcPort,
+		ContentDir: defaultContentDir(),
+		WorkDir:    workDir,
+		LogLevel:   "debug",
+		Scheduler:  "local",
 		Schedulers: Schedulers{
-			Local: LocalScheduler{
-				NumWorkers: 4,
+			Local: LocalScheduler{},
+			GCE: GCEScheduler{
+				Weights: Weights{
+					"startup time": 1.0,
+				},
 			},
 		},
-		Worker:        WorkerDefaultConfig(),
-		MaxJobLogSize: 10000,
+		MaxJobLogSize:     10000,
+		ScheduleRate:      time.Second,
+		ScheduleChunk:     10,
+		WorkerPingTimeout: time.Minute,
+		WorkerInitTimeout: time.Minute * 5,
 	}
+	c.Worker = WorkerDefaultConfig(c)
+	return c
 }
 
 // Worker contains worker configuration.
@@ -109,31 +152,44 @@ type Worker struct {
 	// Default, -1, indicates to tear down the worker immediately after completing
 	// its job
 	Timeout time.Duration
-	// How often (milliseconds) the worker polls for cancellation requests
-	StatusPollRate time.Duration
-	// How often (milliseconds) the worker sends log updates
+	// How often the worker sends update requests to the server
+	UpdateRate time.Duration
+	// How often the worker sends job log updates
 	LogUpdateRate time.Duration
-	// How often (milliseconds) the scheduler polls for new jobs
-	NewJobPollRate time.Duration
-	LogTailSize    int64
-	Storage        []*StorageConfig
-	LogPath        string
-	LogLevel       string
+	TrackerRate   time.Duration
+	LogTailSize   int64
+	Storage       []*StorageConfig
+	LogPath       string
+	LogLevel      string
+	Resources     *pbr.Resources
+	// Timeout duration for UpdateWorker() and UpdateJobLogs() RPC calls
+	UpdateTimeout time.Duration
+	Metadata      map[string]string
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
-func WorkerDefaultConfig() Worker {
+func WorkerDefaultConfig(c Config) Worker {
 	return Worker{
-		ServerAddress: "localhost:9090",
-		WorkDir:       "tes-work-dir",
+		ServerAddress: c.HostName + ":" + c.RPCPort,
+		WorkDir:       c.WorkDir,
 		Timeout:       -1,
 		// TODO these get reset to zero when not found in yaml?
-		StatusPollRate: time.Second * 5,
-		LogUpdateRate:  time.Second * 5,
-		NewJobPollRate: time.Second * 5,
-		LogTailSize:    10000,
-		LogLevel:       "debug",
+		UpdateRate:    time.Second * 5,
+		LogUpdateRate: time.Second * 5,
+		TrackerRate:   time.Second * 5,
+		LogTailSize:   10000,
+		Storage:       c.Storage,
+		LogLevel:      "debug",
+		UpdateTimeout: time.Second,
 	}
+}
+
+// WorkerInheritConfigVals is a utility to help ensure the Worker inherits the proper config values from the parent Config
+func WorkerInheritConfigVals(c Config) Worker {
+	c.Worker.ServerAddress = c.HostName + ":" + c.RPCPort
+	c.Worker.WorkDir = c.WorkDir
+	c.Worker.Storage = c.Storage
+	return c.Worker
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.

@@ -50,5 +50,5 @@ func (ga4ghServer *GA4GHServer) Start(hostPort string) {
 	}
 
 	log.Info("RPC server listening", "port", hostPort)
-	go grpcServer.Serve(lis)
+	grpcServer.Serve(lis)
 }

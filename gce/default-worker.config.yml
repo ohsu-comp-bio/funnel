@@ -1,0 +1,10 @@
+ServerAddress: funnel-master:9090
+WorkDir: /opt/funnel/work-dir
+Metadata:
+  gce: yes
+Storage:
+- Local:
+  AllowedDirs:
+    /opt/funnel/shared-data
+- GS:
+  FromEnv: true

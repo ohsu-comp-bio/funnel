@@ -3,7 +3,7 @@
 from common_test_util import S3ServerTest, get_abspath
 
 
-class TestFileOP(S3ServerTest):
+class TestS3(S3ServerTest):
 
     def test_file_mount(self):
 
@@ -47,7 +47,7 @@ class TestFileOP(S3ServerTest):
         }
 
         job_id = self.tes.submit(task)
-        self.tes.wait(job_id)
+        self.tes.wait(job_id, timeout=20)
 
         path = self.get_from_storage(out_loc)
         with open(path) as handle:

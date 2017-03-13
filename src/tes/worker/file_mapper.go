@@ -45,15 +45,25 @@ func NewJobFileMapper(jobID string, baseDir string) *FileMapper {
 	dir := path.Join(baseDir, jobID)
 	// TODO error handling
 	dir, _ = filepath.Abs(dir)
-	return &FileMapper{dir: dir}
+	return &FileMapper{
+		Volumes: []Volume{},
+		Inputs:  []*pbe.TaskParameter{},
+		Outputs: []*pbe.TaskParameter{},
+		dir:     dir,
+	}
 }
 
 // MapTask adds all the volumes, inputs, and outputs in the given Task to the FileMapper.
 func (mapper *FileMapper) MapTask(task *pbe.Task) error {
-
+	var err error
 	// Add all the volumes to the mapper
 	for _, vol := range task.Resources.Volumes {
-		err := mapper.AddVolume(vol.Source, vol.MountPoint)
+		switch vol.Readonly {
+		case true:
+			err = mapper.AddVolume(vol.Source, vol.MountPoint, "ro")
+		case false:
+			err = mapper.AddVolume(vol.Source, vol.MountPoint, "rw")
+		}
 		if err != nil {
 			return err
 		}
@@ -84,7 +94,7 @@ func (mapper *FileMapper) MapTask(task *pbe.Task) error {
 // Currently, volumes are hard-coded to "rw" (read-write).
 //
 // If the volume paths are invalid or can't be mapped, an error is returned.
-func (mapper *FileMapper) AddVolume(source string, mountPoint string) error {
+func (mapper *FileMapper) AddVolume(source string, mountPoint string, mode string) error {
 	if source != "" {
 		return fmt.Errorf("Could not create a volume: 'source' is not supported for %s", source)
 	}
@@ -100,8 +110,7 @@ func (mapper *FileMapper) AddVolume(source string, mountPoint string) error {
 	v := Volume{
 		HostPath:      hostPath,
 		ContainerPath: mountPoint,
-		// TODO should be read only?
-		Mode: "rw",
+		Mode:          mode,
 	}
 
 	// Ensure that the volume directory exists on the host
@@ -195,6 +204,9 @@ func (mapper *FileMapper) AddInput(input *pbe.TaskParameter) error {
 	// Create a TaskParameter for the input with a path mapped to the host
 	hostIn := proto.Clone(input).(*pbe.TaskParameter)
 	hostIn.Path = p
+	if mapper.IsInReadOnlyVolume(p) {
+		hostIn.Class = "ReadOnlyFile"
+	}
 	mapper.Inputs = append(mapper.Inputs, hostIn)
 	return nil
 }
@@ -241,6 +253,21 @@ func (mapper *FileMapper) IsInVolume(p string) bool {
 	for _, vol := range mapper.Volumes {
 		if mapper.IsSubpath(p, vol.HostPath) {
 			return true
+		}
+	}
+	return false
+}
+
+// IsInReadOnlyVolume checks whether a given path is in a mapped volume.
+func (mapper *FileMapper) IsInReadOnlyVolume(p string) bool {
+	for _, vol := range mapper.Volumes {
+		if mapper.IsSubpath(p, vol.HostPath) {
+			switch {
+			case vol.Mode == "ro":
+				return true
+			default:
+				return false
+			}
 		}
 	}
 	return false

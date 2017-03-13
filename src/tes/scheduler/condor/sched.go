@@ -5,18 +5,25 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
+	pbr "tes/server/proto"
 	"text/template"
 )
 
-var log = logger.New("condor-sched")
+var log = logger.New("condor")
+
+// prefix is a string prefixed to condor worker IDs, so that condor
+// workers can be identified by ShouldStartWorker() below.
+// TODO move to worker metadata to be consistent with GCE
+const prefix = "condor-"
 
 // NewScheduler returns a new HTCondor Scheduler instance.
-func NewScheduler(c config.Config) sched.Scheduler {
-	return &scheduler{c}
+func NewScheduler(conf config.Config) sched.Scheduler {
+	return &scheduler{conf}
 }
 
 type scheduler struct {
@@ -24,46 +31,36 @@ type scheduler struct {
 }
 
 // Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
-func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
+func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running condor scheduler")
 
-	w := sched.Worker{
-		ID: sched.GenWorkerID(),
-		Resources: sched.Resources{
-			// TODO
-			CPU:  1,
-			RAM:  1.0,
-			Disk: 10.0,
-		},
+	// TODO could we call condor_submit --dry-run to test if a job would succeed?
+	w := &pbr.Worker{
+		Id: prefix + sched.GenWorkerID(),
 	}
-	o := sched.NewOffer(j, w)
-	go s.observe(o)
-	return o
+	return sched.NewOffer(w, j, sched.Scores{})
 }
 
-func (s *scheduler) observe(o sched.Offer) {
-	<-o.Wait()
-	if o.Accepted() {
-		s.startWorker(o.Worker().ID)
-	} else if o.Rejected() {
-		log.Debug("Condor offer was rejected")
-	}
+func (s *scheduler) ShouldStartWorker(w *pbr.Worker) bool {
+	return strings.HasPrefix(w.Id, prefix) &&
+		w.State == pbr.WorkerState_Uninitialized
 }
 
-func (s *scheduler) startWorker(workerID string) {
-	log.Debug("Start condor worker")
+// StartWorker submits a job via "condor_submit" to start a new worker.
+func (s *scheduler) StartWorker(w *pbr.Worker) error {
+	log.Debug("Starting condor worker")
+
 	// TODO document that these working dirs need manual cleanup
-	workdir := path.Join(s.conf.WorkDir, "condor-scheduler", workerID)
+	workdir := path.Join(s.conf.WorkDir, w.Id)
 	workdir, _ = filepath.Abs(workdir)
 	os.MkdirAll(workdir, 0755)
 
-	workerConf := s.conf.Worker
-	workerConf.ID = workerID
-	workerConf.ServerAddress = s.conf.ServerAddress
-	workerConf.Storage = s.conf.Storage
+	c := s.conf.Worker
+	c.ID = w.Id
+	c.Timeout = 0
 
 	confPath := path.Join(workdir, "worker.conf.yml")
-	workerConf.ToYamlFile(confPath)
+	c.ToYamlFile(confPath)
 
 	workerPath := sched.DetectWorkerPath()
 
@@ -73,7 +70,7 @@ func (s *scheduler) startWorker(workerID string) {
 	submitTpl, _ := template.New("condor.submit").Parse(`
 		universe    = vanilla
 		executable  = {{.Executable}}
-		arguments   = -config {{.WorkDir}}/worker.conf.yml
+		arguments   = -config worker.conf.yml
 		environment = "PATH=/usr/bin"
 		log         = {{.WorkDir}}/condor-event-log
 		error       = {{.WorkDir}}/tes-worker-stderr
@@ -96,4 +93,7 @@ func (s *scheduler) startWorker(workerID string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
+
+	// TODO better error checking
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"tes/ga4gh"
+	pbr "tes/server/proto"
 )
 
 // HandleError handles errors in the HTTP stack, logging errors, stack traces,
@@ -35,6 +36,10 @@ func StartHTTPProxy(rpcPort string, httpPort string, contentDir string) {
 	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, url, opts)
 	if err != nil {
 		log.Error("Couldn't register Task Service", "error", err)
+	}
+	serr := pbr.RegisterSchedulerHandlerFromEndpoint(ctx, grpcMux, url, opts)
+	if serr != nil {
+		log.Error("Couldn't register Scheduler service HTTP proxy", "error", err)
 	}
 	r := mux.NewRouter()
 

@@ -34,13 +34,17 @@ var JobState = []byte("jobs-state")
 // job ID -> ga4gh_task_exec.JobLog struct
 var JobsLog = []byte("jobs-log")
 
-// JobWorker defines the name a bucket which maps
-// job ID -> worker ID
-var JobWorker = []byte("job-worker")
-
 // Workers maps:
 // worker ID -> ga4gh_task_ref.Worker struct
 var Workers = []byte("workers")
+
+// JobWorker Map job ID -> worker ID
+var JobWorker = []byte("job-worker")
+
+// WorkerJobs indexes worker -> jobs
+// Implemented as composite_key(worker ID + job ID) => job ID
+// And searched with prefix scan using worker ID
+var WorkerJobs = []byte("worker-jobs")
 
 // TaskBolt provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
@@ -81,6 +85,9 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 		}
 		if tx.Bucket(JobWorker) == nil {
 			tx.CreateBucket(JobWorker)
+		}
+		if tx.Bucket(WorkerJobs) == nil {
+			tx.CreateBucket(WorkerJobs)
 		}
 		return nil
 	})
@@ -227,7 +234,6 @@ func loadJobLogs(tx *bolt.Tx, job *ga4gh_task_exec.Job) {
 
 // GetJob gets a job, which describes a running task
 func (taskBolt *TaskBolt) GetJob(ctx context.Context, id *ga4gh_task_exec.JobID) (*ga4gh_task_exec.Job, error) {
-	log.Debug("GetJob called", "jobID", id.Value)
 
 	var job *ga4gh_task_exec.Job
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
@@ -282,7 +288,9 @@ func (taskBolt *TaskBolt) CancelJob(ctx context.Context, taskop *ga4gh_task_exec
 	log.Info("Canceling job")
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		return transitionJobState(tx, taskop.Value, ga4gh_task_exec.State_Canceled)
+		// TODO need a test that ensures a canceled job is deleted from the worker
+		id := taskop.Value
+		return transitionJobState(tx, id, ga4gh_task_exec.State_Canceled)
 	})
 	if err != nil {
 		return nil, err

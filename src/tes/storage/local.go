@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -8,6 +9,7 @@ import (
 	"path"
 	"strings"
 	"syscall"
+	"tes/config"
 )
 
 // LocalProtocol defines the expected prefix of URL matching this storage system.
@@ -21,13 +23,13 @@ type LocalBackend struct {
 
 // NewLocalBackend returns a LocalBackend instance, configured to limit
 // file system access to the given allowed directories.
-func NewLocalBackend(allowed []string) *LocalBackend {
-	return &LocalBackend{allowed}
+func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
+	return &LocalBackend{conf.AllowedDirs}, nil
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(url string, hostPath string, class string) error {
-	log.Info("Starting download", "url", url)
+func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string) error {
+	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
 	if !isAllowed(path, local.allowedDirs) {
@@ -52,7 +54,7 @@ func (local *LocalBackend) Get(url string, hostPath string, class string) error 
 }
 
 // Put copies a file from the hostPath into storage.
-func (local *LocalBackend) Put(url string, hostPath string, class string) error {
+func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class string) error {
 	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -141,14 +143,15 @@ func copyDir(source string, dest string) (err error) {
 	// ensure dest dir does not already exist
 
 	_, err = os.Open(dest)
-	if !os.IsNotExist(err) {
-		return fmt.Errorf("Destination already exists")
-	}
-
-	// create dest dir
-	_ = syscall.Umask(0000)
-	err = os.MkdirAll(dest, 0777)
-	if err != nil {
+	if os.IsNotExist(err) {
+		// create dest dir
+		_ = syscall.Umask(0000)
+		err = os.MkdirAll(dest, 0777)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		log.Error("copyDir os.Open error", err)
 		return err
 	}
 

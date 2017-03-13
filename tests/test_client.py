@@ -12,7 +12,7 @@ from common_test_util import SimpleServerTest
 TESTS_DIR = os.path.dirname(__file__)
 
 
-class TestTaskREST(SimpleServerTest):
+class TestClient(SimpleServerTest):
 
     def dumps(self, d):
         return json.dumps(d, indent=2, sort_keys=True)
@@ -40,7 +40,9 @@ class TestTaskREST(SimpleServerTest):
         return self.tes.submit(task)
 
     def test_hello_world(self):
-        '''Test a basic "Hello world" task and expected API result.'''
+        '''
+        Test a basic "Hello world" task and expected API result.
+        '''
         job_id = self._submit_steps("echo hello world")
         data = self.tes.wait(job_id)
         print self.dumps(data)

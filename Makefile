@@ -46,7 +46,8 @@ tidy:
 	@find ./* -type f | grep -E '.*\.py$$' | grep -v "/venv/" | grep -v "/share/node" | xargs autopep8 --in-place --aggressive --aggressive
 
 lint:
-	flake8 --exclude ./venv .
+	pip install -q flake8
+	flake8 --exclude ./venv,./share .
 	go get github.com/alecthomas/gometalinter
 	./buildtools/bin/gometalinter --install > /dev/null
 	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/...

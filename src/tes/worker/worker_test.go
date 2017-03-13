@@ -9,6 +9,7 @@ import (
 	"tes/logger"
 	sched_mocks "tes/scheduler/mocks"
 	"testing"
+	"time"
 )
 
 func init() {
@@ -132,4 +133,61 @@ func TestGetWorkerFail(t *testing.T) {
 	// Set GetWorker to return an error
 	m.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("TEST"))
 	w.Sync()
+}
+
+// Test the flow of a worker completing a job then timing out
+func TestWorkerTimeout(t *testing.T) {
+	conf := config.DefaultConfig()
+	conf.Worker.Timeout = time.Millisecond
+	conf.Worker.UpdateRate = time.Millisecond * 2
+	srv := MockSchedulerServerFromConfig(conf)
+	defer srv.Close()
+
+	done := make(chan struct{})
+	go func() {
+		srv.worker.Run()
+		log.Debug("DONE")
+		close(done)
+	}()
+
+	jobID := srv.Server.RunHelloWorld()
+
+	// Sync worker
+	srv.Flush()
+	ctrl := srv.worker.Ctrls[jobID]
+
+	// Set job complete
+	ctrl.SetResult(nil)
+	srv.Flush()
+	srv.Flush()
+
+	timeout := time.NewTimer(conf.Worker.Timeout * 100)
+
+	// Wait for either the worker to be done, or the test to timeout
+	select {
+	case <-timeout.C:
+		t.Error("Expected worker to be done")
+	case <-done:
+		// Worker is done
+	}
+}
+
+// Test calling Worker.Stop()
+func TestStopWorker(t *testing.T) {
+	w, _ := NewWorker(config.WorkerDefaultConfig())
+	done := make(chan struct{})
+	go func() {
+		w.Run()
+		close(done)
+	}()
+	timeout := time.NewTimer(time.Millisecond * 4)
+	w.Stop()
+
+	// Wait for either the worker to be done, or the test to timeout
+	select {
+	case <-timeout.C:
+		t.Error("Expected worker to be done")
+	case <-done:
+		// Worker is done
+	}
 }

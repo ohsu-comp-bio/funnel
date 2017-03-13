@@ -78,14 +78,14 @@ func (t *timerTimeout) Stop() {
 	if !t.started {
 		return
 	}
-	if !t.timer.Stop() {
-		// If the timer already finished, drain the channel.
-		<-t.timer.C
-	}
+	t.timer.Stop()
 	t.started = false
 }
 
 // NewIdleTimeout returns an IdleTimeout instance for the given duration.
 func NewIdleTimeout(d time.Duration) IdleTimeout {
+	if d < 0 {
+		return NoIdleTimeout()
+	}
 	return &timerTimeout{d, nil, false}
 }

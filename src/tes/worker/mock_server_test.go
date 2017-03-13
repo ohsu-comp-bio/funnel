@@ -18,15 +18,20 @@ func (m *mockScheduler) Schedule(j *pbe.Job) *scheduler.Offer {
 	return scheduler.NewOffer(m.worker, j, scheduler.Scores{})
 }
 
-func newMockSchedulerServer() *mockSchedulerServer {
-	srv := server_mocks.NewMockServer()
+func newMockSchedulerServer() *MockSchedulerServer {
+	conf := config.DefaultConfig()
+	return MockSchedulerServerFromConfig(conf)
+}
 
-	wconf := config.WorkerDefaultConfig()
-	wconf.ServerAddress = srv.Conf.ServerAddress
-	wconf.ID = "test-worker"
+// MockSchedulerServerFromConfig returns a mockSchdulerServer with the given config.
+func MockSchedulerServerFromConfig(conf config.Config) *MockSchedulerServer {
+	srv := server_mocks.MockServerFromConfig(conf)
+
+	conf.Worker.ServerAddress = srv.Conf.ServerAddress
+	conf.Worker.ID = "test-worker"
 
 	// Create a worker
-	w, werr := NewWorker(wconf)
+	w, werr := NewWorker(conf.Worker)
 	if werr != nil {
 		panic(werr)
 	}
@@ -41,11 +46,11 @@ func newMockSchedulerServer() *mockSchedulerServer {
 		Jobs:  map[string]*pbr.JobWrapper{},
 	}}
 
-	m := mockSchedulerServer{srv.DB, srv, sched, srv.Conf, w}
+	m := MockSchedulerServer{srv.DB, srv, sched, srv.Conf, w}
 	return &m
 }
 
-type mockSchedulerServer struct {
+type MockSchedulerServer struct {
 	db     *server.TaskBolt
 	Server *server_mocks.MockServer
 	sched  *mockScheduler
@@ -53,11 +58,11 @@ type mockSchedulerServer struct {
 	worker *Worker
 }
 
-func (m *mockSchedulerServer) Flush() {
+func (m *MockSchedulerServer) Flush() {
 	scheduler.ScheduleChunk(m.db, m.sched, m.conf)
 	m.worker.Sync()
 }
 
-func (m *mockSchedulerServer) Close() {
+func (m *MockSchedulerServer) Close() {
 	m.Server.Close()
 }

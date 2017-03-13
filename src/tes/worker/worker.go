@@ -7,6 +7,7 @@ import (
 	pbe "tes/ga4gh"
 	"tes/logger"
 	pbr "tes/server/proto"
+	"tes/util"
 	"time"
 )
 
@@ -24,7 +25,13 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	logUpdates := make(logUpdateChan)
 	// Tracks active job ctrls: job ID -> JobControl instance
 	ctrls := map[string]JobControl{}
-	return &Worker{conf, logUpdates, sched, log, res, runJob, ctrls}, nil
+	timeout := util.NewIdleTimeout(conf.Timeout)
+	stop := make(chan struct{})
+	state := pbr.WorkerState_Uninitialized
+	return &Worker{
+		conf, logUpdates, sched, log, res,
+		runJob, ctrls, timeout, stop, state,
+	}, nil
 }
 
 // Worker is a worker...
@@ -37,33 +44,47 @@ type Worker struct {
 	resources  *pbr.Resources
 	JobRunner  JobRunner
 	Ctrls      map[string]JobControl
+	timeout    util.IdleTimeout
+	stop       chan struct{}
+	state      pbr.WorkerState
 }
 
 // Run runs a worker with the given config. This is responsible for communication
 // with the server and starting job runners
 func (w *Worker) Run() {
 	w.log.Info("Starting worker")
+	w.state = pbr.WorkerState_Alive
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
 	defer ticker.Stop()
 
 	for {
 		select {
+		case <-w.stop:
+			return
 		case up := <-w.logUpdates:
 			w.updateLogs(up)
 		case <-ticker.C:
 			w.Sync()
+			w.checkIdleTimer()
+		case <-w.timeout.Done():
+			// Worker timeout reached. Shutdown.
+			w.Stop()
+			return
 		}
 	}
 }
 
 // Sync syncs the worker's state with the server. It reports job state changes,
 // handles signals from the server (new job, cancel job, etc), reports resources, etc.
+//
+// TODO Sync should probably use a channel to sync data access.
+//      Probably only a problem for test code, where Sync is called directly.
 func (w *Worker) Sync() {
 	r, gerr := w.sched.GetWorker(context.TODO(), &pbr.GetWorkerRequest{Id: w.conf.ID})
 
 	if gerr != nil {
-		log.Error("Couldn't reconcile worker state.", gerr)
+		log.Error("Couldn't get worker state during sync.", gerr)
 		return
 	}
 
@@ -77,7 +98,7 @@ func (w *Worker) Sync() {
 
 	// Worker data has been updated. Send back to server for database update.
 	r.Resources = w.resources
-	r.State = pbr.WorkerState_Alive
+	r.State = w.state
 
 	// Merge metadata
 	if r.Metadata == nil {
@@ -93,13 +114,29 @@ func (w *Worker) Sync() {
 	}
 }
 
-// TODO need a way to shut the worker down.
-// TODO Close isn't correct. Wouldn't actually stop internal goroutines.
-//func (w *worker) Close() {
-// Tell the scheduler that the worker is gone.
-//w.sched.WorkerGone()
-//w.sched.Close()
-//}
+// Stop stops the worker
+// TODO need a way to shut the worker down from the server/scheduler.
+func (w *Worker) Stop() {
+	w.state = pbr.WorkerState_Gone
+	close(w.stop)
+	w.timeout.Stop()
+	for _, ctrl := range w.Ctrls {
+		ctrl.Cancel()
+	}
+	w.Sync()
+	w.sched.Close()
+}
+
+// Check if the worker is idle. If so, start the timeout timer.
+func (w *Worker) checkIdleTimer() {
+	// The worker is idle if there are no job controllers.
+	idle := len(w.Ctrls) == 0 && w.state == pbr.WorkerState_Alive
+	if idle {
+		w.timeout.Start()
+	} else {
+		w.timeout.Stop()
+	}
+}
 
 func (w *Worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
 	// UpdateJobLogs() is more lightweight than UpdateWorker(),
@@ -156,10 +193,6 @@ func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 		case jobSt == Unknown && runSt == Unknown:
 			// Edge case. Shouldn't be here, but log just in case.
 			fallthrough
-		case isActive(jobSt) && runSt == Canceled:
-			// Edge case. Server says running but ctrl says canceled.
-			// Not sure how this would happen.
-			fallthrough
 		case isComplete(jobSt) && runSt == Unknown:
 			// Edge case. Job is complete and there's no ctrl. Do nothing.
 			fallthrough
@@ -170,6 +203,12 @@ func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 			// Log so that these unexpected cases can be explored.
 			log.Error("Edge case during worker reconciliation. Recovering.",
 				"jobst", jobSt, "runst", runSt)
+
+		case isActive(jobSt) && runSt == Canceled:
+			// Edge case. Server says running but ctrl says canceled.
+			// Possibly the worker is shutting down due to a local signal
+			// and canceled its jobs.
+			job.State = runSt
 
 		case jobSt == runSt:
 			// States match, do nothing.

@@ -8,6 +8,7 @@ import (
 	"tes/logger"
 	pbr "tes/server/proto"
 	"tes/storage"
+	"tes/util"
 )
 
 // JobRunner is a function that does the work of running a job on a worker,
@@ -149,7 +150,7 @@ func (r *jobRunner) prepareDir() error {
 	if err != nil {
 		return err
 	}
-	return ensureDir(dir)
+	return util.EnsureDir(dir)
 }
 
 // Prepare file mapper, which maps task file URLs to host filesystem paths

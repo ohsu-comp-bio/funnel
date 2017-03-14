@@ -4,63 +4,11 @@ import (
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
 	"net"
-	"os"
 	"os/exec"
-	"path"
 	"syscall"
 	"tes/config"
 	pbr "tes/server/proto"
 )
-
-const headerSize = int64(102400)
-
-// exists returns whether the given file or directory exists or not
-func exists(p string) (bool, error) {
-	_, err := os.Stat(p)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return true, err
-}
-
-func ensureDir(p string) error {
-	e, err := exists(p)
-	if err != nil {
-		return err
-	}
-	if !e {
-		// TODO configurable mode?
-		_ = syscall.Umask(0000)
-		err := os.MkdirAll(p, 0777)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func ensurePath(p string) error {
-	dir := path.Dir(p)
-	return ensureDir(dir)
-}
-
-func ensureFile(p string, class string) error {
-	err := ensurePath(p)
-	if err != nil {
-		return err
-	}
-	if class == "File" {
-		f, err := os.Create(p)
-		if err != nil {
-			return err
-		}
-		f.Close()
-	}
-	return nil
-}
 
 func externalIP() (string, error) {
 	ifaces, err := net.Interfaces()

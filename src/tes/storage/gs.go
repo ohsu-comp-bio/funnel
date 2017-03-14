@@ -12,9 +12,11 @@ import (
 	"net/http"
 	urllib "net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"tes/config"
+	"tes/util"
 )
 
 // The gs url protocol
@@ -67,7 +69,7 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 
 // Get copies an object from GS to the host path.
 func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class string) error {
-	log.Info("Starting download of %s", rawurl)
+	log.Info("Starting download", "url", rawurl)
 
 	url, perr := parse(rawurl)
 	if perr != nil {
@@ -75,28 +77,47 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 	}
 
 	if class == File {
-		resp, derr := gs.svc.Objects.Get(url.bucket, url.path).Download()
-		if derr != nil {
-			return derr
+		call := gs.svc.Objects.Get(url.bucket, url.path)
+		err := download(call, hostPath)
+		if err != nil {
+			return err
 		}
-
-		dest, cerr := os.Create(hostPath)
-		if cerr != nil {
-			return cerr
-		}
-
-		written, werr := io.Copy(dest, resp.Body)
-		if werr != nil {
-			return werr
-		}
-
-		log.Info("Finished download", "url", rawurl, "hostPath", hostPath, "bytes", written)
+		log.Info("Finished file download", "url", rawurl, "hostPath", hostPath)
 		return nil
 
 	} else if class == Directory {
-		return fmt.Errorf("GS directories not yet supported")
+		// TODO not handling pagination
+		objects, _ := gs.svc.Objects.List(url.bucket).Prefix(url.path).Do()
+		for _, obj := range objects.Items {
+			call := gs.svc.Objects.Get(url.bucket, obj.Name)
+			err := download(call, path.Join(hostPath, obj.Name))
+			if err != nil {
+				return err
+			}
+		}
+		log.Info("Finished directory download", "url", rawurl, "hostPath", hostPath)
+		return nil
 	}
 	return fmt.Errorf("Unknown file class: %s", class)
+}
+
+func download(call *storage.ObjectsGetCall, hostPath string) error {
+	resp, derr := call.Download()
+	if derr != nil {
+		return derr
+	}
+
+	util.EnsurePath(hostPath)
+	dest, cerr := os.Create(hostPath)
+	if cerr != nil {
+		return cerr
+	}
+
+	_, werr := io.Copy(dest, resp.Body)
+	if werr != nil {
+		return werr
+	}
+	return nil
 }
 
 // Put copies an object (file) from the host path to GS.
@@ -127,9 +148,9 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 	} else if class == Directory {
 		err := filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
 			if !f.IsDir() {
-				// TODO
+				// TODO do what?
 				rel, _ := filepath.Rel(hostPath, p)
-				// TODO
+				// TODO do what?
 				gs.Put(ctx, rawurl+"/"+rel, p, File)
 				log.Debug("Subpath", "full", p, "rel", rel)
 			}

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	pbe "tes/ga4gh"
+	"tes/util"
 )
 
 // FileMapper is responsible for mapping paths into a working directory on the
@@ -110,7 +111,7 @@ func (mapper *FileMapper) AddVolume(source string, mountPoint string) error {
 	}
 
 	// Ensure that the volume directory exists on the host
-	perr := ensureDir(hostPath)
+	perr := util.EnsureDir(hostPath)
 	if perr != nil {
 		return perr
 	}
@@ -165,7 +166,7 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 	if perr != nil {
 		return nil, perr
 	}
-	err := ensurePath(p)
+	err := util.EnsurePath(p)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +193,7 @@ func (mapper *FileMapper) AddInput(input *pbe.TaskParameter) error {
 		return fmt.Errorf("Input path is required to be in a volume: %s", input.Path)
 	}
 
-	perr := ensurePath(p)
+	perr := util.EnsurePath(p)
 	if perr != nil {
 		return perr
 	}
@@ -224,7 +225,7 @@ func (mapper *FileMapper) AddOutput(output *pbe.TaskParameter) error {
 	}
 	// Create the file if needed, as per the TES spec
 	if output.Create {
-		err := ensureFile(p, output.Class)
+		err := util.EnsureFile(p, output.Class)
 		if err != nil {
 			return err
 		}

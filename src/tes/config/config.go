@@ -81,7 +81,6 @@ type GCEScheduler struct {
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
 	Local     LocalScheduler
-	Dumblocal LocalScheduler
 	Condor    LocalScheduler
 	OpenStack OpenStackScheduler
 	GCE       GCEScheduler

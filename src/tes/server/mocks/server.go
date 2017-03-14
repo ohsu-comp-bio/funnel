@@ -35,8 +35,8 @@ func MockServerFromConfig(conf config.Config) *MockServer {
 
 	// Configuration
 	port := randomPort()
-	conf.ServerAddress = "localhost:" + port
-	conf.Worker.ServerAddress = conf.ServerAddress
+	conf.HostName = "localhost"
+	conf.Worker.ServerAddress = conf.HostName + ":" + port
 	conf.RPCPort = port
 	conf.DBPath = f.Name()
 

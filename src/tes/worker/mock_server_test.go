@@ -27,7 +27,7 @@ func newMockSchedulerServer() *MockSchedulerServer {
 func MockSchedulerServerFromConfig(conf config.Config) *MockSchedulerServer {
 	srv := server_mocks.MockServerFromConfig(conf)
 
-	conf.Worker.ServerAddress = srv.Conf.ServerAddress
+	conf.Worker.ServerAddress = srv.Conf.HostName + ":" + srv.Conf.RPCPort
 	conf.Worker.ID = "test-worker"
 
 	// Create a worker

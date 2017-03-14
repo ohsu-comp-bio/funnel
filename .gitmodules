@@ -64,3 +64,12 @@
 [submodule "src/vendor/github.com/shirou/gopsutil"]
 	path = src/vendor/github.com/shirou/gopsutil
 	url = https://github.com/shirou/gopsutil
+[submodule "src/vendor/github.com/mitchellh/copystructure"]
+	path = src/vendor/github.com/mitchellh/copystructure
+	url = https://github.com/mitchellh/copystructure
+[submodule "src/vendor/github.com/mitchellh/reflectwalk"]
+	path = src/vendor/github.com/mitchellh/reflectwalk
+	url = https://github.com/mitchellh/reflectwalk
+[submodule "src/vendor/github.com/stretchr/testify"]
+	path = src/vendor/github.com/stretchr/testify
+	url = https://github.com/stretchr/testify

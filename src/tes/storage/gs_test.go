@@ -34,7 +34,6 @@ func TestAnonymousGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// TODO this doesn't create the output path yet
 	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", "File")
 	if gerr != nil {
 		t.Error(gerr)

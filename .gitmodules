@@ -79,12 +79,3 @@
 [submodule "src/vendor/github.com/imdario/mergo"]
 	path = src/vendor/github.com/imdario/mergo
 	url = https://github.com/imdario/mergo
-[submodule "src/vendor/github.com/mitchellh/copystructure"]
-	path = src/vendor/github.com/mitchellh/copystructure
-	url = https://github.com/mitchellh/copystructure
-[submodule "src/vendor/github.com/mitchellh/reflectwalk"]
-	path = src/vendor/github.com/mitchellh/reflectwalk
-	url = https://github.com/mitchellh/reflectwalk
-[submodule "src/vendor/github.com/stretchr/testify"]
-	path = src/vendor/github.com/stretchr/testify
-	url = https://github.com/stretchr/testify

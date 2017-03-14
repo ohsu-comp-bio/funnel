@@ -1,7 +1,7 @@
 {
-    "name" : "TestEcho",
+    "name" : "TestSleep",
     "projectId" : "MyProject",
-    "description" : "Simple Echo Command",
+    "description" : "Simple Sleep Command",
     "resources" : {
 	"minimumCpuCores": 2,
         "volumes": [
@@ -14,13 +14,7 @@
     },
     "docker" : [
 	{
-	    "imageName" : "tes-wait",
-	    "ports": [
-		{
-		    "host": 0,
-		    "container": 8888
-		}
-	    ],
+	    "imageName" : "ubuntu",
 	    "cmd" : [
 		"bash",
 		"-c",

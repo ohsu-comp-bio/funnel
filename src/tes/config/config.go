@@ -176,6 +176,9 @@ func WorkerDefaultConfig() Worker {
 		LogTailSize:   10000,
 		LogLevel:      "debug",
 		UpdateTimeout: time.Second,
+		Resources: &pbr.Resources{
+			Disk: 100.0,
+		},
 	}
 }
 

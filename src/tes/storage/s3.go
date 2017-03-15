@@ -31,7 +31,7 @@ func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
 }
 
 // Get copies an object from S3 to the host path.
-func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class string) error {
+func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class string, readonly bool) error {
 	log.Info("Starting download", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)

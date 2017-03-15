@@ -66,7 +66,7 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 }
 
 // Get copies an object from GS to the host path.
-func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class string) error {
+func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class string, readonly bool) error {
 	log.Info("Starting download", "url", rawurl)
 
 	url, perr := parse(rawurl)

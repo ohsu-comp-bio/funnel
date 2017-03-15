@@ -144,6 +144,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 	log.Debug("RunTask called", "task", task)
 
 	if len(task.Docker) == 0 {
+		log.Error("No docker commands found")
 		return nil, fmt.Errorf("No docker commands found")
 	}
 
@@ -156,6 +157,8 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 			}
 		}
 		if !diskFound {
+			log.Error("RunTask: required volume not found in resources",
+				"path", input.Path)
 			return nil, fmt.Errorf("Required volume '%s' not found in resources", input.Path)
 		}
 		//Fixing blank value to File by default... Is this too much hand holding?
@@ -178,7 +181,10 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 		idBytes := []byte(jobID)
 
 		taskopB := tx.Bucket(TaskBucket)
-		v, _ := proto.Marshal(task)
+		v, err := proto.Marshal(task)
+		if err != nil {
+			return err
+		}
 		taskopB.Put(idBytes, v)
 
 		tx.Bucket(JobState).Put(idBytes, []byte(ga4gh_task_exec.State_Queued.String()))
@@ -192,6 +198,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 		return nil
 	})
 	if err != nil {
+		log.Error("Error processing task", err)
 		return nil, err
 	}
 	a := <-ch

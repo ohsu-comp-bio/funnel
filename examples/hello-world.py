@@ -4,7 +4,7 @@ import time
 import urllib
 
 task = {
-    "name": "TestEcho",
+    "name": "Hello world",
     "projectId": "MyProject",
     "description": "Simple Echo Command",
     "resources": {},

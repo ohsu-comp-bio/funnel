@@ -8,7 +8,7 @@ parser.add_argument("--count", type=int, default=1)
 args = parser.parse_args()
 
 task = {
-    "name": "TestMD5",
+    "name": "4 CPU sleep",
     "projectId": "MyProject",
     "description": "My Desc",
     "inputs": [

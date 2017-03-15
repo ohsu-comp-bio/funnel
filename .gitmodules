@@ -73,3 +73,6 @@
 [submodule "src/vendor/github.com/stretchr/testify"]
 	path = src/vendor/github.com/stretchr/testify
 	url = https://github.com/stretchr/testify
+[submodule "src/vendor/github.com/rs/xid"]
+	path = src/vendor/github.com/rs/xid
+	url = https://github.com/rs/xid

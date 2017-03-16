@@ -28,36 +28,32 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string) error {
-	log.Info("Starting download", "url", url, "hostPath", hostPath, "class", class)
+func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string, readonly bool) error {
+	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
 	if !isAllowed(path, local.allowedDirs) {
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", path)
 	}
 
-	switch class {
-	case File:
-		err := copyFile(path, hostPath)
-		if err != nil {
-			return err
+	var err error
+	if class == File {
+		if readonly {
+			err = linkFile(path, hostPath)
+		} else {
+			err = copyFile(path, hostPath)
 		}
-	case ReadOnlyFile:
-		err := linkFile(path, hostPath)
-		if err != nil {
-			return err
-		}
-	case Directory:
-		err := copyDir(path, hostPath)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("Unknown file class: %s", class)
+	} else if class == Directory {
+		// TODO link readonly directory
+		err = copyDir(path, hostPath)
+	} else {
+		err = fmt.Errorf("Unknown file class: %s", class)
 	}
 
-	log.Info("Finished download", "url", url, "hostPath", hostPath)
-	return nil
+	if err == nil {
+		log.Info("Finished download", "url", url, "hostPath", hostPath)
+	}
+	return err
 }
 
 // Put copies a file from the hostPath into storage.
@@ -69,22 +65,19 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
 	}
 
-	switch class {
-	// Outputs are always copied
-	case File, ReadOnlyFile:
+	if class == File {
 		err := copyFile(hostPath, path)
 		if err != nil {
 			return err
 		}
-	case Directory:
+	} else if class == Directory {
 		err := copyDir(hostPath, path)
 		if err != nil {
 			return err
 		}
-	default:
+	} else {
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
-
 	log.Info("Finished upload", "url", url, "hostPath", hostPath)
 	return nil
 }
@@ -106,19 +99,17 @@ func isAllowed(path string, allowedDirs []string) bool {
 
 // Copies file source to destination dest.
 func copyFile(source string, dest string) (err error) {
-	same := checkSame(source, dest)
-	if same {
-		return nil
-	}
-	err = precheck(source, dest)
-	if err != nil {
-		return err
-	}
 	sf, err := os.Open(source)
 	if err != nil {
 		return err
 	}
 	defer sf.Close()
+	dstD := path.Dir(dest)
+	// make parent dirs if they dont exist
+	if _, err := os.Stat(dstD); err != nil {
+		_ = syscall.Umask(0000)
+		os.MkdirAll(dstD, 0777)
+	}
 	df, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -131,102 +122,12 @@ func copyFile(source string, dest string) (err error) {
 	if cerr != nil {
 		return cerr
 	}
-	// ensure readable files
+	// ensure readable output files
 	err = os.Chmod(dest, 0666)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-// Hard links file source to destination dest.
-func linkFile(source string, dest string) error {
-	same := checkSame(source, dest)
-	if same {
-		return nil
-	}
-	err := precheck(source, dest)
-	if err != nil {
-		return err
-	}
-	err = os.Link(source, dest)
-	if err != nil {
-		log.Debug("Failed to link file; attempting copy", "linkErr", err, "source", source, "dest", dest)
-		err := copyFile(source, dest)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return nil
-}
-
-func precheck(source string, dest string) error {
-	err := checkSrc(source)
-	if err != nil {
-		return err
-	}
-	err = checkDest(dest)
-	if err != nil {
-		return err
-	}
-	dstD := path.Dir(dest)
-	// make parent dirs if they dont exist
-	_, err = os.Stat(dstD)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-		_ = syscall.Umask(0000)
-		os.MkdirAll(dstD, 0777)
-	}
-	return nil
-}
-
-func checkSrc(source string) error {
-	sfi, err := os.Lstat(source)
-	if err != nil {
-		return err
-	}
-	switch mode := sfi.Mode(); {
-	case mode.IsRegular():
-		return nil
-	case mode&os.ModeSymlink != 0:
-		_, err := os.Stat(source)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return fmt.Errorf("Symlink (%s) could not be resolved", source)
-			}
-			return err
-		}
-	case !mode.IsRegular():
-		// cannot copy non-regular files (e.g., directories, devices, etc.)
-		return fmt.Errorf("non-regular source file %s (%q)", sfi.Name(), sfi.Mode().String())
-	}
-	return nil
-}
-
-func checkDest(dest string) error {
-	dfi, err := os.Stat(dest)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-	} else {
-		if !(dfi.Mode().IsRegular()) {
-			return fmt.Errorf("non-regular destination file %s (%q)", dfi.Name(), dfi.Mode().String())
-		}
-	}
-	return nil
-}
-
-func checkSame(source string, dest string) bool {
-	sfi, _ := os.Stat(source)
-	dfi, _ := os.Stat(dest)
-	if os.SameFile(sfi, dfi) {
-		return true
-	}
-	return false
 }
 
 // Recursively copies a directory tree, attempting to preserve permissions.

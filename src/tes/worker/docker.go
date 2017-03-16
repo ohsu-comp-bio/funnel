@@ -170,5 +170,9 @@ func setupDockerClient() *client.Client {
 // GetVolumes takes a jobID and returns an array of string.
 func formatVolumeArg(v Volume) string {
 	// `o` is structed as "HostPath:ContainerPath:Mode".
-	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, v.Mode)
+	mode := "rw"
+	if v.Readonly {
+		mode = "ro"
+	}
+	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
 }

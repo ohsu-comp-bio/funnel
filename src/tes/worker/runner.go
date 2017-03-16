@@ -65,7 +65,14 @@ func (r *jobRunner) Run() {
 	// Download inputs
 	for _, input := range r.mapper.Inputs {
 		r.step("store.Get", func() error {
-			return r.store.Get(r.ctrl.Context(), input.Location, input.Path, input.Class)
+			vol, _ := r.mapper.FindVolume(input.Path)
+			return r.store.Get(
+				r.ctrl.Context(),
+				input.Location,
+				input.Path,
+				input.Class,
+				vol.Readonly,
+			)
 		})
 	}
 

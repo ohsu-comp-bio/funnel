@@ -28,7 +28,7 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string) error {
+func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string, readonly bool) error {
 	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -36,21 +36,24 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", path)
 	}
 
+	var err error
 	if class == File {
-		err := copyFile(path, hostPath)
-		if err != nil {
-			return err
+		if readonly {
+			err = linkFile(path, hostPath)
+		} else {
+			err = copyFile(path, hostPath)
 		}
 	} else if class == Directory {
-		err := copyDir(path, hostPath)
-		if err != nil {
-			return err
-		}
+		// TODO link readonly directory
+		err = copyDir(path, hostPath)
 	} else {
-		return fmt.Errorf("Unknown file class: %s", class)
+		err = fmt.Errorf("Unknown file class: %s", class)
 	}
-	log.Info("Finished download", "url", url, "hostPath", hostPath)
-	return nil
+
+	if err == nil {
+		log.Info("Finished download", "url", url, "hostPath", hostPath)
+	}
+	return err
 }
 
 // Put copies a file from the hostPath into storage.
@@ -173,4 +176,18 @@ func copyDir(source string, dest string) (err error) {
 		}
 	}
 	return nil
+}
+
+// Hard links file source to destination dest.
+func linkFile(source string, dest string) error {
+	var err error
+	err = os.Link(source, dest)
+	if err != nil {
+		log.Debug("Failed to link file; attempting copy",
+			"linkErr", err,
+			"source", source,
+			"dest", dest)
+		err = copyFile(source, dest)
+	}
+	return err
 }

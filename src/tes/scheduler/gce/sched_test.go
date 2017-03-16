@@ -95,8 +95,7 @@ func TestSchedStartWorker(t *testing.T) {
 
 	// Mock config
 	conf := basicConf()
-	// Set a different server address to test that it gets passed on to the worker
-	conf.ServerAddress = "other:9090"
+
 	// Add an instance template to the config. The scheduler uses these templates
 	// to start new worker instances.
 	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
@@ -138,7 +137,7 @@ func TestSchedStartWorker(t *testing.T) {
 	// Expected worker config
 	wconf := conf.Worker
 	// Expect ServerAddress to match the server's config
-	wconf.ServerAddress = conf.ServerAddress
+	wconf.ServerAddress = conf.HostName + ":" + conf.RPCPort
 	wconf.ID = expected.Id
 	gce.On("StartWorker", "test-proj", "test-zone", "test-tpl", wconf).Return(nil)
 

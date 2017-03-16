@@ -22,8 +22,7 @@ func TestWrapper(t *testing.T) {
 
 	// Mock config
 	conf := basicConf()
-	// Set a different server address to test that it gets passed on to the worker
-	conf.ServerAddress = "other:9090"
+
 	// Add an instance template to the config. The scheduler uses these templates
 	// to start new worker instances.
 	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
@@ -81,7 +80,7 @@ func TestWrapper(t *testing.T) {
 
 	workerConf := conf.Worker
 	workerConf.ID = w.Id
-	workerConf.ServerAddress = conf.ServerAddress
+	workerConf.ServerAddress = conf.HostName + ":" + conf.RPCPort
 	confYaml := string(workerConf.ToYaml())
 	expected := &Instance{
 		// TODO test that these fields get passed through from the template correctly.

@@ -1,0 +1,14 @@
+<div ng-controller="WorkerListController" class="worker-list-page">
+  <div class="board">
+
+    <h4>Workers</h4>
+
+    <table ng-table="tableParams" class="worker-list-table">
+      <tr ng-repeat="worker in workers"> 
+        <td data-title="'ID'" filter="{'worker.id': 'text'}" sortable="'worker.id'"><a href="#/workers/{{worker.id}}">{{ worker.id }}</a></td>
+        <td data-title="'State'" filter="{'worker.state': 'text'}" sortable="'state'">{{worker.state}}</td>
+      </tr>
+    </table> 
+
+  </div>
+</div>

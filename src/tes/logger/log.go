@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
+var formatter = &textFormatter{
+	DisableTimestamp: true,
+}
+
 func init() {
-	logrus.SetFormatter(&textFormatter{
-		DisableTimestamp: true,
-	})
+	logrus.SetFormatter(formatter)
 	// TODO hard-coded level
 	logrus.SetLevel(logrus.DebugLevel)
 }
@@ -37,6 +39,11 @@ func SetLevel(l string) {
 	default:
 		logrus.SetLevel(logrus.InfoLevel)
 	}
+}
+
+// ForceColors forces the log output formatter to use color. Useful during testing.
+func ForceColors() {
+	formatter.ForceColors = true
 }
 
 // New returns a new Logger instance.

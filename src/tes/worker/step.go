@@ -16,7 +16,7 @@ type stepRunner struct {
 	Num     int
 	Cmd     *DockerCmd
 	Log     logger.Logger
-	Updates updateChan
+	Updates logUpdateChan
 	IP      string
 }
 
@@ -99,7 +99,7 @@ func (s *stepRunner) inspectContainer(ctx context.Context) {
 // update sends an update of the JobLog of the currently running step.
 // Used to update stdout/err logs, port mapping, etc.
 func (s *stepRunner) update(log *pbe.JobLog) {
-	s.Updates <- &pbr.UpdateStatusRequest{
+	s.Updates <- &pbr.UpdateJobLogsRequest{
 		Id:   s.JobID,
 		Step: int64(s.Num),
 		Log:  log,

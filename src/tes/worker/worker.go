@@ -2,149 +2,258 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
-	"tes/scheduler"
 	pbr "tes/server/proto"
 	"tes/util"
 	"time"
 )
 
-type updateChan chan *pbr.UpdateStatusRequest
+type logUpdateChan chan *pbr.UpdateJobLogsRequest
 
-type result struct {
-	Job *pbe.Job
-	Err error
-}
-
-// Worker handles polling the scheduler for jobs, creating job runners,
-// tracking them, and communicating updates back to the scheduler.
-type Worker struct {
-	ID      string
-	conf    config.Worker
-	log     logger.Logger
-	jobs    chan *pbr.JobResponse
-	sched   *scheduler.Client
-	updates updateChan
-}
-
-// NewWorker returns a new Worker instance with the given config.
+// NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (*Worker, error) {
-	sched, err := scheduler.NewClient(conf)
+	sched, err := newSchedClient(conf)
 	if err != nil {
 		return nil, err
 	}
 
+	log := logger.New("worker", "workerID", conf.ID)
+	res := detectResources(conf.Resources)
+	logUpdates := make(logUpdateChan)
+	// Tracks active job ctrls: job ID -> JobControl instance
+	ctrls := map[string]JobControl{}
+	timeout := util.NewIdleTimeout(conf.Timeout)
+	stop := make(chan struct{})
+	state := pbr.WorkerState_Uninitialized
 	return &Worker{
-		ID:      conf.ID,
-		conf:    conf,
-		log:     logger.New("worker", "workerID", conf.ID),
-		sched:   sched,
-		jobs:    make(chan *pbr.JobResponse),
-		updates: make(updateChan),
+		conf, logUpdates, sched, log, res,
+		runJob, ctrls, timeout, stop, state,
 	}, nil
 }
 
-// Close cleans up worker resources.
-func (w *Worker) Close() {
+// Worker is a worker...
+type Worker struct {
+	conf config.Worker
+	// Channel for job updates from job runners: stdout/err, ports, etc.
+	logUpdates logUpdateChan
+	sched      *schedClient
+	log        logger.Logger
+	resources  *pbr.Resources
+	JobRunner  JobRunner
+	Ctrls      map[string]JobControl
+	timeout    util.IdleTimeout
+	stop       chan struct{}
+	state      pbr.WorkerState
+}
+
+// Run runs a worker with the given config. This is responsible for communication
+// with the server and starting job runners
+func (w *Worker) Run() {
+	w.log.Info("Starting worker")
+	w.state = pbr.WorkerState_Alive
+
+	ticker := time.NewTicker(w.conf.UpdateRate)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-w.stop:
+			return
+		case up := <-w.logUpdates:
+			w.updateLogs(up)
+		case <-ticker.C:
+			w.Sync()
+			w.checkIdleTimer()
+		case <-w.timeout.Done():
+			// Worker timeout reached. Shutdown.
+			w.Stop()
+			return
+		}
+	}
+}
+
+// Sync syncs the worker's state with the server. It reports job state changes,
+// handles signals from the server (new job, cancel job, etc), reports resources, etc.
+//
+// TODO Sync should probably use a channel to sync data access.
+//      Probably only a problem for test code, where Sync is called directly.
+func (w *Worker) Sync() {
+	r, gerr := w.sched.GetWorker(context.TODO(), &pbr.GetWorkerRequest{Id: w.conf.ID})
+
+	if gerr != nil {
+		log.Error("Couldn't get worker state during sync.", gerr)
+		return
+	}
+
+	// Reconcile server state with worker state.
+	rerr := w.reconcile(r.Jobs)
+	if rerr != nil {
+		// TODO what's the best behavior here?
+		log.Error("Couldn't reconcile worker state.", rerr)
+		return
+	}
+
+	// Worker data has been updated. Send back to server for database update.
+	r.Resources = w.resources
+	r.State = w.state
+
+	// Merge metadata
+	if r.Metadata == nil {
+		r.Metadata = map[string]string{}
+	}
+	for k, v := range w.conf.Metadata {
+		r.Metadata[k] = v
+	}
+
+	_, err := w.sched.UpdateWorker(r)
+	if err != nil {
+		log.Error("Couldn't save worker update. Recovering.", err)
+	}
+}
+
+// Stop stops the worker
+// TODO need a way to shut the worker down from the server/scheduler.
+func (w *Worker) Stop() {
+	w.state = pbr.WorkerState_Gone
+	close(w.stop)
+	w.timeout.Stop()
+	for _, ctrl := range w.Ctrls {
+		ctrl.Cancel()
+	}
+	w.Sync()
 	w.sched.Close()
 }
 
-// Run runs the worker.
-func (w *Worker) Run(pctx context.Context) {
-	ctx, cancel := context.WithCancel(pctx)
-	defer cancel()
-
-	w.log.Info("Running worker")
-	defer w.log.Info("Shutting down")
-
-	go w.sched.PollForJobs(ctx, w.ID, w.jobs)
-	w.trackJobs(ctx)
-}
-
-func (w *Worker) trackJobs(ctx context.Context) {
-	runningJobs := 0
-	done := make(chan bool)
-	// timeout controls how long before the worker shuts down
-	// when no jobs are available.
-	timeout := util.NewIdleTimeout(w.conf.Timeout)
-
-	// If no jobs are found for awhile, the worker will shut down.
-	for {
-		select {
-		case <-ctx.Done():
-			return
-
-		// "w.updates" contains job updates, e.g. stdout/err updates.
-		case up := <-w.updates:
-			w.log.Info("Sending update", "data", up)
-			w.sched.UpdateJobStatus(ctx, up)
-
-		case <-timeout.Done():
-			w.log.Info("Reached idle timeout")
-			return
-
-		// "jobs" is written to when a new job is assigned by the scheduler.
-		case job := <-w.jobs:
-			log.Debug("Worker got job", "job", job)
-			go func() {
-				w.runJob(ctx, job)
-				done <- true
-			}()
-			runningJobs++
-			timeout.Stop()
-
-			// "done" is written to when a job finishes
-		case <-done:
-			runningJobs--
-			if runningJobs == 0 {
-				timeout.Start()
-			}
-		}
+// Check if the worker is idle. If so, start the timeout timer.
+func (w *Worker) checkIdleTimer() {
+	// The worker is idle if there are no job controllers.
+	idle := len(w.Ctrls) == 0 && w.state == pbr.WorkerState_Alive
+	if idle {
+		w.timeout.Start()
+	} else {
+		w.timeout.Stop()
 	}
 }
 
-// runJob handles creating and calling the job runner and communicating
-// job state with the scheduler, including watching for cancelation signals.
-func (w *Worker) runJob(pctx context.Context, resp *pbr.JobResponse) {
-	job := resp.Job
-	ctx := w.jobContext(pctx, job.JobID)
-	err := runJob(ctx, resp, w.conf, w.updates)
-	failed := err != nil
-	if failed {
-		w.log.Error("Job failed to run.", err)
+func (w *Worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
+	// UpdateJobLogs() is more lightweight than UpdateWorker(),
+	// which is why it happens separately and at a different rate.
+	err := w.sched.UpdateJobLogs(up)
+	if err != nil {
+		// TODO if the request failed, the job update is lost and the logs
+		//      are corrupted. Cache logs to prevent this?
+		w.log.Error("Job log update failed", err)
 	}
-	w.sched.JobComplete(ctx, &pbr.JobCompleteRequest{
-		Id:     job.JobID,
-		Failed: failed,
-	})
 }
 
-// jobContext returns a context object that will be canceled when the job
-// is canceled by the scheduler.
-func (w *Worker) jobContext(parent context.Context, jobID string) context.Context {
-	ctx, cancel := context.WithCancel(parent)
+// reconcile merges the server state with the worker state:
+// - identifies new jobs and starts new runners for them
+// - identifies canceled jobs and cancels existing runners
+// - updates pbr.Job structs with current job state (running, complete, error, etc)
+func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
+	var (
+		Unknown  = pbe.State_Unknown
+		Canceled = pbe.State_Canceled
+	)
 
-	go func() {
-		ticker := time.NewTicker(w.conf.StatusPollRate)
-		defer ticker.Stop()
+	// Combine job IDs from response with job IDs from ctrls so we can reconcile
+	// both sets below.
+	jobIDs := map[string]bool{}
+	for jobID := range w.Ctrls {
+		jobIDs[jobID] = true
+	}
+	for jobID := range jobs {
+		jobIDs[jobID] = true
+	}
 
-		for {
-			select {
-			case <-parent.Done():
-				return
+	for jobID := range jobIDs {
+		jobSt := pbe.State_Unknown
+		runSt := pbe.State_Unknown
 
-			case <-ticker.C:
-				resp, err := w.sched.GetJobState(ctx, &pbe.JobID{Value: jobID})
-				if err != nil {
-					w.log.Error("Couldn't get job state. Recovering.", err)
-				} else if resp.State == pbe.State_Canceled {
-					cancel()
-					return
-				}
-			}
+		ctrl := w.Ctrls[jobID]
+		if ctrl != nil {
+			runSt = ctrl.State()
 		}
-	}()
-	return ctx
+
+		wrapper := jobs[jobID]
+		var job *pbe.Job
+		if wrapper != nil {
+			job = wrapper.Job
+			jobSt = job.GetState()
+		}
+
+		if isComplete(jobSt) {
+			delete(w.Ctrls, jobID)
+		}
+
+		switch {
+		case jobSt == Unknown && runSt == Unknown:
+			// Edge case. Shouldn't be here, but log just in case.
+			fallthrough
+		case isComplete(jobSt) && runSt == Unknown:
+			// Edge case. Job is complete and there's no ctrl. Do nothing.
+			fallthrough
+		case isComplete(jobSt) && runSt == Canceled:
+			// Edge case. Job is complete and the ctrl is canceled. Do nothing.
+			// This shouldn't happen but it's better to check for it anyway.
+			//
+			// Log so that these unexpected cases can be explored.
+			log.Error("Edge case during worker reconciliation. Recovering.",
+				"jobst", jobSt, "runst", runSt)
+
+		case isActive(jobSt) && runSt == Canceled:
+			// Edge case. Server says running but ctrl says canceled.
+			// Possibly the worker is shutting down due to a local signal
+			// and canceled its jobs.
+			job.State = runSt
+
+		case jobSt == runSt:
+			// States match, do nothing.
+
+		case isActive(jobSt) && runSt == Unknown:
+			// Job needs to be started.
+			ctrl := NewJobControl()
+			w.JobRunner(ctrl, w.conf, wrapper, w.logUpdates)
+			w.Ctrls[jobID] = ctrl
+			job.State = ctrl.State()
+
+		case isActive(jobSt) && runSt != Unknown:
+			// Job is running, update state.
+			job.State = runSt
+
+		case jobSt == Canceled && runSt != Unknown:
+			// Job is canceled.
+			// ctrl.Cancel() is idempotent, so blindly cancel and delete.
+			ctrl.Cancel()
+
+		case jobSt == Unknown && runSt != Unknown:
+			// Edge case. There's a ctrl for a non-existent job. Delete it.
+			// TODO is it better to leave it? Continue in absence of explicit command principle?
+			ctrl.Cancel()
+			delete(w.Ctrls, jobID)
+
+		case isComplete(jobSt) && isActive(runSt):
+			// Edge case. The job is complete but the ctrl is still running.
+			// This shouldn't happen but it's better to check for it anyway.
+			// TODO better to update job state?
+			ctrl.Cancel()
+
+		default:
+			log.Error("Unhandled case during worker reconciliation.",
+				"job", job, "ctrl", ctrl)
+			return errors.New("Unhandled case during worker reconciliation")
+		}
+	}
+	return nil
+}
+
+func isActive(s pbe.State) bool {
+	return s == pbe.State_Queued || s == pbe.State_Initializing || s == pbe.State_Running
+}
+
+func isComplete(s pbe.State) bool {
+	return s == pbe.State_Complete || s == pbe.State_Error || s == pbe.State_SystemError
 }

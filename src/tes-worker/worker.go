@@ -1,11 +1,11 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"os"
 	"tes/config"
 	"tes/logger"
+	"tes/scheduler"
 	"tes/worker"
 )
 
@@ -43,10 +43,14 @@ func start(conf config.Worker) {
 		}
 	}
 
+	if conf.ID == "" {
+		conf.ID = scheduler.GenWorkerID()
+	}
+
 	w, err := worker.NewWorker(conf)
 	if err != nil {
 		log.Error("Can't create worker", err)
+		return
 	}
-	ctx := context.Background()
-	w.Run(ctx)
+	w.Run()
 }

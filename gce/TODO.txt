@@ -1,0 +1,5 @@
+Require/set ServerAddress config in master.config.yml
+Move to ansible
+Document hard-coded requirements
+- funnel-master name
+- project/zone, templates

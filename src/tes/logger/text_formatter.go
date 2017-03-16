@@ -145,11 +145,11 @@ func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		case float64:
 		case bool:
 		case proto.Message:
-			v = proto.MarshalTextString(x)
+			v = pretty.Sprint(x)
 		case fmt.Stringer:
 		case error:
 		default:
-			v = pretty.Sprint(v)
+			v = pretty.Sprint(x)
 		}
 		fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%v", levelColor, k, v)
 		//f.appendValue(b, v)

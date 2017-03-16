@@ -1,47 +1,86 @@
 package openstack
 
 import (
+	"context"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
 	sched "tes/scheduler"
-	dumb "tes/scheduler/dumb"
+	pbr "tes/server/proto"
 )
 
-var log = logger.New("openstack-sched")
+var log = logger.New("openstack")
 
 // NewScheduler returns a new Scheduler instance.
-func NewScheduler(conf config.Config) sched.Scheduler {
-	return &scheduler{
-		dumb.NewScheduler(conf.Schedulers.Openstack.NumWorkers),
-		conf,
+func NewScheduler(conf config.Config) (sched.Scheduler, error) {
+
+	// Create a client for talking to the funnel scheduler
+	client, err := sched.NewClient(conf.Worker)
+	if err != nil {
+		log.Error("Can't connect scheduler client", err)
+		return nil, err
 	}
+
+	return &scheduler{conf, client}, nil
 }
 
 type scheduler struct {
-	ds   dumb.Scheduler
-	conf config.Config
+	conf   config.Config
+	client sched.Client
 }
 
-// Schedule schedules a job, returning an Offer.
-func (s *scheduler) Schedule(j *pbe.Job) sched.Offer {
-	log.Debug("Running dumb openstack scheduler")
+// Schedule schedules a job on a OpenStack VM worker instance.
+func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
+	log.Debug("Running OpenStack scheduler")
 
-	o := s.ds.Schedule(j)
-	go s.observe(o)
-	return o
-}
+	offers := []*sched.Offer{}
+	predicates := append(sched.DefaultPredicates, sched.WorkerHasTag("openstack"))
 
-func (s *scheduler) observe(o sched.Offer) {
-	<-o.Wait()
+	for _, w := range s.getWorkers() {
+		// Filter out workers that don't match the job request.
+		// Checks CPU, RAM, disk space, ports, etc.
+		if !sched.Match(w, j, predicates) {
+			continue
+		}
 
-	if o.Accepted() {
-		s.ds.DecrementAvailable()
-		s.start(o.Worker().ID)
-		// TODO there is nothing to watch the status of openstack workers yet,
-		//      so this scheduler only does N jobs and then stops.
+		sc := sched.DefaultScores(w, j)
+		/*
+			    TODO?
+			    if w.State == pbr.WorkerState_Alive {
+					  sc["startup time"] = 1.0
+			    }
+		*/
+		sc = sc.Weighted(s.conf.Schedulers.OpenStack.Weights)
 
-	} else if o.Rejected() {
-		log.Debug("Local offer was rejected")
+		offer := sched.NewOffer(w, j, sc)
+		offers = append(offers, offer)
 	}
+
+	// No matching workers were found.
+	if len(offers) == 0 {
+		return nil
+	}
+
+	sched.SortByAverageScore(offers)
+	return offers[0]
+}
+
+func (s *scheduler) getWorkers() []*pbr.Worker {
+
+	// Get the workers from the funnel server
+	workers := []*pbr.Worker{}
+	req := &pbr.GetWorkersRequest{}
+	resp, err := s.client.GetWorkers(context.Background(), req)
+
+	// If there's an error, return an empty list
+	if err != nil {
+		log.Error("Failed GetWorkers request. Recovering.", err)
+		return workers
+	}
+
+	workers = resp.Workers
+
+	// TODO include unprovisioned worker templates from config
+
+	return workers
 }

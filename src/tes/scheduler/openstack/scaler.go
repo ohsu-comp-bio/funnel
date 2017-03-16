@@ -1,11 +1,11 @@
 package openstack
 
 import (
-	"github.com/ghodss/yaml"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	pbr "tes/server/proto"
 )
 
 const startScript = `
@@ -13,17 +13,20 @@ const startScript = `
 sudo systemctl start tes.service
 `
 
-func (s *scheduler) start(workerID string) {
+// StartWorker calls out to OpenStack APIs to start a new worker instance.
+func (s *scheduler) StartWorker(w *pbr.Worker) error {
+
+	// TODO move to client wrapper
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
 	if aerr != nil {
 		log.Error("Auth options failed", aerr)
-		return
+		return aerr
 	}
 
 	provider, perr := openstack.AuthenticatedClient(authOpts)
 	if perr != nil {
 		log.Error("Provider failed", perr)
-		return
+		return perr
 	}
 
 	client, cerr := openstack.NewComputeV2(provider,
@@ -31,17 +34,16 @@ func (s *scheduler) start(workerID string) {
 
 	if cerr != nil {
 		log.Error("Provider failed", cerr)
-		return
+		return cerr
 	}
 
-	// Write the worker config YAML file, which gets uploaded to the VM.
-	workerConf := s.conf.Worker
-	workerConf.ID = workerID
-	workerConf.ServerAddress = s.conf.ServerAddress
-	workerConf.Storage = s.conf.Storage
-	workerConfYaml, _ := yaml.Marshal(workerConf)
+	conf := s.conf.Worker
+	conf.ID = w.Id
+	conf.ServerAddress = s.conf.ServerAddress
+	conf.Storage = s.conf.Storage
 
-	osconf := s.conf.Schedulers.Openstack
+	osconf := s.conf.Schedulers.OpenStack
+
 	_, serr := servers.Create(client, keypairs.CreateOptsExt{
 		CreateOptsBuilder: servers.CreateOpts{
 			Name:       osconf.Server.Name,
@@ -53,7 +55,7 @@ func (s *scheduler) start(workerID string) {
 			Personality: []*servers.File{
 				{
 					Path:     osconf.ConfigPath,
-					Contents: []byte(workerConfYaml),
+					Contents: []byte(conf.ToYaml()),
 				},
 			},
 			// Write a simple bash script that starts the TES service.
@@ -65,5 +67,15 @@ func (s *scheduler) start(workerID string) {
 
 	if serr != nil {
 		log.Error("Error creating server", serr)
+		return serr
 	}
+	return nil
+}
+
+// ShouldStartWorker tells the scaler loop which workers
+// belong to this scheduler backend, basically.
+func (s *scheduler) ShouldStartWorker(w *pbr.Worker) bool {
+	// Only start works that are uninitialized and have a gce template.
+	tpl, ok := w.Metadata["openstack"]
+	return ok && tpl != "" && w.State == pbr.WorkerState_Uninitialized
 }

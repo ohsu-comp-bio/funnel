@@ -8,18 +8,35 @@ import (
 	"path"
 	"path/filepath"
 	log "tes/logger"
+	pbr "tes/server/proto"
 	"time"
 )
+
+// Weights describes the scheduler score weights.
+// All fields should be float32 type.
+type Weights map[string]float32
 
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
 	Local LocalStorage
 	S3    S3Storage
+	GS    GSStorage
 }
 
 // LocalStorage describes the directories TES can read from and write to
 type LocalStorage struct {
 	AllowedDirs []string
+}
+
+// GSStorage describes configuration for the Google Cloud storage backend.
+type GSStorage struct {
+	AccountFile string
+	FromEnv     bool
+}
+
+// Valid validates the GSStorage configuration.
+func (g GSStorage) Valid() bool {
+	return g.FromEnv || g.AccountFile != ""
 }
 
 // Valid validates the LocalStorage configuration
@@ -41,23 +58,32 @@ func (l S3Storage) Valid() bool {
 
 // LocalScheduler describes configuration for the local scheduler.
 type LocalScheduler struct {
-	NumWorkers int
+	Weights Weights
 }
 
-// OpenstackScheduler describes configuration for the openstack scheduler.
-type OpenstackScheduler struct {
-	NumWorkers int
+// OpenStackScheduler describes configuration for the openstack scheduler.
+type OpenStackScheduler struct {
 	KeyPair    string
 	ConfigPath string
 	Server     os_servers.CreateOpts
+	Weights    Weights
+}
+
+// GCEScheduler describes configuration for the Google Cloud scheduler.
+type GCEScheduler struct {
+	AccountFile string
+	Project     string
+	Zone        string
+	Templates   []string
+	Weights     Weights
 }
 
 // Schedulers describes configuration for all schedulers.
 type Schedulers struct {
 	Local     LocalScheduler
-	Dumblocal LocalScheduler
 	Condor    LocalScheduler
-	Openstack OpenstackScheduler
+	OpenStack OpenStackScheduler
+	GCE       GCEScheduler
 }
 
 // Config describes configuration for TES.
@@ -74,6 +100,12 @@ type Config struct {
 	WorkDir       string
 	LogLevel      string
 	MaxJobLogSize int
+	ScheduleRate  time.Duration
+	ScheduleChunk int
+	// How long to wait for a worker ping before marking it as dead
+	WorkerPingTimeout time.Duration
+	// How long to wait for worker initialization before marking it dead
+	WorkerInitTimeout time.Duration
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -89,12 +121,19 @@ func DefaultConfig() Config {
 		LogLevel:      "debug",
 		Scheduler:     "local",
 		Schedulers: Schedulers{
-			Local: LocalScheduler{
-				NumWorkers: 4,
+			Local: LocalScheduler{},
+			GCE: GCEScheduler{
+				Weights: Weights{
+					"startup time": 1.0,
+				},
 			},
 		},
-		Worker:        WorkerDefaultConfig(),
-		MaxJobLogSize: 10000,
+		Worker:            WorkerDefaultConfig(),
+		MaxJobLogSize:     10000,
+		ScheduleRate:      time.Second,
+		ScheduleChunk:     10,
+		WorkerPingTimeout: time.Minute,
+		WorkerInitTimeout: time.Minute * 5,
 	}
 }
 
@@ -109,16 +148,19 @@ type Worker struct {
 	// Default, -1, indicates to tear down the worker immediately after completing
 	// its job
 	Timeout time.Duration
-	// How often (milliseconds) the worker polls for cancellation requests
-	StatusPollRate time.Duration
-	// How often (milliseconds) the worker sends log updates
+	// How often the worker sends update requests to the server
+	UpdateRate time.Duration
+	// How often the worker sends job log updates
 	LogUpdateRate time.Duration
-	// How often (milliseconds) the scheduler polls for new jobs
-	NewJobPollRate time.Duration
-	LogTailSize    int64
-	Storage        []*StorageConfig
-	LogPath        string
-	LogLevel       string
+	TrackerRate   time.Duration
+	LogTailSize   int64
+	Storage       []*StorageConfig
+	LogPath       string
+	LogLevel      string
+	Resources     *pbr.Resources
+	// Timeout duration for UpdateWorker() and UpdateJobLogs() RPC calls
+	UpdateTimeout time.Duration
+	Metadata      map[string]string
 }
 
 // WorkerDefaultConfig returns simple, default worker configuration.
@@ -128,11 +170,15 @@ func WorkerDefaultConfig() Worker {
 		WorkDir:       "tes-work-dir",
 		Timeout:       -1,
 		// TODO these get reset to zero when not found in yaml?
-		StatusPollRate: time.Second * 5,
-		LogUpdateRate:  time.Second * 5,
-		NewJobPollRate: time.Second * 5,
-		LogTailSize:    10000,
-		LogLevel:       "debug",
+		UpdateRate:    time.Second * 5,
+		LogUpdateRate: time.Second * 5,
+		TrackerRate:   time.Second * 5,
+		LogTailSize:   10000,
+		LogLevel:      "debug",
+		UpdateTimeout: time.Second,
+		Resources: &pbr.Resources{
+			Disk: 100.0,
+		},
 	}
 }
 

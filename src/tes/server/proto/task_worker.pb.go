@@ -9,15 +9,17 @@ It is generated from these files:
 	task_worker.proto
 
 It has these top-level messages:
-	WorkerInfo
-	JobRequest
-	JobResponse
-	UpdateStatusRequest
+	Resources
+	Worker
+	JobWrapper
+	UpdateJobLogsRequest
+	UpdateJobLogsResponse
 	QueuedTaskInfoRequest
 	QueuedTaskInfo
-	JobCompleteRequest
-	JobCompleteResponse
-	Worker
+	GetWorkersRequest
+	GetWorkersResponse
+	UpdateWorkerResponse
+	GetWorkerRequest
 */
 package ga4gh_task_ref
 
@@ -25,6 +27,7 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import ga4gh_task_exec "tes/ga4gh"
+import _ "github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api"
 
 import (
 	context "golang.org/x/net/context"
@@ -42,127 +45,252 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// *
-// Worker Info
-type WorkerInfo struct {
-	Id       string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	LastPing int64  `protobuf:"varint,2,opt,name=last_ping,json=lastPing" json:"last_ping,omitempty"`
-	Hostname string `protobuf:"bytes,3,opt,name=hostname" json:"hostname,omitempty"`
+type WorkerState int32
+
+const (
+	WorkerState_Uninitialized WorkerState = 0
+	WorkerState_Alive         WorkerState = 1
+	WorkerState_Dead          WorkerState = 2
+	WorkerState_Gone          WorkerState = 3
+	WorkerState_Initializing  WorkerState = 4
+)
+
+var WorkerState_name = map[int32]string{
+	0: "Uninitialized",
+	1: "Alive",
+	2: "Dead",
+	3: "Gone",
+	4: "Initializing",
+}
+var WorkerState_value = map[string]int32{
+	"Uninitialized": 0,
+	"Alive":         1,
+	"Dead":          2,
+	"Gone":          3,
+	"Initializing":  4,
 }
 
-func (m *WorkerInfo) Reset()                    { *m = WorkerInfo{} }
-func (m *WorkerInfo) String() string            { return proto.CompactTextString(m) }
-func (*WorkerInfo) ProtoMessage()               {}
-func (*WorkerInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (x WorkerState) String() string {
+	return proto.EnumName(WorkerState_name, int32(x))
+}
+func (WorkerState) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-func (m *WorkerInfo) GetId() string {
+type Resources struct {
+	Cpus uint32 `protobuf:"varint,1,opt,name=cpus" json:"cpus,omitempty"`
+	// In GB
+	Ram float64 `protobuf:"fixed64,2,opt,name=ram" json:"ram,omitempty"`
+	// In GB
+	Disk float64 `protobuf:"fixed64,3,opt,name=disk" json:"disk,omitempty"`
+}
+
+func (m *Resources) Reset()                    { *m = Resources{} }
+func (m *Resources) String() string            { return proto.CompactTextString(m) }
+func (*Resources) ProtoMessage()               {}
+func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *Resources) GetCpus() uint32 {
+	if m != nil {
+		return m.Cpus
+	}
+	return 0
+}
+
+func (m *Resources) GetRam() float64 {
+	if m != nil {
+		return m.Ram
+	}
+	return 0
+}
+
+func (m *Resources) GetDisk() float64 {
+	if m != nil {
+		return m.Disk
+	}
+	return 0
+}
+
+type Worker struct {
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	// Job ID -> JobWrapper
+	Jobs        map[string]*JobWrapper `protobuf:"bytes,2,rep,name=jobs" json:"jobs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Resources   *Resources             `protobuf:"bytes,5,opt,name=resources" json:"resources,omitempty"`
+	Available   *Resources             `protobuf:"bytes,6,opt,name=available" json:"available,omitempty"`
+	LastPing    int64                  `protobuf:"varint,7,opt,name=last_ping,json=lastPing" json:"last_ping,omitempty"`
+	State       WorkerState            `protobuf:"varint,8,opt,name=state,enum=ga4gh_task_ref.WorkerState" json:"state,omitempty"`
+	Preemptible bool                   `protobuf:"varint,9,opt,name=preemptible" json:"preemptible,omitempty"`
+	// TODO where does this get updated?
+	ActivePorts []int32 `protobuf:"varint,10,rep,packed,name=active_ports,json=activePorts" json:"active_ports,omitempty"`
+	Zone        string  `protobuf:"bytes,11,opt,name=zone" json:"zone,omitempty"`
+	// Hostname of the worker host.
+	// TODO
+	Hostname string `protobuf:"bytes,13,opt,name=hostname" json:"hostname,omitempty"`
+	// Version of the record in the database. Used to prevent write conflicts.
+	Version  int64             `protobuf:"varint,14,opt,name=version" json:"version,omitempty"`
+	Metadata map[string]string `protobuf:"bytes,15,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+}
+
+func (m *Worker) Reset()                    { *m = Worker{} }
+func (m *Worker) String() string            { return proto.CompactTextString(m) }
+func (*Worker) ProtoMessage()               {}
+func (*Worker) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *Worker) GetId() string {
 	if m != nil {
 		return m.Id
 	}
 	return ""
 }
 
-func (m *WorkerInfo) GetLastPing() int64 {
+func (m *Worker) GetJobs() map[string]*JobWrapper {
 	if m != nil {
-		return m.LastPing
-	}
-	return 0
-}
-
-func (m *WorkerInfo) GetHostname() string {
-	if m != nil {
-		return m.Hostname
-	}
-	return ""
-}
-
-type JobRequest struct {
-	Worker    *WorkerInfo                `protobuf:"bytes,1,opt,name=worker" json:"worker,omitempty"`
-	Resources *ga4gh_task_exec.Resources `protobuf:"bytes,2,opt,name=resources" json:"resources,omitempty"`
-}
-
-func (m *JobRequest) Reset()                    { *m = JobRequest{} }
-func (m *JobRequest) String() string            { return proto.CompactTextString(m) }
-func (*JobRequest) ProtoMessage()               {}
-func (*JobRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *JobRequest) GetWorker() *WorkerInfo {
-	if m != nil {
-		return m.Worker
+		return m.Jobs
 	}
 	return nil
 }
 
-func (m *JobRequest) GetResources() *ga4gh_task_exec.Resources {
+func (m *Worker) GetResources() *Resources {
 	if m != nil {
 		return m.Resources
 	}
 	return nil
 }
 
-type JobResponse struct {
+func (m *Worker) GetAvailable() *Resources {
+	if m != nil {
+		return m.Available
+	}
+	return nil
+}
+
+func (m *Worker) GetLastPing() int64 {
+	if m != nil {
+		return m.LastPing
+	}
+	return 0
+}
+
+func (m *Worker) GetState() WorkerState {
+	if m != nil {
+		return m.State
+	}
+	return WorkerState_Uninitialized
+}
+
+func (m *Worker) GetPreemptible() bool {
+	if m != nil {
+		return m.Preemptible
+	}
+	return false
+}
+
+func (m *Worker) GetActivePorts() []int32 {
+	if m != nil {
+		return m.ActivePorts
+	}
+	return nil
+}
+
+func (m *Worker) GetZone() string {
+	if m != nil {
+		return m.Zone
+	}
+	return ""
+}
+
+func (m *Worker) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *Worker) GetVersion() int64 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *Worker) GetMetadata() map[string]string {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+// TODO is there a nice way to avoid this wrapper? Maybe protobuf extensions?
+//      or use metadata field of Job?
+type JobWrapper struct {
 	Job  *ga4gh_task_exec.Job `protobuf:"bytes,1,opt,name=job" json:"job,omitempty"`
 	Auth string               `protobuf:"bytes,2,opt,name=auth" json:"auth,omitempty"`
 }
 
-func (m *JobResponse) Reset()                    { *m = JobResponse{} }
-func (m *JobResponse) String() string            { return proto.CompactTextString(m) }
-func (*JobResponse) ProtoMessage()               {}
-func (*JobResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *JobWrapper) Reset()                    { *m = JobWrapper{} }
+func (m *JobWrapper) String() string            { return proto.CompactTextString(m) }
+func (*JobWrapper) ProtoMessage()               {}
+func (*JobWrapper) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-func (m *JobResponse) GetJob() *ga4gh_task_exec.Job {
+func (m *JobWrapper) GetJob() *ga4gh_task_exec.Job {
 	if m != nil {
 		return m.Job
 	}
 	return nil
 }
 
-func (m *JobResponse) GetAuth() string {
+func (m *JobWrapper) GetAuth() string {
 	if m != nil {
 		return m.Auth
 	}
 	return ""
 }
 
-type UpdateStatusRequest struct {
+type UpdateJobLogsRequest struct {
 	Id       string                  `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
 	Step     int64                   `protobuf:"varint,2,opt,name=step" json:"step,omitempty"`
 	Log      *ga4gh_task_exec.JobLog `protobuf:"bytes,4,opt,name=log" json:"log,omitempty"`
 	WorkerId string                  `protobuf:"bytes,5,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
 }
 
-func (m *UpdateStatusRequest) Reset()                    { *m = UpdateStatusRequest{} }
-func (m *UpdateStatusRequest) String() string            { return proto.CompactTextString(m) }
-func (*UpdateStatusRequest) ProtoMessage()               {}
-func (*UpdateStatusRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (m *UpdateJobLogsRequest) Reset()                    { *m = UpdateJobLogsRequest{} }
+func (m *UpdateJobLogsRequest) String() string            { return proto.CompactTextString(m) }
+func (*UpdateJobLogsRequest) ProtoMessage()               {}
+func (*UpdateJobLogsRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
-func (m *UpdateStatusRequest) GetId() string {
+func (m *UpdateJobLogsRequest) GetId() string {
 	if m != nil {
 		return m.Id
 	}
 	return ""
 }
 
-func (m *UpdateStatusRequest) GetStep() int64 {
+func (m *UpdateJobLogsRequest) GetStep() int64 {
 	if m != nil {
 		return m.Step
 	}
 	return 0
 }
 
-func (m *UpdateStatusRequest) GetLog() *ga4gh_task_exec.JobLog {
+func (m *UpdateJobLogsRequest) GetLog() *ga4gh_task_exec.JobLog {
 	if m != nil {
 		return m.Log
 	}
 	return nil
 }
 
-func (m *UpdateStatusRequest) GetWorkerId() string {
+func (m *UpdateJobLogsRequest) GetWorkerId() string {
 	if m != nil {
 		return m.WorkerId
 	}
 	return ""
 }
+
+type UpdateJobLogsResponse struct {
+}
+
+func (m *UpdateJobLogsResponse) Reset()                    { *m = UpdateJobLogsResponse{} }
+func (m *UpdateJobLogsResponse) String() string            { return proto.CompactTextString(m) }
+func (*UpdateJobLogsResponse) ProtoMessage()               {}
+func (*UpdateJobLogsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 type QueuedTaskInfoRequest struct {
 	MaxTasks int32 `protobuf:"varint,1,opt,name=max_tasks,json=maxTasks" json:"max_tasks,omitempty"`
@@ -171,7 +299,7 @@ type QueuedTaskInfoRequest struct {
 func (m *QueuedTaskInfoRequest) Reset()                    { *m = QueuedTaskInfoRequest{} }
 func (m *QueuedTaskInfoRequest) String() string            { return proto.CompactTextString(m) }
 func (*QueuedTaskInfoRequest) ProtoMessage()               {}
-func (*QueuedTaskInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*QueuedTaskInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *QueuedTaskInfoRequest) GetMaxTasks() int32 {
 	if m != nil {
@@ -188,7 +316,7 @@ type QueuedTaskInfo struct {
 func (m *QueuedTaskInfo) Reset()                    { *m = QueuedTaskInfo{} }
 func (m *QueuedTaskInfo) String() string            { return proto.CompactTextString(m) }
 func (*QueuedTaskInfo) ProtoMessage()               {}
-func (*QueuedTaskInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*QueuedTaskInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 func (m *QueuedTaskInfo) GetInputs() []string {
 	if m != nil {
@@ -204,81 +332,67 @@ func (m *QueuedTaskInfo) GetResources() *ga4gh_task_exec.Resources {
 	return nil
 }
 
-type JobCompleteRequest struct {
+type GetWorkersRequest struct {
+}
+
+func (m *GetWorkersRequest) Reset()                    { *m = GetWorkersRequest{} }
+func (m *GetWorkersRequest) String() string            { return proto.CompactTextString(m) }
+func (*GetWorkersRequest) ProtoMessage()               {}
+func (*GetWorkersRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+type GetWorkersResponse struct {
+	Workers []*Worker `protobuf:"bytes,1,rep,name=workers" json:"workers,omitempty"`
+}
+
+func (m *GetWorkersResponse) Reset()                    { *m = GetWorkersResponse{} }
+func (m *GetWorkersResponse) String() string            { return proto.CompactTextString(m) }
+func (*GetWorkersResponse) ProtoMessage()               {}
+func (*GetWorkersResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *GetWorkersResponse) GetWorkers() []*Worker {
+	if m != nil {
+		return m.Workers
+	}
+	return nil
+}
+
+type UpdateWorkerResponse struct {
+}
+
+func (m *UpdateWorkerResponse) Reset()                    { *m = UpdateWorkerResponse{} }
+func (m *UpdateWorkerResponse) String() string            { return proto.CompactTextString(m) }
+func (*UpdateWorkerResponse) ProtoMessage()               {}
+func (*UpdateWorkerResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+
+type GetWorkerRequest struct {
 	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	// TODO this could be inferred from the job logs exit code
-	Failed bool `protobuf:"varint,2,opt,name=failed" json:"failed,omitempty"`
 }
 
-func (m *JobCompleteRequest) Reset()                    { *m = JobCompleteRequest{} }
-func (m *JobCompleteRequest) String() string            { return proto.CompactTextString(m) }
-func (*JobCompleteRequest) ProtoMessage()               {}
-func (*JobCompleteRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (m *GetWorkerRequest) Reset()                    { *m = GetWorkerRequest{} }
+func (m *GetWorkerRequest) String() string            { return proto.CompactTextString(m) }
+func (*GetWorkerRequest) ProtoMessage()               {}
+func (*GetWorkerRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
-func (m *JobCompleteRequest) GetId() string {
+func (m *GetWorkerRequest) GetId() string {
 	if m != nil {
 		return m.Id
 	}
 	return ""
-}
-
-func (m *JobCompleteRequest) GetFailed() bool {
-	if m != nil {
-		return m.Failed
-	}
-	return false
-}
-
-type JobCompleteResponse struct {
-}
-
-func (m *JobCompleteResponse) Reset()                    { *m = JobCompleteResponse{} }
-func (m *JobCompleteResponse) String() string            { return proto.CompactTextString(m) }
-func (*JobCompleteResponse) ProtoMessage()               {}
-func (*JobCompleteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-type Worker struct {
-	Id         string   `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	ActiveJobs []string `protobuf:"bytes,2,rep,name=active_jobs,json=activeJobs" json:"active_jobs,omitempty"`
-	QueuedJobs []string `protobuf:"bytes,3,rep,name=queued_jobs,json=queuedJobs" json:"queued_jobs,omitempty"`
-}
-
-func (m *Worker) Reset()                    { *m = Worker{} }
-func (m *Worker) String() string            { return proto.CompactTextString(m) }
-func (*Worker) ProtoMessage()               {}
-func (*Worker) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
-
-func (m *Worker) GetId() string {
-	if m != nil {
-		return m.Id
-	}
-	return ""
-}
-
-func (m *Worker) GetActiveJobs() []string {
-	if m != nil {
-		return m.ActiveJobs
-	}
-	return nil
-}
-
-func (m *Worker) GetQueuedJobs() []string {
-	if m != nil {
-		return m.QueuedJobs
-	}
-	return nil
 }
 
 func init() {
-	proto.RegisterType((*WorkerInfo)(nil), "ga4gh_task_ref.WorkerInfo")
-	proto.RegisterType((*JobRequest)(nil), "ga4gh_task_ref.JobRequest")
-	proto.RegisterType((*JobResponse)(nil), "ga4gh_task_ref.JobResponse")
-	proto.RegisterType((*UpdateStatusRequest)(nil), "ga4gh_task_ref.UpdateStatusRequest")
+	proto.RegisterType((*Resources)(nil), "ga4gh_task_ref.Resources")
+	proto.RegisterType((*Worker)(nil), "ga4gh_task_ref.Worker")
+	proto.RegisterType((*JobWrapper)(nil), "ga4gh_task_ref.JobWrapper")
+	proto.RegisterType((*UpdateJobLogsRequest)(nil), "ga4gh_task_ref.UpdateJobLogsRequest")
+	proto.RegisterType((*UpdateJobLogsResponse)(nil), "ga4gh_task_ref.UpdateJobLogsResponse")
 	proto.RegisterType((*QueuedTaskInfoRequest)(nil), "ga4gh_task_ref.QueuedTaskInfoRequest")
 	proto.RegisterType((*QueuedTaskInfo)(nil), "ga4gh_task_ref.QueuedTaskInfo")
-	proto.RegisterType((*JobCompleteRequest)(nil), "ga4gh_task_ref.JobCompleteRequest")
-	proto.RegisterType((*JobCompleteResponse)(nil), "ga4gh_task_ref.JobCompleteResponse")
-	proto.RegisterType((*Worker)(nil), "ga4gh_task_ref.Worker")
+	proto.RegisterType((*GetWorkersRequest)(nil), "ga4gh_task_ref.GetWorkersRequest")
+	proto.RegisterType((*GetWorkersResponse)(nil), "ga4gh_task_ref.GetWorkersResponse")
+	proto.RegisterType((*UpdateWorkerResponse)(nil), "ga4gh_task_ref.UpdateWorkerResponse")
+	proto.RegisterType((*GetWorkerRequest)(nil), "ga4gh_task_ref.GetWorkerRequest")
+	proto.RegisterEnum("ga4gh_task_ref.WorkerState", WorkerState_name, WorkerState_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -293,11 +407,10 @@ const _ = grpc.SupportPackageIsVersion4
 
 type SchedulerClient interface {
 	GetQueueInfo(ctx context.Context, in *QueuedTaskInfoRequest, opts ...grpc.CallOption) (Scheduler_GetQueueInfoClient, error)
-	GetJobToRun(ctx context.Context, in *JobRequest, opts ...grpc.CallOption) (*JobResponse, error)
-	UpdateJobStatus(ctx context.Context, in *UpdateStatusRequest, opts ...grpc.CallOption) (*ga4gh_task_exec.JobID, error)
-	JobComplete(ctx context.Context, in *JobCompleteRequest, opts ...grpc.CallOption) (*JobCompleteResponse, error)
-	WorkerPing(ctx context.Context, in *WorkerInfo, opts ...grpc.CallOption) (*WorkerInfo, error)
-	GetJobState(ctx context.Context, in *ga4gh_task_exec.JobID, opts ...grpc.CallOption) (*ga4gh_task_exec.JobDesc, error)
+	UpdateJobLogs(ctx context.Context, in *UpdateJobLogsRequest, opts ...grpc.CallOption) (*UpdateJobLogsResponse, error)
+	UpdateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*UpdateWorkerResponse, error)
+	GetWorkers(ctx context.Context, in *GetWorkersRequest, opts ...grpc.CallOption) (*GetWorkersResponse, error)
+	GetWorker(ctx context.Context, in *GetWorkerRequest, opts ...grpc.CallOption) (*Worker, error)
 }
 
 type schedulerClient struct {
@@ -340,45 +453,36 @@ func (x *schedulerGetQueueInfoClient) Recv() (*QueuedTaskInfo, error) {
 	return m, nil
 }
 
-func (c *schedulerClient) GetJobToRun(ctx context.Context, in *JobRequest, opts ...grpc.CallOption) (*JobResponse, error) {
-	out := new(JobResponse)
-	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/GetJobToRun", in, out, c.cc, opts...)
+func (c *schedulerClient) UpdateJobLogs(ctx context.Context, in *UpdateJobLogsRequest, opts ...grpc.CallOption) (*UpdateJobLogsResponse, error) {
+	out := new(UpdateJobLogsResponse)
+	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/UpdateJobLogs", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *schedulerClient) UpdateJobStatus(ctx context.Context, in *UpdateStatusRequest, opts ...grpc.CallOption) (*ga4gh_task_exec.JobID, error) {
-	out := new(ga4gh_task_exec.JobID)
-	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/UpdateJobStatus", in, out, c.cc, opts...)
+func (c *schedulerClient) UpdateWorker(ctx context.Context, in *Worker, opts ...grpc.CallOption) (*UpdateWorkerResponse, error) {
+	out := new(UpdateWorkerResponse)
+	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/UpdateWorker", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *schedulerClient) JobComplete(ctx context.Context, in *JobCompleteRequest, opts ...grpc.CallOption) (*JobCompleteResponse, error) {
-	out := new(JobCompleteResponse)
-	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/JobComplete", in, out, c.cc, opts...)
+func (c *schedulerClient) GetWorkers(ctx context.Context, in *GetWorkersRequest, opts ...grpc.CallOption) (*GetWorkersResponse, error) {
+	out := new(GetWorkersResponse)
+	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/GetWorkers", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *schedulerClient) WorkerPing(ctx context.Context, in *WorkerInfo, opts ...grpc.CallOption) (*WorkerInfo, error) {
-	out := new(WorkerInfo)
-	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/WorkerPing", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *schedulerClient) GetJobState(ctx context.Context, in *ga4gh_task_exec.JobID, opts ...grpc.CallOption) (*ga4gh_task_exec.JobDesc, error) {
-	out := new(ga4gh_task_exec.JobDesc)
-	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/GetJobState", in, out, c.cc, opts...)
+func (c *schedulerClient) GetWorker(ctx context.Context, in *GetWorkerRequest, opts ...grpc.CallOption) (*Worker, error) {
+	out := new(Worker)
+	err := grpc.Invoke(ctx, "/ga4gh_task_ref.Scheduler/GetWorker", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -389,11 +493,10 @@ func (c *schedulerClient) GetJobState(ctx context.Context, in *ga4gh_task_exec.J
 
 type SchedulerServer interface {
 	GetQueueInfo(*QueuedTaskInfoRequest, Scheduler_GetQueueInfoServer) error
-	GetJobToRun(context.Context, *JobRequest) (*JobResponse, error)
-	UpdateJobStatus(context.Context, *UpdateStatusRequest) (*ga4gh_task_exec.JobID, error)
-	JobComplete(context.Context, *JobCompleteRequest) (*JobCompleteResponse, error)
-	WorkerPing(context.Context, *WorkerInfo) (*WorkerInfo, error)
-	GetJobState(context.Context, *ga4gh_task_exec.JobID) (*ga4gh_task_exec.JobDesc, error)
+	UpdateJobLogs(context.Context, *UpdateJobLogsRequest) (*UpdateJobLogsResponse, error)
+	UpdateWorker(context.Context, *Worker) (*UpdateWorkerResponse, error)
+	GetWorkers(context.Context, *GetWorkersRequest) (*GetWorkersResponse, error)
+	GetWorker(context.Context, *GetWorkerRequest) (*Worker, error)
 }
 
 func RegisterSchedulerServer(s *grpc.Server, srv SchedulerServer) {
@@ -421,92 +524,74 @@ func (x *schedulerGetQueueInfoServer) Send(m *QueuedTaskInfo) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Scheduler_GetJobToRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(JobRequest)
+func _Scheduler_UpdateJobLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateJobLogsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SchedulerServer).GetJobToRun(ctx, in)
+		return srv.(SchedulerServer).UpdateJobLogs(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ga4gh_task_ref.Scheduler/GetJobToRun",
+		FullMethod: "/ga4gh_task_ref.Scheduler/UpdateJobLogs",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SchedulerServer).GetJobToRun(ctx, req.(*JobRequest))
+		return srv.(SchedulerServer).UpdateJobLogs(ctx, req.(*UpdateJobLogsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_UpdateJobStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateStatusRequest)
+func _Scheduler_UpdateWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Worker)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SchedulerServer).UpdateJobStatus(ctx, in)
+		return srv.(SchedulerServer).UpdateWorker(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ga4gh_task_ref.Scheduler/UpdateJobStatus",
+		FullMethod: "/ga4gh_task_ref.Scheduler/UpdateWorker",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SchedulerServer).UpdateJobStatus(ctx, req.(*UpdateStatusRequest))
+		return srv.(SchedulerServer).UpdateWorker(ctx, req.(*Worker))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_JobComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(JobCompleteRequest)
+func _Scheduler_GetWorkers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWorkersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SchedulerServer).JobComplete(ctx, in)
+		return srv.(SchedulerServer).GetWorkers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ga4gh_task_ref.Scheduler/JobComplete",
+		FullMethod: "/ga4gh_task_ref.Scheduler/GetWorkers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SchedulerServer).JobComplete(ctx, req.(*JobCompleteRequest))
+		return srv.(SchedulerServer).GetWorkers(ctx, req.(*GetWorkersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_WorkerPing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkerInfo)
+func _Scheduler_GetWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWorkerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SchedulerServer).WorkerPing(ctx, in)
+		return srv.(SchedulerServer).GetWorker(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ga4gh_task_ref.Scheduler/WorkerPing",
+		FullMethod: "/ga4gh_task_ref.Scheduler/GetWorker",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SchedulerServer).WorkerPing(ctx, req.(*WorkerInfo))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Scheduler_GetJobState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ga4gh_task_exec.JobID)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SchedulerServer).GetJobState(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ga4gh_task_ref.Scheduler/GetJobState",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SchedulerServer).GetJobState(ctx, req.(*ga4gh_task_exec.JobID))
+		return srv.(SchedulerServer).GetWorker(ctx, req.(*GetWorkerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -516,24 +601,20 @@ var _Scheduler_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*SchedulerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetJobToRun",
-			Handler:    _Scheduler_GetJobToRun_Handler,
+			MethodName: "UpdateJobLogs",
+			Handler:    _Scheduler_UpdateJobLogs_Handler,
 		},
 		{
-			MethodName: "UpdateJobStatus",
-			Handler:    _Scheduler_UpdateJobStatus_Handler,
+			MethodName: "UpdateWorker",
+			Handler:    _Scheduler_UpdateWorker_Handler,
 		},
 		{
-			MethodName: "JobComplete",
-			Handler:    _Scheduler_JobComplete_Handler,
+			MethodName: "GetWorkers",
+			Handler:    _Scheduler_GetWorkers_Handler,
 		},
 		{
-			MethodName: "WorkerPing",
-			Handler:    _Scheduler_WorkerPing_Handler,
-		},
-		{
-			MethodName: "GetJobState",
-			Handler:    _Scheduler_GetJobState_Handler,
+			MethodName: "GetWorker",
+			Handler:    _Scheduler_GetWorker_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -549,41 +630,60 @@ var _Scheduler_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("task_worker.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 569 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xa4, 0x94, 0xcf, 0x6f, 0xd3, 0x30,
-	0x14, 0xc7, 0xdb, 0x65, 0xab, 0x9a, 0x57, 0x34, 0x84, 0xb7, 0x95, 0x28, 0x95, 0x60, 0xf2, 0x04,
-	0x2a, 0x97, 0x0a, 0x95, 0x1d, 0x38, 0x70, 0x41, 0x4c, 0x8c, 0x56, 0x1c, 0x86, 0xb7, 0x89, 0x1f,
-	0x97, 0xca, 0x69, 0x5e, 0xd3, 0xac, 0x6d, 0x9c, 0xc5, 0x0e, 0x54, 0xdc, 0xf8, 0x6b, 0xf9, 0x37,
-	0x90, 0xed, 0x74, 0x55, 0xdb, 0xb4, 0x17, 0x6e, 0xf6, 0xf3, 0xe7, 0xfd, 0xfa, 0xfa, 0xd9, 0xf0,
-	0x44, 0x71, 0x39, 0x19, 0xfc, 0x12, 0xd9, 0x04, 0xb3, 0x4e, 0x9a, 0x09, 0x25, 0xc8, 0x61, 0xc4,
-	0xcf, 0xa3, 0xf1, 0xc0, 0x1c, 0x64, 0x38, 0xf2, 0x8f, 0xcd, 0x0a, 0xe7, 0x38, 0xcc, 0x55, 0x2c,
-	0x12, 0x4b, 0xd1, 0x5b, 0x80, 0xaf, 0xc6, 0xab, 0x97, 0x8c, 0x04, 0x39, 0x84, 0xbd, 0x38, 0xf4,
-	0xaa, 0xa7, 0xd5, 0xb6, 0xcb, 0xf6, 0xe2, 0x90, 0xb4, 0xc0, 0x9d, 0x72, 0xa9, 0x06, 0x69, 0x9c,
-	0x44, 0xde, 0xde, 0x69, 0xb5, 0xed, 0xb0, 0xba, 0x36, 0x5c, 0xc5, 0x49, 0x44, 0x7c, 0xa8, 0x8f,
-	0x85, 0x54, 0x09, 0x9f, 0xa1, 0xe7, 0x18, 0x97, 0x87, 0x3d, 0xfd, 0x0d, 0xd0, 0x17, 0x01, 0xc3,
-	0xfb, 0x1c, 0xa5, 0x22, 0x5d, 0xa8, 0xd9, 0xd2, 0x4c, 0xe8, 0x46, 0xd7, 0xef, 0xac, 0xd6, 0xd6,
-	0x59, 0x96, 0xc0, 0x0a, 0x92, 0xbc, 0x05, 0x37, 0x43, 0x29, 0xf2, 0x6c, 0x88, 0xd2, 0xa4, 0x5e,
-	0x73, 0xd3, 0x8d, 0x74, 0xd8, 0x82, 0x60, 0x4b, 0x98, 0xf6, 0xa0, 0x61, 0x72, 0xcb, 0x54, 0x24,
-	0x12, 0xc9, 0x4b, 0x70, 0xee, 0x44, 0x50, 0x64, 0x3e, 0xde, 0x08, 0xa1, 0x51, 0x0d, 0x10, 0x02,
-	0xfb, 0x3c, 0x57, 0x63, 0x93, 0xcb, 0x65, 0x66, 0x4d, 0xff, 0x54, 0xe1, 0xe8, 0x36, 0x0d, 0xb9,
-	0xc2, 0x6b, 0xc5, 0x55, 0x2e, 0x17, 0x0d, 0xad, 0xeb, 0x44, 0x60, 0x5f, 0x2a, 0x4c, 0x0b, 0x89,
-	0xcc, 0x9a, 0xbc, 0x02, 0x67, 0x2a, 0x22, 0x6f, 0xdf, 0xe4, 0x7d, 0x5a, 0x96, 0xf7, 0xb3, 0x88,
-	0x98, 0x66, 0xb4, 0xcc, 0xb6, 0xeb, 0x41, 0x1c, 0x7a, 0x07, 0x56, 0x4a, 0x6b, 0xe8, 0x85, 0xf4,
-	0x1c, 0x4e, 0xbe, 0xe4, 0x98, 0x63, 0x78, 0xc3, 0xe5, 0xc4, 0x48, 0x54, 0x14, 0xd1, 0x02, 0x77,
-	0xc6, 0xe7, 0x26, 0xa4, 0x34, 0xb5, 0x1c, 0xb0, 0xfa, 0x8c, 0xcf, 0x35, 0x26, 0x69, 0x00, 0x87,
-	0xab, 0x5e, 0xa4, 0x09, 0xb5, 0x38, 0x49, 0x73, 0xa5, 0x59, 0xa7, 0xed, 0xb2, 0x62, 0xf7, 0x1f,
-	0x42, 0xbf, 0x03, 0xd2, 0x17, 0xc1, 0x07, 0x31, 0x4b, 0xa7, 0xa8, 0x70, 0x9b, 0x36, 0x4d, 0xa8,
-	0x8d, 0x78, 0x3c, 0xc5, 0xd0, 0x04, 0xaf, 0xb3, 0x62, 0x47, 0x4f, 0xe0, 0x68, 0xc5, 0xdb, 0x5e,
-	0x17, 0xfd, 0x01, 0x35, 0x3b, 0x0d, 0x1b, 0x81, 0x9e, 0x43, 0x83, 0x0f, 0x55, 0xfc, 0x13, 0x07,
-	0x77, 0x22, 0xd0, 0xa5, 0xea, 0x2e, 0xc0, 0x9a, 0xfa, 0x22, 0x90, 0x1a, 0xb8, 0x37, 0x3d, 0x5b,
-	0xc0, 0xb1, 0x80, 0x35, 0x69, 0xa0, 0xfb, 0xd7, 0x01, 0xf7, 0x7a, 0x38, 0xc6, 0x30, 0x9f, 0x62,
-	0x46, 0xbe, 0xc3, 0xa3, 0x4b, 0x54, 0x46, 0x25, 0x23, 0xd0, 0x8b, 0xf5, 0xa9, 0x2c, 0x95, 0xdd,
-	0x7f, 0xb6, 0x1b, 0xa3, 0x95, 0xd7, 0x55, 0xf2, 0x09, 0x1a, 0x97, 0xa8, 0xfa, 0x22, 0xb8, 0x11,
-	0x2c, 0x4f, 0xc8, 0xc6, 0xbc, 0x2f, 0xdf, 0x86, 0xdf, 0x2a, 0x3d, 0x2b, 0xc4, 0xa8, 0x90, 0x2b,
-	0x78, 0x6c, 0x07, 0xb0, 0x2f, 0x02, 0x3b, 0x83, 0xe4, 0x6c, 0xdd, 0xa3, 0x64, 0x42, 0xfd, 0x66,
-	0xd9, 0xc0, 0xf5, 0x2e, 0x68, 0x85, 0x7c, 0x33, 0xcf, 0x63, 0xa1, 0x3b, 0xa1, 0x25, 0xf9, 0xd7,
-	0xae, 0xd4, 0x3f, 0xdb, 0xc9, 0x3c, 0xd4, 0xfa, 0x71, 0xf1, 0x97, 0xd8, 0xef, 0x61, 0xfb, 0x23,
-	0xf7, 0x77, 0x9c, 0xd1, 0x0a, 0x79, 0xbf, 0x50, 0x4f, 0xb7, 0x84, 0x64, 0x4b, 0x2b, 0xbe, 0x57,
-	0x66, 0xbf, 0x40, 0x39, 0xa4, 0x95, 0xa0, 0x66, 0x7e, 0xb7, 0x37, 0xff, 0x02, 0x00, 0x00, 0xff,
-	0xff, 0x92, 0x57, 0x09, 0xa1, 0x18, 0x05, 0x00, 0x00,
+	// 865 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x84, 0x55, 0xdd, 0x6e, 0x1b, 0x45,
+	0x14, 0xce, 0x7a, 0xed, 0xc4, 0x7b, 0x1c, 0x1b, 0xe7, 0xe0, 0xa6, 0xcb, 0x06, 0x55, 0xdb, 0x15,
+	0x45, 0x86, 0x8b, 0x38, 0x35, 0x91, 0xa8, 0xe0, 0x06, 0x24, 0x4a, 0x48, 0x54, 0x50, 0x3b, 0xa1,
+	0xaa, 0xb8, 0xc1, 0x1a, 0x7b, 0x27, 0x9b, 0xa9, 0xd7, 0x33, 0xcb, 0xce, 0xac, 0x49, 0x8b, 0xb8,
+	0xe9, 0x2b, 0xf0, 0x68, 0xbc, 0x02, 0xd7, 0xdc, 0xf0, 0x02, 0x68, 0x66, 0x6d, 0xc7, 0x71, 0xec,
+	0xe6, 0xee, 0xec, 0x99, 0xef, 0xfc, 0x7e, 0xdf, 0xd1, 0xc2, 0x9e, 0xa6, 0x6a, 0x3c, 0xf8, 0x5d,
+	0xe6, 0x63, 0x96, 0x1f, 0x66, 0xb9, 0xd4, 0x12, 0x5b, 0x09, 0x3d, 0x4e, 0x2e, 0x07, 0xf6, 0x21,
+	0x67, 0x17, 0x41, 0xc7, 0x5a, 0xec, 0x8a, 0x8d, 0x0a, 0xcd, 0xa5, 0x28, 0x51, 0xc1, 0xc7, 0x89,
+	0x94, 0x49, 0xca, 0x7a, 0x34, 0xe3, 0x3d, 0x2a, 0x84, 0xd4, 0xd4, 0x3c, 0xaa, 0xf2, 0x35, 0x7a,
+	0x0a, 0x1e, 0x61, 0x4a, 0x16, 0xf9, 0x88, 0x29, 0x44, 0xa8, 0x8e, 0xb2, 0x42, 0xf9, 0x4e, 0xe8,
+	0x74, 0x9b, 0xc4, 0xda, 0xd8, 0x06, 0x37, 0xa7, 0x13, 0xbf, 0x12, 0x3a, 0x5d, 0x87, 0x18, 0xd3,
+	0xa0, 0x62, 0xae, 0xc6, 0xbe, 0x6b, 0x5d, 0xd6, 0x8e, 0xfe, 0xab, 0xc2, 0xf6, 0x2b, 0xdb, 0x1b,
+	0xb6, 0xa0, 0xc2, 0x63, 0x9b, 0xc2, 0x23, 0x15, 0x1e, 0xe3, 0x31, 0x54, 0x5f, 0xcb, 0xa1, 0xf2,
+	0x2b, 0xa1, 0xdb, 0x6d, 0xf4, 0xc3, 0xc3, 0x9b, 0x4d, 0x1f, 0x96, 0x51, 0x87, 0x67, 0x72, 0xa8,
+	0x9e, 0x0a, 0x9d, 0xbf, 0x21, 0x16, 0x8d, 0x5f, 0x82, 0x97, 0xcf, 0xfb, 0xf2, 0x6b, 0xa1, 0xd3,
+	0x6d, 0xf4, 0x3f, 0x5a, 0x0d, 0x5d, 0x34, 0x4e, 0xae, 0xb1, 0x26, 0x90, 0x4e, 0x29, 0x4f, 0xe9,
+	0x30, 0x65, 0xfe, 0xf6, 0x9d, 0x81, 0x0b, 0x2c, 0x1e, 0x80, 0x97, 0x52, 0xa5, 0x07, 0x19, 0x17,
+	0x89, 0xbf, 0x13, 0x3a, 0x5d, 0x97, 0xd4, 0x8d, 0xe3, 0x39, 0x17, 0x09, 0x3e, 0x86, 0x9a, 0xd2,
+	0x54, 0x33, 0xbf, 0x1e, 0x3a, 0xdd, 0x56, 0xff, 0x60, 0xfd, 0x14, 0xe7, 0x06, 0x42, 0x4a, 0x24,
+	0x86, 0xd0, 0xc8, 0x72, 0xc6, 0x26, 0x99, 0xe6, 0xa6, 0x15, 0x2f, 0x74, 0xba, 0x75, 0xb2, 0xec,
+	0xc2, 0x87, 0xb0, 0x4b, 0x47, 0x9a, 0x4f, 0xd9, 0x20, 0x93, 0xb9, 0x56, 0x3e, 0x84, 0x6e, 0xb7,
+	0x46, 0x1a, 0xa5, 0xef, 0xb9, 0x71, 0x99, 0x5d, 0xbf, 0x95, 0x82, 0xf9, 0x0d, 0xbb, 0x4e, 0x6b,
+	0x63, 0x00, 0xf5, 0x4b, 0xa9, 0xb4, 0xa0, 0x13, 0xe6, 0x37, 0xad, 0x7f, 0xf1, 0x8d, 0x3e, 0xec,
+	0x4c, 0x59, 0xae, 0xb8, 0x14, 0x7e, 0xcb, 0x8e, 0x30, 0xff, 0xc4, 0x6f, 0xa0, 0x3e, 0x61, 0x9a,
+	0xc6, 0x54, 0x53, 0xff, 0x03, 0x4b, 0xc5, 0x27, 0x1b, 0xa8, 0xf8, 0x71, 0x06, 0x2b, 0xe9, 0x58,
+	0x44, 0x05, 0xe7, 0xe0, 0x2d, 0x58, 0x32, 0xb2, 0x18, 0xb3, 0x37, 0x33, 0x9a, 0x8d, 0x89, 0x47,
+	0x50, 0x9b, 0xd2, 0xb4, 0x60, 0x56, 0x2a, 0x8d, 0x7e, 0xb0, 0x9a, 0xfd, 0x4c, 0x0e, 0x5f, 0xe5,
+	0x34, 0xcb, 0x58, 0x4e, 0x4a, 0xe0, 0x57, 0x95, 0x27, 0x4e, 0xf0, 0x35, 0x34, 0x6f, 0xd4, 0x5b,
+	0x93, 0xb8, 0xb3, 0x9c, 0xd8, 0x5b, 0x0a, 0x8e, 0x7e, 0x00, 0xb8, 0xce, 0x8a, 0x9f, 0x82, 0xfb,
+	0x5a, 0x0e, 0x6d, 0x64, 0xa3, 0xdf, 0x59, 0x2e, 0x6f, 0x4e, 0xc2, 0xd4, 0x27, 0x06, 0x60, 0x76,
+	0x4a, 0x0b, 0x7d, 0x39, 0x4b, 0x67, 0xed, 0xe8, 0x9d, 0x03, 0x9d, 0x97, 0x59, 0x4c, 0x35, 0x3b,
+	0x93, 0xc3, 0x67, 0x32, 0x51, 0x84, 0xfd, 0x56, 0x30, 0xa5, 0x6f, 0xa9, 0x19, 0xa1, 0xaa, 0x34,
+	0xcb, 0x6c, 0xb0, 0x4b, 0xac, 0x8d, 0x9f, 0x81, 0x9b, 0xca, 0xc4, 0xaf, 0xda, 0xc2, 0xf7, 0xd7,
+	0x15, 0x7e, 0x26, 0x13, 0x62, 0x30, 0x46, 0x64, 0xe5, 0x09, 0x0f, 0x78, 0x6c, 0x65, 0xed, 0x91,
+	0x7a, 0xe9, 0x38, 0x8d, 0xa3, 0xfb, 0x70, 0x6f, 0xa5, 0x07, 0x95, 0x49, 0xa1, 0x58, 0x74, 0x0c,
+	0xf7, 0x5e, 0x14, 0xac, 0x60, 0xf1, 0xcf, 0x54, 0x8d, 0x4f, 0xc5, 0x85, 0x9c, 0x77, 0x77, 0x00,
+	0xde, 0x84, 0x5e, 0xd9, 0x5a, 0xe5, 0xd5, 0xd6, 0x48, 0x7d, 0x42, 0xaf, 0x0c, 0x4c, 0x45, 0x43,
+	0x68, 0xdd, 0x8c, 0xc2, 0x7d, 0xd8, 0xe6, 0x22, 0x2b, 0xb4, 0xc1, 0xba, 0x5d, 0x8f, 0xcc, 0xbe,
+	0xf0, 0xc9, 0xf2, 0xb1, 0xad, 0xa1, 0xcf, 0x8e, 0xb1, 0xee, 0xda, 0xa2, 0x0f, 0x61, 0xef, 0x84,
+	0xe9, 0x52, 0x38, 0xf3, 0x9d, 0x45, 0xdf, 0x03, 0x2e, 0x3b, 0xcb, 0x21, 0xf0, 0x08, 0x76, 0xca,
+	0x49, 0xcb, 0xea, 0x8d, 0xfe, 0xfe, 0x7a, 0xfd, 0x91, 0x39, 0x2c, 0xda, 0x9f, 0x73, 0x32, 0x7b,
+	0x98, 0xaf, 0x23, 0x82, 0xf6, 0x22, 0xff, 0x06, 0x9e, 0x3e, 0x7f, 0x01, 0x8d, 0xa5, 0x9b, 0xc4,
+	0x3d, 0x68, 0xbe, 0x14, 0x5c, 0x70, 0xcd, 0x69, 0xca, 0xdf, 0xb2, 0xb8, 0xbd, 0x85, 0x1e, 0xd4,
+	0xbe, 0x4d, 0xf9, 0x94, 0xb5, 0x1d, 0xac, 0x43, 0xf5, 0x3b, 0x46, 0xe3, 0x76, 0xc5, 0x58, 0x27,
+	0x52, 0xb0, 0xb6, 0x8b, 0x6d, 0xd8, 0x3d, 0x9d, 0xe3, 0xb9, 0x48, 0xda, 0xd5, 0xfe, 0xbf, 0x2e,
+	0x78, 0xe7, 0xa3, 0x4b, 0x16, 0x17, 0x29, 0xcb, 0xf1, 0x17, 0xd8, 0x3d, 0x61, 0xda, 0x2e, 0xd8,
+	0xee, 0xf6, 0xd1, 0xea, 0x34, 0x6b, 0x19, 0x0b, 0x1e, 0xbc, 0x1f, 0x16, 0x6d, 0x1d, 0x39, 0xf8,
+	0x2b, 0x34, 0x6f, 0xe8, 0x00, 0x6f, 0x5d, 0xea, 0x3a, 0xa9, 0x06, 0x8f, 0xee, 0x40, 0xcd, 0xb6,
+	0xb7, 0x85, 0x3f, 0xc1, 0xee, 0xf2, 0x5e, 0x71, 0x03, 0x11, 0xc1, 0x86, 0xb2, 0x2b, 0x6c, 0x6c,
+	0xa1, 0x04, 0xb8, 0xe6, 0x1b, 0x1f, 0xae, 0x46, 0xdd, 0x12, 0x48, 0x10, 0xbd, 0x0f, 0x32, 0x4b,
+	0x1b, 0xbc, 0xfb, 0xfb, 0x9f, 0xbf, 0x2a, 0x1d, 0xc4, 0xde, 0xf4, 0x71, 0xef, 0xa2, 0x10, 0x82,
+	0xa5, 0xbd, 0x99, 0x30, 0x90, 0x81, 0xb7, 0x88, 0xc0, 0x70, 0x63, 0xb2, 0x79, 0xb9, 0x0d, 0xf3,
+	0x45, 0x0f, 0x6c, 0x09, 0x1f, 0xf7, 0x6f, 0x95, 0xe8, 0xfd, 0xc1, 0xe3, 0x3f, 0x87, 0xdb, 0xf6,
+	0x17, 0xf9, 0xc5, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0xad, 0x13, 0x9f, 0x44, 0x7b, 0x07, 0x00,
+	0x00,
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"regexp"
 	"strconv"
 	"strings"
@@ -35,6 +36,13 @@ func (dcmd DockerCmd) Run() error {
 	if dcmd.RemoveContainer {
 		args = append(args, "--rm")
 	}
+
+	// set UID in container to match UID of Funnel process
+	usr, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("Could not determine the current user")
+	}
+	args = append(args, "-u", usr.Uid)
 
 	if dcmd.Ports != nil {
 		for i := range dcmd.Ports {

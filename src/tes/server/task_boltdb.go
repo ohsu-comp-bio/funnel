@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
-	uuid "github.com/nu7hatch/gouuid"
+	"github.com/rs/xid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 	"strings"
@@ -128,10 +128,17 @@ func getJWT(ctx context.Context) string {
 	return jwt
 }
 
+// GenJobID generates a job ID string.
+// IDs are globally unique and sortable.
+func GenJobID() string {
+	id := xid.New()
+	return id.String()
+}
+
 // RunTask documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Task) (*ga4gh_task_exec.JobID, error) {
-	jobID, _ := uuid.NewV4()
+	jobID := GenJobID()
 	log := log.WithFields("jobID", jobID)
 
 	log.Debug("RunTask called", "task", task)
@@ -168,7 +175,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 
 	ch := make(chan *ga4gh_task_exec.JobID, 1)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		idBytes := []byte(jobID.String())
+		idBytes := []byte(jobID)
 
 		taskopB := tx.Bucket(TaskBucket)
 		v, _ := proto.Marshal(task)
@@ -181,7 +188,7 @@ func (taskBolt *TaskBolt) RunTask(ctx context.Context, task *ga4gh_task_exec.Tas
 
 		queueB := tx.Bucket(JobsQueued)
 		queueB.Put(idBytes, []byte{})
-		ch <- &ga4gh_task_exec.JobID{Value: jobID.String()}
+		ch <- &ga4gh_task_exec.JobID{Value: jobID}
 		return nil
 	})
 	if err != nil {

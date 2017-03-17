@@ -36,7 +36,7 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running condor scheduler")
 
 	var disk float64
-	for _, v := range j.Task.Resources.Volumes {
+	for _, v := range j.Task.GetResources().GetVolumes() {
 		disk += v.SizeGb
 	}
 
@@ -44,8 +44,8 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	w := &pbr.Worker{
 		Id: prefix + sched.GenWorkerID(),
 		Resources: &pbr.Resources{
-			Cpus: j.Task.Resources.MinimumCpuCores,
-			Ram:  j.Task.Resources.MinimumRamGb,
+			Cpus: j.Task.GetResources().MinimumCpuCores,
+			Ram:  j.Task.GetResources().MinimumRamGb,
 			Disk: disk,
 		},
 	}
@@ -90,12 +90,12 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 		log            = {{.WorkDir}}/condor-event-log
 		error          = {{.WorkDir}}/tes-worker-stderr
 		output         = {{.WorkDir}}/tes-worker-stdout
-    input          = {{.Config}}
-    request_cpus   = {{.CPU}}
-    request_memory = {{.RAM}}
-    request_disk   = {{.Disk}}
-    should_transfer_files   = YES
-    when_to_transfer_output = ON_EXIT
+		input					 = {{.Config}}
+		request_cpus	 = {{.CPU}}
+		request_memory = {{.RAM}}
+		request_disk	 = {{.Disk}}
+		should_transfer_files		= YES
+		when_to_transfer_output = ON_EXIT
 		queue
 	`)
 	submitTpl.Execute(f, map[string]string{

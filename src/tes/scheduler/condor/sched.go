@@ -35,12 +35,18 @@ type scheduler struct {
 func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running condor scheduler")
 
+	var disk float64
+	for _, v := range j.Task.Resources.Volumes {
+		disk += v.SizeGb
+	}
+
 	// TODO could we call condor_submit --dry-run to test if a job would succeed?
 	w := &pbr.Worker{
 		Id: prefix + sched.GenWorkerID(),
 		Resources: &pbr.Resources{
 			Cpus: j.Task.Resources.MinimumCpuCores,
-			Ram: j.Task.Resources.MinimumRamGb,
+			Ram:  j.Task.Resources.MinimumRamGb,
+			Disk: disk,
 		},
 	}
 	return sched.NewOffer(w, j, sched.Scores{})
@@ -63,6 +69,9 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 	c := s.conf.Worker
 	c.ID = w.Id
 	c.Timeout = 0
+	c.Resources.Cpus = w.Resources.Cpus
+	c.Resources.Ram = w.Resources.Ram
+	c.Resources.Disk = w.Resources.Disk
 	c.Storage = s.conf.Storage
 
 	confPath := path.Join(workdir, "worker.conf.yml")
@@ -84,6 +93,7 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
     input          = {{.Config}}
     request_cpus   = {{.CPU}}
     request_memory = {{.RAM}}
+    request_disk   = {{.Disk}}
     should_transfer_files   = YES
     when_to_transfer_output = ON_EXIT
 		queue
@@ -92,8 +102,10 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 		"Executable": workerPath,
 		"WorkDir":    workdir,
 		"Config":     confPath,
-		"request_cpus": fmt.Sprintf("%s", w.Resources.Cpus),
-		"request_memory": fmt.Sprintf("%s GB", w.Resources.Ram),
+		"CPU":        fmt.Sprintf("%s", w.Resources.Cpus),
+		"RAM":        fmt.Sprintf("%s GB", w.Resources.Ram),
+		// Convert GB to KiB
+		"Disk": fmt.Sprintf("%s GB", w.Resources.Disk*976562),
 	})
 	f.Close()
 

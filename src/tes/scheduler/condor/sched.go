@@ -102,10 +102,10 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 		"Executable": workerPath,
 		"WorkDir":    workdir,
 		"Config":     confPath,
-		"CPU":        fmt.Sprintf("%s", w.Resources.Cpus),
-		"RAM":        fmt.Sprintf("%s GB", w.Resources.Ram),
+		"CPU":        fmt.Sprintf("%d", w.Resources.Cpus),
+		"RAM":        fmt.Sprintf("%f GB", w.Resources.Ram),
 		// Convert GB to KiB
-		"Disk": fmt.Sprintf("%s GB", w.Resources.Disk*976562),
+		"Disk": fmt.Sprintf("%f", w.Resources.Disk*976562),
 	})
 	f.Close()
 

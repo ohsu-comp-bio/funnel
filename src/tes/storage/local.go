@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"tes/config"
@@ -181,7 +182,12 @@ func copyDir(source string, dest string) (err error) {
 // Hard links file source to destination dest.
 func linkFile(source string, dest string) error {
 	var err error
-	err = os.Link(source, dest)
+	// without this resulting link with be a symlink
+	parent, err := filepath.EvalSymlinks(source)
+	if err != nil {
+		return err
+	}
+	err = os.Link(parent, dest)
 	if err != nil {
 		log.Debug("Failed to link file; attempting copy",
 			"linkErr", err,

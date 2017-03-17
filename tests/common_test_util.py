@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import logging
 import os
 import py_tes
@@ -127,7 +129,7 @@ class SimpleServerTest(unittest.TestCase):
             try:
                 dclient.containers.get(name)
                 return True
-            except:
+            except BaseException:
                 return False
         polling.poll(on_poll, timeout=timeout, step=0.1)
 
@@ -138,7 +140,7 @@ class SimpleServerTest(unittest.TestCase):
             try:
                 dclient.containers.get(name)
                 return False
-            except:
+            except BaseException:
                 return True
         polling.poll(on_poll, timeout=timeout, step=0.1)
 
@@ -254,12 +256,12 @@ class S3ServerTest(unittest.TestCase):
         dstpath = "s3://%s/%s" % (
             BUCKET_NAME, os.path.join(self.dir_name, os.path.basename(path))
         )
-        print "uploading:", dstpath
+        print("uploading:", dstpath)
         self.tes.upload_file(path, dstpath)
         return dstpath
 
     def get_from_storage(self, loc):
         dst = os.path.join(self.output_dir, os.path.basename(loc))
-        print "Downloading %s to %s" % (loc, dst)
+        print("Downloading %s to %s" % (loc, dst))
         self.tes.download_file(dst, loc)
         return dst

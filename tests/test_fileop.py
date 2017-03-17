@@ -104,7 +104,6 @@ class TestFileOP(SimpleServerTest):
 
         job_id = self.tes.submit(task)
         data = self.tes.wait(job_id)
-        print data
         assert data['state'] == "Complete"
 
     def test_bad_symlink(self):

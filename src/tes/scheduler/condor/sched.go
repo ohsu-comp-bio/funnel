@@ -1,6 +1,7 @@
 package condor
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -37,6 +38,10 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	// TODO could we call condor_submit --dry-run to test if a job would succeed?
 	w := &pbr.Worker{
 		Id: prefix + sched.GenWorkerID(),
+		Resources: &pbr.Resources{
+			Cpus: j.Task.Resources.MinimumCpuCores,
+			Ram: j.Task.Resources.MinimumRamGb,
+		},
 	}
 	return sched.NewOffer(w, j, sched.Scores{})
 }
@@ -69,14 +74,16 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 	f, _ := os.Create(submitPath)
 
 	submitTpl, _ := template.New("condor.submit").Parse(`
-		universe    = vanilla
-		executable  = {{.Executable}}
-		arguments   = -config worker.conf.yml
-		environment = "PATH=/usr/bin"
-		log         = {{.WorkDir}}/condor-event-log
-		error       = {{.WorkDir}}/tes-worker-stderr
-		output      = {{.WorkDir}}/tes-worker-stdout
-    input       = {{.Config}}
+		universe       = vanilla
+		executable     = {{.Executable}}
+		arguments      = -config worker.conf.yml
+		environment    = "PATH=/usr/bin"
+		log            = {{.WorkDir}}/condor-event-log
+		error          = {{.WorkDir}}/tes-worker-stderr
+		output         = {{.WorkDir}}/tes-worker-stdout
+    input          = {{.Config}}
+    request_cpus   = {{.CPU}}
+    request_memory = {{.RAM}}
     should_transfer_files   = YES
     when_to_transfer_output = ON_EXIT
 		queue
@@ -85,6 +92,8 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 		"Executable": workerPath,
 		"WorkDir":    workdir,
 		"Config":     confPath,
+		"request_cpus": fmt.Sprintf("%s", w.Resources.Cpus),
+		"request_memory": fmt.Sprintf("%s GB", w.Resources.Ram),
 	})
 	f.Close()
 

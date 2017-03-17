@@ -30,7 +30,7 @@ func TestWrapper(t *testing.T) {
 	// Mock the GCE API wrapper
 	wpr := new(gce_mocks.Wrapper)
 	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.NewMockServer()
+	srv := server_mocks.MockServerFromConfig(conf)
 	defer srv.Close()
 
 	srv.RunHelloWorld()

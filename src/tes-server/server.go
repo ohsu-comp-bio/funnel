@@ -41,11 +41,12 @@ func main() {
 	// make sure the proper defaults are set
 	conf.Worker = config.WorkerInheritConfigVals(conf)
 
-	logger.SetLevel(conf.LogLevel)
 	start(conf)
 }
 
 func start(conf config.Config) {
+	logger.SetLevel(conf.LogLevel)
+
 	os.MkdirAll(conf.WorkDir, 0755)
 
 	taski, dberr := server.NewTaskBolt(conf)

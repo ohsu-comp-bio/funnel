@@ -17,7 +17,7 @@ func init() {
 }
 
 func basicConf() config.Config {
-	conf := config.DefaultConfig()
+	conf := server_mocks.NewMockServerConfig()
 	conf.Schedulers.GCE.Project = "test-proj"
 	conf.Schedulers.GCE.Zone = "test-zone"
 	return conf
@@ -103,7 +103,7 @@ func TestSchedStartWorker(t *testing.T) {
 	// Mock the GCE API so actual API calls aren't needed
 	gce := new(gce_mocks.Client)
 	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.NewMockServer()
+	srv := server_mocks.MockServerFromConfig(conf)
 	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity

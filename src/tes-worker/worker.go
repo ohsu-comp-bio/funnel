@@ -33,11 +33,12 @@ func main() {
 		panic(err)
 	}
 
-	logger.SetLevel(conf.LogLevel)
 	start(conf)
 }
 
 func start(conf config.Worker) {
+	logger.SetLevel(conf.LogLevel)
+
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log
 	//      without having file permission problems?

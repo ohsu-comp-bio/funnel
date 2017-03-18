@@ -21,7 +21,6 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
-
 // NewMockServerConfig returns the default config with a random port
 func NewMockServerConfig() config.Config {
 	port := randomPort()
@@ -43,7 +42,7 @@ func MockServerFromConfig(conf config.Config) *MockServer {
 	// Write the database to a temporary file
 	f, _ := ioutil.TempFile("", "funnel-test-db-")
 
-	// Configuration	
+	// Configuration
 	conf.Worker = config.WorkerInheritConfigVals(conf)
 	conf.DBPath = f.Name()
 
@@ -55,7 +54,7 @@ func MockServerFromConfig(conf config.Config) *MockServer {
 
 	// Listen on TCP port for RPC
 	server := grpc.NewServer()
-	lis, err := net.Listen("tcp", ":" + conf.RPCPort)
+	lis, err := net.Listen("tcp", ":"+conf.RPCPort)
 	if err != nil {
 		panic("Cannot open port: " + conf.RPCPort)
 	}

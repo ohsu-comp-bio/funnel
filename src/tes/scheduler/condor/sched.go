@@ -1,6 +1,7 @@
 package condor
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -34,9 +35,19 @@ type scheduler struct {
 func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	log.Debug("Running condor scheduler")
 
+	var disk float64
+	for _, v := range j.Task.GetResources().GetVolumes() {
+		disk += v.SizeGb
+	}
+
 	// TODO could we call condor_submit --dry-run to test if a job would succeed?
 	w := &pbr.Worker{
 		Id: prefix + sched.GenWorkerID(),
+		Resources: &pbr.Resources{
+			Cpus: j.Task.GetResources().MinimumCpuCores,
+			Ram:  j.Task.GetResources().MinimumRamGb,
+			Disk: disk,
+		},
 	}
 	return sched.NewOffer(w, j, sched.Scores{})
 }
@@ -58,6 +69,9 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 	c := s.conf.Worker
 	c.ID = w.Id
 	c.Timeout = 0
+	c.Resources.Cpus = w.Resources.Cpus
+	c.Resources.Ram = w.Resources.Ram
+	c.Resources.Disk = w.Resources.Disk
 	c.Storage = s.conf.Storage
 
 	confPath := path.Join(workdir, "worker.conf.yml")
@@ -69,22 +83,29 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 	f, _ := os.Create(submitPath)
 
 	submitTpl, _ := template.New("condor.submit").Parse(`
-		universe    = vanilla
-		executable  = {{.Executable}}
-		arguments   = -config worker.conf.yml
-		environment = "PATH=/usr/bin"
-		log         = {{.WorkDir}}/condor-event-log
-		error       = {{.WorkDir}}/tes-worker-stderr
-		output      = {{.WorkDir}}/tes-worker-stdout
-    input       = {{.Config}}
-    should_transfer_files   = YES
-    when_to_transfer_output = ON_EXIT
+		universe       = vanilla
+		executable     = {{.Executable}}
+		arguments      = -config worker.conf.yml
+		environment    = "PATH=/usr/bin"
+		log            = {{.WorkDir}}/condor-event-log
+		error          = {{.WorkDir}}/tes-worker-stderr
+		output         = {{.WorkDir}}/tes-worker-stdout
+		input					 = {{.Config}}
+		request_cpus	 = {{.CPU}}
+		request_memory = {{.RAM}}
+		request_disk	 = {{.Disk}}
+		should_transfer_files		= YES
+		when_to_transfer_output = ON_EXIT
 		queue
 	`)
 	submitTpl.Execute(f, map[string]string{
 		"Executable": workerPath,
 		"WorkDir":    workdir,
 		"Config":     confPath,
+		"CPU":        fmt.Sprintf("%d", w.Resources.Cpus),
+		"RAM":        fmt.Sprintf("%f GB", w.Resources.Ram),
+		// Convert GB to KiB
+		"Disk": fmt.Sprintf("%f", w.Resources.Disk*976562),
 	})
 	f.Close()
 

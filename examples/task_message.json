@@ -1,0 +1,27 @@
+{
+    "name" : "TestSleep",
+    "projectId" : "MyProject",
+    "description" : "Simple Sleep Command",
+    "resources" : {
+	"minimumCpuCores": 2,
+        "volumes": [
+	    {
+		"name": "test_disk",
+		"sizeGb": 5,
+		"mountPoint": "/tmp"
+            }
+	]
+    },
+    "docker" : [
+	{
+	    "imageName" : "ubuntu",
+	    "cmd" : [
+		"bash",
+		"-c",
+		"echo foo && sleep 10 && echo bar"
+	    ],
+	    "stdout" : "stdout",
+	    "stderr" : "stderr"
+	}
+    ]
+}

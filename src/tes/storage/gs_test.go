@@ -34,7 +34,7 @@ func TestAnonymousGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", "File")
+	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", "File", false)
 	if gerr != nil {
 		t.Error(gerr)
 	}
@@ -44,7 +44,7 @@ func TestGet(t *testing.T) {
 	ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/downloaded", "File")
+	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/downloaded", "File", false)
 	if gerr != nil {
 		t.Error(gerr)
 	}

@@ -21,10 +21,19 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
+// NewMockServerConfig returns the default config with a random port
+func NewMockServerConfig() config.Config {
+	port := randomPort()
+	conf := config.DefaultConfig()
+	conf.RPCPort = port
+	conf.Worker = config.WorkerInheritConfigVals(conf)
+	return conf
+}
+
 // NewMockServer starts a test server. This creates a database in a temp. file
 // and starts a gRPC server on a random port.
 func NewMockServer() *MockServer {
-	conf := config.DefaultConfig()
+	conf := NewMockServerConfig()
 	return MockServerFromConfig(conf)
 }
 
@@ -34,10 +43,7 @@ func MockServerFromConfig(conf config.Config) *MockServer {
 	f, _ := ioutil.TempFile("", "funnel-test-db-")
 
 	// Configuration
-	port := randomPort()
-	conf.ServerAddress = "localhost:" + port
-	conf.Worker.ServerAddress = conf.ServerAddress
-	conf.RPCPort = port
+	conf.Worker = config.WorkerInheritConfigVals(conf)
 	conf.DBPath = f.Name()
 
 	// Create database

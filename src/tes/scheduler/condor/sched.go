@@ -72,7 +72,6 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 	c.Resources.Cpus = w.Resources.Cpus
 	c.Resources.Ram = w.Resources.Ram
 	c.Resources.Disk = w.Resources.Disk
-	c.Storage = s.conf.Storage
 
 	confPath := path.Join(workdir, "worker.conf.yml")
 	c.ToYamlFile(confPath)

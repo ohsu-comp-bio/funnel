@@ -31,7 +31,7 @@ if __name__ == "__main__":
             req.add_header('authorization', "JWT %s" % (args.token))
         r = urllib2.urlopen(req)
         data = json.loads(r.read())
-        if data["state"] not in ['Queued', "Running"]:
+        if data["state"] not in ['Queued', "Initializing", "Running"]:
             break
         time.sleep(1)
     print json.dumps(data, indent=4)

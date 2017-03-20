@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import print_function
 
 import docker
 import json
@@ -36,7 +36,7 @@ class TestClient(SimpleServerTest):
             "resources": {},
             "docker": docker
         }
-        print 'submitted task', self.dumps(task)
+        print('submitted task', self.dumps(task))
         return self.tes.submit(task)
 
     def test_hello_world(self):
@@ -45,7 +45,7 @@ class TestClient(SimpleServerTest):
         '''
         job_id = self._submit_steps("echo hello world")
         data = self.tes.wait(job_id)
-        print self.dumps(data)
+        print(self.dumps(data))
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "hello world\n"
 
@@ -60,7 +60,7 @@ class TestClient(SimpleServerTest):
         self.wait("step 1")
         time.sleep(0.1)
         data = self.tes.get_job(job_id)
-        print self.dumps(data)
+        print(self.dumps(data))
         assert 'logs' in data
         assert data['logs'][0]['stdout'] == "a\n"
         self.resume()
@@ -73,7 +73,7 @@ class TestClient(SimpleServerTest):
         self.wait("step 2")
         time.sleep(0.1)
         data = self.tes.get_job(job_id)
-        print self.dumps(data)
+        print(self.dumps(data))
         assert 'logs' in data
         assert data['logs'][0]['ports'][0]['host'] == 5000
         self.resume()

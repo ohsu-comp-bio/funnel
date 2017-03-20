@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ type DockerCmd struct {
 	Workdir         string
 	Ports           []*pbe.Ports
 	ContainerName   string
-	UID             string
+	User            *user.User
 	RemoveContainer bool
 	Stdin           io.Reader
 	Stdout          io.Writer
@@ -38,7 +39,7 @@ func (dcmd DockerCmd) Run() error {
 	}
 
 	// set UID in container to match UID of Funnel process
-	args = append(args, "--user", dcmd.UID)
+	args = append(args, "--user", fmt.Sprintf("%s:%s", dcmd.User.Uid, dcmd.User.Gid))
 
 	if dcmd.Ports != nil {
 		for i := range dcmd.Ports {

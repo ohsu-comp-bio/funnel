@@ -40,7 +40,7 @@ type jobRunner struct {
 	mapper  *FileMapper
 	store   *storage.Storage
 	ip      string
-	uid     string
+	user    *user.User
 }
 
 // TODO document behavior of slow consumer of job log updates
@@ -61,7 +61,7 @@ func (r *jobRunner) Run() {
 	// TODO prepareIP can fail when there is no network connection,
 	//      but should just return no IP. Fix and test.
 	r.step("prepareIP", r.prepareIP)
-	r.step("prepareUID", r.prepareUID)
+	r.step("prepareUserInfo", r.prepareUserInfo)
 	r.step("validateInputs", r.validateInputs)
 	r.step("validateOutputs", r.validateOutputs)
 
@@ -95,7 +95,7 @@ func (r *jobRunner) Run() {
 				Cmd: &DockerCmd{
 					ImageName:     d.ImageName,
 					Cmd:           d.Cmd,
-					UID:           r.uid,
+					User:          r.user,
 					Volumes:       r.mapper.Volumes,
 					Workdir:       d.Workdir,
 					Ports:         d.Ports,
@@ -177,11 +177,10 @@ func (r *jobRunner) prepareIP() error {
 	return err
 }
 
-// Grab the UID of this process. Passed to container to switch users.
-func (r *jobRunner) prepareUID() error {
+// Grab the User info for this process. Passed to container to set UID/GID.
+func (r *jobRunner) prepareUserInfo() error {
 	var err error
-	usr, err := user.Current()
-	r.uid = usr.Uid
+	r.user, err = user.Current()
 	return err
 }
 

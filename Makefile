@@ -61,5 +61,6 @@ test:
 web:
 	cd share && \
 	npm install && \
+	./node_modules/.bin/browserify app.js -o bundle.js && \
 	./node_modules/node-sass/bin/node-sass style.scss style.css && \
 	cd ..

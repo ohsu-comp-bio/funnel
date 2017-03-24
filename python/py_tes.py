@@ -1,4 +1,5 @@
-
+#!/usr/bin/env python
+import argparse
 import re
 import json
 import urllib2
@@ -8,7 +9,13 @@ import requests
 import polling
 import logging
 
+
 logging.getLogger("requests").setLevel(logging.WARNING)
+parser = argparse.ArgumentParser()
+parser.add_argument("--repeat", type=int, default=1)
+parser.add_argument("--server", default="http://localhost:8000")
+parser.add_argument("--wait", action="store_true")
+parser.add_argument("task")
 
 
 class TES:
@@ -95,3 +102,13 @@ class TES:
 
     def delete_job(self, job_id):
         return requests.delete("%s/v1/jobs/%s" % (self.url, job_id)).json()
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    c = TES(args.server)
+    t = json.load(open(args.task))
+    for i in range(args.repeat):
+        job_id = c.submit(t)
+    if args.wait:
+        c.wait(job_id)

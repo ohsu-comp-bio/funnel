@@ -1,0 +1,14 @@
+{
+    "name": "Test Ports",
+    "projectId": "Funnel",
+    "description": "Simple Echo Command",
+    "resources": {},
+    "docker": [
+        {
+            "imageName": "ubuntu",
+            "ports": [{"host": 0, "container": 8888}],
+            "cmd": ["sleep", "100"],
+            "stdout": "stdout"
+        }
+    ]
+}

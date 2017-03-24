@@ -1,6 +1,6 @@
 {
-    "name" : "TestSleep",
-    "projectId" : "MyProject",
+    "name" : "Test Echo, Sleep, Echo",
+    "projectId" : "Funnel",
     "description" : "Simple Sleep Command",
     "resources" : {
 	"minimumCpuCores": 2,

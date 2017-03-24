@@ -1,0 +1,16 @@
+{
+    "name": "Echo a loop",
+    "projectId": "Funnel",
+    "description": "Print the date every second, for-ev-or.",
+    "inputs": [],
+    "outputs": [],
+    "resources": {},
+    "docker": [
+        {
+            "imageName": "ubuntu",
+            "cmd": ["bash", "-c", "while true; do echo a; sleep 10; done"],
+            "stdout": "/tmp/date_loop_out",
+            "stderr": "/tmp/date_loop_err"
+        }
+    ]
+}

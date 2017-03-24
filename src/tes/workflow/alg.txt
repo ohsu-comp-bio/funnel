@@ -1,0 +1,19 @@
+eval loop
+===========
+
+for each entry in workflow tasks bucket
+  gather dependent tasks
+  execute entry as TES task with dependencies as stdin list
+  gather stdout: expected to be list of TES tasks
+  for task in stdout list
+    // Require tasks to declare hash key? workflow ID + task ID + new task name?
+    if task does not exist: // call caching
+      execute task
+
+
+
+submit
+============
+
+given workflow, build list of tasks, one per workflow graph node
+tasks include unique IDs of dependent tasks

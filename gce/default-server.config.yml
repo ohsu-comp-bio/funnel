@@ -1,18 +1,15 @@
 DBPath: /opt/funnel/funnel.db
 ContentDir: /opt/funnel/share
-WorkDir: /mnt/disks/shared/funnel-work-dir
-ServerAddress: funnel-master:9090
-HTTPPort: 80
+WorkDir: /opt/funnel/work-dir
+HostName: funnel-server
 Scheduler: gce
 Schedulers:
   GCE:
     Project: isb-cgc-04-0029
     Zone: us-west1-b
-    Templates:
-    - funnel-worker-8
 Storage:
 - Local:
   AllowedDirs:
-    /mnt/disks/shared
+    - /opt/funnel/shared-bucket
 - GS:
   FromEnv: true

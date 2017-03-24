@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	uuid "github.com/nu7hatch/gouuid"
 	"tes/config"
 	pbe "tes/ga4gh"
@@ -73,9 +74,9 @@ func ScheduleChunk(db server.Database, sched Scheduler, conf config.Config) {
 }
 
 // GenWorkerID returns a UUID string.
-func GenWorkerID() string {
+func GenWorkerID(prefix string) string {
 	u, _ := uuid.NewV4()
-	return "worker-" + u.String()
+	return fmt.Sprintf("%s-worker-%s", prefix, u.String())
 }
 
 // Scale implements some common logic for allowing scheduler backends

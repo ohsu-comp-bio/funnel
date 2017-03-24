@@ -66,3 +66,7 @@ web:
 	./node_modules/.bin/browserify app.js -o bundle.js && \
 	./node_modules/node-sass/bin/node-sass style.scss style.css && \
 	cd ..
+
+gce-bundle:
+	GOOS=linux GOARCH=amd64 make
+	tar --exclude share/node_modules -czvf bin/gce-bundle.tar.gz bin/* gce/* share/*

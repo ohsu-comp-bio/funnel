@@ -1,23 +1,23 @@
 #!/bin/bash
 
-# Exit on first error
-set -e
+# This creates a VM on GCE and deploys a Funnel worker.
 
 NAME='funnel-worker'
+SHARED_BUCKET='smc-rna-funnel'
+BUNDLE="gs://$SHARED_BUCKET/gce-bundle.tar.gz"
 
-GOOS=linux GOARCH=amd64 make
+# Build the GCE Funnel bundle
+#make gce-bundle
+
+# Upload the bundle to the shared bucket
+#gsutil cp bin/gce-bundle.tar.gz $BUNDLE
 
 gcloud compute instances create $NAME \
-  --scopes https://www.googleapis.com/auth/cloud-platform
+  --scopes https://www.googleapis.com/auth/cloud-platform \
+  --tags funnel \
+  --metadata "funnel-shared-bucket=$SHARED_BUCKET,funnel-bundle=$BUNDLE,funnel-process=worker" \
+  --metadata-from-file startup-script=gce/install.sh
 
-RUN="gcloud compute ssh $NAME --command"
-COPY="gcloud compute copy-files"
-
-$RUN 'mkdir ~/funnel'
-$COPY bin/linux_amd64/tes-worker gce $NAME:~/funnel/
-$RUN 'sudo mv ~/funnel /opt/'
-$RUN 'sudo cp /opt/funnel/gce/funnel-worker.service /etc/systemd/system/multi-user.target.wants/'
-$RUN 'sudo apt update'
-$RUN 'sudo apt install docker.io'
-$RUN 'sudo systemctl daemon-reload'
-$RUN 'sudo systemctl start funnel-worker.service'
+# Useful for debugging
+gcloud compute instances add-metadata $NAME --metadata=serial-port-enable=1
+gcloud compute instances tail-serial-port-output $NAME

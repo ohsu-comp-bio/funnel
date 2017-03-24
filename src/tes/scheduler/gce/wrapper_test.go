@@ -36,7 +36,9 @@ func TestWrapper(t *testing.T) {
 	srv.RunHelloWorld()
 
 	// The GCE scheduler under test
-	client := newClient(wpr)
+	client := &gceClient{
+		wrapper: wpr,
+	}
 	s := &gceScheduler{conf, srv.Client, client}
 
 	wpr.On("ListMachineTypes", "test-proj", "test-zone").Return(&MachineTypeList{
@@ -120,7 +122,9 @@ func TestInsertTempError(t *testing.T) {
 	conf := basicConf().Worker
 	conf.ID = "test-worker"
 	wpr := new(gce_mocks.Wrapper)
-	client := newClient(wpr)
+	client := &gceClient{
+		wrapper: wpr,
+	}
 
 	wpr.On("GetInstanceTemplate", "test-proj", "test-tpl").Return(&InstanceTemplate{
 		Properties: &InstanceProperties{

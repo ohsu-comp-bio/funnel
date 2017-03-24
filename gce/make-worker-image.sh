@@ -4,16 +4,25 @@
 
 # The name of the VM instance to make an image from.
 SOURCE='funnel-worker'
+TS=$(date +%s)
+IMAGE="funnel-worker-image-$TS"
+
+function cleanup {
+  set +e
+  gcloud compute snapshots delete funnel-worker-snapshot-$TS
+  gcloud compute disks delete funnel-worker-snapshot-disk-$TS
+}
+trap cleanup EXIT
 
 # Exit on first error
 set -e
 
-gcloud compute disks snapshot $SOURCE --snapshot-names funnel-worker-snapshot
+echo Creating image: $IMAGE
 
-gcloud compute disks create funnel-worker-image-snapshot --source-snapshot funnel-worker-snapshot
+gcloud compute disks snapshot $SOURCE --snapshot-names funnel-worker-snapshot-$TS
 
-gcloud compute images create funnel-worker-image --source-disk funnel-worker-image-snapshot
+gcloud compute disks create funnel-worker-snapshot-disk-$TS --source-snapshot funnel-worker-snapshot-$TS
 
-gcloud compute disks delete funnel-worker-image-snapshot
+gcloud compute images create $IMAGE --source-disk funnel-worker-snapshot-disk-$TS
 
-gcloud compute snapshots delete funnel-worker-snapshot
+echo Created image: $IMAGE

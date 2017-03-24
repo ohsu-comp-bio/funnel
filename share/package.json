@@ -10,7 +10,9 @@
     "ng-table": "^3.0.1",
     "node-sass": "^4.5.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "browserify": "^14.1.0"
+  },
   "scripts": {
     "test": "None"
   },

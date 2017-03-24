@@ -1,3 +1,7 @@
+var angular = require('angular')
+var angular_route = require('angular-route')
+var ngtable = require('ng-table')
+var mdl = require('material-design-lite')
 var app = angular.module('TESApp', ['ngRoute', 'ngTable']);
 
 function shortID(longID) {

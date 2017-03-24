@@ -17,3 +17,4 @@ bower_components
 .sass-cache/
 style.css
 style.css.map
+/share/bundle.js

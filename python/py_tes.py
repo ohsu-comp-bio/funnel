@@ -108,7 +108,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     c = TES(args.server)
     t = json.load(open(args.task))
+
+    job_ids = []
     for i in range(args.repeat):
         job_id = c.submit(t)
+        job_ids.append(job_id)
+
     if args.wait:
-        c.wait(job_id)
+        for job_id in job_ids:
+            c.wait(job_id)

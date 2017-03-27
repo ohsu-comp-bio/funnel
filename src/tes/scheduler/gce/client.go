@@ -6,7 +6,6 @@ import (
 	//"github.com/mitchellh/copystructure"
 	"google.golang.org/api/compute/v1"
 	"tes/config"
-	sched "tes/scheduler"
 	pbr "tes/server/proto"
 	"time"
 )
@@ -79,7 +78,6 @@ func (s *gceClient) Templates() []pbr.Worker {
 		// Copy resources struct for available
 		avail := res
 		workers = append(workers, pbr.Worker{
-			Id:        sched.GenWorkerID("gce"),
 			Resources: &res,
 			Available: &avail,
 			Zone:      s.zone,

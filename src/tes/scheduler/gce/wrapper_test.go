@@ -23,10 +23,6 @@ func TestWrapper(t *testing.T) {
 	// Mock config
 	conf := basicConf()
 
-	// Add an instance template to the config. The scheduler uses these templates
-	// to start new worker instances.
-	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
-
 	// Mock the GCE API wrapper
 	wpr := new(gce_mocks.Wrapper)
 	// Mock the server/database so we can easily control available workers
@@ -38,32 +34,13 @@ func TestWrapper(t *testing.T) {
 	// The GCE scheduler under test
 	client := &gceClient{
 		wrapper: wpr,
+		project: "test-proj",
+		zone:    "test-zone",
 	}
 	s := &gceScheduler{conf, srv.Client, client}
 
-	wpr.On("ListMachineTypes", "test-proj", "test-zone").Return(&MachineTypeList{
-		Items: []*MachineType{
-			{
-				Name:      "test-mt",
-				GuestCpus: 3,
-				MemoryMb:  12,
-			},
-		},
-	}, nil)
-
-	wpr.On("GetInstanceTemplate", "test-proj", "test-tpl").Return(&InstanceTemplate{
-		Properties: &InstanceProperties{
-			MachineType: "test-mt",
-			Disks: []*AttachedDisk{
-				{
-					InitializeParams: &AttachedDiskInitializeParams{
-						DiskSizeGb: 14,
-					},
-				},
-			},
-			Metadata: &Metadata{},
-		},
-	}, nil)
+	wpr.SetupMockInstanceTemplates()
+	wpr.SetupMockMachineTypes()
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
@@ -109,6 +86,9 @@ func TestWrapper(t *testing.T) {
 				},
 			},
 		},
+		Tags: &Tags{
+			Items: []string{"funnel"},
+		},
 	}
 	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
@@ -122,23 +102,13 @@ func TestInsertTempError(t *testing.T) {
 	conf := basicConf().Worker
 	conf.ID = "test-worker"
 	wpr := new(gce_mocks.Wrapper)
+	wpr.SetupMockInstanceTemplates()
+	wpr.SetupMockMachineTypes()
 	client := &gceClient{
 		wrapper: wpr,
+		project: "test-proj",
+		zone:    "test-zone",
 	}
-
-	wpr.On("GetInstanceTemplate", "test-proj", "test-tpl").Return(&InstanceTemplate{
-		Properties: &InstanceProperties{
-			MachineType: "test-mt",
-			Disks: []*AttachedDisk{
-				{
-					InitializeParams: &AttachedDiskInitializeParams{
-						DiskSizeGb: 14,
-					},
-				},
-			},
-			Metadata: &Metadata{},
-		},
-	}, nil)
 
 	// Set InsertInstance to return an error
 	wpr.On("InsertInstance", "test-proj", "test-zone", mock.Anything).Return(nil, errors.New("TEST"))
@@ -146,10 +116,14 @@ func TestInsertTempError(t *testing.T) {
 	// Do this a few times to exacerbate any errors.
 	// e.g. a previous bug would build up a longer config string after every failure
 	//      because cached data was being incorrectly shared.
-	client.StartWorker("test-proj", "test-zone", "test-tpl", conf)
-	client.StartWorker("test-proj", "test-zone", "test-tpl", conf)
-	client.StartWorker("test-proj", "test-zone", "test-tpl", conf)
+	client.StartWorker("test-tpl", conf)
+	client.StartWorker("test-tpl", conf)
+	client.StartWorker("test-tpl", conf)
 	wpr.AssertExpectations(t)
+	// Clear the previous expected calls
+	wpr.ExpectedCalls = nil
+	wpr.SetupMockInstanceTemplates()
+	wpr.SetupMockMachineTypes()
 
 	// Now set InsertInstance to success
 	confYaml := string(conf.ToYaml())
@@ -178,11 +152,12 @@ func TestInsertTempError(t *testing.T) {
 				},
 			},
 		},
+		Tags: &Tags{
+			Items: []string{"funnel"},
+		},
 	}
-	// Clear the previous expected calls
-	wpr.ExpectedCalls = nil
 	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
-	client.StartWorker("test-proj", "test-zone", "test-tpl", conf)
+	client.StartWorker("test-tpl", conf)
 	wpr.AssertExpectations(t)
 }

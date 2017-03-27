@@ -109,6 +109,7 @@ func (s *gceScheduler) getWorkers() []*pbr.Worker {
 	// This is how the scheduler can schedule jobs to workers that
 	// haven't been started yet.
 	for _, t := range s.gce.Templates() {
+		t.Id = sched.GenWorkerID("gce")
 		workers = append(workers, &t)
 	}
 

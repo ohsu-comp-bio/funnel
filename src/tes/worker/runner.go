@@ -135,6 +135,11 @@ func (r *jobRunner) resolveLinks() error {
 	// Walk all outputs, including walking directories recursively
 	for _, output := range r.mapper.Outputs {
 		filepath.Walk(output.Path, func(p string, f os.FileInfo, err error) error {
+			if err != nil {
+				// There's an error, so be safe and give up on this file
+				return nil
+			}
+
 			// Only bother to check symlinks
 			if f.Mode()&os.ModeSymlink != 0 {
 				// Test if the file can be opened because it doesn't exist

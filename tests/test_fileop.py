@@ -173,3 +173,44 @@ class TestFileOP(SimpleServerTest):
         job_id = self.tes.submit(task)
         data = self.tes.wait(job_id)
         assert data['state'] == "Error"
+
+    def test_symlink_in_output(self):
+        """
+        test_symlink_in_output
+
+        Test the case where a container creates a symlink in an output path.
+        From the view of the host system where Funnel is running, this creates
+        a broken link, because the source of the symlink is a path relative
+        to the container filesystem.
+
+        Funnel can fix some of these cases using volume definitions, which
+        is being tested here.
+        """
+        task = {
+            "name": "Test symlink in output",
+            "outputs": [{
+                "location": "file://" + self.storage_path("out"),
+                "class": "File",
+                "path": "/tmp/out",
+            }],
+            "resources": {
+                "volumes": [{
+                    "name": "testvol",
+                    "sizeGb": 5,
+                    "mountPoint": "/tmp",
+                }],
+            },
+            "docker": [{
+                "imageName": "alpine",
+                "cmd": [
+                    "sh", "-c",
+                    "echo foo > /tmp/foo && ln -s /tmp/foo /tmp/out"
+                ],
+            }],
+        }
+        job_id = self.tes.submit(task)
+        data = self.tes.wait(job_id)
+        print data
+        assert data["state"] != "Error"
+        with open(self.storage_path("out")) as fh:
+            assert fh.read() == "foo\n"

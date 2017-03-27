@@ -1,0 +1,19 @@
+{
+    "name": "Test Google Storage",
+    "projectId": "Funnel",
+    "description": "Simple Echo Command",
+    "resources": {"volumes": [{"name": "test_disk",
+                               "sizeGb": 5,
+                               "mountPoint": "/tmp"}]},
+    "docker": [{"imageName": "ubuntu",
+                "cmd": ["echo",
+                        "hello",
+                        "world"],
+                "stdout": "stdout"
+                }],
+    "inputs": [{"name": "infile",
+                "description": "File to be MD5ed",
+                "location": "gs://smc-rna-eval/cwltool-test-output/isoform/7150823/",
+                "class": "Directory",
+                "path": "/tmp/test_file"}]
+}

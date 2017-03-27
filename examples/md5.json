@@ -1,16 +1,6 @@
-import argparse
-import json
-import urllib
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--count", type=int, default=1)
-parser.add_argument("--sleep", type=int, default=10)
-
-args = parser.parse_args()
-
-task = {
-    "name": "TestMD5",
-    "projectId": "MyProject",
+{
+    "name": "Test MD5",
+    "projectId": "Funnel",
     "description": "My Desc",
     "inputs": [
         {
@@ -40,10 +30,7 @@ task = {
             "imageName": "ubuntu",
             "cmd": ["md5sum", "/tmp/test_file"],
             "stdout": "/tmp/test_out",
-            "stderr": "/tmp/test_err",
+            "stderr": "/tmp/test_err"
         }
     ]
 }
-
-for x in range(args.count):
-    u = urllib.urlopen("http://localhost:8000/v1/jobs", json.dumps(task))

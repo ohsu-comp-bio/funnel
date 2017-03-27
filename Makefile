@@ -2,6 +2,8 @@ GOPATH := $(shell pwd)/buildtools:$(shell pwd)
 export GOPATH
 PATH := ${PATH}:$(shell pwd)/bin
 export PATH
+PYTHONPATH := ${PYTHONPATH}:$(shell pwd)/python
+export PYTHONPATH
 
 PROTO_INC= -I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api

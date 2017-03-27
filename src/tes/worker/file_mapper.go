@@ -37,13 +37,9 @@ type Volume struct {
 	Readonly      bool
 }
 
-// NewJobFileMapper returns a new FileMapper configured to map files for a job.
-//
-// The following example will return a FileMapper that maps into the
-// "/path/to/workdir/123/" directory on the host file system.
-//     NewJobFileMapper("123", "/path/to/workdir")
-func NewJobFileMapper(jobID string, baseDir string) *FileMapper {
-	dir := path.Join(baseDir, jobID)
+// NewFileMapper returns a new FileMapper, which maps files into the given
+// base directory.
+func NewFileMapper(dir string) *FileMapper {
 	// TODO error handling
 	dir, _ = filepath.Abs(dir)
 	return &FileMapper{

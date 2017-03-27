@@ -2,7 +2,10 @@ package worker
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"tes/config"
 	pbe "tes/ga4gh"
 	"tes/logger"
@@ -17,10 +20,13 @@ type JobRunner func(JobControl, config.Worker, *pbr.JobWrapper, logUpdateChan)
 
 // Default JobRunner
 func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) {
+	// Map files into this baseDir
+	baseDir := path.Join(conf.WorkDir, j.Job.JobID)
+
 	r := &jobRunner{
 		ctrl:    ctrl,
 		wrapper: j,
-		mapper:  NewJobFileMapper(j.Job.JobID, conf.WorkDir),
+		mapper:  NewFileMapper(baseDir),
 		store:   &storage.Storage{},
 		conf:    conf,
 		updates: up,
@@ -111,6 +117,8 @@ func (r *jobRunner) Run() {
 		})
 	}
 
+	r.step("resolveLinks", r.resolveLinks)
+
 	// Upload outputs
 	for _, output := range r.mapper.Outputs {
 		r.step("store.Put", func() error {
@@ -119,6 +127,35 @@ func (r *jobRunner) Run() {
 	}
 
 	r.ctrl.SetResult(nil)
+}
+
+// resolveLinks walks the output paths, fixing cases where a symlink is
+// broken because it's pointing to a path inside a container volume.
+func (r *jobRunner) resolveLinks() error {
+	// Walk all outputs, including walking directories recursively
+	for _, output := range r.mapper.Outputs {
+		filepath.Walk(output.Path, func(p string, f os.FileInfo, err error) error {
+			// Only bother to check symlinks
+			if f.Mode()&os.ModeSymlink != 0 {
+				// Test if the file can be opened because it doesn't exist
+				fh, rerr := os.Open(p)
+				fh.Close()
+
+				if rerr != nil && os.IsNotExist(rerr) {
+					// Looks like a broken symlink, so try to fix it by checking
+					// whether the source path is in a mapped volume
+					for _, vol := range r.mapper.Volumes {
+						dst, _ := os.Readlink(p)
+						if strings.HasPrefix(dst, vol.ContainerPath) {
+							output.Path = strings.Replace(dst, vol.ContainerPath, vol.HostPath, 1)
+						}
+					}
+				}
+			}
+			return nil
+		})
+	}
+	return nil
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.

@@ -11,7 +11,6 @@ import (
 )
 
 var workerLog = logger.New("funnel-worker")
-var workerDconf = baseConf.Worker
 
 // workerCmd represents the worker command
 var workerCmd = &cobra.Command{
@@ -21,8 +20,12 @@ var workerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var wconf = config.WorkerDefaultConfig(config.DefaultConfig())
 		var conf config.Config
-		config.LoadConfigOrExit(configFile, &conf)
-		wconf = conf.Worker
+		if configFile != "" {
+			config.LoadConfigOrExit(configFile, &conf)
+			wconf = conf.Worker
+		}
+
+		workerDconf := config.WorkerInheritConfigVals(baseConf)
 
 		// file vals <- cli val
 		err := mergo.MergeWithOverwrite(&wconf, workerDconf)
@@ -36,8 +39,8 @@ var workerCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(workerCmd)
-	workerCmd.Flags().StringVar(&workerDconf.ID, "id", workerDconf.ID, "Worker ID")
-	workerCmd.Flags().DurationVar(&workerDconf.Timeout, "timeout", workerDconf.Timeout, "Timeout in seconds")
+	workerCmd.Flags().StringVar(&baseConf.Worker.ID, "id", baseConf.Worker.ID, "Worker ID")
+	workerCmd.Flags().DurationVar(&baseConf.Worker.Timeout, "timeout", baseConf.Worker.Timeout, "Timeout in seconds")
 }
 
 func startWorker(conf config.Worker) {

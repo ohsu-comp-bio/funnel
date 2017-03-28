@@ -4,8 +4,8 @@
 
 Default configuration (generated)
 ```yaml
-WorkDir: tes-work-dir
-DBPath: tes-work-dir/tes_task.db
+WorkDir: funnel-work-dir
+DBPath: funnel-work-dir/funnel_task.db
 
 # Run the 
 HTTPPort: "8000"
@@ -13,9 +13,9 @@ HTTPPort: "8000"
 # Run the RPC server on this port
 RPCPort: "9090"
 
-# The address of the Funnel server.
+# The hostname of the Funnel server.
 # Used by workers for communication.
-ServerAddress: localhost:9090
+HostName: localhost
 
 LogLevel: debug
 
@@ -35,6 +35,7 @@ Storage: null
 
 # Per-worker configuration
 Worker:
+  ServerAddress: localhost:9090
   LogLevel: debug
   LogPath: ""
   LogTailSize: 10000
@@ -46,14 +47,8 @@ Worker:
   # -1 means never time out.
   # 0 means shut down immediately when there are no jobs.
   Timeout: -1
-  WorkDir: tes-work-dir
+  WorkDir: funnel-work-dir
 
 # Active scheduler backend
 Scheduler: local
-
-Schedulers:
-  Condor:
-    NumWorkers: 0
-  Local:
-    NumWorkers: 4
 ```

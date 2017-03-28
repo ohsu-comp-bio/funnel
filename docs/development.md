@@ -54,21 +54,20 @@ There are probably other commands. Check out the [Makefile](../Makefile).
   - `server`: database and server API
   - `storage`: filesystem support, used by worker during upload/download, e.g. local, Google Cloud Storage, S3, etc.
   - `worker`: worker process and state management, job runner, docker command executor, file mapper, etc.
-- `src/tes-server`: tes-server CLI binary
-- `src/tes-worker`: tes-worker CLI binary
-- `proto`: the internal, Funnel-specific protobuf + gRPC schemas
-- `task-execution-schemas/proto`: the GA4GH Protobuf + gRPC schemas
-- `share`: javascript/css/html for web dashboard
+- `src/funnel`: funnel CLI binary
+- `proto/funnel.proto`: the internal, Funnel-specific protobuf + gRPC schemas
+- `proto/tes.proto`: the GA4GH Protobuf + gRPC schemas
+- `web`: javascript/css/html for web dashboard
 
 ## Go Tests
 
 Useful testing commands (first, see the GOPATH section above):
 
-Run all tests: `go test tes/...`
+Run all tests: `go test funnel/...`
 
-Run the scheduler tests: `go test tes/scheduler/...`
+Run the scheduler tests: `go test funnel/scheduler/...`
 
-Run the worker tests matching "\*Cancel\*": `go test tes/worker -run Cancel`
+Run the worker tests matching "\*Cancel\*": `go test funnel/worker -run Cancel`
 
 You get the idea. See to `go test` docs for more.
 

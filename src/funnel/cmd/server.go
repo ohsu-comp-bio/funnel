@@ -24,7 +24,9 @@ var serverCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		var conf = config.DefaultConfig()
-		config.LoadConfigOrExit(configFile, &conf)
+		if configFile != "" {
+			config.LoadConfigOrExit(configFile, &conf)
+		}
 
 		// file vals <- cli val
 		err := mergo.MergeWithOverwrite(&conf, baseConf)
@@ -41,6 +43,7 @@ var serverCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(serverCmd)
+	serverCmd.Flags().StringVar(&baseConf.HTTPPort, "http-port", baseConf.HTTPPort, "HTTP Port")
 	serverCmd.Flags().StringVar(&baseConf.DBPath, "db-path", baseConf.DBPath, "Database path")
 	serverCmd.Flags().StringVar(&baseConf.Scheduler, "scheduler", baseConf.Scheduler, "Name of scheduler to enable")
 }

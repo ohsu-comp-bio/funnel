@@ -3,10 +3,10 @@ package mocks
 import (
 	"fmt"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/scheduler"
 	"funnel/server"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"io/ioutil"
@@ -65,7 +65,7 @@ func MockServerFromConfig(conf config.Config) *MockServer {
 		panic("Can't connect scheduler client")
 	}
 
-	pbr.RegisterSchedulerServer(server, db)
+	pbf.RegisterSchedulerServer(server, db)
 	go server.Serve(lis)
 
 	return &MockServer{
@@ -91,12 +91,12 @@ func (m *MockServer) Close() {
 }
 
 // AddWorker adds the given worker to the database (calling db.UpdateWorker)
-func (m *MockServer) AddWorker(w *pbr.Worker) {
+func (m *MockServer) AddWorker(w *pbf.Worker) {
 	m.DB.UpdateWorker(context.Background(), w)
 }
 
 // RunTask adds a task to the database (calling db.RunTask)
-func (m *MockServer) RunTask(t *pbe.Task) string {
+func (m *MockServer) RunTask(t *tes.Task) string {
 	ret, err := m.DB.RunTask(context.Background(), t)
 	if err != nil {
 		panic(err)
@@ -110,17 +110,17 @@ func (m *MockServer) RunHelloWorld() string {
 }
 
 // HelloWorldTask returns a simple hello world task.
-func (m *MockServer) HelloWorldTask() *pbe.Task {
-	return &pbe.Task{
+func (m *MockServer) HelloWorldTask() *tes.Task {
+	return &tes.Task{
 		Name: "Hello world",
-		Docker: []*pbe.DockerExecutor{
+		Docker: []*tes.DockerExecutor{
 			{
 				Cmd: []string{"echo", "hello world"},
 			},
 		},
-		Resources: &pbe.Resources{
+		Resources: &tes.Resources{
 			MinimumCpuCores: 1,
-			Volumes: []*pbe.Volume{
+			Volumes: []*tes.Volume{
 				{
 					Name:       "test-vol",
 					SizeGb:     10.0,
@@ -132,8 +132,8 @@ func (m *MockServer) HelloWorldTask() *pbe.Task {
 }
 
 // GetWorkers calls db.GetWorkers.
-func (m *MockServer) GetWorkers() []*pbr.Worker {
-	resp, _ := m.DB.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
+func (m *MockServer) GetWorkers() []*pbf.Worker {
+	resp, _ := m.DB.GetWorkers(context.Background(), &pbf.GetWorkersRequest{})
 	return resp.Workers
 }
 
@@ -141,7 +141,7 @@ func (m *MockServer) GetWorkers() []*pbr.Worker {
 func (m *MockServer) CompleteJob(jobID string) {
 	for _, w := range m.GetWorkers() {
 		if j, ok := w.Jobs[jobID]; ok {
-			j.Job.State = pbe.State_Complete
+			j.Job.State = tes.State_Complete
 			m.DB.UpdateWorker(context.Background(), w)
 			return
 		}

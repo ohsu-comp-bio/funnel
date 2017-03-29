@@ -6,7 +6,7 @@ import (
 	"funnel/scheduler"
 	gce_mocks "funnel/scheduler/gce/mocks"
 	server_mocks "funnel/server/mocks"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"funnel/worker"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -23,15 +23,15 @@ func basicConf() config.Config {
 	return conf
 }
 
-func testWorker(id string, s pbr.WorkerState) *pbr.Worker {
-	return &pbr.Worker{
+func testWorker(id string, s pbf.WorkerState) *pbf.Worker {
+	return &pbf.Worker{
 		Id: id,
-		Resources: &pbr.Resources{
+		Resources: &pbf.Resources{
 			Cpus: 10.0,
 			Ram:  100.0,
 			Disk: 1000.0,
 		},
-		Available: &pbr.Resources{
+		Available: &pbf.Resources{
 			Cpus: 10.0,
 			Ram:  100.0,
 			Disk: 1000.0,
@@ -57,6 +57,7 @@ func TestSchedToExisting(t *testing.T) {
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
+
 
 	existing := testWorker("existing", pbr.WorkerState_Alive)
 	srv.AddWorker(existing)
@@ -103,7 +104,7 @@ func TestSchedStartWorker(t *testing.T) {
 	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	existing.Resources.Cpus = 0.0
 	srv.AddWorker(existing)
 
@@ -112,6 +113,16 @@ func TestSchedStartWorker(t *testing.T) {
 	// The GCE scheduler under test
 	s := &gceScheduler{conf, srv.Client, gce}
 
+<<<<<<< HEAD
+=======
+	// Mock an instance template response with 1 cpu/ram/disk
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
+		Cpus: 10.0,
+		Ram:  100.0,
+		Disk: 1000.0,
+	}, nil)
+
+>>>>>>> 9c9f8d5... moved proto files
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
@@ -149,7 +160,12 @@ func TestPreferExistingWorker(t *testing.T) {
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
+<<<<<<< HEAD
 	existing := testWorker("existing", pbr.WorkerState_Alive)
+=======
+	// Represents a worker that is alive but at full capacity
+	existing := testWorker("existing", pbf.WorkerState_Alive)
+>>>>>>> 9c9f8d5... moved proto files
 	existing.Resources.Cpus = 10.0
 	srv.AddWorker(existing)
 
@@ -158,6 +174,16 @@ func TestPreferExistingWorker(t *testing.T) {
 	// The GCE scheduler under test
 	s := &gceScheduler{conf, srv.Client, gce}
 
+<<<<<<< HEAD
+=======
+	// Mock an instance template response with 1 cpu/ram/disk
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
+		Cpus: 10.0,
+		Ram:  100.0,
+		Disk: 1000.0,
+	}, nil)
+
+>>>>>>> 9c9f8d5... moved proto files
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
@@ -199,7 +225,11 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram
+<<<<<<< HEAD
 	gce.SetupMockTemplates(pbr.Resources{
+=======
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
+>>>>>>> 9c9f8d5... moved proto files
 		Cpus: 1.0,
 		Ram:  1.0,
 		Disk: 1000.0,
@@ -221,7 +251,7 @@ func TestUpdateAvailableResources(t *testing.T) {
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	srv.AddWorker(existing)
 	ta := srv.HelloWorldTask()
 	srv.RunTask(ta)
@@ -251,11 +281,11 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	existingA := testWorker("existing-A", pbr.WorkerState_Alive)
+	existingA := testWorker("existing-A", pbf.WorkerState_Alive)
 	existingA.Resources.Cpus = 8.0
 	srv.AddWorker(existingA)
 
-	existingB := testWorker("existing-B", pbr.WorkerState_Alive)
+	existingB := testWorker("existing-B", pbf.WorkerState_Alive)
 	existingB.Resources.Cpus = 8.0
 	srv.AddWorker(existingB)
 
@@ -302,6 +332,16 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 
 	var w *worker.Worker
 
+<<<<<<< HEAD
+=======
+	// Mock an instance template response with 1 cpu/ram/disk
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
+		Cpus: 10.0,
+		Ram:  100.0,
+		Disk: 1000.0,
+	}, nil)
+
+>>>>>>> 9c9f8d5... moved proto files
 	// This test stems from a bug found during testing GCE worker init.
 	// Mock out a started worker to match the scenario the bug was found.
 	//

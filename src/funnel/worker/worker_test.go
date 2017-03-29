@@ -3,7 +3,7 @@ package worker
 import (
 	"errors"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
 	sched_mocks "funnel/scheduler/mocks"
 	"github.com/stretchr/testify/mock"
@@ -34,7 +34,7 @@ func TestBasicWorker(t *testing.T) {
 		t.Error("Expected controller for job")
 	}
 
-	if ctrl.State() != pbe.State_Initializing {
+	if ctrl.State() != tes.State_Initializing {
 		t.Error("Expected runner state to be init")
 	}
 
@@ -43,9 +43,9 @@ func TestBasicWorker(t *testing.T) {
 	srv.Flush()
 
 	// Check job state in DB
-	r, _ := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
+	r, _ := srv.db.GetJob(ctx, &tes.JobID{Value: jobID})
 
-	if r.State != pbe.State_Running {
+	if r.State != tes.State_Running {
 		t.Error("Expected job state in DB to be running")
 	}
 
@@ -54,9 +54,9 @@ func TestBasicWorker(t *testing.T) {
 	srv.Flush()
 
 	// Check for complete state in database
-	q, _ := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
+	q, _ := srv.db.GetJob(ctx, &tes.JobID{Value: jobID})
 
-	if q.State != pbe.State_Complete {
+	if q.State != tes.State_Complete {
 		t.Error("Expected job state in DB to be running")
 	}
 	log.Debug("TEST", "jobID", jobID, "r", r)
@@ -96,9 +96,9 @@ func TestJobFail(t *testing.T) {
 	srv.Flush()
 
 	// Check job state in DB
-	r, _ := srv.db.GetJob(ctx, &pbe.JobID{Value: jobID})
+	r, _ := srv.db.GetJob(ctx, &tes.JobID{Value: jobID})
 
-	if r.State != pbe.State_Error {
+	if r.State != tes.State_Error {
 		t.Error("Expected job state in DB to be running")
 	}
 

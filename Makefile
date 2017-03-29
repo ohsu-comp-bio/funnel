@@ -5,7 +5,7 @@ export PATH
 PYTHONPATH := ${PYTHONPATH}:$(shell pwd)/python
 export PYTHONPATH
 
-PROTO_INC= -I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
+PROTO_INC=-I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
 
 server: depends
@@ -14,16 +14,18 @@ server: depends
 proto_build:
 	@go get ./src/vendor/github.com/golang/protobuf/protoc-gen-go/
 	@go get ./src/vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/
-	@cd proto && protoc $(PROTO_INC) \
-		--go_out=$(GRPC_HTTP_MOD),plugins=grpc:../../src/funnel/ga4gh/ \
-		--grpc-gateway_out=logtostderr=true:../../src/funnel/ga4gh/ \
-		tes.proto
-	@cd proto && protoc \
+	@cd src/funnel/proto/tes && protoc \
 		$(PROTO_INC) \
-		-I ../proto/ \
-		--go_out=$(GRPC_HTTP_MOD),Mtes.proto=funnel/ga4gh,plugins=grpc:../src/funnel/server/proto \
-		--grpc-gateway_out=logtostderr=true:../src/funnel/server/proto/ \
+		--go_out=$(GRPC_HTTP_MOD),plugins=grpc:. \
+		--grpc-gateway_out=logtostderr=true:. \
+		tes.proto
+	@cd src/funnel/proto/funnel && protoc \
+		$(PROTO_INC) \
+		-I ../tes \
+		--go_out=$(GRPC_HTTP_MOD),Mtes.proto=funnel/proto/tes,plugins=grpc:. \
+		--grpc-gateway_out=logtostderr=true:. \
 		funnel.proto
+	@find src/funnel/proto -name *pb* -type f -exec sed -i '' 's/ga4gh_task_exec/tes/g' {} +
 
 depends:
 	git submodule update --init --recursive

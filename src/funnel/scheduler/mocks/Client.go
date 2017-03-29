@@ -1,7 +1,7 @@
 package mocks
 
 import context "golang.org/x/net/context"
-import ga4gh_task_ref "funnel/server/proto"
+import pbf "funnel/proto/funnel"
 import grpc "google.golang.org/grpc"
 import mock "github.com/stretchr/testify/mock"
 
@@ -16,20 +16,20 @@ func (_m *Client) Close() {
 }
 
 // GetQueueInfo provides a mock function with given fields: ctx, in, opts
-func (_m *Client) GetQueueInfo(ctx context.Context, in *ga4gh_task_ref.QueuedTaskInfoRequest, opts ...grpc.CallOption) (ga4gh_task_ref.Scheduler_GetQueueInfoClient, error) {
+func (_m *Client) GetQueueInfo(ctx context.Context, in *pbf.QueuedTaskInfoRequest, opts ...grpc.CallOption) (pbf.Scheduler_GetQueueInfoClient, error) {
 	ret := _m.Called(ctx, in, opts)
 
-	var r0 ga4gh_task_ref.Scheduler_GetQueueInfoClient
-	if rf, ok := ret.Get(0).(func(context.Context, *ga4gh_task_ref.QueuedTaskInfoRequest, ...grpc.CallOption) ga4gh_task_ref.Scheduler_GetQueueInfoClient); ok {
+	var r0 pbf.Scheduler_GetQueueInfoClient
+	if rf, ok := ret.Get(0).(func(context.Context, *pbf.QueuedTaskInfoRequest, ...grpc.CallOption) pbf.Scheduler_GetQueueInfoClient); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(ga4gh_task_ref.Scheduler_GetQueueInfoClient)
+			r0 = ret.Get(0).(pbf.Scheduler_GetQueueInfoClient)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *ga4gh_task_ref.QueuedTaskInfoRequest, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *pbf.QueuedTaskInfoRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -39,20 +39,20 @@ func (_m *Client) GetQueueInfo(ctx context.Context, in *ga4gh_task_ref.QueuedTas
 }
 
 // GetWorker provides a mock function with given fields: ctx, in, opts
-func (_m *Client) GetWorker(ctx context.Context, in *ga4gh_task_ref.GetWorkerRequest, opts ...grpc.CallOption) (*ga4gh_task_ref.Worker, error) {
+func (_m *Client) GetWorker(ctx context.Context, in *pbf.GetWorkerRequest, opts ...grpc.CallOption) (*pbf.Worker, error) {
 	ret := _m.Called(ctx, in, opts)
 
-	var r0 *ga4gh_task_ref.Worker
-	if rf, ok := ret.Get(0).(func(context.Context, *ga4gh_task_ref.GetWorkerRequest, ...grpc.CallOption) *ga4gh_task_ref.Worker); ok {
+	var r0 *pbf.Worker
+	if rf, ok := ret.Get(0).(func(context.Context, *pbf.GetWorkerRequest, ...grpc.CallOption) *pbf.Worker); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ga4gh_task_ref.Worker)
+			r0 = ret.Get(0).(*pbf.Worker)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *ga4gh_task_ref.GetWorkerRequest, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *pbf.GetWorkerRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -62,20 +62,20 @@ func (_m *Client) GetWorker(ctx context.Context, in *ga4gh_task_ref.GetWorkerReq
 }
 
 // GetWorkers provides a mock function with given fields: ctx, in, opts
-func (_m *Client) GetWorkers(ctx context.Context, in *ga4gh_task_ref.GetWorkersRequest, opts ...grpc.CallOption) (*ga4gh_task_ref.GetWorkersResponse, error) {
+func (_m *Client) GetWorkers(ctx context.Context, in *pbf.GetWorkersRequest, opts ...grpc.CallOption) (*pbf.GetWorkersResponse, error) {
 	ret := _m.Called(ctx, in, opts)
 
-	var r0 *ga4gh_task_ref.GetWorkersResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *ga4gh_task_ref.GetWorkersRequest, ...grpc.CallOption) *ga4gh_task_ref.GetWorkersResponse); ok {
+	var r0 *pbf.GetWorkersResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *pbf.GetWorkersRequest, ...grpc.CallOption) *pbf.GetWorkersResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ga4gh_task_ref.GetWorkersResponse)
+			r0 = ret.Get(0).(*pbf.GetWorkersResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *ga4gh_task_ref.GetWorkersRequest, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *pbf.GetWorkersRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -85,20 +85,20 @@ func (_m *Client) GetWorkers(ctx context.Context, in *ga4gh_task_ref.GetWorkersR
 }
 
 // UpdateJobLogs provides a mock function with given fields: ctx, in, opts
-func (_m *Client) UpdateJobLogs(ctx context.Context, in *ga4gh_task_ref.UpdateJobLogsRequest, opts ...grpc.CallOption) (*ga4gh_task_ref.UpdateJobLogsResponse, error) {
+func (_m *Client) UpdateJobLogs(ctx context.Context, in *pbf.UpdateJobLogsRequest, opts ...grpc.CallOption) (*pbf.UpdateJobLogsResponse, error) {
 	ret := _m.Called(ctx, in, opts)
 
-	var r0 *ga4gh_task_ref.UpdateJobLogsResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *ga4gh_task_ref.UpdateJobLogsRequest, ...grpc.CallOption) *ga4gh_task_ref.UpdateJobLogsResponse); ok {
+	var r0 *pbf.UpdateJobLogsResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *pbf.UpdateJobLogsRequest, ...grpc.CallOption) *pbf.UpdateJobLogsResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ga4gh_task_ref.UpdateJobLogsResponse)
+			r0 = ret.Get(0).(*pbf.UpdateJobLogsResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *ga4gh_task_ref.UpdateJobLogsRequest, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *pbf.UpdateJobLogsRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -108,20 +108,20 @@ func (_m *Client) UpdateJobLogs(ctx context.Context, in *ga4gh_task_ref.UpdateJo
 }
 
 // UpdateWorker provides a mock function with given fields: ctx, in, opts
-func (_m *Client) UpdateWorker(ctx context.Context, in *ga4gh_task_ref.Worker, opts ...grpc.CallOption) (*ga4gh_task_ref.UpdateWorkerResponse, error) {
+func (_m *Client) UpdateWorker(ctx context.Context, in *pbf.Worker, opts ...grpc.CallOption) (*pbf.UpdateWorkerResponse, error) {
 	ret := _m.Called(ctx, in, opts)
 
-	var r0 *ga4gh_task_ref.UpdateWorkerResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *ga4gh_task_ref.Worker, ...grpc.CallOption) *ga4gh_task_ref.UpdateWorkerResponse); ok {
+	var r0 *pbf.UpdateWorkerResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *pbf.Worker, ...grpc.CallOption) *pbf.UpdateWorkerResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ga4gh_task_ref.UpdateWorkerResponse)
+			r0 = ret.Get(0).(*pbf.UpdateWorkerResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *ga4gh_task_ref.Worker, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *pbf.Worker, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)

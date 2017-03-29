@@ -1,15 +1,15 @@
 package scheduler
 
 import (
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 )
 
 // Predicate is a function that checks whether a job fits a worker.
-type Predicate func(*pbe.Job, *pbr.Worker) bool
+type Predicate func(*tes.Job, *pbf.Worker) bool
 
 // ResourcesFit determines whether a job fits a worker's resources.
-func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
+func ResourcesFit(j *tes.Job, w *pbf.Worker) bool {
 	req := j.Task.GetResources()
 
 	switch {
@@ -34,7 +34,7 @@ func ResourcesFit(j *pbe.Job, w *pbr.Worker) bool {
 
 // VolumesFit determines whether a job's volumes fit a worker
 // by checking that the worker has enough disk space available.
-func VolumesFit(j *pbe.Job, w *pbr.Worker) bool {
+func VolumesFit(j *tes.Job, w *pbf.Worker) bool {
 	req := j.Task.GetResources()
 	vol := req.GetVolumes()
 
@@ -57,7 +57,7 @@ func VolumesFit(j *pbe.Job, w *pbr.Worker) bool {
 
 // PortsFit determines whether a job's ports fit a worker
 // by checking that the worker has the requested ports available.
-func PortsFit(j *pbe.Job, w *pbr.Worker) bool {
+func PortsFit(j *tes.Job, w *pbf.Worker) bool {
 	// Get the set of active ports on the worker
 	active := map[int32]bool{}
 	for _, p := range w.ActivePorts {
@@ -80,7 +80,7 @@ func PortsFit(j *pbe.Job, w *pbr.Worker) bool {
 }
 
 // ZonesFit determines whether a job's zones fit a worker.
-func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
+func ZonesFit(j *tes.Job, w *pbf.Worker) bool {
 	if w.Zone == "" {
 		// Worker doesn't have a set zone, so don't bother checking.
 		return true
@@ -101,14 +101,14 @@ func ZonesFit(j *pbe.Job, w *pbr.Worker) bool {
 }
 
 // NotDead returns true if the worker state is not Dead or Gone.
-func NotDead(j *pbe.Job, w *pbr.Worker) bool {
-	return w.State != pbr.WorkerState_Dead && w.State != pbr.WorkerState_Gone
+func NotDead(j *tes.Job, w *pbf.Worker) bool {
+	return w.State != pbf.WorkerState_Dead && w.State != pbf.WorkerState_Gone
 }
 
 // WorkerHasTag returns a predicate function which returns true
 // if the worker has the given tag (key in Metadata field).
 func WorkerHasTag(tag string) Predicate {
-	return func(j *pbe.Job, w *pbr.Worker) bool {
+	return func(j *tes.Job, w *pbf.Worker) bool {
 		_, ok := w.Metadata[tag]
 		return ok
 	}
@@ -133,7 +133,7 @@ var DefaultPredicates = []Predicate{
 //        maybe set a max. time allowed to be unscheduled before notification
 
 // Match checks whether a job fits a worker using the given Predicate list.
-func Match(worker *pbr.Worker, job *pbe.Job, predicates []Predicate) bool {
+func Match(worker *pbf.Worker, job *tes.Job, predicates []Predicate) bool {
 	for _, pred := range predicates {
 		if ok := pred(job, worker); !ok {
 			return false

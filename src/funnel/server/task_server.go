@@ -1,8 +1,8 @@
 package server
 
 import (
-	"funnel/ga4gh"
-	"funnel/server/proto"
+	"funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 	"google.golang.org/grpc"
 	"net"
 )
@@ -11,8 +11,8 @@ import (
 // placed into the same server, for the moment there is just the task
 // server.
 type GA4GHServer struct {
-	task  ga4gh_task_exec.TaskServiceServer
-	sched ga4gh_task_ref.SchedulerServer
+	task  tes.TaskServiceServer
+	sched pbf.SchedulerServer
 }
 
 // NewGA4GHServer documentation
@@ -23,13 +23,13 @@ func NewGA4GHServer() *GA4GHServer {
 
 // RegisterTaskServer documentation
 // TODO: documentation
-func (ga4ghServer *GA4GHServer) RegisterTaskServer(task ga4gh_task_exec.TaskServiceServer) {
+func (ga4ghServer *GA4GHServer) RegisterTaskServer(task tes.TaskServiceServer) {
 	ga4ghServer.task = task
 }
 
 // RegisterScheduleServer documentation
 // TODO: documentation
-func (ga4ghServer *GA4GHServer) RegisterScheduleServer(sched ga4gh_task_ref.SchedulerServer) {
+func (ga4ghServer *GA4GHServer) RegisterScheduleServer(sched pbf.SchedulerServer) {
 	ga4ghServer.sched = sched
 }
 
@@ -43,10 +43,10 @@ func (ga4ghServer *GA4GHServer) Start(hostPort string) {
 	grpcServer := grpc.NewServer()
 
 	if ga4ghServer.task != nil {
-		ga4gh_task_exec.RegisterTaskServiceServer(grpcServer, ga4ghServer.task)
+		tes.RegisterTaskServiceServer(grpcServer, ga4ghServer.task)
 	}
 	if ga4ghServer.sched != nil {
-		ga4gh_task_ref.RegisterSchedulerServer(grpcServer, ga4ghServer.sched)
+		pbf.RegisterSchedulerServer(grpcServer, ga4ghServer.sched)
 	}
 
 	log.Info("RPC server listening", "port", hostPort)

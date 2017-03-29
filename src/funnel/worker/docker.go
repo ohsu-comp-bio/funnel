@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"github.com/docker/docker/client"
 	"io"
 	"os"
@@ -20,7 +20,7 @@ type DockerCmd struct {
 	Cmd             []string
 	Volumes         []Volume
 	Workdir         string
-	Ports           []*pbe.Ports
+	Ports           []*tes.Ports
 	ContainerName   string
 	RemoveContainer bool
 	Stdin           io.Reader
@@ -81,7 +81,7 @@ func (dcmd DockerCmd) Run() error {
 }
 
 // Inspect returns metadata about the container (calls "docker inspect").
-func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*pbe.Ports, error) {
+func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
 	log.Info("Fetching container metadata")
 	dclient := setupDockerClient()
 	// close the docker client connection
@@ -100,7 +100,7 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*pbe.Ports, error) {
 				break
 			}
 			if metadata.State.Running == true {
-				var portMap []*pbe.Ports
+				var portMap []*tes.Ports
 				// extract exposed host port from
 				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
 				for k, v := range metadata.NetworkSettings.Ports {
@@ -115,7 +115,7 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*pbe.Ports, error) {
 						if err != nil {
 							return nil, err
 						}
-						portMap = append(portMap, &pbe.Ports{
+						portMap = append(portMap, &tes.Ports{
 							Container: int32(containerPort),
 							Host:      int32(hostPort),
 						})

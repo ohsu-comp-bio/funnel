@@ -2,10 +2,10 @@ package local
 
 import (
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
 	sched "funnel/scheduler"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"funnel/worker"
 	"golang.org/x/net/context"
 )
@@ -30,7 +30,7 @@ type scheduler struct {
 	workerID string
 }
 
-func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
+func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
 	log.Debug("Running local scheduler")
 	weights := s.conf.Schedulers.Local.Weights
 	workers := s.getWorkers()
@@ -42,9 +42,9 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 // This is a bit redundant in the local scheduler, because there is only
 // ever one worker, but it demonstrates the pattern of a scheduler backend,
 // and give the scheduler a chance to get an updated worker state.
-func (s *scheduler) getWorkers() []*pbr.Worker {
-	workers := []*pbr.Worker{}
-	resp, rerr := s.client.GetWorkers(context.Background(), &pbr.GetWorkersRequest{})
+func (s *scheduler) getWorkers() []*pbf.Worker {
+	workers := []*pbf.Worker{}
+	resp, rerr := s.client.GetWorkers(context.Background(), &pbf.GetWorkersRequest{})
 
 	if rerr != nil {
 		log.Error("Error getting workers. Recovering.", rerr)
@@ -52,7 +52,7 @@ func (s *scheduler) getWorkers() []*pbr.Worker {
 	}
 
 	for _, w := range resp.Workers {
-		if w.Id != s.workerID || w.State != pbr.WorkerState_Alive {
+		if w.Id != s.workerID || w.State != pbf.WorkerState_Alive {
 			// Ignore workers that aren't alive
 			continue
 		}

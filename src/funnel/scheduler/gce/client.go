@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
-	pbr "funnel/server/proto"
-	//"github.com/mitchellh/copystructure"
+	pbf "funnel/proto/funnel"
+	"github.com/mitchellh/copystructure"
 	"google.golang.org/api/compute/v1"
 	"time"
 )

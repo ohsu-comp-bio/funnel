@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	server "funnel/server"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	uuid "github.com/nu7hatch/gouuid"
 	"time"
 )
@@ -21,7 +21,7 @@ import (
 // startup time, cost, etc. Scores and weights are used to control the behavior
 // of schedulers, and to combine offers from multiple schedulers.
 type Scheduler interface {
-	Schedule(*pbe.Job) *Offer
+	Schedule(*tes.Job) *Offer
 }
 
 // Scaler represents a service that can start worker instances, for example
@@ -29,10 +29,10 @@ type Scheduler interface {
 type Scaler interface {
 	// StartWorker is where the work is done to start a worker instance,
 	// for example, calling out to Google Cloud APIs.
-	StartWorker(*pbr.Worker) error
+	StartWorker(*pbf.Worker) error
 	// ShouldStartWorker allows scalers to filter out workers they are interested in.
 	// If "true" is returned, Scaler.StartWorker() will be called with this worker.
-	ShouldStartWorker(*pbr.Worker) bool
+	ShouldStartWorker(*pbf.Worker) bool
 }
 
 // Offer describes a worker offered by a scheduler for a job.
@@ -40,12 +40,12 @@ type Scaler interface {
 // which could be used by other a scheduler to pick the best offer.
 type Offer struct {
 	JobID  string
-	Worker *pbr.Worker
+	Worker *pbf.Worker
 	Scores Scores
 }
 
 // NewOffer returns a new Offer instance.
-func NewOffer(w *pbr.Worker, j *pbe.Job, s Scores) *Offer {
+func NewOffer(w *pbf.Worker, j *tes.Job, s Scores) *Offer {
 	return &Offer{
 		JobID:  j.JobID,
 		Worker: w,
@@ -84,7 +84,7 @@ func GenWorkerID(prefix string) string {
 // and shutdown.
 func Scale(db server.Database, s Scaler) {
 
-	resp, err := db.GetWorkers(context.TODO(), &pbr.GetWorkersRequest{})
+	resp, err := db.GetWorkers(context.TODO(), &pbf.GetWorkersRequest{})
 	if err != nil {
 		log.Error("Failed GetWorkers request. Recovering.", err)
 		return
@@ -104,7 +104,7 @@ func Scale(db server.Database, s Scaler) {
 
 		// TODO should the Scaler instance handle this? Is it possible
 		//      that Initializing is the wrong state in some cases?
-		w.State = pbr.WorkerState_Initializing
+		w.State = pbf.WorkerState_Initializing
 		_, err := db.UpdateWorker(context.TODO(), w)
 
 		if err != nil {

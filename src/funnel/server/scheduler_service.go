@@ -6,8 +6,8 @@ package server
 import (
 	"errors"
 	"fmt"
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
@@ -16,29 +16,29 @@ import (
 
 // State variables for convenience
 const (
-	Unknown      = pbe.State_Unknown
-	Queued       = pbe.State_Queued
-	Running      = pbe.State_Running
-	Paused       = pbe.State_Paused
-	Complete     = pbe.State_Complete
-	Error        = pbe.State_Error
-	SystemError  = pbe.State_SystemError
-	Canceled     = pbe.State_Canceled
-	Initializing = pbe.State_Initializing
+	Unknown      = tes.State_Unknown
+	Queued       = tes.State_Queued
+	Running      = tes.State_Running
+	Paused       = tes.State_Paused
+	Complete     = tes.State_Complete
+	Error        = tes.State_Error
+	SystemError  = tes.State_SystemError
+	Canceled     = tes.State_Canceled
+	Initializing = tes.State_Initializing
 )
 
 // UpdateWorker is an RPC endpoint that is used by workers to send heartbeats
 // and status updates, such as completed jobs. The server responds with updated
 // information for the worker, such as canceled jobs.
-func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbr.Worker) (*pbr.UpdateWorkerResponse, error) {
+func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbf.Worker) (*pbf.UpdateWorkerResponse, error) {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 		return updateWorker(tx, req)
 	})
-	resp := &pbr.UpdateWorkerResponse{}
+	resp := &pbf.UpdateWorkerResponse{}
 	return resp, err
 }
 
-func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
+func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 	// Get worker
 	worker := getWorker(tx, req.Id)
 
@@ -51,7 +51,7 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 
 	if req.Resources != nil {
 		if worker.Resources == nil {
-			worker.Resources = &pbr.Resources{}
+			worker.Resources = &pbf.Resources{}
 		}
 		// Merge resources
 		if req.Resources.Cpus > 0 {
@@ -102,12 +102,12 @@ func updateWorker(tx *bolt.Tx, req *pbr.Worker) error {
 
 // AssignJob assigns a job to a worker. This updates the job state to Initializing,
 // and updates the worker (calls UpdateWorker()).
-func (taskBolt *TaskBolt) AssignJob(j *pbe.Job, w *pbr.Worker) {
+func (taskBolt *TaskBolt) AssignJob(j *tes.Job, w *pbf.Worker) {
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		// TODO this is important! write a test for this line.
 		//      when a job is assigned, its state is immediately Initializing
 		//      even before the worker has received it.
-		transitionJobState(tx, j.JobID, pbe.State_Initializing)
+		transitionJobState(tx, j.JobID, tes.State_Initializing)
 		jobIDBytes := []byte(j.JobID)
 		workerIDBytes := []byte(w.Id)
 		// TODO the database needs tests for this stuff. Getting errors during dev
@@ -126,9 +126,9 @@ func (taskBolt *TaskBolt) AssignJob(j *pbe.Job, w *pbr.Worker) {
 
 // TODO include active ports. maybe move Available out of the protobuf message
 //      and expect this helper to be used?
-func updateAvailableResources(tx *bolt.Tx, worker *pbr.Worker) {
+func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
 	// Calculate available resources
-	a := pbr.Resources{
+	a := pbf.Resources{
 		Cpus: worker.GetResources().GetCpus(),
 		Ram:  worker.GetResources().GetRam(),
 		Disk: worker.GetResources().GetDisk(),
@@ -159,8 +159,8 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbr.Worker) {
 }
 
 // GetWorker gets a worker
-func (taskBolt *TaskBolt) GetWorker(ctx context.Context, req *pbr.GetWorkerRequest) (*pbr.Worker, error) {
-	var worker *pbr.Worker
+func (taskBolt *TaskBolt) GetWorker(ctx context.Context, req *pbf.GetWorkerRequest) (*pbf.Worker, error) {
+	var worker *pbf.Worker
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		worker = getWorker(tx, req.Id)
 		return nil
@@ -176,10 +176,10 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 		c := bucket.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			worker := &pbr.Worker{}
+			worker := &pbf.Worker{}
 			proto.Unmarshal(v, worker)
 
-			if worker.State == pbr.WorkerState_Gone {
+			if worker.State == pbf.WorkerState_Gone {
 				tx.Bucket(Workers).Delete(k)
 				continue
 			}
@@ -194,19 +194,19 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 			lastPing := time.Unix(worker.LastPing, 0)
 			d := time.Since(lastPing)
 
-			if worker.State == pbr.WorkerState_Uninitialized ||
-				worker.State == pbr.WorkerState_Initializing {
+			if worker.State == pbf.WorkerState_Uninitialized ||
+				worker.State == pbf.WorkerState_Initializing {
 
 				// The worker is initializing, which has a more liberal timeout.
 				if d > taskBolt.conf.WorkerInitTimeout {
 					// Looks like the worker failed to initialize. Mark it dead
-					worker.State = pbr.WorkerState_Dead
+					worker.State = pbf.WorkerState_Dead
 				}
 			} else if d > taskBolt.conf.WorkerPingTimeout {
 				// The worker is stale/dead
-				worker.State = pbr.WorkerState_Dead
+				worker.State = pbf.WorkerState_Dead
 			} else {
-				worker.State = pbr.WorkerState_Alive
+				worker.State = pbf.WorkerState_Alive
 			}
 			// TODO when to delete workers from the database?
 			//      is dead worker deletion an automatic garbage collection process?
@@ -221,9 +221,9 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 }
 
 // GetWorkers is an API endpoint that returns a list of workers.
-func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbr.GetWorkersRequest) (*pbr.GetWorkersResponse, error) {
-	resp := &pbr.GetWorkersResponse{}
-	resp.Workers = []*pbr.Worker{}
+func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbf.GetWorkersRequest) (*pbf.GetWorkersResponse, error) {
+	resp := &pbf.GetWorkersResponse{}
+	resp.Workers = []*pbf.Worker{}
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
@@ -255,7 +255,7 @@ func getJobAuth(tx *bolt.Tx, jobID string) string {
 	return auth
 }
 
-func transitionJobState(tx *bolt.Tx, id string, state pbe.State) error {
+func transitionJobState(tx *bolt.Tx, id string, state tes.State) error {
 	idBytes := []byte(id)
 	current := getJobState(tx, id)
 
@@ -305,7 +305,7 @@ func transitionJobState(tx *bolt.Tx, id string, state pbe.State) error {
 
 // UpdateJobLogs is an API endpoint that updates the logs of a job.
 // This is used by workers to communicate job updates to the server.
-func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbr.UpdateJobLogsRequest) (*pbr.UpdateJobLogsResponse, error) {
+func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbf.UpdateJobLogsRequest) (*pbf.UpdateJobLogsResponse, error) {
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bL := tx.Bucket(JobsLog)
@@ -319,7 +319,7 @@ func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbr.UpdateJobL
 			o := bL.Get(key)
 			if o != nil {
 				// There is an existing log in the DB, load it
-				existing := &pbe.JobLog{}
+				existing := &tes.JobLog{}
 				// max bytes to be stored in the db
 				proto.Unmarshal(o, existing)
 
@@ -350,15 +350,15 @@ func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbr.UpdateJobL
 
 		return nil
 	})
-	return &pbr.UpdateJobLogsResponse{}, nil
+	return &pbf.UpdateJobLogsResponse{}, nil
 }
 
 // GetQueueInfo returns a stream of queue info
 // This is an RPC endpoint.
 // TODO why doesn't this take Context as the first argument?
 // TODO I don't think this is actually used.
-func (taskBolt *TaskBolt) GetQueueInfo(request *pbr.QueuedTaskInfoRequest, server pbr.Scheduler_GetQueueInfoServer) error {
-	ch := make(chan *pbe.Task)
+func (taskBolt *TaskBolt) GetQueueInfo(request *pbf.QueuedTaskInfoRequest, server pbf.Scheduler_GetQueueInfoServer) error {
+	ch := make(chan *tes.Task)
 	log.Debug("GetQueueInfo called")
 
 	// TODO handle DB errors
@@ -370,9 +370,9 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *pbr.QueuedTaskInfoRequest, serve
 		c := bq.Cursor()
 		var count int32
 		for k, v := c.First(); k != nil && count < request.MaxTasks; k, v = c.Next() {
-			if string(v) == pbe.State_Queued.String() {
+			if string(v) == tes.State_Queued.String() {
 				v := bt.Get(k)
-				out := pbe.Task{}
+				out := tes.Task{}
 				proto.Unmarshal(v, &out)
 				ch <- &out
 			}
@@ -386,7 +386,7 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *pbr.QueuedTaskInfoRequest, serve
 		for _, i := range m.Inputs {
 			inputs = append(inputs, i.Location)
 		}
-		server.Send(&pbr.QueuedTaskInfo{Inputs: inputs, Resources: m.Resources})
+		server.Send(&pbf.QueuedTaskInfo{Inputs: inputs, Resources: m.Resources})
 	}
 
 	return nil

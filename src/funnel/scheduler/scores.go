@@ -2,8 +2,8 @@ package scheduler
 
 import (
 	"funnel/config"
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 	"sort"
 )
 
@@ -36,7 +36,7 @@ func (s Scores) Weighted(w config.Weights) Scores {
 }
 
 // DefaultScores returns a default set of scores.
-func DefaultScores(w *pbr.Worker, j *pbe.Job) Scores {
+func DefaultScores(w *pbf.Worker, j *tes.Job) Scores {
 	req := j.GetTask().GetResources()
 	tot := w.GetResources()
 	avail := w.GetAvailable()

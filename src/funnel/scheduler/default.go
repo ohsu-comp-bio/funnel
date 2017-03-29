@@ -2,14 +2,14 @@ package scheduler
 
 import (
 	"funnel/config"
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 )
 
 // DefaultScheduleAlgorithm implements a simple scheduling algorithm
 // that is (currently) common across a few scheduler backends.
 // Given a job, list of workers, and weights, it returns the best Offer or nil.
-func DefaultScheduleAlgorithm(j *pbe.Job, workers []*pbr.Worker, weights config.Weights) *Offer {
+func DefaultScheduleAlgorithm(j *tes.Job, workers []*pbf.Worker, weights config.Weights) *Offer {
 
 	offers := []*Offer{}
 	for _, w := range workers {

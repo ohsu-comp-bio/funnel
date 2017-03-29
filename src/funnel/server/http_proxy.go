@@ -1,8 +1,8 @@
 package server
 
 import (
-	"funnel/ga4gh"
-	pbr "funnel/server/proto"
+	"funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
@@ -33,11 +33,11 @@ func StartHTTPProxy(serverAddress string, httpPort string, contentDir string) {
 
 	url := serverAddress
 	log.Info("HTTP proxy listening gRPC", "url", url)
-	err := ga4gh_task_exec.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, url, opts)
+	err := tes.RegisterTaskServiceHandlerFromEndpoint(ctx, grpcMux, url, opts)
 	if err != nil {
 		log.Error("Couldn't register Task Service", "error", err)
 	}
-	serr := pbr.RegisterSchedulerHandlerFromEndpoint(ctx, grpcMux, url, opts)
+	serr := pbf.RegisterSchedulerHandlerFromEndpoint(ctx, grpcMux, url, opts)
 	if serr != nil {
 		log.Error("Couldn't register Scheduler service HTTP proxy", "error", err)
 	}

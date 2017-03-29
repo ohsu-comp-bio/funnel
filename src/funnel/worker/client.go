@@ -4,7 +4,7 @@ import (
 	"context"
 	"funnel/config"
 	"funnel/scheduler"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 )
 
 // Defines some helpers for RPC calls in the code above
@@ -21,14 +21,14 @@ func newSchedClient(conf config.Worker) (*schedClient, error) {
 	return &schedClient{sched, conf}, nil
 }
 
-func (c *schedClient) UpdateWorker(req *pbr.Worker) (*pbr.UpdateWorkerResponse, error) {
+func (c *schedClient) UpdateWorker(req *pbf.Worker) (*pbf.UpdateWorkerResponse, error) {
 	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
 	resp, err := c.Client.UpdateWorker(ctx, req)
 	cleanup()
 	return resp, err
 }
 
-func (c *schedClient) UpdateJobLogs(up *pbr.UpdateJobLogsRequest) error {
+func (c *schedClient) UpdateJobLogs(up *pbf.UpdateJobLogsRequest) error {
 	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
 	_, err := c.Client.UpdateJobLogs(ctx, up)
 	cleanup()

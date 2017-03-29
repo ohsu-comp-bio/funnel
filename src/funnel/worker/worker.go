@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"funnel/util"
 	"time"
 )
 
-type logUpdateChan chan *pbr.UpdateJobLogsRequest
+type logUpdateChan chan *pbf.UpdateJobLogsRequest
 
 // NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (*Worker, error) {
@@ -27,7 +27,7 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	ctrls := map[string]JobControl{}
 	timeout := util.NewIdleTimeout(conf.Timeout)
 	stop := make(chan struct{})
-	state := pbr.WorkerState_Uninitialized
+	state := pbf.WorkerState_Uninitialized
 	return &Worker{
 		conf, logUpdates, sched, log, res,
 		runJob, ctrls, timeout, stop, state,
@@ -41,19 +41,19 @@ type Worker struct {
 	logUpdates logUpdateChan
 	sched      *schedClient
 	log        logger.Logger
-	resources  *pbr.Resources
+	resources  *pbf.Resources
 	JobRunner  JobRunner
 	Ctrls      map[string]JobControl
 	timeout    util.IdleTimeout
 	stop       chan struct{}
-	state      pbr.WorkerState
+	state      pbf.WorkerState
 }
 
 // Run runs a worker with the given config. This is responsible for communication
 // with the server and starting job runners
 func (w *Worker) Run() {
 	w.log.Info("Starting worker")
-	w.state = pbr.WorkerState_Alive
+	w.state = pbf.WorkerState_Alive
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
 	defer ticker.Stop()
@@ -81,7 +81,7 @@ func (w *Worker) Run() {
 // TODO Sync should probably use a channel to sync data access.
 //      Probably only a problem for test code, where Sync is called directly.
 func (w *Worker) Sync() {
-	r, gerr := w.sched.GetWorker(context.TODO(), &pbr.GetWorkerRequest{Id: w.conf.ID})
+	r, gerr := w.sched.GetWorker(context.TODO(), &pbf.GetWorkerRequest{Id: w.conf.ID})
 
 	if gerr != nil {
 		log.Error("Couldn't get worker state during sync.", gerr)
@@ -117,7 +117,7 @@ func (w *Worker) Sync() {
 // Stop stops the worker
 // TODO need a way to shut the worker down from the server/scheduler.
 func (w *Worker) Stop() {
-	w.state = pbr.WorkerState_Gone
+	w.state = pbf.WorkerState_Gone
 	close(w.stop)
 	w.timeout.Stop()
 	for _, ctrl := range w.Ctrls {
@@ -130,7 +130,7 @@ func (w *Worker) Stop() {
 // Check if the worker is idle. If so, start the timeout timer.
 func (w *Worker) checkIdleTimer() {
 	// The worker is idle if there are no job controllers.
-	idle := len(w.Ctrls) == 0 && w.state == pbr.WorkerState_Alive
+	idle := len(w.Ctrls) == 0 && w.state == pbf.WorkerState_Alive
 	if idle {
 		w.timeout.Start()
 	} else {
@@ -138,7 +138,7 @@ func (w *Worker) checkIdleTimer() {
 	}
 }
 
-func (w *Worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
+func (w *Worker) updateLogs(up *pbf.UpdateJobLogsRequest) {
 	// UpdateJobLogs() is more lightweight than UpdateWorker(),
 	// which is why it happens separately and at a different rate.
 	err := w.sched.UpdateJobLogs(up)
@@ -152,11 +152,11 @@ func (w *Worker) updateLogs(up *pbr.UpdateJobLogsRequest) {
 // reconcile merges the server state with the worker state:
 // - identifies new jobs and starts new runners for them
 // - identifies canceled jobs and cancels existing runners
-// - updates pbr.Job structs with current job state (running, complete, error, etc)
-func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
+// - updates pbf.Job structs with current job state (running, complete, error, etc)
+func (w *Worker) reconcile(jobs map[string]*pbf.JobWrapper) error {
 	var (
-		Unknown  = pbe.State_Unknown
-		Canceled = pbe.State_Canceled
+		Unknown  = tes.State_Unknown
+		Canceled = tes.State_Canceled
 	)
 
 	// Combine job IDs from response with job IDs from ctrls so we can reconcile
@@ -170,8 +170,8 @@ func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 	}
 
 	for jobID := range jobIDs {
-		jobSt := pbe.State_Unknown
-		runSt := pbe.State_Unknown
+		jobSt := tes.State_Unknown
+		runSt := tes.State_Unknown
 
 		ctrl := w.Ctrls[jobID]
 		if ctrl != nil {
@@ -179,7 +179,7 @@ func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 		}
 
 		wrapper := jobs[jobID]
-		var job *pbe.Job
+		var job *tes.Job
 		if wrapper != nil {
 			job = wrapper.Job
 			jobSt = job.GetState()
@@ -250,10 +250,10 @@ func (w *Worker) reconcile(jobs map[string]*pbr.JobWrapper) error {
 	return nil
 }
 
-func isActive(s pbe.State) bool {
-	return s == pbe.State_Queued || s == pbe.State_Initializing || s == pbe.State_Running
+func isActive(s tes.State) bool {
+	return s == tes.State_Queued || s == tes.State_Initializing || s == tes.State_Running
 }
 
-func isComplete(s pbe.State) bool {
-	return s == pbe.State_Complete || s == pbe.State_Error || s == pbe.State_SystemError
+func isComplete(s tes.State) bool {
+	return s == tes.State_Complete || s == tes.State_Error || s == tes.State_SystemError
 }

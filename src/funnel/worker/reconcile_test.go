@@ -2,15 +2,15 @@ package worker
 
 import (
 	"errors"
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 	"testing"
 )
 
 func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 
 	var err error
-	jobs := map[string]*pbr.JobWrapper{}
+	jobs := map[string]*pbf.JobWrapper{}
 	w := Worker{
 		JobRunner: NoopJobRunner,
 		Ctrls:     map[string]JobControl{},
@@ -25,9 +25,9 @@ func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 		t.Error("Unexpected runner created on empty reconcile")
 	}
 
-	j := &pbe.Job{
+	j := &tes.Job{
 		JobID: "job-1",
-		State: pbe.State_Queued,
+		State: tes.State_Queued,
 	}
 	addJob(jobs, j)
 
@@ -39,35 +39,35 @@ func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 
 	ctrl := w.Ctrls["job-1"]
 
-	if j.State != pbe.State_Initializing {
+	if j.State != tes.State_Initializing {
 		t.Error("Expected job just started to be in initializing state.")
 	}
 
 	ctrl.SetRunning()
 	w.reconcile(jobs)
 
-	if j.State != pbe.State_Running {
+	if j.State != tes.State_Running {
 		t.Error("Expected job state to be running")
 	}
 
 	ctrl.SetResult(nil)
 	w.reconcile(jobs)
 
-	if j.State != pbe.State_Complete {
+	if j.State != tes.State_Complete {
 		t.Error("Expected job state to be complete")
 	}
 }
 
 func TestReconcileJobError(t *testing.T) {
 
-	jobs := map[string]*pbr.JobWrapper{}
+	jobs := map[string]*pbf.JobWrapper{}
 	w := Worker{
 		JobRunner: NoopJobRunner,
 		Ctrls:     map[string]JobControl{},
 	}
-	j := &pbe.Job{
+	j := &tes.Job{
 		JobID: "job-1",
-		State: pbe.State_Queued,
+		State: tes.State_Queued,
 	}
 	addJob(jobs, j)
 	w.reconcile(jobs)
@@ -75,23 +75,23 @@ func TestReconcileJobError(t *testing.T) {
 	ctrl.SetResult(errors.New("Test job error"))
 	w.reconcile(jobs)
 
-	if j.State != pbe.State_Error {
+	if j.State != tes.State_Error {
 		t.Error("Expected job state to be Error")
 	}
 }
 
 func TestReconcileCancelJob(t *testing.T) {
 	// Set up worker with no-op runner
-	jobs := map[string]*pbr.JobWrapper{}
+	jobs := map[string]*pbf.JobWrapper{}
 	w := Worker{
 		JobRunner: NoopJobRunner,
 		Ctrls:     map[string]JobControl{},
 	}
 
 	// Add a job
-	j := &pbe.Job{
+	j := &tes.Job{
 		JobID: "job-1",
-		State: pbe.State_Queued,
+		State: tes.State_Queued,
 	}
 	addJob(jobs, j)
 
@@ -99,13 +99,13 @@ func TestReconcileCancelJob(t *testing.T) {
 	w.reconcile(jobs)
 
 	// Cancel job
-	j.State = pbe.State_Canceled
+	j.State = tes.State_Canceled
 	ctrl := w.Ctrls["job-1"]
 
 	// Reconcile again. Worker should react to job being canceled.
 	w.reconcile(jobs)
 
-	if ctrl.State() != pbe.State_Canceled {
+	if ctrl.State() != tes.State_Canceled {
 		t.Error("Expected runner state to be canceled")
 	}
 
@@ -122,7 +122,7 @@ func TestReconcileCancelJob(t *testing.T) {
 
 func TestReconcileMultiple(t *testing.T) {
 
-	jobs := map[string]*pbr.JobWrapper{}
+	jobs := map[string]*pbf.JobWrapper{}
 	w := Worker{
 		JobRunner: NoopJobRunner,
 		Ctrls:     map[string]JobControl{},
@@ -130,9 +130,9 @@ func TestReconcileMultiple(t *testing.T) {
 
 	w.reconcile(jobs)
 
-	addJob(jobs, &pbe.Job{
+	addJob(jobs, &tes.Job{
 		JobID: "job-1",
-		State: pbe.State_Queued,
+		State: tes.State_Queued,
 	})
 
 	w.reconcile(jobs)
@@ -141,24 +141,24 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected runner to be created for new job")
 	}
 
-	if jobs["job-1"].Job.State != pbe.State_Initializing {
+	if jobs["job-1"].Job.State != tes.State_Initializing {
 		t.Error("Expected job just started to be in initializing state.")
 	}
 
 	w.Ctrls["job-1"].SetRunning()
 	w.reconcile(jobs)
 
-	if jobs["job-1"].Job.State != pbe.State_Running {
+	if jobs["job-1"].Job.State != tes.State_Running {
 		t.Error("Expected job state to be running")
 	}
 
-	addJob(jobs, &pbe.Job{
+	addJob(jobs, &tes.Job{
 		JobID: "job-2",
-		State: pbe.State_Queued,
+		State: tes.State_Queued,
 	})
-	addJob(jobs, &pbe.Job{
+	addJob(jobs, &tes.Job{
 		JobID: "job-3",
-		State: pbe.State_Queued,
+		State: tes.State_Queued,
 	})
 
 	w.reconcile(jobs)
@@ -167,29 +167,29 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected runner to be created for new job")
 	}
 
-	if jobs["job-2"].Job.State != pbe.State_Initializing {
+	if jobs["job-2"].Job.State != tes.State_Initializing {
 		t.Error("Expected job 2 state to be init")
 	}
 
-	if jobs["job-3"].Job.State != pbe.State_Initializing {
+	if jobs["job-3"].Job.State != tes.State_Initializing {
 		t.Error("Expected job 3 state to be init")
 	}
 
 	// Set job-1 to complete
 	w.Ctrls["job-1"].SetResult(nil)
 	// Cancel job-2
-	jobs["job-2"].Job.State = pbe.State_Canceled
+	jobs["job-2"].Job.State = tes.State_Canceled
 	// Set job-3 to error
 	w.Ctrls["job-3"].SetResult(errors.New("Job 3 error"))
 
 	j2ctrl := w.Ctrls["job-2"]
 	w.reconcile(jobs)
 
-	if jobs["job-1"].Job.State != pbe.State_Complete {
+	if jobs["job-1"].Job.State != tes.State_Complete {
 		t.Error("Expected job 1 state to be complete")
 	}
 
-	if j2ctrl.State() != pbe.State_Canceled {
+	if j2ctrl.State() != tes.State_Canceled {
 		t.Error("Expected job 2 controller to be canceled state")
 	}
 
@@ -203,7 +203,7 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected job 2 ctrl to be cleaned up")
 	}
 
-	if jobs["job-3"].Job.State != pbe.State_Error {
+	if jobs["job-3"].Job.State != tes.State_Error {
 		t.Error("Expected job 3 state to be error")
 	}
 }
@@ -211,19 +211,19 @@ func TestReconcileMultiple(t *testing.T) {
 // Tests how the worker handles the case where it finds a job without a controller
 // and the job state is not Queued (normal case), but is Initializing or Running
 func TestStraightToRunning(t *testing.T) {
-	jobs := map[string]*pbr.JobWrapper{}
+	jobs := map[string]*pbf.JobWrapper{}
 	w := Worker{
 		JobRunner: NoopJobRunner,
 		Ctrls:     map[string]JobControl{},
 	}
 
-	addJob(jobs, &pbe.Job{
+	addJob(jobs, &tes.Job{
 		JobID: "job-1",
-		State: pbe.State_Initializing,
+		State: tes.State_Initializing,
 	})
-	addJob(jobs, &pbe.Job{
+	addJob(jobs, &tes.Job{
 		JobID: "job-2",
-		State: pbe.State_Running,
+		State: tes.State_Running,
 	})
 
 	w.reconcile(jobs)
@@ -235,11 +235,11 @@ func TestStraightToRunning(t *testing.T) {
 		t.Error("Expected runner to be created for new job 2")
 	}
 
-	if jobs["job-1"].Job.State != pbe.State_Initializing {
+	if jobs["job-1"].Job.State != tes.State_Initializing {
 		t.Error("Expected job 1 state to be unchanged.")
 	}
 
-	if jobs["job-2"].Job.State != pbe.State_Initializing {
+	if jobs["job-2"].Job.State != tes.State_Initializing {
 		t.Error("Expected job 2 state to revert to initializing.")
 	}
 }

@@ -3,9 +3,9 @@ package worker
 import (
 	"fmt"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"funnel/storage"
 	"funnel/util"
 	"os"
@@ -15,7 +15,7 @@ import (
 
 // JobRunner is a function that does the work of running a job on a worker,
 // including download inputs, executing commands, uploading outputs, etc.
-type JobRunner func(JobControl, config.Worker, *pbr.JobWrapper, logUpdateChan)
+type JobRunner func(JobControl, config.Worker, *pbf.JobWrapper, logUpdateChan)
 
 // Default JobRunner
 func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) {
@@ -37,7 +37,7 @@ func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdate
 // jobRunner helps collect data used across many helper methods.
 type jobRunner struct {
 	ctrl    JobControl
-	wrapper *pbr.JobWrapper
+	wrapper *pbf.JobWrapper
 	conf    config.Worker
 	updates logUpdateChan
 	log     logger.Logger
@@ -175,7 +175,7 @@ func (r *jobRunner) fixLinks(basepath string) {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *jobRunner) openStepLogs(s *stepRunner, d *pbe.DockerExecutor) error {
+func (r *jobRunner) openStepLogs(s *stepRunner, d *tes.DockerExecutor) error {
 
 	// Find the path for job stdin
 	var err error

@@ -2,7 +2,7 @@ package worker
 
 import (
 	"funnel/config"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
 	"net"
@@ -70,8 +70,8 @@ func getExitCode(err error) int32 {
 // detectResources helps determine the amount of resources to report.
 // Resources are determined by inspecting the host, but they
 // can be overridden by config.
-func detectResources(conf *pbr.Resources) *pbr.Resources {
-	res := &pbr.Resources{
+func detectResources(conf *pbf.Resources) *pbf.Resources {
+	res := &pbf.Resources{
 		Cpus: conf.GetCpus(),
 		Ram:  conf.GetRam(),
 		Disk: conf.GetDisk(),
@@ -98,5 +98,5 @@ func detectResources(conf *pbr.Resources) *pbr.Resources {
 
 // NoopJobRunner is useful during testing for creating a worker with a JobRunner
 // that doesn't do anything.
-func NoopJobRunner(l JobControl, c config.Worker, j *pbr.JobWrapper, u logUpdateChan) {
+func NoopJobRunner(l JobControl, c config.Worker, j *pbf.JobWrapper, u logUpdateChan) {
 }

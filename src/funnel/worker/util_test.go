@@ -1,10 +1,10 @@
 package worker
 
 import (
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 )
 
-func addJob(jobs map[string]*pbr.JobWrapper, j *pbe.Job) {
-	jobs[j.JobID] = &pbr.JobWrapper{Job: j}
+func addJob(jobs map[string]*pbf.JobWrapper, j *tes.Job) {
+	jobs[j.JobID] = &pbf.JobWrapper{Job: j}
 }

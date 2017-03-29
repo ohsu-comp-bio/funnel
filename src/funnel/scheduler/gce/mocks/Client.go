@@ -1,7 +1,7 @@
 package mocks
 
 import config "funnel/config"
-import ga4gh_task_ref "funnel/server/proto"
+import pbf "funnel/proto/funnel"
 
 import mock "github.com/stretchr/testify/mock"
 
@@ -23,6 +23,7 @@ func (_m *Client) StartWorker(tplName string, conf config.Worker) error {
 
 	return r0
 }
+
 
 // Templates provides a mock function with given fields:
 func (_m *Client) Templates() []ga4gh_task_ref.Worker {

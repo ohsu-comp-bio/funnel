@@ -7,7 +7,7 @@ import (
 	"funnel/config"
 	"funnel/logger"
 	server_mocks "funnel/server/mocks"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"testing"
 	"time"
 )
@@ -24,16 +24,16 @@ func TestWorkerDead(t *testing.T) {
 	srv := server_mocks.MockServerFromConfig(conf)
 	defer srv.Close()
 
-	srv.AddWorker(&pbr.Worker{
+	srv.AddWorker(&pbf.Worker{
 		Id:    "test-worker",
-		State: pbr.WorkerState_Alive,
+		State: pbf.WorkerState_Alive,
 	})
 
 	time.Sleep(conf.WorkerPingTimeout * 2)
 	srv.DB.CheckWorkers()
 
 	workers := srv.GetWorkers()
-	if workers[0].State != pbr.WorkerState_Dead {
+	if workers[0].State != pbf.WorkerState_Dead {
 		t.Error("Expected worker to be dead")
 	}
 }
@@ -46,16 +46,16 @@ func TestWorkerInitFail(t *testing.T) {
 	srv := server_mocks.MockServerFromConfig(conf)
 	defer srv.Close()
 
-	srv.AddWorker(&pbr.Worker{
+	srv.AddWorker(&pbf.Worker{
 		Id:    "test-worker",
-		State: pbr.WorkerState_Initializing,
+		State: pbf.WorkerState_Initializing,
 	})
 
 	time.Sleep(conf.WorkerInitTimeout * 2)
 	srv.DB.CheckWorkers()
 	workers := srv.GetWorkers()
 
-	if workers[0].State != pbr.WorkerState_Dead {
+	if workers[0].State != pbf.WorkerState_Dead {
 		t.Error("Expected worker to be dead")
 	}
 }

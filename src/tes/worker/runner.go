@@ -2,6 +2,8 @@ package worker
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
 	"tes/config"
 	pbe "tes/ga4gh"
@@ -17,10 +19,13 @@ type JobRunner func(JobControl, config.Worker, *pbr.JobWrapper, logUpdateChan)
 
 // Default JobRunner
 func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) {
+	// Map files into this baseDir
+	baseDir := path.Join(conf.WorkDir, j.Job.JobID)
+
 	r := &jobRunner{
 		ctrl:    ctrl,
 		wrapper: j,
-		mapper:  NewJobFileMapper(j.Job.JobID, conf.WorkDir),
+		mapper:  NewFileMapper(baseDir),
 		store:   &storage.Storage{},
 		conf:    conf,
 		updates: up,
@@ -114,11 +119,59 @@ func (r *jobRunner) Run() {
 	// Upload outputs
 	for _, output := range r.mapper.Outputs {
 		r.step("store.Put", func() error {
+			r.fixLinks(output.Path)
 			return r.store.Put(r.ctrl.Context(), output.Location, output.Path, output.Class)
 		})
 	}
 
 	r.ctrl.SetResult(nil)
+}
+
+// fixLinks walks the output paths, fixing cases where a symlink is
+// broken because it's pointing to a path inside a container volume.
+func (r *jobRunner) fixLinks(basepath string) {
+	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
+		if err != nil {
+			// There's an error, so be safe and give up on this file
+			return nil
+		}
+
+		// Only bother to check symlinks
+		if f.Mode()&os.ModeSymlink != 0 {
+			// Test if the file can be opened because it doesn't exist
+			fh, rerr := os.Open(p)
+			fh.Close()
+
+			if rerr != nil && os.IsNotExist(rerr) {
+
+				// Get symlink source path
+				src, err := os.Readlink(p)
+				if err != nil {
+					return nil
+				}
+
+				// Map symlink source (possible container path) to host path
+				mapped, err := r.mapper.HostPath(src)
+				if err != nil {
+					return nil
+				}
+
+				// Check whether the mapped path exists
+				fh, err := os.Open(mapped)
+				fh.Close()
+
+				// If the mapped path exists, fix the symlink
+				if err == nil {
+					err := os.Remove(p)
+					if err != nil {
+						return nil
+					}
+					os.Symlink(mapped, p)
+				}
+			}
+		}
+		return nil
+	})
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.

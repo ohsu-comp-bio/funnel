@@ -2,8 +2,8 @@ package scheduler
 
 import (
 	"funnel/config"
-	tes "funnel/proto/tes"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 )
 
 // DefaultScheduleAlgorithm implements a simple scheduling algorithm

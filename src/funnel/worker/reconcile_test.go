@@ -2,8 +2,8 @@ package worker
 
 import (
 	"errors"
-	tes "funnel/proto/tes"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"testing"
 )
 

@@ -2,11 +2,11 @@ package local
 
 import (
 	"funnel/config"
-	tes "funnel/proto/tes"
 	"funnel/logger"
+	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	sched "funnel/scheduler"
 	sched_mocks "funnel/scheduler/mocks"
-	pbf "funnel/proto/funnel"
 	. "github.com/stretchr/testify/mock"
 	"testing"
 )

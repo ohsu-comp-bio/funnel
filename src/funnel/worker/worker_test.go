@@ -3,8 +3,8 @@ package worker
 import (
 	"errors"
 	"funnel/config"
-	tes "funnel/proto/tes"
 	"funnel/logger"
+	"funnel/proto/tes"
 	sched_mocks "funnel/scheduler/mocks"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"

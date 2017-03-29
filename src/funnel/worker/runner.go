@@ -3,9 +3,9 @@ package worker
 import (
 	"fmt"
 	"funnel/config"
-	tes "funnel/proto/tes"
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"funnel/storage"
 	"funnel/util"
 	"os"

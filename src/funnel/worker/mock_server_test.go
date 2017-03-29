@@ -2,11 +2,11 @@ package worker
 
 import (
 	"funnel/config"
-	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"funnel/scheduler"
 	"funnel/server"
 	server_mocks "funnel/server/mocks"
-	pbf "funnel/proto/funnel"
 )
 
 // mockScheduler is a mock scheduler that assigns every job to a single worker.

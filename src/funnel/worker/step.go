@@ -3,9 +3,9 @@ package worker
 import (
 	"context"
 	"funnel/config"
-	tes "funnel/proto/tes"
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"io"
 	"time"
 )

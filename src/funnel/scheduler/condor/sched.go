@@ -3,10 +3,10 @@ package condor
 import (
 	"fmt"
 	"funnel/config"
-	tes "funnel/proto/tes"
 	"funnel/logger"
-	sched "funnel/scheduler"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
+	sched "funnel/scheduler"
 	"os"
 	"os/exec"
 	"path"

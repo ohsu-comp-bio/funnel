@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	tes "funnel/proto/tes"
+	"funnel/proto/tes"
 	"sync"
 )
 

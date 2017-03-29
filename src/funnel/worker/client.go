@@ -3,8 +3,8 @@ package worker
 import (
 	"context"
 	"funnel/config"
-	"funnel/scheduler"
 	pbf "funnel/proto/funnel"
+	"funnel/scheduler"
 )
 
 // Defines some helpers for RPC calls in the code above

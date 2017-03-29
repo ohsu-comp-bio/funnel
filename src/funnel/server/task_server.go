@@ -1,8 +1,8 @@
 package server
 
 import (
-	"funnel/proto/tes"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"google.golang.org/grpc"
 	"net"
 )

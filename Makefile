@@ -8,10 +8,10 @@ export PYTHONPATH
 PROTO_INC=-I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
 
-server: depends
+install: depends
 	go install funnel
 
-proto_build:
+proto:
 	@go get ./src/vendor/github.com/golang/protobuf/protoc-gen-go/
 	@go get ./src/vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/
 	@cd src/funnel/proto/tes && protoc \
@@ -70,3 +70,6 @@ web:
 gce-bundle:
 	GOOS=linux GOARCH=amd64 make
 	tar --exclude share/node_modules -czvf bin/gce-bundle.tar.gz bin/* gce/* share/*
+
+.PHONY: proto web
+

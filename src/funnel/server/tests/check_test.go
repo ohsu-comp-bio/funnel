@@ -6,8 +6,8 @@ package tests
 import (
 	"funnel/config"
 	"funnel/logger"
-	server_mocks "funnel/server/mocks"
 	pbf "funnel/proto/funnel"
+	server_mocks "funnel/server/mocks"
 	"testing"
 	"time"
 )

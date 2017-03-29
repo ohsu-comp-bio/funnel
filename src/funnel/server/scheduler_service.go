@@ -6,8 +6,8 @@ package server
 import (
 	"errors"
 	"fmt"
-	tes "funnel/proto/tes"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"

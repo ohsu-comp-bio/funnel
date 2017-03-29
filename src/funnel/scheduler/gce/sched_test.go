@@ -3,10 +3,10 @@ package gce
 import (
 	"funnel/config"
 	"funnel/logger"
+	pbf "funnel/proto/funnel"
 	"funnel/scheduler"
 	gce_mocks "funnel/scheduler/gce/mocks"
 	server_mocks "funnel/server/mocks"
-	pbf "funnel/proto/funnel"
 	"funnel/worker"
 	"github.com/stretchr/testify/mock"
 	"testing"

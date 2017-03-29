@@ -2,7 +2,7 @@ package worker
 
 import (
 	"fmt"
-	tes "funnel/proto/tes"
+	"funnel/proto/tes"
 	"funnel/util"
 	proto "github.com/golang/protobuf/proto"
 	"os"

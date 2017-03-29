@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
-	tes "funnel/proto/tes"
-	server "funnel/server"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
+	server "funnel/server"
 	uuid "github.com/nu7hatch/gouuid"
 	"time"
 )

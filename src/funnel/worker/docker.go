@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	tes "funnel/proto/tes"
+	"funnel/proto/tes"
 	"github.com/docker/docker/client"
 	"io"
 	"os"

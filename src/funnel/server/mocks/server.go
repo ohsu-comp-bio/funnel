@@ -3,10 +3,10 @@ package mocks
 import (
 	"fmt"
 	"funnel/config"
-	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"funnel/scheduler"
 	"funnel/server"
-	pbf "funnel/proto/funnel"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"io/ioutil"

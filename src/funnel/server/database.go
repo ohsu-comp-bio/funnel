@@ -1,8 +1,8 @@
 package server
 
 import (
-	tes "funnel/proto/tes"
 	pbf "funnel/proto/funnel"
+	"funnel/proto/tes"
 	"golang.org/x/net/context"
 )
 

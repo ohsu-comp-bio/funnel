@@ -8,7 +8,7 @@ export PYTHONPATH
 PROTO_INC=-I ./ -I $(shell pwd)/build/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
 
-server: depends
+funnel: depends
 	go install funnel
 
 depends:
@@ -71,3 +71,5 @@ web:
 	./node_modules/.bin/browserify app.js -o bundle.js && \
 	./node_modules/node-sass/bin/node-sass style.scss style.css && \
 	cd ..
+
+.PHONY: web proto

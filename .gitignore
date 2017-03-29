@@ -1,13 +1,11 @@
 *.pyc
 .idea
-/bin
-/pkg
+/build/src
+/build/pkg
+/build/bin
+/build/tools
 /test_tmp
-ga4gh_tasks.db
-/src/github.com/
-/src/golang.org/
-/src/google.golang.org/
-/buildtools/
+*.db
 /storage/
 /volumes/
 /tes-work-dir/
@@ -18,5 +16,5 @@ bower_components
 .sass-cache/
 style.css
 style.css.map
-/web/bundle.js
-/share/bundle.js
+bundle.js
+

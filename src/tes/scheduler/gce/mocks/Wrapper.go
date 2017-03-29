@@ -9,29 +9,6 @@ type Wrapper struct {
 	mock.Mock
 }
 
-// GetInstanceTemplate provides a mock function with given fields: project, id
-func (_m *Wrapper) GetInstanceTemplate(project string, id string) (*compute.InstanceTemplate, error) {
-	ret := _m.Called(project, id)
-
-	var r0 *compute.InstanceTemplate
-	if rf, ok := ret.Get(0).(func(string, string) *compute.InstanceTemplate); ok {
-		r0 = rf(project, id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*compute.InstanceTemplate)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(project, id)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // InsertInstance provides a mock function with given fields: project, zone, instance
 func (_m *Wrapper) InsertInstance(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
 	ret := _m.Called(project, zone, instance)
@@ -48,6 +25,29 @@ func (_m *Wrapper) InsertInstance(project string, zone string, instance *compute
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, *compute.Instance) error); ok {
 		r1 = rf(project, zone, instance)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListInstanceTemplates provides a mock function with given fields: project
+func (_m *Wrapper) ListInstanceTemplates(project string) (*compute.InstanceTemplateList, error) {
+	ret := _m.Called(project)
+
+	var r0 *compute.InstanceTemplateList
+	if rf, ok := ret.Get(0).(func(string) *compute.InstanceTemplateList); ok {
+		r0 = rf(project)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*compute.InstanceTemplateList)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(project)
 	} else {
 		r1 = ret.Error(1)
 	}

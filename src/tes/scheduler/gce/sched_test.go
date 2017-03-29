@@ -53,13 +53,12 @@ func TestSchedToExisting(t *testing.T) {
 	conf := basicConf()
 	// Mock the GCE API so actual API calls aren't needed
 	gce := new(gce_mocks.Client)
+	gce.SetupEmptyMockTemplates()
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	// Represents a worker that is alive but at full capacity
 	existing := testWorker("existing", pbr.WorkerState_Alive)
-	existing.Resources.Cpus = 0.0
 	srv.AddWorker(existing)
 	srv.RunHelloWorld()
 
@@ -96,12 +95,9 @@ func TestSchedStartWorker(t *testing.T) {
 	// Mock config
 	conf := basicConf()
 
-	// Add an instance template to the config. The scheduler uses these templates
-	// to start new worker instances.
-	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
-
 	// Mock the GCE API so actual API calls aren't needed
 	gce := new(gce_mocks.Client)
+	gce.SetupDefaultMockTemplates()
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.MockServerFromConfig(conf)
 	defer srv.Close()
@@ -115,13 +111,6 @@ func TestSchedStartWorker(t *testing.T) {
 
 	// The GCE scheduler under test
 	s := &gceScheduler{conf, srv.Client, gce}
-
-	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
-		Cpus: 10.0,
-		Ram:  100.0,
-		Disk: 1000.0,
-	}, nil)
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
@@ -139,7 +128,7 @@ func TestSchedStartWorker(t *testing.T) {
 	// Expect ServerAddress to match the server's config
 	wconf.ServerAddress = conf.HostName + ":" + conf.RPCPort
 	wconf.ID = expected.Id
-	gce.On("StartWorker", "test-proj", "test-zone", "test-tpl", wconf).Return(nil)
+	gce.On("StartWorker", "test-tpl", wconf).Return(nil)
 
 	scheduler.Scale(srv.DB, s)
 	gce.AssertExpectations(t)
@@ -152,17 +141,14 @@ func TestPreferExistingWorker(t *testing.T) {
 
 	// Mock config
 	conf := basicConf()
-	// Add an instance template to the config. The scheduler uses these templates
-	// to start new worker instances.
-	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
 
 	// Mock the GCE API so actual API calls aren't needed
 	gce := new(gce_mocks.Client)
+	gce.SetupDefaultMockTemplates()
 	// Mock the server/database so we can easily control available workers
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	// Represents a worker that is alive but at full capacity
 	existing := testWorker("existing", pbr.WorkerState_Alive)
 	existing.Resources.Cpus = 10.0
 	srv.AddWorker(existing)
@@ -171,13 +157,6 @@ func TestPreferExistingWorker(t *testing.T) {
 
 	// The GCE scheduler under test
 	s := &gceScheduler{conf, srv.Client, gce}
-
-	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
-		Cpus: 10.0,
-		Ram:  100.0,
-		Disk: 1000.0,
-	}, nil)
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
@@ -204,9 +183,6 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 
 	// Mock config
 	conf := basicConf()
-	// Add an instance template to the config. The scheduler uses these templates
-	// to start new worker instances.
-	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
 
 	// Mock the GCE API so actual API calls aren't needed
 	gce := new(gce_mocks.Client)
@@ -223,11 +199,11 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
+	gce.SetupMockTemplates(pbr.Resources{
 		Cpus: 1.0,
 		Ram:  1.0,
 		Disk: 1000.0,
-	}, nil)
+	})
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
@@ -249,7 +225,9 @@ func TestUpdateAvailableResources(t *testing.T) {
 	srv.AddWorker(existing)
 	ta := srv.HelloWorldTask()
 	srv.RunTask(ta)
-	s := &gceScheduler{conf, srv.Client, new(gce_mocks.Client)}
+	gce := new(gce_mocks.Client)
+	gce.SetupEmptyMockTemplates()
+	s := &gceScheduler{conf, srv.Client, gce}
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
@@ -291,7 +269,9 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	srv.RunTask(tb)
 	srv.RunTask(tc)
 
-	s := &gceScheduler{conf, srv.Client, new(gce_mocks.Client)}
+	gce := new(gce_mocks.Client)
+	gce.SetupEmptyMockTemplates()
+	s := &gceScheduler{conf, srv.Client, gce}
 
 	scheduler.ScheduleChunk(srv.DB, s, conf)
 	workers := srv.GetWorkers()
@@ -315,19 +295,12 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 
 	conf := basicConf()
 	gce := new(gce_mocks.Client)
-	conf.Schedulers.GCE.Templates = append(conf.Schedulers.GCE.Templates, "test-tpl")
+	gce.SetupDefaultMockTemplates()
 	srv := server_mocks.MockServerFromConfig(conf)
 	defer srv.Close()
 	s := &gceScheduler{srv.Conf, srv.Client, gce}
 
 	var w *worker.Worker
-
-	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
-		Cpus: 10.0,
-		Ram:  100.0,
-		Disk: 1000.0,
-	}, nil)
 
 	// This test stems from a bug found during testing GCE worker init.
 	// Mock out a started worker to match the scenario the bug was found.
@@ -337,9 +310,9 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 	// but once the worker sent an update, the resource information was incorrectly
 	// reported and merged. This test tries to replicate that scenario closely.
 	gce.
-		On("StartWorker", "test-proj", "test-zone", "test-tpl", mock.Anything).
+		On("StartWorker", "test-tpl", mock.Anything).
 		Run(func(args mock.Arguments) {
-			wconf := args[3].(config.Worker)
+			wconf := args[1].(config.Worker)
 			w = newMockWorker(wconf)
 		}).
 		Return(nil)

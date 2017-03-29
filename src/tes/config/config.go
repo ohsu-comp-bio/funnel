@@ -74,8 +74,8 @@ type GCEScheduler struct {
 	AccountFile string
 	Project     string
 	Zone        string
-	Templates   []string
 	Weights     Weights
+	CacheTTL    time.Duration
 }
 
 // Schedulers describes configuration for all schedulers.
@@ -128,6 +128,7 @@ func DefaultConfig() Config {
 				Weights: Weights{
 					"startup time": 1.0,
 				},
+				CacheTTL: time.Minute,
 			},
 		},
 		MaxJobLogSize:     10000,

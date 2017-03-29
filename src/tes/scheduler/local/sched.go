@@ -14,7 +14,7 @@ var log = logger.New("local")
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(conf config.Config) (sched.Scheduler, error) {
-	id := sched.GenWorkerID()
+	id := sched.GenWorkerID("local")
 	err := startWorker(id, conf)
 	if err != nil {
 		return nil, err

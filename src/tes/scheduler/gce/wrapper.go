@@ -16,7 +16,7 @@ import (
 type Wrapper interface {
 	InsertInstance(project, zone string, instance *compute.Instance) (*compute.Operation, error)
 	ListMachineTypes(project, zone string) (*compute.MachineTypeList, error)
-	GetInstanceTemplate(project, id string) (*compute.InstanceTemplate, error)
+	ListInstanceTemplates(project string) (*compute.InstanceTemplateList, error)
 }
 
 func newWrapper(ctx context.Context, conf config.Config) (Wrapper, error) {
@@ -61,6 +61,6 @@ func (w *wrapper) ListMachineTypes(project, zone string) (*compute.MachineTypeLi
 	return w.svc.MachineTypes.List(project, zone).Do()
 }
 
-func (w *wrapper) GetInstanceTemplate(project, id string) (*compute.InstanceTemplate, error) {
-	return w.svc.InstanceTemplates.Get(project, id).Do()
+func (w *wrapper) ListInstanceTemplates(project string) (*compute.InstanceTemplateList, error) {
+	return w.svc.InstanceTemplates.List(project).Do()
 }

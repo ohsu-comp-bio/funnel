@@ -11,7 +11,7 @@ GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gatew
 install: depends
 	go install funnel
 
-proto:
+proto: depends
 	@go get ./src/vendor/github.com/golang/protobuf/protoc-gen-go/
 	@go get ./src/vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/
 	@cd src/funnel/proto/tes && protoc \
@@ -34,7 +34,7 @@ depends:
 serve-doc:
 	godoc --http=:6060
 
-add_deps:
+add_deps: 
 	go get github.com/dpw/vendetta
 	./buildtools/bin/vendetta src/
 

@@ -5,7 +5,7 @@ export PATH
 PYTHONPATH := ${PYTHONPATH}:$(shell pwd)/python
 export PYTHONPATH
 
-PROTO_INC=-I ./ -I $(shell pwd)/funnel/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+PROTO_INC=-I ./ -I $(shell pwd)/build/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
 
 server: depends
@@ -14,8 +14,11 @@ server: depends
 depends:
 	mkdir -p build/src build/bin build/pkg build/tools
 	git submodule update --init --recursive
-	ln -s $(shell pwd)/funnel/ $(shell pwd)/build/src/funnel
+	cp -r $(shell pwd)/funnel $(shell pwd)/build/src/funnel
 	go get -d funnel
+
+clean:
+	rm -rf build/src/funnel build/bin build/pkg build/tools
 
 proto:
 	@go get github.com/golang/protobuf/protoc-gen-go/
@@ -36,17 +39,17 @@ proto:
 serve-doc:
 	godoc --http=:6060
 
-add_deps:
+add_deps: depends
 	go get github.com/dpw/vendetta
-	./build/tools/bin/vendetta ./funnel
+	./build/tools/bin/vendetta ./build/src
 
-prune_deps:
+prune_deps: depends
 	go get github.com/dpw/vendetta
-	./build/tools/bin/vendetta -p ./funnel
+	./build/tools/bin/vendetta -p ./build/src
 
 tidy:
 	pip install -q autopep8
-	@find ./funnel -type f | grep -v "funnel/vendor" | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
+	@find ./funnel -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
 	@find ./* -type f | grep -E '.*\.py$$' | grep -v "/venv/" | grep -v "/web/node" | xargs autopep8 --in-place --aggressive --aggressive
 
 lint:

@@ -1,6 +1,6 @@
 *.pyc
 .idea
-/build/src
+/build/src/funnel
 /build/pkg
 /build/bin
 /build/tools

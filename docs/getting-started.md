@@ -34,9 +34,9 @@ See the [configuration docs](./configuration.md) for full detail on configuratio
 
 This is the simplest setup. This runs both the server and workers locally. The server will handle starting worker processes, and the local filesystem will be used for storage.
 
-Run `tes-server`
+Run `funnel server`
 
-Try out a "Hello, world!" task with `python examples/hello-world.py`
+Try out a "Hello, world!" task with `python python/py_tes.py examples/hello-world.json`
 
 Check out the web dashboard at `http://localhost:8000`
 
@@ -45,9 +45,9 @@ Check out the web dashboard at `http://localhost:8000`
 
 In this mode, the Funnel server runs on one machine, and you manually start worker processes on other machines.
 
-To start the server, run `tes-server`
+To start the server, run `funnel server`
 
-To start the worker, run `tes-worker --server-address <address-of-server>:9090`
+To start the worker, run `funnel worker --server-address <address-of-server>:9090`
 
 The Funnel RPC API runs on port 9090, which is configurable.
 
@@ -58,13 +58,13 @@ In this mode, the Funnel server will automatically start worker processes on oth
 ***Work in progress***
 
 
-## Python examples
+## Example task messages
 
-There are example python scripts in the [examples directory](../examples). 
+There are example task messages in the [examples directory](../examples). 
 
-For example, to submit 10 tasks which each sleep for 5 seconds, run:
+For example, to submit 10 tasks which each sleep for 30 seconds, run:
 ```
-python examples/submit-sleep-tasks.py --count 10 --sleep 5
+python python/py_tes.py examples/4-cpu-sleep.json --repeat 10
 ```
 
 

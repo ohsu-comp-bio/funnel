@@ -69,15 +69,18 @@ class SimpleServerTest(unittest.TestCase):
         f, db_path = tempfile.mkstemp(dir="./test_tmp", prefix="tes_task_db.")
         os.close(f)
         self.storage_dir = os.path.abspath(db_path + ".storage")
+        self.funnel_work_dir = os.path.abspath(db_path + ".work-dir")
         os.mkdir(self.storage_dir)
+        os.mkdir(self.funnel_work_dir)
 
         # Build server config file (YAML)
         rate = config_seconds(0.05)
         configFile = temp_config({
             "HostName": "localhost",
+            "HTTPPort": "8000",
             "RPCPort": "9090",
             "DBPath": db_path,
-            "WorkDir": "test_tmp",
+            "WorkDir": self.funnel_work_dir,
             "Storage": [{
                 "Local": {
                     "AllowedDirs": [self.storage_dir]
@@ -90,13 +93,13 @@ class SimpleServerTest(unittest.TestCase):
                 "LogUpdateRate": rate,
                 "NewJobPollRate": rate,
                 "UpdateRate": rate,
-                "TrackerRate": rate,
+                "TrackerRate": rate
             },
             "ScheduleRate": rate,
         })
 
         # Start server
-        cmd = ["./bin/tes-server", "-config", configFile.name]
+        cmd = ["./bin/funnel", "server", "--config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
         signal.signal(signal.SIGINT, self.cleanup)
@@ -176,8 +179,10 @@ class S3ServerTest(unittest.TestCase):
         os.close(f)
         self.storage_dir = db_path + ".storage"
         self.output_dir = db_path + ".output"
+        self.funnel_work_dir = os.path.abspath(db_path + ".work-dir")
         os.mkdir(self.storage_dir)
         os.mkdir(self.output_dir)
+        os.mkdir(self.funnel_work_dir)
 
         self.dir_name = os.path.basename(db_path)
 
@@ -198,9 +203,11 @@ class S3ServerTest(unittest.TestCase):
 
         # Build server config file (YAML)
         configFile = temp_config({
-            "ServerAddress": "localhost:9090",
+            "HostName": "localhost",
+            "HTTPPort": "8000",
+            "RPCPort": "9090",
             "DBPath": db_path,
-            "WorkDir": "test_tmp",
+            "WorkDir": self.funnel_work_dir,
             "Storage": [{
                 "S3": {
                     "Endpoint": S3_ENDPOINT,
@@ -211,7 +218,7 @@ class S3ServerTest(unittest.TestCase):
         })
 
         # Start server
-        cmd = ["./bin/tes-server", "-config", configFile.name]
+        cmd = ["./bin/funnel", "server", "--config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
         time.sleep(5)

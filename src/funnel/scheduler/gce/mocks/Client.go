@@ -1,7 +1,7 @@
 package mocks
 
 import config "funnel/config"
-import ga4gh_task_ref "funnel/server/proto"
+import pbf "funnel/proto/funnel"
 
 import mock "github.com/stretchr/testify/mock"
 
@@ -25,15 +25,15 @@ func (_m *Client) StartWorker(project string, zone string, id string, conf confi
 }
 
 // Template provides a mock function with given fields: project, zone, id
-func (_m *Client) Template(project string, zone string, id string) (*ga4gh_task_ref.Resources, error) {
+func (_m *Client) Template(project string, zone string, id string) (*pbf.Resources, error) {
 	ret := _m.Called(project, zone, id)
 
-	var r0 *ga4gh_task_ref.Resources
-	if rf, ok := ret.Get(0).(func(string, string, string) *ga4gh_task_ref.Resources); ok {
+	var r0 *pbf.Resources
+	if rf, ok := ret.Get(0).(func(string, string, string) *pbf.Resources); ok {
 		r0 = rf(project, zone, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ga4gh_task_ref.Resources)
+			r0 = ret.Get(0).(*pbf.Resources)
 		}
 	}
 

@@ -6,7 +6,7 @@ import (
 	"funnel/scheduler"
 	gce_mocks "funnel/scheduler/gce/mocks"
 	server_mocks "funnel/server/mocks"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"funnel/worker"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -23,15 +23,15 @@ func basicConf() config.Config {
 	return conf
 }
 
-func testWorker(id string, s pbr.WorkerState) *pbr.Worker {
-	return &pbr.Worker{
+func testWorker(id string, s pbf.WorkerState) *pbf.Worker {
+	return &pbf.Worker{
 		Id: id,
-		Resources: &pbr.Resources{
+		Resources: &pbf.Resources{
 			Cpus: 10.0,
 			Ram:  100.0,
 			Disk: 1000.0,
 		},
-		Available: &pbr.Resources{
+		Available: &pbf.Resources{
 			Cpus: 10.0,
 			Ram:  100.0,
 			Disk: 1000.0,
@@ -58,7 +58,7 @@ func TestSchedToExisting(t *testing.T) {
 	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	existing.Resources.Cpus = 0.0
 	srv.AddWorker(existing)
 	srv.RunHelloWorld()
@@ -107,7 +107,7 @@ func TestSchedStartWorker(t *testing.T) {
 	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	existing.Resources.Cpus = 0.0
 	srv.AddWorker(existing)
 
@@ -117,7 +117,7 @@ func TestSchedStartWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
 		Cpus: 10.0,
 		Ram:  100.0,
 		Disk: 1000.0,
@@ -163,7 +163,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	defer srv.Close()
 
 	// Represents a worker that is alive but at full capacity
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	existing.Resources.Cpus = 10.0
 	srv.AddWorker(existing)
 
@@ -173,7 +173,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
 		Cpus: 10.0,
 		Ram:  100.0,
 		Disk: 1000.0,
@@ -223,7 +223,7 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
 		Cpus: 1.0,
 		Ram:  1.0,
 		Disk: 1000.0,
@@ -245,7 +245,7 @@ func TestUpdateAvailableResources(t *testing.T) {
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	srv.AddWorker(existing)
 	ta := srv.HelloWorldTask()
 	srv.RunTask(ta)
@@ -273,11 +273,11 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	existingA := testWorker("existing-A", pbr.WorkerState_Alive)
+	existingA := testWorker("existing-A", pbf.WorkerState_Alive)
 	existingA.Resources.Cpus = 8.0
 	srv.AddWorker(existingA)
 
-	existingB := testWorker("existing-B", pbr.WorkerState_Alive)
+	existingB := testWorker("existing-B", pbf.WorkerState_Alive)
 	existingB.Resources.Cpus = 8.0
 	srv.AddWorker(existingB)
 
@@ -323,7 +323,7 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 	var w *worker.Worker
 
 	// Mock an instance template response with 1 cpu/ram/disk
-	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbr.Resources{
+	gce.On("Template", "test-proj", "test-zone", "test-tpl").Return(&pbf.Resources{
 		Cpus: 10.0,
 		Ram:  100.0,
 		Disk: 1000.0,

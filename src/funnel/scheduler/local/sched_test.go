@@ -2,11 +2,11 @@ package local
 
 import (
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
 	sched "funnel/scheduler"
 	sched_mocks "funnel/scheduler/mocks"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	. "github.com/stretchr/testify/mock"
 	"testing"
 )
@@ -15,32 +15,32 @@ func init() {
 	logger.ForceColors()
 }
 
-func simpleWorker() *pbr.Worker {
-	return &pbr.Worker{
+func simpleWorker() *pbf.Worker {
+	return &pbf.Worker{
 		// This ID MUST match the ID set in setup()
 		// because the local scheduler is built to have only a single worker
 		Id: "test-worker-id",
-		Resources: &pbr.Resources{
+		Resources: &pbf.Resources{
 			Cpus: 1.0,
 			Ram:  1.0,
 			Disk: 1.0,
 		},
-		Available: &pbr.Resources{
+		Available: &pbf.Resources{
 			Cpus: 1.0,
 			Ram:  1.0,
 			Disk: 1.0,
 		},
-		State: pbr.WorkerState_Alive,
+		State: pbf.WorkerState_Alive,
 		Zone:  "ok-zone",
 	}
 }
 
-func setup(workers []*pbr.Worker) (*sched_mocks.Client, *scheduler) {
+func setup(workers []*pbf.Worker) (*sched_mocks.Client, *scheduler) {
 	conf := config.Config{}
 	mc := new(sched_mocks.Client)
 
 	// Mock in test workers
-	mc.On("GetWorkers", Anything, Anything, Anything).Return(&pbr.GetWorkersResponse{
+	mc.On("GetWorkers", Anything, Anything, Anything).Return(&pbf.GetWorkersResponse{
 		Workers: workers,
 	}, nil)
 
@@ -53,8 +53,8 @@ func setup(workers []*pbr.Worker) (*sched_mocks.Client, *scheduler) {
 }
 
 func TestNoWorkers(t *testing.T) {
-	_, s := setup([]*pbr.Worker{})
-	j := &pbe.Job{}
+	_, s := setup([]*pbf.Worker{})
+	j := &tes.Job{}
 	o := s.Schedule(j)
 	if o != nil {
 		t.Error("Job scheduled on empty workers")
@@ -62,11 +62,11 @@ func TestNoWorkers(t *testing.T) {
 }
 
 func TestSingleWorker(t *testing.T) {
-	_, s := setup([]*pbr.Worker{
+	_, s := setup([]*pbf.Worker{
 		simpleWorker(),
 	})
 
-	j := &pbe.Job{}
+	j := &tes.Job{}
 	o := s.Schedule(j)
 	if o == nil {
 		t.Error("Failed to schedule job on single worker")
@@ -82,9 +82,9 @@ func TestIgnoreOtherWorkers(t *testing.T) {
 	other := simpleWorker()
 	other.Id = "other-worker"
 
-	_, s := setup([]*pbr.Worker{other})
+	_, s := setup([]*pbf.Worker{other})
 
-	j := &pbe.Job{}
+	j := &tes.Job{}
 	o := s.Schedule(j)
 	if o != nil {
 		t.Error("Scheduled job to other worker")
@@ -93,12 +93,12 @@ func TestIgnoreOtherWorkers(t *testing.T) {
 
 // Test that scheduler ignores workers without the "Alive" state
 func TestIgnoreNonAliveWorkers(t *testing.T) {
-	j := &pbe.Job{}
+	j := &tes.Job{}
 
-	for name, val := range pbr.WorkerState_value {
+	for name, val := range pbf.WorkerState_value {
 		w := simpleWorker()
-		w.State = pbr.WorkerState(val)
-		_, s := setup([]*pbr.Worker{w})
+		w.State = pbf.WorkerState(val)
+		_, s := setup([]*pbf.Worker{w})
 		o := s.Schedule(j)
 
 		if name == "Alive" {
@@ -118,16 +118,16 @@ func TestIgnoreNonAliveWorkers(t *testing.T) {
 // Test whether the scheduler correctly filters workers based on
 // cpu, ram, disk, etc.
 func TestMatch(t *testing.T) {
-	_, s := setup([]*pbr.Worker{
+	_, s := setup([]*pbf.Worker{
 		simpleWorker(),
 	})
 
 	var o *sched.Offer
-	var j *pbe.Job
+	var j *tes.Job
 
 	// Helper which sets up Task.Resources struct to non-nil
-	blankJob := func() *pbe.Job {
-		return &pbe.Job{Task: &pbe.Task{Resources: &pbe.Resources{}}}
+	blankJob := func() *tes.Job {
+		return &tes.Job{Task: &tes.Task{Resources: &tes.Resources{}}}
 	}
 
 	// test CPUs too big
@@ -148,7 +148,7 @@ func TestMatch(t *testing.T) {
 
 	// test disk too big
 	j = blankJob()
-	j.Task.Resources.Volumes = []*pbe.Volume{
+	j.Task.Resources.Volumes = []*tes.Volume{
 		{SizeGb: 2.0},
 	}
 
@@ -160,7 +160,7 @@ func TestMatch(t *testing.T) {
 	// test two volumes, basically check that they are
 	// added together to get total size
 	j = blankJob()
-	j.Task.Resources.Volumes = []*pbe.Volume{
+	j.Task.Resources.Volumes = []*tes.Volume{
 		{SizeGb: 1.0},
 		{SizeGb: 0.1},
 	}
@@ -182,7 +182,7 @@ func TestMatch(t *testing.T) {
 	j = blankJob()
 	j.Task.Resources.MinimumCpuCores = 1
 	j.Task.Resources.MinimumRamGb = 1.0
-	j.Task.Resources.Volumes = []*pbe.Volume{
+	j.Task.Resources.Volumes = []*tes.Volume{
 		{SizeGb: 0.5},
 		{SizeGb: 0.5},
 	}

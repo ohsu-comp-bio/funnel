@@ -11,10 +11,10 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
 	sched "funnel/scheduler"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 )
 
 var log = logger.New("gce")
@@ -52,7 +52,7 @@ type gceScheduler struct {
 }
 
 // Schedule schedules a job on a Google Cloud VM worker instance.
-func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
+func (s *gceScheduler) Schedule(j *tes.Job) *sched.Offer {
 	log.Debug("Running GCE scheduler")
 
 	offers := []*sched.Offer{}
@@ -68,7 +68,7 @@ func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
 		sc := sched.DefaultScores(w, j)
 		/*
 			    TODO?
-			    if w.State == pbr.WorkerState_Alive {
+			    if w.State == pbf.WorkerState_Alive {
 					  sc["startup time"] = 1.0
 			    }
 		*/
@@ -89,11 +89,11 @@ func (s *gceScheduler) Schedule(j *pbe.Job) *sched.Offer {
 
 // getWorkers returns a list of all GCE workers and appends a set of
 // uninitialized workers, which the scheduler can use to create new worker VMs.
-func (s *gceScheduler) getWorkers() []*pbr.Worker {
+func (s *gceScheduler) getWorkers() []*pbf.Worker {
 
 	// Get the workers from the funnel server
-	workers := []*pbr.Worker{}
-	req := &pbr.GetWorkersRequest{}
+	workers := []*pbf.Worker{}
+	req := &pbf.GetWorkersRequest{}
 	resp, err := s.client.GetWorkers(context.Background(), req)
 
 	// If there's an error, return an empty list
@@ -121,7 +121,7 @@ func (s *gceScheduler) getWorkers() []*pbr.Worker {
 		// Copy resources for available resources
 		avail := *res
 
-		workers = append(workers, &pbr.Worker{
+		workers = append(workers, &pbf.Worker{
 			Id:        sched.GenWorkerID(),
 			Resources: res,
 			Available: &avail,
@@ -138,14 +138,14 @@ func (s *gceScheduler) getWorkers() []*pbr.Worker {
 
 // ShouldStartWorker tells the scaler loop which workers
 // belong to this scheduler backend, basically.
-func (s *gceScheduler) ShouldStartWorker(w *pbr.Worker) bool {
+func (s *gceScheduler) ShouldStartWorker(w *pbf.Worker) bool {
 	// Only start works that are uninitialized and have a gce template.
 	tpl, ok := w.Metadata["gce-template"]
-	return ok && tpl != "" && w.State == pbr.WorkerState_Uninitialized
+	return ok && tpl != "" && w.State == pbf.WorkerState_Uninitialized
 }
 
 // StartWorker calls out to GCE APIs to start a new worker instance.
-func (s *gceScheduler) StartWorker(w *pbr.Worker) error {
+func (s *gceScheduler) StartWorker(w *pbf.Worker) error {
 
 	// Write the funnel worker config yaml to a string
 	c := s.conf.Worker

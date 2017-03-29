@@ -2,19 +2,19 @@ package worker
 
 import (
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/scheduler"
 	"funnel/server"
 	server_mocks "funnel/server/mocks"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 )
 
 // mockScheduler is a mock scheduler that assigns every job to a single worker.
 type mockScheduler struct {
-	worker *pbr.Worker
+	worker *pbf.Worker
 }
 
-func (m *mockScheduler) Schedule(j *pbe.Job) *scheduler.Offer {
+func (m *mockScheduler) Schedule(j *tes.Job) *scheduler.Offer {
 	return scheduler.NewOffer(m.worker, j, scheduler.Scores{})
 }
 
@@ -40,10 +40,10 @@ func MockSchedulerServerFromConfig(conf config.Config) *MockSchedulerServer {
 	w.JobRunner = NoopJobRunner
 
 	// Create a mock scheduler with a single worker
-	sched := &mockScheduler{&pbr.Worker{
+	sched := &mockScheduler{&pbf.Worker{
 		Id:    "test-worker",
-		State: pbr.WorkerState_Alive,
-		Jobs:  map[string]*pbr.JobWrapper{},
+		State: pbf.WorkerState_Alive,
+		Jobs:  map[string]*pbf.JobWrapper{},
 	}}
 
 	m := MockSchedulerServer{srv.DB, srv, sched, srv.Conf, w}

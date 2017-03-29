@@ -2,7 +2,7 @@ package config
 
 import (
 	log "funnel/logger"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"github.com/ghodss/yaml"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
@@ -161,7 +161,7 @@ type Worker struct {
 	Storage       []*StorageConfig
 	LogPath       string
 	LogLevel      string
-	Resources     *pbr.Resources
+	Resources     *pbf.Resources
 	// Timeout duration for UpdateWorker() and UpdateJobLogs() RPC calls
 	UpdateTimeout time.Duration
 	Metadata      map[string]string
@@ -181,7 +181,7 @@ func WorkerDefaultConfig(c Config) Worker {
 		Storage:       c.Storage,
 		LogLevel:      "debug",
 		UpdateTimeout: time.Second,
-		Resources: &pbr.Resources{
+		Resources: &pbf.Resources{
 			Disk: 100.0,
 		},
 	}

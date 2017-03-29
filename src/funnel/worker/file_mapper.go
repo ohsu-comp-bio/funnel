@@ -2,7 +2,7 @@ package worker
 
 import (
 	"fmt"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/util"
 	proto "github.com/golang/protobuf/proto"
 	"os"
@@ -20,8 +20,8 @@ import (
 // manage all these paths.
 type FileMapper struct {
 	Volumes []Volume
-	Inputs  []*pbe.TaskParameter
-	Outputs []*pbe.TaskParameter
+	Inputs  []*tes.TaskParameter
+	Outputs []*tes.TaskParameter
 	dir     string
 }
 
@@ -48,14 +48,14 @@ func NewJobFileMapper(jobID string, baseDir string) *FileMapper {
 	dir, _ = filepath.Abs(dir)
 	return &FileMapper{
 		Volumes: []Volume{},
-		Inputs:  []*pbe.TaskParameter{},
-		Outputs: []*pbe.TaskParameter{},
+		Inputs:  []*tes.TaskParameter{},
+		Outputs: []*tes.TaskParameter{},
 		dir:     dir,
 	}
 }
 
 // MapTask adds all the volumes, inputs, and outputs in the given Task to the FileMapper.
-func (mapper *FileMapper) MapTask(task *pbe.Task) error {
+func (mapper *FileMapper) MapTask(task *tes.Task) error {
 
 	// Add all the volumes to the mapper
 	for _, vol := range task.Resources.Volumes {
@@ -88,7 +88,7 @@ func (mapper *FileMapper) MapTask(task *pbe.Task) error {
 // is added to mapper.Volumes.
 //
 // If the volume paths are invalid or can't be mapped, an error is returned.
-func (mapper *FileMapper) AddVolume(vol *pbe.Volume) error {
+func (mapper *FileMapper) AddVolume(vol *tes.Volume) error {
 
 	if vol.Source != "" {
 		return fmt.Errorf("Could not create a volume: 'source' is not supported for %s", vol.Source)
@@ -181,7 +181,7 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 //
 // If the path can't be mapped, or the path is not in an existing volume,
 // an error is returned.
-func (mapper *FileMapper) AddInput(input *pbe.TaskParameter) error {
+func (mapper *FileMapper) AddInput(input *tes.TaskParameter) error {
 	p, err := mapper.HostPath(input.Path)
 	if err != nil {
 		return err
@@ -198,7 +198,7 @@ func (mapper *FileMapper) AddInput(input *pbe.TaskParameter) error {
 	}
 
 	// Create a TaskParameter for the input with a path mapped to the host
-	hostIn := proto.Clone(input).(*pbe.TaskParameter)
+	hostIn := proto.Clone(input).(*tes.TaskParameter)
 	hostIn.Path = p
 	mapper.Inputs = append(mapper.Inputs, hostIn)
 	return nil
@@ -213,7 +213,7 @@ func (mapper *FileMapper) AddInput(input *pbe.TaskParameter) error {
 //
 // If the path can't be mapped, or the path is not in an existing volume,
 // an error is returned.
-func (mapper *FileMapper) AddOutput(output *pbe.TaskParameter) error {
+func (mapper *FileMapper) AddOutput(output *tes.TaskParameter) error {
 	p, err := mapper.HostPath(output.Path)
 	if err != nil {
 		return err
@@ -237,7 +237,7 @@ func (mapper *FileMapper) AddOutput(output *pbe.TaskParameter) error {
 		}
 	}
 	// Create a TaskParameter for the out with a path mapped to the host
-	hostOut := proto.Clone(output).(*pbe.TaskParameter)
+	hostOut := proto.Clone(output).(*tes.TaskParameter)
 	hostOut.Path = p
 	mapper.Outputs = append(mapper.Outputs, hostOut)
 	return nil

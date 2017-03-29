@@ -1,8 +1,8 @@
 package scheduler
 
 import (
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 	"runtime/debug"
 	"testing"
 )
@@ -24,22 +24,22 @@ func TestResourcesFitEmptyJob(t *testing.T) {
 }
 
 func TestCpuResourcesFit(t *testing.T) {
-	j := &pbe.Job{
-		Task: &pbe.Task{
-			Resources: &pbe.Resources{
+	j := &tes.Job{
+		Task: &tes.Task{
+			Resources: &tes.Resources{
 				MinimumCpuCores: 1,
 			},
 		},
 	}
 
-	w := &pbr.Worker{
+	w := &pbf.Worker{
 		Id: "test-worker",
-		Resources: &pbr.Resources{
+		Resources: &pbf.Resources{
 			Cpus: 1.0,
 			Ram:  1.0,
 			Disk: 1.0,
 		},
-		Available: &pbr.Resources{
+		Available: &pbf.Resources{
 			Cpus: 1.0,
 			Ram:  1.0,
 			Disk: 1.0,
@@ -73,7 +73,7 @@ func testEmptyJob(t *testing.T, p Predicate, name string) {
 		}
 	}()
 
-	j := &pbe.Job{}
-	w := &pbr.Worker{}
+	j := &tes.Job{}
+	w := &pbf.Worker{}
 	p(j, w)
 }

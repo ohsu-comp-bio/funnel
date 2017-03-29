@@ -3,10 +3,10 @@ package openstack
 import (
 	"context"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
 	sched "funnel/scheduler"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 )
 
 var log = logger.New("openstack")
@@ -30,7 +30,7 @@ type scheduler struct {
 }
 
 // Schedule schedules a job on a OpenStack VM worker instance.
-func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
+func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
 	log.Debug("Running OpenStack scheduler")
 
 	offers := []*sched.Offer{}
@@ -46,7 +46,7 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 		sc := sched.DefaultScores(w, j)
 		/*
 			    TODO?
-			    if w.State == pbr.WorkerState_Alive {
+			    if w.State == pbf.WorkerState_Alive {
 					  sc["startup time"] = 1.0
 			    }
 		*/
@@ -65,11 +65,11 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	return offers[0]
 }
 
-func (s *scheduler) getWorkers() []*pbr.Worker {
+func (s *scheduler) getWorkers() []*pbf.Worker {
 
 	// Get the workers from the funnel server
-	workers := []*pbr.Worker{}
-	req := &pbr.GetWorkersRequest{}
+	workers := []*pbf.Worker{}
+	req := &pbf.GetWorkersRequest{}
 	resp, err := s.client.GetWorkers(context.Background(), req)
 
 	// If there's an error, return an empty list

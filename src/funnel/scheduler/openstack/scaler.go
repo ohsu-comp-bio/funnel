@@ -1,7 +1,7 @@
 package openstack
 
 import (
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
@@ -14,7 +14,7 @@ sudo systemctl start tes.service
 `
 
 // StartWorker calls out to OpenStack APIs to start a new worker instance.
-func (s *scheduler) StartWorker(w *pbr.Worker) error {
+func (s *scheduler) StartWorker(w *pbf.Worker) error {
 
 	// TODO move to client wrapper
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
@@ -71,8 +71,8 @@ func (s *scheduler) StartWorker(w *pbr.Worker) error {
 
 // ShouldStartWorker tells the scaler loop which workers
 // belong to this scheduler backend, basically.
-func (s *scheduler) ShouldStartWorker(w *pbr.Worker) bool {
+func (s *scheduler) ShouldStartWorker(w *pbf.Worker) bool {
 	// Only start works that are uninitialized and have a gce template.
 	tpl, ok := w.Metadata["openstack"]
-	return ok && tpl != "" && w.State == pbr.WorkerState_Uninitialized
+	return ok && tpl != "" && w.State == pbf.WorkerState_Uninitialized
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"github.com/mitchellh/copystructure"
 	"google.golang.org/api/compute/v1"
 )
@@ -13,7 +13,7 @@ import (
 // Mainly, the scheduler needs to be able to look up an instance template,
 // or start a worker instance.
 type Client interface {
-	Template(project, zone, id string) (*pbr.Resources, error)
+	Template(project, zone, id string) (*pbf.Resources, error)
 	StartWorker(project, zone, template string, conf config.Worker) error
 }
 
@@ -35,13 +35,13 @@ func newClientFromConfig(conf config.Config) (Client, error) {
 
 type gceClient struct {
 	templates    map[string]*compute.InstanceTemplate
-	machineTypes map[string]pbr.Resources
+	machineTypes map[string]pbf.Resources
 	wrapper      Wrapper
 }
 
 // Templates queries the GCE API to get details about GCE instance templates.
 // If the API client fails to connect, this returns an empty list.
-func (s *gceClient) Template(project, zone, id string) (*pbr.Resources, error) {
+func (s *gceClient) Template(project, zone, id string) (*pbf.Resources, error) {
 
 	// TODO expire cache?
 	if s.machineTypes == nil {
@@ -57,7 +57,7 @@ func (s *gceClient) Template(project, zone, id string) (*pbr.Resources, error) {
 		return nil, err
 	}
 
-	// Map the machine type ID string to a pbr.Resources struct
+	// Map the machine type ID string to a pbf.Resources struct
 	x, ok := s.machineTypes[tpl.Properties.MachineType]
 
 	if !ok {
@@ -141,10 +141,10 @@ func (s *gceClient) loadMachineTypes(project, zone string) error {
 		log.Error("Couldn't get GCE machine list.", err)
 		return err
 	}
-	s.machineTypes = map[string]pbr.Resources{}
+	s.machineTypes = map[string]pbf.Resources{}
 
 	for _, m := range resp.Items {
-		s.machineTypes[m.Name] = pbr.Resources{
+		s.machineTypes[m.Name] = pbf.Resources{
 			Cpus: uint32(m.GuestCpus),
 			Ram:  float64(m.MemoryMb) / float64(1024),
 		}

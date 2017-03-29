@@ -2,14 +2,14 @@ package worker
 
 import (
 	"context"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"sync"
 )
 
 // JobState represents the state of a running job
 type JobState interface {
 	Err() error
-	State() pbe.State
+	State() tes.State
 	Complete() bool
 }
 
@@ -80,19 +80,19 @@ func (r *jobControl) Complete() bool {
 	return r.complete
 }
 
-func (r *jobControl) State() pbe.State {
+func (r *jobControl) State() tes.State {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	switch {
 	case r.err == context.Canceled:
-		return pbe.State_Canceled
+		return tes.State_Canceled
 	case r.err != nil:
-		return pbe.State_Error
+		return tes.State_Error
 	case r.complete:
-		return pbe.State_Complete
+		return tes.State_Complete
 	case r.running:
-		return pbe.State_Running
+		return tes.State_Running
 	default:
-		return pbe.State_Initializing
+		return tes.State_Initializing
 	}
 }

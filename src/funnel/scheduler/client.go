@@ -2,18 +2,18 @@ package scheduler
 
 import (
 	"funnel/config"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"google.golang.org/grpc"
 )
 
 // Client is a client for the scheduler gRPC service.
 type Client interface {
-	pbr.SchedulerClient
+	pbf.SchedulerClient
 	Close()
 }
 
 type client struct {
-	pbr.SchedulerClient
+	pbf.SchedulerClient
 	conn *grpc.ClientConn
 }
 
@@ -26,7 +26,7 @@ func NewClient(conf config.Worker) (Client, error) {
 		return nil, err
 	}
 
-	s := pbr.NewSchedulerClient(conn)
+	s := pbf.NewSchedulerClient(conn)
 	return &client{s, conn}, nil
 }
 

@@ -3,9 +3,9 @@ package worker
 import (
 	"context"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"io"
 	"time"
 )
@@ -24,7 +24,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 	log.Debug("Running step", "jobID", s.JobID, "stepNum", s.Num)
 
 	// Send update for host IP address.
-	s.update(&pbe.JobLog{
+	s.update(&tes.JobLog{
 		HostIP: s.IP,
 	})
 
@@ -60,7 +60,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 			stderr.Flush()
 
 		case result := <-done:
-			s.update(&pbe.JobLog{
+			s.update(&tes.JobLog{
 				ExitCode: getExitCode(result),
 			})
 			return result
@@ -70,10 +70,10 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 func (s *stepRunner) logTails() (*tailer, *tailer) {
 	stdout, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.update(&pbe.JobLog{Stdout: c})
+		s.update(&tes.JobLog{Stdout: c})
 	})
 	stderr, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.update(&pbe.JobLog{Stderr: c})
+		s.update(&tes.JobLog{Stderr: c})
 	})
 	if s.Cmd.Stdout != nil {
 		s.Cmd.Stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
@@ -91,15 +91,15 @@ func (s *stepRunner) inspectContainer(ctx context.Context) {
 		s.Log.Error("Error inspecting container", err)
 		return
 	}
-	s.update(&pbe.JobLog{
+	s.update(&tes.JobLog{
 		Ports: ports,
 	})
 }
 
 // update sends an update of the JobLog of the currently running step.
 // Used to update stdout/err logs, port mapping, etc.
-func (s *stepRunner) update(log *pbe.JobLog) {
-	s.Updates <- &pbr.UpdateJobLogsRequest{
+func (s *stepRunner) update(log *tes.JobLog) {
+	s.Updates <- &pbf.UpdateJobLogsRequest{
 		Id:   s.JobID,
 		Step: int64(s.Num),
 		Log:  log,

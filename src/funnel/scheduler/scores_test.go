@@ -1,8 +1,8 @@
 package scheduler
 
 import (
-	pbe "funnel/ga4gh"
-	pbr "funnel/server/proto"
+	tes "funnel/proto/tes"
+	pbf "funnel/proto/funnel"
 	"runtime/debug"
 	"testing"
 )
@@ -14,7 +14,7 @@ func TestDefaultScoresEmptyJob(t *testing.T) {
 		}
 	}()
 
-	j := &pbe.Job{}
-	w := &pbr.Worker{}
+	j := &tes.Job{}
+	w := &pbf.Worker{}
 	DefaultScores(w, j)
 }

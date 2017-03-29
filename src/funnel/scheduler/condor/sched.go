@@ -3,10 +3,10 @@ package condor
 import (
 	"fmt"
 	"funnel/config"
-	pbe "funnel/ga4gh"
+	tes "funnel/proto/tes"
 	"funnel/logger"
 	sched "funnel/scheduler"
-	pbr "funnel/server/proto"
+	pbf "funnel/proto/funnel"
 	"os"
 	"os/exec"
 	"path"
@@ -32,7 +32,7 @@ type scheduler struct {
 }
 
 // Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
-func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
+func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
 	log.Debug("Running condor scheduler")
 
 	var disk float64
@@ -41,9 +41,9 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	}
 
 	// TODO could we call condor_submit --dry-run to test if a job would succeed?
-	w := &pbr.Worker{
+	w := &pbf.Worker{
 		Id: prefix + sched.GenWorkerID(),
-		Resources: &pbr.Resources{
+		Resources: &pbf.Resources{
 			Cpus: j.Task.GetResources().GetMinimumCpuCores(),
 			Ram:  j.Task.GetResources().GetMinimumRamGb(),
 			Disk: disk,
@@ -52,13 +52,13 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 	return sched.NewOffer(w, j, sched.Scores{})
 }
 
-func (s *scheduler) ShouldStartWorker(w *pbr.Worker) bool {
+func (s *scheduler) ShouldStartWorker(w *pbf.Worker) bool {
 	return strings.HasPrefix(w.Id, prefix) &&
-		w.State == pbr.WorkerState_Uninitialized
+		w.State == pbf.WorkerState_Uninitialized
 }
 
 // StartWorker submits a job via "condor_submit" to start a new worker.
-func (s *scheduler) StartWorker(w *pbr.Worker) error {
+func (s *scheduler) StartWorker(w *pbf.Worker) error {
 	log.Debug("Starting condor worker")
 
 	// TODO document that these working dirs need manual cleanup

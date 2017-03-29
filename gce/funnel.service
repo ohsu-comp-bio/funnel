@@ -1,0 +1,12 @@
+[Unit]
+Description=Funnel
+
+[Service]
+User=funnel
+Group=funnel
+WorkingDirectory=/opt/funnel
+Restart=always
+ExecStart=/opt/funnel/gce/start-funnel.sh -config /opt/funnel/config.yml
+
+[Install]
+WantedBy=multi-user.target

@@ -20,7 +20,7 @@ var log = logger.New("condor")
 // prefix is a string prefixed to condor worker IDs, so that condor
 // workers can be identified by ShouldStartWorker() below.
 // TODO move to worker metadata to be consistent with GCE
-const prefix = "condor-"
+const prefix = "condor"
 
 // NewScheduler returns a new HTCondor Scheduler instance.
 func NewScheduler(conf config.Config) sched.Scheduler {
@@ -42,7 +42,7 @@ func (s *scheduler) Schedule(j *pbe.Job) *sched.Offer {
 
 	// TODO could we call condor_submit --dry-run to test if a job would succeed?
 	w := &pbr.Worker{
-		Id: prefix + sched.GenWorkerID(),
+		Id: prefix + sched.GenWorkerID(prefix),
 		Resources: &pbr.Resources{
 			Cpus: j.Task.GetResources().MinimumCpuCores,
 			Ram:  j.Task.GetResources().MinimumRamGb,

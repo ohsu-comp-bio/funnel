@@ -53,7 +53,7 @@ func start(conf config.Worker) {
 	}
 
 	if conf.ID == "" {
-		conf.ID = scheduler.GenWorkerID()
+		conf.ID = scheduler.GenWorkerID("funnel")
 	}
 
 	w, err := worker.NewWorker(conf)

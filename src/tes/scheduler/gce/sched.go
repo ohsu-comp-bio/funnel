@@ -21,6 +21,7 @@ var log = logger.New("gce")
 
 // NewScheduler returns a new Google Cloud Engine Scheduler instance.
 func NewScheduler(conf config.Config) (sched.Scheduler, error) {
+	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 
 	// Create a client for talking to the funnel scheduler
 	client, err := sched.NewClient(conf.Worker)
@@ -103,34 +104,13 @@ func (s *gceScheduler) getWorkers() []*pbr.Worker {
 	}
 
 	workers = resp.Workers
-	project := s.conf.Schedulers.GCE.Project
-	zone := s.conf.Schedulers.GCE.Zone
 
 	// Include unprovisioned (template) workers.
 	// This is how the scheduler can schedule jobs to workers that
 	// haven't been started yet.
-	for _, t := range s.conf.Schedulers.GCE.Templates {
-		res, err := s.gce.Template(project, zone, t)
-
-		if err != nil {
-			log.Error("Couldn't get template from GCE. Skipping.",
-				"error", err,
-				"template", t)
-			continue
-		}
-		// Copy resources for available resources
-		avail := *res
-
-		workers = append(workers, &pbr.Worker{
-			Id:        sched.GenWorkerID(),
-			Resources: res,
-			Available: &avail,
-			Zone:      zone,
-			Metadata: map[string]string{
-				"gce":          "yes",
-				"gce-template": t,
-			},
-		})
+	for _, t := range s.gce.Templates() {
+		t.Id = sched.GenWorkerID("gce")
+		workers = append(workers, &t)
 	}
 
 	return workers
@@ -152,14 +132,11 @@ func (s *gceScheduler) StartWorker(w *pbr.Worker) error {
 	c.ID = w.Id
 	c.Timeout = -1
 
-	project := s.conf.Schedulers.GCE.Project
-	zone := s.conf.Schedulers.GCE.Zone
-
 	// Get the template ID from the worker metadata
 	template, ok := w.Metadata["gce-template"]
 	if !ok || template == "" {
 		return fmt.Errorf("Could not get GCE template ID from metadata")
 	}
 
-	return s.gce.StartWorker(project, zone, template, c)
+	return s.gce.StartWorker(template, c)
 }

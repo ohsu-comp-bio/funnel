@@ -42,7 +42,7 @@ func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
 
 	// TODO could we call condor_submit --dry-run to test if a job would succeed?
 	w := &pbf.Worker{
-		Id: prefix + sched.GenWorkerID(),
+		Id: prefix + sched.GenWorkerID(prefix),
 		Resources: &pbf.Resources{
 			Cpus: j.Task.GetResources().GetMinimumCpuCores(),
 			Ram:  j.Task.GetResources().GetMinimumRamGb(),

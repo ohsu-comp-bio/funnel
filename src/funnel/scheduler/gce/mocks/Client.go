@@ -24,7 +24,6 @@ func (_m *Client) StartWorker(tplName string, conf config.Worker) error {
 	return r0
 }
 
-
 // Templates provides a mock function with given fields:
 func (_m *Client) Templates() []ga4gh_task_ref.Worker {
 	ret := _m.Called()

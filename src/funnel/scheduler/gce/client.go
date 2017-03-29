@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"funnel/config"
 	pbf "funnel/proto/funnel"
-	"github.com/mitchellh/copystructure"
+	//"github.com/mitchellh/copystructure"
 	"google.golang.org/api/compute/v1"
 	"time"
 )
@@ -14,7 +14,7 @@ import (
 // Mainly, the scheduler needs to be able to look up an instance template,
 // or start a worker instance.
 type Client interface {
-	Templates() []pbr.Worker
+	Templates() []pbf.Worker
 	StartWorker(tplName string, conf config.Worker) error
 }
 
@@ -52,9 +52,9 @@ type gceClient struct {
 
 // Templates queries the GCE API to get details about GCE instance templates.
 // If the API client fails to connect, this returns an empty list.
-func (s *gceClient) Templates() []pbr.Worker {
+func (s *gceClient) Templates() []pbf.Worker {
 	s.loadTemplates()
-	workers := []pbr.Worker{}
+	workers := []pbf.Worker{}
 
 	for id, tpl := range s.templates {
 
@@ -67,7 +67,7 @@ func (s *gceClient) Templates() []pbr.Worker {
 
 		disks := tpl.Properties.Disks
 
-		res := pbr.Resources{
+		res := pbf.Resources{
 			Cpus: uint32(mt.GuestCpus),
 			Ram:  float64(mt.MemoryMb) / float64(1024),
 			// TODO is there always at least one disk? Is the first the best choice?
@@ -77,7 +77,7 @@ func (s *gceClient) Templates() []pbr.Worker {
 
 		// Copy resources struct for available
 		avail := res
-		workers = append(workers, pbr.Worker{
+		workers = append(workers, pbf.Worker{
 			Resources: &res,
 			Available: &avail,
 			Zone:      s.zone,

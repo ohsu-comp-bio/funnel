@@ -18,7 +18,7 @@ import (
 type JobRunner func(JobControl, config.Worker, *pbf.JobWrapper, logUpdateChan)
 
 // Default JobRunner
-func runJob(ctrl JobControl, conf config.Worker, j *pbr.JobWrapper, up logUpdateChan) {
+func runJob(ctrl JobControl, conf config.Worker, j *pbf.JobWrapper, up logUpdateChan) {
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, j.Job.JobID)
 

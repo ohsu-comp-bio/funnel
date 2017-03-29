@@ -188,11 +188,18 @@ class TestFileOP(SimpleServerTest):
         """
         task = {
             "name": "Test symlink in output",
-            "outputs": [{
-                "location": "file://" + self.storage_path("out"),
-                "class": "File",
-                "path": "/tmp/out",
-            }],
+            "outputs": [
+                {
+                    "location": "file://" + self.storage_path("out-sym"),
+                    "class": "File",
+                    "path": "/tmp/sym",
+                },
+                {
+                    "location": "file://" + self.storage_path("out-dir"),
+                    "class": "Directory",
+                    "path": "/tmp",
+                },
+            ],
             "resources": {
                 "volumes": [{
                     "name": "testvol",
@@ -204,13 +211,18 @@ class TestFileOP(SimpleServerTest):
                 "imageName": "alpine",
                 "cmd": [
                     "sh", "-c",
-                    "echo foo > /tmp/foo && ln -s /tmp/foo /tmp/out"
+                    "echo foo > /tmp/foo && ln -s /tmp/foo /tmp/sym"
                 ],
             }],
         }
+
         job_id = self.tes.submit(task)
         data = self.tes.wait(job_id)
         print data
         assert data["state"] != "Error"
-        with open(self.storage_path("out")) as fh:
+        with open(self.storage_path("out-sym")) as fh:
+            assert fh.read() == "foo\n"
+        with open(self.storage_path("out-dir", "foo")) as fh:
+            assert fh.read() == "foo\n"
+        with open(self.storage_path("out-dir", "sym")) as fh:
             assert fh.read() == "foo\n"

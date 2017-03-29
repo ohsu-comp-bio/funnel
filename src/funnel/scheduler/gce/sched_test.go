@@ -58,7 +58,7 @@ func TestSchedToExisting(t *testing.T) {
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	srv.AddWorker(existing)
 	srv.RunHelloWorld()
 
@@ -149,7 +149,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
 
-	existing := testWorker("existing", pbr.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_Alive)
 	existing.Resources.Cpus = 10.0
 	srv.AddWorker(existing)
 
@@ -199,7 +199,7 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	s := &gceScheduler{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram
-	gce.SetupMockTemplates(pbr.Resources{
+	gce.SetupMockTemplates(pbf.Resources{
 		Cpus: 1.0,
 		Ram:  1.0,
 		Disk: 1000.0,

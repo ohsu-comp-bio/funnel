@@ -25,15 +25,15 @@ func (_m *Client) StartWorker(tplName string, conf config.Worker) error {
 }
 
 // Templates provides a mock function with given fields:
-func (_m *Client) Templates() []ga4gh_task_ref.Worker {
+func (_m *Client) Templates() []pbf.Worker {
 	ret := _m.Called()
 
-	var r0 []ga4gh_task_ref.Worker
-	if rf, ok := ret.Get(0).(func() []ga4gh_task_ref.Worker); ok {
+	var r0 []pbf.Worker
+	if rf, ok := ret.Get(0).(func() []pbf.Worker); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]ga4gh_task_ref.Worker)
+			r0 = ret.Get(0).([]pbf.Worker)
 		}
 	}
 

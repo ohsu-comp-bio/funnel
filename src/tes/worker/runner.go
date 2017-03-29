@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"os/user"
 	"path/filepath"
 	"tes/config"
 	pbe "tes/ga4gh"
@@ -39,6 +40,7 @@ type jobRunner struct {
 	mapper  *FileMapper
 	store   *storage.Storage
 	ip      string
+	user    *user.User
 }
 
 // TODO document behavior of slow consumer of job log updates
@@ -59,6 +61,7 @@ func (r *jobRunner) Run() {
 	// TODO prepareIP can fail when there is no network connection,
 	//      but should just return no IP. Fix and test.
 	r.step("prepareIP", r.prepareIP)
+	r.step("prepareUserInfo", r.prepareUserInfo)
 	r.step("validateInputs", r.validateInputs)
 	r.step("validateOutputs", r.validateOutputs)
 
@@ -92,6 +95,7 @@ func (r *jobRunner) Run() {
 				Cmd: &DockerCmd{
 					ImageName:     d.ImageName,
 					Cmd:           d.Cmd,
+					User:          r.user,
 					Volumes:       r.mapper.Volumes,
 					Workdir:       d.Workdir,
 					Ports:         d.Ports,
@@ -170,6 +174,13 @@ func (r *jobRunner) prepareMapper() error {
 func (r *jobRunner) prepareIP() error {
 	var err error
 	r.ip, err = externalIP()
+	return err
+}
+
+// Grab the User info for this process. Passed to container to set UID/GID.
+func (r *jobRunner) prepareUserInfo() error {
+	var err error
+	r.user, err = user.Current()
 	return err
 }
 

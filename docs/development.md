@@ -72,7 +72,7 @@ Run the worker tests matching "\*Cancel\*": `go test funnel/worker -run Cancel`
 
 You get the idea. See to `go test` docs for more.
 
-### Mocking
+## Mocking
 
 There are some helpful mocks in the code. The [testify](https://github.com/stretchr/testify) and [mockery](https://github.com/vektra/mockery) tools have been useful.
 

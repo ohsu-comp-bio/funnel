@@ -2,4 +2,4 @@
 
 ## Deployment
 
-There are some helper scripts for deployment in the [gce](../../gce) directory.
+There are some helper scripts for deployment in the [gce](../../deployments/gce) directory.

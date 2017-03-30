@@ -13,7 +13,7 @@ import (
 var log = logger.New("funnel-run")
 var zones []string
 var name, project, description, tpl string
-var dryrun, preemptible, wait bool
+var dryrun, preemptible, wait, interactive bool
 var cpu int
 var ram float64
 
@@ -42,12 +42,14 @@ func init() {
   f.StringSliceVar(&zones, "zones", zones, "Require task be scheduled in certain zones")
   f.BoolVar(&wait, "wait", wait, "Wait for task to complete before exiting")
   f.BoolVar(&dryrun, "dry-run", dryrun, "Print task JSON only, do not run task")
+  f.BoolVarP(&interactive, "interactive", "i", interactive, "Interactive prompt helps define the command template, vars, and other config outside of the shell environment.")
 }
 
 type builder struct {
 }
 
 func (b *builder) In(args ...string) string {
+  fmt.Println("INNNNNNNN", args)
   return args[0]
 }
 
@@ -107,6 +109,10 @@ func run(cmd *cobra.Command, args []string) {
   funcs := template.FuncMap{
     "in": b.In,
     "out": b.Out,
+    "name": func(args ...string) string {
+      fmt.Println(":LWKJEFLEWJFWELKFJ", args)
+      return "TNALKJ"
+    },
   }
 
   t, err := template.New("cmd").

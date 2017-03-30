@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/ohsu-comp-bio/funnel/cmd/examples"
 	"github.com/ohsu-comp-bio/funnel/cmd/gce"
+  "github.com/ohsu-comp-bio/funnel/cmd/run"
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/cmd/task"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash"
@@ -18,7 +19,9 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(worker.Cmd)
+	RootCmd.AddCommand(examples.Cmd)
+	RootCmd.AddCommand(gce.Cmd)
+  RootCmd.AddCommand(run.Cmd)
 	RootCmd.AddCommand(server.Cmd)
 	RootCmd.AddCommand(task.Cmd)
 	RootCmd.AddCommand(termdash.Cmd)
@@ -26,4 +29,5 @@ func init() {
 	RootCmd.AddCommand(examples.Cmd)
 	RootCmd.AddCommand(markdownCmd)
 	RootCmd.AddCommand(genBashCompletionCmd)
+	RootCmd.AddCommand(worker.Cmd)
 }

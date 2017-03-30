@@ -278,6 +278,11 @@ func (taskBolt *TaskBolt) ListJobs(ctx context.Context, in *tes.JobListRequest) 
 			job := &tes.JobDesc{
 				JobID: jobID,
 				State: jobState,
+				Task: &tes.TaskDesc{
+					Name:        task.Name,
+					ProjectID:   task.ProjectID,
+					Description: task.Description,
+				},
 			}
 			jobs = append(jobs, job)
 		}

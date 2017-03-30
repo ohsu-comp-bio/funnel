@@ -3,11 +3,11 @@
 // DO NOT EDIT!
 
 /*
-Package api is a reverse proxy.
+Package funnel is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package api
+package funnel
 
 import (
 	"io"

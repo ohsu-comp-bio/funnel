@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package api;
+package funnel;
 
 import "tes.proto";
 import "google/api/annotations.proto";

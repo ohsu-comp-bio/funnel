@@ -21,9 +21,9 @@ PROCESS=$( $GET_META/funnel-process )
 if [ "$PROCESS" == "server" ]; then
   # If there was no config in the metadata, copy over the default config
   cp -n /opt/funnel/gce/default-server.config.yml /opt/funnel/config.yml
-  /opt/funnel/bin/linux_amd64/tes-server -config /opt/funnel/config.yml
+  /opt/funnel/bin/linux_amd64/funnel server --config /opt/funnel/config.yml
 else
   # If there was no config in the metadata, copy over the default config
   cp -n /opt/funnel/gce/default-worker.config.yml /opt/funnel/config.yml
-  /opt/funnel/bin/linux_amd64/tes-worker -config /opt/funnel/config.yml
+  /opt/funnel/bin/linux_amd64/funnel worker --config /opt/funnel/config.yml
 fi

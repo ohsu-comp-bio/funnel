@@ -18,7 +18,7 @@ See the other docs pages for more detail:
 - [Getting Started](./docs/getting-started.md)
 - [Development](./docs/development.md)
 - [APIs](./docs/apis.md)
-- [Godocs](https://godoc.org/github.com/ohsu-comp-bio/funnel)
+- [Godocs](https://godoc.org/github.com/ohsu-comp-bio/funnel/src/funnel)
 - [Design](./docs/design.md)
 - Guides
   - [Google Cloud Compute](./docs/guides/google-cloud-compute.md)

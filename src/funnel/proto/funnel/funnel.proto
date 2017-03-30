@@ -1,0 +1,102 @@
+
+
+syntax = "proto3";
+
+package funnel;
+
+import "tes.proto";
+import "google/api/annotations.proto";
+
+message Resources {
+  uint32 cpus = 1;
+  // In GB
+  double ram = 2;
+  // In GB
+  double disk = 3;
+}
+
+enum WorkerState {
+  Uninitialized = 0;
+  Alive = 1;
+  Dead = 2;
+  Gone = 3;
+  Initializing = 4;
+}
+
+message Worker {
+  string id = 1;
+  // Job ID -> JobWrapper
+  map<string, JobWrapper> jobs = 2;
+  Resources resources = 5;
+  Resources available = 6;
+  int64 last_ping = 7;
+  WorkerState state = 8;
+  bool preemptible = 9;
+  // TODO where does this get updated?
+  repeated int32 active_ports = 10;
+  string zone = 11;
+  // Hostname of the worker host.
+  // TODO
+  string hostname  = 13;
+  // Version of the record in the database. Used to prevent write conflicts.
+  int64 version = 14;
+  map<string,string> metadata = 15;
+}
+
+// TODO is there a nice way to avoid this wrapper? Maybe protobuf extensions?
+//      or use metadata field of Job?
+message JobWrapper {
+  ga4gh_task_exec.Job job = 1;
+  string auth = 2;
+}
+
+message UpdateJobLogsRequest {
+  string id = 1;
+  int64 step = 2;
+  ga4gh_task_exec.JobLog log = 4;
+  string worker_id = 5;
+}
+message UpdateJobLogsResponse {}
+
+message QueuedTaskInfoRequest {
+  int32 max_tasks = 1;
+}
+
+message QueuedTaskInfo {
+  repeated string inputs = 1;
+  ga4gh_task_exec.Resources resources = 2;
+}
+
+message GetWorkersRequest {
+}
+
+message GetWorkersResponse {
+  repeated Worker workers = 1;
+}
+
+message UpdateWorkerResponse {}
+
+message GetWorkerRequest {
+  string id = 1;
+}
+
+/**
+ * Scheduler Service
+ */
+service Scheduler {
+  rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
+  rpc UpdateJobLogs(UpdateJobLogsRequest) returns (UpdateJobLogsResponse) {};
+  rpc UpdateWorker(Worker) returns (UpdateWorkerResponse) {};
+
+  rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {
+    option (google.api.http) = {
+      get: "/v1/funnel/workers"
+    };
+  };
+
+  rpc GetWorker(GetWorkerRequest) returns (Worker) {
+    option (google.api.http) = {
+      get: "/v1/funnel/worker/{id}"
+    };
+  };
+}

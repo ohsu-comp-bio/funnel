@@ -218,7 +218,6 @@ class TestFileOP(SimpleServerTest):
 
         job_id = self.tes.submit(task)
         data = self.tes.wait(job_id)
-        print data
         assert data["state"] != "Error"
         with open(self.storage_path("out-sym")) as fh:
             assert fh.read() == "foo\n"

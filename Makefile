@@ -5,36 +5,36 @@ export PATH
 PYTHONPATH := ${PYTHONPATH}:$(shell pwd)/python
 export PYTHONPATH
 
-PROTO_INC= -I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/
+PROTO_INC=-I ./ -I $(GOPATH)/src/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
 
-server: depends
-	go install tes-server
-	go install tes-worker
+install: depends
+	go install funnel
 
-proto_build:
+proto: depends
 	@go get ./src/vendor/github.com/golang/protobuf/protoc-gen-go/
 	@go get ./src/vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/
-	@cd task-execution-schemas/proto && protoc $(PROTO_INC) \
-		--go_out=$(GRPC_HTTP_MOD),plugins=grpc:../../src/tes/ga4gh/ \
-		--grpc-gateway_out=logtostderr=true:../../src/tes/ga4gh/ \
-		task_execution.proto
-	@cd proto && protoc \
+	@cd src/funnel/proto/tes && protoc \
 		$(PROTO_INC) \
-		-I ../task-execution-schemas/proto/ \
-		--go_out=$(GRPC_HTTP_MOD),Mtask_execution.proto=tes/ga4gh,plugins=grpc:../src/tes/server/proto \
-		--grpc-gateway_out=logtostderr=true:../src/tes/server/proto/ \
-		task_worker.proto
+		--go_out=$(GRPC_HTTP_MOD),plugins=grpc:. \
+		--grpc-gateway_out=logtostderr=true:. \
+		tes.proto
+	@cd src/funnel/proto/funnel && protoc \
+		$(PROTO_INC) \
+		-I ../tes \
+		--go_out=$(GRPC_HTTP_MOD),Mtes.proto=funnel/proto/tes,plugins=grpc:. \
+		--grpc-gateway_out=logtostderr=true:. \
+		funnel.proto
+	@find src/funnel/proto -name *pb* -type f -exec sed -i '' 's/ga4gh_task_exec/tes/g' {} +
 
 depends:
 	git submodule update --init --recursive
-	go get -d tes-server
-	go get -d tes-worker
+	go get -d funnel
 
 serve-doc:
 	godoc --http=:6060
 
-add_deps:
+add_deps: 
 	go get github.com/dpw/vendetta
 	./buildtools/bin/vendetta src/
 
@@ -44,24 +44,24 @@ prune_deps:
 
 tidy:
 	pip install -q autopep8
-	@find ./src/tes* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
-	@find ./* -type f | grep -E '.*\.py$$' | grep -v "/venv/" | grep -v "/share/node" | xargs autopep8 --in-place --aggressive --aggressive
+	@find ./src/funnel* -type f | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
+	@find ./* -type f | grep -E '.*\.py$$' | grep -v "/venv/" | grep -v "/web/node" | xargs autopep8 --in-place --aggressive --aggressive
 
 lint:
 	pip install -q flake8
-	flake8 --exclude ./venv,./share .
+	flake8 --exclude ./venv,./web .
 	go get github.com/alecthomas/gometalinter
 	./buildtools/bin/gometalinter --install > /dev/null
-	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/...
+	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/funnel/...
 
 test:	
 	docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/
 	pip2.7 install -q -r tests/requirements.txt
 	nosetests-2.7 tests/
-	go test tes/...
+	go test funnel/...
 
 web:
-	cd share && \
+	cd web && \
 	npm install && \
 	./node_modules/.bin/browserify app.js -o bundle.js && \
 	./node_modules/node-sass/bin/node-sass style.scss style.css && \
@@ -70,3 +70,6 @@ web:
 gce-bundle:
 	GOOS=linux GOARCH=amd64 make
 	tar --exclude share/node_modules -czvf bin/gce-bundle.tar.gz bin/* gce/* share/*
+
+.PHONY: proto web
+

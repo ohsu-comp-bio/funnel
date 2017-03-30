@@ -2,7 +2,7 @@
 
 ***Docs are possibly out dated***
 
-This section describes the HTTP/gRPC APIs and related schemas available. These are described in Protobufs and gRPC in the [proto](../proto) and [task-execution-schemas](../task-execution-schemas) directories.
+This section describes the HTTP/gRPC APIs and related schemas available. These are described in Protobufs and gRPC in the [proto](../proto) directory.
 
 ###Example Task Message
 ```json

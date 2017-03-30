@@ -11,10 +11,12 @@ ga4gh_tasks.db
 /storage/
 /volumes/
 /tes-work-dir/
+/funnel-work-dir/
 *.sw[op]
 node_modules
 bower_components
 .sass-cache/
 style.css
 style.css.map
+/web/bundle.js
 /share/bundle.js

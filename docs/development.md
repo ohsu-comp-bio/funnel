@@ -35,7 +35,7 @@ Unfortunately this project isn't "go get-able" yet.
 
 - `make` builds the code
 - `make test` runs the test suite
-- `make proto_build` regenerates code from protobuf schemas (requires protoc)
+- `make proto` regenerates code from protobuf schemas (requires protoc)
 - `make tidy` reformats code
 - `make lint` checks code style and other 
 - `make add_deps` uses [vendetta](github.com/dpw/vendetta) to vendor Go dependencies
@@ -46,29 +46,29 @@ There are probably other commands. Check out the [Makefile](../Makefile).
 
 ## Source
 
-- `src/tes`: majority of the code.
+- `src/funnel`: majority of the code.
+  - `cmd`: funnel command line interface
   - `config`: configuration parsing/loading
-  - `ga4gh`: generated protobuf/gRPC files from [task-execution-schemas](../task-execution-schemas/proto/)
+  - `proto/tes`: generated GA4GH protobuf/gRPC files from [task-execution-schemas](../task-execution-schemas/proto/)
+  - `proto/funnel`: the internal, Funnel-specific protobuf/gRPC files
   - `logger`: custom logging code
   - `scheduler`: scheduler logic and scheduler backends
-  - `server`: database and server API
+  - `server`: database and server implementing the TES API
   - `storage`: filesystem support, used by worker during upload/download, e.g. local, Google Cloud Storage, S3, etc.
   - `worker`: worker process and state management, job runner, docker command executor, file mapper, etc.
-- `src/tes-server`: tes-server CLI binary
-- `src/tes-worker`: tes-worker CLI binary
-- `proto`: the internal, Funnel-specific protobuf + gRPC schemas
-- `task-execution-schemas/proto`: the GA4GH Protobuf + gRPC schemas
-- `share`: javascript/css/html for web dashboard
+- `bin/funnel`: funnel CLI binary
+
+- `web`: javascript/css/html for web dashboard
 
 ## Go Tests
 
 Useful testing commands (first, see the GOPATH section above):
 
-Run all tests: `go test tes/...`
+Run all tests: `go test funnel/...`
 
-Run the scheduler tests: `go test tes/scheduler/...`
+Run the scheduler tests: `go test funnel/scheduler/...`
 
-Run the worker tests matching "\*Cancel\*": `go test tes/worker -run Cancel`
+Run the worker tests matching "\*Cancel\*": `go test funnel/worker -run Cancel`
 
 You get the idea. See to `go test` docs for more.
 

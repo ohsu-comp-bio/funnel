@@ -16,10 +16,20 @@ var name, project, description, tpl string
 var dryrun, preemptible, wait, interactive bool
 var cpu int
 var ram float64
+// TODO allow outputs to be defined when they don't fit into the command
+// TODO workdir
+// TODO with input contents, script could be loaded from file
+// TODO what is stdout/err of funnel run?
+//      should have job id to access job state later
+// TODO load vars from file
+// TODO scatter over many vars files
+// TODO is there a case for glob inputs?
+// TODO volumes? size requirement?
 
 var examples string = `
 Examples:
   funnel run ubuntu 'md5sum {in .SRC} > {out .DST}' -- INFILE=~/input.txt OUTFILE=md5sum.txt",
+  funnel run ubuntu 'ls {dir .P | name "IN PATH" | desc "IN DESCRIPTION" | path "/tmp/in"  | create } > {out .O | path "/tmp/out" }
 `
 
 var cmd = &cobra.Command{

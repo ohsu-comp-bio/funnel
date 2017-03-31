@@ -27,9 +27,4 @@ var listCmd = &cobra.Command{
 
 func init() {
 	taskCmd.AddCommand(listCmd)
-	listCmd.Flags().StringVarP(&taskName, "name", "n", "", "Task name")
-	listCmd.Flags().StringVarP(&taskDesc, "desc", "d", "", "Task description")
-	listCmd.Flags().StringVarP(&taskTags, "tags", "t", "", "Task tags")
-	listCmd.Flags().StringVarP(&taskStart, "start", "s", "", "Task start time")
-	listCmd.Flags().StringVarP(&taskEnd, "end", "e", "", "Task end time")
 }

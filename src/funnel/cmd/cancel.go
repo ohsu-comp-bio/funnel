@@ -10,9 +10,12 @@ import (
 
 // cancelCmd represents the cancel command
 var cancelCmd = &cobra.Command{
-	Use:   "cancel <task_id> ...",
+	Use:   "cancel [taskID ...]",
 	Short: "cancel one or more tasks by ID",
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			cmd.Help()
+		}
 		for _, taskID := range args {
 			u, err := url.Parse(tesServer + "/v1/jobs/" + taskID)
 			if err != nil {

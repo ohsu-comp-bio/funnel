@@ -16,6 +16,9 @@ var createCmd = &cobra.Command{
 	Use:   "create <task.json>",
 	Short: "create a task to run on the server",
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			cmd.Help()
+		}
 		for _, task := range args {
 			taskMessage, err := ioutil.ReadFile(task)
 			if err != nil {

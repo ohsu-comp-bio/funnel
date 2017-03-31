@@ -3,9 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"net/http"
-	"os"
 )
 
 var (
@@ -22,16 +20,7 @@ var listCmd = &cobra.Command{
 	Short: "list all tasks",
 	Run: func(cmd *cobra.Command, args []string) {
 		resp, err := http.Get(tesServer + "/v1/jobs")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		body := responseChecker(resp, err)
 		fmt.Printf("%s", body)
 	},
 }

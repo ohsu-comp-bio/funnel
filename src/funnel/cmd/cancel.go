@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,14 +10,13 @@ import (
 
 // cancelCmd represents the cancel command
 var cancelCmd = &cobra.Command{
-	Use:   "cancel",
-	Short: "cancel a task",
+	Use:   "cancel <task_id> ...",
+	Short: "cancel one or more tasks by ID",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		for _, jobID := range args {
-			u, err := url.Parse(tesServer + "/v1/jobs/" + jobID)
+		for _, taskID := range args {
+			u, err := url.Parse(tesServer + "/v1/jobs/" + taskID)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 			cli := &http.Client{}
@@ -26,16 +24,7 @@ var cancelCmd = &cobra.Command{
 				Method: "DELETE",
 				URL:    u,
 			})
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			body := responseChecker(resp, err)
 			fmt.Printf("%s\n", body)
 		}
 	},

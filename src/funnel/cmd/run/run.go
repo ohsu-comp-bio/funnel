@@ -1,13 +1,14 @@
 package run
 
 import (
+  "context"
 	"funnel/logger"
-  "bytes"
 	"github.com/spf13/cobra"
   "fmt"
   "os"
   "funnel/proto/tes"
   "github.com/golang/protobuf/jsonpb"
+	"google.golang.org/grpc"
 )
 
 var log = logger.New("run")
@@ -15,6 +16,7 @@ var log = logger.New("run")
 // TODO figure out a nice default for name
 var name = "Funnel run"
 var workdir = "/opt/funnel"
+var server = "localhost:9090"
 var project, description, varsFile string
 var printTask, preemptible, wait bool
 // TODO validate resources
@@ -57,6 +59,8 @@ func init() {
   f.BoolVar(&preemptible, "preemptible", preemptible, "Allow task to be scheduled on preemptible workers")
   f.StringSliceVar(&zones, "zones", zones, "Require task be scheduled in certain zones")
   f.StringVar(&varsFile, "vars-file", varsFile, "Read vars a file")
+  f.StringVar(&server, "server", server, "Address of Funnel server")
+  f.BoolVar(&printTask, "print", printTask, "Print the task, instead of running it")
 }
 
 
@@ -84,17 +88,11 @@ func run(cmd *cobra.Command, args []string) {
   fileVars, err := parseFileVars(varsFile)
   vars, err := mergeVars(cliVars, fileVars)
 
-  if err != nil {
-    fmt.Println("Invalid vars: %s", err)
-    os.Exit(3)
-  }
+  checkErr(err)
 
   res, err := parseTpl(rawcmd, vars)
 
-  if err != nil {
-    fmt.Println(err)
-    os.Exit(3)
-  }
+  checkErr(err)
 
   // TODO
   res.Volumes[0].SizeGb = disk
@@ -129,16 +127,60 @@ func run(cmd *cobra.Command, args []string) {
   }
   log.Debug("TASK", task)
 
-  mar := jsonpb.Marshaler{
-    EmitDefaults: true,
-    Indent: "\t",
+  // Marshal message to JSON and print
+  if printTask {
+    mar := jsonpb.Marshaler{
+      EmitDefaults: true,
+      Indent: "\t",
+    }
+    s, merr := mar.MarshalToString(task)
+    checkErr(merr)
+    fmt.Println(s)
+    return
   }
-  buf := &bytes.Buffer{}
-  merr := mar.Marshal(buf, task)
-  if merr != nil {
-    fmt.Println(merr)
+
+  c, cerr := newClient(server)
+  checkErr(cerr)
+  resp, rerr := c.RunTask(context.TODO(), task)
+  checkErr(rerr)
+
+  jobID := resp.Value
+  fmt.Println(jobID)
+}
+
+func checkErr(err error) {
+  if err != nil {
+    fmt.Println(err)
     os.Exit(3)
   }
-  s := buf.String()
-  fmt.Println(s)
+}
+
+type client struct {
+	tes.TaskServiceClient
+	conn *grpc.ClientConn
+}
+
+func newClient(address string) (*client, error) {
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+
+	if err != nil {
+		log.Error("Couldn't open RPC connection",
+			"error", err,
+			"address", address,
+		)
+		return nil, err
+	}
+
+	if err != nil {
+		log.Error("Couldn't connect to server", err)
+		return nil, err
+	}
+
+	s := tes.NewTaskServiceClient(conn)
+	return &client{s, conn}, nil
+}
+
+// Close closes the client connection.
+func (client *client) Close() {
+	client.conn.Close()
 }

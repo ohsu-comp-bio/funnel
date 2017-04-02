@@ -66,10 +66,16 @@ func parseTpl(raw string, vars map[string]string) (*parseResult, error) {
     // TODO
     Volumes: []*tes.Volume{
       {
-        Name: "TODO Default funnel run volume",
+        Name: "TODO Default funnel run output volume",
         // TODO
         SizeGb: 10,
         MountPoint: "/opt/funnel/outputs",
+      },
+      {
+        Name: "TODO Default funnel run inputs volume",
+        // TODO
+        SizeGb: 10,
+        MountPoint: "/opt/funnel/inputs",
       },
     },
     inputsMap: map[string]*tes.TaskParameter{},

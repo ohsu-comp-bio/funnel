@@ -9,6 +9,7 @@ import (
   "funnel/proto/tes"
   "github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
+  "time"
 )
 
 var log = logger.New("run")
@@ -61,6 +62,7 @@ func init() {
   f.StringVar(&varsFile, "vars-file", varsFile, "Read vars a file")
   f.StringVar(&server, "server", server, "Address of Funnel server")
   f.BoolVar(&printTask, "print", printTask, "Print the task, instead of running it")
+  f.BoolVar(&wait, "wait", wait, "Wait for the task to finish before exiting")
 }
 
 
@@ -146,6 +148,12 @@ func run(cmd *cobra.Command, args []string) {
 
   jobID := resp.Value
   fmt.Println(jobID)
+
+  if wait {
+    c.waitForTask(jobID)
+    // TODO print/log result
+    // TODO stream logs while waiting
+  }
 }
 
 func checkErr(err error) {
@@ -158,6 +166,17 @@ func checkErr(err error) {
 type client struct {
 	tes.TaskServiceClient
 	conn *grpc.ClientConn
+}
+
+func (c *client) waitForTask(jobID string) {
+  for range time.NewTicker(time.Second * 2).C {
+    // TODO handle error
+    r, _ := c.GetJob(context.TODO(), &tes.JobID{jobID})
+    switch r.State {
+    case tes.State_Complete, tes.State_Error, tes.State_SystemError, tes.State_Canceled:
+      return
+    }
+  }
 }
 
 func newClient(address string) (*client, error) {

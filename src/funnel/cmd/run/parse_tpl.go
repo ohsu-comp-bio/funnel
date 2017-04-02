@@ -6,6 +6,7 @@ import (
   "strings"
   "funnel/proto/tes"
   "net/url"
+  "path/filepath"
 )
 
 type parseResult struct {
@@ -22,11 +23,16 @@ type parseResult struct {
 
 func (res *parseResult) AddInput(rawurl string) string {
   u, _ := url.Parse(rawurl)
+  if u.Scheme == "" {
+    u.Scheme = "file"
+    abs, _ := filepath.Abs(filepath.Clean(rawurl))
+    u, _ = url.Parse(abs)
+  }
   // TODO linux specific path?
   // TODO raw/encoded path is best?
   p := "/opt/funnel/inputs" + u.EscapedPath()
   in := &tes.TaskParameter{
-    Location: rawurl,
+    Location: u.String(),
     Path: p,
     Class: "File",
   }
@@ -37,12 +43,16 @@ func (res *parseResult) AddInput(rawurl string) string {
 
 func (res *parseResult) AddOutput(rawurl string) string {
   u, _ := url.Parse(rawurl)
-  log.Debug("OUTPATH", u.EscapedPath())
+  if u.Scheme == "" {
+    u.Scheme = "file"
+    abs, _ := filepath.Abs(filepath.Clean(rawurl))
+    u, _ = url.Parse(abs)
+  }
   // TODO linux specific path?
   // TODO raw/encoded path is best?
   p := "/opt/funnel/outputs" + u.EscapedPath()
   out := &tes.TaskParameter{
-    Location: rawurl,
+    Location: u.String(),
     Path: p,
     Class: "File",
   }
@@ -70,7 +80,7 @@ func parseTpl(raw string, vars map[string]string) (*parseResult, error) {
     "out": res.AddOutput,
   }
 
-  t, err := template.New("cmd").
+  t, err := template.New("Command").
     Delims("{", "}").
     Funcs(funcs).
     Parse(raw)
@@ -86,7 +96,6 @@ func parseTpl(raw string, vars map[string]string) (*parseResult, error) {
   }
 
   cmd := buf.String()
-  log.Debug("CMD", cmd)
   // TODO shell splitting needed
   res.Cmd = strings.Split(cmd, " ")
   return res, nil

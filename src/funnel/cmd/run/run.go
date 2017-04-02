@@ -29,17 +29,19 @@ var zones []string
 // TODO allow outputs to be defined when they don't fit into the command
 //      such as bam file index secondary file
 // TODO with input contents, script could be loaded from file
-// TODO what is stdout/err of funnel run?
-//      should have job id to access job state later
 // TODO load vars from file
 // TODO is there a case for glob inputs?
-// TODO volumes? size requirement?
+// TODO better volumes? size requirement?
+// TODO don't bother with specific outputs? Just upload entire working directory by default?
 
-var examples string = `
+var examples string
+/*
+TODO
 Examples:
   funnel run ubuntu 'md5sum {in .SRC} > {out .DST}' -- -SRC ~/input.txt -DST md5sum.txt"
   funnel run ubuntu 'ls {in .P | name "IN PATH" | desc "IN DESCRIPTION" | path "/tmp/in"  | create } > {out .O | path "/tmp/out" }'
 `
+*/
 
 var Cmd = &cobra.Command{
 	Use:   "run [flags] IMAGE TEMPLATE -- VARS",

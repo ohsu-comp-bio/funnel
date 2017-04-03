@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"fmt"
@@ -10,14 +10,13 @@ import (
 
 var tesServer string
 
-// taskCmd represents the task command
-var taskCmd = &cobra.Command{
+// TaskCmd represents the task command
+var TaskCmd = &cobra.Command{
 	Use: "task",
 }
 
 func init() {
-	RootCmd.AddCommand(taskCmd)
-	taskCmd.PersistentFlags().StringVarP(&tesServer, "server", "S", "http://localhost:8000", "")
+	TaskCmd.PersistentFlags().StringVarP(&tesServer, "server", "S", "http://localhost:8000", "")
 }
 
 // responseChecker does some basic error handling and reads the response body into a byte array

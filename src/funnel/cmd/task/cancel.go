@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"fmt"
@@ -34,5 +34,5 @@ var cancelCmd = &cobra.Command{
 }
 
 func init() {
-	taskCmd.AddCommand(cancelCmd)
+	TaskCmd.AddCommand(cancelCmd)
 }

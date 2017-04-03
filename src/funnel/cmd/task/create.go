@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"bytes"
@@ -50,7 +50,7 @@ var createCmd = &cobra.Command{
 }
 
 func init() {
-	taskCmd.AddCommand(createCmd)
+	TaskCmd.AddCommand(createCmd)
 }
 
 func isJSON(s string) bool {

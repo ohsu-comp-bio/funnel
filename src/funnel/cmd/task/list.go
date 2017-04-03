@@ -1,4 +1,4 @@
-package cmd
+package task
 
 import (
 	"encoding/json"
@@ -48,17 +48,17 @@ var listCmd = &cobra.Command{
 			}
 		}
 
-		jobsJson, err := json.Marshal(jobs)
+		jobsJSON, err := json.Marshal(jobs)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		fmt.Printf("%s", jobsJson)
+		fmt.Printf("%s", jobsJSON)
 	},
 }
 
 func init() {
-	taskCmd.AddCommand(listCmd)
+	TaskCmd.AddCommand(listCmd)
 	listCmd.Flags().StringVarP(&taskState, "state", "s", "", "Task state")
 	listCmd.Flags().StringVarP(&taskName, "name", "n", "", "Task name")
 }

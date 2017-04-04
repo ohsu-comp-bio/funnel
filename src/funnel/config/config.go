@@ -190,7 +190,9 @@ func WorkerDefaultConfig(c Config) Worker {
 
 // WorkerInheritConfigVals is a utility to help ensure the Worker inherits the proper config values from the parent Config
 func WorkerInheritConfigVals(c Config) Worker {
-	c.Worker.ServerAddress = c.HostName + ":" + c.RPCPort
+	if (c.HostName != "") && (c.RPCPort != "") {
+		c.Worker.ServerAddress = c.HostName + ":" + c.RPCPort
+	}
 	c.Worker.Storage = c.Storage
 	c.Worker.WorkDir = c.WorkDir
 	c.Worker.LogLevel = c.LogLevel
@@ -198,20 +200,20 @@ func WorkerInheritConfigVals(c Config) Worker {
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.
-func (c Worker) ToYaml() []byte {
+func (c Config) ToYaml() []byte {
 	// TODO handle error
 	yamlstr, _ := yaml.Marshal(c)
 	return yamlstr
 }
 
 // ToYamlFile writes the configuration to a YAML file.
-func (c Worker) ToYamlFile(p string) {
+func (c Config) ToYamlFile(p string) {
 	// TODO handle error
 	ioutil.WriteFile(p, c.ToYaml(), 0600)
 }
 
 // ToYamlTempFile writes the configuration to a YAML temp. file.
-func (c Worker) ToYamlTempFile(name string) (string, func()) {
+func (c Config) ToYamlTempFile(name string) (string, func()) {
 	// I'm creating a temp. directory instead of a temp. file so that
 	// the file can have an expected name. This is helpful for the HTCondor scheduler.
 	tmpdir, _ := ioutil.TempDir("", "")

@@ -57,9 +57,11 @@ func init() {
 }
 
 func startServer(conf config.Config) {
+	logger.SetLevel(conf.LogLevel)
+	workerLog.Debug("Server Config", "config.Config", conf)
+
 	var err error
 
-	logger.SetLevel(conf.LogLevel)
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log
 	//      without having file permission problems?

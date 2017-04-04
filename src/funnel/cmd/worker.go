@@ -18,7 +18,6 @@ var workerBaseConf = config.Config{}
 var workerCmd = &cobra.Command{
 	Use:   "worker",
 	Short: "",
-	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		var wconf = config.WorkerDefaultConfig(config.DefaultConfig())
 		var conf config.Config
@@ -53,6 +52,7 @@ func init() {
 
 func startWorker(conf config.Worker) {
 	logger.SetLevel(conf.LogLevel)
+	workerLog.Debug("Worker Config", "config.Worker", conf)
 
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log

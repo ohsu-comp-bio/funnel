@@ -128,9 +128,9 @@ func (s *gceScheduler) ShouldStartWorker(w *pbf.Worker) bool {
 func (s *gceScheduler) StartWorker(w *pbf.Worker) error {
 
 	// Write the funnel worker config yaml to a string
-	c := s.conf.Worker
-	c.ID = w.Id
-	c.Timeout = -1
+	wc := s.conf
+	wc.Worker.ID = w.Id
+	wc.Worker.Timeout = -1
 
 	// Get the template ID from the worker metadata
 	template, ok := w.Metadata["gce-template"]
@@ -138,5 +138,5 @@ func (s *gceScheduler) StartWorker(w *pbf.Worker) error {
 		return fmt.Errorf("Could not get GCE template ID from metadata")
 	}
 
-	return s.gce.StartWorker(template, c)
+	return s.gce.StartWorker(template, wc)
 }

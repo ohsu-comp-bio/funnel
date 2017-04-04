@@ -25,7 +25,8 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 	// Send update for host IP address.
 	s.update(&tes.JobLog{
-		HostIP: s.IP,
+		StartTime: time.Now().Format(time.RFC3339),
+		HostIP:    s.IP,
 	})
 
 	// subctx helps ensure that these goroutines are cleaned up,
@@ -53,6 +54,9 @@ func (s *stepRunner) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			// Likely the job was canceled.
 			s.Cmd.Stop()
+			s.update(&tes.JobLog{
+				EndTime: time.Now().Format(time.RFC3339),
+			})
 			return ctx.Err()
 
 		case <-ticker.C:
@@ -61,6 +65,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 		case result := <-done:
 			s.update(&tes.JobLog{
+				EndTime:  time.Now().Format(time.RFC3339),
 				ExitCode: getExitCode(result),
 			})
 			return result

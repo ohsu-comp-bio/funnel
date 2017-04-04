@@ -102,19 +102,19 @@ func (s *scheduler) StartWorker(w *pbf.Worker) error {
 	}
 
 	submitTpl, err := template.New("condor.submit").Parse(`
-		universe       = vanilla
-		executable     = {{.Executable}}
-		arguments      = worker --config worker.conf.yml
-		environment    = "PATH=/usr/bin"
-		log            = {{.WorkDir}}/condor-event-log
-		error          = {{.WorkDir}}/tes-worker-stderr
-		output         = {{.WorkDir}}/tes-worker-stdout
-		input          = {{.Config}}
-		{{.Resources}}
-		should_transfer_files   = YES
-		when_to_transfer_output = ON_EXIT
-		queue
-	`)
+universe       = vanilla
+executable     = {{.Executable}}
+arguments      = worker --config worker.conf.yml
+environment    = "PATH=/usr/bin"
+log            = {{.WorkDir}}/condor-event-log
+error          = {{.WorkDir}}/tes-worker-stderr
+output         = {{.WorkDir}}/tes-worker-stdout
+input          = {{.Config}}
+{{.Resources}}
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT
+queue
+`)
 	if err != nil {
 		return err
 	}

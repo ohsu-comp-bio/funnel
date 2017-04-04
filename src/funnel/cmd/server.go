@@ -16,6 +16,8 @@ import (
 )
 
 var serverLog = logger.New("funnel-server")
+var configFile string
+var baseConf = config.Config{}
 
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
@@ -43,6 +45,12 @@ var serverCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(serverCmd)
+	serverCmd.Flags().StringVarP(&configFile, "config", "c", "", "Config File")
+	serverCmd.Flags().StringVar(&baseConf.HostName, "hostname", baseConf.HostName, "Host name or IP")
+	serverCmd.Flags().StringVar(&baseConf.RPCPort, "rpc-port", baseConf.RPCPort, "RPC Port")
+	serverCmd.Flags().StringVar(&baseConf.WorkDir, "work-dir", baseConf.WorkDir, "Working Directory")
+	serverCmd.Flags().StringVar(&baseConf.LogLevel, "log-level", baseConf.LogLevel, "Level of logging")
+	serverCmd.Flags().StringVar(&baseConf.LogPath, "log-path", baseConf.LogLevel, "File path to write logs to")
 	serverCmd.Flags().StringVar(&baseConf.HTTPPort, "http-port", baseConf.HTTPPort, "HTTP Port")
 	serverCmd.Flags().StringVar(&baseConf.DBPath, "db-path", baseConf.DBPath, "Database path")
 	serverCmd.Flags().StringVar(&baseConf.Scheduler, "scheduler", baseConf.Scheduler, "Name of scheduler to enable")

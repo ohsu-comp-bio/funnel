@@ -55,7 +55,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 			// Likely the job was canceled.
 			s.Cmd.Stop()
 			s.update(&tes.JobLog{
-				EndTime:  time.Now().Format(time.RFC3339),
+				EndTime: time.Now().Format(time.RFC3339),
 			})
 			return ctx.Err()
 

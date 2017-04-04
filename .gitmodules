@@ -79,3 +79,12 @@
 [submodule "src/vendor/github.com/spf13/pflag"]
 	path = src/vendor/github.com/spf13/pflag
 	url = https://github.com/spf13/pflag
+[submodule "src/vendor/github.com/elgs/jsonql"]
+	path = src/vendor/github.com/elgs/jsonql
+	url = https://github.com/elgs/jsonql
+[submodule "src/vendor/github.com/elgs/gojq"]
+	path = src/vendor/github.com/elgs/gojq
+	url = https://github.com/elgs/gojq
+[submodule "src/vendor/github.com/elgs/gosplitargs"]
+	path = src/vendor/github.com/elgs/gosplitargs
+	url = https://github.com/elgs/gosplitargs

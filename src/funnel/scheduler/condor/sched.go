@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 )
 
 var log = logger.New("condor")
@@ -84,8 +85,7 @@ func (s *scheduler) StartWorker(w *pbf.Worker) error {
 
 	c := s.conf.Worker
 	c.ID = w.Id
-	// 5 second timeout
-	c.Timeout = 5000000000
+	c.Timeout = 5 * time.Second
 	c.Resources.Cpus = w.Resources.Cpus
 	c.Resources.Ram = w.Resources.Ram
 	c.Resources.Disk = w.Resources.Disk

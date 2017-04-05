@@ -15,7 +15,7 @@ import (
 // or start a worker instance.
 type Client interface {
 	Templates() []pbf.Worker
-	StartWorker(tplName string, conf config.Worker) error
+	StartWorker(tplName string, conf config.Config) error
 }
 
 // Helper for creating a wrapper before creating a client
@@ -92,7 +92,7 @@ func (s *gceClient) Templates() []pbf.Worker {
 
 // StartWorker calls out to GCE APIs to create a VM instance
 // with a Funnel worker.
-func (s *gceClient) StartWorker(tplName string, conf config.Worker) error {
+func (s *gceClient) StartWorker(tplName string, conf config.Config) error {
 	s.loadTemplates()
 
 	// Get the instance template from the GCE API
@@ -124,7 +124,7 @@ func (s *gceClient) StartWorker(tplName string, conf config.Worker) error {
 
 	// Create the instance on GCE
 	instance := compute.Instance{
-		Name:              conf.ID,
+		Name:              conf.Worker.ID,
 		CanIpForward:      props.CanIpForward,
 		Description:       props.Description,
 		Disks:             props.Disks,

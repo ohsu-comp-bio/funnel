@@ -57,10 +57,10 @@ func TestWrapper(t *testing.T) {
 		t.Error("Worker has incorrect template")
 	}
 
-	workerConf := conf.Worker
-	workerConf.ID = w.Id
-	workerConf.ServerAddress = conf.HostName + ":" + conf.RPCPort
-	confYaml := string(workerConf.ToYaml())
+	wconf := conf
+	wconf.Worker.ID = w.Id
+	wconf.Worker.ServerAddress = conf.HostName + ":" + conf.RPCPort
+	confYaml := string(wconf.ToYaml())
 	expected := &Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
@@ -99,8 +99,8 @@ func TestWrapper(t *testing.T) {
 // Tests what happens when the InsertInstance() call fails the first couple times.
 func TestInsertTempError(t *testing.T) {
 
-	conf := basicConf().Worker
-	conf.ID = "test-worker"
+	conf := basicConf()
+	conf.Worker.ID = "test-worker"
 	wpr := new(gce_mocks.Wrapper)
 	wpr.SetupMockInstanceTemplates()
 	wpr.SetupMockMachineTypes()

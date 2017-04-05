@@ -83,15 +83,15 @@ func (s *scheduler) StartWorker(w *pbf.Worker) error {
 		return err
 	}
 
-	c := s.conf.Worker
-	c.ID = w.Id
-	c.Timeout = 5 * time.Second
-	c.Resources.Cpus = w.Resources.Cpus
-	c.Resources.Ram = w.Resources.Ram
-	c.Resources.Disk = w.Resources.Disk
+	wc := s.conf
+	wc.Worker.ID = w.Id
+	wc.Worker.Timeout = 5 * time.Second
+	wc.Worker.Resources.Cpus = w.Resources.Cpus
+	wc.Worker.Resources.Ram = w.Resources.Ram
+	wc.Worker.Resources.Disk = w.Resources.Disk
 
 	confPath := path.Join(workdir, "worker.conf.yml")
-	c.ToYamlFile(confPath)
+	wc.ToYamlFile(confPath)
 
 	workerPath := sched.DetectWorkerPath()
 
@@ -149,14 +149,14 @@ queue
 func resolveCondorResourceRequest(cpus int, ram float64, disk float64) string {
 	var resources = []string{}
 	if cpus != 0 {
-		resources = append(resources, fmt.Sprintf("request_cpus = %d", cpus))
+		resources = append(resources, fmt.Sprintf("request_cpus   = %d", cpus))
 	}
 	if ram != 0.0 {
 		resources = append(resources, fmt.Sprintf("request_memory = %f GB", ram))
 	}
 	if disk != 0.0 {
 		// Convert GB to KiB
-		resources = append(resources, fmt.Sprintf("request_disk = %f", disk*976562))
+		resources = append(resources, fmt.Sprintf("request_disk   = %f", disk*976562))
 	}
 	return strings.Join(resources, "\n")
 }

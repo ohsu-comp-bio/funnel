@@ -11,11 +11,11 @@ type Client struct {
 }
 
 // StartWorker provides a mock function with given fields: tplName, conf
-func (_m *Client) StartWorker(tplName string, conf config.Worker) error {
+func (_m *Client) StartWorker(tplName string, conf config.Config) error {
 	ret := _m.Called(tplName, conf)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, config.Worker) error); ok {
+	if rf, ok := ret.Get(0).(func(string, config.Config) error); ok {
 		r0 = rf(tplName, conf)
 	} else {
 		r0 = ret.Error(0)

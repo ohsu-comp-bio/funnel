@@ -37,8 +37,8 @@ func (s *scheduler) StartWorker(w *pbf.Worker) error {
 		return cerr
 	}
 
-	conf := s.conf.Worker
-	conf.ID = w.Id
+	conf := s.conf
+	conf.Worker.ID = w.Id
 	osconf := s.conf.Schedulers.OpenStack
 
 	_, serr := servers.Create(client, keypairs.CreateOptsExt{

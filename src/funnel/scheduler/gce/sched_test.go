@@ -124,10 +124,10 @@ func TestSchedStartWorker(t *testing.T) {
 	log.Debug("Workers", workers)
 
 	// Expected worker config
-	wconf := conf.Worker
+	wconf := conf
 	// Expect ServerAddress to match the server's config
-	wconf.ServerAddress = conf.HostName + ":" + conf.RPCPort
-	wconf.ID = expected.Id
+	wconf.Worker.ServerAddress = conf.HostName + ":" + conf.RPCPort
+	wconf.Worker.ID = expected.Id
 	gce.On("StartWorker", "test-tpl", wconf).Return(nil)
 
 	scheduler.Scale(srv.DB, s)
@@ -312,8 +312,8 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 	gce.
 		On("StartWorker", "test-tpl", mock.Anything).
 		Run(func(args mock.Arguments) {
-			wconf := args[1].(config.Worker)
-			w = newMockWorker(wconf)
+			wconf := args[1].(config.Config)
+			w = newMockWorker(wconf.Worker)
 		}).
 		Return(nil)
 

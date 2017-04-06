@@ -101,9 +101,8 @@ upload-latest:
 		done; \
 	done
 
-gce-bundle:
+cross-compile:
 	GOOS=linux GOARCH=amd64 make
-	tar --exclude share/node_modules -czvf bin/gce-bundle.tar.gz bin/* gce/* share/*
 
 full: proto install prune_deps add_deps tidy lint test web
 

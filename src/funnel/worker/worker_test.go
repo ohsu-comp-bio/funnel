@@ -119,7 +119,7 @@ func TestJobFail(t *testing.T) {
 // error from client.GetWorker().
 func TestGetWorkerFail(t *testing.T) {
 	// Create worker
-	conf := config.WorkerDefaultConfig(config.DefaultConfig())
+	conf := config.DefaultConfig().Worker
 	w, err := NewWorker(conf)
 	if err != nil {
 		t.Error(err)
@@ -174,7 +174,7 @@ func TestWorkerTimeout(t *testing.T) {
 
 // Test calling Worker.Stop()
 func TestStopWorker(t *testing.T) {
-	w, _ := NewWorker(config.WorkerDefaultConfig(config.DefaultConfig()))
+	w, _ := NewWorker(config.DefaultConfig().Worker)
 	done := make(chan struct{})
 	go func() {
 		w.Run()

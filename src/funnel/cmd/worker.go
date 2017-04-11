@@ -19,22 +19,21 @@ var workerCmd = &cobra.Command{
 	Use:   "worker",
 	Short: "",
 	Run: func(cmd *cobra.Command, args []string) {
-		var wconf = config.WorkerDefaultConfig(config.DefaultConfig())
-		var conf config.Config
+		conf := config.DefaultConfig()
+
 		if workerConfigFile != "" {
 			config.LoadConfigOrExit(workerConfigFile, &conf)
-			wconf = conf.Worker
 		}
 
 		workerDconf := config.WorkerInheritConfigVals(workerBaseConf)
 
 		// file vals <- cli val
-		err := mergo.MergeWithOverwrite(&wconf, workerDconf)
+		err := mergo.MergeWithOverwrite(&conf.Worker, workerDconf)
 		if err != nil {
 			panic(err)
 		}
 
-		startWorker(wconf)
+		startWorker(conf.Worker)
 	},
 }
 

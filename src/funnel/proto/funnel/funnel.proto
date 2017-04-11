@@ -25,8 +25,8 @@ enum WorkerState {
 
 message Worker {
   string id = 1;
-  // Job ID -> JobWrapper
-  map<string, JobWrapper> jobs = 2;
+  // Task ID -> TaskWrapper
+  map<string, TaskWrapper> tasks = 2;
   Resources resources = 5;
   Resources available = 6;
   int64 last_ping = 7;
@@ -44,19 +44,20 @@ message Worker {
 }
 
 // TODO is there a nice way to avoid this wrapper? Maybe protobuf extensions?
-//      or use metadata field of Job?
-message JobWrapper {
-  ga4gh_task_exec.Job job = 1;
+//      or use metadata field of Task?
+message TaskWrapper {
+  tes.Task task = 1;
   string auth = 2;
 }
 
-message UpdateJobLogsRequest {
+message UpdateExecutorLogsRequest {
   string id = 1;
   int64 step = 2;
-  ga4gh_task_exec.JobLog log = 4;
+  tes.ExecutorLog log = 4;
   string worker_id = 5;
 }
-message UpdateJobLogsResponse {}
+
+message UpdateExecutorLogsResponse {}
 
 message QueuedTaskInfoRequest {
   int32 max_tasks = 1;
@@ -64,7 +65,7 @@ message QueuedTaskInfoRequest {
 
 message QueuedTaskInfo {
   repeated string inputs = 1;
-  ga4gh_task_exec.Resources resources = 2;
+  tes.Resources resources = 2;
 }
 
 message GetWorkersRequest {
@@ -85,7 +86,7 @@ message GetWorkerRequest {
  */
 service Scheduler {
   rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
-  rpc UpdateJobLogs(UpdateJobLogsRequest) returns (UpdateJobLogsResponse) {};
+  rpc UpdateExecutorLogs(UpdateExecutorLogsRequest) returns (UpdateExecutorLogsResponse) {};
   rpc UpdateWorker(Worker) returns (UpdateWorkerResponse) {};
 
   rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {

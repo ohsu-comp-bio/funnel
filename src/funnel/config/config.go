@@ -137,8 +137,22 @@ func DefaultConfig() Config {
 		ScheduleChunk:     10,
 		WorkerPingTimeout: time.Minute,
 		WorkerInitTimeout: time.Minute * 5,
+		Worker: Worker{
+			ServerAddress: hostName + ":" + rpcPort,
+			WorkDir:       workDir,
+			Timeout:       -1,
+			// TODO these get reset to zero when not found in yaml?
+			UpdateRate:    time.Second * 5,
+			LogUpdateRate: time.Second * 5,
+			TrackerRate:   time.Second * 5,
+			LogTailSize:   10000,
+			LogLevel:      "debug",
+			UpdateTimeout: time.Second,
+			Resources: &pbf.Resources{
+				Disk: 100.0,
+			},
+		},
 	}
-	c.Worker = WorkerDefaultConfig(c)
 	return c
 }
 
@@ -166,26 +180,6 @@ type Worker struct {
 	// Timeout duration for UpdateWorker() and UpdateJobLogs() RPC calls
 	UpdateTimeout time.Duration
 	Metadata      map[string]string
-}
-
-// WorkerDefaultConfig returns simple, default worker configuration.
-func WorkerDefaultConfig(c Config) Worker {
-	return Worker{
-		ServerAddress: c.HostName + ":" + c.RPCPort,
-		WorkDir:       c.WorkDir,
-		Timeout:       -1,
-		// TODO these get reset to zero when not found in yaml?
-		UpdateRate:    time.Second * 5,
-		LogUpdateRate: time.Second * 5,
-		TrackerRate:   time.Second * 5,
-		LogTailSize:   10000,
-		Storage:       c.Storage,
-		LogLevel:      "debug",
-		UpdateTimeout: time.Second,
-		Resources: &pbf.Resources{
-			Disk: 100.0,
-		},
-	}
 }
 
 // WorkerInheritConfigVals is a utility to help ensure the Worker inherits the proper config values from the parent Config

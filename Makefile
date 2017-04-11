@@ -101,8 +101,8 @@ upload-latest:
 		done; \
 	done
 
-cross-compile:
-	GOOS=linux GOARCH=amd64 make
+gce-image: cross-compile
+	./deployments/gce/make-image.sh
 
 full: proto install prune_deps add_deps tidy lint test web
 

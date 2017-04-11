@@ -9,7 +9,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Load helper functions
 source $DIR/helpers.sh
 
-log 'Creating VM...'
+log_header 'Creating VM...'
 
 gcloud compute instances create $NAME \
   --scopes https://www.googleapis.com/auth/cloud-platform \

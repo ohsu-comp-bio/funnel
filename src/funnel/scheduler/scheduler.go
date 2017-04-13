@@ -1,66 +1,94 @@
 package scheduler
 
 import (
-	"context"
-	"fmt"
 	"funnel/config"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
-	server "funnel/server"
-	uuid "github.com/nu7hatch/gouuid"
+	"golang.org/x/net/context"
+	"os"
 	"time"
 )
 
-// Scheduler is responsible for scheduling a job. It has a single method which
-// is responsible for taking a Job and returning an Offer, or nil if there is
-// no worker matching the job request. An Offer includes the ID of the offered
-// worker.
-//
-// Offers include scores which describe how well the job fits the worker.
-// Scores may describe a wide variety of metrics: resource usage, packing,
-// startup time, cost, etc. Scores and weights are used to control the behavior
-// of schedulers, and to combine offers from multiple schedulers.
-type Scheduler interface {
-	Schedule(*tes.Job) *Offer
+// Database represents the interface to the database used by the scheduler, scaler, etc.
+// Mostly, this exists so it can be mocked during testing.
+type Database interface {
+	ReadQueue(n int) []*tes.Job
+	AssignJob(*tes.Job, *pbf.Worker)
+	CheckWorkers() error
+	GetWorkers(context.Context, *pbf.GetWorkersRequest) (*pbf.GetWorkersResponse, error)
+	UpdateWorker(context.Context, *pbf.Worker) (*pbf.UpdateWorkerResponse, error)
 }
 
-// Scaler represents a service that can start worker instances, for example
-// the Google Cloud Scheduler backend.
-type Scaler interface {
-	// StartWorker is where the work is done to start a worker instance,
-	// for example, calling out to Google Cloud APIs.
-	StartWorker(*pbf.Worker) error
-	// ShouldStartWorker allows scalers to filter out workers they are interested in.
-	// If "true" is returned, Scaler.StartWorker() will be called with this worker.
-	ShouldStartWorker(*pbf.Worker) bool
+// NewScheduler returns a new Scheduler instance.
+func NewScheduler(db Database, conf config.Config) (*Scheduler, error) {
+	return &Scheduler{db, conf}, nil
 }
 
-// Offer describes a worker offered by a scheduler for a job.
-// The Scores describe how well the job fits this worker,
-// which could be used by other a scheduler to pick the best offer.
-type Offer struct {
-	JobID  string
-	Worker *pbf.Worker
-	Scores Scores
+// Scheduler handles scheduling tasks to workers and support many backends.
+type Scheduler struct {
+	db   Database
+	conf config.Config
 }
 
-// NewOffer returns a new Offer instance.
-func NewOffer(w *pbf.Worker, j *tes.Job, s Scores) *Offer {
-	return &Offer{
-		JobID:  j.JobID,
-		Worker: w,
-		Scores: s,
+// Start starts the scheduling loops. This does not block.
+// The scheduler will take a chunk of tasks from the queue,
+// request the the configured backend schedule them, and
+// act on offers made by the backend.
+func (s *Scheduler) Start(ctx context.Context) error {
+	var err error
+	backend, err := NewBackend(s.conf.Scheduler, s.conf)
+	if err != nil {
+		return err
 	}
+
+	err = os.MkdirAll(s.conf.WorkDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	// The scheduler and scaler loops are in separate goroutines
+	// so that a long, blocking call in one doesn't block the other.
+
+	// Start backend scheduler loop
+	go func() {
+		ticker := time.NewTicker(s.conf.ScheduleRate)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				ScheduleChunk(ctx, s.db, backend, s.conf)
+			}
+		}
+	}()
+
+	// If the scheduler implements the Scaler interface,
+	// start a scaler loop
+	if b, ok := backend.(Scaler); ok {
+		// Start backend scaler loop
+		go func() {
+			ticker := time.NewTicker(s.conf.ScheduleRate)
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					Scale(ctx, s.db, b)
+				}
+			}
+		}()
+	}
+	return nil
 }
 
 // ScheduleChunk does a scheduling iteration. It checks the health of workers
 // in the database, gets a chunk of tasks from the queue (configurable by config.ScheduleChunk),
 // and calls the given scheduler. If the scheduler returns a valid offer, the
 // job is assigned to the offered worker.
-func ScheduleChunk(db server.Database, sched Scheduler, conf config.Config) {
+func ScheduleChunk(ctx context.Context, db Database, b Backend, conf config.Config) {
 	db.CheckWorkers()
 	for _, job := range db.ReadQueue(conf.ScheduleChunk) {
-		offer := sched.Schedule(job)
+		offer := b.Schedule(job)
 		if offer != nil {
 			log.Debug("Assigning job to worker",
 				"jobID", job.JobID,
@@ -73,18 +101,12 @@ func ScheduleChunk(db server.Database, sched Scheduler, conf config.Config) {
 	}
 }
 
-// GenWorkerID returns a UUID string.
-func GenWorkerID(prefix string) string {
-	u, _ := uuid.NewV4()
-	return fmt.Sprintf("%s-worker-%s", prefix, u.String())
-}
-
 // Scale implements some common logic for allowing scheduler backends
 // to poll the database, looking for workers that need to be started
 // and shutdown.
-func Scale(db server.Database, s Scaler) {
+func Scale(ctx context.Context, db Database, s Scaler) {
 
-	resp, err := db.GetWorkers(context.TODO(), &pbf.GetWorkersRequest{})
+	resp, err := db.GetWorkers(ctx, &pbf.GetWorkersRequest{})
 	if err != nil {
 		log.Error("Failed GetWorkers request. Recovering.", err)
 		return
@@ -105,7 +127,7 @@ func Scale(db server.Database, s Scaler) {
 		// TODO should the Scaler instance handle this? Is it possible
 		//      that Initializing is the wrong state in some cases?
 		w.State = pbf.WorkerState_Initializing
-		_, err := db.UpdateWorker(context.TODO(), w)
+		_, err := db.UpdateWorker(ctx, w)
 
 		if err != nil {
 			// TODO an error here would likely result in multiple workers
@@ -116,29 +138,5 @@ func Scale(db server.Database, s Scaler) {
 			//      this *should* be very unlikely.
 			log.Error("Error marking worker as initializing", err)
 		}
-	}
-}
-
-// ScheduleLoop calls ScheduleChunk every config.ScheduleRate, in a loop.
-//
-// TODO make a way to stop this loop
-func ScheduleLoop(db server.Database, sched Scheduler, conf config.Config) {
-	tickChan := time.NewTicker(conf.ScheduleRate).C
-
-	for {
-		<-tickChan
-		ScheduleChunk(db, sched, conf)
-	}
-}
-
-// ScaleLoop calls Scale every config.ScheduleRate, in a loop
-//
-// TODO make a way to stop this loop
-func ScaleLoop(db server.Database, s Scaler, conf config.Config) {
-	ticker := time.NewTicker(conf.ScheduleRate)
-
-	for {
-		<-ticker.C
-		Scale(db, s)
 	}
 }

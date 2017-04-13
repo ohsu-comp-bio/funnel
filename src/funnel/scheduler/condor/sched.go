@@ -6,7 +6,7 @@ import (
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
-	sched "funnel/scheduler"
+	"funnel/scheduler"
 	"os"
 	"os/exec"
 	"path"
@@ -23,17 +23,18 @@ var log = logger.New("condor")
 // TODO move to worker metadata to be consistent with GCE
 const prefix = "condor-worker-"
 
-// NewScheduler returns a new HTCondor Scheduler instance.
-func NewScheduler(conf config.Config) sched.Scheduler {
-	return &scheduler{conf}
+// NewBackend returns a new HTCondor Backend instance.
+func NewBackend(conf config.Config) (*Backend, error) {
+	return &Backend{conf}, nil
 }
 
-type scheduler struct {
+// Backend represents the HTCondor backend.
+type Backend struct {
 	conf config.Config
 }
 
 // Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
-func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
+func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
 	log.Debug("Running condor scheduler")
 
 	disk := s.conf.Worker.Resources.Disk
@@ -62,16 +63,18 @@ func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
 			Disk: disk,
 		},
 	}
-	return sched.NewOffer(w, j, sched.Scores{})
+	return scheduler.NewOffer(w, j, scheduler.Scores{})
 }
 
-func (s *scheduler) ShouldStartWorker(w *pbf.Worker) bool {
+// ShouldStartWorker is part of the Scaler interface and returns true
+// when the given worker needs to be started by Backend.StartWorker
+func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 	return strings.HasPrefix(w.Id, prefix) &&
 		w.State == pbf.WorkerState_Uninitialized
 }
 
 // StartWorker submits a job via "condor_submit" to start a new worker.
-func (s *scheduler) StartWorker(w *pbf.Worker) error {
+func (s *Backend) StartWorker(w *pbf.Worker) error {
 	log.Debug("Starting condor worker")
 	var err error
 
@@ -93,7 +96,7 @@ func (s *scheduler) StartWorker(w *pbf.Worker) error {
 	confPath := path.Join(workdir, "worker.conf.yml")
 	wc.ToYamlFile(confPath)
 
-	workerPath := sched.DetectWorkerPath()
+	workerPath := scheduler.DetectWorkerPath()
 
 	submitPath := path.Join(workdir, "condor.submit")
 	f, err := os.Create(submitPath)
@@ -159,4 +162,13 @@ func resolveCondorResourceRequest(cpus int, ram float64, disk float64) string {
 		resources = append(resources, fmt.Sprintf("request_disk   = %f", disk*976562))
 	}
 	return strings.Join(resources, "\n")
+}
+
+// Register the backend with the scheduler package
+// See funnel/scheduler/backends.go
+func init() {
+	scheduler.RegisterBackend("condor", func(conf config.Config) (scheduler.Backend, error) {
+		b, err := NewBackend(conf)
+		return scheduler.Backend(b), err
+	})
 }

@@ -1,6 +1,7 @@
 package gce
 
 import (
+	"context"
 	"funnel/config"
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
@@ -18,8 +19,8 @@ func init() {
 
 func basicConf() config.Config {
 	conf := server_mocks.NewMockServerConfig()
-	conf.Schedulers.GCE.Project = "test-proj"
-	conf.Schedulers.GCE.Zone = "test-zone"
+	conf.Backends.GCE.Project = "test-proj"
+	conf.Backends.GCE.Zone = "test-zone"
 	return conf
 }
 
@@ -49,6 +50,7 @@ func testWorker(id string, s pbf.WorkerState) *pbf.Worker {
 // so the scheduler will not create any new workers.
 func TestSchedToExisting(t *testing.T) {
 
+	ctx := context.Background()
 	// Mock config
 	conf := basicConf()
 	// Mock the GCE API so actual API calls aren't needed
@@ -63,9 +65,9 @@ func TestSchedToExisting(t *testing.T) {
 	srv.RunHelloWorld()
 
 	// The GCE scheduler under test
-	s := &gceScheduler{conf, srv.Client, gce}
+	s := &Backend{conf, srv.Client, gce}
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	if len(workers) != 1 {
@@ -80,7 +82,7 @@ func TestSchedToExisting(t *testing.T) {
 	}
 
 	// Not really needed for this test, but safer anyway
-	scheduler.Scale(srv.DB, s)
+	scheduler.Scale(ctx, srv.DB, s)
 	// Basically asserts that no GCE APIs were called. None are needed in this case.
 	gce.AssertExpectations(t)
 }
@@ -92,6 +94,7 @@ func TestSchedToExisting(t *testing.T) {
 // start the worker.
 func TestSchedStartWorker(t *testing.T) {
 
+	ctx := context.Background()
 	// Mock config
 	conf := basicConf()
 
@@ -110,9 +113,9 @@ func TestSchedStartWorker(t *testing.T) {
 	srv.RunHelloWorld()
 
 	// The GCE scheduler under test
-	s := &gceScheduler{conf, srv.Client, gce}
+	s := &Backend{conf, srv.Client, gce}
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	if len(workers) != 2 {
@@ -130,7 +133,7 @@ func TestSchedStartWorker(t *testing.T) {
 	wconf.Worker.ID = expected.Id
 	gce.On("StartWorker", "test-tpl", wconf).Return(nil)
 
-	scheduler.Scale(srv.DB, s)
+	scheduler.Scale(ctx, srv.DB, s)
 	gce.AssertExpectations(t)
 }
 
@@ -139,6 +142,7 @@ func TestSchedStartWorker(t *testing.T) {
 // and the task should be scheduled to the existing worker.
 func TestPreferExistingWorker(t *testing.T) {
 
+	ctx := context.Background()
 	// Mock config
 	conf := basicConf()
 
@@ -156,9 +160,9 @@ func TestPreferExistingWorker(t *testing.T) {
 	srv.RunHelloWorld()
 
 	// The GCE scheduler under test
-	s := &gceScheduler{conf, srv.Client, gce}
+	s := &Backend{conf, srv.Client, gce}
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	if len(workers) != 1 {
@@ -173,7 +177,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	}
 
 	// Nothing should be scaled in this test, but safer to call Scale anyway
-	scheduler.Scale(srv.DB, s)
+	scheduler.Scale(ctx, srv.DB, s)
 	gce.AssertExpectations(t)
 }
 
@@ -181,6 +185,7 @@ func TestPreferExistingWorker(t *testing.T) {
 // should be started.
 func TestSchedStartMultipleWorker(t *testing.T) {
 
+	ctx := context.Background()
 	// Mock config
 	conf := basicConf()
 
@@ -196,7 +201,7 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	srv.RunHelloWorld()
 
 	// The GCE scheduler under test
-	s := &gceScheduler{conf, srv.Client, gce}
+	s := &Backend{conf, srv.Client, gce}
 
 	// Mock an instance template response with 1 cpu/ram
 	gce.SetupMockTemplates(pbf.Resources{
@@ -205,7 +210,7 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 		Disk: 1000.0,
 	})
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	if len(workers) != 4 {
@@ -217,6 +222,7 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 // Test that assigning a job to a worker correctly updates the available resources.
 func TestUpdateAvailableResources(t *testing.T) {
 
+	ctx := context.Background()
 	conf := basicConf()
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
@@ -227,9 +233,9 @@ func TestUpdateAvailableResources(t *testing.T) {
 	srv.RunTask(ta)
 	gce := new(gce_mocks.Client)
 	gce.SetupEmptyMockTemplates()
-	s := &gceScheduler{conf, srv.Client, gce}
+	s := &Backend{conf, srv.Client, gce}
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	if len(workers) != 1 || workers[0].Id != "existing" {
@@ -247,6 +253,7 @@ func TestUpdateAvailableResources(t *testing.T) {
 // Try to reproduce a bug where available CPUs seems to overflow
 func TestUpdateBugAvailableResources(t *testing.T) {
 
+	ctx := context.Background()
 	conf := basicConf()
 	srv := server_mocks.NewMockServer()
 	defer srv.Close()
@@ -271,9 +278,9 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 
 	gce := new(gce_mocks.Client)
 	gce.SetupEmptyMockTemplates()
-	s := &gceScheduler{conf, srv.Client, gce}
+	s := &Backend{conf, srv.Client, gce}
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	log.Debug("WORKERS", workers)
@@ -298,7 +305,8 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 	gce.SetupDefaultMockTemplates()
 	srv := server_mocks.MockServerFromConfig(conf)
 	defer srv.Close()
-	s := &gceScheduler{srv.Conf, srv.Client, gce}
+	s := &Backend{srv.Conf, srv.Client, gce}
+	ctx := context.Background()
 
 	var w *worker.Worker
 
@@ -319,9 +327,9 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 
 		// Run the first task. This will be scheduled.
 	ida := srv.RunHelloWorld()
-	scheduler.ScheduleChunk(srv.DB, s, srv.Conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, srv.Conf)
 	// Starts the worker.
-	scheduler.Scale(srv.DB, s)
+	scheduler.Scale(ctx, srv.DB, s)
 
 	// Sync the worker state.
 	w.Sync()
@@ -333,7 +341,7 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 
 	// Run the second task. This wasn't being scheduled, which is a bug.
 	idb := srv.RunHelloWorld()
-	scheduler.ScheduleChunk(srv.DB, s, srv.Conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, srv.Conf)
 
 	log.Debug("RESOURCES", srv.GetWorkers())
 

@@ -14,7 +14,7 @@ sudo systemctl start tes.service
 `
 
 // StartWorker calls out to OpenStack APIs to start a new worker instance.
-func (s *scheduler) StartWorker(w *pbf.Worker) error {
+func (s *Backend) StartWorker(w *pbf.Worker) error {
 
 	// TODO move to client wrapper
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
@@ -39,7 +39,7 @@ func (s *scheduler) StartWorker(w *pbf.Worker) error {
 
 	conf := s.conf
 	conf.Worker.ID = w.Id
-	osconf := s.conf.Schedulers.OpenStack
+	osconf := s.conf.Backends.OpenStack
 
 	_, serr := servers.Create(client, keypairs.CreateOptsExt{
 		CreateOptsBuilder: servers.CreateOpts{
@@ -71,7 +71,7 @@ func (s *scheduler) StartWorker(w *pbf.Worker) error {
 
 // ShouldStartWorker tells the scaler loop which workers
 // belong to this scheduler backend, basically.
-func (s *scheduler) ShouldStartWorker(w *pbf.Worker) bool {
+func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 	// Only start works that are uninitialized and have a gce template.
 	tpl, ok := w.Metadata["openstack"]
 	return ok && tpl != "" && w.State == pbf.WorkerState_Uninitialized

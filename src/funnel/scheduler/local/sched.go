@@ -5,36 +5,38 @@ import (
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
-	sched "funnel/scheduler"
+	"funnel/scheduler"
 	"funnel/worker"
 	"golang.org/x/net/context"
 )
 
 var log = logger.New("local")
 
-// NewScheduler returns a new Scheduler instance.
-func NewScheduler(conf config.Config) (sched.Scheduler, error) {
-	id := sched.GenWorkerID("local")
+// NewBackend returns a new Backend instance.
+func NewBackend(conf config.Config) (*Backend, error) {
+	id := scheduler.GenWorkerID("local")
 	err := startWorker(id, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	client, _ := sched.NewClient(conf.Worker)
-	return &scheduler{conf, client, id}, nil
+	client, _ := scheduler.NewClient(conf.Worker)
+	return &Backend{conf, client, id}, nil
 }
 
-type scheduler struct {
+// Backend represents the local backend.
+type Backend struct {
 	conf     config.Config
-	client   sched.Client
+	client   scheduler.Client
 	workerID string
 }
 
-func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
-	log.Debug("Running local scheduler")
-	weights := s.conf.Schedulers.Local.Weights
+// Schedule schedules a task.
+func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
+	log.Debug("Running local scheduler backend")
+	weights := s.conf.Backends.Local.Weights
 	workers := s.getWorkers()
-	return sched.DefaultScheduleAlgorithm(j, workers, weights)
+	return scheduler.DefaultScheduleAlgorithm(j, workers, weights)
 }
 
 // getWorkers gets a list of active, local workers.
@@ -42,7 +44,7 @@ func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
 // This is a bit redundant in the local scheduler, because there is only
 // ever one worker, but it demonstrates the pattern of a scheduler backend,
 // and give the scheduler a chance to get an updated worker state.
-func (s *scheduler) getWorkers() []*pbf.Worker {
+func (s *Backend) getWorkers() []*pbf.Worker {
 	workers := []*pbf.Worker{}
 	resp, rerr := s.client.GetWorkers(context.Background(), &pbf.GetWorkersRequest{})
 
@@ -75,4 +77,13 @@ func startWorker(id string, conf config.Config) error {
 	}
 	go w.Run()
 	return nil
+}
+
+// Register the backend with the scheduler package
+// See funnel/scheduler/backends.go
+func init() {
+	scheduler.RegisterBackend("local", func(conf config.Config) (scheduler.Backend, error) {
+		b, err := NewBackend(conf)
+		return scheduler.Backend(b), err
+	})
 }

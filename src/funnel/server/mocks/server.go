@@ -8,10 +8,8 @@ import (
 	"funnel/scheduler"
 	"funnel/server"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"time"
 )
 
@@ -30,6 +28,21 @@ func NewMockServerConfig() config.Config {
 	return conf
 }
 
+// NewTestDatabase creates a new database in a temporary file
+// and updates conf.DBPath.
+func NewTestDatabase(conf *config.Config) *server.TaskBolt {
+	// Write the database to a temporary file
+	f, _ := ioutil.TempFile("", "funnel-test-db-")
+	conf.DBPath = f.Name()
+
+	// Create database
+	db, dberr := server.NewTaskBolt(*conf)
+	if dberr != nil {
+		panic("Couldn't open database")
+	}
+	return db
+}
+
 // NewMockServer starts a test server. This creates a database in a temp. file
 // and starts a gRPC server on a random port.
 func NewMockServer() *MockServer {
@@ -39,40 +52,35 @@ func NewMockServer() *MockServer {
 
 // MockServerFromConfig starts a test server with the given config.
 func MockServerFromConfig(conf config.Config) *MockServer {
-	// Write the database to a temporary file
-	f, _ := ioutil.TempFile("", "funnel-test-db-")
 
 	// Configuration
 	conf.Worker = config.WorkerInheritConfigVals(conf)
-	conf.DBPath = f.Name()
+	db := NewTestDatabase(&conf)
+	var err error
 
-	// Create database
-	db, dberr := server.NewTaskBolt(conf)
-	if dberr != nil {
-		panic("Couldn't open database")
-	}
+	// Create server
+	srv, err := server.NewServer(db, conf)
 
-	// Listen on TCP port for RPC
-	server := grpc.NewServer()
-	lis, err := net.Listen("tcp", ":"+conf.RPCPort)
-	if err != nil {
-		panic("Cannot open port: " + conf.RPCPort)
-	}
+	// Create scheduler
+	sched, err := scheduler.NewScheduler(db, conf)
 
 	// Create client
 	client, err := scheduler.NewClient(conf.Worker)
+
 	if err != nil {
-		panic("Can't connect scheduler client")
+		panic(err)
 	}
 
-	pbf.RegisterSchedulerServer(server, db)
-	go server.Serve(lis)
+	ctx, stop := context.WithCancel(context.Background())
+	srv.Start(ctx)
+	sched.Start(ctx)
 
 	return &MockServer{
 		DB:     db,
 		Client: client,
-		srv:    server,
+		srv:    srv,
 		Conf:   conf,
+		stop:   stop,
 	}
 }
 
@@ -80,14 +88,16 @@ func MockServerFromConfig(conf config.Config) *MockServer {
 type MockServer struct {
 	DB     *server.TaskBolt
 	Client scheduler.Client
-	srv    *grpc.Server
+	srv    *server.Server
 	Conf   config.Config
+	stop   context.CancelFunc
 }
 
 // Close cleans up the mock server resources
 func (m *MockServer) Close() {
+	m.stop()
 	m.Client.Close()
-	m.srv.GracefulStop()
+	m.srv.Stop()
 }
 
 // AddWorker adds the given worker to the database (calling db.UpdateWorker)

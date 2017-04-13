@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"funnel/config"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
@@ -59,7 +60,7 @@ type MockSchedulerServer struct {
 }
 
 func (m *MockSchedulerServer) Flush() {
-	scheduler.ScheduleChunk(m.db, m.sched, m.conf)
+	scheduler.ScheduleChunk(context.Background(), m.db, m.sched, m.conf)
 	m.worker.Sync()
 }
 

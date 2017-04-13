@@ -1,13 +1,14 @@
 package gce
 
 import (
+	"context"
 	"errors"
 	"funnel/logger"
 	"funnel/scheduler"
 	gce_mocks "funnel/scheduler/gce/mocks"
 	server_mocks "funnel/server/mocks"
 	"github.com/stretchr/testify/mock"
-	. "google.golang.org/api/compute/v1"
+	"google.golang.org/api/compute/v1"
 	"testing"
 )
 
@@ -20,6 +21,7 @@ func init() {
 // in client.go and allows a more end-to-end test.
 func TestWrapper(t *testing.T) {
 
+	ctx := context.Background()
 	// Mock config
 	conf := basicConf()
 
@@ -37,12 +39,12 @@ func TestWrapper(t *testing.T) {
 		project: "test-proj",
 		zone:    "test-zone",
 	}
-	s := &gceScheduler{conf, srv.Client, client}
+	s := &Backend{conf, srv.Client, client}
 
 	wpr.SetupMockInstanceTemplates()
 	wpr.SetupMockMachineTypes()
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
+	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
 	workers := srv.GetWorkers()
 
 	if len(workers) != 1 {
@@ -61,16 +63,16 @@ func TestWrapper(t *testing.T) {
 	wconf.Worker.ID = w.Id
 	wconf.Worker.ServerAddress = conf.HostName + ":" + conf.RPCPort
 	confYaml := string(wconf.ToYaml())
-	expected := &Instance{
+	expected := &compute.Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
 		CanIpForward:      false,
 		CpuPlatform:       "",
 		CreationTimestamp: "",
 		Description:       "",
-		Disks: []*AttachedDisk{
+		Disks: []*compute.AttachedDisk{
 			{
-				InitializeParams: &AttachedDiskInitializeParams{
+				InitializeParams: &compute.AttachedDiskInitializeParams{
 					DiskSizeGb: 14,
 					DiskType:   "zones/test-zone/diskTypes/", // TODO??? this must be wrong
 				},
@@ -78,21 +80,21 @@ func TestWrapper(t *testing.T) {
 		},
 		Name:        w.Id,
 		MachineType: "zones/test-zone/machineTypes/test-mt",
-		Metadata: &Metadata{
-			Items: []*MetadataItems{
+		Metadata: &compute.Metadata{
+			Items: []*compute.MetadataItems{
 				{
 					Key:   "funnel-config",
 					Value: &confYaml,
 				},
 			},
 		},
-		Tags: &Tags{
+		Tags: &compute.Tags{
 			Items: []string{"funnel"},
 		},
 	}
 	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
-	scheduler.Scale(srv.DB, s)
+	scheduler.Scale(ctx, srv.DB, s)
 	wpr.AssertExpectations(t)
 }
 
@@ -127,16 +129,16 @@ func TestInsertTempError(t *testing.T) {
 
 	// Now set InsertInstance to success
 	confYaml := string(conf.ToYaml())
-	expected := &Instance{
+	expected := &compute.Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
 		CanIpForward:      false,
 		CpuPlatform:       "",
 		CreationTimestamp: "",
 		Description:       "",
-		Disks: []*AttachedDisk{
+		Disks: []*compute.AttachedDisk{
 			{
-				InitializeParams: &AttachedDiskInitializeParams{
+				InitializeParams: &compute.AttachedDiskInitializeParams{
 					DiskSizeGb: 14,
 					DiskType:   "zones/test-zone/diskTypes/", // TODO??? this must be wrong
 				},
@@ -144,15 +146,15 @@ func TestInsertTempError(t *testing.T) {
 		},
 		Name:        "test-worker",
 		MachineType: "zones/test-zone/machineTypes/test-mt",
-		Metadata: &Metadata{
-			Items: []*MetadataItems{
+		Metadata: &compute.Metadata{
+			Items: []*compute.MetadataItems{
 				{
 					Key:   "funnel-config",
 					Value: &confYaml,
 				},
 			},
 		},
-		Tags: &Tags{
+		Tags: &compute.Tags{
 			Items: []string{"funnel"},
 		},
 	}

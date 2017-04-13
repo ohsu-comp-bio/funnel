@@ -54,11 +54,13 @@ lint:
 	./buildtools/bin/gometalinter --install > /dev/null
 	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/funnel/...
 
-test:	
+go-test:
+	go test funnel/...
+
+test:	go-test
 	docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/
 	pip2.7 install -q -r tests/requirements.txt
 	nosetests-2.7 tests/
-	go test funnel/...
 
 web:
 	cd web && \

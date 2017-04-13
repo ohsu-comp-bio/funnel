@@ -4,8 +4,8 @@ import (
 	"funnel/config"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
+	"funnel/util"
 	"golang.org/x/net/context"
-	"os"
 	"time"
 )
 
@@ -41,7 +41,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 		return err
 	}
 
-	err = os.MkdirAll(s.conf.WorkDir, 0755)
+	err = util.EnsureDir(s.conf.WorkDir)
 	if err != nil {
 		return err
 	}

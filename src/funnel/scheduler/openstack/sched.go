@@ -6,53 +6,60 @@ import (
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
-	sched "funnel/scheduler"
+	"funnel/scheduler"
 )
 
 var log = logger.New("openstack")
 
-// NewScheduler returns a new Scheduler instance.
-func NewScheduler(conf config.Config) (sched.Scheduler, error) {
+// Plugin provides the OpenStack scheduler backend plugin.
+var Plugin = &scheduler.BackendPlugin{
+	Name:   "openstack",
+	Create: NewBackend,
+}
+
+// NewBackend returns a new Backend instance.
+func NewBackend(conf config.Config) (scheduler.Backend, error) {
 
 	// Create a client for talking to the funnel scheduler
-	client, err := sched.NewClient(conf.Worker)
+	client, err := scheduler.NewClient(conf.Worker)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
 	}
 
-	return &scheduler{conf, client}, nil
+	return scheduler.Backend(&Backend{conf, client}), nil
 }
 
-type scheduler struct {
+// Backend represents the OpenStack backend.
+type Backend struct {
 	conf   config.Config
-	client sched.Client
+	client scheduler.Client
 }
 
 // Schedule schedules a job on a OpenStack VM worker instance.
-func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
+func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
 	log.Debug("Running OpenStack scheduler")
 
-	offers := []*sched.Offer{}
-	predicates := append(sched.DefaultPredicates, sched.WorkerHasTag("openstack"))
+	offers := []*scheduler.Offer{}
+	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("openstack"))
 
 	for _, w := range s.getWorkers() {
 		// Filter out workers that don't match the job request.
 		// Checks CPU, RAM, disk space, ports, etc.
-		if !sched.Match(w, j, predicates) {
+		if !scheduler.Match(w, j, predicates) {
 			continue
 		}
 
-		sc := sched.DefaultScores(w, j)
+		sc := scheduler.DefaultScores(w, j)
 		/*
 			    TODO?
 			    if w.State == pbf.WorkerState_Alive {
 					  sc["startup time"] = 1.0
 			    }
 		*/
-		sc = sc.Weighted(s.conf.Schedulers.OpenStack.Weights)
+		sc = sc.Weighted(s.conf.Backends.OpenStack.Weights)
 
-		offer := sched.NewOffer(w, j, sc)
+		offer := scheduler.NewOffer(w, j, sc)
 		offers = append(offers, offer)
 	}
 
@@ -61,11 +68,11 @@ func (s *scheduler) Schedule(j *tes.Job) *sched.Offer {
 		return nil
 	}
 
-	sched.SortByAverageScore(offers)
+	scheduler.SortByAverageScore(offers)
 	return offers[0]
 }
 
-func (s *scheduler) getWorkers() []*pbf.Worker {
+func (s *Backend) getWorkers() []*pbf.Worker {
 
 	// Get the workers from the funnel server
 	workers := []*pbf.Worker{}

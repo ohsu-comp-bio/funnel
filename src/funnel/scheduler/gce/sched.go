@@ -14,17 +14,23 @@ import (
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
-	sched "funnel/scheduler"
+	"funnel/scheduler"
 )
 
 var log = logger.New("gce")
 
-// NewScheduler returns a new Google Cloud Engine Scheduler instance.
-func NewScheduler(conf config.Config) (sched.Scheduler, error) {
+// Plugin provides the Google Cloud Compute scheduler backend plugin.
+var Plugin = &scheduler.BackendPlugin{
+	Name:   "gce",
+	Create: NewBackend,
+}
+
+// NewBackend returns a new Google Cloud Engine Backend instance.
+func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 
 	// Create a client for talking to the funnel scheduler
-	client, err := sched.NewClient(conf.Worker)
+	client, err := scheduler.NewClient(conf.Worker)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
@@ -37,45 +43,47 @@ func NewScheduler(conf config.Config) (sched.Scheduler, error) {
 		return nil, gerr
 	}
 
-	s := &gceScheduler{
+	s := &Backend{
 		conf:   conf,
 		client: client,
 		gce:    gce,
 	}
 
-	return s, nil
+	return scheduler.Backend(s), nil
 }
 
-type gceScheduler struct {
+// Backend represents the GCE backend, which provides
+// and interface for both scheduling and scaling.
+type Backend struct {
 	conf   config.Config
-	client sched.Client
+	client scheduler.Client
 	gce    Client
 }
 
 // Schedule schedules a job on a Google Cloud VM worker instance.
-func (s *gceScheduler) Schedule(j *tes.Job) *sched.Offer {
+func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
 	log.Debug("Running GCE scheduler")
 
-	offers := []*sched.Offer{}
-	predicates := append(sched.DefaultPredicates, sched.WorkerHasTag("gce"))
+	offers := []*scheduler.Offer{}
+	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("gce"))
 
 	for _, w := range s.getWorkers() {
 		// Filter out workers that don't match the job request.
 		// Checks CPU, RAM, disk space, ports, etc.
-		if !sched.Match(w, j, predicates) {
+		if !scheduler.Match(w, j, predicates) {
 			continue
 		}
 
-		sc := sched.DefaultScores(w, j)
+		sc := scheduler.DefaultScores(w, j)
 		/*
 			    TODO?
 			    if w.State == pbf.WorkerState_Alive {
 					  sc["startup time"] = 1.0
 			    }
 		*/
-		sc = sc.Weighted(s.conf.Schedulers.GCE.Weights)
+		sc = sc.Weighted(s.conf.Backends.GCE.Weights)
 
-		offer := sched.NewOffer(w, j, sc)
+		offer := scheduler.NewOffer(w, j, sc)
 		offers = append(offers, offer)
 	}
 
@@ -84,13 +92,13 @@ func (s *gceScheduler) Schedule(j *tes.Job) *sched.Offer {
 		return nil
 	}
 
-	sched.SortByAverageScore(offers)
+	scheduler.SortByAverageScore(offers)
 	return offers[0]
 }
 
 // getWorkers returns a list of all GCE workers and appends a set of
 // uninitialized workers, which the scheduler can use to create new worker VMs.
-func (s *gceScheduler) getWorkers() []*pbf.Worker {
+func (s *Backend) getWorkers() []*pbf.Worker {
 
 	// Get the workers from the funnel server
 	workers := []*pbf.Worker{}
@@ -109,7 +117,7 @@ func (s *gceScheduler) getWorkers() []*pbf.Worker {
 	// This is how the scheduler can schedule jobs to workers that
 	// haven't been started yet.
 	for _, t := range s.gce.Templates() {
-		t.Id = sched.GenWorkerID("gce")
+		t.Id = scheduler.GenWorkerID("gce")
 		workers = append(workers, &t)
 	}
 
@@ -118,14 +126,14 @@ func (s *gceScheduler) getWorkers() []*pbf.Worker {
 
 // ShouldStartWorker tells the scaler loop which workers
 // belong to this scheduler backend, basically.
-func (s *gceScheduler) ShouldStartWorker(w *pbf.Worker) bool {
+func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 	// Only start works that are uninitialized and have a gce template.
 	tpl, ok := w.Metadata["gce-template"]
 	return ok && tpl != "" && w.State == pbf.WorkerState_Uninitialized
 }
 
 // StartWorker calls out to GCE APIs to start a new worker instance.
-func (s *gceScheduler) StartWorker(w *pbf.Worker) error {
+func (s *Backend) StartWorker(w *pbf.Worker) error {
 
 	// Write the funnel worker config yaml to a string
 	wc := s.conf

@@ -35,7 +35,7 @@ func simpleWorker() *pbf.Worker {
 	}
 }
 
-func setup(workers []*pbf.Worker) (*sched_mocks.Client, *scheduler) {
+func setup(workers []*pbf.Worker) (*sched_mocks.Client, *Backend) {
 	conf := config.Config{}
 	mc := new(sched_mocks.Client)
 
@@ -44,7 +44,7 @@ func setup(workers []*pbf.Worker) (*sched_mocks.Client, *scheduler) {
 		Workers: workers,
 	}, nil)
 
-	s := &scheduler{
+	s := &Backend{
 		conf,
 		mc,
 		"test-worker-id",

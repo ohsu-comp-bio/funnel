@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"funnel/config"
 	"funnel/logger"
 	"funnel/scheduler"
@@ -12,34 +13,69 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
 	"os"
-	"strings"
 )
 
-var serverLog = logger.New("funnel-server")
 var configFile string
 var baseConf = config.Config{}
 
-// serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "",
+	Short: "Starts a Funnel server.",
 	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		var err error
 		var conf = config.DefaultConfig()
 		if configFile != "" {
 			config.LoadConfigOrExit(configFile, &conf)
 		}
 
 		// file vals <- cli val
-		err := mergo.MergeWithOverwrite(&conf, baseConf)
+		err = mergo.MergeWithOverwrite(&conf, baseConf)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		// make sure the proper defaults are set
 		conf.Worker = config.WorkerInheritConfigVals(conf)
 
-		startServer(conf)
+		initLogging(conf)
+
+		db, err := server.NewTaskBolt(conf)
+		if err != nil {
+			logger.Error("Couldn't open database", err)
+			return err
+		}
+
+		srv, err := server.NewServer(db, conf)
+		if err != nil {
+			return err
+		}
+
+		sched, err := scheduler.NewScheduler(db, conf)
+		if err != nil {
+			return err
+		}
+
+		sched.AddBackend(gce.Plugin)
+		sched.AddBackend(condor.Plugin)
+		sched.AddBackend(openstack.Plugin)
+		sched.AddBackend(local.Plugin)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Start server
+		srv.Start(ctx)
+
+		// Start scheduler
+		err = sched.Start(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Block
+		<-ctx.Done()
+		return nil
 	},
 }
 
@@ -56,70 +92,21 @@ func init() {
 	serverCmd.Flags().StringVar(&baseConf.Scheduler, "scheduler", baseConf.Scheduler, "Name of scheduler to enable")
 }
 
-func startServer(conf config.Config) {
+func initLogging(conf config.Config) {
 	logger.SetLevel(conf.LogLevel)
-	workerLog.Debug("Server Config", "config.Config", conf)
-
-	var err error
 
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log
-	//      without having file permission problems?
+	//      without having file permission problems? syslog?
 	// Configure logging
 	if conf.LogPath != "" {
-		logFile, err := os.OpenFile(conf.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		logFile, err := os.OpenFile(
+			conf.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666,
+		)
 		if err != nil {
-			workerLog.Error("Can't open log output file", "path", conf.LogPath)
+			logger.Error("Can't open log output file", "path", conf.LogPath)
 		} else {
 			logger.SetOutput(logFile)
 		}
 	}
-
-	err = os.MkdirAll(conf.WorkDir, 0755)
-	if err != nil {
-		panic(err)
-	}
-
-	taski, err := server.NewTaskBolt(conf)
-	if err != nil {
-		serverLog.Error("Couldn't open database", err)
-		return
-	}
-
-	s := server.NewGA4GHServer()
-	s.RegisterTaskServer(taski)
-	s.RegisterScheduleServer(taski)
-	go s.Start(conf.RPCPort)
-
-	var sched scheduler.Scheduler
-	switch strings.ToLower(conf.Scheduler) {
-	case "local":
-		// TODO worker will stay alive if the parent process panics
-		sched, err = local.NewScheduler(conf)
-	case "condor":
-		sched = condor.NewScheduler(conf)
-	case "gce":
-		sched, err = gce.NewScheduler(conf)
-	case "openstack":
-		sched, err = openstack.NewScheduler(conf)
-	default:
-		serverLog.Error("Unknown scheduler", "scheduler", conf.Scheduler)
-		return
-	}
-
-	if err != nil {
-		serverLog.Error("Couldn't create scheduler", err)
-		return
-	}
-
-	go scheduler.ScheduleLoop(taski, sched, conf)
-
-	// If the scheduler implements the Scaler interface,
-	// start a scaler loop
-	if s, ok := sched.(scheduler.Scaler); ok {
-		go scheduler.ScaleLoop(taski, s, conf)
-	}
-
-	// TODO if port 8000 is already busy, does this lock up silently?
-	server.StartHTTPProxy(conf.HostName+":"+conf.RPCPort, conf.HTTPPort, conf.ContentDir)
 }

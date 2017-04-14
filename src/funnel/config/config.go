@@ -56,21 +56,21 @@ func (l S3Storage) Valid() bool {
 	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
 }
 
-// LocalScheduler describes configuration for the local scheduler.
-type LocalScheduler struct {
+// LocalSchedulerBackend describes configuration for the local scheduler.
+type LocalSchedulerBackend struct {
 	Weights Weights
 }
 
-// OpenStackScheduler describes configuration for the openstack scheduler.
-type OpenStackScheduler struct {
+// OpenStackSchedulerBackend describes configuration for the openstack scheduler.
+type OpenStackSchedulerBackend struct {
 	KeyPair    string
 	ConfigPath string
 	Server     os_servers.CreateOpts
 	Weights    Weights
 }
 
-// GCEScheduler describes configuration for the Google Cloud scheduler.
-type GCEScheduler struct {
+// GCESchedulerBackend describes configuration for the Google Cloud scheduler.
+type GCESchedulerBackend struct {
 	AccountFile string
 	Project     string
 	Zone        string
@@ -78,12 +78,12 @@ type GCEScheduler struct {
 	CacheTTL    time.Duration
 }
 
-// Schedulers describes configuration for all schedulers.
-type Schedulers struct {
-	Local     LocalScheduler
-	Condor    LocalScheduler
-	OpenStack OpenStackScheduler
-	GCE       GCEScheduler
+// SchedulerBackends describes configuration for all schedulers.
+type SchedulerBackends struct {
+	Local     LocalSchedulerBackend
+	Condor    LocalSchedulerBackend
+	OpenStack OpenStackSchedulerBackend
+	GCE       GCESchedulerBackend
 }
 
 // Config describes configuration for Funnel.
@@ -91,7 +91,7 @@ type Config struct {
 	Storage       []*StorageConfig
 	HostName      string
 	Scheduler     string
-	Schedulers    Schedulers
+	Backends      SchedulerBackends
 	Worker        Worker
 	DBPath        string
 	HTTPPort      string
@@ -107,6 +107,17 @@ type Config struct {
 	WorkerPingTimeout time.Duration
 	// How long to wait for worker initialization before marking it dead
 	WorkerInitTimeout time.Duration
+	DisableHTTPCache  bool
+}
+
+// HTTPAddress returns the HTTP address based on HostName and HTTPPort
+func (c Config) HTTPAddress() string {
+	return "http://" + c.HostName + ":" + c.HTTPPort
+}
+
+// RPCAddress returns the RPC address based on HostName and RPCPort
+func (c Config) RPCAddress() string {
+	return c.HostName + ":" + c.RPCPort
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -116,16 +127,16 @@ func DefaultConfig() Config {
 	rpcPort := "9090"
 	c := Config{
 		HostName:   hostName,
-		DBPath:     path.Join(workDir, "funnel_task.db"),
+		DBPath:     path.Join(workDir, "funnel.db"),
 		HTTPPort:   "8000",
 		RPCPort:    rpcPort,
 		ContentDir: defaultContentDir(),
 		WorkDir:    workDir,
 		LogLevel:   "debug",
 		Scheduler:  "local",
-		Schedulers: Schedulers{
-			Local: LocalScheduler{},
-			GCE: GCEScheduler{
+		Backends: SchedulerBackends{
+			Local: LocalSchedulerBackend{},
+			GCE: GCESchedulerBackend{
 				Weights: Weights{
 					"startup time": 1.0,
 				},
@@ -152,6 +163,7 @@ func DefaultConfig() Config {
 				Disk: 100.0,
 			},
 		},
+		DisableHTTPCache: true,
 	}
 	return c
 }

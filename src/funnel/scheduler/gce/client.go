@@ -27,9 +27,9 @@ func newClientFromConfig(conf config.Config) (Client, error) {
 
 	return &gceClient{
 		wrapper:  w,
-		cacheTTL: conf.Schedulers.GCE.CacheTTL,
-		project:  conf.Schedulers.GCE.Project,
-		zone:     conf.Schedulers.GCE.Zone,
+		cacheTTL: conf.Backends.GCE.CacheTTL,
+		project:  conf.Backends.GCE.Project,
+		zone:     conf.Backends.GCE.Zone,
 	}, nil
 }
 

@@ -2,12 +2,11 @@ package gce
 
 import (
 	"errors"
+	"funnel/config"
 	"funnel/logger"
-	"funnel/scheduler"
 	gce_mocks "funnel/scheduler/gce/mocks"
-	server_mocks "funnel/server/mocks"
 	"github.com/stretchr/testify/mock"
-	. "google.golang.org/api/compute/v1"
+	"google.golang.org/api/compute/v1"
 	"testing"
 )
 
@@ -19,31 +18,24 @@ func init() {
 // This mocks out the Wrapper interface, which allows better testing the logic
 // in client.go and allows a more end-to-end test.
 func TestWrapper(t *testing.T) {
-
-	// Mock config
-	conf := basicConf()
+	h := setup()
+	defer h.srv.Stop()
 
 	// Mock the GCE API wrapper
 	wpr := new(gce_mocks.Wrapper)
-	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.MockServerFromConfig(conf)
-	defer srv.Close()
-
-	srv.RunHelloWorld()
-
-	// The GCE scheduler under test
-	client := &gceClient{
+	h.gceClient = &gceClient{
 		wrapper: wpr,
 		project: "test-proj",
 		zone:    "test-zone",
 	}
-	s := &gceScheduler{conf, srv.Client, client}
+
+	h.srv.RunHelloWorld()
 
 	wpr.SetupMockInstanceTemplates()
 	wpr.SetupMockMachineTypes()
 
-	scheduler.ScheduleChunk(srv.DB, s, conf)
-	workers := srv.GetWorkers()
+	h.Schedule()
+	workers := h.srv.GetWorkers()
 
 	if len(workers) != 1 {
 		t.Error("Expected a single worker")
@@ -57,20 +49,20 @@ func TestWrapper(t *testing.T) {
 		t.Error("Worker has incorrect template")
 	}
 
-	wconf := conf
+	wconf := h.conf
 	wconf.Worker.ID = w.Id
-	wconf.Worker.ServerAddress = conf.HostName + ":" + conf.RPCPort
+	wconf.Worker.ServerAddress = h.conf.HostName + ":" + h.conf.RPCPort
 	confYaml := string(wconf.ToYaml())
-	expected := &Instance{
+	expected := &compute.Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
 		CanIpForward:      false,
 		CpuPlatform:       "",
 		CreationTimestamp: "",
 		Description:       "",
-		Disks: []*AttachedDisk{
+		Disks: []*compute.AttachedDisk{
 			{
-				InitializeParams: &AttachedDiskInitializeParams{
+				InitializeParams: &compute.AttachedDiskInitializeParams{
 					DiskSizeGb: 14,
 					DiskType:   "zones/test-zone/diskTypes/", // TODO??? this must be wrong
 				},
@@ -78,28 +70,30 @@ func TestWrapper(t *testing.T) {
 		},
 		Name:        w.Id,
 		MachineType: "zones/test-zone/machineTypes/test-mt",
-		Metadata: &Metadata{
-			Items: []*MetadataItems{
+		Metadata: &compute.Metadata{
+			Items: []*compute.MetadataItems{
 				{
 					Key:   "funnel-config",
 					Value: &confYaml,
 				},
 			},
 		},
-		Tags: &Tags{
+		Tags: &compute.Tags{
 			Items: []string{"funnel"},
 		},
 	}
 	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
-	scheduler.Scale(srv.DB, s)
+	h.Scale()
 	wpr.AssertExpectations(t)
 }
 
 // Tests what happens when the InsertInstance() call fails the first couple times.
 func TestInsertTempError(t *testing.T) {
 
-	conf := basicConf()
+	conf := config.DefaultConfig()
+	conf.Backends.GCE.Project = "test-proj"
+	conf.Backends.GCE.Zone = "test-zone"
 	conf.Worker.ID = "test-worker"
 	wpr := new(gce_mocks.Wrapper)
 	wpr.SetupMockInstanceTemplates()
@@ -127,16 +121,16 @@ func TestInsertTempError(t *testing.T) {
 
 	// Now set InsertInstance to success
 	confYaml := string(conf.ToYaml())
-	expected := &Instance{
+	expected := &compute.Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
 		CanIpForward:      false,
 		CpuPlatform:       "",
 		CreationTimestamp: "",
 		Description:       "",
-		Disks: []*AttachedDisk{
+		Disks: []*compute.AttachedDisk{
 			{
-				InitializeParams: &AttachedDiskInitializeParams{
+				InitializeParams: &compute.AttachedDiskInitializeParams{
 					DiskSizeGb: 14,
 					DiskType:   "zones/test-zone/diskTypes/", // TODO??? this must be wrong
 				},
@@ -144,15 +138,15 @@ func TestInsertTempError(t *testing.T) {
 		},
 		Name:        "test-worker",
 		MachineType: "zones/test-zone/machineTypes/test-mt",
-		Metadata: &Metadata{
-			Items: []*MetadataItems{
+		Metadata: &compute.Metadata{
+			Items: []*compute.MetadataItems{
 				{
 					Key:   "funnel-config",
 					Value: &confYaml,
 				},
 			},
 		},
-		Tags: &Tags{
+		Tags: &compute.Tags{
 			Items: []string{"funnel"},
 		},
 	}

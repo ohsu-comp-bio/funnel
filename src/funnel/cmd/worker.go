@@ -2,15 +2,12 @@ package cmd
 
 import (
 	"funnel/config"
-	"funnel/logger"
 	"funnel/scheduler"
 	"funnel/worker"
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
-	"os"
 )
 
-var workerLog = logger.New("funnel-worker")
 var workerConfigFile string
 var workerBaseConf = config.Config{}
 
@@ -18,7 +15,7 @@ var workerBaseConf = config.Config{}
 var workerCmd = &cobra.Command{
 	Use:   "worker",
 	Short: "",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := config.DefaultConfig()
 
 		if workerConfigFile != "" {
@@ -30,10 +27,21 @@ var workerCmd = &cobra.Command{
 		// file vals <- cli val
 		err := mergo.MergeWithOverwrite(&conf.Worker, workerDconf)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
-		startWorker(conf.Worker)
+		initLogging(conf)
+
+		if conf.Worker.ID == "" {
+			conf.Worker.ID = scheduler.GenWorkerID("funnel")
+		}
+
+		w, err := worker.NewWorker(conf.Worker)
+		if err != nil {
+			return err
+		}
+		w.Run()
+		return nil
 	},
 }
 
@@ -47,33 +55,4 @@ func init() {
 	workerCmd.Flags().StringVar(&workerBaseConf.WorkDir, "work-dir", workerBaseConf.WorkDir, "Working Directory")
 	workerCmd.Flags().StringVar(&workerBaseConf.LogLevel, "log-level", workerBaseConf.LogLevel, "Level of logging")
 	workerCmd.Flags().StringVar(&workerBaseConf.LogPath, "log-path", workerBaseConf.LogLevel, "File path to write logs to")
-}
-
-func startWorker(conf config.Worker) {
-	logger.SetLevel(conf.LogLevel)
-	workerLog.Debug("Worker Config", "config.Worker", conf)
-
-	// TODO Good defaults, configuration, and reusable way to configure logging.
-	//      Also, how do we get this to default to /var/log/tes/worker.log
-	//      without having file permission problems?
-	// Configure logging
-	if conf.LogPath != "" {
-		logFile, err := os.OpenFile(conf.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			workerLog.Error("Can't open log output file", "path", conf.LogPath)
-		} else {
-			logger.SetOutput(logFile)
-		}
-	}
-
-	if conf.ID == "" {
-		conf.ID = scheduler.GenWorkerID("funnel")
-	}
-
-	w, err := worker.NewWorker(conf)
-	if err != nil {
-		workerLog.Error("Can't create worker", err)
-		return
-	}
-	w.Run()
 }

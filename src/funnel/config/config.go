@@ -96,7 +96,6 @@ type Config struct {
 	DBPath        string
 	HTTPPort      string
 	RPCPort       string
-	ContentDir    string
 	WorkDir       string
 	LogLevel      string
 	LogPath       string
@@ -126,14 +125,13 @@ func DefaultConfig() Config {
 	hostName := "localhost"
 	rpcPort := "9090"
 	c := Config{
-		HostName:   hostName,
-		DBPath:     path.Join(workDir, "funnel.db"),
-		HTTPPort:   "8000",
-		RPCPort:    rpcPort,
-		ContentDir: defaultContentDir(),
-		WorkDir:    workDir,
-		LogLevel:   "debug",
-		Scheduler:  "local",
+		HostName:  hostName,
+		DBPath:    path.Join(workDir, "funnel.db"),
+		HTTPPort:  "8000",
+		RPCPort:   rpcPort,
+		WorkDir:   workDir,
+		LogLevel:  "debug",
+		Scheduler: "local",
 		Backends: SchedulerBackends{
 			Local: LocalSchedulerBackend{},
 			GCE: GCESchedulerBackend{
@@ -231,15 +229,6 @@ func (c Config) ToYamlTempFile(name string) (string, func()) {
 	p := filepath.Join(tmpdir, name)
 	c.ToYamlFile(p)
 	return p, cleanup
-}
-
-func defaultContentDir() string {
-	// TODO this depends on having the entire repo available
-	//      which prevents us from releasing a single binary.
-	//      Not the worst, but maybe there's a good way to make it optional.
-	// TODO handle error
-	dir, _ := filepath.Abs(os.Args[0])
-	return filepath.Join(dir, "..", "..", "web")
 }
 
 // ParseConfigFile parses a Funnel config file, which is formatted in YAML,

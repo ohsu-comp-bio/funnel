@@ -53,15 +53,20 @@ func (s *Server) Start(ctx context.Context) error {
 	s.httpServer.Handler = httpHandler
 
 	log.Info("RPC server listening", "port", s.conf.RPCPort)
-	go s.grpcServer.Serve(lis)
+	go func() {
+		err := s.grpcServer.Serve(lis)
+		log.Error("RPC server error", err)
+	}()
 
 	log.Info("HTTP server listening",
 		"port", s.conf.HTTPPort, "rpcAddress", s.conf.RPCAddress(),
 	)
 	// TODO how do we handle errors returned from grpcServer.Serve()
 	//      httpServer.ListenAndServe()
-	// TODO if port 8000 is already busy, does this lock up silently?
-	go s.httpServer.ListenAndServe()
+	go func() {
+		err := s.httpServer.ListenAndServe()
+		log.Error("HTTP server error", err)
+	}()
 	return nil
 }
 

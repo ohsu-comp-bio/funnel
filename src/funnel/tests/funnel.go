@@ -81,7 +81,10 @@ func (m *Funnel) Client() scheduler.Client {
 func (m *Funnel) Start() {
 	ctx, stop := context.WithCancel(context.Background())
 	m.stop = stop
-	m.Server.Start(ctx)
+	err := m.Server.Start(ctx)
+	if err != nil {
+		panic(err)
+	}
 	m.NoopWorker = noop.NewWorker(m.Conf)
 	m.Scheduler.AddBackend(noop.NewPlugin(m.NoopWorker))
 }

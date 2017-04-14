@@ -4,7 +4,6 @@ package tests
 // imports, it's easier to have it here.
 
 import (
-	"funnel/config"
 	"funnel/logger"
 	pbf "funnel/proto/funnel"
 	server_mocks "funnel/server/mocks"
@@ -19,10 +18,10 @@ func init() {
 // Test the simple case of a worker that is alive,
 // then doesn't ping in time, and it marked dead
 func TestWorkerDead(t *testing.T) {
-	conf := config.DefaultConfig()
+	conf := server_mocks.NewConfig()
 	conf.WorkerPingTimeout = time.Millisecond
-	srv := server_mocks.MockServerFromConfig(conf)
-	defer srv.Close()
+	srv := server_mocks.NewServer(conf)
+	defer srv.Stop()
 
 	srv.AddWorker(&pbf.Worker{
 		Id:    "test-worker",
@@ -41,10 +40,10 @@ func TestWorkerDead(t *testing.T) {
 // Test what happens when a worker never starts.
 // It should be marked as dead.
 func TestWorkerInitFail(t *testing.T) {
-	conf := config.DefaultConfig()
+	conf := server_mocks.NewConfig()
 	conf.WorkerInitTimeout = time.Millisecond
-	srv := server_mocks.MockServerFromConfig(conf)
-	defer srv.Close()
+	srv := server_mocks.NewServer(conf)
+	defer srv.Stop()
 
 	srv.AddWorker(&pbf.Worker{
 		Id:    "test-worker",

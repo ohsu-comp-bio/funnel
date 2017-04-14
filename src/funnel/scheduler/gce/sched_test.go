@@ -1,74 +1,27 @@
 package gce
 
 import (
-	"context"
 	"funnel/config"
-	"funnel/logger"
 	pbf "funnel/proto/funnel"
-	"funnel/scheduler"
-	gce_mocks "funnel/scheduler/gce/mocks"
-	server_mocks "funnel/server/mocks"
 	"funnel/worker"
 	"github.com/stretchr/testify/mock"
 	"testing"
 )
 
-func init() {
-	logger.ForceColors()
-}
-
-func basicConf() config.Config {
-	conf := server_mocks.NewMockServerConfig()
-	conf.Backends.GCE.Project = "test-proj"
-	conf.Backends.GCE.Zone = "test-zone"
-	return conf
-}
-
-func testWorker(id string, s pbf.WorkerState) *pbf.Worker {
-	return &pbf.Worker{
-		Id: id,
-		Resources: &pbf.Resources{
-			Cpus: 10.0,
-			Ram:  100.0,
-			Disk: 1000.0,
-		},
-		Available: &pbf.Resources{
-			Cpus: 10.0,
-			Ram:  100.0,
-			Disk: 1000.0,
-		},
-		Zone:  "ok-zone",
-		State: s,
-		Metadata: map[string]string{
-			"gce": "yes",
-		},
-	}
-}
-
 // TestSchedToExisting tests the case where an existing worker has capacity
 // available for the task. In this case, there are no instance templates,
 // so the scheduler will not create any new workers.
 func TestSchedToExisting(t *testing.T) {
-
-	ctx := context.Background()
-	// Mock config
-	conf := basicConf()
-	// Mock the GCE API so actual API calls aren't needed
-	gce := new(gce_mocks.Client)
-	gce.SetupEmptyMockTemplates()
-	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.NewMockServer()
-	defer srv.Close()
+	h := setup()
+	defer h.srv.Stop()
 
 	existing := testWorker("existing", pbf.WorkerState_Alive)
-	srv.AddWorker(existing)
-	srv.RunHelloWorld()
+	h.mockClient.SetupEmptyMockTemplates()
+	h.srv.AddWorker(existing)
+	h.srv.RunHelloWorld()
 
-	// The GCE scheduler under test
-	s := &Backend{conf, srv.Client, gce}
-
-	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
-	workers := srv.GetWorkers()
+	h.Schedule()
+	workers := h.srv.GetWorkers()
 
 	if len(workers) != 1 {
 		t.Error("Expected a single worker")
@@ -82,9 +35,9 @@ func TestSchedToExisting(t *testing.T) {
 	}
 
 	// Not really needed for this test, but safer anyway
-	scheduler.Scale(ctx, srv.DB, s)
+	h.Scale()
 	// Basically asserts that no GCE APIs were called. None are needed in this case.
-	gce.AssertExpectations(t)
+	h.mockClient.AssertExpectations(t)
 }
 
 // TestSchedStartWorker tests the case where the scheduler wants to start a new
@@ -93,77 +46,57 @@ func TestSchedToExisting(t *testing.T) {
 // a job to that unintialized worker. The scaler then calls the GCE API to
 // start the worker.
 func TestSchedStartWorker(t *testing.T) {
+	h := setup()
+	defer h.srv.Stop()
 
-	ctx := context.Background()
-	// Mock config
-	conf := basicConf()
-
-	// Mock the GCE API so actual API calls aren't needed
-	gce := new(gce_mocks.Client)
-	gce.SetupDefaultMockTemplates()
-	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.MockServerFromConfig(conf)
-	defer srv.Close()
+	h.mockClient.SetupDefaultMockTemplates()
 
 	// Represents a worker that is alive but at full capacity
 	existing := testWorker("existing", pbf.WorkerState_Alive)
 	existing.Resources.Cpus = 0.0
-	srv.AddWorker(existing)
+	h.srv.AddWorker(existing)
 
-	srv.RunHelloWorld()
-
-	// The GCE scheduler under test
-	s := &Backend{conf, srv.Client, gce}
-
-	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
-	workers := srv.GetWorkers()
+	h.srv.RunHelloWorld()
+	h.Schedule()
+	workers := h.srv.GetWorkers()
 
 	if len(workers) != 2 {
 		log.Debug("Workers", workers)
 		t.Error("Expected new worker to be added to database")
+		return
 	}
 
 	expected := workers[1]
 	log.Debug("Workers", workers)
 
 	// Expected worker config
-	wconf := conf
+	wconf := h.conf
 	// Expect ServerAddress to match the server's config
-	wconf.Worker.ServerAddress = conf.HostName + ":" + conf.RPCPort
+	wconf.Worker.ServerAddress = h.conf.RPCAddress()
 	wconf.Worker.ID = expected.Id
-	gce.On("StartWorker", "test-tpl", wconf).Return(nil)
+	h.mockClient.On("StartWorker", "test-tpl", wconf).Return(nil)
 
-	scheduler.Scale(ctx, srv.DB, s)
-	gce.AssertExpectations(t)
+	h.Scale()
+	h.mockClient.AssertExpectations(t)
 }
 
 // TestPreferExistingWorker tests the case where there is an existing worker
 // AND instance templates available. The existing worker has capacity for the task,
 // and the task should be scheduled to the existing worker.
 func TestPreferExistingWorker(t *testing.T) {
+	h := setup()
+	defer h.srv.Stop()
 
-	ctx := context.Background()
-	// Mock config
-	conf := basicConf()
-
-	// Mock the GCE API so actual API calls aren't needed
-	gce := new(gce_mocks.Client)
-	gce.SetupDefaultMockTemplates()
-	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.NewMockServer()
-	defer srv.Close()
+	h.mockClient.SetupDefaultMockTemplates()
 
 	existing := testWorker("existing", pbf.WorkerState_Alive)
 	existing.Resources.Cpus = 10.0
-	srv.AddWorker(existing)
+	h.srv.AddWorker(existing)
 
-	srv.RunHelloWorld()
+	h.srv.RunHelloWorld()
 
-	// The GCE scheduler under test
-	s := &Backend{conf, srv.Client, gce}
-
-	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
-	workers := srv.GetWorkers()
+	h.Schedule()
+	workers := h.srv.GetWorkers()
 
 	if len(workers) != 1 {
 		t.Error("Expected no new workers to be created")
@@ -177,41 +110,30 @@ func TestPreferExistingWorker(t *testing.T) {
 	}
 
 	// Nothing should be scaled in this test, but safer to call Scale anyway
-	scheduler.Scale(ctx, srv.DB, s)
-	gce.AssertExpectations(t)
+	h.Scale()
+	h.mockClient.AssertExpectations(t)
 }
 
 // Test submit multiple jobs at once when no workers exist. Multiple workers
 // should be started.
 func TestSchedStartMultipleWorker(t *testing.T) {
+	h := setup()
+	defer h.srv.Stop()
 
-	ctx := context.Background()
-	// Mock config
-	conf := basicConf()
-
-	// Mock the GCE API so actual API calls aren't needed
-	gce := new(gce_mocks.Client)
-	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.NewMockServer()
-	defer srv.Close()
-
-	srv.RunHelloWorld()
-	srv.RunHelloWorld()
-	srv.RunHelloWorld()
-	srv.RunHelloWorld()
-
-	// The GCE scheduler under test
-	s := &Backend{conf, srv.Client, gce}
+	h.srv.RunHelloWorld()
+	h.srv.RunHelloWorld()
+	h.srv.RunHelloWorld()
+	h.srv.RunHelloWorld()
 
 	// Mock an instance template response with 1 cpu/ram
-	gce.SetupMockTemplates(pbf.Resources{
+	h.mockClient.SetupMockTemplates(pbf.Resources{
 		Cpus: 1.0,
 		Ram:  1.0,
 		Disk: 1000.0,
 	})
 
-	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
-	workers := srv.GetWorkers()
+	h.Schedule()
+	workers := h.srv.GetWorkers()
 
 	if len(workers) != 4 {
 		log.Debug("WORKERS", workers)
@@ -221,22 +143,18 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 
 // Test that assigning a job to a worker correctly updates the available resources.
 func TestUpdateAvailableResources(t *testing.T) {
-
-	ctx := context.Background()
-	conf := basicConf()
-	srv := server_mocks.NewMockServer()
-	defer srv.Close()
+	h := setup()
+	defer h.srv.Stop()
+	h.mockClient.SetupEmptyMockTemplates()
 
 	existing := testWorker("existing", pbf.WorkerState_Alive)
-	srv.AddWorker(existing)
-	ta := srv.HelloWorldTask()
-	srv.RunTask(ta)
-	gce := new(gce_mocks.Client)
-	gce.SetupEmptyMockTemplates()
-	s := &Backend{conf, srv.Client, gce}
+	h.srv.AddWorker(existing)
 
-	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
-	workers := srv.GetWorkers()
+	ta := h.srv.HelloWorldTask()
+	h.srv.RunTask(ta)
+
+	h.Schedule()
+	workers := h.srv.GetWorkers()
 
 	if len(workers) != 1 || workers[0].Id != "existing" {
 		log.Debug("WORKERS", workers)
@@ -252,36 +170,30 @@ func TestUpdateAvailableResources(t *testing.T) {
 
 // Try to reproduce a bug where available CPUs seems to overflow
 func TestUpdateBugAvailableResources(t *testing.T) {
-
-	ctx := context.Background()
-	conf := basicConf()
-	srv := server_mocks.NewMockServer()
-	defer srv.Close()
+	h := setup()
+	defer h.srv.Stop()
+	h.mockClient.SetupEmptyMockTemplates()
 
 	existingA := testWorker("existing-A", pbf.WorkerState_Alive)
 	existingA.Resources.Cpus = 8.0
-	srv.AddWorker(existingA)
+	h.srv.AddWorker(existingA)
 
 	existingB := testWorker("existing-B", pbf.WorkerState_Alive)
 	existingB.Resources.Cpus = 8.0
-	srv.AddWorker(existingB)
+	h.srv.AddWorker(existingB)
 
-	ta := srv.HelloWorldTask()
-	tb := srv.HelloWorldTask()
-	tc := srv.HelloWorldTask()
+	ta := h.srv.HelloWorldTask()
+	tb := h.srv.HelloWorldTask()
+	tc := h.srv.HelloWorldTask()
 	ta.Resources.MinimumCpuCores = 4
 	tb.Resources.MinimumCpuCores = 4
 	tc.Resources.MinimumCpuCores = 4
-	srv.RunTask(ta)
-	srv.RunTask(tb)
-	srv.RunTask(tc)
+	h.srv.RunTask(ta)
+	h.srv.RunTask(tb)
+	h.srv.RunTask(tc)
 
-	gce := new(gce_mocks.Client)
-	gce.SetupEmptyMockTemplates()
-	s := &Backend{conf, srv.Client, gce}
-
-	scheduler.ScheduleChunk(ctx, srv.DB, s, conf)
-	workers := srv.GetWorkers()
+	h.Schedule()
+	workers := h.srv.GetWorkers()
 
 	log.Debug("WORKERS", workers)
 
@@ -299,14 +211,9 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 // Test a bug where worker resources were not being correctly reported/updated,
 // causing jobs to be scheduled incorrectly.
 func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
-
-	conf := basicConf()
-	gce := new(gce_mocks.Client)
-	gce.SetupDefaultMockTemplates()
-	srv := server_mocks.MockServerFromConfig(conf)
-	defer srv.Close()
-	s := &Backend{srv.Conf, srv.Client, gce}
-	ctx := context.Background()
+	h := setup()
+	defer h.srv.Stop()
+	h.mockClient.SetupDefaultMockTemplates()
 
 	var w *worker.Worker
 
@@ -317,7 +224,7 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 	// because the Disk resources would first be reported by the GCE instance template,
 	// but once the worker sent an update, the resource information was incorrectly
 	// reported and merged. This test tries to replicate that scenario closely.
-	gce.
+	h.mockClient.
 		On("StartWorker", "test-tpl", mock.Anything).
 		Run(func(args mock.Arguments) {
 			wconf := args[1].(config.Config)
@@ -326,10 +233,10 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 		Return(nil)
 
 		// Run the first task. This will be scheduled.
-	ida := srv.RunHelloWorld()
-	scheduler.ScheduleChunk(ctx, srv.DB, s, srv.Conf)
+	ida := h.srv.RunHelloWorld()
+	h.Schedule()
 	// Starts the worker.
-	scheduler.Scale(ctx, srv.DB, s)
+	h.Scale()
 
 	// Sync the worker state.
 	w.Sync()
@@ -337,20 +244,20 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 	w.Ctrls[ida].SetResult(nil)
 	w.Sync()
 
-	log.Debug("RESOURCES", srv.GetWorkers())
+	log.Debug("RESOURCES", h.srv.GetWorkers())
 
 	// Run the second task. This wasn't being scheduled, which is a bug.
-	idb := srv.RunHelloWorld()
-	scheduler.ScheduleChunk(ctx, srv.DB, s, srv.Conf)
+	idb := h.srv.RunHelloWorld()
+	h.Schedule()
 
-	log.Debug("RESOURCES", srv.GetWorkers())
+	log.Debug("RESOURCES", h.srv.GetWorkers())
 
 	w.Sync()
 	if _, ok := w.Ctrls[idb]; !ok {
 		t.Error("The second job didn't get to the worker as expected")
 	}
 
-	if len(srv.GetWorkers()) != 1 {
+	if len(h.srv.GetWorkers()) != 1 {
 		t.Error("Expected only one worker")
 	}
 }

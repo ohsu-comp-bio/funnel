@@ -23,9 +23,15 @@ var log = logger.New("condor")
 // TODO move to worker metadata to be consistent with GCE
 const prefix = "condor-worker-"
 
+// Plugin provides the HTCondor scheduler backend plugin.
+var Plugin = scheduler.BackendPlugin{
+	Name:   "condor",
+	Create: NewBackend,
+}
+
 // NewBackend returns a new HTCondor Backend instance.
-func NewBackend(conf config.Config) (*Backend, error) {
-	return &Backend{conf}, nil
+func NewBackend(conf config.Config) (scheduler.Backend, error) {
+	return scheduler.Backend(&Backend{conf}), nil
 }
 
 // Backend represents the HTCondor backend.
@@ -162,13 +168,4 @@ func resolveCondorResourceRequest(cpus int, ram float64, disk float64) string {
 		resources = append(resources, fmt.Sprintf("request_disk   = %f", disk*976562))
 	}
 	return strings.Join(resources, "\n")
-}
-
-// Register the backend with the scheduler package
-// See funnel/scheduler/backends.go
-func init() {
-	scheduler.RegisterBackend("condor", func(conf config.Config) (scheduler.Backend, error) {
-		b, err := NewBackend(conf)
-		return scheduler.Backend(b), err
-	})
 }

@@ -5,11 +5,10 @@ import (
 	"funnel/config"
 	"funnel/logger"
 	"funnel/scheduler"
-	// Register scheduler backends
-	_ "funnel/scheduler/condor"
-	_ "funnel/scheduler/gce"
-	_ "funnel/scheduler/local"
-	_ "funnel/scheduler/openstack"
+	"funnel/scheduler/condor"
+	"funnel/scheduler/gce"
+	"funnel/scheduler/local"
+	"funnel/scheduler/openstack"
 	"funnel/server"
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
@@ -56,6 +55,11 @@ var serverCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		sched.AddBackend(gce.Factory)
+		sched.AddBackend(condor.Factory)
+		sched.AddBackend(openstack.Factory)
+		sched.AddBackend(local.Factory)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()

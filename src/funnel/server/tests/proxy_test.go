@@ -8,11 +8,11 @@ import (
 )
 
 func TestNoCacheHeader(t *testing.T) {
-	conf := server_mocks.NewMockServerConfig()
-	srv := server_mocks.MockServerFromConfig(conf)
-	defer srv.Close()
+	srv := server_mocks.NewServer(server_mocks.NewConfig())
+	srv.Start()
+	defer srv.Stop()
 
-	resp, err := http.Get(conf.HTTPAddress() + "/v1/jobs")
+	resp, err := http.Get(srv.Conf.HTTPAddress() + "/v1/jobs")
 
 	if err != nil {
 		panic(err)

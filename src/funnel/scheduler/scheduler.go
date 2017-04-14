@@ -1,11 +1,13 @@
 package scheduler
 
 import (
+	"fmt"
 	"funnel/config"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
 	"funnel/util"
 	"golang.org/x/net/context"
+	"strings"
 	"time"
 )
 
@@ -21,104 +23,108 @@ type Database interface {
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(db Database, conf config.Config) (*Scheduler, error) {
-	return &Scheduler{db, conf}, nil
+	backends := map[string]BackendPlugin{}
+
+	err := util.EnsureDir(conf.WorkDir)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Scheduler{db, conf, backends}, nil
 }
 
 // Scheduler handles scheduling tasks to workers and support many backends.
 type Scheduler struct {
-	db   Database
-	conf config.Config
+	db       Database
+	conf     config.Config
+	backends map[string]BackendPlugin
 }
 
-// Start starts the scheduling loops. This does not block.
+// AddBackend adds a backend plugin.
+func (s *Scheduler) AddBackend(plugin BackendPlugin) {
+	s.backends[plugin.Name] = plugin
+}
+
+// Start starts the scheduling loop. This blocks.
+//
 // The scheduler will take a chunk of tasks from the queue,
 // request the the configured backend schedule them, and
 // act on offers made by the backend.
 func (s *Scheduler) Start(ctx context.Context) error {
-	var err error
-	backend, err := NewBackend(s.conf.Scheduler, s.conf)
-	if err != nil {
-		return err
-	}
-
-	err = util.EnsureDir(s.conf.WorkDir)
-	if err != nil {
-		return err
-	}
-
-	// The scheduler and scaler loops are in separate goroutines
-	// so that a long, blocking call in one doesn't block the other.
-
-	// Start backend scheduler loop
-	go func() {
-		ticker := time.NewTicker(s.conf.ScheduleRate)
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				ScheduleChunk(ctx, s.db, backend, s.conf)
+	ticker := time.NewTicker(s.conf.ScheduleRate)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			var err error
+			err = s.Schedule(ctx)
+			if err != nil {
+				return err
+			}
+			err = s.Scale(ctx)
+			if err != nil {
+				return err
 			}
 		}
-	}()
-
-	// If the scheduler implements the Scaler interface,
-	// start a scaler loop
-	if b, ok := backend.(Scaler); ok {
-		// Start backend scaler loop
-		go func() {
-			ticker := time.NewTicker(s.conf.ScheduleRate)
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					Scale(ctx, s.db, b)
-				}
-			}
-		}()
 	}
-	return nil
 }
 
-// ScheduleChunk does a scheduling iteration. It checks the health of workers
+// Schedule does a scheduling iteration. It checks the health of workers
 // in the database, gets a chunk of tasks from the queue (configurable by config.ScheduleChunk),
 // and calls the given scheduler. If the scheduler returns a valid offer, the
 // job is assigned to the offered worker.
-func ScheduleChunk(ctx context.Context, db Database, b Backend, conf config.Config) {
-	db.CheckWorkers()
-	for _, job := range db.ReadQueue(conf.ScheduleChunk) {
-		offer := b.Schedule(job)
+func (s *Scheduler) Schedule(ctx context.Context) error {
+	backend, err := s.backend()
+	if err != nil {
+		return err
+	}
+
+	s.db.CheckWorkers()
+	for _, job := range s.db.ReadQueue(s.conf.ScheduleChunk) {
+		offer := backend.Schedule(job)
 		if offer != nil {
-			log.Debug("Assigning job to worker",
+			log.Info("Assigning job to worker",
 				"jobID", job.JobID,
 				"workerID", offer.Worker.Id,
 			)
-			db.AssignJob(job, offer.Worker)
+			s.db.AssignJob(job, offer.Worker)
 		} else {
 			log.Info("No worker could be scheduled for job", "jobID", job.JobID)
 		}
 	}
+	return nil
 }
 
 // Scale implements some common logic for allowing scheduler backends
 // to poll the database, looking for workers that need to be started
 // and shutdown.
-func Scale(ctx context.Context, db Database, s Scaler) {
+func (s *Scheduler) Scale(ctx context.Context) error {
+	backend, err := s.backend()
+	if err != nil {
+		return err
+	}
 
-	resp, err := db.GetWorkers(ctx, &pbf.GetWorkersRequest{})
+	b, isScaler := backend.(Scaler)
+	// If the scheduler doesn't implement the Scaler interface,
+	// stop here.
+	if !isScaler {
+		return nil
+	}
+
+	resp, err := s.db.GetWorkers(ctx, &pbf.GetWorkersRequest{})
 	if err != nil {
 		log.Error("Failed GetWorkers request. Recovering.", err)
-		return
+		return nil
 	}
 
 	for _, w := range resp.Workers {
 
-		if !s.ShouldStartWorker(w) {
+		if !b.ShouldStartWorker(w) {
 			continue
 		}
 
-		serr := s.StartWorker(w)
+		serr := b.StartWorker(w)
 		if serr != nil {
 			log.Error("Error starting worker", serr)
 			continue
@@ -127,7 +133,7 @@ func Scale(ctx context.Context, db Database, s Scaler) {
 		// TODO should the Scaler instance handle this? Is it possible
 		//      that Initializing is the wrong state in some cases?
 		w.State = pbf.WorkerState_Initializing
-		_, err := db.UpdateWorker(ctx, w)
+		_, err := s.db.UpdateWorker(ctx, w)
 
 		if err != nil {
 			// TODO an error here would likely result in multiple workers
@@ -139,4 +145,28 @@ func Scale(ctx context.Context, db Database, s Scaler) {
 			log.Error("Error marking worker as initializing", err)
 		}
 	}
+	return nil
+}
+
+// backend returns a Backend instance for the backend
+// given by name in config.Scheduler.
+func (s *Scheduler) backend() (Backend, error) {
+	name := strings.ToLower(s.conf.Scheduler)
+	plugin, ok := s.backends[name]
+
+	if !ok {
+		log.Error("Unknown scheduler backend", "name", name)
+		return nil, fmt.Errorf("Unknown scheduler backend %s", name)
+	}
+
+	// Cache the scheduler instance on the plugin so that
+	// we can call this backend() function repeatedly.
+	if plugin.instance == nil {
+		i, err := plugin.Create(s.conf)
+		if err != nil {
+			return nil, err
+		}
+		plugin.instance = i
+	}
+	return plugin.instance, nil
 }

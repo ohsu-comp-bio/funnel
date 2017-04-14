@@ -19,8 +19,14 @@ import (
 
 var log = logger.New("gce")
 
+// Plugin provides the Google Cloud Compute scheduler backend plugin.
+var Plugin = scheduler.BackendPlugin{
+	Name:   "gce",
+	Create: NewBackend,
+}
+
 // NewBackend returns a new Google Cloud Engine Backend instance.
-func NewBackend(conf config.Config) (*Backend, error) {
+func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 
 	// Create a client for talking to the funnel scheduler
@@ -43,7 +49,7 @@ func NewBackend(conf config.Config) (*Backend, error) {
 		gce:    gce,
 	}
 
-	return s, nil
+	return scheduler.Backend(s), nil
 }
 
 // Backend represents the GCE backend, which provides
@@ -141,13 +147,4 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 	}
 
 	return s.gce.StartWorker(template, wc)
-}
-
-// Register the backend with the scheduler package
-// See funnel/scheduler/backends.go
-func init() {
-	scheduler.RegisterBackend("gce", func(conf config.Config) (scheduler.Backend, error) {
-		b, err := NewBackend(conf)
-		return scheduler.Backend(b), err
-	})
 }

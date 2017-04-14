@@ -12,8 +12,14 @@ import (
 
 var log = logger.New("local")
 
+// Plugin provides the local scheduler backend plugin
+var Plugin = scheduler.BackendPlugin{
+	Name:   "local",
+	Create: NewBackend,
+}
+
 // NewBackend returns a new Backend instance.
-func NewBackend(conf config.Config) (*Backend, error) {
+func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	id := scheduler.GenWorkerID("local")
 	err := startWorker(id, conf)
 	if err != nil {
@@ -21,7 +27,7 @@ func NewBackend(conf config.Config) (*Backend, error) {
 	}
 
 	client, _ := scheduler.NewClient(conf.Worker)
-	return &Backend{conf, client, id}, nil
+	return scheduler.Backend(&Backend{conf, client, id}), nil
 }
 
 // Backend represents the local backend.
@@ -77,13 +83,4 @@ func startWorker(id string, conf config.Config) error {
 	}
 	go w.Run()
 	return nil
-}
-
-// Register the backend with the scheduler package
-// See funnel/scheduler/backends.go
-func init() {
-	scheduler.RegisterBackend("local", func(conf config.Config) (scheduler.Backend, error) {
-		b, err := NewBackend(conf)
-		return scheduler.Backend(b), err
-	})
 }

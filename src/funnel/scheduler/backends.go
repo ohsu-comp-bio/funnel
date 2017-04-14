@@ -1,11 +1,9 @@
 package scheduler
 
 import (
-	"fmt"
 	"funnel/config"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
-	"strings"
 )
 
 // Backend is responsible for scheduling a job. It has a single method which
@@ -50,27 +48,10 @@ func NewOffer(w *pbf.Worker, j *tes.Job, s Scores) *Offer {
 	}
 }
 
-// factory is a function provided by backends when they register,
-// which allows NewBackend() to create a backend instance as needed.
-type factory func(config.Config) (Backend, error)
-
-// backends maps backend names to factory functions.
-var backends = map[string]factory{}
-
-// RegisterBackend is used by backends to register factory functions.
-// See an init function in any of the backends.
-func RegisterBackend(name string, f factory) {
-	backends[name] = f
-}
-
-// NewBackend creates a new backend from the given name.
-func NewBackend(name string, conf config.Config) (Backend, error) {
-	name = strings.ToLower(name)
-	f, ok := backends[name]
-
-	if !ok {
-		log.Error("Unknown scheduler backend", "name", name)
-		return nil, fmt.Errorf("Unknown scheduler backend %s", name)
-	}
-	return f(conf)
+// BackendPlugin is provided by backends when they register with Scheduler,
+// which allows to the scheduler to create a backend instance by name.
+type BackendPlugin struct {
+	Name     string
+	Create   func(config.Config) (Backend, error)
+	instance Backend
 }

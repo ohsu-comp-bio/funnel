@@ -11,8 +11,14 @@ import (
 
 var log = logger.New("openstack")
 
+// Plugin provides the OpenStack scheduler backend plugin.
+var Plugin = scheduler.BackendPlugin{
+	Name:   "openstack",
+	Create: NewBackend,
+}
+
 // NewBackend returns a new Backend instance.
-func NewBackend(conf config.Config) (*Backend, error) {
+func NewBackend(conf config.Config) (scheduler.Backend, error) {
 
 	// Create a client for talking to the funnel scheduler
 	client, err := scheduler.NewClient(conf.Worker)
@@ -21,7 +27,7 @@ func NewBackend(conf config.Config) (*Backend, error) {
 		return nil, err
 	}
 
-	return &Backend{conf, client}, nil
+	return scheduler.Backend(&Backend{conf, client}), nil
 }
 
 // Backend represents the OpenStack backend.
@@ -84,13 +90,4 @@ func (s *Backend) getWorkers() []*pbf.Worker {
 	// TODO include unprovisioned worker templates from config
 
 	return workers
-}
-
-// Register the backend with the scheduler package
-// See funnel/scheduler/backends.go
-func init() {
-	scheduler.RegisterBackend("openstack", func(conf config.Config) (scheduler.Backend, error) {
-		b, err := NewBackend(conf)
-		return scheduler.Backend(b), err
-	})
 }

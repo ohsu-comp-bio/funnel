@@ -39,37 +39,35 @@ type Backend struct {
 	conf config.Config
 }
 
-// Schedule schedules a job on the HTCondor queue and returns a corresponding Offer.
-func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
+// Schedule schedules a task on the HTCondor queue and returns a corresponding Offer.
+func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
 	log.Debug("Running condor scheduler")
 
 	disk := s.conf.Worker.Resources.Disk
 	if disk == 0.0 {
-		for _, v := range j.Task.GetResources().GetVolumes() {
-			disk += v.GetSizeGb()
-		}
+		disk = t.GetResources().GetSizeGb()
 	}
 
 	cpus := s.conf.Worker.Resources.Cpus
 	if cpus == 0 {
-		cpus = j.Task.GetResources().GetMinimumCpuCores()
+		cpus = t.GetResources().GetCpuCores()
 	}
 
 	ram := s.conf.Worker.Resources.Ram
 	if ram == 0.0 {
-		ram = j.Task.GetResources().GetMinimumRamGb()
+		ram = t.GetResources().GetRamGb()
 	}
 
-	// TODO could we call condor_submit --dry-run to test if a job would succeed?
+	// TODO could we call condor_submit --dry-run to test if a task would succeed?
 	w := &pbf.Worker{
-		Id: prefix + j.JobID,
+		Id: prefix + t.Id,
 		Resources: &pbf.Resources{
 			Cpus: cpus,
 			Ram:  ram,
 			Disk: disk,
 		},
 	}
-	return scheduler.NewOffer(w, j, scheduler.Scores{})
+	return scheduler.NewOffer(w, t, scheduler.Scores{})
 }
 
 // ShouldStartWorker is part of the Scaler interface and returns true
@@ -79,7 +77,7 @@ func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 		w.State == pbf.WorkerState_Uninitialized
 }
 
-// StartWorker submits a job via "condor_submit" to start a new worker.
+// StartWorker submits a task via "condor_submit" to start a new worker.
 func (s *Backend) StartWorker(w *pbf.Worker) error {
 	log.Debug("Starting condor worker")
 	var err error

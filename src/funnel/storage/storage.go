@@ -2,7 +2,7 @@ package storage
 
 // NOTE!
 // It's important that Storage instances be immutable!
-// We don't want storage authentication to be accidentally shared between jobs.
+// We don't want storage authentication to be accidentally shared between tasks.
 // If they are mutable, there's more chance that storage config can leak
 // between separate processes.
 
@@ -10,28 +10,29 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
+	"funnel/proto/tes"
 )
 
 const (
 	// File represents the file type
-	File string = "File"
+	File = tes.FileType_FILE
 	// Directory represents the directory type
-	Directory = "Directory"
+	Directory = tes.FileType_DIRECTORY
 )
 
 // Backend provides an interface for a storage backend.
 // New storage backends must support this interface.
 type Backend interface {
-	Get(ctx context.Context, url string, path string, class string, readonly bool) error
-	Put(ctx context.Context, url string, path string, class string) error
+	Get(ctx context.Context, url string, path string, class tes.FileType, readonly bool) error
+	Put(ctx context.Context, url string, path string, class tes.FileType) error
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
 	// TODO would it be useful if this included the request type (Get/Put)?
-	Supports(url string, path string, class string) bool
+	Supports(url string, path string, class tes.FileType) bool
 }
 
 // Storage provides a client for accessing multiple storage systems,
-// i.e. for downloading/uploading job files from S3, GS, local disk, etc.
+// i.e. for downloading/uploading task files from S3, GS, local disk, etc.
 //
 // For a given storage url, the storage backend is usually determined by the url prefix,
 // e.g. "s3://my-bucket/file" will access the S3 backend.
@@ -42,7 +43,7 @@ type Storage struct {
 // Get downloads a file from a storage system at the given "url".
 // The file is downloaded to the given local "path".
 // "class" is either "File" or "Directory".
-func (storage Storage) Get(ctx context.Context, url string, path string, class string, readonly bool) error {
+func (storage Storage) Get(ctx context.Context, url string, path string, class tes.FileType, readonly bool) error {
 	backend, err := storage.findBackend(url, path, class)
 	if err != nil {
 		return err
@@ -53,7 +54,7 @@ func (storage Storage) Get(ctx context.Context, url string, path string, class s
 // Put uploads a file to a storage system at the given "url".
 // The file is uploaded from the given local "path".
 // "class" is either "File" or "Directory".
-func (storage Storage) Put(ctx context.Context, url string, path string, class string) error {
+func (storage Storage) Put(ctx context.Context, url string, path string, class tes.FileType) error {
 	backend, err := storage.findBackend(url, path, class)
 	if err != nil {
 		return err
@@ -62,14 +63,14 @@ func (storage Storage) Put(ctx context.Context, url string, path string, class s
 }
 
 // Supports indicates whether the storage supports the given request.
-func (storage Storage) Supports(url string, path string, class string) bool {
+func (storage Storage) Supports(url string, path string, class tes.FileType) bool {
 	b, _ := storage.findBackend(url, path, class)
 	return b != nil
 }
 
 // findBackend tries to find a backend that matches the given url/path/class.
 // This is how a url gets matched to a backend, for example by the url prefix "s3://".
-func (storage Storage) findBackend(url string, path string, class string) (Backend, error) {
+func (storage Storage) findBackend(url string, path string, class tes.FileType) (Backend, error) {
 	for _, backend := range storage.backends {
 		if backend.Supports(url, path, class) {
 			return backend, nil

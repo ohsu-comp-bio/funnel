@@ -60,15 +60,15 @@ type Backend struct {
 	gce    Client
 }
 
-// Schedule schedules a job on a Google Cloud VM worker instance.
-func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
+// Schedule schedules a task on a Google Cloud VM worker instance.
+func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	log.Debug("Running GCE scheduler")
 
 	offers := []*scheduler.Offer{}
 	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("gce"))
 
 	for _, w := range s.getWorkers() {
-		// Filter out workers that don't match the job request.
+		// Filter out workers that don't match the task request.
 		// Checks CPU, RAM, disk space, ports, etc.
 		if !scheduler.Match(w, j, predicates) {
 			continue
@@ -114,7 +114,7 @@ func (s *Backend) getWorkers() []*pbf.Worker {
 	workers = resp.Workers
 
 	// Include unprovisioned (template) workers.
-	// This is how the scheduler can schedule jobs to workers that
+	// This is how the scheduler can schedule tasks to workers that
 	// haven't been started yet.
 	for _, t := range s.gce.Templates() {
 		t.Id = scheduler.GenWorkerID("gce")

@@ -7,24 +7,24 @@ import (
 	"testing"
 )
 
-func TestPortsFitEmptyJob(t *testing.T) {
-	testEmptyJob(t, PortsFit, "PortsFit")
+func TestPortsFitEmptyTask(t *testing.T) {
+	testEmptyTask(t, PortsFit, "PortsFit")
 }
 
-func TestVolumesFitEmptyJob(t *testing.T) {
-	testEmptyJob(t, VolumesFit, "VolumesFit")
+func TestVolumesFitEmptyTask(t *testing.T) {
+	testEmptyTask(t, VolumesFit, "VolumesFit")
 }
 
-func TestZonesFitEmptyJob(t *testing.T) {
-	testEmptyJob(t, ZonesFit, "ZonesFit")
+func TestZonesFitEmptyTask(t *testing.T) {
+	testEmptyTask(t, ZonesFit, "ZonesFit")
 }
 
-func TestResourcesFitEmptyJob(t *testing.T) {
-	testEmptyJob(t, ResourcesFit, "ResourcesFit")
+func TestResourcesFitEmptyTask(t *testing.T) {
+	testEmptyTask(t, ResourcesFit, "ResourcesFit")
 }
 
 func TestCpuResourcesFit(t *testing.T) {
-	j := &tes.Job{
+	j := &tes.Task{
 		Task: &tes.Task{
 			Resources: &tes.Resources{
 				MinimumCpuCores: 1,
@@ -64,16 +64,16 @@ func TestCpuResourcesFit(t *testing.T) {
 	}
 }
 
-// testEmptyJob tests that the predicates all handle an empty job.
+// testEmptyTask tests that the predicates all handle an empty task.
 // Protects against nil-pointer panics.
-func testEmptyJob(t *testing.T, p Predicate, name string) {
+func testEmptyTask(t *testing.T, p Predicate, name string) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("Predicate panic: %s\n%s", name, debug.Stack())
 		}
 	}()
 
-	j := &tes.Job{}
+	j := &tes.Task{}
 	w := &pbf.Worker{}
 	p(j, w)
 }

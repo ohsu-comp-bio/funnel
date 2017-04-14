@@ -36,15 +36,15 @@ type Backend struct {
 	client scheduler.Client
 }
 
-// Schedule schedules a job on a OpenStack VM worker instance.
-func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
+// Schedule schedules a task on a OpenStack VM worker instance.
+func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	log.Debug("Running OpenStack scheduler")
 
 	offers := []*scheduler.Offer{}
 	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("openstack"))
 
 	for _, w := range s.getWorkers() {
-		// Filter out workers that don't match the job request.
+		// Filter out workers that don't match the task request.
 		// Checks CPU, RAM, disk space, ports, etc.
 		if !scheduler.Match(w, j, predicates) {
 			continue

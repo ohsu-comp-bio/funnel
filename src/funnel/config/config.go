@@ -99,9 +99,9 @@ type Config struct {
 	WorkDir       string
 	LogLevel      string
 	LogPath       string
-	MaxJobLogSize int
-	ScheduleRate  time.Duration
-	ScheduleChunk int
+	MaxExecutorLogSize int
+	ScheduleRate       time.Duration
+	ScheduleChunk      int
 	// How long to wait for a worker ping before marking it as dead
 	WorkerPingTimeout time.Duration
 	// How long to wait for worker initialization before marking it dead
@@ -141,11 +141,11 @@ func DefaultConfig() Config {
 				CacheTTL: time.Minute,
 			},
 		},
-		MaxJobLogSize:     10000,
-		ScheduleRate:      time.Second,
-		ScheduleChunk:     10,
-		WorkerPingTimeout: time.Minute,
-		WorkerInitTimeout: time.Minute * 5,
+		MaxExecutorLogSize: 10000,
+		ScheduleRate:       time.Second,
+		ScheduleChunk:      10,
+		WorkerPingTimeout:  time.Minute,
+		WorkerInitTimeout:  time.Minute * 5,
 		Worker: Worker{
 			ServerAddress: hostName + ":" + rpcPort,
 			WorkDir:       workDir,
@@ -171,15 +171,15 @@ type Worker struct {
 	ID string
 	// Address of the scheduler, e.g. "1.2.3.4:9090"
 	ServerAddress string
-	// Directory to write job files to
+	// Directory to write task files to
 	WorkDir string
 	// How long (seconds) to wait before tearing down an inactive worker
 	// Default, -1, indicates to tear down the worker immediately after completing
-	// its job
+	// its task
 	Timeout time.Duration
 	// How often the worker sends update requests to the server
 	UpdateRate time.Duration
-	// How often the worker sends job log updates
+	// How often the worker sends task log updates
 	LogUpdateRate time.Duration
 	TrackerRate   time.Duration
 	LogTailSize   int64
@@ -187,7 +187,7 @@ type Worker struct {
 	LogPath       string
 	LogLevel      string
 	Resources     *pbf.Resources
-	// Timeout duration for UpdateWorker() and UpdateJobLogs() RPC calls
+	// Timeout duration for UpdateWorker() and UpdateTaskLogs() RPC calls
 	UpdateTimeout time.Duration
 	Metadata      map[string]string
 }

@@ -38,7 +38,7 @@ type Backend struct {
 }
 
 // Schedule schedules a task.
-func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
+func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	log.Debug("Running local scheduler backend")
 	weights := s.conf.Backends.Local.Weights
 	workers := s.getWorkers()

@@ -7,7 +7,7 @@ import (
 	"sort"
 )
 
-// Scores describe how well a job fits a worker.
+// Scores describe how well a task fits a worker.
 type Scores map[string]float32
 
 // Scores keys
@@ -36,14 +36,14 @@ func (s Scores) Weighted(w config.Weights) Scores {
 }
 
 // DefaultScores returns a default set of scores.
-func DefaultScores(w *pbf.Worker, j *tes.Job) Scores {
-	req := j.GetTask().GetResources()
+func DefaultScores(w *pbf.Worker, t *tes.Task) Scores {
+	req := t.GetResources()
 	tot := w.GetResources()
 	avail := w.GetAvailable()
 	s := Scores{}
 
-	s[CPU] = float32(avail.GetCpus()+req.GetMinimumCpuCores()) / float32(tot.GetCpus())
-	s[RAM] = float32(avail.GetRam() + req.GetMinimumRamGb()/tot.GetRam())
+	s[CPU] = float32(avail.GetCpus()+req.GetCpuCores()) / float32(tot.GetCpus())
+	s[RAM] = float32(avail.GetRam() + req.GetRamGb()/tot.GetRam())
 	return s
 }
 

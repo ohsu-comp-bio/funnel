@@ -116,8 +116,8 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
 							return nil, err
 						}
 						portMap = append(portMap, &tes.Ports{
-							Container: int32(containerPort),
-							Host:      int32(hostPort),
+							Container: uint32(containerPort),
+							Host:      uint32(hostPort),
 						})
 						log.Debug("Found port mapping:", "host", hostPort, "container", containerPort)
 					}

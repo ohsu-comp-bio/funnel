@@ -5,12 +5,12 @@ import (
 	"funnel/proto/tes"
 )
 
-// Predicate is a function that checks whether a job fits a worker.
-type Predicate func(*tes.Job, *pbf.Worker) bool
+// Predicate is a function that checks whether a task fits a worker.
+type Predicate func(*tes.Task, *pbf.Worker) bool
 
-// ResourcesFit determines whether a job fits a worker's resources.
-func ResourcesFit(j *tes.Job, w *pbf.Worker) bool {
-	req := j.Task.GetResources()
+// ResourcesFit determines whether a task fits a worker's resources.
+func ResourcesFit(t *tes.Task, w *pbf.Worker) bool {
+	req := t.GetResources()
 
 	switch {
 	case w.GetPreemptible() && !req.GetPreemptible():
@@ -22,27 +22,24 @@ func ResourcesFit(j *tes.Job, w *pbf.Worker) bool {
 	case w.GetAvailable().GetRam() <= 0.0:
 		log.Debug("Fail zero ram")
 		return false
-	case w.GetAvailable().GetCpus() < req.GetMinimumCpuCores():
+	case w.GetAvailable().GetCpus() < req.GetCpuCores():
 		log.Debug("Fail cpus")
 		return false
-	case w.GetAvailable().GetRam() < req.GetMinimumRamGb():
+	case w.GetAvailable().GetRam() < req.GetRamGb():
 		log.Debug("Fail ram")
 		return false
 	}
 	return true
 }
 
-// VolumesFit determines whether a job's volumes fit a worker
+// VolumesFit determines whether a task's volumes fit a worker
 // by checking that the worker has enough disk space available.
-func VolumesFit(j *tes.Job, w *pbf.Worker) bool {
-	req := j.Task.GetResources()
-	vol := req.GetVolumes()
+func VolumesFit(t *tes.Task, w *pbf.Worker) bool {
+	req := t.GetResources()
 
-	// Total size (GB) of all requested volumes
+	// Requested size (GB) of disk on worker
 	var tot float64
-	for _, v := range vol {
-		tot += v.GetSizeGb()
-	}
+	tot = req.GetSizeGb()
 
 	if tot == 0.0 {
 		return true
@@ -55,23 +52,23 @@ func VolumesFit(j *tes.Job, w *pbf.Worker) bool {
 	return f
 }
 
-// PortsFit determines whether a job's ports fit a worker
+// PortsFit determines whether a task's ports fit a worker
 // by checking that the worker has the requested ports available.
-func PortsFit(j *tes.Job, w *pbf.Worker) bool {
+func PortsFit(t *tes.Task, w *pbf.Worker) bool {
 	// Get the set of active ports on the worker
 	active := map[int32]bool{}
 	for _, p := range w.ActivePorts {
 		active[p] = true
 	}
 	// Loop through the requested ports, fail if they are active.
-	for _, d := range j.GetTask().GetDocker() {
+	for _, d := range t.GetExecutors() {
 		for _, p := range d.Ports {
 			h := p.GetHost()
 			if h == 0 {
 				// "0" means "assign a random port, so skip checking this one.
 				continue
 			}
-			if b := active[h]; b {
+			if b := active[int32(h)]; b {
 				return false
 			}
 		}
@@ -79,19 +76,19 @@ func PortsFit(j *tes.Job, w *pbf.Worker) bool {
 	return true
 }
 
-// ZonesFit determines whether a job's zones fit a worker.
-func ZonesFit(j *tes.Job, w *pbf.Worker) bool {
+// ZonesFit determines whether a task's zones fit a worker.
+func ZonesFit(t *tes.Task, w *pbf.Worker) bool {
 	if w.Zone == "" {
 		// Worker doesn't have a set zone, so don't bother checking.
 		return true
 	}
 
-	if len(j.GetTask().GetResources().GetZones()) == 0 {
+	if len(t.GetResources().GetZones()) == 0 {
 		// Request doesn't specify any zones, so don't bother checking.
 		return true
 	}
 
-	for _, z := range j.GetTask().GetResources().GetZones() {
+	for _, z := range t.GetResources().GetZones() {
 		if z == w.Zone {
 			return true
 		}
@@ -101,21 +98,21 @@ func ZonesFit(j *tes.Job, w *pbf.Worker) bool {
 }
 
 // NotDead returns true if the worker state is not Dead or Gone.
-func NotDead(j *tes.Job, w *pbf.Worker) bool {
+func NotDead(j *tes.Task, w *pbf.Worker) bool {
 	return w.State != pbf.WorkerState_Dead && w.State != pbf.WorkerState_Gone
 }
 
 // WorkerHasTag returns a predicate function which returns true
 // if the worker has the given tag (key in Metadata field).
 func WorkerHasTag(tag string) Predicate {
-	return func(j *tes.Job, w *pbf.Worker) bool {
+	return func(j *tes.Task, w *pbf.Worker) bool {
 		_, ok := w.Metadata[tag]
 		return ok
 	}
 }
 
 // DefaultPredicates is a list of Predicate functions that check
-// the whether a job fits a worker.
+// the whether a task fits a worker.
 var DefaultPredicates = []Predicate{
 	ResourcesFit,
 	VolumesFit,
@@ -132,10 +129,10 @@ var DefaultPredicates = []Predicate{
 //        for example, if it requests access to storage that isn't available?
 //        maybe set a max. time allowed to be unscheduled before notification
 
-// Match checks whether a job fits a worker using the given Predicate list.
-func Match(worker *pbf.Worker, job *tes.Job, predicates []Predicate) bool {
+// Match checks whether a task fits a worker using the given Predicate list.
+func Match(worker *pbf.Worker, task *tes.Task, predicates []Predicate) bool {
 	for _, pred := range predicates {
-		if ok := pred(job, worker); !ok {
+		if ok := pred(task, worker); !ok {
 			return false
 		}
 	}

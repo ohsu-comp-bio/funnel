@@ -7,16 +7,16 @@ import (
 	"testing"
 )
 
-func TestReconcileSingleJobCompleteFlow(t *testing.T) {
+func TestReconcileSingleTaskCompleteFlow(t *testing.T) {
 
 	var err error
-	jobs := map[string]*pbf.JobWrapper{}
+	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
-		JobRunner: NoopJobRunner,
-		Ctrls:     map[string]JobControl{},
+		TaskRunner: NoopTaskRunner,
+		Ctrls:      map[string]TaskControl{},
 	}
 
-	err = w.reconcile(jobs)
+	err = w.reconcile(tasks)
 
 	if err != nil {
 		t.Error("Unexpected error on empty reconcile")
@@ -25,226 +25,226 @@ func TestReconcileSingleJobCompleteFlow(t *testing.T) {
 		t.Error("Unexpected runner created on empty reconcile")
 	}
 
-	j := &tes.Job{
-		JobID: "job-1",
-		State: tes.State_Queued,
+	j := &tes.Task{
+		TaskID: "task-1",
+		State:  Queued,
 	}
-	addJob(jobs, j)
+	addTask(tasks, j)
 
-	w.reconcile(jobs)
+	w.reconcile(tasks)
 
-	if _, exists := w.Ctrls["job-1"]; !exists {
-		t.Error("Expected runner to be created for new job")
+	if _, exists := w.Ctrls["task-1"]; !exists {
+		t.Error("Expected runner to be created for new task")
 	}
 
-	ctrl := w.Ctrls["job-1"]
+	ctrl := w.Ctrls["task-1"]
 
-	if j.State != tes.State_Initializing {
-		t.Error("Expected job just started to be in initializing state.")
+	if j.State != Initializing {
+		t.Error("Expected task just started to be in initializing state.")
 	}
 
 	ctrl.SetRunning()
-	w.reconcile(jobs)
+	w.reconcile(tasks)
 
-	if j.State != tes.State_Running {
-		t.Error("Expected job state to be running")
+	if j.State != Running {
+		t.Error("Expected task state to be running")
 	}
 
 	ctrl.SetResult(nil)
-	w.reconcile(jobs)
+	w.reconcile(tasks)
 
-	if j.State != tes.State_Complete {
-		t.Error("Expected job state to be complete")
+	if j.State != Complete {
+		t.Error("Expected task state to be complete")
 	}
 }
 
-func TestReconcileJobError(t *testing.T) {
+func TestReconcileTaskError(t *testing.T) {
 
-	jobs := map[string]*pbf.JobWrapper{}
+	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
-		JobRunner: NoopJobRunner,
-		Ctrls:     map[string]JobControl{},
+		TaskRunner: NoopTaskRunner,
+		Ctrls:      map[string]TaskControl{},
 	}
-	j := &tes.Job{
-		JobID: "job-1",
-		State: tes.State_Queued,
+	j := &tes.Task{
+		TaskID: "task-1",
+		State:  Queued,
 	}
-	addJob(jobs, j)
-	w.reconcile(jobs)
-	ctrl := w.Ctrls["job-1"]
-	ctrl.SetResult(errors.New("Test job error"))
-	w.reconcile(jobs)
+	addTask(tasks, j)
+	w.reconcile(tasks)
+	ctrl := w.Ctrls["task-1"]
+	ctrl.SetResult(errors.New("Test task error"))
+	w.reconcile(tasks)
 
-	if j.State != tes.State_Error {
-		t.Error("Expected job state to be Error")
+	if j.State != Error {
+		t.Error("Expected task state to be Error")
 	}
 }
 
-func TestReconcileCancelJob(t *testing.T) {
+func TestReconcileCancelTask(t *testing.T) {
 	// Set up worker with no-op runner
-	jobs := map[string]*pbf.JobWrapper{}
+	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
-		JobRunner: NoopJobRunner,
-		Ctrls:     map[string]JobControl{},
+		TaskRunner: NoopTaskRunner,
+		Ctrls:      map[string]TaskControl{},
 	}
 
-	// Add a job
-	j := &tes.Job{
-		JobID: "job-1",
-		State: tes.State_Queued,
+	// Add a task
+	j := &tes.Task{
+		TaskID: "task-1",
+		State:  Queued,
 	}
-	addJob(jobs, j)
+	addTask(tasks, j)
 
-	// Reconcile worker state, which registers job with worker
-	w.reconcile(jobs)
+	// Reconcile worker state, which registers task with worker
+	w.reconcile(tasks)
 
-	// Cancel job
-	j.State = tes.State_Canceled
-	ctrl := w.Ctrls["job-1"]
+	// Cancel task
+	j.State = Canceled
+	ctrl := w.Ctrls["task-1"]
 
-	// Reconcile again. Worker should react to job being canceled.
-	w.reconcile(jobs)
+	// Reconcile again. Worker should react to task being canceled.
+	w.reconcile(tasks)
 
-	if ctrl.State() != tes.State_Canceled {
+	if ctrl.State() != Canceled {
 		t.Error("Expected runner state to be canceled")
 	}
 
-	// Delete canceled job. This is emulating what would happen with
-	// the server. The worker won't delete a canceled job controller
-	// until the server deletes the job first.
-	delete(jobs, "job-1")
-	w.reconcile(jobs)
+	// Delete canceled task. This is emulating what would happen with
+	// the server. The worker won't delete a canceled task controller
+	// until the server deletes the task first.
+	delete(tasks, "task-1")
+	w.reconcile(tasks)
 
-	if w.Ctrls["job-1"] != nil {
-		t.Error("Expected job ctrl to be cleaned up")
+	if w.Ctrls["task-1"] != nil {
+		t.Error("Expected task ctrl to be cleaned up")
 	}
 }
 
 func TestReconcileMultiple(t *testing.T) {
 
-	jobs := map[string]*pbf.JobWrapper{}
+	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
-		JobRunner: NoopJobRunner,
-		Ctrls:     map[string]JobControl{},
+		TaskRunner: NoopTaskRunner,
+		Ctrls:      map[string]TaskControl{},
 	}
 
-	w.reconcile(jobs)
+	w.reconcile(tasks)
 
-	addJob(jobs, &tes.Job{
-		JobID: "job-1",
-		State: tes.State_Queued,
+	addTask(tasks, &tes.Task{
+		TaskID: "task-1",
+		State:  Queued,
 	})
 
-	w.reconcile(jobs)
+	w.reconcile(tasks)
 
-	if _, exists := w.Ctrls["job-1"]; !exists {
-		t.Error("Expected runner to be created for new job")
+	if _, exists := w.Ctrls["task-1"]; !exists {
+		t.Error("Expected runner to be created for new task")
 	}
 
-	if jobs["job-1"].Job.State != tes.State_Initializing {
-		t.Error("Expected job just started to be in initializing state.")
+	if tasks["task-1"].Task.State != Initializing {
+		t.Error("Expected task just started to be in initializing state.")
 	}
 
-	w.Ctrls["job-1"].SetRunning()
-	w.reconcile(jobs)
+	w.Ctrls["task-1"].SetRunning()
+	w.reconcile(tasks)
 
-	if jobs["job-1"].Job.State != tes.State_Running {
-		t.Error("Expected job state to be running")
+	if tasks["task-1"].Task.State != Running {
+		t.Error("Expected task state to be running")
 	}
 
-	addJob(jobs, &tes.Job{
-		JobID: "job-2",
-		State: tes.State_Queued,
+	addTask(tasks, &tes.Task{
+		TaskID: "task-2",
+		State:  Queued,
 	})
-	addJob(jobs, &tes.Job{
-		JobID: "job-3",
-		State: tes.State_Queued,
+	addTask(tasks, &tes.Task{
+		TaskID: "task-3",
+		State:  Queued,
 	})
 
-	w.reconcile(jobs)
+	w.reconcile(tasks)
 
 	if len(w.Ctrls) != 3 {
-		t.Error("Expected runner to be created for new job")
+		t.Error("Expected runner to be created for new task")
 	}
 
-	if jobs["job-2"].Job.State != tes.State_Initializing {
-		t.Error("Expected job 2 state to be init")
+	if tasks["task-2"].Task.State != Initializing {
+		t.Error("Expected task 2 state to be init")
 	}
 
-	if jobs["job-3"].Job.State != tes.State_Initializing {
-		t.Error("Expected job 3 state to be init")
+	if tasks["task-3"].Task.State != Initializing {
+		t.Error("Expected task 3 state to be init")
 	}
 
-	// Set job-1 to complete
-	w.Ctrls["job-1"].SetResult(nil)
-	// Cancel job-2
-	jobs["job-2"].Job.State = tes.State_Canceled
-	// Set job-3 to error
-	w.Ctrls["job-3"].SetResult(errors.New("Job 3 error"))
+	// Set task-1 to complete
+	w.Ctrls["task-1"].SetResult(nil)
+	// Cancel task-2
+	tasks["task-2"].Task.State = Canceled
+	// Set task-3 to error
+	w.Ctrls["task-3"].SetResult(errors.New("Task 3 error"))
 
-	j2ctrl := w.Ctrls["job-2"]
-	w.reconcile(jobs)
+	j2ctrl := w.Ctrls["task-2"]
+	w.reconcile(tasks)
 
-	if jobs["job-1"].Job.State != tes.State_Complete {
-		t.Error("Expected job 1 state to be complete")
+	if tasks["task-1"].Task.State != Complete {
+		t.Error("Expected task 1 state to be complete")
 	}
 
-	if j2ctrl.State() != tes.State_Canceled {
-		t.Error("Expected job 2 controller to be canceled state")
+	if j2ctrl.State() != Canceled {
+		t.Error("Expected task 2 controller to be canceled state")
 	}
 
-	// Delete canceled job. This is emulating what would happen with
-	// the server. The worker won't delete a canceled job controller
-	// until the server deletes the job first.
-	delete(jobs, "job-2")
-	w.reconcile(jobs)
+	// Delete canceled task. This is emulating what would happen with
+	// the server. The worker won't delete a canceled task controller
+	// until the server deletes the task first.
+	delete(tasks, "task-2")
+	w.reconcile(tasks)
 
-	if w.Ctrls["job-2"] != nil {
-		t.Error("Expected job 2 ctrl to be cleaned up")
+	if w.Ctrls["task-2"] != nil {
+		t.Error("Expected task 2 ctrl to be cleaned up")
 	}
 
-	if jobs["job-3"].Job.State != tes.State_Error {
-		t.Error("Expected job 3 state to be error")
+	if tasks["task-3"].Task.State != Error {
+		t.Error("Expected task 3 state to be error")
 	}
 }
 
-// Tests how the worker handles the case where it finds a job without a controller
-// and the job state is not Queued (normal case), but is Initializing or Running
+// Tests how the worker handles the case where it finds a task without a controller
+// and the task state is not Queued (normal case), but is Initializing or Running
 func TestStraightToRunning(t *testing.T) {
-	jobs := map[string]*pbf.JobWrapper{}
+	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
-		JobRunner: NoopJobRunner,
-		Ctrls:     map[string]JobControl{},
+		TaskRunner: NoopTaskRunner,
+		Ctrls:      map[string]TaskControl{},
 	}
 
-	addJob(jobs, &tes.Job{
-		JobID: "job-1",
-		State: tes.State_Initializing,
+	addTask(tasks, &tes.Task{
+		TaskID: "task-1",
+		State:  Initializing,
 	})
-	addJob(jobs, &tes.Job{
-		JobID: "job-2",
-		State: tes.State_Running,
+	addTask(tasks, &tes.Task{
+		TaskID: "task-2",
+		State:  Running,
 	})
 
-	w.reconcile(jobs)
+	w.reconcile(tasks)
 
-	if _, exists := w.Ctrls["job-1"]; !exists {
-		t.Error("Expected runner to be created for new job 1")
+	if _, exists := w.Ctrls["task-1"]; !exists {
+		t.Error("Expected runner to be created for new task 1")
 	}
-	if _, exists := w.Ctrls["job-2"]; !exists {
-		t.Error("Expected runner to be created for new job 2")
-	}
-
-	if jobs["job-1"].Job.State != tes.State_Initializing {
-		t.Error("Expected job 1 state to be unchanged.")
+	if _, exists := w.Ctrls["task-2"]; !exists {
+		t.Error("Expected runner to be created for new task 2")
 	}
 
-	if jobs["job-2"].Job.State != tes.State_Initializing {
-		t.Error("Expected job 2 state to revert to initializing.")
+	if tasks["task-1"].Task.State != Initializing {
+		t.Error("Expected task 1 state to be unchanged.")
+	}
+
+	if tasks["task-2"].Task.State != Initializing {
+		t.Error("Expected task 2 state to revert to initializing.")
 	}
 }
 
 // TODO test edge cases
-// - missing job
+// - missing task
 // - missing ctrl
-// - complete job, ctrl incomplete
+// - complete task, ctrl incomplete

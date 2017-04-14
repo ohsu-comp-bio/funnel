@@ -6,17 +6,17 @@ import (
 	"funnel/proto/tes"
 )
 
-// Backend is responsible for scheduling a job. It has a single method which
-// is responsible for taking a Job and returning an Offer, or nil if there is
-// no worker matching the job request. An Offer includes the ID of the offered
+// Backend is responsible for scheduling a task. It has a single method which
+// is responsible for taking a Task and returning an Offer, or nil if there is
+// no worker matching the task request. An Offer includes the ID of the offered
 // worker.
 //
-// Offers include scores which describe how well the job fits the worker.
+// Offers include scores which describe how well the task fits the worker.
 // Scores may describe a wide variety of metrics: resource usage, packing,
 // startup time, cost, etc. Scores and weights are used to control the behavior
 // of schedulers, and to combine offers from multiple schedulers.
 type Backend interface {
-	Schedule(*tes.Job) *Offer
+	Schedule(*tes.Task) *Offer
 }
 
 // Scaler represents a service that can start worker instances, for example
@@ -30,19 +30,19 @@ type Scaler interface {
 	ShouldStartWorker(*pbf.Worker) bool
 }
 
-// Offer describes a worker offered by a scheduler for a job.
-// The Scores describe how well the job fits this worker,
+// Offer describes a worker offered by a scheduler for a task.
+// The Scores describe how well the task fits this worker,
 // which could be used by other a scheduler to pick the best offer.
 type Offer struct {
-	JobID  string
+	TaskID string
 	Worker *pbf.Worker
 	Scores Scores
 }
 
 // NewOffer returns a new Offer instance.
-func NewOffer(w *pbf.Worker, j *tes.Job, s Scores) *Offer {
+func NewOffer(w *pbf.Worker, t *tes.Task, s Scores) *Offer {
 	return &Offer{
-		JobID:  j.JobID,
+		TaskID: t.Id,
 		Worker: w,
 		Scores: s,
 	}

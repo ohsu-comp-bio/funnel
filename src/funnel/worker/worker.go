@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type logUpdateChan chan *pbf.UpdateJobLogsRequest
+type logUpdateChan chan *pbf.UpdateExecutorLogsRequest
 
 // NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (*Worker, error) {
@@ -24,34 +24,34 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	log.Debug("Worker Config", "config.Worker", conf)
 	res := detectResources(conf.Resources)
 	logUpdates := make(logUpdateChan)
-	// Tracks active job ctrls: job ID -> JobControl instance
-	ctrls := map[string]JobControl{}
+	// Tracks active task ctrls: task ID -> TaskControl instance
+	ctrls := map[string]TaskControl{}
 	timeout := util.NewIdleTimeout(conf.Timeout)
 	stop := make(chan struct{})
 	state := pbf.WorkerState_Uninitialized
 	return &Worker{
 		conf, logUpdates, sched, log, res,
-		runJob, ctrls, timeout, stop, state,
+		runTask, ctrls, timeout, stop, state,
 	}, nil
 }
 
 // Worker is a worker...
 type Worker struct {
 	conf config.Worker
-	// Channel for job updates from job runners: stdout/err, ports, etc.
+	// Channel for task updates from task runners: stdout/err, ports, etc.
 	logUpdates logUpdateChan
 	sched      *schedClient
 	log        logger.Logger
 	resources  *pbf.Resources
-	JobRunner  JobRunner
-	Ctrls      map[string]JobControl
+	TaskRunner TaskRunner
+	Ctrls      map[string]TaskControl
 	timeout    util.IdleTimeout
 	stop       chan struct{}
 	state      pbf.WorkerState
 }
 
 // Run runs a worker with the given config. This is responsible for communication
-// with the server and starting job runners
+// with the server and starting task runners
 func (w *Worker) Run() {
 	w.log.Info("Starting worker")
 	w.state = pbf.WorkerState_Alive
@@ -87,8 +87,8 @@ func (w *Worker) checkConnection() {
 	}
 }
 
-// Sync syncs the worker's state with the server. It reports job state changes,
-// handles signals from the server (new job, cancel job, etc), reports resources, etc.
+// Sync syncs the worker's state with the server. It reports task state changes,
+// handles signals from the server (new task, cancel task, etc), reports resources, etc.
 //
 // TODO Sync should probably use a channel to sync data access.
 //      Probably only a problem for test code, where Sync is called directly.
@@ -101,7 +101,7 @@ func (w *Worker) Sync() {
 	}
 
 	// Reconcile server state with worker state.
-	rerr := w.reconcile(r.Jobs)
+	rerr := w.reconcile(r.Tasks)
 	if rerr != nil {
 		// TODO what's the best behavior here?
 		log.Error("Couldn't reconcile worker state.", rerr)
@@ -141,7 +141,7 @@ func (w *Worker) Stop() {
 
 // Check if the worker is idle. If so, start the timeout timer.
 func (w *Worker) checkIdleTimer() {
-	// The worker is idle if there are no job controllers.
+	// The worker is idle if there are no task controllers.
 	idle := len(w.Ctrls) == 0 && w.state == pbf.WorkerState_Alive
 	if idle {
 		w.timeout.Start()
@@ -150,112 +150,107 @@ func (w *Worker) checkIdleTimer() {
 	}
 }
 
-func (w *Worker) updateLogs(up *pbf.UpdateJobLogsRequest) {
-	// UpdateJobLogs() is more lightweight than UpdateWorker(),
+func (w *Worker) updateLogs(up *pbf.UpdateExecutorLogsRequest) {
+	// UpdateExecutorLogs() is more lightweight than UpdateWorker(),
 	// which is why it happens separately and at a different rate.
-	err := w.sched.UpdateJobLogs(up)
+	err := w.sched.UpdateExecutorLogs(up)
 	if err != nil {
-		// TODO if the request failed, the job update is lost and the logs
+		// TODO if the request failed, the task update is lost and the logs
 		//      are corrupted. Cache logs to prevent this?
-		w.log.Error("Job log update failed", err)
+		w.log.Error("Task log update failed", err)
 	}
 }
 
 // reconcile merges the server state with the worker state:
-// - identifies new jobs and starts new runners for them
-// - identifies canceled jobs and cancels existing runners
-// - updates pbf.Job structs with current job state (running, complete, error, etc)
-func (w *Worker) reconcile(jobs map[string]*pbf.JobWrapper) error {
-	var (
-		Unknown  = tes.State_Unknown
-		Canceled = tes.State_Canceled
-	)
-
-	// Combine job IDs from response with job IDs from ctrls so we can reconcile
+// - identifies new tasks and starts new runners for them
+// - identifies canceled tasks and cancels existing runners
+// - updates pbf.Task structs with current task state (running, complete, error, etc)
+func (w *Worker) reconcile(tasks map[string]*pbf.TaskWrapper) error {
+	// Combine task IDs from response with task IDs from ctrls so we can reconcile
 	// both sets below.
-	jobIDs := map[string]bool{}
-	for jobID := range w.Ctrls {
-		jobIDs[jobID] = true
+	taskIDs := map[string]bool{}
+	for taskID := range w.Ctrls {
+		taskIDs[taskID] = true
 	}
-	for jobID := range jobs {
-		jobIDs[jobID] = true
+	for taskID := range tasks {
+		taskIDs[taskID] = true
 	}
 
-	for jobID := range jobIDs {
-		jobSt := tes.State_Unknown
-		runSt := tes.State_Unknown
+	for taskID := range taskIDs {
+		taskSt := Unknown
+		runSt := Unknown
 
-		ctrl := w.Ctrls[jobID]
+		ctrl := w.Ctrls[taskID]
 		if ctrl != nil {
 			runSt = ctrl.State()
 		}
 
-		wrapper := jobs[jobID]
-		var job *tes.Job
+		wrapper := tasks[taskID]
+		var task *tes.Task
 		if wrapper != nil {
-			job = wrapper.Job
-			jobSt = job.GetState()
+			task = wrapper.Task
+			taskSt = task.GetState()
 		}
 
-		if isComplete(jobSt) {
-			delete(w.Ctrls, jobID)
+		if isComplete(taskSt) {
+			delete(w.Ctrls, taskID)
 		}
 
 		switch {
-		case jobSt == Unknown && runSt == Unknown:
+		case taskSt == Unknown && runSt == Unknown:
 			// Edge case. Shouldn't be here, but log just in case.
 			fallthrough
-		case isComplete(jobSt) && runSt == Unknown:
-			// Edge case. Job is complete and there's no ctrl. Do nothing.
+		case isComplete(taskSt) && runSt == Unknown:
+			// Edge case. Task is complete and there's no ctrl. Do nothing.
 			fallthrough
-		case isComplete(jobSt) && runSt == Canceled:
-			// Edge case. Job is complete and the ctrl is canceled. Do nothing.
+		case isComplete(taskSt) && runSt == Canceled:
+			// Edge case. Task is complete and the ctrl is canceled. Do nothing.
 			// This shouldn't happen but it's better to check for it anyway.
 			//
 			// Log so that these unexpected cases can be explored.
 			log.Error("Edge case during worker reconciliation. Recovering.",
-				"jobst", jobSt, "runst", runSt)
+				"taskst", taskSt, "runst", runSt)
 
-		case isActive(jobSt) && runSt == Canceled:
+		case isActive(taskSt) && runSt == Canceled:
 			// Edge case. Server says running but ctrl says canceled.
 			// Possibly the worker is shutting down due to a local signal
-			// and canceled its jobs.
-			job.State = runSt
+			// and canceled its tasks.
+			task.State = runSt
 
-		case jobSt == runSt:
+		case taskSt == runSt:
 			// States match, do nothing.
 
-		case isActive(jobSt) && runSt == Unknown:
-			// Job needs to be started.
-			ctrl := NewJobControl()
-			w.JobRunner(ctrl, w.conf, wrapper, w.logUpdates)
-			w.Ctrls[jobID] = ctrl
-			job.State = ctrl.State()
+		case isActive(taskSt) && runSt == Unknown:
+			// Task needs to be started.
+			ctrl := NewTaskControl()
+			w.TaskRunner(ctrl, w.conf, wrapper, w.logUpdates)
+			w.Ctrls[taskID] = ctrl
+			task.State = ctrl.State()
 
-		case isActive(jobSt) && runSt != Unknown:
-			// Job is running, update state.
-			job.State = runSt
+		case isActive(taskSt) && runSt != Unknown:
+			// Task is running, update state.
+			task.State = runSt
 
-		case jobSt == Canceled && runSt != Unknown:
-			// Job is canceled.
+		case taskSt == Canceled && runSt != Unknown:
+			// Task is canceled.
 			// ctrl.Cancel() is idempotent, so blindly cancel and delete.
 			ctrl.Cancel()
 
-		case jobSt == Unknown && runSt != Unknown:
-			// Edge case. There's a ctrl for a non-existent job. Delete it.
+		case taskSt == Unknown && runSt != Unknown:
+			// Edge case. There's a ctrl for a non-existent task. Delete it.
 			// TODO is it better to leave it? Continue in absence of explicit command principle?
 			ctrl.Cancel()
-			delete(w.Ctrls, jobID)
+			delete(w.Ctrls, taskID)
 
-		case isComplete(jobSt) && isActive(runSt):
-			// Edge case. The job is complete but the ctrl is still running.
+		case isComplete(taskSt) && isActive(runSt):
+			// Edge case. The task is complete but the ctrl is still running.
 			// This shouldn't happen but it's better to check for it anyway.
-			// TODO better to update job state?
+			// TODO better to update task state?
 			ctrl.Cancel()
 
 		default:
 			log.Error("Unhandled case during worker reconciliation.",
-				"job", job, "ctrl", ctrl)
+				"task", task, "ctrl", ctrl)
 			return errors.New("Unhandled case during worker reconciliation")
 		}
 	}
@@ -263,9 +258,9 @@ func (w *Worker) reconcile(jobs map[string]*pbf.JobWrapper) error {
 }
 
 func isActive(s tes.State) bool {
-	return s == tes.State_Queued || s == tes.State_Initializing || s == tes.State_Running
+	return s == Queued || s == Initializing || s == Running
 }
 
 func isComplete(s tes.State) bool {
-	return s == tes.State_Complete || s == tes.State_Error || s == tes.State_SystemError
+	return s == Complete || s == Error || s == SystemError
 }

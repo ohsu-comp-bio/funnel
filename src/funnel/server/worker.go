@@ -17,19 +17,19 @@ func getWorker(tx *bolt.Tx, id string) *pbf.Worker {
 		proto.Unmarshal(data, worker)
 	}
 
-	worker.Jobs = map[string]*pbf.JobWrapper{}
+	worker.Tasks = map[string]*pbf.TaskWrapper{}
 	// Prefix scan for keys that start with worker ID
-	c := tx.Bucket(WorkerJobs).Cursor()
+	c := tx.Bucket(WorkerTasks).Cursor()
 	prefix := []byte(id)
 	for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
-		jobID := string(v)
-		job := getJob(tx, jobID)
-		auth := getJobAuth(tx, jobID)
-		wrapper := &pbf.JobWrapper{
-			Job:  job,
+		taskID := string(v)
+		task := getTask(tx, taskID)
+		auth := getTaskAuth(tx, taskID)
+		wrapper := &pbf.TaskWrapper{
+			Task: task,
 			Auth: auth,
 		}
-		worker.Jobs[jobID] = wrapper
+		worker.Tasks[taskID] = wrapper
 	}
 
 	if worker.Metadata == nil {
@@ -40,14 +40,14 @@ func getWorker(tx *bolt.Tx, id string) *pbf.Worker {
 }
 
 func putWorker(tx *bolt.Tx, worker *pbf.Worker) {
-	// Jobs are not saved in the database under the worker,
+	// Tasks are not saved in the database under the worker,
 	// they are stored in a separate bucket and linked via an index.
 	// The same protobuf message is used for both communication and database,
 	// so we have to set nil here.
 	//
 	// Also, this modifies the worker, so copy it first.
 	w := proto.Clone(worker).(*pbf.Worker)
-	w.Jobs = nil
+	w.Tasks = nil
 	data, _ := proto.Marshal(w)
 	tx.Bucket(Workers).Put([]byte(w.Id), data)
 }

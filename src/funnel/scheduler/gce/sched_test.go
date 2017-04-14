@@ -31,7 +31,7 @@ func TestSchedToExisting(t *testing.T) {
 	w := workers[0]
 
 	if w.Id != "existing" {
-		t.Error("Job scheduled to unexpected worker")
+		t.Error("Task scheduled to unexpected worker")
 	}
 
 	// Not really needed for this test, but safer anyway
@@ -43,7 +43,7 @@ func TestSchedToExisting(t *testing.T) {
 // TestSchedStartWorker tests the case where the scheduler wants to start a new
 // GCE worker instance from a instance template defined in the configuration.
 // The scheduler calls the GCE API to get the template details and assigns
-// a job to that unintialized worker. The scaler then calls the GCE API to
+// a task to that unintialized worker. The scaler then calls the GCE API to
 // start the worker.
 func TestSchedStartWorker(t *testing.T) {
 	h := setup()
@@ -106,7 +106,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	log.Debug("Workers", workers)
 
 	if expected.Id != "existing" {
-		t.Error("Job was scheduled to the wrong worker")
+		t.Error("Task was scheduled to the wrong worker")
 	}
 
 	// Nothing should be scaled in this test, but safer to call Scale anyway
@@ -114,7 +114,7 @@ func TestPreferExistingWorker(t *testing.T) {
 	h.mockClient.AssertExpectations(t)
 }
 
-// Test submit multiple jobs at once when no workers exist. Multiple workers
+// Test submit multiple tasks at once when no workers exist. Multiple workers
 // should be started.
 func TestSchedStartMultipleWorker(t *testing.T) {
 	h := setup()
@@ -141,7 +141,7 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	}
 }
 
-// Test that assigning a job to a worker correctly updates the available resources.
+// Test that assigning a task to a worker correctly updates the available resources.
 func TestUpdateAvailableResources(t *testing.T) {
 	h := setup()
 	defer h.srv.Stop()
@@ -209,8 +209,8 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 }
 
 // Test a bug where worker resources were not being correctly reported/updated,
-// causing jobs to be scheduled incorrectly.
-func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
+// causing tasks to be scheduled incorrectly.
+func TestSchedMultipleTasksResourceUpdateBug(t *testing.T) {
 	h := setup()
 	defer h.srv.Stop()
 	h.mockClient.SetupDefaultMockTemplates()
@@ -220,7 +220,7 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 	// This test stems from a bug found during testing GCE worker init.
 	// Mock out a started worker to match the scenario the bug was found.
 	//
-	// The root problem was that the scheduler could schedule one job but not two,
+	// The root problem was that the scheduler could schedule one task but not two,
 	// because the Disk resources would first be reported by the GCE instance template,
 	// but once the worker sent an update, the resource information was incorrectly
 	// reported and merged. This test tries to replicate that scenario closely.
@@ -254,7 +254,7 @@ func TestSchedMultipleJobsResourceUpdateBug(t *testing.T) {
 
 	w.Sync()
 	if _, ok := w.Ctrls[idb]; !ok {
-		t.Error("The second job didn't get to the worker as expected")
+		t.Error("The second task didn't get to the worker as expected")
 	}
 
 	if len(h.srv.GetWorkers()) != 1 {
@@ -267,7 +267,7 @@ func newMockWorker(conf config.Worker) *worker.Worker {
 	if err != nil {
 		panic(err)
 	}
-	w.JobRunner = worker.NoopJobRunner
+	w.TaskRunner = worker.NoopTaskRunner
 	w.Sync()
 	return w
 }

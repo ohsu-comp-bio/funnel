@@ -96,7 +96,7 @@ func detectResources(conf *pbf.Resources) *pbf.Resources {
 	return res
 }
 
-// NoopJobRunner is useful during testing for creating a worker with a JobRunner
+// NoopTaskRunner is useful during testing for creating a worker with a TaskRunner
 // that doesn't do anything.
-func NoopJobRunner(l JobControl, c config.Worker, j *pbf.JobWrapper, u logUpdateChan) {
+func NoopTaskRunner(l TaskControl, c config.Worker, j *pbf.TaskWrapper, u logUpdateChan) {
 }

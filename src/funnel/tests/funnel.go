@@ -157,14 +157,14 @@ func (m *Funnel) GetWorkers() []*pbf.Worker {
 	return resp.Workers
 }
 
-// CompleteJob marks a job as completed
-func (m *Funnel) CompleteJob(jobID string) {
+// CompleteTask marks a task as completed
+func (m *Funnel) CompleteTask(taskID string) {
 	for _, w := range m.GetWorkers() {
-		if j, ok := w.Jobs[jobID]; ok {
-			j.Job.State = tes.State_Complete
+		if j, ok := w.Tasks[taskID]; ok {
+			j.Task.State = tes.State_COMPLETE
 			m.DB.UpdateWorker(context.Background(), w)
 			return
 		}
 	}
-	panic("No such job found: " + jobID)
+	panic("No such task found: " + taskID)
 }

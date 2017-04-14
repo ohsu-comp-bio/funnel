@@ -25,53 +25,48 @@ type Client struct {
 	client  *http.Client
 }
 
-// GetTask returns the raw bytes from GET /v1/jobs/{id}
+// GetTask returns the raw bytes from GET /v1/tasks/{id}
 func (c *Client) GetTask(id string) ([]byte, error) {
-	return check(c.client.Get(c.address + "/v1/jobs/" + id))
+	return check(c.client.Get(c.address + "/v1/tasks/" + id))
 }
 
-// ListTasks returns the result of GET /v1/jobs
+// ListTasks returns the result of GET /v1/tasks
 // TODO returning interface{} is weird
 func (c *Client) ListTasks() (interface{}, error) {
-	body, err := check(c.client.Get(c.address + "/v1/jobs"))
+	body, err := check(c.client.Get(c.address + "/v1/tasks"))
 	var res map[string]interface{}
 	err = json.Unmarshal(body, &res)
 	if err != nil {
 		return nil, err
 	}
-	return res["jobs"], nil
+	return res["tasks"], nil
 }
 
-// CreateTask POSTs a Task message to /v1/jobs
+// CreateTask POSTs a Task message to /v1/tasks
 func (c *Client) CreateTask(msg []byte) (string, error) {
 	if !isTask(msg) {
-		return "", fmt.Errorf("Not a valid Job message")
+		return "", fmt.Errorf("Not a valid Task message")
 	}
 	var err error
 
 	// Send request
 	r := bytes.NewReader(msg)
-	u := c.address + "/v1/jobs"
+	u := c.address + "/v1/tasks"
 	body, err := check(c.client.Post(u, "application/json", r))
 
 	// Parse response
-	jobID := tes.JobID{}
-	err = json.Unmarshal(body, &jobID)
+	resp := tes.CreateTaskResponse{}
+	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		return "", err
 	}
-	return jobID.Value, nil
+	return resp.Id, nil
 }
 
-// CancelTask DELETEs to /v1/jobs/{id}
+// CancelTask POSTs to /v1/tasks/{id}:cancel
 func (c *Client) CancelTask(id string) ([]byte, error) {
-	u := c.address + "/v1/jobs/" + id
-	req, err := http.NewRequest(http.MethodDelete, u, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.client.Do(req)
-	return check(resp, err)
+	u := c.address + "/v1/tasks/" + id + ":cancel"
+	return check(c.client.Post(u, "application/json", nil))
 }
 
 // check does some basic error handling
@@ -93,6 +88,6 @@ func check(resp *http.Response, err error) ([]byte, error) {
 }
 
 func isTask(b []byte) bool {
-	var js tes.Job
+	var js tes.Task
 	return json.Unmarshal(b, &js) == nil
 }

@@ -35,31 +35,31 @@ func init() {
 
 func doList(server string) (string, error) {
 	client := NewClient(server)
-	jobs, err := client.ListTasks()
+	tasks, err := client.ListTasks()
 
 	if err != nil {
 		return "", err
 	}
 
-	parser := jsonql.NewQuery(jobs)
+	parser := jsonql.NewQuery(tasks)
 	var queries []string
 
 	if taskState != "" {
 		queries = append(queries, fmt.Sprintf("state~='%s'", taskState))
 	}
 	if taskName != "" {
-		queries = append(queries, fmt.Sprintf("task.name~='%s'", taskName))
+		queries = append(queries, fmt.Sprintf("name~='%s'", taskName))
 	}
 	if len(queries) > 0 {
-		jobs, err = parser.Query(strings.Join(queries, " && "))
+		tasks, err = parser.Query(strings.Join(queries, " && "))
 		if err != nil {
 			return "", err
 		}
 	}
 
-	jobsJSON, err := json.Marshal(jobs)
+	tasksJSON, err := json.Marshal(tasks)
 	if err != nil {
 		return "", err
 	}
-	return string(jobsJSON), nil
+	return string(tasksJSON), nil
 }

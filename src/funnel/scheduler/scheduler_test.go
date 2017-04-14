@@ -16,7 +16,7 @@ func init() {
 
 type BlankBackend struct{}
 
-func (b *BlankBackend) Schedule(*tes.Job) *Offer {
+func (b *BlankBackend) Schedule(*tes.Task) *Offer {
 	return nil
 }
 
@@ -28,7 +28,7 @@ func TestBackendCaching(t *testing.T) {
 
 	db := &mocks.Database{}
 	db.On("CheckWorkers").Return(nil)
-	db.On("ReadQueue", 10).Return([]*tes.Job{})
+	db.On("ReadQueue", 10).Return([]*tes.Task{})
 
 	s, _ := NewScheduler(db, conf)
 	calls := 0

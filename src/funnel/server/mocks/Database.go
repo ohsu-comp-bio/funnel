@@ -11,21 +11,21 @@ type Database struct {
 	mock.Mock
 }
 
-// CancelJob provides a mock function with given fields: _a0, _a1
-func (_m *Database) CancelJob(_a0 context.Context, _a1 *tes.JobID) (*tes.JobID, error) {
+// CancelTask provides a mock function with given fields: _a0, _a1
+func (_m *Database) CancelTask(_a0 context.Context, _a1 *tes.TaskID) (*tes.TaskID, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.JobID
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.JobID) *tes.JobID); ok {
+	var r0 *tes.TaskID
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.TaskID) *tes.TaskID); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.JobID)
+			r0 = ret.Get(0).(*tes.TaskID)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.JobID) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.TaskID) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -34,21 +34,21 @@ func (_m *Database) CancelJob(_a0 context.Context, _a1 *tes.JobID) (*tes.JobID, 
 	return r0, r1
 }
 
-// GetJob provides a mock function with given fields: _a0, _a1
-func (_m *Database) GetJob(_a0 context.Context, _a1 *tes.JobID) (*tes.Job, error) {
+// GetTask provides a mock function with given fields: _a0, _a1
+func (_m *Database) GetTask(_a0 context.Context, _a1 *tes.TaskID) (*tes.Task, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.Job
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.JobID) *tes.Job); ok {
+	var r0 *tes.Task
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.TaskID) *tes.Task); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.Job)
+			r0 = ret.Get(0).(*tes.Task)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.JobID) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.TaskID) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -140,21 +140,21 @@ func (_m *Database) GetWorkers(_a0 context.Context, _a1 *funnel.GetWorkersReques
 	return r0, r1
 }
 
-// ListJobs provides a mock function with given fields: _a0, _a1
-func (_m *Database) ListJobs(_a0 context.Context, _a1 *tes.JobListRequest) (*tes.JobListResponse, error) {
+// ListTasks provides a mock function with given fields: _a0, _a1
+func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.TaskListRequest) (*tes.TaskListResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.JobListResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.JobListRequest) *tes.JobListResponse); ok {
+	var r0 *tes.TaskListResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.TaskListRequest) *tes.TaskListResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.JobListResponse)
+			r0 = ret.Get(0).(*tes.TaskListResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.JobListRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.TaskListRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -164,15 +164,15 @@ func (_m *Database) ListJobs(_a0 context.Context, _a1 *tes.JobListRequest) (*tes
 }
 
 // RunTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) RunTask(_a0 context.Context, _a1 *tes.Task) (*tes.JobID, error) {
+func (_m *Database) RunTask(_a0 context.Context, _a1 *tes.Task) (*tes.TaskID, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.JobID
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.Task) *tes.JobID); ok {
+	var r0 *tes.TaskID
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.Task) *tes.TaskID); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.JobID)
+			r0 = ret.Get(0).(*tes.TaskID)
 		}
 	}
 
@@ -186,21 +186,21 @@ func (_m *Database) RunTask(_a0 context.Context, _a1 *tes.Task) (*tes.JobID, err
 	return r0, r1
 }
 
-// UpdateJobLogs provides a mock function with given fields: _a0, _a1
-func (_m *Database) UpdateJobLogs(_a0 context.Context, _a1 *funnel.UpdateJobLogsRequest) (*funnel.UpdateJobLogsResponse, error) {
+// UpdateExecutorLogs provides a mock function with given fields: _a0, _a1
+func (_m *Database) UpdateExecutorLogs(_a0 context.Context, _a1 *funnel.UpdateExecutorLogsRequest) (*funnel.UpdateExecutorLogsResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *funnel.UpdateJobLogsResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *funnel.UpdateJobLogsRequest) *funnel.UpdateJobLogsResponse); ok {
+	var r0 *funnel.UpdateExecutorLogsResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *funnel.UpdateExecutorLogsRequest) *funnel.UpdateExecutorLogsResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*funnel.UpdateJobLogsResponse)
+			r0 = ret.Get(0).(*funnel.UpdateExecutorLogsResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *funnel.UpdateJobLogsRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *funnel.UpdateExecutorLogsRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

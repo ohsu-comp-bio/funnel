@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
+	"funnel/proto/tes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -29,7 +30,7 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string, readonly bool) error {
+func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType, readonly bool) error {
 	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -58,7 +59,7 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 }
 
 // Put copies a file from the hostPath into storage.
-func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class string) error {
+func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) error {
 	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -85,7 +86,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 
 // Supports indicates whether this backend supports the given storage request.
 // For the LocalBackend, the url must start with "file://"
-func (local *LocalBackend) Supports(url string, hostPath string, class string) bool {
+func (local *LocalBackend) Supports(url string, hostPath string, class tes.FileType) bool {
 	return strings.HasPrefix(url, LocalProtocol)
 }
 

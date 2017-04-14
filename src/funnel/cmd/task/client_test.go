@@ -34,9 +34,9 @@ func TestGetTask(t *testing.T) {
 
 	// Set up test server response
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/jobs/1", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v1/tasks/1", func(w http.ResponseWriter, r *http.Request) {
 		m := jsonpb.Marshaler{}
-		ta := tes.Job{JobID: "test-id"}
+		ta := tes.Task{Id: "test-id"}
 		m.Marshal(w, &ta)
 	})
 
@@ -49,10 +49,10 @@ func TestGetTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task := tes.Job{}
+	task := tes.Task{}
 	jsonpb.Unmarshal(bytes.NewReader(body), &task)
 
-	if task.JobID != "test-id" {
+	if task.Id != "test-id" {
 		log.Debug("RESPONSE", task)
 		t.Error("Unexpected response")
 	}
@@ -63,9 +63,9 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 
 	// Set up test server response
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/jobs/1", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/v1/tasks/1", func(w http.ResponseWriter, r *http.Request) {
 		m := jsonpb.Marshaler{}
-		ta := tes.Job{JobID: "test-id"}
+		ta := tes.Task{Id: "test-id"}
 		m.Marshal(w, &ta)
 	})
 
@@ -78,10 +78,10 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task := tes.Job{}
+	task := tes.Task{}
 	jsonpb.Unmarshal(bytes.NewReader(body), &task)
 
-	if task.JobID != "test-id" {
+	if task.Id != "test-id" {
 		log.Debug("RESPONSE", task)
 		t.Error("Unexpected response")
 	}

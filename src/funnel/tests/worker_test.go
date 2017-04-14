@@ -67,7 +67,6 @@ func TestBasicWorker(t *testing.T) {
 }
 
 // Test a scheduled job is removed from the job queue.
-// TODO doesn't this belong more in the scheduler?
 func TestScheduledJobRemovedFromQueue(t *testing.T) {
 	srv := server_mocks.NewServer(server_mocks.NewConfig())
 	srv.Start()

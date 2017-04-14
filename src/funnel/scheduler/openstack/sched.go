@@ -12,7 +12,7 @@ import (
 var log = logger.New("openstack")
 
 // Plugin provides the OpenStack scheduler backend plugin.
-var Plugin = scheduler.BackendPlugin{
+var Plugin = &scheduler.BackendPlugin{
 	Name:   "openstack",
 	Create: NewBackend,
 }

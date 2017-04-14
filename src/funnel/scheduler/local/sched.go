@@ -13,7 +13,7 @@ import (
 var log = logger.New("local")
 
 // Plugin provides the local scheduler backend plugin
-var Plugin = scheduler.BackendPlugin{
+var Plugin = &scheduler.BackendPlugin{
 	Name:   "local",
 	Create: NewBackend,
 }

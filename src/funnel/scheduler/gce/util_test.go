@@ -44,7 +44,7 @@ func setup() *harness {
 	h := &harness{conf, srv, gce, gce}
 
 	// Add mock backend
-	h.srv.Scheduler.AddBackend(scheduler.BackendPlugin{
+	h.srv.Scheduler.AddBackend(&scheduler.BackendPlugin{
 		Name: "gce-mock",
 		Create: func(conf config.Config) (scheduler.Backend, error) {
 			log.Debug("Creating mock scheduler backend")

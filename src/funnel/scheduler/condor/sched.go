@@ -24,7 +24,7 @@ var log = logger.New("condor")
 const prefix = "condor-worker-"
 
 // Plugin provides the HTCondor scheduler backend plugin.
-var Plugin = scheduler.BackendPlugin{
+var Plugin = &scheduler.BackendPlugin{
 	Name:   "condor",
 	Create: NewBackend,
 }

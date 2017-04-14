@@ -23,7 +23,7 @@ type Database interface {
 
 // NewScheduler returns a new Scheduler instance.
 func NewScheduler(db Database, conf config.Config) (*Scheduler, error) {
-	backends := map[string]BackendPlugin{}
+	backends := map[string]*BackendPlugin{}
 
 	err := util.EnsureDir(conf.WorkDir)
 	if err != nil {
@@ -37,11 +37,11 @@ func NewScheduler(db Database, conf config.Config) (*Scheduler, error) {
 type Scheduler struct {
 	db       Database
 	conf     config.Config
-	backends map[string]BackendPlugin
+	backends map[string]*BackendPlugin
 }
 
 // AddBackend adds a backend plugin.
-func (s *Scheduler) AddBackend(plugin BackendPlugin) {
+func (s *Scheduler) AddBackend(plugin *BackendPlugin) {
 	s.backends[plugin.Name] = plugin
 }
 
@@ -60,10 +60,12 @@ func (s *Scheduler) Start(ctx context.Context) error {
 			var err error
 			err = s.Schedule(ctx)
 			if err != nil {
+				log.Error("Schedule error", err)
 				return err
 			}
 			err = s.Scale(ctx)
 			if err != nil {
+				log.Error("Scale error", err)
 				return err
 			}
 		}

@@ -90,7 +90,7 @@ func (m *Server) Start() {
 	m.stop = stop
 	m.Server.Start(ctx)
 	m.NoopWorker = NewNoopWorker(m.Conf)
-	m.Scheduler.AddBackend(scheduler.BackendPlugin{
+	m.Scheduler.AddBackend(&scheduler.BackendPlugin{
 		Name: "noop",
 		Create: func(conf config.Config) (scheduler.Backend, error) {
 			return scheduler.Backend(&NoopBackend{m.NoopWorker, conf}), nil

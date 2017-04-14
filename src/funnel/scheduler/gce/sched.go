@@ -20,7 +20,7 @@ import (
 var log = logger.New("gce")
 
 // Plugin provides the Google Cloud Compute scheduler backend plugin.
-var Plugin = scheduler.BackendPlugin{
+var Plugin = &scheduler.BackendPlugin{
 	Name:   "gce",
 	Create: NewBackend,
 }

@@ -115,6 +115,9 @@ gen-mocks:
 	mockery -dir src/funnel/scheduler -name Database -print > src/funnel/scheduler/mocks/Database_mock.go
 	mockery -dir src/funnel/scheduler -name Client -print > src/funnel/scheduler/mocks/Client_mock.go
 
+bundle-examples:
+	go-bindata -pkg examples -o src/funnel/examples/bundle.go examples
+
 full: proto install prune_deps add_deps tidy lint test web
 
 clean:

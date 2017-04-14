@@ -90,7 +90,7 @@ func (m *Server) Start() {
 	m.stop = stop
 	m.Server.Start(ctx)
 	m.NoopWorker = NewNoopWorker(m.Conf)
-	m.Scheduler.AddBackend(scheduler.BackendFactory{
+	m.Scheduler.AddBackend(scheduler.BackendPlugin{
 		Name: "noop",
 		Create: func(conf config.Config) (scheduler.Backend, error) {
 			return scheduler.Backend(&NoopBackend{m.NoopWorker, conf}), nil
@@ -113,8 +113,8 @@ func (m *Server) Stop() {
 // manually sync the server and worker instead of depending
 // on tickers/timing.
 func (m *Server) Flush() {
-	s.Scheduler.Schedule(context.Background())
-	s.NoopWorker.Sync()
+	m.Scheduler.Schedule(context.Background())
+	m.NoopWorker.Sync()
 }
 
 // AddWorker adds the given worker to the database (calling db.UpdateWorker)

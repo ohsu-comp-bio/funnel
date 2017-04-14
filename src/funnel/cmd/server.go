@@ -56,10 +56,10 @@ var serverCmd = &cobra.Command{
 			return err
 		}
 
-		sched.AddBackend(gce.Factory)
-		sched.AddBackend(condor.Factory)
-		sched.AddBackend(openstack.Factory)
-		sched.AddBackend(local.Factory)
+		sched.AddBackend(gce.Plugin)
+		sched.AddBackend(condor.Plugin)
+		sched.AddBackend(openstack.Plugin)
+		sched.AddBackend(local.Plugin)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()

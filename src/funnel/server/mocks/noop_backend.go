@@ -2,7 +2,6 @@ package mocks
 
 import (
 	"funnel/config"
-	"funnel/logger"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
 	"funnel/scheduler"

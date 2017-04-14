@@ -21,6 +21,7 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	}
 
 	log := logger.New("worker", "workerID", conf.ID)
+	log.Debug("Worker Config", "config.Worker", conf)
 	res := detectResources(conf.Resources)
 	logUpdates := make(logUpdateChan)
 	// Tracks active job ctrls: job ID -> JobControl instance

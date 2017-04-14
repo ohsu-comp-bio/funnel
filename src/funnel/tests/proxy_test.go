@@ -2,13 +2,12 @@ package tests
 
 import (
 	"funnel/logger"
-	server_mocks "funnel/server/mocks"
 	"net/http"
 	"testing"
 )
 
 func TestNoCacheHeader(t *testing.T) {
-	srv := server_mocks.NewServer(server_mocks.NewConfig())
+	srv := NewFunnel(NewConfig())
 	srv.Start()
 	defer srv.Stop()
 

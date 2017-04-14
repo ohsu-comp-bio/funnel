@@ -127,7 +127,7 @@ func DefaultConfig() Config {
 	rpcPort := "9090"
 	c := Config{
 		HostName:   hostName,
-		DBPath:     path.Join(workDir, "funnel_task.db"),
+		DBPath:     path.Join(workDir, "funnel.db"),
 		HTTPPort:   "8000",
 		RPCPort:    rpcPort,
 		ContentDir: defaultContentDir(),

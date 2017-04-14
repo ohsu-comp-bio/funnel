@@ -7,7 +7,7 @@ import (
 	pbf "funnel/proto/funnel"
 	"funnel/scheduler"
 	gce_mocks "funnel/scheduler/gce/mocks"
-	server_mocks "funnel/server/mocks"
+	"funnel/tests"
 )
 
 func init() {
@@ -16,7 +16,7 @@ func init() {
 
 type harness struct {
 	conf       config.Config
-	srv        *server_mocks.Server
+	srv        *tests.Funnel
 	gceClient  Client
 	mockClient *gce_mocks.Client
 }
@@ -30,7 +30,7 @@ func (h *harness) Scale() {
 }
 
 func setup() *harness {
-	conf := server_mocks.NewConfig()
+	conf := tests.NewConfig()
 	conf.Scheduler = "gce-mock"
 	conf.Backends.GCE.Project = "test-proj"
 	conf.Backends.GCE.Zone = "test-zone"
@@ -39,7 +39,7 @@ func setup() *harness {
 	gce := new(gce_mocks.Client)
 
 	// Mock the server/database so we can easily control available workers
-	srv := server_mocks.NewServer(conf)
+	srv := tests.NewFunnel(conf)
 
 	h := &harness{conf, srv, gce, gce}
 

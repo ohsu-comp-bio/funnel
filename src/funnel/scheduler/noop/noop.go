@@ -1,4 +1,4 @@
-package mocks
+package noop
 
 import (
 	"funnel/config"
@@ -8,8 +8,26 @@ import (
 	"funnel/worker"
 )
 
-// NewNoopWorker returns a new NoopWorker instance.
-func NewNoopWorker(conf config.Config) *worker.Worker {
+// Config updates the config with noop backend values
+// and returns a new config instance
+func Config(conf config.Config) config.Config {
+	conf.Scheduler = "noop"
+	return conf
+}
+
+// NewPlugin returns a new scheduler backend plugin configured
+// to use the given worker.
+func NewPlugin(w *worker.Worker) *scheduler.BackendPlugin {
+	return &scheduler.BackendPlugin{
+		Name: "noop",
+		Create: func(conf config.Config) (scheduler.Backend, error) {
+			return &Backend{w, conf}, nil
+		},
+	}
+}
+
+// NewWorker returns a new Worker instance.
+func NewWorker(conf config.Config) *worker.Worker {
 	conf.Worker.ID = "noop-worker"
 	w, _ := worker.NewWorker(conf.Worker)
 	// Stub the job runner so it's a no-op runner
@@ -18,12 +36,12 @@ func NewNoopWorker(conf config.Config) *worker.Worker {
 	return w
 }
 
-// NoopBackend is a scheduler backend plugin useful for testing.
+// Backend is a scheduler backend plugin useful for testing.
 // It exposes the Worker instance, so tests can check state directly
 // in the worker. The worker is configured with a NoopJobRunner,
 // which avoids interaction with the storage and containers
 // (i.e. no file downloads/uploads nor docker calls)
-type NoopBackend struct {
+type Backend struct {
 	Worker *worker.Worker
 	conf   config.Config
 }
@@ -31,7 +49,7 @@ type NoopBackend struct {
 // Schedule schedules a job to the noop worker. There is only
 // one worker and jobs are always scheduled to that worker without
 // and logic or filtering (just dead simple).
-func (s *NoopBackend) Schedule(j *tes.Job) *scheduler.Offer {
+func (s *Backend) Schedule(j *tes.Job) *scheduler.Offer {
 	w := &pbf.Worker{
 		Id:    "noop-worker",
 		State: pbf.WorkerState_Alive,

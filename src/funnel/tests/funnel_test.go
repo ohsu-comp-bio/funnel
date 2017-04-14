@@ -4,7 +4,6 @@ import (
 	"errors"
 	"funnel/logger"
 	"funnel/proto/tes"
-	server_mocks "funnel/server/mocks"
 	"golang.org/x/net/context"
 	"testing"
 	"time"
@@ -18,7 +17,7 @@ func init() {
 
 // Test the flow of a job being scheduled to a worker, run, completed, etc.
 func TestBasicWorker(t *testing.T) {
-	srv := server_mocks.NewServer(server_mocks.NewConfig())
+	srv := NewFunnel(NewConfig())
 	srv.Start()
 	defer srv.Stop()
 	ctx := context.Background()
@@ -68,7 +67,7 @@ func TestBasicWorker(t *testing.T) {
 
 // Test a scheduled job is removed from the job queue.
 func TestScheduledJobRemovedFromQueue(t *testing.T) {
-	srv := server_mocks.NewServer(server_mocks.NewConfig())
+	srv := NewFunnel(NewConfig())
 	srv.Start()
 	defer srv.Stop()
 
@@ -84,7 +83,7 @@ func TestScheduledJobRemovedFromQueue(t *testing.T) {
 
 // Test the case where a job fails.
 func TestJobFail(t *testing.T) {
-	srv := server_mocks.NewServer(server_mocks.NewConfig())
+	srv := NewFunnel(NewConfig())
 	srv.Start()
 	defer srv.Stop()
 	ctx := context.Background()
@@ -129,11 +128,11 @@ func TestJobFail(t *testing.T) {
 
 // Test the flow of a worker completing a job then timing out
 func TestWorkerTimeout(t *testing.T) {
-	conf := server_mocks.NewConfig()
+	conf := NewConfig()
 	conf.Worker.Timeout = time.Millisecond
 	conf.Worker.UpdateRate = time.Millisecond * 2
 
-	srv := server_mocks.NewServer(conf)
+	srv := NewFunnel(conf)
 	srv.Start()
 	defer srv.Stop()
 

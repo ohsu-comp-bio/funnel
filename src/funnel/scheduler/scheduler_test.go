@@ -6,6 +6,7 @@ import (
 	"funnel/proto/tes"
 	"funnel/scheduler/mocks"
 	"golang.org/x/net/context"
+	"io/ioutil"
 	"testing"
 )
 
@@ -22,6 +23,8 @@ func (b *BlankBackend) Schedule(*tes.Job) *Offer {
 func TestBackendCaching(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Scheduler = "test"
+	f, _ := ioutil.TempDir("", "funnel-test-")
+	conf.WorkDir = f
 
 	db := &mocks.Database{}
 	db.On("CheckWorkers").Return(nil)

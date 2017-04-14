@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"funnel/examples"
 	"github.com/spf13/cobra"
 	"strings"
@@ -10,9 +11,8 @@ var examplesCmd = &cobra.Command{
 	Use:   "examples",
 	Short: "Print example task messages.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			cmd.Usage()
-			return nil
+		if len(args) == 0 {
+			return fmt.Errorf("Example name required")
 		}
 		name := args[0]
 
@@ -27,8 +27,9 @@ var examplesCmd = &cobra.Command{
 
 		data, err := examples.Asset("examples/" + name + ".json")
 		if err != nil {
-			return err
+			return fmt.Errorf("No example by the name of %s", name)
 		}
+
 		print(string(data))
 		return nil
 	},

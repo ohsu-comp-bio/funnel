@@ -1,4 +1,5 @@
 GOPATH := $(shell pwd)/buildtools:$(shell pwd)
+export SHELL=/bin/bash
 export GOPATH
 PATH := ${PATH}:$(shell pwd)/bin
 export PATH
@@ -68,6 +69,36 @@ web:
 	./node_modules/.bin/browserify app.js -o bundle.js && \
 	./node_modules/node-sass/bin/node-sass style.scss style.css && \
 	cd ..
+
+cross-compile: depends
+	for GOOS in darwin linux; do \
+		for GOARCH in 386 amd64; do \
+			GOOS=$$GOOS GOARCH=$$GOARCH go build -o ./bin/funnel-$$GOOS-$$GOARCH funnel; \
+		done; \
+	done
+
+upload-latest:
+	go get github.com/aktau/github-release
+	@if [ -z "$$GITHUB_TOKEN" ]; then \
+	  echo 'GITHUB_TOKEN env. var. is required but not set'; \
+		exit 1; \
+	fi
+	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
+		echo 'This command should only be run from the master branch'; \
+		exit 1; \
+	fi
+	make cross-compile
+	for GOOS in darwin linux; do \
+		for GOARCH in 386 amd64; do \
+			github-release upload \
+			-u ohsu-comp-bio \
+			-r funnel \
+			--name funnel-$$GOOS-$$GOARCH \
+			--tag latest \
+			--replace \
+			--file ./bin/funnel-$$GOOS-$$GOARCH; \
+		done; \
+	done
 
 gce-bundle:
 	GOOS=linux GOARCH=amd64 make

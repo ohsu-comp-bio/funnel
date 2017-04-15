@@ -61,8 +61,6 @@ func (r *jobRunner) Run() {
 	r.step("prepareDir", r.prepareDir)
 	r.step("prepareMapper", r.prepareMapper)
 	r.step("prepareStorage", r.prepareStorage)
-	// TODO prepareIP can fail when there is no network connection,
-	//      but should just return no IP. Fix and test.
 	r.step("prepareIP", r.prepareIP)
 	r.step("validateInputs", r.validateInputs)
 	r.step("validateOutputs", r.validateOutputs)

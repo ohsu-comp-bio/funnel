@@ -55,6 +55,7 @@ type Worker struct {
 func (w *Worker) Run() {
 	w.log.Info("Starting worker")
 	w.state = pbf.WorkerState_Alive
+	w.checkConnection()
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
 	defer ticker.Stop()
@@ -73,6 +74,16 @@ func (w *Worker) Run() {
 			w.Stop()
 			return
 		}
+	}
+}
+
+func (w *Worker) checkConnection() {
+	_, err := w.sched.GetWorker(context.TODO(), &pbf.GetWorkerRequest{Id: w.conf.ID})
+
+	if err != nil {
+		log.Error("Couldn't contact server.", err)
+	} else {
+		log.Info("Successfully connected to server.")
 	}
 }
 

@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"fmt"
+	uuid "github.com/nu7hatch/gouuid"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,4 +14,10 @@ func DetectWorkerPath() string {
 	//      move this to overrideable default config value?
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	return path.Join(dir, "funnel")
+}
+
+// GenWorkerID returns a UUID string.
+func GenWorkerID(prefix string) string {
+	u, _ := uuid.NewV4()
+	return fmt.Sprintf("%s-worker-%s", prefix, u.String())
 }

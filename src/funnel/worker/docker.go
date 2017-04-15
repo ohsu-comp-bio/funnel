@@ -167,7 +167,6 @@ func setupDockerClient() *client.Client {
 	return dclient
 }
 
-// GetVolumes takes a jobID and returns an array of string.
 func formatVolumeArg(v Volume) string {
 	// `o` is structed as "HostPath:ContainerPath:Mode".
 	mode := "rw"

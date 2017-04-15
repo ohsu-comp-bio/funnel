@@ -21,10 +21,10 @@ type Wrapper interface {
 
 func newWrapper(ctx context.Context, conf config.Config) (Wrapper, error) {
 	var client *http.Client
-	if conf.Schedulers.GCE.AccountFile != "" {
+	if conf.Backends.GCE.AccountFile != "" {
 		// Pull the client configuration (e.g. auth) from a given account file.
 		// This is likely downloaded from Google Cloud manually via IAM & Admin > Service accounts.
-		bytes, rerr := ioutil.ReadFile(conf.Schedulers.GCE.AccountFile)
+		bytes, rerr := ioutil.ReadFile(conf.Backends.GCE.AccountFile)
 		if rerr != nil {
 			return nil, rerr
 		}

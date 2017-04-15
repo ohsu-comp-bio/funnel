@@ -21,6 +21,7 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	}
 
 	log := logger.New("worker", "workerID", conf.ID)
+	log.Debug("Worker Config", "config.Worker", conf)
 	res := detectResources(conf.Resources)
 	logUpdates := make(logUpdateChan)
 	// Tracks active job ctrls: job ID -> JobControl instance
@@ -54,6 +55,7 @@ type Worker struct {
 func (w *Worker) Run() {
 	w.log.Info("Starting worker")
 	w.state = pbf.WorkerState_Alive
+	w.checkConnection()
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
 	defer ticker.Stop()
@@ -72,6 +74,16 @@ func (w *Worker) Run() {
 			w.Stop()
 			return
 		}
+	}
+}
+
+func (w *Worker) checkConnection() {
+	_, err := w.sched.GetWorker(context.TODO(), &pbf.GetWorkerRequest{Id: w.conf.ID})
+
+	if err != nil {
+		log.Error("Couldn't contact server.", err)
+	} else {
+		log.Info("Successfully connected to server.")
 	}
 }
 

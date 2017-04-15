@@ -1,14 +1,14 @@
-language: python
+language: go
 sudo: required
 services:
   - docker
-python:
-  - "2.7"
+go:
+  - 1.8
 os:
   - linux
 before_install:
   - sudo apt-get update
-  - sudo apt-get install -y golang
+  - sudo apt-get -y install python-pip
   - pip install -r tests/requirements.txt
   - docker pull minio/minio
   - docker pull ubuntu

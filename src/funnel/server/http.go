@@ -5,6 +5,7 @@ import (
 	"funnel/config"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
+	"funnel/web"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
 	"net/http"
@@ -31,13 +32,12 @@ func httpMux(ctx context.Context, conf config.Config) (*http.ServeMux, error) {
 		return nil, err
 	}
 
-	// Serves dashboard and static files (html, img, css, etc.)
-	fileServer := http.FileServer(http.Dir(conf.ContentDir))
-
+	// Static files are bundled into funnel/web
+	fs := web.FileServer()
 	// Set up URL path handlers
 	mux := http.NewServeMux()
-	mux.Handle("/", fileServer)
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+	mux.Handle("/", fs)
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.Handle("/v1/", grpcMux)
 
 	// Set "cache-control: no-store" to disable response caching.

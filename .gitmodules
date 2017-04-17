@@ -85,3 +85,6 @@
 [submodule "src/vendor/github.com/elgs/gosplitargs"]
 	path = src/vendor/github.com/elgs/gosplitargs
 	url = https://github.com/elgs/gosplitargs
+[submodule "src/vendor/github.com/elazarl/go-bindata-assetfs"]
+	path = src/vendor/github.com/elazarl/go-bindata-assetfs
+	url = https://github.com/elazarl/go-bindata-assetfs

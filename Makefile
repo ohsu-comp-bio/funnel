@@ -1,7 +1,7 @@
-GOPATH := $(shell pwd)/buildtools:$(shell pwd)
+GOPATH := $(shell pwd)/build:$(shell pwd)
 export SHELL=/bin/bash
 export GOPATH
-PATH := ${PATH}:$(shell pwd)/bin
+PATH := ${PATH}:$(shell pwd)/bin:$(shell pwd)/build/bin
 export PATH
 PYTHONPATH := ${PYTHONPATH}:$(shell pwd)/python
 export PYTHONPATH
@@ -37,11 +37,11 @@ serve-doc:
 
 add_deps: 
 	go get github.com/dpw/vendetta
-	./buildtools/bin/vendetta src/
+	./build/bin/vendetta src/
 
 prune_deps:
 	go get github.com/dpw/vendetta
-	./buildtools/bin/vendetta -p src/
+	./build/bin/vendetta -p src/
 
 tidy:
 	pip install -q autopep8
@@ -52,8 +52,8 @@ lint:
 	pip install -q flake8
 	flake8 --exclude ./venv,./web .
 	go get github.com/alecthomas/gometalinter
-	./buildtools/bin/gometalinter --install > /dev/null
-	./buildtools/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto ./src/funnel/...
+	./build/bin/gometalinter --install > /dev/null
+	./build/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto -s web ./src/funnel/...
 
 go-test:
 	go test funnel/...
@@ -64,11 +64,13 @@ test:	go-test
 	nosetests-2.7 tests/
 
 web:
-	cd web && \
-	npm install && \
-	./node_modules/.bin/browserify app.js -o bundle.js && \
-	./node_modules/node-sass/bin/node-sass style.scss style.css && \
-	cd ..
+	mkdir -p build/web
+	npm install --prefix ./web
+	./web/node_modules/.bin/browserify web/app.js -o build/web/bundle.js
+	./web/node_modules/.bin/node-sass web/style.scss build/web/style.css
+	cp web/*.html build/web/
+	go get -u github.com/jteeuwen/go-bindata/...
+	go-bindata -pkg web -prefix "build/" -o src/funnel/web/web.go build/web
 
 cross-compile: depends
 	for GOOS in darwin linux; do \

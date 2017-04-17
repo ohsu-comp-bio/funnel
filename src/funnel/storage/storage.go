@@ -23,7 +23,7 @@ const (
 // Backend provides an interface for a storage backend.
 // New storage backends must support this interface.
 type Backend interface {
-	Get(ctx context.Context, url string, path string, class tes.FileType, readonly bool) error
+	Get(ctx context.Context, url string, path string, class tes.FileType) error
 	Put(ctx context.Context, url string, path string, class tes.FileType) error
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
@@ -43,12 +43,12 @@ type Storage struct {
 // Get downloads a file from a storage system at the given "url".
 // The file is downloaded to the given local "path".
 // "class" is either "File" or "Directory".
-func (storage Storage) Get(ctx context.Context, url string, path string, class tes.FileType, readonly bool) error {
+func (storage Storage) Get(ctx context.Context, url string, path string, class tes.FileType) error {
 	backend, err := storage.findBackend(url, path, class)
 	if err != nil {
 		return err
 	}
-	return backend.Get(ctx, url, path, class, readonly)
+	return backend.Get(ctx, url, path, class)
 }
 
 // Put uploads a file to a storage system at the given "url".

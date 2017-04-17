@@ -73,7 +73,6 @@ func (r *taskRunner) Run() {
 				input.Url,
 				input.Path,
 				input.Type,
-				true,
 			)
 		})
 	}
@@ -114,6 +113,7 @@ func (r *taskRunner) Run() {
 	}
 
 	// Upload outputs
+	log.Debug("Outputs", r.mapper.Outputs)
 	for _, output := range r.mapper.Outputs {
 		r.step("store.Put", func() error {
 			r.fixLinks(output.Path)
@@ -146,7 +146,6 @@ func (r *taskRunner) fixLinks(basepath string) {
 				if err != nil {
 					return nil
 				}
-
 				// Map symlink source (possible container path) to host path
 				mapped, err := r.mapper.HostPath(src)
 				if err != nil {

@@ -30,7 +30,7 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType, readonly bool) error {
+func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
 	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -40,13 +40,8 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 
 	var err error
 	if class == File {
-		if readonly {
-			err = linkFile(path, hostPath)
-		} else {
-			err = copyFile(path, hostPath)
-		}
+		err = linkFile(path, hostPath)
 	} else if class == Directory {
-		// TODO link readonly directory
 		err = copyDir(path, hostPath)
 	} else {
 		err = fmt.Errorf("Unknown file class: %s", class)
@@ -170,8 +165,8 @@ func copyDir(source string, dest string) (err error) {
 				return err
 			}
 		} else {
-			// perform copy
-			err = copyFile(sfp, dfp)
+			// create hard link; falls back to copy on error
+			err = linkFile(sfp, dfp)
 			if err != nil {
 				return err
 			}

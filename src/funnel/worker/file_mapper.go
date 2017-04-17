@@ -55,7 +55,7 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 
 	// Add all the volumes to the mapper
 	for _, vol := range task.Volumes {
-		err := mapper.AddVolume(vol)
+		err := mapper.AddTmpVolume(vol)
 		if err != nil {
 			return err
 		}
@@ -84,22 +84,11 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 // is added to mapper.Volumes.
 //
 // If the volume paths are invalid or can't be mapped, an error is returned.
-func (mapper *FileMapper) AddVolume(mountPoint string) error {
-	hostPath, err := mapper.HostPath(mountPoint)
-	if err != nil {
-		return err
-	}
-
+func (mapper *FileMapper) AddVolume(hostPath string, mountPoint string, readonly bool) error {
 	v := Volume{
 		HostPath:      hostPath,
 		ContainerPath: mountPoint,
-		Readonly:      false,
-	}
-
-	// Ensure that the volume directory exists on the host
-	perr := util.EnsureDir(hostPath)
-	if perr != nil {
-		return perr
+		Readonly:      readonly,
 	}
 
 	if !mapper.hasVolume(v) {
@@ -166,26 +155,53 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 	return f, nil
 }
 
-// AddInput adds an input to the mapped files for the given TaskParameter.
-// A copy of the TaskParameter will be added to mapper.Inputs, with the
-// "Path" field updated to the mapped host path.
+// AddTmpVolume creates a directory on the host based on the delcared path in
+// the container and adds it to mapper.Volumes.
 //
-// If the path can't be mapped, or the path is not in an existing volume,
-// an error is returned.
-func (mapper *FileMapper) AddInput(input *tes.TaskParameter) error {
-	p, err := mapper.HostPath(input.Path)
+// If the path can't be mapped, an error is returned.
+func (mapper *FileMapper) AddTmpVolume(mountPoint string) error {
+	hostPath, err := mapper.HostPath(mountPoint)
 	if err != nil {
 		return err
 	}
 
-	perr := util.EnsurePath(p)
-	if perr != nil {
-		return perr
+	err = util.EnsureDir(hostPath)
+	if err != nil {
+		return err
+	}
+
+	err = mapper.AddVolume(hostPath, mountPoint, false)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddInput adds an input to the mapped files for the given TaskParameter.
+// A copy of the TaskParameter will be added to mapper.Inputs, with the
+// "Path" field updated to the mapped host path.
+//
+// If the path can't be mapped an error is returned.
+func (mapper *FileMapper) AddInput(input *tes.TaskParameter) error {
+	hostPath, err := mapper.HostPath(input.Path)
+	if err != nil {
+		return err
+	}
+
+	err = util.EnsurePath(hostPath)
+	if err != nil {
+		return err
+	}
+
+	// Add input volumes
+	err = mapper.AddVolume(hostPath, input.Path, true)
+	if err != nil {
+		return err
 	}
 
 	// Create a TaskParameter for the input with a path mapped to the host
 	hostIn := proto.Clone(input).(*tes.TaskParameter)
-	hostIn.Path = p
+	hostIn.Path = hostPath
 	mapper.Inputs = append(mapper.Inputs, hostIn)
 	return nil
 }
@@ -194,34 +210,34 @@ func (mapper *FileMapper) AddInput(input *tes.TaskParameter) error {
 // A copy of the TaskParameter will be added to mapper.Outputs, with the
 // "Path" field updated to the mapped host path.
 //
-// If the Create flag is set on the TaskParameter, the file will be created
-// on the host file system.
-//
-// If the path can't be mapped, or the path is not in an existing volume,
-// an error is returned.
+// If the path can't be mapped, an error is returned.
 func (mapper *FileMapper) AddOutput(output *tes.TaskParameter) error {
-	p, err := mapper.HostPath(output.Path)
+	hostPath, err := mapper.HostPath(output.Path)
 	if err != nil {
 		return err
 	}
 
-	if output.Type == tes.FileType_DIRECTORY {
-		err := util.EnsureDir(p)
-		if err != nil {
-			return err
-		}
+	hostDir := hostPath
+	mountDir := output.Path
+	if output.Type == tes.FileType_FILE {
+		hostDir = path.Dir(hostPath)
+		mountDir = path.Dir(output.Path)
 	}
 
-	// Prepare volume for outputs
-	dir := path.Dir(p)
-	err = mapper.AddVolume(dir)
+	err = util.EnsureDir(hostDir)
+	if err != nil {
+		return err
+	}
+
+	// Add output volumes
+	err = mapper.AddVolume(hostDir, mountDir, false)
 	if err != nil {
 		return err
 	}
 
 	// Create a TaskParameter for the out with a path mapped to the host
 	hostOut := proto.Clone(output).(*tes.TaskParameter)
-	hostOut.Path = p
+	hostOut.Path = hostPath
 	mapper.Outputs = append(mapper.Outputs, hostOut)
 	return nil
 }

@@ -19,14 +19,14 @@ class TestS3(S3ServerTest):
                     "name": "infile",
                     "description": "File to be MD5ed",
                     "url": in_loc,
-                    "type": "File",
+                    "type": "FILE",
                     "path": "/tmp/test_file"
                 }
             ],
             "outputs": [
                 {
                     "url": out_loc,
-                    "type": "File",
+                    "type": "FILE",
                     "path": "/tmp/test_out"
                 }
             ],

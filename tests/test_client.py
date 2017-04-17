@@ -108,8 +108,8 @@ class TestClient(SimpleServerTest):
 
     def test_executor_log_length(self):
         '''
-        The task executor logs list should only include entries for steps that have
-        been started or completed, i.e. steps that have yet to be started
+        The task executor logs list should only include entries for steps that
+        have been started or completed, i.e. steps that have yet to be started
         won't show up in Task.Logs[0].Logs
         '''
         task_id = self._submit_steps(

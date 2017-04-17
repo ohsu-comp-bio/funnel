@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+from __future__ import print_function
 
+import json
 import os
-
 from common_test_util import SimpleServerTest, get_abspath
 
 
@@ -18,18 +18,18 @@ class TestFileOP(SimpleServerTest):
                             "description": "File to be MD5ed",
                             "url": 'file://' +
                             self.storage_path('test_data.1'),
-                            "type": "File",
+                            "type": "FILE",
                             "path": "/tmp/test_file"}],
                 "outputs": [{"url": 'file://' +
                              self.storage_path('output/test_data.out'),
-                             "type": "File",
+                             "type": "FILE",
                              "path": "/tmp/test_out"}],
                 "resources": {},
                 "executors": [{"image_name": "ubuntu",
                                "cmd": ["md5sum",
                                        "/tmp/test_file"],
                                "stdout": "/tmp/test_out"}]}
-
+        print(json.dumps(task))
         task_id = self.tes.submit(task)
         self.tes.wait(task_id)
 
@@ -51,7 +51,7 @@ class TestFileOP(SimpleServerTest):
                             "description": "File to be MD5ed",
                             "url": 'file://' +
                             self.storage_path('test_data.1'),
-                            "type": "File",
+                            "type": "FILE",
                             "path": "/tmp/test_file"}],
                 "resources": {},
                 "executors": [{"image_name": "ubuntu",
@@ -81,7 +81,7 @@ class TestFileOP(SimpleServerTest):
                             "description": "File to be MD5ed",
                             "url": 'file://' +
                             self.storage_path('test_symlink'),
-                            "type": "File",
+                            "type": "FILE",
                             "path": "/tmp/test_file"}],
                 "resources": {},
                 "executors": [{"image_name": "ubuntu",
@@ -92,6 +92,7 @@ class TestFileOP(SimpleServerTest):
 
         task_id = self.tes.submit(task)
         data = self.tes.wait(task_id)
+        print(json.dumps(data))
         assert data['state'] == "COMPLETE"
 
     def test_bad_symlink(self):
@@ -108,7 +109,7 @@ class TestFileOP(SimpleServerTest):
                             "description": "File to be MD5ed",
                             "url": 'file://' +
                             self.storage_path('test_symlink'),
-                            "type": "File",
+                            "type": "FILE",
                             "path": "/tmp/test_file"}],
                 "resources": {},
                 "executors": [{"image_name": "ubuntu",
@@ -116,37 +117,6 @@ class TestFileOP(SimpleServerTest):
                                        "/tmp/test_file"],
                                "workdir": "/workdir",
                                "stdout": "/workdir/test_out"}]}
-
-        task_id = self.tes.submit(task)
-        data = self.tes.wait(task_id)
-        assert data['state'] == "ERROR"
-
-    def test_no_output_in_readonly(self):
-
-        self.copy_to_storage(get_abspath("test_data.1"))
-        os.symlink(self.storage_path('test_data.1'),
-                   self.storage_path('test_symlink'))
-        os.remove(self.storage_path('test_data.1'))
-
-        task = {"name": "TestMD5",
-                "project": "MyProject",
-                "description": "My Desc",
-                "inputs": [{"name": "infile",
-                            "description": "File to be MD5ed",
-                            "url": 'file://' +
-                            self.storage_path('test_symlink'),
-                            "type": "File",
-                            "path": "/tmp/test_file"}],
-                "outputs": [{"url": 'file://' +
-                             self.storage_path('output/test_out'),
-                             "type": "File",
-                             "path": "/tmp/test_out"}],
-                "resources": {},
-                "executors": [{"image_name": "ubuntu",
-                               "cmd": ["md5sum",
-                                       "/tmp/test_file"],
-                               "workdir": "/tmp",
-                               "stdout": "/tmp/test_out"}]}
 
         task_id = self.tes.submit(task)
         data = self.tes.wait(task_id)
@@ -169,12 +139,12 @@ class TestFileOP(SimpleServerTest):
             "outputs": [
                 {
                     "url": "file://" + self.storage_path("out-sym"),
-                    "type": "File",
+                    "type": "FILE",
                     "path": "/tmp/sym",
                 },
                 {
                     "url": "file://" + self.storage_path("out-dir"),
-                    "type": "Directory",
+                    "type": "DIRECTORY",
                     "path": "/tmp",
                 },
             ],
@@ -190,10 +160,11 @@ class TestFileOP(SimpleServerTest):
 
         task_id = self.tes.submit(task)
         data = self.tes.wait(task_id)
+        print(json.dumps(data))
         assert data["state"] != "ERROR"
-        with open(self.storage_path("out-sym")) as fh:
-            assert fh.read() == "foo\n"
         with open(self.storage_path("out-dir", "foo")) as fh:
+            assert fh.read() == "foo\n"
+        with open(self.storage_path("out-sym")) as fh:
             assert fh.read() == "foo\n"
         with open(self.storage_path("out-dir", "sym")) as fh:
             assert fh.read() == "foo\n"

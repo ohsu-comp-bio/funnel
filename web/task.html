@@ -110,31 +110,33 @@
     </table>
 
     <h5>Logs</h5>
-    <div ng-repeat="item in task.logs">
-      <table class="task-desc-table">
-        <tbody>
-          <tr>
-            <td>Exit Code</td>
-            <td>{{ item.exit_code }}</td>
-          </tr>
-          <tr>
-            <td>Stdout</td>
-            <td>{{ item.stdout }}</td>
-          </tr>
-          <tr>
-            <td>Stderr</td>
-            <td>{{ item.stderr }}</td>
-          </tr>
-          <tr>
-            <td>Host IP</td>
-            <td>{{ item.host_ip }}</td>
-          </tr>
-          <tr ng-repeat="port in item.ports">
-            <td>Ports</td>
-            <td><b>Host:</b> {{ port.host }}<br><b>Container:</b> {{ port.container }}</td>
-          </tr>
-        </tbody>
-    </table>
+    <div ng-repeat="logs in task.logs">
+      <div ng-repeat="item in logs.logs">
+        <table class="task-desc-table">
+          <tbody>
+            <tr>
+              <td>Exit Code</td>
+              <td>{{ item.exit_code }}</td>
+            </tr>
+            <tr>
+              <td>Stdout</td>
+              <td>{{ item.stdout }}</td>
+            </tr>
+            <tr>
+              <td>Stderr</td>
+              <td>{{ item.stderr }}</td>
+            </tr>
+            <tr>
+              <td>Host IP</td>
+              <td>{{ item.host_ip }}</td>
+            </tr>
+            <tr ng-repeat="port in item.ports">
+              <td>Ports</td>
+              <td><b>Host:</b> {{ port.host }}<br><b>Container:</b> {{ port.container }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     
     <h5>API</h5>

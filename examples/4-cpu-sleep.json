@@ -5,7 +5,7 @@
     "inputs": [],
     "outputs": [],
     "resources": {
-        "cpu_cores": 4,
+        "cpu_cores": 4
     },
     "executors": [
         {

@@ -1,15 +1,15 @@
-<div ng-controller="JobListController" class="job-list-page">
+<div ng-controller="TaskListController" class="task-list-page">
   <div class="board">
 
-    <h4>Jobs</h4>
+    <h4>Tasks</h4>
 
-    <table ng-table="tableParams" class="job-list-table">
-      <tr ng-repeat="job in $data"> 
-        <td data-title="'ID'" filter="{jobID: 'text'}" sortable="'jobID'"><a href="#/jobs/{{job.jobID}}">{{ shortID(job.jobID) }}</a></td>
-        <td data-title="'State'" filter="{state: 'text'}" sortable="'state'">{{job.state}}</td>
-        <td data-title="'Name'" filter="{'task.name': 'text'}" sortable="'task.name'">{{job.task.name}}</td>
-        <td data-title="'Description'" filter="{'task.description': 'text'}" sortable="'task.description'">{{job.task.description}}</td>
-        <td><button class="btn-cancel mdl-button--icon" ng-disabled="job.state == 'Complete' || job.state == 'Error' || job.state == 'Canceled'" ng-click=cancelJob(job.jobID)><i class="material-icons">clear</i></button></td>
+    <table ng-table="tableParams" class="task-list-table">
+      <tr ng-repeat="task in $data"> 
+        <td data-title="'ID'" filter="{id: 'text'}" sortable="'id'"><a href="#/tasks/{{task.id}}">{{ shortID(task.id) }}</a></td>
+        <td data-title="'State'" filter="{state: 'text'}" sortable="'state'">{{task.state}}</td>
+        <td data-title="'Name'" filter="{name: 'text'}" sortable="'name'">{{task.name}}</td>
+        <td data-title="'Description'" filter="{description: 'text'}" sortable="'description'">{{task.description}}</td>
+        <td><button class="btn-cancel mdl-button--icon" ng-disabled="task.state == 'COMPLETE' || task.state == 'ERROR' || task.state == 'CANCELED'" ng-click=cancelTask(task.id)><i class="material-icons">clear</i></button></td>
       </tr>
     </table> 
 

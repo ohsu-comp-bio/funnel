@@ -245,11 +245,11 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"web/bundle.js": webBundleJs,
-	"web/index.html": webIndexHtml,
-	"web/job.html": webJobHtml,
-	"web/list.html": webListHtml,
-	"web/style.css": webStyleCss,
+	"web/bundle.js":        webBundleJs,
+	"web/index.html":       webIndexHtml,
+	"web/job.html":         webJobHtml,
+	"web/list.html":        webListHtml,
+	"web/style.css":        webStyleCss,
 	"web/worker-list.html": webWorkerListHtml,
 }
 
@@ -292,14 +292,15 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
-	"web": &bintree{nil, map[string]*bintree{
-		"bundle.js": &bintree{webBundleJs, map[string]*bintree{}},
-		"index.html": &bintree{webIndexHtml, map[string]*bintree{}},
-		"job.html": &bintree{webJobHtml, map[string]*bintree{}},
-		"list.html": &bintree{webListHtml, map[string]*bintree{}},
-		"style.css": &bintree{webStyleCss, map[string]*bintree{}},
-		"worker-list.html": &bintree{webWorkerListHtml, map[string]*bintree{}},
+	"web": {nil, map[string]*bintree{
+		"bundle.js":        {webBundleJs, map[string]*bintree{}},
+		"index.html":       {webIndexHtml, map[string]*bintree{}},
+		"job.html":         {webJobHtml, map[string]*bintree{}},
+		"list.html":        {webListHtml, map[string]*bintree{}},
+		"style.css":        {webStyleCss, map[string]*bintree{}},
+		"worker-list.html": {webWorkerListHtml, map[string]*bintree{}},
 	}},
 }}
 
@@ -349,4 +350,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

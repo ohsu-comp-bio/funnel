@@ -1,28 +1,28 @@
-<div ng-controller="JobInfoController">
+<div ng-controller="TaskInfoController">
   <div class="board">
-    <h4>Job {{job.jobID}}</h4>
-    <button class="btn-cancel" ng-click=cancelJob(job.jobID) ng-disabled="job.state == 'Complete' || job.state == 'Error' || job.state == 'Canceled'">
+    <h4>Task {{task.id}}</h4>
+    <button class="btn-cancel" ng-click=cancelTask(task.id) ng-disabled="task.state == 'COMPLETE' || task.state == 'ERROR' || task.state == 'CANCELED'">
       Cancel
     </button>
     <br>
     <br>
-    <table class="job-desc-table">
+    <table class="task-desc-table">
       <tbody>
         <tr>
           <td>Name</td>
-          <td>{{ job.task.name }}</td>
+          <td>{{ task.name }}</td>
         </tr>
         <tr>
           <td>Project ID</td>
-          <td>{{ job.task.projectID }}</td>
+          <td>{{ task.project }}</td>
         </tr>
         <tr>
           <td>Description</td>
-          <td>{{ job.task.description }}</td>
+          <td>{{ task.description }}</td>
         </tr>
         <tr>
           <td>State</td>
-          <td>{{ job.state }}</td>
+          <td>{{ task.state }}</td>
         </tr>
       </tbody>
     </table>
@@ -36,8 +36,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr ng-repeat="cmd in job.task.docker">
-          <td>{{ cmd.imageName }}</td>
+        <tr ng-repeat="cmd in task.executors">
+          <td>{{ cmd.image_name }}</td>
           <td><code>{{ cmdStr(cmd.cmd) }}</code></td>
         </tr>
       </tbody>
@@ -51,16 +51,16 @@
           <th>Description</th>
           <th>URL</th>
           <th>Container Path</th>
-          <th>Class</th>
+          <th>Type</th>
         </tr>
       </thead>
       <tbody>
-        <tr ng-repeat="input in job.task.inputs">
+        <tr ng-repeat="input in task.inputs">
           <td>{{ input.name }}</td>
           <td>{{ input.description }}</td>
-          <td>{{ input.location }}</td>
+          <td>{{ input.url }}</td>
           <td>{{ input.path }}</td>
-          <td>{{ input.class }}</td>
+          <td>{{ input.type }}</td>
         </tr>
       </tbody>
     </table>
@@ -73,49 +73,49 @@
           <th>Description</th>
           <th>URL</th>
           <th>Container Path</th>
-          <th>Class</th>
+          <th>Type</th>
         </tr>
       </thead>
       <tbody>
-        <tr ng-repeat="output in job.task.outputs">
+        <tr ng-repeat="output in task.outputs">
           <td>{{ output.name }}</td>
           <td>{{ output.description }}</td>
-          <td>{{ output.location }}</td>
+          <td>{{ output.url }}</td>
           <td>{{ output.path }}</td>
-          <td>{{ output.class }}</td>
+          <td>{{ output.type }}</td>
         </tr>
       </tbody>
     </table>
 
     <h5>Resources</h5>
-    <table class="job-desc-table">
+    <table class="task-desc-table">
       <tbody>
         <tr>
           <td>CPU</td>
-          <td>{{ job.task.resources.minimumCpuCores }}</td>
+          <td>{{ task.resources.cpu_cores }}</td>
         </tr>
         <tr>
           <td>RAM</td>
-          <td>{{ job.task.resources.minimumRamGb }} GB</td>
+          <td>{{ task.resources.ram_gb }} GB</td>
         </tr>
-        <tr ng-repeat="vol in job.task.resources.volumes">
-          <td>Volume</td>
-          <td><b>Name: </b>{{ vol.name }}<br><b>Size: </b>{{ vol.sizeGb }} GB<br><b>Mount Point: </b>{{ vol.mountPoint }}<br><b>Read Only: </b>{{ vol.readOnly }}</td>
+        <tr>
+          <td>Disk</td>
+          <td>{{ task.resources.size_gb }} GB</td>
         </tr>
         <tr>
           <td>Preemptible</td>
-          <td>{{ job.task.resources.preemptible }}</td>
+          <td>{{ task.resources.preemptible }}</td>
         </tr>
       </tbody>
     </table>
 
     <h5>Logs</h5>
-    <div ng-repeat="item in job.logs">
-      <table class="job-desc-table">
+    <div ng-repeat="item in task.logs">
+      <table class="task-desc-table">
         <tbody>
           <tr>
             <td>Exit Code</td>
-            <td>{{ item.exitCode }}</td>
+            <td>{{ item.exit_code }}</td>
           </tr>
           <tr>
             <td>Stdout</td>
@@ -127,7 +127,7 @@
           </tr>
           <tr>
             <td>Host IP</td>
-            <td>{{ item.hostIP }}</td>
+            <td>{{ item.host_ip }}</td>
           </tr>
           <tr ng-repeat="port in item.ports">
             <td>Ports</td>
@@ -139,7 +139,7 @@
     
     <h5>API</h5>
     <div>
-      <code>curl localhost:8000/v1/jobs/{{ job.jobID }}</code>
+      <code>curl localhost:8000/v1/tasks/{{ task.id }}</code>
     </div>
   </div>
 </div>

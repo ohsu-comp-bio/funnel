@@ -206,18 +206,20 @@ func getTask(tx *bolt.Tx, taskID string) *tes.Task {
 func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 	//if there is logging info
 	bucket := tx.Bucket(TasksLog)
-	out := make([]*tes.TaskLog, 0)
+	out := make([]*tes.ExecutorLog, 0)
 
 	for i := range task.Executors {
 		o := bucket.Get([]byte(fmt.Sprint(task.Id, i)))
 		if o != nil {
-			var log tes.TaskLog
+			var log tes.ExecutorLog
 			proto.Unmarshal(o, &log)
 			out = append(out, &log)
 		}
 	}
 
-	task.Logs = out
+	task.Logs = []*tes.TaskLog{{
+		Logs: out,
+	}}
 }
 
 // GetTask gets a task, which describes a running task

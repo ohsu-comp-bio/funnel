@@ -12,28 +12,26 @@ class TestFileOP(SimpleServerTest):
         self.copy_to_storage(get_abspath("test_data.1"))
 
         task = {"name": "TestMD5",
-                "projectId": "MyProject",
+                "project": "MyProject",
                 "description": "My Desc",
                 "inputs": [{"name": "infile",
                             "description": "File to be MD5ed",
-                            "location": 'file://' +
+                            "url": 'file://' +
                             self.storage_path('test_data.1'),
-                            "class": "File",
+                            "type": "File",
                             "path": "/tmp/test_file"}],
-                "outputs": [{"location": 'file://' +
+                "outputs": [{"url": 'file://' +
                              self.storage_path('output/test_data.out'),
-                             "class": "File",
+                             "type": "File",
                              "path": "/tmp/test_out"}],
-                "resources": {"volumes": [{"name": "test_disk",
-                                           "sizeGb": 5,
-                                           "mountPoint": "/tmp"}]},
-                "docker": [{"imageName": "ubuntu",
-                            "cmd": ["md5sum",
-                                    "/tmp/test_file"],
-                            "stdout": "/tmp/test_out"}]}
+                "resources": {},
+                "executors": [{"image_name": "ubuntu",
+                               "cmd": ["md5sum",
+                                       "/tmp/test_file"],
+                               "stdout": "/tmp/test_out"}]}
 
-        job_id = self.tes.submit(task)
-        self.tes.wait(job_id)
+        task_id = self.tes.submit(task)
+        self.tes.wait(task_id)
 
         path = self.get_from_storage('output/test_data.out')
         with open(path) as handle:
@@ -47,28 +45,23 @@ class TestFileOP(SimpleServerTest):
         before_src_info = os.stat(self.storage_path('test_data.1'))
 
         task = {"name": "TestMD5",
-                "projectId": "MyProject",
+                "project": "MyProject",
                 "description": "My Desc",
                 "inputs": [{"name": "infile",
                             "description": "File to be MD5ed",
-                            "location": 'file://' +
+                            "url": 'file://' +
                             self.storage_path('test_data.1'),
-                            "class": "File",
+                            "type": "File",
                             "path": "/tmp/test_file"}],
-                "resources": {
-                    "volumes": [{"name": "test_disk",
-                                 "sizeGb": 5,
-                                 "mountPoint": "/tmp",
-                                 "readonly": True}]
-                },
-                "docker": [{"imageName": "ubuntu",
-                            "cmd": ["md5sum",
-                                    "/tmp/test_file"],
-                            "workdir": "/workdir",
-                            "stdout": "/workdir/test_out"}]}
+                "resources": {},
+                "executors": [{"image_name": "ubuntu",
+                               "cmd": ["md5sum",
+                                       "/tmp/test_file"],
+                               "workdir": "/workdir",
+                               "stdout": "/workdir/test_out"}]}
 
-        job_id = self.tes.submit(task)
-        self.tes.wait(job_id)
+        task_id = self.tes.submit(task)
+        self.tes.wait(task_id)
 
         after_src_info = os.stat(self.storage_path('test_data.1'))
 
@@ -82,29 +75,24 @@ class TestFileOP(SimpleServerTest):
                    self.storage_path('test_symlink'))
 
         task = {"name": "TestMD5",
-                "projectId": "MyProject",
+                "project": "MyProject",
                 "description": "My Desc",
                 "inputs": [{"name": "infile",
                             "description": "File to be MD5ed",
-                            "location": 'file://' +
+                            "url": 'file://' +
                             self.storage_path('test_symlink'),
-                            "class": "File",
+                            "type": "File",
                             "path": "/tmp/test_file"}],
-                "resources": {
-                    "volumes": [{"name": "test_disk",
-                                 "sizeGb": 5,
-                                 "mountPoint": "/tmp",
-                                 "readonly": True}]
-                },
-                "docker": [{"imageName": "ubuntu",
-                            "cmd": ["md5sum",
-                                    "/tmp/test_file"],
-                            "workdir": "/workdir",
-                            "stdout": "/workdir/test_out"}]}
+                "resources": {},
+                "executors": [{"image_name": "ubuntu",
+                               "cmd": ["md5sum",
+                                       "/tmp/test_file"],
+                               "workdir": "/workdir",
+                               "stdout": "/workdir/test_out"}]}
 
-        job_id = self.tes.submit(task)
-        data = self.tes.wait(job_id)
-        assert data['state'] == "Complete"
+        task_id = self.tes.submit(task)
+        data = self.tes.wait(task_id)
+        assert data['state'] == "COMPLETE"
 
     def test_bad_symlink(self):
 
@@ -114,29 +102,24 @@ class TestFileOP(SimpleServerTest):
         os.remove(self.storage_path('test_data.1'))
 
         task = {"name": "TestMD5",
-                "projectId": "MyProject",
+                "project": "MyProject",
                 "description": "My Desc",
                 "inputs": [{"name": "infile",
                             "description": "File to be MD5ed",
-                            "location": 'file://' +
+                            "url": 'file://' +
                             self.storage_path('test_symlink'),
-                            "class": "File",
+                            "type": "File",
                             "path": "/tmp/test_file"}],
-                "resources": {
-                    "volumes": [{"name": "test_disk",
-                                 "sizeGb": 5,
-                                 "mountPoint": "/tmp",
-                                 "readonly": True}]
-                },
-                "docker": [{"imageName": "ubuntu",
-                            "cmd": ["md5sum",
-                                    "/tmp/test_file"],
-                            "workdir": "/workdir",
-                            "stdout": "/workdir/test_out"}]}
+                "resources": {},
+                "executors": [{"image_name": "ubuntu",
+                               "cmd": ["md5sum",
+                                       "/tmp/test_file"],
+                               "workdir": "/workdir",
+                               "stdout": "/workdir/test_out"}]}
 
-        job_id = self.tes.submit(task)
-        data = self.tes.wait(job_id)
-        assert data['state'] == "Error"
+        task_id = self.tes.submit(task)
+        data = self.tes.wait(task_id)
+        assert data['state'] == "ERROR"
 
     def test_no_output_in_readonly(self):
 
@@ -146,33 +129,28 @@ class TestFileOP(SimpleServerTest):
         os.remove(self.storage_path('test_data.1'))
 
         task = {"name": "TestMD5",
-                "projectId": "MyProject",
+                "project": "MyProject",
                 "description": "My Desc",
                 "inputs": [{"name": "infile",
                             "description": "File to be MD5ed",
-                            "location": 'file://' +
+                            "url": 'file://' +
                             self.storage_path('test_symlink'),
-                            "class": "File",
+                            "type": "File",
                             "path": "/tmp/test_file"}],
-                "outputs": [{"location": 'file://' +
+                "outputs": [{"url": 'file://' +
                              self.storage_path('output/test_out'),
-                             "class": "File",
+                             "type": "File",
                              "path": "/tmp/test_out"}],
-                "resources": {
-                    "volumes": [{"name": "test_disk",
-                                 "sizeGb": 5,
-                                 "mountPoint": "/tmp",
-                                 "readonly": True}]
-                },
-                "docker": [{"imageName": "ubuntu",
-                            "cmd": ["md5sum",
-                                    "/tmp/test_file"],
-                            "workdir": "/tmp",
-                            "stdout": "/tmp/test_out"}]}
+                "resources": {},
+                "executors": [{"image_name": "ubuntu",
+                               "cmd": ["md5sum",
+                                       "/tmp/test_file"],
+                               "workdir": "/tmp",
+                               "stdout": "/tmp/test_out"}]}
 
-        job_id = self.tes.submit(task)
-        data = self.tes.wait(job_id)
-        assert data['state'] == "Error"
+        task_id = self.tes.submit(task)
+        data = self.tes.wait(task_id)
+        assert data['state'] == "ERROR"
 
     def test_symlink_in_output(self):
         """
@@ -190,25 +168,19 @@ class TestFileOP(SimpleServerTest):
             "name": "Test symlink in output",
             "outputs": [
                 {
-                    "location": "file://" + self.storage_path("out-sym"),
-                    "class": "File",
+                    "url": "file://" + self.storage_path("out-sym"),
+                    "type": "File",
                     "path": "/tmp/sym",
                 },
                 {
-                    "location": "file://" + self.storage_path("out-dir"),
-                    "class": "Directory",
+                    "url": "file://" + self.storage_path("out-dir"),
+                    "type": "Directory",
                     "path": "/tmp",
                 },
             ],
-            "resources": {
-                "volumes": [{
-                    "name": "testvol",
-                    "sizeGb": 5,
-                    "mountPoint": "/tmp",
-                }],
-            },
-            "docker": [{
-                "imageName": "alpine",
+            "resources": {},
+            "executors": [{
+                "image_name": "alpine",
                 "cmd": [
                     "sh", "-c",
                     "echo foo > /tmp/foo && ln -s /tmp/foo /tmp/sym"
@@ -216,9 +188,9 @@ class TestFileOP(SimpleServerTest):
             }],
         }
 
-        job_id = self.tes.submit(task)
-        data = self.tes.wait(job_id)
-        assert data["state"] != "Error"
+        task_id = self.tes.submit(task)
+        data = self.tes.wait(task_id)
+        assert data["state"] != "ERROR"
         with open(self.storage_path("out-sym")) as fh:
             assert fh.read() == "foo\n"
         with open(self.storage_path("out-dir", "foo")) as fh:

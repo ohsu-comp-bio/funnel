@@ -12,42 +12,36 @@ class TestS3(S3ServerTest):
 
         task = {
             "name": "TestMD5",
-            "projectId": "MyProject",
+            "project": "MyProject",
             "description": "My Desc",
             "inputs": [
                 {
                     "name": "infile",
                     "description": "File to be MD5ed",
-                    "location": in_loc,
-                    "class": "File",
+                    "url": in_loc,
+                    "type": "File",
                     "path": "/tmp/test_file"
                 }
             ],
             "outputs": [
                 {
-                    "location": out_loc,
-                    "class": "File",
+                    "url": out_loc,
+                    "type": "File",
                     "path": "/tmp/test_out"
                 }
             ],
-            "resources": {
-                "volumes": [{
-                    "name": "test_disk",
-                    "sizeGb": 5,
-                    "mountPoint": "/tmp"
-                }]
-            },
-            "docker": [
+            "resources": {},
+            "executors": [
                 {
-                    "imageName": "ubuntu",
+                    "image_name": "ubuntu",
                     "cmd": ["md5sum", "/tmp/test_file"],
                     "stdout": "/tmp/test_out"
                 }
             ]
         }
 
-        job_id = self.tes.submit(task)
-        self.tes.wait(job_id, timeout=20)
+        task_id = self.tes.submit(task)
+        self.tes.wait(task_id, timeout=20)
 
         path = self.get_from_storage(out_loc)
         with open(path) as handle:

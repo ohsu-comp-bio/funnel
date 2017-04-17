@@ -88,17 +88,17 @@ type SchedulerBackends struct {
 
 // Config describes configuration for Funnel.
 type Config struct {
-	Storage       []*StorageConfig
-	HostName      string
-	Scheduler     string
-	Backends      SchedulerBackends
-	Worker        Worker
-	DBPath        string
-	HTTPPort      string
-	RPCPort       string
-	WorkDir       string
-	LogLevel      string
-	LogPath       string
+	Storage            []*StorageConfig
+	HostName           string
+	Scheduler          string
+	Backends           SchedulerBackends
+	Worker             Worker
+	DBPath             string
+	HTTPPort           string
+	RPCPort            string
+	WorkDir            string
+	LogLevel           string
+	LogPath            string
 	MaxExecutorLogSize int
 	ScheduleRate       time.Duration
 	ScheduleChunk      int

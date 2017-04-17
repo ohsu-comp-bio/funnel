@@ -12,20 +12,20 @@ type Database struct {
 }
 
 // CancelTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) CancelTask(_a0 context.Context, _a1 *tes.TaskID) (*tes.TaskID, error) {
+func (_m *Database) CancelTask(_a0 context.Context, _a1 *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.TaskID
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.TaskID) *tes.TaskID); ok {
+	var r0 *tes.CancelTaskResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.CancelTaskRequest) *tes.CancelTaskResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.TaskID)
+			r0 = ret.Get(0).(*tes.CancelTaskResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.TaskID) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.CancelTaskRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -35,11 +35,11 @@ func (_m *Database) CancelTask(_a0 context.Context, _a1 *tes.TaskID) (*tes.TaskI
 }
 
 // GetTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) GetTask(_a0 context.Context, _a1 *tes.TaskID) (*tes.Task, error) {
+func (_m *Database) GetTask(_a0 context.Context, _a1 *tes.GetTaskRequest) (*tes.Task, error) {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 *tes.Task
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.TaskID) *tes.Task); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.GetTaskRequest) *tes.Task); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
@@ -48,7 +48,7 @@ func (_m *Database) GetTask(_a0 context.Context, _a1 *tes.TaskID) (*tes.Task, er
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.TaskID) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.GetTaskRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -141,20 +141,20 @@ func (_m *Database) GetWorkers(_a0 context.Context, _a1 *funnel.GetWorkersReques
 }
 
 // ListTasks provides a mock function with given fields: _a0, _a1
-func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.TaskListRequest) (*tes.TaskListResponse, error) {
+func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.TaskListResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.TaskListRequest) *tes.TaskListResponse); ok {
+	var r0 *tes.ListTasksResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.ListTasksRequest) *tes.ListTasksResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.TaskListResponse)
+			r0 = ret.Get(0).(*tes.ListTasksResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.TaskListRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.ListTasksRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -163,16 +163,16 @@ func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.TaskListRequest) (*t
 	return r0, r1
 }
 
-// RunTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) RunTask(_a0 context.Context, _a1 *tes.Task) (*tes.TaskID, error) {
+// CreateTask provides a mock function with given fields: _a0, _a1
+func (_m *Database) CreateTask(_a0 context.Context, _a1 *tes.Task) (*tes.CreateTaskResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.TaskID
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.Task) *tes.TaskID); ok {
+	var r0 *tes.CreateTaskResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.Task) *tes.CreateTaskResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.TaskID)
+			r0 = ret.Get(0).(*tes.CreateTaskResponse)
 		}
 	}
 

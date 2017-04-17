@@ -115,38 +115,31 @@ func (m *Funnel) AddWorker(w *pbf.Worker) {
 	m.DB.UpdateWorker(context.Background(), w)
 }
 
-// RunTask adds a task to the database (calling db.RunTask)
-func (m *Funnel) RunTask(t *tes.Task) string {
-	ret, err := m.DB.RunTask(context.Background(), t)
+// CreateTask adds a task to the database (calling db.CreateTask)
+func (m *Funnel) CreateTask(t *tes.Task) string {
+	ret, err := m.DB.CreateTask(context.Background(), t)
 	if err != nil {
 		panic(err)
 	}
-	return ret.Value
+	return ret.Id
 }
 
 // RunHelloWorld adds a simple hello world task to the database queue.
 func (m *Funnel) RunHelloWorld() string {
-	return m.RunTask(m.HelloWorldTask())
+	return m.CreateTask(m.HelloWorldTask())
 }
 
 // HelloWorldTask returns a simple hello world task.
 func (m *Funnel) HelloWorldTask() *tes.Task {
 	return &tes.Task{
 		Name: "Hello world",
-		Docker: []*tes.DockerExecutor{
+		Executors: []*tes.Executor{
 			{
 				Cmd: []string{"echo", "hello world"},
 			},
 		},
 		Resources: &tes.Resources{
-			MinimumCpuCores: 1,
-			Volumes: []*tes.Volume{
-				{
-					Name:       "test-vol",
-					SizeGb:     10.0,
-					MountPoint: "/tmp",
-				},
-			},
+			CpuCores: 1,
 		},
 	}
 }

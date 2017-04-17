@@ -26,8 +26,8 @@ func TestReconcileSingleTaskCompleteFlow(t *testing.T) {
 	}
 
 	j := &tes.Task{
-		TaskID: "task-1",
-		State:  Queued,
+		Id:    "task-1",
+		State: Queued,
 	}
 	addTask(tasks, j)
 
@@ -66,8 +66,8 @@ func TestReconcileTaskError(t *testing.T) {
 		Ctrls:      map[string]TaskControl{},
 	}
 	j := &tes.Task{
-		TaskID: "task-1",
-		State:  Queued,
+		Id:    "task-1",
+		State: Queued,
 	}
 	addTask(tasks, j)
 	w.reconcile(tasks)
@@ -90,8 +90,8 @@ func TestReconcileCancelTask(t *testing.T) {
 
 	// Add a task
 	j := &tes.Task{
-		TaskID: "task-1",
-		State:  Queued,
+		Id:    "task-1",
+		State: Queued,
 	}
 	addTask(tasks, j)
 
@@ -131,8 +131,8 @@ func TestReconcileMultiple(t *testing.T) {
 	w.reconcile(tasks)
 
 	addTask(tasks, &tes.Task{
-		TaskID: "task-1",
-		State:  Queued,
+		Id:    "task-1",
+		State: Queued,
 	})
 
 	w.reconcile(tasks)
@@ -153,12 +153,12 @@ func TestReconcileMultiple(t *testing.T) {
 	}
 
 	addTask(tasks, &tes.Task{
-		TaskID: "task-2",
-		State:  Queued,
+		Id:    "task-2",
+		State: Queued,
 	})
 	addTask(tasks, &tes.Task{
-		TaskID: "task-3",
-		State:  Queued,
+		Id:    "task-3",
+		State: Queued,
 	})
 
 	w.reconcile(tasks)
@@ -218,12 +218,12 @@ func TestStraightToRunning(t *testing.T) {
 	}
 
 	addTask(tasks, &tes.Task{
-		TaskID: "task-1",
-		State:  Initializing,
+		Id:    "task-1",
+		State: Initializing,
 	})
 	addTask(tasks, &tes.Task{
-		TaskID: "task-2",
-		State:  Running,
+		Id:    "task-2",
+		State: Running,
 	})
 
 	w.reconcile(tasks)

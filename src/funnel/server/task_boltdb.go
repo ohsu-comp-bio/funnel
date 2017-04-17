@@ -137,7 +137,7 @@ func GenTaskID() string {
 	return id.String()
 }
 
-// RunTask documentation
+// CreateTask documentation
 // TODO: documentation
 func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 	taskID := GenTaskID()

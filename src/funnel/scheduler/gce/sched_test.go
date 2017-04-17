@@ -151,7 +151,7 @@ func TestUpdateAvailableResources(t *testing.T) {
 	h.srv.AddWorker(existing)
 
 	ta := h.srv.HelloWorldTask()
-	h.srv.RunTask(ta)
+	h.srv.CreateTask(ta)
 
 	h.Schedule()
 	workers := h.srv.GetWorkers()
@@ -161,7 +161,7 @@ func TestUpdateAvailableResources(t *testing.T) {
 		t.Error("Expected a single, existing worker")
 	}
 
-	expect := existing.Resources.Cpus - ta.Resources.MinimumCpuCores
+	expect := existing.Resources.Cpus - ta.Resources.CpuCores
 
 	if workers[0].Available.Cpus != expect {
 		t.Error("Unexpected cpu count")
@@ -185,12 +185,12 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	ta := h.srv.HelloWorldTask()
 	tb := h.srv.HelloWorldTask()
 	tc := h.srv.HelloWorldTask()
-	ta.Resources.MinimumCpuCores = 4
-	tb.Resources.MinimumCpuCores = 4
-	tc.Resources.MinimumCpuCores = 4
-	h.srv.RunTask(ta)
-	h.srv.RunTask(tb)
-	h.srv.RunTask(tc)
+	ta.Resources.CpuCores = 4
+	tb.Resources.CpuCores = 4
+	tc.Resources.CpuCores = 4
+	h.srv.CreateTask(ta)
+	h.srv.CreateTask(tb)
+	h.srv.CreateTask(tc)
 
 	h.Schedule()
 	workers := h.srv.GetWorkers()

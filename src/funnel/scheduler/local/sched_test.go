@@ -127,12 +127,12 @@ func TestMatch(t *testing.T) {
 
 	// Helper which sets up Task.Resources struct to non-nil
 	blankTask := func() *tes.Task {
-		return &tes.Task{Task: &tes.Task{Resources: &tes.Resources{}}}
+		return &tes.Task{Resources: &tes.Resources{}}
 	}
 
 	// test CPUs too big
 	j = blankTask()
-	j.Task.Resources.MinimumCpuCores = 2
+	j.Resources.CpuCores = 2
 	o = s.Schedule(j)
 	if o != nil {
 		t.Error("Scheduled task to worker without enough CPU resources")
@@ -140,7 +140,7 @@ func TestMatch(t *testing.T) {
 
 	// test RAM too big
 	j = blankTask()
-	j.Task.Resources.MinimumRamGb = 2.0
+	j.Resources.RamGb = 2.0
 	o = s.Schedule(j)
 	if o != nil {
 		t.Error("Scheduled task to worker without enough RAM resources")
@@ -148,31 +148,15 @@ func TestMatch(t *testing.T) {
 
 	// test disk too big
 	j = blankTask()
-	j.Task.Resources.Volumes = []*tes.Volume{
-		{SizeGb: 2.0},
-	}
-
+	j.Resources.SizeGb = 2.0
 	o = s.Schedule(j)
 	if o != nil {
 		t.Error("Scheduled task to worker without enough Disk resources")
 	}
 
-	// test two volumes, basically check that they are
-	// added together to get total size
-	j = blankTask()
-	j.Task.Resources.Volumes = []*tes.Volume{
-		{SizeGb: 1.0},
-		{SizeGb: 0.1},
-	}
-
-	o = s.Schedule(j)
-	if o != nil {
-		t.Error("Scheduled task to worker without enough Disk resources, 2 volumes")
-	}
-
 	// test zones don't match
 	j = blankTask()
-	j.Task.Resources.Zones = []string{"test-zone"}
+	j.Resources.Zones = []string{"test-zone"}
 	o = s.Schedule(j)
 	if o != nil {
 		t.Error("Scheduled task to worker out of zone")
@@ -180,14 +164,10 @@ func TestMatch(t *testing.T) {
 
 	// Now test a task that fits
 	j = blankTask()
-	j.Task.Resources.MinimumCpuCores = 1
-	j.Task.Resources.MinimumRamGb = 1.0
-	j.Task.Resources.Volumes = []*tes.Volume{
-		{SizeGb: 0.5},
-		{SizeGb: 0.5},
-	}
-	j.Task.Resources.Zones = []string{"ok-zone", "not-ok-zone"}
-
+	j.Resources.CpuCores = 1
+	j.Resources.RamGb = 1.0
+	j.Resources.SizeGb = 1.0
+	j.Resources.Zones = []string{"ok-zone", "not-ok-zone"}
 	o = s.Schedule(j)
 	if o == nil {
 		t.Error("Didn't schedule task when resources fit")

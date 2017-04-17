@@ -6,5 +6,5 @@ import (
 )
 
 func addTask(tasks map[string]*pbf.TaskWrapper, t *tes.Task) {
-	tasks[j.TaskID] = &pbf.TaskWrapper{Task: t}
+	tasks[t.Id] = &pbf.TaskWrapper{Task: t}
 }

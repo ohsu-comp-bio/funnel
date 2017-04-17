@@ -25,10 +25,8 @@ func TestResourcesFitEmptyTask(t *testing.T) {
 
 func TestCpuResourcesFit(t *testing.T) {
 	j := &tes.Task{
-		Task: &tes.Task{
-			Resources: &tes.Resources{
-				MinimumCpuCores: 1,
-			},
+		Resources: &tes.Resources{
+			CpuCores: 1,
 		},
 	}
 
@@ -57,7 +55,7 @@ func TestCpuResourcesFit(t *testing.T) {
 	}
 
 	w.Available.Cpus = 1.0
-	j.Task.Resources.MinimumCpuCores = 2
+	j.Resources.CpuCores = 2
 
 	if ResourcesFit(j, w) {
 		t.Error("Execpted resources NOT to fit")

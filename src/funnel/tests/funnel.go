@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"path"
+	"time"
 )
 
 // NewConfig returns the default config with a random port,
@@ -85,6 +86,7 @@ func (m *Funnel) Start() {
 	if err != nil {
 		panic(err)
 	}
+	time.Sleep(time.Millisecond * 300)
 	m.NoopWorker = noop.NewWorker(m.Conf)
 	m.Scheduler.AddBackend(noop.NewPlugin(m.NoopWorker))
 }

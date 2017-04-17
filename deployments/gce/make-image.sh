@@ -10,8 +10,8 @@ source "$( dirname $0 )/helpers.sh"
 
 log_header "Checking prerequisites"
 
-if [ ! -e $ROOT/bin/linux_amd64/funnel ]; then
-  log_error "Missing ./bin/linux_amd64/funnel binary. Run \`make cross-compile\`"
+if [ ! -e $ROOT/bin/funnel-linux-amd64 ]; then
+  log_error "Missing ./bin/funnel-linux-amd64 binary. Run \`make cross-compile\`"
   exit
 fi
 
@@ -50,7 +50,7 @@ gce_wait_for_ssh $NAME
 log_header "Uploading funnel files to $NAME"
 
 gce_ssh $NAME 'mkdir ~/funnel'
-gce copy-files $ROOT/bin/linux_amd64/funnel $NAME:~/funnel/
+gce copy-files $ROOT/bin/funnel-linux-amd64 $NAME:~/funnel/funnel
 gce copy-files $ROOT/deployments/gce/instance-scripts/start-funnel.sh $NAME:~/funnel/
 gce copy-files $ROOT/deployments/gce/instance-scripts/install.sh $NAME:~/funnel/
 

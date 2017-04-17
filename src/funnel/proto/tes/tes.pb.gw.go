@@ -105,10 +105,6 @@ func request_TaskService_CancelTask_0(ctx context.Context, marshaler runtime.Mar
 	var protoReq CancelTaskRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil {
-		return nil, metadata, grpc.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	var (
 		val string
 		ok  bool

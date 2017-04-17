@@ -143,7 +143,7 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 	taskID := GenTaskID()
 	log := log.WithFields("taskID", taskID)
 
-	log.Debug("RunTask called", "task", task)
+	log.Debug("CreateTask called", "task", task)
 
 	if len(task.Executors) == 0 {
 		log.Error("No executor commands found")

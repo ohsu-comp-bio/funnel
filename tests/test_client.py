@@ -95,7 +95,7 @@ class TestClient(SimpleServerTest):
         self.wait("step 1", timeout=20)
         # ensure the container was created
         self.wait_for_container(task_id + "-0")
-        self.tes.delete_task(task_id)
+        self.tes.cancel_task(task_id)
         # ensure docker stops the container within 20 seconds
         self.wait_for_container_stop(task_id + "-0", timeout=20)
         # make sure the first container was stopped
@@ -103,13 +103,14 @@ class TestClient(SimpleServerTest):
         # make sure the second container was never started
         self.assertRaises(Exception, dclient.containers.get, task_id + "-1")
         data = self.tes.get_task(task_id)
+        print(self.dumps(data))
         assert data["state"] == "CANCELED"
 
-    def test_task_log_length(self):
+    def test_executor_log_length(self):
         '''
-        The task logs list should only include entries for steps that have
+        The task executor logs list should only include entries for steps that have
         been started or completed, i.e. steps that have yet to be started
-        won't show up in Task.Logs.
+        won't show up in Task.Logs[0].Logs
         '''
         task_id = self._submit_steps(
             "tes-wait step 1",
@@ -117,6 +118,7 @@ class TestClient(SimpleServerTest):
         )
         self.wait("step 1")
         data = self.tes.get_task(task_id)
+        print(self.dumps(data))
         assert len(data['logs']) == 1
         assert len(data['logs'][0]['logs']) == 1
         self.resume()
@@ -134,5 +136,6 @@ class TestClient(SimpleServerTest):
         )
         self.wait("step 2")
         data = self.tes.get_task(task_id)
+        print(self.dumps(data))
         assert data['state'] == 'RUNNING'
         self.resume()

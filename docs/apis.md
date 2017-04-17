@@ -4,36 +4,35 @@
 
 This section describes the HTTP/gRPC APIs and related schemas available. These are described in Protobufs and gRPC in the [proto](../src/funnel/proto) directory.
 
-###Example Task Message
+### Example Task Message
 ```json
 {
     "name" : "TestMD5",
 	"projectId" : "MyProject",
 	"description" : "My Desc",
+    "tags" : { <Custom labels> },
 	"inputs" : [
 		{
 			"name" : "infile",
 			"description" : "File to be MD5ed",
-			"location" : "s3://my-bucket/input_file",
+			"url" : "s3://my-bucket/input_file",
 			"path" : "/tmp/test_file"
+            "type" : "FILE"
 		}
 	],
 	"outputs" : [
 		{
-			"location" : "s3://my-bucket/output_file",
+			"url" : "s3://my-bucket/output_file",
 			"path" : "/tmp/test_out"
+            "type" : "FILE"
 		}
 	],
 	"resources" : {
-		"volumes" : [{
-			"name" : "test_disk",
-			"sizeGb" : 5,
-			"mountPoint" : "/tmp"
-		}]
+		"size_gb" : 5,
 	},
-	"docker" : [
+	"executors" : [
 		{
-			"imageName" : "ubuntu",
+			"image_name" : "ubuntu",
 			"cmd" : ["md5sum", "/tmp/test_file"],
 			"stdout" : "/tmp/test_out"
 		}
@@ -41,110 +40,125 @@ This section describes the HTTP/gRPC APIs and related schemas available. These a
 }
 ```
 
-### Example Task Message:
+### Example Output Only Fields in Task Message:
 ```json
 {
-  "jobId" : "6E57CA6B-0BC7-44FB-BA2C-0CBFEC629C63",
-  "metadata" : { Custom service metadata },
-  "task" : {Task Message Above},
-  "state" : "Running",
-  "logs" : [
-  	{ Job Log }
-  ]
+  "Id" : "b3qh5c3uns0hfns6jvj0",
+  "state" : "RUNNING",
+  "logs" : [ <TaskLog> ]
 }
 ```
 
-### Example Job Log Message:
+### Example Task Log Message:
 ```json
 {
-  "cmd" : ["md5sum", "/tmp/test_file"],
-  "startTime" : "2016-09-18T23:08:27Z",
-  "endTime" : "2016-09-18T23:38:00Z",
-  "stdout": "f6913671da6018ff8afcb1517983ab24  test_file",
-  "stderr": "",
-  "exitCode": 0,
+    "start_time" : "2017-04-17T12:08:37-07:00",
+    "end_time" : "2017-04-17T12:09:47-35:00",
+    "metadata" : { <Custom Service Metadata> },
+    "logs" : [ <Executor Logs> ],
+    "outputs" : {}
+}
+```
+
+### Example Executor Log Message:
+```json
+{
+    "host_ip" : "127.0.0.1",
+    "start_time" : "2017-04-17T12:08:38-00:00",
+    "end_time" : "2017-04-17T12:09:46-00:00",
+    "stdout" : "hello world\n",
+    "stderr" : "",
+    "ports" : [
+        {
+            "host" : 5000,
+            "container" : 5000
+        }
+    ]
 }
 ```
 
 ### Get meta-data about service
 ```
-GET /v1/jobs-service
+GET /v1/tasks/service-info
 ```
+
 Returns (from reference server)
 ```json
-{"storageConfig":{"baseDir":"/var/run/task-execution-server/storage","storageType":"sharedFile"}}
+{
+    "name": "OHSU Funnel Server",
+    "desc": "",
+    "storage": ["file:///cluster_share/"]
+}
 ```
 
 
-### Post Job
+### Post Task
 ```
-POST /v1/jobs {JSON body message above}
+POST /v1/tasks {JSON body message above}
 ```
 
 Return:
 ```json
-{ "value" : "{job uuid}"}
+{ "id" : "{task uuid}"}
 ```
 
-### Get Job Info
+### Get Task Info
 ```
-GET /v1/jobs/{job uuid}
+GET /v1/tasks/{task uuid}
 ```
 
-Returns Job Body Example:
+Returns Task Body Example:
 ```json
 {
-   "jobId" : "06b170b4-6ae8-4f11-7fc6-4417f1778b74",
+   "id" : "06b170b4-6ae8-4f11-7fc6-4417f1778b74",
    "logs" : [
-      {
-         "exitCode" : -1
-      }
-   ],
-   "task" : {
-      "projectId" : "test",
-      "inputs" : [
-         {
-            "location" : "fs://README.md",
-            "description" : "input",
-            "path" : "/mnt/README.md",
-            "name" : "input"
-         }
-      ],
-      "name" : "funnel workflow",
-      "taskId" : "06b170b4-6ae8-4f11-7fc6-4417f1778b74",
-      "resources" : {
-         "minimumRamGb" : 1,
-         "minimumCpuCores" : 1,
-         "volumes" : [
+    {
+        "start_time" : "2017-04-17T12:08:38-00:00",
+        "end_time" : "2017-04-17T12:09:46-00:00",
+        "logs": [
             {
-               "sizeGb" : 10,
-               "name" : "data",
-               "mountPoint" : "/mnt"
+                "exitCode" : -1
             }
-         ]
-      },
-      "outputs" : [
-         {
-            "location" : "fs://output/sha",
-            "path" : "/mnt/sha",
-            "name" : "stdout",
-            "description" : "tool stdout"
-         }
-      ],
-      "docker" : [
-         {
-            "imageName" : "bmeg/openssl",
-            "workdir" : "/mnt/sha",
-            "cmd" : [
-               "openssl",
-               "dgst",
-               "-sha",
-               "/mnt/README.md"
-            ]
-         }
-      ],
-      "description" : "CWL TES task"
-   },
-   "state" : "Error"
+        ]
+   ],
+   "project" : "test",
+   "inputs" : [
+      {
+         "url" : "fs://README.md",
+         "description" : "input",
+         "path" : "/mnt/README.md",
+         "name" : "input",
+         "type" : "FILE"
+      }
+  ],
+  "name" : "funnel workflow",
+  "resources" : {
+     "ram_gb" : 1,
+     "cpu_cores" : 1,
+     "size_gb" : 10,
+  },
+  "outputs" : [
+     {
+        "url" : "fs://output/sha",
+        "path" : "/mnt/sha",
+        "name" : "stdout",
+        "description" : "tool stdout",
+        "type" : "FILE"
+     }
+  ],
+  "executors" : [
+     {
+        "image_name" : "bmeg/openssl",
+        "workdir" : "/mnt/sha",
+        "cmd" : [
+           "openssl",
+           "dgst",
+           "-sha",
+           "/mnt/README.md"
+        ]
+     }
+  ],
+  "description" : "CWL TES task",
+  "state" : "ERROR"
 }
 ```

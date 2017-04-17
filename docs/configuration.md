@@ -19,8 +19,8 @@ HostName: localhost
 
 LogLevel: debug
 
-# Maximum per-job-step log size in bytes
-MaxJobLogSize: 10000
+# Maximum per-task-step log size in bytes
+MaxTaskLogSize: 10000
 
 # Storage backend configuration
 Storage: null
@@ -40,12 +40,12 @@ Worker:
   LogPath: ""
   LogTailSize: 10000
   LogUpdateRate: 5000000000
-  NewJobPollRate: 5000000000
+  NewTaskPollRate: 5000000000
   # In nanoseconds (TODO fix this)
   StatusPollRate: 5000000000
   # Configure the worker to shutdown if it is idle.
   # -1 means never time out.
-  # 0 means shut down immediately when there are no jobs.
+  # 0 means shut down immediately when there are no tasks.
   Timeout: -1
   WorkDir: funnel-work-dir
 

@@ -55,7 +55,7 @@ There are probably other commands. Check out the [Makefile](../Makefile).
   - `scheduler`: scheduler logic and scheduler backends
   - `server`: database and server implementing the TES API
   - `storage`: filesystem support, used by worker during upload/download, e.g. local, Google Cloud Storage, S3, etc.
-  - `worker`: worker process and state management, job runner, docker command executor, file mapper, etc.
+  - `worker`: worker process and state management, task runner, docker command executor, file mapper, etc.
 - `bin/funnel`: funnel CLI binary
 
 - `web`: javascript/css/html for web dashboard

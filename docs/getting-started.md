@@ -36,7 +36,7 @@ This is the simplest setup. This runs both the server and workers locally. The s
 
 Run `funnel server`
 
-Try out a "Hello, world!" task with `python python/py_tes.py examples/hello-world.json`
+Try out a "Hello, world!" task with `funnel task create examples/hello-world.json`
 
 Check out the web dashboard at `http://localhost:8000`
 
@@ -57,6 +57,14 @@ In this mode, the Funnel server will automatically start worker processes on oth
 
 ***Work in progress***
 
+## Funnel CLI
+The funnel binary can be used to perform common actions.
+
+* `funnel server`
+* `funnel worker`
+* `funnel task {create, list, get, cancel}`
+
+Use `funnel [command] --help` for more information about a command.
 
 ## Example task messages
 
@@ -67,6 +75,10 @@ For example, to submit 10 tasks which each sleep for 30 seconds, run:
 python python/py_tes.py examples/4-cpu-sleep.json --repeat 10
 ```
 
+Alternatively, task can be submitted via: 
+```
+funnel task create examples/4-cpu-sleep.json
+```
 
 ## Next steps
 

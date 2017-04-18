@@ -7,36 +7,38 @@ This section describes the HTTP/gRPC APIs and related schemas available. These a
 ### Example Task Message
 ```json
 {
-    "name" : "TestMD5",
-	"projectId" : "MyProject",
-	"description" : "My Desc",
-    "tags" : { <Custom labels> },
-	"inputs" : [
-		{
-			"name" : "infile",
-			"description" : "File to be MD5ed",
-			"url" : "s3://my-bucket/input_file",
-			"path" : "/tmp/test_file"
-            "type" : "FILE"
-		}
-	],
-	"outputs" : [
-		{
-			"url" : "s3://my-bucket/output_file",
-			"path" : "/tmp/test_out"
-            "type" : "FILE"
-		}
-	],
-	"resources" : {
-		"size_gb" : 5,
-	},
-	"executors" : [
-		{
-			"image_name" : "ubuntu",
-			"cmd" : ["md5sum", "/tmp/test_file"],
-			"stdout" : "/tmp/test_out"
-		}
-	]
+  "name" : "TestMD5",
+  "projectId" : "MyProject",
+  "description" : "My Desc",
+  "tags" : { Custom labels },
+  "inputs" : [
+     {
+        "name" : "infile",
+        "description" : "File to be MD5ed",
+        "url" : "s3://my-bucket/input_file",
+        "path" : "/tmp/test_file",
+        "type" : "FILE"
+     }
+  ],
+  "outputs" : [
+     {
+         "url" : "s3://my-bucket/output_file",
+         "path" : "/tmp/test_out",
+         "type" : "FILE"
+     }
+  ],
+  "resources" : {
+     "cpu_cores": 1,
+     "ram_gb": 4.5,
+     "size_gb" : 5.0
+  },
+  "executors" : [
+     {
+        "image_name" : "ubuntu",
+        "cmd" : ["md5sum", "/tmp/test_file"],
+        "stdout" : "/tmp/test_out"
+     }
+  ]
 }
 ```
 
@@ -45,7 +47,7 @@ This section describes the HTTP/gRPC APIs and related schemas available. These a
 {
   "Id" : "b3qh5c3uns0hfns6jvj0",
   "state" : "RUNNING",
-  "logs" : [ <TaskLog> ]
+  "logs" : [ TaskLog ]
 }
 ```
 
@@ -54,8 +56,8 @@ This section describes the HTTP/gRPC APIs and related schemas available. These a
 {
     "start_time" : "2017-04-17T12:08:37-07:00",
     "end_time" : "2017-04-17T12:09:47-35:00",
-    "metadata" : { <Custom Service Metadata> },
-    "logs" : [ <Executor Logs> ],
+    "metadata" : { Custom Service Metadata },
+    "logs" : [ ExecutorLog ],
     "outputs" : {}
 }
 ```
@@ -110,26 +112,27 @@ GET /v1/tasks/{task uuid}
 Returns Task Body Example:
 ```json
 {
-   "id" : "06b170b4-6ae8-4f11-7fc6-4417f1778b74",
-   "logs" : [
-    {
+  "id" : "06b170b4-6ae8-4f11-7fc6-4417f1778b74",
+  "logs" : [
+     {
         "start_time" : "2017-04-17T12:08:38-00:00",
         "end_time" : "2017-04-17T12:09:46-00:00",
         "logs": [
-            {
-                "exitCode" : -1
-            }
+           {
+              "exitCode" : -1
+           }
         ]
-   ],
-   "project" : "test",
-   "inputs" : [
-      {
-         "url" : "fs://README.md",
-         "description" : "input",
-         "path" : "/mnt/README.md",
-         "name" : "input",
-         "type" : "FILE"
-      }
+     }
+  ],
+  "project" : "test",
+  "inputs" : [
+     {
+        "url" : "fs://README.md",
+        "description" : "input",
+        "path" : "/mnt/README.md",
+        "name" : "input",
+        "type" : "FILE"
+     }
   ],
   "name" : "funnel workflow",
   "resources" : {

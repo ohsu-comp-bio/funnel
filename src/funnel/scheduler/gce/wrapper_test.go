@@ -49,10 +49,7 @@ func TestWrapper(t *testing.T) {
 		t.Error("Worker has incorrect template")
 	}
 
-	wconf := h.conf
-	wconf.Worker.ID = w.Id
-	wconf.Worker.ServerAddress = h.conf.HostName + ":" + h.conf.RPCPort
-	confYaml := string(wconf.ToYaml())
+	addr := h.conf.RPCAddress()
 	expected := &compute.Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
@@ -73,8 +70,8 @@ func TestWrapper(t *testing.T) {
 		Metadata: &compute.Metadata{
 			Items: []*compute.MetadataItems{
 				{
-					Key:   "funnel-config",
-					Value: &confYaml,
+					Key:   "funnel-worker-serveraddress",
+					Value: &addr,
 				},
 			},
 		},
@@ -110,9 +107,9 @@ func TestInsertTempError(t *testing.T) {
 	// Do this a few times to exacerbate any errors.
 	// e.g. a previous bug would build up a longer config string after every failure
 	//      because cached data was being incorrectly shared.
-	client.StartWorker("test-tpl", conf)
-	client.StartWorker("test-tpl", conf)
-	client.StartWorker("test-tpl", conf)
+	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
+	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
+	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
 	wpr.AssertExpectations(t)
 	// Clear the previous expected calls
 	wpr.ExpectedCalls = nil
@@ -120,7 +117,7 @@ func TestInsertTempError(t *testing.T) {
 	wpr.SetupMockMachineTypes()
 
 	// Now set InsertInstance to success
-	confYaml := string(conf.ToYaml())
+	addr := conf.RPCAddress()
 	expected := &compute.Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
@@ -141,8 +138,8 @@ func TestInsertTempError(t *testing.T) {
 		Metadata: &compute.Metadata{
 			Items: []*compute.MetadataItems{
 				{
-					Key:   "funnel-config",
-					Value: &confYaml,
+					Key:   "funnel-worker-serveraddress",
+					Value: &addr,
 				},
 			},
 		},
@@ -152,6 +149,6 @@ func TestInsertTempError(t *testing.T) {
 	}
 	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
-	client.StartWorker("test-tpl", conf)
+	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
 	wpr.AssertExpectations(t)
 }

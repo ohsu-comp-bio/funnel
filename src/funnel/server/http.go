@@ -38,14 +38,16 @@ func httpMux(ctx context.Context, conf config.Config) (*http.ServeMux, error) {
 	mux := http.NewServeMux()
 	mux.Handle("/", fs)
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
-	mux.Handle("/v1/", grpcMux)
 
 	// Set "cache-control: no-store" to disable response caching.
 	// Without this, some servers (e.g. GCE) will cache a response from ListTasks, GetTask, etc.
 	// which results in confusion about the stale data.
 	if conf.DisableHTTPCache {
-		mux.Handle("/v1/tasks", noCacheHandler(grpcMux))
+		mux.Handle("/v1/", noCacheHandler(grpcMux))
+	} else {
+		mux.Handle("/v1/", grpcMux)
 	}
+
 	return mux, nil
 }
 
@@ -61,7 +63,7 @@ func handleError(w http.ResponseWriter, req *http.Request, err string, code int)
 // and pass through to the next mux.
 func noCacheHandler(next http.Handler) http.HandlerFunc {
 	return func(resp http.ResponseWriter, req *http.Request) {
-		resp.Header().Set("cache-control", "no-store")
+		resp.Header().Set("Cache-Control", "no-store")
 		next.ServeHTTP(resp, req)
 	}
 }

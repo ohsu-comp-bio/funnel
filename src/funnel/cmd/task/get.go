@@ -27,10 +27,6 @@ var getCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	TaskCmd.AddCommand(getCmd)
-}
-
 func doGet(server string, ids []string) ([]string, error) {
 	client := NewClient(server)
 	res := []string{}

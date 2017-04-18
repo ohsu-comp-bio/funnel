@@ -69,12 +69,8 @@ func TestSchedStartWorker(t *testing.T) {
 	expected := workers[1]
 	log.Debug("Workers", workers)
 
-	// Expected worker config
-	wconf := h.conf
 	// Expect ServerAddress to match the server's config
-	wconf.Worker.ServerAddress = h.conf.RPCAddress()
-	wconf.Worker.ID = expected.Id
-	h.mockClient.On("StartWorker", "test-tpl", wconf).Return(nil)
+	h.mockClient.On("StartWorker", "test-tpl", h.conf.RPCAddress(), expected.Id).Return(nil)
 
 	h.Scale()
 	h.mockClient.AssertExpectations(t)
@@ -225,10 +221,14 @@ func TestSchedMultipleTasksResourceUpdateBug(t *testing.T) {
 	// but once the worker sent an update, the resource information was incorrectly
 	// reported and merged. This test tries to replicate that scenario closely.
 	h.mockClient.
-		On("StartWorker", "test-tpl", mock.Anything).
+		On("StartWorker", "test-tpl", h.conf.RPCAddress(), mock.Anything).
 		Run(func(args mock.Arguments) {
-			wconf := args[1].(config.Config)
-			w = newMockWorker(wconf.Worker)
+			addr := args[1].(string)
+			id := args[2].(string)
+			wconf := h.conf.Worker
+			wconf.ServerAddress = addr
+			wconf.ID = id
+			w = newMockWorker(wconf)
 		}).
 		Return(nil)
 

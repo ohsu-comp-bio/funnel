@@ -15,7 +15,7 @@ import (
 // or start a worker instance.
 type Client interface {
 	Templates() []pbf.Worker
-	StartWorker(tplName string, conf config.Config) error
+	StartWorker(tplName, serverAddress, workerID string) error
 }
 
 // Helper for creating a wrapper before creating a client
@@ -92,7 +92,7 @@ func (s *gceClient) Templates() []pbf.Worker {
 
 // StartWorker calls out to GCE APIs to create a VM instance
 // with a Funnel worker.
-func (s *gceClient) StartWorker(tplName string, conf config.Config) error {
+func (s *gceClient) StartWorker(tplName, serverAddress, workerID string) error {
 	s.loadTemplates()
 
 	// Get the instance template from the GCE API
@@ -101,17 +101,13 @@ func (s *gceClient) StartWorker(tplName string, conf config.Config) error {
 		return fmt.Errorf("Instance template not found: %s", tplName)
 	}
 
-	//      probably more consistent than figuring out a different config
-	//      deployment for each cloud provider
-	confYaml := string(conf.ToYaml())
-
-	// Add the funnel config yaml string to the template metadata
+	// Add GCE instance metadata
 	props := tpl.Properties
 	metadata := compute.Metadata{
 		Items: append(props.Metadata.Items,
 			&compute.MetadataItems{
-				Key:   "funnel-config",
-				Value: &confYaml,
+				Key:   "funnel-worker-serveraddress",
+				Value: &serverAddress,
 			},
 		),
 	}
@@ -124,7 +120,7 @@ func (s *gceClient) StartWorker(tplName string, conf config.Config) error {
 
 	// Create the instance on GCE
 	instance := compute.Instance{
-		Name:              conf.Worker.ID,
+		Name:              workerID,
 		CanIpForward:      props.CanIpForward,
 		Description:       props.Description,
 		Disks:             props.Disks,
@@ -157,7 +153,10 @@ func (s *gceClient) loadTemplates() {
 	// Get the machine types available
 	mtresp, mterr := s.wrapper.ListMachineTypes(s.project, s.zone)
 	if mterr != nil {
-		log.Error("Couldn't get GCE machine list", mterr)
+		log.Error("Couldn't get GCE machine list",
+			"error", mterr,
+			"project", s.project,
+			"zone", s.zone)
 		return
 	}
 

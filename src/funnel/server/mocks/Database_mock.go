@@ -1,4 +1,4 @@
-package servermocks
+package mocks
 
 import context "golang.org/x/net/context"
 import funnel "funnel/proto/funnel"
@@ -34,21 +34,21 @@ func (_m *Database) CancelTask(_a0 context.Context, _a1 *tes.CancelTaskRequest) 
 	return r0, r1
 }
 
-// GetTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) GetTask(_a0 context.Context, _a1 *tes.GetTaskRequest) (*tes.Task, error) {
+// CreateTask provides a mock function with given fields: _a0, _a1
+func (_m *Database) CreateTask(_a0 context.Context, _a1 *tes.Task) (*tes.CreateTaskResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *tes.Task
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.GetTaskRequest) *tes.Task); ok {
+	var r0 *tes.CreateTaskResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.Task) *tes.CreateTaskResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.Task)
+			r0 = ret.Get(0).(*tes.CreateTaskResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.GetTaskRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.Task) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -86,6 +86,29 @@ func (_m *Database) GetServiceInfo(_a0 context.Context, _a1 *tes.ServiceInfoRequ
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *tes.ServiceInfoRequest) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTask provides a mock function with given fields: _a0, _a1
+func (_m *Database) GetTask(_a0 context.Context, _a1 *tes.GetTaskRequest) (*tes.Task, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *tes.Task
+	if rf, ok := ret.Get(0).(func(context.Context, *tes.GetTaskRequest) *tes.Task); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tes.Task)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *tes.GetTaskRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -155,29 +178,6 @@ func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.ListTasksRequest) (*
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *tes.ListTasksRequest) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// CreateTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) CreateTask(_a0 context.Context, _a1 *tes.Task) (*tes.CreateTaskResponse, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 *tes.CreateTaskResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *tes.Task) *tes.CreateTaskResponse); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tes.CreateTaskResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *tes.Task) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

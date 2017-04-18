@@ -46,12 +46,11 @@ gce_wait_for_ssh $NAME
 
 #####################################################
 
-# Make tarball and upload
-log_header "Uploading funnel files to $NAME"
+# Upload Funnel install files
+log_header "Uploading funnel files"
 
 gce_ssh $NAME 'mkdir ~/funnel'
 gce copy-files $ROOT/bin/funnel-linux-amd64 $NAME:~/funnel/funnel
-gce copy-files $ROOT/deployments/gce/instance-scripts/start-funnel.sh $NAME:~/funnel/
 gce copy-files $ROOT/deployments/gce/instance-scripts/install.sh $NAME:~/funnel/
 
 #####################################################

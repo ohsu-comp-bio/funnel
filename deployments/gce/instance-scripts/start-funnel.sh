@@ -6,7 +6,7 @@
 GET_META='curl -f0 -H Metadata-Flavor:Google http://metadata/computeMetadata/v1/instance/attributes/'
 
 # Is there any config to download?
-CONFIG=$( $GET_META/funnel-instance-config )
+CONFIG=$( $GET_META/funnel-config )
 
 if [ "$CONFIG" != "" ]; then
   echo "$CONFIG" > /opt/funnel/funnel.config.yml

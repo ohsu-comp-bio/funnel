@@ -5,14 +5,8 @@
 # and can be configured with resources (CPU, RAM, etc).
 
 NAME='funnel-worker-16'
+SERVER='funnel-server:9090'
 MACHINE_TYPE='n1-standard-16'
-
-# Directory of this script
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-# Load helper functions
-source $DIR/helpers.sh
-
-log_header 'Creating template...'
 
 gcloud compute instance-templates create $NAME \
   --scopes https://www.googleapis.com/auth/cloud-platform \
@@ -21,4 +15,4 @@ gcloud compute instance-templates create $NAME \
   --machine-type $MACHINE_TYPE \
   --boot-disk-type 'pd-standard' \
   --boot-disk-size '250GB' \
-  --metadata-from-file "funnel-instance-config=$DIR/funnel.config.yml"
+  --metadata "funnel-worker-serveraddress=$SERVER"

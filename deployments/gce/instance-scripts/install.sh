@@ -40,7 +40,7 @@ User=funnel
 Group=funnel
 Restart=always
 WorkingDirectory=/opt/funnel
-ExecStart=/opt/funnel/start-funnel.sh
+ExecStart=/opt/funnel/funnel gce start
 
 [Install]
 WantedBy=multi-user.target

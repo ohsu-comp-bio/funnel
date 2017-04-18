@@ -1,0 +1,83 @@
+{
+    "instance": {
+        "attributes": {
+            "funnel-worker-serveraddress": "funnel-server",
+            "serial-port-enable": "1"
+        },
+        "cpuPlatform": "Intel Broadwell",
+        "description": "",
+        "disks": [
+            {
+                "deviceName": "persistent-disk-0",
+                "index": 0,
+                "mode": "READ_WRITE",
+                "type": "PERSISTENT"
+            }
+        ],
+        "hostname": "funnel-worker-1492486244.c.funnel-proj-id.internal",
+        "id": 1234,
+        "image": "",
+        "licenses": [
+            {
+                "id": "1234"
+            }
+        ],
+        "machineType": "projects/123456/machineTypes/n1-standard-1",
+        "maintenanceEvent": "NONE",
+        "name": "funnel-worker-1492486244",
+        "networkInterfaces": [
+            {
+                "accessConfigs": [
+                    {
+                        "externalIp": "1.2.3.4",
+                        "type": "ONE_TO_ONE_NAT"
+                    }
+                ],
+                "forwardedIps": [],
+                "ip": "5.6.7.8",
+                "ipAliases": [],
+                "mac": "aa:bb:cc:dd:ee:ff",
+                "network": "projects/123456/networks/default"
+            }
+        ],
+        "scheduling": {
+            "automaticRestart": "TRUE",
+            "onHostMaintenance": "MIGRATE",
+            "preemptible": "FALSE"
+        },
+        "serviceAccounts": {
+            "123456-compute@developer.gserviceaccount.com": {
+                "aliases": [
+                    "default"
+                ],
+                "email": "123456-compute@developer.gserviceaccount.com",
+                "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                ]
+            },
+            "default": {
+                "aliases": [
+                    "default"
+                ],
+                "email": "123456-compute@developer.gserviceaccount.com",
+                "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                ]
+            }
+        },
+        "tags": [
+            "funnel"
+        ],
+        "virtualClock": {
+            "driftToken": "0"
+        },
+        "zone": "projects/123456/zones/us-west1-b"
+    },
+    "project": {
+        "attributes": {
+            "sshKeys": ""
+        },
+        "numericProjectId": 123456,
+        "projectId": "funnel-proj-id"
+    }
+}

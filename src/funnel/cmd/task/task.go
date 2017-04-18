@@ -6,13 +6,17 @@ import (
 )
 
 var tesServer string
-var log = logger.New("task-cmd")
+var log = logger.New("task cmd")
 
-// TaskCmd represents the task command
-var TaskCmd = &cobra.Command{
+// Cmd represents the task command
+var Cmd = &cobra.Command{
 	Use: "task",
 }
 
 func init() {
-	TaskCmd.PersistentFlags().StringVarP(&tesServer, "server", "S", "http://localhost:8000", "")
+	Cmd.PersistentFlags().StringVarP(&tesServer, "server", "S", "http://localhost:8000", "")
+	Cmd.AddCommand(listCmd)
+	Cmd.AddCommand(createCmd)
+	Cmd.AddCommand(getCmd)
+	Cmd.AddCommand(cancelCmd)
 }

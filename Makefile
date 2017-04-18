@@ -104,7 +104,18 @@ upload-latest:
 gce-image: cross-compile
 	./deployments/gce/make-image.sh
 
+gen-mocks:
+	go get github.com/vektra/mockery
+	mockery -dir src/funnel/scheduler/gce -name Client -print > src/funnel/scheduler/gce/mocks/Client_mock.go
+	mockery -dir src/funnel/scheduler/gce -name Wrapper -print > src/funnel/scheduler/gce/mocks/Wrapper_mock.go
+	mockery -dir src/funnel/server -name Database -print > src/funnel/server/mocks/Database_mock.go
+	mockery -dir src/funnel/scheduler -name Database -print > src/funnel/scheduler/mocks/Database_mock.go
+	mockery -dir src/funnel/scheduler -name Client -print > src/funnel/scheduler/mocks/Client_mock.go
+
 full: proto install prune_deps add_deps tidy lint test web
+
+clean:
+	rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
 .PHONY: proto web
 

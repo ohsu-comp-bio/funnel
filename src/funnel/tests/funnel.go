@@ -1,16 +1,17 @@
 package tests
 
 import (
+	"fmt"
 	"funnel/config"
 	pbf "funnel/proto/funnel"
 	"funnel/proto/tes"
 	"funnel/scheduler"
 	"funnel/scheduler/noop"
 	"funnel/server"
-	"funnel/server/mocks"
 	"funnel/worker"
 	"golang.org/x/net/context"
 	"io/ioutil"
+	"math/rand"
 	"path"
 	"time"
 )
@@ -22,8 +23,9 @@ func NewConfig() config.Config {
 	f, _ := ioutil.TempDir("", "funnel-test-")
 	conf.WorkDir = f
 	conf.DBPath = path.Join(f, "funnel.db")
-	conf = servermocks.Config(conf)
 	conf = noop.Config(conf)
+	conf.RPCPort = randomPort()
+	conf.HTTPPort = randomPort()
 	conf.Worker = config.WorkerInheritConfigVals(conf)
 	return conf
 }
@@ -160,4 +162,16 @@ func (m *Funnel) CompleteTask(taskID string) {
 		}
 	}
 	panic("No such task found: " + taskID)
+}
+
+func init() {
+	// nanoseconds are important because the tests run faster than a millisecond
+	// which can cause port conflicts
+	rand.Seed(time.Now().UTC().UnixNano())
+}
+func randomPort() string {
+	min := 10000
+	max := 20000
+	n := rand.Intn(max-min) + min
+	return fmt.Sprintf("%d", n)
 }

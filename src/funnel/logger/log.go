@@ -13,7 +13,6 @@ var formatter = &textFormatter{
 
 func init() {
 	logrus.SetFormatter(formatter)
-	// TODO hard-coded level
 	logrus.SetLevel(logrus.DebugLevel)
 }
 

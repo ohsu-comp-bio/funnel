@@ -1,7 +1,7 @@
 package config
 
 import (
-	log "funnel/logger"
+	"funnel/logger"
 	pbf "funnel/proto/funnel"
 	"github.com/ghodss/yaml"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
@@ -160,6 +160,7 @@ func DefaultConfig() Config {
 			Resources: &pbf.Resources{
 				Disk: 100.0,
 			},
+			Metadata: map[string]string{},
 		},
 		DisableHTTPCache: true,
 	}
@@ -231,36 +232,40 @@ func (c Config) ToYamlTempFile(name string) (string, func()) {
 	return p, cleanup
 }
 
-// ParseConfigFile parses a Funnel config file, which is formatted in YAML,
-// and returns a Config struct.
-func ParseConfigFile(path string, doc interface{}) error {
-	source, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	err = yaml.Unmarshal(source, &doc)
+// Parse parses a YAML doc into the given Config instance.
+func Parse(raw []byte, conf *Config) error {
+	err := yaml.Unmarshal(raw, conf)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// LoadConfigOrExit tries to load the config from the given file.
-// If the file cannot be loaded, os.Exit() is called.
-func LoadConfigOrExit(relpath string, config interface{}) {
-	var err error
-	if relpath != "" {
-		var abspath string
-		abspath, err = filepath.Abs(relpath)
-		if err != nil {
-			log.Error("Failure reading config", "path", abspath, "error", err)
-			os.Exit(1)
-		}
-		log.Info("Using config file", "path", abspath)
-		err = ParseConfigFile(abspath, &config)
-		if err != nil {
-			log.Error("Failure reading config", "path", abspath, "error", err)
-			os.Exit(1)
-		}
+// ParseFile parses a Funnel config file, which is formatted in YAML,
+// and returns a Config struct.
+func ParseFile(relpath string, conf *Config) error {
+	if relpath == "" {
+		return nil
 	}
+
+	// Try to get absolute path. If it fails, fall back to relative path.
+	path, abserr := filepath.Abs(relpath)
+	if abserr != nil {
+		path = relpath
+	}
+
+	// Read file
+	source, err := ioutil.ReadFile(path)
+	if err != nil {
+		logger.Error("Failure reading config", "path", path, "error", err)
+		return err
+	}
+
+	// Parse file
+	perr := Parse(source, conf)
+	if perr != nil {
+		logger.Error("Failure reading config", "path", path, "error", perr)
+		return perr
+	}
+	return nil
 }

@@ -28,7 +28,6 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
-	TaskCmd.AddCommand(listCmd)
 	listCmd.Flags().StringVarP(&taskState, "state", "s", "", "Task state")
 	listCmd.Flags().StringVarP(&taskName, "name", "n", "", "Task name")
 }

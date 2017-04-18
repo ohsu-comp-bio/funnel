@@ -88,7 +88,7 @@ func webBundleJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/bundle.js", size: 1302849, mode: os.FileMode(420), modTime: time.Unix(1492468925, 0)}
+	info := bindataFileInfo{name: "web/bundle.js", size: 1302849, mode: os.FileMode(420), modTime: time.Unix(1492554179, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -108,7 +108,7 @@ func webIndexHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/index.html", size: 1112, mode: os.FileMode(420), modTime: time.Unix(1492468926, 0)}
+	info := bindataFileInfo{name: "web/index.html", size: 1112, mode: os.FileMode(420), modTime: time.Unix(1492554180, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -128,7 +128,7 @@ func webListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/list.html", size: 915, mode: os.FileMode(420), modTime: time.Unix(1492468926, 0)}
+	info := bindataFileInfo{name: "web/list.html", size: 915, mode: os.FileMode(420), modTime: time.Unix(1492554180, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -148,7 +148,7 @@ func webStyleCss() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/style.css", size: 353060, mode: os.FileMode(420), modTime: time.Unix(1492468926, 0)}
+	info := bindataFileInfo{name: "web/style.css", size: 353060, mode: os.FileMode(420), modTime: time.Unix(1492554180, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -168,7 +168,7 @@ func webTaskHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/task.html", size: 3644, mode: os.FileMode(420), modTime: time.Unix(1492468926, 0)}
+	info := bindataFileInfo{name: "web/task.html", size: 3644, mode: os.FileMode(420), modTime: time.Unix(1492554180, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -188,7 +188,7 @@ func webWorkerListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/worker-list.html", size: 510, mode: os.FileMode(420), modTime: time.Unix(1492468926, 0)}
+	info := bindataFileInfo{name: "web/worker-list.html", size: 510, mode: os.FileMode(420), modTime: time.Unix(1492554180, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

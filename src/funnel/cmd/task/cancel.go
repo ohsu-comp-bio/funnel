@@ -26,10 +26,6 @@ var cancelCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	TaskCmd.AddCommand(cancelCmd)
-}
-
 func doCancel(server string, ids []string) ([]string, error) {
 	client := NewClient(server)
 	res := []string{}

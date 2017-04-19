@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"funnel/cmd/gce"
+	"funnel/cmd/server"
 	"funnel/cmd/task"
+	"funnel/cmd/worker"
 	"github.com/spf13/cobra"
 )
 
@@ -11,5 +14,8 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(task.TaskCmd)
+	RootCmd.AddCommand(worker.Cmd)
+	RootCmd.AddCommand(server.Cmd)
+	RootCmd.AddCommand(task.Cmd)
+	RootCmd.AddCommand(gce.Cmd)
 }

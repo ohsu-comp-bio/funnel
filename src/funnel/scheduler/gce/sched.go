@@ -117,7 +117,7 @@ func (s *Backend) getWorkers() []*pbf.Worker {
 	// This is how the scheduler can schedule tasks to workers that
 	// haven't been started yet.
 	for _, t := range s.gce.Templates() {
-		t.Id = scheduler.GenWorkerID("gce")
+		t.Id = scheduler.GenWorkerID("funnel")
 		workers = append(workers, &t)
 	}
 
@@ -135,16 +135,11 @@ func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 // StartWorker calls out to GCE APIs to start a new worker instance.
 func (s *Backend) StartWorker(w *pbf.Worker) error {
 
-	// Write the funnel worker config yaml to a string
-	wc := s.conf
-	wc.Worker.ID = w.Id
-	wc.Worker.Timeout = -1
-
 	// Get the template ID from the worker metadata
 	template, ok := w.Metadata["gce-template"]
 	if !ok || template == "" {
 		return fmt.Errorf("Could not get GCE template ID from metadata")
 	}
 
-	return s.gce.StartWorker(template, wc)
+	return s.gce.StartWorker(template, s.conf.RPCAddress(), w.Id)
 }

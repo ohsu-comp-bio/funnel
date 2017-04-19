@@ -4,15 +4,15 @@
 # The template includes a startup script which installs the worker,
 # and can be configured with resources (CPU, RAM, etc).
 
-SHARED_BUCKET='smc-rna-funnel'
-BUNDLE="gs://$SHARED_BUCKET/gce-bundle.tar.gz"
+NAME='funnel-worker-16'
+SERVER='funnel-server:9090'
+MACHINE_TYPE='n1-standard-16'
 
-gcloud compute instance-templates create \
-  funnel-worker-16 \
+gcloud compute instance-templates create $NAME \
   --scopes https://www.googleapis.com/auth/cloud-platform \
   --tags funnel \
-  --machine-type 'n1-standard-16' \
+  --image-family funnel \
+  --machine-type $MACHINE_TYPE \
   --boot-disk-type 'pd-standard' \
   --boot-disk-size '250GB' \
-  --metadata "funnel-shared-bucket=$SHARED_BUCKET,funnel-bundle=$BUNDLE,funnel-process=worker" \
-  --metadata-from-file "startup-script=./gce/install.sh"
+  --metadata "funnel-worker-serveraddress=$SERVER"

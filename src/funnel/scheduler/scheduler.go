@@ -14,8 +14,8 @@ import (
 // Database represents the interface to the database used by the scheduler, scaler, etc.
 // Mostly, this exists so it can be mocked during testing.
 type Database interface {
-	ReadQueue(n int) []*tes.Job
-	AssignJob(*tes.Job, *pbf.Worker)
+	ReadQueue(n int) []*tes.Task
+	AssignTask(*tes.Task, *pbf.Worker)
 	CheckWorkers() error
 	GetWorkers(context.Context, *pbf.GetWorkersRequest) (*pbf.GetWorkersResponse, error)
 	UpdateWorker(context.Context, *pbf.Worker) (*pbf.UpdateWorkerResponse, error)
@@ -75,7 +75,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 // Schedule does a scheduling iteration. It checks the health of workers
 // in the database, gets a chunk of tasks from the queue (configurable by config.ScheduleChunk),
 // and calls the given scheduler. If the scheduler returns a valid offer, the
-// job is assigned to the offered worker.
+// task is assigned to the offered worker.
 func (s *Scheduler) Schedule(ctx context.Context) error {
 	backend, err := s.backend()
 	if err != nil {
@@ -83,16 +83,16 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 	}
 
 	s.db.CheckWorkers()
-	for _, job := range s.db.ReadQueue(s.conf.ScheduleChunk) {
-		offer := backend.Schedule(job)
+	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {
+		offer := backend.Schedule(task)
 		if offer != nil {
-			log.Info("Assigning job to worker",
-				"jobID", job.JobID,
+			log.Info("Assigning task to worker",
+				"taskID", task.Id,
 				"workerID", offer.Worker.Id,
 			)
-			s.db.AssignJob(job, offer.Worker)
+			s.db.AssignTask(task, offer.Worker)
 		} else {
-			log.Info("No worker could be scheduled for job", "jobID", job.JobID)
+			log.Info("No worker could be scheduled for task", "taskID", task.Id)
 		}
 	}
 	return nil

@@ -55,7 +55,7 @@ main {
 }
 
 .worker-list-table,
-.job-list-table, .job-desc-table, .data-table {
+.task-list-table, .task-desc-table, .data-table {
   @extend .mdl-data-table;
   width: 100%;
   table-layout: fixed;
@@ -74,7 +74,7 @@ main {
   }
 }
 
-.job-list-table {
+.task-list-table {
 
   td, th { 
     &:nth-child(1) {
@@ -95,7 +95,7 @@ main {
   }
 }
 
-.job-desc-table {
+.task-desc-table {
   td { 
     &:nth-child(1) {
       width: 10%;

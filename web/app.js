@@ -8,12 +8,12 @@ function shortID(longID) {
   return longID.split('-')[0];
 }
 
-app.controller('JobListController', function($scope, NgTableParams, $http) {
-  $scope.url = "/v1/jobs";
+app.controller('TaskListController', function($scope, NgTableParams, $http) {
+  $scope.url = "/v1/tasks";
   $scope.shortID = shortID;
 
   $http.get($scope.url).then(function(result) {
-	  var jobs = result.data.jobs || [];
+	  var tasks = result.data.tasks || [];
     $scope.tableParams = new NgTableParams(
       {
         count: 25
@@ -22,15 +22,15 @@ app.controller('JobListController', function($scope, NgTableParams, $http) {
         counts: [25, 50, 100],
         paginationMinBlocks: 2,
         paginationMaxBlocks: 10,
-        total: jobs.length,
-        dataset: jobs
+        total: tasks.length,
+        dataset: tasks
       }
     );
   });
 
-  $scope.cancelJob = function(jobID) {
-    var url = "/v1/jobs/" + jobID;
-    $http.delete(url);
+  $scope.cancelTask = function(taskID) {
+    var url = "/v1/tasks/" + taskID + ":cancel";
+    $http.post(url);
   }
 });
 
@@ -46,11 +46,11 @@ console.log(workers)
   });
 });
 
-app.controller('JobInfoController', function($scope, $http, $routeParams) {
+app.controller('TaskInfoController', function($scope, $http, $routeParams) {
   
-  $scope.url = "/v1/jobs/" + $routeParams.job_id
+  $scope.url = "/v1/tasks/" + $routeParams.task_id
 
-  $scope.job = {};
+  $scope.task = {};
   $scope.cmdStr = function(cmd) {
     return cmd.join(' ');
   };
@@ -58,13 +58,13 @@ app.controller('JobInfoController', function($scope, $http, $routeParams) {
   $scope.fetchContent = function() {
     $http.get($scope.url).then(function(result){
       console.log(result.data);
-      $scope.job = result.data
+      $scope.task = result.data
     })
   }
   $scope.fetchContent();
 
-  $scope.cancelJob = function() {
-    $http.delete($scope.url);
+  $scope.cancelTask = function() {
+    $http.post($scope.url + ":cancel");
   }
 });
 
@@ -74,8 +74,8 @@ app.config(
      $routeProvider.when('/', {
        templateUrl: 'static/list.html',
      }).
-     when('/jobs/:job_id', {
-       templateUrl: 'static/job.html'
+     when('/tasks/:task_id', {
+       templateUrl: 'static/task.html'
      }).
      when('/workers/', {
        templateUrl: 'static/worker-list.html'

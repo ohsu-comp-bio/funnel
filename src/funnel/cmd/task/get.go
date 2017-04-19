@@ -13,6 +13,7 @@ var getCmd = &cobra.Command{
 		if len(args) == 0 {
 			return cmd.Help()
 		}
+
 		res, err := doGet(tesServer, args)
 		if err != nil {
 			return err

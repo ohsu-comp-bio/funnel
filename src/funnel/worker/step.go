@@ -11,7 +11,7 @@ import (
 )
 
 type stepRunner struct {
-	JobID   string
+	TaskID  string
 	Conf    config.Worker
 	Num     int
 	Cmd     *DockerCmd
@@ -21,16 +21,16 @@ type stepRunner struct {
 }
 
 func (s *stepRunner) Run(ctx context.Context) error {
-	log.Debug("Running step", "jobID", s.JobID, "stepNum", s.Num)
+	log.Debug("Running step", "taskID", s.TaskID, "stepNum", s.Num)
 
 	// Send update for host IP address.
-	s.update(&tes.JobLog{
+	s.update(&tes.ExecutorLog{
 		StartTime: time.Now().Format(time.RFC3339),
-		HostIP:    s.IP,
+		HostIp:    s.IP,
 	})
 
 	// subctx helps ensure that these goroutines are cleaned up,
-	// even when the job is canceled.
+	// even when the task is canceled.
 	subctx, cleanup := context.WithCancel(ctx)
 	defer cleanup()
 
@@ -52,9 +52,9 @@ func (s *stepRunner) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			// Likely the job was canceled.
+			// Likely the task was canceled.
 			s.Cmd.Stop()
-			s.update(&tes.JobLog{
+			s.update(&tes.ExecutorLog{
 				EndTime: time.Now().Format(time.RFC3339),
 			})
 			return ctx.Err()
@@ -64,7 +64,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 			stderr.Flush()
 
 		case result := <-done:
-			s.update(&tes.JobLog{
+			s.update(&tes.ExecutorLog{
 				EndTime:  time.Now().Format(time.RFC3339),
 				ExitCode: getExitCode(result),
 			})
@@ -75,10 +75,10 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 func (s *stepRunner) logTails() (*tailer, *tailer) {
 	stdout, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.update(&tes.JobLog{Stdout: c})
+		s.update(&tes.ExecutorLog{Stdout: c})
 	})
 	stderr, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.update(&tes.JobLog{Stderr: c})
+		s.update(&tes.ExecutorLog{Stderr: c})
 	})
 	if s.Cmd.Stdout != nil {
 		s.Cmd.Stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
@@ -96,16 +96,16 @@ func (s *stepRunner) inspectContainer(ctx context.Context) {
 		s.Log.Error("Error inspecting container", err)
 		return
 	}
-	s.update(&tes.JobLog{
+	s.update(&tes.ExecutorLog{
 		Ports: ports,
 	})
 }
 
-// update sends an update of the JobLog of the currently running step.
+// update sends an update of the ExecutorLog of the currently running step.
 // Used to update stdout/err logs, port mapping, etc.
-func (s *stepRunner) update(log *tes.JobLog) {
-	s.Updates <- &pbf.UpdateJobLogsRequest{
-		Id:   s.JobID,
+func (s *stepRunner) update(log *tes.ExecutorLog) {
+	s.Updates <- &pbf.UpdateExecutorLogsRequest{
+		Id:   s.TaskID,
 		Step: int64(s.Num),
 		Log:  log,
 	}

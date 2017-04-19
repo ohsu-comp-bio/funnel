@@ -5,6 +5,6 @@ import (
 	"funnel/proto/tes"
 )
 
-func addJob(jobs map[string]*pbf.JobWrapper, j *tes.Job) {
-	jobs[j.JobID] = &pbf.JobWrapper{Job: j}
+func addTask(tasks map[string]*pbf.TaskWrapper, t *tes.Task) {
+	tasks[t.Id] = &pbf.TaskWrapper{Task: t}
 }

@@ -11,7 +11,7 @@ func TestNoCacheHeader(t *testing.T) {
 	srv.Start()
 	defer srv.Stop()
 
-	resp, err := http.Get(srv.Conf.HTTPAddress() + "/v1/jobs")
+	resp, err := http.Get(srv.Conf.HTTPAddress() + "/v1/tasks")
 
 	if err != nil {
 		panic(err)

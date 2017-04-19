@@ -115,38 +115,31 @@ func (m *Funnel) AddWorker(w *pbf.Worker) {
 	m.DB.UpdateWorker(context.Background(), w)
 }
 
-// RunTask adds a task to the database (calling db.RunTask)
-func (m *Funnel) RunTask(t *tes.Task) string {
-	ret, err := m.DB.RunTask(context.Background(), t)
+// CreateTask adds a task to the database (calling db.CreateTask)
+func (m *Funnel) CreateTask(t *tes.Task) string {
+	ret, err := m.DB.CreateTask(context.Background(), t)
 	if err != nil {
 		panic(err)
 	}
-	return ret.Value
+	return ret.Id
 }
 
 // RunHelloWorld adds a simple hello world task to the database queue.
 func (m *Funnel) RunHelloWorld() string {
-	return m.RunTask(m.HelloWorldTask())
+	return m.CreateTask(m.HelloWorldTask())
 }
 
 // HelloWorldTask returns a simple hello world task.
 func (m *Funnel) HelloWorldTask() *tes.Task {
 	return &tes.Task{
 		Name: "Hello world",
-		Docker: []*tes.DockerExecutor{
+		Executors: []*tes.Executor{
 			{
 				Cmd: []string{"echo", "hello world"},
 			},
 		},
 		Resources: &tes.Resources{
-			MinimumCpuCores: 1,
-			Volumes: []*tes.Volume{
-				{
-					Name:       "test-vol",
-					SizeGb:     10.0,
-					MountPoint: "/tmp",
-				},
-			},
+			CpuCores: 1,
 		},
 	}
 }
@@ -157,14 +150,14 @@ func (m *Funnel) GetWorkers() []*pbf.Worker {
 	return resp.Workers
 }
 
-// CompleteJob marks a job as completed
-func (m *Funnel) CompleteJob(jobID string) {
+// CompleteTask marks a task as completed
+func (m *Funnel) CompleteTask(taskID string) {
 	for _, w := range m.GetWorkers() {
-		if j, ok := w.Jobs[jobID]; ok {
-			j.Job.State = tes.State_Complete
+		if j, ok := w.Tasks[taskID]; ok {
+			j.Task.State = tes.State_COMPLETE
 			m.DB.UpdateWorker(context.Background(), w)
 			return
 		}
 	}
-	panic("No such job found: " + jobID)
+	panic("No such task found: " + taskID)
 }

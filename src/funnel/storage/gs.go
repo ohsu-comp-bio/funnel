@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
+	"funnel/proto/tes"
 	"funnel/util"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/storage/v1"
@@ -66,7 +67,7 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 }
 
 // Get copies an object from GS to the host path.
-func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class string, readonly bool) error {
+func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
 	log.Info("Starting download", "url", rawurl)
 
 	url, perr := parse(rawurl)
@@ -74,7 +75,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		return perr
 	}
 
-	if class == File {
+	if class == tes.FileType_FILE {
 		call := gs.svc.Objects.Get(url.bucket, url.path)
 		err := download(call, hostPath)
 		if err != nil {
@@ -83,7 +84,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		log.Info("Finished file download", "url", rawurl, "hostPath", hostPath)
 		return nil
 
-	} else if class == Directory {
+	} else if class == tes.FileType_DIRECTORY {
 		// TODO not handling pagination
 		objects, _ := gs.svc.Objects.List(url.bucket).Prefix(url.path).Do()
 		for _, obj := range objects.Items {
@@ -119,7 +120,7 @@ func download(call *storage.ObjectsGetCall, hostPath string) error {
 }
 
 // Put copies an object (file) from the host path to GS.
-func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, class string) error {
+func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
 	log.Info("Starting upload", "url", rawurl)
 
 	url, perr := parse(rawurl)
@@ -163,7 +164,7 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 
 // Supports returns true if this backend supports the given storage request.
 // The Google Storage backend supports URLs which have a "gs://" scheme.
-func (gs *GSBackend) Supports(rawurl string, hostPath string, class string) bool {
+func (gs *GSBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
 	_, err := parse(rawurl)
 	if err != nil {
 		return false

@@ -11,8 +11,8 @@ type Database struct {
 	mock.Mock
 }
 
-// AssignJob provides a mock function with given fields: _a0, _a1
-func (_m *Database) AssignJob(_a0 *tes.Job, _a1 *funnel.Worker) {
+// AssignTask provides a mock function with given fields: _a0, _a1
+func (_m *Database) AssignTask(_a0 *tes.Task, _a1 *funnel.Worker) {
 	_m.Called(_a0, _a1)
 }
 
@@ -54,15 +54,15 @@ func (_m *Database) GetWorkers(_a0 context.Context, _a1 *funnel.GetWorkersReques
 }
 
 // ReadQueue provides a mock function with given fields: n
-func (_m *Database) ReadQueue(n int) []*tes.Job {
+func (_m *Database) ReadQueue(n int) []*tes.Task {
 	ret := _m.Called(n)
 
-	var r0 []*tes.Job
-	if rf, ok := ret.Get(0).(func(int) []*tes.Job); ok {
+	var r0 []*tes.Task
+	if rf, ok := ret.Get(0).(func(int) []*tes.Task); ok {
 		r0 = rf(n)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*tes.Job)
+			r0 = ret.Get(0).([]*tes.Task)
 		}
 	}
 

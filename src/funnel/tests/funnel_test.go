@@ -15,7 +15,7 @@ func init() {
 	logger.ForceColors()
 }
 
-// Test the flow of a job being scheduled to a worker, run, completed, etc.
+// Test the flow of a task being scheduled to a worker, run, completed, etc.
 func TestBasicWorker(t *testing.T) {
 	srv := NewFunnel(NewConfig())
 	srv.Start()
@@ -23,50 +23,50 @@ func TestBasicWorker(t *testing.T) {
 	ctx := context.Background()
 
 	// Run task
-	jobID := srv.RunHelloWorld()
+	taskID := srv.RunHelloWorld()
 
 	// Schedule and sync worker
 	srv.Flush()
-	ctrl := srv.NoopWorker.Ctrls[jobID]
+	ctrl := srv.NoopWorker.Ctrls[taskID]
 
 	if ctrl == nil {
-		t.Error("Expected controller for job")
+		t.Error("Expected controller for task")
 		return
 	}
 
-	if ctrl.State() != tes.State_Initializing {
+	if ctrl.State() != tes.State_INITIALIZING {
 		t.Error("Expected runner state to be init")
 		return
 	}
 
-	// Set job to running and sync worker
+	// Set task to running and sync worker
 	ctrl.SetRunning()
 	srv.Flush()
 
-	// Check job state in DB
-	r, _ := srv.DB.GetJob(ctx, &tes.JobID{Value: jobID})
+	// Check task state in DB
+	r, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{Id: taskID})
 
-	if r.State != tes.State_Running {
-		t.Error("Expected job state in DB to be running")
+	if r.State != tes.State_RUNNING {
+		t.Error("Expected task state in DB to be running")
 		return
 	}
 
-	// Set job to complete and sync worker
+	// Set task to complete and sync worker
 	ctrl.SetResult(nil)
 	srv.Flush()
 
 	// Check for complete state in database
-	q, _ := srv.DB.GetJob(ctx, &tes.JobID{Value: jobID})
+	q, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{Id: taskID})
 
-	if q.State != tes.State_Complete {
-		t.Error("Expected job state in DB to be running")
+	if q.State != tes.State_COMPLETE {
+		t.Error("Expected task state in DB to be running")
 		return
 	}
-	log.Debug("TEST", "jobID", jobID, "r", r)
+	log.Debug("TEST", "taskID", taskID, "r", r)
 }
 
-// Test a scheduled job is removed from the job queue.
-func TestScheduledJobRemovedFromQueue(t *testing.T) {
+// Test a scheduled task is removed from the task queue.
+func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 	srv := NewFunnel(NewConfig())
 	srv.Start()
 	defer srv.Stop()
@@ -76,27 +76,27 @@ func TestScheduledJobRemovedFromQueue(t *testing.T) {
 
 	res := srv.DB.ReadQueue(10)
 	if len(res) != 0 {
-		t.Error("Expected job queue to be empty")
+		t.Error("Expected task queue to be empty")
 		return
 	}
 }
 
-// Test the case where a job fails.
-func TestJobFail(t *testing.T) {
+// Test the case where a task fails.
+func TestTaskFail(t *testing.T) {
 	srv := NewFunnel(NewConfig())
 	srv.Start()
 	defer srv.Stop()
 	ctx := context.Background()
 
 	// Run task
-	jobID := srv.RunHelloWorld()
+	taskID := srv.RunHelloWorld()
 
 	// Schedule and sync worker
 	srv.Flush()
-	ctrl := srv.NoopWorker.Ctrls[jobID]
+	ctrl := srv.NoopWorker.Ctrls[taskID]
 
 	if ctrl == nil {
-		t.Error("Expected controller for job")
+		t.Error("Expected controller for task")
 		return
 	}
 
@@ -104,29 +104,29 @@ func TestJobFail(t *testing.T) {
 	ctrl.SetResult(errors.New("TEST"))
 	srv.Flush()
 
-	// Check job state in DB
-	r, _ := srv.DB.GetJob(ctx, &tes.JobID{Value: jobID})
+	// Check task state in DB
+	r, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{Id: taskID})
 
-	if r.State != tes.State_Error {
-		t.Error("Expected job state in DB to be running")
+	if r.State != tes.State_ERROR {
+		t.Error("Expected task state in DB to be running")
 		return
 	}
 
-	// Sync worker. The worker should remove the job controller for the
-	// failed job.
+	// Sync worker. The worker should remove the task controller for the
+	// failed task.
 	srv.Flush()
-	// There was a bug where the worker was re-running failed jobs.
+	// There was a bug where the worker was re-running failed tasks.
 	// Do a few syncs just to make sure.
 	srv.Flush()
 	srv.Flush()
 
 	if len(srv.NoopWorker.Ctrls) != 0 {
-		t.Error("Expected job control to be cleaned up.")
+		t.Error("Expected task control to be cleaned up.")
 		return
 	}
 }
 
-// Test the flow of a worker completing a job then timing out
+// Test the flow of a worker completing a task then timing out
 func TestWorkerTimeout(t *testing.T) {
 	conf := NewConfig()
 	conf.Worker.Timeout = time.Millisecond
@@ -143,18 +143,18 @@ func TestWorkerTimeout(t *testing.T) {
 		close(done)
 	}()
 
-	jobID := srv.RunHelloWorld()
+	taskID := srv.RunHelloWorld()
 
 	// Sync worker
 	srv.Flush()
-	ctrl := srv.NoopWorker.Ctrls[jobID]
+	ctrl := srv.NoopWorker.Ctrls[taskID]
 
 	if ctrl == nil {
-		t.Error("Expected controller for job")
+		t.Error("Expected controller for task")
 		return
 	}
 
-	// Set job complete
+	// Set task complete
 	ctrl.SetResult(nil)
 	srv.Flush()
 	srv.Flush()

@@ -14,7 +14,7 @@ var workerBaseConf = config.Config{}
 // workerCmd represents the worker command
 var workerCmd = &cobra.Command{
 	Use:   "worker",
-	Short: "",
+	Short: "Starts a Funnel worker.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := config.DefaultConfig()
 

@@ -1,33 +1,27 @@
 {
     "name": "Test MD5",
-    "projectId": "Funnel",
+    "project": "Funnel",
     "description": "My Desc",
     "inputs": [
         {
             "name": "infile",
             "description": "File to be MD5ed",
-            "location": "file:///tmp/test_file",
-            "class": "File",
+            "url": "file:///tmp/test_file",
+            "type": "File",
             "path": "/tmp/test_file"
         }
     ],
     "outputs": [
         {
-            "location": "file:///tmp/test_out_file",
-            "class": "File",
+            "url": "file:///tmp/test_out_file",
+            "type": "File",
             "path": "/tmp/test_out"
         }
     ],
-    "resources": {
-        "volumes": [{
-            "name": "test_disk",
-            "sizeGb": 5,
-            "mountPoint": "/tmp"
-        }]
-    },
-    "docker": [
+    "resources": {},
+    "executors": [
         {
-            "imageName": "ubuntu",
+            "image_name": "ubuntu",
             "cmd": ["md5sum", "/tmp/test_file"],
             "stdout": "/tmp/test_out",
             "stderr": "/tmp/test_err"

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"funnel/config"
+	"funnel/proto/tes"
 	"os"
 	"testing"
 )
@@ -34,7 +35,7 @@ func TestAnonymousGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", "File", false)
+	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", tes.FileType_FILE)
 	if gerr != nil {
 		t.Error(gerr)
 	}
@@ -44,7 +45,7 @@ func TestGet(t *testing.T) {
 	ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/downloaded", "File", false)
+	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/downloaded", tes.FileType_FILE)
 	if gerr != nil {
 		t.Error(gerr)
 	}
@@ -54,7 +55,7 @@ func TestPut(t *testing.T) {
 	ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com/go_test_put", "_test_files/for_put", "File")
+	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com/go_test_put", "_test_files/for_put", tes.FileType_FILE)
 	if gerr != nil {
 		t.Error(gerr)
 	}
@@ -64,7 +65,7 @@ func TestTrimSlashes(t *testing.T) {
 	ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com///go_test_put", "_test_files/for_put", "File")
+	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com///go_test_put", "_test_files/for_put", tes.FileType_FILE)
 	if gerr != nil {
 		t.Error(gerr)
 	}

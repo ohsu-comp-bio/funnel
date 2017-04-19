@@ -41,10 +41,10 @@ func httpMux(ctx context.Context, conf config.Config) (*http.ServeMux, error) {
 	mux.Handle("/v1/", grpcMux)
 
 	// Set "cache-control: no-store" to disable response caching.
-	// Without this, some servers (e.g. GCE) will cache a response from ListJobs, GetJob, etc.
+	// Without this, some servers (e.g. GCE) will cache a response from ListTasks, GetTask, etc.
 	// which results in confusion about the stale data.
 	if conf.DisableHTTPCache {
-		mux.Handle("/v1/jobs", noCacheHandler(grpcMux))
+		mux.Handle("/v1/tasks", noCacheHandler(grpcMux))
 	}
 	return mux, nil
 }

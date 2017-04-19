@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import argparse
 import re
 import json
@@ -31,7 +32,7 @@ class TES:
         self.s3_secret_key = s3_secret_key
 
     def get_service_info(self):
-        req = urllib2.Request("%s/v1/jobs-service" % (self.url))
+        req = urllib2.Request("%s/v1/tasks/service-info" % (self.url))
         u = urllib2.urlopen(req)
         return json.loads(u.read())
 
@@ -82,26 +83,28 @@ class TES:
         c.bucket_exists(bucket)
 
     def submit(self, task):
-        req = urllib2.Request("%s/v1/jobs" % (self.url))
+        req = urllib2.Request("%s/v1/tasks" % (self.url))
         u = urllib2.urlopen(req, json.dumps(task))
         data = json.loads(u.read())
-        job_id = data['value']
-        return job_id
+        task_id = data['id']
+        return task_id
 
-    def wait(self, job_id, timeout=10):
+    def wait(self, task_id, timeout=10):
         def check_success(data):
-            return data["state"] not in ['Queued', "Running", "Initializing"]
+            return data["state"] not in ['QUEUED', "RUNNING", "INITIALIZING"]
         return polling.poll(
-            lambda: self.get_job(job_id),
+            lambda: self.get_task(task_id),
             check_success=check_success,
             timeout=timeout,
             step=0.1)
 
-    def get_job(self, job_id):
-        return requests.get("%s/v1/jobs/%s" % (self.url, job_id)).json()
+    def get_task(self, task_id):
+        return requests.get("%s/v1/tasks/%s" % (self.url, task_id)).json()
 
-    def delete_job(self, job_id):
-        return requests.delete("%s/v1/jobs/%s" % (self.url, job_id)).json()
+    def cancel_task(self, task_id):
+        return requests.post(
+            "%s/v1/tasks/%s:cancel" % (self.url, task_id)
+        ).json()
 
 
 if __name__ == '__main__':
@@ -109,11 +112,11 @@ if __name__ == '__main__':
     c = TES(args.server)
     t = json.load(open(args.task))
 
-    job_ids = []
+    task_ids = []
     for i in range(args.repeat):
-        job_id = c.submit(t)
-        job_ids.append(job_id)
+        task_id = c.submit(t)
+        task_ids.append(task_id)
 
     if args.wait:
-        for job_id in job_ids:
-            c.wait(job_id)
+        for task_id in task_ids:
+            c.wait(task_id)

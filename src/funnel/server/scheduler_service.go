@@ -16,20 +16,20 @@ import (
 
 // State variables for convenience
 const (
-	Unknown      = tes.State_Unknown
-	Queued       = tes.State_Queued
-	Running      = tes.State_Running
-	Paused       = tes.State_Paused
-	Complete     = tes.State_Complete
-	Error        = tes.State_Error
-	SystemError  = tes.State_SystemError
-	Canceled     = tes.State_Canceled
-	Initializing = tes.State_Initializing
+	Unknown      = tes.State_UNKNOWN
+	Queued       = tes.State_QUEUED
+	Running      = tes.State_RUNNING
+	Paused       = tes.State_PAUSED
+	Complete     = tes.State_COMPLETE
+	Error        = tes.State_ERROR
+	SystemError  = tes.State_SYSTEM_ERROR
+	Canceled     = tes.State_CANCELED
+	Initializing = tes.State_INITIALIZING
 )
 
 // UpdateWorker is an RPC endpoint that is used by workers to send heartbeats
-// and status updates, such as completed jobs. The server responds with updated
-// information for the worker, such as canceled jobs.
+// and status updates, such as completed tasks. The server responds with updated
+// information for the worker, such as canceled tasks.
 func (taskBolt *TaskBolt) UpdateWorker(ctx context.Context, req *pbf.Worker) (*pbf.UpdateWorkerResponse, error) {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 		return updateWorker(tx, req)
@@ -65,27 +65,27 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		}
 	}
 
-	// Reconcile worker's job states with database
-	for _, wrapper := range req.Jobs {
+	// Reconcile worker's task states with database
+	for _, wrapper := range req.Tasks {
 		// TODO test transition to self a noop
-		job := wrapper.Job
-		err := transitionJobState(tx, job.JobID, job.State)
+		task := wrapper.Task
+		err := transitionTaskState(tx, task.Id, task.State)
 		// TODO what's the proper behavior of an error?
 		//      this is just ignoring the error, but it will happen again
 		//      on the next update.
 		//      need to resolve the conflicting states.
 		//      Additionally, returning an error here will fail the db transaction,
-		//      preventing all updates to this worker for all jobs.
+		//      preventing all updates to this worker for all tasks.
 		if err != nil {
 			return err
 		}
 
-		// If the worker has acknowledged that the job is complete,
-		// unlink the job from the worker.
-		switch job.State {
+		// If the worker has acknowledged that the task is complete,
+		// unlink the task from the worker.
+		switch task.State {
 		case Canceled, Complete, Error, SystemError:
-			key := append([]byte(req.Id), []byte(job.JobID)...)
-			tx.Bucket(WorkerJobs).Delete(key)
+			key := append([]byte(req.Id), []byte(task.Id)...)
+			tx.Bucket(WorkerTasks).Delete(key)
 		}
 	}
 
@@ -100,21 +100,21 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 	return nil
 }
 
-// AssignJob assigns a job to a worker. This updates the job state to Initializing,
+// AssignTask assigns a task to a worker. This updates the task state to Initializing,
 // and updates the worker (calls UpdateWorker()).
-func (taskBolt *TaskBolt) AssignJob(j *tes.Job, w *pbf.Worker) {
+func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbf.Worker) {
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
 		// TODO this is important! write a test for this line.
-		//      when a job is assigned, its state is immediately Initializing
+		//      when a task is assigned, its state is immediately Initializing
 		//      even before the worker has received it.
-		transitionJobState(tx, j.JobID, tes.State_Initializing)
-		jobIDBytes := []byte(j.JobID)
+		transitionTaskState(tx, t.Id, tes.State_INITIALIZING)
+		taskIDBytes := []byte(t.Id)
 		workerIDBytes := []byte(w.Id)
 		// TODO the database needs tests for this stuff. Getting errors during dev
 		//      because it's easy to forget to link everything.
-		key := append(workerIDBytes, jobIDBytes...)
-		tx.Bucket(WorkerJobs).Put(key, jobIDBytes)
-		tx.Bucket(JobWorker).Put(jobIDBytes, workerIDBytes)
+		key := append(workerIDBytes, taskIDBytes...)
+		tx.Bucket(WorkerTasks).Put(key, taskIDBytes)
+		tx.Bucket(TaskWorker).Put(taskIDBytes, workerIDBytes)
 
 		err := updateWorker(tx, w)
 		if err != nil {
@@ -133,20 +133,20 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
 		Ram:  worker.GetResources().GetRam(),
 		Disk: worker.GetResources().GetDisk(),
 	}
-	for jobID := range worker.Jobs {
-		j := getJob(tx, jobID)
-		res := j.Task.GetResources()
+	for taskID := range worker.Tasks {
+		t := getTask(tx, taskID)
+		res := t.GetResources()
 
 		// Cpus are represented by an unsigned int, and if we blindly
 		// subtract it will rollover to a very large number. So check first.
-		rcpus := res.GetMinimumCpuCores()
+		rcpus := res.GetCpuCores()
 		if rcpus >= a.Cpus {
 			a.Cpus = 0
 		} else {
 			a.Cpus -= rcpus
 		}
 
-		a.Ram -= res.GetMinimumRamGb()
+		a.Ram -= res.GetRamGb()
 
 		if a.Cpus < 0 {
 			a.Cpus = 0
@@ -244,9 +244,9 @@ func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbf.GetWorkersReq
 	return resp, nil
 }
 
-// Look for an auth token related to the given job ID.
-func getJobAuth(tx *bolt.Tx, jobID string) string {
-	idBytes := []byte(jobID)
+// Look for an auth token related to the given task ID.
+func getTaskAuth(tx *bolt.Tx, taskID string) string {
+	idBytes := []byte(taskID)
 	var auth string
 	data := tx.Bucket(TaskAuthBucket).Get(idBytes)
 	if data != nil {
@@ -255,9 +255,9 @@ func getJobAuth(tx *bolt.Tx, jobID string) string {
 	return auth
 }
 
-func transitionJobState(tx *bolt.Tx, id string, state tes.State) error {
+func transitionTaskState(tx *bolt.Tx, id string, state tes.State) error {
 	idBytes := []byte(id)
-	current := getJobState(tx, id)
+	current := getTaskState(tx, id)
 
 	switch current {
 	case state:
@@ -267,7 +267,7 @@ func transitionJobState(tx *bolt.Tx, id string, state tes.State) error {
 	case Complete, Error, SystemError, Canceled:
 		// Current state is a terminal state, can't do that.
 		err := errors.New("Invalid state change")
-		log.Error("Cannot change state of a job already in a terminal state",
+		log.Error("Cannot change state of a task already in a terminal state",
 			"error", err,
 			"current", current,
 			"requested", state)
@@ -277,49 +277,49 @@ func transitionJobState(tx *bolt.Tx, id string, state tes.State) error {
 	switch state {
 	case Canceled, Complete, Error, SystemError:
 		// Remove from queue
-		tx.Bucket(JobsQueued).Delete(idBytes)
+		tx.Bucket(TasksQueued).Delete(idBytes)
 
 	case Running, Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
 			log.Error("Unexpected transition", "current", current, "requested", state)
 			return errors.New("Unexpected transition to Initializing")
 		}
-		tx.Bucket(JobsQueued).Delete(idBytes)
+		tx.Bucket(TasksQueued).Delete(idBytes)
 
 	case Unknown, Paused:
-		log.Error("Unimplemented job state", "state", state)
-		return errors.New("Unimplemented job state")
+		log.Error("Unimplemented task state", "state", state)
+		return errors.New("Unimplemented task state")
 
 	case Queued:
 		log.Error("Can't transition to Queued state")
 		return errors.New("Can't transition to Queued state")
 	default:
-		log.Error("Unknown job state", "state", state)
-		return errors.New("Unknown job state")
+		log.Error("Unknown task state", "state", state)
+		return errors.New("Unknown task state")
 	}
 
-	tx.Bucket(JobState).Put(idBytes, []byte(state.String()))
-	log.Info("Set job state", "jobID", id, "state", state.String())
+	tx.Bucket(TaskState).Put(idBytes, []byte(state.String()))
+	log.Info("Set task state", "taskID", id, "state", state.String())
 	return nil
 }
 
-// UpdateJobLogs is an API endpoint that updates the logs of a job.
-// This is used by workers to communicate job updates to the server.
-func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbf.UpdateJobLogsRequest) (*pbf.UpdateJobLogsResponse, error) {
+// UpdateExecutorLogs is an API endpoint that updates the logs of a task.
+// This is used by workers to communicate task updates to the server.
+func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *pbf.UpdateExecutorLogsRequest) (*pbf.UpdateExecutorLogsResponse, error) {
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		bL := tx.Bucket(JobsLog)
+		bL := tx.Bucket(TasksLog)
 
 		// max size (bytes) for stderr and stdout streams to keep in db
-		max := taskBolt.conf.MaxJobLogSize
+		max := taskBolt.conf.MaxExecutorLogSize
 		key := []byte(fmt.Sprint(req.Id, req.Step))
 
 		if req.Log != nil {
-			// Check if there is an existing job log
+			// Check if there is an existing task log
 			o := bL.Get(key)
 			if o != nil {
 				// There is an existing log in the DB, load it
-				existing := &tes.JobLog{}
+				existing := &tes.ExecutorLog{}
 				// max bytes to be stored in the db
 				proto.Unmarshal(o, existing)
 
@@ -345,12 +345,12 @@ func (taskBolt *TaskBolt) UpdateJobLogs(ctx context.Context, req *pbf.UpdateJobL
 
 			// Save the updated log
 			logbytes, _ := proto.Marshal(req.Log)
-			tx.Bucket(JobsLog).Put(key, logbytes)
+			tx.Bucket(TasksLog).Put(key, logbytes)
 		}
 
 		return nil
 	})
-	return &pbf.UpdateJobLogsResponse{}, nil
+	return &pbf.UpdateExecutorLogsResponse{}, nil
 }
 
 // GetQueueInfo returns a stream of queue info
@@ -366,11 +366,11 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *pbf.QueuedTaskInfoRequest, serve
 		defer close(ch)
 
 		bt := tx.Bucket(TaskBucket)
-		bq := tx.Bucket(JobsQueued)
+		bq := tx.Bucket(TasksQueued)
 		c := bq.Cursor()
 		var count int32
 		for k, v := c.First(); k != nil && count < request.MaxTasks; k, v = c.Next() {
-			if string(v) == tes.State_Queued.String() {
+			if string(v) == tes.State_QUEUED.String() {
 				v := bt.Get(k)
 				out := tes.Task{}
 				proto.Unmarshal(v, &out)
@@ -384,7 +384,7 @@ func (taskBolt *TaskBolt) GetQueueInfo(request *pbf.QueuedTaskInfoRequest, serve
 	for m := range ch {
 		inputs := make([]string, 0, len(m.Inputs))
 		for _, i := range m.Inputs {
-			inputs = append(inputs, i.Location)
+			inputs = append(inputs, i.Url)
 		}
 		server.Send(&pbf.QueuedTaskInfo{Inputs: inputs, Resources: m.Resources})
 	}

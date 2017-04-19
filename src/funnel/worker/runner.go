@@ -13,31 +13,31 @@ import (
 	"path/filepath"
 )
 
-// JobRunner is a function that does the work of running a job on a worker,
+// TaskRunner is a function that does the work of running a task on a worker,
 // including download inputs, executing commands, uploading outputs, etc.
-type JobRunner func(JobControl, config.Worker, *pbf.JobWrapper, logUpdateChan)
+type TaskRunner func(TaskControl, config.Worker, *pbf.TaskWrapper, logUpdateChan)
 
-// Default JobRunner
-func runJob(ctrl JobControl, conf config.Worker, j *pbf.JobWrapper, up logUpdateChan) {
+// Default TaskRunner
+func runTask(ctrl TaskControl, conf config.Worker, t *pbf.TaskWrapper, up logUpdateChan) {
 	// Map files into this baseDir
-	baseDir := path.Join(conf.WorkDir, j.Job.JobID)
+	baseDir := path.Join(conf.WorkDir, t.Task.Id)
 
-	r := &jobRunner{
+	r := &taskRunner{
 		ctrl:    ctrl,
-		wrapper: j,
+		wrapper: t,
 		mapper:  NewFileMapper(baseDir),
 		store:   &storage.Storage{},
 		conf:    conf,
 		updates: up,
-		log:     logger.New("runner", "workerID", conf.ID, "jobID", j.Job.JobID),
+		log:     logger.New("runner", "workerID", conf.ID, "taskID", t.Task.Id),
 	}
 	go r.Run()
 }
 
-// jobRunner helps collect data used across many helper methods.
-type jobRunner struct {
-	ctrl    JobControl
-	wrapper *pbf.JobWrapper
+// taskRunner helps collect data used across many helper methods.
+type taskRunner struct {
+	ctrl    TaskControl
+	wrapper *pbf.TaskWrapper
 	conf    config.Worker
 	updates logUpdateChan
 	log     logger.Logger
@@ -46,10 +46,10 @@ type jobRunner struct {
 	ip      string
 }
 
-// TODO document behavior of slow consumer of job log updates
-func (r *jobRunner) Run() {
-	r.log.Debug("JobRunner.Run")
-	job := r.wrapper.Job
+// TODO document behavior of slow consumer of task log updates
+func (r *taskRunner) Run() {
+	r.log.Debug("TaskRunner.Run")
+	task := r.wrapper.Task
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
 	// The steps are:
@@ -68,13 +68,11 @@ func (r *jobRunner) Run() {
 	// Download inputs
 	for _, input := range r.mapper.Inputs {
 		r.step("store.Get", func() error {
-			vol, _ := r.mapper.FindVolume(input.Path)
 			return r.store.Get(
 				r.ctrl.Context(),
-				input.Location,
+				input.Url,
 				input.Path,
-				input.Class,
-				vol.Readonly,
+				input.Type,
 			)
 		})
 	}
@@ -82,11 +80,11 @@ func (r *jobRunner) Run() {
 	r.ctrl.SetRunning()
 
 	// Run steps
-	for i, d := range job.Task.Docker {
+	for i, d := range task.Executors {
 		stepName := fmt.Sprintf("step-%d", i)
 		r.step(stepName, func() error {
 			s := &stepRunner{
-				JobID:   job.JobID,
+				TaskID:  task.Id,
 				Conf:    r.conf,
 				Num:     i,
 				Log:     r.log.WithFields("step", i),
@@ -98,7 +96,7 @@ func (r *jobRunner) Run() {
 					Volumes:       r.mapper.Volumes,
 					Workdir:       d.Workdir,
 					Ports:         d.Ports,
-					ContainerName: fmt.Sprintf("%s-%d", job.JobID, i),
+					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
 					// TODO make RemoveContainer configurable
 					RemoveContainer: true,
 				},
@@ -115,10 +113,11 @@ func (r *jobRunner) Run() {
 	}
 
 	// Upload outputs
+	log.Debug("Outputs", r.mapper.Outputs)
 	for _, output := range r.mapper.Outputs {
 		r.step("store.Put", func() error {
 			r.fixLinks(output.Path)
-			return r.store.Put(r.ctrl.Context(), output.Location, output.Path, output.Class)
+			return r.store.Put(r.ctrl.Context(), output.Url, output.Path, output.Type)
 		})
 	}
 
@@ -127,7 +126,7 @@ func (r *jobRunner) Run() {
 
 // fixLinks walks the output paths, fixing cases where a symlink is
 // broken because it's pointing to a path inside a container volume.
-func (r *jobRunner) fixLinks(basepath string) {
+func (r *taskRunner) fixLinks(basepath string) {
 	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
 		if err != nil {
 			// There's an error, so be safe and give up on this file
@@ -147,7 +146,6 @@ func (r *jobRunner) fixLinks(basepath string) {
 				if err != nil {
 					return nil
 				}
-
 				// Map symlink source (possible container path) to host path
 				mapped, err := r.mapper.HostPath(src)
 				if err != nil {
@@ -173,9 +171,9 @@ func (r *jobRunner) fixLinks(basepath string) {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *jobRunner) openStepLogs(s *stepRunner, d *tes.DockerExecutor) error {
+func (r *taskRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
 
-	// Find the path for job stdin
+	// Find the path for task stdin
 	var err error
 	if d.Stdin != "" {
 		s.Cmd.Stdin, err = r.mapper.OpenHostFile(d.Stdin)
@@ -184,7 +182,7 @@ func (r *jobRunner) openStepLogs(s *stepRunner, d *tes.DockerExecutor) error {
 		}
 	}
 
-	// Create file for job stdout
+	// Create file for task stdout
 	if d.Stdout != "" {
 		s.Cmd.Stdout, err = r.mapper.CreateHostFile(d.Stdout)
 		if err != nil {
@@ -192,7 +190,7 @@ func (r *jobRunner) openStepLogs(s *stepRunner, d *tes.DockerExecutor) error {
 		}
 	}
 
-	// Create file for job stderr
+	// Create file for task stderr
 	if d.Stderr != "" {
 		s.Cmd.Stderr, err = r.mapper.CreateHostFile(d.Stderr)
 		if err != nil {
@@ -203,7 +201,7 @@ func (r *jobRunner) openStepLogs(s *stepRunner, d *tes.DockerExecutor) error {
 }
 
 // Create working dir
-func (r *jobRunner) prepareDir() error {
+func (r *taskRunner) prepareDir() error {
 	dir, err := filepath.Abs(r.conf.WorkDir)
 	if err != nil {
 		return err
@@ -212,21 +210,21 @@ func (r *jobRunner) prepareDir() error {
 }
 
 // Prepare file mapper, which maps task file URLs to host filesystem paths
-func (r *jobRunner) prepareMapper() error {
+func (r *taskRunner) prepareMapper() error {
 	// Map task paths to working dir paths
-	return r.mapper.MapTask(r.wrapper.Job.Task)
+	return r.mapper.MapTask(r.wrapper.Task)
 }
 
-// Grab the IP address of this host. Used to send job metadata updates.
-func (r *jobRunner) prepareIP() error {
+// Grab the IP address of this host. Used to send task metadata updates.
+func (r *taskRunner) prepareIP() error {
 	var err error
 	r.ip, err = externalIP()
 	return err
 }
 
-// Configure a job-specific storage backend.
+// Configure a task-specific storage backend.
 // This provides download/upload for inputs/outputs.
-func (r *jobRunner) prepareStorage() error {
+func (r *taskRunner) prepareStorage() error {
 	var err error
 
 	for _, conf := range r.conf.Storage {
@@ -240,9 +238,9 @@ func (r *jobRunner) prepareStorage() error {
 }
 
 // Validate the input downloads
-func (r *jobRunner) validateInputs() error {
+func (r *taskRunner) validateInputs() error {
 	for _, input := range r.mapper.Inputs {
-		if !r.store.Supports(input.Location, input.Path, input.Class) {
+		if !r.store.Supports(input.Url, input.Path, input.Type) {
 			return fmt.Errorf("Input download not supported by storage: %v", input)
 		}
 	}
@@ -250,9 +248,9 @@ func (r *jobRunner) validateInputs() error {
 }
 
 // Validate the output uploads
-func (r *jobRunner) validateOutputs() error {
+func (r *taskRunner) validateOutputs() error {
 	for _, output := range r.mapper.Outputs {
-		if !r.store.Supports(output.Location, output.Path, output.Class) {
+		if !r.store.Supports(output.Url, output.Path, output.Type) {
 			return fmt.Errorf("Output upload not supported by storage: %v", output)
 		}
 	}
@@ -263,7 +261,7 @@ func (r *jobRunner) validateOutputs() error {
 //
 // Every operation in the runner needs to check if the context is done,
 // and handle errors appropriately. This helper removes that duplicated, verbose code.
-func (r *jobRunner) step(name string, stepfunc func() error) {
+func (r *taskRunner) step(name string, stepfunc func() error) {
 	// If the runner is already complete (perhaps because a previous step failed)
 	// skip the step.
 	if !r.ctrl.Complete() {
@@ -272,7 +270,7 @@ func (r *jobRunner) step(name string, stepfunc func() error) {
 		// If the step failed, set the runner to failed. All the following steps
 		// will be skipped.
 		if err != nil {
-			r.log.Error("Job runner step failed", "error", err, "step", name)
+			r.log.Error("Task runner step failed", "error", err, "step", name)
 			r.ctrl.SetResult(err)
 		}
 	}

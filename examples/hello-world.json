@@ -1,11 +1,11 @@
 {
     "name": "Hello world",
-    "projectId": "Funnel",
+    "project": "Funnel",
     "description": "Simple Echo Command",
     "resources": {},
-    "docker": [
+    "executors": [
         {
-            "imageName": "ubuntu",
+            "image_name": "ubuntu",
             "cmd": ["echo", "hello", "world"],
             "stdout": "stdout"
         }

@@ -84,21 +84,21 @@ func (_m *Client) GetWorkers(ctx context.Context, in *pbf.GetWorkersRequest, opt
 	return r0, r1
 }
 
-// UpdateJobLogs provides a mock function with given fields: ctx, in, opts
-func (_m *Client) UpdateJobLogs(ctx context.Context, in *pbf.UpdateJobLogsRequest, opts ...grpc.CallOption) (*pbf.UpdateJobLogsResponse, error) {
+// UpdateExecutorLogs provides a mock function with given fields: ctx, in, opts
+func (_m *Client) UpdateExecutorLogs(ctx context.Context, in *pbf.UpdateExecutorLogsRequest, opts ...grpc.CallOption) (*pbf.UpdateExecutorLogsResponse, error) {
 	ret := _m.Called(ctx, in, opts)
 
-	var r0 *pbf.UpdateJobLogsResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *pbf.UpdateJobLogsRequest, ...grpc.CallOption) *pbf.UpdateJobLogsResponse); ok {
+	var r0 *pbf.UpdateExecutorLogsResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *pbf.UpdateExecutorLogsRequest, ...grpc.CallOption) *pbf.UpdateExecutorLogsResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*pbf.UpdateJobLogsResponse)
+			r0 = ret.Get(0).(*pbf.UpdateExecutorLogsResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *pbf.UpdateJobLogsRequest, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *pbf.UpdateExecutorLogsRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)

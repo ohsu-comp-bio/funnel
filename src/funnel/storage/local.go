@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"funnel/config"
+	"funnel/proto/tes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -29,7 +30,7 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class string, readonly bool) error {
+func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
 	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -39,13 +40,8 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 
 	var err error
 	if class == File {
-		if readonly {
-			err = linkFile(path, hostPath)
-		} else {
-			err = copyFile(path, hostPath)
-		}
+		err = linkFile(path, hostPath)
 	} else if class == Directory {
-		// TODO link readonly directory
 		err = copyDir(path, hostPath)
 	} else {
 		err = fmt.Errorf("Unknown file class: %s", class)
@@ -58,7 +54,7 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 }
 
 // Put copies a file from the hostPath into storage.
-func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class string) error {
+func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) error {
 	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path := strings.TrimPrefix(url, LocalProtocol)
 
@@ -85,7 +81,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 
 // Supports indicates whether this backend supports the given storage request.
 // For the LocalBackend, the url must start with "file://"
-func (local *LocalBackend) Supports(url string, hostPath string, class string) bool {
+func (local *LocalBackend) Supports(url string, hostPath string, class tes.FileType) bool {
 	return strings.HasPrefix(url, LocalProtocol)
 }
 
@@ -169,8 +165,8 @@ func copyDir(source string, dest string) (err error) {
 				return err
 			}
 		} else {
-			// perform copy
-			err = copyFile(sfp, dfp)
+			// create hard link; falls back to copy on error
+			err = linkFile(sfp, dfp)
 			if err != nil {
 				return err
 			}

@@ -9,19 +9,20 @@ It is generated from these files:
 	tes.proto
 
 It has these top-level messages:
+	Task
 	TaskParameter
 	Ports
-	DockerExecutor
-	Volume
+	Executor
 	Resources
-	Task
-	JobListRequest
-	TaskDesc
-	JobDesc
-	JobListResponse
-	JobID
-	JobLog
-	Job
+	TaskLog
+	ExecutorLog
+	OutputFileLog
+	CreateTaskResponse
+	GetTaskRequest
+	ListTasksRequest
+	ListTasksResponse
+	CancelTaskRequest
+	CancelTaskResponse
 	ServiceInfoRequest
 	ServiceInfo
 */
@@ -48,385 +49,183 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type FileType int32
+
+const (
+	FileType_FILE      FileType = 0
+	FileType_DIRECTORY FileType = 1
+)
+
+var FileType_name = map[int32]string{
+	0: "FILE",
+	1: "DIRECTORY",
+}
+var FileType_value = map[string]int32{
+	"FILE":      0,
+	"DIRECTORY": 1,
+}
+
+func (x FileType) String() string {
+	return proto.EnumName(FileType_name, int32(x))
+}
+func (FileType) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+// OUTPUT ONLY
+//
+// Task states.
 type State int32
 
 const (
-	State_Unknown      State = 0
-	State_Queued       State = 1
-	State_Running      State = 2
-	State_Paused       State = 3
-	State_Complete     State = 4
-	State_Error        State = 5
-	State_SystemError  State = 6
-	State_Canceled     State = 7
-	State_Initializing State = 8
+	State_UNKNOWN      State = 0
+	State_QUEUED       State = 1
+	State_INITIALIZING State = 2
+	State_RUNNING      State = 3
+	// An implementation *may* have the ability to pause a task,
+	// but this is not required.
+	State_PAUSED       State = 4
+	State_COMPLETE     State = 5
+	State_ERROR        State = 6
+	State_SYSTEM_ERROR State = 7
+	State_CANCELED     State = 8
 )
 
 var State_name = map[int32]string{
-	0: "Unknown",
-	1: "Queued",
-	2: "Running",
-	3: "Paused",
-	4: "Complete",
-	5: "Error",
-	6: "SystemError",
-	7: "Canceled",
-	8: "Initializing",
+	0: "UNKNOWN",
+	1: "QUEUED",
+	2: "INITIALIZING",
+	3: "RUNNING",
+	4: "PAUSED",
+	5: "COMPLETE",
+	6: "ERROR",
+	7: "SYSTEM_ERROR",
+	8: "CANCELED",
 }
 var State_value = map[string]int32{
-	"Unknown":      0,
-	"Queued":       1,
-	"Running":      2,
-	"Paused":       3,
-	"Complete":     4,
-	"Error":        5,
-	"SystemError":  6,
-	"Canceled":     7,
-	"Initializing": 8,
+	"UNKNOWN":      0,
+	"QUEUED":       1,
+	"INITIALIZING": 2,
+	"RUNNING":      3,
+	"PAUSED":       4,
+	"COMPLETE":     5,
+	"ERROR":        6,
+	"SYSTEM_ERROR": 7,
+	"CANCELED":     8,
 }
 
 func (x State) String() string {
 	return proto.EnumName(State_name, int32(x))
 }
-func (State) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (State) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-// Parameters for Task
-type TaskParameter struct {
-	// OPTIONAL
-	// name of the parameter
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// OPTIONAL
-	// Text description
-	Description string `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
-	// REQUIRED
-	// location in long term storage, is a url specific to the implementing
-	// system. For example s3://my-object-store/file1 or gs://my-bucket/file2 or
-	// file:///path/to/my/file
-	Location string `protobuf:"bytes,3,opt,name=location" json:"location,omitempty"`
-	// REQUIRED
-	// path in the machine file system. Note, this MUST be a path that exists
-	// within one of the defined volumes
-	// If the file is mounted in a volume that is mounted read/write the file must
-	// be accessable to processes in the container. Optimizations, suc as hard linking
-	// to a source file, or providing a streaming input from a FUSE mount should only
-	// be done if the volume is mounted as read only
-	Path string `protobuf:"bytes,4,opt,name=path" json:"path,omitempty"`
-	// REQUIRED
-	// Type of data, "File" or "Directory"
-	// if used for an output all the files in the directory
-	// will be copied to the storage location
-	Class string `protobuf:"bytes,5,opt,name=class" json:"class,omitempty"`
-	// OPTIONAL: default false
-	// if the parameter is an output, should the element be created before executing
-	// the command. For example if saving the working directory as an output,
-	// the directory needs to exist before the command is called. If false, it is
-	// assumed that the user will create the element as a part of the operation
-	Create bool `protobuf:"varint,6,opt,name=create" json:"create,omitempty"`
+// TaskView affects the fields returned by the ListTasks endpoint.
+//
+// Some of the fields in task can be large strings (e.g. logs),
+// which can be a burden on the network. In the default BASIC view,
+// these heavyweight fields are not included, however, a client may
+// request the FULL version to include these fields.
+type TaskView int32
+
+const (
+	// Task message will include ONLY the fields:
+	//   Task.Id
+	//   Task.State
+	TaskView_MINIMAL TaskView = 0
+	// Task message will include all fields EXCEPT:
+	//   Task.ExecutorLog.stdout
+	//   Task.ExecutorLog.stderr
+	//   TaskParameter.Contents in Task.Inputs
+	TaskView_BASIC TaskView = 1
+	// Task message includes all fields.
+	TaskView_FULL TaskView = 2
+)
+
+var TaskView_name = map[int32]string{
+	0: "MINIMAL",
+	1: "BASIC",
+	2: "FULL",
+}
+var TaskView_value = map[string]int32{
+	"MINIMAL": 0,
+	"BASIC":   1,
+	"FULL":    2,
 }
 
-func (m *TaskParameter) Reset()                    { *m = TaskParameter{} }
-func (m *TaskParameter) String() string            { return proto.CompactTextString(m) }
-func (*TaskParameter) ProtoMessage()               {}
-func (*TaskParameter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
-
-func (m *TaskParameter) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
+func (x TaskView) String() string {
+	return proto.EnumName(TaskView_name, int32(x))
 }
+func (TaskView) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-func (m *TaskParameter) GetDescription() string {
-	if m != nil {
-		return m.Description
-	}
-	return ""
-}
-
-func (m *TaskParameter) GetLocation() string {
-	if m != nil {
-		return m.Location
-	}
-	return ""
-}
-
-func (m *TaskParameter) GetPath() string {
-	if m != nil {
-		return m.Path
-	}
-	return ""
-}
-
-func (m *TaskParameter) GetClass() string {
-	if m != nil {
-		return m.Class
-	}
-	return ""
-}
-
-func (m *TaskParameter) GetCreate() bool {
-	if m != nil {
-		return m.Create
-	}
-	return false
-}
-
-// host to container port mappings
-type Ports struct {
-	// REQUIRED
-	// Exposed port on container
-	Container int32 `protobuf:"varint,1,opt,name=container" json:"container,omitempty"`
-	// OPTIONAL
-	// Must be greater than 1024;
-	// Defaults to 0
-	Host int32 `protobuf:"varint,2,opt,name=host" json:"host,omitempty"`
-}
-
-func (m *Ports) Reset()                    { *m = Ports{} }
-func (m *Ports) String() string            { return proto.CompactTextString(m) }
-func (*Ports) ProtoMessage()               {}
-func (*Ports) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *Ports) GetContainer() int32 {
-	if m != nil {
-		return m.Container
-	}
-	return 0
-}
-
-func (m *Ports) GetHost() int32 {
-	if m != nil {
-		return m.Host
-	}
-	return 0
-}
-
-// A command line to be executed and the docker container to run it
-type DockerExecutor struct {
-	// REQUIRED
-	// Docker Image name
-	ImageName string `protobuf:"bytes,1,opt,name=imageName" json:"imageName,omitempty"`
-	// REQUIRED
-	// The command to be executed
-	Cmd []string `protobuf:"bytes,2,rep,name=cmd" json:"cmd,omitempty"`
-	// OPTIONAL: default docker image directory
-	// The working directory that the command will be executed in
-	Workdir string `protobuf:"bytes,3,opt,name=workdir" json:"workdir,omitempty"`
-	// OPTIONAL
-	// Path for supplying input to stdin, blank if none
-	Stdin string `protobuf:"bytes,6,opt,name=stdin" json:"stdin,omitempty"`
-	// OPTIONAL
-	// Path for stdout recording, blank if not storing to file
-	Stdout string `protobuf:"bytes,4,opt,name=stdout" json:"stdout,omitempty"`
-	// OPTIONAL
-	// Path for stderr recording, blank if not storing to file
-	Stderr string `protobuf:"bytes,5,opt,name=stderr" json:"stderr,omitempty"`
-	// OPTIONAL
-	// Port to expose from within the container, blank if none
-	Ports []*Ports `protobuf:"bytes,7,rep,name=ports" json:"ports,omitempty"`
-}
-
-func (m *DockerExecutor) Reset()                    { *m = DockerExecutor{} }
-func (m *DockerExecutor) String() string            { return proto.CompactTextString(m) }
-func (*DockerExecutor) ProtoMessage()               {}
-func (*DockerExecutor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
-
-func (m *DockerExecutor) GetImageName() string {
-	if m != nil {
-		return m.ImageName
-	}
-	return ""
-}
-
-func (m *DockerExecutor) GetCmd() []string {
-	if m != nil {
-		return m.Cmd
-	}
-	return nil
-}
-
-func (m *DockerExecutor) GetWorkdir() string {
-	if m != nil {
-		return m.Workdir
-	}
-	return ""
-}
-
-func (m *DockerExecutor) GetStdin() string {
-	if m != nil {
-		return m.Stdin
-	}
-	return ""
-}
-
-func (m *DockerExecutor) GetStdout() string {
-	if m != nil {
-		return m.Stdout
-	}
-	return ""
-}
-
-func (m *DockerExecutor) GetStderr() string {
-	if m != nil {
-		return m.Stderr
-	}
-	return ""
-}
-
-func (m *DockerExecutor) GetPorts() []*Ports {
-	if m != nil {
-		return m.Ports
-	}
-	return nil
-}
-
-// Attached volume request.
-type Volume struct {
-	// OPTIONAL
-	// Name of attached volume
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// REQUIRED
-	// Minimum size
-	SizeGb float64 `protobuf:"fixed64,2,opt,name=sizeGb" json:"sizeGb,omitempty"`
-	// OPTIONAL
-	// Source volume, this would refer to an existing volume the execution engine
-	// could identify. Leave blank if is to be a newly created volume
-	// Volumes loaded from a source will be mounted as read only
-	Source string `protobuf:"bytes,3,opt,name=source" json:"source,omitempty"`
-	// REQUIRED
-	// mount point for volume inside the docker container
-	MountPoint string `protobuf:"bytes,6,opt,name=mountPoint" json:"mountPoint,omitempty"`
-	// OPTIONAL default False
-	Readonly bool `protobuf:"varint,7,opt,name=readonly" json:"readonly,omitempty"`
-}
-
-func (m *Volume) Reset()                    { *m = Volume{} }
-func (m *Volume) String() string            { return proto.CompactTextString(m) }
-func (*Volume) ProtoMessage()               {}
-func (*Volume) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
-
-func (m *Volume) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *Volume) GetSizeGb() float64 {
-	if m != nil {
-		return m.SizeGb
-	}
-	return 0
-}
-
-func (m *Volume) GetSource() string {
-	if m != nil {
-		return m.Source
-	}
-	return ""
-}
-
-func (m *Volume) GetMountPoint() string {
-	if m != nil {
-		return m.MountPoint
-	}
-	return ""
-}
-
-func (m *Volume) GetReadonly() bool {
-	if m != nil {
-		return m.Readonly
-	}
-	return false
-}
-
-type Resources struct {
-	// OPTIONAL default 1
-	// Minimum number of CPUs
-	MinimumCpuCores uint32 `protobuf:"varint,1,opt,name=minimumCpuCores" json:"minimumCpuCores,omitempty"`
-	// Can schedule on resource that resource that can be preempted, like AWS Spot Instances
-	// OPTIONAL default false
-	Preemptible bool `protobuf:"varint,2,opt,name=preemptible" json:"preemptible,omitempty"`
-	// REQUIRED
-	// Minimum RAM required
-	MinimumRamGb float64 `protobuf:"fixed64,3,opt,name=minimumRamGb" json:"minimumRamGb,omitempty"`
-	// REQUIRED
-	// Volumes to be mounted into the docker container
-	Volumes []*Volume `protobuf:"bytes,4,rep,name=volumes" json:"volumes,omitempty"`
-	// OPTIONAL
-	// optional scheduling information for systems where multiple compute zones are avalible
-	Zones []string `protobuf:"bytes,5,rep,name=zones" json:"zones,omitempty"`
-}
-
-func (m *Resources) Reset()                    { *m = Resources{} }
-func (m *Resources) String() string            { return proto.CompactTextString(m) }
-func (*Resources) ProtoMessage()               {}
-func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
-
-func (m *Resources) GetMinimumCpuCores() uint32 {
-	if m != nil {
-		return m.MinimumCpuCores
-	}
-	return 0
-}
-
-func (m *Resources) GetPreemptible() bool {
-	if m != nil {
-		return m.Preemptible
-	}
-	return false
-}
-
-func (m *Resources) GetMinimumRamGb() float64 {
-	if m != nil {
-		return m.MinimumRamGb
-	}
-	return 0
-}
-
-func (m *Resources) GetVolumes() []*Volume {
-	if m != nil {
-		return m.Volumes
-	}
-	return nil
-}
-
-func (m *Resources) GetZones() []string {
-	if m != nil {
-		return m.Zones
-	}
-	return nil
-}
-
-// The description of a task to be run
+// Task describes an instance of a task.
 type Task struct {
+	// OUTPUT ONLY
+	//
+	// Task identifier assigned by the server.
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	// OUTPUT ONLY
+	State State `protobuf:"varint,2,opt,name=state,enum=tes.State" json:"state,omitempty"`
 	// OPTIONAL
-	// user name for task
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
 	// OPTIONAL
-	// parameter for execution engine to define/store group information
-	ProjectID string `protobuf:"bytes,2,opt,name=projectID" json:"projectID,omitempty"`
+	//
+	// Describes the project this task is associated with.
+	// Commonly used for billing on cloud providers (AWS, Google Cloud, etc).
+	Project string `protobuf:"bytes,4,opt,name=project" json:"project,omitempty"`
 	// OPTIONAL
-	// free text description of task
-	Description string `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
+	Description string `protobuf:"bytes,5,opt,name=description" json:"description,omitempty"`
+	// OPTIONAL
+	//
+	// Input files.
+	// Inputs will be downloaded and mounted into the executor container.
+	Inputs []*TaskParameter `protobuf:"bytes,6,rep,name=inputs" json:"inputs,omitempty"`
+	// OPTIONAL
+	//
+	// Output files.
+	// Outputs will be uploaded from the executor container to long-term storage.
+	Outputs []*TaskParameter `protobuf:"bytes,7,rep,name=outputs" json:"outputs,omitempty"`
+	// OPTIONAL
+	//
+	// Request that the task be run with these resources.
+	Resources *Resources `protobuf:"bytes,8,opt,name=resources" json:"resources,omitempty"`
 	// REQUIRED
-	// Files to be copied into system before tasks
-	Inputs []*TaskParameter `protobuf:"bytes,4,rep,name=inputs" json:"inputs,omitempty"`
-	// REQUIRED
-	// Files to be copied out of the system after tasks
-	Outputs []*TaskParameter `protobuf:"bytes,5,rep,name=outputs" json:"outputs,omitempty"`
-	// REQUIRED
-	// Define required system resources to run job
-	Resources *Resources `protobuf:"bytes,6,opt,name=resources" json:"resources,omitempty"`
-	// REQUIRED
-	// An array of docker executions that will be run sequentially
-	Docker []*DockerExecutor `protobuf:"bytes,8,rep,name=docker" json:"docker,omitempty"`
+	//
+	// A list of executors to be run, sequentially.
+	Executors []*Executor `protobuf:"bytes,9,rep,name=executors" json:"executors,omitempty"`
+	// OPTIONAL
+	//
+	// Declared volumes.
+	// Volumes are shared between executors. Volumes for inputs and outputs are
+	// inferred and should not be delcared here.
+	Volumes []string `protobuf:"bytes,10,rep,name=volumes" json:"volumes,omitempty"`
+	// OPTIONAL
+	//
+	// A key-value map of arbitrary tags.
+	Tags map[string]string `protobuf:"bytes,11,rep,name=tags" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// OUTPUT ONLY
+	//
+	// Task logging information.
+	// Normally, this will contain only one entry, but in the case where
+	// a task fails and is retried, an entry will be appended to this list.
+	Logs []*TaskLog `protobuf:"bytes,12,rep,name=logs" json:"logs,omitempty"`
 }
 
 func (m *Task) Reset()                    { *m = Task{} }
 func (m *Task) String() string            { return proto.CompactTextString(m) }
 func (*Task) ProtoMessage()               {}
-func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*Task) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *Task) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *Task) GetState() State {
+	if m != nil {
+		return m.State
+	}
+	return State_UNKNOWN
+}
 
 func (m *Task) GetName() string {
 	if m != nil {
@@ -435,9 +234,9 @@ func (m *Task) GetName() string {
 	return ""
 }
 
-func (m *Task) GetProjectID() string {
+func (m *Task) GetProject() string {
 	if m != nil {
-		return m.ProjectID
+		return m.Project
 	}
 	return ""
 }
@@ -470,356 +269,781 @@ func (m *Task) GetResources() *Resources {
 	return nil
 }
 
-func (m *Task) GetDocker() []*DockerExecutor {
+func (m *Task) GetExecutors() []*Executor {
 	if m != nil {
-		return m.Docker
+		return m.Executors
 	}
 	return nil
 }
 
-// Request listing of jobs tracked by server
-type JobListRequest struct {
-	// OPTIONAL
-	// The name of the project to search for pipelines. Caller must have READ access to this project.
-	ProjectID string `protobuf:"bytes,1,opt,name=projectID" json:"projectID,omitempty"`
-	// OPTIONAL
-	// Pipelines with names that match this prefix should be returned. If unspecified, all pipelines in the project, up to pageSize, will be returned.
-	NamePrefix string `protobuf:"bytes,2,opt,name=namePrefix" json:"namePrefix,omitempty"`
-	// OPTIONAL
-	// Number of pipelines to return at once. Defaults to 256, and max is 2048.
-	PageSize uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
-	// OPTIONAL
-	// Token to use to indicate where to start getting results. If unspecified, returns the first page of results.
-	PageToken string `protobuf:"bytes,4,opt,name=pageToken" json:"pageToken,omitempty"`
-}
-
-func (m *JobListRequest) Reset()                    { *m = JobListRequest{} }
-func (m *JobListRequest) String() string            { return proto.CompactTextString(m) }
-func (*JobListRequest) ProtoMessage()               {}
-func (*JobListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-func (m *JobListRequest) GetProjectID() string {
+func (m *Task) GetVolumes() []string {
 	if m != nil {
-		return m.ProjectID
-	}
-	return ""
-}
-
-func (m *JobListRequest) GetNamePrefix() string {
-	if m != nil {
-		return m.NamePrefix
-	}
-	return ""
-}
-
-func (m *JobListRequest) GetPageSize() uint32 {
-	if m != nil {
-		return m.PageSize
-	}
-	return 0
-}
-
-func (m *JobListRequest) GetPageToken() string {
-	if m != nil {
-		return m.PageToken
-	}
-	return ""
-}
-
-// Small description of tasks, returned by server during listing
-type TaskDesc struct {
-	// OPTIONAL
-	// user name for task
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// OPTIONAL
-	// parameter for execution engine to define/store group information
-	ProjectID string `protobuf:"bytes,2,opt,name=projectID" json:"projectID,omitempty"`
-	// OPTIONAL
-	// free text description of task
-	Description string `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
-}
-
-func (m *TaskDesc) Reset()                    { *m = TaskDesc{} }
-func (m *TaskDesc) String() string            { return proto.CompactTextString(m) }
-func (*TaskDesc) ProtoMessage()               {}
-func (*TaskDesc) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *TaskDesc) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *TaskDesc) GetProjectID() string {
-	if m != nil {
-		return m.ProjectID
-	}
-	return ""
-}
-
-func (m *TaskDesc) GetDescription() string {
-	if m != nil {
-		return m.Description
-	}
-	return ""
-}
-
-// Small description of jobs, returned by server during listing
-type JobDesc struct {
-	// REQUIRED
-	JobID string `protobuf:"bytes,1,opt,name=jobID" json:"jobID,omitempty"`
-	// REQUIRED
-	State State `protobuf:"varint,2,opt,name=state,enum=tes.State" json:"state,omitempty"`
-	// REQUIRED short description of task
-	Task *TaskDesc `protobuf:"bytes,3,opt,name=task" json:"task,omitempty"`
-}
-
-func (m *JobDesc) Reset()                    { *m = JobDesc{} }
-func (m *JobDesc) String() string            { return proto.CompactTextString(m) }
-func (*JobDesc) ProtoMessage()               {}
-func (*JobDesc) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
-
-func (m *JobDesc) GetJobID() string {
-	if m != nil {
-		return m.JobID
-	}
-	return ""
-}
-
-func (m *JobDesc) GetState() State {
-	if m != nil {
-		return m.State
-	}
-	return State_Unknown
-}
-
-func (m *JobDesc) GetTask() *TaskDesc {
-	if m != nil {
-		return m.Task
+		return m.Volumes
 	}
 	return nil
 }
 
-// Return envelope
-type JobListResponse struct {
-	Jobs          []*JobDesc `protobuf:"bytes,1,rep,name=jobs" json:"jobs,omitempty"`
-	NextPageToken string     `protobuf:"bytes,2,opt,name=nextPageToken" json:"nextPageToken,omitempty"`
-}
-
-func (m *JobListResponse) Reset()                    { *m = JobListResponse{} }
-func (m *JobListResponse) String() string            { return proto.CompactTextString(m) }
-func (*JobListResponse) ProtoMessage()               {}
-func (*JobListResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
-
-func (m *JobListResponse) GetJobs() []*JobDesc {
+func (m *Task) GetTags() map[string]string {
 	if m != nil {
-		return m.Jobs
+		return m.Tags
 	}
 	return nil
 }
 
-func (m *JobListResponse) GetNextPageToken() string {
-	if m != nil {
-		return m.NextPageToken
-	}
-	return ""
-}
-
-// ID of an instance of a Task
-type JobID struct {
-	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
-}
-
-func (m *JobID) Reset()                    { *m = JobID{} }
-func (m *JobID) String() string            { return proto.CompactTextString(m) }
-func (*JobID) ProtoMessage()               {}
-func (*JobID) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
-
-func (m *JobID) GetValue() string {
-	if m != nil {
-		return m.Value
-	}
-	return ""
-}
-
-type JobLog struct {
-	// The command line that was run
-	Cmd []string `protobuf:"bytes,1,rep,name=cmd" json:"cmd,omitempty"`
-	// When the command was executed
-	StartTime string `protobuf:"bytes,2,opt,name=startTime" json:"startTime,omitempty"`
-	// When the command completed
-	EndTime string `protobuf:"bytes,3,opt,name=endTime" json:"endTime,omitempty"`
-	// Sample of stdout (not guaranteed to be entire log)
-	Stdout string `protobuf:"bytes,4,opt,name=stdout" json:"stdout,omitempty"`
-	// Sample of stderr (not guaranteed to be entire log)
-	Stderr string `protobuf:"bytes,5,opt,name=stderr" json:"stderr,omitempty"`
-	// Exit code of the program
-	ExitCode int32 `protobuf:"varint,6,opt,name=exitCode" json:"exitCode,omitempty"`
-	// ip of worker host
-	HostIP string `protobuf:"bytes,7,opt,name=hostIP" json:"hostIP,omitempty"`
-	// ports bound from container to host
-	Ports []*Ports `protobuf:"bytes,8,rep,name=ports" json:"ports,omitempty"`
-}
-
-func (m *JobLog) Reset()                    { *m = JobLog{} }
-func (m *JobLog) String() string            { return proto.CompactTextString(m) }
-func (*JobLog) ProtoMessage()               {}
-func (*JobLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
-
-func (m *JobLog) GetCmd() []string {
-	if m != nil {
-		return m.Cmd
-	}
-	return nil
-}
-
-func (m *JobLog) GetStartTime() string {
-	if m != nil {
-		return m.StartTime
-	}
-	return ""
-}
-
-func (m *JobLog) GetEndTime() string {
-	if m != nil {
-		return m.EndTime
-	}
-	return ""
-}
-
-func (m *JobLog) GetStdout() string {
-	if m != nil {
-		return m.Stdout
-	}
-	return ""
-}
-
-func (m *JobLog) GetStderr() string {
-	if m != nil {
-		return m.Stderr
-	}
-	return ""
-}
-
-func (m *JobLog) GetExitCode() int32 {
-	if m != nil {
-		return m.ExitCode
-	}
-	return 0
-}
-
-func (m *JobLog) GetHostIP() string {
-	if m != nil {
-		return m.HostIP
-	}
-	return ""
-}
-
-func (m *JobLog) GetPorts() []*Ports {
-	if m != nil {
-		return m.Ports
-	}
-	return nil
-}
-
-// The description of the running instance of a task
-type Job struct {
-	JobID    string            `protobuf:"bytes,1,opt,name=jobID" json:"jobID,omitempty"`
-	Metadata map[string]string `protobuf:"bytes,2,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Task     *Task             `protobuf:"bytes,3,opt,name=task" json:"task,omitempty"`
-	State    State             `protobuf:"varint,4,opt,name=state,enum=tes.State" json:"state,omitempty"`
-	Logs     []*JobLog         `protobuf:"bytes,5,rep,name=logs" json:"logs,omitempty"`
-}
-
-func (m *Job) Reset()                    { *m = Job{} }
-func (m *Job) String() string            { return proto.CompactTextString(m) }
-func (*Job) ProtoMessage()               {}
-func (*Job) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
-
-func (m *Job) GetJobID() string {
-	if m != nil {
-		return m.JobID
-	}
-	return ""
-}
-
-func (m *Job) GetMetadata() map[string]string {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *Job) GetTask() *Task {
-	if m != nil {
-		return m.Task
-	}
-	return nil
-}
-
-func (m *Job) GetState() State {
-	if m != nil {
-		return m.State
-	}
-	return State_Unknown
-}
-
-func (m *Job) GetLogs() []*JobLog {
+func (m *Task) GetLogs() []*TaskLog {
 	if m != nil {
 		return m.Logs
 	}
 	return nil
 }
 
-// Blank request message for service request
+// TaskParameter describes input and output files for a Task.
+type TaskParameter struct {
+	// OPTIONAL
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// OPTIONAL
+	Description string `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
+	// REQUIRED
+	//
+	// URL in long term storage, for example:
+	// s3://my-object-store/file1
+	// gs://my-bucket/file2
+	// file:///path/to/my/file
+	// /path/to/my/file
+	// etc...
+	Url string `protobuf:"bytes,3,opt,name=url" json:"url,omitempty"`
+	// REQUIRED
+	//
+	// Path of the file inside the container.
+	Path string `protobuf:"bytes,4,opt,name=path" json:"path,omitempty"`
+	// REQUIRED
+	//
+	// Type of the file, FILE or DIRECTORY
+	Type FileType `protobuf:"varint,5,opt,name=type,enum=tes.FileType" json:"type,omitempty"`
+	// OPTIONAL
+	//
+	// File contents literal.
+	// Implementations should support a minimum of 128 KiB in this field and may define its own maximum.
+	// UTF-8 encoded
+	Contents string `protobuf:"bytes,6,opt,name=contents" json:"contents,omitempty"`
+}
+
+func (m *TaskParameter) Reset()                    { *m = TaskParameter{} }
+func (m *TaskParameter) String() string            { return proto.CompactTextString(m) }
+func (*TaskParameter) ProtoMessage()               {}
+func (*TaskParameter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *TaskParameter) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetUrl() string {
+	if m != nil {
+		return m.Url
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *TaskParameter) GetType() FileType {
+	if m != nil {
+		return m.Type
+	}
+	return FileType_FILE
+}
+
+func (m *TaskParameter) GetContents() string {
+	if m != nil {
+		return m.Contents
+	}
+	return ""
+}
+
+// Ports describes the port mapping between the container and host.
+type Ports struct {
+	// REQUIRED
+	//
+	// Port number opened inside the container.
+	Container uint32 `protobuf:"varint,1,opt,name=container" json:"container,omitempty"`
+	// OPTIONAL
+	//
+	// Port number opened on the host. Must be greater than 1024.
+	// Defaults to 0, which assigns a random port on the host.
+	Host uint32 `protobuf:"varint,2,opt,name=host" json:"host,omitempty"`
+}
+
+func (m *Ports) Reset()                    { *m = Ports{} }
+func (m *Ports) String() string            { return proto.CompactTextString(m) }
+func (*Ports) ProtoMessage()               {}
+func (*Ports) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *Ports) GetContainer() uint32 {
+	if m != nil {
+		return m.Container
+	}
+	return 0
+}
+
+func (m *Ports) GetHost() uint32 {
+	if m != nil {
+		return m.Host
+	}
+	return 0
+}
+
+// Executor describes a command to run, and its environment.
+type Executor struct {
+	// REQUIRED
+	//
+	// Name of the container image, for example:
+	// ubuntu
+	// quay.io/aptible/ubuntu
+	// gcr.io/my-org/my-image
+	// etc...
+	ImageName string `protobuf:"bytes,1,opt,name=image_name,json=imageName" json:"image_name,omitempty"`
+	// REQUIRED
+	//
+	// The command to be executed.
+	Cmd []string `protobuf:"bytes,2,rep,name=cmd" json:"cmd,omitempty"`
+	// OPTIONAL
+	//
+	// The working directory that the command will be executed in.
+	// Defaults to the directory set by the container image.
+	Workdir string `protobuf:"bytes,3,opt,name=workdir" json:"workdir,omitempty"`
+	// OPTIONAL
+	//
+	// Path inside the container to a file which will be piped
+	// to the command's stdin.
+	Stdin string `protobuf:"bytes,6,opt,name=stdin" json:"stdin,omitempty"`
+	// OPTIONAL
+	//
+	// Path inside the container to a file where the command's
+	// stdout will be written to.
+	Stdout string `protobuf:"bytes,4,opt,name=stdout" json:"stdout,omitempty"`
+	// OPTIONAL
+	//
+	// Path inside the container to a file where the command's
+	// stderr will be written to.
+	Stderr string `protobuf:"bytes,5,opt,name=stderr" json:"stderr,omitempty"`
+	// OPTIONAL
+	//
+	// Port to expose from within the container, blank if none.
+	Ports []*Ports `protobuf:"bytes,7,rep,name=ports" json:"ports,omitempty"`
+	// OPTIONAL
+	//
+	// Enviromental variables to set within the container.
+	Environ map[string]string `protobuf:"bytes,8,rep,name=environ" json:"environ,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+}
+
+func (m *Executor) Reset()                    { *m = Executor{} }
+func (m *Executor) String() string            { return proto.CompactTextString(m) }
+func (*Executor) ProtoMessage()               {}
+func (*Executor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *Executor) GetImageName() string {
+	if m != nil {
+		return m.ImageName
+	}
+	return ""
+}
+
+func (m *Executor) GetCmd() []string {
+	if m != nil {
+		return m.Cmd
+	}
+	return nil
+}
+
+func (m *Executor) GetWorkdir() string {
+	if m != nil {
+		return m.Workdir
+	}
+	return ""
+}
+
+func (m *Executor) GetStdin() string {
+	if m != nil {
+		return m.Stdin
+	}
+	return ""
+}
+
+func (m *Executor) GetStdout() string {
+	if m != nil {
+		return m.Stdout
+	}
+	return ""
+}
+
+func (m *Executor) GetStderr() string {
+	if m != nil {
+		return m.Stderr
+	}
+	return ""
+}
+
+func (m *Executor) GetPorts() []*Ports {
+	if m != nil {
+		return m.Ports
+	}
+	return nil
+}
+
+func (m *Executor) GetEnviron() map[string]string {
+	if m != nil {
+		return m.Environ
+	}
+	return nil
+}
+
+// Resources describes the resources requested by a task.
+type Resources struct {
+	// OPTIONAL
+	//
+	// Requested number of CPUs
+	CpuCores uint32 `protobuf:"varint,1,opt,name=cpu_cores,json=cpuCores" json:"cpu_cores,omitempty"`
+	// OPTIONAL
+	//
+	// Is the task allowed to run on preemptible compute instances (e.g. AWS Spot)?
+	Preemptible bool `protobuf:"varint,2,opt,name=preemptible" json:"preemptible,omitempty"`
+	// OPTIONAL
+	//
+	// Requested RAM required in gigabytes (GB)
+	RamGb float64 `protobuf:"fixed64,3,opt,name=ram_gb,json=ramGb" json:"ram_gb,omitempty"`
+	// OPTIONAL
+	//
+	// Requested disk size in gigabytes (GB)
+	SizeGb float64 `protobuf:"fixed64,4,opt,name=size_gb,json=sizeGb" json:"size_gb,omitempty"`
+	// OPTIONAL
+	//
+	// Request that the task be run in these compute zones.
+	Zones []string `protobuf:"bytes,5,rep,name=zones" json:"zones,omitempty"`
+}
+
+func (m *Resources) Reset()                    { *m = Resources{} }
+func (m *Resources) String() string            { return proto.CompactTextString(m) }
+func (*Resources) ProtoMessage()               {}
+func (*Resources) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *Resources) GetCpuCores() uint32 {
+	if m != nil {
+		return m.CpuCores
+	}
+	return 0
+}
+
+func (m *Resources) GetPreemptible() bool {
+	if m != nil {
+		return m.Preemptible
+	}
+	return false
+}
+
+func (m *Resources) GetRamGb() float64 {
+	if m != nil {
+		return m.RamGb
+	}
+	return 0
+}
+
+func (m *Resources) GetSizeGb() float64 {
+	if m != nil {
+		return m.SizeGb
+	}
+	return 0
+}
+
+func (m *Resources) GetZones() []string {
+	if m != nil {
+		return m.Zones
+	}
+	return nil
+}
+
+// OUTPUT ONLY
+//
+// TaskLog describes logging information related to a Task.
+type TaskLog struct {
+	// REQUIRED
+	//
+	// Logs for each executor
+	Logs []*ExecutorLog `protobuf:"bytes,1,rep,name=logs" json:"logs,omitempty"`
+	// OPTIONAL
+	//
+	// Arbitrary logging metadata included by the implementation.
+	Metadata map[string]string `protobuf:"bytes,2,rep,name=metadata" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// OPTIONAL
+	//
+	// When the task started, in RFC 3339 format.
+	StartTime string `protobuf:"bytes,3,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
+	// OPTIONAL
+	//
+	// When the task ended, in RFC 3339 format.
+	EndTime string `protobuf:"bytes,4,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
+	// REQUIRED
+	//
+	// Information about all output files. Directory outputs are
+	// flattened into separate items.
+	Outputs []*OutputFileLog `protobuf:"bytes,5,rep,name=outputs" json:"outputs,omitempty"`
+}
+
+func (m *TaskLog) Reset()                    { *m = TaskLog{} }
+func (m *TaskLog) String() string            { return proto.CompactTextString(m) }
+func (*TaskLog) ProtoMessage()               {}
+func (*TaskLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *TaskLog) GetLogs() []*ExecutorLog {
+	if m != nil {
+		return m.Logs
+	}
+	return nil
+}
+
+func (m *TaskLog) GetMetadata() map[string]string {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *TaskLog) GetStartTime() string {
+	if m != nil {
+		return m.StartTime
+	}
+	return ""
+}
+
+func (m *TaskLog) GetEndTime() string {
+	if m != nil {
+		return m.EndTime
+	}
+	return ""
+}
+
+func (m *TaskLog) GetOutputs() []*OutputFileLog {
+	if m != nil {
+		return m.Outputs
+	}
+	return nil
+}
+
+// OUTPUT ONLY
+//
+// ExecutorLog describes logging information related to an Executor.
+type ExecutorLog struct {
+	// OPTIONAL
+	//
+	// Time the executor started, in RFC 3339 format.
+	StartTime string `protobuf:"bytes,2,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
+	// OPTIONAL
+	//
+	// Time the executor ended, in RFC 3339 format.
+	EndTime string `protobuf:"bytes,3,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
+	// OPTIONAL
+	//
+	// Stdout tail.
+	// This is not guaranteed to be the entire log.
+	// Implementations determine the maximum size.
+	Stdout string `protobuf:"bytes,4,opt,name=stdout" json:"stdout,omitempty"`
+	// OPTIONAL
+	//
+	// Stderr tail.
+	// This is not guaranteed to be the entire log.
+	// Implementations determine the maximum size.
+	Stderr string `protobuf:"bytes,5,opt,name=stderr" json:"stderr,omitempty"`
+	// REQUIRED
+	//
+	// Exit code.
+	ExitCode int32 `protobuf:"varint,6,opt,name=exit_code,json=exitCode" json:"exit_code,omitempty"`
+	// OPTIONAL
+	//
+	// IP address of host.
+	HostIp string `protobuf:"bytes,7,opt,name=host_ip,json=hostIp" json:"host_ip,omitempty"`
+	// OPTIONAL
+	//
+	// Ports mapped between the container and host.
+	Ports []*Ports `protobuf:"bytes,8,rep,name=ports" json:"ports,omitempty"`
+}
+
+func (m *ExecutorLog) Reset()                    { *m = ExecutorLog{} }
+func (m *ExecutorLog) String() string            { return proto.CompactTextString(m) }
+func (*ExecutorLog) ProtoMessage()               {}
+func (*ExecutorLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+func (m *ExecutorLog) GetStartTime() string {
+	if m != nil {
+		return m.StartTime
+	}
+	return ""
+}
+
+func (m *ExecutorLog) GetEndTime() string {
+	if m != nil {
+		return m.EndTime
+	}
+	return ""
+}
+
+func (m *ExecutorLog) GetStdout() string {
+	if m != nil {
+		return m.Stdout
+	}
+	return ""
+}
+
+func (m *ExecutorLog) GetStderr() string {
+	if m != nil {
+		return m.Stderr
+	}
+	return ""
+}
+
+func (m *ExecutorLog) GetExitCode() int32 {
+	if m != nil {
+		return m.ExitCode
+	}
+	return 0
+}
+
+func (m *ExecutorLog) GetHostIp() string {
+	if m != nil {
+		return m.HostIp
+	}
+	return ""
+}
+
+func (m *ExecutorLog) GetPorts() []*Ports {
+	if m != nil {
+		return m.Ports
+	}
+	return nil
+}
+
+// OUTPUT ONLY
+//
+// OutputFileLog describes a single output file. This describes
+// file details after the task has completed successfully,
+// for logging purposes.
+type OutputFileLog struct {
+	// REQUIRED
+	//
+	// URL of the file in storage, e.g. s3://bucket/file.txt
+	Url string `protobuf:"bytes,1,opt,name=url" json:"url,omitempty"`
+	// REQUIRED
+	//
+	// Path of the file inside the container.
+	Path string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
+	// REQUIRED
+	//
+	// Size of the file in bytes.
+	SizeBytes int64 `protobuf:"varint,3,opt,name=size_bytes,json=sizeBytes" json:"size_bytes,omitempty"`
+}
+
+func (m *OutputFileLog) Reset()                    { *m = OutputFileLog{} }
+func (m *OutputFileLog) String() string            { return proto.CompactTextString(m) }
+func (*OutputFileLog) ProtoMessage()               {}
+func (*OutputFileLog) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *OutputFileLog) GetUrl() string {
+	if m != nil {
+		return m.Url
+	}
+	return ""
+}
+
+func (m *OutputFileLog) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *OutputFileLog) GetSizeBytes() int64 {
+	if m != nil {
+		return m.SizeBytes
+	}
+	return 0
+}
+
+// OUTPUT ONLY
+//
+// CreateTaskResponse describes a response from the CreateTask endpoint.
+type CreateTaskResponse struct {
+	// REQUIRED
+	//
+	// Task identifier assigned by the server.
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+}
+
+func (m *CreateTaskResponse) Reset()                    { *m = CreateTaskResponse{} }
+func (m *CreateTaskResponse) String() string            { return proto.CompactTextString(m) }
+func (*CreateTaskResponse) ProtoMessage()               {}
+func (*CreateTaskResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *CreateTaskResponse) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+// GetTaskRequest describes a request to the GetTask endpoint.
+type GetTaskRequest struct {
+	// REQUIRED
+	//
+	// Task identifier.
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	// OPTIONAL
+	//
+	// Affects the fields included in the returned Task messages.
+	// See TaskView below.
+	View TaskView `protobuf:"varint,2,opt,name=view,enum=tes.TaskView" json:"view,omitempty"`
+}
+
+func (m *GetTaskRequest) Reset()                    { *m = GetTaskRequest{} }
+func (m *GetTaskRequest) String() string            { return proto.CompactTextString(m) }
+func (*GetTaskRequest) ProtoMessage()               {}
+func (*GetTaskRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+
+func (m *GetTaskRequest) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *GetTaskRequest) GetView() TaskView {
+	if m != nil {
+		return m.View
+	}
+	return TaskView_MINIMAL
+}
+
+// ListTasksRequest describes a request to the ListTasks service endpoint.
+type ListTasksRequest struct {
+	// OPTIONAL
+	//
+	// Filter the task list to include tasks in this project.
+	Project string `protobuf:"bytes,1,opt,name=project" json:"project,omitempty"`
+	// OPTIONAL
+	//
+	// Filter the list to include tasks where the name matches this prefix.
+	// If unspecified, no task name filtering is done.
+	NamePrefix string `protobuf:"bytes,2,opt,name=name_prefix,json=namePrefix" json:"name_prefix,omitempty"`
+	// OPTIONAL
+	//
+	// Number of tasks to return in one page.
+	// Must be less than 2048. Defaults to 256.
+	PageSize uint32 `protobuf:"varint,3,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
+	// OPTIONAL
+	//
+	// Page token is used to retrieve the next page of results.
+	// If unspecified, returns the first page of results.
+	// See ListTasksResponse.next_page_token
+	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
+	// OPTIONAL
+	//
+	// Affects the fields included in the returned Task messages.
+	// See TaskView below.
+	View TaskView `protobuf:"varint,5,opt,name=view,enum=tes.TaskView" json:"view,omitempty"`
+}
+
+func (m *ListTasksRequest) Reset()                    { *m = ListTasksRequest{} }
+func (m *ListTasksRequest) String() string            { return proto.CompactTextString(m) }
+func (*ListTasksRequest) ProtoMessage()               {}
+func (*ListTasksRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+
+func (m *ListTasksRequest) GetProject() string {
+	if m != nil {
+		return m.Project
+	}
+	return ""
+}
+
+func (m *ListTasksRequest) GetNamePrefix() string {
+	if m != nil {
+		return m.NamePrefix
+	}
+	return ""
+}
+
+func (m *ListTasksRequest) GetPageSize() uint32 {
+	if m != nil {
+		return m.PageSize
+	}
+	return 0
+}
+
+func (m *ListTasksRequest) GetPageToken() string {
+	if m != nil {
+		return m.PageToken
+	}
+	return ""
+}
+
+func (m *ListTasksRequest) GetView() TaskView {
+	if m != nil {
+		return m.View
+	}
+	return TaskView_MINIMAL
+}
+
+// OUTPUT ONLY
+//
+// ListTasksResponse describes a response from the ListTasks endpoint.
+type ListTasksResponse struct {
+	// REQUIRED
+	//
+	// List of lightweight task descriptions.
+	Tasks []*Task `protobuf:"bytes,1,rep,name=tasks" json:"tasks,omitempty"`
+	// OPTIONAL
+	//
+	// Token used to return the next page of results.
+	// See TaskListRequest.next_page_token
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
+}
+
+func (m *ListTasksResponse) Reset()                    { *m = ListTasksResponse{} }
+func (m *ListTasksResponse) String() string            { return proto.CompactTextString(m) }
+func (*ListTasksResponse) ProtoMessage()               {}
+func (*ListTasksResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+
+func (m *ListTasksResponse) GetTasks() []*Task {
+	if m != nil {
+		return m.Tasks
+	}
+	return nil
+}
+
+func (m *ListTasksResponse) GetNextPageToken() string {
+	if m != nil {
+		return m.NextPageToken
+	}
+	return ""
+}
+
+// CancelTaskRequest describes a request to the CancelTask endpoint.
+type CancelTaskRequest struct {
+	// REQUIRED
+	//
+	// Task identifier.
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+}
+
+func (m *CancelTaskRequest) Reset()                    { *m = CancelTaskRequest{} }
+func (m *CancelTaskRequest) String() string            { return proto.CompactTextString(m) }
+func (*CancelTaskRequest) ProtoMessage()               {}
+func (*CancelTaskRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+
+func (m *CancelTaskRequest) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+// OUTPUT ONLY
+//
+// CancelTaskResponse describes a response from the CancelTask endpoint.
+type CancelTaskResponse struct {
+}
+
+func (m *CancelTaskResponse) Reset()                    { *m = CancelTaskResponse{} }
+func (m *CancelTaskResponse) String() string            { return proto.CompactTextString(m) }
+func (*CancelTaskResponse) ProtoMessage()               {}
+func (*CancelTaskResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+
+// ServiceInfoRequest describes a request to the ServiceInfo endpoint.
 type ServiceInfoRequest struct {
 }
 
 func (m *ServiceInfoRequest) Reset()                    { *m = ServiceInfoRequest{} }
 func (m *ServiceInfoRequest) String() string            { return proto.CompactTextString(m) }
 func (*ServiceInfoRequest) ProtoMessage()               {}
-func (*ServiceInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+func (*ServiceInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
 
-// Information about Task Execution Service
-// May include information related (but not limited to)
-// resource availability and storage system information
+// OUTPUT ONLY
+//
+// ServiceInfo describes information about the service,
+// such as storage details, resource availability,
+// and other documentation.
 type ServiceInfo struct {
-	// System specific key/value pairs
-	// Example for a shared file system based storage system:
-	// storageType=sharedFile, baseDir=/path/to/shared/directory
-	StorageConfig map[string]string `protobuf:"bytes,1,rep,name=storageConfig" json:"storageConfig,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Returns the name of the service, e.g. "ohsu-compbio-funnel".
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Returns a documentation string, e.g. "Hey, we're OHSU Comp. Bio!".
+	Doc string `protobuf:"bytes,2,opt,name=doc" json:"doc,omitempty"`
+	// Lists some, but not necessarily all, storage locations supported by the service.
+	//
+	// Must be in a valid URL format.
+	// e.g.
+	// file:///path/to/local/funnel-storage
+	// s3://ohsu-compbio-funnel/storage
+	// etc.
+	Storage []string `protobuf:"bytes,3,rep,name=storage" json:"storage,omitempty"`
 }
 
 func (m *ServiceInfo) Reset()                    { *m = ServiceInfo{} }
 func (m *ServiceInfo) String() string            { return proto.CompactTextString(m) }
 func (*ServiceInfo) ProtoMessage()               {}
-func (*ServiceInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+func (*ServiceInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
 
-func (m *ServiceInfo) GetStorageConfig() map[string]string {
+func (m *ServiceInfo) GetName() string {
 	if m != nil {
-		return m.StorageConfig
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ServiceInfo) GetDoc() string {
+	if m != nil {
+		return m.Doc
+	}
+	return ""
+}
+
+func (m *ServiceInfo) GetStorage() []string {
+	if m != nil {
+		return m.Storage
 	}
 	return nil
 }
 
 func init() {
+	proto.RegisterType((*Task)(nil), "tes.Task")
 	proto.RegisterType((*TaskParameter)(nil), "tes.TaskParameter")
 	proto.RegisterType((*Ports)(nil), "tes.Ports")
-	proto.RegisterType((*DockerExecutor)(nil), "tes.DockerExecutor")
-	proto.RegisterType((*Volume)(nil), "tes.Volume")
+	proto.RegisterType((*Executor)(nil), "tes.Executor")
 	proto.RegisterType((*Resources)(nil), "tes.Resources")
-	proto.RegisterType((*Task)(nil), "tes.Task")
-	proto.RegisterType((*JobListRequest)(nil), "tes.JobListRequest")
-	proto.RegisterType((*TaskDesc)(nil), "tes.TaskDesc")
-	proto.RegisterType((*JobDesc)(nil), "tes.JobDesc")
-	proto.RegisterType((*JobListResponse)(nil), "tes.JobListResponse")
-	proto.RegisterType((*JobID)(nil), "tes.JobID")
-	proto.RegisterType((*JobLog)(nil), "tes.JobLog")
-	proto.RegisterType((*Job)(nil), "tes.Job")
+	proto.RegisterType((*TaskLog)(nil), "tes.TaskLog")
+	proto.RegisterType((*ExecutorLog)(nil), "tes.ExecutorLog")
+	proto.RegisterType((*OutputFileLog)(nil), "tes.OutputFileLog")
+	proto.RegisterType((*CreateTaskResponse)(nil), "tes.CreateTaskResponse")
+	proto.RegisterType((*GetTaskRequest)(nil), "tes.GetTaskRequest")
+	proto.RegisterType((*ListTasksRequest)(nil), "tes.ListTasksRequest")
+	proto.RegisterType((*ListTasksResponse)(nil), "tes.ListTasksResponse")
+	proto.RegisterType((*CancelTaskRequest)(nil), "tes.CancelTaskRequest")
+	proto.RegisterType((*CancelTaskResponse)(nil), "tes.CancelTaskResponse")
 	proto.RegisterType((*ServiceInfoRequest)(nil), "tes.ServiceInfoRequest")
 	proto.RegisterType((*ServiceInfo)(nil), "tes.ServiceInfo")
+	proto.RegisterEnum("tes.FileType", FileType_name, FileType_value)
 	proto.RegisterEnum("tes.State", State_name, State_value)
+	proto.RegisterEnum("tes.TaskView", TaskView_name, TaskView_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -833,16 +1057,20 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for TaskService service
 
 type TaskServiceClient interface {
-	// Get Service Info
+	// GetServiceInfo provides information about the service,
+	// such as storage details, resource availability, and
+	// other documentation.
 	GetServiceInfo(ctx context.Context, in *ServiceInfoRequest, opts ...grpc.CallOption) (*ServiceInfo, error)
-	// Run a task
-	RunTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*JobID, error)
-	// List the TaskOps
-	ListJobs(ctx context.Context, in *JobListRequest, opts ...grpc.CallOption) (*JobListResponse, error)
-	// Get info about a running task
-	GetJob(ctx context.Context, in *JobID, opts ...grpc.CallOption) (*Job, error)
-	// Cancel a running task
-	CancelJob(ctx context.Context, in *JobID, opts ...grpc.CallOption) (*JobID, error)
+	// Create a new task.
+	CreateTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*CreateTaskResponse, error)
+	// List tasks.
+	// TaskView is requested as such: "v1/tasks?view=BASIC"
+	ListTasks(ctx context.Context, in *ListTasksRequest, opts ...grpc.CallOption) (*ListTasksResponse, error)
+	// Get a task.
+	// TaskView is requested as such: "v1/tasks/{id}?view=FULL"
+	GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*Task, error)
+	// Cancel a task.
+	CancelTask(ctx context.Context, in *CancelTaskRequest, opts ...grpc.CallOption) (*CancelTaskResponse, error)
 }
 
 type taskServiceClient struct {
@@ -862,36 +1090,36 @@ func (c *taskServiceClient) GetServiceInfo(ctx context.Context, in *ServiceInfoR
 	return out, nil
 }
 
-func (c *taskServiceClient) RunTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*JobID, error) {
-	out := new(JobID)
-	err := grpc.Invoke(ctx, "/tes.TaskService/RunTask", in, out, c.cc, opts...)
+func (c *taskServiceClient) CreateTask(ctx context.Context, in *Task, opts ...grpc.CallOption) (*CreateTaskResponse, error) {
+	out := new(CreateTaskResponse)
+	err := grpc.Invoke(ctx, "/tes.TaskService/CreateTask", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) ListJobs(ctx context.Context, in *JobListRequest, opts ...grpc.CallOption) (*JobListResponse, error) {
-	out := new(JobListResponse)
-	err := grpc.Invoke(ctx, "/tes.TaskService/ListJobs", in, out, c.cc, opts...)
+func (c *taskServiceClient) ListTasks(ctx context.Context, in *ListTasksRequest, opts ...grpc.CallOption) (*ListTasksResponse, error) {
+	out := new(ListTasksResponse)
+	err := grpc.Invoke(ctx, "/tes.TaskService/ListTasks", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) GetJob(ctx context.Context, in *JobID, opts ...grpc.CallOption) (*Job, error) {
-	out := new(Job)
-	err := grpc.Invoke(ctx, "/tes.TaskService/GetJob", in, out, c.cc, opts...)
+func (c *taskServiceClient) GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*Task, error) {
+	out := new(Task)
+	err := grpc.Invoke(ctx, "/tes.TaskService/GetTask", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) CancelJob(ctx context.Context, in *JobID, opts ...grpc.CallOption) (*JobID, error) {
-	out := new(JobID)
-	err := grpc.Invoke(ctx, "/tes.TaskService/CancelJob", in, out, c.cc, opts...)
+func (c *taskServiceClient) CancelTask(ctx context.Context, in *CancelTaskRequest, opts ...grpc.CallOption) (*CancelTaskResponse, error) {
+	out := new(CancelTaskResponse)
+	err := grpc.Invoke(ctx, "/tes.TaskService/CancelTask", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -901,16 +1129,20 @@ func (c *taskServiceClient) CancelJob(ctx context.Context, in *JobID, opts ...gr
 // Server API for TaskService service
 
 type TaskServiceServer interface {
-	// Get Service Info
+	// GetServiceInfo provides information about the service,
+	// such as storage details, resource availability, and
+	// other documentation.
 	GetServiceInfo(context.Context, *ServiceInfoRequest) (*ServiceInfo, error)
-	// Run a task
-	RunTask(context.Context, *Task) (*JobID, error)
-	// List the TaskOps
-	ListJobs(context.Context, *JobListRequest) (*JobListResponse, error)
-	// Get info about a running task
-	GetJob(context.Context, *JobID) (*Job, error)
-	// Cancel a running task
-	CancelJob(context.Context, *JobID) (*JobID, error)
+	// Create a new task.
+	CreateTask(context.Context, *Task) (*CreateTaskResponse, error)
+	// List tasks.
+	// TaskView is requested as such: "v1/tasks?view=BASIC"
+	ListTasks(context.Context, *ListTasksRequest) (*ListTasksResponse, error)
+	// Get a task.
+	// TaskView is requested as such: "v1/tasks/{id}?view=FULL"
+	GetTask(context.Context, *GetTaskRequest) (*Task, error)
+	// Cancel a task.
+	CancelTask(context.Context, *CancelTaskRequest) (*CancelTaskResponse, error)
 }
 
 func RegisterTaskServiceServer(s *grpc.Server, srv TaskServiceServer) {
@@ -935,74 +1167,74 @@ func _TaskService_GetServiceInfo_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_RunTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TaskService_CreateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Task)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).RunTask(ctx, in)
+		return srv.(TaskServiceServer).CreateTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tes.TaskService/RunTask",
+		FullMethod: "/tes.TaskService/CreateTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).RunTask(ctx, req.(*Task))
+		return srv.(TaskServiceServer).CreateTask(ctx, req.(*Task))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_ListJobs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(JobListRequest)
+func _TaskService_ListTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTasksRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).ListJobs(ctx, in)
+		return srv.(TaskServiceServer).ListTasks(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tes.TaskService/ListJobs",
+		FullMethod: "/tes.TaskService/ListTasks",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).ListJobs(ctx, req.(*JobListRequest))
+		return srv.(TaskServiceServer).ListTasks(ctx, req.(*ListTasksRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_GetJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(JobID)
+func _TaskService_GetTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).GetJob(ctx, in)
+		return srv.(TaskServiceServer).GetTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tes.TaskService/GetJob",
+		FullMethod: "/tes.TaskService/GetTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).GetJob(ctx, req.(*JobID))
+		return srv.(TaskServiceServer).GetTask(ctx, req.(*GetTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_CancelJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(JobID)
+func _TaskService_CancelTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).CancelJob(ctx, in)
+		return srv.(TaskServiceServer).CancelTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tes.TaskService/CancelJob",
+		FullMethod: "/tes.TaskService/CancelTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).CancelJob(ctx, req.(*JobID))
+		return srv.(TaskServiceServer).CancelTask(ctx, req.(*CancelTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1016,20 +1248,20 @@ var _TaskService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _TaskService_GetServiceInfo_Handler,
 		},
 		{
-			MethodName: "RunTask",
-			Handler:    _TaskService_RunTask_Handler,
+			MethodName: "CreateTask",
+			Handler:    _TaskService_CreateTask_Handler,
 		},
 		{
-			MethodName: "ListJobs",
-			Handler:    _TaskService_ListJobs_Handler,
+			MethodName: "ListTasks",
+			Handler:    _TaskService_ListTasks_Handler,
 		},
 		{
-			MethodName: "GetJob",
-			Handler:    _TaskService_GetJob_Handler,
+			MethodName: "GetTask",
+			Handler:    _TaskService_GetTask_Handler,
 		},
 		{
-			MethodName: "CancelJob",
-			Handler:    _TaskService_CancelJob_Handler,
+			MethodName: "CancelTask",
+			Handler:    _TaskService_CancelTask_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1039,81 +1271,90 @@ var _TaskService_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("tes.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 1209 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0x4d, 0x6f, 0x1c, 0x45,
-	0x13, 0x7e, 0x67, 0x77, 0x67, 0x3f, 0x6a, 0xb3, 0xf6, 0xaa, 0x5f, 0x93, 0x0c, 0x2b, 0x93, 0x58,
-	0x03, 0x07, 0x13, 0x12, 0xaf, 0x62, 0x10, 0x84, 0x20, 0x21, 0x24, 0x3b, 0xb2, 0x6c, 0x25, 0x68,
-	0x69, 0x27, 0x1c, 0x89, 0x7a, 0x67, 0x2a, 0x93, 0xc9, 0xee, 0x74, 0x0f, 0xdd, 0x3d, 0x8e, 0x6d,
-	0xe0, 0x02, 0x17, 0xee, 0xdc, 0xb9, 0x20, 0xf1, 0x37, 0xb8, 0x70, 0xe6, 0x82, 0xf8, 0x07, 0xf9,
-	0x21, 0xa8, 0x7b, 0x7a, 0xbf, 0xbc, 0xeb, 0x28, 0x39, 0x70, 0xeb, 0xaa, 0xae, 0xaa, 0xae, 0x7a,
-	0x9e, 0xaa, 0x9a, 0x81, 0x96, 0x46, 0xb5, 0x93, 0x4b, 0xa1, 0x05, 0x59, 0x4f, 0xd8, 0x47, 0xc9,
-	0xb3, 0x27, 0x9a, 0xa9, 0xd1, 0x13, 0x3c, 0xc5, 0xa8, 0xb7, 0x99, 0x08, 0x91, 0x8c, 0xb1, 0xcf,
-	0xf2, 0xb4, 0xcf, 0x38, 0x17, 0x9a, 0xe9, 0x54, 0x70, 0x67, 0x1e, 0xfe, 0xe6, 0x41, 0xe7, 0x11,
-	0x53, 0xa3, 0x01, 0x93, 0x2c, 0x43, 0x8d, 0x92, 0x10, 0xa8, 0x71, 0x96, 0x61, 0xe0, 0x6d, 0x79,
-	0xdb, 0x2d, 0x6a, 0xcf, 0x64, 0x0b, 0xda, 0x31, 0xaa, 0x48, 0xa6, 0xb9, 0xf1, 0x0d, 0x2a, 0xf6,
-	0x6a, 0x5e, 0x45, 0x7a, 0xd0, 0x1c, 0x8b, 0xc8, 0x86, 0x0e, 0xaa, 0xf6, 0x7a, 0x2a, 0x9b, 0x88,
-	0x39, 0xd3, 0xcf, 0x82, 0x5a, 0x19, 0xd1, 0x9c, 0xc9, 0x06, 0xf8, 0xd1, 0x98, 0x29, 0x15, 0xf8,
-	0x56, 0x59, 0x0a, 0xe4, 0x2a, 0xd4, 0x23, 0x89, 0x4c, 0x63, 0x50, 0xdf, 0xf2, 0xb6, 0x9b, 0xd4,
-	0x49, 0xe1, 0xa7, 0xe0, 0x0f, 0x84, 0xd4, 0x8a, 0x6c, 0x42, 0x2b, 0x12, 0x5c, 0xb3, 0x94, 0xa3,
-	0xb4, 0x19, 0xfa, 0x74, 0xa6, 0x30, 0x0f, 0x3d, 0x13, 0x4a, 0xdb, 0xfc, 0x7c, 0x6a, 0xcf, 0xe1,
-	0x5f, 0x1e, 0xac, 0xed, 0x8b, 0x68, 0x84, 0xf2, 0xfe, 0x29, 0x46, 0x85, 0x16, 0xd2, 0x04, 0x49,
-	0x33, 0x96, 0xe0, 0x97, 0xb3, 0x32, 0x67, 0x0a, 0xd2, 0x85, 0x6a, 0x94, 0xc5, 0x41, 0x65, 0xab,
-	0xba, 0xdd, 0xa2, 0xe6, 0x48, 0x02, 0x68, 0xbc, 0x10, 0x72, 0x14, 0xa7, 0xd2, 0x95, 0x36, 0x11,
-	0x4d, 0x15, 0x4a, 0xc7, 0x29, 0xb7, 0xe9, 0xb6, 0x68, 0x29, 0x98, 0x2a, 0x94, 0x8e, 0x45, 0xa1,
-	0x5d, 0xc5, 0x4e, 0x72, 0x7a, 0x94, 0xd2, 0x15, 0xed, 0x24, 0x72, 0x0b, 0xfc, 0xdc, 0x54, 0x17,
-	0x34, 0xb6, 0xaa, 0xdb, 0xed, 0xdd, 0xab, 0x3b, 0x17, 0x28, 0xdc, 0xb1, 0xb5, 0xd3, 0xd2, 0x28,
-	0xfc, 0xd9, 0x83, 0xfa, 0xd7, 0x62, 0x5c, 0x64, 0xb8, 0x92, 0x2a, 0xf3, 0x48, 0x7a, 0x8e, 0x07,
-	0x43, 0x8b, 0x82, 0x47, 0x9d, 0x64, 0xf5, 0xa2, 0x90, 0x11, 0xba, 0x1a, 0x9c, 0x44, 0xae, 0x03,
-	0x64, 0xa2, 0xe0, 0x7a, 0x20, 0x52, 0xae, 0x5d, 0x1d, 0x73, 0x1a, 0x43, 0xac, 0x44, 0x16, 0x0b,
-	0x3e, 0x3e, 0x0b, 0x1a, 0x96, 0x94, 0xa9, 0x1c, 0xfe, 0xe9, 0x41, 0x8b, 0x62, 0x19, 0x48, 0x91,
-	0x6d, 0x58, 0xcf, 0x52, 0x9e, 0x66, 0x45, 0xb6, 0x97, 0x17, 0x7b, 0x42, 0xa2, 0xb2, 0x89, 0x75,
-	0xe8, 0x45, 0xb5, 0x69, 0xa7, 0x5c, 0x22, 0x66, 0xb9, 0x4e, 0x87, 0x63, 0xb4, 0x89, 0x36, 0xe9,
-	0xbc, 0x8a, 0x84, 0x70, 0xc5, 0x39, 0x51, 0x96, 0x1d, 0x0c, 0x6d, 0xce, 0x1e, 0x5d, 0xd0, 0x91,
-	0x3b, 0xd0, 0x38, 0xb1, 0x38, 0xa8, 0xa0, 0x66, 0x81, 0xbb, 0xb6, 0x04, 0x5c, 0x89, 0x13, 0x9d,
-	0xd8, 0x19, 0xbe, 0xce, 0x05, 0x47, 0xd3, 0x75, 0x86, 0xdd, 0x52, 0x08, 0xff, 0xa8, 0x40, 0xcd,
-	0xcc, 0xc0, 0x4a, 0x3c, 0x37, 0xa1, 0x95, 0x4b, 0xf1, 0x1c, 0x23, 0x7d, 0xb8, 0xef, 0x1a, 0x7f,
-	0xa6, 0xb8, 0x38, 0x18, 0xd5, 0xe5, 0xc1, 0xf8, 0x18, 0xea, 0x29, 0xcf, 0x0b, 0x3d, 0x49, 0xf2,
-	0xfa, 0x52, 0x92, 0x0b, 0xe3, 0x47, 0x9d, 0x35, 0xb9, 0x0b, 0x0d, 0x51, 0x68, 0xeb, 0xe8, 0xbf,
-	0x96, 0xe3, 0xc4, 0x9c, 0xdc, 0x85, 0x96, 0x9c, 0x90, 0x62, 0x09, 0x6d, 0xef, 0xf6, 0x96, 0x7c,
-	0xa7, 0xb4, 0xd1, 0x99, 0x31, 0xf9, 0x04, 0xea, 0xb1, 0x1d, 0x95, 0xa0, 0x69, 0x9f, 0xbc, 0xb1,
-	0xe4, 0xb6, 0x38, 0x49, 0xd4, 0x99, 0x9b, 0x9e, 0x5c, 0x3b, 0x12, 0xc3, 0x07, 0xa9, 0xd2, 0x14,
-	0xbf, 0x2d, 0x50, 0xe9, 0x45, 0xdc, 0xbc, 0x8b, 0xb8, 0x5d, 0x07, 0x30, 0xe8, 0x0e, 0x24, 0x3e,
-	0x4d, 0x4f, 0x1d, 0xac, 0x73, 0x1a, 0xd3, 0x75, 0x39, 0x4b, 0xf0, 0x38, 0x3d, 0x2f, 0xfb, 0xb5,
-	0x43, 0xa7, 0xb2, 0x8d, 0xcc, 0x12, 0x7c, 0x24, 0x46, 0xc8, 0xdd, 0x84, 0xcd, 0x14, 0xe1, 0x37,
-	0xd0, 0x34, 0xb8, 0xec, 0xa3, 0x8a, 0xfe, 0x0b, 0x3e, 0xc3, 0xef, 0xa1, 0x71, 0x24, 0x86, 0x36,
-	0xfc, 0x06, 0xf8, 0xcf, 0xc5, 0x70, 0x5a, 0x5e, 0x29, 0x98, 0x69, 0x56, 0xda, 0xac, 0x30, 0x13,
-	0x7c, 0x6d, 0xc5, 0x34, 0x1f, 0x9b, 0x5b, 0x5a, 0x1a, 0x91, 0xdb, 0x50, 0x33, 0x37, 0xf6, 0xa5,
-	0xf6, 0xee, 0xdb, 0x2b, 0x39, 0x36, 0x8f, 0x51, 0x6b, 0x16, 0x22, 0xac, 0x4f, 0x71, 0x56, 0xb9,
-	0xe0, 0x0a, 0xc9, 0x2d, 0xa8, 0x3d, 0x17, 0x43, 0x33, 0x6b, 0x86, 0xb2, 0x60, 0x29, 0x82, 0xcb,
-	0x96, 0x5a, 0x2b, 0xf2, 0x1e, 0x74, 0x38, 0x9e, 0xea, 0xc1, 0x14, 0xc0, 0x12, 0x82, 0x45, 0x65,
-	0xf8, 0x0e, 0xf8, 0x47, 0xb6, 0x98, 0x0d, 0xf0, 0x4f, 0xd8, 0xb8, 0x98, 0x40, 0x58, 0x0a, 0xe1,
-	0x4b, 0x0f, 0xea, 0x26, 0x0d, 0x91, 0x4c, 0xb6, 0xa5, 0x37, 0xdb, 0x96, 0x9b, 0xd0, 0x52, 0x9a,
-	0x49, 0xfd, 0x28, 0xcd, 0x70, 0x02, 0xf0, 0x54, 0x61, 0x76, 0x29, 0xf2, 0xd8, 0xde, 0xb9, 0x5d,
-	0xea, 0xc4, 0x37, 0xde, 0x9a, 0x3d, 0x68, 0xe2, 0x69, 0xaa, 0xf7, 0x44, 0x5c, 0x7e, 0x2d, 0x7c,
-	0x3a, 0x95, 0x8d, 0x8f, 0x59, 0xfe, 0x87, 0x03, 0xbb, 0xb2, 0x5a, 0xd4, 0x49, 0xb3, 0x4d, 0xdb,
-	0x7c, 0x9d, 0x4d, 0xfb, 0x6b, 0x05, 0xaa, 0x47, 0x62, 0x78, 0x09, 0xcf, 0x9f, 0x43, 0x33, 0x43,
-	0xcd, 0x62, 0xa6, 0x99, 0xfd, 0x58, 0xb4, 0x77, 0xc3, 0x55, 0xd8, 0xef, 0x3c, 0x74, 0x46, 0xf7,
-	0xb9, 0x96, 0x67, 0x74, 0xea, 0x43, 0xde, 0x5f, 0x60, 0xfe, 0xad, 0x95, 0xcc, 0x97, 0xac, 0xcf,
-	0x5a, 0xaa, 0xf6, 0x3a, 0x2d, 0xf5, 0x01, 0xd4, 0xc6, 0x22, 0x99, 0xac, 0x8d, 0x6b, 0xab, 0x92,
-	0x7a, 0x20, 0x12, 0x6a, 0x8d, 0x7a, 0x9f, 0x41, 0x67, 0x21, 0x41, 0x43, 0xe8, 0x08, 0xcf, 0x5c,
-	0xa9, 0xe6, 0x38, 0xeb, 0x81, 0xca, 0x5c, 0x0f, 0xdc, 0xab, 0xdc, 0xf5, 0xc2, 0x0d, 0x20, 0xc7,
-	0x28, 0x4f, 0xd2, 0x08, 0x0f, 0xf9, 0x53, 0xe1, 0x26, 0x3f, 0xfc, 0xdd, 0x83, 0xf6, 0x9c, 0x9a,
-	0x3c, 0x86, 0x8e, 0xd2, 0x42, 0xb2, 0x04, 0xf7, 0x04, 0x7f, 0x9a, 0x26, 0xae, 0x53, 0xfb, 0xcb,
-	0x55, 0xcc, 0x9c, 0x76, 0x8e, 0xe7, 0x3d, 0x4a, 0xe8, 0x16, 0xa3, 0xf4, 0xbe, 0x00, 0xb2, 0x6c,
-	0xf4, 0x26, 0xe9, 0xdf, 0xfc, 0xc9, 0x03, 0xdf, 0x22, 0x47, 0xda, 0xd0, 0x78, 0xcc, 0x47, 0x5c,
-	0xbc, 0xe0, 0xdd, 0xff, 0x11, 0x80, 0xfa, 0x57, 0x05, 0x16, 0x18, 0x77, 0x3d, 0x73, 0x41, 0x0b,
-	0xce, 0x53, 0x9e, 0x74, 0x2b, 0xe6, 0x62, 0xc0, 0x0a, 0x85, 0x71, 0xb7, 0x4a, 0xae, 0x40, 0x73,
-	0x4f, 0x64, 0xf9, 0x18, 0x35, 0x76, 0x6b, 0xa4, 0x05, 0xfe, 0x7d, 0x29, 0x85, 0xec, 0xfa, 0x64,
-	0x1d, 0xda, 0xc7, 0x67, 0x4a, 0x63, 0x56, 0x2a, 0xea, 0xd6, 0x92, 0xf1, 0x08, 0xc7, 0x18, 0x77,
-	0x1b, 0xa4, 0x0b, 0x57, 0x0e, 0x79, 0xaa, 0x53, 0x36, 0x4e, 0xcf, 0x4d, 0xd4, 0xe6, 0xee, 0x3f,
-	0x55, 0x68, 0x1b, 0xae, 0x5d, 0xf5, 0x24, 0x83, 0xb5, 0x03, 0xd4, 0xf3, 0x00, 0xbe, 0xfb, 0x2a,
-	0xa4, 0x1c, 0xea, 0xbd, 0xcd, 0x57, 0x19, 0x85, 0xc1, 0x8f, 0x7f, 0xbf, 0xfc, 0xa5, 0x42, 0x48,
-	0xb7, 0x7f, 0x72, 0xa7, 0x6f, 0x16, 0xc1, 0x6d, 0xe5, 0x9e, 0x7b, 0x68, 0x2b, 0xb4, 0x9f, 0xbf,
-	0xd5, 0x3d, 0xd8, 0xbb, 0xba, 0xaa, 0x83, 0x0e, 0xf7, 0xc3, 0xff, 0xdb, 0x98, 0x9d, 0xb0, 0x39,
-	0x89, 0x79, 0xcf, 0xbb, 0x49, 0x9e, 0x40, 0xd3, 0x6c, 0xa7, 0x23, 0xb3, 0x6b, 0x6e, 0xac, 0x6c,
-	0xbd, 0xd9, 0x37, 0xa2, 0xb7, 0x75, 0xb9, 0x41, 0xb9, 0xdc, 0xc2, 0xae, 0x7d, 0x03, 0xc8, 0xf4,
-	0x0d, 0x32, 0x80, 0xfa, 0x01, 0x9a, 0xf8, 0xe4, 0x92, 0xbc, 0x7a, 0x1b, 0xab, 0xf4, 0xcb, 0x08,
-	0xf4, 0xbf, 0xb3, 0x9d, 0xf0, 0x03, 0x79, 0x0c, 0xad, 0x92, 0xa0, 0x57, 0x05, 0xbd, 0x0c, 0x04,
-	0x17, 0xf6, 0xe6, 0x52, 0xd8, 0x61, 0xdd, 0xfe, 0x60, 0x7f, 0xf8, 0x6f, 0x00, 0x00, 0x00, 0xff,
-	0xff, 0xa7, 0xad, 0xe9, 0x1a, 0x9c, 0x0b, 0x00, 0x00,
+	// 1358 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x56, 0xcd, 0x6e, 0xdb, 0xc6,
+	0x16, 0x0e, 0xf5, 0x4b, 0x1e, 0x59, 0xbe, 0xcc, 0xdc, 0xc4, 0xe1, 0x55, 0x92, 0x1b, 0x85, 0x09,
+	0xee, 0x35, 0xdc, 0xd4, 0x46, 0xdd, 0xa2, 0x3f, 0xee, 0xca, 0x91, 0x19, 0x43, 0xa8, 0x24, 0xbb,
+	0x94, 0xdc, 0x22, 0x6d, 0x00, 0x81, 0x26, 0x27, 0x0a, 0x6b, 0x89, 0xc3, 0x72, 0x46, 0x4e, 0x9c,
+	0xa2, 0x9b, 0xa2, 0xcb, 0x2e, 0x0a, 0xf4, 0x0d, 0xba, 0x2c, 0x0a, 0xf4, 0x51, 0xba, 0xe8, 0xb2,
+	0xdb, 0x3e, 0x48, 0x71, 0x86, 0x43, 0x8a, 0xb2, 0x9a, 0x00, 0xd9, 0xcd, 0xf9, 0xce, 0x37, 0x87,
+	0xe7, 0xe7, 0x9b, 0x19, 0x82, 0x21, 0x28, 0xdf, 0x8e, 0x13, 0x26, 0x18, 0x29, 0x0b, 0xca, 0x5b,
+	0xb7, 0x26, 0x8c, 0x4d, 0xa6, 0x74, 0xc7, 0x8b, 0xc3, 0x1d, 0x2f, 0x8a, 0x98, 0xf0, 0x44, 0xc8,
+	0x22, 0x45, 0xb1, 0xff, 0x2c, 0x43, 0x65, 0xe4, 0xf1, 0x33, 0xb2, 0x0e, 0xa5, 0x30, 0xb0, 0xb4,
+	0xb6, 0xb6, 0x69, 0xb8, 0xa5, 0x30, 0x20, 0x6d, 0xa8, 0x72, 0xe1, 0x09, 0x6a, 0x95, 0xda, 0xda,
+	0xe6, 0xfa, 0x2e, 0x6c, 0x63, 0xd8, 0x21, 0x22, 0x6e, 0xea, 0x20, 0x04, 0x2a, 0x91, 0x37, 0xa3,
+	0x56, 0x59, 0xee, 0x91, 0x6b, 0x62, 0x41, 0x3d, 0x4e, 0xd8, 0x57, 0xd4, 0x17, 0x56, 0x45, 0xc2,
+	0x99, 0x49, 0xda, 0xd0, 0x08, 0x28, 0xf7, 0x93, 0x30, 0xc6, 0xcf, 0x5b, 0x55, 0xe9, 0x2d, 0x42,
+	0x64, 0x0b, 0x6a, 0x61, 0x14, 0xcf, 0x05, 0xb7, 0x6a, 0xed, 0xf2, 0x66, 0x63, 0x97, 0xc8, 0x4f,
+	0x62, 0x72, 0xc7, 0x5e, 0xe2, 0xcd, 0xa8, 0xa0, 0x89, 0xab, 0x18, 0xe4, 0x01, 0xd4, 0xd9, 0x5c,
+	0x48, 0x72, 0xfd, 0x95, 0xe4, 0x8c, 0x42, 0x1e, 0x80, 0x91, 0x50, 0xce, 0xe6, 0x89, 0x4f, 0xb9,
+	0xa5, 0xb7, 0xb5, 0xcd, 0xc6, 0xee, 0xba, 0xe4, 0xbb, 0x19, 0xea, 0x2e, 0x08, 0xe4, 0x2d, 0x30,
+	0xe8, 0x0b, 0xea, 0xcf, 0x05, 0x4b, 0xb8, 0x65, 0xc8, 0xe8, 0x4d, 0xc9, 0x76, 0x14, 0xea, 0x2e,
+	0xfc, 0x58, 0xf0, 0x39, 0x9b, 0xce, 0x67, 0x94, 0x5b, 0xd0, 0x2e, 0x63, 0xc1, 0xca, 0x24, 0xff,
+	0x87, 0x8a, 0xf0, 0x26, 0xdc, 0x6a, 0xc8, 0x08, 0xff, 0xce, 0xf3, 0xdb, 0x1e, 0x79, 0x13, 0xee,
+	0x44, 0x22, 0xb9, 0x70, 0x25, 0x81, 0xb4, 0xa1, 0x32, 0x65, 0x13, 0x6e, 0xad, 0x49, 0xe2, 0x5a,
+	0x4e, 0xec, 0xb1, 0x89, 0x2b, 0x3d, 0xad, 0x0f, 0xc0, 0xc8, 0x37, 0x11, 0x13, 0xca, 0x67, 0xf4,
+	0x42, 0x4d, 0x0a, 0x97, 0xe4, 0x1a, 0x54, 0xcf, 0xbd, 0xe9, 0x3c, 0x1d, 0x95, 0xe1, 0xa6, 0xc6,
+	0x5e, 0xe9, 0x43, 0xcd, 0xfe, 0x45, 0x83, 0xe6, 0x52, 0x4f, 0xf2, 0xa1, 0x69, 0x85, 0xa1, 0x5d,
+	0x1a, 0x4d, 0x69, 0x75, 0x34, 0x26, 0x94, 0xe7, 0xc9, 0x54, 0x4d, 0x1a, 0x97, 0x18, 0x27, 0xf6,
+	0xc4, 0x33, 0x35, 0x65, 0xb9, 0x26, 0x77, 0xa1, 0x22, 0x2e, 0x62, 0x2a, 0x67, 0xbb, 0xae, 0x7a,
+	0xf6, 0x28, 0x9c, 0xd2, 0xd1, 0x45, 0x4c, 0x5d, 0xe9, 0x22, 0x2d, 0xd0, 0x7d, 0x16, 0x09, 0x1a,
+	0xc9, 0x29, 0xe3, 0xd6, 0xdc, 0xb6, 0x3f, 0x82, 0xea, 0x31, 0x4b, 0x04, 0x27, 0xb7, 0xc0, 0x40,
+	0xd0, 0x0b, 0x23, 0x9a, 0xc8, 0x44, 0x9b, 0xee, 0x02, 0xc0, 0x2f, 0x3f, 0x63, 0x5c, 0xc8, 0x34,
+	0x9b, 0xae, 0x5c, 0xdb, 0xbf, 0x95, 0x40, 0xcf, 0xa6, 0x43, 0x6e, 0x03, 0x84, 0x33, 0x6f, 0x42,
+	0xc7, 0x85, 0x42, 0x0d, 0x89, 0x0c, 0xb0, 0x5a, 0x13, 0xca, 0xfe, 0x2c, 0xb0, 0x4a, 0x72, 0x5a,
+	0xb8, 0xc4, 0x19, 0x3e, 0x67, 0xc9, 0x59, 0x10, 0x26, 0xaa, 0xc2, 0xcc, 0xc4, 0xce, 0x72, 0x11,
+	0x84, 0x91, 0xca, 0x35, 0x35, 0xc8, 0x06, 0xd4, 0xb8, 0x08, 0xd8, 0x3c, 0xd3, 0xb8, 0xb2, 0x14,
+	0x4e, 0x93, 0x44, 0xa9, 0x5b, 0x59, 0x78, 0x94, 0x62, 0x2c, 0x4c, 0x49, 0x35, 0x3d, 0x4a, 0xb2,
+	0x54, 0x37, 0x75, 0x90, 0xf7, 0xa0, 0x4e, 0xa3, 0xf3, 0x30, 0x61, 0x91, 0xa5, 0x4b, 0x4e, 0x6b,
+	0x49, 0x70, 0xdb, 0x4e, 0xea, 0x4c, 0x55, 0x93, 0x51, 0x5b, 0x7b, 0xb0, 0x56, 0x74, 0xbc, 0x91,
+	0x32, 0x7e, 0xd4, 0xc0, 0xc8, 0xd5, 0x4f, 0x6e, 0x82, 0xe1, 0xc7, 0xf3, 0xb1, 0xcf, 0x12, 0xca,
+	0x55, 0xc7, 0x75, 0x3f, 0x9e, 0x77, 0xd0, 0x46, 0x79, 0xc4, 0x09, 0xa5, 0xb3, 0x58, 0x84, 0xa7,
+	0xd3, 0x34, 0x94, 0xee, 0x16, 0x21, 0x72, 0x1d, 0x6a, 0x89, 0x37, 0x1b, 0x4f, 0x4e, 0x65, 0xff,
+	0x34, 0xb7, 0x9a, 0x78, 0xb3, 0xc3, 0x53, 0x72, 0x03, 0xea, 0x3c, 0x7c, 0x49, 0x11, 0xaf, 0x48,
+	0xbc, 0x86, 0xe6, 0xe1, 0x29, 0xa6, 0xf5, 0x92, 0x45, 0x94, 0x5b, 0x55, 0x39, 0x84, 0xd4, 0xb0,
+	0x7f, 0x28, 0x41, 0x5d, 0xe9, 0x9e, 0xdc, 0x57, 0x67, 0x42, 0x93, 0xdd, 0x30, 0x97, 0xba, 0x91,
+	0x9f, 0x0b, 0xf2, 0x3e, 0xe8, 0x33, 0x2a, 0xbc, 0xc0, 0x13, 0x9e, 0x9c, 0x67, 0xd6, 0x37, 0x15,
+	0x65, 0xbb, 0xaf, 0x9c, 0x69, 0xdf, 0x72, 0x2e, 0x2a, 0x84, 0x0b, 0x2f, 0x11, 0x63, 0x11, 0xe6,
+	0xf7, 0x97, 0x21, 0x91, 0x51, 0x38, 0xa3, 0xe4, 0x3f, 0xa0, 0xd3, 0x28, 0x48, 0x9d, 0xea, 0x16,
+	0xa3, 0x51, 0x20, 0x5d, 0x85, 0x7b, 0xa7, 0x5a, 0xb8, 0x77, 0x8e, 0x24, 0x86, 0x5a, 0xc7, 0xe4,
+	0x32, 0x4a, 0xeb, 0x63, 0x68, 0x2e, 0xa5, 0xf0, 0x46, 0x13, 0xfa, 0x5d, 0x83, 0x46, 0xa1, 0xe4,
+	0x4b, 0x49, 0x97, 0x5e, 0x97, 0x74, 0x79, 0x39, 0xe9, 0x37, 0xd5, 0xeb, 0x4d, 0xbc, 0x00, 0x43,
+	0x31, 0xf6, 0x59, 0x40, 0xa5, 0xf2, 0xab, 0xae, 0x8e, 0x40, 0x87, 0x05, 0x14, 0x87, 0x8a, 0x47,
+	0x6e, 0x1c, 0xc6, 0x56, 0x3d, 0xdd, 0x85, 0x66, 0x37, 0x5e, 0xa8, 0x5c, 0x7f, 0x85, 0xca, 0xed,
+	0x11, 0x34, 0x97, 0x1a, 0x95, 0x5d, 0x2b, 0xda, 0xea, 0xb5, 0x52, 0x2a, 0x5c, 0x2b, 0x58, 0x38,
+	0xca, 0xe8, 0xf4, 0x42, 0x50, 0x2e, 0x6b, 0x2b, 0xbb, 0x06, 0x22, 0x0f, 0x11, 0xb0, 0xef, 0x03,
+	0xe9, 0x24, 0xd4, 0x13, 0x14, 0xa7, 0xee, 0x52, 0x1e, 0xb3, 0x88, 0xd3, 0xcb, 0xcf, 0x99, 0xdd,
+	0x81, 0xf5, 0x43, 0x2a, 0x52, 0xca, 0xd7, 0x73, 0xca, 0xc5, 0xca, 0x83, 0x77, 0x17, 0x2a, 0xe7,
+	0x21, 0x7d, 0xae, 0xde, 0xbb, 0x66, 0x2e, 0xa4, 0xcf, 0x42, 0xfa, 0xdc, 0x95, 0x2e, 0xfb, 0x57,
+	0x0d, 0xcc, 0x5e, 0xc8, 0x65, 0x18, 0x9e, 0xc5, 0x29, 0x3c, 0x79, 0xda, 0xf2, 0x93, 0x77, 0x07,
+	0x1a, 0x78, 0x05, 0x8d, 0xe3, 0x84, 0x3e, 0x0d, 0x5f, 0xa8, 0x9a, 0x00, 0xa1, 0x63, 0x89, 0x60,
+	0xa3, 0x63, 0xbc, 0xa8, 0xb0, 0x18, 0x59, 0x58, 0xd3, 0xd5, 0x11, 0x18, 0x86, 0x2f, 0x29, 0x96,
+	0x2d, 0x9d, 0x82, 0x9d, 0xd1, 0x48, 0x4d, 0x4e, 0xd2, 0x47, 0x08, 0xe4, 0xe9, 0x56, 0x5f, 0x9d,
+	0xee, 0x13, 0xb8, 0x5a, 0xc8, 0x56, 0x35, 0xe6, 0x0e, 0x54, 0x05, 0x02, 0xea, 0x68, 0x19, 0xf9,
+	0x46, 0x37, 0xc5, 0xc9, 0xff, 0xe0, 0x5f, 0x11, 0x7d, 0x21, 0xc6, 0x85, 0x8f, 0xa7, 0x99, 0x37,
+	0x11, 0x3e, 0xce, 0x12, 0xb0, 0xef, 0xc1, 0xd5, 0x8e, 0x17, 0xf9, 0x74, 0xfa, 0x9a, 0xa6, 0xda,
+	0xd7, 0x80, 0x14, 0x49, 0x69, 0x0e, 0x88, 0x0e, 0x69, 0x72, 0x1e, 0xfa, 0xb4, 0x1b, 0x3d, 0x65,
+	0x6a, 0xaf, 0xdd, 0x87, 0x46, 0x01, 0xfd, 0xc7, 0x97, 0xca, 0x84, 0x72, 0xc0, 0x7c, 0x95, 0x0f,
+	0x2e, 0xb1, 0xfb, 0x5c, 0xb0, 0xc4, 0x9b, 0x60, 0x03, 0xe5, 0xfb, 0xab, 0xcc, 0xad, 0x7b, 0xa0,
+	0x67, 0x8f, 0x0f, 0xd1, 0xa1, 0xf2, 0xa8, 0xdb, 0x73, 0xcc, 0x2b, 0xa4, 0x09, 0xc6, 0x41, 0xd7,
+	0x75, 0x3a, 0xa3, 0x23, 0xf7, 0xb1, 0xa9, 0x6d, 0x7d, 0xaf, 0x41, 0x55, 0xfe, 0xd4, 0x90, 0x06,
+	0xd4, 0x4f, 0x06, 0x9f, 0x0c, 0x8e, 0x3e, 0x1f, 0x98, 0x57, 0x08, 0x40, 0xed, 0xd3, 0x13, 0xe7,
+	0xc4, 0x39, 0x30, 0x35, 0x62, 0xc2, 0x5a, 0x77, 0xd0, 0x1d, 0x75, 0xf7, 0x7b, 0xdd, 0x2f, 0xba,
+	0x83, 0x43, 0xb3, 0x84, 0x54, 0xf7, 0x64, 0x30, 0x40, 0xa3, 0x8c, 0xd4, 0xe3, 0xfd, 0x93, 0xa1,
+	0x73, 0x60, 0x56, 0xc8, 0x1a, 0xe8, 0x9d, 0xa3, 0xfe, 0x71, 0xcf, 0x19, 0x39, 0x66, 0x95, 0x18,
+	0x50, 0x75, 0x5c, 0xf7, 0xc8, 0x35, 0x6b, 0x18, 0x63, 0xf8, 0x78, 0x38, 0x72, 0xfa, 0xe3, 0x14,
+	0xa9, 0x4b, 0xea, 0xfe, 0xa0, 0xe3, 0xf4, 0x9c, 0x03, 0x53, 0xdf, 0x7a, 0x00, 0x7a, 0x36, 0x3b,
+	0x8c, 0xde, 0xef, 0x0e, 0xba, 0xfd, 0xfd, 0x9e, 0x79, 0x05, 0x63, 0x3c, 0xdc, 0x1f, 0x76, 0x3b,
+	0xa6, 0x26, 0x6b, 0x38, 0xe9, 0xf5, 0xcc, 0xd2, 0xee, 0xcf, 0x65, 0x68, 0x20, 0x5d, 0x75, 0x8b,
+	0x7c, 0x29, 0xb5, 0x5d, 0xec, 0xdd, 0x8d, 0xf4, 0x6f, 0x6d, 0xa5, 0xc7, 0x2d, 0xf3, 0xb2, 0xc3,
+	0xfe, 0xef, 0x77, 0x7f, 0xfc, 0xf5, 0x53, 0xc9, 0x22, 0x1b, 0x3b, 0xe7, 0xef, 0xec, 0x48, 0x05,
+	0xec, 0xf0, 0xd4, 0xfd, 0x76, 0x88, 0xa1, 0x1e, 0x01, 0x2c, 0x8e, 0x17, 0x59, 0xc8, 0xa5, 0x95,
+	0x7e, 0x63, 0xf5, 0xe8, 0xd9, 0xd7, 0x64, 0xc4, 0x75, 0xdb, 0xc8, 0x23, 0xee, 0x69, 0x5b, 0xa4,
+	0x0f, 0x46, 0x2e, 0x46, 0x72, 0x5d, 0xee, 0xbd, 0x7c, 0x94, 0x5a, 0x1b, 0x97, 0x61, 0x15, 0xf1,
+	0xaa, 0x8c, 0xd8, 0x20, 0x8b, 0x88, 0x64, 0x1f, 0xea, 0xea, 0x3c, 0x93, 0xf4, 0xd7, 0x6a, 0xf9,
+	0x74, 0xb7, 0x16, 0x89, 0xda, 0x1b, 0x72, 0xb7, 0x49, 0xd6, 0x17, 0x15, 0x7e, 0x13, 0x06, 0xdf,
+	0x92, 0x27, 0x00, 0x0b, 0x6d, 0x92, 0xf4, 0xdb, 0x2b, 0x8a, 0xce, 0xca, 0x5c, 0x15, 0xf1, 0x6d,
+	0x19, 0xf6, 0x86, 0x7d, 0x7d, 0x39, 0xec, 0x9e, 0x2f, 0xa9, 0xa7, 0x35, 0xf9, 0x7f, 0xfd, 0xee,
+	0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x20, 0x21, 0xb4, 0x6e, 0x8f, 0x0b, 0x00, 0x00,
 }

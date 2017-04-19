@@ -54,10 +54,10 @@ func setup(workers []*pbf.Worker) (*sched_mocks.Client, *Backend) {
 
 func TestNoWorkers(t *testing.T) {
 	_, s := setup([]*pbf.Worker{})
-	j := &tes.Job{}
+	j := &tes.Task{}
 	o := s.Schedule(j)
 	if o != nil {
-		t.Error("Job scheduled on empty workers")
+		t.Error("Task scheduled on empty workers")
 	}
 }
 
@@ -66,14 +66,14 @@ func TestSingleWorker(t *testing.T) {
 		simpleWorker(),
 	})
 
-	j := &tes.Job{}
+	j := &tes.Task{}
 	o := s.Schedule(j)
 	if o == nil {
-		t.Error("Failed to schedule job on single worker")
+		t.Error("Failed to schedule task on single worker")
 		return
 	}
 	if o.Worker.Id != "test-worker-id" {
-		t.Error("Scheduled job on unexpected worker")
+		t.Error("Scheduled task on unexpected worker")
 	}
 }
 
@@ -84,16 +84,16 @@ func TestIgnoreOtherWorkers(t *testing.T) {
 
 	_, s := setup([]*pbf.Worker{other})
 
-	j := &tes.Job{}
+	j := &tes.Task{}
 	o := s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled job to other worker")
+		t.Error("Scheduled task to other worker")
 	}
 }
 
 // Test that scheduler ignores workers without the "Alive" state
 func TestIgnoreNonAliveWorkers(t *testing.T) {
-	j := &tes.Job{}
+	j := &tes.Task{}
 
 	for name, val := range pbf.WorkerState_value {
 		w := simpleWorker()
@@ -104,11 +104,11 @@ func TestIgnoreNonAliveWorkers(t *testing.T) {
 		if name == "Alive" {
 			// Testing Alive just so I know this test is worker as expected
 			if o == nil {
-				t.Error("Didn't schedule job to alive worker")
+				t.Error("Didn't schedule task to alive worker")
 			}
 		} else {
 			if o != nil {
-				t.Errorf("Scheduled job to non-alive worker: %s", name)
+				t.Errorf("Scheduled task to non-alive worker: %s", name)
 				return
 			}
 		}
@@ -123,73 +123,53 @@ func TestMatch(t *testing.T) {
 	})
 
 	var o *sched.Offer
-	var j *tes.Job
+	var j *tes.Task
 
 	// Helper which sets up Task.Resources struct to non-nil
-	blankJob := func() *tes.Job {
-		return &tes.Job{Task: &tes.Task{Resources: &tes.Resources{}}}
+	blankTask := func() *tes.Task {
+		return &tes.Task{Resources: &tes.Resources{}}
 	}
 
 	// test CPUs too big
-	j = blankJob()
-	j.Task.Resources.MinimumCpuCores = 2
+	j = blankTask()
+	j.Resources.CpuCores = 2
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled job to worker without enough CPU resources")
+		t.Error("Scheduled task to worker without enough CPU resources")
 	}
 
 	// test RAM too big
-	j = blankJob()
-	j.Task.Resources.MinimumRamGb = 2.0
+	j = blankTask()
+	j.Resources.RamGb = 2.0
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled job to worker without enough RAM resources")
+		t.Error("Scheduled task to worker without enough RAM resources")
 	}
 
 	// test disk too big
-	j = blankJob()
-	j.Task.Resources.Volumes = []*tes.Volume{
-		{SizeGb: 2.0},
-	}
-
+	j = blankTask()
+	j.Resources.SizeGb = 2.0
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled job to worker without enough Disk resources")
-	}
-
-	// test two volumes, basically check that they are
-	// added together to get total size
-	j = blankJob()
-	j.Task.Resources.Volumes = []*tes.Volume{
-		{SizeGb: 1.0},
-		{SizeGb: 0.1},
-	}
-
-	o = s.Schedule(j)
-	if o != nil {
-		t.Error("Scheduled job to worker without enough Disk resources, 2 volumes")
+		t.Error("Scheduled task to worker without enough Disk resources")
 	}
 
 	// test zones don't match
-	j = blankJob()
-	j.Task.Resources.Zones = []string{"test-zone"}
+	j = blankTask()
+	j.Resources.Zones = []string{"test-zone"}
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled job to worker out of zone")
+		t.Error("Scheduled task to worker out of zone")
 	}
 
-	// Now test a job that fits
-	j = blankJob()
-	j.Task.Resources.MinimumCpuCores = 1
-	j.Task.Resources.MinimumRamGb = 1.0
-	j.Task.Resources.Volumes = []*tes.Volume{
-		{SizeGb: 0.5},
-		{SizeGb: 0.5},
-	}
-	j.Task.Resources.Zones = []string{"ok-zone", "not-ok-zone"}
-
+	// Now test a task that fits
+	j = blankTask()
+	j.Resources.CpuCores = 1
+	j.Resources.RamGb = 1.0
+	j.Resources.SizeGb = 1.0
+	j.Resources.Zones = []string{"ok-zone", "not-ok-zone"}
 	o = s.Schedule(j)
 	if o == nil {
-		t.Error("Didn't schedule job when resources fit")
+		t.Error("Didn't schedule task when resources fit")
 	}
 }

@@ -41,19 +41,3 @@ func EnsurePath(p string) error {
 	dir := path.Dir(p)
 	return EnsureDir(dir)
 }
-
-// EnsureFile ensures a file exists
-func EnsureFile(p string, class string) error {
-	err := EnsurePath(p)
-	if err != nil {
-		return err
-	}
-	if class == "File" {
-		f, err := os.Create(p)
-		if err != nil {
-			return err
-		}
-		f.Close()
-	}
-	return nil
-}

@@ -26,7 +26,6 @@ proto: depends
 		--go_out=$(GRPC_HTTP_MOD),Mtes.proto=funnel/proto/tes,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		funnel.proto
-	@find src/funnel/proto -name *pb* -type f -exec sed -i '' 's/ga4gh_task_exec/tes/g' {} +
 
 depends:
 	git submodule update --init --recursive

@@ -1,22 +1,15 @@
 {
     "name": "4 CPU sleep",
-    "projectId": "Funnel",
+    "project": "Funnel",
     "description": "My Desc",
-    "inputs": [
-    ],
-    "outputs": [
-    ],
+    "inputs": [],
+    "outputs": [],
     "resources": {
-        "minimumCpuCores": 4,
-        "volumes": [{
-            "name": "test_disk",
-            "sizeGb": 5,
-            "mountPoint": "/tmp"
-        }]
+        "cpu_cores": 4
     },
-    "docker": [
+    "executors": [
         {
-            "imageName": "ubuntu",
+            "image_name": "ubuntu",
             "cmd": ["sleep", "30"],
             "stdout": "/tmp/test_out",
             "stderr": "/tmp/test_err"

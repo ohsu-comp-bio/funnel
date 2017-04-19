@@ -68,7 +68,7 @@ func TestGetMetadata(t *testing.T) {
 		t.Fatal("Expected gce tag in worker metadata")
 	}
 
-	if conf.Backends.GCE.Zone != "projects/123456/zones/us-west1-b" {
+	if conf.Backends.GCE.Zone != "us-west1-b" {
 		t.Fatal("Unexpected zone")
 	}
 }

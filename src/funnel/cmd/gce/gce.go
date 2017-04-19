@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 var log = logger.New("gce cmd")
@@ -89,9 +90,15 @@ func WithGCEConfig(conf config.Config, metaURL string) (config.Config, error) {
 		conf.Backends.GCE.Project = meta.Project.ProjectID
 	}
 	// TODO need to parse zone?
-	// projects/685045051618/zones/us-west1-b
 	if meta.Instance.Zone != "" {
-		conf.Backends.GCE.Zone = meta.Instance.Zone
+		zone := meta.Instance.Zone
+		// Parse zone out of metadata format
+		// e.g. "projects/1234/zones/us-west1-b" => "us-west1-b"
+		idx := strings.LastIndex(zone, "/")
+		if idx != -1 {
+			zone = zone[idx+1:]
+		}
+		conf.Backends.GCE.Zone = zone
 	}
 
 	conf.Worker.Metadata["gce"] = "yes"

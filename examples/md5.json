@@ -7,14 +7,14 @@
             "name": "infile",
             "description": "File to be MD5ed",
             "url": "file:///tmp/test_file",
-            "type": "File",
+            "type": "FILE",
             "path": "/tmp/test_file"
         }
     ],
     "outputs": [
         {
             "url": "file:///tmp/test_out_file",
-            "type": "File",
+            "type": "FILE",
             "path": "/tmp/test_out"
         }
     ],

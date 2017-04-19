@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"funnel/proto/tes"
+	"github.com/golang/protobuf/jsonpb"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // NewClient returns a new HTTP client for accessing
@@ -16,7 +18,12 @@ import (
 func NewClient(address string) *Client {
 	// Strip trailing slash. A quick and dirty fix.
 	address = strings.TrimSuffix(address, "/")
-	return &Client{address, &http.Client{}}
+	return &Client{
+		address: address,
+		client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+	}
 }
 
 // Client represents the HTTP Task client.
@@ -44,10 +51,11 @@ func (c *Client) ListTasks() (interface{}, error) {
 
 // CreateTask POSTs a Task message to /v1/tasks
 func (c *Client) CreateTask(msg []byte) (string, error) {
-	if !isTask(msg) {
-		return "", fmt.Errorf("Not a valid Task message")
-	}
 	var err error
+	err = isTask(msg)
+	if err != nil {
+		return "", fmt.Errorf("Not a valid Task message: %v", err)
+	}
 
 	// Send request
 	r := bytes.NewReader(msg)
@@ -87,7 +95,8 @@ func check(resp *http.Response, err error) ([]byte, error) {
 	return body, nil
 }
 
-func isTask(b []byte) bool {
+// TODO replace with proper message validation
+func isTask(b []byte) error {
 	var js tes.Task
-	return json.Unmarshal(b, &js) == nil
+	return jsonpb.UnmarshalString(string(b), &js)
 }

@@ -54,6 +54,9 @@ lint:
 	./build/bin/gometalinter --install > /dev/null
 	./build/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto -s web ./src/funnel/...
 
+go-test-short:
+	go test -short funnel/...
+
 go-test:
 	go test funnel/...
 

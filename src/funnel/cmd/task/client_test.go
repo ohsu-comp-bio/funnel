@@ -86,3 +86,26 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 		t.Error("Unexpected response")
 	}
 }
+
+func TestClientTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping TestClientTimeout.")
+	}
+
+	// Set up test server response
+	mux := http.NewServeMux()
+	ch := make(chan struct{})
+	mux.HandleFunc("/v1/tasks/1", func(w http.ResponseWriter, r *http.Request) {
+		<-ch
+	})
+
+	ts := testServer(mux)
+	defer ts.Close()
+
+	c := NewClient("http://localhost:20001")
+	_, err := c.GetTask("1")
+	close(ch)
+	if err == nil {
+		t.Fatal("Request did not timeout.")
+	}
+}

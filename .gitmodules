@@ -88,3 +88,18 @@
 [submodule "src/vendor/github.com/elazarl/go-bindata-assetfs"]
 	path = vendor/github.com/elazarl/go-bindata-assetfs
 	url = https://github.com/elazarl/go-bindata-assetfs
+[submodule "src/vendor/github.com/gizak/termui"]
+	path = src/vendor/github.com/gizak/termui
+	url = https://github.com/gizak/termui
+[submodule "src/vendor/github.com/maruel/panicparse"]
+	path = src/vendor/github.com/maruel/panicparse
+	url = https://github.com/maruel/panicparse
+[submodule "src/vendor/github.com/mattn/go-runewidth"]
+	path = src/vendor/github.com/mattn/go-runewidth
+	url = https://github.com/mattn/go-runewidth
+[submodule "src/vendor/github.com/mitchellh/go-wordwrap"]
+	path = src/vendor/github.com/mitchellh/go-wordwrap
+	url = https://github.com/mitchellh/go-wordwrap
+[submodule "src/vendor/github.com/nsf/termbox-go"]
+	path = src/vendor/github.com/nsf/termbox-go
+	url = https://github.com/nsf/termbox-go

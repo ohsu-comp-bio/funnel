@@ -51,11 +51,11 @@ func doCreate(server string, messages []string) ([]string, error) {
 			}
 		}
 
-		jobID, err := client.CreateTask(taskMessage)
+		r, err := client.CreateTask(taskMessage)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, jobID)
+		res = append(res, r.Id)
 	}
 	return res, nil
 }

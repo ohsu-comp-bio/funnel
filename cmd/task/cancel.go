@@ -31,11 +31,16 @@ func doCancel(server string, ids []string) ([]string, error) {
 	res := []string{}
 
 	for _, taskID := range ids {
-		body, err := client.CancelTask(taskID)
+		resp, err := client.CancelTask(taskID)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, string(body))
+		// CancelTaskResponse is an empty struct
+		out, err := client.marshaler.MarshalToString(resp)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, out)
 	}
 	return res, nil
 }

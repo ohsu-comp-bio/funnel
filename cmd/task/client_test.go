@@ -1,7 +1,6 @@
 package task
 
 import (
-	"bytes"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"net"
@@ -49,11 +48,9 @@ func TestGetTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task := tes.Task{}
-	jsonpb.Unmarshal(bytes.NewReader(body), &task)
 
-	if task.Id != "test-id" {
-		log.Debug("RESPONSE", task)
+	if body.Id != "test-id" {
+		log.Debug("RESPONSE", body)
 		t.Error("Unexpected response")
 	}
 }
@@ -78,11 +75,9 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task := tes.Task{}
-	jsonpb.Unmarshal(bytes.NewReader(body), &task)
 
-	if task.Id != "test-id" {
-		log.Debug("RESPONSE", task)
+	if body.Id != "test-id" {
+		log.Debug("RESPONSE", body)
 		t.Error("Unexpected response")
 	}
 }

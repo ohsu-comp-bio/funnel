@@ -40,8 +40,8 @@ USAGE
 
 # Create a bundle from a directory. Writes to ./bundle.run
 create() {
-  echo "Creating bundle.run" >&2
   THISDIR=`pwd`
+  echo "Creating ${THISDIR}/bundle.run" >&2
   TARDIR=`mktemp -d /tmp/bundler.XXXXXX`
   cd $1 && tar -czf $TARDIR/bundle.tar.gz ./*
   cd $THISDIR
@@ -57,7 +57,7 @@ create() {
 # Install the bundle.
 install() {
   if [ -z $TARBALL ]; then
-    echo "Error: can't install. This is not a bundle." >&2
+    usage;
     exit 1
   fi
 

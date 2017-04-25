@@ -10,7 +10,3 @@ ExecStart=/opt/funnel/funnel gce start
 
 [Install]
 WantedBy=multi-user.target
-SYSD
-
-systemctl daemon-reload
-systemctl start funnel.service

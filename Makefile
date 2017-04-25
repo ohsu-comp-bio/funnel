@@ -95,6 +95,13 @@ upload-dev-release:
 	mkdir -p build/dev-release
 	cp bin/* build/dev-release/
 	cp build/funnel-gce-image-installer build/dev-release
+	for GOOS in darwin linux; do \
+		for GOARCH in 386 amd64; do \
+			GOOS=$$GOOS GOARCH=$$GOARCH \
+				tar -C build/dev-release -czvf build/dev-release/funnel-$$GOOS-$$GOARCH.tar.gz funnel-$$GOOS-$$GOARCH; \
+				rm build/dev-release/funnel-$$GOOS-$$GOARCH; \
+		done; \
+	done
 	for f in $$(ls -1 build/dev-release); do \
 		github-release upload \
 		-u ohsu-comp-bio \

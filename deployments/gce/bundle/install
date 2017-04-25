@@ -4,6 +4,8 @@
 
 source ./helpers.sh
 ./install-deps.sh
+# Sync disk
+sync
 
 vm_name=$(hostname)
 # Get zone from instance metadata

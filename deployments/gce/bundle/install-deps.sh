@@ -29,3 +29,5 @@ chown -R funnel:funnel /opt/funnel
 
 # Install the systemd service
 cp ./funnel.service /etc/systemd/system/multi-user.target.wants/
+
+systemctl daemon-reload

@@ -6,6 +6,9 @@
 
 NAME='funnel-server'
 
+#gcloud compute firewall-rules create default-http --allow='tcp:80'
+#gcloud compute firewall-rules create default-http --allow='tcp:80' --source-tags='http-server'
+
 # Start the VM
 gcloud compute instances create $NAME    \
   --scopes       'compute-rw,storage-rw' \
@@ -14,5 +17,5 @@ gcloud compute instances create $NAME    \
   --image-family 'funnel'
 
 # Useful for debugging
-gcloud compute instances add-metadata $NAME --metadata=serial-port-enable=1
-gcloud compute instances tail-serial-port-output $NAME
+gcloud compute instances add-metadata $NAME --metadata=serial-port-enable=1 --zone us-west1-a
+gcloud compute instances tail-serial-port-output $NAME --zone us-west1-a

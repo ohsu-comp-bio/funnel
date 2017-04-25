@@ -98,23 +98,19 @@ func run(cmd *cobra.Command, args []string) {
 
   checkErr(err)
 
-  // TODO
-  res.Volumes[0].SizeGb = disk
-
   task := &tes.Task{
     Name: name,
-    ProjectID: project,
+    Project: project,
     Description: description,
     Inputs: res.Inputs,
     Outputs: res.Outputs,
     Resources: &tes.Resources{
-      MinimumCpuCores: uint32(cpu),
-      MinimumRamGb: ram,
+      CpuCores: uint32(cpu),
+      RamGb: ram,
       Zones: zones,
       Preemptible: preemptible,
-      Volumes: res.Volumes,
     },
-    Docker: []*tes.DockerExecutor{
+    Executors: []*tes.Executor{
       // TODO allow more than one command?
       {
         ImageName: image,
@@ -145,14 +141,14 @@ func run(cmd *cobra.Command, args []string) {
 
   c, cerr := newClient(server)
   checkErr(cerr)
-  resp, rerr := c.RunTask(context.TODO(), task)
+  resp, rerr := c.CreateTask(context.TODO(), task)
   checkErr(rerr)
 
-  jobID := resp.Value
-  fmt.Println(jobID)
+  taskID := resp.Id
+  fmt.Println(taskID)
 
   if wait {
-    c.waitForTask(jobID)
+    c.waitForTask(taskID)
     // TODO print/log result
     // TODO stream logs while waiting
   }
@@ -170,12 +166,12 @@ type client struct {
 	conn *grpc.ClientConn
 }
 
-func (c *client) waitForTask(jobID string) {
+func (c *client) waitForTask(taskID string) {
   for range time.NewTicker(time.Second * 2).C {
     // TODO handle error
-    r, _ := c.GetJob(context.TODO(), &tes.JobID{jobID})
+    r, _ := c.GetTask(context.TODO(), &tes.GetTaskRequest{Id: taskID})
     switch r.State {
-    case tes.State_Complete, tes.State_Error, tes.State_SystemError, tes.State_Canceled:
+    case tes.State_COMPLETE, tes.State_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
       return
     }
   }

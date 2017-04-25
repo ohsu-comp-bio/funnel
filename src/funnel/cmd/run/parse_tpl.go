@@ -12,7 +12,6 @@ import (
 type parseResult struct {
   Inputs []*tes.TaskParameter
   Outputs []*tes.TaskParameter
-  Volumes []*tes.Volume
   Cmd []string
   // The template functions must return a string
   // so map urls to TaskParameters so other functions
@@ -32,9 +31,9 @@ func (res *parseResult) AddInput(rawurl string) string {
   // TODO raw/encoded path is best?
   p := "/opt/funnel/inputs" + u.EscapedPath()
   in := &tes.TaskParameter{
-    Location: u.String(),
+    Url: u.String(),
     Path: p,
-    Class: "File",
+    Type: tes.FileType_FILE,
   }
   res.inputsMap[p] = in
   res.Inputs = append(res.Inputs, in)
@@ -52,9 +51,9 @@ func (res *parseResult) AddOutput(rawurl string) string {
   // TODO raw/encoded path is best?
   p := "/opt/funnel/outputs" + u.EscapedPath()
   out := &tes.TaskParameter{
-    Location: u.String(),
+    Url: u.String(),
     Path: p,
-    Class: "File",
+    Type: tes.FileType_FILE,
   }
   res.outputsMap[p] = out
   res.Outputs = append(res.Outputs, out)
@@ -63,21 +62,6 @@ func (res *parseResult) AddOutput(rawurl string) string {
 
 func parseTpl(raw string, vars map[string]string) (*parseResult, error) {
   res := &parseResult{
-    // TODO
-    Volumes: []*tes.Volume{
-      {
-        Name: "TODO Default funnel run output volume",
-        // TODO
-        SizeGb: 10,
-        MountPoint: "/opt/funnel/outputs",
-      },
-      {
-        Name: "TODO Default funnel run inputs volume",
-        // TODO
-        SizeGb: 10,
-        MountPoint: "/opt/funnel/inputs",
-      },
-    },
     inputsMap: map[string]*tes.TaskParameter{},
     outputsMap: map[string]*tes.TaskParameter{},
   }

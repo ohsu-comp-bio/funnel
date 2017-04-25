@@ -38,9 +38,120 @@ var examples string
 /*
 TODO
 Examples:
-  funnel run ubuntu 'md5sum {in .SRC} > {out .DST}' -- -SRC ~/input.txt -DST md5sum.txt"
-  funnel run ubuntu 'ls {in .P | name "IN PATH" | desc "IN DESCRIPTION" | path "/tmp/in"  | create } > {out .O | path "/tmp/out" }'
-`
+  funnel run ubuntu 'md5sum {in .SRC name:"Input path"} {.DST | stdout}' SRC: ~/input.txt DST: md5sum.txt"
+
+  tes template 'md5sum' --stdin ~/input.txt --stdout gs://bkt/output.txt
+
+  tes tpl --script runscript.sh --in input ~/input.txt --out output gs://bkt/results.txt
+
+  funnel task template  \
+    'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments' \
+    --in pair1 ~/pair1.fastq                        \
+    --in pair2 ~/pair2.fastq                        \
+    --contents other ~/input.txt                    \
+    --name pair1 'Pair 1 inputs'                    \
+    --desc pair1 'Pair 1 description'               \
+    --type pair1 directory                          \
+    --out alignments gs://bkt/bowtie/alignments.bam \
+    --factor 5                                      \
+    --image my-bowtie2                              \
+    --name 'Bowtie2 test'                           \
+    --volume /tmp                                   \
+    --volume /opt                                   \
+    --tag 'foo: bar'                                \
+    --description 'Testings an example of using `funnel run` for a bowtie2 command'
+
+  funnel run <<TPL
+  funnel task template 
+
+  align=$(cat <<TPL
+    'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments' 
+    -i pair1 ~/pair1.fastq            
+    -i pair2 ~/pair2.fastq           
+    -o alignments gs://bkt/bowtie/alignments.bam
+    -c other ~/input.txt        
+    -n pair1 'Pair 1 inputs'        
+    -d pair1 'Pair 1 description'   
+    -t pair1 directory             
+    -e factor 5
+    -m my-bowtie2
+    -n 'Bowtie2 test'
+    -v /tmp /opt
+    -l 'foo: bar'
+    -d 'Testings an example of using `funnel run` for a bowtie2 command'
+  TPL)
+
+
+
+  align_tpl=$(cat <<TPL
+    'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments' 
+    -c other ~/input.txt        
+    -n pair1 'Pair 1 inputs'        
+    -d pair1 'Pair 1 description'   
+    -t pair1 directory             
+    -e factor 5
+    -m my-bowtie2
+    -n 'Bowtie2 test'
+    -v /tmp /opt
+    -l 'foo: bar'
+    -d 'Testings an example of using `funnel run` for a bowtie2 command'
+  TPL)
+
+  align_sample_1=$(cat <<TPL
+    -i pair1 ~/sample1/pair1.fastq            
+    -i pair2 ~/sample1/pair2.fastq           
+    -o alignments gs://bkt/bowtie/sample1/alignments.bam
+  TPL)
+
+  align_sample_2=$(cat <<TPL
+    -i pair1 ~/sample2/pair1.fastq            
+    -i pair2 ~/sample2/pair2.fastq           
+    -o alignments gs://bkt/bowtie/sample2/alignments.bam
+  TPL)
+
+  sample_1_task=$(funnel run $align_tpl $align_sample_1)
+  sample_2_task=$(funnel run $align_tpl $align_sample_2)
+
+  funnel wait $sample_1_task $sample_2_task
+
+  sample_align_tasks=$( for sample in $(ls -1 samples/); \
+    funnel run $align_tpl \
+      -i pair1 "samples/$sample/pair1.fastq" \
+      -i pair2 "samples/$sample/pair2.fastq" \
+      -o alignments "gs://bkt/bowtie/$sample/alignments.bam"; \
+  done)
+
+  funnel wait $sample_align_tasks
+
+
+  funnel run <<TPL
+    --cpus 10
+    --preemptible
+    --ram 150GB
+    --disk 1TB
+    --zones west,east
+  TPL
+
+
+  funnel task template --yaml <<TPL
+    name: My task
+    description: My task description
+    resources:
+    inputs:
+      - name: Input one
+        url: {{ .input1 }}
+        path: /tmp/input.txt
+        type: FILE
+        contents: $(cat ~/other.txt)
+    cmd: md5sum /tmp/input.txt
+    stdout: STDOUT
+    stderr: STDERR
+    outputs:
+      - name: Output
+        url: {{ .output1 }}
+  TPL
+
+  funnel task create md5-task.json
 */
 
 var Cmd = &cobra.Command{
@@ -88,22 +199,38 @@ func run(cmd *cobra.Command, args []string) {
 
   log.Debug("CLIVARS", rawCliVars)
 
+  // Get template variables from the command line and variables file.
   cliVars, err := parseCliVars(rawCliVars)
   fileVars, err := parseFileVars(varsFile)
   vars, err := mergeVars(cliVars, fileVars)
 
   checkErr(err)
 
-  res, err := parseTpl(rawcmd, vars)
 
   checkErr(err)
 
+  // Build task input parameters
+  inputs := []*tes.TaskParameter{}
+  for path, url := range res.Inputs {
+    input := &tes.TaskParameter{
+    }
+    inputs = append(inputs, input)
+  }
+
+  // Build task output parameters
+  outputs := []*tes.TaskParameter{}
+  for path, url := range res.Outputs {
+    output := &tes.TaskParameter{}
+    outputs = append(outputs, output)
+  }
+
+  // Build the task message
   task := &tes.Task{
     Name: name,
     Project: project,
     Description: description,
-    Inputs: res.Inputs,
-    Outputs: res.Outputs,
+    Inputs: inputs,
+    Outputs: outputs,
     Resources: &tes.Resources{
       CpuCores: uint32(cpu),
       RamGb: ram,
@@ -111,7 +238,6 @@ func run(cmd *cobra.Command, args []string) {
       Preemptible: preemptible,
     },
     Executors: []*tes.Executor{
-      // TODO allow more than one command?
       {
         ImageName: image,
         Cmd: res.Cmd,

@@ -64,64 +64,6 @@ Examples:
   funnel run <<TPL
   funnel task template 
 
-  align=$(cat <<TPL
-    'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments' 
-    -i pair1 ~/pair1.fastq            
-    -i pair2 ~/pair2.fastq           
-    -o alignments gs://bkt/bowtie/alignments.bam
-    -c other ~/input.txt        
-    -n pair1 'Pair 1 inputs'        
-    -d pair1 'Pair 1 description'   
-    -t pair1 directory             
-    -e factor 5
-    -m my-bowtie2
-    -n 'Bowtie2 test'
-    -v /tmp /opt
-    -l 'foo: bar'
-    -d 'Testings an example of using `funnel run` for a bowtie2 command'
-  TPL)
-
-
-
-  align_tpl=$(cat <<TPL
-    'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments' 
-    -c other ~/input.txt        
-    -n pair1 'Pair 1 inputs'        
-    -d pair1 'Pair 1 description'   
-    -t pair1 directory             
-    -e factor 5
-    -m my-bowtie2
-    -n 'Bowtie2 test'
-    -v /tmp /opt
-    -l 'foo: bar'
-    -d 'Testings an example of using `funnel run` for a bowtie2 command'
-  TPL)
-
-  align_sample_1=$(cat <<TPL
-    -i pair1 ~/sample1/pair1.fastq            
-    -i pair2 ~/sample1/pair2.fastq           
-    -o alignments gs://bkt/bowtie/sample1/alignments.bam
-  TPL)
-
-  align_sample_2=$(cat <<TPL
-    -i pair1 ~/sample2/pair1.fastq            
-    -i pair2 ~/sample2/pair2.fastq           
-    -o alignments gs://bkt/bowtie/sample2/alignments.bam
-  TPL)
-
-  sample_1_task=$(funnel run $align_tpl $align_sample_1)
-  sample_2_task=$(funnel run $align_tpl $align_sample_2)
-
-  funnel wait $sample_1_task $sample_2_task
-
-  sample_align_tasks=$( for sample in $(ls -1 samples/); \
-    funnel run $align_tpl \
-      -i pair1 "samples/$sample/pair1.fastq" \
-      -i pair2 "samples/$sample/pair2.fastq" \
-      -o alignments "gs://bkt/bowtie/$sample/alignments.bam"; \
-  done)
-
-  funnel wait $sample_align_tasks
 
 
   funnel run <<TPL
@@ -327,3 +269,64 @@ func newClient(address string) (*client, error) {
 func (client *client) Close() {
 	client.conn.Close()
 }
+
+/*
+  align=$(cat <<TPL
+    'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments' 
+    -i pair1 ~/pair1.fastq            
+    -i pair2 ~/pair2.fastq           
+    -o alignments gs://bkt/bowtie/alignments.bam
+    -c other ~/input.txt        
+    -n pair1 'Pair 1 inputs'        
+    -d pair1 'Pair 1 description'   
+    -t pair1 directory             
+    -e factor 5
+    -m my-bowtie2
+    -n 'Bowtie2 test'
+    -v /tmp /opt
+    -l 'foo: bar'
+    -d 'Testings an example of using `funnel run` for a bowtie2 command'
+  TPL)
+
+
+
+  align_tpl=$(cat <<TPL
+    'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments' 
+    -c other ~/input.txt        
+    -n pair1 'Pair 1 inputs'        
+    -d pair1 'Pair 1 description'   
+    -t pair1 directory             
+    -e factor 5
+    -m my-bowtie2
+    -n 'Bowtie2 test'
+    -v /tmp /opt
+    -l 'foo: bar'
+    -d 'Testings an example of using `funnel run` for a bowtie2 command'
+  TPL)
+
+  align_sample_1=$(cat <<TPL
+    -i pair1 ~/sample1/pair1.fastq            
+    -i pair2 ~/sample1/pair2.fastq           
+    -o alignments gs://bkt/bowtie/sample1/alignments.bam
+  TPL)
+
+  align_sample_2=$(cat <<TPL
+    -i pair1 ~/sample2/pair1.fastq            
+    -i pair2 ~/sample2/pair2.fastq           
+    -o alignments gs://bkt/bowtie/sample2/alignments.bam
+  TPL)
+
+  sample_1_task=$(funnel run $align_tpl $align_sample_1)
+  sample_2_task=$(funnel run $align_tpl $align_sample_2)
+
+  funnel wait $sample_1_task $sample_2_task
+
+  sample_align_tasks=$( for sample in $(ls -1 samples/); \
+    funnel run $align_tpl \
+      -i pair1 "samples/$sample/pair1.fastq" \
+      -i pair2 "samples/$sample/pair2.fastq" \
+      -o alignments "gs://bkt/bowtie/$sample/alignments.bam"; \
+  done)
+
+  funnel wait $sample_align_tasks
+*/

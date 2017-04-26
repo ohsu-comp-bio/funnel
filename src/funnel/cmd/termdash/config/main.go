@@ -13,7 +13,7 @@ var (
 	GlobalSwitches []*Switch
 )
 
-func init() {
+func Init() {
 	for _, p := range params {
 		GlobalParams = append(GlobalParams, p)
 	}

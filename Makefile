@@ -54,8 +54,10 @@ lint:
 	@flake8 --exclude ./venv,./web,./src/vendor .
 	@go get github.com/alecthomas/gometalinter
 	@./build/bin/gometalinter --install > /dev/null
+	@# TODO enable golint on funnel/cmd/termdash
 	@./build/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor \
-	 -s proto --exclude 'cmd/examples/bundle.go' --exclude 'web-dashboard/web.go' ./...
+	 -s proto --exclude 'cmd/examples/bundle.go' --exclude "cmd/termdash" --exclude 'web-dashboard/web.go' ./...
+	@gometalinter --disable-all --enable=vet --enable=gofmt --vendor ./cmd/termdash/...
 
 go-test-short:
 	@go test -short $(shell go list ./... | grep -v /vendor/)

@@ -45,7 +45,7 @@ func (gc *GridCursor) RefreshTaskList() (lenChanged bool) {
 	for _, t := range gc.tSource.All() {
 		if t.display {
 			if t.Task.Id == gc.selectedID {
-				t.Widgets.Id.Highlight()
+				t.Widgets.ID.Highlight()
 				cursorVisible = true
 			}
 			gc.filtered = append(gc.filtered, t)
@@ -70,11 +70,11 @@ func (gc *GridCursor) RefreshTaskList() (lenChanged bool) {
 // Set an initial cursor position, if possible
 func (gc *GridCursor) Reset() {
 	for _, t := range gc.tSource.All() {
-		t.Widgets.Id.UnHighlight()
+		t.Widgets.ID.UnHighlight()
 	}
 	if gc.Len() > 0 {
 		gc.selectedID = gc.filtered[0].Task.Id
-		gc.filtered[0].Widgets.Id.Highlight()
+		gc.filtered[0].Widgets.ID.Highlight()
 	}
 }
 
@@ -119,9 +119,9 @@ func (gc *GridCursor) Up() {
 	active := gc.filtered[idx]
 	next := gc.filtered[idx-1]
 
-	active.Widgets.Id.UnHighlight()
+	active.Widgets.ID.UnHighlight()
 	gc.selectedID = next.Task.Id
-	next.Widgets.Id.Highlight()
+	next.Widgets.ID.Highlight()
 
 	gc.ScrollPage()
 	ui.Render(cGrid)
@@ -135,9 +135,9 @@ func (gc *GridCursor) Down() {
 	active := gc.filtered[idx]
 	next := gc.filtered[idx+1]
 
-	active.Widgets.Id.UnHighlight()
+	active.Widgets.ID.UnHighlight()
 	gc.selectedID = next.Task.Id
-	next.Widgets.Id.Highlight()
+	next.Widgets.ID.Highlight()
 
 	gc.ScrollPage()
 	ui.Render(cGrid)
@@ -157,9 +157,9 @@ func (gc *GridCursor) PgUp() {
 	active := gc.filtered[idx]
 	next := gc.filtered[nextidx]
 
-	active.Widgets.Id.UnHighlight()
+	active.Widgets.ID.UnHighlight()
 	gc.selectedID = next.Task.Id
-	next.Widgets.Id.Highlight()
+	next.Widgets.ID.Highlight()
 
 	cGrid.Align()
 	ui.Render(cGrid)
@@ -180,9 +180,9 @@ func (gc *GridCursor) PgDown() {
 	active := gc.filtered[idx]
 	next := gc.filtered[nextidx]
 
-	active.Widgets.Id.UnHighlight()
+	active.Widgets.ID.UnHighlight()
 	gc.selectedID = next.Task.Id
-	next.Widgets.Id.Highlight()
+	next.Widgets.ID.Highlight()
 
 	cGrid.Align()
 	ui.Render(cGrid)

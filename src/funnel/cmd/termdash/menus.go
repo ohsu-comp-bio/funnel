@@ -78,7 +78,7 @@ func SortMenu() {
 	m.BorderLabel = "Sort Field"
 
 	for _, field := range SortFields() {
-		m.AddItems(menu.Item{field, ""})
+		m.AddItems(menu.Item{Label: field, Val: ""})
 	}
 
 	// set cursor position to current sort field

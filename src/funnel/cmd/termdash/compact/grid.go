@@ -7,7 +7,7 @@ import (
 	ui "github.com/gizak/termui"
 )
 
-var header *CompactHeader
+var header *Header
 
 type Grid struct {
 	ui.GridBufferer

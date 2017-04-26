@@ -23,7 +23,7 @@ type Compact struct {
 
 func NewCompact(t *tes.Task) *Compact {
 	// truncate task id
-	id := t.ID
+	id := t.Id
 	if len(id) > 12 {
 		id = id[:12]
 	}

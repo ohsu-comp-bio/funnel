@@ -5,6 +5,7 @@ import (
 	"funnel/cmd/server"
 	"funnel/cmd/task"
 	"funnel/cmd/worker"
+  "funnel/cmd/run"
 	"github.com/spf13/cobra"
 )
 
@@ -20,4 +21,5 @@ func init() {
 	RootCmd.AddCommand(server.Cmd)
 	RootCmd.AddCommand(task.Cmd)
 	RootCmd.AddCommand(gce.Cmd)
+  RootCmd.AddCommand(run.Cmd)
 }

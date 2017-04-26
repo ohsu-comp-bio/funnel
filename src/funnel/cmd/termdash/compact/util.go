@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package compact
 
 // Common helper functions
@@ -20,7 +23,7 @@ func calcWidth(width int) int {
 	for _, w := range colWidths {
 		width -= w
 		if w == 0 {
-			staticCols += 1
+			staticCols++
 		}
 	}
 	return (width - spacing) / staticCols

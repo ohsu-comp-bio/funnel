@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package termdash
 
 import (
@@ -8,13 +11,13 @@ import (
 )
 
 var helpDialog = []menu.Item{
-	{"[a] - toggle display of all tasks", ""},
-	{"[f] - filter displayed tasks", ""},
-	{"[h] - open this help dialog", ""},
-	{"[H] - toggle dashboard header", ""},
-	{"[s] - select task sort field", ""},
-	{"[r] - reverse task sort order", ""},
-	{"[q] - exit funnel dashboard", ""},
+	{Label: "[a] - toggle display of all tasks", Val: ""},
+	{Label: "[f] - filter displayed tasks", Val: ""},
+	{Label: "[h] - open this help dialog", Val: ""},
+	{Label: "[H] - toggle dashboard header", Val: ""},
+	{Label: "[s] - select task sort field", Val: ""},
+	{Label: "[r] - reverse task sort order", Val: ""},
+	{Label: "[q] - exit funnel dashboard", Val: ""},
 }
 
 func HelpMenu() {

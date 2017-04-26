@@ -17,9 +17,9 @@ type TaskSource struct {
 	lock   sync.RWMutex
 }
 
-func NewTaskSource(tesHttpServerAddress string) *TaskSource {
+func NewTaskSource(tesHTTPServerAddress string) *TaskSource {
 	// init funnel http client
-	client := task.NewClient(tesHttpServerAddress)
+	client := task.NewClient(tesHTTPServerAddress)
 	cm := &TaskSource{
 		client: client,
 		lock:   sync.RWMutex{},

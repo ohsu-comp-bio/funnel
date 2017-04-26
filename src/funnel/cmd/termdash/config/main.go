@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package config
 
 import (
@@ -10,7 +13,7 @@ var (
 	GlobalSwitches []*Switch
 )
 
-func Init() {
+func init() {
 	for _, p := range params {
 		GlobalParams = append(GlobalParams, p)
 	}

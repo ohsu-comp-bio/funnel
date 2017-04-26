@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package compact
 
 import (
@@ -9,7 +12,7 @@ import (
 
 type Compact struct {
 	Status *Status
-	Id     *TextCol
+	ID     *TextCol
 	State  *TextCol
 	Name   *TextCol
 	Desc   *TextCol
@@ -20,13 +23,13 @@ type Compact struct {
 
 func NewCompact(t *tes.Task) *Compact {
 	// truncate task id
-	id := t.Id
+	id := t.ID
 	if len(id) > 12 {
 		id = id[:12]
 	}
 	row := &Compact{
 		Status: NewStatus(),
-		Id:     NewTextCol(id),
+		ID:     NewTextCol(id),
 		State:  NewTextCol(t.State.String()),
 		Name:   NewTextCol(t.Name),
 		Desc:   NewTextCol(t.Description),
@@ -78,7 +81,7 @@ func (row *Compact) SetWidth(width int) {
 func (row *Compact) Buffer() ui.Buffer {
 	buf := ui.NewBuffer()
 	buf.Merge(row.Status.Buffer())
-	buf.Merge(row.Id.Buffer())
+	buf.Merge(row.ID.Buffer())
 	buf.Merge(row.State.Buffer())
 	buf.Merge(row.Name.Buffer())
 	buf.Merge(row.Desc.Buffer())
@@ -88,7 +91,7 @@ func (row *Compact) Buffer() ui.Buffer {
 func (row *Compact) all() []ui.GridBufferer {
 	return []ui.GridBufferer{
 		row.Status,
-		row.Id,
+		row.ID,
 		row.State,
 		row.Name,
 		row.Desc,

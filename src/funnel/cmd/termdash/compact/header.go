@@ -1,19 +1,22 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package compact
 
 import (
 	ui "github.com/gizak/termui"
 )
 
-type CompactHeader struct {
+type Header struct {
 	X, Y   int
 	Width  int
 	Height int
 	pars   []*ui.Par
 }
 
-func NewCompactHeader() *CompactHeader {
+func NewHeader() *Header {
 	fields := []string{"", "ID", "STATE", "NAME", "DESCRIPTION"}
-	ch := &CompactHeader{}
+	ch := &Header{}
 	ch.Height = 2
 	for _, f := range fields {
 		ch.addFieldPar(f)
@@ -21,11 +24,11 @@ func NewCompactHeader() *CompactHeader {
 	return ch
 }
 
-func (ch *CompactHeader) GetHeight() int {
+func (ch *Header) GetHeight() int {
 	return ch.Height
 }
 
-func (ch *CompactHeader) SetWidth(w int) {
+func (ch *Header) SetWidth(w int) {
 	if w == ch.Width {
 		return
 	}
@@ -46,18 +49,18 @@ func (ch *CompactHeader) SetWidth(w int) {
 	ch.Width = w
 }
 
-func (ch *CompactHeader) SetX(x int) {
+func (ch *Header) SetX(x int) {
 	ch.X = x
 }
 
-func (ch *CompactHeader) SetY(y int) {
+func (ch *Header) SetY(y int) {
 	for _, p := range ch.pars {
 		p.SetY(y)
 	}
 	ch.Y = y
 }
 
-func (ch *CompactHeader) Buffer() ui.Buffer {
+func (ch *Header) Buffer() ui.Buffer {
 	buf := ui.NewBuffer()
 	for _, p := range ch.pars {
 		buf.Merge(p.Buffer())
@@ -65,7 +68,7 @@ func (ch *CompactHeader) Buffer() ui.Buffer {
 	return buf
 }
 
-func (ch *CompactHeader) addFieldPar(s string) {
+func (ch *Header) addFieldPar(s string) {
 	p := ui.NewPar(s)
 	p.Height = ch.Height
 	p.Border = false

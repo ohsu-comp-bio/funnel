@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package termdash
 
 import (
@@ -17,7 +20,7 @@ Valid colors:
 	ui.ColorWhite
 */
 
-var ColorMap = map[string]ui.Attribute{
+var colorMap = map[string]ui.Attribute{
 	"fg":                 ui.ColorWhite,
 	"bg":                 ui.ColorDefault,
 	"block.bg":           ui.ColorDefault,

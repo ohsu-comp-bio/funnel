@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package widgets
 
 import (
@@ -7,7 +10,7 @@ import (
 )
 
 var (
-	input_chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_."
+	inputChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_."
 )
 
 type Padding [2]int // x,y padding
@@ -77,7 +80,7 @@ func (i *Input) KeyPress(e ui.Event) {
 	if len(i.Data) >= i.MaxLen {
 		return
 	}
-	if strings.Index(input_chars, ch) > -1 {
+	if strings.Index(inputChars, ch) > -1 {
 		i.Data += ch
 		i.stream <- i.Data
 		ui.Render(i)

@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package termdash
 
 import (
@@ -6,14 +9,14 @@ import (
 )
 
 type GridCursor struct {
-	selectedID string // id of currently selected task
+	selectedID string
 	filtered   TaskWidgets
 	tSource    TesTaskSource
 }
 
-func NewGridCursor(tesHttpServerAddress string) *GridCursor {
+func NewGridCursor(tesHTTPServerAddress string) *GridCursor {
 	return &GridCursor{
-		tSource: NewTaskSource(tesHttpServerAddress),
+		tSource: NewTaskSource(tesHTTPServerAddress),
 	}
 }
 

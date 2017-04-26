@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package compact
 
 import (
@@ -6,7 +9,7 @@ import (
 
 var header *CompactHeader
 
-type CompactGrid struct {
+type Grid struct {
 	ui.GridBufferer
 	Rows   []ui.GridBufferer
 	X, Y   int
@@ -15,12 +18,12 @@ type CompactGrid struct {
 	Offset int // starting row offset
 }
 
-func NewCompactGrid() *CompactGrid {
-	header = NewCompactHeader() // init column header
-	return &CompactGrid{}
+func NewGrid() *Grid {
+	header = NewHeader() // init column header
+	return &Grid{}
 }
 
-func (cg *CompactGrid) Align() {
+func (cg *Grid) Align() {
 	y := cg.Y
 	if cg.Offset >= len(cg.Rows) {
 		cg.Offset = 0
@@ -33,20 +36,20 @@ func (cg *CompactGrid) Align() {
 	}
 }
 
-func (cg *CompactGrid) Clear()         { cg.Rows = []ui.GridBufferer{} }
-func (cg *CompactGrid) GetHeight() int { return len(cg.Rows) + header.Height }
-func (cg *CompactGrid) SetX(x int)     { cg.X = x }
-func (cg *CompactGrid) SetY(y int)     { cg.Y = y }
-func (cg *CompactGrid) SetWidth(w int) { cg.Width = w }
-func (cg *CompactGrid) MaxRows() int   { return ui.TermHeight() - header.Height - cg.Y }
+func (cg *Grid) Clear()         { cg.Rows = []ui.GridBufferer{} }
+func (cg *Grid) GetHeight() int { return len(cg.Rows) + header.Height }
+func (cg *Grid) SetX(x int)     { cg.X = x }
+func (cg *Grid) SetY(y int)     { cg.Y = y }
+func (cg *Grid) SetWidth(w int) { cg.Width = w }
+func (cg *Grid) MaxRows() int   { return ui.TermHeight() - header.Height - cg.Y }
 
-func (cg *CompactGrid) pageRows() (rows []ui.GridBufferer) {
+func (cg *Grid) pageRows() (rows []ui.GridBufferer) {
 	rows = append(rows, header)
 	rows = append(rows, cg.Rows[cg.Offset:]...)
 	return rows
 }
 
-func (cg *CompactGrid) Buffer() ui.Buffer {
+func (cg *Grid) Buffer() ui.Buffer {
 	buf := ui.NewBuffer()
 	for _, r := range cg.pageRows() {
 		buf.Merge(r.Buffer())
@@ -54,7 +57,7 @@ func (cg *CompactGrid) Buffer() ui.Buffer {
 	return buf
 }
 
-func (cg *CompactGrid) AddRows(rows ...ui.GridBufferer) {
+func (cg *Grid) AddRows(rows ...ui.GridBufferer) {
 	for _, r := range rows {
 		cg.Rows = append(cg.Rows, r)
 	}

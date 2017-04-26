@@ -1,3 +1,6 @@
+// Copied and modified from: https://github.com/bcicen/ctop
+// MIT License - Copyright (c) 2017 VektorLab
+
 package expanded
 
 import (
@@ -18,7 +21,7 @@ var (
 )
 
 type Expanded struct {
-	TaskJson *Json
+	TaskJSON *JSON
 	// TaskInfo    *TaskInfo
 	// TaskInputs  *TaskParameter
 	// TaskOutputs *TaskParameter
@@ -33,7 +36,7 @@ func NewExpanded(t *tes.Task) *Expanded {
 	ts, _ := marshaler.MarshalToString(t)
 	ts = strings.Replace(ts, "\\n", "\n  ", -1)
 	return &Expanded{
-		TaskJson: NewJson(ts),
+		TaskJSON: NewJSON(ts),
 		// TaskInfo:    NewTaskInfo(t),
 		// TaskInputs:  NewTaskParameters(t.Inputs, "INPUTS"),
 		// TaskOutputs: NewTaskParameters(t.Outputs, "OUTPUTS"),
@@ -47,7 +50,7 @@ func NewExpanded(t *tes.Task) *Expanded {
 func (e *Expanded) Update(t *tes.Task) {
 	ts, _ := marshaler.MarshalToString(t)
 	ts = strings.Replace(ts, "\\n", "\n  ", -1)
-	e.TaskJson.Set(ts)
+	e.TaskJSON.Set(ts)
 	// e.TaskInfo.Set(t)
 	// e.TaskInputs.Set(t.Inputs)
 	// e.TaskOutputs.Set(t.Outputs)
@@ -79,7 +82,7 @@ func (e *Expanded) SetWidth(w int) {
 
 // Return total column height
 func (e *Expanded) GetHeight() (h int) {
-	h += e.TaskJson.Height
+	h += e.TaskJSON.Height
 	// h += e.TaskInfo.Height
 	// h += e.TaskInputs.Height
 	// h += e.TaskOutputs.Height
@@ -116,7 +119,7 @@ func (e *Expanded) Buffer() ui.Buffer {
 		buf.Merge(sizeError.Buffer())
 		return buf
 	}
-	buf.Merge(e.TaskJson.Buffer())
+	buf.Merge(e.TaskJSON.Buffer())
 	// buf.Merge(e.TaskInfo.Buffer())
 	// buf.Merge(e.TaskInputs.Buffer())
 	// buf.Merge(e.TaskOutputs.Buffer())
@@ -128,7 +131,7 @@ func (e *Expanded) Buffer() ui.Buffer {
 
 func (e *Expanded) all() []ui.GridBufferer {
 	return []ui.GridBufferer{
-		e.TaskJson,
+		e.TaskJSON,
 		// e.TaskInfo,
 		// e.TaskInputs,
 		// e.TaskOutputs,

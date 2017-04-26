@@ -1,0 +1,94 @@
+
+{{ partial "head.html" . }}
+
+<div class="homepage-lead"><div class="homepage-lead-container">
+  <h1>Funnel runs your tasks.</h1>
+  <p>Given a task, Funnel will find a worker in a cluster,
+     download input files, run the task in Docker,
+     upload output files, and capture logs.</p>
+  <a href="/install" class="download-button">Download v0.1</a>
+  <a href="/docs/" class="docs-button">Learn more</a>
+</div></div>
+
+<div class="homepage">
+
+  <div class="homepage-notice">
+    <h3>Funnel is alpha quality.</h3>
+    <p>Funnel is a young project and there's still a lot to do.
+       It's usable, but important things are broken and missing.
+       Check out the roadmap.</p>
+  </div>
+
+  <hr>
+
+  <div class="homepage-demo">
+    <h2>Check it out.</h2>
+
+    {{ range .Params.Demo }}
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>{{ .Title }}</h1>
+          <p>{{ .Desc }}</p>
+        </div>
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">{{ .Cmd }}</code></pre>
+        </div>
+      </div>
+    {{ end }}
+
+    <p style="text-align: center"><strong>The beat goes on.</strong> Check out the guides for more.</p>
+  </div>
+
+  <hr>
+
+  <div class="homepage-more">
+
+    <h2>Join us!</h2>
+
+    <div class="section group">
+
+      <div class="col span_4_of_12">
+        <h3>Drop in for a chat.</h3>
+        <p>Join the <a href="https://gitter.im/ohsu-comp-bio/funnel">Gitter channel</a>.</p>
+      </div>
+
+      <div class="col span_4_of_12">
+        <h3>Get the code.</h3>
+        <p>Head over to <a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a> and dig in.</p>
+      </div>
+
+      <div class="col span_4_of_12">
+        <h3>Give feedback.</h3>
+        <p>We love hearing from users.<br>
+           Tell us what you think.</p>
+      </div>
+
+    </div>
+
+    <hr>
+
+    <h2>There's more.</h2>
+
+    <div class="section group">
+
+      <div class="col span_4_of_12">
+        <h3>Standards based.</h3>
+        <p>Funnel is based on an <a href="https://github.com/ga4gh/task-execution-schemas">open standard effort</a> from the GA4GH.</p>
+      </div>
+
+      <div class="col span_4_of_12">
+        <h3>Open source.</h3>
+        <p>Funnel is <a href="https://opensource.org/licenses/MIT">MIT licensed</a>.<br>Do as you please.</p>
+      </div>
+
+      <div class="col span_4_of_12">
+        <h3>Related projects.</h3>
+        <p>Need something here.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,3 +1,0 @@
-# Design
-
-***Work in progress***

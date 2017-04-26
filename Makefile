@@ -11,9 +11,11 @@ export PYTHONPATH
 PROTO_INC=-I ./ -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
 
+# Build the code
 install: depends
 	@go install github.com/ohsu-comp-bio/funnel
 
+# Generate the protobuf/gRPC code
 proto: depends
 	@go get ./vendor/github.com/golang/protobuf/protoc-gen-go/
 	@go get ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/
@@ -29,26 +31,32 @@ proto: depends
 		--grpc-gateway_out=logtostderr=true:. \
 		funnel.proto
 
+# Update submodules and build code
 depends:
 	@git submodule update --init --recursive
 	@go get -d github.com/ohsu-comp-bio/funnel
 
+# Start API reference doc server
 serve-doc:
 	godoc --http=:6060
 
+# Add new vendored dependencies
 add_deps: 
 	@go get github.com/dpw/vendetta
 	@vendetta ./
 
+# Prune unused vendored dependencies
 prune_deps:
 	@go get github.com/dpw/vendetta
 	@vendetta -p ./
 
+# Automatially update code formatting
 tidy:
 	@pip install -q autopep8
 	@find . \( -path ./vendor -o -path ./web-dashboard/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
 	@find . \( -path ./vendor -o -path ./web-dashboard/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
 
+# Run code style and other checks
 lint:
 	@pip install -q flake8
 	@flake8 --exclude ./venv,./web-dashboard,./vendor .
@@ -57,17 +65,21 @@ lint:
 	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor \
 	  -s proto --exclude 'cmd/examples/bundle.go' --exclude 'web-dashboard/web.go' ./...
 
+# Run fast-running Go tests
 go-test-short:
 	@go test -short $(shell go list ./... | grep -v /vendor/)
 
+# Run all Go tests
 go-test:
 	@go test $(shell go list ./... | grep -v /vendor/)
 
+# Run all tests, including end-to-end Python tests
 test:	go-test
 	@docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/
 	@pip2.7 install -q -r tests/requirements.txt
 	@nosetests-2.7 tests/
 
+# Build the web dashboard
 web:
 	@mkdir -p build/web-dashboard
 	@npm install --prefix ./web-dashboard
@@ -77,6 +89,7 @@ web:
 	@go get -u github.com/jteeuwen/go-bindata/...
 	@go-bindata -pkg webdash -prefix "build/" -o web-dashboard/web.go build/web-dashboard
 
+# Build binaries for all OS/Architectures
 cross-compile: depends
 	@for GOOS in darwin linux; do \
 		for GOARCH in 386 amd64; do \
@@ -84,6 +97,7 @@ cross-compile: depends
 		done; \
 	done
 
+# Upload a dev. release to GitHub
 upload-dev-release:
 	@go get github.com/aktau/github-release
 	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
@@ -115,6 +129,7 @@ upload-dev-release:
 		--file ./build/dev-release/$$f; \
 	done
 
+# Build the GCE image installer
 gce-installer: cross-compile
 	@mkdir -p build/gce-installer
 	@cp deployments/gce/bundle/* build/gce-installer/
@@ -124,6 +139,7 @@ gce-installer: cross-compile
 		mv bundle.run funnel-gce-image-installer && \
 		cd ..
 
+# Generate mocks for testing.
 gen-mocks:
 	@go get github.com/vektra/mockery/...
 	@mockery -dir scheduler/gce -name Client -print > scheduler/gce/mocks/Client_mock.go
@@ -132,11 +148,19 @@ gen-mocks:
 	@mockery -dir scheduler -name Database -print > scheduler/mocks/Database_mock.go
 	@mockery -dir scheduler -name Client -print > scheduler/mocks/Client_mock.go
 
+# Bundle example task messages into Go code.
 bundle-examples:
 	@go-bindata -pkg examples -o cmd/examples/bundle.go examples
 
+# Make everything usually needed to prepare for a pull request
 full: proto install prune_deps add_deps tidy lint test web
 
+# Serve the Funnel website on localhost:1313
+website-dev:
+	@go get github.com/spf13/hugo
+	hugo --source ./website -w server
+
+# Remove build/development files.
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 

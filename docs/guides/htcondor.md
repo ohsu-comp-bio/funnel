@@ -1,3 +1,0 @@
-# HTCondor
-
-***Work in progress***

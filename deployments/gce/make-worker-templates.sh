@@ -1,18 +1,15 @@
 #!/bin/bash
 
-# This creates a GCE Instance Templates for a Funnel workers.
-#
-# This expects the "funnel" image family to exist already.
-
-FUNNEL_SERVER='funnel-server:9090'
+# List of machine types to create templates for.
+# https://cloud.google.com/compute/docs/machine-types
 MACHINE_TYPES="
 n1-standard-1
+n1-standard-2
 n1-standard-4
 "
 
 for mt in $MACHINE_TYPES; do
-  NAME="funnel-worker-$mt"
-  gcloud compute instance-templates create $NAME \
+  gcloud compute instance-templates create "funnel-worker-$mt" \
     --scopes compute-rw,storage-rw \
     --tags funnel \
     --image-family funnel \

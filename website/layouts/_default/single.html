@@ -1,0 +1,37 @@
+{{ partial "head.html" . }}
+
+<div class="content section group">
+
+  <div class="sidebar col span_3_of_12">
+    <ul class="sidebar-nav">
+      {{ $page := . }}
+      {{ range $i, $menu := .Site.Menus }}
+        {{ range $menu }}
+        <li><a
+          href="{{ .URL }}"
+          class="sidebar-nav-item {{ if $page.IsMenuCurrent "main" . }} active{{end}}"
+          >{{ .Pre }}{{ .Name }}</a></li>
+          {{ if .HasChildren }}
+          {{ range .Children }}
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="{{ .URL }}"
+                   class="sidebar-nav-item {{ if $page.IsMenuCurrent "main" . }} active{{end}}"
+                >{{ .Name }}</a></li>
+            </ul>
+          </li>
+          {{ end }}
+          {{ end }}
+        {{ end }}
+      {{end}}
+    </ul>
+  </div>
+
+  <div class="main col span_8_of_12">
+    {{ .Content }}
+  </div>
+
+</div>
+</body>
+</html>

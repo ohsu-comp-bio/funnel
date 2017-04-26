@@ -52,7 +52,7 @@ lint:
 	flake8 --exclude ./venv,./web .
 	go get github.com/alecthomas/gometalinter
 	./build/bin/gometalinter --install > /dev/null
-	./build/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto -s web ./src/funnel/...
+	./build/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor -s ga4gh -s proto -s web --exclude 'examples/bundle.go' ./src/funnel/...
 
 go-test-short:
 	go test -short funnel/...
@@ -114,6 +114,9 @@ gen-mocks:
 	mockery -dir src/funnel/server -name Database -print > src/funnel/server/mocks/Database_mock.go
 	mockery -dir src/funnel/scheduler -name Database -print > src/funnel/scheduler/mocks/Database_mock.go
 	mockery -dir src/funnel/scheduler -name Client -print > src/funnel/scheduler/mocks/Client_mock.go
+
+bundle-examples:
+	go-bindata -pkg examples -o src/funnel/examples/bundle.go examples
 
 full: proto install prune_deps add_deps tidy lint test web
 

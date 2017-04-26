@@ -88,7 +88,7 @@ func webBundleJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/bundle.js", size: 1302849, mode: os.FileMode(420), modTime: time.Unix(1492625399, 0)}
+	info := bindataFileInfo{name: "web/bundle.js", size: 1302849, mode: os.FileMode(420), modTime: time.Unix(1492626830, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -108,7 +108,7 @@ func webIndexHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/index.html", size: 1112, mode: os.FileMode(420), modTime: time.Unix(1492625400, 0)}
+	info := bindataFileInfo{name: "web/index.html", size: 1112, mode: os.FileMode(420), modTime: time.Unix(1492626830, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -128,7 +128,7 @@ func webListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/list.html", size: 915, mode: os.FileMode(420), modTime: time.Unix(1492625400, 0)}
+	info := bindataFileInfo{name: "web/list.html", size: 915, mode: os.FileMode(420), modTime: time.Unix(1492626830, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -148,7 +148,7 @@ func webStyleCss() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/style.css", size: 353060, mode: os.FileMode(420), modTime: time.Unix(1492625400, 0)}
+	info := bindataFileInfo{name: "web/style.css", size: 353060, mode: os.FileMode(420), modTime: time.Unix(1492626830, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -168,7 +168,7 @@ func webTaskHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/task.html", size: 3644, mode: os.FileMode(420), modTime: time.Unix(1492625400, 0)}
+	info := bindataFileInfo{name: "web/task.html", size: 3644, mode: os.FileMode(420), modTime: time.Unix(1492626830, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -188,7 +188,7 @@ func webWorkerListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "web/worker-list.html", size: 510, mode: os.FileMode(420), modTime: time.Unix(1492625400, 0)}
+	info := bindataFileInfo{name: "web/worker-list.html", size: 510, mode: os.FileMode(420), modTime: time.Unix(1492626830, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -245,11 +245,11 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"web/bundle.js":        webBundleJs,
-	"web/index.html":       webIndexHtml,
-	"web/list.html":        webListHtml,
-	"web/style.css":        webStyleCss,
-	"web/task.html":        webTaskHtml,
+	"web/bundle.js": webBundleJs,
+	"web/index.html": webIndexHtml,
+	"web/list.html": webListHtml,
+	"web/style.css": webStyleCss,
+	"web/task.html": webTaskHtml,
 	"web/worker-list.html": webWorkerListHtml,
 }
 
@@ -292,15 +292,14 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
-
 var _bintree = &bintree{nil, map[string]*bintree{
-	"web": {nil, map[string]*bintree{
-		"bundle.js":        {webBundleJs, map[string]*bintree{}},
-		"index.html":       {webIndexHtml, map[string]*bintree{}},
-		"list.html":        {webListHtml, map[string]*bintree{}},
-		"style.css":        {webStyleCss, map[string]*bintree{}},
-		"task.html":        {webTaskHtml, map[string]*bintree{}},
-		"worker-list.html": {webWorkerListHtml, map[string]*bintree{}},
+	"web": &bintree{nil, map[string]*bintree{
+		"bundle.js": &bintree{webBundleJs, map[string]*bintree{}},
+		"index.html": &bintree{webIndexHtml, map[string]*bintree{}},
+		"list.html": &bintree{webListHtml, map[string]*bintree{}},
+		"style.css": &bintree{webStyleCss, map[string]*bintree{}},
+		"task.html": &bintree{webTaskHtml, map[string]*bintree{}},
+		"worker-list.html": &bintree{webWorkerListHtml, map[string]*bintree{}},
 	}},
 }}
 
@@ -350,3 +349,4 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
+

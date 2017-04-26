@@ -8,7 +8,8 @@ import (
 )
 
 var formatter = &textFormatter{
-	DisableTimestamp: true,
+	DisableTimestamp: false,
+	FullTimestamp:    true,
 }
 
 func init() {
@@ -109,7 +110,7 @@ func SetOutput(w io.Writer) {
 	logrus.SetOutput(w)
 }
 
-var rootLogger = New("tes")
+var rootLogger = New("funnel")
 
 // Debug logs to the global logger at the Debug level
 func Debug(msg string, args ...interface{}) {

@@ -224,7 +224,7 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 
 // GetTask gets a task, which describes a running task
 func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
-
+	log.Debug("GetTasks called", "taskID", req.Id)
 	var task *tes.Task
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		task = getTask(tx, req.Id)
@@ -293,6 +293,7 @@ func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTask
 // - versions
 // - etc.
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
+	log.Debug("GetServiceInfo called")
 	//BUG: this isn't the best translation, probably lossy.
 	//     Maybe ServiceInfo data structure schema needs to be refactored
 	//     For example, you can't have multiple S3 endpoints

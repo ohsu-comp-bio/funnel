@@ -81,7 +81,8 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 					  sc["startup time"] = 1.0
 			    }
 		*/
-		sc = sc.Weighted(s.conf.Backends.GCE.Weights)
+		weights := map[string]float32{}
+		sc = sc.Weighted(weights)
 
 		offer := scheduler.NewOffer(w, j, sc)
 		offers = append(offers, offer)

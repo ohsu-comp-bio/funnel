@@ -52,12 +52,12 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 
 		sc := scheduler.DefaultScores(w, j)
 		/*
-			    TODO?
-			    if w.State == pbf.WorkerState_Alive {
-					  sc["startup time"] = 1.0
-			    }
+				    TODO?
+				    if w.State == pbf.WorkerState_Alive {
+						  sc["startup time"] = 1.0
+				    }
+			sc = sc.Weighted(s.conf.Backends.OpenStack.Weights)
 		*/
-		sc = sc.Weighted(s.conf.Backends.OpenStack.Weights)
 
 		offer := scheduler.NewOffer(w, j, sc)
 		offers = append(offers, offer)

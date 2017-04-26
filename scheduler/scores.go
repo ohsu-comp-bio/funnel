@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"sort"
@@ -27,7 +26,7 @@ func (s Scores) Average() float32 {
 
 // Weighted returns a new Scores instance with each score multiplied
 // by the given weights. Weights default to 0.0
-func (s Scores) Weighted(w config.Weights) Scores {
+func (s Scores) Weighted(w map[string]float32) Scores {
 	out := Scores{}
 	for k, v := range s {
 		out[k] = v * w[k]

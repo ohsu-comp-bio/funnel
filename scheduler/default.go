@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
@@ -9,7 +8,7 @@ import (
 // DefaultScheduleAlgorithm implements a simple scheduling algorithm
 // that is (currently) common across a few scheduler backends.
 // Given a task, list of workers, and weights, it returns the best Offer or nil.
-func DefaultScheduleAlgorithm(j *tes.Task, workers []*pbf.Worker, weights config.Weights) *Offer {
+func DefaultScheduleAlgorithm(j *tes.Task, workers []*pbf.Worker, weights map[string]float32) *Offer {
 
 	offers := []*Offer{}
 	for _, w := range workers {

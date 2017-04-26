@@ -1,21 +1,22 @@
 #!/bin/bash
 
 # This creates a VM on GCE and deploys a Funnel worker.
+#
 # This expects a Funnel server to already be running,
 # and also expects the "funnel" image family to already exist.
 
 NAME="funnel-worker-$(date +%s)"
-SERVER='funnel-server:9090'
-MACHINE_TYPE='n1-standard-16'
+FUNNEL_SERVER='funnel-server:9090'
 
 gcloud compute instances create $NAME \
-  --scopes https://www.googleapis.com/auth/cloud-platform \
+  --scopes compute-rw,storage-rw \
+  --zone 'us-west1-a' \
   --tags funnel \
   --image-family funnel \
-  --machine-type $MACHINE_TYPE \
+  --machine-type 'n1-standard-16' \
   --boot-disk-type 'pd-standard' \
   --boot-disk-size '250GB' \
-  --metadata "funnel-worker-serveraddress=$SERVER"
+  --metadata "funnel-worker-serveraddress=$FUNNEL_SERVER"
 
 # Tail serial port logs.
 # Useful for debugging.

@@ -1,0 +1,12 @@
+[Unit]
+Description=Funnel
+
+[Service]
+User=funnel
+Group=funnel
+Restart=always
+WorkingDirectory=/opt/funnel
+ExecStart=/opt/funnel/funnel gce start
+
+[Install]
+WantedBy=multi-user.target

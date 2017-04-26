@@ -81,31 +81,45 @@ cross-compile: depends
 		done; \
 	done
 
-upload-latest:
+upload-dev-release:
 	go get github.com/aktau/github-release
-	@if [ -z "$$GITHUB_TOKEN" ]; then \
-	  echo 'GITHUB_TOKEN env. var. is required but not set'; \
-		exit 1; \
-	fi
 	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
 		echo 'This command should only be run from the master branch'; \
 		exit 1; \
 	fi
-	make cross-compile
+	@if [ -z "$$GITHUB_TOKEN" ]; then \
+	  echo 'GITHUB_TOKEN env. var. is required but not set'; \
+		exit 1; \
+	fi
+	make gce-installer
+	mkdir -p build/dev-release
+	cp bin/* build/dev-release/
+	cp build/funnel-gce-image-installer build/dev-release
 	for GOOS in darwin linux; do \
 		for GOARCH in 386 amd64; do \
-			github-release upload \
-			-u ohsu-comp-bio \
-			-r funnel \
-			--name funnel-$$GOOS-$$GOARCH \
-			--tag latest \
-			--replace \
-			--file ./bin/funnel-$$GOOS-$$GOARCH; \
+			GOOS=$$GOOS GOARCH=$$GOARCH \
+				tar -C build/dev-release -czvf build/dev-release/funnel-$$GOOS-$$GOARCH.tar.gz funnel-$$GOOS-$$GOARCH; \
+				rm build/dev-release/funnel-$$GOOS-$$GOARCH; \
 		done; \
 	done
+	for f in $$(ls -1 build/dev-release); do \
+		github-release upload \
+		-u ohsu-comp-bio \
+		-r funnel \
+		--name $$f \
+		--tag dev \
+		--replace \
+		--file ./build/dev-release/$$f; \
+	done
 
-gce-image: cross-compile
-	./deployments/gce/make-image.sh
+gce-installer: cross-compile
+	mkdir -p build/gce-installer
+	cp deployments/gce/bundle/* build/gce-installer/
+	cp bin/funnel-linux-amd64 build/gce-installer/funnel
+	cd build && \
+		../deployments/gce/make-installer.sh -c gce-installer && \
+		mv bundle.run funnel-gce-image-installer && \
+		cd ..
 
 gen-mocks:
 	go get github.com/vektra/mockery

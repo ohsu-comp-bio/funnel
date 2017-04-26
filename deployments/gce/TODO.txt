@@ -1,3 +1,0 @@
-Document hard-coded requirements
-- funnel-server name
-- project/zone, templates

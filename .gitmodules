@@ -1,90 +1,90 @@
 [submodule "src/vendor/github.com/golang/protobuf"]
-	path = src/vendor/github.com/golang/protobuf
+	path = vendor/github.com/golang/protobuf
 	url = https://github.com/golang/protobuf
 [submodule "src/vendor/github.com/grpc-ecosystem/grpc-gateway"]
-	path = src/vendor/github.com/grpc-ecosystem/grpc-gateway
+	path = vendor/github.com/grpc-ecosystem/grpc-gateway
 	url = https://github.com/grpc-ecosystem/grpc-gateway
 [submodule "src/vendor/golang.org/x/net"]
-	path = src/vendor/golang.org/x/net
+	path = vendor/golang.org/x/net
 	url = https://go.googlesource.com/net
 [submodule "src/vendor/google.golang.org/grpc"]
-	path = src/vendor/google.golang.org/grpc
+	path = vendor/google.golang.org/grpc
 	url = https://github.com/grpc/grpc-go
 [submodule "src/vendor/github.com/boltdb/bolt"]
-	path = src/vendor/github.com/boltdb/bolt
+	path = vendor/github.com/boltdb/bolt
 	url = https://github.com/boltdb/bolt
 [submodule "src/vendor/github.com/nu7hatch/gouuid"]
-	path = src/vendor/github.com/nu7hatch/gouuid
+	path = vendor/github.com/nu7hatch/gouuid
 	url = https://github.com/nu7hatch/gouuid
 [submodule "src/vendor/github.com/ghodss/yaml"]
-	path = src/vendor/github.com/ghodss/yaml
+	path = vendor/github.com/ghodss/yaml
 	url = https://github.com/ghodss/yaml
 [submodule "src/vendor/gopkg.in/yaml.v2"]
-	path = src/vendor/gopkg.in/yaml.v2
+	path = vendor/gopkg.in/yaml.v2
 	url = https://gopkg.in/yaml.v2
 [submodule "src/vendor/github.com/minio/minio-go"]
-	path = src/vendor/github.com/minio/minio-go
+	path = vendor/github.com/minio/minio-go
 	url = https://github.com/minio/minio-go
 [submodule "src/vendor/github.com/rackspace/gophercloud"]
-	path = src/vendor/github.com/rackspace/gophercloud
+	path = vendor/github.com/rackspace/gophercloud
 	url = https://github.com/rackspace/gophercloud
 [submodule "src/vendor/github.com/mitchellh/mapstructure"]
-	path = src/vendor/github.com/mitchellh/mapstructure
+	path = vendor/github.com/mitchellh/mapstructure
 	url = https://github.com/mitchellh/mapstructure
 [submodule "src/vendor/github.com/docker/docker"]
-	path = src/vendor/github.com/docker/docker
+	path = vendor/github.com/docker/docker
 	url = https://github.com/docker/docker
 [submodule "src/vendor/github.com/Sirupsen/logrus"]
-	path = src/vendor/github.com/Sirupsen/logrus
+	path = vendor/github.com/Sirupsen/logrus
 	url = https://github.com/Sirupsen/logrus
 [submodule "src/vendor/github.com/kr/pretty"]
-	path = src/vendor/github.com/kr/pretty
+	path = vendor/github.com/kr/pretty
 	url = https://github.com/kr/pretty
 [submodule "src/vendor/github.com/kr/text"]
-	path = src/vendor/github.com/kr/text
+	path = vendor/github.com/kr/text
 	url = https://github.com/kr/text
 [submodule "src/vendor/golang.org/x/oauth2"]
-	path = src/vendor/golang.org/x/oauth2
+	path = vendor/golang.org/x/oauth2
 	url = https://go.googlesource.com/oauth2
 [submodule "src/vendor/cloud.google.com/go"]
-	path = src/vendor/cloud.google.com/go
+	path = vendor/cloud.google.com/go
 	url = https://code.googlesource.com/gocloud
 [submodule "src/vendor/github.com/googleapis/gax-go"]
-	path = src/vendor/github.com/googleapis/gax-go
+	path = vendor/github.com/googleapis/gax-go
 	url = https://github.com/googleapis/gax-go
 [submodule "src/vendor/google.golang.org/api"]
-	path = src/vendor/google.golang.org/api
+	path = vendor/google.golang.org/api
 	url = https://code.googlesource.com/google-api-go-client
 [submodule "src/vendor/github.com/shirou/gopsutil"]
-	path = src/vendor/github.com/shirou/gopsutil
+	path = vendor/github.com/shirou/gopsutil
 	url = https://github.com/shirou/gopsutil
 [submodule "src/vendor/github.com/stretchr/testify"]
-	path = src/vendor/github.com/stretchr/testify
+	path = vendor/github.com/stretchr/testify
 	url = https://github.com/stretchr/testify
 [submodule "src/vendor/github.com/rs/xid"]
-	path = src/vendor/github.com/rs/xid
+	path = vendor/github.com/rs/xid
 	url = https://github.com/rs/xid
 [submodule "src/vendor/github.com/imdario/mergo"]
-	path = src/vendor/github.com/imdario/mergo
+	path = vendor/github.com/imdario/mergo
 	url = https://github.com/imdario/mergo
 [submodule "task-execution-schemas"]
-	path = src/funnel/proto/tes/task-execution-schemas
+	path = proto/tes/task-execution-schemas
 	url = https://github.com/ga4gh/task-execution-schemas
 [submodule "src/vendor/github.com/spf13/cobra"]
-	path = src/vendor/github.com/spf13/cobra
+	path = vendor/github.com/spf13/cobra
 	url = https://github.com/spf13/cobra
 [submodule "src/vendor/github.com/spf13/pflag"]
-	path = src/vendor/github.com/spf13/pflag
+	path = vendor/github.com/spf13/pflag
 	url = https://github.com/spf13/pflag
 [submodule "src/vendor/github.com/elgs/jsonql"]
-	path = src/vendor/github.com/elgs/jsonql
+	path = vendor/github.com/elgs/jsonql
 	url = https://github.com/elgs/jsonql
 [submodule "src/vendor/github.com/elgs/gojq"]
-	path = src/vendor/github.com/elgs/gojq
+	path = vendor/github.com/elgs/gojq
 	url = https://github.com/elgs/gojq
 [submodule "src/vendor/github.com/elgs/gosplitargs"]
-	path = src/vendor/github.com/elgs/gosplitargs
+	path = vendor/github.com/elgs/gosplitargs
 	url = https://github.com/elgs/gosplitargs
 [submodule "src/vendor/github.com/elazarl/go-bindata-assetfs"]
-	path = src/vendor/github.com/elazarl/go-bindata-assetfs
+	path = vendor/github.com/elazarl/go-bindata-assetfs
 	url = https://github.com/elazarl/go-bindata-assetfs

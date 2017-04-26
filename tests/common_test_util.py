@@ -99,7 +99,7 @@ class SimpleServerTest(unittest.TestCase):
         })
 
         # Start server
-        cmd = ["./bin/funnel", "server", "--config", configFile.name]
+        cmd = ["funnel", "server", "--config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
         signal.signal(signal.SIGINT, self.cleanup)
@@ -218,7 +218,7 @@ class S3ServerTest(unittest.TestCase):
         })
 
         # Start server
-        cmd = ["./bin/funnel", "server", "--config", configFile.name]
+        cmd = ["funnel", "server", "--config", configFile.name]
         logging.info("Running %s" % (" ".join(cmd)))
         self.task_server = popen(cmd)
         time.sleep(5)

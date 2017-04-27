@@ -12,6 +12,7 @@ var log = logger.New("task cmd")
 var Cmd = &cobra.Command{
 	Use:     "task",
 	Aliases: []string{"tasks"},
+	Short: "Make API calls to a TES server.",
 }
 
 func init() {

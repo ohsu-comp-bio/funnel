@@ -103,3 +103,9 @@
 [submodule "vendor/github.com/nsf/termbox-go"]
 	path = vendor/github.com/nsf/termbox-go
 	url = https://github.com/nsf/termbox-go
+[submodule "vendor/github.com/deckarep/golang-set"]
+	path = vendor/github.com/deckarep/golang-set
+	url = https://github.com/deckarep/golang-set
+[submodule "vendor/github.com/cpuguy83/go-md2man"]
+	path = vendor/github.com/cpuguy83/go-md2man
+	url = https://github.com/cpuguy83/go-md2man

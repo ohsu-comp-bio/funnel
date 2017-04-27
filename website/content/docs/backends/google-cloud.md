@@ -40,7 +40,7 @@ gcloud compute instances tail-serial-port-output $NAME
 
 This takes a few minutes. The installer needs to create a VM instance,
 snapshot, disk, and then finally an image. Images will be created in the
-"funnel" [image family][].
+"funnel" [image family][imgfam].
 
 
 ## Create a Server
@@ -120,3 +120,4 @@ This guide and the example code in Funnel is just the tip of the iceberg, really
 [3]: https://cloud.google.com/compute/docs/images
 [4]: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/gce/bundle
 [8]: https://cloud.google.com/compute/docs/instance-templates
+[imgfam]: https://cloud.google.com/compute/docs/images#image_families

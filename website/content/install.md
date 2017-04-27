@@ -17,13 +17,21 @@ Currently, we only have development releases:
 - [Linux (32-bit)][linux-32-bin]
 - [macOS (64-bit)][mac-64-bin]
 
-Windows is not supported yet.  
-If you want to build the Funnel source code, see the [development docs][dev].
+Windows is not supported yet.
+
+<h3>Build the code <i class="optional">optional</i></h3>
+
+In short, this will get you started:
+```shell
+$ go get github.com/ohsu-comp-bio/funnel
+```
+Check out the [development docs][dev] for more detail.
+
 
 
 
 [linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/dev/funnel-linux-amd64.tar.gz
 [linux-32-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/dev/funnel-linux-386.tar.gz
 [mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/dev/funnel-darwin-amd64.tar.gz
-[dev]: /docs/devel
+[dev]: /docs/development/
 [docker]: https://docker.io

@@ -18,3 +18,4 @@ bower_components
 .sass-cache/
 /web/build/
 /build/
+website/public

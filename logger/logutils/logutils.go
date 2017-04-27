@@ -9,6 +9,7 @@ import (
 // Configure configures the logging level and output path.
 func Configure(conf config.Config) {
 	logger.SetLevel(conf.LogLevel)
+	logger.DisableTimestamp(!conf.TimestampLogs)
 
 	// TODO Good defaults, configuration, and reusable way to configure logging.
 	//      Also, how do we get this to default to /var/log/tes/worker.log

@@ -41,6 +41,15 @@ func SetLevel(l string) {
 	}
 }
 
+// DisableTimestamp prevents timestamps from being displayed in the logs
+func DisableTimestamp(b bool) {
+	formatter := &textFormatter{
+		DisableTimestamp: b,
+		FullTimestamp:    true,
+	}
+	logrus.SetFormatter(formatter)
+}
+
 // ForceColors forces the log output formatter to use color. Useful during testing.
 func ForceColors() {
 	formatter.ForceColors = true

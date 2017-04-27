@@ -155,6 +155,13 @@ bundle-examples:
 # Make everything usually needed to prepare for a pull request
 full: proto install prune_deps add_deps tidy lint test web
 
+# Build the website
+website:
+	@go get github.com/spf13/hugo
+	hugo --source ./website -w server
+	# TODO there's more here
+	# https://gohugo.io/tutorials/github-pages-blog/#deployment-via-gh-pages-branch
+
 # Serve the Funnel website on localhost:1313
 website-dev:
 	@go get github.com/spf13/hugo

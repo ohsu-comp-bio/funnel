@@ -8,8 +8,9 @@ import (
 
 // Cmd represents the examples command
 var Cmd = &cobra.Command{
-	Use:   "examples",
-	Short: "Print example task messages.",
+	Use:     "examples",
+	Aliases: []string{"example"},
+	Short:   "Print example task messages.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return fmt.Errorf("Example name required")

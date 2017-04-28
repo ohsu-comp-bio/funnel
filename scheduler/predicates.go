@@ -19,13 +19,13 @@ func ResourcesFit(t *tes.Task, w *pbf.Worker) bool {
 	case w.GetAvailable().GetCpus() <= 0:
 		log.Debug("Fail zero cpus")
 		return false
-	case w.GetAvailable().GetRam() <= 0.0:
+	case w.GetAvailable().GetRamGb() <= 0.0:
 		log.Debug("Fail zero ram")
 		return false
 	case w.GetAvailable().GetCpus() < req.GetCpuCores():
 		log.Debug("Fail cpus")
 		return false
-	case w.GetAvailable().GetRam() < req.GetRamGb():
+	case w.GetAvailable().GetRamGb() < req.GetRamGb():
 		log.Debug("Fail ram")
 		return false
 	}
@@ -45,9 +45,9 @@ func VolumesFit(t *tes.Task, w *pbf.Worker) bool {
 		return true
 	}
 
-	f := tot <= w.GetAvailable().GetDisk()
+	f := tot <= w.GetAvailable().GetDiskGb()
 	if !f {
-		log.Debug("Failed volumes", "tot", tot, "avail", w.GetAvailable().GetDisk())
+		log.Debug("Failed volumes", "tot", tot, "avail", w.GetAvailable().GetDiskGb())
 	}
 	return f
 }
@@ -99,7 +99,7 @@ func ZonesFit(t *tes.Task, w *pbf.Worker) bool {
 
 // NotDead returns true if the worker state is not Dead or Gone.
 func NotDead(j *tes.Task, w *pbf.Worker) bool {
-	return w.State != pbf.WorkerState_Dead && w.State != pbf.WorkerState_Gone
+	return w.State != pbf.WorkerState_DEAD && w.State != pbf.WorkerState_GONE
 }
 
 // WorkerHasTag returns a predicate function which returns true

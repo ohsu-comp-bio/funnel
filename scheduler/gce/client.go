@@ -68,11 +68,11 @@ func (s *gceClient) Templates() []pbf.Worker {
 		disks := tpl.Properties.Disks
 
 		res := pbf.Resources{
-			Cpus: uint32(mt.GuestCpus),
-			Ram:  float64(mt.MemoryMb) / float64(1024),
+			Cpus:  uint32(mt.GuestCpus),
+			RamGb: float64(mt.MemoryMb) / float64(1024),
 			// TODO is there always at least one disk? Is the first the best choice?
 			//      how to know which to pick if there are multiple?
-			Disk: float64(disks[0].InitializeParams.DiskSizeGb),
+			DiskGb: float64(disks[0].InitializeParams.DiskSizeGb),
 		}
 
 		// Copy resources struct for available

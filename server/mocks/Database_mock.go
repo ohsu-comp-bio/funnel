@@ -57,20 +57,6 @@ func (_m *Database) CreateTask(_a0 context.Context, _a1 *tes.Task) (*tes.CreateT
 	return r0, r1
 }
 
-// GetQueueInfo provides a mock function with given fields: _a0, _a1
-func (_m *Database) GetQueueInfo(_a0 *funnel.QueuedTaskInfoRequest, _a1 funnel.Scheduler_GetQueueInfoServer) error {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*funnel.QueuedTaskInfoRequest, funnel.Scheduler_GetQueueInfoServer) error); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // GetServiceInfo provides a mock function with given fields: _a0, _a1
 func (_m *Database) GetServiceInfo(_a0 context.Context, _a1 *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
 	ret := _m.Called(_a0, _a1)
@@ -140,29 +126,6 @@ func (_m *Database) GetWorker(_a0 context.Context, _a1 *funnel.GetWorkerRequest)
 	return r0, r1
 }
 
-// GetWorkers provides a mock function with given fields: _a0, _a1
-func (_m *Database) GetWorkers(_a0 context.Context, _a1 *funnel.GetWorkersRequest) (*funnel.GetWorkersResponse, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 *funnel.GetWorkersResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *funnel.GetWorkersRequest) *funnel.GetWorkersResponse); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*funnel.GetWorkersResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *funnel.GetWorkersRequest) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // ListTasks provides a mock function with given fields: _a0, _a1
 func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 	ret := _m.Called(_a0, _a1)
@@ -178,6 +141,29 @@ func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.ListTasksRequest) (*
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *tes.ListTasksRequest) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListWorkers provides a mock function with given fields: _a0, _a1
+func (_m *Database) ListWorkers(_a0 context.Context, _a1 *funnel.ListWorkersRequest) (*funnel.ListWorkersResponse, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *funnel.ListWorkersResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *funnel.ListWorkersRequest) *funnel.ListWorkersResponse); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*funnel.ListWorkersResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *funnel.ListWorkersRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

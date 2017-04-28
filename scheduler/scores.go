@@ -42,7 +42,7 @@ func DefaultScores(w *pbf.Worker, t *tes.Task) Scores {
 	s := Scores{}
 
 	s[CPU] = float32(avail.GetCpus()+req.GetCpuCores()) / float32(tot.GetCpus())
-	s[RAM] = float32(avail.GetRam() + req.GetRamGb()/tot.GetRam())
+	s[RAM] = float32(avail.GetRamGb() + req.GetRamGb()/tot.GetRamGb())
 	return s
 }
 

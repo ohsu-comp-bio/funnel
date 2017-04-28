@@ -16,14 +16,14 @@ func TestWorkerDead(t *testing.T) {
 
 	srv.AddWorker(&pbf.Worker{
 		Id:    "test-worker",
-		State: pbf.WorkerState_Alive,
+		State: pbf.WorkerState_ALIVE,
 	})
 
 	time.Sleep(conf.WorkerPingTimeout * 2)
 	srv.DB.CheckWorkers()
 
-	workers := srv.GetWorkers()
-	if workers[0].State != pbf.WorkerState_Dead {
+	workers := srv.ListWorkers()
+	if workers[0].State != pbf.WorkerState_DEAD {
 		t.Error("Expected worker to be dead")
 	}
 }
@@ -38,14 +38,14 @@ func TestWorkerInitFail(t *testing.T) {
 
 	srv.AddWorker(&pbf.Worker{
 		Id:    "test-worker",
-		State: pbf.WorkerState_Initializing,
+		State: pbf.WorkerState_INITIALIZING,
 	})
 
 	time.Sleep(conf.WorkerInitTimeout * 2)
 	srv.DB.CheckWorkers()
-	workers := srv.GetWorkers()
+	workers := srv.ListWorkers()
 
-	if workers[0].State != pbf.WorkerState_Dead {
+	if workers[0].State != pbf.WorkerState_DEAD {
 		t.Error("Expected worker to be dead")
 	}
 }

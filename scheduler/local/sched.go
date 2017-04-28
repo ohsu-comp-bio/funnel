@@ -52,7 +52,7 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 // and give the scheduler a chance to get an updated worker state.
 func (s *Backend) getWorkers() []*pbf.Worker {
 	workers := []*pbf.Worker{}
-	resp, rerr := s.client.GetWorkers(context.Background(), &pbf.GetWorkersRequest{})
+	resp, rerr := s.client.ListWorkers(context.Background(), &pbf.ListWorkersRequest{})
 
 	if rerr != nil {
 		log.Error("Error getting workers. Recovering.", rerr)
@@ -60,7 +60,7 @@ func (s *Backend) getWorkers() []*pbf.Worker {
 	}
 
 	for _, w := range resp.Workers {
-		if w.Id != s.workerID || w.State != pbf.WorkerState_Alive {
+		if w.Id != s.workerID || w.State != pbf.WorkerState_ALIVE {
 			// Ignore workers that aren't alive
 			continue
 		}

@@ -17,7 +17,7 @@ type Database interface {
 	ReadQueue(n int) []*tes.Task
 	AssignTask(*tes.Task, *pbf.Worker)
 	CheckWorkers() error
-	GetWorkers(context.Context, *pbf.GetWorkersRequest) (*pbf.GetWorkersResponse, error)
+	ListWorkers(context.Context, *pbf.ListWorkersRequest) (*pbf.ListWorkersResponse, error)
 	UpdateWorker(context.Context, *pbf.Worker) (*pbf.UpdateWorkerResponse, error)
 }
 
@@ -114,9 +114,9 @@ func (s *Scheduler) Scale(ctx context.Context) error {
 		return nil
 	}
 
-	resp, err := s.db.GetWorkers(ctx, &pbf.GetWorkersRequest{})
+	resp, err := s.db.ListWorkers(ctx, &pbf.ListWorkersRequest{})
 	if err != nil {
-		log.Error("Failed GetWorkers request. Recovering.", err)
+		log.Error("Failed ListWorkers request. Recovering.", err)
 		return nil
 	}
 
@@ -134,7 +134,7 @@ func (s *Scheduler) Scale(ctx context.Context) error {
 
 		// TODO should the Scaler instance handle this? Is it possible
 		//      that Initializing is the wrong state in some cases?
-		w.State = pbf.WorkerState_Initializing
+		w.State = pbf.WorkerState_INITIALIZING
 		_, err := s.db.UpdateWorker(ctx, w)
 
 		if err != nil {

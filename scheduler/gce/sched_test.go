@@ -15,13 +15,13 @@ func TestSchedToExisting(t *testing.T) {
 	h := setup()
 	defer h.srv.Stop()
 
-	existing := testWorker("existing", pbf.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_ALIVE)
 	h.mockClient.SetupEmptyMockTemplates()
 	h.srv.AddWorker(existing)
 	h.srv.RunHelloWorld()
 
 	h.Schedule()
-	workers := h.srv.GetWorkers()
+	workers := h.srv.ListWorkers()
 
 	if len(workers) != 1 {
 		t.Error("Expected a single worker")
@@ -52,13 +52,13 @@ func TestSchedStartWorker(t *testing.T) {
 	h.mockClient.SetupDefaultMockTemplates()
 
 	// Represents a worker that is alive but at full capacity
-	existing := testWorker("existing", pbf.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_ALIVE)
 	existing.Resources.Cpus = 0.0
 	h.srv.AddWorker(existing)
 
 	h.srv.RunHelloWorld()
 	h.Schedule()
-	workers := h.srv.GetWorkers()
+	workers := h.srv.ListWorkers()
 
 	if len(workers) != 2 {
 		log.Debug("Workers", workers)
@@ -85,14 +85,14 @@ func TestPreferExistingWorker(t *testing.T) {
 
 	h.mockClient.SetupDefaultMockTemplates()
 
-	existing := testWorker("existing", pbf.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_ALIVE)
 	existing.Resources.Cpus = 10.0
 	h.srv.AddWorker(existing)
 
 	h.srv.RunHelloWorld()
 
 	h.Schedule()
-	workers := h.srv.GetWorkers()
+	workers := h.srv.ListWorkers()
 
 	if len(workers) != 1 {
 		t.Error("Expected no new workers to be created")
@@ -123,13 +123,13 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 
 	// Mock an instance template response with 1 cpu/ram
 	h.mockClient.SetupMockTemplates(pbf.Resources{
-		Cpus: 1.0,
-		Ram:  1.0,
-		Disk: 1000.0,
+		Cpus:   1.0,
+		RamGb:  1.0,
+		DiskGb: 1000.0,
 	})
 
 	h.Schedule()
-	workers := h.srv.GetWorkers()
+	workers := h.srv.ListWorkers()
 
 	if len(workers) != 4 {
 		log.Debug("WORKERS", workers)
@@ -143,14 +143,14 @@ func TestUpdateAvailableResources(t *testing.T) {
 	defer h.srv.Stop()
 	h.mockClient.SetupEmptyMockTemplates()
 
-	existing := testWorker("existing", pbf.WorkerState_Alive)
+	existing := testWorker("existing", pbf.WorkerState_ALIVE)
 	h.srv.AddWorker(existing)
 
 	ta := h.srv.HelloWorldTask()
 	h.srv.CreateTask(ta)
 
 	h.Schedule()
-	workers := h.srv.GetWorkers()
+	workers := h.srv.ListWorkers()
 
 	if len(workers) != 1 || workers[0].Id != "existing" {
 		log.Debug("WORKERS", workers)
@@ -170,11 +170,11 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	defer h.srv.Stop()
 	h.mockClient.SetupEmptyMockTemplates()
 
-	existingA := testWorker("existing-A", pbf.WorkerState_Alive)
+	existingA := testWorker("existing-A", pbf.WorkerState_ALIVE)
 	existingA.Resources.Cpus = 8.0
 	h.srv.AddWorker(existingA)
 
-	existingB := testWorker("existing-B", pbf.WorkerState_Alive)
+	existingB := testWorker("existing-B", pbf.WorkerState_ALIVE)
 	existingB.Resources.Cpus = 8.0
 	h.srv.AddWorker(existingB)
 
@@ -189,7 +189,7 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	h.srv.CreateTask(tc)
 
 	h.Schedule()
-	workers := h.srv.GetWorkers()
+	workers := h.srv.ListWorkers()
 
 	log.Debug("WORKERS", workers)
 
@@ -244,20 +244,20 @@ func TestSchedMultipleTasksResourceUpdateBug(t *testing.T) {
 	w.Ctrls[ida].SetResult(nil)
 	w.Sync()
 
-	log.Debug("RESOURCES", h.srv.GetWorkers())
+	log.Debug("RESOURCES", h.srv.ListWorkers())
 
 	// Run the second task. This wasn't being scheduled, which is a bug.
 	idb := h.srv.RunHelloWorld()
 	h.Schedule()
 
-	log.Debug("RESOURCES", h.srv.GetWorkers())
+	log.Debug("RESOURCES", h.srv.ListWorkers())
 
 	w.Sync()
 	if _, ok := w.Ctrls[idb]; !ok {
 		t.Error("The second task didn't get to the worker as expected")
 	}
 
-	if len(h.srv.GetWorkers()) != 1 {
+	if len(h.srv.ListWorkers()) != 1 {
 		t.Error("Expected only one worker")
 	}
 }

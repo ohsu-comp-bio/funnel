@@ -43,7 +43,7 @@ type Backend struct {
 func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
 	log.Debug("Running condor scheduler")
 
-	disk := s.conf.Worker.Resources.Disk
+	disk := s.conf.Worker.Resources.DiskGb
 	if disk == 0.0 {
 		disk = t.GetResources().GetSizeGb()
 	}
@@ -53,7 +53,7 @@ func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
 		cpus = t.GetResources().GetCpuCores()
 	}
 
-	ram := s.conf.Worker.Resources.Ram
+	ram := s.conf.Worker.Resources.RamGb
 	if ram == 0.0 {
 		ram = t.GetResources().GetRamGb()
 	}
@@ -62,9 +62,9 @@ func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
 	w := &pbf.Worker{
 		Id: prefix + t.Id,
 		Resources: &pbf.Resources{
-			Cpus: cpus,
-			Ram:  ram,
-			Disk: disk,
+			Cpus:   cpus,
+			RamGb:  ram,
+			DiskGb: disk,
 		},
 	}
 	return scheduler.NewOffer(w, t, scheduler.Scores{})
@@ -74,7 +74,7 @@ func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
 // when the given worker needs to be started by Backend.StartWorker
 func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 	return strings.HasPrefix(w.Id, prefix) &&
-		w.State == pbf.WorkerState_Uninitialized
+		w.State == pbf.WorkerState_UNINITIALIZED
 }
 
 // StartWorker submits a task via "condor_submit" to start a new worker.
@@ -94,8 +94,8 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 	wc.Worker.ID = w.Id
 	wc.Worker.Timeout = 5 * time.Second
 	wc.Worker.Resources.Cpus = w.Resources.Cpus
-	wc.Worker.Resources.Ram = w.Resources.Ram
-	wc.Worker.Resources.Disk = w.Resources.Disk
+	wc.Worker.Resources.RamGb = w.Resources.RamGb
+	wc.Worker.Resources.DiskGb = w.Resources.DiskGb
 
 	confPath := path.Join(workdir, "worker.conf.yml")
 	wc.ToYamlFile(confPath)
@@ -130,7 +130,7 @@ queue
 		"Executable": workerPath,
 		"WorkDir":    workdir,
 		"Config":     confPath,
-		"Resources":  resolveCondorResourceRequest(int(w.Resources.Cpus), w.Resources.Ram, w.Resources.Disk),
+		"Resources":  resolveCondorResourceRequest(int(w.Resources.Cpus), w.Resources.RamGb, w.Resources.DiskGb),
 	})
 	if err != nil {
 		return err

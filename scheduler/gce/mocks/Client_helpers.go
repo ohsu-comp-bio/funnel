@@ -5,9 +5,9 @@ import pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 // SetupDefaultMockTemplates is a helper which sets up the mocked Client.Templates()
 func (c *Client) SetupDefaultMockTemplates() {
 	c.SetupMockTemplates(pbf.Resources{
-		Cpus: 10.0,
-		Ram:  100.0,
-		Disk: 1000.0,
+		Cpus:   10.0,
+		RamGb:  100.0,
+		DiskGb: 1000.0,
 	})
 }
 

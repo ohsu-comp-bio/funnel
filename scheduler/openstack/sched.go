@@ -76,12 +76,12 @@ func (s *Backend) getWorkers() []*pbf.Worker {
 
 	// Get the workers from the funnel server
 	workers := []*pbf.Worker{}
-	req := &pbf.GetWorkersRequest{}
-	resp, err := s.client.GetWorkers(context.Background(), req)
+	req := &pbf.ListWorkersRequest{}
+	resp, err := s.client.ListWorkers(context.Background(), req)
 
 	// If there's an error, return an empty list
 	if err != nil {
-		log.Error("Failed GetWorkers request. Recovering.", err)
+		log.Error("Failed ListWorkers request. Recovering.", err)
 		return workers
 	}
 

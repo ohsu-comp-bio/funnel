@@ -1,5 +1,3 @@
-
-
 syntax = "proto3";
 
 package funnel;
@@ -10,17 +8,17 @@ import "google/api/annotations.proto";
 message Resources {
   uint32 cpus = 1;
   // In GB
-  double ram = 2;
+  double ram_gb = 2;
   // In GB
-  double disk = 3;
+  double disk_gb = 3;
 }
 
 enum WorkerState {
-  Uninitialized = 0;
-  Alive = 1;
-  Dead = 2;
-  Gone = 3;
-  Initializing = 4;
+  UNINITIALIZED = 0;
+  ALIVE = 1;
+  DEAD = 2;
+  GONE = 3;
+  INITIALIZING = 4;
 }
 
 message Worker {
@@ -59,19 +57,10 @@ message UpdateExecutorLogsRequest {
 
 message UpdateExecutorLogsResponse {}
 
-message QueuedTaskInfoRequest {
-  int32 max_tasks = 1;
+message ListWorkersRequest {
 }
 
-message QueuedTaskInfo {
-  repeated string inputs = 1;
-  tes.Resources resources = 2;
-}
-
-message GetWorkersRequest {
-}
-
-message GetWorkersResponse {
+message ListWorkersResponse {
   repeated Worker workers = 1;
 }
 
@@ -85,11 +74,10 @@ message GetWorkerRequest {
  * Scheduler Service
  */
 service Scheduler {
-  rpc GetQueueInfo(QueuedTaskInfoRequest) returns(stream QueuedTaskInfo) {};
   rpc UpdateExecutorLogs(UpdateExecutorLogsRequest) returns (UpdateExecutorLogsResponse) {};
   rpc UpdateWorker(Worker) returns (UpdateWorkerResponse) {};
 
-  rpc GetWorkers(GetWorkersRequest) returns (GetWorkersResponse) {
+  rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse) {
     option (google.api.http) = {
       get: "/v1/funnel/workers"
     };

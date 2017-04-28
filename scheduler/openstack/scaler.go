@@ -74,5 +74,5 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 	// Only start works that are uninitialized and have a gce template.
 	tpl, ok := w.Metadata["openstack"]
-	return ok && tpl != "" && w.State == pbf.WorkerState_Uninitialized
+	return ok && tpl != "" && w.State == pbf.WorkerState_UNINITIALIZED
 }

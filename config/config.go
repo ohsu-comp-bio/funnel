@@ -95,7 +95,7 @@ func DefaultConfig() Config {
 			TimestampLogs: true,
 			UpdateTimeout: time.Second,
 			Resources: &pbf.Resources{
-				Disk: 100.0,
+				DiskGb: 100.0,
 			},
 			Metadata: map[string]string{},
 		},

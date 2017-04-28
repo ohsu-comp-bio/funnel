@@ -52,7 +52,7 @@ type Backend struct {
 func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	w := &pbf.Worker{
 		Id:    "noop-worker",
-		State: pbf.WorkerState_Alive,
+		State: pbf.WorkerState_ALIVE,
 		Tasks: map[string]*pbf.TaskWrapper{},
 	}
 	return scheduler.NewOffer(w, j, scheduler.Scores{})

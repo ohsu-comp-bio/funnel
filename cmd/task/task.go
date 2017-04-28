@@ -10,7 +10,8 @@ var log = logger.New("task cmd")
 
 // Cmd represents the task command
 var Cmd = &cobra.Command{
-	Use: "task",
+	Use:     "task",
+	Aliases: []string{"tasks"},
 }
 
 func init() {

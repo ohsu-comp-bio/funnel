@@ -14,8 +14,9 @@ var flagConf = config.Config{}
 
 // Cmd represents the worker command
 var Cmd = &cobra.Command{
-	Use:   "worker",
-	Short: "Starts a Funnel worker.",
+	Use:     "worker",
+	Aliases: []string{"workers"},
+	Short:   "Starts a Funnel worker.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := config.DefaultConfig()
 		config.ParseFile(configFile, &conf)

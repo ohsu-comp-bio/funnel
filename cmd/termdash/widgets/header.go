@@ -14,6 +14,7 @@ type TermDashHeader struct {
 	Time   *ui.Par
 	Count  *ui.Par
 	Filter *ui.Par
+	help   *ui.Par
 	bg     *ui.Par
 }
 
@@ -22,6 +23,7 @@ func NewTermDashHeader() *TermDashHeader {
 		Time:   headerPar(0, timeStr()),
 		Count:  headerPar(33, "-"),
 		Filter: headerPar(50, ""),
+		help:   headerPar(ui.TermWidth()-19, "press [h] for help"),
 		bg:     headerBg(),
 	}
 }
@@ -33,6 +35,7 @@ func (c *TermDashHeader) Buffer() ui.Buffer {
 	buf.Merge(c.Time.Buffer())
 	buf.Merge(c.Count.Buffer())
 	buf.Merge(c.Filter.Buffer())
+	buf.Merge(c.help.Buffer())
 	return buf
 }
 

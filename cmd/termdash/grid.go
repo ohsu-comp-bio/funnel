@@ -48,7 +48,7 @@ func ExpandView(t *TaskWidget) {
 
 	HandleKeys("up", ex.Up)
 	HandleKeys("down", ex.Down)
-	ui.Handle("/sys/kbd/q", func(ui.Event) { ui.StopLoop() })
+	ui.Handle("/sys/kbd/", func(ui.Event) { ui.StopLoop() })
 	ui.Handle("/timer/1s", func(e ui.Event) {
 		task := cursor.RefreshTask(t.Task.Id)
 		ex.Update(task.Task)

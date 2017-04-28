@@ -1,18 +1,15 @@
 package run
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 	"os"
 	"regexp"
 	"strings"
-	"time"
 )
 
 var log = logger.New("run")
@@ -172,31 +169,25 @@ func run(cmd *cobra.Command, args []string) {
 	}
 	log.Debug("Task", "taskmsg", task)
 
-	// Marshal message to JSON and print
+	cli := client.NewClient(server)
+	// Marshal message to JSON
+	taskJSON, merr := cli.Marshaler.MarshalToString(task)
+	checkErr(merr)
+
 	if printTask {
-		mar := jsonpb.Marshaler{
-			EnumsAsInts:  false,
-			EmitDefaults: false,
-			Indent:       "  ",
-		}
-		s, merr := mar.MarshalToString(task)
-		checkErr(merr)
-		fmt.Println(s)
+		fmt.Println(taskJSON)
 		return
 	}
 
-	c, cerr := newClient(server)
-	checkErr(cerr)
-	resp, rerr := c.CreateTask(context.TODO(), task)
+	resp, rerr := cli.CreateTask([]byte(taskJSON))
 	checkErr(rerr)
 
 	taskID := resp.Id
 	fmt.Println(taskID)
 
 	if wait {
-		c.waitForTask(taskID)
-		// TODO print/log result
-		// TODO stream logs while waiting
+		werr := cli.WaitForTask(taskID)
+		checkErr(werr)
 	}
 }
 
@@ -215,45 +206,4 @@ func checkErr(err error) {
 		fmt.Println(err)
 		os.Exit(3)
 	}
-}
-
-type client struct {
-	tes.TaskServiceClient
-	conn *grpc.ClientConn
-}
-
-func (c *client) waitForTask(taskID string) {
-	for range time.NewTicker(time.Second * 2).C {
-		// TODO handle error
-		r, _ := c.GetTask(context.TODO(), &tes.GetTaskRequest{Id: taskID})
-		switch r.State {
-		case tes.State_COMPLETE, tes.State_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
-			return
-		}
-	}
-}
-
-func newClient(address string) (*client, error) {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-
-	if err != nil {
-		log.Error("Couldn't open RPC connection",
-			"error", err,
-			"address", address,
-		)
-		return nil, err
-	}
-
-	if err != nil {
-		log.Error("Couldn't connect to server", err)
-		return nil, err
-	}
-
-	s := tes.NewTaskServiceClient(conn)
-	return &client{s, conn}, nil
-}
-
-// Close closes the client connection.
-func (c *client) Close() {
-	c.conn.Close()
 }

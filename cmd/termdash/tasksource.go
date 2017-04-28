@@ -1,7 +1,7 @@
 package termdash
 
 import (
-	"github.com/ohsu-comp-bio/funnel/cmd/task"
+	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"sort"
 	"sync"
 )
@@ -12,16 +12,16 @@ type TesTaskSource interface {
 }
 
 type TaskSource struct {
-	client *task.Client
+	client *client.Client
 	tasks  TaskWidgets
 	lock   sync.RWMutex
 }
 
 func NewTaskSource(tesHTTPServerAddress string) *TaskSource {
 	// init funnel http client
-	client := task.NewClient(tesHTTPServerAddress)
+	cli := client.NewClient(tesHTTPServerAddress)
 	cm := &TaskSource{
-		client: client,
+		client: cli,
 		lock:   sync.RWMutex{},
 	}
 	cm.tasks = cm.listTasks()

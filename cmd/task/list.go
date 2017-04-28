@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/elgs/jsonql"
+	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/spf13/cobra"
 	"strings"
 )
@@ -33,15 +34,15 @@ func init() {
 }
 
 func doList(server string) (string, error) {
-	client := NewClient(server)
-	resp, err := client.ListTasks()
+	cli := client.NewClient(server)
+	resp, err := cli.ListTasks()
 	if err != nil {
 		return "", err
 	}
 
 	// convert resp to map[string]interface{} for query
 	var out map[string]interface{}
-	j, _ := client.marshaler.MarshalToString(resp)
+	j, _ := cli.Marshaler.MarshalToString(resp)
 	_ = json.Unmarshal([]byte(j), &out)
 	tasks := out["tasks"]
 

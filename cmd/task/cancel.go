@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/spf13/cobra"
 )
 
@@ -27,16 +28,16 @@ var cancelCmd = &cobra.Command{
 }
 
 func doCancel(server string, ids []string) ([]string, error) {
-	client := NewClient(server)
+	cli := client.NewClient(server)
 	res := []string{}
 
 	for _, taskID := range ids {
-		resp, err := client.CancelTask(taskID)
+		resp, err := cli.CancelTask(taskID)
 		if err != nil {
 			return nil, err
 		}
 		// CancelTaskResponse is an empty struct
-		out, err := client.marshaler.MarshalToString(resp)
+		out, err := cli.Marshaler.MarshalToString(resp)
 		if err != nil {
 			return nil, err
 		}

@@ -1,7 +1,8 @@
-package task
+package client
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -23,7 +24,7 @@ func NewClient(address string) *Client {
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		marshaler: &jsonpb.Marshaler{
+		Marshaler: &jsonpb.Marshaler{
 			EnumsAsInts:  false,
 			EmitDefaults: false,
 		},
@@ -34,7 +35,7 @@ func NewClient(address string) *Client {
 type Client struct {
 	address   string
 	client    *http.Client
-	marshaler *jsonpb.Marshaler
+	Marshaler *jsonpb.Marshaler
 }
 
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
@@ -54,7 +55,6 @@ func (c *Client) GetTask(id string) (*tes.Task, error) {
 }
 
 // ListTasks returns the result of GET /v1/tasks
-// TODO returning interface{} is weird
 func (c *Client) ListTasks() (*tes.ListTasksResponse, error) {
 	// Send request
 	body, err := check(c.client.Get(c.address + "/v1/tasks"))
@@ -110,6 +110,33 @@ func (c *Client) CancelTask(id string) (*tes.CancelTaskResponse, error) {
 		return nil, err
 	}
 	return resp, nil
+}
+
+// WaitForTask polls /v1/tasks/{id} for each Id provided and returns
+// once all tasks are in a terminal state.
+func (c *Client) WaitForTask(taskIDs ...string) error {
+	for range time.NewTicker(time.Second * 2).C {
+		done := false
+		for _, id := range taskIDs {
+			r, err := c.GetTask(id)
+			if err != nil {
+				return err
+			}
+			switch r.State {
+			case tes.State_COMPLETE:
+				done = true
+			case tes.State_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
+				errMsg := fmt.Sprintf("Task %s exited with state %s", id, r.State.String())
+				return errors.New(errMsg)
+			default:
+				done = false
+			}
+		}
+		if done {
+			return nil
+		}
+	}
+	return nil
 }
 
 // check does some basic error handling

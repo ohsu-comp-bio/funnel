@@ -17,10 +17,10 @@ var log = logger.New("run")
 // TODO figure out a nice default for name
 var name = "Funnel Run Task"
 var workdir = "/opt/funnel"
-var server = "localhost:9090"
+var server = "http://localhost:9090"
 var image, project, description, varsFile string
 var printTask, preemptible, wait bool
-var cliInputs, cliOutputs, cliEnvVars, tags, volumes []string
+var cliInputs, cliInputDirs, cliOutputs, cliOutputDirs, cliEnvVars, tags, volumes []string
 
 // TODO validate resources
 var cpu int
@@ -31,13 +31,9 @@ var zones []string
 // TODO with input contents, script could be loaded from file
 // TODO load vars from file
 // TODO is there a case for glob inputs?
-// TODO don't bother with specific outputs? Just upload entire working directory by default?
 
-var examples = `
-Run a task.
-
-Example:
-  funnel run <<TPL
+var example = `
+    funnel run
     'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments'
     --image opengenomics/bowtie2:latest
     --name 'Bowtie2 test'
@@ -51,44 +47,56 @@ Example:
     --cpu 8
     --ram 32
     --disk 100
-  TPL
 `
 
 // Cmd represents the run command
 var Cmd = &cobra.Command{
-	Use:   "run [flags] --image IMAGE CMD",
-	Short: "Run a task.\n",
-	Long:  examples,
-	Run:   run,
+	Use:     "run [flags] --image IMAGE CMD",
+	Short:   "Run a task.\n",
+	Long:    ``,
+	Example: example,
+	Run:     run,
 }
 
 func init() {
 	f := Cmd.Flags()
-	f.StringVar(&name, "name", name, "Task name")
+	f.StringVarP(&name, "name", "n", name, "Task name")
 	f.StringVar(&description, "description", description, "Task description")
 	f.StringVar(&project, "project", project, "Project")
-	f.StringVar(&workdir, "workdir", workdir, "Set the containter working directory")
-	f.StringVar(&image, "image", image, "Specify the containter image")
-	f.StringSliceVar(&cliInputs, "in", cliInputs, "A key-value map of input files")
-	f.StringSliceVar(&cliOutputs, "out", cliOutputs, "A key-value map of output files")
-	f.StringSliceVar(&cliEnvVars, "env", cliEnvVars, "A key-value map of enviromental variables")
+	f.StringVarP(&workdir, "workdir", "w", workdir, "Set the containter working directory")
+	f.StringVarP(&image, "container", "c", image, "Specify the containter image")
+	f.StringSliceVarP(&cliInputs, "in", "i", cliInputs, "A key-value map of input files")
+	f.StringSliceVarP(&cliInputDirs, "in-dir", "I", cliInputDirs, "A key-value map of input directories")
+	f.StringSliceVarP(&cliOutputs, "out", "o", cliOutputs, "A key-value map of output files")
+	f.StringSliceVarP(&cliOutputDirs, "out-dir", "O", cliOutputDirs, "A key-value map of output directories")
+	f.StringSliceVarP(&cliEnvVars, "env", "e", cliEnvVars, "A key-value map of enviromental variables")
 	f.StringSliceVar(&volumes, "vol", volumes, "Volumes to be defined on the container")
 	f.StringSliceVar(&tags, "tag", tags, "A key-value map of arbitrary tags")
 	f.IntVar(&cpu, "cpu", cpu, "Number of CPUs requested")
 	f.Float64Var(&ram, "ram", ram, "Amount of RAM requested (in GB)")
 	f.Float64Var(&disk, "disk", disk, "Amount of disk space requested (in GB)")
 	f.BoolVar(&preemptible, "preemptible", preemptible, "Allow task to be scheduled on preemptible workers")
-	f.StringSliceVar(&zones, "zones", zones, "Require task be scheduled in certain zones")
-	f.StringVar(&varsFile, "vars-file", varsFile, "Read vars a file")
-	f.StringVar(&server, "server", server, "Address of Funnel server")
-	f.BoolVar(&printTask, "print", printTask, "Print the task, instead of running it")
+	f.StringSliceVar(&zones, "zone", zones, "Require task be scheduled in certain zones")
+	// TODO
+	//f.StringVar(&varsFile, "vars-file", varsFile, "Read vars from file")
+	//f.StringVar(&cmdFile, "cmd-file", cmdFile, "Read cmd template from file")
+	f.StringVarP(&server, "server", "S", server, "Address of Funnel server")
+	f.BoolVarP(&printTask, "print", "p", printTask, "Print the task, instead of running it")
 	f.BoolVar(&wait, "wait", wait, "Wait for the task to finish before exiting")
 }
 
 func run(cmd *cobra.Command, args []string) {
 
-	if len(args) != 1 {
+	if len(args) < 1 {
 		fmt.Printf("ERROR - You must specify a command to run\n\n")
+		cmd.Usage()
+		os.Exit(2)
+		return
+	}
+
+	if len(args) > 1 {
+		fmt.Printf("ERROR - extra arg(s) %s\n\n", args[1:])
+		fmt.Printf("--in, --out and --env args should have the form 'KEY=VALUE' not 'KEY VALUE'\n\n")
 		cmd.Usage()
 		os.Exit(2)
 		return
@@ -108,34 +116,48 @@ func run(cmd *cobra.Command, args []string) {
 
 	// Get template variables from the command line.
 	// TODO variables file.
-	inputsMap, err := parseCliVars(cliInputs)
+	inputFileMap, err := parseCliVars(cliInputs)
 	checkErr(err)
-	outputsMap, err := parseCliVars(cliOutputs)
+	inputDirMap, err := parseCliVars(cliInputDirs)
 	checkErr(err)
-	envVarsMap, err := parseCliVars(cliEnvVars)
+	outputFileMap, err := parseCliVars(cliOutputs)
+	checkErr(err)
+	outputDirMap, err := parseCliVars(cliOutputDirs)
+	checkErr(err)
+	envVarMap, err := parseCliVars(cliEnvVars)
 	checkErr(err)
 	tagsMap, err := parseCliVars(tags)
 	checkErr(err)
 
 	// check for key collisions
-	err = compareKeys(inputsMap, outputsMap, envVarsMap)
+	err = compareKeys(inputFileMap, inputDirMap, outputFileMap, outputDirMap, envVarMap)
 	checkErr(err)
 
 	// Create map of enviromental variables to be passed to the executor
-	inputEnvVars, err := fileMapToEnvVars(inputsMap, "/opt/funnel/inputs/")
+	inputEnvVars, err := fileMapToEnvVars(inputFileMap, "/opt/funnel/inputs/")
 	checkErr(err)
-	outputEnvVars, err := fileMapToEnvVars(outputsMap, "/opt/funnel/outputs/")
+	inputDirEnvVars, err := fileMapToEnvVars(inputDirMap, "/opt/funnel/inputs/")
 	checkErr(err)
-	environ, err := mergeVars(inputEnvVars, outputEnvVars, envVarsMap)
+	outputEnvVars, err := fileMapToEnvVars(outputFileMap, "/opt/funnel/outputs/")
+	checkErr(err)
+	outputDirEnvVars, err := fileMapToEnvVars(outputDirMap, "/opt/funnel/outputs/")
+	checkErr(err)
+	environ, err := mergeVars(inputEnvVars, inputDirEnvVars, outputEnvVars, outputDirEnvVars, envVarMap)
 	checkErr(err)
 
 	// Build task input parameters
-	inputs, err := createTaskParams(inputsMap, "/opt/funnel/inputs/")
+	inputs, err := createTaskParams(inputFileMap, "/opt/funnel/inputs/", tes.FileType_FILE)
 	checkErr(err)
+	inputDirs, err := createTaskParams(inputDirMap, "/opt/funnel/inputs/", tes.FileType_DIRECTORY)
+	checkErr(err)
+	inputs = append(inputs, inputDirs...)
 
 	// Build task output parameters
-	outputs, err := createTaskParams(outputsMap, "/opt/funnel/outputs/")
+	outputs, err := createTaskParams(outputFileMap, "/opt/funnel/outputs/", tes.FileType_FILE)
 	checkErr(err)
+	outputDirs, err := createTaskParams(outputFileMap, "/opt/funnel/outputs/", tes.FileType_DIRECTORY)
+	checkErr(err)
+	outputs = append(outputs, outputDirs...)
 
 	// Build the task message
 	task := &tes.Task{

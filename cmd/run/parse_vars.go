@@ -88,7 +88,7 @@ func fileMapToEnvVars(m map[string]string, path string) (map[string]string, erro
 	return result, nil
 }
 
-func createTaskParams(params map[string]string, path string) ([]*tes.TaskParameter, error) {
+func createTaskParams(params map[string]string, path string, t tes.FileType) ([]*tes.TaskParameter, error) {
 	result := []*tes.TaskParameter{}
 	for key, url := range params {
 		p, err := stripStoragePrefix(url)
@@ -100,7 +100,7 @@ func createTaskParams(params map[string]string, path string) ([]*tes.TaskParamet
 			Name: key,
 			Url:  url,
 			Path: path,
-			Type: tes.FileType_FILE,
+			Type: t,
 		}
 		result = append(result, param)
 	}

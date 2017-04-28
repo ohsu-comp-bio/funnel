@@ -43,6 +43,7 @@ type Config struct {
 	WorkDir            string
 	LogLevel           string
 	LogPath            string
+	TimestampLogs      bool
 	MaxExecutorLogSize int
 	ScheduleRate       time.Duration
 	ScheduleChunk      int
@@ -75,6 +76,7 @@ func DefaultConfig() Config {
 		RPCPort:            rpcPort,
 		WorkDir:            workDir,
 		LogLevel:           "debug",
+		TimestampLogs:      true,
 		Scheduler:          "local",
 		MaxExecutorLogSize: 10000,
 		ScheduleRate:       time.Second,
@@ -90,6 +92,7 @@ func DefaultConfig() Config {
 			LogUpdateRate: time.Second * 5,
 			LogTailSize:   10000,
 			LogLevel:      "debug",
+			TimestampLogs: true,
 			UpdateTimeout: time.Second,
 			Resources: &pbf.Resources{
 				Disk: 100.0,
@@ -123,6 +126,7 @@ type Worker struct {
 	Storage       []*StorageConfig
 	LogPath       string
 	LogLevel      string
+	TimestampLogs bool
 	Resources     *pbf.Resources
 	// Timeout duration for UpdateWorker() and UpdateTaskLogs() RPC calls
 	UpdateTimeout time.Duration
@@ -137,6 +141,7 @@ func WorkerInheritConfigVals(c Config) Worker {
 	c.Worker.Storage = c.Storage
 	c.Worker.WorkDir = c.WorkDir
 	c.Worker.LogLevel = c.LogLevel
+	c.Worker.TimestampLogs = c.TimestampLogs
 	return c.Worker
 }
 

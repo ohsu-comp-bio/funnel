@@ -8,7 +8,8 @@ import (
 )
 
 var formatter = &textFormatter{
-	DisableTimestamp: true,
+	DisableTimestamp: false,
+	FullTimestamp:    true,
 }
 
 func init() {
@@ -38,6 +39,15 @@ func SetLevel(l string) {
 	default:
 		logrus.SetLevel(logrus.InfoLevel)
 	}
+}
+
+// DisableTimestamp prevents timestamps from being displayed in the logs
+func DisableTimestamp(b bool) {
+	formatter := &textFormatter{
+		DisableTimestamp: b,
+		FullTimestamp:    true,
+	}
+	logrus.SetFormatter(formatter)
 }
 
 // ForceColors forces the log output formatter to use color. Useful during testing.
@@ -109,7 +119,7 @@ func SetOutput(w io.Writer) {
 	logrus.SetOutput(w)
 }
 
-var rootLogger = New("tes")
+var rootLogger = New("funnel")
 
 // Debug logs to the global logger at the Debug level
 func Debug(msg string, args ...interface{}) {

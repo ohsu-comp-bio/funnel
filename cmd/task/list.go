@@ -34,12 +34,18 @@ func init() {
 
 func doList(server string) (string, error) {
 	client := NewClient(server)
-	tasks, err := client.ListTasks()
-
+	resp, err := client.ListTasks()
 	if err != nil {
 		return "", err
 	}
 
+	// convert resp to map[string]interface{} for query
+	var out map[string]interface{}
+	j, _ := client.marshaler.MarshalToString(resp)
+	_ = json.Unmarshal([]byte(j), &out)
+	tasks := out["tasks"]
+
+	// query tasks
 	parser := jsonql.NewQuery(tasks)
 	var queries []string
 

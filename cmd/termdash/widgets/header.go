@@ -23,7 +23,7 @@ func NewTermDashHeader() *TermDashHeader {
 		Time:   headerPar(0, timeStr()),
 		Count:  headerPar(33, "-"),
 		Filter: headerPar(50, ""),
-		help:   headerPar(ui.TermWidth() - 19, "press [h] for help"),
+		help:   headerPar(ui.TermWidth()-19, "press [h] for help"),
 		bg:     headerBg(),
 	}
 }

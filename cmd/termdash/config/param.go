@@ -8,7 +8,7 @@ var params = []*Param{
 	{
 		Key:   "filterStr",
 		Val:   "",
-		Label: "Task Name or ID Filter",
+		Label: "Match on ID, State, Name or Description",
 	},
 	{
 		Key:   "sortField",

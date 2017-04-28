@@ -160,7 +160,7 @@ full: proto install prune_deps add_deps tidy lint test web
 # Build the website
 website:
 	@go get github.com/spf13/hugo
-	hugo --source ./website -w server
+	hugo --source ./website
 	# TODO there's more here
 	# https://gohugo.io/tutorials/github-pages-blog/#deployment-via-gh-pages-branch
 
@@ -173,4 +173,4 @@ website-dev:
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto web
+.PHONY: proto web website

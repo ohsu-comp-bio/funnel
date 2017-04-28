@@ -1,15 +1,12 @@
 package run
 
 import (
-	"errors"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/spf13/cobra"
 	"os"
-	"regexp"
-	"strings"
 )
 
 var log = logger.New("run")
@@ -17,8 +14,8 @@ var log = logger.New("run")
 // TODO figure out a nice default for name
 var name = "Funnel Run Task"
 var workdir = "/opt/funnel"
-var server = "http://localhost:9090"
-var image, project, description, varsFile string
+var server = "http://localhost:8000"
+var image, project, description, stdin, stdout, stderr string
 var printTask, preemptible, wait bool
 var cliInputs, cliInputDirs, cliOutputs, cliOutputDirs, cliEnvVars, tags, volumes []string
 
@@ -70,6 +67,9 @@ func init() {
 	f.StringSliceVarP(&cliOutputs, "out", "o", cliOutputs, "A key-value map of output files")
 	f.StringSliceVarP(&cliOutputDirs, "out-dir", "O", cliOutputDirs, "A key-value map of output directories")
 	f.StringSliceVarP(&cliEnvVars, "env", "e", cliEnvVars, "A key-value map of enviromental variables")
+	f.StringVar(&stdin, "stdin", stdin, "File to pass via stdin to the command")
+	f.StringVar(&stdout, "stdout", stdout, "File to write the stdout of the command")
+	f.StringVar(&stderr, "stderr", stderr, "File to write the stderr of the command")
 	f.StringSliceVar(&volumes, "vol", volumes, "Volumes to be defined on the container")
 	f.StringSliceVar(&tags, "tag", tags, "A key-value map of arbitrary tags")
 	f.IntVar(&cpu, "cpu", cpu, "Number of CPUs requested")
@@ -154,9 +154,14 @@ func run(cmd *cobra.Command, args []string) {
 	// Build task output parameters
 	outputs, err := createTaskParams(outputFileMap, "/opt/funnel/outputs/", tes.FileType_FILE)
 	checkErr(err)
-	outputDirs, err := createTaskParams(outputFileMap, "/opt/funnel/outputs/", tes.FileType_DIRECTORY)
+	outputDirs, err := createTaskParams(outputDirMap, "/opt/funnel/outputs/", tes.FileType_DIRECTORY)
 	checkErr(err)
 	outputs = append(outputs, outputDirs...)
+
+	stdinPath := ""
+	if stdin != "" {
+		stdinPath = stdin
+	}
 
 	// Build the task message
 	task := &tes.Task{
@@ -178,7 +183,7 @@ func run(cmd *cobra.Command, args []string) {
 				Cmd:       executorCmd,
 				Environ:   environ,
 				Workdir:   workdir,
-				Stdin:     "",
+				Stdin:     stdinPath,
 				Stdout:    "/opt/funnel/outputs/stdout",
 				Stderr:    "/opt/funnel/outputs/stderr",
 				// TODO no ports
@@ -209,16 +214,6 @@ func run(cmd *cobra.Command, args []string) {
 		werr := cli.WaitForTask(taskID)
 		checkErr(werr)
 	}
-}
-
-func stripStoragePrefix(url string) (string, error) {
-	re := regexp.MustCompile("[a-z3]+://")
-	if !re.MatchString(url) {
-		err := errors.New("File paths must be prefixed with one of:\n file://\n gs://\n s3://")
-		return "", err
-	}
-	path := re.ReplaceAllString(url, "")
-	return strings.TrimPrefix(path, "/"), nil
 }
 
 func checkErr(err error) {

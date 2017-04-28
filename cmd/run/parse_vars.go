@@ -2,10 +2,13 @@ package run
 
 import (
 	"errors"
+	"fmt"
 	set "github.com/deckarep/golang-set"
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 func mergeVars(maps ...map[string]string) (map[string]string, error) {
@@ -76,10 +79,46 @@ func compareKeys(maps ...map[string]string) error {
 	return nil
 }
 
+func stripStoragePrefix(url string) (string, error) {
+	re := regexp.MustCompile("[a-z3]+://")
+	if !re.MatchString(url) {
+		err := errors.New("File paths must be prefixed with one of:\n file://\n gs://\n s3://")
+		return "", err
+	}
+	path := re.ReplaceAllString(url, "")
+	return strings.TrimPrefix(path, "/"), nil
+}
+
+func resolvePath(url string) (string, error) {
+	local := strings.HasPrefix(url, "/") || strings.HasPrefix(url, ".") || strings.HasPrefix(url, "~")
+	file := strings.HasPrefix(url, "file://")
+	gs := strings.HasPrefix(url, "gs://")
+	s3 := strings.HasPrefix(url, "s3://")
+	var path string
+	switch {
+	case local:
+		path, err := filepath.Abs(url)
+		if err != nil {
+			return "", err
+		}
+		return "file://" + path, nil
+	case file, gs, s3:
+		path = url
+		return path, nil
+	default:
+		e := fmt.Sprintf("could not resolve filepath: %s", url)
+		return "", errors.New(e)
+	}
+}
+
 func fileMapToEnvVars(m map[string]string, path string) (map[string]string, error) {
 	result := map[string]string{}
 	for k, v := range m {
-		p, err := stripStoragePrefix(v)
+		url, err := resolvePath(v)
+		if err != nil {
+			return nil, err
+		}
+		p, err := stripStoragePrefix(url)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +129,11 @@ func fileMapToEnvVars(m map[string]string, path string) (map[string]string, erro
 
 func createTaskParams(params map[string]string, path string, t tes.FileType) ([]*tes.TaskParameter, error) {
 	result := []*tes.TaskParameter{}
-	for key, url := range params {
+	for key, val := range params {
+		url, err := resolvePath(val)
+		if err != nil {
+			return nil, err
+		}
 		p, err := stripStoragePrefix(url)
 		if err != nil {
 			return nil, err

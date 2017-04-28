@@ -103,12 +103,12 @@ func (s *Backend) getWorkers() []*pbf.Worker {
 
 	// Get the workers from the funnel server
 	workers := []*pbf.Worker{}
-	req := &pbf.GetWorkersRequest{}
-	resp, err := s.client.GetWorkers(context.Background(), req)
+	req := &pbf.ListWorkersRequest{}
+	resp, err := s.client.ListWorkers(context.Background(), req)
 
 	// If there's an error, return an empty list
 	if err != nil {
-		log.Error("Failed GetWorkers request. Recovering.", err)
+		log.Error("Failed ListWorkers request. Recovering.", err)
 		return workers
 	}
 
@@ -130,7 +130,7 @@ func (s *Backend) getWorkers() []*pbf.Worker {
 func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 	// Only start works that are uninitialized and have a gce template.
 	tpl, ok := w.Metadata["gce-template"]
-	return ok && tpl != "" && w.State == pbf.WorkerState_Uninitialized
+	return ok && tpl != "" && w.State == pbf.WorkerState_UNINITIALIZED
 }
 
 // StartWorker calls out to GCE APIs to start a new worker instance.

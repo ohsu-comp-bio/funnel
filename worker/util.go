@@ -72,9 +72,9 @@ func getExitCode(err error) int32 {
 // can be overridden by config.
 func detectResources(conf *pbf.Resources) *pbf.Resources {
 	res := &pbf.Resources{
-		Cpus: conf.GetCpus(),
-		Ram:  conf.GetRam(),
-		Disk: conf.GetDisk(),
+		Cpus:   conf.GetCpus(),
+		RamGb:  conf.GetRamGb(),
+		DiskGb: conf.GetDiskGb(),
 	}
 	cpuinfo, _ := pscpu.Info()
 	vmeminfo, _ := psmem.VirtualMemory()
@@ -88,8 +88,8 @@ func detectResources(conf *pbf.Resources) *pbf.Resources {
 		}
 	}
 
-	if conf.GetRam() == 0.0 {
-		res.Ram = float64(vmeminfo.Total) /
+	if conf.GetRamGb() == 0.0 {
+		res.RamGb = float64(vmeminfo.Total) /
 			float64(1024) / float64(1024) / float64(1024)
 	}
 

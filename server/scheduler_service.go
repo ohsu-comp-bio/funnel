@@ -57,11 +57,11 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		if req.Resources.Cpus > 0 {
 			worker.Resources.Cpus = req.Resources.Cpus
 		}
-		if req.Resources.Ram > 0 {
-			worker.Resources.Ram = req.Resources.Ram
+		if req.Resources.RamGb > 0 {
+			worker.Resources.RamGb = req.Resources.RamGb
 		}
-		if req.Resources.Disk > 0 {
-			worker.Resources.Disk = req.Resources.Disk
+		if req.Resources.DiskGb > 0 {
+			worker.Resources.DiskGb = req.Resources.DiskGb
 		}
 	}
 
@@ -129,9 +129,9 @@ func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbf.Worker) {
 func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
 	// Calculate available resources
 	a := pbf.Resources{
-		Cpus: worker.GetResources().GetCpus(),
-		Ram:  worker.GetResources().GetRam(),
-		Disk: worker.GetResources().GetDisk(),
+		Cpus:   worker.GetResources().GetCpus(),
+		RamGb:  worker.GetResources().GetRamGb(),
+		DiskGb: worker.GetResources().GetDiskGb(),
 	}
 	for taskID := range worker.Tasks {
 		t := getTask(tx, taskID)
@@ -146,13 +146,13 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
 			a.Cpus -= rcpus
 		}
 
-		a.Ram -= res.GetRamGb()
+		a.RamGb -= res.GetRamGb()
 
 		if a.Cpus < 0 {
 			a.Cpus = 0
 		}
-		if a.Ram < 0.0 {
-			a.Ram = 0.0
+		if a.RamGb < 0.0 {
+			a.RamGb = 0.0
 		}
 	}
 	worker.Available = &a
@@ -179,7 +179,7 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 			worker := &pbf.Worker{}
 			proto.Unmarshal(v, worker)
 
-			if worker.State == pbf.WorkerState_Gone {
+			if worker.State == pbf.WorkerState_GONE {
 				tx.Bucket(Workers).Delete(k)
 				continue
 			}
@@ -194,19 +194,19 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 			lastPing := time.Unix(worker.LastPing, 0)
 			d := time.Since(lastPing)
 
-			if worker.State == pbf.WorkerState_Uninitialized ||
-				worker.State == pbf.WorkerState_Initializing {
+			if worker.State == pbf.WorkerState_UNINITIALIZED ||
+				worker.State == pbf.WorkerState_INITIALIZING {
 
 				// The worker is initializing, which has a more liberal timeout.
 				if d > taskBolt.conf.WorkerInitTimeout {
 					// Looks like the worker failed to initialize. Mark it dead
-					worker.State = pbf.WorkerState_Dead
+					worker.State = pbf.WorkerState_DEAD
 				}
 			} else if d > taskBolt.conf.WorkerPingTimeout {
 				// The worker is stale/dead
-				worker.State = pbf.WorkerState_Dead
+				worker.State = pbf.WorkerState_DEAD
 			} else {
-				worker.State = pbf.WorkerState_Alive
+				worker.State = pbf.WorkerState_ALIVE
 			}
 			// TODO when to delete workers from the database?
 			//      is dead worker deletion an automatic garbage collection process?
@@ -220,9 +220,9 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 	return nil
 }
 
-// GetWorkers is an API endpoint that returns a list of workers.
-func (taskBolt *TaskBolt) GetWorkers(ctx context.Context, req *pbf.GetWorkersRequest) (*pbf.GetWorkersResponse, error) {
-	resp := &pbf.GetWorkersResponse{}
+// ListWorkers is an API endpoint that returns a list of workers.
+func (taskBolt *TaskBolt) ListWorkers(ctx context.Context, req *pbf.ListWorkersRequest) (*pbf.ListWorkersResponse, error) {
+	resp := &pbf.ListWorkersResponse{}
 	resp.Workers = []*pbf.Worker{}
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -351,43 +351,4 @@ func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *pbf.Updat
 		return nil
 	})
 	return &pbf.UpdateExecutorLogsResponse{}, nil
-}
-
-// GetQueueInfo returns a stream of queue info
-// This is an RPC endpoint.
-// TODO why doesn't this take Context as the first argument?
-// TODO I don't think this is actually used.
-func (taskBolt *TaskBolt) GetQueueInfo(request *pbf.QueuedTaskInfoRequest, server pbf.Scheduler_GetQueueInfoServer) error {
-	ch := make(chan *tes.Task)
-	log.Debug("GetQueueInfo called")
-
-	// TODO handle DB errors
-	go taskBolt.db.View(func(tx *bolt.Tx) error {
-		defer close(ch)
-
-		bt := tx.Bucket(TaskBucket)
-		bq := tx.Bucket(TasksQueued)
-		c := bq.Cursor()
-		var count int32
-		for k, v := c.First(); k != nil && count < request.MaxTasks; k, v = c.Next() {
-			if string(v) == tes.State_QUEUED.String() {
-				v := bt.Get(k)
-				out := tes.Task{}
-				proto.Unmarshal(v, &out)
-				ch <- &out
-			}
-		}
-
-		return nil
-	})
-
-	for m := range ch {
-		inputs := make([]string, 0, len(m.Inputs))
-		for _, i := range m.Inputs {
-			inputs = append(inputs, i.Url)
-		}
-		server.Send(&pbf.QueuedTaskInfo{Inputs: inputs, Resources: m.Resources})
-	}
-
-	return nil
 }

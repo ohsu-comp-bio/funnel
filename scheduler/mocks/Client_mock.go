@@ -15,46 +15,9 @@ func (_m *Client) Close() {
 	_m.Called()
 }
 
-// GetQueueInfo provides a mock function with given fields: ctx, in, opts
-func (_m *Client) GetQueueInfo(ctx context.Context, in *funnel.QueuedTaskInfoRequest, opts ...grpc.CallOption) (funnel.Scheduler_GetQueueInfoClient, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 funnel.Scheduler_GetQueueInfoClient
-	if rf, ok := ret.Get(0).(func(context.Context, *funnel.QueuedTaskInfoRequest, ...grpc.CallOption) funnel.Scheduler_GetQueueInfoClient); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(funnel.Scheduler_GetQueueInfoClient)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *funnel.QueuedTaskInfoRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetWorker provides a mock function with given fields: ctx, in, opts
 func (_m *Client) GetWorker(ctx context.Context, in *funnel.GetWorkerRequest, opts ...grpc.CallOption) (*funnel.Worker, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+	ret := _m.Called(ctx, in, opts)
 
 	var r0 *funnel.Worker
 	if rf, ok := ret.Get(0).(func(context.Context, *funnel.GetWorkerRequest, ...grpc.CallOption) *funnel.Worker); ok {
@@ -75,28 +38,21 @@ func (_m *Client) GetWorker(ctx context.Context, in *funnel.GetWorkerRequest, op
 	return r0, r1
 }
 
-// GetWorkers provides a mock function with given fields: ctx, in, opts
-func (_m *Client) GetWorkers(ctx context.Context, in *funnel.GetWorkersRequest, opts ...grpc.CallOption) (*funnel.GetWorkersResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+// ListWorkers provides a mock function with given fields: ctx, in, opts
+func (_m *Client) ListWorkers(ctx context.Context, in *funnel.ListWorkersRequest, opts ...grpc.CallOption) (*funnel.ListWorkersResponse, error) {
+	ret := _m.Called(ctx, in, opts)
 
-	var r0 *funnel.GetWorkersResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *funnel.GetWorkersRequest, ...grpc.CallOption) *funnel.GetWorkersResponse); ok {
+	var r0 *funnel.ListWorkersResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *funnel.ListWorkersRequest, ...grpc.CallOption) *funnel.ListWorkersResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*funnel.GetWorkersResponse)
+			r0 = ret.Get(0).(*funnel.ListWorkersResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *funnel.GetWorkersRequest, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *funnel.ListWorkersRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -107,14 +63,7 @@ func (_m *Client) GetWorkers(ctx context.Context, in *funnel.GetWorkersRequest, 
 
 // UpdateExecutorLogs provides a mock function with given fields: ctx, in, opts
 func (_m *Client) UpdateExecutorLogs(ctx context.Context, in *funnel.UpdateExecutorLogsRequest, opts ...grpc.CallOption) (*funnel.UpdateExecutorLogsResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+	ret := _m.Called(ctx, in, opts)
 
 	var r0 *funnel.UpdateExecutorLogsResponse
 	if rf, ok := ret.Get(0).(func(context.Context, *funnel.UpdateExecutorLogsRequest, ...grpc.CallOption) *funnel.UpdateExecutorLogsResponse); ok {
@@ -137,14 +86,7 @@ func (_m *Client) UpdateExecutorLogs(ctx context.Context, in *funnel.UpdateExecu
 
 // UpdateWorker provides a mock function with given fields: ctx, in, opts
 func (_m *Client) UpdateWorker(ctx context.Context, in *funnel.Worker, opts ...grpc.CallOption) (*funnel.UpdateWorkerResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+	ret := _m.Called(ctx, in, opts)
 
 	var r0 *funnel.UpdateWorkerResponse
 	if rf, ok := ret.Get(0).(func(context.Context, *funnel.Worker, ...grpc.CallOption) *funnel.UpdateWorkerResponse); ok {

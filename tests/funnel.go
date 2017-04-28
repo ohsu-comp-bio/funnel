@@ -146,15 +146,15 @@ func (m *Funnel) HelloWorldTask() *tes.Task {
 	}
 }
 
-// GetWorkers calls db.GetWorkers.
-func (m *Funnel) GetWorkers() []*pbf.Worker {
-	resp, _ := m.DB.GetWorkers(context.Background(), &pbf.GetWorkersRequest{})
+// ListWorkers calls db.ListWorkers.
+func (m *Funnel) ListWorkers() []*pbf.Worker {
+	resp, _ := m.DB.ListWorkers(context.Background(), &pbf.ListWorkersRequest{})
 	return resp.Workers
 }
 
 // CompleteTask marks a task as completed
 func (m *Funnel) CompleteTask(taskID string) {
-	for _, w := range m.GetWorkers() {
+	for _, w := range m.ListWorkers() {
 		if j, ok := w.Tasks[taskID]; ok {
 			j.Task.State = tes.State_COMPLETE
 			m.DB.UpdateWorker(context.Background(), w)

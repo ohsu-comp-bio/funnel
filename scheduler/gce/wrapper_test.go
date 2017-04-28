@@ -35,7 +35,7 @@ func TestWrapper(t *testing.T) {
 	wpr.SetupMockMachineTypes()
 
 	h.Schedule()
-	workers := h.srv.GetWorkers()
+	workers := h.srv.ListWorkers()
 
 	if len(workers) != 1 {
 		t.Error("Expected a single worker")

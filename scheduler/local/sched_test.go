@@ -21,16 +21,16 @@ func simpleWorker() *pbf.Worker {
 		// because the local scheduler is built to have only a single worker
 		Id: "test-worker-id",
 		Resources: &pbf.Resources{
-			Cpus: 1.0,
-			Ram:  1.0,
-			Disk: 1.0,
+			Cpus:   1.0,
+			RamGb:  1.0,
+			DiskGb: 1.0,
 		},
 		Available: &pbf.Resources{
-			Cpus: 1.0,
-			Ram:  1.0,
-			Disk: 1.0,
+			Cpus:   1.0,
+			RamGb:  1.0,
+			DiskGb: 1.0,
 		},
-		State: pbf.WorkerState_Alive,
+		State: pbf.WorkerState_ALIVE,
 		Zone:  "ok-zone",
 	}
 }
@@ -40,7 +40,7 @@ func setup(workers []*pbf.Worker) (*sched_mocks.Client, *Backend) {
 	mc := new(sched_mocks.Client)
 
 	// Mock in test workers
-	mc.On("GetWorkers", Anything, Anything, Anything).Return(&pbf.GetWorkersResponse{
+	mc.On("ListWorkers", Anything, Anything, Anything).Return(&pbf.ListWorkersResponse{
 		Workers: workers,
 	}, nil)
 
@@ -91,7 +91,7 @@ func TestIgnoreOtherWorkers(t *testing.T) {
 	}
 }
 
-// Test that scheduler ignores workers without the "Alive" state
+// Test that scheduler ignores workers without the "ALIVE" state
 func TestIgnoreNonAliveWorkers(t *testing.T) {
 	j := &tes.Task{}
 
@@ -101,8 +101,8 @@ func TestIgnoreNonAliveWorkers(t *testing.T) {
 		_, s := setup([]*pbf.Worker{w})
 		o := s.Schedule(j)
 
-		if name == "Alive" {
-			// Testing Alive just so I know this test is worker as expected
+		if name == "ALIVE" {
+			// Testing ALIVE just so I know this test is worker as expected
 			if o == nil {
 				t.Error("Didn't schedule task to alive worker")
 			}
@@ -151,7 +151,7 @@ func TestMatch(t *testing.T) {
 	j.Resources.SizeGb = 2.0
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled task to worker without enough Disk resources")
+		t.Error("Scheduled task to worker without enough DiskGb resources")
 	}
 
 	// test zones don't match

@@ -28,7 +28,7 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	ctrls := map[string]TaskControl{}
 	timeout := util.NewIdleTimeout(conf.Timeout)
 	stop := make(chan struct{})
-	state := pbf.WorkerState_Uninitialized
+	state := pbf.WorkerState_UNINITIALIZED
 	return &Worker{
 		conf, logUpdates, sched, log, res,
 		runTask, ctrls, timeout, stop, state,
@@ -54,7 +54,7 @@ type Worker struct {
 // with the server and starting task runners
 func (w *Worker) Run() {
 	w.log.Info("Starting worker")
-	w.state = pbf.WorkerState_Alive
+	w.state = pbf.WorkerState_ALIVE
 	w.checkConnection()
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
@@ -129,7 +129,7 @@ func (w *Worker) Sync() {
 // Stop stops the worker
 // TODO need a way to shut the worker down from the server/scheduler.
 func (w *Worker) Stop() {
-	w.state = pbf.WorkerState_Gone
+	w.state = pbf.WorkerState_GONE
 	close(w.stop)
 	w.timeout.Stop()
 	for _, ctrl := range w.Ctrls {
@@ -142,7 +142,7 @@ func (w *Worker) Stop() {
 // Check if the worker is idle. If so, start the timeout timer.
 func (w *Worker) checkIdleTimer() {
 	// The worker is idle if there are no task controllers.
-	idle := len(w.Ctrls) == 0 && w.state == pbf.WorkerState_Alive
+	idle := len(w.Ctrls) == 0 && w.state == pbf.WorkerState_ALIVE
 	if idle {
 		w.timeout.Start()
 	} else {

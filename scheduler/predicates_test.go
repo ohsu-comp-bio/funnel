@@ -33,14 +33,14 @@ func TestCpuResourcesFit(t *testing.T) {
 	w := &pbf.Worker{
 		Id: "test-worker",
 		Resources: &pbf.Resources{
-			Cpus: 1.0,
-			Ram:  1.0,
-			Disk: 1.0,
+			Cpus:   1.0,
+			RamGb:  1.0,
+			DiskGb: 1.0,
 		},
 		Available: &pbf.Resources{
-			Cpus: 1.0,
-			Ram:  1.0,
-			Disk: 1.0,
+			Cpus:   1.0,
+			RamGb:  1.0,
+			DiskGb: 1.0,
 		},
 	}
 

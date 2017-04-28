@@ -30,21 +30,21 @@ func (_m *Database) CheckWorkers() error {
 	return r0
 }
 
-// GetWorkers provides a mock function with given fields: _a0, _a1
-func (_m *Database) GetWorkers(_a0 context.Context, _a1 *funnel.GetWorkersRequest) (*funnel.GetWorkersResponse, error) {
+// ListWorkers provides a mock function with given fields: _a0, _a1
+func (_m *Database) ListWorkers(_a0 context.Context, _a1 *funnel.ListWorkersRequest) (*funnel.ListWorkersResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *funnel.GetWorkersResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *funnel.GetWorkersRequest) *funnel.GetWorkersResponse); ok {
+	var r0 *funnel.ListWorkersResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *funnel.ListWorkersRequest) *funnel.ListWorkersResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*funnel.GetWorkersResponse)
+			r0 = ret.Get(0).(*funnel.ListWorkersResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *funnel.GetWorkersRequest) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *funnel.ListWorkersRequest) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

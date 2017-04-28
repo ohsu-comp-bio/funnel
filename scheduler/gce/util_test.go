@@ -61,14 +61,14 @@ func testWorker(id string, s pbf.WorkerState) *pbf.Worker {
 	return &pbf.Worker{
 		Id: id,
 		Resources: &pbf.Resources{
-			Cpus: 10.0,
-			Ram:  100.0,
-			Disk: 1000.0,
+			Cpus:   10.0,
+			RamGb:  100.0,
+			DiskGb: 1000.0,
 		},
 		Available: &pbf.Resources{
-			Cpus: 10.0,
-			Ram:  100.0,
-			Disk: 1000.0,
+			Cpus:   10.0,
+			RamGb:  100.0,
+			DiskGb: 1000.0,
 		},
 		Zone:  "ok-zone",
 		State: s,

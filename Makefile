@@ -112,7 +112,7 @@ upload-dev-release:
 	fi
 	@make gce-installer
 	@mkdir -p build/dev-release
-	@cp bin/* build/dev-release/
+	@cp build/bin/* build/dev-release/
 	@cp build/funnel-gce-image-installer build/dev-release
 	@for GOOS in darwin linux; do \
 		for GOARCH in 386 amd64; do \

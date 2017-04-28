@@ -46,7 +46,7 @@ console.log(workers)
   });
 });
 
-app.controller('TaskInfoController', function($scope, $http, $routeParams) {
+app.controller('TaskInfoController', function($scope, $http, $routeParams, $location) {
   
   $scope.url = "/v1/tasks/" + $routeParams.task_id
 
@@ -62,6 +62,8 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams) {
     })
   }
   $scope.fetchContent();
+
+  $scope.serverURL = $location.protocol() + "://" + $location.host() + ":" + $location.port();
 
   $scope.cancelTask = function() {
     $http.post($scope.url + ":cancel");

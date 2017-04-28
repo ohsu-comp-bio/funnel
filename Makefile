@@ -59,11 +59,13 @@ tidy:
 # Run code style and other checks
 lint:
 	@pip install -q flake8
-	@flake8 --exclude ./venv,./web-dashboard,./vendor .
+	@flake8 --exclude ./venv,./web,./src/vendor .
 	@go get github.com/alecthomas/gometalinter
-	@gometalinter --install > /dev/null
-	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor \
-	  -s proto --exclude 'cmd/examples/bundle.go' --exclude 'web-dashboard/web.go' ./...
+	@./build/bin/gometalinter --install > /dev/null
+	@# TODO enable golint on funnel/cmd/termdash
+	@./build/bin/gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor \
+	 -s proto --exclude 'cmd/examples/bundle.go' --exclude "cmd/termdash" --exclude 'web-dashboard/web.go' ./...
+	@gometalinter --disable-all --enable=vet --enable=gofmt --vendor ./cmd/termdash/...
 
 # Run fast-running Go tests
 go-test-short:

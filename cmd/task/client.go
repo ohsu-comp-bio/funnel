@@ -2,7 +2,6 @@ package task
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -16,6 +15,7 @@ import (
 // Create/List/Get/Cancel Task endpoints. "address" is the address
 // of the TES server.
 func NewClient(address string) *Client {
+
 	// Strip trailing slash. A quick and dirty fix.
 	address = strings.TrimSuffix(address, "/")
 	return &Client{
@@ -23,58 +23,93 @@ func NewClient(address string) *Client {
 		client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		marshaler: &jsonpb.Marshaler{
+			EnumsAsInts:  false,
+			EmitDefaults: false,
+		},
 	}
 }
 
 // Client represents the HTTP Task client.
 type Client struct {
-	address string
-	client  *http.Client
+	address   string
+	client    *http.Client
+	marshaler *jsonpb.Marshaler
 }
 
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
-func (c *Client) GetTask(id string) ([]byte, error) {
-	return check(c.client.Get(c.address + "/v1/tasks/" + id))
+func (c *Client) GetTask(id string) (*tes.Task, error) {
+	// Send request
+	body, err := check(c.client.Get(c.address + "/v1/tasks/" + id))
+	if err != nil {
+		return nil, err
+	}
+	// Parse response
+	resp := &tes.Task{}
+	err = jsonpb.UnmarshalString(string(body), resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // ListTasks returns the result of GET /v1/tasks
 // TODO returning interface{} is weird
-func (c *Client) ListTasks() (interface{}, error) {
+func (c *Client) ListTasks() (*tes.ListTasksResponse, error) {
+	// Send request
 	body, err := check(c.client.Get(c.address + "/v1/tasks"))
-	var res map[string]interface{}
-	err = json.Unmarshal(body, &res)
 	if err != nil {
 		return nil, err
 	}
-	return res["tasks"], nil
+	// Parse response
+	resp := &tes.ListTasksResponse{}
+	err = jsonpb.UnmarshalString(string(body), resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // CreateTask POSTs a Task message to /v1/tasks
-func (c *Client) CreateTask(msg []byte) (string, error) {
+func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 	var err error
 	err = isTask(msg)
 	if err != nil {
-		return "", fmt.Errorf("Not a valid Task message: %v", err)
+		return nil, fmt.Errorf("Not a valid Task message: %v", err)
 	}
 
 	// Send request
 	r := bytes.NewReader(msg)
 	u := c.address + "/v1/tasks"
 	body, err := check(c.client.Post(u, "application/json", r))
+	if err != nil {
+		return nil, err
+	}
 
 	// Parse response
-	resp := tes.CreateTaskResponse{}
-	err = json.Unmarshal(body, &resp)
+	resp := &tes.CreateTaskResponse{}
+	err = jsonpb.UnmarshalString(string(body), resp)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return resp.Id, nil
+	return resp, nil
 }
 
 // CancelTask POSTs to /v1/tasks/{id}:cancel
-func (c *Client) CancelTask(id string) ([]byte, error) {
+func (c *Client) CancelTask(id string) (*tes.CancelTaskResponse, error) {
 	u := c.address + "/v1/tasks/" + id + ":cancel"
-	return check(c.client.Post(u, "application/json", nil))
+	body, err := check(c.client.Post(u, "application/json", nil))
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse response
+	resp := &tes.CancelTaskResponse{}
+	err = jsonpb.UnmarshalString(string(body), resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // check does some basic error handling

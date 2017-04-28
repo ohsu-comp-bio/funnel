@@ -32,11 +32,15 @@ func doGet(server string, ids []string) ([]string, error) {
 	res := []string{}
 
 	for _, taskID := range ids {
-		body, err := client.GetTask(taskID)
+		resp, err := client.GetTask(taskID)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, string(body))
+		out, err := client.marshaler.MarshalToString(resp)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, out)
 	}
 	return res, nil
 }

@@ -42,8 +42,8 @@ type Config struct {
 	RPCPort            string
 	WorkDir            string
 	LogLevel           string
-	TimestampLogs      bool
 	LogPath            string
+	TimestampLogs      bool
 	MaxExecutorLogSize int
 	ScheduleRate       time.Duration
 	ScheduleChunk      int
@@ -70,23 +70,14 @@ func DefaultConfig() Config {
 	hostName := "localhost"
 	rpcPort := "9090"
 	c := Config{
-		HostName:      hostName,
-		DBPath:        path.Join(workDir, "funnel.db"),
-		HTTPPort:      "8000",
-		RPCPort:       rpcPort,
-		WorkDir:       workDir,
-		LogLevel:      "debug",
-		TimestampLogs: true,
-		Scheduler:     "local",
-		Backends: SchedulerBackends{
-			Local: LocalSchedulerBackend{},
-			GCE: GCESchedulerBackend{
-				Weights: Weights{
-					"startup time": 1.0,
-				},
-				CacheTTL: time.Minute,
-			},
-		},
+		HostName:           hostName,
+		DBPath:             path.Join(workDir, "funnel.db"),
+		HTTPPort:           "8000",
+		RPCPort:            rpcPort,
+		WorkDir:            workDir,
+		LogLevel:           "debug",
+		TimestampLogs:      true,
+		Scheduler:          "local",
 		MaxExecutorLogSize: 10000,
 		ScheduleRate:       time.Second,
 		ScheduleChunk:      10,

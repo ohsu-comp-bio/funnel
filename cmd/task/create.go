@@ -3,6 +3,7 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 )
@@ -35,7 +36,7 @@ func isJSON(s string) bool {
 }
 
 func doCreate(server string, messages []string) ([]string, error) {
-	client := NewClient(server)
+	cli := client.NewClient(server)
 	res := []string{}
 
 	for _, task := range messages {
@@ -51,7 +52,7 @@ func doCreate(server string, messages []string) ([]string, error) {
 			}
 		}
 
-		r, err := client.CreateTask(taskMessage)
+		r, err := cli.CreateTask(taskMessage)
 		if err != nil {
 			return nil, err
 		}

@@ -93,6 +93,7 @@ func (r *taskRunner) Run() {
 				Cmd: &DockerCmd{
 					ImageName:     d.ImageName,
 					Cmd:           d.Cmd,
+					Environ:       d.Environ,
 					Volumes:       r.mapper.Volumes,
 					Workdir:       d.Workdir,
 					Ports:         d.Ports,

@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/spf13/cobra"
 )
 
@@ -28,15 +29,15 @@ var getCmd = &cobra.Command{
 }
 
 func doGet(server string, ids []string) ([]string, error) {
-	client := NewClient(server)
+	cli := client.NewClient(server)
 	res := []string{}
 
 	for _, taskID := range ids {
-		resp, err := client.GetTask(taskID)
+		resp, err := cli.GetTask(taskID)
 		if err != nil {
 			return nil, err
 		}
-		out, err := client.marshaler.MarshalToString(resp)
+		out, err := cli.Marshaler.MarshalToString(resp)
 		if err != nil {
 			return nil, err
 		}

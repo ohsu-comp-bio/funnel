@@ -12,86 +12,30 @@ import (
 	"time"
 )
 
-// Weights describes the scheduler score weights.
-// All fields should be float32 type.
-type Weights map[string]float32
-
-// StorageConfig describes configuration for all storage types
-type StorageConfig struct {
-	Local LocalStorage
-	S3    S3Storage
-	GS    GSStorage
-}
-
-// LocalStorage describes the directories Funnel can read from and write to
-type LocalStorage struct {
-	AllowedDirs []string
-}
-
-// GSStorage describes configuration for the Google Cloud storage backend.
-type GSStorage struct {
-	AccountFile string
-	FromEnv     bool
-}
-
-// Valid validates the GSStorage configuration.
-func (g GSStorage) Valid() bool {
-	return g.FromEnv || g.AccountFile != ""
-}
-
-// Valid validates the LocalStorage configuration
-func (l LocalStorage) Valid() bool {
-	return len(l.AllowedDirs) > 0
-}
-
-// S3Storage describes the directories Funnel can read from and write to
-type S3Storage struct {
-	Endpoint string
-	Key      string
-	Secret   string
-}
-
-// Valid validates the LocalStorage configuration
-func (l S3Storage) Valid() bool {
-	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
-}
-
-// LocalSchedulerBackend describes configuration for the local scheduler.
-type LocalSchedulerBackend struct {
-	Weights Weights
-}
-
-// OpenStackSchedulerBackend describes configuration for the openstack scheduler.
-type OpenStackSchedulerBackend struct {
-	KeyPair    string
-	ConfigPath string
-	Server     os_servers.CreateOpts
-	Weights    Weights
-}
-
-// GCESchedulerBackend describes configuration for the Google Cloud scheduler.
-type GCESchedulerBackend struct {
-	AccountFile string
-	Project     string
-	Zone        string
-	Weights     Weights
-	CacheTTL    time.Duration
-}
-
-// SchedulerBackends describes configuration for all schedulers.
-type SchedulerBackends struct {
-	Local     LocalSchedulerBackend
-	Condor    LocalSchedulerBackend
-	OpenStack OpenStackSchedulerBackend
-	GCE       GCESchedulerBackend
-}
-
 // Config describes configuration for Funnel.
 type Config struct {
-	Storage            []*StorageConfig
-	HostName           string
-	Scheduler          string
-	Backends           SchedulerBackends
+	Storage   []*StorageConfig
+	HostName  string
+	Scheduler string
+	Backends  struct {
+		Local     struct{}
+		HTCondor  struct{}
+		OpenStack struct {
+			KeyPair    string
+			ConfigPath string
+			Server     os_servers.CreateOpts
+		}
+		// Google Cloud Compute
+		GCE struct {
+			AccountFile string
+			Project     string
+			Zone        string
+			Weights     struct {
+				PreferQuickStartup float32
+			}
+			CacheTTL time.Duration
+		}
+	}
 	Worker             Worker
 	DBPath             string
 	HTTPPort           string
@@ -125,22 +69,13 @@ func DefaultConfig() Config {
 	hostName := "localhost"
 	rpcPort := "9090"
 	c := Config{
-		HostName:  hostName,
-		DBPath:    path.Join(workDir, "funnel.db"),
-		HTTPPort:  "8000",
-		RPCPort:   rpcPort,
-		WorkDir:   workDir,
-		LogLevel:  "debug",
-		Scheduler: "local",
-		Backends: SchedulerBackends{
-			Local: LocalSchedulerBackend{},
-			GCE: GCESchedulerBackend{
-				Weights: Weights{
-					"startup time": 1.0,
-				},
-				CacheTTL: time.Minute,
-			},
-		},
+		HostName:           hostName,
+		DBPath:             path.Join(workDir, "funnel.db"),
+		HTTPPort:           "8000",
+		RPCPort:            rpcPort,
+		WorkDir:            workDir,
+		LogLevel:           "debug",
+		Scheduler:          "local",
 		MaxExecutorLogSize: 10000,
 		ScheduleRate:       time.Second,
 		ScheduleChunk:      10,
@@ -153,7 +88,6 @@ func DefaultConfig() Config {
 			// TODO these get reset to zero when not found in yaml?
 			UpdateRate:    time.Second * 5,
 			LogUpdateRate: time.Second * 5,
-			TrackerRate:   time.Second * 5,
 			LogTailSize:   10000,
 			LogLevel:      "debug",
 			UpdateTimeout: time.Second,
@@ -164,6 +98,9 @@ func DefaultConfig() Config {
 		},
 		DisableHTTPCache: true,
 	}
+
+	c.Backends.GCE.CacheTTL = time.Minute
+	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
 	return c
 }
 
@@ -182,7 +119,6 @@ type Worker struct {
 	UpdateRate time.Duration
 	// How often the worker sends task log updates
 	LogUpdateRate time.Duration
-	TrackerRate   time.Duration
 	LogTailSize   int64
 	Storage       []*StorageConfig
 	LogPath       string
@@ -202,6 +138,46 @@ func WorkerInheritConfigVals(c Config) Worker {
 	c.Worker.WorkDir = c.WorkDir
 	c.Worker.LogLevel = c.LogLevel
 	return c.Worker
+}
+
+// StorageConfig describes configuration for all storage types
+type StorageConfig struct {
+	Local LocalStorage
+	S3    S3Storage
+	GS    GSStorage
+}
+
+// LocalStorage describes the directories Funnel can read from and write to
+type LocalStorage struct {
+	AllowedDirs []string
+}
+
+// Valid validates the LocalStorage configuration
+func (l LocalStorage) Valid() bool {
+	return len(l.AllowedDirs) > 0
+}
+
+// GSStorage describes configuration for the Google Cloud storage backend.
+type GSStorage struct {
+	AccountFile string
+	FromEnv     bool
+}
+
+// Valid validates the GSStorage configuration.
+func (g GSStorage) Valid() bool {
+	return g.FromEnv || g.AccountFile != ""
+}
+
+// S3Storage describes the directories Funnel can read from and write to
+type S3Storage struct {
+	Endpoint string
+	Key      string
+	Secret   string
+}
+
+// Valid validates the LocalStorage configuration
+func (l S3Storage) Valid() bool {
+	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.

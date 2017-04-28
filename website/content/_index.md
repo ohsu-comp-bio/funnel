@@ -1,54 +1,51 @@
 ---
 Demo:
-  - Title: Start Funnel.
-    Desc: Start simple.
+  - Title: Start Funnel
     Cmd: $ funnel server
 
-  - Title: Run a task.
+  - Title: Run a task
     Desc: Returns a task ID.
-    Cmd: $ funnel run 'md5sum' --stdin ~/input.txt --stdout ~/input-md5.txt
+    Cmd: |
+      $ funnel run 'md5sum $src' -I ubuntu --in src=~/src.txt
+      b41pkv2rl6qjf441avd0
 
-  - Title: Get the task.
+  - Title: Get the task
     Desc: Returns state, logs, and more.
-    Cmd: $ funnel tasks get [task-id]
+    Cmd: $ funnel task get b41pkv2rl6qjf441avd0
 
-  - Title: Run lots of tasks.
-    Desc: That's what clusters are for.
-    Cmd: $ funnel run 'md5sum' 
+  - Title: List all the tasks
+    Cmd: $ funnel task list
 
-  - Title: List all the tasks.
-    Desc: TODO
-    Cmd: $ funnel tasks list
+  - Title: View the terminal dashboard
+    Cmd: $ funnel dashboard
 
-  - Title: Move to the cloud.
-    Desc: |
-      Google, Amazon, Microsoft, HPC, and more.
+# - Title: Move to the cloud.
+#   Desc: |
+#     Google, Amazon, Microsoft, HPC, and more.
+#   Cmd: |
+#     $ gcloud auth login
+#     $ funnel deploy gce
+#     $ funnel run 'md5sum'                \
+#         --stdin gs://pub/input.txt       \
+#         --stdout gs://my-bkt/output.txt
+
+  - Title: Use a remove server
+    Cmd: $ funnel run --server http://funnel.example.com ...
+
+  - Title: Example tasks
     Cmd: |
-      $ gcloud auth login
-      $ funnel deploy gce
-      $ funnel run 'md5sum'                \
-          --stdin gs://pub/input.txt       \
-          --stdout gs://my-bkt/output.txt
+      $ funnel example list
+      $ funnel example hello-world
 
-  - Title: Hand-craft a task.
-    Desc: Get into the details with JSON or YAML.
-    Cmd: |
-      $ funnel task create --yaml <<TASK
-        name: My Task
-        description: Taking Funnel for a drive.
-        inputs:
-      TASK
-
-  - Title: Get help.
-    Desc: The Funnel CLI is extensive.
+  - Title: Get help
+#   Desc: The Funnel CLI is extensive.
     Cmd: $ funnel help
 
-  - Title: File a bug.
-    Desc: It happens.
-    Cmd: $ funnel bug
+#  - Title: File a bug.
+#    Desc: It happens.
+#    Cmd: $ funnel bug
 
-  - Title: Get the code.
-    Desc: Go get it.
+  - Title: Get the code
     Cmd: $ go get github.com/ohsu-comp-bio/funnel
 
 #  - Title: Hack together a workflow.

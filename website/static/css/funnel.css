@@ -109,7 +109,7 @@
   background-color: #e9f1fc;
   padding: 2rem;
   border-radius: 10px;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   text-align: center;
 }
 
@@ -120,6 +120,10 @@
 
 .homepage-lead h1 {
   margin: 0;
+}
+
+.homepage-footer {
+  height: 100px;
 }
 
 .homepage-notice {

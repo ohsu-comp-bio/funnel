@@ -112,7 +112,6 @@ func run(cmd *cobra.Command, args []string) {
 	// TODO validate cmd
 	rawcmd := args[0]
 	executorCmd := []string{"bash", "-c", rawcmd}
-	log.Debug("Command:", "cmd", executorCmd)
 
 	// Get template variables from the command line.
 	// TODO variables file.
@@ -189,7 +188,6 @@ func run(cmd *cobra.Command, args []string) {
 		Volumes: volumes,
 		Tags:    tagsMap,
 	}
-	log.Debug("Task", "taskmsg", task)
 
 	cli := client.NewClient(server)
 	// Marshal message to JSON

@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 )
+
+var log = logger.New("tes http client")
 
 // NewClient returns a new HTTP client for accessing
 // Create/List/Get/Cancel Task endpoints. "address" is the address

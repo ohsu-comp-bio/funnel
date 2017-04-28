@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"{{with .Site.LanguageCode}} xml:lang="{{.}}" lang="{{.}}"{{end}}>
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  {{ .Hugo.Generator }}
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  {{ if .IsHome }}
+  <title>{{ .Site.Title }}</title>
+  {{ else }}
+  <title>{{ .Title }} &middot; {{ .Site.Title }}</title>
+  {{ end }}
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ .Site.BaseURL }}css/poole.css">
+  <link rel="stylesheet" href="{{ .Site.BaseURL }}css/monokai-sublime.css">
+  <link rel="stylesheet" href="{{ .Site.BaseURL }}css/syntax.css">
+  <link rel="stylesheet" href="{{ .Site.BaseURL }}css/theme.css">
+  <link rel="stylesheet" href="{{ .Site.BaseURL }}css/funnel.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  <script src="{{ .Site.BaseURL }}js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+  <div class="global-header">
+    <div class="global-header-container">
+      <div class="global-header-home">
+        <a href="{{ .Site.BaseURL }}"><h1>Funnel</h1></a>
+      </div>
+      <ul class="global-header-nav">
+          <li><a href="{{ .Site.BaseURL }}install/">Install</a></li>
+          <li><a href="{{ .Site.BaseURL }}docs/">Docs</a></li>
+          <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
+        </ul>
+      <div class="global-header-ohsucb">
+        <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp. Bio.</h2></a>
+      </div>
+    </div>
+  </div>

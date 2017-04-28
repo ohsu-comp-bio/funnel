@@ -22,4 +22,6 @@ func init() {
 	RootCmd.AddCommand(task.Cmd)
 	RootCmd.AddCommand(gce.Cmd)
 	RootCmd.AddCommand(examples.Cmd)
+	RootCmd.AddCommand(markdownCmd)
+	RootCmd.AddCommand(genBashCompletionCmd)
 }

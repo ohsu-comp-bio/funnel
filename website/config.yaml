@@ -1,0 +1,21 @@
+baseURL: https://ohsu-comp-bio.github.io/funnel/
+canonifyURLs: true
+languageCode: en-us
+title: Funnel
+
+menu:
+  main:
+
+  - name: Reference
+    url: https://godoc.org/github.com/ohsu-comp-bio/funnel
+    weight: 30
+
+  - name: GitHub
+    identifier: github
+    url: https://github.com/ohsu-comp-bio/funnel
+    weight: 50
+
+  - name: Chat
+    identifier: gitter
+    url: https://gitter.im/ohsu-comp-bio/funnel
+    weight: 51

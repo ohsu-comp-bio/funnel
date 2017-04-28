@@ -32,7 +32,7 @@ var zones []string
 var example = `
     funnel run
     'bowtie2 -f $factor -x $other -p1 $pair1 -p2 $pair2 -o $alignments'
-    --image opengenomics/bowtie2:latest
+    --container opengenomics/bowtie2:latest
     --name 'Bowtie2 test'
     --description 'Testings an example of using 'funnel run' for a bowtie2 command'
     --in pair1=file://~/pair1.fastq
@@ -48,7 +48,7 @@ var example = `
 
 // Cmd represents the run command
 var Cmd = &cobra.Command{
-	Use:     "run [flags] --image IMAGE CMD",
+	Use:     "run [flags] --container IMAGE CMD",
 	Short:   "Run a task.\n",
 	Long:    ``,
 	Example: example,

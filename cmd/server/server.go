@@ -86,7 +86,7 @@ func Run(conf config.Config) error {
 	defer cancel()
 
 	// Start server
-	srv.Serve(ctx)
+	go srv.Serve(ctx)
 
 	// Start scheduler
 	err = sched.Start(ctx)

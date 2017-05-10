@@ -4,7 +4,6 @@
 /bin
 /pkg
 test_tmp
-tes-work-dir
 funnel-work-dir
 *.sw[op]
 node_modules

@@ -150,7 +150,6 @@ gen-mocks:
 	@mockery -dir scheduler -name Database -print > scheduler/mocks/Database_mock.go
 	@mockery -dir scheduler -name Client -print > scheduler/mocks/Client_mock.go
 	@mockery -dir proto/tes -name TaskServiceClient -print > proto/tes/mocks/TaskServiceClient_mock.go
-	@mockery -dir ccc/dts -name Client -print > ccc/dts/mocks/Client_mock.go
 
 # Bundle example task messages into Go code.
 bundle-examples:

@@ -4,16 +4,15 @@ import (
 	"fmt"
 	uuid "github.com/nu7hatch/gouuid"
 	"os"
-	"path"
-	"path/filepath"
 )
 
 // DetectWorkerPath detects the path to the "funnel" binary
-func DetectWorkerPath() string {
-	// TODO HACK: get the path to the worker executable
-	//      move this to overrideable default config value?
-	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-	return path.Join(dir, "funnel")
+func DetectWorkerPath() (string, error) {
+	path, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("Failed to detect path of funnel binary")
+	}
+	return path, err
 }
 
 // GenWorkerID returns a UUID string.

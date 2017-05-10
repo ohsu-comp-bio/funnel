@@ -20,6 +20,7 @@ type Config struct {
 	Backends  struct {
 		Local     struct{}
 		HTCondor  struct{}
+		CCC       struct{}
 		OpenStack struct {
 			KeyPair    string
 			ConfigPath string
@@ -52,6 +53,13 @@ type Config struct {
 	// How long to wait for worker initialization before marking it dead
 	WorkerInitTimeout time.Duration
 	DisableHTTPCache  bool
+	CCC               struct {
+		DTSAddress  string
+		Sites       []string
+		CentralSite string
+		DTSDemo     map[string][]string
+	}
+	ServiceName string
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort
@@ -100,6 +108,7 @@ func DefaultConfig() Config {
 			Metadata: map[string]string{},
 		},
 		DisableHTTPCache: true,
+		ServiceName:      "Funnel",
 	}
 
 	c.Backends.GCE.CacheTTL = time.Minute
@@ -148,6 +157,7 @@ func WorkerInheritConfigVals(c Config) Worker {
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
 	Local LocalStorage
+	CCC   CCCStorage
 	S3    S3Storage
 	GS    GSStorage
 }
@@ -160,6 +170,22 @@ type LocalStorage struct {
 // Valid validates the LocalStorage configuration
 func (l LocalStorage) Valid() bool {
 	return len(l.AllowedDirs) > 0
+}
+
+// CCCStorage describes the directories Funnel can read from and write to and
+// the sites it can access
+type CCCStorage struct {
+	Strategy string
+	DTSUrl   string
+	Sites    struct {
+		Local  string
+		Remote string
+	}
+}
+
+// Valid validates the CCCStorage configuration
+func (l CCCStorage) Valid() bool {
+	return l.DTSUrl != "" && l.Sites.Remote != "" && l.Sites.Local != ""
 }
 
 // GSStorage describes configuration for the Google Cloud storage backend.

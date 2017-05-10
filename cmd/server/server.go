@@ -70,10 +70,7 @@ func Run(conf config.Config) error {
 		return err
 	}
 
-	srv, err := server.NewServer(db, conf)
-	if err != nil {
-		return err
-	}
+	srv := server.DefaultServer(db, conf)
 
 	sched, err := scheduler.NewScheduler(db, conf)
 	if err != nil {
@@ -89,7 +86,7 @@ func Run(conf config.Config) error {
 	defer cancel()
 
 	// Start server
-	srv.Start(ctx)
+	srv.Serve(ctx)
 
 	// Start scheduler
 	err = sched.Start(ctx)

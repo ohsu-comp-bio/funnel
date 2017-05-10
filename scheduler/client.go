@@ -8,12 +8,12 @@ import (
 
 // Client is a client for the scheduler gRPC service.
 type Client interface {
-	pbf.SchedulerClient
+	pbf.SchedulerServiceClient
 	Close()
 }
 
 type client struct {
-	pbf.SchedulerClient
+	pbf.SchedulerServiceClient
 	conn *grpc.ClientConn
 }
 
@@ -26,7 +26,7 @@ func NewClient(conf config.Worker) (Client, error) {
 		return nil, err
 	}
 
-	s := pbf.NewSchedulerClient(conn)
+	s := pbf.NewSchedulerServiceClient(conn)
 	return &client{s, conn}, nil
 }
 

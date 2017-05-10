@@ -73,7 +73,7 @@ message GetWorkerRequest {
 /**
  * Scheduler Service
  */
-service Scheduler {
+service SchedulerService {
   rpc UpdateExecutorLogs(UpdateExecutorLogsRequest) returns (UpdateExecutorLogsResponse) {};
   rpc UpdateWorker(Worker) returns (UpdateWorkerResponse) {};
 

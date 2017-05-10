@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"io/ioutil"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"net/http"
 	"strings"
 	"time"
@@ -44,7 +44,7 @@ type Client struct {
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
 func (c *Client) GetTask(id string) (*tes.Task, error) {
 	// Send request
-	body, err := check(c.client.Get(c.address + "/v1/tasks/" + id))
+	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks/" + id))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (c *Client) GetTask(id string) (*tes.Task, error) {
 // ListTasks returns the result of GET /v1/tasks
 func (c *Client) ListTasks() (*tes.ListTasksResponse, error) {
 	// Send request
-	body, err := check(c.client.Get(c.address + "/v1/tasks"))
+	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks"))
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 	// Send request
 	r := bytes.NewReader(msg)
 	u := c.address + "/v1/tasks"
-	body, err := check(c.client.Post(u, "application/json", r))
+	body, err := util.CheckHTTPResponse(c.client.Post(u, "application/json", r))
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 // CancelTask POSTs to /v1/tasks/{id}:cancel
 func (c *Client) CancelTask(id string) (*tes.CancelTaskResponse, error) {
 	u := c.address + "/v1/tasks/" + id + ":cancel"
-	body, err := check(c.client.Post(u, "application/json", nil))
+	body, err := util.CheckHTTPResponse(c.client.Post(u, "application/json", nil))
 	if err != nil {
 		return nil, err
 	}
@@ -140,24 +140,6 @@ func (c *Client) WaitForTask(taskIDs ...string) error {
 		}
 	}
 	return nil
-}
-
-// check does some basic error handling
-// and reads the response body into a byte array
-func check(resp *http.Response, err error) ([]byte, error) {
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if (resp.StatusCode / 100) != 2 {
-		return nil, fmt.Errorf("[STATUS CODE - %d]\t%s", resp.StatusCode, body)
-	}
-	return body, nil
 }
 
 // TODO replace with proper message validation

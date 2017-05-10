@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"io"
+	"io/ioutil"
 	"strings"
 )
 
@@ -15,6 +16,10 @@ var formatter = &textFormatter{
 func init() {
 	logrus.SetFormatter(formatter)
 	logrus.SetLevel(logrus.DebugLevel)
+}
+
+func Discard() {
+	logrus.SetOutput(ioutil.Discard)
 }
 
 // Logger is repsonsible for logging messages from code.

@@ -306,5 +306,5 @@ func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceI
 			out = append(out, i.S3.Endpoint)
 		}
 	}
-	return &tes.ServiceInfo{Storage: out}, nil
+	return &tes.ServiceInfo{Name: taskBolt.conf.ServiceName, Storage: out}, nil
 }

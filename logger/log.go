@@ -18,6 +18,7 @@ func init() {
 	logrus.SetLevel(logrus.DebugLevel)
 }
 
+// Discard configures to logger to discard all loogs.
 func Discard() {
 	logrus.SetOutput(ioutil.Discard)
 }

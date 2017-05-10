@@ -2,6 +2,7 @@ package webdash
 
 import "net/http"
 
+// Handler handles static web-dashboard files
 func Handler() *http.ServeMux {
 	// Static files are bundled into web-dashboard
 	fs := FileServer()

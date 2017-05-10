@@ -29,6 +29,7 @@ type Server struct {
 	DialOptions            []grpc.DialOption
 }
 
+// DefaultServer returns a new server instance.
 func DefaultServer(db Database, conf config.Config) *Server {
 	log.Debug("Server Config", "config.Config", conf)
 
@@ -48,6 +49,8 @@ func DefaultServer(db Database, conf config.Config) *Server {
 	}
 }
 
+// Serve starts the server and does not block. This will open TCP ports
+// for both RPC and HTTP.
 func (s *Server) Serve(ctx context.Context) error {
 
 	// Open TCP connection for RPC

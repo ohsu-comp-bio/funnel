@@ -52,7 +52,7 @@ type Config struct {
 	// How long to wait for worker initialization before marking it dead
 	WorkerInitTimeout time.Duration
 	DisableHTTPCache  bool
-	ServiceName string
+	ServiceName       string
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort

@@ -3,7 +3,6 @@ package run
 import (
 	"errors"
 	"fmt"
-	set "github.com/deckarep/golang-set"
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"path/filepath"
@@ -49,38 +48,22 @@ func parseCliVars(args []string) (map[string]string, error) {
 }
 
 func compareKeys(maps ...map[string]string) error {
-	keys := []set.Set{}
-	for i, mymap := range maps {
-		keys = append(keys, set.NewSet())
+	keys := make(map[string]string)
+	for _, mymap := range maps {
 		for k := range mymap {
-			if keys[i].Contains(k) {
+			if _, ok := keys[k]; !ok {
+				keys[k] = ""
+			} else {
 				err := errors.New("Can't use the same KEY for multiple --in, --out, --env arguments: " + k)
 				return err
 			}
-			keys[i].Add(k)
 		}
-	}
-
-	common := set.NewSet()
-	i := 0
-	for i < (len(keys) - 1) {
-		j := i + 1
-		for j <= (len(keys) - 1) {
-			common = common.Union(keys[i].Intersect(keys[j]))
-			j++
-		}
-		i++
-	}
-
-	if common.Cardinality() > 0 {
-		err := errors.New("Can't use the same KEY for multiple --in, --out, --env arguments: " + common.String())
-		return err
 	}
 	return nil
 }
 
 func stripStoragePrefix(url string) (string, error) {
-	re := regexp.MustCompile("[a-z3]+://")
+	re := regexp.MustCompile("[a-z0-9]+://")
 	if !re.MatchString(url) {
 		err := errors.New("File paths must be prefixed with one of:\n file://\n gs://\n s3://")
 		return "", err
@@ -91,9 +74,8 @@ func stripStoragePrefix(url string) (string, error) {
 
 func resolvePath(url string) (string, error) {
 	local := strings.HasPrefix(url, "/") || strings.HasPrefix(url, ".") || strings.HasPrefix(url, "~")
-	file := strings.HasPrefix(url, "file://")
-	gs := strings.HasPrefix(url, "gs://")
-	s3 := strings.HasPrefix(url, "s3://")
+	re := regexp.MustCompile("[a-z0-9]+://")
+	prefixed := re.MatchString(url)
 	var path string
 	switch {
 	case local:
@@ -102,7 +84,7 @@ func resolvePath(url string) (string, error) {
 			return "", err
 		}
 		return "file://" + path, nil
-	case file, gs, s3:
+	case prefixed:
 		path = url
 		return path, nil
 	default:

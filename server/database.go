@@ -9,5 +9,5 @@ import (
 // Mostly, this exists so it can be mocked during testing.
 type Database interface {
 	tes.TaskServiceServer
-	pbf.SchedulerServer
+	pbf.SchedulerServiceServer
 }

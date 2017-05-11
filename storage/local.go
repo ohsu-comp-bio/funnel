@@ -63,7 +63,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 	}
 
 	if class == File {
-		err := copyFile(hostPath, path)
+		err := linkFile(hostPath, path)
 		if err != nil {
 			return err
 		}
@@ -141,7 +141,6 @@ func copyDir(source string, dest string) (err error) {
 	}
 
 	// ensure dest dir does not already exist
-
 	_, err = os.Open(dest)
 	if os.IsNotExist(err) {
 		// create dest dir
@@ -178,7 +177,7 @@ func copyDir(source string, dest string) (err error) {
 // Hard links file source to destination dest.
 func linkFile(source string, dest string) error {
 	var err error
-	// without this resulting link with be a symlink
+	// without this resulting link could be a symlink
 	parent, err := filepath.EvalSymlinks(source)
 	if err != nil {
 		return err

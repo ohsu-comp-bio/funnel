@@ -27,7 +27,7 @@ var _ io.Reader
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
-func request_Scheduler_ListWorkers_0(ctx context.Context, marshaler runtime.Marshaler, client SchedulerClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SchedulerService_ListWorkers_0(ctx context.Context, marshaler runtime.Marshaler, client SchedulerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListWorkersRequest
 	var metadata runtime.ServerMetadata
 
@@ -36,7 +36,7 @@ func request_Scheduler_ListWorkers_0(ctx context.Context, marshaler runtime.Mars
 
 }
 
-func request_Scheduler_GetWorker_0(ctx context.Context, marshaler runtime.Marshaler, client SchedulerClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_SchedulerService_GetWorker_0(ctx context.Context, marshaler runtime.Marshaler, client SchedulerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetWorkerRequest
 	var metadata runtime.ServerMetadata
 
@@ -63,9 +63,9 @@ func request_Scheduler_GetWorker_0(ctx context.Context, marshaler runtime.Marsha
 
 }
 
-// RegisterSchedulerHandlerFromEndpoint is same as RegisterSchedulerHandler but
+// RegisterSchedulerServiceHandlerFromEndpoint is same as RegisterSchedulerServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterSchedulerHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterSchedulerServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -85,15 +85,15 @@ func RegisterSchedulerHandlerFromEndpoint(ctx context.Context, mux *runtime.Serv
 		}()
 	}()
 
-	return RegisterSchedulerHandler(ctx, mux, conn)
+	return RegisterSchedulerServiceHandler(ctx, mux, conn)
 }
 
-// RegisterSchedulerHandler registers the http handlers for service Scheduler to "mux".
+// RegisterSchedulerServiceHandler registers the http handlers for service SchedulerService to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterSchedulerHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	client := NewSchedulerClient(conn)
+func RegisterSchedulerServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	client := NewSchedulerServiceClient(conn)
 
-	mux.Handle("GET", pattern_Scheduler_ListWorkers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SchedulerService_ListWorkers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -110,18 +110,18 @@ func RegisterSchedulerHandler(ctx context.Context, mux *runtime.ServeMux, conn *
 		if err != nil {
 			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
 		}
-		resp, md, err := request_Scheduler_ListWorkers_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SchedulerService_ListWorkers_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Scheduler_ListWorkers_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SchedulerService_ListWorkers_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_Scheduler_GetWorker_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SchedulerService_GetWorker_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -138,14 +138,14 @@ func RegisterSchedulerHandler(ctx context.Context, mux *runtime.ServeMux, conn *
 		if err != nil {
 			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
 		}
-		resp, md, err := request_Scheduler_GetWorker_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SchedulerService_GetWorker_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Scheduler_GetWorker_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_SchedulerService_GetWorker_0(ctx, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -153,13 +153,13 @@ func RegisterSchedulerHandler(ctx context.Context, mux *runtime.ServeMux, conn *
 }
 
 var (
-	pattern_Scheduler_ListWorkers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "funnel", "workers"}, ""))
+	pattern_SchedulerService_ListWorkers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "funnel", "workers"}, ""))
 
-	pattern_Scheduler_GetWorker_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "funnel", "worker", "id"}, ""))
+	pattern_SchedulerService_GetWorker_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "funnel", "worker", "id"}, ""))
 )
 
 var (
-	forward_Scheduler_ListWorkers_0 = runtime.ForwardResponseMessage
+	forward_SchedulerService_ListWorkers_0 = runtime.ForwardResponseMessage
 
-	forward_Scheduler_GetWorker_0 = runtime.ForwardResponseMessage
+	forward_SchedulerService_GetWorker_0 = runtime.ForwardResponseMessage
 )

@@ -53,18 +53,18 @@ prune_deps:
 # Automatially update code formatting
 tidy:
 	@pip install -q autopep8
-	@find . \( -path ./vendor -o -path ./web-dashboard/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
-	@find . \( -path ./vendor -o -path ./web-dashboard/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
+	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
+	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
 
 # Run code style and other checks
 lint:
 	@pip install -q flake8
-	@flake8 --exclude ./venv,./web-dashboard,./vendor .
+	@flake8 --exclude ./venv,./webdash,./vendor .
 	@go get github.com/alecthomas/gometalinter
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
 	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor \
-	 -s proto --exclude 'cmd/examples/bundle.go' --exclude "cmd/termdash" --exclude 'web-dashboard/web.go' ./...
+	 -s proto --exclude 'cmd/examples/bundle.go' --exclude "cmd/termdash" --exclude 'webdash/web.go' ./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --vendor ./cmd/termdash/...
 
 # Run fast-running Go tests
@@ -82,14 +82,14 @@ test:	go-test
 	@nosetests-2.7 tests/
 
 # Build the web dashboard
-web:
-	@mkdir -p build/web-dashboard
-	@npm install --prefix ./web-dashboard
-	@./web-dashboard/node_modules/.bin/browserify web-dashboard/app.js -o build/web-dashboard/bundle.js
-	@./web-dashboard/node_modules/.bin/node-sass web-dashboard/style.scss build/web-dashboard/style.css
-	@cp web-dashboard/*.html build/web-dashboard/
+webdash:
+	@mkdir -p build/webdash
+	@npm install --prefix ./webdash
+	@./webdash/node_modules/.bin/browserify webdash/app.js -o build/webdash/bundle.js
+	@./webdash/node_modules/.bin/node-sass webdash/style.scss build/webdash/style.css
+	@cp webdash/*.html build/webdash/
 	@go get -u github.com/jteeuwen/go-bindata/...
-	@go-bindata -pkg webdash -prefix "build/" -o web-dashboard/web.go build/web-dashboard
+	@go-bindata -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
 
 # Build binaries for all OS/Architectures
 cross-compile: depends
@@ -149,6 +149,7 @@ gen-mocks:
 	@mockery -dir server -name Database -print > server/mocks/Database_mock.go
 	@mockery -dir scheduler -name Database -print > scheduler/mocks/Database_mock.go
 	@mockery -dir scheduler -name Client -print > scheduler/mocks/Client_mock.go
+	@mockery -dir proto/tes -name TaskServiceClient -print > proto/tes/mocks/TaskServiceClient_mock.go
 
 # Bundle example task messages into Go code.
 bundle-examples:
@@ -173,4 +174,4 @@ website-dev:
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto web website
+.PHONY: proto web website webdash

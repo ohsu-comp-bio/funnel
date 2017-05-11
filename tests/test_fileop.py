@@ -91,6 +91,8 @@ class TestFileOP(SimpleServerTest):
                                "stdout": "/workdir/test_out"}]}
 
         task_id = self.tes.submit(task)
+        print(task_id)
+        print(json.dumps(self.tes.get_task(task_id)))
         data = self.tes.wait(task_id)
         print(json.dumps(data))
         assert data['state'] == "COMPLETE"

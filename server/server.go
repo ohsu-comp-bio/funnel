@@ -51,7 +51,9 @@ func DefaultServer(db Database, conf config.Config) *Server {
 
 // Serve starts the server and does not block. This will open TCP ports
 // for both RPC and HTTP.
-func (s *Server) Serve(ctx context.Context) error {
+func (s *Server) Serve(pctx context.Context) error {
+	ctx, cancel := context.WithCancel(pctx)
+	defer cancel()
 
 	// Open TCP connection for RPC
 	lis, err := net.Listen("tcp", s.RPCAddress)
@@ -106,29 +108,26 @@ func (s *Server) Serve(ctx context.Context) error {
 		Handler: mux,
 	}
 
-	log.Info("RPC server listening", "address", s.RPCAddress)
-
+	var srverr error
 	go func() {
-		err := grpcServer.Serve(lis)
-		log.Error("RPC server error", err)
+		srverr = grpcServer.Serve(lis)
+		cancel()
 	}()
 
-	log.Info("HTTP server listening",
+	go func() {
+		srverr = httpServer.ListenAndServe()
+		cancel()
+	}()
+
+	log.Info("Server listening",
 		"httpPort", s.HTTPPort, "rpcAddress", s.RPCAddress,
 	)
-	// TODO how do we handle errors returned from grpcServer.Serve()
-	//      httpServer.ListenAndServe()
-	go func() {
-		err := httpServer.ListenAndServe()
-		log.Error("HTTP server error", err)
-	}()
 
-	select {
-	case <-ctx.Done():
-		grpcServer.GracefulStop()
-		httpServer.Shutdown(context.TODO())
-	}
-	return nil
+	<-ctx.Done()
+	grpcServer.GracefulStop()
+	httpServer.Shutdown(context.TODO())
+
+	return srverr
 }
 
 // handleError handles errors in the HTTP stack, logging errors, stack traces,

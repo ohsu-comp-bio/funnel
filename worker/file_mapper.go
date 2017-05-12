@@ -97,7 +97,7 @@ func (mapper *FileMapper) AddVolume(hostPath string, mountPoint string, readonly
 			return nil
 		}
 
-		// If the proposed RW Volume is not a subpath of an existing RW Volume
+		// If the proposed RW Volume is a subpath of an existing RW Volume
 		// do not add it to the mapper
 		// If an existing RW Volume is a subpath of the proposed RW Volume, replace it with
 		// the proposed RW Volume

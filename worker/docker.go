@@ -18,7 +18,7 @@ import (
 type DockerCmd struct {
 	ImageName       string
 	Cmd             []string
-	Volumes         []*Volume
+	Volumes         []Volume
 	Workdir         string
 	Ports           []*tes.Ports
 	ContainerName   string
@@ -174,7 +174,7 @@ func setupDockerClient() *client.Client {
 	return dclient
 }
 
-func formatVolumeArg(v *Volume) string {
+func formatVolumeArg(v Volume) string {
 	// `o` is structed as "HostPath:ContainerPath:Mode".
 	mode := "rw"
 	if v.Readonly {

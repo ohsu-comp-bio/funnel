@@ -19,7 +19,7 @@ import (
 // outputs, uploads, stdin/out/err, etc. FileMapper helps the worker engine
 // manage all these paths.
 type FileMapper struct {
-	Volumes []*Volume
+	Volumes []Volume
 	Inputs  []*tes.TaskParameter
 	Outputs []*tes.TaskParameter
 	dir     string
@@ -43,7 +43,7 @@ func NewFileMapper(dir string) *FileMapper {
 	// TODO error handling
 	dir, _ = filepath.Abs(dir)
 	return &FileMapper{
-		Volumes: []*Volume{},
+		Volumes: []Volume{},
 		Inputs:  []*tes.TaskParameter{},
 		Outputs: []*tes.TaskParameter{},
 		dir:     dir,
@@ -85,7 +85,7 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 //
 // If the volume paths are invalid or can't be mapped, an error is returned.
 func (mapper *FileMapper) AddVolume(hostPath string, mountPoint string, readonly bool) error {
-	vol := &Volume{
+	vol := Volume{
 		HostPath:      hostPath,
 		ContainerPath: mountPoint,
 		Readonly:      readonly,
@@ -247,7 +247,7 @@ func (mapper *FileMapper) IsSubpath(p string, base string) bool {
 }
 
 // check if a Volume is already present in the FileMapper
-func (mapper *FileMapper) hasVolume(vol *Volume) bool {
+func (mapper *FileMapper) hasVolume(vol Volume) bool {
 	for i, v := range mapper.Volumes {
 		if vol == v {
 			return true

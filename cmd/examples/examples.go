@@ -3,30 +3,41 @@ package examples
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"path/filepath"
 	"strings"
 )
 
 // Cmd represents the examples command
 var Cmd = &cobra.Command{
-	Use:     "examples",
+	Use:     "examples [name]",
 	Aliases: []string{"example"},
 	Short:   "Print example task messages.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return fmt.Errorf("Example name required")
-		}
-		name := args[0]
 
-		if name == "list" {
-			for _, n := range AssetNames() {
-				n = strings.TrimPrefix(n, "examples/")
-				n = strings.TrimSuffix(n, ".json")
-				print(n + "\n")
+		// Map example name to asset name
+		// e.g. config => examples/config.yml
+		byShortName := map[string]string{}
+		for _, n := range AssetNames() {
+			sn := filepath.Base(n)
+			sn = strings.TrimSuffix(sn, filepath.Ext(sn))
+			byShortName[sn] = n
+		}
+
+		// Print a list of example names and exit
+		if len(args) == 0 || args[0] == "list" {
+			for sn := range byShortName {
+				fmt.Println(sn)
 			}
 			return nil
 		}
 
-		data, err := Asset("examples/" + name + ".json")
+		// Retrieve and print the example
+		name := args[0]
+		key, ok := byShortName[name]
+		if !ok {
+			return fmt.Errorf("No example by the name of %s", name)
+		}
+		data, err := Asset(key)
 		if err != nil {
 			return fmt.Errorf("No example by the name of %s", name)
 		}

@@ -19,7 +19,7 @@ import (
 // outputs, uploads, stdin/out/err, etc. FileMapper helps the worker engine
 // manage all these paths.
 type FileMapper struct {
-	Volumes []Volume
+	Volumes []*Volume
 	Inputs  []*tes.TaskParameter
 	Outputs []*tes.TaskParameter
 	dir     string
@@ -43,7 +43,7 @@ func NewFileMapper(dir string) *FileMapper {
 	// TODO error handling
 	dir, _ = filepath.Abs(dir)
 	return &FileMapper{
-		Volumes: []Volume{},
+		Volumes: []*Volume{},
 		Inputs:  []*tes.TaskParameter{},
 		Outputs: []*tes.TaskParameter{},
 		dir:     dir,
@@ -85,16 +85,15 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 //
 // If the volume paths are invalid or can't be mapped, an error is returned.
 func (mapper *FileMapper) AddVolume(hostPath string, mountPoint string, readonly bool) error {
-	v := Volume{
+	vol := &Volume{
 		HostPath:      hostPath,
 		ContainerPath: mountPoint,
 		Readonly:      readonly,
 	}
 
-	if !mapper.hasVolume(v) {
-		mapper.Volumes = append(mapper.Volumes, v)
+	if !mapper.hasVolume(vol) {
+		mapper.Volumes = append(mapper.Volumes, vol)
 	}
-
 	return nil
 }
 
@@ -248,10 +247,23 @@ func (mapper *FileMapper) IsSubpath(p string, base string) bool {
 }
 
 // check if a Volume is already present in the FileMapper
-func (mapper *FileMapper) hasVolume(new Volume) bool {
-	for _, v := range mapper.Volumes {
-		if v == new {
+func (mapper *FileMapper) hasVolume(vol *Volume) bool {
+	for i, v := range mapper.Volumes {
+		if vol == v {
 			return true
+		}
+
+		// If the proposed RW Volume is not a subpath of an existing RW Volume
+		// do not add it to the mapper
+		// If an existing RW Volume is a subpath of the proposed RW Volume, replace it with
+		// the proposed RW Volume
+		if !vol.Readonly && !v.Readonly {
+			if mapper.IsSubpath(vol.ContainerPath, v.ContainerPath) {
+				return true
+			} else if mapper.IsSubpath(v.ContainerPath, vol.ContainerPath) {
+				mapper.Volumes[i] = vol
+				return true
+			}
 		}
 	}
 	return false

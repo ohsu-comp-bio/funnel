@@ -12,7 +12,7 @@ func FileServer() http.Handler {
 		Asset:     Asset,
 		AssetDir:  AssetDir,
 		AssetInfo: AssetInfo,
-		Prefix:    "web-dashboard",
+		Prefix:    "webdash",
 	}
 	return http.FileServer(fs)
 }

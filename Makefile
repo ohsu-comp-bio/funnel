@@ -93,6 +93,7 @@ webdash:
 
 # Build binaries for all OS/Architectures
 cross-compile: depends
+	@echo '=== Cross compiling... ==='
 	@for GOOS in darwin linux; do \
 		for GOARCH in 386 amd64; do \
 			GOOS=$$GOOS GOARCH=$$GOARCH go build -o build/bin/funnel-$$GOOS-$$GOARCH .; \
@@ -170,8 +171,15 @@ website-dev:
 	@go get github.com/spf13/hugo
 	hugo --source ./website -w server
 
+# Build docker image.
+docker: cross-compile
+	mkdir -p build/docker
+	cp build/bin/funnel-linux-amd64 build/docker/
+	cp docker/* build/docker/
+	cd build/docker/ && docker build -t funnel .
+
 # Remove build/development files.
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto web website webdash
+.PHONY: proto web website docker webdash

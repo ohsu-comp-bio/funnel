@@ -86,7 +86,11 @@ func Run(conf config.Config) error {
 	defer cancel()
 
 	// Start server
-	go srv.Serve(ctx)
+	var srverr error
+	go func() {
+		srverr = srv.Serve(ctx)
+		cancel()
+	}()
 
 	// Start scheduler
 	err = sched.Start(ctx)
@@ -96,5 +100,8 @@ func Run(conf config.Config) error {
 
 	// Block
 	<-ctx.Done()
-	return nil
+	if srverr != nil {
+		log.Error("Server error", srverr)
+	}
+	return srverr
 }

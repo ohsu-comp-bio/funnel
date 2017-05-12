@@ -91,9 +91,27 @@ func (mapper *FileMapper) AddVolume(hostPath string, mountPoint string, readonly
 		Readonly:      readonly,
 	}
 
-	if !mapper.hasVolume(vol) {
-		mapper.Volumes = append(mapper.Volumes, vol)
+	for i, v := range mapper.Volumes {
+		// check if this volume is already present in the mapper
+		if vol == v {
+			return nil
+		}
+
+		// If the proposed RW Volume is not a subpath of an existing RW Volume
+		// do not add it to the mapper
+		// If an existing RW Volume is a subpath of the proposed RW Volume, replace it with
+		// the proposed RW Volume
+		if !vol.Readonly && !v.Readonly {
+			if mapper.IsSubpath(vol.ContainerPath, v.ContainerPath) {
+				return nil
+			} else if mapper.IsSubpath(v.ContainerPath, vol.ContainerPath) {
+				mapper.Volumes[i] = vol
+				return nil
+			}
+		}
 	}
+
+	mapper.Volumes = append(mapper.Volumes, vol)
 	return nil
 }
 
@@ -244,27 +262,4 @@ func (mapper *FileMapper) AddOutput(output *tes.TaskParameter) error {
 // IsSubpath returns true if the given path "p" is a subpath of "base".
 func (mapper *FileMapper) IsSubpath(p string, base string) bool {
 	return strings.HasPrefix(p, base)
-}
-
-// check if a Volume is already present in the FileMapper
-func (mapper *FileMapper) hasVolume(vol Volume) bool {
-	for i, v := range mapper.Volumes {
-		if vol == v {
-			return true
-		}
-
-		// If the proposed RW Volume is not a subpath of an existing RW Volume
-		// do not add it to the mapper
-		// If an existing RW Volume is a subpath of the proposed RW Volume, replace it with
-		// the proposed RW Volume
-		if !vol.Readonly && !v.Readonly {
-			if mapper.IsSubpath(vol.ContainerPath, v.ContainerPath) {
-				return true
-			} else if mapper.IsSubpath(v.ContainerPath, vol.ContainerPath) {
-				mapper.Volumes[i] = vol
-				return true
-			}
-		}
-	}
-	return false
 }

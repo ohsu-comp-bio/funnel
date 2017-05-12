@@ -7,16 +7,13 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
 )
-
-// LocalProtocol defines the expected prefix of URL matching this storage system.
-// e.g. "file:///path/to/file" matches the Local storage system.
-const LocalProtocol = "file://"
 
 // LocalBackend provides access to a local-disk storage system.
 type LocalBackend struct {
@@ -32,7 +29,11 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
 	log.Info("Starting download", "url", url, "hostPath", hostPath)
-	path := strings.TrimPrefix(url, LocalProtocol)
+	path, ok := getPath(url)
+
+	if !ok {
+		return fmt.Errorf("local storage does not support put on %s", url)
+	}
 
 	if !isAllowed(path, local.allowedDirs) {
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", path)
@@ -56,7 +57,11 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 // Put copies a file from the hostPath into storage.
 func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) error {
 	log.Info("Starting upload", "url", url, "hostPath", hostPath)
-	path := strings.TrimPrefix(url, LocalProtocol)
+	path, ok := getPath(url)
+
+	if !ok {
+		return fmt.Errorf("local storage does not support put on %s", url)
+	}
 
 	if !isAllowed(path, local.allowedDirs) {
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
@@ -81,8 +86,27 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 
 // Supports indicates whether this backend supports the given storage request.
 // For the LocalBackend, the url must start with "file://"
-func (local *LocalBackend) Supports(url string, hostPath string, class tes.FileType) bool {
-	return strings.HasPrefix(url, LocalProtocol)
+func (local *LocalBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
+	_, ok := getPath(rawurl)
+	return ok
+}
+
+func getPath(rawurl string) (string, bool) {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return "", false
+	}
+	if u.Path == "" {
+		return "", false
+	}
+	if u.Scheme == "file" {
+		return u.Path, true
+	}
+	// Handle URLs that are file paths, e.g. "/path/to/foo.txt"
+	if u.Scheme == "" && u.Host == "" {
+		return u.Path, true
+	}
+	return "", false
 }
 
 func isAllowed(path string, allowedDirs []string) bool {

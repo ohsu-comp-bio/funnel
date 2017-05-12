@@ -1,0 +1,13 @@
+{
+    "name": "Port request",
+    "description": "Demonstrates assigning ports to the executor container.",
+    "executors": [
+        {
+            "image_name": "alpine",
+            "ports": [{
+              "host": 0, "container": 8888
+            }],
+            "cmd": ["sleep", "10"]
+        }
+    ]
+}

@@ -1,12 +1,10 @@
 {
     "name": "Hello world",
-    "project": "Funnel",
-    "description": "Simple Echo Command",
-    "resources": {},
+    "description": "Demonstrates the most basic echo task.",
     "executors": [
         {
-            "image_name": "ubuntu",
-            "cmd": ["echo", "hello", "world"],
+            "image_name": "alpine",
+            "cmd": ["echo", "hello world"],
             "stdout": "stdout"
         }
     ]

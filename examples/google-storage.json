@@ -1,24 +1,19 @@
 {
-    "name": "Test Google Storage",
-    "project": "Funnel",
-    "description": "Simple Echo Command",
-    "resources": {},
+    "name": "Google Cloud Storage example",
+    "description": "Task inputs and outputs can be Google Cloud Storage URLs.",
     "executors": [
       {
         "image_name": "ubuntu",
-        "cmd": ["echo",
-                "hello",
-                "world"],
+        "cmd": ["md5sum", "/tmp/file.zip"],
         "stdout": "stdout"
       }
     ],
     "inputs": [
       {
-        "name": "infile",
-        "description": "File to be MD5ed",
-        "url": "gs://smc-rna-eval/cwltool-test-output/isoform/7150823/",
-        "type": "DIRECTORY",
-        "path": "/tmp/test_file"
+        "name": "zipfile",
+        "description": "Download a public file from Google Storage (US Patent Office data)",
+        "url": "gs://uspto-pair/applications/05900016.zip",
+        "path": "/tmp/file.zip"
       }
     ]
 }

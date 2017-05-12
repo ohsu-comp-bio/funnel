@@ -1,0 +1,12 @@
+{
+    "name": "Log streaming",
+    "description": "Demonstrates that stdout/err logs are streamed by to the Funnel dashboards. Prints the date/time every second, until canceled.",
+    "executors": [
+        {
+            "image_name": "alpine",
+            "cmd": ["sh", "-c", "while true; do date; sleep 1; done"],
+            "stdout": "/tmp/stdout",
+            "stderr": "/tmp/stderr"
+        }
+    ]
+}

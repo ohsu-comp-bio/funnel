@@ -1,0 +1,15 @@
+{
+    "name": "Resource request",
+    "description": "Demonstrates a task requesting 4 CPU cores, 15 GB RAM, and 100 GB disk space.",
+    "resources": {
+        "cpu_cores": 4,
+        "ram_gb": 15,
+        "size_gb": 100
+    },
+    "executors": [
+        {
+            "image_name": "alpine",
+            "cmd": ["sleep", "1"]
+        }
+    ]
+}

@@ -197,7 +197,6 @@ func copyDir(source string, dest string) (err error) {
 
 	entries, err := ioutil.ReadDir(source)
 	for _, entry := range entries {
-		log.Debug("COPYDIR", "entry", fmt.Sprintf("%+v", entry))
 		sfp := path.Join(source, entry.Name())
 		dfp := path.Join(dest, entry.Name())
 		if entry.IsDir() {

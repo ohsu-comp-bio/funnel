@@ -92,7 +92,7 @@ func TestLocalPut(t *testing.T) {
 	}
 
 	// Check the resulting content
-	b, rerr := ioutil.ReadFile(cp)
+	b, rerr := ioutil.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -122,7 +122,51 @@ func TestLocalPutPath(t *testing.T) {
 	}
 
 	// Check the resulting content
-	b, rerr := ioutil.ReadFile(cp)
+	b, rerr := ioutil.ReadFile(op)
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if string(b) != "foo" {
+		t.Fatal("Unexpected content")
+	}
+}
+
+// Tests Put when source and dest reference the same file (inode)
+// Since the LocalBackend hard-links files when possible we need to protect
+// against the case where the same path is 'Put' twice
+func TestSameFile(t *testing.T) {
+	ctx := context.Background()
+	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	logger.Debug("TEMP DIR", tmp)
+	tmpOut, err := ioutil.TempDir("", "funnel-test-local-storage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	logger.Debug("TEMP OUT DIR", tmpOut)
+	l := LocalBackend{allowedDirs: []string{tmp, tmp_out}}
+
+	// Write the test files
+	cp := path.Join(tmp, "output.txt")
+	op := path.Join(tmpOut, "output.txt")
+	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+
+	pferr := l.Put(ctx, op, cp, tes.FileType_FILE)
+	if pferr != nil {
+		t.Fatal(pferr)
+	}
+
+	// since the file in this dir were already 'Put' in the previous step
+	// nothing should happen
+	pderr := l.Put(ctx, tmpOut, tmp, tes.FileType_DIRECTORY)
+	if pderr != nil {
+		t.Fatal(pderr)
+	}
+
+	// Check the resulting content
+	b, rerr := ioutil.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}

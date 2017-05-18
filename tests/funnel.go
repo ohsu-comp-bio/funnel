@@ -1,18 +1,15 @@
 package tests
 
 import (
-	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/ohsu-comp-bio/funnel/scheduler/noop"
 	"github.com/ohsu-comp-bio/funnel/server"
+	"github.com/ohsu-comp-bio/funnel/tests/testutils"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"golang.org/x/net/context"
-	"io/ioutil"
-	"math/rand"
-	"path"
 	"time"
 )
 
@@ -20,12 +17,9 @@ import (
 // and other common config used in tests.
 func NewConfig() config.Config {
 	conf := config.DefaultConfig()
-	f, _ := ioutil.TempDir("", "funnel-test-")
-	conf.WorkDir = f
-	conf.DBPath = path.Join(f, "funnel.db")
+	conf = testutils.TempDirConfig(conf, "/tmp")
 	conf = noop.Config(conf)
-	conf.RPCPort = randomPort()
-	conf.HTTPPort = randomPort()
+	conf = testutils.RandomPortConfig(conf)
 	conf.Worker = config.WorkerInheritConfigVals(conf)
 	return conf
 }
@@ -154,16 +148,4 @@ func (m *Funnel) CompleteTask(taskID string) {
 		}
 	}
 	panic("No such task found: " + taskID)
-}
-
-func init() {
-	// nanoseconds are important because the tests run faster than a millisecond
-	// which can cause port conflicts
-	rand.Seed(time.Now().UTC().UnixNano())
-}
-func randomPort() string {
-	min := 10000
-	max := 20000
-	n := rand.Intn(max-min) + min
-	return fmt.Sprintf("%d", n)
 }

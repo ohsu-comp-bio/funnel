@@ -17,7 +17,7 @@ import (
 // and other common config used in tests.
 func NewConfig() config.Config {
 	conf := config.DefaultConfig()
-	conf = testutils.TempDirConfig(conf, "/tmp")
+	conf = testutils.TempDirConfig(conf)
 	conf = noop.Config(conf)
 	conf = testutils.RandomPortConfig(conf)
 	conf.Worker = config.WorkerInheritConfigVals(conf)

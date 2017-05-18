@@ -33,14 +33,14 @@ var minioSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 func init() {
 	logger.ForceColors()
 	conf := config.DefaultConfig()
-	conf = testutils.TempDirConfig(conf, "/tmp")
+	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
-	//conf.LogLevel = "debug"
+	conf.LogLevel = "debug"
 	conf.Worker.LogUpdateRate = rate
 	conf.Worker.UpdateRate = rate
 	conf.ScheduleRate = rate
 
-	storageDir, _ = ioutil.TempDir("/tmp", "funnel-test-storage-")
+	storageDir, _ = ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 
 	// TODO need to fix the storage config so that you can't accidentally
@@ -129,7 +129,7 @@ func run(s string) string {
 	tpl := template.Must(template.New("run").Parse(s))
 	var by bytes.Buffer
 	data := map[string]string{
-		"storage": storageDir,
+		"storage": "./" + storageDir,
 	}
 	if eerr := tpl.Execute(&by, data); eerr != nil {
 		panic(eerr)

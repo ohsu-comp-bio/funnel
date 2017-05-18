@@ -151,6 +151,11 @@ func recoverLogErr() {
 	}
 }
 
+// PrintSimpleError prints out an error message with a red "ERROR:" prefix.
+func PrintSimpleError(err error) {
+	fmt.Printf("\x1b[%dm%s\x1b[0m %s\n", red, "ERROR:", err.Error())
+}
+
 func fields(args ...interface{}) map[string]interface{} {
 	f := make(map[string]interface{}, len(args)/2)
 	if len(args) == 1 {

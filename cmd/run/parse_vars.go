@@ -3,131 +3,238 @@ package run
 import (
 	"errors"
 	"fmt"
-	"github.com/imdario/mergo"
+	"github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-func mergeVars(maps ...map[string]string) (map[string]string, error) {
-	var err error
-	merged := map[string]string{}
-	for _, m := range maps {
-		err = mergo.MergeWithOverwrite(&merged, m)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return merged, nil
+// ErrKeyFmt describes an error in input/output/env/tag flag formatting
+var ErrKeyFmt = errors.New("Arguments passed to --in, --out and --env must be of the form: KEY=VALUE")
+
+// ErrStorageScheme describes an error in supported storage URL schemes.
+var ErrStorageScheme = errors.New("File paths must be prefixed with one of:\n file://\n gs://\n s3://")
+
+// DuplicateKeyErr returns a new error describing conflicting keys for env. vars., inputs, and outputs.
+func DuplicateKeyErr(key string) error {
+	return errors.New("Can't use the same KEY for multiple --in, --out, --env arguments: " + key)
 }
 
-func parseCliVars(args []string) (map[string]string, error) {
-	data := map[string]string{}
+// Parse CLI variable definitions (e.g "varname=value") into usable task values.
+func valsToTask(vals flagVals) (task *tes.Task, err error) {
 
-	if len(args) == 0 {
-		return data, nil
+	// Any error occuring during parsing the variables an preparing the task
+	// is a fatal error, so I'm using panic/recover to simplify error handling.
+	defer func() {
+		if x := recover(); x != nil {
+			err = x.(error)
+		}
+	}()
+
+	environ := map[string]string{}
+
+	// Build the task message
+	task = &tes.Task{
+		Name:        vals.name,
+		Project:     vals.project,
+		Description: vals.description,
+		Resources: &tes.Resources{
+			CpuCores:    uint32(vals.cpu),
+			RamGb:       vals.ram,
+			SizeGb:      vals.disk,
+			Zones:       vals.zones,
+			Preemptible: vals.preemptible,
+		},
+		Volumes: vals.volumes,
+		Tags:    map[string]string{},
 	}
 
-	for _, arg := range args {
-		re := regexp.MustCompile("=")
-		res := re.Split(arg, -1)
-		if len(res) != 2 {
-			err := errors.New("Arguments passed to --in, --out and --env must be of the form: KEY=VALUE")
-			return data, err
+	// Create executors
+	for i, exec := range vals.execs {
+		// Split command string based on shell syntax.
+		cmd, _ := shellquote.Split(exec.cmd)
+		stdinPath := fmt.Sprintf("/opt/funnel/inputs/stdin-%d", i)
+		stdoutPath := fmt.Sprintf("/opt/funnel/outputs/stdout-%d", i)
+		stderrPath := fmt.Sprintf("/opt/funnel/outputs/stderr-%d", i)
+
+		// Only set the stdin path if the --stdin flag was used.
+		var stdin string
+		if exec.stdin != "" {
+			stdin = stdinPath
+			task.Inputs = append(task.Inputs, &tes.TaskParameter{
+				Name: fmt.Sprintf("stdin-%d", i),
+				Url:  resolvePath(exec.stdin),
+				Path: stdinPath,
+			})
 		}
-		key := res[0]
-		val := res[1]
-		if _, ok := data[key]; ok {
-			err := errors.New("Can't use the same KEY for multiple --in, --out, --env arguments: " + key)
-			return data, err
+
+		if exec.stdout != "" {
+			task.Outputs = append(task.Outputs, &tes.TaskParameter{
+				Name: fmt.Sprintf("stdout-%d", i),
+				Url:  resolvePath(exec.stdout),
+				Path: stdoutPath,
+			})
 		}
-		data[key] = val
+
+		if exec.stderr != "" {
+			task.Outputs = append(task.Outputs, &tes.TaskParameter{
+				Name: fmt.Sprintf("stderr-%d", i),
+				Url:  resolvePath(exec.stderr),
+				Path: stderrPath,
+			})
+		}
+
+		task.Executors = append(task.Executors, &tes.Executor{
+			ImageName: vals.container,
+			Cmd:       cmd,
+			Workdir:   vals.workdir,
+			Environ:   environ,
+			Stdin:     stdin,
+			Stdout:    stdoutPath,
+			Stderr:    stderrPath,
+			// TODO no ports
+			Ports: nil,
+		})
 	}
-	return data, nil
+
+	// Helper to make sure variable keys are unique.
+	setenv := func(key, val string) {
+		_, exists := environ[key]
+		if exists {
+			panic(DuplicateKeyErr(key))
+		}
+		environ[key] = val
+	}
+
+	for _, raw := range vals.inputs {
+		k, v := parseCliVar(raw)
+		url := resolvePath(v)
+		path := "/opt/funnel/inputs/" + stripStoragePrefix(url)
+		setenv(k, path)
+		task.Inputs = append(task.Inputs, &tes.TaskParameter{
+			Name: k,
+			Url:  url,
+			Path: path,
+		})
+	}
+
+	for _, raw := range vals.inputDirs {
+		k, v := parseCliVar(raw)
+		url := resolvePath(v)
+		path := "/opt/funnel/inputs/" + stripStoragePrefix(url)
+		setenv(k, path)
+		task.Inputs = append(task.Inputs, &tes.TaskParameter{
+			Name: k,
+			Url:  url,
+			Path: path,
+			Type: tes.FileType_DIRECTORY,
+		})
+	}
+
+	for _, raw := range vals.contents {
+		k, v := parseCliVar(raw)
+		path := "/opt/funnel/inputs/" + stripStoragePrefix(resolvePath(v))
+		setenv(k, path)
+		task.Inputs = append(task.Inputs, &tes.TaskParameter{
+			Name:     k,
+			Path:     path,
+			Contents: getContents(v),
+		})
+	}
+
+	for _, raw := range vals.outputs {
+		k, v := parseCliVar(raw)
+		url := resolvePath(v)
+		path := "/opt/funnel/outputs/" + stripStoragePrefix(url)
+		setenv(k, path)
+		task.Outputs = append(task.Outputs, &tes.TaskParameter{
+			Name: k,
+			Url:  url,
+			Path: path,
+		})
+	}
+
+	for _, raw := range vals.outputDirs {
+		k, v := parseCliVar(raw)
+		url := resolvePath(v)
+		path := "/opt/funnel/outputs/" + stripStoragePrefix(url)
+		setenv(k, path)
+		task.Outputs = append(task.Outputs, &tes.TaskParameter{
+			Name: k,
+			Url:  url,
+			Path: path,
+			Type: tes.FileType_DIRECTORY,
+		})
+	}
+
+	for _, raw := range vals.environ {
+		k, v := parseCliVar(raw)
+		setenv(k, v)
+	}
+
+	for _, raw := range vals.tags {
+		k, v := parseCliVar(raw)
+		task.Tags[k] = v
+	}
+	return
 }
 
-func compareKeys(maps ...map[string]string) error {
-	keys := make(map[string]string)
-	for _, mymap := range maps {
-		for k := range mymap {
-			if _, ok := keys[k]; !ok {
-				keys[k] = ""
-			} else {
-				err := errors.New("Can't use the same KEY for multiple --in, --out, --env arguments: " + k)
-				return err
-			}
-		}
+func getContents(p string) string {
+	b, err := ioutil.ReadFile(p)
+	if err != nil {
+		panic(err)
 	}
-	return nil
+	return string(b)
 }
 
-func stripStoragePrefix(url string) (string, error) {
+func parseCliVar(raw string) (string, string) {
+	re := regexp.MustCompile("=")
+	res := re.Split(raw, -1)
+
+	if len(res) != 2 {
+		panic(ErrKeyFmt)
+	}
+
+	key := res[0]
+	val := res[1]
+	return key, val
+}
+
+// Give a input/output URL "raw", return the path of the file
+// relative to the container.
+func containerPath(raw, base string) string {
+	url := resolvePath(raw)
+	p := stripStoragePrefix(url)
+	return base + p
+}
+
+func stripStoragePrefix(url string) string {
 	re := regexp.MustCompile("[a-z0-9]+://")
 	if !re.MatchString(url) {
-		err := errors.New("File paths must be prefixed with one of:\n file://\n gs://\n s3://")
-		return "", err
+		panic(ErrStorageScheme)
 	}
 	path := re.ReplaceAllString(url, "")
-	return strings.TrimPrefix(path, "/"), nil
+	return strings.TrimPrefix(path, "/")
 }
 
-func resolvePath(url string) (string, error) {
-	local := strings.HasPrefix(url, "/") || strings.HasPrefix(url, ".") || strings.HasPrefix(url, "~")
+func resolvePath(url string) string {
+	local := strings.HasPrefix(url, "/") || strings.HasPrefix(url, ".") ||
+		strings.HasPrefix(url, "~")
 	re := regexp.MustCompile("[a-z0-9]+://")
 	prefixed := re.MatchString(url)
-	var path string
+
 	switch {
 	case local:
 		path, err := filepath.Abs(url)
 		if err != nil {
-			return "", err
+			panic(err)
 		}
-		return "file://" + path, nil
+		return "file://" + path
 	case prefixed:
-		path = url
-		return path, nil
+		return url
 	default:
-		e := fmt.Sprintf("could not resolve filepath: %s", url)
-		return "", errors.New(e)
+		panic(fmt.Errorf("could not resolve filepath: %s", url))
 	}
-}
-
-func fileMapToEnvVars(m map[string]string, path string) (map[string]string, error) {
-	result := map[string]string{}
-	for k, v := range m {
-		url, err := resolvePath(v)
-		if err != nil {
-			return nil, err
-		}
-		p, err := stripStoragePrefix(url)
-		if err != nil {
-			return nil, err
-		}
-		result[k] = path + p
-	}
-	return result, nil
-}
-
-func createTaskParams(params map[string]string, path string, t tes.FileType) ([]*tes.TaskParameter, error) {
-	result := []*tes.TaskParameter{}
-	for key, val := range params {
-		url, err := resolvePath(val)
-		if err != nil {
-			return nil, err
-		}
-		p, err := stripStoragePrefix(url)
-		if err != nil {
-			return nil, err
-		}
-		path := path + p
-		param := &tes.TaskParameter{
-			Name: key,
-			Url:  url,
-			Path: path,
-			Type: t,
-		}
-		result = append(result, param)
-	}
-	return result, nil
 }

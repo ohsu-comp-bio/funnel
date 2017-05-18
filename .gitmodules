@@ -106,6 +106,9 @@
 [submodule "vendor/github.com/cpuguy83/go-md2man"]
 	path = vendor/github.com/cpuguy83/go-md2man
 	url = https://github.com/cpuguy83/go-md2man
+[submodule "vendor/github.com/kballard/go-shellquote"]
+	path = vendor/github.com/kballard/go-shellquote
+	url = https://github.com/kballard/go-shellquote
 [submodule "vendor/github.com/go-test/deep"]
 	path = vendor/github.com/go-test/deep
 	url = https://github.com/go-test/deep

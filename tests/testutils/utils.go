@@ -5,6 +5,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"path"
 	"time"
 )
@@ -31,8 +32,9 @@ func RandomPortConfig(conf config.Config) config.Config {
 }
 
 // TempDirConfig returns a modified config with workdir and db path set to a temp. directory.
-func TempDirConfig(conf config.Config, dir string) config.Config {
-	f, _ := ioutil.TempDir(dir, "funnel-test-")
+func TempDirConfig(conf config.Config) config.Config {
+	os.Mkdir("./test_tmp", os.ModePerm)
+	f, _ := ioutil.TempDir("./test_tmp", "funnel-test-")
 	conf.WorkDir = f
 	conf.DBPath = path.Join(f, "funnel.db")
 	return conf

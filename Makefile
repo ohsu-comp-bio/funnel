@@ -5,8 +5,6 @@ endif
 export SHELL=/bin/bash
 PATH := ${PATH}:${GOPATH}/bin
 export PATH
-PYTHONPATH := ${PYTHONPATH}:$(shell pwd)/python
-export PYTHONPATH
 
 PROTO_INC=-I ./ -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
@@ -53,7 +51,7 @@ prune_deps:
 # Automatially update code formatting
 tidy:
 	@pip install -q autopep8
-	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v ".pb." | grep -E '.*\.go$$' | xargs gofmt -w -s
+	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v ".pb." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
 
 # Run code style and other checks
@@ -69,21 +67,15 @@ lint:
 	@gometalinter --disable-all --enable=vet --enable=gofmt --vendor ./cmd/termdash/...
 
 # Run fast-running Go tests
-go-test-short:
+test-short:
 	@go test -short $(shell go list ./... | grep -v /vendor/)
 
-# Run all Go tests
-go-test:
+# Run all tests
+test:	
 	@go test $(shell go list ./... | grep -v /vendor/)
 
-go-test-verbose:
+test-verbose:
 	@go run tests/fmt/fmt.go -v ./tests
-
-# Run all tests, including end-to-end Python tests
-test:	go-test-verbose
-	@docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/
-	@pip2.7 install -q -r tests/requirements.txt
-	@nosetests-2.7 tests/
 
 # Build the web dashboard
 webdash:

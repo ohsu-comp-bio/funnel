@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/fatih/color"
 	"github.com/golang/protobuf/proto"
 	"github.com/kr/pretty"
+	"github.com/logrusorgru/aurora"
 	"runtime"
 	"sort"
 	"time"
@@ -94,30 +94,28 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys []string, timestampFormat string, ns string) {
-	var levelColor, nsColor func(format string, a ...interface{}) string
+	var levelColor aurora.Color
 
 	switch entry.Level {
 	case logrus.DebugLevel:
-		levelColor = color.New(color.FgYellow).SprintfFunc()
-		nsColor = color.New(color.Bold, color.FgYellow).SprintfFunc()
+		levelColor = aurora.BrownFg
 	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
-		levelColor = color.New(color.FgRed).SprintfFunc()
-		nsColor = color.New(color.Bold, color.FgRed).SprintfFunc()
+		levelColor = aurora.RedFg
 	default:
-		levelColor = color.New(color.FgCyan).SprintfFunc()
-		nsColor = color.New(color.Bold, color.FgCyan).SprintfFunc()
+		levelColor = aurora.CyanFg
 	}
+	nsColor := levelColor | aurora.BoldFm
 
-	//levelText := strings.ToUpper(entry.Level.String())
-	fmt.Fprintf(b, "%-22s %s\n", nsColor(ns), entry.Message)
+	fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize(ns, nsColor), entry.Message)
 
 	if !f.DisableTimestamp {
 		if !f.FullTimestamp {
-			fmt.Fprintf(b, "%-20s %04d\n", levelColor("time"),
+			fmt.Fprintf(b, "%-20s %04d\n", aurora.Colorize("time", levelColor),
 				int(entry.Time.Sub(baseTimestamp)/time.Second))
 
 		} else {
-			fmt.Fprintf(b, "%-20s %s\n", levelColor("time"), entry.Time.Format(timestampFormat))
+			fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize("time", levelColor),
+				entry.Time.Format(timestampFormat))
 		}
 	}
 
@@ -147,7 +145,7 @@ func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 			v = pretty.Sprint(x)
 		}
 		//fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%v", levelColor, k, v)
-		fmt.Fprintf(b, "%-20s %s\n", levelColor(k), v)
+		fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize(k, levelColor), v)
 		//f.appendValue(b, v)
 	}
 }

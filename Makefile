@@ -76,6 +76,9 @@ go-test-short:
 go-test:
 	@go test $(shell go list ./... | grep -v /vendor/)
 
+go-test-verbose:
+	@go run tests/fmt/fmt.go -v ./tests
+
 # Run all tests, including end-to-end Python tests
 test:	go-test
 	@docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/

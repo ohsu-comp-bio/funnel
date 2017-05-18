@@ -19,7 +19,7 @@ func TestMapTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := FileMapper{ 
+	f := FileMapper{
 		dir: tmp,
 	}
 
@@ -28,7 +28,7 @@ func TestMapTask(t *testing.T) {
 		t.Fatal(err)
 	}
 
-  task := &tes.Task{
+	task := &tes.Task{
 		Inputs: []*tes.TaskParameter{
 			{
 				Name: "f1",
@@ -98,34 +98,34 @@ func TestMapTask(t *testing.T) {
 
 	ev := []Volume{
 		{
-			HostPath: tmp + "/volone",
+			HostPath:      tmp + "/volone",
 			ContainerPath: "/volone",
-			Readonly: false,
+			Readonly:      false,
 		},
 		{
-			HostPath: tmp + "/voltwo",
+			HostPath:      tmp + "/voltwo",
 			ContainerPath: "/voltwo",
-			Readonly: false,
+			Readonly:      false,
 		},
 		{
-			HostPath: tmp + "/opt/funnel/inputs/testdata/f1.txt",
+			HostPath:      tmp + "/opt/funnel/inputs/testdata/f1.txt",
 			ContainerPath: "/opt/funnel/inputs/testdata/f1.txt",
-			Readonly: true,
+			Readonly:      true,
 		},
 		{
-			HostPath: tmp + "/opt/funnel/inputs/testdata/f4",
+			HostPath:      tmp + "/opt/funnel/inputs/testdata/f4",
 			ContainerPath: "/opt/funnel/inputs/testdata/f4",
-			Readonly: true,
+			Readonly:      true,
 		},
 		{
-			HostPath: tmp + "/opt/funnel/inputs/testdata/contents.txt",
+			HostPath:      tmp + "/opt/funnel/inputs/testdata/contents.txt",
 			ContainerPath: "/opt/funnel/inputs/testdata/contents.txt",
-			Readonly: true,
+			Readonly:      true,
 		},
 		{
-			HostPath: tmp + "/opt/funnel/outputs",
+			HostPath:      tmp + "/opt/funnel/outputs",
 			ContainerPath: "/opt/funnel/outputs",
-			Readonly: false,
+			Readonly:      false,
 		},
 	}
 

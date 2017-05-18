@@ -146,7 +146,7 @@ func TestSameFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	logger.Debug("TEMP OUT DIR", tmpOut)
-	l := LocalBackend{allowedDirs: []string{tmp, tmp_out}}
+	l := LocalBackend{allowedDirs: []string{tmp, tmpOut}}
 
 	// Write the test files
 	cp := path.Join(tmp, "output.txt")

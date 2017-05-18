@@ -47,8 +47,14 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 			Zones:       vals.zones,
 			Preemptible: vals.preemptible,
 		},
-		Volumes: vals.volumes,
-		Tags:    map[string]string{},
+		Tags: map[string]string{},
+	}
+
+	for _, vol := range vals.volumes {
+		if !strings.HasPrefix(vol, "/") {
+			panic(fmt.Errorf("volumes must be absolute paths: %s", vol))
+		}
+		task.Volumes = append(task.Volumes, vol)
 	}
 
 	// Create executors

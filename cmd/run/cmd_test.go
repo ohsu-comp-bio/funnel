@@ -118,7 +118,7 @@ func TestParse(t *testing.T) {
 					},
 				},
 			},
-			Volumes: []string{"volone", "voltwo"},
+			Volumes: []string{"/volone", "/voltwo"},
 			Tags: map[string]string{
 				"one": "onev",
 				"two": "twov",
@@ -143,8 +143,8 @@ func TestParse(t *testing.T) {
     -x '--name foo'
     --cmd 'echo two'
     --stdout ./testdata/stdout-second
-    --vol volone
-    --vol voltwo
+    --vol /volone
+    --vol /voltwo
     --cpu 8
     --ram 32
     --disk 100

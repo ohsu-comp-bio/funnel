@@ -13,6 +13,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests/testutils"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
@@ -71,7 +72,7 @@ func init() {
 	cli = tes.NewTaskServiceClient(conn)
 
 	var derr error
-	dcli, derr = docker.NewEnvClient()
+	dcli, derr = util.NewDockerClient()
 	if derr != nil {
 		panic(derr)
 	}

@@ -76,7 +76,7 @@ func DefaultConfig() Config {
 		HTTPPort:           "8000",
 		RPCPort:            rpcPort,
 		WorkDir:            workDir,
-		LogLevel:           "debug",
+		LogLevel:           "info",
 		TimestampLogs:      true,
 		Scheduler:          "local",
 		MaxExecutorLogSize: 10000,

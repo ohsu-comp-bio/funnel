@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
-	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -90,7 +89,10 @@ func (dcmd DockerCmd) Run() error {
 // Inspect returns metadata about the container (calls "docker inspect").
 func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
 	log.Info("Fetching container metadata")
-	dclient := setupDockerClient()
+	dclient, derr := util.NewDockerClient()
+	if derr != nil {
+		return nil, derr
+	}
 	// close the docker client connection
 	defer dclient.Close()
 	for {
@@ -138,7 +140,10 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
 // Stop stops the container.
 func (dcmd DockerCmd) Stop() error {
 	log.Info("Stopping container", "container", dcmd.ContainerName)
-	dclient := setupDockerClient()
+	dclient, derr := util.NewDockerClient()
+	if derr != nil {
+		return derr
+	}
 	// close the docker client connection
 	defer dclient.Close()
 	// Set timeout
@@ -147,31 +152,6 @@ func (dcmd DockerCmd) Stop() error {
 	// TODO is context.Background right?
 	err := dclient.ContainerStop(context.Background(), dcmd.ContainerName, &timeout)
 	return err
-}
-
-func setupDockerClient() *client.Client {
-	dclient, err := client.NewEnvClient()
-	if err != nil {
-		log.Error("Docker error", err)
-		return nil
-	}
-
-	// If the api version is not set test if the client can communicate with the
-	// server; if not infer API version from error message and inform the client
-	// to use that version for future communication
-	if os.Getenv("DOCKER_API_VERSION") == "" {
-		_, err := dclient.ServerVersion(context.Background())
-		if err != nil {
-			re := regexp.MustCompile(`([0-9\.]+)`)
-			version := re.FindAllString(err.Error(), -1)
-			// Error message example:
-			//   Error getting metadata for container: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
-			log.Debug("DOCKER_API_VERSION", "version", version[1])
-			os.Setenv("DOCKER_API_VERSION", version[1])
-			return setupDockerClient()
-		}
-	}
-	return dclient
 }
 
 func formatVolumeArg(v Volume) string {

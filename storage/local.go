@@ -120,28 +120,45 @@ func isAllowed(path string, allowedDirs []string) bool {
 
 // Copies file source to destination dest.
 func copyFile(source string, dest string) (err error) {
+	// check if dest exists; if it does check if it is the same as the source
+	same, err := sameFile(source, dest)
+	if err != nil {
+		return err
+	}
+	if same {
+		log.Debug("source and dest are the same file - skipping...")
+		return nil
+	}
+	// Open source file for copying
 	sf, err := os.Open(source)
 	if err != nil {
 		return err
 	}
-	defer sf.Close()
 	dstD := path.Dir(dest)
 	// make parent dirs if they dont exist
 	if _, err := os.Stat(dstD); err != nil {
 		_ = syscall.Umask(0000)
-		os.MkdirAll(dstD, 0777)
+		err = os.MkdirAll(dstD, 0777)
+		if err != nil {
+			return err
+		}
 	}
 	df, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
 	_, err = io.Copy(df, sf)
-	cerr := df.Close()
 	if err != nil {
 		return err
 	}
-	if cerr != nil {
-		return cerr
+	// close files
+	err = sf.Close()
+	if err != nil {
+		return err
+	}
+	err = df.Close()
+	if err != nil {
+		return err
 	}
 	// ensure readable output files
 	err = os.Chmod(dest, 0666)
@@ -180,8 +197,8 @@ func copyDir(source string, dest string) (err error) {
 
 	entries, err := ioutil.ReadDir(source)
 	for _, entry := range entries {
-		sfp := source + "/" + entry.Name()
-		dfp := dest + "/" + entry.Name()
+		sfp := path.Join(source, entry.Name())
+		dfp := path.Join(dest, entry.Name())
 		if entry.IsDir() {
 			err = copyDir(sfp, dfp)
 			if err != nil {
@@ -206,6 +223,14 @@ func linkFile(source string, dest string) error {
 	if err != nil {
 		return err
 	}
+	same, err := sameFile(parent, dest)
+	if err != nil {
+		return err
+	}
+	if same {
+		log.Debug("source and dest are the same file - skipping...")
+		return nil
+	}
 	err = os.Link(parent, dest)
 	if err != nil {
 		log.Debug("Failed to link file; attempting copy",
@@ -215,4 +240,21 @@ func linkFile(source string, dest string) error {
 		err = copyFile(source, dest)
 	}
 	return err
+}
+
+func sameFile(source string, dest string) (bool, error) {
+	var same bool
+	var err error
+	sfi, err := os.Stat(source)
+	if err != nil {
+		return same, err
+	}
+	dfi, err := os.Stat(dest)
+	if os.IsNotExist(err) {
+		return same, nil
+	} else if err != nil {
+		return same, err
+	}
+	same = os.SameFile(sfi, dfi)
+	return same, nil
 }

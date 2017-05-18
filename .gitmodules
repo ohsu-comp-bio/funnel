@@ -109,3 +109,6 @@
 [submodule "vendor/github.com/go-test/deep"]
 	path = vendor/github.com/go-test/deep
 	url = https://github.com/go-test/deep
+[submodule "vendor/github.com/logrusorgru/aurora"]
+	path = vendor/github.com/logrusorgru/aurora
+	url = https://github.com/logrusorgru/aurora

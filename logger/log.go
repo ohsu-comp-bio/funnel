@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/fatih/color"
 	"io"
 	"io/ioutil"
 	"strings"

@@ -4,23 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/fatih/color"
 	"github.com/golang/protobuf/proto"
 	"github.com/kr/pretty"
 	"runtime"
 	"sort"
-	"strings"
 	"time"
-)
-
-const (
-	nocolor = 0
-	red     = 31
-	green   = 32
-	yellow  = 33
-	blue    = 36
-	gray    = 37
-	debug   = 33
-	nsColor = 100
 )
 
 var (
@@ -105,27 +94,33 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys []string, timestampFormat string, ns string) {
-	var levelColor int
+	var levelColor, nsColor func(format string, a ...interface{}) string
+
 	switch entry.Level {
 	case logrus.DebugLevel:
-		levelColor = debug
-	case logrus.WarnLevel:
-		levelColor = yellow
+		levelColor = color.New(color.FgYellow).SprintfFunc()
+		nsColor = color.New(color.Bold, color.FgYellow).SprintfFunc()
 	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
-		levelColor = red
+		levelColor = color.New(color.FgRed).SprintfFunc()
+		nsColor = color.New(color.Bold, color.FgRed).SprintfFunc()
 	default:
-		levelColor = blue
+		levelColor = color.New(color.FgCyan).SprintfFunc()
+		nsColor = color.New(color.Bold, color.FgCyan).SprintfFunc()
 	}
 
-	levelText := strings.ToUpper(entry.Level.String())[0:4]
+	//levelText := strings.ToUpper(entry.Level.String())
+	fmt.Fprintf(b, "%-22s %s\n", nsColor(ns), entry.Message)
 
-	if f.DisableTimestamp {
-		fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m \x1b[%dm%-10s\x1b[0m %-30s ", levelColor, levelText, nsColor, ns, entry.Message)
-	} else if !f.FullTimestamp {
-		fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%04d] \x1b[%dm%-10s\x1b[0m %-30s ", levelColor, levelText, int(entry.Time.Sub(baseTimestamp)/time.Second), nsColor, ns, entry.Message)
-	} else {
-		fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s] \x1b[%dm%-10s\x1b[0m %-30s ", levelColor, levelText, entry.Time.Format(timestampFormat), nsColor, ns, entry.Message)
+	if !f.DisableTimestamp {
+		if !f.FullTimestamp {
+			fmt.Fprintf(b, "%-20s %04d\n", levelColor("time"),
+				int(entry.Time.Sub(baseTimestamp)/time.Second))
+
+		} else {
+			fmt.Fprintf(b, "%-20s %s\n", levelColor("time"), entry.Time.Format(timestampFormat))
+		}
 	}
+
 	for _, k := range keys {
 		v := entry.Data[k]
 		switch x := v.(type) {
@@ -151,7 +146,8 @@ func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		default:
 			v = pretty.Sprint(x)
 		}
-		fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%v", levelColor, k, v)
+		//fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%v", levelColor, k, v)
+		fmt.Fprintf(b, "%-20s %s\n", levelColor(k), v)
 		//f.appendValue(b, v)
 	}
 }

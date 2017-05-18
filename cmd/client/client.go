@@ -30,6 +30,7 @@ func NewClient(address string) *Client {
 		Marshaler: &jsonpb.Marshaler{
 			EnumsAsInts:  false,
 			EmitDefaults: false,
+			Indent:       "\t",
 		},
 	}
 }

@@ -23,19 +23,19 @@ func TestFileMount(t *testing.T) {
 	}
 }
 
-// Test that the local storage system hard links output files.
+// Test that the local storage system hard links input files.
 // TODO this test is unix specific because it uses syscall?
-func TestLocalFilesystemHardLink(t *testing.T) {
+func TestLocalFilesystemHardLinkInput(t *testing.T) {
+	writeFile("test_hard_link_input", "content")
 	id := run(`
-    --cmd "sh -c 'cat $in > $out'"
-    -i in=./testdata/test_in
-    -o out={{ .storage }}/test_out_hardlink
+    --cmd "echo foo"
+    -i in={{ .storage }}/test_hard_link_input
   `)
 	task := wait(id)
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("unexpected task failure")
 	}
-	name := storageDir + "/test_out_hardlink"
+	name := storageDir + "/test_hard_link_input"
 	fi, sterr := os.Lstat(name)
 	if sterr != nil {
 		panic(sterr)

@@ -92,7 +92,7 @@ func main() {
 		fmt.Printf(report.String())
 	}
 
-  if cmderr != nil {
-    os.Exit(1)
-  }
+	if cmderr != nil {
+		os.Exit(1)
+	}
 }

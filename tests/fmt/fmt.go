@@ -85,10 +85,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, "scanning stdout: ", err)
 	}
 
-	cmd.Wait()
+	cmderr := cmd.Wait()
 
 	if printSummary {
 		fmt.Println("\n=========== Summary ============")
 		fmt.Printf(report.String())
 	}
+
+  if cmderr != nil {
+    os.Exit(1)
+  }
 }

@@ -74,10 +74,10 @@ test-short:
 
 # Run all tests
 test:	
-	@go test $(TESTS)
+	@go run tests/fmt/fmt.go $(TESTS)
 
 test-verbose:
-	go run tests/fmt/fmt.go -v $(TESTS)
+	@go run tests/fmt/fmt.go -v $(TESTS)
 
 # Build the web dashboard
 webdash:

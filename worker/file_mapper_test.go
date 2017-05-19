@@ -138,6 +138,14 @@ func TestMapTask(t *testing.T) {
 		t.Fatal("unexpected mapper inputs")
 	}
 
+	c, err := ioutil.ReadFile(tmp + "/opt/funnel/inputs/testdata/contents.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(c) != "test content\n" {
+		t.Fatal("unexpected content")
+	}
+
 	if diff := deep.Equal(f.Outputs, eo); diff != nil {
 		t.Fatal("unexpected mapper inputs")
 	}

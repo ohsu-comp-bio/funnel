@@ -33,55 +33,62 @@ var (
 )
 
 func main() {
-	goPath, err := exec.LookPath("go")
-	if err != nil {
-		panic(err)
-	}
-	cmd := exec.Command(goPath, append([]string{"test"}, os.Args[1:]...)...)
 
-	stdoutReader, stdoutWriter := io.Pipe()
-	stderrReader, stderrWriter := io.Pipe()
-	cmd.Stdout = stdoutWriter
-	cmd.Stderr = stderrWriter
-	cmd.Start()
+	// Call `go test` and pass all the arguments.
+	goPath, _ := exec.LookPath("go")
+	cmd := exec.Command(goPath, append([]string{"test"}, os.Args[1:]...)...)
+	cmdStdout, _ := cmd.StdoutPipe()
+
+	scanner := bufio.NewScanner(cmdStdout)
 
 	// Collect a report that can be dumped at the end.
 	report := new(bytes.Buffer)
 	out := io.MultiWriter(report, os.Stdout)
+	// Don't print the output summary default, because in many cases
+	// it will just look like the go test output was printed twice
+	// (e.g. if there were no logs to clog it all up).
+	printSummary := false
 
-	go func() {
-		scanner := bufio.NewScanner(stderrReader)
-		for scanner.Scan() {
-			fmt.Fprintf(os.Stderr, "    %s\n", scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "scanning stderr: ", err)
-		}
-	}()
+	cmd.Start()
 
-	go func() {
-		scanner := bufio.NewScanner(stdoutReader)
-		for scanner.Scan() {
-			b := scanner.Bytes()
-			s := string(b)
+	// Scan the `go test` output looking for report lines which we can colorize.
+	for scanner.Scan() {
+		b := scanner.Bytes()
+		s := string(b)
 
-			switch {
-			case passtail.Match(b):
-				fmt.Fprintf(out, "%s\n", aurora.Green(s))
-			case runhead.Match(b):
-				fmt.Fprintf(out, "%s\n", aurora.Colorize(s, 257))
-			case failtail.Match(b):
-				fmt.Fprintf(out, "%s\n", aurora.Red(s))
-			default:
-				fmt.Fprintln(out, aurora.Colorize(scanner.Text(), 257))
-			}
+		switch {
+		// PASS lines
+		case passtail.Match(b) || passlonely.Match(b):
+			fmt.Fprintf(out, "%s\n", aurora.Green(s))
+
+		// RUN, SKIP, ok, and lots of other stuff from `go test`
+		case runhead.Match(b) || skiptail.Match(b) || okPath.Match(b) ||
+			notestPath.Match(b) || coverage.Match(b) || filename.Match(b) ||
+			importpath.Match(b):
+
+			fmt.Fprintf(out, "%s\n", aurora.Colorize(s, 257))
+
+		// FAIL
+		case failtail.Match(b):
+			fmt.Fprintf(out, "%s\n", aurora.Red(s))
+
+		// Everything else, most likely funnel logging.
+		default:
+			// Only print the summary if there were lines that didn't match
+			// known go test output (most likely logs)
+			printSummary = true
+			fmt.Fprintln(os.Stdout, s)
 		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "scanning stdout: ", err)
-		}
-	}()
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "scanning stdout: ", err)
+	}
 
 	cmd.Wait()
-	fmt.Println("\n=========== Summary ============")
-	fmt.Printf(report.String())
+
+	if printSummary {
+		fmt.Println("\n=========== Summary ============")
+		fmt.Printf(report.String())
+	}
 }

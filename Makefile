@@ -2,6 +2,8 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
+TESTS=$(shell go list ./... | grep -v /vendor/)
+
 export SHELL=/bin/bash
 PATH := ${PATH}:${GOPATH}/bin
 export PATH
@@ -68,14 +70,14 @@ lint:
 
 # Run fast-running Go tests
 test-short:
-	@go test -short $(shell go list ./... | grep -v /vendor/)
+	@go test -short $(TESTS)
 
 # Run all tests
 test:	
-	@go test $(shell go list ./... | grep -v /vendor/)
+	@go test $(TESTS)
 
 test-verbose:
-	@go run tests/fmt/fmt.go -v ./tests
+	go run tests/fmt/fmt.go -v $(TESTS)
 
 # Build the web dashboard
 webdash:

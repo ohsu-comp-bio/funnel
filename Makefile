@@ -80,7 +80,7 @@ go-test-verbose:
 	@go run tests/fmt/fmt.go -v ./tests
 
 # Run all tests, including end-to-end Python tests
-test:	go-test
+test:	go-test-verbose
 	@docker build -t tes-wait -f tests/docker_files/tes-wait/Dockerfile tests/docker_files/tes-wait/
 	@pip2.7 install -q -r tests/requirements.txt
 	@nosetests-2.7 tests/

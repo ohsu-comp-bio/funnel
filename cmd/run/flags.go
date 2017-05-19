@@ -66,6 +66,8 @@ type flagVals struct {
 
 func newFlags(v *flagVals) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
+	// Disable usage because it's handled elsewhere (cmd.go)
+	f.Usage = func() {}
 
 	// These flags are separate because they are not allowed
 	// in scattered tasks.

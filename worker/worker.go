@@ -42,7 +42,7 @@ type Worker struct {
 	logUpdates logUpdateChan
 	sched      *schedClient
 	log        logger.Logger
-	resources  *pbf.Resources
+	resources  config.Resources
 	TaskRunner TaskRunner
 	Ctrls      map[string]TaskControl
 	timeout    util.IdleTimeout
@@ -109,7 +109,11 @@ func (w *Worker) Sync() {
 	}
 
 	// Worker data has been updated. Send back to server for database update.
-	r.Resources = w.resources
+	r.Resources = &pbf.Resources{
+		Cpus:   w.resources.Cpus,
+		RamGb:  w.resources.RamGb,
+		DiskGb: w.resources.DiskGb,
+	}
 	r.State = w.state
 
 	// Merge metadata

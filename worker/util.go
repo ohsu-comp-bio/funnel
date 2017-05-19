@@ -70,16 +70,16 @@ func getExitCode(err error) int32 {
 // detectResources helps determine the amount of resources to report.
 // Resources are determined by inspecting the host, but they
 // can be overridden by config.
-func detectResources(conf *pbf.Resources) *pbf.Resources {
-	res := &pbf.Resources{
-		Cpus:   conf.GetCpus(),
-		RamGb:  conf.GetRamGb(),
-		DiskGb: conf.GetDiskGb(),
+func detectResources(conf config.Resources) config.Resources {
+	res := config.Resources{
+		Cpus:   conf.Cpus,
+		RamGb:  conf.RamGb,
+		DiskGb: conf.DiskGb,
 	}
 	cpuinfo, _ := pscpu.Info()
 	vmeminfo, _ := psmem.VirtualMemory()
 
-	if conf.GetCpus() == 0 {
+	if conf.Cpus == 0 {
 		// TODO is cores the best metric? with hyperthreading,
 		//      runtime.NumCPU() and pscpu.Counts() return 8
 		//      on my 4-core mac laptop
@@ -88,7 +88,7 @@ func detectResources(conf *pbf.Resources) *pbf.Resources {
 		}
 	}
 
-	if conf.GetRamGb() == 0.0 {
+	if conf.RamGb == 0.0 {
 		res.RamGb = float64(vmeminfo.Total) /
 			float64(1024) / float64(1024) / float64(1024)
 	}

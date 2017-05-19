@@ -3,7 +3,6 @@ package config
 import (
 	"github.com/ghodss/yaml"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
 	"os"
@@ -93,12 +92,12 @@ func DefaultConfig() Config {
 			LogUpdateRate: time.Second * 5,
 			LogTailSize:   10000,
 			LogLevel:      "debug",
-			TimestampLogs: true,
-			UpdateTimeout: time.Second,
-			Resources: &pbf.Resources{
+			Resources: Resources{
 				DiskGb: 100.0,
 			},
-			Metadata: map[string]string{},
+			TimestampLogs: true,
+			UpdateTimeout: time.Second,
+			Metadata:      map[string]string{},
 		},
 		DisableHTTPCache: true,
 		ServiceName:      "Funnel",
@@ -107,6 +106,13 @@ func DefaultConfig() Config {
 	c.Backends.GCE.CacheTTL = time.Minute
 	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
 	return c
+}
+
+// Resources describes worker resource config.
+type Resources struct {
+	Cpus   uint32
+	RamGb  float64 // nolint
+	DiskGb float64
 }
 
 // Worker contains worker configuration.
@@ -129,7 +135,7 @@ type Worker struct {
 	LogPath       string
 	LogLevel      string
 	TimestampLogs bool
-	Resources     *pbf.Resources
+	Resources     Resources
 	// Timeout duration for UpdateWorker() and UpdateTaskLogs() RPC calls
 	UpdateTimeout time.Duration
 	Metadata      map[string]string

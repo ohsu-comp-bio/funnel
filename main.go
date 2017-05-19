@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
 )
 
 func main() {
 	if err := cmd.RootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		logger.PrintSimpleError(err)
 		os.Exit(-1)
 	}
 }

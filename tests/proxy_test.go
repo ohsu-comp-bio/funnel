@@ -30,7 +30,7 @@ func TestGetNoCacheHeader(t *testing.T) {
 	srv.Start()
 	defer srv.Stop()
 
-	resp, err := http.Get(srv.Conf.HTTPAddress() + "/v1/jobs/1")
+	resp, err := http.Get(srv.Conf.HTTPAddress() + "/v1/tasks/1")
 
 	if err != nil {
 		panic(err)

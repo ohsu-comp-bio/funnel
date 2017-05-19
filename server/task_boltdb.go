@@ -9,6 +9,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/rs/xid"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"strings"
 	"time"
@@ -137,18 +139,17 @@ func GenTaskID() string {
 	return id.String()
 }
 
-// CreateTask documentation
-// TODO: documentation
+// CreateTask provides an HTTP/gRPC endpoint for creating a task.
+// This is part of the TES implementation.
 func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	taskID := GenTaskID()
-	log := log.WithFields("taskID", taskID)
-
 	log.Debug("CreateTask called", "task", task)
 
-	if len(task.Executors) == 0 {
-		log.Error("No executor commands found")
-		return nil, fmt.Errorf("No executor commands found")
+	if err := tes.Validate(task); err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
+
+	taskID := GenTaskID()
+	log := log.WithFields("taskID", taskID)
 
 	jwt := getJWT(ctx)
 	log.Debug("JWT", "token", jwt)

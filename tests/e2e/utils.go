@@ -125,6 +125,14 @@ func get(id string) *tes.Task {
 
 // run a task and return it's ID
 func run(s string) string {
+	id, err := runE(s)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+func runE(s string) (string, error) {
 	// Process the string as a template to allow a few helpers
 	tpl := template.Must(template.New("run").Parse(s))
 	var by bytes.Buffer
@@ -132,23 +140,27 @@ func run(s string) string {
 		"storage": "./" + storageDir,
 	}
 	if eerr := tpl.Execute(&by, data); eerr != nil {
-		panic(eerr)
+		return "", eerr
 	}
 	s = by.String()
 
 	tasks, err := runlib.ParseString(s)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if len(tasks) > 1 {
-		panic("Funnel run only handles a single task (no scatter)")
+		return "", fmt.Errorf("Funnel run only handles a single task (no scatter)")
 	}
 	log.Debug("TASK", tasks[0])
-	resp, cerr := cli.CreateTask(context.Background(), tasks[0])
+	return runTask(tasks[0])
+}
+
+func runTask(t *tes.Task) (string, error) {
+	resp, cerr := cli.CreateTask(context.Background(), t)
 	if cerr != nil {
-		panic(cerr)
+		return "", cerr
 	}
-	return resp.Id
+	return resp.Id, nil
 }
 
 // wait for a task to complete

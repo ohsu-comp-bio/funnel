@@ -44,7 +44,7 @@ class TestFileOP(SimpleServerTest):
         self.copy_to_storage(get_abspath("test_data.1"))
         before_src_info = os.stat(self.storage_path('test_data.1'))
 
-        task = {"name": "TestMD5",
+        task = {"name": "Hardlink test",
                 "project": "MyProject",
                 "description": "My Desc",
                 "inputs": [{"name": "infile",
@@ -52,11 +52,11 @@ class TestFileOP(SimpleServerTest):
                             "url": 'file://' +
                             self.storage_path('test_data.1'),
                             "type": "FILE",
-                            "path": "/tmp/test_file"}],
+                            "path": "/tmp/test_hl_file"}],
                 "resources": {},
                 "executors": [{"image_name": "ubuntu",
                                "cmd": ["md5sum",
-                                       "/tmp/test_file"],
+                                       "/tmp/test_hl_file"],
                                "workdir": "/workdir",
                                "stdout": "/workdir/test_out"}]}
 

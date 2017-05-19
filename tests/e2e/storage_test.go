@@ -29,13 +29,13 @@ func TestLocalFilesystemHardLink(t *testing.T) {
 	id := run(`
     --cmd "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in
-    -o out={{ .storage }}/test_out
+    -o out={{ .storage }}/test_out_hardlink
   `)
 	task := wait(id)
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("unexpected task failure")
 	}
-	name := storageDir + "/test_out"
+	name := storageDir + "/test_out_hardlink"
 	fi, sterr := os.Lstat(name)
 	if sterr != nil {
 		panic(sterr)

@@ -123,7 +123,8 @@ func (m *Funnel) HelloWorldTask() *tes.Task {
 		Name: "Hello world",
 		Executors: []*tes.Executor{
 			{
-				Cmd: []string{"echo", "hello world"},
+				ImageName: "alpine",
+				Cmd:       []string{"echo", "hello world"},
 			},
 		},
 		Resources: &tes.Resources{

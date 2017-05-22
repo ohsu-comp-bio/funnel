@@ -38,6 +38,7 @@ func main() {
 	goPath, _ := exec.LookPath("go")
 	cmd := exec.Command(goPath, append([]string{"test"}, os.Args[1:]...)...)
 	cmdStdout, _ := cmd.StdoutPipe()
+	cmd.Stderr = os.Stderr
 
 	scanner := bufio.NewScanner(cmdStdout)
 

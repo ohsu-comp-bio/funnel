@@ -52,14 +52,12 @@ prune_deps:
 
 # Automatially update code formatting
 tidy:
-	@pip install -q autopep8
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v ".pb." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
+	@pip install -q autopep8
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
 
 # Run code style and other checks
 lint:
-	@pip install -q flake8
-	@flake8 --exclude ./venv,./webdash,./vendor,./funnel-work-dir .
 	@go get github.com/alecthomas/gometalinter
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
@@ -67,6 +65,8 @@ lint:
 	 -s proto --exclude 'cmd/examples/bundle.go' --exclude "cmd/termdash" --exclude 'webdash/web.go' \
 	 --exclude 'funnel-work-dir' ./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --vendor ./cmd/termdash/...
+	@pip install -q flake8
+	@flake8 --exclude ./venv,./webdash,./vendor,./funnel-work-dir .
 
 # Run fast-running Go tests
 test-short:

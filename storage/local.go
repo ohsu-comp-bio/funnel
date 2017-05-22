@@ -6,7 +6,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -48,7 +47,7 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 				if err != nil {
 					return err
 				}
-				return local.Put(ctx, filepath.Join(url, rel), p, File)
+				return local.Get(ctx, filepath.Join(url, rel), p, File)
 			}
 			return nil
 		})
@@ -107,21 +106,8 @@ func (local *LocalBackend) Supports(rawurl string, hostPath string, class tes.Fi
 }
 
 func getPath(rawurl string) (string, bool) {
-	u, err := url.Parse(rawurl)
-	if err != nil {
-		return "", false
-	}
-	if u.EscapedPath() == "" {
-		return "", false
-	}
-	if u.Scheme == "file" {
-		return u.EscapedPath(), true
-	}
-	// Handle URLs that are file paths, e.g. "/path/to/foo.txt"
-	if u.Scheme == "" && u.Host == "" {
-		return u.EscapedPath(), true
-	}
-	return "", false
+	p := strings.TrimPrefix(rawurl, "file://")
+	return p, strings.HasPrefix(p, "/")
 }
 
 func isAllowed(path string, allowedDirs []string) bool {

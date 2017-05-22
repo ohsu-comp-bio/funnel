@@ -115,3 +115,9 @@
 [submodule "vendor/github.com/logrusorgru/aurora"]
 	path = vendor/github.com/logrusorgru/aurora
 	url = https://github.com/logrusorgru/aurora
+[submodule "vendor/github.com/andreyvit/diff"]
+	path = vendor/github.com/andreyvit/diff
+	url = https://github.com/andreyvit/diff
+[submodule "vendor/github.com/sergi/go-diff"]
+	path = vendor/github.com/sergi/go-diff
+	url = https://github.com/sergi/go-diff

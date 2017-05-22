@@ -34,7 +34,7 @@ func Validate(t *Task) ValidationError {
 		}
 
 		if len(exec.Cmd) == 0 {
-			errs.add("Task.Executors[%d].Cmd: required, but empty")
+			errs.add("Task.Executors[%d].Cmd: required, but empty", i)
 		}
 
 		if exec.Workdir != "" && !strings.HasPrefix(exec.Workdir, "/") {

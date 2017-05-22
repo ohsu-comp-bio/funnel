@@ -189,3 +189,17 @@ func TestSameFile(t *testing.T) {
 		t.Fatal("Unexpected content")
 	}
 }
+
+func TestGetPath(t *testing.T) {
+	x := "file:///foo/bar/file with spaces.txt"
+	e, ok := getPath(x)
+	if !ok || e != "/foo/bar/file with spaces.txt" {
+		t.Fatal("Unexpected URL encoding")
+	}
+
+	x = "/foo/bar/escaped%20with%20.txt"
+	e, ok = getPath(x)
+	if !ok || e != "/foo/bar/escaped%20with%20.txt" {
+		t.Fatal("Unexpected URL encoding")
+	}
+}

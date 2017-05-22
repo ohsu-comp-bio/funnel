@@ -6,7 +6,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -43,7 +42,16 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	if class == File {
 		err = linkFile(path, hostPath)
 	} else if class == Directory {
-		err = copyDir(path, hostPath)
+		err = filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
+			if !f.IsDir() {
+				rel, err := filepath.Rel(hostPath, p)
+				if err != nil {
+					return err
+				}
+				return local.Put(ctx, filepath.Join(url, rel), p, File)
+			}
+			return nil
+		})
 	} else {
 		err = fmt.Errorf("Unknown file class: %s", class)
 	}
@@ -67,20 +75,27 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
 	}
 
+	var err error
 	if class == File {
-		err := linkFile(hostPath, path)
-		if err != nil {
-			return err
-		}
+		err = linkFile(hostPath, path)
 	} else if class == Directory {
-		err := copyDir(hostPath, path)
-		if err != nil {
-			return err
-		}
+		err = filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
+			if !f.IsDir() {
+				rel, err := filepath.Rel(hostPath, p)
+				if err != nil {
+					return err
+				}
+				return local.Put(ctx, filepath.Join(url, rel), p, File)
+			}
+			return nil
+		})
 	} else {
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
-	log.Info("Finished upload", "url", url, "hostPath", hostPath)
+
+	if err == nil {
+		log.Info("Finished upload", "url", url, "hostPath", hostPath)
+	}
 	return nil
 }
 
@@ -96,11 +111,11 @@ func getPath(rawurl string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	if u.Path == "" {
+	if u.EscapedPath() == "" {
 		return "", false
 	}
 	if u.Scheme == "file" {
-		return u.Path, true
+		return u.EscapedPath(), true
 	}
 	// Handle URLs that are file paths, e.g. "/path/to/foo.txt"
 	if u.Scheme == "" && u.Host == "" {
@@ -134,15 +149,6 @@ func copyFile(source string, dest string) (err error) {
 	if err != nil {
 		return err
 	}
-	dstD := path.Dir(dest)
-	// make parent dirs if they dont exist
-	if _, err := os.Stat(dstD); err != nil {
-		_ = syscall.Umask(0000)
-		err = os.MkdirAll(dstD, 0777)
-		if err != nil {
-			return err
-		}
-	}
 	df, err := os.Create(dest)
 	if err != nil {
 		return err
@@ -161,56 +167,10 @@ func copyFile(source string, dest string) (err error) {
 		return err
 	}
 	// ensure readable output files
-	err = os.Chmod(dest, 0666)
+	_ = syscall.Umask(0000)
+	err = os.Chmod(dest, 0766)
 	if err != nil {
 		return err
-	}
-	return nil
-}
-
-// Recursively copies a directory tree, attempting to preserve permissions.
-// Source directory must exist, destination directory must *not* exist.
-func copyDir(source string, dest string) (err error) {
-	// get properties of source dir
-	fi, err := os.Stat(source)
-	if err != nil {
-		return err
-	}
-
-	if !fi.IsDir() {
-		return fmt.Errorf("Source is not a directory")
-	}
-
-	// ensure dest dir does not already exist
-	_, err = os.Open(dest)
-	if os.IsNotExist(err) {
-		// create dest dir
-		_ = syscall.Umask(0000)
-		err = os.MkdirAll(dest, 0777)
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		log.Error("copyDir os.Open error", err)
-		return err
-	}
-
-	entries, err := ioutil.ReadDir(source)
-	for _, entry := range entries {
-		sfp := path.Join(source, entry.Name())
-		dfp := path.Join(dest, entry.Name())
-		if entry.IsDir() {
-			err = copyDir(sfp, dfp)
-			if err != nil {
-				return err
-			}
-		} else {
-			// create hard link; falls back to copy on error
-			err = linkFile(sfp, dfp)
-			if err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
@@ -230,6 +190,15 @@ func linkFile(source string, dest string) error {
 	if same {
 		log.Debug("source and dest are the same file - skipping...")
 		return nil
+	}
+	// make parent dirs if they dont exist
+	dstD := path.Dir(dest)
+	if _, err := os.Stat(dstD); err != nil {
+		_ = syscall.Umask(0000)
+		err = os.MkdirAll(dstD, 0777)
+		if err != nil {
+			return err
+		}
 	}
 	err = os.Link(parent, dest)
 	if err != nil {

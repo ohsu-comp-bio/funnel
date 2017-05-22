@@ -147,9 +147,11 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 	} else if class == Directory {
 		err := filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
 			if !f.IsDir() {
-				rel, _ := filepath.Rel(hostPath, p)
-				gs.Put(ctx, rawurl+"/"+rel, p, File)
-				log.Debug("Subpath", "full", p, "rel", rel)
+				rel, err := filepath.Rel(hostPath, p)
+				if err != nil {
+					return err
+				}
+				return gs.Put(ctx, filepath.Join(rawurl, rel), p, File)
 			}
 			return nil
 		})

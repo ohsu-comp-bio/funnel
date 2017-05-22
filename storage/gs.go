@@ -151,7 +151,7 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 				if err != nil {
 					return err
 				}
-				return gs.Put(ctx, filepath.Join(rawurl, rel), p, File)
+				return gs.Put(ctx, rawurl+"/"+rel, p, File)
 			}
 			return nil
 		})

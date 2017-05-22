@@ -145,7 +145,7 @@ func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 			v = pretty.Sprint(x)
 		}
 		//fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%v", levelColor, k, v)
-		fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize(k, levelColor), v)
+		fmt.Fprintf(b, "%-20s %v\n", aurora.Colorize(k, levelColor), v)
 		//f.appendValue(b, v)
 	}
 }

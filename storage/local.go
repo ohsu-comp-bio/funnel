@@ -55,10 +55,11 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 		err = fmt.Errorf("Unknown file class: %s", class)
 	}
 
-	if err == nil {
-		log.Info("Finished download", "url", url, "hostPath", hostPath)
+	if err != nil {
+		return err
 	}
-	return err
+	log.Info("Finished download", "url", url, "hostPath", hostPath)
+	return nil
 }
 
 // Put copies a file from the hostPath into storage.
@@ -92,9 +93,10 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 		return fmt.Errorf("Unknown file class: %s", class)
 	}
 
-	if err == nil {
-		log.Info("Finished upload", "url", url, "hostPath", hostPath)
+	if err != nil {
+		return err
 	}
+	log.Info("Finished upload", "url", url, "hostPath", hostPath)
 	return nil
 }
 

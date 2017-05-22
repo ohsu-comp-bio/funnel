@@ -119,7 +119,7 @@ func getPath(rawurl string) (string, bool) {
 	}
 	// Handle URLs that are file paths, e.g. "/path/to/foo.txt"
 	if u.Scheme == "" && u.Host == "" {
-		return u.Path, true
+		return u.EscapedPath(), true
 	}
 	return "", false
 }

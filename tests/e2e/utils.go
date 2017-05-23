@@ -23,7 +23,7 @@ import (
 
 var cli tes.TaskServiceClient
 var log = logger.New("e2e")
-var rate = time.Millisecond * 10
+var rate = time.Millisecond * 1000
 var dcli *docker.Client
 var startTime = fmt.Sprintf("%d", time.Now().Unix())
 var storageDir string
@@ -111,16 +111,30 @@ func cancel(id string) error {
 	return err
 }
 
-// get a task by ID
-func get(id string) *tes.Task {
+func listView(view tes.TaskView) []*tes.Task {
+	t, err := cli.ListTasks(context.Background(), &tes.ListTasksRequest{
+		View: view,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return t.Tasks
+}
+
+func getView(id string, view tes.TaskView) *tes.Task {
 	t, err := cli.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: view,
 	})
 	if err != nil {
 		panic(err)
 	}
 	return t
+}
+
+// get a task by ID
+func get(id string) *tes.Task {
+	return getView(id, tes.TaskView_FULL)
 }
 
 // run a task and return it's ID

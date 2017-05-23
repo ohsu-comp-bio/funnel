@@ -44,7 +44,10 @@ func TestBasicWorker(t *testing.T) {
 	srv.Flush()
 
 	// Check task state in DB
-	r, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{Id: taskID})
+	r, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{
+		Id:   taskID,
+		View: tes.TaskView_FULL,
+	})
 
 	if r.State != tes.State_RUNNING {
 		t.Error("Expected task state in DB to be running")
@@ -56,7 +59,10 @@ func TestBasicWorker(t *testing.T) {
 	srv.Flush()
 
 	// Check for complete state in database
-	q, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{Id: taskID})
+	q, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{
+		Id:   taskID,
+		View: tes.TaskView_FULL,
+	})
 
 	if q.State != tes.State_COMPLETE {
 		t.Error("Expected task state in DB to be running")
@@ -105,7 +111,10 @@ func TestTaskFail(t *testing.T) {
 	srv.Flush()
 
 	// Check task state in DB
-	r, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{Id: taskID})
+	r, _ := srv.DB.GetTask(ctx, &tes.GetTaskRequest{
+		Id:   taskID,
+		View: tes.TaskView_FULL,
+	})
 
 	if r.State != tes.State_ERROR {
 		t.Error("Expected task state in DB to be running")

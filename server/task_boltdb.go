@@ -160,6 +160,7 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 		idBytes := []byte(taskID)
 
 		taskopB := tx.Bucket(TaskBucket)
+		task.Id = taskID
 		v, err := proto.Marshal(task)
 		if err != nil {
 			return err
@@ -195,14 +196,9 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 	return tes.State(v)
 }
 
-func getTask(tx *bolt.Tx, taskID string) *tes.Task {
-	bT := tx.Bucket(TaskBucket)
-	v := bT.Get([]byte(taskID))
-	task := &tes.Task{}
-	proto.Unmarshal(v, task)
-	task.Id = taskID
-	task.State = getTaskState(tx, taskID)
-	return task
+func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) {
+	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	proto.Unmarshal(b, task)
 }
 
 func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
@@ -213,9 +209,9 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 	for i := range task.Executors {
 		o := bucket.Get([]byte(fmt.Sprint(task.Id, i)))
 		if o != nil {
-			var log tes.ExecutorLog
-			proto.Unmarshal(o, &log)
-			out = append(out, &log)
+			var execlog tes.ExecutorLog
+			proto.Unmarshal(o, &execlog)
+			out = append(out, &execlog)
 		}
 	}
 
@@ -228,36 +224,43 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task *tes.Task
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
-		task = getTask(tx, req.Id)
-		loadTaskLogs(tx, task)
+		task = getTaskView(tx, req.Id, req.View)
 		return nil
 	})
 	return task, err
 }
 
+func getTask(tx *bolt.Tx, id string) *tes.Task {
+	// This is a thin wrapper around getTaskView in order to allow task views
+	// to be added with out changing existing code calling getTask().
+	return getTaskView(tx, id, tes.TaskView_FULL)
+}
+
+func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) *tes.Task {
+	task := &tes.Task{}
+
+	if view == tes.TaskView_BASIC {
+		loadBasicTaskView(tx, id, task)
+	} else if view == tes.TaskView_FULL {
+		loadBasicTaskView(tx, id, task)
+		loadTaskLogs(tx, task)
+	}
+	task.Id = id
+	task.State = getTaskState(tx, id)
+
+	return task
+}
+
 // ListTasks returns a list of taskIDs
-func (taskBolt *TaskBolt) ListTasks(ctx context.Context, in *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
 	tasks := make([]*tes.Task, 0, 10)
 
 	taskBolt.db.View(func(tx *bolt.Tx) error {
-		taskopB := tx.Bucket(TaskBucket)
-		c := taskopB.Cursor()
+		c := tx.Bucket(TaskBucket).Cursor()
 
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			taskID := string(k)
-			taskState := getTaskState(tx, taskID)
-
-			task := &tes.Task{}
-			proto.Unmarshal(v, task)
-
-			task = &tes.Task{
-				Id:          taskID,
-				State:       taskState,
-				Name:        task.Name,
-				Project:     task.Project,
-				Description: task.Description,
-			}
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+			task := getTaskView(tx, string(k), req.View)
 			tasks = append(tasks, task)
 		}
 		return nil

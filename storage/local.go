@@ -41,13 +41,13 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	if class == File {
 		err = linkFile(path, hostPath)
 	} else if class == Directory {
-		err = filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
+		err = filepath.Walk(path, func(p string, f os.FileInfo, err error) error {
 			if !f.IsDir() {
-				rel, err := filepath.Rel(hostPath, p)
+				rel, err := filepath.Rel(path, p)
 				if err != nil {
 					return err
 				}
-				return local.Get(ctx, filepath.Join(url, rel), p, File)
+				return local.Get(ctx, p, filepath.Join(hostPath, rel), File)
 			}
 			return nil
 		})
@@ -85,7 +85,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 				if err != nil {
 					return err
 				}
-				return local.Put(ctx, filepath.Join(url, rel), p, File)
+				return local.Put(ctx, filepath.Join(path, rel), p, File)
 			}
 			return nil
 		})

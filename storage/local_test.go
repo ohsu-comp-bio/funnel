@@ -30,18 +30,42 @@ func TestLocalGet(t *testing.T) {
 	}
 	logger.Debug("TEMP DIR", tmp)
 	l := LocalBackend{allowedDirs: []string{tmp}}
+
+	// File test
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
 	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+
 	gerr := l.Get(ctx, "file://"+ip, cp, tes.FileType_FILE)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
+
 	b, rerr := ioutil.ReadFile(cp)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
 	if string(b) != "foo" {
+		t.Fatal("Unexpected content")
+	}
+
+	// Directory test
+	id := path.Join(tmp, "subdir")
+	os.MkdirAll(id, os.ModePerm)
+	idf := path.Join(id, "other.txt")
+	cd := path.Join(tmp, "localized_dir")
+	ioutil.WriteFile(idf, []byte("bar"), os.ModePerm)
+
+	gerr = l.Get(ctx, "file://"+id, cd, tes.FileType_DIRECTORY)
+	if gerr != nil {
+		t.Fatal(gerr)
+	}
+
+	b, rerr = ioutil.ReadFile(path.Join(cd, "other.txt"))
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if string(b) != "bar" {
 		t.Fatal("Unexpected content")
 	}
 }
@@ -55,13 +79,16 @@ func TestLocalGetPath(t *testing.T) {
 	}
 	logger.Debug("TEMP DIR", tmp)
 	l := LocalBackend{allowedDirs: []string{tmp}}
+
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
 	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+
 	gerr := l.Get(ctx, ip, cp, tes.FileType_FILE)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
+
 	b, rerr := ioutil.ReadFile(cp)
 	if rerr != nil {
 		t.Fatal(rerr)
@@ -81,7 +108,7 @@ func TestLocalPut(t *testing.T) {
 	logger.Debug("TEMP DIR", tmp)
 	l := LocalBackend{allowedDirs: []string{tmp}}
 
-	// Write the test files
+	// File test
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
@@ -91,12 +118,31 @@ func TestLocalPut(t *testing.T) {
 		t.Fatal(gerr)
 	}
 
-	// Check the resulting content
 	b, rerr := ioutil.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
 	if string(b) != "foo" {
+		t.Fatal("Unexpected content")
+	}
+
+	// Directory test
+	cd := path.Join(tmp, "subdir")
+	os.MkdirAll(cd, os.ModePerm)
+	cdf := path.Join(cd, "other.txt")
+	od := path.Join(tmp, "subout")
+	ioutil.WriteFile(cdf, []byte("bar"), os.ModePerm)
+
+	gerr = l.Put(ctx, "file://"+od, cd, tes.FileType_DIRECTORY)
+	if gerr != nil {
+		t.Fatal(gerr)
+	}
+
+	b, rerr = ioutil.ReadFile(path.Join(od, "other.txt"))
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if string(b) != "bar" {
 		t.Fatal("Unexpected content")
 	}
 }
@@ -111,7 +157,6 @@ func TestLocalPutPath(t *testing.T) {
 	logger.Debug("TEMP DIR", tmp)
 	l := LocalBackend{allowedDirs: []string{tmp}}
 
-	// Write the test files
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
@@ -121,7 +166,6 @@ func TestLocalPutPath(t *testing.T) {
 		t.Fatal(gerr)
 	}
 
-	// Check the resulting content
 	b, rerr := ioutil.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)

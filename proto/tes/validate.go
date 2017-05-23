@@ -62,18 +62,18 @@ func Validate(t *Task) ValidationError {
 	}
 
 	for i, input := range t.Inputs {
+		if input.Contents != "" && input.Url != "" {
+			errs.add("Task.Inputs[%d].Contents: Url is non-empty", i)
+		} else if input.Url == "" && input.Contents == "" {
+			errs.add("Task.Inputs[%d].Url: required, but empty", i)
+		}
+
 		if input.Path == "" {
 			errs.add("Task.Inputs[%d].Path: required, but empty", i)
 		}
 
 		if input.Path != "" && !strings.HasPrefix(input.Path, "/") {
 			errs.add("task.Inputs[%d].Path: must be an absolute path", i)
-		}
-
-		if input.Contents != "" && input.Url != "" {
-			errs.add("Task.Inputs[%d].Contents: Url is non-empty", i)
-		} else if input.Url == "" && input.Contents == "" {
-			errs.add("Task.Inputs[%d].Url: required, but empty", i)
 		}
 	}
 

@@ -17,6 +17,90 @@ func TestHelloWorld(t *testing.T) {
 	}
 }
 
+func TestGetTaskView(t *testing.T) {
+	id := run(`
+    --cmd 'echo hello world'
+    --name 'foo'
+  `)
+	wait(id)
+	task := getView(id, tes.TaskView_MINIMAL)
+
+	if task.Id != id {
+		t.Fatal("expected task ID in minimal view")
+	}
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected complete state")
+	}
+	if task.Name != "" {
+		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in minimal view")
+	}
+
+	task = getView(id, tes.TaskView_BASIC)
+
+	if task.Name != "foo" {
+		t.Fatal("expected task name to be included basic view")
+	}
+
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in basic view")
+	}
+
+	task = getView(id, tes.TaskView_FULL)
+
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
+}
+
+// TODO this is a bit hacky for now because we're reusing the same
+//      server + DB for all the e2e tests, so ListTasks gets the
+//      results of all of those. It works for the moment, but
+//      should probably run against a clean environment.
+func TestListTaskView(t *testing.T) {
+	id := run(`
+    --cmd 'echo hello world'
+    --name 'foo'
+  `)
+	wait(id)
+
+	tasks := listView(tes.TaskView_MINIMAL)
+	task := tasks[0]
+
+	if task.Id == "" {
+		t.Fatal("expected task ID in minimal view")
+	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected complete state")
+	}
+	if task.Name != "" {
+		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in minimal view")
+	}
+
+	tasks = listView(tes.TaskView_BASIC)
+	task = tasks[0]
+
+	if task.Name == "" {
+		t.Fatal("expected task name to be included basic view")
+	}
+
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in basic view")
+	}
+
+	tasks = listView(tes.TaskView_FULL)
+	task = tasks[0]
+
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
+}
+
 // Test that the streaming logs pick up a single character.
 // This ensures that the streaming works even when a small
 // amount of logs are written (which was once a bug).

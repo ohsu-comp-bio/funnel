@@ -45,7 +45,7 @@ type Client struct {
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
 func (c *Client) GetTask(id string) (*tes.Task, error) {
 	// Send request
-	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks/" + id))
+	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks/" + id + "?view=FULL"))
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (c *Client) GetTask(id string) (*tes.Task, error) {
 // ListTasks returns the result of GET /v1/tasks
 func (c *Client) ListTasks() (*tes.ListTasksResponse, error) {
 	// Send request
-	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks"))
+	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks?view=FULL"))
 	if err != nil {
 		return nil, err
 	}

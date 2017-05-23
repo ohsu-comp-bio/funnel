@@ -47,6 +47,27 @@ func TestTaskInputContentsValidationError(t *testing.T) {
 	}
 }
 
+func TestTaskInputContentsValidation(t *testing.T) {
+	_, err := runTask(&tes.Task{
+		Executors: []*tes.Executor{
+			{
+				ImageName: "alpine",
+				Cmd:       []string{"echo"},
+			},
+		},
+		Inputs: []*tes.TaskParameter{
+			{
+				Contents: "foo",
+				Url:      "",
+				Path:     "/bar",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal("unexpected validation error")
+	}
+}
+
 func TestTaskValidationError(t *testing.T) {
 	_, err := runTask(&tes.Task{
 		Executors: []*tes.Executor{

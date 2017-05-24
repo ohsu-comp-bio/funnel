@@ -7,6 +7,7 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
+	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -22,6 +23,7 @@ import (
 )
 
 var cli tes.TaskServiceClient
+var hcli *client.Client
 var log = logger.New("e2e")
 var rate = time.Millisecond * 1000
 var dcli *docker.Client
@@ -76,6 +78,9 @@ func init() {
 	if derr != nil {
 		panic(derr)
 	}
+
+	// http client
+	hcli = client.NewClient("http://localhost:" + conf.HTTPPort)
 }
 
 // wait for a "destroy" event from docker for the given container ID

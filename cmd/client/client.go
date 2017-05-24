@@ -43,9 +43,12 @@ type Client struct {
 }
 
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
-func (c *Client) GetTask(id string) (*tes.Task, error) {
+func (c *Client) GetTask(id string, view string) (*tes.Task, error) {
+	if !validateView(view) {
+		return nil, fmt.Errorf("Invalid view. Must be one of MINIMAL, BASIC, FULL")
+	}
 	// Send request
-	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks/" + id + "?view=FULL"))
+	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks/" + id + "?view=" + view))
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +62,12 @@ func (c *Client) GetTask(id string) (*tes.Task, error) {
 }
 
 // ListTasks returns the result of GET /v1/tasks
-func (c *Client) ListTasks() (*tes.ListTasksResponse, error) {
+func (c *Client) ListTasks(view string) (*tes.ListTasksResponse, error) {
+	if !validateView(view) {
+		return nil, fmt.Errorf("Invalid view. Must be one of MINIMAL, BASIC, FULL")
+	}
 	// Send request
-	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks?view=FULL"))
+	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks?view=" + view))
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +83,7 @@ func (c *Client) ListTasks() (*tes.ListTasksResponse, error) {
 // CreateTask POSTs a Task message to /v1/tasks
 func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 	var err error
-	err = isTask(msg)
+	err = isValidTask(msg)
 	if err != nil {
 		return nil, fmt.Errorf("Not a valid Task message: %v", err)
 	}
@@ -122,7 +128,7 @@ func (c *Client) WaitForTask(taskIDs ...string) error {
 	for range time.NewTicker(time.Second * 2).C {
 		done := false
 		for _, id := range taskIDs {
-			r, err := c.GetTask(id)
+			r, err := c.GetTask(id, "MINIMAL")
 			if err != nil {
 				return err
 			}
@@ -143,8 +149,19 @@ func (c *Client) WaitForTask(taskIDs ...string) error {
 	return nil
 }
 
-// TODO replace with proper message validation
-func isTask(b []byte) error {
+func isValidTask(b []byte) error {
 	var js tes.Task
-	return jsonpb.UnmarshalString(string(b), &js)
+	err := jsonpb.UnmarshalString(string(b), &js)
+	if err != nil {
+		return err
+	}
+	err = tes.Validate(&js)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateView(s string) bool {
+	return s == "MINIMAL" || s == "BASIC" || s == "FULL"
 }

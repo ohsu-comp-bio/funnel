@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var taskView string
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get [taskID ...]",
@@ -28,12 +30,16 @@ var getCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	getCmd.Flags().StringVarP(&taskView, "view", "v", "FULL", "Task view")
+}
+
 func doGet(server string, ids []string) ([]string, error) {
 	cli := client.NewClient(server)
 	res := []string{}
 
 	for _, taskID := range ids {
-		resp, err := cli.GetTask(taskID)
+		resp, err := cli.GetTask(taskID, taskView)
 		if err != nil {
 			return nil, err
 		}

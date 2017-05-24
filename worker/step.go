@@ -4,30 +4,26 @@ import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io"
 	"time"
 )
 
 type stepRunner struct {
-	TaskID  string
-	Conf    config.Worker
-	Num     int
-	Cmd     *DockerCmd
-	Log     logger.Logger
-	Updates logUpdateChan
-	IP      string
+	TaskID     string
+	Conf       config.Worker
+	Num        int
+	Cmd        *DockerCmd
+	Log        logger.Logger
+	TaskLogger TaskLogger
+	IP         string
 }
 
 func (s *stepRunner) Run(ctx context.Context) error {
 	log.Debug("Running step", "taskID", s.TaskID, "stepNum", s.Num)
 
 	// Send update for host IP address.
-	s.update(&tes.ExecutorLog{
-		StartTime: time.Now().Format(time.RFC3339),
-		HostIp:    s.IP,
-	})
+	s.TaskLogger.ExecutorStartTime(s.Num, time.Now())
+	s.TaskLogger.ExecutorHostIP(s.Num, s.IP)
 
 	// subctx helps ensure that these goroutines are cleaned up,
 	// even when the task is canceled.
@@ -54,9 +50,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			// Likely the task was canceled.
 			s.Cmd.Stop()
-			s.update(&tes.ExecutorLog{
-				EndTime: time.Now().Format(time.RFC3339),
-			})
+			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
 			return ctx.Err()
 
 		case <-ticker.C:
@@ -64,10 +58,8 @@ func (s *stepRunner) Run(ctx context.Context) error {
 			stderr.Flush()
 
 		case result := <-done:
-			s.update(&tes.ExecutorLog{
-				EndTime:  time.Now().Format(time.RFC3339),
-				ExitCode: getExitCode(result),
-			})
+			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
+			s.TaskLogger.ExecutorExitCode(s.Num, getExitCode(result))
 			return result
 		}
 	}
@@ -75,10 +67,10 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 func (s *stepRunner) logTails() (*tailer, *tailer) {
 	stdout, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.update(&tes.ExecutorLog{Stdout: c})
+		s.TaskLogger.AppendExecutorStdout(s.Num, c)
 	})
 	stderr, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.update(&tes.ExecutorLog{Stderr: c})
+		s.TaskLogger.AppendExecutorStderr(s.Num, c)
 	})
 	if s.Cmd.Stdout != nil {
 		s.Cmd.Stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
@@ -96,17 +88,5 @@ func (s *stepRunner) inspectContainer(ctx context.Context) {
 		s.Log.Error("Error inspecting container", err)
 		return
 	}
-	s.update(&tes.ExecutorLog{
-		Ports: ports,
-	})
-}
-
-// update sends an update of the ExecutorLog of the currently running step.
-// Used to update stdout/err logs, port mapping, etc.
-func (s *stepRunner) update(log *tes.ExecutorLog) {
-	s.Updates <- &pbf.UpdateExecutorLogsRequest{
-		Id:   s.TaskID,
-		Step: int64(s.Num),
-		Log:  log,
-	}
+	s.TaskLogger.ExecutorPorts(s.Num, ports)
 }

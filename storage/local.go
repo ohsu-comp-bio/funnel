@@ -63,41 +63,60 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 }
 
 // Put copies a file from the hostPath into storage.
-func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) error {
+func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
 	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path, ok := getPath(url)
 
 	if !ok {
-		return fmt.Errorf("local storage does not support put on %s", url)
+		return nil, fmt.Errorf("local storage does not support put on %s", url)
 	}
 
 	if !isAllowed(path, local.allowedDirs) {
-		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
+		return nil, fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
 	}
 
+	var out []*tes.OutputFileLog
 	var err error
-	if class == File {
+
+	switch class {
+	case File:
 		err = linkFile(hostPath, path)
-	} else if class == Directory {
-		err = filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
-			if !f.IsDir() {
-				rel, err := filepath.Rel(hostPath, p)
-				if err != nil {
-					return err
-				}
-				return local.Put(ctx, filepath.Join(path, rel), p, File)
-			}
-			return nil
+		out = append(out, &tes.OutputFileLog{
+			Url:       url,
+			Path:      path,
+			SizeBytes: fileSize(hostPath),
 		})
-	} else {
-		return fmt.Errorf("Unknown file class: %s", class)
+
+	case Directory:
+
+		var files []hostfile
+		files, err = walkFiles(hostPath)
+
+		for _, f := range files {
+			u := filepath.Join(path, f.rel)
+			err := linkFile(f.abs, u)
+
+			if err != nil {
+				return nil, err
+			}
+
+			out = append(out, &tes.OutputFileLog{
+				Url:       u,
+				Path:      f.abs,
+				SizeBytes: f.size,
+			})
+		}
+
+	default:
+		return nil, fmt.Errorf("Unknown file class: %s", class)
 	}
 
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	log.Info("Finished upload", "url", url, "hostPath", hostPath)
-	return nil
+	return out, nil
 }
 
 // Supports indicates whether this backend supports the given storage request.

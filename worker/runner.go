@@ -15,12 +15,13 @@ import (
 
 // TaskRunner is a function that does the work of running a task on a worker,
 // including download inputs, executing commands, uploading outputs, etc.
-type TaskRunner func(TaskControl, config.Worker, *pbf.TaskWrapper, logUpdateChan)
+type TaskRunner func(TaskControl, config.Worker, *pbf.TaskWrapper)
 
 // Default TaskRunner
-func runTask(ctrl TaskControl, conf config.Worker, t *pbf.TaskWrapper, up logUpdateChan) {
+func runTask(ctrl TaskControl, conf config.Worker, t *pbf.TaskWrapper) {
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, t.Task.Id)
+	client, _ := newSchedClient(conf)
 
 	r := &taskRunner{
 		ctrl:    ctrl,
@@ -28,22 +29,25 @@ func runTask(ctrl TaskControl, conf config.Worker, t *pbf.TaskWrapper, up logUpd
 		mapper:  NewFileMapper(baseDir),
 		store:   storage.Storage{},
 		conf:    conf,
-		updates: up,
-		log:     logger.New("runner", "workerID", conf.ID, "taskID", t.Task.Id),
+		taskLogger: &RPCTask{
+			client: client,
+			taskID: t.Task.Id,
+		},
+		log: logger.New("runner", "workerID", conf.ID, "taskID", t.Task.Id),
 	}
 	go r.Run()
 }
 
 // taskRunner helps collect data used across many helper methods.
 type taskRunner struct {
-	ctrl    TaskControl
-	wrapper *pbf.TaskWrapper
-	conf    config.Worker
-	updates logUpdateChan
-	log     logger.Logger
-	mapper  *FileMapper
-	store   storage.Storage
-	ip      string
+	ctrl       TaskControl
+	wrapper    *pbf.TaskWrapper
+	conf       config.Worker
+	taskLogger TaskLogger
+	log        logger.Logger
+	mapper     *FileMapper
+	store      storage.Storage
+	ip         string
 }
 
 // TODO document behavior of slow consumer of task log updates
@@ -84,12 +88,12 @@ func (r *taskRunner) Run() {
 		stepName := fmt.Sprintf("step-%d", i)
 		r.step(stepName, func() error {
 			s := &stepRunner{
-				TaskID:  task.Id,
-				Conf:    r.conf,
-				Num:     i,
-				Log:     r.log.WithFields("step", i),
-				Updates: r.updates,
-				IP:      r.ip,
+				TaskID:     task.Id,
+				Conf:       r.conf,
+				Num:        i,
+				Log:        r.log.WithFields("step", i),
+				TaskLogger: r.taskLogger,
+				IP:         r.ip,
 				Cmd: &DockerCmd{
 					ImageName:     d.ImageName,
 					Cmd:           d.Cmd,
@@ -115,12 +119,17 @@ func (r *taskRunner) Run() {
 
 	// Upload outputs
 	log.Debug("Outputs", r.mapper.Outputs)
+	var outputs []*tes.OutputFileLog
 	for _, output := range r.mapper.Outputs {
 		r.step("store.Put", func() error {
 			r.fixLinks(output.Path)
-			return r.store.Put(r.ctrl.Context(), output.Url, output.Path, output.Type)
+			out, err := r.store.Put(r.ctrl.Context(), output.Url, output.Path, output.Type)
+			outputs = append(outputs, out...)
+			return err
 		})
 	}
+
+	r.taskLogger.Outputs(outputs)
 
 	r.ctrl.SetResult(nil)
 }

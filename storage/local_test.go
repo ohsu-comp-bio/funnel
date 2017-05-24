@@ -113,7 +113,7 @@ func TestLocalPut(t *testing.T) {
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 
-	gerr := l.Put(ctx, "file://"+op, cp, tes.FileType_FILE)
+	_, gerr := l.Put(ctx, "file://"+op, cp, tes.FileType_FILE)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -133,7 +133,7 @@ func TestLocalPut(t *testing.T) {
 	od := path.Join(tmp, "subout")
 	ioutil.WriteFile(cdf, []byte("bar"), os.ModePerm)
 
-	gerr = l.Put(ctx, "file://"+od, cd, tes.FileType_DIRECTORY)
+	_, gerr = l.Put(ctx, "file://"+od, cd, tes.FileType_DIRECTORY)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -161,7 +161,7 @@ func TestLocalPutPath(t *testing.T) {
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 
-	gerr := l.Put(ctx, op, cp, tes.FileType_FILE)
+	_, gerr := l.Put(ctx, op, cp, tes.FileType_FILE)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}

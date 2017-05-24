@@ -131,7 +131,6 @@ type metadata struct {
 		Zone       string
 		Attributes struct {
 			FunnelConfig              string `json:"funnel-config"`
-			FunnelWorker              string `json:"funnel-worker"`
 			FunnelWorkerServerAddress string `json:"funnel-worker-serveraddress"`
 		}
 	}

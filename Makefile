@@ -168,7 +168,7 @@ website-dev:
 # Build docker image.
 docker: cross-compile
 	mkdir -p build/docker
-	cp build/bin/funnel-linux-amd64 build/docker/
+	cp build/bin/funnel-linux-amd64 build/docker/funnel
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t funnel .
 

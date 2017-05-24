@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 )
 
 // TaskRunner is a function that does the work of running a task on a worker,
@@ -61,6 +62,7 @@ func (r *taskRunner) Run() {
 	// 2. download inputs
 	// 3. run the steps (docker)
 	// 4. upload the outputs
+	r.taskLogger.StartTime(time.Now())
 
 	r.step("prepareDir", r.prepareDir)
 	r.step("prepareMapper", r.prepareMapper)
@@ -130,6 +132,7 @@ func (r *taskRunner) Run() {
 	}
 
 	r.taskLogger.Outputs(outputs)
+	r.taskLogger.EndTime(time.Now())
 
 	r.ctrl.SetResult(nil)
 }

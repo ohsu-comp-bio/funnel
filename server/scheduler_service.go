@@ -329,14 +329,14 @@ func (taskBolt *TaskBolt) UpdateTaskLogs(ctx context.Context, req *pbf.UpdateTas
 			tasklog.Outputs = req.TaskLog.Outputs
 		}
 
-    if req.TaskLog.Metadata != nil {
-      if tasklog.Metadata == nil {
-        tasklog.Metadata = map[string]string{}
-      }
-      for k, v := range req.TaskLog.Metadata {
-        tasklog.Metadata[k] = v
-      }
-    }
+		if req.TaskLog.Metadata != nil {
+			if tasklog.Metadata == nil {
+				tasklog.Metadata = map[string]string{}
+			}
+			for k, v := range req.TaskLog.Metadata {
+				tasklog.Metadata[k] = v
+			}
+		}
 
 		logbytes, _ := proto.Marshal(tasklog)
 		tx.Bucket(TasksLog).Put([]byte(req.Id), logbytes)

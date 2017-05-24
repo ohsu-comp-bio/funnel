@@ -44,7 +44,7 @@ func TestGetTask(t *testing.T) {
 
 	// Make test client call
 	c := NewClient("http://localhost:20001")
-	body, err := c.GetTask("1")
+	body, err := c.GetTask("1", "MINIMAL")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 
 	// Make test client call
 	c := NewClient("http://localhost:20001")
-	body, err := c.GetTask("1")
+	body, err := c.GetTask("1", "MINIMAL")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestClientTimeout(t *testing.T) {
 	defer ts.Close()
 
 	c := NewClient("http://localhost:20001")
-	_, err := c.GetTask("1")
+	_, err := c.GetTask("1", "MINIMAL")
 	close(ch)
 	if err == nil {
 		t.Fatal("Request did not timeout.")

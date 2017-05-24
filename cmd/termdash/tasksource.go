@@ -29,7 +29,7 @@ func NewTaskSource(tesHTTPServerAddress string) *TaskSource {
 }
 
 func (cm *TaskSource) listTasks() TaskWidgets {
-	resp, err := cm.client.ListTasks()
+	resp, err := cm.client.ListTasks("BASIC")
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +58,7 @@ func (cm *TaskSource) All() TaskWidgets {
 
 // Get a single task, by ID
 func (cm *TaskSource) Get(id string) *TaskWidget {
-	task, err := cm.client.GetTask(id)
+	task, err := cm.client.GetTask(id, "FULL")
 	if err != nil {
 		panic(err)
 	}

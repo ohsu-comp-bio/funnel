@@ -8,28 +8,25 @@ export SHELL=/bin/bash
 PATH := ${PATH}:${GOPATH}/bin
 export PATH
 
-PROTO_INC=-I ./ -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
-GRPC_HTTP_MOD=Mgoogle/api/annotations.proto=github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api
+PROTO_INC=-I ./  -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 
 # Build the code
 install: depends
 	@go install github.com/ohsu-comp-bio/funnel
 
 # Generate the protobuf/gRPC code
-proto: depends
-	@go get ./vendor/github.com/golang/protobuf/protoc-gen-go/
-	@go get ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/
+proto:
 	@cd proto/tes && protoc \
-		$(PROTO_INC) \
-		--go_out=$(GRPC_HTTP_MOD),plugins=grpc:. \
+	  $(PROTO_INC) \
+		--go_out=plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		tes.proto
-	@cd proto/funnel && protoc \
-		$(PROTO_INC) \
-		-I ../tes \
-		--go_out=$(GRPC_HTTP_MOD),Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
-		--grpc-gateway_out=logtostderr=true:. \
-		funnel.proto
+	 @cd proto/funnel && protoc \
+	   $(PROTO_INC) \
+	 	-I ../tes \
+	 	--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
+	 	--grpc-gateway_out=logtostderr=true:. \
+	 	funnel.proto
 
 # Update submodules and build code
 depends:

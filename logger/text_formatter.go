@@ -19,7 +19,6 @@ var (
 
 func init() {
 	baseTimestamp = time.Now()
-	isTerminal = logrus.IsTerminal()
 }
 
 type textFormatter struct {
@@ -67,6 +66,7 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	prefixFieldClashes(entry.Data)
 
+	isTerminal = logrus.IsTerminal(entry.Logger.Out)
 	isColorTerminal := isTerminal && (runtime.GOOS != "windows")
 	isColored := (f.ForceColors || isColorTerminal) && !f.DisableColors
 

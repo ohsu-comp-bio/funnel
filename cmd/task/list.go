@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	taskName  string
-	taskState string
+	taskListView string
+	taskName     string
+	taskState    string
 )
 
 // listCmd represents the list command
@@ -29,13 +30,14 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
+	listCmd.Flags().StringVarP(&taskListView, "view", "v", "BASIC", "Task view")
 	listCmd.Flags().StringVarP(&taskState, "state", "s", "", "Task state")
 	listCmd.Flags().StringVarP(&taskName, "name", "n", "", "Task name")
 }
 
 func doList(server string) (string, error) {
 	cli := client.NewClient(server)
-	resp, err := cli.ListTasks()
+	resp, err := cli.ListTasks(taskListView)
 	if err != nil {
 		return "", err
 	}

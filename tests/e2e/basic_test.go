@@ -18,12 +18,16 @@ func TestHelloWorld(t *testing.T) {
 }
 
 func TestGetTaskView(t *testing.T) {
+	var err error
+	var task *tes.Task
+
 	id := run(`
     --cmd 'echo hello world'
     --name 'foo'
   `)
 	wait(id)
-	task := getView(id, tes.TaskView_MINIMAL)
+
+	task = getView(id, tes.TaskView_MINIMAL)
 
 	if task.Id != id {
 		t.Fatal("expected task ID in minimal view")
@@ -53,6 +57,44 @@ func TestGetTaskView(t *testing.T) {
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout in full view")
 	}
+
+	// test http proxy
+	task, err = hcli.GetTask(id, "MINIMAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if task.Id != id {
+		t.Fatal("expected task ID in minimal view")
+	}
+	if task.Name != "" {
+		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in minimal view")
+	}
+
+	task, err = hcli.GetTask(id, "BASIC")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if task.Name != "foo" {
+		t.Fatal("expected task name to be included basic view")
+	}
+
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in basic view")
+	}
+
+	task, err = hcli.GetTask(id, "FULL")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
 }
 
 // TODO this is a bit hacky for now because we're reusing the same
@@ -60,14 +102,18 @@ func TestGetTaskView(t *testing.T) {
 //      results of all of those. It works for the moment, but
 //      should probably run against a clean environment.
 func TestListTaskView(t *testing.T) {
+	var tasks []*tes.Task
+	var task *tes.Task
+	var err error
+
 	id := run(`
     --cmd 'echo hello world'
     --name 'foo'
   `)
 	wait(id)
 
-	tasks := listView(tes.TaskView_MINIMAL)
-	task := tasks[0]
+	tasks = listView(tes.TaskView_MINIMAL)
+	task = tasks[0]
 
 	if task.Id == "" {
 		t.Fatal("expected task ID in minimal view")
@@ -95,6 +141,51 @@ func TestListTaskView(t *testing.T) {
 
 	tasks = listView(tes.TaskView_FULL)
 	task = tasks[0]
+
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
+
+	// test http proxy
+	var r *tes.ListTasksResponse
+	r, err = hcli.ListTasks("MINIMAL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	task = r.Tasks[0]
+
+	if task.Id == "" {
+		t.Fatal("expected task ID in minimal view")
+	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected complete state")
+	}
+	if task.Name != "" {
+		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in minimal view")
+	}
+
+	r, err = hcli.ListTasks("BASIC")
+	if err != nil {
+		t.Fatal(err)
+	}
+	task = r.Tasks[0]
+
+	if task.Name == "" {
+		t.Fatal("expected task name to be included basic view")
+	}
+
+	if task.Logs != nil {
+		t.Fatal("unexpected task logs included in basic view")
+	}
+
+	r, err = hcli.ListTasks("FULL")
+	if err != nil {
+		t.Fatal(err)
+	}
+	task = r.Tasks[0]
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout in full view")

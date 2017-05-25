@@ -282,9 +282,11 @@ func TestMarkCompleteBug(t *testing.T) {
     --cmd 'echo step 1'
     --cmd 'sleep 100'
   `)
+	waitForRunning(id)
 	waitForExec(id, 2)
 	task := get(id)
 	if task.State != tes.State_RUNNING {
 		t.Fatal("Unexpected task state")
 	}
+	cancel(id)
 }

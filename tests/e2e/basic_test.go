@@ -197,8 +197,9 @@ func TestListTaskView(t *testing.T) {
 // amount of logs are written (which was once a bug).
 func TestSingleCharLog(t *testing.T) {
 	id := run(`
-    --cmd "sh -c 'echo a; sleep 10'"
+    --cmd "sh -c 'echo a; sleep 100'"
   `)
+	waitForRunning(id)
 	time.Sleep(time.Second * 2)
 	task := get(id)
 	if task.Logs[0].Logs[0].Stdout != "a\n" {

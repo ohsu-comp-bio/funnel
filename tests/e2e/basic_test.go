@@ -290,3 +290,67 @@ func TestMarkCompleteBug(t *testing.T) {
 	}
 	cancel(id)
 }
+
+func TestTaskStartEndTimeLogs(t *testing.T) {
+	id := run(`--cmd 'echo 1'`)
+	task := wait(id)
+	if task.Logs[0].StartTime == "" {
+		t.Fatal("missing task start time log")
+	}
+	if task.Logs[0].EndTime == "" {
+		t.Fatal("missing task end time log")
+	}
+}
+
+func TestOutputFileLog(t *testing.T) {
+	dir := tempdir()
+
+	id, _ := runTask(&tes.Task{
+		Executors: []*tes.Executor{
+			{
+				ImageName: "alpine",
+				Cmd: []string{
+					"sh", "-c", "mkdir /tmp/outdir; echo fooo > /tmp/outdir/fooofile; echo ba > /tmp/outdir/bafile; echo bar > /tmp/barfile",
+				},
+			},
+		},
+		Outputs: []*tes.TaskParameter{
+			{
+				Url:  dir + "/outdir",
+				Path: "/tmp/outdir",
+				Type: tes.FileType_DIRECTORY,
+			},
+			{
+				Url:  dir + "/barfile",
+				Path: "/tmp/barfile",
+			},
+		},
+	})
+
+	task := wait(id)
+	log.Debug("TEST", "task", task)
+
+	out := task.Logs[0].Outputs
+
+	if out[0].Url != dir+"/outdir/bafile" {
+		t.Fatal("unexpected output url")
+	}
+
+	if out[1].Url != dir+"/outdir/fooofile" {
+		t.Fatal("unexpected output url")
+	}
+
+	if out[2].Url != dir+"/barfile" {
+		t.Fatal("unexpected output url")
+	}
+
+	if out[0].SizeBytes != 3 {
+		t.Fatal("unexpected output size")
+	}
+	if out[1].SizeBytes != 5 {
+		t.Fatal("unexpected output size")
+	}
+	if out[2].SizeBytes != 4 {
+		t.Fatal("unexpected output size")
+	}
+}

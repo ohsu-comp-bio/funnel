@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"text/template"
 	"time"
 )
@@ -144,6 +145,12 @@ func run(s string) string {
 		panic(err)
 	}
 	return id
+}
+
+func tempdir() string {
+	d, _ := ioutil.TempDir(storageDir, "")
+	d, _ = filepath.Abs(d)
+	return d
 }
 
 func runE(s string) (string, error) {

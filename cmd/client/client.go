@@ -85,7 +85,7 @@ func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 	var err error
 	err = isValidTask(msg)
 	if err != nil {
-		return nil, fmt.Errorf("Not a valid Task message: %v", err)
+		return nil, fmt.Errorf("Not a valid Task message: %s", err)
 	}
 
 	// Send request
@@ -155,9 +155,9 @@ func isValidTask(b []byte) error {
 	if err != nil {
 		return err
 	}
-	err = tes.Validate(&js)
-	if err != nil {
-		return err
+	verr := tes.Validate(&js)
+	if verr != nil {
+		return verr
 	}
 	return nil
 }

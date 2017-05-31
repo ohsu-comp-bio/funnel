@@ -152,7 +152,7 @@ bundle-examples:
 	@go-bindata -pkg examples -o cmd/examples/bundle.go examples
 
 # Make everything usually needed to prepare for a pull request
-full: proto install prune_deps add_deps tidy lint test web
+full: proto install prune_deps add_deps tidy lint test website webdash
 
 # Build the website
 website:
@@ -177,4 +177,4 @@ docker: cross-compile
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto web website docker webdash
+.PHONY: proto website docker webdash

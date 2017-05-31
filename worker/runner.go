@@ -26,7 +26,7 @@ func runTask(ctrl TaskControl, conf config.Worker, t *pbf.TaskWrapper, up logUpd
 		ctrl:    ctrl,
 		wrapper: t,
 		mapper:  NewFileMapper(baseDir),
-		store:   &storage.Storage{},
+		store:   storage.Storage{},
 		conf:    conf,
 		updates: up,
 		log:     logger.New("runner", "workerID", conf.ID, "taskID", t.Task.Id),
@@ -42,7 +42,7 @@ type taskRunner struct {
 	updates logUpdateChan
 	log     logger.Logger
 	mapper  *FileMapper
-	store   *storage.Storage
+	store   storage.Storage
 	ip      string
 }
 
@@ -228,11 +228,9 @@ func (r *taskRunner) prepareIP() error {
 func (r *taskRunner) prepareStorage() error {
 	var err error
 
-	for _, conf := range r.conf.Storage {
-		r.store, err = r.store.WithConfig(conf)
-		if err != nil {
-			return err
-		}
+	r.store, err = r.store.WithConfig(r.conf.Storage)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -240,6 +238,7 @@ func (r *taskRunner) prepareStorage() error {
 
 // Validate the input downloads
 func (r *taskRunner) validateInputs() error {
+
 	for _, input := range r.mapper.Inputs {
 		if !r.store.Supports(input.Url, input.Path, input.Type) {
 			return fmt.Errorf("Input download not supported by storage: %v", input)

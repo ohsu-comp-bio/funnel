@@ -110,11 +110,8 @@ func WithGCEConfig(conf config.Config, metaURL string) (config.Config, error) {
 			log.Error("Empty server address while starting worker")
 			return conf, fmt.Errorf("Empty server address while starting worker")
 		}
-		conf.Worker.Storage = append(conf.Worker.Storage, &config.StorageConfig{
-			GS: config.GSStorage{
-				FromEnv: true,
-			},
-		})
+		conf.Worker.Storage.GS = append(conf.Worker.Storage.GS,
+			config.GSStorage{FromEnv: true})
 	}
 
 	// Auto detect the server's host name when it's not already set.

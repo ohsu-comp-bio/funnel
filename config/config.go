@@ -13,7 +13,7 @@ import (
 
 // Config describes configuration for Funnel.
 type Config struct {
-	Storage   []*StorageConfig
+	Storage   StorageConfig
 	HostName  string
 	Scheduler string
 	Backends  struct {
@@ -69,15 +69,21 @@ func DefaultConfig() Config {
 	workDir := "funnel-work-dir"
 	hostName := "localhost"
 	rpcPort := "9090"
+	cwd, _ := os.Getwd()
 	c := Config{
-		HostName:           hostName,
-		DBPath:             path.Join(workDir, "funnel.db"),
-		HTTPPort:           "8000",
-		RPCPort:            rpcPort,
-		WorkDir:            workDir,
-		LogLevel:           "info",
-		TimestampLogs:      true,
-		Scheduler:          "local",
+		HostName:      hostName,
+		DBPath:        path.Join(workDir, "funnel.db"),
+		HTTPPort:      "8000",
+		RPCPort:       rpcPort,
+		WorkDir:       workDir,
+		LogLevel:      "info",
+		TimestampLogs: true,
+		Scheduler:     "local",
+		Storage: StorageConfig{
+			Local: LocalStorage{
+				AllowedDirs: []string{cwd},
+			},
+		},
 		MaxExecutorLogSize: 10000,
 		ScheduleRate:       time.Second,
 		ScheduleChunk:      10,
@@ -131,7 +137,7 @@ type Worker struct {
 	// How often the worker sends task log updates
 	LogUpdateRate time.Duration
 	LogTailSize   int64
-	Storage       []*StorageConfig
+	Storage       StorageConfig
 	LogPath       string
 	LogLevel      string
 	TimestampLogs bool
@@ -156,8 +162,8 @@ func WorkerInheritConfigVals(c Config) Worker {
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
 	Local LocalStorage
-	S3    S3Storage
-	GS    GSStorage
+	S3    []S3Storage
+	GS    []GSStorage
 }
 
 // LocalStorage describes the directories Funnel can read from and write to

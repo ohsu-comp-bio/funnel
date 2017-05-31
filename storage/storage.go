@@ -80,48 +80,41 @@ func (storage Storage) findBackend(url string, path string, class tes.FileType) 
 }
 
 // WithBackend returns a new child Storage instance with the given backend added.
-func (storage Storage) WithBackend(b Backend) (*Storage, error) {
-	backends := append(storage.backends, b)
-	return &Storage{backends}, nil
+func (storage Storage) WithBackend(b Backend) Storage {
+	storage.backends = append(storage.backends, b)
+	return storage
 }
 
 // WithConfig returns a new Storage instance with the given additional configuration.
-func (storage Storage) WithConfig(conf *config.StorageConfig) (*Storage, error) {
-	var err error
-	var out *Storage
+func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 
 	if conf.Local.Valid() {
 		local, err := NewLocalBackend(conf.Local)
 		if err != nil {
-			return nil, err
+			return storage, err
 		}
-		out, err = storage.WithBackend(local)
+		storage = storage.WithBackend(local)
 	}
 
-	if conf.S3.Valid() {
-		s3, err := NewS3Backend(conf.S3)
-		if err != nil {
-			return nil, err
+	for _, c := range conf.S3 {
+		if c.Valid() {
+			s3, err := NewS3Backend(c)
+			if err != nil {
+				return storage, err
+			}
+			storage = storage.WithBackend(s3)
 		}
-		out, err = storage.WithBackend(s3)
 	}
 
-	if conf.GS.Valid() {
-		gs, nerr := NewGSBackend(conf.GS)
-		if nerr != nil {
-			return nil, nerr
+	for _, c := range conf.GS {
+		if c.Valid() {
+			gs, nerr := NewGSBackend(c)
+			if nerr != nil {
+				return storage, nerr
+			}
+			storage = storage.WithBackend(gs)
 		}
-		out, err = storage.WithBackend(gs)
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	// If the configuration did nothing, return the initial storage instance
-	if out == nil {
-		return &storage, nil
-	}
-
-	return out, nil
+	return storage, nil
 }

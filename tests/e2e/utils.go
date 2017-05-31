@@ -45,23 +45,18 @@ func init() {
 	storageDir, _ = ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 
-	// TODO need to fix the storage config so that you can't accidentally
-	//      configure both S3 and Local on the same StorageConfig object,
-	//      which is not valid.
-	conf.Storage = append(conf.Storage,
-		&config.StorageConfig{
-			Local: config.LocalStorage{
-				AllowedDirs: []string{storageDir, wd},
-			},
+	conf.Storage = config.StorageConfig{
+		Local: config.LocalStorage{
+			AllowedDirs: []string{storageDir, wd},
 		},
-		&config.StorageConfig{
-			S3: config.S3Storage{
+		S3: []config.S3Storage{
+			{
 				Endpoint: "localhost:9999",
 				Key:      minioKey,
 				Secret:   minioSecret,
 			},
 		},
-	)
+	}
 
 	go server.Run(conf)
 	time.Sleep(time.Second)

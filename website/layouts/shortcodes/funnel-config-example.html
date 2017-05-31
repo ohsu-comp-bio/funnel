@@ -31,26 +31,25 @@ WorkerInitTimeout: 300000000000 # 5 minutes
 DisableHTTPCache: true
 
 # File storage systems.
-# This is a list of structs (TODO that's confusing, restructure this config)
 Storage:
   # Local file system.
-  - Local:
-      # Whitelist of local directory paths which Funnel is allowed to access.
-      AllowedDirs:
-        - ./funnel-work-dir/storage
-    #S3:
-    #  Endpoint:
-    #  Key:
-    #  Secret:
+  Local:
+    # Whitelist of local directory paths which Funnel is allowed to access.
+    AllowedDirs:
+      - ./funnel-work-dir/storage
 
-     # Google Cloud Storage
-     #GS:
-      # Path to account credentials file.
-      # Optional. If possible, credentials will be automatically discovered
-      # from the environment.
-     # AccountFile:
-      # Automatically discover credentials from the environment.
-     # FromEnv: true
+  # S3:
+  #   - Endpoint:
+  #     Key:
+  #     Secret:
+
+  # Google Cloud Storage
+  # GS:
+  #   - # Path to account credentials file.
+  #     # Optional. If possible, this will be automatically discovered.
+  #     AccountFile:
+  #     # Automatically discover credentials from the environment.
+  #     FromEnv: true
 
 # The name of the active scheduler backend
 # Available backends: local, condor, gce, openstack

@@ -296,16 +296,17 @@ func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTask
 // - versions
 // - etc.
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	//BUG: this isn't the best translation, probably lossy.
+	// BUG: this isn't the best translation, probably lossy.
 	//     Maybe ServiceInfo data structure schema needs to be refactored
 	//     For example, you can't have multiple S3 endpoints
 	var out []string
-	for _, i := range taskBolt.conf.Storage {
-		if i.Local.Valid() {
-			out = append(out, i.Local.AllowedDirs...)
-		}
-		if i.S3.Valid() {
-			out = append(out, i.S3.Endpoint)
+	if taskBolt.conf.Storage.Local.Valid() {
+		out = append(out, taskBolt.conf.Storage.Local.AllowedDirs...)
+	}
+
+	for _, i := range taskBolt.conf.Storage.S3 {
+		if i.Valid() {
+			out = append(out, i.Endpoint)
 		}
 	}
 	return &tes.ServiceInfo{Name: taskBolt.conf.ServiceName, Storage: out}, nil

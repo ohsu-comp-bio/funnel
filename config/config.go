@@ -19,6 +19,7 @@ type Config struct {
 	Backends  struct {
 		Local     struct{}
 		HTCondor  struct{}
+		SLURM     struct{}
 		OpenStack struct {
 			KeyPair    string
 			ConfigPath string

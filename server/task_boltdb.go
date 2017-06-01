@@ -37,6 +37,9 @@ var TaskState = []byte("tasks-state")
 // task ID -> tes.TaskLog struct
 var TasksLog = []byte("tasks-log")
 
+// ExecutorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
+var ExecutorLogs = []byte("executor-logs")
+
 // Workers maps:
 // worker ID -> funnel.Worker struct
 var Workers = []byte("workers")
@@ -83,6 +86,9 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 		}
 		if tx.Bucket(TasksLog) == nil {
 			tx.CreateBucket(TasksLog)
+		}
+		if tx.Bucket(ExecutorLogs) == nil {
+			tx.CreateBucket(ExecutorLogs)
 		}
 		if tx.Bucket(Workers) == nil {
 			tx.CreateBucket(Workers)
@@ -202,22 +208,22 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) {
 }
 
 func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
-	//if there is logging info
-	bucket := tx.Bucket(TasksLog)
-	out := make([]*tes.ExecutorLog, 0)
+	tasklog := &tes.TaskLog{}
+	task.Logs = []*tes.TaskLog{tasklog}
+
+	b := tx.Bucket(TasksLog).Get([]byte(task.Id))
+	if b != nil {
+		proto.Unmarshal(b, tasklog)
+	}
 
 	for i := range task.Executors {
-		o := bucket.Get([]byte(fmt.Sprint(task.Id, i)))
+		o := tx.Bucket(ExecutorLogs).Get([]byte(fmt.Sprint(task.Id, i)))
 		if o != nil {
 			var execlog tes.ExecutorLog
 			proto.Unmarshal(o, &execlog)
-			out = append(out, &execlog)
+			tasklog.Logs = append(tasklog.Logs, &execlog)
 		}
 	}
-
-	task.Logs = []*tes.TaskLog{{
-		Logs: out,
-	}}
 }
 
 // GetTask gets a task, which describes a running task

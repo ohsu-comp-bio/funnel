@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -24,7 +26,7 @@ const (
 // New storage backends must support this interface.
 type Backend interface {
 	Get(ctx context.Context, url string, path string, class tes.FileType) error
-	Put(ctx context.Context, url string, path string, class tes.FileType) error
+	Put(ctx context.Context, url string, path string, class tes.FileType) ([]*tes.OutputFileLog, error)
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
 	// TODO would it be useful if this included the request type (Get/Put)?
@@ -54,10 +56,10 @@ func (storage Storage) Get(ctx context.Context, url string, path string, class t
 // Put uploads a file to a storage system at the given "url".
 // The file is uploaded from the given local "path".
 // "class" is either "File" or "Directory".
-func (storage Storage) Put(ctx context.Context, url string, path string, class tes.FileType) error {
+func (storage Storage) Put(ctx context.Context, url string, path string, class tes.FileType) ([]*tes.OutputFileLog, error) {
 	backend, err := storage.findBackend(url, path, class)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return backend.Put(ctx, url, path, class)
 }
@@ -117,4 +119,38 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 	}
 
 	return storage, nil
+}
+
+type hostfile struct {
+	// The path relative to the "root" given to walkFiles().
+	rel string
+	// The absolute path of the file on the host.
+	abs string
+	// Size of the file in bytes
+	size int64
+}
+
+func walkFiles(root string) ([]hostfile, error) {
+	var files []hostfile
+
+	err := filepath.Walk(root, func(p string, f os.FileInfo, err error) error {
+		if !f.IsDir() {
+			rel, err := filepath.Rel(root, p)
+			if err != nil {
+				return err
+			}
+			files = append(files, hostfile{rel, p, f.Size()})
+		}
+		return nil
+	})
+	return files, err
+}
+
+// Get the file size, or return 0 if there's an error calling os.Stat().
+func fileSize(path string) int64 {
+	st, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	return st.Size()
 }

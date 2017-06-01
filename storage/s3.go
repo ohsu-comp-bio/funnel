@@ -51,24 +51,31 @@ func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class
 }
 
 // Put copies an object (file) from the host path to S3.
-func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) error {
+func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
+
 	log.Info("Starting upload", "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	// TODO it's easy to create an error if this starts with a "/"
 	//      maybe just strip it?
 	split := strings.SplitN(path, "/", 2)
 
-	if class == File {
+	switch class {
+	case File:
 		_, err := s3.client.FPutObject(split[0], split[1], hostPath, "application/data")
 		if err != nil {
-			return err
+			return nil, err
 		}
 		log.Info("Successfully uploaded", "hostPath", hostPath)
-		return nil
-	} else if class == Directory {
-		return fmt.Errorf("S3 directories not yet supported")
+		return []*tes.OutputFileLog{
+			{Url: url, Path: hostPath, SizeBytes: fileSize(hostPath)},
+		}, nil
+
+	case Directory:
+		return nil, fmt.Errorf("S3 directories not yet supported")
+
+	default:
+		return nil, fmt.Errorf("Unknown file class: %s", class)
 	}
-	return fmt.Errorf("Unknown file class: %s", class)
 }
 
 // Supports indicates whether this backend supports the given storage request.

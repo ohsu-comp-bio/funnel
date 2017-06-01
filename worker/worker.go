@@ -11,7 +11,22 @@ import (
 	"time"
 )
 
-type logUpdateChan chan *pbf.UpdateExecutorLogsRequest
+// TaskLogger provides write access to a task's logs.
+type TaskLogger interface {
+	StartTime(t time.Time)
+	EndTime(t time.Time)
+	Outputs(o []*tes.OutputFileLog)
+	Metadata(m map[string]string)
+
+	ExecutorExitCode(i int, code int)
+	ExecutorPorts(i int, ports []*tes.Ports)
+	ExecutorHostIP(i int, ip string)
+	ExecutorStartTime(i int, t time.Time)
+	ExecutorEndTime(i int, t time.Time)
+
+	AppendExecutorStdout(i int, s string)
+	AppendExecutorStderr(i int, s string)
+}
 
 // NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (*Worker, error) {
@@ -23,23 +38,20 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	log := logger.New("worker", "workerID", conf.ID)
 	log.Debug("Worker Config", "config.Worker", conf)
 	res := detectResources(conf.Resources)
-	logUpdates := make(logUpdateChan)
 	// Tracks active task ctrls: task ID -> TaskControl instance
 	ctrls := map[string]TaskControl{}
 	timeout := util.NewIdleTimeout(conf.Timeout)
 	stop := make(chan struct{})
 	state := pbf.WorkerState_UNINITIALIZED
 	return &Worker{
-		conf, logUpdates, sched, log, res,
+		conf, sched, log, res,
 		runTask, ctrls, timeout, stop, state,
 	}, nil
 }
 
 // Worker is a worker...
 type Worker struct {
-	conf config.Worker
-	// Channel for task updates from task runners: stdout/err, ports, etc.
-	logUpdates logUpdateChan
+	conf       config.Worker
 	sched      *schedClient
 	log        logger.Logger
 	resources  config.Resources
@@ -64,8 +76,6 @@ func (w *Worker) Run() {
 		select {
 		case <-w.stop:
 			return
-		case up := <-w.logUpdates:
-			w.updateLogs(up)
 		case <-ticker.C:
 			w.Sync()
 			w.checkIdleTimer()
@@ -227,7 +237,7 @@ func (w *Worker) reconcile(tasks map[string]*pbf.TaskWrapper) error {
 		case isActive(taskSt) && runSt == Unknown:
 			// Task needs to be started.
 			ctrl := NewTaskControl()
-			w.TaskRunner(ctrl, w.conf, wrapper, w.logUpdates)
+			w.TaskRunner(ctrl, w.conf, wrapper)
 			w.Ctrls[taskID] = ctrl
 			task.State = ctrl.State()
 

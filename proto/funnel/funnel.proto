@@ -70,12 +70,20 @@ message GetWorkerRequest {
   string id = 1;
 }
 
+message UpdateTaskLogsRequest {
+  string id = 1;
+  tes.TaskLog task_log = 2;
+}
+
+message UpdateTaskLogsResponse {}
+
 /**
  * Scheduler Service
  */
 service SchedulerService {
   rpc UpdateExecutorLogs(UpdateExecutorLogsRequest) returns (UpdateExecutorLogsResponse) {};
   rpc UpdateWorker(Worker) returns (UpdateWorkerResponse) {};
+  rpc UpdateTaskLogs(UpdateTaskLogsRequest) returns (UpdateTaskLogsResponse) {};
 
   rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse) {
     option (google.api.http) = {

@@ -55,7 +55,7 @@ func TestPut(t *testing.T) {
 	ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com/go_test_put", "_test_files/for_put", tes.FileType_FILE)
+	_, gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com/go_test_put", "_test_files/for_put", tes.FileType_FILE)
 	if gerr != nil {
 		t.Error(gerr)
 	}
@@ -65,7 +65,7 @@ func TestTrimSlashes(t *testing.T) {
 	ctx := context.Background()
 	gs := authed(t)
 
-	gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com///go_test_put", "_test_files/for_put", tes.FileType_FILE)
+	_, gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com///go_test_put", "_test_files/for_put", tes.FileType_FILE)
 	if gerr != nil {
 		t.Error(gerr)
 	}

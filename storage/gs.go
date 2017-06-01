@@ -16,7 +16,6 @@ import (
 	urllib "net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 )
 
@@ -120,48 +119,69 @@ func download(call *storage.ObjectsGetCall, hostPath string) error {
 }
 
 // Put copies an object (file) from the host path to GS.
-func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
+func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
 	log.Info("Starting upload", "url", rawurl)
+
+	var out []*tes.OutputFileLog
+
+	switch class {
+	case File:
+		err := gs.put(ctx, rawurl, hostPath)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, &tes.OutputFileLog{
+			Url:       rawurl,
+			Path:      hostPath,
+			SizeBytes: fileSize(hostPath),
+		})
+
+	case Directory:
+		files, err := walkFiles(hostPath)
+
+		for _, f := range files {
+			u := rawurl + "/" + f.rel
+			out = append(out, &tes.OutputFileLog{
+				Url:       u,
+				Path:      f.abs,
+				SizeBytes: f.size,
+			})
+			err := gs.put(ctx, u, f.abs)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		return nil, fmt.Errorf("Unknown file class: %s", class)
+	}
+
+	log.Info("Finished upload", "url", rawurl, "hostPath", hostPath)
+	return out, nil
+}
+
+func (gs *GSBackend) put(ctx context.Context, rawurl, hostPath string) error {
 
 	url, perr := parse(rawurl)
 	if perr != nil {
 		return perr
 	}
 
-	if class == File {
-		reader, oerr := os.Open(hostPath)
-		if oerr != nil {
-			return oerr
-		}
-
-		obj := &storage.Object{
-			Name: url.path,
-		}
-
-		_, err := gs.svc.Objects.Insert(url.bucket, obj).Media(reader).Do()
-		if err != nil {
-			return err
-		}
-		return nil
-
-	} else if class == Directory {
-		err := filepath.Walk(hostPath, func(p string, f os.FileInfo, err error) error {
-			if !f.IsDir() {
-				rel, err := filepath.Rel(hostPath, p)
-				if err != nil {
-					return err
-				}
-				return gs.Put(ctx, rawurl+"/"+rel, p, File)
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		return nil
+	reader, oerr := os.Open(hostPath)
+	if oerr != nil {
+		return oerr
 	}
-	log.Info("Finished upload", "url", rawurl, "hostPath", hostPath)
-	return fmt.Errorf("Unknown file class: %s", class)
+
+	obj := &storage.Object{
+		Name: url.path,
+	}
+
+	_, err := gs.svc.Objects.Insert(url.bucket, obj).Media(reader).Do()
+	return err
 }
 
 // Supports returns true if this backend supports the given storage request.

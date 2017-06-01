@@ -84,6 +84,29 @@ func (_m *Client) UpdateExecutorLogs(ctx context.Context, in *funnel.UpdateExecu
 	return r0, r1
 }
 
+// UpdateTaskLogs provides a mock function with given fields: ctx, in, opts
+func (_m *Client) UpdateTaskLogs(ctx context.Context, in *funnel.UpdateTaskLogsRequest, opts ...grpc.CallOption) (*funnel.UpdateTaskLogsResponse, error) {
+	ret := _m.Called(ctx, in, opts)
+
+	var r0 *funnel.UpdateTaskLogsResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *funnel.UpdateTaskLogsRequest, ...grpc.CallOption) *funnel.UpdateTaskLogsResponse); ok {
+		r0 = rf(ctx, in, opts...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*funnel.UpdateTaskLogsResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *funnel.UpdateTaskLogsRequest, ...grpc.CallOption) error); ok {
+		r1 = rf(ctx, in, opts...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // UpdateWorker provides a mock function with given fields: ctx, in, opts
 func (_m *Client) UpdateWorker(ctx context.Context, in *funnel.Worker, opts ...grpc.CallOption) (*funnel.UpdateWorkerResponse, error) {
 	ret := _m.Called(ctx, in, opts)

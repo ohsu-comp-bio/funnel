@@ -303,12 +303,55 @@ func transitionTaskState(tx *bolt.Tx, id string, state tes.State) error {
 	return nil
 }
 
+// UpdateTaskLogs is an internal API endpoint that allows the worker to update
+// task logs (start time, end time, output files, etc).
+func (taskBolt *TaskBolt) UpdateTaskLogs(ctx context.Context, req *pbf.UpdateTaskLogsRequest) (*pbf.UpdateTaskLogsResponse, error) {
+	log.Debug("Update task logs", req)
+
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+		tasklog := &tes.TaskLog{}
+
+		// Try to load existing task log
+		b := tx.Bucket(TasksLog).Get([]byte(req.Id))
+		if b != nil {
+			proto.Unmarshal(b, tasklog)
+		}
+
+		if req.TaskLog.StartTime != "" {
+			tasklog.StartTime = req.TaskLog.StartTime
+		}
+
+		if req.TaskLog.EndTime != "" {
+			tasklog.EndTime = req.TaskLog.EndTime
+		}
+
+		if req.TaskLog.Outputs != nil {
+			tasklog.Outputs = req.TaskLog.Outputs
+		}
+
+		if req.TaskLog.Metadata != nil {
+			if tasklog.Metadata == nil {
+				tasklog.Metadata = map[string]string{}
+			}
+			for k, v := range req.TaskLog.Metadata {
+				tasklog.Metadata[k] = v
+			}
+		}
+
+		logbytes, _ := proto.Marshal(tasklog)
+		tx.Bucket(TasksLog).Put([]byte(req.Id), logbytes)
+		return nil
+	})
+	return &pbf.UpdateTaskLogsResponse{}, err
+}
+
 // UpdateExecutorLogs is an API endpoint that updates the logs of a task.
 // This is used by workers to communicate task updates to the server.
 func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *pbf.UpdateExecutorLogsRequest) (*pbf.UpdateExecutorLogsResponse, error) {
+	log.Debug("Update task executor logs", req)
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		bL := tx.Bucket(TasksLog)
+		bL := tx.Bucket(ExecutorLogs)
 
 		// max size (bytes) for stderr and stdout streams to keep in db
 		max := taskBolt.conf.MaxExecutorLogSize
@@ -318,6 +361,7 @@ func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *pbf.Updat
 			// Check if there is an existing task log
 			o := bL.Get(key)
 			if o != nil {
+				log.Debug("UPDTA")
 				// There is an existing log in the DB, load it
 				existing := &tes.ExecutorLog{}
 				// max bytes to be stored in the db
@@ -345,7 +389,7 @@ func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *pbf.Updat
 
 			// Save the updated log
 			logbytes, _ := proto.Marshal(req.Log)
-			tx.Bucket(TasksLog).Put(key, logbytes)
+			tx.Bucket(ExecutorLogs).Put(key, logbytes)
 		}
 
 		return nil

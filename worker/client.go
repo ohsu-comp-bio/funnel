@@ -35,6 +35,13 @@ func (c *schedClient) UpdateExecutorLogs(up *pbf.UpdateExecutorLogsRequest) erro
 	return err
 }
 
+func (c *schedClient) UpdateTaskLogs(up *pbf.UpdateTaskLogsRequest) error {
+	ctx, cleanup := context.WithTimeout(context.Background(), c.conf.UpdateTimeout)
+	_, err := c.Client.UpdateTaskLogs(ctx, up)
+	cleanup()
+	return err
+}
+
 func (c *schedClient) Close() {
 	c.Client.Close()
 }

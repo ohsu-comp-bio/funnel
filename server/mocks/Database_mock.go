@@ -195,6 +195,29 @@ func (_m *Database) UpdateExecutorLogs(_a0 context.Context, _a1 *funnel.UpdateEx
 	return r0, r1
 }
 
+// UpdateTaskLogs provides a mock function with given fields: _a0, _a1
+func (_m *Database) UpdateTaskLogs(_a0 context.Context, _a1 *funnel.UpdateTaskLogsRequest) (*funnel.UpdateTaskLogsResponse, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *funnel.UpdateTaskLogsResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *funnel.UpdateTaskLogsRequest) *funnel.UpdateTaskLogsResponse); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*funnel.UpdateTaskLogsResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *funnel.UpdateTaskLogsRequest) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // UpdateWorker provides a mock function with given fields: _a0, _a1
 func (_m *Database) UpdateWorker(_a0 context.Context, _a1 *funnel.Worker) (*funnel.UpdateWorkerResponse, error) {
 	ret := _m.Called(_a0, _a1)

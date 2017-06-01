@@ -11,6 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler/local"
 	"github.com/ohsu-comp-bio/funnel/scheduler/manual"
 	"github.com/ohsu-comp-bio/funnel/scheduler/openstack"
+	"github.com/ohsu-comp-bio/funnel/scheduler/slurm"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/spf13/cobra"
 )
@@ -79,6 +80,7 @@ func Run(conf config.Config) error {
 
 	sched.AddBackend(gce.Plugin)
 	sched.AddBackend(condor.Plugin)
+	sched.AddBackend(slurm.Plugin)
 	sched.AddBackend(openstack.Plugin)
 	sched.AddBackend(local.Plugin)
 	sched.AddBackend(manual.Plugin)

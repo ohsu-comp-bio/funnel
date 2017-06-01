@@ -1,4 +1,4 @@
-package condor
+package slurm
 
 import (
 	"fmt"
@@ -16,32 +16,31 @@ import (
 	"time"
 )
 
-var log = logger.Sub("condor")
+var log = logger.New("slurm")
 
-// prefix is a string prefixed to condor worker IDs, so that condor
+// prefix is a string prefixed to slurm worker IDs, so that slurm
 // workers can be identified by ShouldStartWorker() below.
-// TODO move to worker metadata to be consistent with GCE
-const prefix = "condor-worker-"
+const prefix = "slurm-worker-"
 
-// Plugin provides the HTCondor scheduler backend plugin.
+// Plugin provides the SLURM scheduler backend plugin.
 var Plugin = &scheduler.BackendPlugin{
-	Name:   "condor",
+	Name:   "slurm",
 	Create: NewBackend,
 }
 
-// NewBackend returns a new HTCondor Backend instance.
+// NewBackend returns a new SLURM Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	return scheduler.Backend(&Backend{conf}), nil
 }
 
-// Backend represents the HTCondor backend.
+// Backend represents the SLURM backend.
 type Backend struct {
 	conf config.Config
 }
 
 // Schedule schedules a task on the HTCondor queue and returns a corresponding Offer.
 func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
-	log.Debug("Running condor scheduler")
+	log.Debug("Running slurm scheduler")
 
 	disk := s.conf.Worker.Resources.DiskGb
 	if disk == 0.0 {
@@ -58,7 +57,6 @@ func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
 		ram = t.GetResources().GetRamGb()
 	}
 
-	// TODO could we call condor_submit --dry-run to test if a task would succeed?
 	w := &pbf.Worker{
 		Id: prefix + t.Id,
 		Resources: &pbf.Resources{
@@ -77,9 +75,9 @@ func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 		w.State == pbf.WorkerState_UNINITIALIZED
 }
 
-// StartWorker submits a task via "condor_submit" to start a new worker.
+// StartWorker submits a task via "srun" to start a new worker.
 func (s *Backend) StartWorker(w *pbf.Worker) error {
-	log.Debug("Starting condor worker")
+	log.Debug("Starting slurm worker")
 	var err error
 
 	// TODO document that these working dirs need manual cleanup
@@ -105,47 +103,42 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 		return err
 	}
 
-	submitPath := path.Join(workdir, "condor.submit")
+	submitPath := path.Join(workdir, "slurm.submit.sh")
 	f, err := os.Create(submitPath)
 	if err != nil {
 		return err
 	}
 
-	submitTpl, err := template.New("condor.submit").Parse(`
-universe       = vanilla
-executable     = {{.Executable}}
-arguments      = worker --config worker.conf.yml
-environment    = "PATH=/usr/bin"
-log            = {{.WorkDir}}/condor-event-log
-error          = {{.WorkDir}}/funnel-worker-stderr
-output         = {{.WorkDir}}/funnel-worker-stdout
-input          = {{.Config}}
+	submitTpl, err := template.New("slurm.submit.sh").Parse(`#!/bin/bash
+#SBATCH --job-name {{.Name}}
+#SBATCH --ntasks 1
+#SBATCH --error {{.WorkDir}}/funnel-worker-stderr
+#SBATCH --output {{.WorkDir}}/funnel-worker-stdout
 {{.Resources}}
-should_transfer_files   = YES
-when_to_transfer_output = ON_EXIT
-queue
+
+{{.ExecutableCmd}}
 `)
 	if err != nil {
 		return err
 	}
 
 	err = submitTpl.Execute(f, map[string]string{
-		"Executable": workerPath,
+		"Name": w.Id,
+		"ExecutableCmd": fmt.Sprintf("%s --config %s", workerPath, confPath),
 		"WorkDir":    workdir,
-		"Config":     confPath,
-		"Resources":  resolveCondorResourceRequest(int(w.Resources.Cpus), w.Resources.RamGb, w.Resources.DiskGb),
+		"Resources":  resolveResourceRequest(int(w.Resources.Cpus), w.Resources.RamGb, w.Resources.DiskGb),
 	})
 	if err != nil {
 		return err
 	}
 	f.Close()
 
-	cmd := exec.Command("condor_submit")
-	stdin, err := os.Open(submitPath)
-	if err != nil {
-		return err
-	}
-	cmd.Stdin = stdin
+
+	cmd := exec.Command(
+		"sbatch", 
+		submitPath,
+	)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -156,17 +149,16 @@ queue
 	return nil
 }
 
-func resolveCondorResourceRequest(cpus int, ram float64, disk float64) string {
+func resolveResourceRequest(cpus int, ram float64, disk float64) string {
 	var resources = []string{}
 	if cpus != 0 {
-		resources = append(resources, fmt.Sprintf("request_cpus   = %d", cpus))
+		resources = append(resources, fmt.Sprintf("#SBATCH --cpus-per-task %d", cpus))
 	}
 	if ram != 0.0 {
-		resources = append(resources, fmt.Sprintf("request_memory = %.2f GB", ram))
+		resources = append(resources, fmt.Sprintf("#SBATCH --mem %.2fGB", ram))
 	}
 	if disk != 0.0 {
-		// Convert GB to KiB
-		resources = append(resources, fmt.Sprintf("request_disk   = %.2f", disk*976562))
+		resources = append(resources, fmt.Sprintf("#SBATCH --tmp %.2fGB", disk))
 	}
 	return strings.Join(resources, "\n")
 }

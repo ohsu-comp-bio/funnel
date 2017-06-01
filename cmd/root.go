@@ -23,7 +23,7 @@ func init() {
 	RootCmd.AddCommand(examples.Cmd)
 	RootCmd.AddCommand(gce.Cmd)
 	RootCmd.AddCommand(genBashCompletionCmd)
-	RootCmd.AddCommand(markdownCmd)
+	RootCmd.AddCommand(genMarkdownCmd)
 	RootCmd.AddCommand(run.Cmd)
 	RootCmd.AddCommand(server.Cmd)
 	RootCmd.AddCommand(task.Cmd)

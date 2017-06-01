@@ -6,8 +6,9 @@ import (
 	"os"
 )
 
-var markdownCmd = &cobra.Command{
+var genMarkdownCmd = &cobra.Command{
 	Use:    "genmarkdown",
+	Short:  "generate markdown formatted documentation for the funnel commands",
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return doc.GenMarkdownTree(RootCmd, "./funnel-cmd-docs")
@@ -15,7 +16,9 @@ var markdownCmd = &cobra.Command{
 }
 
 var genBashCompletionCmd = &cobra.Command{
-	Use: "bash",
+	Use:    "genbash",
+	Short:  "generate bash completions for the funnel commands",
+	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		RootCmd.GenBashCompletion(os.Stdout)
 	},

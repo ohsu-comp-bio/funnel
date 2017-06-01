@@ -135,7 +135,7 @@ func defaultVals(vals *flagVals) {
 
 	// Default name
 	if vals.name == "" {
-		vals.name = "Funnel run: " + vals.cmds[0]
+		vals.name = "Funnel run: " + vals.execs[0].cmd
 	}
 
 	if vals.server == "" {
@@ -162,14 +162,14 @@ func parseTopLevelArgs(vals *flagVals, args []string) error {
 		cmd := flags.Args()[0]
 		args = append([]string{"--cmd", cmd}, args...)
 	}
+	parseTaskArgs(vals, args)
 
-	if len(vals.cmds) == 0 {
+	if len(vals.execs) == 0 {
 		return fmt.Errorf("you must specify a command to run")
 	}
 
 	// Fill in empty values with defaults.
 	defaultVals(vals)
-	parseTaskArgs(vals, args)
 
 	return nil
 }
@@ -184,7 +184,6 @@ func parseTaskArgs(vals *flagVals, args []string) {
 // and build that information into vals.execs
 func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
 	vals.execs = nil
-	vals.cmds = nil
 	var exec *executor
 	flags.ParseAll(args, func(f *pflag.Flag, value string) error {
 		switch f.Name {

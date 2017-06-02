@@ -17,7 +17,6 @@ Funnel uses:
 - [Angular][angular] and [SASS][sass] for the web dashboard.
 - [GNU Make][make] for development tasks.
 - [Docker][docker] for executing task containers.
-- [Python][python] for end-to-end conformance tests.
 - [vendetta][vendetta] for Go dependency vendoring.
 - and more.
 
@@ -39,8 +38,9 @@ Most development tasks are run through `make`.
 |---|---|
 |`make`              | Build the code.
 |`make test`         | Run both unit and end-to-end tests.
-|`make go-test`      | Run Go unit/integration tests.
-|`make go-test-short`| Run only fast-running Go tests.
+|`make test-short`   | Run only fast-running tests.
+|`make test-verbose` | Run tests in verbose mode.
+|`make test-backends`| Run end-to-end tests against dockerized HPC scheduler backends.
 |`make proto`        | Regenerate code from protobuf schemas (requires protoc)
 |`make tidy`         | Reformat code
 |`make lint`         | Run code style and other checks.
@@ -70,7 +70,7 @@ Most development tasks are run through `make`.
 |`server`      | Database and server implementing the [TES API][tes] and Scheduler RPC.
 |`storage`     | Filesystem support, e.g. local, Google Cloud Storage, S3, etc.
 |`worker`      | Worker process: task runner, docker, file mapper, etc.
-|`web`         | Javascript, CSS, HTML for web dashboard.
+|`webdash`     | Javascript, CSS, HTML for web dashboard.
 
 ## Go Tests
 
@@ -84,14 +84,6 @@ You get the idea. See the `go test` docs for more.
 
 The [testify][testify] and [mockery][mockery] tools are used to generate and use
 mock interfaces in test code, for example, to mock the Google Cloud APIs.
-
-## Python Tests
-
-There are end-to-end tests written in python.
-These are heavyweight integration tests which start Funnel servers
-and workers and submit tasks.
-
-These are run with `make test`.
 
 ## Vendoring
 

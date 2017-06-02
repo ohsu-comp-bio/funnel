@@ -1,0 +1,11 @@
+#!/bin/bash
+#$ -N test_job
+#$ -cwd
+#$ -V
+#$ -l h_rt=00:1:00
+#$ -q debug
+
+date
+hostname
+sleep 5
+date

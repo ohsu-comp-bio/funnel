@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name {{.WorkerId}}
+#SBATCH --ntasks 1
+#SBATCH --error {{.WorkDir}}/funnel-worker-stderr
+#SBATCH --output {{.WorkDir}}/funnel-worker-stdout
+{{if ne .Cpus 0 -}}
+{{printf "#SBATCH --cpus-per-task %d" .Cpus}}
+{{- end}}
+{{if ne .RamGb 0.0 -}}
+{{printf "#SBATCH --mem %.0fGB" .RamGb}}
+{{- end}}
+{{if ne .DiskGb 0.0 -}}
+{{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
+{{- end}}
+
+{{.Executable}} worker --config {{.WorkerConfig}}

@@ -173,7 +173,7 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 	return f, nil
 }
 
-// AddTmpVolume creates a directory on the host based on the delcared path in
+// AddTmpVolume creates a directory on the host based on the declared path in
 // the container and adds it to mapper.Volumes.
 //
 // If the path can't be mapped, an error is returned.

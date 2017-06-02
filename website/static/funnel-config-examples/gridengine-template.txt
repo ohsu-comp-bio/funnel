@@ -1,0 +1,15 @@
+#!/bin/bash
+#$ -N {{.WorkerId}}
+#$ -o {{.WorkDir}}/funnel-worker-stdout
+#$ -e {{.WorkDir}}/funnel-worker-stderr
+{{if ne .Cpus 0 -}}
+{{printf "#$ -pe mpi %d" .Cpus}}
+{{- end}}
+{{if ne .RamGb 0.0 -}}
+{{printf "#$ -l h_vmem=%.0fG" .RamGb}}
+{{- end}}
+{{if ne .DiskGb 0.0 -}}
+{{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
+{{- end}}
+
+{{.Executable}} worker --config {{.WorkerConfig}}

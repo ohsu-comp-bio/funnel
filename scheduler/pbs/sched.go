@@ -1,4 +1,4 @@
-package condor
+package pbs
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -11,38 +11,38 @@ import (
 	"strings"
 )
 
-var log = logger.Sub("condor")
+var log = logger.New("pbs")
 
-// prefix is a string prefixed to condor worker IDs, so that condor
+// prefix is a string prefixed to pbs worker IDs, so that pbs
 // workers can be identified by ShouldStartWorker() below.
-const prefix = "condor-worker-"
+const prefix = "pbs-worker-"
 
-// Plugin provides the HTCondor scheduler backend plugin.
+// Plugin provides the PBS scheduler backend plugin.
 var Plugin = &scheduler.BackendPlugin{
-	Name:   "condor",
+	Name:   "pbs",
 	Create: NewBackend,
 }
 
-// NewBackend returns a new HTCondor Backend instance.
+// NewBackend returns a new PBS Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	b := scheduler.Backend(&Backend{
-		name:     "condor",
+		name:     "pbs",
 		conf:     conf,
-		template: conf.Backends.HTCondor.Template,
+		template: conf.Backends.PBS.Template,
 	})
 	return b, nil
 }
 
-// Backend represents the HTCondor backend.
+// Backend represents the PBS backend.
 type Backend struct {
 	name     string
 	conf     config.Config
 	template string
 }
 
-// Schedule schedules a task on the HTCondor queue and returns a corresponding Offer.
+// Schedule schedules a task on the PBS queue and returns a corresponding Offer.
 func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
-	log.Debug("Running condor scheduler")
+	log.Debug("Running pbs scheduler")
 	return scheduler.ScheduleSingleTaskWorker(prefix, s.conf.Worker, t)
 }
 
@@ -53,16 +53,16 @@ func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 		w.State == pbf.WorkerState_UNINITIALIZED
 }
 
-// StartWorker submits a task via "condor_submit" to start a new worker.
+// StartWorker submits a task via "sbatch" to start a new worker.
 func (s *Backend) StartWorker(w *pbf.Worker) error {
-	log.Debug("Starting condor worker")
+	log.Debug("Starting pbs worker")
 
 	submitPath, err := scheduler.SetupTemplatedHPCWorker(s.name, s.template, s.conf, w)
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command("condor_submit", submitPath)
+	cmd := exec.Command("qsub", submitPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

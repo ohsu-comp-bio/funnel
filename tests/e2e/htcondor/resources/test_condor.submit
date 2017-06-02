@@ -1,0 +1,6 @@
+executable = /bin/date
+universe = vanilla
+output = condortest.out
+error = condortest.err
+log = condortest.log
+queue

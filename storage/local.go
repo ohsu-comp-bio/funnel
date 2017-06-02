@@ -21,7 +21,15 @@ type LocalBackend struct {
 // NewLocalBackend returns a LocalBackend instance, configured to limit
 // file system access to the given allowed directories.
 func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
-	return &LocalBackend{conf.AllowedDirs}, nil
+	allowed := []string{}
+	for _, d := range conf.AllowedDirs {
+		a, err := filepath.Abs(d)
+		if err != nil {
+			return nil, err
+		}
+		allowed = append(allowed, a)
+	}
+	return &LocalBackend{allowed}, nil
 }
 
 // Get copies a file from storage into the given hostPath.

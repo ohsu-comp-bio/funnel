@@ -12,8 +12,9 @@ type Database struct {
 }
 
 // AssignTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) AssignTask(_a0 *tes.Task, _a1 *funnel.Worker) {
+func (_m *Database) AssignTask(_a0 *tes.Task, _a1 *funnel.Worker) error {
 	_m.Called(_a0, _a1)
+	return nil
 }
 
 // CheckWorkers provides a mock function with given fields:

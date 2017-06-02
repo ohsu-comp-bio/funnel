@@ -6,6 +6,7 @@ import (
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
+	"math"
 	"net"
 	"os/exec"
 	"syscall"
@@ -77,9 +78,22 @@ func detectResources(conf config.Worker) config.Resources {
 		RamGb:  conf.Resources.RamGb,
 		DiskGb: conf.Resources.DiskGb,
 	}
-	cpuinfo, _ := pscpu.Info()
-	vmeminfo, _ := psmem.VirtualMemory()
-	diskinfo, _ := psdisk.Usage(conf.WorkDir)
+
+	cpuinfo, err := pscpu.Info()
+	if err != nil {
+		log.Error("Error detecting cpu cores", err)
+		return res
+	}
+	vmeminfo, err := psmem.VirtualMemory()
+	if err != nil {
+		log.Error("Error detecting memory", err)
+		return res
+	}
+	diskinfo, err := psdisk.Usage(conf.WorkDir)
+	if err != nil {
+		log.Error("Error detecting available disk", err)
+		return res
+	}
 
 	if conf.Resources.Cpus == 0 {
 		// TODO is cores the best metric? with hyperthreading,
@@ -90,6 +104,7 @@ func detectResources(conf config.Worker) config.Resources {
 		}
 	}
 
+	gb := math.Pow(1000, 3)
 	if conf.Resources.RamGb == 0.0 {
 		res.RamGb = float64(vmeminfo.Total) / float64(gb)
 	}
@@ -105,10 +120,3 @@ func detectResources(conf config.Worker) config.Resources {
 // that doesn't do anything.
 func NoopTaskRunner(l TaskControl, c config.Worker, j *pbf.TaskWrapper) {
 }
-
-const (
-	b  = 1
-	kb = 1024 * B
-	mb = 1024 * KB
-	gb = 1024 * MB
-)

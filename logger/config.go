@@ -64,6 +64,7 @@ func DebugConfig() Config {
 		Formatter: "text",
 		TextFormat: TextFormatConfig{
 			ForceColors:     true,
+			FullTimestamp:   true,
 			TimestampFormat: logrus.DefaultTimestampFormat,
 		},
 	}

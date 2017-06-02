@@ -60,15 +60,13 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		if req.Resources.RamGb > 0 {
 			worker.Resources.RamGb = req.Resources.RamGb
 		}
-		if req.Resources.DiskGb > 0 {
-			worker.Resources.DiskGb = req.Resources.DiskGb
-		}
 	}
 
-	// monitor disk usage of worker while it is idle
+	// update disk usage while idle
 	if len(req.Tasks) == 0 {
-		// TODO move to on-demand helper. i.e. don't store in DB
-		updateAvailableResources(tx, worker)
+		if req.GetResources().GetDiskGb() > 0 {
+			worker.Resources.DiskGb = req.Resources.DiskGb
+		}
 	}
 
 	// Reconcile worker's task states with database
@@ -92,8 +90,10 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		case Canceled, Complete, Error, SystemError:
 			key := append([]byte(req.Id), []byte(task.Id)...)
 			tx.Bucket(WorkerTasks).Delete(key)
-			// update disk usage calculation once a task completes
-			updateAvailableResources(tx, worker)
+			// update disk usage once a task completes
+			if req.GetResources().GetDiskGb() > 0 {
+				worker.Resources.DiskGb = req.Resources.DiskGb
+			}
 		}
 	}
 
@@ -101,32 +101,37 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		worker.Metadata[k] = v
 	}
 
+	// TODO move to on-demand helper. i.e. don't store in DB
+	updateAvailableResources(tx, worker)
 	worker.Version = time.Now().Unix()
-	putWorker(tx, worker)
-	return nil
+	return putWorker(tx, worker)
 }
 
 // AssignTask assigns a task to a worker. This updates the task state to Initializing,
 // and updates the worker (calls UpdateWorker()).
-func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbf.Worker) {
-	taskBolt.db.Update(func(tx *bolt.Tx) error {
+func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbf.Worker) error {
+	return taskBolt.db.Update(func(tx *bolt.Tx) error {
 		// TODO this is important! write a test for this line.
 		//      when a task is assigned, its state is immediately Initializing
 		//      even before the worker has received it.
-		transitionTaskState(tx, t.Id, tes.State_INITIALIZING)
+		err := transitionTaskState(tx, t.Id, tes.State_INITIALIZING)
+		if err != nil {
+			return err
+		}
 		taskIDBytes := []byte(t.Id)
 		workerIDBytes := []byte(w.Id)
 		// TODO the database needs tests for this stuff. Getting errors during dev
 		//      because it's easy to forget to link everything.
 		key := append(workerIDBytes, taskIDBytes...)
-		tx.Bucket(WorkerTasks).Put(key, taskIDBytes)
-		tx.Bucket(TaskWorker).Put(taskIDBytes, workerIDBytes)
-
-		err := updateWorker(tx, w)
+		err = tx.Bucket(WorkerTasks).Put(key, taskIDBytes)
 		if err != nil {
 			return err
 		}
-		return nil
+		err = tx.Bucket(TaskWorker).Put(taskIDBytes, workerIDBytes)
+		if err != nil {
+			return err
+		}
+		return updateWorker(tx, w)
 	})
 }
 
@@ -220,14 +225,14 @@ func (taskBolt *TaskBolt) CheckWorkers() error {
 			}
 			// TODO when to delete workers from the database?
 			//      is dead worker deletion an automatic garbage collection process?
-			putWorker(tx, worker)
+			err := putWorker(tx, worker)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // ListWorkers is an API endpoint that returns a list of workers.

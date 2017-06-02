@@ -24,6 +24,12 @@ type Config struct {
 		SLURM struct {
 			Template string
 		}
+		PBS struct {
+			Template string
+		}
+		GridEngine struct {
+			Template string
+		}
 		OpenStack struct {
 			KeyPair    string
 			ConfigPath string
@@ -107,8 +113,16 @@ func DefaultConfig() Config {
 		DisableHTTPCache: true,
 		ServiceName:      "Funnel",
 	}
-	c.Backends.HTCondor.Template = condorTemplate
-	c.Backends.SLURM.Template = slurmTemplate
+
+	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
+	slurmTemplate, _ := Asset("config/slurm-template.txt")
+	pbsTemplate, _ := Asset("config/pbs-template.txt")
+	geTemplate, _ := Asset("config/gridengine-template.txt")
+
+	c.Backends.HTCondor.Template = string(htcondorTemplate)
+	c.Backends.SLURM.Template = string(slurmTemplate)
+	c.Backends.PBS.Template = string(pbsTemplate)
+	c.Backends.GridEngine.Template = string(geTemplate)
 	c.Backends.GCE.CacheTTL = time.Minute
 	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
 	return c

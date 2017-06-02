@@ -2,6 +2,8 @@ package examples
 
 import (
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/config"
+	ex "github.com/ohsu-comp-bio/funnel/examples"
 	"github.com/spf13/cobra"
 	"path/filepath"
 	"strings"
@@ -17,7 +19,13 @@ var Cmd = &cobra.Command{
 		// Map example name to asset name
 		// e.g. config => examples/config.yml
 		byShortName := map[string]string{}
-		for _, n := range AssetNames() {
+		for _, n := range ex.AssetNames() {
+			sn := filepath.Base(n)
+			sn = strings.TrimSuffix(sn, filepath.Ext(sn))
+			byShortName[sn] = n
+		}
+
+		for _, n := range config.AssetNames() {
 			sn := filepath.Base(n)
 			sn = strings.TrimSuffix(sn, filepath.Ext(sn))
 			byShortName[sn] = n
@@ -37,9 +45,13 @@ var Cmd = &cobra.Command{
 		if !ok {
 			return fmt.Errorf("No example by the name of %s", name)
 		}
-		data, err := Asset(key)
+
+		data, err := ex.Asset(key)
 		if err != nil {
-			return fmt.Errorf("No example by the name of %s", name)
+			data, err = config.Asset(key)
+			if err != nil {
+				return fmt.Errorf("No example by the name of %s", name)
+			}
 		}
 
 		print(string(data))

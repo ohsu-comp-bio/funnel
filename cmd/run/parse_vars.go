@@ -25,7 +25,7 @@ func DuplicateKeyErr(key string) error {
 // Parse CLI variable definitions (e.g "varname=value") into usable task values.
 func valsToTask(vals flagVals) (task *tes.Task, err error) {
 
-	// Any error occuring during parsing the variables an preparing the task
+	// Any error occurring during parsing the variables an preparing the task
 	// is a fatal error, so I'm using panic/recover to simplify error handling.
 	defer func() {
 		if x := recover(); x != nil {

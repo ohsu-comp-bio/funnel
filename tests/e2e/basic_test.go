@@ -238,7 +238,7 @@ func TestCompleteStateImmutable(t *testing.T) {
 	fun.Wait(id)
 	err := fun.Cancel(id)
 	if err == nil {
-		t.Fatal("expected error")
+		t.Error("expected error")
 	}
 	task := fun.Get(id)
 	if task.State != tes.State_COMPLETE {

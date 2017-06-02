@@ -15,7 +15,6 @@ import (
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
-	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
 )
 
 // Name of the scheduler backend
@@ -145,7 +144,14 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 // Google Cloud APIs, which is useful for testing.
 type MockBackend struct {
 	*Backend
-	Wrapper *gcemock.Wrapper
+	Wrapper Wrapper
+	gce     *gceClient
+}
+
+// SetWrapper sets the GCE wrapper, useful for testing.
+func (m *MockBackend) SetWrapper(w Wrapper) {
+	m.Wrapper = w
+	m.gce.wrapper = w
 }
 
 // NewMockBackend returns a GCE scheduler backend that doesn't
@@ -155,9 +161,7 @@ func NewMockBackend(conf config.Config) (*MockBackend, error) {
 	// Set up a GCE scheduler backend that has a mock client
 	// so that it doesn't actually communicate with GCE.
 
-	gceWrapper := new(gcemock.Wrapper)
 	gceClient := &gceClient{
-		wrapper: gceWrapper,
 		project: conf.Backends.GCE.Project,
 		zone:    conf.Backends.GCE.Zone,
 	}
@@ -173,6 +177,6 @@ func NewMockBackend(conf config.Config) (*MockBackend, error) {
 			client: schedClient,
 			gce:    gceClient,
 		},
-		Wrapper: gceWrapper,
+		gce: gceClient,
 	}, nil
 }

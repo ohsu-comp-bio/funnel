@@ -63,6 +63,8 @@ func (r *DefaultRunner) Run(pctx context.Context) {
 	var run helper
 	var task *tes.Task
 
+	r.Log.Debug("Run")
+
 	task, run.syserr = r.Svc.Task()
 
 	r.Svc.StartTime(time.Now())

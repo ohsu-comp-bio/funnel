@@ -18,7 +18,7 @@ type Client interface {
 }
 
 // Helper for creating a wrapper before creating a client
-func newClientFromConfig(conf config.Config) (Client, error) {
+func newClientFromConfig(conf config.Config) (*gceClient, error) {
 	w, err := newWrapper(context.Background(), conf)
 	if err != nil {
 		return nil, err

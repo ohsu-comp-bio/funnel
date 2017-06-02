@@ -158,6 +158,8 @@ gen-mocks:
 	@mockery -dir server -name Database -print > server/mocks/Database_mock.go
 	@mockery -dir scheduler -name Database -print > scheduler/mocks/Database_mock.go
 	@mockery -dir scheduler -name Client -print > scheduler/mocks/Client_mock.go
+	@mockery -dir cmd/aws -name Batch -print > cmd/aws/mocks/Batch_mock.go
+	@mockery -dir cmd/aws -name CloudWatchLogs -print > cmd/aws/mocks/CloudWatchLogs_mock.go
 
 # Bundle example task messages into Go code.
 bundle-examples:

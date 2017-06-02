@@ -76,6 +76,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	// Set "cache-control: no-store" to disable response caching.
 	// Without this, some servers (e.g. GCE) will cache a response from ListTasks, GetTask, etc.
 	// which results in confusion about the stale data.
+	// TODO BUG HERE, DisableHTTPCache is required.
 	if s.DisableHTTPCache {
 		mux.Handle("/v1/", disableCache(grpcMux))
 	}
@@ -88,6 +89,7 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Register TES service
 	if s.TaskServiceServer != nil {
+		log.Debug("Registering task service")
 		tes.RegisterTaskServiceServer(grpcServer, s.TaskServiceServer)
 		err := tes.RegisterTaskServiceHandlerFromEndpoint(
 			ctx, grpcMux, s.RPCAddress, s.DialOptions,

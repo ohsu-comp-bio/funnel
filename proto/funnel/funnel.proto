@@ -23,8 +23,6 @@ enum WorkerState {
 
 message Worker {
   string id = 1;
-  // Task ID -> TaskWrapper
-  map<string, TaskWrapper> tasks = 2;
   Resources resources = 5;
   Resources available = 6;
   int64 last_ping = 7;
@@ -39,6 +37,7 @@ message Worker {
   // Version of the record in the database. Used to prevent write conflicts.
   int64 version = 14;
   map<string,string> metadata = 15;
+  repeated string task_ids = 16;
 }
 
 // TODO is there a nice way to avoid this wrapper? Maybe protobuf extensions?
@@ -77,6 +76,13 @@ message UpdateTaskLogsRequest {
 
 message UpdateTaskLogsResponse {}
 
+message UpdateTaskStateRequest {
+  string id = 1;
+  tes.State state = 2;
+}
+
+message UpdateTaskStateResponse {}
+
 /**
  * Scheduler Service
  */
@@ -84,6 +90,7 @@ service SchedulerService {
   rpc UpdateExecutorLogs(UpdateExecutorLogsRequest) returns (UpdateExecutorLogsResponse) {};
   rpc UpdateWorker(Worker) returns (UpdateWorkerResponse) {};
   rpc UpdateTaskLogs(UpdateTaskLogsRequest) returns (UpdateTaskLogsResponse) {};
+  rpc UpdateTaskState(UpdateTaskStateRequest) returns (UpdateTaskStateResponse) {};
 
   rpc ListWorkers(ListWorkersRequest) returns (ListWorkersResponse) {
     option (google.api.http) = {

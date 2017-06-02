@@ -2,38 +2,20 @@ package worker
 
 import (
 	"context"
-	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"time"
 )
-
-// TaskLogger provides write access to a task's logs.
-type TaskLogger interface {
-	StartTime(t time.Time)
-	EndTime(t time.Time)
-	Outputs(o []*tes.OutputFileLog)
-	Metadata(m map[string]string)
-
-	ExecutorExitCode(i int, code int)
-	ExecutorPorts(i int, ports []*tes.Ports)
-	ExecutorHostIP(i int, ip string)
-	ExecutorStartTime(i int, t time.Time)
-	ExecutorEndTime(i int, t time.Time)
-
-	AppendExecutorStdout(i int, s string)
-	AppendExecutorStderr(i int, s string)
-}
 
 // NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (*Worker, error) {
 	log := logger.Sub("worker", "workerID", conf.ID)
 	log.Debug("Worker Config", "config.Worker", conf)
 
-	sched, err := newSchedClient(conf)
+	sched, err := scheduler.NewClient(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -45,26 +27,24 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 
 	// Detect available resources at startup
 	res := detectResources(conf)
-
-	// Tracks active task ctrls: task ID -> TaskControl instance
-	ctrls := map[string]TaskControl{}
+	runners := runSet{}
 	timeout := util.NewIdleTimeout(conf.Timeout)
 	stop := make(chan struct{})
 	state := pbf.WorkerState_UNINITIALIZED
 	return &Worker{
 		conf, sched, log, res,
-		runTask, ctrls, timeout, stop, state,
+		NewDefaultRunner, runners, timeout, stop, state,
 	}, nil
 }
 
 // Worker is a worker...
 type Worker struct {
 	conf       config.Worker
-	sched      *schedClient
+	sched      scheduler.Client
 	log        logger.Logger
 	resources  config.Resources
-	TaskRunner TaskRunner
-	Ctrls      map[string]TaskControl
+	newRunner  RunnerFactory
+	runners    runSet
 	timeout    util.IdleTimeout
 	stop       chan struct{}
 	state      pbf.WorkerState
@@ -118,12 +98,14 @@ func (w *Worker) Sync() {
 		return
 	}
 
-	// Reconcile server state with worker state.
-	rerr := w.reconcile(r.Tasks)
-	if rerr != nil {
-		// TODO what's the best behavior here?
-		log.Error("Couldn't reconcile worker state.", rerr)
-		return
+	// Start task runners. runSet will track task IDs
+	// to ensure there's only one runner per ID, so it's ok
+	// to call this multiple times with the same task ID.
+	for _, id := range r.TaskIds {
+		w.runners.Add(id, func(ctx context.Context, id string) {
+			r := w.newRunner(w.conf, id)
+      r.Run(ctx)
+		})
 	}
 
 	// Worker data has been updated. Send back to server for database update.
@@ -143,7 +125,7 @@ func (w *Worker) Sync() {
 		r.Metadata[k] = v
 	}
 
-	_, err := w.sched.UpdateWorker(r)
+	_, err := w.sched.UpdateWorker(context.Background(), r)
 	if err != nil {
 		log.Error("Couldn't save worker update. Recovering.", err)
 	}
@@ -155,135 +137,18 @@ func (w *Worker) Stop() {
 	w.state = pbf.WorkerState_GONE
 	close(w.stop)
 	w.timeout.Stop()
-	for _, ctrl := range w.Ctrls {
-		ctrl.Cancel()
-	}
+	w.runners.Stop()
 	w.Sync()
 	w.sched.Close()
 }
 
 // Check if the worker is idle. If so, start the timeout timer.
 func (w *Worker) checkIdleTimer() {
-	// The worker is idle if there are no task controllers.
-	idle := len(w.Ctrls) == 0 && w.state == pbf.WorkerState_ALIVE
+	// The worker is idle if there are no task runners.
+	idle := w.runners.Count() == 0 && w.state == pbf.WorkerState_ALIVE
 	if idle {
 		w.timeout.Start()
 	} else {
 		w.timeout.Stop()
 	}
-}
-
-func (w *Worker) updateLogs(up *pbf.UpdateExecutorLogsRequest) {
-	// UpdateExecutorLogs() is more lightweight than UpdateWorker(),
-	// which is why it happens separately and at a different rate.
-	err := w.sched.UpdateExecutorLogs(up)
-	if err != nil {
-		// TODO if the request failed, the task update is lost and the logs
-		//      are corrupted. Cache logs to prevent this?
-		w.log.Error("Task log update failed", err)
-	}
-}
-
-// reconcile merges the server state with the worker state:
-// - identifies new tasks and starts new runners for them
-// - identifies canceled tasks and cancels existing runners
-// - updates pbf.Task structs with current task state (running, complete, error, etc)
-func (w *Worker) reconcile(tasks map[string]*pbf.TaskWrapper) error {
-	// Combine task IDs from response with task IDs from ctrls so we can reconcile
-	// both sets below.
-	taskIDs := map[string]bool{}
-	for taskID := range w.Ctrls {
-		taskIDs[taskID] = true
-	}
-	for taskID := range tasks {
-		taskIDs[taskID] = true
-	}
-
-	for taskID := range taskIDs {
-		taskSt := Unknown
-		runSt := Unknown
-
-		ctrl := w.Ctrls[taskID]
-		if ctrl != nil {
-			runSt = ctrl.State()
-		}
-
-		wrapper := tasks[taskID]
-		var task *tes.Task
-		if wrapper != nil {
-			task = wrapper.Task
-			taskSt = task.GetState()
-		}
-
-		if isComplete(taskSt) {
-			delete(w.Ctrls, taskID)
-		}
-
-		switch {
-		case taskSt == Unknown && runSt == Unknown:
-			// Edge case. Shouldn't be here, but log just in case.
-			fallthrough
-		case isComplete(taskSt) && runSt == Unknown:
-			// Edge case. Task is complete and there's no ctrl. Do nothing.
-			fallthrough
-		case isComplete(taskSt) && runSt == Canceled:
-			// Edge case. Task is complete and the ctrl is canceled. Do nothing.
-			// This shouldn't happen but it's better to check for it anyway.
-			//
-			// Log so that these unexpected cases can be explored.
-			log.Error("Edge case during worker reconciliation. Recovering.",
-				"taskst", taskSt, "runst", runSt)
-
-		case isActive(taskSt) && runSt == Canceled:
-			// Edge case. Server says running but ctrl says canceled.
-			// Possibly the worker is shutting down due to a local signal
-			// and canceled its tasks.
-			task.State = runSt
-
-		case taskSt == runSt:
-			// States match, do nothing.
-
-		case isActive(taskSt) && runSt == Unknown:
-			// Task needs to be started.
-			ctrl := NewTaskControl()
-			w.TaskRunner(ctrl, w.conf, wrapper)
-			w.Ctrls[taskID] = ctrl
-			task.State = ctrl.State()
-
-		case isActive(taskSt) && runSt != Unknown:
-			// Task is running, update state.
-			task.State = runSt
-
-		case taskSt == Canceled && runSt != Unknown:
-			// Task is canceled.
-			// ctrl.Cancel() is idempotent, so blindly cancel and delete.
-			ctrl.Cancel()
-
-		case taskSt == Unknown && runSt != Unknown:
-			// Edge case. There's a ctrl for a non-existent task. Delete it.
-			// TODO is it better to leave it? Continue in absence of explicit command principle?
-			ctrl.Cancel()
-			delete(w.Ctrls, taskID)
-
-		case isComplete(taskSt) && isActive(runSt):
-			// Edge case. The task is complete but the ctrl is still running.
-			// This shouldn't happen but it's better to check for it anyway.
-			// TODO better to update task state?
-			ctrl.Cancel()
-
-		default:
-			log.Error("Unhandled case during worker reconciliation.",
-				"task", task, "ctrl", ctrl)
-			return errors.New("Unhandled case during worker reconciliation")
-		}
-	}
-	return nil
-}
-
-func isActive(s tes.State) bool {
-	return s == Queued || s == Initializing || s == Running
-}
-
-func isComplete(s tes.State) bool {
-	return s == Complete || s == Error || s == SystemError
 }

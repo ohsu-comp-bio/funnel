@@ -96,9 +96,7 @@ func DefaultConfig() Config {
 			LogUpdateRate: time.Second * 5,
 			LogTailSize:   10000,
 			Logger:        logger.DefaultConfig(),
-			Resources: Resources{
-				DiskGb: 100.0,
-			},
+			Resources:     Resources{},
 			UpdateTimeout: time.Second,
 			Metadata:      map[string]string{},
 		},

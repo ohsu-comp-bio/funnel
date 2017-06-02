@@ -65,6 +65,12 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		}
 	}
 
+	// monitor disk usage of worker while it is idle
+	if len(req.Tasks) == 0 {
+		// TODO move to on-demand helper. i.e. don't store in DB
+		updateAvailableResources(tx, worker)
+	}
+
 	// Reconcile worker's task states with database
 	for _, wrapper := range req.Tasks {
 		// TODO test transition to self a noop
@@ -86,6 +92,8 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		case Canceled, Complete, Error, SystemError:
 			key := append([]byte(req.Id), []byte(task.Id)...)
 			tx.Bucket(WorkerTasks).Delete(key)
+			// update disk usage calculation once a task completes
+			updateAvailableResources(tx, worker)
 		}
 	}
 
@@ -93,8 +101,6 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		worker.Metadata[k] = v
 	}
 
-	// TODO move to on-demand helper. i.e. don't store in DB
-	updateAvailableResources(tx, worker)
 	worker.Version = time.Now().Unix()
 	putWorker(tx, worker)
 	return nil
@@ -147,12 +153,16 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
 		}
 
 		a.RamGb -= res.GetRamGb()
+		a.DiskGb -= res.GetSizeGb()
 
 		if a.Cpus < 0 {
 			a.Cpus = 0
 		}
 		if a.RamGb < 0.0 {
 			a.RamGb = 0.0
+		}
+		if a.DiskGb < 0.0 {
+			a.DiskGb = 0.0
 		}
 	}
 	worker.Available = &a

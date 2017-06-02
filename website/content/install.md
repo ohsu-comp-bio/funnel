@@ -14,7 +14,6 @@ Funnel requires [Docker][docker].
 Currently, we only have development releases:
 
 - [Linux (64-bit)][linux-64-bin]
-- [Linux (32-bit)][linux-32-bin]
 - [macOS (64-bit)][mac-64-bin]
 
 Windows is not supported yet.

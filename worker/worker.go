@@ -37,7 +37,7 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 
 	log := logger.Sub("worker", "workerID", conf.ID)
 	log.Debug("Worker Config", "config.Worker", conf)
-	res := detectResources(conf.Resources)
+	res := detectResources(conf)
 	// Tracks active task ctrls: task ID -> TaskControl instance
 	ctrls := map[string]TaskControl{}
 	timeout := util.NewIdleTimeout(conf.Timeout)
@@ -119,10 +119,11 @@ func (w *Worker) Sync() {
 	}
 
 	// Worker data has been updated. Send back to server for database update.
+	res := detectResources(w.conf)
 	r.Resources = &pbf.Resources{
-		Cpus:   w.resources.Cpus,
-		RamGb:  w.resources.RamGb,
-		DiskGb: w.resources.DiskGb,
+		Cpus:   res.Cpus,
+		RamGb:  res.RamGb,
+		DiskGb: res.DiskGb,
 	}
 	r.State = w.state
 

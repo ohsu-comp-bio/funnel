@@ -118,3 +118,15 @@
 [submodule "vendor/github.com/sergi/go-diff"]
 	path = vendor/github.com/sergi/go-diff
 	url = https://github.com/sergi/go-diff
+[submodule "vendor/google.golang.org/genproto"]
+	path = vendor/google.golang.org/genproto
+	url = https://github.com/google/go-genproto
+[submodule "vendor/golang.org/x/text"]
+	path = vendor/golang.org/x/text
+	url = https://go.googlesource.com/text
+[submodule "vendor/github.com/go-ini/ini"]
+	path = vendor/github.com/go-ini/ini
+	url = https://github.com/go-ini/ini
+[submodule "vendor/github.com/minio/go-homedir"]
+	path = vendor/github.com/minio/go-homedir
+	url = https://github.com/minio/go-homedir

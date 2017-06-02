@@ -4,6 +4,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	pscpu "github.com/shirou/gopsutil/cpu"
+	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
 	"net"
 	"os/exec"
@@ -70,16 +71,17 @@ func getExitCode(err error) int {
 // detectResources helps determine the amount of resources to report.
 // Resources are determined by inspecting the host, but they
 // can be overridden by config.
-func detectResources(conf config.Resources) config.Resources {
+func detectResources(conf config.Worker) config.Resources {
 	res := config.Resources{
-		Cpus:   conf.Cpus,
-		RamGb:  conf.RamGb,
-		DiskGb: conf.DiskGb,
+		Cpus:   conf.Resources.Cpus,
+		RamGb:  conf.Resources.RamGb,
+		DiskGb: conf.Resources.DiskGb,
 	}
 	cpuinfo, _ := pscpu.Info()
 	vmeminfo, _ := psmem.VirtualMemory()
+	diskinfo, _ := psdisk.Usage(conf.WorkDir)
 
-	if conf.Cpus == 0 {
+	if conf.Resources.Cpus == 0 {
 		// TODO is cores the best metric? with hyperthreading,
 		//      runtime.NumCPU() and pscpu.Counts() return 8
 		//      on my 4-core mac laptop
@@ -88,9 +90,12 @@ func detectResources(conf config.Resources) config.Resources {
 		}
 	}
 
-	if conf.RamGb == 0.0 {
-		res.RamGb = float64(vmeminfo.Total) /
-			float64(1024) / float64(1024) / float64(1024)
+	if conf.Resources.RamGb == 0.0 {
+		res.RamGb = float64(vmeminfo.Total) / float64(GB)
+	}
+
+	if conf.Resources.DiskGb == 0.0 {
+		res.DiskGb = float64(diskinfo.Free) / float64(GB)
 	}
 
 	return res
@@ -100,3 +105,10 @@ func detectResources(conf config.Resources) config.Resources {
 // that doesn't do anything.
 func NoopTaskRunner(l TaskControl, c config.Worker, j *pbf.TaskWrapper) {
 }
+
+const (
+	B  = 1
+	KB = 1024 * B
+	MB = 1024 * KB
+	GB = 1024 * MB
+)

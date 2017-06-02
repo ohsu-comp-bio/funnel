@@ -123,19 +123,18 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 	}
 
 	err = submitTpl.Execute(f, map[string]string{
-		"Name": w.Id,
+		"Name":          w.Id,
 		"ExecutableCmd": fmt.Sprintf("%s --config %s", workerPath, confPath),
-		"WorkDir":    workdir,
-		"Resources":  resolveResourceRequest(int(w.Resources.Cpus), w.Resources.RamGb, w.Resources.DiskGb),
+		"WorkDir":       workdir,
+		"Resources":     resolveResourceRequest(int(w.Resources.Cpus), w.Resources.RamGb, w.Resources.DiskGb),
 	})
 	if err != nil {
 		return err
 	}
 	f.Close()
 
-
 	cmd := exec.Command(
-		"sbatch", 
+		"sbatch",
 		submitPath,
 	)
 
@@ -155,10 +154,11 @@ func resolveResourceRequest(cpus int, ram float64, disk float64) string {
 		resources = append(resources, fmt.Sprintf("#SBATCH --cpus-per-task %d", cpus))
 	}
 	if ram != 0.0 {
-		resources = append(resources, fmt.Sprintf("#SBATCH --mem %.2fGB", ram))
+		resources = append(resources, fmt.Sprintf("#SBATCH --mem %.0fGB", ram))
 	}
+	// TODO: figure out if this is the right way to request disk space
 	if disk != 0.0 {
-		resources = append(resources, fmt.Sprintf("#SBATCH --tmp %.2fGB", disk))
+		resources = append(resources, fmt.Sprintf("#SBATCH --tmp %.0fGB", disk))
 	}
 	return strings.Join(resources, "\n")
 }

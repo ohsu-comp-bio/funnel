@@ -78,7 +78,6 @@ func (r *RPCTask) ExecutorEndTime(i int, t time.Time) {
 
 // ExecutorExitCode updates an executor's exit code log.
 func (r *RPCTask) ExecutorExitCode(i int, x int) {
-	log.Debug("Exit")
 	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
@@ -90,7 +89,6 @@ func (r *RPCTask) ExecutorExitCode(i int, x int) {
 
 // ExecutorPorts updates an executor's ports log.
 func (r *RPCTask) ExecutorPorts(i int, ports []*tes.Ports) {
-	log.Debug("PORT")
 	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
@@ -113,7 +111,6 @@ func (r *RPCTask) ExecutorHostIP(i int, ip string) {
 
 // AppendExecutorStdout appends to an executor's stdout log.
 func (r *RPCTask) AppendExecutorStdout(i int, s string) {
-	log.Debug("STDOUT")
 	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
@@ -125,7 +122,6 @@ func (r *RPCTask) AppendExecutorStdout(i int, s string) {
 
 // AppendExecutorStderr appends to an executor's stderr log.
 func (r *RPCTask) AppendExecutorStderr(i int, s string) {
-	log.Debug("STDERR")
 	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),

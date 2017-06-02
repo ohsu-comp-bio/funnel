@@ -91,7 +91,7 @@ webdash:
 cross-compile: depends
 	@echo '=== Cross compiling... ==='
 	@for GOOS in darwin linux; do \
-		for GOARCH in 386 amd64; do \
+		for GOARCH in amd64; do \
 			GOOS=$$GOOS GOARCH=$$GOARCH go build -o build/bin/funnel-$$GOOS-$$GOARCH .; \
 		done; \
 	done
@@ -112,7 +112,7 @@ upload-release:
 	@cp build/bin/* build/release/
 	@cp build/funnel-gce-image-installer build/release
 	@for GOOS in darwin linux; do \
-		for GOARCH in 386 amd64; do \
+		for GOARCH in amd64; do \
 			GOOS=$$GOOS GOARCH=$$GOARCH \
 				tar -C build/release -czvf build/release/funnel-$$GOOS-$$GOARCH.tar.gz funnel-$$GOOS-$$GOARCH; \
 				rm build/release/funnel-$$GOOS-$$GOARCH; \

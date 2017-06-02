@@ -17,16 +17,24 @@ func ResourcesFit(t *tes.Task, w *pbf.Worker) bool {
 		log.Debug("Fail preemptible")
 		return false
 	case w.GetAvailable().GetCpus() <= 0:
-		log.Debug("Fail zero cpus")
+		log.Debug("Fail zero cpus available")
 		return false
 	case w.GetAvailable().GetRamGb() <= 0.0:
-		log.Debug("Fail zero ram")
+		log.Debug("Fail zero ram available")
 		return false
 	case w.GetAvailable().GetCpus() < req.GetCpuCores():
-		log.Debug("Fail cpus")
+		log.Debug(
+			"Fail cpus",
+			"requested", req.GetCpuCores(),
+			"available", w.GetAvailable().GetCpus(),
+		)
 		return false
 	case w.GetAvailable().GetRamGb() < req.GetRamGb():
-		log.Debug("Fail ram")
+		log.Debug(
+			"Fail ram",
+			"requested", req.GetRamGb(),
+			"available", w.GetAvailable().GetRamGb(),
+		)
 		return false
 	}
 	return true
@@ -45,9 +53,10 @@ func VolumesFit(t *tes.Task, w *pbf.Worker) bool {
 		return true
 	}
 
-	f := tot <= w.GetAvailable().GetDiskGb()
+	avail := w.GetAvailable().GetDiskGb()
+	f := tot <= avail
 	if !f {
-		log.Debug("Failed volumes", "tot", tot, "avail", w.GetAvailable().GetDiskGb())
+		log.Debug("Failed volumes", "requested", tot, "available", avail)
 	}
 	return f
 }

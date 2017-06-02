@@ -17,9 +17,13 @@ type Config struct {
 	HostName  string
 	Scheduler string
 	Backends  struct {
-		Local     struct{}
-		HTCondor  struct{}
-		SLURM     struct{}
+		Local    struct{}
+		HTCondor struct {
+			Template string
+		}
+		SLURM struct {
+			Template string
+		}
 		OpenStack struct {
 			KeyPair    string
 			ConfigPath string
@@ -103,7 +107,8 @@ func DefaultConfig() Config {
 		DisableHTTPCache: true,
 		ServiceName:      "Funnel",
 	}
-
+	c.Backends.HTCondor.Template = condorTemplate
+	c.Backends.SLURM.Template = slurmTemplate
 	c.Backends.GCE.CacheTTL = time.Minute
 	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
 	return c

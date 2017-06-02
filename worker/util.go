@@ -91,11 +91,11 @@ func detectResources(conf config.Worker) config.Resources {
 	}
 
 	if conf.Resources.RamGb == 0.0 {
-		res.RamGb = float64(vmeminfo.Total) / float64(GB)
+		res.RamGb = float64(vmeminfo.Total) / float64(gb)
 	}
 
 	if conf.Resources.DiskGb == 0.0 {
-		res.DiskGb = float64(diskinfo.Free) / float64(GB)
+		res.DiskGb = float64(diskinfo.Free) / float64(gb)
 	}
 
 	return res
@@ -107,8 +107,8 @@ func NoopTaskRunner(l TaskControl, c config.Worker, j *pbf.TaskWrapper) {
 }
 
 const (
-	B  = 1
-	KB = 1024 * B
-	MB = 1024 * KB
-	GB = 1024 * MB
+	b  = 1
+	kb = 1024 * B
+	mb = 1024 * KB
+	gb = 1024 * MB
 )

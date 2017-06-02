@@ -260,20 +260,37 @@ func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) *tes.Task {
 // ListTasks returns a list of taskIDs
 func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
-	tasks := make([]*tes.Task, 0, 10)
+	var tasks []*tes.Task
+	pageSize := 256
+
+	if req.PageSize != 0 {
+		pageSize = int(req.GetPageSize())
+		if pageSize > 2048 {
+			pageSize = 2048
+		}
+		if pageSize < 50 {
+			pageSize = 50
+		}
+	}
 
 	taskBolt.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket(TaskBucket).Cursor()
 
-		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+		i := 0
+		for k, _ := c.Seek([]byte(req.PageToken)); k != nil && i < pageSize; k, _ = c.Next() {
 			task := getTaskView(tx, string(k), req.View)
 			tasks = append(tasks, task)
+			i++
 		}
 		return nil
 	})
 
 	out := tes.ListTasksResponse{
 		Tasks: tasks,
+	}
+
+	if len(tasks) == pageSize {
+		out.NextPageToken = tasks[len(tasks)-1].Id
 	}
 
 	return &out, nil

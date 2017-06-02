@@ -59,10 +59,10 @@ lint:
 	@go get github.com/alecthomas/gometalinter
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
-	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --vendor \
-	 -s proto --exclude 'cmd/examples/bundle.go' --exclude "cmd/termdash" --exclude 'webdash/web.go' \
-	 --exclude 'funnel-work-dir' ./...
-	@gometalinter --disable-all --enable=vet --enable=gofmt --vendor ./cmd/termdash/...
+	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell --vendor \
+	 -s proto --exclude 'examples/bundle.go' --exclude 'config/bundle.go' --exclude "cmd/termdash" \
+	 --exclude 'webdash/web.go' --exclude 'funnel-work-dir' ./...
+	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 	@pip install -q flake8
 	@flake8 --exclude ./venv,./webdash,./vendor,./funnel-work-dir .
 
@@ -71,8 +71,15 @@ test-short:
 	@go test -short $(TESTS)
 
 # Run all tests
-test:	
+test:
 	@go run tests/fmt/fmt.go $(TESTS)
+
+# Run backend tests
+test-backends:	
+	@go test -timeout 120s ./tests/e2e/slurm -run-test
+	@go test -timeout 120s ./tests/e2e/gridengine -run-test
+	@go test -timeout 120s ./tests/e2e/htcondor -run-test
+	@go test -timeout 120s ./tests/e2e/pbs -run-test
 
 test-verbose:
 	@go run tests/fmt/fmt.go -v $(TESTS)
@@ -154,13 +161,15 @@ gen-mocks:
 
 # Bundle example task messages into Go code.
 bundle-examples:
-	@go-bindata -pkg examples -o cmd/examples/bundle.go examples
+	@go-bindata -pkg examples -o examples/bundle.go examples
+	@go-bindata -pkg config -o config/bundle.go $(shell find config/ -name '*.txt' -o -name '*.yaml')
 
 # Make everything usually needed to prepare for a pull request
 full: proto install prune_deps add_deps tidy lint test website webdash
 
 # Build the website
 website:
+	@find ./config -name '*.txt' -o -name '*.yaml' -exec cp {} website/static/funnel-config-examples/ \;
 	@go get github.com/spf13/hugo
 	hugo --source ./website
 	# TODO there's more here
@@ -168,6 +177,7 @@ website:
 
 # Serve the Funnel website on localhost:1313
 website-dev:
+	@cp config/* website/static/funnel-config-examples/
 	@go get github.com/spf13/hugo
 	hugo --source ./website -w server
 

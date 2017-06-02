@@ -6,4 +6,23 @@ menu:
     weight: -50
 ---
 
-# Docs index
+# Compute Backends
+
+## Cloud
+ 
+* Google Compute Engine
+
+## HPC
+
+* HTCondor
+* SLURM
+* Grid Engine
+* PBS/Torque
+
+# Storage Backends
+
+Files can be downloaded and uploaded from:
+
+* Local/shared filesystem
+* Google Storage
+* S3

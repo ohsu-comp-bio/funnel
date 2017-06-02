@@ -39,7 +39,7 @@ func getWorker(tx *bolt.Tx, id string) *pbf.Worker {
 	return worker
 }
 
-func putWorker(tx *bolt.Tx, worker *pbf.Worker) {
+func putWorker(tx *bolt.Tx, worker *pbf.Worker) error {
 	// Tasks are not saved in the database under the worker,
 	// they are stored in a separate bucket and linked via an index.
 	// The same protobuf message is used for both communication and database,
@@ -49,5 +49,5 @@ func putWorker(tx *bolt.Tx, worker *pbf.Worker) {
 	w := proto.Clone(worker).(*pbf.Worker)
 	w.Tasks = nil
 	data, _ := proto.Marshal(w)
-	tx.Bucket(Workers).Put([]byte(w.Id), data)
+	return tx.Bucket(Workers).Put([]byte(w.Id), data)
 }

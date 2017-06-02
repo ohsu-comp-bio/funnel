@@ -15,7 +15,7 @@ import (
 // Mostly, this exists so it can be mocked during testing.
 type Database interface {
 	ReadQueue(n int) []*tes.Task
-	AssignTask(*tes.Task, *pbf.Worker)
+	AssignTask(*tes.Task, *pbf.Worker) error
 	CheckWorkers() error
 	ListWorkers(context.Context, *pbf.ListWorkersRequest) (*pbf.ListWorkersResponse, error)
 	UpdateWorker(context.Context, *pbf.Worker) (*pbf.UpdateWorkerResponse, error)
@@ -82,7 +82,10 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 		return err
 	}
 
-	s.db.CheckWorkers()
+	err = s.db.CheckWorkers()
+	if err != nil {
+		return err
+	}
 	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {
 		offer := backend.Schedule(task)
 		if offer != nil {
@@ -90,7 +93,10 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 				"taskID", task.Id,
 				"workerID", offer.Worker.Id,
 			)
-			s.db.AssignTask(task, offer.Worker)
+			err = s.db.AssignTask(task, offer.Worker)
+			if err != nil {
+				log.Error("Error in AssignTask", err)
+			}
 		} else {
 			log.Debug("No worker could be scheduled for task", "taskID", task.Id)
 		}

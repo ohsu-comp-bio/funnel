@@ -122,6 +122,23 @@ func (c *Client) CancelTask(id string) (*tes.CancelTaskResponse, error) {
 	return resp, nil
 }
 
+// GetServiceInfo returns result of GET /v1/tasks/service-info
+func (c *Client) GetServiceInfo() (*tes.ServiceInfo, error) {
+	u := c.address + "/v1/tasks/service-info"
+	body, err := util.CheckHTTPResponse(c.client.Get(u))
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse response
+	resp := &tes.ServiceInfo{}
+	err = jsonpb.UnmarshalString(string(body), resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // WaitForTask polls /v1/tasks/{id} for each Id provided and returns
 // once all tasks are in a terminal state.
 func (c *Client) WaitForTask(taskIDs ...string) error {

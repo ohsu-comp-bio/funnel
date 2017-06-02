@@ -6,11 +6,13 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
-	"github.com/ohsu-comp-bio/funnel/scheduler/condor"
 	"github.com/ohsu-comp-bio/funnel/scheduler/gce"
+	"github.com/ohsu-comp-bio/funnel/scheduler/gridengine"
+	"github.com/ohsu-comp-bio/funnel/scheduler/htcondor"
 	"github.com/ohsu-comp-bio/funnel/scheduler/local"
 	"github.com/ohsu-comp-bio/funnel/scheduler/manual"
 	"github.com/ohsu-comp-bio/funnel/scheduler/openstack"
+	"github.com/ohsu-comp-bio/funnel/scheduler/pbs"
 	"github.com/ohsu-comp-bio/funnel/scheduler/slurm"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/spf13/cobra"
@@ -35,9 +37,6 @@ var Cmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		// make sure the proper defaults are set
-		conf.Worker = config.WorkerInheritConfigVals(conf)
 
 		return Run(conf)
 	},
@@ -78,12 +77,14 @@ func Run(conf config.Config) error {
 		return err
 	}
 
+	sched.AddBackend(htcondor.Plugin)
 	sched.AddBackend(gce.Plugin)
-	sched.AddBackend(condor.Plugin)
-	sched.AddBackend(slurm.Plugin)
-	sched.AddBackend(openstack.Plugin)
 	sched.AddBackend(local.Plugin)
 	sched.AddBackend(manual.Plugin)
+	sched.AddBackend(openstack.Plugin)
+	sched.AddBackend(pbs.Plugin)
+	sched.AddBackend(gridengine.Plugin)
+	sched.AddBackend(slurm.Plugin)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

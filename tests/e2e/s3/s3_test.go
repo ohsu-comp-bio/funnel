@@ -1,4 +1,4 @@
-package e2e
+package s3
 
 import (
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -10,9 +10,12 @@ import (
 )
 
 var log = logger.New("e2e-s3")
-var fun = e2e.NewFunnel()
+var fun *e2e.Funnel
 
 func TestMain(m *testing.M) {
+	log.Configure(logger.DebugConfig())
+
+	fun = e2e.NewFunnel()
 	fun.StartServer()
 	// Start minio
 	dockerPath, _ := exec.LookPath("docker")

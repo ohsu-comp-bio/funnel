@@ -41,13 +41,12 @@ func init() {
 	flags.StringVar(&flagConf.HostName, "hostname", flagConf.HostName, "Host name or IP")
 	flags.StringVar(&flagConf.RPCPort, "rpc-port", flagConf.RPCPort, "RPC Port")
 	flags.StringVar(&flagConf.WorkDir, "work-dir", flagConf.WorkDir, "Working Directory")
-	flags.StringVar(&flagConf.Logger.Level, "log-level", flagConf.Logger.Level, "Level of logging")
-	flags.StringVar(&flagConf.Logger.OutputFile, "log-path", flagConf.Logger.OutputFile, "File path to write logs to")
+	flags.StringVar(&flagConf.Worker.Logger.Level, "log-level", flagConf.Worker.Logger.Level, "Level of logging")
+	flags.StringVar(&flagConf.Worker.Logger.OutputFile, "log-path", flagConf.Worker.Logger.OutputFile, "File path to write logs to")
 }
 
 // Run runs a worker with the given config, blocking until the worker exits.
 func Run(conf config.Config) error {
-
 	logger.Configure(conf.Worker.Logger)
 
 	if conf.Worker.ID == "" {

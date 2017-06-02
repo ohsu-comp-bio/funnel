@@ -22,6 +22,9 @@ func ResourcesFit(t *tes.Task, w *pbf.Worker) bool {
 	case w.GetAvailable().GetRamGb() <= 0.0:
 		log.Debug("Fail zero ram available")
 		return false
+	case w.GetAvailable().GetDiskGb() <= 0.0:
+		log.Debug("Fail zero disk available")
+		return false
 	case w.GetAvailable().GetCpus() < req.GetCpuCores():
 		log.Debug(
 			"Fail cpus",
@@ -36,29 +39,15 @@ func ResourcesFit(t *tes.Task, w *pbf.Worker) bool {
 			"available", w.GetAvailable().GetRamGb(),
 		)
 		return false
+	case w.GetAvailable().GetDiskGb() < req.GetSizeGb():
+		log.Debug(
+			"Fail disk",
+			"requested", req.GetSizeGb(),
+			"available", w.GetAvailable().GetDiskGb(),
+		)
+		return false
 	}
 	return true
-}
-
-// VolumesFit determines whether a task's volumes fit a worker
-// by checking that the worker has enough disk space available.
-func VolumesFit(t *tes.Task, w *pbf.Worker) bool {
-	req := t.GetResources()
-
-	// Requested size (GB) of disk on worker
-	var tot float64
-	tot = req.GetSizeGb()
-
-	if tot == 0.0 {
-		return true
-	}
-
-	avail := w.GetAvailable().GetDiskGb()
-	f := tot <= avail
-	if !f {
-		log.Debug("Failed volumes", "requested", tot, "available", avail)
-	}
-	return f
 }
 
 // PortsFit determines whether a task's ports fit a worker
@@ -124,7 +113,6 @@ func WorkerHasTag(tag string) Predicate {
 // the whether a task fits a worker.
 var DefaultPredicates = []Predicate{
 	ResourcesFit,
-	VolumesFit,
 	PortsFit,
 	ZonesFit,
 	NotDead,

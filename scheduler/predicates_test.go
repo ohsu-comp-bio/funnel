@@ -11,10 +11,6 @@ func TestPortsFitEmptyTask(t *testing.T) {
 	testEmptyTask(t, PortsFit, "PortsFit")
 }
 
-func TestVolumesFitEmptyTask(t *testing.T) {
-	testEmptyTask(t, VolumesFit, "VolumesFit")
-}
-
 func TestZonesFitEmptyTask(t *testing.T) {
 	testEmptyTask(t, ZonesFit, "ZonesFit")
 }

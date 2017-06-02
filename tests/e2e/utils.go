@@ -3,6 +3,7 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
@@ -18,13 +19,20 @@ import (
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"syscall"
 	"text/template"
 	"time"
 )
 
 var log = logger.New("e2e")
-var fun = NewFunnel()
+
+func init() {
+	log.Configure(logger.DebugConfig())
+}
 
 // Funnel provides a test server and RPC/HTTP clients
 type Funnel struct {
@@ -51,17 +59,18 @@ func NewFunnel() *Funnel {
 	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
 	conf.Logger = logger.DebugConfig()
-	conf.Worker.LogUpdateRate = rate
-	conf.Worker.UpdateRate = rate
+	conf.Worker.LogUpdateRate = time.Millisecond * 1300
+	conf.Worker.UpdateRate = time.Millisecond * 1300
 	conf.Worker.Logger = logger.DebugConfig()
-	conf.ScheduleRate = rate
+	conf.ScheduleRate = time.Millisecond * 700
+	conf.Worker = config.WorkerInheritConfigVals(conf)
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 
 	conf.Storage = config.StorageConfig{
 		Local: config.LocalStorage{
-			AllowedDirs: []string{storageDir, wd},
+			AllowedDirs: []string{"./test_tmp", wd},
 		},
 		S3: []config.S3Storage{
 			{
@@ -72,11 +81,6 @@ func NewFunnel() *Funnel {
 		},
 	}
 
-	conn, err := grpc.Dial(conf.RPCAddress(), grpc.WithInsecure())
-	if err != nil {
-		panic(err)
-	}
-
 	var derr error
 	dcli, derr := util.NewDockerClient()
 	if derr != nil {
@@ -84,22 +88,42 @@ func NewFunnel() *Funnel {
 	}
 
 	return &Funnel{
-		RPC:        tes.NewTaskServiceClient(conn),
 		HTTP:       client.NewClient("http://localhost:" + conf.HTTPPort),
 		Docker:     dcli,
 		Conf:       conf,
 		StorageDir: storageDir,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
 		rate:       rate,
-		conn:       conn,
 	}
 }
 
-// Tempdir returns a new temporary directory path
-func (f *Funnel) Tempdir() string {
-	d, _ := ioutil.TempDir(f.StorageDir, "")
-	d, _ = filepath.Abs(d)
-	return d
+func (f *Funnel) addRPCClient() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+	logger.DisableGRPCLogger()
+	conn, err := grpc.DialContext(
+		ctx,
+		f.Conf.RPCAddress(),
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		return err
+	}
+	logger.EnableGRPCLogger()
+	f.conn = conn
+	f.RPC = tes.NewTaskServiceClient(conn)
+	return nil
+}
+
+// StartServer starts the server
+func (f *Funnel) StartServer() {
+	go server.Run(f.Conf)
+	err := f.addRPCClient()
+	if err != nil {
+		log.Error("funnel server failed to start within allocated time", err)
+	}
+	log.Debug("Funnel server started")
 }
 
 // Cleanup cleans up test resources
@@ -107,12 +131,6 @@ func (f *Funnel) Cleanup() {
 	os.RemoveAll(f.StorageDir)
 	os.RemoveAll(f.Conf.WorkDir)
 	f.conn.Close()
-}
-
-// StartServer starts the server
-func (f *Funnel) StartServer() {
-	go server.Run(f.Conf)
-	time.Sleep(time.Second)
 }
 
 // WaitForDockerDestroy waits for a "destroy" event
@@ -217,6 +235,7 @@ func (f *Funnel) RunTask(t *tes.Task) (string, error) {
 	if cerr != nil {
 		return "", cerr
 	}
+	log.Debug("Created Task", "id", resp.Id)
 	return resp.Id, nil
 }
 
@@ -253,6 +272,13 @@ func (f *Funnel) WaitForExec(id string, i int) {
 	}
 }
 
+// Tempdir returns a new temporary directory path
+func (f *Funnel) Tempdir() string {
+	d, _ := ioutil.TempDir(f.StorageDir, "")
+	d, _ = filepath.Abs(d)
+	return d
+}
+
 // WriteFile writes a file to the local (temporary) storage directory.
 func (f *Funnel) WriteFile(name string, content string) {
 	err := ioutil.WriteFile(f.StorageDir+"/"+name, []byte(content), os.ModePerm)
@@ -268,4 +294,118 @@ func (f *Funnel) ReadFile(name string) string {
 		panic(err)
 	}
 	return string(b)
+}
+
+// StartServerInDocker starts a funnel server in a docker image
+func (f *Funnel) StartServerInDocker(imageName string, scheduler string, extraArgs []string) {
+	// find the funnel-linux-amd64 binary
+	// TODO there must be a better way than this hardcoded path
+	funnelBinary, err := filepath.Abs(filepath.Join(
+		"../../../build/bin/funnel-linux-amd64",
+	))
+	if err != nil {
+		log.Error("Error finding funnel-linux-amd64 binary. Run `make cross-compile`", err)
+		panic(err)
+	}
+	fi, err := os.Stat(funnelBinary)
+	if os.IsNotExist(err) || fi.Mode().IsDir() || !strings.Contains(fi.Mode().String(), "x") {
+		log.Error("Error finding funnel-linux-amd64 binary. Run `make cross-compile`")
+		panic(errors.New(""))
+	}
+
+	// write config file
+	configPath, _ := filepath.Abs(filepath.Join(f.Conf.WorkDir, "config.yml"))
+	f.Conf.ToYamlFile(configPath)
+	os.Chmod(configPath, 0644)
+
+	httpPort, _ := strconv.ParseInt(f.Conf.HTTPPort, 0, 32)
+	rpcPort, _ := strconv.ParseInt(f.Conf.RPCPort, 0, 32)
+
+	// detect gid of /var/run/docker.sock
+	fi, err = os.Stat("/var/run/docker.sock")
+	if err != nil {
+		panic(err)
+	}
+	gid := fi.Sys().(*syscall.Stat_t).Gid
+	log.Debug("Docker GID", "value", gid)
+
+	// setup docker run cmd
+	args := []string{
+		"run", "-i", "--rm",
+		"--group-add", fmt.Sprintf("%d", gid),
+		"--name", "funnel-test-server-" + testutils.RandomString(6),
+		"-p", fmt.Sprintf("%d:%d", httpPort, httpPort),
+		"-p", fmt.Sprintf("%d:%d", rpcPort, rpcPort),
+		"-v", "/var/run/docker.sock:/var/run/docker.sock",
+		"-v", fmt.Sprintf("%s:/bin/funnel", funnelBinary),
+		"-v", fmt.Sprintf("%s:%s", configPath, configPath),
+	}
+	args = append(args, extraArgs...)
+	args = append(args, imageName, "funnel", "server", "--config",
+		configPath, "--scheduler", scheduler)
+
+	cmd := exec.Command("docker", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	log.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
+
+	// start server
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Run()
+	}()
+
+	ready := make(chan struct{})
+	go func() {
+		err = f.addRPCClient()
+		if err != nil {
+			log.Error("funnel server failed to start within allocated time", err)
+		} else {
+			close(ready)
+		}
+	}()
+
+	select {
+	case err := <-done:
+		log.Error("Error starting funnel server in container", err)
+		panic(err)
+	case <-ready:
+		break
+	}
+	return
+}
+
+func (f *Funnel) findTestServerContainers() []string {
+	res := []string{}
+	containers, err := f.Docker.ContainerList(context.Background(), dockerTypes.ContainerListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	for _, c := range containers {
+		for _, n := range c.Names {
+			if strings.Contains(n, "funnel-test-server-") {
+				res = append(res, n)
+			}
+		}
+	}
+	return res
+}
+
+func (f *Funnel) killTestServerContainers(ids []string) {
+	timeout := 10 * time.Second
+	for _, n := range ids {
+		err := f.Docker.ContainerStop(context.Background(), strings.TrimPrefix(n, "/"), &timeout)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return
+}
+
+// CleanupTestServerContainer stops the docker container running the test funnel server
+func (f *Funnel) CleanupTestServerContainer() {
+	f.Cleanup()
+	s := f.findTestServerContainers()
+	f.killTestServerContainers(s)
+	return
 }

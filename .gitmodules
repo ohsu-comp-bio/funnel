@@ -130,3 +130,6 @@
 [submodule "vendor/github.com/minio/go-homedir"]
 	path = vendor/github.com/minio/go-homedir
 	url = https://github.com/minio/go-homedir
+[submodule "vendor/golang.org/x/sys"]
+	path = vendor/golang.org/x/sys
+	url = https://go.googlesource.com/sys

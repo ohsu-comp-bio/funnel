@@ -1,18 +1,24 @@
-language: go
+os:
+  - linux
 sudo: required
+language: go
 services:
   - docker
 go:
   - 1.8
-os:
-  - linux
 before_install:
   - docker pull minio/minio
+  - docker pull ohsucompbio/htcondor
+  - docker pull ohsucompbio/slurm
+  - docker pull ohsucompbio/gridengine
+  - docker pull ohsucompbio/pbs-torque
 install:
   - make depends
   - make
+  - make cross-compile
 script: 
   - make lint
   - make test
+  - make test-backends
 notifications:
   email: false

@@ -20,7 +20,7 @@ const (
 // Formatter defines a log output formatter.
 type Formatter logrus.Formatter
 
-// Logger is repsonsible for logging messages from code.
+// Logger is responsible for logging messages from code.
 type Logger interface {
 	Sub(string, ...interface{}) Logger
 	SetFormatter(Formatter)

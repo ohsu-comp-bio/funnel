@@ -30,14 +30,22 @@ type TaskLogger interface {
 
 // NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (*Worker, error) {
+	log := logger.Sub("worker", "workerID", conf.ID)
+	log.Debug("Worker Config", "config.Worker", conf)
+
 	sched, err := newSchedClient(conf)
 	if err != nil {
 		return nil, err
 	}
 
-	log := logger.Sub("worker", "workerID", conf.ID)
-	log.Debug("Worker Config", "config.Worker", conf)
+	err = util.EnsureDir(conf.WorkDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Detect available resources at startup
 	res := detectResources(conf)
+
 	// Tracks active task ctrls: task ID -> TaskControl instance
 	ctrls := map[string]TaskControl{}
 	timeout := util.NewIdleTimeout(conf.Timeout)

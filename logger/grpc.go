@@ -34,3 +34,30 @@ func (g *grpclogger) Printf(format string, args ...interface{}) {
 func (g *grpclogger) Println(args ...interface{}) {
 	grpc.Error(fmt.Sprint(args))
 }
+
+// DisableGRPCLogger disables all grpc logging
+func DisableGRPCLogger() {
+	grpclog.SetLogger(&disabledlogger{})
+}
+
+// EnableGRPCLogger configures the GRPC logger to use the global logrus configuration
+func EnableGRPCLogger() {
+	grpclog.SetLogger(&grpclogger{})
+}
+
+// this is used in the tests so the RPC client doesn't spam logs while connecting
+type disabledlogger struct {
+}
+
+func (g *disabledlogger) Fatal(args ...interface{}) {
+}
+func (g *disabledlogger) Fatalf(format string, args ...interface{}) {
+}
+func (g *disabledlogger) Fatalln(args ...interface{}) {
+}
+func (g *disabledlogger) Print(args ...interface{}) {
+}
+func (g *disabledlogger) Printf(format string, args ...interface{}) {
+}
+func (g *disabledlogger) Println(args ...interface{}) {
+}

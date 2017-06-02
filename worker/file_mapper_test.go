@@ -147,7 +147,12 @@ func TestMapTask(t *testing.T) {
 	}
 
 	if diff := deep.Equal(f.Outputs, eo); diff != nil {
-		t.Fatal("unexpected mapper inputs")
+		log.Debug("Expected", fmt.Sprintf("%+v", eo))
+		log.Debug("Actual", fmt.Sprintf("%+v", f.Outputs))
+		for _, d := range diff {
+			log.Debug("Diff", d)
+		}
+		t.Fatal("unexpected mapper outputs")
 	}
 
 	if diff := deep.Equal(f.Volumes, ev); diff != nil {

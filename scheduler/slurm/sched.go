@@ -1,7 +1,6 @@
 package slurm
 
 import (
-	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
@@ -9,11 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
 	"strings"
-	"text/template"
-	"time"
 )
 
 var log = logger.New("slurm")
@@ -30,42 +25,25 @@ var Plugin = &scheduler.BackendPlugin{
 
 // NewBackend returns a new SLURM Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
-	return scheduler.Backend(&Backend{conf}), nil
+	b := scheduler.Backend(&Backend{
+		name:     "slurm",
+		conf:     conf,
+		template: conf.Backends.SLURM.Template,
+	})
+	return b, nil
 }
 
 // Backend represents the SLURM backend.
 type Backend struct {
-	conf config.Config
+	name     string
+	conf     config.Config
+	template string
 }
 
-// Schedule schedules a task on the HTCondor queue and returns a corresponding Offer.
+// Schedule schedules a task on the SLURM queue and returns a corresponding Offer.
 func (s *Backend) Schedule(t *tes.Task) *scheduler.Offer {
 	log.Debug("Running slurm scheduler")
-
-	disk := s.conf.Worker.Resources.DiskGb
-	if disk == 0.0 {
-		disk = t.GetResources().GetSizeGb()
-	}
-
-	cpus := s.conf.Worker.Resources.Cpus
-	if cpus == 0 {
-		cpus = t.GetResources().GetCpuCores()
-	}
-
-	ram := s.conf.Worker.Resources.RamGb
-	if ram == 0.0 {
-		ram = t.GetResources().GetRamGb()
-	}
-
-	w := &pbf.Worker{
-		Id: prefix + t.Id,
-		Resources: &pbf.Resources{
-			Cpus:   cpus,
-			RamGb:  ram,
-			DiskGb: disk,
-		},
-	}
-	return scheduler.NewOffer(w, t, scheduler.Scores{})
+	return scheduler.ScheduleSingleTaskWorker(prefix, s.conf.Worker, t)
 }
 
 // ShouldStartWorker is part of the Scaler interface and returns true
@@ -75,69 +53,16 @@ func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
 		w.State == pbf.WorkerState_UNINITIALIZED
 }
 
-// StartWorker submits a task via "srun" to start a new worker.
+// StartWorker submits a task via "sbatch" to start a new worker.
 func (s *Backend) StartWorker(w *pbf.Worker) error {
 	log.Debug("Starting slurm worker")
-	var err error
 
-	// TODO document that these working dirs need manual cleanup
-	workdir := path.Join(s.conf.WorkDir, w.Id)
-	workdir, _ = filepath.Abs(workdir)
-	err = os.MkdirAll(workdir, 0755)
+	submitPath, err := scheduler.SetupTemplatedHPCWorker(s.name, s.template, s.conf, w)
 	if err != nil {
 		return err
 	}
 
-	wc := s.conf
-	wc.Worker.ID = w.Id
-	wc.Worker.Timeout = 5 * time.Second
-	wc.Worker.Resources.Cpus = w.Resources.Cpus
-	wc.Worker.Resources.RamGb = w.Resources.RamGb
-	wc.Worker.Resources.DiskGb = w.Resources.DiskGb
-
-	confPath := path.Join(workdir, "worker.conf.yml")
-	wc.ToYamlFile(confPath)
-
-	workerPath, err := scheduler.DetectWorkerPath()
-	if err != nil {
-		return err
-	}
-
-	submitPath := path.Join(workdir, "slurm.submit.sh")
-	f, err := os.Create(submitPath)
-	if err != nil {
-		return err
-	}
-
-	submitTpl, err := template.New("slurm.submit.sh").Parse(`#!/bin/bash
-#SBATCH --job-name {{.Name}}
-#SBATCH --ntasks 1
-#SBATCH --error {{.WorkDir}}/funnel-worker-stderr
-#SBATCH --output {{.WorkDir}}/funnel-worker-stdout
-{{.Resources}}
-
-{{.ExecutableCmd}}
-`)
-	if err != nil {
-		return err
-	}
-
-	err = submitTpl.Execute(f, map[string]string{
-		"Name":          w.Id,
-		"ExecutableCmd": fmt.Sprintf("%s --config %s", workerPath, confPath),
-		"WorkDir":       workdir,
-		"Resources":     resolveResourceRequest(int(w.Resources.Cpus), w.Resources.RamGb, w.Resources.DiskGb),
-	})
-	if err != nil {
-		return err
-	}
-	f.Close()
-
-	cmd := exec.Command(
-		"sbatch",
-		submitPath,
-	)
-
+	cmd := exec.Command("sbatch", submitPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -146,19 +71,4 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 	}
 
 	return nil
-}
-
-func resolveResourceRequest(cpus int, ram float64, disk float64) string {
-	var resources = []string{}
-	if cpus != 0 {
-		resources = append(resources, fmt.Sprintf("#SBATCH --cpus-per-task %d", cpus))
-	}
-	if ram != 0.0 {
-		resources = append(resources, fmt.Sprintf("#SBATCH --mem %.0fGB", ram))
-	}
-	// TODO: figure out if this is the right way to request disk space
-	if disk != 0.0 {
-		resources = append(resources, fmt.Sprintf("#SBATCH --tmp %.0fGB", disk))
-	}
-	return strings.Join(resources, "\n")
 }

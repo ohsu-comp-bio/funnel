@@ -7,21 +7,17 @@ import (
 	"testing"
 )
 
-func TestReconcileSingleTaskCompleteFlow(t *testing.T) {
+func TestSyncSingleTaskCompleteFlow(t *testing.T) {
 
 	var err error
-	tasks := map[string]*pbf.TaskWrapper{}
+	tasks := map[string]*tes.Task{}
 	w := Worker{
 		TaskRunner: NoopTaskRunner,
-		Ctrls:      map[string]TaskControl{},
 	}
 
-	err = w.reconcile(tasks)
+	w.Sync()
 
-	if err != nil {
-		t.Error("Unexpected error on empty reconcile")
-	}
-	if len(w.Ctrls) != 0 {
+	if w.runners.Count() != 0 {
 		t.Error("Unexpected runner created on empty reconcile")
 	}
 
@@ -31,9 +27,9 @@ func TestReconcileSingleTaskCompleteFlow(t *testing.T) {
 	}
 	addTask(tasks, j)
 
-	w.reconcile(tasks)
+	w.Sync()
 
-	if _, exists := w.Ctrls["task-1"]; !exists {
+	if w.runners.Count() != 1 {
 		t.Error("Expected runner to be created for new task")
 	}
 
@@ -44,21 +40,20 @@ func TestReconcileSingleTaskCompleteFlow(t *testing.T) {
 	}
 
 	ctrl.SetRunning()
-	w.reconcile(tasks)
+	w.Sync()
 
 	if j.State != Running {
 		t.Error("Expected task state to be running")
 	}
 
 	ctrl.SetResult(nil)
-	w.reconcile(tasks)
 
 	if j.State != Complete {
 		t.Error("Expected task state to be complete")
 	}
 }
 
-func TestReconcileTaskError(t *testing.T) {
+func TestSyncTaskError(t *testing.T) {
 
 	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
@@ -70,17 +65,17 @@ func TestReconcileTaskError(t *testing.T) {
 		State: Queued,
 	}
 	addTask(tasks, j)
-	w.reconcile(tasks)
+	w.Sync()
 	ctrl := w.Ctrls["task-1"]
 	ctrl.SetResult(errors.New("Test task error"))
-	w.reconcile(tasks)
+	w.Sync()
 
 	if j.State != Error {
 		t.Error("Expected task state to be Error")
 	}
 }
 
-func TestReconcileCancelTask(t *testing.T) {
+func TestSyncCancelTask(t *testing.T) {
 	// Set up worker with no-op runner
 	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
@@ -95,15 +90,13 @@ func TestReconcileCancelTask(t *testing.T) {
 	}
 	addTask(tasks, j)
 
-	// Reconcile worker state, which registers task with worker
-	w.reconcile(tasks)
+	w.Sync()
 
 	// Cancel task
 	j.State = Canceled
 	ctrl := w.Ctrls["task-1"]
 
-	// Reconcile again. Worker should react to task being canceled.
-	w.reconcile(tasks)
+	w.Sync()
 
 	if ctrl.State() != Canceled {
 		t.Error("Expected runner state to be canceled")
@@ -113,14 +106,14 @@ func TestReconcileCancelTask(t *testing.T) {
 	// the server. The worker won't delete a canceled task controller
 	// until the server deletes the task first.
 	delete(tasks, "task-1")
-	w.reconcile(tasks)
+	w.Sync()
 
 	if w.Ctrls["task-1"] != nil {
 		t.Error("Expected task ctrl to be cleaned up")
 	}
 }
 
-func TestReconcileMultiple(t *testing.T) {
+func TestSyncMultiple(t *testing.T) {
 
 	tasks := map[string]*pbf.TaskWrapper{}
 	w := Worker{
@@ -128,14 +121,14 @@ func TestReconcileMultiple(t *testing.T) {
 		Ctrls:      map[string]TaskControl{},
 	}
 
-	w.reconcile(tasks)
+	w.Sync()
 
 	addTask(tasks, &tes.Task{
 		Id:    "task-1",
 		State: Queued,
 	})
 
-	w.reconcile(tasks)
+	w.Sync()
 
 	if _, exists := w.Ctrls["task-1"]; !exists {
 		t.Error("Expected runner to be created for new task")
@@ -146,7 +139,7 @@ func TestReconcileMultiple(t *testing.T) {
 	}
 
 	w.Ctrls["task-1"].SetRunning()
-	w.reconcile(tasks)
+	w.Sync()
 
 	if tasks["task-1"].Task.State != Running {
 		t.Error("Expected task state to be running")
@@ -161,7 +154,7 @@ func TestReconcileMultiple(t *testing.T) {
 		State: Queued,
 	})
 
-	w.reconcile(tasks)
+	w.Sync()
 
 	if len(w.Ctrls) != 3 {
 		t.Error("Expected runner to be created for new task")
@@ -183,7 +176,7 @@ func TestReconcileMultiple(t *testing.T) {
 	w.Ctrls["task-3"].SetResult(errors.New("Task 3 error"))
 
 	j2ctrl := w.Ctrls["task-2"]
-	w.reconcile(tasks)
+	w.Sync()
 
 	if tasks["task-1"].Task.State != Complete {
 		t.Error("Expected task 1 state to be complete")
@@ -197,7 +190,7 @@ func TestReconcileMultiple(t *testing.T) {
 	// the server. The worker won't delete a canceled task controller
 	// until the server deletes the task first.
 	delete(tasks, "task-2")
-	w.reconcile(tasks)
+	w.Sync()
 
 	if w.Ctrls["task-2"] != nil {
 		t.Error("Expected task 2 ctrl to be cleaned up")
@@ -207,44 +200,3 @@ func TestReconcileMultiple(t *testing.T) {
 		t.Error("Expected task 3 state to be error")
 	}
 }
-
-// Tests how the worker handles the case where it finds a task without a controller
-// and the task state is not Queued (normal case), but is Initializing or Running
-func TestStraightToRunning(t *testing.T) {
-	tasks := map[string]*pbf.TaskWrapper{}
-	w := Worker{
-		TaskRunner: NoopTaskRunner,
-		Ctrls:      map[string]TaskControl{},
-	}
-
-	addTask(tasks, &tes.Task{
-		Id:    "task-1",
-		State: Initializing,
-	})
-	addTask(tasks, &tes.Task{
-		Id:    "task-2",
-		State: Running,
-	})
-
-	w.reconcile(tasks)
-
-	if _, exists := w.Ctrls["task-1"]; !exists {
-		t.Error("Expected runner to be created for new task 1")
-	}
-	if _, exists := w.Ctrls["task-2"]; !exists {
-		t.Error("Expected runner to be created for new task 2")
-	}
-
-	if tasks["task-1"].Task.State != Initializing {
-		t.Error("Expected task 1 state to be unchanged.")
-	}
-
-	if tasks["task-2"].Task.State != Initializing {
-		t.Error("Expected task 2 state to revert to initializing.")
-	}
-}
-
-// TODO test edge cases
-// - missing task
-// - missing ctrl
-// - complete task, ctrl incomplete

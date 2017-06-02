@@ -70,7 +70,7 @@ func TestBrokenSymlinkInput(t *testing.T) {
     -o out={{ .storage }}/test_out
   `)
 	task := fun.Wait(id)
-	if task.State != tes.State_ERROR {
+	if task.State != tes.State_SYSTEM_ERROR {
 		t.Fatal("Expected error on broken symlink input")
 	}
 }

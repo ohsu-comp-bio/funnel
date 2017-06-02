@@ -70,25 +70,14 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 	}
 
 	// Reconcile worker's task states with database
-	for _, wrapper := range req.Tasks {
-		// TODO test transition to self a noop
-		task := wrapper.Task
-		err := transitionTaskState(tx, task.Id, task.State)
-		// TODO what's the proper behavior of an error?
-		//      this is just ignoring the error, but it will happen again
-		//      on the next update.
-		//      need to resolve the conflicting states.
-		//      Additionally, returning an error here will fail the db transaction,
-		//      preventing all updates to this worker for all tasks.
-		if err != nil {
-			return err
-		}
+	for _, id := range req.TaskIds {
+		state := getTaskState(tx, id)
 
 		// If the worker has acknowledged that the task is complete,
 		// unlink the task from the worker.
-		switch task.State {
+		switch state {
 		case Canceled, Complete, Error, SystemError:
-			key := append([]byte(req.Id), []byte(task.Id)...)
+			key := append([]byte(req.Id), []byte(id)...)
 			tx.Bucket(WorkerTasks).Delete(key)
 			// update disk usage once a task completes
 			if req.GetResources().GetDiskGb() > 0 {
@@ -135,6 +124,14 @@ func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbf.Worker) error {
 	})
 }
 
+func (taskBolt *TaskBolt) UpdateTaskState(ctx context.Context, req *pbf.UpdateTaskStateRequest) (*pbf.UpdateTaskStateResponse, error) {
+	log.Debug("Update task STATE", req)
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+		return transitionTaskState(tx, req.Id, req.State)
+	})
+	return &pbf.UpdateTaskStateResponse{}, err
+}
+
 // TODO include active ports. maybe move Available out of the protobuf message
 //      and expect this helper to be used?
 func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
@@ -144,7 +141,7 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
 		RamGb:  worker.GetResources().GetRamGb(),
 		DiskGb: worker.GetResources().GetDiskGb(),
 	}
-	for taskID := range worker.Tasks {
+	for _, taskID := range worker.TaskIds {
 		t := getTask(tx, taskID)
 		res := t.GetResources()
 
@@ -270,51 +267,54 @@ func getTaskAuth(tx *bolt.Tx, taskID string) string {
 	return auth
 }
 
-func transitionTaskState(tx *bolt.Tx, id string, state tes.State) error {
+func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 	idBytes := []byte(id)
 	current := getTaskState(tx, id)
 
-	switch current {
-	case state:
+	switch {
+	case target == current:
 		// Current state matches target state. Do nothing.
 		return nil
 
-	case Complete, Error, SystemError, Canceled:
-		// Current state is a terminal state, can't do that.
-		err := errors.New("Invalid state change")
-		log.Error("Cannot change state of a task already in a terminal state",
-			"error", err,
-			"current", current,
-			"requested", state)
-		return err
+	case tes.TerminalState(target) && tes.TerminalState(current):
+		// Avoid switching between two terminal states.
+		log.Debug("Won't switch between two terminal states.",
+			"current", current, "target", target)
+		return nil
+
+	case tes.TerminalState(current) && !tes.TerminalState(target):
+		// Error when trying to switch out of a terminal state to a non-terminal one.
+		log.Error("Unexpected transition", "current", current, "target", target)
+		return errors.New("Unexpected transition to Initializing")
+
+	case target == Queued:
+		log.Error("Can't transition to Queued state")
+		return errors.New("Can't transition to Queued state")
 	}
 
-	switch state {
+	switch target {
+	case Unknown, Paused:
+		log.Error("Unimplemented task state", "state", target)
+		return errors.New("Unimplemented task state")
+
 	case Canceled, Complete, Error, SystemError:
 		// Remove from queue
 		tx.Bucket(TasksQueued).Delete(idBytes)
 
 	case Running, Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
-			log.Error("Unexpected transition", "current", current, "requested", state)
+			log.Error("Unexpected transition", "current", current, "target", target)
 			return errors.New("Unexpected transition to Initializing")
 		}
 		tx.Bucket(TasksQueued).Delete(idBytes)
 
-	case Unknown, Paused:
-		log.Error("Unimplemented task state", "state", state)
-		return errors.New("Unimplemented task state")
-
-	case Queued:
-		log.Error("Can't transition to Queued state")
-		return errors.New("Can't transition to Queued state")
 	default:
-		log.Error("Unknown task state", "state", state)
+		log.Error("Unknown target state", "target", target)
 		return errors.New("Unknown task state")
 	}
 
-	tx.Bucket(TaskState).Put(idBytes, []byte(state.String()))
-	log.Info("Set task state", "taskID", id, "state", state.String())
+	tx.Bucket(TaskState).Put(idBytes, []byte(target.String()))
+	log.Info("Set task state", "taskID", id, "state", target.String())
 	return nil
 }
 

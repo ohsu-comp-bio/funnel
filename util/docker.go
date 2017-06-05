@@ -2,9 +2,11 @@ package util
 
 import (
 	"context"
+	"errors"
 	"github.com/docker/docker/client"
 	"os"
 	"regexp"
+	"time"
 )
 
 // NewDockerClient returns a new docker client. This util handles
@@ -19,10 +21,16 @@ func NewDockerClient() (*client.Client, error) {
 	// server; if not infer API version from error message and inform the client
 	// to use that version for future communication
 	if os.Getenv("DOCKER_API_VERSION") == "" {
-		_, err := dclient.ServerVersion(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		_, err := dclient.ServerVersion(ctx)
 		if err != nil {
 			re := regexp.MustCompile(`([0-9\.]+)`)
 			version := re.FindAllString(err.Error(), -1)
+			if version == nil {
+				return nil, errors.New("Can't connect docker client")
+			}
 			// Error message example:
 			//   Error getting metadata for container: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
 			os.Setenv("DOCKER_API_VERSION", version[1])

@@ -7,10 +7,10 @@ import (
 )
 
 func TestHelloWorld(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd 'echo hello world'
   `)
-	task := wait(id)
+	task := fun.Wait(id)
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout")
@@ -21,13 +21,13 @@ func TestGetTaskView(t *testing.T) {
 	var err error
 	var task *tes.Task
 
-	id := run(`
+	id := fun.Run(`
     --cmd 'echo hello world'
     --name 'foo'
   `)
-	wait(id)
+	fun.Wait(id)
 
-	task = getView(id, tes.TaskView_MINIMAL)
+	task = fun.GetView(id, tes.TaskView_MINIMAL)
 
 	if task.Id != id {
 		t.Fatal("expected task ID in minimal view")
@@ -42,7 +42,7 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	task = getView(id, tes.TaskView_BASIC)
+	task = fun.GetView(id, tes.TaskView_BASIC)
 
 	if task.Name != "foo" {
 		t.Fatal("expected task name to be included basic view")
@@ -52,14 +52,14 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in basic view")
 	}
 
-	task = getView(id, tes.TaskView_FULL)
+	task = fun.GetView(id, tes.TaskView_FULL)
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout in full view")
 	}
 
 	// test http proxy
-	task, err = hcli.GetTask(id, "MINIMAL")
+	task, err = fun.HTTP.GetTask(id, "MINIMAL")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	task, err = hcli.GetTask(id, "BASIC")
+	task, err = fun.HTTP.GetTask(id, "BASIC")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in basic view")
 	}
 
-	task, err = hcli.GetTask(id, "FULL")
+	task, err = fun.HTTP.GetTask(id, "FULL")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,13 +106,13 @@ func TestListTaskView(t *testing.T) {
 	var task *tes.Task
 	var err error
 
-	id := run(`
+	id := fun.Run(`
     --cmd 'echo hello world'
     --name 'foo'
   `)
-	wait(id)
+	fun.Wait(id)
 
-	tasks = listView(tes.TaskView_MINIMAL)
+	tasks = fun.ListView(tes.TaskView_MINIMAL)
 	task = tasks[0]
 
 	if task.Id == "" {
@@ -128,7 +128,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	tasks = listView(tes.TaskView_BASIC)
+	tasks = fun.ListView(tes.TaskView_BASIC)
 	task = tasks[0]
 
 	if task.Name == "" {
@@ -139,7 +139,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in basic view")
 	}
 
-	tasks = listView(tes.TaskView_FULL)
+	tasks = fun.ListView(tes.TaskView_FULL)
 	task = tasks[0]
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
@@ -148,7 +148,7 @@ func TestListTaskView(t *testing.T) {
 
 	// test http proxy
 	var r *tes.ListTasksResponse
-	r, err = hcli.ListTasks("MINIMAL")
+	r, err = fun.HTTP.ListTasks("MINIMAL")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	r, err = hcli.ListTasks("BASIC")
+	r, err = fun.HTTP.ListTasks("BASIC")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in basic view")
 	}
 
-	r, err = hcli.ListTasks("FULL")
+	r, err = fun.HTTP.ListTasks("FULL")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,27 +196,27 @@ func TestListTaskView(t *testing.T) {
 // This ensures that the streaming works even when a small
 // amount of logs are written (which was once a bug).
 func TestSingleCharLog(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd "sh -c 'echo a; sleep 100'"
   `)
-	waitForRunning(id)
+	fun.WaitForRunning(id)
 	time.Sleep(time.Second * 2)
-	task := get(id)
+	task := fun.Get(id)
 	if task.Logs[0].Logs[0].Stdout != "a\n" {
 		t.Fatal("Missing logs")
 	}
-	cancel(id)
+	fun.Cancel(id)
 }
 
 // Test that port mappings are being logged.
 /* TODO need ports in funnel run
 func TestPortLog(t *testing.T) {
-  id := run(`
+  id := fun.Run(`
     --cmd 'echo start'
     --cmd 'sleep 10'
   `)
-  waitForExec(id, 2)
-  task := get(id)
+  fun.WaitForExec(id, 2)
+  task := fun.Get(id)
   if task.Logs[0].Logs[0].Ports[0].Host != 5000 {
     t.Fatal("Unexpected port logs")
   }
@@ -225,15 +225,15 @@ func TestPortLog(t *testing.T) {
 
 // Test that a completed task cannot change state.
 func TestCompleteStateImmutable(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd 'echo hello'
   `)
-	wait(id)
-	err := cancel(id)
+	fun.Wait(id)
+	err := fun.Cancel(id)
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	task := get(id)
+	task := fun.Get(id)
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("Unexpected state")
 	}
@@ -241,17 +241,17 @@ func TestCompleteStateImmutable(t *testing.T) {
 
 // Test canceling a task
 func TestCancel(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd 'echo start'
     --cmd 'sleep 1000'
     --cmd 'echo never'
   `)
-	waitForExec(id, 1)
-	cancel(id)
+	fun.WaitForExec(id, 1)
+	fun.Cancel(id)
 	// TODO docker details and container ID are very Funnel specific
 	//      how could we generalize this to be reusued as TES conformance?
-	waitForDockerDestroy(id + "-0")
-	task := get(id)
+	fun.WaitForDockerDestroy(id + "-0")
+	task := fun.Get(id)
 	if task.State != tes.State_CANCELED {
 		t.Fatal("Unexpected state")
 	}
@@ -261,14 +261,14 @@ func TestCancel(t *testing.T) {
 // have been started or completed, i.e. steps that have yet to be started
 // won't show up in Task.Logs[0].Logs
 func TestExecutorLogLength(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd 'echo first'
     --cmd 'sleep 10'
     --cmd 'echo done'
   `)
-	waitForExec(id, 2)
-	task := get(id)
-	cancel(id)
+	fun.WaitForExec(id, 2)
+	task := fun.Get(id)
+	fun.Cancel(id)
 	if len(task.Logs[0].Logs) != 2 {
 		t.Fatal("Unexpected executor log count")
 	}
@@ -278,22 +278,22 @@ func TestExecutorLogLength(t *testing.T) {
 // the first step completed, but the correct behavior is to mark the
 // task complete after *all* steps have completed.
 func TestMarkCompleteBug(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd 'echo step 1'
     --cmd 'sleep 100'
   `)
-	waitForRunning(id)
-	waitForExec(id, 2)
-	task := get(id)
+	fun.WaitForRunning(id)
+	fun.WaitForExec(id, 2)
+	task := fun.Get(id)
 	if task.State != tes.State_RUNNING {
 		t.Fatal("Unexpected task state")
 	}
-	cancel(id)
+	fun.Cancel(id)
 }
 
 func TestTaskStartEndTimeLogs(t *testing.T) {
-	id := run(`--cmd 'echo 1'`)
-	task := wait(id)
+	id := fun.Run(`--cmd 'echo 1'`)
+	task := fun.Wait(id)
 	if task.Logs[0].StartTime == "" {
 		t.Fatal("missing task start time log")
 	}
@@ -303,9 +303,9 @@ func TestTaskStartEndTimeLogs(t *testing.T) {
 }
 
 func TestOutputFileLog(t *testing.T) {
-	dir := tempdir()
+	dir := fun.Tempdir()
 
-	id, _ := runTask(&tes.Task{
+	id, _ := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{
 				ImageName: "alpine",
@@ -327,7 +327,7 @@ func TestOutputFileLog(t *testing.T) {
 		},
 	})
 
-	task := wait(id)
+	task := fun.Wait(id)
 	log.Debug("TEST", "task", task)
 
 	out := task.Logs[0].Outputs

@@ -3,6 +3,7 @@ package testutils
 import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -14,6 +15,7 @@ func init() {
 	// nanoseconds are important because the tests run faster than a millisecond
 	// which can cause port conflicts
 	rand.Seed(time.Now().UTC().UnixNano())
+	logger.ForceColors()
 }
 
 // RandomPort returns a random port string between 10000 and 20000.

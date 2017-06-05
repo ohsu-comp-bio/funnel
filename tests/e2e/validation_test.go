@@ -9,7 +9,7 @@ import (
 )
 
 func TestTaskNoExecutorsValidationError(t *testing.T) {
-	_, err := runTask(&tes.Task{})
+	_, err := fun.RunTask(&tes.Task{})
 	log.Debug("VALID ERR", err)
 	if err == nil {
 		t.Fatal("expected validation error")
@@ -26,7 +26,7 @@ func TestTaskNoExecutorsValidationError(t *testing.T) {
 }
 
 func TestTaskInputContentsValidationError(t *testing.T) {
-	_, err := runTask(&tes.Task{
+	_, err := fun.RunTask(&tes.Task{
 		Inputs: []*tes.TaskParameter{
 			{
 				Contents: "foo",
@@ -48,7 +48,7 @@ func TestTaskInputContentsValidationError(t *testing.T) {
 }
 
 func TestTaskInputContentsValidation(t *testing.T) {
-	_, err := runTask(&tes.Task{
+	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{
 				ImageName: "alpine",
@@ -69,7 +69,7 @@ func TestTaskInputContentsValidation(t *testing.T) {
 }
 
 func TestTaskValidationError(t *testing.T) {
-	_, err := runTask(&tes.Task{
+	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{},
 		},

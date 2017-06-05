@@ -9,13 +9,13 @@ import (
 
 // Test that a file can be passed as an input and output.
 func TestFileMount(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in
     -o out={{ .storage }}/test_out
   `)
-	task := wait(id)
-	c := readFile("test_out")
+	task := fun.Wait(id)
+	c := fun.ReadFile("test_out")
 	if c != "hello\n" {
 		log.Error("TASK", task)
 		log.Error("CONTENT", c)
@@ -26,16 +26,16 @@ func TestFileMount(t *testing.T) {
 // Test that the local storage system hard links input files.
 // TODO this test is unix specific because it uses syscall?
 func TestLocalFilesystemHardLinkInput(t *testing.T) {
-	writeFile("test_hard_link_input", "content")
-	id := run(`
+	fun.WriteFile("test_hard_link_input", "content")
+	id := fun.Run(`
     --cmd "echo foo"
     -i in={{ .storage }}/test_hard_link_input
   `)
-	task := wait(id)
+	task := fun.Wait(id)
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("unexpected task failure")
 	}
-	name := storageDir + "/test_hard_link_input"
+	name := fun.StorageDir + "/test_hard_link_input"
 	fi, sterr := os.Lstat(name)
 	if sterr != nil {
 		panic(sterr)
@@ -51,12 +51,12 @@ func TestLocalFilesystemHardLinkInput(t *testing.T) {
 
 // Test using a symlink as an input file.
 func TestSymlinkInput(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in_symlink
     -o out={{ .storage }}/test_out
   `)
-	task := wait(id)
+	task := fun.Wait(id)
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("Expected success on symlink input")
 	}
@@ -64,12 +64,12 @@ func TestSymlinkInput(t *testing.T) {
 
 // Test using a broken symlink as an input file.
 func TestBrokenSymlinkInput(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd "sh -c 'cat $in > $out'"
     -i in=./testdata/test_broken_symlink
     -o out={{ .storage }}/test_out
   `)
-	task := wait(id)
+	task := fun.Wait(id)
 	if task.State != tes.State_ERROR {
 		t.Fatal("Expected error on broken symlink input")
 	}
@@ -85,26 +85,26 @@ func TestBrokenSymlinkInput(t *testing.T) {
   is being tested here.
 */
 func TestSymlinkOutput(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd "sh -c 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'"
     -o sym={{ .storage }}/out-sym
     -O dir={{ .storage }}/out-dir
   `)
-	task := wait(id)
+	task := fun.Wait(id)
 
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("expected success on symlink output")
 	}
 
-	if readFile("out-dir/foo") != "foo\n" {
+	if fun.ReadFile("out-dir/foo") != "foo\n" {
 		t.Fatal("unexpected out-dir/foo content")
 	}
 
-	if readFile("out-sym") != "foo\n" {
+	if fun.ReadFile("out-sym") != "foo\n" {
 		t.Fatal("unexpected out-sym content")
 	}
 
-	if readFile("out-dir/sym") != "foo\n" {
+	if fun.ReadFile("out-dir/sym") != "foo\n" {
 		t.Fatal("unexpected out-dir/sym content")
 	}
 }

@@ -93,6 +93,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 	if conf.Local.Valid() {
 		local, err := NewLocalBackend(conf.Local)
 		if err != nil {
+			log.Error("Local storage backend", err)
 			return storage, err
 		}
 		storage = storage.WithBackend(local)
@@ -102,6 +103,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		if c.Valid() {
 			s3, err := NewS3Backend(c)
 			if err != nil {
+				log.Error("S3 storage backend", err)
 				return storage, err
 			}
 			storage = storage.WithBackend(s3)
@@ -112,6 +114,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		if c.Valid() {
 			gs, nerr := NewGSBackend(c)
 			if nerr != nil {
+				log.Error("Google Storage backend", nerr)
 				return storage, nerr
 			}
 			storage = storage.WithBackend(gs)

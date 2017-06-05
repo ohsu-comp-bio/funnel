@@ -23,18 +23,31 @@ import (
 	"time"
 )
 
-var cli tes.TaskServiceClient
-var hcli *client.Client
 var log = logger.New("e2e")
-var rate = time.Millisecond * 1000
-var dcli *docker.Client
-var startTime = fmt.Sprintf("%d", time.Now().Unix())
-var storageDir string
-var minioKey = "AKIAIOSFODNN7EXAMPLE"
-var minioSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+var fun = NewFunnel()
 
 func init() {
 	logger.ForceColors()
+	fun.StartServer()
+}
+
+type Funnel struct {
+	// Clients
+	RPC    tes.TaskServiceClient
+	HTTP   *client.Client
+	Docker *docker.Client
+
+	// Config
+	Conf       config.Config
+	StorageDir string
+
+	// Internal
+	startTime string
+	rate      time.Duration
+}
+
+func NewFunnel() *Funnel {
+	var rate = time.Millisecond * 1000
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
@@ -43,7 +56,7 @@ func init() {
 	conf.Worker.UpdateRate = rate
 	conf.ScheduleRate = rate
 
-	storageDir, _ = ioutil.TempDir("./test_tmp", "funnel-test-storage-")
+	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 
 	conf.Storage = config.StorageConfig{
@@ -53,46 +66,59 @@ func init() {
 		S3: []config.S3Storage{
 			{
 				Endpoint: "localhost:9999",
-				Key:      minioKey,
-				Secret:   minioSecret,
+				Key:      "AKIAIOSFODNN7EXAMPLE",
+				Secret:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 			},
 		},
 	}
-
-	go server.Run(conf)
-	time.Sleep(time.Second)
 
 	conn, err := grpc.Dial(conf.RPCAddress(), grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 	}
 
-	cli = tes.NewTaskServiceClient(conn)
-
 	var derr error
-	dcli, derr = util.NewDockerClient()
+	dcli, derr := util.NewDockerClient()
 	if derr != nil {
 		panic(derr)
 	}
 
-	// http client
-	hcli = client.NewClient("http://localhost:" + conf.HTTPPort)
+	return &Funnel{
+		RPC:        tes.NewTaskServiceClient(conn),
+		HTTP:       client.NewClient("http://localhost:" + conf.HTTPPort),
+		Docker:     dcli,
+		Conf:       conf,
+		StorageDir: storageDir,
+		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
+		rate:       rate,
+	}
+}
+
+func (f *Funnel) Tempdir() string {
+	d, _ := ioutil.TempDir(f.StorageDir, "")
+	d, _ = filepath.Abs(d)
+	return d
+}
+
+func (f *Funnel) StartServer() {
+	go server.Run(f.Conf)
+	time.Sleep(time.Second)
 }
 
 // wait for a "destroy" event from docker for the given container ID
 // TODO probably could use docker.ContainerWait()
 // https://godoc.org/github.com/moby/moby/client#Client.ContainerWait
-func waitForDockerDestroy(id string) {
-	f := dockerFilters.NewArgs()
-	f.Add("type", "container")
-	f.Add("container", id)
-	f.Add("event", "destroy")
+func (f *Funnel) WaitForDockerDestroy(id string) {
+	fil := dockerFilters.NewArgs()
+	fil.Add("type", "container")
+	fil.Add("container", id)
+	fil.Add("event", "destroy")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	s, err := dcli.Events(ctx, dockerTypes.EventsOptions{
-		Since:   string(startTime),
-		Filters: f,
+	s, err := f.Docker.Events(ctx, dockerTypes.EventsOptions{
+		Since:   string(f.startTime),
+		Filters: fil,
 	})
 	for {
 		select {
@@ -105,15 +131,15 @@ func waitForDockerDestroy(id string) {
 }
 
 // cancel a task by ID
-func cancel(id string) error {
-	_, err := cli.CancelTask(context.Background(), &tes.CancelTaskRequest{
+func (f *Funnel) Cancel(id string) error {
+	_, err := f.RPC.CancelTask(context.Background(), &tes.CancelTaskRequest{
 		Id: id,
 	})
 	return err
 }
 
-func listView(view tes.TaskView) []*tes.Task {
-	t, err := cli.ListTasks(context.Background(), &tes.ListTasksRequest{
+func (f *Funnel) ListView(view tes.TaskView) []*tes.Task {
+	t, err := f.RPC.ListTasks(context.Background(), &tes.ListTasksRequest{
 		View: view,
 	})
 	if err != nil {
@@ -122,8 +148,8 @@ func listView(view tes.TaskView) []*tes.Task {
 	return t.Tasks
 }
 
-func getView(id string, view tes.TaskView) *tes.Task {
-	t, err := cli.GetTask(context.Background(), &tes.GetTaskRequest{
+func (f *Funnel) GetView(id string, view tes.TaskView) *tes.Task {
+	t, err := f.RPC.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
 		View: view,
 	})
@@ -134,31 +160,25 @@ func getView(id string, view tes.TaskView) *tes.Task {
 }
 
 // get a task by ID
-func get(id string) *tes.Task {
-	return getView(id, tes.TaskView_FULL)
+func (f *Funnel) Get(id string) *tes.Task {
+	return f.GetView(id, tes.TaskView_FULL)
 }
 
 // run a task and return it's ID
-func run(s string) string {
-	id, err := runE(s)
+func (f *Funnel) Run(s string) string {
+	id, err := f.RunE(s)
 	if err != nil {
 		panic(err)
 	}
 	return id
 }
 
-func tempdir() string {
-	d, _ := ioutil.TempDir(storageDir, "")
-	d, _ = filepath.Abs(d)
-	return d
-}
-
-func runE(s string) (string, error) {
+func (f *Funnel) RunE(s string) (string, error) {
 	// Process the string as a template to allow a few helpers
 	tpl := template.Must(template.New("run").Parse(s))
 	var by bytes.Buffer
 	data := map[string]string{
-		"storage": "./" + storageDir,
+		"storage": "./" + f.StorageDir,
 	}
 	if eerr := tpl.Execute(&by, data); eerr != nil {
 		return "", eerr
@@ -172,12 +192,11 @@ func runE(s string) (string, error) {
 	if len(tasks) > 1 {
 		return "", fmt.Errorf("Funnel run only handles a single task (no scatter)")
 	}
-	log.Debug("TASK", tasks[0])
-	return runTask(tasks[0])
+	return f.RunTask(tasks[0])
 }
 
-func runTask(t *tes.Task) (string, error) {
-	resp, cerr := cli.CreateTask(context.Background(), t)
+func (f *Funnel) RunTask(t *tes.Task) (string, error) {
+	resp, cerr := f.RPC.CreateTask(context.Background(), t)
 	if cerr != nil {
 		return "", cerr
 	}
@@ -185,9 +204,9 @@ func runTask(t *tes.Task) (string, error) {
 }
 
 // wait for a task to complete
-func wait(id string) *tes.Task {
-	for range time.NewTicker(rate).C {
-		t := get(id)
+func (f *Funnel) Wait(id string) *tes.Task {
+	for range time.NewTicker(f.rate).C {
+		t := f.Get(id)
 		if t.State != tes.State_QUEUED && t.State != tes.State_INITIALIZING &&
 			t.State != tes.State_RUNNING {
 			return t
@@ -197,9 +216,9 @@ func wait(id string) *tes.Task {
 }
 
 // wait for a task to be in the RUNNING state
-func waitForRunning(id string) {
-	for range time.NewTicker(rate).C {
-		t := get(id)
+func (f *Funnel) WaitForRunning(id string) {
+	for range time.NewTicker(f.rate).C {
+		t := f.Get(id)
 		if t.State == tes.State_RUNNING {
 			return
 		}
@@ -208,9 +227,9 @@ func waitForRunning(id string) {
 
 // wait for a task to reach the given executor index.
 // 1 is the first executor.
-func waitForExec(id string, i int) {
-	for range time.NewTicker(rate).C {
-		t := get(id)
+func (f *Funnel) WaitForExec(id string, i int) {
+	for range time.NewTicker(f.rate).C {
+		t := f.Get(id)
 		if len(t.Logs[0].Logs) >= i {
 			return
 		}
@@ -218,16 +237,16 @@ func waitForExec(id string, i int) {
 }
 
 // write a file to local storage
-func writeFile(name string, content string) {
-	err := ioutil.WriteFile(storageDir+"/"+name, []byte(content), os.ModePerm)
+func (f *Funnel) WriteFile(name string, content string) {
+	err := ioutil.WriteFile(f.StorageDir+"/"+name, []byte(content), os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 }
 
 // read a file from local storage
-func readFile(name string) string {
-	b, err := ioutil.ReadFile(storageDir + "/" + name)
+func (f *Funnel) ReadFile(name string) string {
+	b, err := ioutil.ReadFile(f.StorageDir + "/" + name)
 	if err != nil {
 		panic(err)
 	}

@@ -14,9 +14,9 @@ func TestMain(m *testing.M) {
 		"-p", "9999:9999",
 		"--rm",
 		"--name", "fun-minio-test",
-		"-e", "MINIO_ACCESS_KEY=" + minioKey,
-		"-e", "MINIO_SECRET_KEY=" + minioSecret,
-		"-v", storageDir + ":/export",
+		"-e", "MINIO_ACCESS_KEY=" + fun.Conf.Storage.S3[0].Key,
+		"-e", "MINIO_SECRET_KEY=" + fun.Conf.Storage.S3[0].Secret,
+		"-v", fun.StorageDir + ":/export",
 		"minio/minio", "server", "/export",
 	}
 	log.Debug("Start minio", strings.Join(args, " "))
@@ -39,11 +39,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestS3(t *testing.T) {
-	id := run(`
+	id := fun.Run(`
     --cmd "sh -c 'echo foo > $out'"
     -o out=s3://bkt/test_output
   `)
-	wait(id)
+	fun.Wait(id)
 }
 
 /*

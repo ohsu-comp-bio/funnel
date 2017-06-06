@@ -2,6 +2,7 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
+VERSION = 0.1.0
 TESTS=$(shell go list ./... | grep -v /vendor/)
 
 export SHELL=/bin/bash
@@ -95,36 +96,41 @@ cross-compile: depends
 		done; \
 	done
 
-# Upload a dev. release to GitHub
-upload-dev-release:
+# Upload a release to GitHub
+upload-release:
 	@go get github.com/aktau/github-release
 	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
 		echo 'This command should only be run from the master branch'; \
 		exit 1; \
 	fi
 	@if [ -z "$$GITHUB_TOKEN" ]; then \
-	  echo 'GITHUB_TOKEN env. var. is required but not set'; \
+	  echo 'GITHUB_TOKEN is required but not set. Generate one in your GitHub settings at https://github.com/settings/tokens and set it to an environment variable with `export GITHUB_TOKEN=123456...`'; \
 		exit 1; \
 	fi
 	@make gce-installer
-	@mkdir -p build/dev-release
-	@cp build/bin/* build/dev-release/
-	@cp build/funnel-gce-image-installer build/dev-release
+	@mkdir -p build/release
+	@cp build/bin/* build/release/
+	@cp build/funnel-gce-image-installer build/release
 	@for GOOS in darwin linux; do \
 		for GOARCH in 386 amd64; do \
 			GOOS=$$GOOS GOARCH=$$GOARCH \
-				tar -C build/dev-release -czvf build/dev-release/funnel-$$GOOS-$$GOARCH.tar.gz funnel-$$GOOS-$$GOARCH; \
-				rm build/dev-release/funnel-$$GOOS-$$GOARCH; \
+				tar -C build/release -czvf build/release/funnel-$$GOOS-$$GOARCH.tar.gz funnel-$$GOOS-$$GOARCH; \
+				rm build/release/funnel-$$GOOS-$$GOARCH; \
 		done; \
 	done
-	@for f in $$(ls -1 build/dev-release); do \
+	#github-release release \
+		-u ohsu-comp-bio \
+		-r funnel \
+		--tag $(VERSION) \
+		--name $(VERSION)
+	@for f in $$(ls -1 build/release); do \
 		github-release upload \
 		-u ohsu-comp-bio \
 		-r funnel \
 		--name $$f \
-		--tag dev \
+		--tag $(VERSION) \
 		--replace \
-		--file ./build/dev-release/$$f; \
+		--file ./build/release/$$f; \
 	done
 
 # Build the GCE image installer

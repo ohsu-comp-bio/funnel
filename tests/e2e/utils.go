@@ -31,6 +31,7 @@ func init() {
 	fun.StartServer()
 }
 
+// Funnel provides a test server and RPC/HTTP clients
 type Funnel struct {
 	// Clients
 	RPC    tes.TaskServiceClient
@@ -46,6 +47,8 @@ type Funnel struct {
 	rate      time.Duration
 }
 
+// NewFunnel creates a new funnel test server with some test
+// configuration automatically set: random ports, temp work dir, etc.
 func NewFunnel() *Funnel {
 	var rate = time.Millisecond * 1000
 	conf := config.DefaultConfig()
@@ -94,18 +97,22 @@ func NewFunnel() *Funnel {
 	}
 }
 
+// Tempdir returns a new temporary directory path
 func (f *Funnel) Tempdir() string {
 	d, _ := ioutil.TempDir(f.StorageDir, "")
 	d, _ = filepath.Abs(d)
 	return d
 }
 
+// StartServer starts the server
 func (f *Funnel) StartServer() {
 	go server.Run(f.Conf)
 	time.Sleep(time.Second)
 }
 
-// wait for a "destroy" event from docker for the given container ID
+// WaitForDockerDestroy waits for a "destroy" event
+// from docker for the given container ID
+//
 // TODO probably could use docker.ContainerWait()
 // https://godoc.org/github.com/moby/moby/client#Client.ContainerWait
 func (f *Funnel) WaitForDockerDestroy(id string) {
@@ -130,7 +137,7 @@ func (f *Funnel) WaitForDockerDestroy(id string) {
 	}
 }
 
-// cancel a task by ID
+// Cancel cancels a task by ID
 func (f *Funnel) Cancel(id string) error {
 	_, err := f.RPC.CancelTask(context.Background(), &tes.CancelTaskRequest{
 		Id: id,
@@ -138,6 +145,7 @@ func (f *Funnel) Cancel(id string) error {
 	return err
 }
 
+// ListView returns a task list (calls ListTasks) with the given view.
 func (f *Funnel) ListView(view tes.TaskView) []*tes.Task {
 	t, err := f.RPC.ListTasks(context.Background(), &tes.ListTasksRequest{
 		View: view,
@@ -148,6 +156,7 @@ func (f *Funnel) ListView(view tes.TaskView) []*tes.Task {
 	return t.Tasks
 }
 
+// GetView returns a task (calls GetTask) with the given view.
 func (f *Funnel) GetView(id string, view tes.TaskView) *tes.Task {
 	t, err := f.RPC.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
@@ -159,12 +168,13 @@ func (f *Funnel) GetView(id string, view tes.TaskView) *tes.Task {
 	return t
 }
 
-// get a task by ID
+// Get gets a task by ID
 func (f *Funnel) Get(id string) *tes.Task {
 	return f.GetView(id, tes.TaskView_FULL)
 }
 
-// run a task and return it's ID
+// Run uses `funnel run` syntax to create a task.
+// Run panics on error.
 func (f *Funnel) Run(s string) string {
 	id, err := f.RunE(s)
 	if err != nil {
@@ -173,6 +183,7 @@ func (f *Funnel) Run(s string) string {
 	return id
 }
 
+// RunE is like Run(), but returns an error instead of panicing.
 func (f *Funnel) RunE(s string) (string, error) {
 	// Process the string as a template to allow a few helpers
 	tpl := template.Must(template.New("run").Parse(s))
@@ -195,6 +206,7 @@ func (f *Funnel) RunE(s string) (string, error) {
 	return f.RunTask(tasks[0])
 }
 
+// RunTask calls CreateTask with the given task message and returns the ID.
 func (f *Funnel) RunTask(t *tes.Task) (string, error) {
 	resp, cerr := f.RPC.CreateTask(context.Background(), t)
 	if cerr != nil {
@@ -203,7 +215,7 @@ func (f *Funnel) RunTask(t *tes.Task) (string, error) {
 	return resp.Id, nil
 }
 
-// wait for a task to complete
+// Wait waits for a task to complete.
 func (f *Funnel) Wait(id string) *tes.Task {
 	for range time.NewTicker(f.rate).C {
 		t := f.Get(id)
@@ -215,7 +227,7 @@ func (f *Funnel) Wait(id string) *tes.Task {
 	return nil
 }
 
-// wait for a task to be in the RUNNING state
+// WaitForRunning waits for a task to be in the RUNNING state
 func (f *Funnel) WaitForRunning(id string) {
 	for range time.NewTicker(f.rate).C {
 		t := f.Get(id)
@@ -225,7 +237,7 @@ func (f *Funnel) WaitForRunning(id string) {
 	}
 }
 
-// wait for a task to reach the given executor index.
+// WaitForExec waits for a task to reach the given executor index.
 // 1 is the first executor.
 func (f *Funnel) WaitForExec(id string, i int) {
 	for range time.NewTicker(f.rate).C {
@@ -236,7 +248,7 @@ func (f *Funnel) WaitForExec(id string, i int) {
 	}
 }
 
-// write a file to local storage
+// WriteFile writes a file to the local (temporary) storage directory.
 func (f *Funnel) WriteFile(name string, content string) {
 	err := ioutil.WriteFile(f.StorageDir+"/"+name, []byte(content), os.ModePerm)
 	if err != nil {
@@ -244,7 +256,7 @@ func (f *Funnel) WriteFile(name string, content string) {
 	}
 }
 
-// read a file from local storage
+// ReadFile reads a file to the local (temporary) storage directory.
 func (f *Funnel) ReadFile(name string) string {
 	b, err := ioutil.ReadFile(f.StorageDir + "/" + name)
 	if err != nil {

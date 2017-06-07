@@ -26,11 +26,6 @@ import (
 var log = logger.New("e2e")
 var fun = NewFunnel()
 
-func init() {
-	logger.ForceColors()
-	fun.StartServer()
-}
-
 // Funnel provides a test server and RPC/HTTP clients
 type Funnel struct {
 	// Clients

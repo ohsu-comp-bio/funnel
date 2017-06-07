@@ -361,7 +361,6 @@ func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *pbf.Updat
 			// Check if there is an existing task log
 			o := bL.Get(key)
 			if o != nil {
-				log.Debug("UPDTA")
 				// There is an existing log in the DB, load it
 				existing := &tes.ExecutorLog{}
 				// max bytes to be stored in the db

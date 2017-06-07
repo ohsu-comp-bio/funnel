@@ -10,6 +10,7 @@ func BenchmarkRun5000NoWorkers(b *testing.B) {
 	fun := e2e.NewFunnel()
 	// No workers connected in this test
 	fun.Conf.Scheduler = "manual"
+	fun.Conf.LogLevel = "error"
 	fun.StartServer()
 	b.ResetTimer()
 
@@ -26,6 +27,7 @@ func BenchmarkRun5000ConcurrentNoWorkers(b *testing.B) {
 	fun := e2e.NewFunnel()
 	// No workers connected in this test
 	fun.Conf.Scheduler = "manual"
+	fun.Conf.LogLevel = "error"
 	fun.StartServer()
 	b.ResetTimer()
 

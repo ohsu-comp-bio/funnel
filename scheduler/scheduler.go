@@ -92,7 +92,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 			)
 			s.db.AssignTask(task, offer.Worker)
 		} else {
-			log.Info("No worker could be scheduled for task", "taskID", task.Id)
+			log.Debug("No worker could be scheduled for task", "taskID", task.Id)
 		}
 	}
 	return nil

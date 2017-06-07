@@ -40,6 +40,7 @@ type Funnel struct {
 	// Internal
 	startTime string
 	rate      time.Duration
+	conn      *grpc.ClientConn
 }
 
 // NewFunnel creates a new funnel test server with some test
@@ -90,6 +91,7 @@ func NewFunnel() *Funnel {
 		StorageDir: storageDir,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
 		rate:       rate,
+		conn:       conn,
 	}
 }
 
@@ -98,6 +100,13 @@ func (f *Funnel) Tempdir() string {
 	d, _ := ioutil.TempDir(f.StorageDir, "")
 	d, _ = filepath.Abs(d)
 	return d
+}
+
+// Cleanup cleans up test resources
+func (f *Funnel) Cleanup() {
+	os.RemoveAll(f.StorageDir)
+	os.RemoveAll(f.Conf.WorkDir)
+	f.conn.Close()
 }
 
 // StartServer starts the server
@@ -204,7 +213,7 @@ func (f *Funnel) RunE(s string) (string, error) {
 
 // RunTask calls CreateTask with the given task message and returns the ID.
 func (f *Funnel) RunTask(t *tes.Task) (string, error) {
-	resp, cerr := f.RPC.CreateTask(context.Background(), t)
+	resp, cerr := f.RPC.CreateTask(context.Background(), t, grpc.FailFast(false))
 	if cerr != nil {
 		return "", cerr
 	}

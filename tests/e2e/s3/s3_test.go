@@ -1,13 +1,19 @@
 package e2e
 
 import (
+	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 )
 
+var log = logger.New("e2e-s3")
+var fun = e2e.NewFunnel()
+
 func TestMain(m *testing.M) {
+	fun.StartServer()
 	// Start minio
 	dockerPath, _ := exec.LookPath("docker")
 	args := []string{dockerPath, "run",

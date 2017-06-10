@@ -15,7 +15,7 @@ func init() {
 	// nanoseconds are important because the tests run faster than a millisecond
 	// which can cause port conflicts
 	rand.Seed(time.Now().UTC().UnixNano())
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 }
 
 // RandomPort returns a random port string between 10000 and 20000.

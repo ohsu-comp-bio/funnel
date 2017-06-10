@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 }
 
 func TestMapTask(t *testing.T) {

@@ -9,10 +9,11 @@ WorkDir: ./funnel-work-dir
 # Hostname of the Funnel server. Mainly, this is used by auto-scalers
 # to configure workers.
 HostName: localhost
-# Logging levels: debug, info, error
-LogLevel: debug
-# Write logs to this path. If empty, logs are written to stderr.
-LogPath: ""
+Logger:
+  # Logging levels: debug, info, error
+  Level: info
+  # Write logs to this path. If empty, logs are written to stderr.
+  OutputFile: ""
 # Limit the size of task executor logs (stdout/err), in bytes.
 MaxExecutorLogSize: 10000 # 10 KB
 # How often to run a scheduler iteration.
@@ -112,10 +113,11 @@ Worker:
        # AccountFile:
         # Automatically discover credentials from the environment.
        # FromEnv: true
-  # Logging levels: debug, info, error
-  LogLevel: debug
-  # Write logs to this path. If empty, logs are written to stderr.
-  LogPath: ""
+  Logger:
+    # Logging levels: debug, info, error
+    Level: info
+    # Write logs to this path. If empty, logs are written to stderr.
+    OutputFile: ""
   # Override available resources.
   Resources:
     # CPUs available.

@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 }
 
 type BlankBackend struct{}

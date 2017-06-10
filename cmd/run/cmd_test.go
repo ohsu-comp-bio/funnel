@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 }
 
 func TestParse(t *testing.T) {

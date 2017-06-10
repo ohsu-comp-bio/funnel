@@ -9,7 +9,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 	fun.StartServer()
 	e := m.Run()
 	os.Exit(e)

@@ -3,7 +3,7 @@ package worker
 import (
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger/logutils"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"github.com/spf13/cobra"
@@ -41,14 +41,14 @@ func init() {
 	flags.StringVar(&flagConf.HostName, "hostname", flagConf.HostName, "Host name or IP")
 	flags.StringVar(&flagConf.RPCPort, "rpc-port", flagConf.RPCPort, "RPC Port")
 	flags.StringVar(&flagConf.WorkDir, "work-dir", flagConf.WorkDir, "Working Directory")
-	flags.StringVar(&flagConf.LogLevel, "log-level", flagConf.LogLevel, "Level of logging")
-	flags.StringVar(&flagConf.LogPath, "log-path", flagConf.LogLevel, "File path to write logs to")
+	flags.StringVar(&flagConf.Logger.Level, "log-level", flagConf.Logger.Level, "Level of logging")
+	flags.StringVar(&flagConf.Logger.OutputFile, "log-path", flagConf.Logger.OutputFile, "File path to write logs to")
 }
 
 // Run runs a worker with the given config, blocking until the worker exits.
 func Run(conf config.Config) error {
 
-	logutils.Configure(conf)
+	logger.Configure(conf.Logger)
 
 	if conf.Worker.ID == "" {
 		conf.Worker.ID = scheduler.GenWorkerID("funnel")

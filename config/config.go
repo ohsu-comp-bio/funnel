@@ -40,9 +40,7 @@ type Config struct {
 	HTTPPort           string
 	RPCPort            string
 	WorkDir            string
-	LogLevel           string
-	LogPath            string
-	TimestampLogs      bool
+	Logger             logger.Config
 	MaxExecutorLogSize int
 	ScheduleRate       time.Duration
 	ScheduleChunk      int
@@ -71,14 +69,13 @@ func DefaultConfig() Config {
 	rpcPort := "9090"
 	cwd, _ := os.Getwd()
 	c := Config{
-		HostName:      hostName,
-		DBPath:        path.Join(workDir, "funnel.db"),
-		HTTPPort:      "8000",
-		RPCPort:       rpcPort,
-		WorkDir:       workDir,
-		LogLevel:      "info",
-		TimestampLogs: true,
-		Scheduler:     "local",
+		HostName:  hostName,
+		DBPath:    path.Join(workDir, "funnel.db"),
+		HTTPPort:  "8000",
+		RPCPort:   rpcPort,
+		WorkDir:   workDir,
+		Logger:    logger.DefaultConfig(),
+		Scheduler: "local",
 		Storage: StorageConfig{
 			Local: LocalStorage{
 				AllowedDirs: []string{cwd},
@@ -97,11 +94,10 @@ func DefaultConfig() Config {
 			UpdateRate:    time.Second * 5,
 			LogUpdateRate: time.Second * 5,
 			LogTailSize:   10000,
-			LogLevel:      "debug",
+			Logger:        logger.DefaultConfig(),
 			Resources: Resources{
 				DiskGb: 100.0,
 			},
-			TimestampLogs: true,
 			UpdateTimeout: time.Second,
 			Metadata:      map[string]string{},
 		},
@@ -138,9 +134,7 @@ type Worker struct {
 	LogUpdateRate time.Duration
 	LogTailSize   int64
 	Storage       StorageConfig
-	LogPath       string
-	LogLevel      string
-	TimestampLogs bool
+	Logger        logger.Config
 	Resources     Resources
 	// Timeout duration for UpdateWorker() and UpdateTaskLogs() RPC calls
 	UpdateTimeout time.Duration
@@ -154,8 +148,7 @@ func WorkerInheritConfigVals(c Config) Worker {
 	}
 	c.Worker.Storage = c.Storage
 	c.Worker.WorkDir = c.WorkDir
-	c.Worker.LogLevel = c.LogLevel
-	c.Worker.TimestampLogs = c.TimestampLogs
+	c.Worker.Logger = c.Logger
 	return c.Worker
 }
 

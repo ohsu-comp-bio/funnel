@@ -49,9 +49,10 @@ func NewFunnel() *Funnel {
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
-	conf.LogLevel = "debug"
+	conf.Logger = logger.DebugConfig()
 	conf.Worker.LogUpdateRate = rate
 	conf.Worker.UpdateRate = rate
+	conf.Worker.Logger = logger.DebugConfig()
 	conf.ScheduleRate = rate
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")

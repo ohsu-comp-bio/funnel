@@ -12,7 +12,7 @@ import (
 var log = logger.New("tests")
 
 func init() {
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 }
 
 // Test the flow of a task being scheduled to a worker, run, completed, etc.

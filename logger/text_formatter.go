@@ -7,93 +7,66 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/kr/pretty"
 	"github.com/logrusorgru/aurora"
+	"io"
 	"runtime"
 	"sort"
 	"time"
 )
 
-var (
-	baseTimestamp time.Time
-	isTerminal    bool
-)
-
-func init() {
-	baseTimestamp = time.Now()
-}
+var baseTimestamp = time.Now()
 
 type textFormatter struct {
-	// Set to true to bypass checking for a TTY before outputting colors.
-	ForceColors bool
+	TextFormatConfig
+	json jsonFormatter
+}
 
-	// Force disabling colors.
-	DisableColors bool
-
-	// Disable timestamp logging. useful when output is redirected to logging
-	// system that already adds timestamps.
-	DisableTimestamp bool
-
-	// Enable logging the full timestamp when a TTY is attached instead of just
-	// the time passed since beginning of execution.
-	FullTimestamp bool
-
-	// TimestampFormat to use for display when a full timestamp is printed
-	TimestampFormat string
-
-	// The fields are sorted by default for a consistent output. For applications
-	// that log extremely frequently and don't use the JSON formatter this may not
-	// be desired.
-	DisableSorting bool
+func isColorTerminal(w io.Writer) bool {
+	return logrus.IsTerminal(w) && (runtime.GOOS != "windows")
 }
 
 func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	var b *bytes.Buffer
+	isColored := (f.ForceColors || isColorTerminal(entry.Logger.Out)) && !f.DisableColors
+	if !isColored {
+		return f.json.Format(entry)
+	}
+
+	// entry namespace
+	ns := entry.Data["ns"].(string)
+
+	// Gather keys so they can be sorted
 	keys := make([]string, 0, len(entry.Data))
 	for k := range entry.Data {
+		// "ns" (namespace) always comes first, so skip that one.
 		if k != "ns" {
 			keys = append(keys, k)
 		}
 	}
-	ns := entry.Data["ns"]
 
 	if !f.DisableSorting {
 		sort.Strings(keys)
 	}
-	if entry.Buffer != nil {
-		b = entry.Buffer
-	} else {
+
+	b := entry.Buffer
+	if b == nil {
 		b = &bytes.Buffer{}
 	}
 
 	prefixFieldClashes(entry.Data)
 
-	isTerminal = logrus.IsTerminal(entry.Logger.Out)
-	isColorTerminal := isTerminal && (runtime.GOOS != "windows")
-	isColored := (f.ForceColors || isColorTerminal) && !f.DisableColors
-
-	timestampFormat := f.TimestampFormat
-	if timestampFormat == "" {
-		timestampFormat = logrus.DefaultTimestampFormat
-	}
-	if isColored {
-		f.printColored(b, entry, keys, timestampFormat, ns.(string))
-	} else {
-		if !f.DisableTimestamp {
-			f.appendKeyValue(b, "time", entry.Time.Format(timestampFormat))
-		}
-		f.appendKeyValue(b, "level", entry.Level.String())
-		if entry.Message != "" {
-			f.appendKeyValue(b, "msg", entry.Message)
-		}
-		for _, key := range keys {
-			f.appendKeyValue(b, key, entry.Data[key])
+	if !f.DisableTimestamp {
+		if !f.FullTimestamp {
+			// How many seconds since this package was initialized
+			t := entry.Time.Sub(baseTimestamp) / time.Second
+			entry.Data["time"] = fmt.Sprintf("%04d", int(t))
+		} else {
+			entry.Data["time"] = entry.Time.Format(f.TimestampFormat)
 		}
 	}
 
-	b.WriteByte('\n')
-	return b.Bytes(), nil
-}
+	if entry.Message != "" {
+		entry.Data["msg"] = entry.Message
+	}
 
-func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys []string, timestampFormat string, ns string) {
 	var levelColor aurora.Color
 
 	switch entry.Level {
@@ -108,19 +81,9 @@ func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 
 	fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize(ns, nsColor), entry.Message)
 
-	if !f.DisableTimestamp {
-		if !f.FullTimestamp {
-			fmt.Fprintf(b, "%-20s %04d\n", aurora.Colorize("time", levelColor),
-				int(entry.Time.Sub(baseTimestamp)/time.Second))
-
-		} else {
-			fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize("time", levelColor),
-				entry.Time.Format(timestampFormat))
-		}
-	}
-
 	for _, k := range keys {
 		v := entry.Data[k]
+
 		switch x := v.(type) {
 		case string:
 		case int:
@@ -144,50 +107,11 @@ func (f *textFormatter) printColored(b *bytes.Buffer, entry *logrus.Entry, keys 
 		default:
 			v = pretty.Sprint(x)
 		}
-		//fmt.Fprintf(b, " \x1b[%dm%s\x1b[0m=%v", levelColor, k, v)
 		fmt.Fprintf(b, "%-20s %v\n", aurora.Colorize(k, levelColor), v)
-		//f.appendValue(b, v)
 	}
-}
 
-func needsQuoting(text string) bool {
-	for _, ch := range text {
-		if !((ch >= 'a' && ch <= 'z') ||
-			(ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') ||
-			ch == '-' || ch == '.') {
-			return true
-		}
-	}
-	return false
-}
-
-func (f *textFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
-
-	b.WriteString(key)
-	b.WriteByte('=')
-	f.appendValue(b, value)
-	b.WriteByte(' ')
-}
-
-func (f *textFormatter) appendValue(b *bytes.Buffer, value interface{}) {
-	switch value := value.(type) {
-	case string:
-		if !needsQuoting(value) {
-			b.WriteString(value)
-		} else {
-			fmt.Fprintf(b, "%q", value)
-		}
-	case error:
-		errmsg := value.Error()
-		if !needsQuoting(errmsg) {
-			b.WriteString(errmsg)
-		} else {
-			fmt.Fprintf(b, "%q", errmsg)
-		}
-	default:
-		fmt.Fprint(b, value)
-	}
+	b.WriteByte('\n')
+	return b.Bytes(), nil
 }
 
 // This is to not silently overwrite `time`, `msg` and `level` fields when

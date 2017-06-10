@@ -8,7 +8,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/logger/logutils"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net/http"
@@ -36,7 +35,7 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		logutils.Configure(conf)
+		logger.Configure(conf.Logger)
 		if conf.Worker.ID != "" {
 			return worker.Run(conf)
 		}

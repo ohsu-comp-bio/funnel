@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 }
 
 func simpleWorker() *pbf.Worker {

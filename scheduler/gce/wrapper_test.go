@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	logger.ForceColors()
+	logger.Configure(logger.DebugConfig())
 }
 
 // Test the scheduler while mocking out a lower level than what's in sched_test.go

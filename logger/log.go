@@ -6,68 +6,76 @@ import (
 	"github.com/logrusorgru/aurora"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
-var formatter = &textFormatter{
-	DisableTimestamp: false,
-	FullTimestamp:    true,
-}
+// Log levels
+const (
+	DebugLevel = "debug"
+	InfoLevel  = "info"
+	ErrorLevel = "error"
+)
 
-func init() {
-	logrus.SetFormatter(formatter)
-	logrus.SetLevel(logrus.DebugLevel)
-}
-
-// Discard configures to logger to discard all loogs.
-func Discard() {
-	logrus.SetOutput(ioutil.Discard)
-}
+// Formatter defines a log output formatter.
+type Formatter logrus.Formatter
 
 // Logger is repsonsible for logging messages from code.
 type Logger interface {
+	SetFormatter(Formatter)
+	SetLevel(string)
+	SetOutput(io.Writer)
+	Discard()
 	Debug(string, ...interface{})
 	Info(string, ...interface{})
 	Error(string, ...interface{})
 	WithFields(...interface{}) Logger
-}
-
-// SetLevel sets the level of logging
-func SetLevel(l string) {
-	switch strings.ToLower(l) {
-	case "debug":
-		logrus.SetLevel(logrus.DebugLevel)
-	case "info":
-		logrus.SetLevel(logrus.InfoLevel)
-	case "warn":
-		logrus.SetLevel(logrus.WarnLevel)
-	case "error":
-		logrus.SetLevel(logrus.ErrorLevel)
-	default:
-		logrus.SetLevel(logrus.InfoLevel)
-	}
-}
-
-// DisableTimestamp prevents timestamps from being displayed in the logs
-func DisableTimestamp(b bool) {
-	formatter.DisableTimestamp = b
-}
-
-// ForceColors forces the log output formatter to use color. Useful during testing.
-func ForceColors() {
-	formatter.ForceColors = true
+	Configure(Config)
 }
 
 // New returns a new Logger instance.
 func New(ns string, args ...interface{}) Logger {
 	f := fields(args...)
 	f["ns"] = ns
-	l := logrus.WithFields(f)
-	return &logger{l}
+	log := logrus.New()
+	base := log.WithFields(f)
+	l := &logger{log, base}
+	l.Configure(DefaultConfig())
+	return l
 }
 
 type logger struct {
-	log *logrus.Entry
+	logrus *logrus.Logger
+	base   *logrus.Entry
+}
+
+// SetLevel sets the level of the logger.
+func (l *logger) SetLevel(lvl string) {
+	switch strings.ToLower(lvl) {
+	case "debug":
+		l.logrus.Level = logrus.DebugLevel
+	case "info":
+		l.logrus.Level = logrus.InfoLevel
+	case "error":
+		l.logrus.Level = logrus.ErrorLevel
+	default:
+		l.logrus.Level = logrus.InfoLevel
+	}
+}
+
+// SetFormatter sets the formatter of the logger.
+func (l *logger) SetFormatter(f Formatter) {
+	l.logrus.Formatter = f
+}
+
+// SetOutput sets the output of the logger.
+func (l *logger) SetOutput(o io.Writer) {
+	l.logrus.Out = o
+}
+
+// Discard configures the logger to discard all logs.
+func (l *logger) Discard() {
+	l.SetOutput(ioutil.Discard)
 }
 
 // Debug logs a debug message.
@@ -77,7 +85,7 @@ type logger struct {
 func (l *logger) Debug(msg string, args ...interface{}) {
 	defer recoverLogErr()
 	f := fields(args...)
-	l.log.WithFields(f).Debug(msg)
+	l.base.WithFields(f).Debug(msg)
 }
 
 // Info logs an info message
@@ -87,7 +95,7 @@ func (l *logger) Debug(msg string, args ...interface{}) {
 func (l *logger) Info(msg string, args ...interface{}) {
 	defer recoverLogErr()
 	f := fields(args...)
-	l.log.WithFields(f).Info(msg)
+	l.base.WithFields(f).Info(msg)
 }
 
 // Error logs an error message
@@ -106,37 +114,24 @@ func (l *logger) Error(msg string, args ...interface{}) {
 	} else {
 		f = fields(args...)
 	}
-	l.log.WithFields(f).Error(msg)
+	l.base.WithFields(f).Error(msg)
 }
 
 // WithFields returns a new Logger instance with the given fields added to all log messages.
 func (l *logger) WithFields(args ...interface{}) Logger {
 	defer recoverLogErr()
 	f := fields(args...)
-	n := l.log.WithFields(f)
-	return &logger{n}
+	base := l.base.WithFields(f)
+	return &logger{l.logrus, base}
 }
 
-// SetOutput sets the output for all loggers.
-func SetOutput(w io.Writer) {
-	logrus.SetOutput(w)
-}
-
-var rootLogger = New("funnel")
-
-// Debug logs to the global logger at the Debug level
-func Debug(msg string, args ...interface{}) {
-	rootLogger.Debug(msg, args...)
-}
-
-// Info logs to the global logger at the Info level
-func Info(msg string, args ...interface{}) {
-	rootLogger.Info(msg, args...)
-}
-
-// Error logs to the global logger at the Error level
-func Error(msg string, args ...interface{}) {
-	rootLogger.Error(msg, args...)
+// PrintSimpleError prints out an error message with a red "ERROR:" prefix.
+func PrintSimpleError(err error) {
+	e := "Error:"
+	if isColorTerminal(os.Stderr) {
+		e = aurora.Red(e).String()
+	}
+	fmt.Fprintf(os.Stderr, "%s %s\n", e, err.Error())
 }
 
 // recoverLogErr is used to recover from any panics during logging.
@@ -148,11 +143,8 @@ func recoverLogErr() {
 	}
 }
 
-// PrintSimpleError prints out an error message with a red "ERROR:" prefix.
-func PrintSimpleError(err error) {
-	fmt.Printf("%s %s\n", aurora.Red("ERROR:"), err.Error())
-}
-
+// converts an argument list to a map, e.g.
+// ("key", value, "key2", value2) => {"key": value, "key2", value2}
 func fields(args ...interface{}) map[string]interface{} {
 	f := make(map[string]interface{}, len(args)/2)
 	if len(args) == 1 {

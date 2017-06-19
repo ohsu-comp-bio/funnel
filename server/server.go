@@ -22,6 +22,7 @@ var log = logger.Sub("server")
 type Server struct {
 	RPCAddress             string
 	HTTPPort               string
+	Password               string
 	TaskServiceServer      tes.TaskServiceServer
 	SchedulerServiceServer pbf.SchedulerServiceServer
 	Handler                http.Handler
@@ -39,6 +40,7 @@ func DefaultServer(db Database, conf config.Config) *Server {
 	return &Server{
 		RPCAddress:             ":" + conf.RPCPort,
 		HTTPPort:               conf.HTTPPort,
+		Password:               conf.Server.Password,
 		TaskServiceServer:      db,
 		SchedulerServiceServer: db,
 		Handler:                mux,
@@ -61,7 +63,10 @@ func (s *Server) Serve(pctx context.Context) error {
 		return err
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		// API auth check.
+		grpc.UnaryInterceptor(newAuthInterceptor(s.Password)),
+	)
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()

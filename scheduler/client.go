@@ -3,6 +3,7 @@ package scheduler
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"google.golang.org/grpc"
 )
 
@@ -20,9 +21,19 @@ type client struct {
 // NewClient returns a new Client instance connected to the
 // scheduler at a given address (e.g. "localhost:9090")
 func NewClient(conf config.Worker) (Client, error) {
-	conn, err := NewRPCConnection(conf.ServerAddress)
+	// TODO if this can't connect initially, should it retry?
+	//      give up after max retries? Does grpc.Dial already do this?
+	// Create a connection for gRPC clients
+	conn, err := grpc.Dial(conf.ServerAddress,
+		grpc.WithInsecure(),
+		util.PerRPCPassword(conf.ServerPassword),
+	)
+
 	if err != nil {
-		log.Error("Couldn't connect to scheduler", err)
+		log.Error("Couldn't open RPC connection to scheduler",
+			"error", err,
+			"address", conf.ServerAddress,
+		)
 		return nil, err
 	}
 
@@ -33,22 +44,4 @@ func NewClient(conf config.Worker) (Client, error) {
 // Close closes the client connection.
 func (client *client) Close() {
 	client.conn.Close()
-}
-
-// NewRPCConnection returns a gRPC ClientConn, or an error.
-// Use this for getting a connection for gRPC clients.
-func NewRPCConnection(address string) (*grpc.ClientConn, error) {
-	// TODO if this can't connect initially, should it retry?
-	//      give up after max retries? Does grpc.Dial already do this?
-	// Create a connection for gRPC clients
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-
-	if err != nil {
-		log.Error("Couldn't open RPC connection",
-			"error", err,
-			"address", address,
-		)
-		return nil, err
-	}
-	return conn, nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -21,6 +22,7 @@ var log = logger.New("tes http client")
 // of the TES server.
 func NewClient(address string) *Client {
 
+	password := os.Getenv("FUNNEL_SERVER_PASSWORD")
 	// Strip trailing slash. A quick and dirty fix.
 	address = strings.TrimSuffix(address, "/")
 	return &Client{
@@ -33,6 +35,7 @@ func NewClient(address string) *Client {
 			EmitDefaults: false,
 			Indent:       "\t",
 		},
+		Password: password,
 	}
 }
 
@@ -41,6 +44,7 @@ type Client struct {
 	address   string
 	client    *http.Client
 	Marshaler *jsonpb.Marshaler
+	Password  string
 }
 
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
@@ -49,7 +53,10 @@ func (c *Client) GetTask(id string, view string) (*tes.Task, error) {
 		return nil, fmt.Errorf("Invalid view. Must be one of MINIMAL, BASIC, FULL")
 	}
 	// Send request
-	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks/" + id + "?view=" + view))
+	u := c.address + "/v1/tasks/" + id + "?view=" + view
+	req, _ := http.NewRequest("GET", u, nil)
+	req.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(req))
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +81,10 @@ func (c *Client) ListTasks(req *tes.ListTasksRequest) (*tes.ListTasksResponse, e
 
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
-	body, err := util.CheckHTTPResponse(c.client.Get(u))
+	u := c.address + "/v1/tasks?view=" + view
+	req, _ := http.NewRequest("GET", u, nil)
+	req.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(req))
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +108,10 @@ func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 	// Send request
 	r := bytes.NewReader(msg)
 	u := c.address + "/v1/tasks"
-	body, err := util.CheckHTTPResponse(c.client.Post(u, "application/json", r))
+	req, _ := http.NewRequest("POST", u, r)
+	req.Header.Add("Content-Type", "application/json")
+	req.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(req))
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +128,10 @@ func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 // CancelTask POSTs to /v1/tasks/{id}:cancel
 func (c *Client) CancelTask(id string) (*tes.CancelTaskResponse, error) {
 	u := c.address + "/v1/tasks/" + id + ":cancel"
-	body, err := util.CheckHTTPResponse(c.client.Post(u, "application/json", nil))
+	req, _ := http.NewRequest("POST", u, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(req))
 	if err != nil {
 		return nil, err
 	}

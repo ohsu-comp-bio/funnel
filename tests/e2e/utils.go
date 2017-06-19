@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	dockerTypes "github.com/docker/docker/api/types"
@@ -19,6 +18,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tests/testutils"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"io/ioutil"
 	"os"
@@ -59,7 +59,8 @@ type Funnel struct {
 	conn      *grpc.ClientConn
 }
 
-// DefaultConfig returns config with a set of defaults useful for end-to-end testing.
+// DefaultConfig returns a default configuration useful for testing,
+// including temp storage dirs, random ports, S3 + minio config, etc.
 func DefaultConfig() config.Config {
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
@@ -94,6 +95,7 @@ func DefaultConfig() config.Config {
 // NewFunnel creates a new funnel test server with some test
 // configuration automatically set: random ports, temp work dir, etc.
 func NewFunnel(conf config.Config) *Funnel {
+	conf.Worker = config.WorkerInheritConfigVals(conf)
 
 	var derr error
 	dcli, derr := util.NewDockerClient()
@@ -120,16 +122,22 @@ func NewFunnel(conf config.Config) *Funnel {
 	}
 }
 
-func (f *Funnel) addRPCClient() error {
+// AddRPCClient configures and connects the RPC client to the server.
+func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	logger.DisableGRPCLogger()
+
+	opts = append(opts,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+
 	conn, err := grpc.DialContext(
 		ctx,
 		f.Conf.RPCAddress(),
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
+		opts...,
 	)
 	if err != nil {
 		return err
@@ -164,7 +172,7 @@ func (f *Funnel) StartServer() {
 		go f.Scheduler.Start(context.Background())
 	}
 
-	err := f.addRPCClient()
+	err := f.AddRPCClient()
 	if err != nil {
 		log.Error("funnel server failed to start within allocated time", err)
 		panic(err)
@@ -400,7 +408,7 @@ func (f *Funnel) StartServerInDocker(imageName string, scheduler string, extraAr
 
 	ready := make(chan struct{})
 	go func() {
-		err = f.addRPCClient()
+		err = f.AddRPCClient()
 		if err != nil {
 			log.Error("funnel server failed to start within allocated time", err)
 		} else {

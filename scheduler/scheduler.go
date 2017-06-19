@@ -79,6 +79,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 			log.Info("Assigning task to worker",
 				"taskID", task.Id,
 				"workerID", offer.Worker.Id,
+				"worker", offer.Worker,
 			)
 			err = s.db.AssignTask(task, offer.Worker)
 			if err != nil {

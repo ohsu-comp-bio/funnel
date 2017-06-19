@@ -16,7 +16,10 @@ type Config struct {
 	Storage   StorageConfig
 	HostName  string
 	Scheduler string
-	Backends  struct {
+	Server    struct {
+		Password string
+	}
+	Backends struct {
 		Local    struct{}
 		HTCondor struct {
 			Template string
@@ -155,8 +158,9 @@ type Worker struct {
 	Logger        logger.Config
 	Resources     Resources
 	// Timeout duration for UpdateWorker() and UpdateTaskLogs() RPC calls
-	UpdateTimeout time.Duration
-	Metadata      map[string]string
+	UpdateTimeout  time.Duration
+	Metadata       map[string]string
+	ServerPassword string
 }
 
 // WorkerInheritConfigVals is a utility to help ensure the Worker inherits the proper config values from the parent Config
@@ -165,6 +169,7 @@ func WorkerInheritConfigVals(c Config) Worker {
 		c.Worker.ServerAddress = c.HostName + ":" + c.RPCPort
 	}
 	c.Worker.Storage = c.Storage
+	c.Worker.ServerPassword = c.Server.Password
 	return c.Worker
 }
 

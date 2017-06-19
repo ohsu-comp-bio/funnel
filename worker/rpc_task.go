@@ -39,7 +39,7 @@ func (r *RPCTask) State() tes.State {
 	t, _ := r.client.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id: r.taskID,
 	})
-	return t.State
+	return t.GetState()
 }
 
 // SetState sets the state of the task.

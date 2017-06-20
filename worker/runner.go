@@ -314,6 +314,6 @@ func (r *DefaultRunner) pollForCancel(ctx context.Context, f func()) context.Con
 type NoopRunner struct{}
 
 func (NoopRunner) Run(context.Context) {}
-func NoopRunnerFactory(ctx context.Context, c config.Worker, taskID string) Runner {
+func NoopRunnerFactory(c config.Worker, taskID string) Runner {
 	return NoopRunner{}
 }

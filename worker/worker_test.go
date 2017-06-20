@@ -3,7 +3,7 @@ package worker
 import (
 	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
-	sched_mocks "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
+	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
@@ -11,40 +11,150 @@ import (
 
 // Test calling Worker.Stop()
 func TestStopWorker(t *testing.T) {
-	w, _ := NewWorker(config.DefaultConfig().Worker)
-	done := make(chan struct{})
-	go func() {
-		w.Run()
-		close(done)
-	}()
-	timeout := time.NewTimer(time.Millisecond * 4)
-	w.Stop()
+	conf := config.DefaultConfig().Worker
+	w := newTestWorker(conf)
 
-	// Wait for either the worker to be done, or the test to timeout
-	select {
-	case <-timeout.C:
-		t.Error("Expected worker to be done")
-	case <-done:
-		// Worker is done
-	}
+	w.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
+		Return(&pbf.Worker{}, nil)
+
+	w.Start()
+
+	// Fail if this test doesn't complete in the given time.
+	cleanup := timeLimit(t, time.Millisecond*4)
+	defer cleanup()
+	w.Stop()
+	w.Wait()
+	w.Sched.AssertCalled(t, "Close")
 }
 
 // Mainly exercising a panic bug caused by an unhandled
 // error from client.GetWorker().
 func TestGetWorkerFail(t *testing.T) {
-	// Create worker
 	conf := config.DefaultConfig().Worker
-	w, err := NewWorker(conf)
-	if err != nil {
-		t.Error(err)
-	}
-
-	// Override worker client with new mock
-	m := new(sched_mocks.Client)
-	s := &schedClient{m, conf}
-	w.sched = s
+	w := newTestWorker(conf)
 
 	// Set GetWorker to return an error
-	m.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("TEST"))
-	w.Sync()
+	w.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("TEST"))
+	w.sync()
+}
+
+// Test the flow of a worker completing a task then timing out
+func TestWorkerTimeout(t *testing.T) {
+	conf := config.DefaultConfig().Worker
+	conf.Timeout = time.Millisecond
+	conf.UpdateRate = time.Millisecond * 2
+
+	w := newTestWorker(conf)
+
+	// Set up a test runner which this code can easily control.
+	r := testRunner{}
+	// Hook the test runner up to the worker's runner factory.
+	w.newRunner = r.Factory
+
+	// Set up scheduler mock to return a task
+	w.AddTasks("task-1")
+
+	// Start the worker
+	w.Start()
+
+	// Fail if this test doesn't complete in the given time.
+	cleanup := timeLimit(t, conf.Timeout*100)
+	defer cleanup()
+
+	// Wait for the worker to exit
+	w.Wait()
+}
+
+// Test that a worker does nothing where there are no assigned tasks.
+func TestNoTasks(t *testing.T) {
+	conf := config.DefaultConfig().Worker
+	w := newTestWorker(conf)
+
+	// Tell the scheduler mock to return nothing
+	w.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
+		Return(&pbf.Worker{}, nil)
+
+	// Count the number of times the runner factory was called
+	var count int
+	// Hook the test runner up to the worker's runner factory.
+	w.newRunner = testRunnerFactoryFunc(func(r testRunner) {
+		count++
+	})
+
+	w.sync()
+	w.sync()
+	w.sync()
+
+	if count != 0 {
+		t.Fatal("Unexpected runner factory call count")
+	}
+	if w.runners.Count() != 0 {
+		t.Fatal("Unexpected worker runner count")
+	}
+}
+
+// Test that a runner gets created for each task.
+func TestWorkerRunnerCreated(t *testing.T) {
+	conf := config.DefaultConfig().Worker
+	w := newTestWorker(conf)
+	w.AddTasks("task-1", "task-2")
+
+	w.sync()
+
+	if w.runners.Count() != 2 {
+		t.Fatal("Unexpected worker runner count")
+	}
+}
+
+// Test that a finished task is not immediately re-run.
+// Tests a bugfix.
+func TestFinishedTaskNotRerun(t *testing.T) {
+	conf := config.DefaultConfig().Worker
+	w := newTestWorker(conf)
+
+	// Set up a test runner which this code can easily control.
+	r := testRunner{}
+	// Hook the test runner up to the worker's runner factory.
+	w.newRunner = r.Factory
+
+	w.Start()
+	w.AddTasks("task-1")
+
+	// manually sync the worker to avoid timing issues.
+	w.sync()
+
+	if w.runners.Count() != 0 {
+		t.Fatal("Unexpected runner count")
+	}
+
+	// There was a bug where later syncs would end up re-running the task.
+	// Do a few syncs to make sure.
+	w.sync()
+	w.sync()
+
+	if w.runners.Count() != 0 {
+		t.Fatal("Unexpected runner count")
+	}
+}
+
+// Test that tasks are removed from the worker's runset when they finish.
+func TestFinishedTaskRunsetCount(t *testing.T) {
+	conf := config.DefaultConfig().Worker
+	w := newTestWorker(conf)
+
+	// Set up a test runner which this code can easily control.
+	r := testRunner{}
+	// Hook the test runner up to the worker's runner factory.
+	w.newRunner = r.Factory
+
+	w.Start()
+	w.AddTasks("task-1")
+
+	// manually sync the worker to avoid timing issues.
+	w.sync()
+
+	if w.runners.Count() != 0 {
+		t.Fatal("Unexpected runner count")
+	}
 }

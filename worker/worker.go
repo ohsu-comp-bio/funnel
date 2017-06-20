@@ -37,6 +37,12 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	}, nil
 }
 
+func NewNoopWorker(conf config.Worker) (*Worker, error) {
+	w, err := NewWorker(conf)
+	w.newRunner = NoopRunnerFactory
+	return w, err
+}
+
 // Worker is a worker...
 type Worker struct {
 	conf      config.Worker
@@ -65,7 +71,7 @@ func (w *Worker) Run() {
 		case <-w.stop:
 			return
 		case <-ticker.C:
-			w.Sync()
+			w.sync()
 			w.checkIdleTimer()
 		case <-w.timeout.Done():
 			// Worker timeout reached. Shutdown.
@@ -73,6 +79,17 @@ func (w *Worker) Run() {
 			return
 		}
 	}
+}
+
+// Stop stops the worker
+// TODO need a way to shut the worker down from the server/scheduler.
+func (w *Worker) Stop() {
+	w.state = pbf.WorkerState_GONE
+	close(w.stop)
+	w.timeout.Stop()
+	w.runners.Stop()
+	w.sync()
+	w.sched.Close()
 }
 
 func (w *Worker) checkConnection() {
@@ -85,12 +102,12 @@ func (w *Worker) checkConnection() {
 	}
 }
 
-// Sync syncs the worker's state with the server. It reports task state changes,
+// sync syncs the worker's state with the server. It reports task state changes,
 // handles signals from the server (new task, cancel task, etc), reports resources, etc.
 //
 // TODO Sync should probably use a channel to sync data access.
 //      Probably only a problem for test code, where Sync is called directly.
-func (w *Worker) Sync() {
+func (w *Worker) sync() {
 	r, gerr := w.sched.GetWorker(context.TODO(), &pbf.GetWorkerRequest{Id: w.conf.ID})
 
 	if gerr != nil {
@@ -131,21 +148,12 @@ func (w *Worker) Sync() {
 	}
 }
 
-// Stop stops the worker
-// TODO need a way to shut the worker down from the server/scheduler.
-func (w *Worker) Stop() {
-	w.state = pbf.WorkerState_GONE
-	close(w.stop)
-	w.timeout.Stop()
-	w.runners.Stop()
-	w.Sync()
-	w.sched.Close()
-}
-
 // Check if the worker is idle. If so, start the timeout timer.
 func (w *Worker) checkIdleTimer() {
 	// The worker is idle if there are no task runners.
+	// The worker should not time out if it's not alive (e.g. if it's initializing)
 	idle := w.runners.Count() == 0 && w.state == pbf.WorkerState_ALIVE
+	log.Debug("runners", "count", w.runners.Count())
 	if idle {
 		w.timeout.Start()
 	} else {

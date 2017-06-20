@@ -14,46 +14,34 @@ import (
 	"time"
 )
 
+// Default Runner
 func NewDefaultRunner(conf config.Worker, taskID string) Runner {
 
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, taskID)
 	// TODO handle error
 	svc, _ := newRPCTask(conf, taskID)
+	log := logger.Sub("runner", "workerID", conf.ID, "taskID", taskID)
 
-  return &taskRunner{
-		conf:   conf,
-		mapper: NewFileMapper(baseDir),
-		store:  storage.Storage{},
-		taskID: taskID,
-		svc:    svc,
+	return &DefaultRunner{
+		Conf:   conf,
+		Mapper: NewFileMapper(baseDir),
+		Store:  storage.Storage{},
+		Svc:    svc,
+		Log:    log,
 	}
 }
 
-func NewLoggerRunner(task *tes.Task, conf config.Worker) Runner {
-	// Map files into this baseDir
-	baseDir := path.Join(conf.WorkDir, task.Id)
-
-	return &taskRunner{
-		conf:   conf,
-		mapper: NewFileMapper(baseDir),
-		store:  storage.Storage{},
-		taskID: task.Id,
-		svc:    NewLoggerTask(task),
-	}
-}
-
-// taskRunner helps collect data used across many helper methods.
-type taskRunner struct {
-	conf   config.Worker
-	mapper *FileMapper
-	store  storage.Storage
-	taskID string
-	svc    TaskService
+type DefaultRunner struct {
+	Conf   config.Worker
+	Mapper *FileMapper
+	Store  storage.Storage
+	Svc    TaskService
+	Log    logger.Logger
 }
 
 // TODO document behavior of slow consumer of task log updates
-func (r *taskRunner) Run(pctx context.Context) {
+func (r *DefaultRunner) Run(pctx context.Context) {
 
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
@@ -70,30 +58,27 @@ func (r *taskRunner) Run(pctx context.Context) {
 	var run helper
 	var task *tes.Task
 
-	log := logger.Sub("runner", "workerID", r.conf.ID, "taskID", r.taskID)
-	log.Debug("Run")
+	task, run.syserr = r.Svc.Task()
 
-	task, run.syserr = r.svc.Task()
-
-	r.svc.StartTime(time.Now())
+	r.Svc.StartTime(time.Now())
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
-		r.svc.EndTime(time.Now())
+		r.Svc.EndTime(time.Now())
 
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
-			r.svc.SetState(tes.State_CANCELED)
+			r.Svc.SetState(tes.State_CANCELED)
 		case run.execerr != nil:
 			// One of the executors failed
-			r.svc.SetState(tes.State_ERROR)
+			r.Svc.SetState(tes.State_ERROR)
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
-			r.svc.SetState(tes.State_SYSTEM_ERROR)
+			r.Svc.SetState(tes.State_SYSTEM_ERROR)
 		default:
-			r.svc.SetState(tes.State_COMPLETE)
+			r.Svc.SetState(tes.State_COMPLETE)
 		}
 	}()
 
@@ -110,7 +95,7 @@ func (r *taskRunner) Run(pctx context.Context) {
 	// Create working dir
 	var dir string
 	if run.ok() {
-		dir, run.syserr = filepath.Abs(r.conf.WorkDir)
+		dir, run.syserr = filepath.Abs(r.Conf.WorkDir)
 	}
 	if run.ok() {
 		run.syserr = util.EnsureDir(dir)
@@ -118,7 +103,7 @@ func (r *taskRunner) Run(pctx context.Context) {
 
 	// Prepare file mapper, which maps task file URLs to host filesystem paths
 	if run.ok() {
-		run.syserr = r.mapper.MapTask(task)
+		run.syserr = r.Mapper.MapTask(task)
 	}
 
 	// Grab the IP address of this host. Used to send task metadata updates.
@@ -130,7 +115,7 @@ func (r *taskRunner) Run(pctx context.Context) {
 	// Configure a task-specific storage backend.
 	// This provides download/upload for inputs/outputs.
 	if run.ok() {
-		r.store, run.syserr = r.store.WithConfig(r.conf.Storage)
+		r.Store, run.syserr = r.Store.WithConfig(r.Conf.Storage)
 	}
 
 	if run.ok() {
@@ -142,30 +127,30 @@ func (r *taskRunner) Run(pctx context.Context) {
 	}
 
 	// Download inputs
-	for _, input := range r.mapper.Inputs {
+	for _, input := range r.Mapper.Inputs {
 		if run.ok() {
-			run.syserr = r.store.Get(ctx, input.Url, input.Path, input.Type)
+			run.syserr = r.Store.Get(ctx, input.Url, input.Path, input.Type)
 		}
 	}
 
 	if run.ok() {
-		r.svc.SetState(tes.State_RUNNING)
+		r.Svc.SetState(tes.State_RUNNING)
 	}
 
 	// Run steps
 	for i, d := range task.Executors {
 		s := &stepRunner{
 			TaskID:     task.Id,
-			Conf:       r.conf,
+			Conf:       r.Conf,
 			Num:        i,
-			Log:        log.WithFields("step", i),
-			TaskLogger: r.svc,
+			Log:        r.Log.WithFields("step", i),
+			TaskLogger: r.Svc,
 			IP:         ip,
 			Cmd: &DockerCmd{
 				ImageName:     d.ImageName,
 				Cmd:           d.Cmd,
 				Environ:       d.Environ,
-				Volumes:       r.mapper.Volumes,
+				Volumes:       r.Mapper.Volumes,
 				Workdir:       d.Workdir,
 				Ports:         d.Ports,
 				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
@@ -186,23 +171,23 @@ func (r *taskRunner) Run(pctx context.Context) {
 
 	// Upload outputs
 	var outputs []*tes.OutputFileLog
-	for _, output := range r.mapper.Outputs {
+	for _, output := range r.Mapper.Outputs {
 		if run.ok() {
 			r.fixLinks(output.Path)
 			var out []*tes.OutputFileLog
-			out, run.syserr = r.store.Put(ctx, output.Url, output.Path, output.Type)
+			out, run.syserr = r.Store.Put(ctx, output.Url, output.Path, output.Type)
 			outputs = append(outputs, out...)
 		}
 	}
 
 	if run.ok() {
-		r.svc.Outputs(outputs)
+		r.Svc.Outputs(outputs)
 	}
 }
 
 // fixLinks walks the output paths, fixing cases where a symlink is
 // broken because it's pointing to a path inside a container volume.
-func (r *taskRunner) fixLinks(basepath string) {
+func (r *DefaultRunner) fixLinks(basepath string) {
 	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
 		if err != nil {
 			// There's an error, so be safe and give up on this file
@@ -223,7 +208,7 @@ func (r *taskRunner) fixLinks(basepath string) {
 					return nil
 				}
 				// Map symlink source (possible container path) to host path
-				mapped, err := r.mapper.HostPath(src)
+				mapped, err := r.Mapper.HostPath(src)
 				if err != nil {
 					return nil
 				}
@@ -247,12 +232,12 @@ func (r *taskRunner) fixLinks(basepath string) {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *taskRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
+func (r *DefaultRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
 
 	// Find the path for task stdin
 	var err error
 	if d.Stdin != "" {
-		s.Cmd.Stdin, err = r.mapper.OpenHostFile(d.Stdin)
+		s.Cmd.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
 		if err != nil {
 			s.Log.Error("Couldn't prepare log files", err)
 			return err
@@ -261,7 +246,7 @@ func (r *taskRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Cmd.Stdout, err = r.mapper.CreateHostFile(d.Stdout)
+		s.Cmd.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
 		if err != nil {
 			s.Log.Error("Couldn't prepare log files", err)
 			return err
@@ -270,7 +255,7 @@ func (r *taskRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Cmd.Stderr, err = r.mapper.CreateHostFile(d.Stderr)
+		s.Cmd.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
 		if err != nil {
 			s.Log.Error("Couldn't prepare log files", err)
 			return err
@@ -280,9 +265,9 @@ func (r *taskRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
 }
 
 // Validate the input downloads
-func (r *taskRunner) validateInputs() error {
-	for _, input := range r.mapper.Inputs {
-		if !r.store.Supports(input.Url, input.Path, input.Type) {
+func (r *DefaultRunner) validateInputs() error {
+	for _, input := range r.Mapper.Inputs {
+		if !r.Store.Supports(input.Url, input.Path, input.Type) {
 			return fmt.Errorf("Input download not supported by storage: %v", input)
 		}
 	}
@@ -290,22 +275,22 @@ func (r *taskRunner) validateInputs() error {
 }
 
 // Validate the output uploads
-func (r *taskRunner) validateOutputs() error {
-	for _, output := range r.mapper.Outputs {
-		if !r.store.Supports(output.Url, output.Path, output.Type) {
+func (r *DefaultRunner) validateOutputs() error {
+	for _, output := range r.Mapper.Outputs {
+		if !r.Store.Supports(output.Url, output.Path, output.Type) {
 			return fmt.Errorf("Output upload not supported by storage: %v", output)
 		}
 	}
 	return nil
 }
 
-func (r *taskRunner) pollForCancel(ctx context.Context, f func()) context.Context {
+func (r *DefaultRunner) pollForCancel(ctx context.Context, f func()) context.Context {
 	taskctx, cancel := context.WithCancel(ctx)
 
 	// Start a goroutine that polls the server to watch for a canceled state.
 	// If a cancel state is found, "taskctx" is canceled.
 	go func() {
-		ticker := time.NewTicker(r.conf.UpdateRate)
+		ticker := time.NewTicker(r.Conf.UpdateRate)
 		defer ticker.Stop()
 
 		for {
@@ -313,7 +298,7 @@ func (r *taskRunner) pollForCancel(ctx context.Context, f func()) context.Contex
 			case <-taskctx.Done():
 				return
 			case <-ticker.C:
-				state := r.svc.State()
+				state := r.Svc.State()
 				if tes.TerminalState(state) {
 					cancel()
 					f()
@@ -324,7 +309,11 @@ func (r *taskRunner) pollForCancel(ctx context.Context, f func()) context.Contex
 	return taskctx
 }
 
-// NoopTaskRunner is useful during testing for creating a worker with a TaskRunner
+// NoopRunner is useful during testing for creating a worker with a Runner
 // that doesn't do anything.
-func NoopTaskRunner(ctx context.Context, c config.Worker, taskID string) {
+type NoopRunner struct{}
+
+func (NoopRunner) Run(context.Context) {}
+func NoopRunnerFactory(ctx context.Context, c config.Worker, taskID string) Runner {
+	return NoopRunner{}
 }

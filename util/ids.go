@@ -1,8 +1,6 @@
 package util
 
-import (
-  "github.com/rs/xid"
-)
+import "github.com/rs/xid"
 
 // GenTaskID generates a task ID string.
 // IDs are globally unique and sortable.

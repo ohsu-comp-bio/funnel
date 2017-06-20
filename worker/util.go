@@ -62,7 +62,7 @@ func getExitCode(err error) int {
 				return status.ExitStatus()
 			}
 		} else {
-			log.Info("Could not determine exit code. Using default -999")
+			log.Info("Could not determine exit code. Using default -999", "err", err)
 			return -999
 		}
 	}

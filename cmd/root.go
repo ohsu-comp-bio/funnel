@@ -30,5 +30,4 @@ func init() {
 	RootCmd.AddCommand(termdash.Cmd)
 	RootCmd.AddCommand(wait.Cmd)
 	RootCmd.AddCommand(worker.Cmd)
-	RootCmd.AddCommand(worker.RunTaskCmd)
 }

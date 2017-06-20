@@ -39,15 +39,15 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 
 // Worker is a worker...
 type Worker struct {
-	conf       config.Worker
-	sched      scheduler.Client
-	log        logger.Logger
-	resources  config.Resources
-	newRunner  RunnerFactory
-	runners    runSet
-	timeout    util.IdleTimeout
-	stop       chan struct{}
-	state      pbf.WorkerState
+	conf      config.Worker
+	sched     scheduler.Client
+	log       logger.Logger
+	resources config.Resources
+	newRunner RunnerFactory
+	runners   runSet
+	timeout   util.IdleTimeout
+	stop      chan struct{}
+	state     pbf.WorkerState
 }
 
 // Run runs a worker with the given config. This is responsible for communication
@@ -104,7 +104,7 @@ func (w *Worker) Sync() {
 	for _, id := range r.TaskIds {
 		w.runners.Add(id, func(ctx context.Context, id string) {
 			r := w.newRunner(w.conf, id)
-      r.Run(ctx)
+			r.Run(ctx)
 		})
 	}
 

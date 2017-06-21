@@ -147,8 +147,6 @@ func WorkerInheritConfigVals(c Config) Worker {
 		c.Worker.ServerAddress = c.HostName + ":" + c.RPCPort
 	}
 	c.Worker.Storage = c.Storage
-	c.Worker.WorkDir = c.WorkDir
-	c.Worker.Logger = c.Logger
 	return c.Worker
 }
 

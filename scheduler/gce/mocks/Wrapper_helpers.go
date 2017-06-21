@@ -10,7 +10,7 @@ func (wpr *Wrapper) SetupMockMachineTypes() {
 			{
 				Name:      "test-mt",
 				GuestCpus: 3,
-				MemoryMb:  12,
+				MemoryMb:  1024,
 			},
 		},
 	}, nil)
@@ -28,7 +28,7 @@ func (wpr *Wrapper) SetupMockInstanceTemplates() {
 					Disks: []*compute.AttachedDisk{
 						{
 							InitializeParams: &compute.AttachedDiskInitializeParams{
-								DiskSizeGb: 14,
+								DiskSizeGb: 100,
 							},
 						},
 					},

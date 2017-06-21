@@ -14,7 +14,8 @@ import (
 	"time"
 )
 
-// Default Runner
+// NewDefaultRunner returns the default task runner used by Funnel,
+// which uses gRPC to read/write task details.
 func NewDefaultRunner(conf config.Worker, taskID string) Runner {
 
 	// Map files into this baseDir
@@ -32,6 +33,9 @@ func NewDefaultRunner(conf config.Worker, taskID string) Runner {
 	}
 }
 
+// DefaultRunner is the default task runner, which follows a basic,
+// sequential process of task initialization, execution, finalization,
+// and logging.
 type DefaultRunner struct {
 	Conf   config.Worker
 	Mapper *FileMapper
@@ -40,6 +44,7 @@ type DefaultRunner struct {
 	Log    logger.Logger
 }
 
+// Run runs the task runner.
 // TODO document behavior of slow consumer of task log updates
 func (r *DefaultRunner) Run(pctx context.Context) {
 
@@ -313,7 +318,10 @@ func (r *DefaultRunner) pollForCancel(ctx context.Context, f func()) context.Con
 // that doesn't do anything.
 type NoopRunner struct{}
 
+// Run doesn't do anything, it's an empty funciton.
 func (NoopRunner) Run(context.Context) {}
+
+// NoopRunnerFactory returns a new NoopRunner.
 func NoopRunnerFactory(c config.Worker, taskID string) Runner {
 	return NoopRunner{}
 }

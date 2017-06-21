@@ -10,13 +10,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-var log = logger.Sub("local")
+// Name of the scheduler backend.
+const Name = "local"
 
-// Plugin provides the local scheduler backend plugin
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "local",
-	Create: NewBackend,
-}
+var log = logger.Sub(Name)
 
 // NewBackend returns a new Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {

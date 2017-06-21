@@ -45,7 +45,8 @@ func TestGetMetadata(t *testing.T) {
 
 	var cerr error
 	conf := config.DefaultConfig()
-	conf, cerr = WithGCEConfig(conf, "http://localhost:20002")
+	meta, _ := LoadMetadataFromURL("http://localhost:20002")
+	conf, cerr = WithMetadataConfig(conf, meta)
 	if cerr != nil {
 		t.Fatal(cerr)
 	}

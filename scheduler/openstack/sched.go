@@ -9,13 +9,10 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
 
-var log = logger.Sub("openstack")
+// Name of the scheduler backend
+const Name = "openstack"
 
-// Plugin provides the OpenStack scheduler backend plugin.
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "openstack",
-	Create: NewBackend,
-}
+var log = logger.Sub(Name)
 
 // NewBackend returns a new Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {

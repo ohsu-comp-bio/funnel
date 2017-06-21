@@ -9,13 +9,10 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
 
-var log = logger.Sub("manual")
+// Name of the scheduler backend.
+const Name = "manual"
 
-// Plugin provides the manual scheduler backend plugin.
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "manual",
-	Create: NewBackend,
-}
+var log = logger.Sub(Name)
 
 // NewBackend returns a new Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {

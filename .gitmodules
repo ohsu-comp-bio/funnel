@@ -49,9 +49,6 @@
 [submodule "vendor/cloud.google.com/go"]
 	path = vendor/cloud.google.com/go
 	url = https://code.googlesource.com/gocloud
-[submodule "vendor/github.com/googleapis/gax-go"]
-	path = vendor/github.com/googleapis/gax-go
-	url = https://github.com/googleapis/gax-go
 [submodule "vendor/google.golang.org/api"]
 	path = vendor/google.golang.org/api
 	url = https://code.googlesource.com/google-api-go-client

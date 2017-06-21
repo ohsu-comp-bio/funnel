@@ -2,4 +2,4 @@ package storage
 
 import "github.com/ohsu-comp-bio/funnel/logger"
 
-var log = logger.New("storage")
+var log = logger.NewSubLogger("storage")

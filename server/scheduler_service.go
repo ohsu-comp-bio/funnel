@@ -124,6 +124,7 @@ func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbf.Worker) error {
 	})
 }
 
+// UpdateTaskState updates a task's state in the database.
 func (taskBolt *TaskBolt) UpdateTaskState(ctx context.Context, req *pbf.UpdateTaskStateRequest) (*pbf.UpdateTaskStateResponse, error) {
 	log.Debug("Update task STATE", req)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -278,9 +279,8 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 	case tes.TerminalState(target) && tes.TerminalState(current):
 		// Avoid switching between two terminal states.
-		log.Debug("Won't switch between two terminal states.",
-			"current", current, "target", target)
-		return nil
+		return fmt.Errorf("Won't switch between two terminal states: %s -> %s",
+			current, target)
 
 	case tes.TerminalState(current) && !tes.TerminalState(target):
 		// Error when trying to switch out of a terminal state to a non-terminal one.

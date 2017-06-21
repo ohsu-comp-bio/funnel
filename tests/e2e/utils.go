@@ -10,10 +10,12 @@ import (
 	docker "github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
-	"github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
+	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/scheduler"
+	"github.com/ohsu-comp-bio/funnel/scheduler/local"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tests/testutils"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"google.golang.org/grpc"
@@ -45,15 +47,19 @@ type Funnel struct {
 	Conf       config.Config
 	StorageDir string
 
+	// Components
+	DB        *server.TaskBolt
+	Server    *server.Server
+	Scheduler *scheduler.Scheduler
+
 	// Internal
 	startTime string
 	rate      time.Duration
 	conn      *grpc.ClientConn
 }
 
-// NewFunnel creates a new funnel test server with some test
-// configuration automatically set: random ports, temp work dir, etc.
-func NewFunnel() *Funnel {
+// DefaultConfig returns config with a set of defaults useful for end-to-end testing.
+func DefaultConfig() config.Config {
 	var rate = time.Millisecond * 1000
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
@@ -80,6 +86,12 @@ func NewFunnel() *Funnel {
 			},
 		},
 	}
+	return conf
+}
+
+// NewFunnel creates a new funnel test server with some test
+// configuration automatically set: random ports, temp work dir, etc.
+func NewFunnel(conf config.Config) *Funnel {
 
 	var derr error
 	dcli, derr := util.NewDockerClient()
@@ -87,13 +99,22 @@ func NewFunnel() *Funnel {
 		panic(derr)
 	}
 
+	db, dberr := server.NewTaskBolt(conf)
+	if dberr != nil {
+		panic(dberr)
+	}
+
+	srv := server.DefaultServer(db, conf)
+
 	return &Funnel{
 		HTTP:       client.NewClient("http://localhost:" + conf.HTTPPort),
 		Docker:     dcli,
 		Conf:       conf,
-		StorageDir: storageDir,
+		StorageDir: conf.Storage.Local.AllowedDirs[0],
+		DB:         db,
+		Server:     srv,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
-		rate:       rate,
+		rate:       conf.ScheduleRate,
 	}
 }
 
@@ -116,21 +137,33 @@ func (f *Funnel) addRPCClient() error {
 	return nil
 }
 
-// StartServer starts the server
-func (f *Funnel) StartServer() {
-	go server.Run(f.Conf)
-	err := f.addRPCClient()
-	if err != nil {
-		log.Error("funnel server failed to start within allocated time", err)
-	}
-	log.Debug("Funnel server started")
-}
-
 // Cleanup cleans up test resources
 func (f *Funnel) Cleanup() {
 	os.RemoveAll(f.StorageDir)
 	os.RemoveAll(f.Conf.WorkDir)
 	f.conn.Close()
+}
+
+// WithLocalBackend configures the instance to use the local scheduler backend.
+func (f *Funnel) WithLocalBackend() {
+	backend, berr := local.NewBackend(f.Conf)
+	if berr != nil {
+		panic(berr)
+	}
+	f.Scheduler = scheduler.NewScheduler(f.DB, backend, f.Conf)
+}
+
+// StartServer starts the server
+func (f *Funnel) StartServer() {
+	err := f.addRPCClient()
+	if err != nil {
+		log.Error("funnel server failed to start within allocated time", err)
+	}
+
+	log.Debug("Funnel server started")
+	go f.Server.Serve(context.Background())
+	go f.Scheduler.Start(context.Background())
+	time.Sleep(time.Second)
 }
 
 // WaitForDockerDestroy waits for a "destroy" event
@@ -252,11 +285,13 @@ func (f *Funnel) Wait(id string) *tes.Task {
 }
 
 // WaitForRunning waits for a task to be in the RUNNING state
-func (f *Funnel) WaitForRunning(id string) {
-	for range time.NewTicker(f.rate).C {
-		t := f.Get(id)
-		if t.State == tes.State_RUNNING {
-			return
+func (f *Funnel) WaitForRunning(ids ...string) {
+	for _, id := range ids {
+		for range time.NewTicker(f.rate).C {
+			t := f.Get(id)
+			if t.State == tes.State_RUNNING {
+				break
+			}
 		}
 	}
 }
@@ -408,4 +443,10 @@ func (f *Funnel) CleanupTestServerContainer() {
 	s := f.findTestServerContainers()
 	f.killTestServerContainers(s)
 	return
+}
+
+// ListWorkers calls db.ListWorkers.
+func (f *Funnel) ListWorkers() []*pbf.Worker {
+	resp, _ := f.DB.ListWorkers(context.Background(), &pbf.ListWorkersRequest{})
+	return resp.Workers
 }

@@ -14,77 +14,6 @@ func init() {
 	logger.Configure(logger.DebugConfig())
 }
 
-// Test the scheduler while mocking out a lower level than what's in sched_test.go
-// This mocks out the Wrapper interface, which allows better testing the logic
-// in client.go and allows a more end-to-end test.
-func TestWrapper(t *testing.T) {
-	h := setup()
-	defer h.srv.Stop()
-
-	// Mock the GCE API wrapper
-	wpr := new(gce_mocks.Wrapper)
-	h.gceClient = &gceClient{
-		wrapper: wpr,
-		project: "test-proj",
-		zone:    "test-zone",
-	}
-
-	h.srv.RunHelloWorld()
-
-	wpr.SetupMockInstanceTemplates()
-	wpr.SetupMockMachineTypes()
-
-	h.Schedule()
-	workers := h.srv.ListWorkers()
-
-	if len(workers) != 1 {
-		t.Error("Expected a single worker")
-		return
-	}
-
-	log.Debug("Workers", workers)
-	w := workers[0]
-
-	if w.Metadata["gce-template"] != "test-tpl" {
-		t.Error("Worker has incorrect template")
-	}
-
-	addr := h.conf.RPCAddress()
-	expected := &compute.Instance{
-		// TODO test that these fields get passed through from the template correctly.
-		//      i.e. mock a more complex template
-		CanIpForward:      false,
-		CpuPlatform:       "",
-		CreationTimestamp: "",
-		Description:       "",
-		Disks: []*compute.AttachedDisk{
-			{
-				InitializeParams: &compute.AttachedDiskInitializeParams{
-					DiskSizeGb: 14,
-					DiskType:   "zones/test-zone/diskTypes/", // TODO??? this must be wrong
-				},
-			},
-		},
-		Name:        w.Id,
-		MachineType: "zones/test-zone/machineTypes/test-mt",
-		Metadata: &compute.Metadata{
-			Items: []*compute.MetadataItems{
-				{
-					Key:   "funnel-worker-serveraddress",
-					Value: &addr,
-				},
-			},
-		},
-		Tags: &compute.Tags{
-			Items: []string{"funnel"},
-		},
-	}
-	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
-
-	h.Scale()
-	wpr.AssertExpectations(t)
-}
-
 // Tests what happens when the InsertInstance() call fails the first couple times.
 func TestInsertTempError(t *testing.T) {
 
@@ -128,7 +57,7 @@ func TestInsertTempError(t *testing.T) {
 		Disks: []*compute.AttachedDisk{
 			{
 				InitializeParams: &compute.AttachedDiskInitializeParams{
-					DiskSizeGb: 14,
+					DiskSizeGb: 100,
 					DiskType:   "zones/test-zone/diskTypes/", // TODO??? this must be wrong
 				},
 			},

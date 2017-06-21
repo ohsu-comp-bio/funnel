@@ -1,6 +1,7 @@
-package tests
+package e2e
 
 import (
+	"context"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"testing"
 	"time"
@@ -9,12 +10,11 @@ import (
 // Test the simple case of a worker that is alive,
 // then doesn't ping in time, and it marked dead
 func TestWorkerDead(t *testing.T) {
-	conf := NewConfig()
+	conf := DefaultConfig()
 	conf.WorkerPingTimeout = time.Millisecond
 	srv := NewFunnel(conf)
-	defer srv.Stop()
 
-	srv.AddWorker(&pbf.Worker{
+	srv.DB.UpdateWorker(context.Background(), &pbf.Worker{
 		Id:    "test-worker",
 		State: pbf.WorkerState_ALIVE,
 	})
@@ -31,12 +31,11 @@ func TestWorkerDead(t *testing.T) {
 // Test what happens when a worker never starts.
 // It should be marked as dead.
 func TestWorkerInitFail(t *testing.T) {
-	conf := NewConfig()
+	conf := DefaultConfig()
 	conf.WorkerInitTimeout = time.Millisecond
 	srv := NewFunnel(conf)
-	defer srv.Stop()
 
-	srv.AddWorker(&pbf.Worker{
+	srv.DB.UpdateWorker(context.Background(), &pbf.Worker{
 		Id:    "test-worker",
 		State: pbf.WorkerState_INITIALIZING,
 	})

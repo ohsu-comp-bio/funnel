@@ -33,10 +33,12 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	state := pbf.WorkerState_UNINITIALIZED
 	return &Worker{
 		conf, sched, log, res,
-		NewDefaultRunner, runners, timeout, stop, state,
+		NewDefaultRunner, runSet{}, timeout, stop, state,
 	}, nil
 }
 
+// NewNoopWorker returns a new worker that doesn't have any side effects
+// (e.g. storage access, docker calls, etc.) which is useful for testing.
 func NewNoopWorker(conf config.Worker) (*Worker, error) {
 	w, err := NewWorker(conf)
 	w.newRunner = NoopRunnerFactory
@@ -153,7 +155,6 @@ func (w *Worker) checkIdleTimer() {
 	// The worker is idle if there are no task runners.
 	// The worker should not time out if it's not alive (e.g. if it's initializing)
 	idle := w.runners.Count() == 0 && w.state == pbf.WorkerState_ALIVE
-	log.Debug("runners", "count", w.runners.Count())
 	if idle {
 		w.timeout.Start()
 	} else {

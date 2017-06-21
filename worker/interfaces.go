@@ -7,12 +7,16 @@ import (
 	"time"
 )
 
+// RunnerFactory is a function which creates a new task runner instance.
 type RunnerFactory func(c config.Worker, taskID string) Runner
 
+// Runner is a type which runs a task.
 type Runner interface {
 	Run(context.Context)
 }
 
+// TaskService is a type which reads and writes task information
+// during task execution.
 type TaskService interface {
 	TaskLogger
 

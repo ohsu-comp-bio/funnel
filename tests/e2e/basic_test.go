@@ -473,3 +473,14 @@ func TestSmallPagination(t *testing.T) {
 		t.Error("unexpected task count")
 	}
 }
+
+func TestTaskError(t *testing.T) {
+	id := fun.Run(`
+    --cmd "sh -c 'exit 1'"
+  `)
+	task := fun.Wait(id)
+
+	if task.State != tes.State_ERROR {
+		t.Fatal("Unexpected task state")
+	}
+}

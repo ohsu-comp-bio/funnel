@@ -48,7 +48,7 @@ func init() {
 // Run runs a worker with the given config, blocking until the worker exits.
 func Run(conf config.Config) error {
 
-	logger.Configure(conf.Logger)
+	logger.Configure(conf.Worker.Logger)
 
 	if conf.Worker.ID == "" {
 		conf.Worker.ID = scheduler.GenWorkerID("funnel")

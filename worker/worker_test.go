@@ -125,6 +125,7 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	w.sync()
 
 	if w.runners.Count() != 0 {
+		log.Debug("COUNT", w.runners.Count())
 		t.Fatal("Unexpected runner count")
 	}
 
@@ -134,6 +135,7 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	w.sync()
 
 	if w.runners.Count() != 0 {
+		log.Debug("COUNT", w.runners.Count())
 		t.Fatal("Unexpected runner count")
 	}
 }
@@ -155,6 +157,7 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 	w.sync()
 
 	if w.runners.Count() != 0 {
+		log.Debug("COUNT", w.runners.Count())
 		t.Fatal("Unexpected runner count")
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"

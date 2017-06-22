@@ -138,9 +138,10 @@ func TestWrapper(t *testing.T) {
 
 	// Run a task
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --cmd 'sleep 100'
   `)
 	fun.WaitForRunning(id)
+	defer fun.Cancel(id)
 
 	// Check the worker
 	workers := fun.ListWorkers()
@@ -201,9 +202,10 @@ func TestSchedToExisting(t *testing.T) {
 
 	// Run a task
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --cmd 'sleep 100'
   `)
 	fun.WaitForRunning(id)
+	defer fun.Cancel(id)
 
 	workers := fun.ListWorkers()
 
@@ -229,11 +231,12 @@ func TestSchedStartWorker(t *testing.T) {
 	fun.AddWorker("existing", 1, 100.0, 1000.0)
 
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --cmd 'sleep 100'
     --cpu 3
   `)
 
 	fun.WaitForRunning(id)
+	defer fun.Cancel(id)
 	workers := fun.ListWorkers()
 
 	if len(workers) != 2 {
@@ -256,10 +259,11 @@ func TestPreferExistingWorker(t *testing.T) {
 	fun.AddWorker("existing", 10, 100.0, 1000.0)
 
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --cmd 'sleep 100'
   `)
 
 	fun.WaitForRunning(id)
+	defer fun.Cancel(id)
 	workers := fun.ListWorkers()
 
 	if len(workers) != 1 {
@@ -282,23 +286,27 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	// NOTE: the machine type hard-coded in scheduler/gce/mocks/Wrapper_helpers.go
 	//       has 3 CPUs.
 	id1 := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 2
   `)
 	id2 := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 2
   `)
 	id3 := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 2
   `)
 	id4 := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 2
   `)
 
 	fun.WaitForRunning(id1, id2, id3, id4)
+	defer fun.Cancel(id1)
+	defer fun.Cancel(id2)
+	defer fun.Cancel(id3)
+	defer fun.Cancel(id4)
 	workers := fun.ListWorkers()
 
 	if len(workers) != 4 {
@@ -313,11 +321,12 @@ func TestUpdateAvailableResources(t *testing.T) {
 	fun.AddWorker("existing", 10, 100.0, 1000.0)
 
 	id := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 2
   `)
 
 	fun.WaitForRunning(id)
+	defer fun.Cancel(id)
 	workers := fun.ListWorkers()
 
 	if len(workers) != 1 || workers[0].Id != "existing" {
@@ -337,19 +346,22 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	fun.AddWorker("existing-2", 8, 100.0, 1000.0)
 
 	id1 := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 4
   `)
 	id2 := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 4
   `)
 	id3 := fun.Run(`
-    --cmd 'sleep 2'
+    --cmd 'sleep 100'
     --cpu 4
   `)
 
 	fun.WaitForRunning(id1, id2, id3)
+	defer fun.Cancel(id1)
+	defer fun.Cancel(id2)
+	defer fun.Cancel(id3)
 	workers := fun.ListWorkers()
 
 	log.Debug("WORKERS", workers)

@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"testing"
 	"time"
@@ -352,5 +353,117 @@ func TestOutputFileLog(t *testing.T) {
 	}
 	if out[2].SizeBytes != 4 {
 		t.Fatal("unexpected output size")
+	}
+}
+
+func TestPagination(t *testing.T) {
+	f := NewFunnel()
+	f.StartServer()
+	ctx := context.Background()
+
+	// Ensure database is empty
+	r0, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
+	if len(r0.Tasks) != 0 {
+		t.Fatal("expected empty database")
+	}
+
+	for i := 0; i < 3000; i++ {
+		f.Run(`--cmd 'echo 1'`)
+	}
+
+	r1, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
+
+	// Default page size is 256
+	if len(r1.Tasks) != 256 {
+		t.Error("wrong default page size")
+	}
+
+	r2, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+		PageSize: 2,
+	})
+
+	// Minimum page size is 50
+	if len(r2.Tasks) != 50 {
+		t.Error("wrong minimum page size")
+	}
+
+	r3, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+		PageSize: 5000,
+	})
+
+	if len(r3.Tasks) != 2048 {
+		t.Error("wrong max page size")
+	}
+
+	r4, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+		PageSize: 500,
+	})
+
+	if len(r4.Tasks) != 500 {
+		t.Error("wrong requested page size")
+	}
+
+	if r4.NextPageToken == "" {
+		t.Error("expected next page token")
+	}
+
+	// Get all pages
+	var tasks []*tes.Task
+	tasks = append(tasks, r4.Tasks...)
+	for r4.NextPageToken != "" {
+		r4, _ = f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+			PageSize:  500,
+			PageToken: r4.NextPageToken,
+		})
+		tasks = append(tasks, r4.Tasks...)
+	}
+
+	if len(tasks) != 3000 {
+		log.Error("TASK COUNT", tasks)
+		t.Error("unexpected task count")
+	}
+}
+
+// Smaller test for debugging getting the full set of pages
+func TestSmallPagination(t *testing.T) {
+	f := NewFunnel()
+	f.StartServer()
+	ctx := context.Background()
+
+	// Ensure database is empty
+	r0, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
+	if len(r0.Tasks) != 0 {
+		t.Fatal("expected empty database")
+	}
+
+	for i := 0; i < 150; i++ {
+		f.Run(`--cmd 'echo 1'`)
+	}
+
+	r4, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+		PageSize: 50,
+	})
+
+	// Get all pages
+	var tasks []*tes.Task
+	tasks = append(tasks, r4.Tasks...)
+	for r4.NextPageToken != "" {
+		r4, _ = f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+			PageSize:  50,
+			PageToken: r4.NextPageToken,
+		})
+
+		// Check a bug where the end of the last page was being included
+		// in the start of the next page.
+		if len(r4.Tasks) > 0 && r4.Tasks[0].Id == tasks[len(tasks)-1].Id {
+			t.Error("Page start/end bug")
+		}
+
+		tasks = append(tasks, r4.Tasks...)
+	}
+
+	if len(tasks) != 150 {
+		log.Error("TASK COUNT", len(tasks))
+		t.Error("unexpected task count")
 	}
 }

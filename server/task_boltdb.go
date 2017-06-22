@@ -277,7 +277,19 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 		c := tx.Bucket(TaskBucket).Cursor()
 
 		i := 0
-		for k, _ := c.Seek([]byte(req.PageToken)); k != nil && i < pageSize; k, _ = c.Next() {
+
+		// For pagination, figure out the starting key.
+		var k []byte
+		if req.PageToken != "" {
+			// Seek moves to the key, but the start of the page is the next key.
+			c.Seek([]byte(req.PageToken))
+			k, _ = c.Next()
+		} else {
+			// No pagination, so take the first key.
+			k, _ = c.First()
+		}
+
+		for ; k != nil && i < pageSize; k, _ = c.Next() {
 			task := getTaskView(tx, string(k), req.View)
 			tasks = append(tasks, task)
 			i++

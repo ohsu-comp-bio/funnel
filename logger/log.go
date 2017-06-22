@@ -31,6 +31,7 @@ type Logger interface {
 	Error(string, ...interface{})
 	WithFields(...interface{}) Logger
 	Configure(Config)
+	GetConfig() Config
 }
 
 // New returns a new Logger instance.
@@ -39,14 +40,16 @@ func New(ns string, args ...interface{}) Logger {
 	f["ns"] = ns
 	log := logrus.New()
 	base := log.WithFields(f)
-	l := &logger{log, base}
-	l.Configure(DefaultConfig())
+	l := &logger{log, base, nil}
+	conf := GetConfig()
+	l.Configure(conf)
 	return l
 }
 
 type logger struct {
 	logrus *logrus.Logger
 	base   *logrus.Entry
+	conf   *Config
 }
 
 // SetLevel sets the level of the logger.
@@ -122,7 +125,7 @@ func (l *logger) WithFields(args ...interface{}) Logger {
 	defer recoverLogErr()
 	f := fields(args...)
 	base := l.base.WithFields(f)
-	return &logger{l.logrus, base}
+	return &logger{l.logrus, base, l.conf}
 }
 
 // PrintSimpleError prints out an error message with a red "ERROR:" prefix.

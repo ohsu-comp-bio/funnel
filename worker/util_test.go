@@ -5,6 +5,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	sched_mocks "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
@@ -33,17 +34,24 @@ type testWorker struct {
 }
 
 func newTestWorker(conf config.Worker) testWorker {
-	w, err := NewWorker(conf)
-	if err != nil {
-		panic(err)
-	}
-	w.state = pbf.WorkerState_ALIVE
 
 	// A mock scheduler client allows this code to fake/control the worker's
 	// communication with a scheduler service.
 	s := new(sched_mocks.Client)
-	w.sched = s
+	w := &Worker{
+		conf:      conf,
+		sched:     s,
+		log:       log,
+		resources: detectResources(conf.Resources),
+		newRunner: NoopRunnerFactory,
+		runners:   runSet{},
+		timeout:   util.NewIdleTimeout(conf.Timeout),
+		stop:      make(chan struct{}),
+		state:     pbf.WorkerState_ALIVE,
+	}
 
+	s.On("UpdateWorker", mock.Anything, mock.Anything).
+		Return(nil, nil)
 	s.On("UpdateWorker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, nil)
 	s.On("Close").Return(nil)
@@ -56,6 +64,8 @@ func newTestWorker(conf config.Worker) testWorker {
 }
 
 func (t *testWorker) Start() {
+	t.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
+		Return(&pbf.Worker{}, nil)
 	go func() {
 		t.Worker.Run()
 		close(t.done)

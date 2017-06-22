@@ -3,11 +3,16 @@ package worker
 import (
 	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
 )
+
+func init() {
+	log.Configure(logger.DebugConfig())
+}
 
 // Test calling Worker.Stop()
 func TestStopWorker(t *testing.T) {
@@ -37,6 +42,7 @@ func TestGetWorkerFail(t *testing.T) {
 	w.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("TEST"))
 	w.sync()
+	time.Sleep(time.Second)
 }
 
 // Test the flow of a worker completing a task then timing out
@@ -55,7 +61,6 @@ func TestWorkerTimeout(t *testing.T) {
 	// Set up scheduler mock to return a task
 	w.AddTasks("task-1")
 
-	// Start the worker
 	w.Start()
 
 	// Fail if this test doesn't complete in the given time.
@@ -85,6 +90,7 @@ func TestNoTasks(t *testing.T) {
 	w.sync()
 	w.sync()
 	w.sync()
+	time.Sleep(time.Second)
 
 	if count != 0 {
 		t.Fatal("Unexpected runner factory call count")
@@ -98,11 +104,20 @@ func TestNoTasks(t *testing.T) {
 func TestWorkerRunnerCreated(t *testing.T) {
 	conf := config.DefaultConfig().Worker
 	w := newTestWorker(conf)
+
+	// Count the number of times the runner factory was called
+	var count int
+	// Hook the test runner up to the worker's runner factory.
+	w.newRunner = testRunnerFactoryFunc(func(r testRunner) {
+		count++
+	})
+
 	w.AddTasks("task-1", "task-2")
-
 	w.sync()
+	time.Sleep(time.Second)
 
-	if w.runners.Count() != 2 {
+	log.Debug("COUNT", count)
+	if count != 2 {
 		t.Fatal("Unexpected worker runner count")
 	}
 }
@@ -118,14 +133,14 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	// Hook the test runner up to the worker's runner factory.
 	w.newRunner = r.Factory
 
-	w.Start()
 	w.AddTasks("task-1")
 
 	// manually sync the worker to avoid timing issues.
 	w.sync()
+	time.Sleep(time.Second)
 
+	log.Debug("COUNT", w.runners.Count())
 	if w.runners.Count() != 0 {
-		log.Debug("COUNT", w.runners.Count())
 		t.Fatal("Unexpected runner count")
 	}
 
@@ -133,9 +148,10 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	// Do a few syncs to make sure.
 	w.sync()
 	w.sync()
+	time.Sleep(time.Second)
 
+	log.Debug("COUNT", w.runners.Count())
 	if w.runners.Count() != 0 {
-		log.Debug("COUNT", w.runners.Count())
 		t.Fatal("Unexpected runner count")
 	}
 }
@@ -150,11 +166,11 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 	// Hook the test runner up to the worker's runner factory.
 	w.newRunner = r.Factory
 
-	w.Start()
 	w.AddTasks("task-1")
 
 	// manually sync the worker to avoid timing issues.
 	w.sync()
+	time.Sleep(time.Second)
 
 	if w.runners.Count() != 0 {
 		log.Debug("COUNT", w.runners.Count())

@@ -149,7 +149,9 @@ func TestListTaskView(t *testing.T) {
 
 	// test http proxy
 	var r *tes.ListTasksResponse
-	r, err = fun.HTTP.ListTasks("MINIMAL")
+	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+		View: tes.TaskView_BASIC,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +170,9 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	r, err = fun.HTTP.ListTasks("BASIC")
+	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+		View: tes.TaskView_BASIC,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +186,9 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in basic view")
 	}
 
-	r, err = fun.HTTP.ListTasks("FULL")
+	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+		View: tes.TaskView_FULL,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

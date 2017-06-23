@@ -2,6 +2,7 @@ package termdash
 
 import (
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"sort"
 	"sync"
 )
@@ -29,13 +30,24 @@ func NewTaskSource(tesHTTPServerAddress string) *TaskSource {
 }
 
 func (cm *TaskSource) listTasks() TaskWidgets {
-	resp, err := cm.client.ListTasks("BASIC")
-	if err != nil {
-		panic(err)
-	}
 	var tasks TaskWidgets
-	for _, t := range resp.Tasks {
-		tasks = append(tasks, NewTaskWidget(t))
+	var page string
+
+	for {
+		resp, err := cm.client.ListTasks(&tes.ListTasksRequest{
+			View:      tes.TaskView_BASIC,
+			PageToken: page,
+		})
+		page = resp.NextPageToken
+		if err != nil {
+			panic(err)
+		}
+		for _, t := range resp.Tasks {
+			tasks = append(tasks, NewTaskWidget(t))
+		}
+		if page == "" {
+			break
+		}
 	}
 	return tasks
 }

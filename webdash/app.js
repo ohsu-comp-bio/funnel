@@ -8,12 +8,33 @@ function shortID(longID) {
   return longID.split('-')[0];
 }
 
-app.controller('TaskListController', function($scope, NgTableParams, $http) {
-  $scope.url = "/v1/tasks";
-  $scope.shortID = shortID;
+function listAllTasks($http, tasks, page) {
+  if (!tasks) {
+    tasks = []
+  }
 
-  $http.get($scope.url).then(function(result) {
-	  var tasks = result.data.tasks || [];
+  var url = "/v1/tasks";
+  if (page) {
+    url += "?page_token=" + page;
+  }
+
+  return $http.get(url).then(function(result) {
+    Array.prototype.push.apply(tasks, result.data.tasks);
+    if (result.data.next_page_token) {
+      return listAllTasks($http, tasks, result.data.next_page_token);
+    } else {
+      return tasks
+    }
+  });
+}
+
+app.controller('TaskListController', function($scope, NgTableParams, $http) {
+  $scope.shortID = shortID;
+  $scope.tasks = [];
+
+  listAllTasks($http).then(function(tasks) {
+    console.log(tasks);
+    $scope.tasks = tasks;
     $scope.tableParams = new NgTableParams(
       {
         count: 25
@@ -23,7 +44,7 @@ app.controller('TaskListController', function($scope, NgTableParams, $http) {
         paginationMinBlocks: 2,
         paginationMaxBlocks: 10,
         total: tasks.length,
-        dataset: tasks
+        dataset: tasks,
       }
     );
   });

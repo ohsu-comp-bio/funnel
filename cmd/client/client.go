@@ -9,6 +9,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -62,12 +63,18 @@ func (c *Client) GetTask(id string, view string) (*tes.Task, error) {
 }
 
 // ListTasks returns the result of GET /v1/tasks
-func (c *Client) ListTasks(view string) (*tes.ListTasksResponse, error) {
-	if !validateView(view) {
-		return nil, fmt.Errorf("Invalid view. Must be one of MINIMAL, BASIC, FULL")
-	}
+func (c *Client) ListTasks(req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+	// Build url query parameters
+	v := url.Values{}
+	addString(v, "project", req.GetProject())
+	addString(v, "name_prefix", req.GetNamePrefix())
+	addUInt32(v, "page_size", req.GetPageSize())
+	addString(v, "page_token", req.GetPageToken())
+	addString(v, "view", req.GetView().String())
+
 	// Send request
-	body, err := util.CheckHTTPResponse(c.client.Get(c.address + "/v1/tasks?view=" + view))
+	u := c.address + "/v1/tasks?" + v.Encode()
+	body, err := util.CheckHTTPResponse(c.client.Get(u))
 	if err != nil {
 		return nil, err
 	}

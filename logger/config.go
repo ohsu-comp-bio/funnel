@@ -70,7 +70,6 @@ func DebugConfig() Config {
 
 // Configure configures the logging level and output path.
 func (l *logger) Configure(conf Config) {
-	l.conf = &conf
 	l.SetLevel(conf.Level)
 
 	switch conf.Formatter {
@@ -107,9 +106,4 @@ func (l *logger) Configure(conf Config) {
 			l.SetOutput(logFile)
 		}
 	}
-}
-
-// GetConfig returns the loggers configuration
-func (l *logger) GetConfig() Config {
-	return *l.conf
 }

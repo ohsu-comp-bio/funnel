@@ -1,22 +1,10 @@
 package logger
 
 import (
-	"github.com/Sirupsen/logrus"
 	"io"
 )
 
-var global = newGlobal("funnel")
-
-func newGlobal(ns string, args ...interface{}) Logger {
-	f := fields(args...)
-	f["ns"] = ns
-	log := logrus.New()
-	base := log.WithFields(f)
-	l := &logger{log, base, nil}
-	conf := DefaultConfig()
-	l.Configure(conf)
-	return l
-}
+var global = New("funnel")
 
 // SetLevel sets the logging level for the global logger.
 func SetLevel(lvl string) {
@@ -63,7 +51,9 @@ func Configure(c Config) {
 	global.Configure(c)
 }
 
-// GetConfig returns the configuration of the global logger.
-func GetConfig() Config {
-	return global.GetConfig()
+// NewSubLogger returns a new sub-logger instance.
+func NewSubLogger(ns string, args ...interface{}) Logger {
+	f := fields(args...)
+	f["ns"] = ns
+	return global.WithFields(f)
 }

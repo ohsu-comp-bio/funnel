@@ -22,6 +22,7 @@ type Formatter logrus.Formatter
 
 // Logger is repsonsible for logging messages from code.
 type Logger interface {
+	NewSubLogger(string, ...interface{}) Logger
 	SetFormatter(Formatter)
 	SetLevel(string)
 	SetOutput(io.Writer)
@@ -31,7 +32,6 @@ type Logger interface {
 	Error(string, ...interface{})
 	WithFields(...interface{}) Logger
 	Configure(Config)
-	GetConfig() Config
 }
 
 // New returns a new Logger instance.
@@ -40,16 +40,21 @@ func New(ns string, args ...interface{}) Logger {
 	f["ns"] = ns
 	log := logrus.New()
 	base := log.WithFields(f)
-	l := &logger{log, base, nil}
-	conf := GetConfig()
-	l.Configure(conf)
+	l := &logger{log, base}
+	l.Configure(DefaultConfig())
 	return l
 }
 
 type logger struct {
 	logrus *logrus.Logger
 	base   *logrus.Entry
-	conf   *Config
+}
+
+// NewSubLogger returns a new sub-logger instance.
+func (l *logger) NewSubLogger(ns string, args ...interface{}) Logger {
+	f := fields(args...)
+	f["ns"] = ns
+	return l.WithFields(f)
 }
 
 // SetLevel sets the level of the logger.
@@ -125,7 +130,7 @@ func (l *logger) WithFields(args ...interface{}) Logger {
 	defer recoverLogErr()
 	f := fields(args...)
 	base := l.base.WithFields(f)
-	return &logger{l.logrus, base, l.conf}
+	return &logger{l.logrus, base}
 }
 
 // PrintSimpleError prints out an error message with a red "ERROR:" prefix.

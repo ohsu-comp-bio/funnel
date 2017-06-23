@@ -17,7 +17,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
 
-var log = logger.NewSubLogger("gce")
+var log = logger.Sub("gce")
 
 // Plugin provides the Google Cloud Compute scheduler backend plugin.
 var Plugin = &scheduler.BackendPlugin{

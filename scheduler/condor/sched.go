@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var log = logger.NewSubLogger("condor")
+var log = logger.Sub("condor")
 
 // prefix is a string prefixed to condor worker IDs, so that condor
 // workers can be identified by ShouldStartWorker() below.

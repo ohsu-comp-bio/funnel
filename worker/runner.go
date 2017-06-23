@@ -34,7 +34,7 @@ func runTask(ctrl TaskControl, conf config.Worker, t *pbf.TaskWrapper) {
 			client: client,
 			taskID: t.Task.Id,
 		},
-		log: logger.NewSubLogger("runner", "workerID", conf.ID, "taskID", t.Task.Id),
+		log: logger.Sub("runner", "workerID", conf.ID, "taskID", t.Task.Id),
 	}
 	go r.Run()
 }

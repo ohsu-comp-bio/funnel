@@ -2,4 +2,4 @@ package worker
 
 import "github.com/ohsu-comp-bio/funnel/logger"
 
-var log = logger.NewSubLogger("worker")
+var log = logger.Sub("worker")

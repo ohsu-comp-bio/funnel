@@ -9,7 +9,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
 
-var log = logger.NewSubLogger("openstack")
+var log = logger.Sub("openstack")
 
 // Plugin provides the OpenStack scheduler backend plugin.
 var Plugin = &scheduler.BackendPlugin{

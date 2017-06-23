@@ -35,7 +35,7 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 		return nil, err
 	}
 
-	log := logger.NewSubLogger("worker", "workerID", conf.ID)
+	log := logger.Sub("worker", "workerID", conf.ID)
 	log.Debug("Worker Config", "config.Worker", conf)
 	res := detectResources(conf.Resources)
 	// Tracks active task ctrls: task ID -> TaskControl instance

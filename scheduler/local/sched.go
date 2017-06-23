@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-var log = logger.NewSubLogger("local")
+var log = logger.Sub("local")
 
 // Plugin provides the local scheduler backend plugin
 var Plugin = &scheduler.BackendPlugin{

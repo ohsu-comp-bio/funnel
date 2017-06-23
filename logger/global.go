@@ -51,7 +51,7 @@ func Configure(c Config) {
 	global.Configure(c)
 }
 
-// NewSubLogger returns a new sub-logger instance.
-func NewSubLogger(ns string, args ...interface{}) Logger {
-	return global.NewSubLogger(ns, args...)
+// Sub returns a new sub-logger instance.
+func Sub(ns string, args ...interface{}) Logger {
+	return global.Sub(ns, args...)
 }

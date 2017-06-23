@@ -14,7 +14,7 @@ import (
 	"runtime/debug"
 )
 
-var log = logger.NewSubLogger("server")
+var log = logger.Sub("server")
 
 // Server represents a Funnel server. The server handles
 // RPC traffic via gRPC, HTTP traffic for the TES API,

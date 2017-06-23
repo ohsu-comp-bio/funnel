@@ -22,6 +22,7 @@ type Formatter logrus.Formatter
 
 // Logger is repsonsible for logging messages from code.
 type Logger interface {
+	NewSubLogger(string, ...interface{}) Logger
 	SetFormatter(Formatter)
 	SetLevel(string)
 	SetOutput(io.Writer)
@@ -47,6 +48,13 @@ func New(ns string, args ...interface{}) Logger {
 type logger struct {
 	logrus *logrus.Logger
 	base   *logrus.Entry
+}
+
+// NewSubLogger returns a new sub-logger instance.
+func (l *logger) NewSubLogger(ns string, args ...interface{}) Logger {
+	f := fields(args...)
+	f["ns"] = ns
+	return l.WithFields(f)
 }
 
 // SetLevel sets the level of the logger.

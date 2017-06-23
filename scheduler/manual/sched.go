@@ -9,7 +9,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
 
-var log = logger.New("manual")
+var log = logger.NewSubLogger("manual")
 
 // Plugin provides the manual scheduler backend plugin.
 var Plugin = &scheduler.BackendPlugin{

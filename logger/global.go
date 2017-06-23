@@ -50,3 +50,10 @@ func WithFields(args ...interface{}) Logger {
 func Configure(c Config) {
 	global.Configure(c)
 }
+
+// NewSubLogger returns a new sub-logger instance.
+func NewSubLogger(ns string, args ...interface{}) Logger {
+	f := fields(args...)
+	f["ns"] = ns
+	return global.WithFields(f)
+}

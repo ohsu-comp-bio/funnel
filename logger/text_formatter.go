@@ -33,25 +33,10 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// entry namespace
 	ns := entry.Data["ns"].(string)
 
-	// Gather keys so they can be sorted
-	keys := make([]string, 0, len(entry.Data))
-	for k := range entry.Data {
-		// "ns" (namespace) always comes first, so skip that one.
-		if k != "ns" {
-			keys = append(keys, k)
-		}
-	}
-
-	if !f.DisableSorting {
-		sort.Strings(keys)
-	}
-
 	b := entry.Buffer
 	if b == nil {
 		b = &bytes.Buffer{}
 	}
-
-	prefixFieldClashes(entry.Data)
 
 	if !f.DisableTimestamp {
 		if !f.FullTimestamp {
@@ -61,10 +46,6 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		} else {
 			entry.Data["time"] = entry.Time.Format(f.TimestampFormat)
 		}
-	}
-
-	if entry.Message != "" {
-		entry.Data["msg"] = entry.Message
 	}
 
 	var levelColor aurora.Color
@@ -81,8 +62,16 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize(ns, nsColor), entry.Message)
 
-	for _, k := range keys {
+	for _, k := range f.entryDataKeys(entry) {
 		v := entry.Data[k]
+
+		// Some keys can conflict with reserved names.
+		// If they do, resolve the conflict with a prefix.
+		keyname := k
+		switch k {
+		case "time", "msg", "level":
+			keyname = "fields." + keyname
+		}
 
 		switch x := v.(type) {
 		case string:
@@ -114,28 +103,19 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// This is to not silently overwrite `time`, `msg` and `level` fields when
-// dumping it. If this code wasn't there doing:
-//
-//  logrus.WithField("level", 1).Info("hello")
-//
-// Would just silently drop the user provided level. Instead with this code
-// it'll logged as:
-//
-//  {"level": "info", "fields.level": 1, "msg": "hello", "time": "..."}
-//
-// It's not exported because it's still using Data in an opinionated way. It's to
-// avoid code duplication between the two default formatters.
-func prefixFieldClashes(data logrus.Fields) {
-	if t, ok := data["time"]; ok {
-		data["fields.time"] = t
+func (f *textFormatter) entryDataKeys(entry *logrus.Entry) []string {
+
+	// Gather keys so they can be sorted
+	keys := make([]string, 0, len(entry.Data))
+	for k := range entry.Data {
+		// "ns" (namespace) always comes first, so skip that one.
+		if k != "ns" {
+			keys = append(keys, k)
+		}
 	}
 
-	if m, ok := data["msg"]; ok {
-		data["fields.msg"] = m
+	if !f.DisableSorting {
+		sort.Strings(keys)
 	}
-
-	if l, ok := data["level"]; ok {
-		data["fields.level"] = l
-	}
+	return keys
 }

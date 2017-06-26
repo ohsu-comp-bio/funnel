@@ -51,6 +51,7 @@ func DefaultConfig() Config {
 		Level:     "info",
 		Formatter: "text",
 		TextFormat: TextFormatConfig{
+			FullTimestamp:   true,
 			TimestampFormat: logrus.DefaultTimestampFormat,
 		},
 	}

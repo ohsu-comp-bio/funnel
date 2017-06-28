@@ -12,7 +12,7 @@ import (
 )
 
 func BenchmarkRunSerialNoWorkers(b *testing.B) {
-	fun := e2e.NewFunnel()
+	fun := e2e.NewFunnel(e2e.DefaultConfig())
 	defer fun.Cleanup()
 	// No workers connected in this test
 	fun.Conf.Scheduler = "manual"
@@ -28,7 +28,7 @@ func BenchmarkRunSerialNoWorkers(b *testing.B) {
 }
 
 func BenchmarkRunConcurrentNoWorkers(b *testing.B) {
-	fun := e2e.NewFunnel()
+	fun := e2e.NewFunnel(e2e.DefaultConfig())
 	defer fun.Cleanup()
 	// No workers connected in this test
 	fun.Conf.Scheduler = "manual"
@@ -51,7 +51,7 @@ func BenchmarkRunConcurrentNoWorkers(b *testing.B) {
 }
 
 func BenchmarkRunConcurrentWithFakeWorkers(b *testing.B) {
-	fun := e2e.NewFunnel()
+	fun := e2e.NewFunnel(e2e.DefaultConfig())
 	defer fun.Cleanup()
 	// Workers are simulated by goroutines writing to the scheduler API
 	fun.Conf.Scheduler = "manual"

@@ -108,3 +108,27 @@ func TestSymlinkOutput(t *testing.T) {
 		t.Fatal("unexpected out-dir/sym content")
 	}
 }
+
+func TestOverwriteOutput(t *testing.T) {
+	id := fun.Run(`
+    --cmd "sh -c 'echo foo > $out; chmod go+w $out'"
+    -o out={{ .storage }}/test_out
+  `)
+	task := fun.Wait(id)
+
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected success")
+	}
+
+	// this time around since the output file exists copyFile will be called
+	// in storage.Put
+	id = fun.Run(`
+    --cmd "sh -c 'echo foo > $out; chmod go+w $out'"
+    -o out={{ .storage }}/test_out
+  `)
+	task = fun.Wait(id)
+
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected success")
+	}
+}

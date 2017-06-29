@@ -181,12 +181,6 @@ func copyFile(source string, dest string) (err error) {
 	if err != nil {
 		return err
 	}
-	// ensure readable output files
-	_ = syscall.Umask(0000)
-	err = os.Chmod(dest, 0766)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -210,7 +204,7 @@ func linkFile(source string, dest string) error {
 	dstD := path.Dir(dest)
 	if _, err := os.Stat(dstD); err != nil {
 		_ = syscall.Umask(0000)
-		err = os.MkdirAll(dstD, 0777)
+		err = os.MkdirAll(dstD, 0775)
 		if err != nil {
 			return err
 		}

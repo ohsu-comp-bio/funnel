@@ -27,7 +27,7 @@ func EnsureDir(p string) error {
 	if !e {
 		// TODO configurable mode?
 		_ = syscall.Umask(0000)
-		err := os.MkdirAll(p, 0777)
+		err := os.MkdirAll(p, 0775)
 		if err != nil {
 			return err
 		}

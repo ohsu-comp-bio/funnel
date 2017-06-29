@@ -10,10 +10,12 @@ n1-standard-4
 
 for mt in $MACHINE_TYPES; do
   gcloud compute instance-templates create "funnel-worker-$mt" \
-    --scopes compute-rw,storage-rw \
-    --tags funnel \
-    --image-family funnel \
-    --machine-type $mt \
-    --boot-disk-type 'pd-standard' \
-    --boot-disk-size '250GB'
+    --scopes compute-rw,storage-rw         \
+    --tags funnel                          \
+    --image-family cos-stable              \
+    --image-project cos-cloud              \
+    --machine-type $mt                     \
+    --boot-disk-type 'pd-standard'         \
+    --boot-disk-size '250GB'               \
+    --metadata-from-file user-data=./cloud-init.yaml
 done

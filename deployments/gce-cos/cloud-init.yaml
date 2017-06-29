@@ -37,6 +37,7 @@ runcmd:
 - mkdir /var/db/funnel
 - chown funnel:funnel /var/db/funnel
 - usermod -aG docker funnel
+- docker pull docker.io/ohsucompbio/funnel:latest
 - systemctl daemon-reload
 - systemctl start funnel.service
 - systemctl start iptables-funnel.service

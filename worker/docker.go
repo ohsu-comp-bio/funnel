@@ -30,11 +30,11 @@ type DockerCmd struct {
 
 // Run runs the Docker command and blocks until done.
 func (dcmd DockerCmd) Run() error {
-  // (Hopefully) temporary hack to sync docker API version info.
-  // Don't need the client here, just the logic inside NewDockerClient().
-  _, derr := util.NewDockerClient()
+	// (Hopefully) temporary hack to sync docker API version info.
+	// Don't need the client here, just the logic inside NewDockerClient().
+	_, derr := util.NewDockerClient()
 	if derr != nil {
-    log.Error("Can't connect to Docker", derr)
+		log.Error("Can't connect to Docker", derr)
 		return derr
 	}
 

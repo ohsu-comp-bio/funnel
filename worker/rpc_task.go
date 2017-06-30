@@ -195,7 +195,14 @@ type taskClient struct {
 }
 
 func newTaskClient(conf config.Worker) (*taskClient, error) {
-	conn, err := grpc.Dial(conf.ServerAddress, grpc.WithInsecure())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx,
+		conf.ServerAddress,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -25,7 +25,7 @@ func TestStopWorker(t *testing.T) {
 	w.Start()
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, time.Millisecond*4)
+	cleanup := timeLimit(t, time.Millisecond*10)
 	defer cleanup()
 	w.Stop()
 	w.Wait()

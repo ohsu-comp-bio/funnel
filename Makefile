@@ -50,7 +50,7 @@ prune_deps:
 
 # Automatially update code formatting
 tidy:
-	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v ".pb." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
+	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 	@pip install -q autopep8
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -E '.*\.py$$' | xargs autopep8 --in-place --aggressive --aggressive
 

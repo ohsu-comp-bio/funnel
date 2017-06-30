@@ -40,7 +40,7 @@ func (f *Funnel) AddWorker(id string, cpus uint32, ram, disk float64) {
 		panic(err)
 	}
 	go w.Run()
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 }
 
 func NewFunnel() *Funnel {

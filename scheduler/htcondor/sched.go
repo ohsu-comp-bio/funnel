@@ -11,7 +11,9 @@ import (
 	"strings"
 )
 
+// Name of the scheduler backend
 const Name = "htcondor"
+
 var log = logger.Sub(Name)
 
 // prefix is a string prefixed to condor worker IDs, so that condor

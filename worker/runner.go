@@ -318,7 +318,7 @@ func (r *DefaultRunner) pollForCancel(ctx context.Context, f func()) context.Con
 // that doesn't do anything.
 type NoopRunner struct{}
 
-// Run doesn't do anything, it's an empty funciton.
+// Run doesn't do anything, it's an empty function.
 func (NoopRunner) Run(context.Context) {}
 
 // NoopRunnerFactory returns a new NoopRunner.

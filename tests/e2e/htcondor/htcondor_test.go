@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 		os.Exit(0)
 	}
 
-	fun = e2e.NewFunnel()
+	fun = e2e.NewFunnel(e2e.DefaultConfig())
 	fun.StartServerInDocker("ohsucompbio/htcondor:latest", "htcondor", []string{})
 	defer fun.CleanupTestServerContainer()
 

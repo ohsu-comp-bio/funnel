@@ -66,6 +66,7 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("gce"))
 
 	for _, w := range s.getWorkers() {
+		log.Debug("WORKER", w)
 		// Filter out workers that don't match the task request.
 		// Checks CPU, RAM, disk space, ports, etc.
 		if !scheduler.Match(w, j, predicates) {

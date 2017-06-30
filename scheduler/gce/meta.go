@@ -81,7 +81,7 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 	return conf, nil
 }
 
-// Metadata contains a subset of details availabe from GCE VM metadata.
+// Metadata contains a subset of details available from GCE VM metadata.
 type Metadata struct {
 	Instance struct {
 		Name       string

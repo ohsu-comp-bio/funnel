@@ -71,14 +71,14 @@ func Run(conf config.Config) error {
 	}
 
 	loader := scheduler.BackendLoader{
-		gce.Name:       gce.NewBackend,
-		htcondor.Name:    htcondor.NewBackend,
-		openstack.Name: openstack.NewBackend,
-		local.Name:     local.NewBackend,
-		manual.Name:    manual.NewBackend,
-    pbs.Name:       pbs.NewBackend,
-    gridengine.Name: gridengine.NewBackend,
-    slurm.Name:     slurm.NewBackend,
+		gce.Name:        gce.NewBackend,
+		htcondor.Name:   htcondor.NewBackend,
+		openstack.Name:  openstack.NewBackend,
+		local.Name:      local.NewBackend,
+		manual.Name:     manual.NewBackend,
+		pbs.Name:        pbs.NewBackend,
+		gridengine.Name: gridengine.NewBackend,
+		slurm.Name:      slurm.NewBackend,
 	}
 
 	backend, lerr := loader.Load(conf.Scheduler, conf)

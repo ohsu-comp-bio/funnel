@@ -61,7 +61,6 @@ type Funnel struct {
 
 // DefaultConfig returns config with a set of defaults useful for end-to-end testing.
 func DefaultConfig() config.Config {
-	var rate = time.Millisecond * 1000
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
@@ -77,7 +76,7 @@ func DefaultConfig() config.Config {
 
 	conf.Storage = config.StorageConfig{
 		Local: config.LocalStorage{
-			AllowedDirs: []string{"./test_tmp", wd},
+			AllowedDirs: []string{storageDir, wd},
 		},
 		S3: []config.S3Storage{
 			{
@@ -122,6 +121,7 @@ func NewFunnel(conf config.Config) *Funnel {
 func (f *Funnel) addRPCClient() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+
 	logger.DisableGRPCLogger()
 	conn, err := grpc.DialContext(
 		ctx,
@@ -132,6 +132,7 @@ func (f *Funnel) addRPCClient() error {
 	if err != nil {
 		return err
 	}
+
 	logger.EnableGRPCLogger()
 	f.conn = conn
 	f.RPC = tes.NewTaskServiceClient(conn)
@@ -156,14 +157,16 @@ func (f *Funnel) WithLocalBackend() {
 
 // StartServer starts the server
 func (f *Funnel) StartServer() {
+	go f.Server.Serve(context.Background())
+	go f.Scheduler.Start(context.Background())
+
 	err := f.addRPCClient()
 	if err != nil {
 		log.Error("funnel server failed to start within allocated time", err)
+		panic(err)
 	}
 
 	log.Debug("Funnel server started")
-	go f.Server.Serve(context.Background())
-	go f.Scheduler.Start(context.Background())
 	time.Sleep(time.Second)
 }
 

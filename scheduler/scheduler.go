@@ -69,7 +69,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 // task is assigned to the offered worker.
 func (s *Scheduler) Schedule(ctx context.Context) error {
 
-	err = s.db.CheckWorkers()
+	err := s.db.CheckWorkers()
 	if err != nil {
 		return err
 	}

@@ -11,26 +11,22 @@ import (
 	"strings"
 )
 
-var log = logger.New("pbs")
+// Name of the scheduler backend
+const Name = "pbs"
+
+var log = logger.Sub(Name)
 
 // prefix is a string prefixed to pbs worker IDs, so that pbs
 // workers can be identified by ShouldStartWorker() below.
 const prefix = "pbs-worker-"
 
-// Plugin provides the PBS scheduler backend plugin.
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "pbs",
-	Create: NewBackend,
-}
-
 // NewBackend returns a new PBS Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
-	b := scheduler.Backend(&Backend{
-		name:     "pbs",
+	return &Backend{
+		name:     Name,
 		conf:     conf,
 		template: conf.Backends.PBS.Template,
-	})
-	return b, nil
+	}, nil
 }
 
 // Backend represents the PBS backend.

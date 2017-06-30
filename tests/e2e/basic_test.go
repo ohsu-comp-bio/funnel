@@ -363,7 +363,7 @@ func TestOutputFileLog(t *testing.T) {
 }
 
 func TestPagination(t *testing.T) {
-	f := NewFunnel()
+	f := NewFunnel(DefaultConfig())
 	f.StartServer()
 	ctx := context.Background()
 
@@ -432,7 +432,7 @@ func TestPagination(t *testing.T) {
 
 // Smaller test for debugging getting the full set of pages
 func TestSmallPagination(t *testing.T) {
-	f := NewFunnel()
+	f := NewFunnel(DefaultConfig())
 	f.StartServer()
 	ctx := context.Background()
 

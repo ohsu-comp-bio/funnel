@@ -11,22 +11,19 @@ import (
 	"strings"
 )
 
-var log = logger.New("gridengine")
+// Name of the scheduler backend
+const Name = "gridengine"
+
+var log = logger.Sub(Name)
 
 // prefix is a string prefixed to gridengine worker IDs, so that gridengine
 // workers can be identified by ShouldStartWorker() below.
 const prefix = "gridengine-worker-"
 
-// Plugin provides the grid engine scheduler backend plugin.
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "gridengine",
-	Create: NewBackend,
-}
-
 // NewBackend returns a new grid engine Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	b := scheduler.Backend(&Backend{
-		name:     "gridengine",
+		name:     Name,
 		conf:     conf,
 		template: conf.Backends.GridEngine.Template,
 	})

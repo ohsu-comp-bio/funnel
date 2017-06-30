@@ -11,22 +11,19 @@ import (
 	"strings"
 )
 
-var log = logger.New("slurm")
+// Name of the scheduler backend
+const Name = "slurm"
+
+var log = logger.Sub(Name)
 
 // prefix is a string prefixed to slurm worker IDs, so that slurm
 // workers can be identified by ShouldStartWorker() below.
 const prefix = "slurm-worker-"
 
-// Plugin provides the SLURM scheduler backend plugin.
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "slurm",
-	Create: NewBackend,
-}
-
 // NewBackend returns a new SLURM Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	b := scheduler.Backend(&Backend{
-		name:     "slurm",
+		name:     Name,
 		conf:     conf,
 		template: conf.Backends.SLURM.Template,
 	})

@@ -7,6 +7,7 @@ import (
 	sched_mocks "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/stretchr/testify/mock"
+	"io/ioutil"
 	"testing"
 	"time"
 )
@@ -35,6 +36,14 @@ type testWorker struct {
 
 func newTestWorker(conf config.Worker) testWorker {
 
+	conf.WorkDir, _ = ioutil.TempDir("", "funnel-test-storage-")
+
+	log.Debug("WORKDIR", conf.WorkDir)
+	err := util.EnsureDir(conf.WorkDir)
+	if err != nil {
+		panic(err)
+	}
+
 	// A mock scheduler client allows this code to fake/control the worker's
 	// communication with a scheduler service.
 	s := new(sched_mocks.Client)
@@ -42,7 +51,7 @@ func newTestWorker(conf config.Worker) testWorker {
 		conf:      conf,
 		sched:     s,
 		log:       log,
-		resources: detectResources(conf.Resources),
+		resources: detectResources(conf),
 		newRunner: NoopRunnerFactory,
 		runners:   runSet{},
 		timeout:   util.NewIdleTimeout(conf.Timeout),

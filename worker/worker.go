@@ -27,7 +27,6 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 
 	// Detect available resources at startup
 	res := detectResources(conf)
-	runners := runSet{}
 	timeout := util.NewIdleTimeout(conf.Timeout)
 	stop := make(chan struct{})
 	state := pbf.WorkerState_UNINITIALIZED

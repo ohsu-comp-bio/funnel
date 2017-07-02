@@ -17,7 +17,7 @@ func TestStopWorker(t *testing.T) {
 		w.Run()
 		close(done)
 	}()
-	timeout := time.NewTimer(time.Millisecond * 4)
+	timeout := time.NewTimer(time.Millisecond * 100)
 	w.Stop()
 
 	// Wait for either the worker to be done, or the test to timeout

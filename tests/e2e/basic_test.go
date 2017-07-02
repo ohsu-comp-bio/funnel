@@ -150,7 +150,7 @@ func TestListTaskView(t *testing.T) {
 	// test http proxy
 	var r *tes.ListTasksResponse
 	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
-		View: tes.TaskView_BASIC,
+		View: tes.TaskView_MINIMAL,
 	})
 	if err != nil {
 		t.Fatal(err)

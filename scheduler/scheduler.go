@@ -1,13 +1,11 @@
 package scheduler
 
 import (
-	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
-	"strings"
 	"time"
 )
 
@@ -22,27 +20,15 @@ type Database interface {
 }
 
 // NewScheduler returns a new Scheduler instance.
-func NewScheduler(db Database, conf config.Config) (*Scheduler, error) {
-	backends := map[string]*BackendPlugin{}
-
-	err := util.EnsureDir(conf.WorkDir)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Scheduler{db, conf, backends}, nil
+func NewScheduler(db Database, backend Backend, conf config.Config) *Scheduler {
+	return &Scheduler{db, conf, backend}
 }
 
 // Scheduler handles scheduling tasks to workers and support many backends.
 type Scheduler struct {
-	db       Database
-	conf     config.Config
-	backends map[string]*BackendPlugin
-}
-
-// AddBackend adds a backend plugin.
-func (s *Scheduler) AddBackend(plugin *BackendPlugin) {
-	s.backends[plugin.Name] = plugin
+	db      Database
+	conf    config.Config
+	backend Backend
 }
 
 // Start starts the scheduling loop. This blocks.
@@ -51,6 +37,11 @@ func (s *Scheduler) AddBackend(plugin *BackendPlugin) {
 // request the the configured backend schedule them, and
 // act on offers made by the backend.
 func (s *Scheduler) Start(ctx context.Context) error {
+	err := util.EnsureDir(s.conf.WorkDir)
+	if err != nil {
+		return err
+	}
+
 	ticker := time.NewTicker(s.conf.ScheduleRate)
 	for {
 		select {
@@ -77,17 +68,13 @@ func (s *Scheduler) Start(ctx context.Context) error {
 // and calls the given scheduler. If the scheduler returns a valid offer, the
 // task is assigned to the offered worker.
 func (s *Scheduler) Schedule(ctx context.Context) error {
-	backend, err := s.backend()
-	if err != nil {
-		return err
-	}
 
-	err = s.db.CheckWorkers()
+	err := s.db.CheckWorkers()
 	if err != nil {
 		return err
 	}
 	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {
-		offer := backend.Schedule(task)
+		offer := s.backend.Schedule(task)
 		if offer != nil {
 			log.Info("Assigning task to worker",
 				"taskID", task.Id,
@@ -108,12 +95,8 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 // to poll the database, looking for workers that need to be started
 // and shutdown.
 func (s *Scheduler) Scale(ctx context.Context) error {
-	backend, err := s.backend()
-	if err != nil {
-		return err
-	}
 
-	b, isScaler := backend.(Scaler)
+	b, isScaler := s.backend.(Scaler)
 	// If the scheduler doesn't implement the Scaler interface,
 	// stop here.
 	if !isScaler {
@@ -154,27 +137,4 @@ func (s *Scheduler) Scale(ctx context.Context) error {
 		}
 	}
 	return nil
-}
-
-// backend returns a Backend instance for the backend
-// given by name in config.Scheduler.
-func (s *Scheduler) backend() (Backend, error) {
-	name := strings.ToLower(s.conf.Scheduler)
-	plugin, ok := s.backends[name]
-
-	if !ok {
-		log.Error("Unknown scheduler backend", "name", name)
-		return nil, fmt.Errorf("Unknown scheduler backend %s", name)
-	}
-
-	// Cache the scheduler instance on the plugin so that
-	// we can call this backend() function repeatedly.
-	if plugin.instance == nil {
-		i, err := plugin.Create(s.conf)
-		if err != nil {
-			return nil, err
-		}
-		plugin.instance = i
-	}
-	return plugin.instance, nil
 }

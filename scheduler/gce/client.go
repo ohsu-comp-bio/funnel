@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
-	//"github.com/mitchellh/copystructure"
 	"google.golang.org/api/compute/v1"
 	"time"
 )

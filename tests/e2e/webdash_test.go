@@ -1,4 +1,4 @@
-package tests
+package e2e
 
 import (
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -9,12 +9,11 @@ import (
 )
 
 func TestWebdash(t *testing.T) {
-	srv := NewFunnel(NewConfig())
-	srv.Start()
-	defer srv.Stop()
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
 
 	// Get the webdash health check endpoint
-	address := "http://localhost:" + srv.Conf.HTTPPort
+	address := "http://localhost:" + fun.Conf.HTTPPort
 	client := http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(address + "/health.html")
 	if err != nil {

@@ -9,6 +9,9 @@ import (
 )
 
 func TestTaskNoExecutorsValidationError(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	_, err := fun.RunTask(&tes.Task{})
 	log.Debug("VALID ERR", err)
 	if err == nil {
@@ -26,6 +29,9 @@ func TestTaskNoExecutorsValidationError(t *testing.T) {
 }
 
 func TestTaskInputContentsValidationError(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	_, err := fun.RunTask(&tes.Task{
 		Inputs: []*tes.TaskParameter{
 			{
@@ -48,6 +54,9 @@ func TestTaskInputContentsValidationError(t *testing.T) {
 }
 
 func TestTaskInputContentsValidation(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{
@@ -69,6 +78,9 @@ func TestTaskInputContentsValidation(t *testing.T) {
 }
 
 func TestTaskValidationError(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{},

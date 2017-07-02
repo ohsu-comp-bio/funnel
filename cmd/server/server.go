@@ -70,21 +70,24 @@ func Run(conf config.Config) error {
 		return err
 	}
 
-	srv := server.DefaultServer(db, conf)
-
-	sched, err := scheduler.NewScheduler(db, conf)
-	if err != nil {
-		return err
+	loader := scheduler.BackendLoader{
+		gce.Name:        gce.NewBackend,
+		htcondor.Name:   htcondor.NewBackend,
+		openstack.Name:  openstack.NewBackend,
+		local.Name:      local.NewBackend,
+		manual.Name:     manual.NewBackend,
+		pbs.Name:        pbs.NewBackend,
+		gridengine.Name: gridengine.NewBackend,
+		slurm.Name:      slurm.NewBackend,
 	}
 
-	sched.AddBackend(htcondor.Plugin)
-	sched.AddBackend(gce.Plugin)
-	sched.AddBackend(local.Plugin)
-	sched.AddBackend(manual.Plugin)
-	sched.AddBackend(openstack.Plugin)
-	sched.AddBackend(pbs.Plugin)
-	sched.AddBackend(gridengine.Plugin)
-	sched.AddBackend(slurm.Plugin)
+	backend, lerr := loader.Load(conf.Scheduler, conf)
+	if lerr != nil {
+		return lerr
+	}
+
+	srv := server.DefaultServer(db, conf)
+	sched := scheduler.NewScheduler(db, backend, conf)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

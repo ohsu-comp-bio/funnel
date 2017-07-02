@@ -15,15 +15,13 @@ import (
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
+	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
 )
 
-var log = logger.Sub("gce")
+// Name of the scheduler backend
+const Name = "gce"
 
-// Plugin provides the Google Cloud Compute scheduler backend plugin.
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "gce",
-	Create: NewBackend,
-}
+var log = logger.Sub(Name)
 
 // NewBackend returns a new Google Cloud Engine Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
@@ -68,6 +66,7 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("gce"))
 
 	for _, w := range s.getWorkers() {
+		log.Debug("WORKER", w)
 		// Filter out workers that don't match the task request.
 		// Checks CPU, RAM, disk space, ports, etc.
 		if !scheduler.Match(w, j, predicates) {
@@ -143,4 +142,40 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 	}
 
 	return s.gce.StartWorker(template, s.conf.RPCAddress(), w.Id)
+}
+
+// MockBackend is a GCE backend that doesn't communicate with
+// Google Cloud APIs, which is useful for testing.
+type MockBackend struct {
+	*Backend
+	Wrapper *gcemock.Wrapper
+}
+
+// NewMockBackend returns a GCE scheduler backend that doesn't
+// communicate with Google Cloud APIs,
+// Useful for testing.
+func NewMockBackend(conf config.Config) (*MockBackend, error) {
+	// Set up a GCE scheduler backend that has a mock client
+	// so that it doesn't actually communicate with GCE.
+
+	gceWrapper := new(gcemock.Wrapper)
+	gceClient := &gceClient{
+		wrapper: gceWrapper,
+		project: conf.Backends.GCE.Project,
+		zone:    conf.Backends.GCE.Zone,
+	}
+
+	schedClient, err := scheduler.NewClient(conf.Worker)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MockBackend{
+		Backend: &Backend{
+			conf:   conf,
+			client: schedClient,
+			gce:    gceClient,
+		},
+		Wrapper: gceWrapper,
+	}, nil
 }

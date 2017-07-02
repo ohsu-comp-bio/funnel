@@ -5,6 +5,7 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 func getWorker(tx *bolt.Tx, id string) *pbf.Worker {
@@ -17,19 +18,15 @@ func getWorker(tx *bolt.Tx, id string) *pbf.Worker {
 		proto.Unmarshal(data, worker)
 	}
 
-	worker.Tasks = map[string]*pbf.TaskWrapper{}
 	// Prefix scan for keys that start with worker ID
 	c := tx.Bucket(WorkerTasks).Cursor()
 	prefix := []byte(id)
 	for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 		taskID := string(v)
-		task := getTask(tx, taskID)
-		auth := getTaskAuth(tx, taskID)
-		wrapper := &pbf.TaskWrapper{
-			Task: task,
-			Auth: auth,
+		state := getTaskState(tx, taskID)
+		if tes.RunnableState(state) {
+			worker.TaskIds = append(worker.TaskIds, taskID)
 		}
-		worker.Tasks[taskID] = wrapper
 	}
 
 	if worker.Metadata == nil {
@@ -47,7 +44,7 @@ func putWorker(tx *bolt.Tx, worker *pbf.Worker) error {
 	//
 	// Also, this modifies the worker, so copy it first.
 	w := proto.Clone(worker).(*pbf.Worker)
-	w.Tasks = nil
+	w.TaskIds = nil
 	data, _ := proto.Marshal(w)
 	return tx.Bucket(Workers).Put([]byte(w.Id), data)
 }

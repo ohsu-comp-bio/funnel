@@ -1,10 +1,10 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util"
@@ -14,132 +14,185 @@ import (
 	"time"
 )
 
-// TaskRunner is a function that does the work of running a task on a worker,
-// including download inputs, executing commands, uploading outputs, etc.
-type TaskRunner func(TaskControl, config.Worker, *pbf.TaskWrapper)
+// NewDefaultRunner returns the default task runner used by Funnel,
+// which uses gRPC to read/write task details.
+func NewDefaultRunner(conf config.Worker, taskID string) Runner {
 
-// Default TaskRunner
-func runTask(ctrl TaskControl, conf config.Worker, t *pbf.TaskWrapper) {
 	// Map files into this baseDir
-	baseDir := path.Join(conf.WorkDir, t.Task.Id)
-	client, _ := newSchedClient(conf)
+	baseDir := path.Join(conf.WorkDir, taskID)
+	// TODO handle error
+	svc, _ := newRPCTask(conf, taskID)
+	log := logger.Sub("runner", "workerID", conf.ID, "taskID", taskID)
 
-	r := &taskRunner{
-		ctrl:    ctrl,
-		wrapper: t,
-		mapper:  NewFileMapper(baseDir),
-		store:   storage.Storage{},
-		conf:    conf,
-		taskLogger: &RPCTask{
-			client: client,
-			taskID: t.Task.Id,
-		},
-		log: logger.Sub("runner", "workerID", conf.ID, "taskID", t.Task.Id),
+	return &DefaultRunner{
+		Conf:   conf,
+		Mapper: NewFileMapper(baseDir),
+		Store:  storage.Storage{},
+		Svc:    svc,
+		Log:    log,
 	}
-	go r.Run()
 }
 
-// taskRunner helps collect data used across many helper methods.
-type taskRunner struct {
-	ctrl       TaskControl
-	wrapper    *pbf.TaskWrapper
-	conf       config.Worker
-	taskLogger TaskLogger
-	log        logger.Logger
-	mapper     *FileMapper
-	store      storage.Storage
-	ip         string
+// DefaultRunner is the default task runner, which follows a basic,
+// sequential process of task initialization, execution, finalization,
+// and logging.
+type DefaultRunner struct {
+	Conf   config.Worker
+	Mapper *FileMapper
+	Store  storage.Storage
+	Svc    TaskService
+	Log    logger.Logger
 }
 
+// Run runs the task runner.
 // TODO document behavior of slow consumer of task log updates
-func (r *taskRunner) Run() {
-	r.log.Debug("TaskRunner.Run")
-	task := r.wrapper.Task
+func (r *DefaultRunner) Run(pctx context.Context) {
+
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
 	// The steps are:
-	// 1. validate input and output mappings
-	// 2. download inputs
-	// 3. run the steps (docker)
-	// 4. upload the outputs
-	r.taskLogger.StartTime(time.Now())
+	// - prepare the working directory
+	// - map the task files to the working directory
+	// - log the IP address
+	// - set up the storage configuration
+	// - validate input and output files
+	// - download inputs
+	// - run the steps (docker)
+	// - upload the outputs
 
-	r.step("prepareDir", r.prepareDir)
-	r.step("prepareMapper", r.prepareMapper)
-	r.step("prepareStorage", r.prepareStorage)
-	r.step("prepareIP", r.prepareIP)
-	r.step("validateInputs", r.validateInputs)
-	r.step("validateOutputs", r.validateOutputs)
+	var run helper
+	var task *tes.Task
 
-	// Download inputs
-	for _, input := range r.mapper.Inputs {
-		r.step("store.Get", func() error {
-			return r.store.Get(
-				r.ctrl.Context(),
-				input.Url,
-				input.Path,
-				input.Type,
-			)
-		})
+	task, run.syserr = r.Svc.Task()
+
+	r.Svc.StartTime(time.Now())
+	// Run the final logging/state steps in a deferred function
+	// to ensure they always run, even if there's a missed error.
+	defer func() {
+		r.Svc.EndTime(time.Now())
+
+		switch {
+		case run.taskCanceled:
+			// The task was canceled.
+			r.Svc.SetState(tes.State_CANCELED)
+		case run.execerr != nil:
+			// One of the executors failed
+			r.Svc.SetState(tes.State_ERROR)
+		case run.syserr != nil:
+			// Something else failed
+			// TODO should we do something special for run.err == context.Canceled?
+			r.Svc.SetState(tes.State_SYSTEM_ERROR)
+		default:
+			r.Svc.SetState(tes.State_COMPLETE)
+		}
+	}()
+
+	// Recover from panics
+	defer handlePanic(func(e error) {
+		run.syserr = e
+	})
+
+	ctx := r.pollForCancel(pctx, func() {
+		run.taskCanceled = true
+	})
+	run.ctx = ctx
+
+	// Create working dir
+	var dir string
+	if run.ok() {
+		dir, run.syserr = filepath.Abs(r.Conf.WorkDir)
+	}
+	if run.ok() {
+		run.syserr = util.EnsureDir(dir)
 	}
 
-	r.ctrl.SetRunning()
+	// Prepare file mapper, which maps task file URLs to host filesystem paths
+	if run.ok() {
+		run.syserr = r.Mapper.MapTask(task)
+	}
+
+	// Grab the IP address of this host. Used to send task metadata updates.
+	var ip string
+	if run.ok() {
+		ip, run.syserr = externalIP()
+	}
+
+	// Configure a task-specific storage backend.
+	// This provides download/upload for inputs/outputs.
+	if run.ok() {
+		r.Store, run.syserr = r.Store.WithConfig(r.Conf.Storage)
+	}
+
+	if run.ok() {
+		run.syserr = r.validateInputs()
+	}
+
+	if run.ok() {
+		run.syserr = r.validateOutputs()
+	}
+
+	// Download inputs
+	for _, input := range r.Mapper.Inputs {
+		if run.ok() {
+			run.syserr = r.Store.Get(ctx, input.Url, input.Path, input.Type)
+		}
+	}
+
+	if run.ok() {
+		r.Svc.SetState(tes.State_RUNNING)
+	}
 
 	// Run steps
 	for i, d := range task.Executors {
-		stepName := fmt.Sprintf("step-%d", i)
-		r.step(stepName, func() error {
-			s := &stepRunner{
-				TaskID:     task.Id,
-				Conf:       r.conf,
-				Num:        i,
-				Log:        r.log.WithFields("step", i),
-				TaskLogger: r.taskLogger,
-				IP:         r.ip,
-				Cmd: &DockerCmd{
-					ImageName:     d.ImageName,
-					Cmd:           d.Cmd,
-					Environ:       d.Environ,
-					Volumes:       r.mapper.Volumes,
-					Workdir:       d.Workdir,
-					Ports:         d.Ports,
-					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
-					// TODO make RemoveContainer configurable
-					RemoveContainer: true,
-				},
-			}
+		s := &stepRunner{
+			TaskID:     task.Id,
+			Conf:       r.Conf,
+			Num:        i,
+			Log:        r.Log.WithFields("step", i),
+			TaskLogger: r.Svc,
+			IP:         ip,
+			Cmd: &DockerCmd{
+				ImageName:     d.ImageName,
+				Cmd:           d.Cmd,
+				Environ:       d.Environ,
+				Volumes:       r.Mapper.Volumes,
+				Workdir:       d.Workdir,
+				Ports:         d.Ports,
+				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
+				// TODO make RemoveContainer configurable
+				RemoveContainer: true,
+			},
+		}
 
-			// Opens stdin/out/err files and updates those fields on "cmd".
-			err := r.openStepLogs(s, d)
-			if err != nil {
-				s.Log.Error("Couldn't prepare log files", err)
-				return err
-			}
-			return s.Run(r.ctrl.Context())
-		})
+		// Opens stdin/out/err files and updates those fields on "cmd".
+		if run.ok() {
+			run.syserr = r.openStepLogs(s, d)
+		}
+
+		if run.ok() {
+			run.execerr = s.Run(ctx)
+		}
 	}
 
 	// Upload outputs
-	log.Debug("Outputs", r.mapper.Outputs)
 	var outputs []*tes.OutputFileLog
-	for _, output := range r.mapper.Outputs {
-		r.step("store.Put", func() error {
+	for _, output := range r.Mapper.Outputs {
+		if run.ok() {
 			r.fixLinks(output.Path)
-			out, err := r.store.Put(r.ctrl.Context(), output.Url, output.Path, output.Type)
+			var out []*tes.OutputFileLog
+			out, run.syserr = r.Store.Put(ctx, output.Url, output.Path, output.Type)
 			outputs = append(outputs, out...)
-			return err
-		})
+		}
 	}
 
-	r.taskLogger.Outputs(outputs)
-	r.taskLogger.EndTime(time.Now())
-
-	r.ctrl.SetResult(nil)
+	if run.ok() {
+		r.Svc.Outputs(outputs)
+	}
 }
 
 // fixLinks walks the output paths, fixing cases where a symlink is
 // broken because it's pointing to a path inside a container volume.
-func (r *taskRunner) fixLinks(basepath string) {
+func (r *DefaultRunner) fixLinks(basepath string) {
 	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
 		if err != nil {
 			// There's an error, so be safe and give up on this file
@@ -160,7 +213,7 @@ func (r *taskRunner) fixLinks(basepath string) {
 					return nil
 				}
 				// Map symlink source (possible container path) to host path
-				mapped, err := r.mapper.HostPath(src)
+				mapped, err := r.Mapper.HostPath(src)
 				if err != nil {
 					return nil
 				}
@@ -184,75 +237,42 @@ func (r *taskRunner) fixLinks(basepath string) {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *taskRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
+func (r *DefaultRunner) openStepLogs(s *stepRunner, d *tes.Executor) error {
 
 	// Find the path for task stdin
 	var err error
 	if d.Stdin != "" {
-		s.Cmd.Stdin, err = r.mapper.OpenHostFile(d.Stdin)
+		s.Cmd.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
 		if err != nil {
+			s.Log.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Cmd.Stdout, err = r.mapper.CreateHostFile(d.Stdout)
+		s.Cmd.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
 		if err != nil {
+			s.Log.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Cmd.Stderr, err = r.mapper.CreateHostFile(d.Stderr)
+		s.Cmd.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
 		if err != nil {
+			s.Log.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
 	return nil
 }
 
-// Create working dir
-func (r *taskRunner) prepareDir() error {
-	dir, err := filepath.Abs(r.conf.WorkDir)
-	if err != nil {
-		return err
-	}
-	return util.EnsureDir(dir)
-}
-
-// Prepare file mapper, which maps task file URLs to host filesystem paths
-func (r *taskRunner) prepareMapper() error {
-	// Map task paths to working dir paths
-	return r.mapper.MapTask(r.wrapper.Task)
-}
-
-// Grab the IP address of this host. Used to send task metadata updates.
-func (r *taskRunner) prepareIP() error {
-	var err error
-	r.ip, err = externalIP()
-	return err
-}
-
-// Configure a task-specific storage backend.
-// This provides download/upload for inputs/outputs.
-func (r *taskRunner) prepareStorage() error {
-	var err error
-
-	r.store, err = r.store.WithConfig(r.conf.Storage)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Validate the input downloads
-func (r *taskRunner) validateInputs() error {
-
-	for _, input := range r.mapper.Inputs {
-		if !r.store.Supports(input.Url, input.Path, input.Type) {
+func (r *DefaultRunner) validateInputs() error {
+	for _, input := range r.Mapper.Inputs {
+		if !r.Store.Supports(input.Url, input.Path, input.Type) {
 			return fmt.Errorf("Input download not supported by storage: %v", input)
 		}
 	}
@@ -260,30 +280,48 @@ func (r *taskRunner) validateInputs() error {
 }
 
 // Validate the output uploads
-func (r *taskRunner) validateOutputs() error {
-	for _, output := range r.mapper.Outputs {
-		if !r.store.Supports(output.Url, output.Path, output.Type) {
+func (r *DefaultRunner) validateOutputs() error {
+	for _, output := range r.Mapper.Outputs {
+		if !r.Store.Supports(output.Url, output.Path, output.Type) {
 			return fmt.Errorf("Output upload not supported by storage: %v", output)
 		}
 	}
 	return nil
 }
 
-// step helps clean up the frequent context and error checking code.
-//
-// Every operation in the runner needs to check if the context is done,
-// and handle errors appropriately. This helper removes that duplicated, verbose code.
-func (r *taskRunner) step(name string, stepfunc func() error) {
-	// If the runner is already complete (perhaps because a previous step failed)
-	// skip the step.
-	if !r.ctrl.Complete() {
-		// Run the step
-		err := stepfunc()
-		// If the step failed, set the runner to failed. All the following steps
-		// will be skipped.
-		if err != nil {
-			r.log.Error("Task runner step failed", "error", err, "step", name)
-			r.ctrl.SetResult(err)
+func (r *DefaultRunner) pollForCancel(ctx context.Context, f func()) context.Context {
+	taskctx, cancel := context.WithCancel(ctx)
+
+	// Start a goroutine that polls the server to watch for a canceled state.
+	// If a cancel state is found, "taskctx" is canceled.
+	go func() {
+		ticker := time.NewTicker(r.Conf.UpdateRate)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-taskctx.Done():
+				return
+			case <-ticker.C:
+				state := r.Svc.State()
+				if tes.TerminalState(state) {
+					cancel()
+					f()
+				}
+			}
 		}
-	}
+	}()
+	return taskctx
+}
+
+// NoopRunner is useful during testing for creating a worker with a Runner
+// that doesn't do anything.
+type NoopRunner struct{}
+
+// Run doesn't do anything, it's an empty function.
+func (NoopRunner) Run(context.Context) {}
+
+// NoopRunnerFactory returns a new NoopRunner.
+func NoopRunnerFactory(c config.Worker, taskID string) Runner {
+	return NoopRunner{}
 }

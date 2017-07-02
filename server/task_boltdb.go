@@ -7,7 +7,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"github.com/rs/xid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -138,13 +137,6 @@ func getJWT(ctx context.Context) string {
 	return jwt
 }
 
-// GenTaskID generates a task ID string.
-// IDs are globally unique and sortable.
-func GenTaskID() string {
-	id := xid.New()
-	return id.String()
-}
-
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
@@ -155,7 +147,7 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	taskID := GenTaskID()
+	taskID := util.GenTaskID()
 	log := log.WithFields("taskID", taskID)
 
 	jwt := getJWT(ctx)

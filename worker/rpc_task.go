@@ -1,8 +1,11 @@
 package worker
 
 import (
+	"context"
+	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"google.golang.org/grpc"
 	"time"
 )
 
@@ -10,13 +13,47 @@ import (
 
 // RPCTask provides access to writing task logs over gRPC to the funnel server.
 type RPCTask struct {
-	client *schedClient
-	taskID string
+	client        *taskClient
+	taskID        string
+	updateTimeout time.Duration
+}
+
+func newRPCTask(conf config.Worker, taskID string) (*RPCTask, error) {
+	client, err := newTaskClient(conf)
+	if err != nil {
+		return nil, err
+	}
+	return &RPCTask{client, taskID, conf.UpdateTimeout}, nil
+}
+
+// Task returns the task descriptor.
+func (r *RPCTask) Task() (*tes.Task, error) {
+	return r.client.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   r.taskID,
+		View: tes.TaskView_FULL,
+	})
+}
+
+// State returns the current state of the task.
+func (r *RPCTask) State() tes.State {
+	t, _ := r.client.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id: r.taskID,
+	})
+	return t.State
+}
+
+// SetState sets the state of the task.
+func (r *RPCTask) SetState(s tes.State) error {
+	_, err := r.client.UpdateTaskState(context.Background(), &pbf.UpdateTaskStateRequest{
+		Id:    r.taskID,
+		State: s,
+	})
+	return err
 }
 
 // StartTime updates the task's start time log.
 func (r *RPCTask) StartTime(t time.Time) {
-	r.client.UpdateTaskLogs(&pbf.UpdateTaskLogsRequest{
+	r.updateTaskLogs(&pbf.UpdateTaskLogsRequest{
 		Id: r.taskID,
 		TaskLog: &tes.TaskLog{
 			StartTime: t.Format(time.RFC3339),
@@ -26,7 +63,7 @@ func (r *RPCTask) StartTime(t time.Time) {
 
 // EndTime updates the task's end time log.
 func (r *RPCTask) EndTime(t time.Time) {
-	r.client.UpdateTaskLogs(&pbf.UpdateTaskLogsRequest{
+	r.updateTaskLogs(&pbf.UpdateTaskLogsRequest{
 		Id: r.taskID,
 		TaskLog: &tes.TaskLog{
 			EndTime: t.Format(time.RFC3339),
@@ -36,7 +73,7 @@ func (r *RPCTask) EndTime(t time.Time) {
 
 // Outputs updates the task's output file log.
 func (r *RPCTask) Outputs(f []*tes.OutputFileLog) {
-	r.client.UpdateTaskLogs(&pbf.UpdateTaskLogsRequest{
+	r.updateTaskLogs(&pbf.UpdateTaskLogsRequest{
 		Id: r.taskID,
 		TaskLog: &tes.TaskLog{
 			Outputs: f,
@@ -46,7 +83,7 @@ func (r *RPCTask) Outputs(f []*tes.OutputFileLog) {
 
 // Metadata updates the task's metadata log.
 func (r *RPCTask) Metadata(m map[string]string) {
-	r.client.UpdateTaskLogs(&pbf.UpdateTaskLogsRequest{
+	r.updateTaskLogs(&pbf.UpdateTaskLogsRequest{
 		Id: r.taskID,
 		TaskLog: &tes.TaskLog{
 			Metadata: m,
@@ -56,7 +93,7 @@ func (r *RPCTask) Metadata(m map[string]string) {
 
 // ExecutorStartTime updates an executor's start time log.
 func (r *RPCTask) ExecutorStartTime(i int, t time.Time) {
-	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
+	r.updateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
 		Log: &tes.ExecutorLog{
@@ -67,7 +104,7 @@ func (r *RPCTask) ExecutorStartTime(i int, t time.Time) {
 
 // ExecutorEndTime updates an executor's end time log.
 func (r *RPCTask) ExecutorEndTime(i int, t time.Time) {
-	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
+	r.updateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
 		Log: &tes.ExecutorLog{
@@ -78,7 +115,7 @@ func (r *RPCTask) ExecutorEndTime(i int, t time.Time) {
 
 // ExecutorExitCode updates an executor's exit code log.
 func (r *RPCTask) ExecutorExitCode(i int, x int) {
-	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
+	r.updateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
 		Log: &tes.ExecutorLog{
@@ -89,7 +126,7 @@ func (r *RPCTask) ExecutorExitCode(i int, x int) {
 
 // ExecutorPorts updates an executor's ports log.
 func (r *RPCTask) ExecutorPorts(i int, ports []*tes.Ports) {
-	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
+	r.updateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
 		Log: &tes.ExecutorLog{
@@ -100,7 +137,7 @@ func (r *RPCTask) ExecutorPorts(i int, ports []*tes.Ports) {
 
 // ExecutorHostIP updates an executor's host IP log.
 func (r *RPCTask) ExecutorHostIP(i int, ip string) {
-	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
+	r.updateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
 		Log: &tes.ExecutorLog{
@@ -111,7 +148,7 @@ func (r *RPCTask) ExecutorHostIP(i int, ip string) {
 
 // AppendExecutorStdout appends to an executor's stdout log.
 func (r *RPCTask) AppendExecutorStdout(i int, s string) {
-	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
+	r.updateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
 		Log: &tes.ExecutorLog{
@@ -122,11 +159,54 @@ func (r *RPCTask) AppendExecutorStdout(i int, s string) {
 
 // AppendExecutorStderr appends to an executor's stderr log.
 func (r *RPCTask) AppendExecutorStderr(i int, s string) {
-	r.client.UpdateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
+	r.updateExecutorLogs(&pbf.UpdateExecutorLogsRequest{
 		Id:   r.taskID,
 		Step: int64(i),
 		Log: &tes.ExecutorLog{
 			Stderr: s,
 		},
 	})
+}
+
+func (r *RPCTask) updateWorker(req *pbf.Worker) (*pbf.UpdateWorkerResponse, error) {
+	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
+	resp, err := r.client.UpdateWorker(ctx, req)
+	cleanup()
+	return resp, err
+}
+
+func (r *RPCTask) updateExecutorLogs(up *pbf.UpdateExecutorLogsRequest) error {
+	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
+	_, err := r.client.UpdateExecutorLogs(ctx, up)
+	cleanup()
+	return err
+}
+
+func (r *RPCTask) updateTaskLogs(up *pbf.UpdateTaskLogsRequest) error {
+	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
+	_, err := r.client.UpdateTaskLogs(ctx, up)
+	cleanup()
+	return err
+}
+
+type taskClient struct {
+	tes.TaskServiceClient
+	pbf.SchedulerServiceClient
+}
+
+func newTaskClient(conf config.Worker) (*taskClient, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx,
+		conf.ServerAddress,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	t := tes.NewTaskServiceClient(conn)
+	s := pbf.NewSchedulerServiceClient(conn)
+	return &taskClient{t, s}, nil
 }

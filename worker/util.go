@@ -1,8 +1,9 @@
 package worker
 
 import (
+	"context"
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
@@ -61,7 +62,7 @@ func getExitCode(err error) int {
 				return status.ExitStatus()
 			}
 		} else {
-			log.Info("Could not determine exit code. Using default -999")
+			log.Info("Could not determine exit code. Using default -999", "err", err)
 			return -999
 		}
 	}
@@ -116,7 +117,33 @@ func detectResources(conf config.Worker) config.Resources {
 	return res
 }
 
-// NoopTaskRunner is useful during testing for creating a worker with a TaskRunner
-// that doesn't do anything.
-func NoopTaskRunner(l TaskControl, c config.Worker, j *pbf.TaskWrapper) {
+// recover from panic and call "cb" with an error value.
+func handlePanic(cb func(error)) {
+	if r := recover(); r != nil {
+		if e, ok := r.(error); ok {
+			cb(e)
+		} else {
+			cb(fmt.Errorf("Unknown task runner panic: %+v", r))
+		}
+	}
+}
+
+// helper aims to simplify the error and context checking in the runner code.
+type helper struct {
+	syserr       error
+	execerr      error
+	taskCanceled bool
+	ctx          context.Context
+}
+
+func (h *helper) ok() bool {
+	if h.ctx != nil {
+		// Check if the context is done, but don't block waiting on it.
+		select {
+		case <-h.ctx.Done():
+			h.syserr = h.ctx.Err()
+		default:
+		}
+	}
+	return h.syserr == nil && h.execerr == nil
 }

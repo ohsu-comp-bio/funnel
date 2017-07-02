@@ -11,17 +11,14 @@ import (
 	"strings"
 )
 
-var log = logger.Sub("htcondor")
+// Name of the scheduler backend
+const Name = "htcondor"
+
+var log = logger.Sub(Name)
 
 // prefix is a string prefixed to condor worker IDs, so that condor
 // workers can be identified by ShouldStartWorker() below.
 const prefix = "htcondor-worker-"
-
-// Plugin provides the HTCondor scheduler backend plugin.
-var Plugin = &scheduler.BackendPlugin{
-	Name:   "htcondor",
-	Create: NewBackend,
-}
 
 // NewBackend returns a new HTCondor Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {

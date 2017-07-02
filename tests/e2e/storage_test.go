@@ -9,6 +9,9 @@ import (
 
 // Test that a file can be passed as an input and output.
 func TestFileMount(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in
@@ -26,6 +29,9 @@ func TestFileMount(t *testing.T) {
 // Test that the local storage system hard links input files.
 // TODO this test is unix specific because it uses syscall?
 func TestLocalFilesystemHardLinkInput(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	fun.WriteFile("test_hard_link_input", "content")
 	id := fun.Run(`
     --cmd "echo foo"
@@ -51,6 +57,9 @@ func TestLocalFilesystemHardLinkInput(t *testing.T) {
 
 // Test using a symlink as an input file.
 func TestSymlinkInput(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in_symlink
@@ -64,13 +73,16 @@ func TestSymlinkInput(t *testing.T) {
 
 // Test using a broken symlink as an input file.
 func TestBrokenSymlinkInput(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd "sh -c 'cat $in > $out'"
     -i in=./testdata/test_broken_symlink
     -o out={{ .storage }}/test_out
   `)
 	task := fun.Wait(id)
-	if task.State != tes.State_ERROR {
+	if task.State != tes.State_SYSTEM_ERROR {
 		t.Fatal("Expected error on broken symlink input")
 	}
 }
@@ -85,6 +97,9 @@ func TestBrokenSymlinkInput(t *testing.T) {
   is being tested here.
 */
 func TestSymlinkOutput(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd "sh -c 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'"
     -o sym={{ .storage }}/out-sym
@@ -110,6 +125,9 @@ func TestSymlinkOutput(t *testing.T) {
 }
 
 func TestOverwriteOutput(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd "sh -c 'echo foo > $out; chmod go+w $out'"
     -o out={{ .storage }}/test_out

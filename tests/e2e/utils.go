@@ -37,6 +37,14 @@ func init() {
 	log.Configure(logger.DebugConfig())
 }
 
+func DefaultFunnel() *Funnel {
+	// logging setup in utils.go
+	fun := NewFunnel(DefaultConfig())
+	fun.WithLocalBackend()
+	fun.StartServer()
+	return fun
+}
+
 // Funnel provides a test server and RPC/HTTP clients
 type Funnel struct {
 	// Clients

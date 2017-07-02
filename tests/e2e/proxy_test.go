@@ -6,6 +6,9 @@ import (
 )
 
 func TestListNoCacheHeader(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	resp, err := http.Get(fun.Conf.HTTPAddress() + "/v1/tasks")
 
 	if err != nil {
@@ -21,6 +24,9 @@ func TestListNoCacheHeader(t *testing.T) {
 }
 
 func TestGetNoCacheHeader(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	resp, err := http.Get(fun.Conf.HTTPAddress() + "/v1/tasks/1")
 
 	if err != nil {

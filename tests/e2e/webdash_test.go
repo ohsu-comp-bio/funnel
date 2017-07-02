@@ -9,6 +9,9 @@ import (
 )
 
 func TestWebdash(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	// Get the webdash health check endpoint
 	address := "http://localhost:" + fun.Conf.HTTPPort
 	client := http.Client{Timeout: 10 * time.Second}

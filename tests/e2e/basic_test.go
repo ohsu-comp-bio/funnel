@@ -7,6 +7,9 @@ import (
 )
 
 func TestHelloWorld(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd 'echo hello world'
   `)
@@ -18,6 +21,9 @@ func TestHelloWorld(t *testing.T) {
 }
 
 func TestGetTaskView(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	var err error
 	var task *tes.Task
 
@@ -102,6 +108,9 @@ func TestGetTaskView(t *testing.T) {
 //      results of all of those. It works for the moment, but
 //      should probably run against a clean environment.
 func TestListTaskView(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	var tasks []*tes.Task
 	var task *tes.Task
 	var err error
@@ -196,6 +205,9 @@ func TestListTaskView(t *testing.T) {
 // This ensures that the streaming works even when a small
 // amount of logs are written (which was once a bug).
 func TestSingleCharLog(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd "sh -c 'echo a; sleep 100'"
   `)
@@ -211,6 +223,9 @@ func TestSingleCharLog(t *testing.T) {
 // Test that port mappings are being logged.
 /* TODO need ports in funnel run
 func TestPortLog(t *testing.T) {
+  fun := DefaultFunnel()
+  defer fun.Cleanup()
+
   id := fun.Run(`
     --cmd 'echo start'
     --cmd 'sleep 10'
@@ -225,6 +240,9 @@ func TestPortLog(t *testing.T) {
 
 // Test that a completed task cannot change state.
 func TestCompleteStateImmutable(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd 'echo hello'
   `)
@@ -241,6 +259,9 @@ func TestCompleteStateImmutable(t *testing.T) {
 
 // Test canceling a task
 func TestCancel(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd 'echo start'
     --cmd 'sleep 1000'
@@ -261,6 +282,9 @@ func TestCancel(t *testing.T) {
 // have been started or completed, i.e. steps that have yet to be started
 // won't show up in Task.Logs[0].Logs
 func TestExecutorLogLength(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd 'echo first'
     --cmd 'sleep 10'
@@ -278,6 +302,9 @@ func TestExecutorLogLength(t *testing.T) {
 // the first step completed, but the correct behavior is to mark the
 // task complete after *all* steps have completed.
 func TestMarkCompleteBug(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd 'echo step 1'
     --cmd 'sleep 100'
@@ -292,6 +319,9 @@ func TestMarkCompleteBug(t *testing.T) {
 }
 
 func TestTaskStartEndTimeLogs(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`--cmd 'echo 1'`)
 	task := fun.Wait(id)
 	if task.Logs[0].StartTime == "" {
@@ -303,6 +333,9 @@ func TestTaskStartEndTimeLogs(t *testing.T) {
 }
 
 func TestOutputFileLog(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	dir := fun.Tempdir()
 
 	id, _ := fun.RunTask(&tes.Task{
@@ -356,6 +389,9 @@ func TestOutputFileLog(t *testing.T) {
 }
 
 func TestTaskError(t *testing.T) {
+	fun := DefaultFunnel()
+	defer fun.Cleanup()
+
 	id := fun.Run(`
     --cmd "sh -c 'exit 1'"
   `)

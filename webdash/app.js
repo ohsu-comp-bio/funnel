@@ -69,7 +69,7 @@ console.log(workers)
 
 app.controller('TaskInfoController', function($scope, $http, $routeParams, $location) {
   
-  $scope.url = "/v1/tasks/" + $routeParams.task_id
+  $scope.url = "/v1/tasks/" + $routeParams.task_id + "?view=FULL"
 
   $scope.task = {};
   $scope.cmdStr = function(cmd) {

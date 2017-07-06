@@ -35,7 +35,9 @@ func TestBasicAuthFail(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	_, err = fun.HTTP.ListTasks("MINIMAL")
+	_, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+		View: tes.TaskView_MINIMAL,
+	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
 		log.Debug("ERR", err)
 		t.Fatal("expected error")
@@ -62,6 +64,7 @@ func TestBasicAuthFail(t *testing.T) {
 func TestBasicAuthed(t *testing.T) {
 	os.Setenv("FUNNEL_SERVER_PASSWORD", "abc123")
 	defer os.Unsetenv("FUNNEL_SERVER_PASSWORD")
+
 	conf := e2e.DefaultConfig()
 	conf.Server.Password = "abc123"
 	fun := e2e.NewFunnel(conf)
@@ -84,7 +87,9 @@ func TestBasicAuthed(t *testing.T) {
 		t.Fatal("unexpected error")
 	}
 
-	_, err = fun.HTTP.ListTasks("MINIMAL")
+	_, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+		View: tes.TaskView_MINIMAL,
+	})
 	if err != nil {
 		t.Fatal("unexpected error")
 	}

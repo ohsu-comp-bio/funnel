@@ -5,6 +5,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"google.golang.org/grpc"
 	"time"
 )
@@ -168,16 +169,12 @@ func (r *RPCTask) AppendExecutorStderr(i int, s string) {
 	})
 }
 
-func (r *RPCTask) updateWorker(req *pbf.Worker) (*pbf.UpdateWorkerResponse, error) {
-	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
-	resp, err := r.client.UpdateWorker(ctx, req)
-	cleanup()
-	return resp, err
-}
-
 func (r *RPCTask) updateExecutorLogs(up *pbf.UpdateExecutorLogsRequest) error {
 	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
 	_, err := r.client.UpdateExecutorLogs(ctx, up)
+	if err != nil {
+		log.Error("Couldn't update executor logs", err)
+	}
 	cleanup()
 	return err
 }
@@ -185,6 +182,9 @@ func (r *RPCTask) updateExecutorLogs(up *pbf.UpdateExecutorLogsRequest) error {
 func (r *RPCTask) updateTaskLogs(up *pbf.UpdateTaskLogsRequest) error {
 	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
 	_, err := r.client.UpdateTaskLogs(ctx, up)
+	if err != nil {
+		log.Error("Couldn't update task logs", err)
+	}
 	cleanup()
 	return err
 }
@@ -202,6 +202,7 @@ func newTaskClient(conf config.Worker) (*taskClient, error) {
 		conf.ServerAddress,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		util.PerRPCPassword(conf.ServerPassword),
 	)
 	if err != nil {
 		return nil, err

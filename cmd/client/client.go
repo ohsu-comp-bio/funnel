@@ -81,10 +81,9 @@ func (c *Client) ListTasks(req *tes.ListTasksRequest) (*tes.ListTasksResponse, e
 
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
-	u := c.address + "/v1/tasks?view=" + view
-	req, _ := http.NewRequest("GET", u, nil)
-	req.SetBasicAuth("funnel", c.Password)
-	body, err := util.CheckHTTPResponse(c.client.Do(req))
+	hreq, _ := http.NewRequest("GET", u, nil)
+	hreq.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
 	}

@@ -41,13 +41,11 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 		return nil, gerr
 	}
 
-	s := &Backend{
+	return &Backend{
 		conf:   conf,
 		client: client,
 		gce:    gce,
-	}
-
-	return scheduler.Backend(s), nil
+	}, nil
 }
 
 // Backend represents the GCE backend, which provides

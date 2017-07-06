@@ -22,12 +22,11 @@ const prefix = "slurm-worker-"
 
 // NewBackend returns a new SLURM Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
-	b := scheduler.Backend(&Backend{
+	return &Backend{
 		name:     Name,
 		conf:     conf,
 		template: conf.Backends.SLURM.Template,
-	})
-	return b, nil
+	}, nil
 }
 
 // Backend represents the SLURM backend.

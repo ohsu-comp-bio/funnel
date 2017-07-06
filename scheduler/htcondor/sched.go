@@ -22,12 +22,11 @@ const prefix = "htcondor-worker-"
 
 // NewBackend returns a new HTCondor Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
-	b := scheduler.Backend(&Backend{
+	return &Backend{
 		name:     "htcondor",
 		conf:     conf,
 		template: conf.Backends.HTCondor.Template,
-	})
-	return b, nil
+	}, nil
 }
 
 // Backend represents the HTCondor backend.

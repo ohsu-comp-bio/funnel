@@ -126,7 +126,6 @@ func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbf.Worker) error {
 
 // UpdateTaskState updates a task's state in the database.
 func (taskBolt *TaskBolt) UpdateTaskState(ctx context.Context, req *pbf.UpdateTaskStateRequest) (*pbf.UpdateTaskStateResponse, error) {
-	log.Debug("Update task STATE", req)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 		return transitionTaskState(tx, req.Id, req.State)
 	})

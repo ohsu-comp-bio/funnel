@@ -21,9 +21,10 @@ var (
 	passlonely = regexp.MustCompile(`(?m)^PASS$`)
 	faillonely = regexp.MustCompile(`(?m)^FAIL$`)
 
-	okPath     = regexp.MustCompile(`(?m)^ok\s+(\S+)\s+([\d\.]+\w+)(?:  (coverage: \d+\.\d+% of statements))?$`)
-	failPath   = regexp.MustCompile(`(?m)^FAIL\s+\S+\s+(?:[\d\.]+\w+|\[build failed\])$`)
-	notestPath = regexp.MustCompile(`(?m)^\?\s+\S+\s+\[no test files\]$`)
+	okPath        = regexp.MustCompile(`(?m)^ok\s+(\S+)\s+([\d\.]+\w+)(?:  (coverage: \d+\.\d+% of statements))?$`)
+	failPath      = regexp.MustCompile(`(?m)^FAIL\s+\S+\s+(?:[\d\.]+\w+|\[build failed\])$`)
+	notestPath    = regexp.MustCompile(`(?m)^\?\s+\S+\s+\[no test files\]$`)
+	notestrunPath = regexp.MustCompile(`\[no tests to run\]`)
 
 	coverage = regexp.MustCompile(`(?m)^coverage: ((\d+)\.\d)+% of statements?$`)
 
@@ -65,12 +66,12 @@ func main() {
 		// RUN, SKIP, ok, and lots of other stuff from `go test`
 		case runhead.Match(b) || skiptail.Match(b) || okPath.Match(b) ||
 			notestPath.Match(b) || coverage.Match(b) || filename.Match(b) ||
-			importpath.Match(b):
+			importpath.Match(b) || notestrunPath.Match(b):
 
 			fmt.Fprintf(out, "%s\n", aurora.Colorize(s, 257))
 
 		// FAIL
-		case failtail.Match(b):
+		case failtail.Match(b) || failPath.Match(b) || faillonely.Match(b):
 			fmt.Fprintf(out, "%s\n", aurora.Red(s))
 
 		// Everything else, most likely funnel logging.

@@ -39,7 +39,7 @@ func (f *Funnel) AddWorker(id string, cpus uint32, ram, disk float64) {
 	if err != nil {
 		panic(err)
 	}
-	go w.Run()
+	go w.Run(context.Background())
 	time.Sleep(time.Second * 2)
 }
 
@@ -92,7 +92,7 @@ func NewFunnel() *Funnel {
 			if err != nil {
 				panic(err)
 			}
-			go w.Run()
+			go w.Run(context.Background())
 		}).
 		Return(nil, nil)
 

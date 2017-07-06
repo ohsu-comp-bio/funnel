@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -57,6 +58,6 @@ func Run(conf config.Config) error {
 	if err != nil {
 		return err
 	}
-	w.Run()
+	w.Run(context.Background())
 	return nil
 }

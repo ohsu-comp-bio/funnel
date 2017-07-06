@@ -1,23 +1,39 @@
 package worker
 
 import (
-	"context"
 	"testing"
+	"time"
 )
 
 func TestRunset(t *testing.T) {
-	r := runSet{}
-	r.Add("foo", func(c context.Context, s string) {
-		if s != "foo" {
-			t.Fatal("Unexpected task ID")
-		}
-		if r.Count() != 1 {
-			t.Fatal("Unexpected runner count")
-		}
-	})
+	r := newRunSet()
+	r.Add("foo")
+	nok := r.Add("foo")
+	if nok {
+		t.Fatal("Expected duplicate Add to return false")
+	}
 
-	r.Wait()
+	go func() {
+		time.Sleep(time.Millisecond * 10)
+		r.Remove("foo")
+	}()
 
+	if r.Count() != 1 {
+		t.Fatal("Unexpected runner count")
+	}
+
+	err := r.Wait(time.Second)
+
+	if err != nil {
+		t.Fatal("unexpected timeout")
+	}
+
+	if r.Count() != 0 {
+		t.Fatal("Unexpected runner count")
+	}
+
+	// Should do nothing
+	r.Remove("foo")
 	if r.Count() != 0 {
 		t.Fatal("Unexpected runner count")
 	}

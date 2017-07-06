@@ -28,11 +28,10 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	// Detect available resources at startup
 	res := detectResources(conf)
 	timeout := util.NewIdleTimeout(conf.Timeout)
-	stop := make(chan struct{})
 	state := pbf.WorkerState_UNINITIALIZED
 	return &Worker{
 		conf, sched, log, res,
-		NewDefaultRunner, runSet{}, timeout, stop, state,
+		NewDefaultRunner, newRunSet(), timeout, state,
 	}, nil
 }
 
@@ -51,50 +50,50 @@ type Worker struct {
 	log       logger.Logger
 	resources config.Resources
 	newRunner RunnerFactory
-	runners   runSet
+	runners   *runSet
 	timeout   util.IdleTimeout
-	stop      chan struct{}
 	state     pbf.WorkerState
 }
 
 // Run runs a worker with the given config. This is responsible for communication
 // with the server and starting task runners
-func (w *Worker) Run() {
+func (w *Worker) Run(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	w.log.Info("Starting worker")
 	w.state = pbf.WorkerState_ALIVE
-	w.checkConnection()
+	w.checkConnection(ctx)
 
 	ticker := time.NewTicker(w.conf.UpdateRate)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-w.stop:
+		case <-w.timeout.Done():
+			cancel()
+		case <-ctx.Done():
+			w.timeout.Stop()
+
+			// The worker gets 10 seconds to do a final sync with the scheduler.
+			stopCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
+			w.state = pbf.WorkerState_GONE
+			w.sync(stopCtx)
+			w.sched.Close()
+
+			// The runners get 10 seconds to finish up.
+			w.runners.Wait(time.Second * 10)
 			return
 		case <-ticker.C:
-			w.sync()
+			w.sync(ctx)
 			w.checkIdleTimer()
-		case <-w.timeout.Done():
-			// Worker timeout reached. Shutdown.
-			w.Stop()
-			return
 		}
 	}
 }
 
-// Stop stops the worker
-// TODO need a way to shut the worker down from the server/scheduler.
-func (w *Worker) Stop() {
-	w.state = pbf.WorkerState_GONE
-	close(w.stop)
-	w.timeout.Stop()
-	w.runners.Stop()
-	w.sync()
-	w.sched.Close()
-}
-
-func (w *Worker) checkConnection() {
-	_, err := w.sched.GetWorker(context.TODO(), &pbf.GetWorkerRequest{Id: w.conf.ID})
+func (w *Worker) checkConnection(ctx context.Context) {
+	_, err := w.sched.GetWorker(ctx, &pbf.GetWorkerRequest{Id: w.conf.ID})
 
 	if err != nil {
 		log.Error("Couldn't contact server.", err)
@@ -108,8 +107,8 @@ func (w *Worker) checkConnection() {
 //
 // TODO Sync should probably use a channel to sync data access.
 //      Probably only a problem for test code, where Sync is called directly.
-func (w *Worker) sync() {
-	r, gerr := w.sched.GetWorker(context.TODO(), &pbf.GetWorkerRequest{Id: w.conf.ID})
+func (w *Worker) sync(ctx context.Context) {
+	r, gerr := w.sched.GetWorker(ctx, &pbf.GetWorkerRequest{Id: w.conf.ID})
 
 	if gerr != nil {
 		log.Error("Couldn't get worker state during sync.", gerr)
@@ -120,10 +119,13 @@ func (w *Worker) sync() {
 	// to ensure there's only one runner per ID, so it's ok
 	// to call this multiple times with the same task ID.
 	for _, id := range r.TaskIds {
-		w.runners.Add(id, func(ctx context.Context, id string) {
-			r := w.newRunner(w.conf, id)
-			r.Run(ctx)
-		})
+		if w.runners.Add(id) {
+			go func(id string) {
+				r := w.newRunner(w.conf, id)
+				r.Run(ctx)
+				w.runners.Remove(id)
+			}(id)
+		}
 	}
 
 	// Worker data has been updated. Send back to server for database update.

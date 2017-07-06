@@ -53,9 +53,8 @@ func newTestWorker(conf config.Worker) testWorker {
 		log:       log,
 		resources: detectResources(conf),
 		newRunner: NoopRunnerFactory,
-		runners:   runSet{},
+		runners:   newRunSet(),
 		timeout:   util.NewIdleTimeout(conf.Timeout),
-		stop:      make(chan struct{}),
 		state:     pbf.WorkerState_ALIVE,
 	}
 
@@ -72,13 +71,15 @@ func newTestWorker(conf config.Worker) testWorker {
 	}
 }
 
-func (t *testWorker) Start() {
+func (t *testWorker) Start() context.CancelFunc {
+	ctx, cancel := context.WithCancel(context.Background())
 	t.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
 		Return(&pbf.Worker{}, nil)
 	go func() {
-		t.Worker.Run()
+		t.Worker.Run(ctx)
 		close(t.done)
 	}()
+	return cancel
 }
 
 func (t *testWorker) Wait() {

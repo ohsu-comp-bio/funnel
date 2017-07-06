@@ -1,62 +1,66 @@
 package worker
 
 import (
-	"context"
+	"errors"
 	"sync"
+	"time"
 )
+
+var errRunSetWaitTimedOut = errors.New("runSet.Wait() timed out")
+
+func newRunSet() *runSet {
+	return &runSet{
+		runners: make(map[string]struct{}),
+	}
+}
 
 // runSet tracks a set of concurrent goroutines by ID.
 // Used by the worker service to track a set of running tasks by task ID.
 type runSet struct {
 	wg      sync.WaitGroup
 	mtx     sync.Mutex
-	runners map[string]context.CancelFunc
+	runners map[string]struct{}
 }
 
-// Run will call the "run" function in a gouroutine and increment the waitgroup count.
-// Ensures "run" is only called once per ID.
-func (r *runSet) Add(id string, run func(context.Context, string)) {
+// Add tries to add an ID to the set and returns true if it was added,
+// false if it already existed.
+func (r *runSet) Add(id string) bool {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	// Initialize map if needed
-	if r.runners == nil {
-		r.runners = make(map[string]context.CancelFunc)
+	// Only add the ID if it doesn't already exist.
+	if _, ok := r.runners[id]; !ok {
+		r.runners[id] = struct{}{}
+		r.wg.Add(1)
+		return true
 	}
-
-	// If there's already a runner for the given task ID,
-	// do nothing.
-	if _, ok := r.runners[id]; ok {
-		return
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	r.runners[id] = cancel
-
-	r.wg.Add(1)
-	go func() {
-		run(ctx, id)
-		r.wg.Done()
-
-		// When the task is finished, remove the task ID from the set
-		r.mtx.Lock()
-		defer r.mtx.Unlock()
-		delete(r.runners, id)
-	}()
+	return false
 }
 
-// Cancel all runners and wait for them to exit.
-func (r *runSet) Stop() {
-	for _, cancel := range r.runners {
-		cancel()
+// Remove removes the given ID from the set.
+func (r *runSet) Remove(id string) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	// Only remove if the ID exists in the set.
+	if _, ok := r.runners[id]; ok {
+		r.wg.Done()
+		delete(r.runners, id)
 	}
-	r.runners = nil
-	r.wg.Wait()
 }
 
 // Wait for all runners to exit.
-func (r *runSet) Wait() {
-	r.wg.Wait()
+func (r *runSet) Wait(timeout time.Duration) error {
+	done := make(chan struct{})
+	go func() {
+		r.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-time.After(timeout):
+		return errRunSetWaitTimedOut
+	}
 }
 
 // Count returns the number of runners currently running.

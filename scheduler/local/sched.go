@@ -78,6 +78,6 @@ func startWorker(id string, conf config.Config) error {
 		log.Error("Can't create worker", err)
 		return err
 	}
-	go w.Run()
+	go w.Run(context.Background())
 	return nil
 }

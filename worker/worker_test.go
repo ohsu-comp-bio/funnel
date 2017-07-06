@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -14,7 +15,7 @@ func init() {
 	log.Configure(logger.DebugConfig())
 }
 
-// Test calling Worker.Stop()
+// Test calling stopping a worker by canceling its context
 func TestStopWorker(t *testing.T) {
 	conf := config.DefaultConfig().Worker
 	w := newTestWorker(conf)
@@ -22,12 +23,12 @@ func TestStopWorker(t *testing.T) {
 	w.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
 		Return(&pbf.Worker{}, nil)
 
-	w.Start()
+	stop := w.Start()
 
 	// Fail if this test doesn't complete in the given time.
 	cleanup := timeLimit(t, time.Millisecond*10)
 	defer cleanup()
-	w.Stop()
+	stop()
 	w.Wait()
 	w.Sched.AssertCalled(t, "Close")
 }
@@ -41,7 +42,7 @@ func TestGetWorkerFail(t *testing.T) {
 	// Set GetWorker to return an error
 	w.Sched.On("GetWorker", mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("TEST"))
-	w.sync()
+	w.sync(context.Background())
 	time.Sleep(time.Second)
 }
 
@@ -87,9 +88,9 @@ func TestNoTasks(t *testing.T) {
 		count++
 	})
 
-	w.sync()
-	w.sync()
-	w.sync()
+	w.sync(context.Background())
+	w.sync(context.Background())
+	w.sync(context.Background())
 	time.Sleep(time.Second)
 
 	if count != 0 {
@@ -113,7 +114,7 @@ func TestWorkerRunnerCreated(t *testing.T) {
 	})
 
 	w.AddTasks("task-1", "task-2")
-	w.sync()
+	w.sync(context.Background())
 	time.Sleep(time.Second)
 
 	log.Debug("COUNT", count)
@@ -136,7 +137,7 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	w.AddTasks("task-1")
 
 	// manually sync the worker to avoid timing issues.
-	w.sync()
+	w.sync(context.Background())
 	time.Sleep(time.Second)
 
 	log.Debug("COUNT", w.runners.Count())
@@ -146,8 +147,8 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 
 	// There was a bug where later syncs would end up re-running the task.
 	// Do a few syncs to make sure.
-	w.sync()
-	w.sync()
+	w.sync(context.Background())
+	w.sync(context.Background())
 	time.Sleep(time.Second)
 
 	log.Debug("COUNT", w.runners.Count())
@@ -169,7 +170,7 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 	w.AddTasks("task-1")
 
 	// manually sync the worker to avoid timing issues.
-	w.sync()
+	w.sync(context.Background())
 	time.Sleep(time.Second)
 
 	if w.runners.Count() != 0 {

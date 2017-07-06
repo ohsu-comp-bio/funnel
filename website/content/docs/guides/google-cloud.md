@@ -3,7 +3,7 @@ title: Google Cloud
 
 menu:
   main:
-    parent: backends
+    parent: guides
     weight: 20
 ---
 

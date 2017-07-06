@@ -62,8 +62,6 @@ func updateWorker(tx *bolt.Tx, req *pbf.Worker) error {
 		}
 	}
 
-	log.Debug("TASKS", req.TaskIds)
-
 	// update disk usage while idle
 	if len(req.TaskIds) == 0 {
 		if req.GetResources().GetDiskGb() > 0 {

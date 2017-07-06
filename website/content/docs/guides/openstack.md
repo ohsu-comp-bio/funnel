@@ -3,7 +3,7 @@ title: OpenStack
 
 menu:
   main:
-    parent: backends
+    parent: guides
     weight: 25
 ---
 

@@ -1,27 +1,26 @@
 ---
-title: Open Grid Engine
+title: SLURM
 
 menu:
   main:
-    parent: backends
+    parent: guides
     weight: 20
 ---
 
-# Open Grid Engine (SGE)
+# SLURM
 
-Funnel can be configured to start workers via [Open Grid Engine][sge].  
+Funnel can be configured to start workers via [SLURM][slurm].  
 
 Workers will start, execute a single task, then exit immediately so that they don't
-unfairly hold slots in the SGE queue. Funnel accesses SGE by making calls
-to `qsub`.
+unfairly hold slots in the SLURM queue. Funnel accesses SLURM by making calls
+to `sbatch`.
 
-The Funnel server process needs to run on the same machine as the SGE master.  
-Configure Funnel to use SGE by including the following config:
+The Funnel server process needs to run on the same machine as the SLURM master.  
+Configure Funnel to use SLURM by including the following config:
 
 ```YAML
-{{< gridengine-template >}}
+{{< slurm-template >}}
 ```
-
 The following variables are available for use in the template:
 
 | Variable    |  Description |
@@ -43,4 +42,4 @@ To start Funnel with a config file:
 $ funnel server --config ./your-config.yaml
 ```
 
-[sge]: http://gridscheduler.sourceforge.net/documentation.html
+[slurm]: https://slurm.schedmd.com/

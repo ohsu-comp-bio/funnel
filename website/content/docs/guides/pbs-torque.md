@@ -3,7 +3,7 @@ title: PBS/Torque
 
 menu:
   main:
-    parent: backends
+    parent: guides
     weight: 20
 ---
 

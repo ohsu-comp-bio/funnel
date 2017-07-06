@@ -12,13 +12,10 @@ import (
 var log = logger.New("e2e-s3")
 var fun = e2e.NewFunnel(e2e.DefaultConfig())
 
-func init() {
-	fun.WithLocalBackend()
-}
-
 func TestMain(m *testing.M) {
 	log.Configure(logger.DebugConfig())
 
+	fun.WithLocalBackend()
 	fun.StartServer()
 	// Start minio
 	dockerPath, _ := exec.LookPath("docker")

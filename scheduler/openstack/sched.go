@@ -24,7 +24,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 		return nil, err
 	}
 
-	return scheduler.Backend(&Backend{conf, client}), nil
+	return &Backend{conf, client}, nil
 }
 
 // Backend represents the OpenStack backend.

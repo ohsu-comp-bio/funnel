@@ -24,7 +24,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	}
 
 	client, _ := scheduler.NewClient(conf.Worker)
-	return scheduler.Backend(&Backend{conf, client, id}), nil
+	return &Backend{conf, client, id}, nil
 }
 
 // Backend represents the local backend.

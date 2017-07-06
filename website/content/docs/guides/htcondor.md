@@ -3,7 +3,7 @@ title: HTCondor
 
 menu:
   main:
-    parent: backends
+    parent: guides
     weight: 20
 ---
 

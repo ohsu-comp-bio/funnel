@@ -177,7 +177,7 @@ website:
 
 # Serve the Funnel website on localhost:1313
 website-dev:
-	@cp config/* website/static/funnel-config-examples/
+	@find ./config -name '*.txt' -o -name '*.yaml' -exec cp {} website/static/funnel-config-examples/ \;
 	@go get github.com/spf13/hugo
 	hugo --source ./website -w server
 

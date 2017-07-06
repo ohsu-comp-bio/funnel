@@ -9,6 +9,11 @@ WorkDir: ./funnel-work-dir
 # Hostname of the Funnel server. Mainly, this is used by auto-scalers
 # to configure workers.
 HostName: localhost
+Server:
+  # Require basic authentication for the server APIs using a password.
+  # If used, make sure to properly restrict access to the config file
+  # (e.g. chmod 600 funnel.config.yml)
+  #Password: abc123
 Logger:
   # Logging levels: debug, info, error
   Level: info
@@ -167,6 +172,9 @@ Worker:
   Timeout: -1
   # Maximum task log (stdout/err) size, in bytes.
   LogTailSize: 10000 # 10 KB
+
+  # Password for basic auth. with the server APIs.
+  #ServerPassword: abc123
 
   # File storage systems.
   #

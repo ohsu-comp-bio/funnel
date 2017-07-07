@@ -45,11 +45,10 @@ type JobDefConfig struct {
 }
 
 // DefaultConfig returns default configuration of AWS.
-// TODO currently hard-coded to development.
 func DefaultConfig() Config {
 	return Config{
-		Region:          endpoints.UsWest2RegionID,
-		Container:       "docker.io/buchanaeohsu/funnel-direct-docker",
+		Region:    endpoints.UsWest2RegionID,
+		Container: "docker.io/ohsucompbio/funnel",
 		DefaultTaskName: "funnel task",
 		ComputeEnv: ComputeEnvConfig{
 			Name:         "funnel-compute-environment",
@@ -59,12 +58,6 @@ func DefaultConfig() Config {
 			},
 			MinVCPUs: 0,
 			MaxVCPUs: 128,
-			SecurityGroupIds: []string{
-				"sg-896e42f2",
-			},
-			Subnets: []string{
-				"subnet-d21a579b", "subnet-a19740fa", "subnet-a6e0cac1",
-			},
 			Tags: map[string]string{
 				"Name": "Funnel",
 			},

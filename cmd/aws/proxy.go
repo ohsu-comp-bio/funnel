@@ -8,8 +8,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"net/http"
 	"regexp"
 	"strings"
 )
@@ -21,17 +19,9 @@ func runProxy(conf config.Config) error {
 		client: newBatchClient(DefaultConfig()),
 	}
 
-	mux := http.NewServeMux()
-	srv := server.Server{
-		RPCAddress:        ":" + conf.RPCPort,
-		HTTPPort:          conf.HTTPPort,
-		Handler:           mux,
-		TaskServiceServer: &p,
-		DisableHTTPCache:  true,
-		DialOptions: []grpc.DialOption{
-			grpc.WithInsecure(),
-		},
-	}
+	srv := server.DefaultServer(conf)
+	srv.TaskServiceServer = &p
+	srv.DisableHTTPCache = true
 
 	return srv.Serve(context.Background())
 }

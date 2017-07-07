@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func deploy() error {
-	cli := newBatchClient(DefaultConfig())
+func deploy(conf Config) error {
+	cli := newBatchClient(conf)
 
 	a, aerr := cli.CreateComputeEnvironment()
 	fmt.Println(a, aerr)

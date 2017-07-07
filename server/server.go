@@ -31,20 +31,18 @@ type Server struct {
 }
 
 // DefaultServer returns a new server instance.
-func DefaultServer(db Database, conf config.Config) *Server {
+func DefaultServer(conf config.Config) *Server {
 	log.Debug("Server Config", "config.Config", conf)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", webdash.Handler())
 
 	return &Server{
-		RPCAddress:             ":" + conf.RPCPort,
-		HTTPPort:               conf.HTTPPort,
-		Password:               conf.Server.Password,
-		TaskServiceServer:      db,
-		SchedulerServiceServer: db,
-		Handler:                mux,
-		DisableHTTPCache:       conf.DisableHTTPCache,
+		RPCAddress:       ":" + conf.RPCPort,
+		HTTPPort:         conf.HTTPPort,
+		Password:         conf.Server.Password,
+		Handler:          mux,
+		DisableHTTPCache: conf.DisableHTTPCache,
 		DialOptions: []grpc.DialOption{
 			grpc.WithInsecure(),
 		},

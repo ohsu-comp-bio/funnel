@@ -86,7 +86,9 @@ func Run(conf config.Config) error {
 		return lerr
 	}
 
-	srv := server.DefaultServer(db, conf)
+	srv := server.DefaultServer(conf)
+	srv.TaskServiceServer = db
+	srv.SchedulerServiceServer = db
 	sched := scheduler.NewScheduler(db, backend, conf)
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -108,7 +108,8 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(dberr)
 	}
 
-	srv := server.DefaultServer(db, conf)
+	srv := server.DefaultServer(conf)
+	srv.TaskServiceServer = db
 
 	return &Funnel{
 		HTTP:       client.NewClient("http://localhost:" + conf.HTTPPort),

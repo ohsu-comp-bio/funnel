@@ -7,6 +7,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/ohsu-comp-bio/funnel/storage"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"os"
 )
@@ -29,6 +30,12 @@ func runTask(task *tes.Task, conf config.Config) error {
 
 	task.Id = os.Getenv("AWS_BATCH_JOB_ID")
 
+	// Allow this command to be used outside of AWS Batch
+	// e.g. during development
+	if task.Id == "" {
+		task.Id = util.GenTaskID()
+	}
+
 	// Task logs will be written to this logger and formatted to JSON.
 	// This get written to AWS CloudWatchLogs, where the Funnel + AWS Batch
 	// proxy reads the log data.
@@ -39,6 +46,12 @@ func runTask(task *tes.Task, conf config.Config) error {
 		JSONFormat: logger.JSONFormatConfig{
 			DisableTimestamp: true,
 		},
+	})
+
+	conf.Worker.Storage.S3 = append(conf.Worker.Storage.S3, config.S3Storage{
+		Endpoint: "s3.amazonaws.com",
+		Key:      os.Getenv("AWS_ACCESS_KEY_ID"),
+		Secret:   os.Getenv("AWS_SECRET_ACCESS_KEY"),
 	})
 
 	runner := worker.DefaultRunner{

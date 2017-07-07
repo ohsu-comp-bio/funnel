@@ -63,6 +63,8 @@ func (r *DefaultRunner) Run(pctx context.Context) {
 	var run helper
 	var task *tes.Task
 
+	r.Log.Debug("Run")
+
 	task, run.syserr = r.Svc.Task()
 
 	r.Svc.StartTime(time.Now())
@@ -74,15 +76,19 @@ func (r *DefaultRunner) Run(pctx context.Context) {
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
+			r.Log.Info("Runner canceled")
 			r.Svc.SetState(tes.State_CANCELED)
 		case run.execerr != nil:
 			// One of the executors failed
+			r.Log.Error("Exec error", run.execerr)
 			r.Svc.SetState(tes.State_ERROR)
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
+			r.Log.Error("System error", run.syserr)
 			r.Svc.SetState(tes.State_SYSTEM_ERROR)
 		default:
+			r.Log.Info("Runner complete")
 			r.Svc.SetState(tes.State_COMPLETE)
 		}
 	}()

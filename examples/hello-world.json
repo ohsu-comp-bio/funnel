@@ -5,7 +5,7 @@
         {
             "image_name": "alpine",
             "cmd": ["echo", "hello world"],
-            "stdout": "stdout"
+            "stdout": "/tmp/stdout"
         }
     ]
 }

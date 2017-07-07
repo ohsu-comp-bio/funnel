@@ -31,20 +31,18 @@ type Server struct {
 }
 
 // DefaultServer returns a new server instance.
-func DefaultServer(db Database, conf config.Config) *Server {
+func DefaultServer(conf config.Config) *Server {
 	log.Debug("Server Config", "config.Config", conf)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", webdash.Handler())
 
 	return &Server{
-		RPCAddress:             ":" + conf.RPCPort,
-		HTTPPort:               conf.HTTPPort,
-		Password:               conf.Server.Password,
-		TaskServiceServer:      db,
-		SchedulerServiceServer: db,
-		Handler:                mux,
-		DisableHTTPCache:       conf.DisableHTTPCache,
+		RPCAddress:       ":" + conf.RPCPort,
+		HTTPPort:         conf.HTTPPort,
+		Password:         conf.Server.Password,
+		Handler:          mux,
+		DisableHTTPCache: conf.DisableHTTPCache,
 		DialOptions: []grpc.DialOption{
 			grpc.WithInsecure(),
 		},
@@ -76,6 +74,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	// Set "cache-control: no-store" to disable response caching.
 	// Without this, some servers (e.g. GCE) will cache a response from ListTasks, GetTask, etc.
 	// which results in confusion about the stale data.
+	// TODO BUG HERE, DisableHTTPCache is required.
 	if s.DisableHTTPCache {
 		mux.Handle("/v1/", disableCache(grpcMux))
 	}
@@ -88,6 +87,7 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Register TES service
 	if s.TaskServiceServer != nil {
+		log.Debug("Registering task service")
 		tes.RegisterTaskServiceServer(grpcServer, s.TaskServiceServer)
 		err := tes.RegisterTaskServiceHandlerFromEndpoint(
 			ctx, grpcMux, s.RPCAddress, s.DialOptions,

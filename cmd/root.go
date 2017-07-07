@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/ohsu-comp-bio/funnel/cmd/aws"
 	"github.com/ohsu-comp-bio/funnel/cmd/examples"
 	"github.com/ohsu-comp-bio/funnel/cmd/gce"
 	"github.com/ohsu-comp-bio/funnel/cmd/run"
@@ -30,4 +31,5 @@ func init() {
 	RootCmd.AddCommand(termdash.Cmd)
 	RootCmd.AddCommand(wait.Cmd)
 	RootCmd.AddCommand(worker.Cmd)
+	RootCmd.AddCommand(aws.Cmd)
 }

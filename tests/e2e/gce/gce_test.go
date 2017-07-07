@@ -22,7 +22,6 @@ var log = logger.New("gce-e2e")
 
 type Funnel struct {
 	*e2e.Funnel
-	GCE               *gcemock.Wrapper
 	InstancesInserted []*compute.Instance
 }
 
@@ -54,17 +53,18 @@ func NewFunnel() *Funnel {
 	if err != nil {
 		panic(err)
 	}
+	wrapper := new(gcemock.Wrapper)
+	backend.SetWrapper(wrapper)
 
 	fun := &Funnel{
 		Funnel: e2e.NewFunnel(conf),
-		GCE:    backend.Wrapper,
 	}
 
-	backend.Wrapper.SetupMockMachineTypes()
-	backend.Wrapper.SetupMockInstanceTemplates()
+	wrapper.SetupMockMachineTypes()
+	wrapper.SetupMockInstanceTemplates()
 
 	// Set up the mock Google Cloud plugin so that it starts a local worker.
-	backend.Wrapper.On("InsertInstance", mock.Anything, mock.Anything, mock.Anything).
+	wrapper.On("InsertInstance", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			log.Debug("INSERT")
 			opts := args[2].(*compute.Instance)

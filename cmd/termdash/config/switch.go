@@ -7,7 +7,7 @@ package config
 var switches = []*Switch{
 	{
 		Key:   "sortReversed",
-		Val:   false,
+		Val:   true,
 		Label: "Reverse Sort Order",
 	},
 	{

@@ -1,6 +1,7 @@
 package termdash
 
 import (
+	"fmt"
 	ui "github.com/gizak/termui"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/compact"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
@@ -29,6 +30,12 @@ func init() {
 }
 
 func termdash(tesHTTPServerAddress string) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("An error occurred:\n", r)
+		}
+	}()
+
 	// init global config
 	config.Init()
 
@@ -36,7 +43,7 @@ func termdash(tesHTTPServerAddress string) {
 	ui.ColorMap = colorMap
 
 	if err := ui.Init(); err != nil {
-		panic(err)
+		panic(fmt.Errorf("Error initializing termdash UI: %v", err))
 	}
 	defer Shutdown()
 

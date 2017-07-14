@@ -34,7 +34,7 @@ type Expanded struct {
 
 func NewExpanded(t *tes.Task) *Expanded {
 	ts, _ := marshaler.MarshalToString(t)
-	ts = strings.Replace(ts, "\\n", "\n  ", -1)
+	ts = strings.Replace(ts, `\n`, "\n", -1)
 	return &Expanded{
 		TaskJSON: NewJSON(ts),
 		// TaskInfo:    NewTaskInfo(t),
@@ -49,7 +49,7 @@ func NewExpanded(t *tes.Task) *Expanded {
 
 func (e *Expanded) Update(t *tes.Task) {
 	ts, _ := marshaler.MarshalToString(t)
-	ts = strings.Replace(ts, "\\n", "\n  ", -1)
+	ts = strings.Replace(ts, `\n`, "\n", -1)
 	e.TaskJSON.Set(ts)
 	// e.TaskInfo.Set(t)
 	// e.TaskInputs.Set(t.Inputs)
@@ -107,9 +107,6 @@ func (e *Expanded) Align() {
 	if e.Width > colWidth[0] {
 		colWidth[1] = e.Width - (colWidth[0] + 1)
 	}
-}
-
-func calcWidth(w int) {
 }
 
 func (e *Expanded) Buffer() ui.Buffer {

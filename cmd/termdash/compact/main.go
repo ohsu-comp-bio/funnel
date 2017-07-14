@@ -22,14 +22,9 @@ type Compact struct {
 }
 
 func NewCompact(t *tes.Task) *Compact {
-	// truncate task id
-	id := t.Id
-	if len(id) > 12 {
-		id = id[:12]
-	}
 	row := &Compact{
 		Status: NewStatus(),
-		ID:     NewTextCol(id),
+		ID:     NewTextCol(t.Id),
 		State:  NewTextCol(t.State.String()),
 		Name:   NewTextCol(t.Name),
 		Desc:   NewTextCol(t.Description),

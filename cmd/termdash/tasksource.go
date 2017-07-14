@@ -1,6 +1,7 @@
 package termdash
 
 import (
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"sort"
@@ -33,18 +34,26 @@ func (cm *TaskSource) listTasks() TaskWidgets {
 	var tasks TaskWidgets
 	var page string
 
+	defer func() {
+		if r := recover(); r != nil {
+			if header != nil {
+				header.SetError(fmt.Sprintf("%v", r))
+			}
+		}
+	}()
+
 	for {
 		resp, err := cm.client.ListTasks(&tes.ListTasksRequest{
 			View:      tes.TaskView_BASIC,
 			PageToken: page,
 		})
-		page = resp.NextPageToken
 		if err != nil {
 			panic(err)
 		}
 		for _, t := range resp.Tasks {
 			tasks = append(tasks, NewTaskWidget(t))
 		}
+		page = resp.NextPageToken
 		if page == "" {
 			break
 		}
@@ -70,6 +79,14 @@ func (cm *TaskSource) All() TaskWidgets {
 
 // Get a single task, by ID
 func (cm *TaskSource) Get(id string) *TaskWidget {
+	defer func() {
+		if r := recover(); r != nil {
+			if header != nil {
+				header.SetError(fmt.Sprintf("%v", r))
+			}
+		}
+	}()
+
 	task, err := cm.client.GetTask(id, "FULL")
 	if err != nil {
 		panic(err)

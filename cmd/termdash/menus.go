@@ -15,9 +15,9 @@ var helpDialog = []menu.Item{
 	{Label: "[f] - filter displayed tasks", Val: ""},
 	{Label: "[h] - open this help dialog", Val: ""},
 	{Label: "[H] - toggle dashboard header", Val: ""},
-	{Label: "[s] - select task sort field", Val: ""},
-	{Label: "[r] - reverse task sort order", Val: ""},
-	{Label: "[q] - exit funnel dashboard", Val: ""},
+	{Label: "[s] - select sort field", Val: ""},
+	{Label: "[r] - reverse sort order", Val: ""},
+	{Label: "[q] - exit dashboard", Val: ""},
 }
 
 func HelpMenu() {

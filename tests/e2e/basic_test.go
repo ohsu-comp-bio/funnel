@@ -18,6 +18,17 @@ func TestHelloWorld(t *testing.T) {
 	}
 }
 
+func TestGetUknownTask(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("GetTask returned a task for an unknown id")
+		}
+	}()
+	// this function panics on error
+	// we expect an error to occur in this case since the task does not exist
+	fun.GetView("nonexistent-task-id", tes.TaskView_MINIMAL)
+}
+
 func TestGetTaskView(t *testing.T) {
 	var err error
 	var task *tes.Task

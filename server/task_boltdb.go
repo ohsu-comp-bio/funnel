@@ -194,13 +194,31 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 	return tes.State(v)
 }
 
+type taskNotFoundError struct {
+	id string
+}
+
+func (e *taskNotFoundError) Error() string {
+	return fmt.Sprintf("no task found for id: %s", e.id)
+}
+
+func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
+	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	if b == nil {
+		return &taskNotFoundError{id}
+	}
+	task.Id = id
+	task.State = getTaskState(tx, id)
+	return nil
+}
+
 func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
-		return fmt.Errorf("task %s not found", id)
+		return &taskNotFoundError{id}
 	}
 	proto.Unmarshal(b, task)
-	return nil
+	return loadMinimalTaskView(tx, id, task)
 }
 
 func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
@@ -230,17 +248,23 @@ func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) 
 		task, err = getTaskView(tx, req.Id, req.View)
 		return err
 	})
+
 	if err != nil {
 		log.Error("GetTask", "error", err, "taskID", req.Id)
-		return nil, grpc.Errorf(codes.NotFound, err.Error())
+		if e, ok := err.(*taskNotFoundError); ok {
+			return nil, grpc.Errorf(codes.NotFound, e.Error())
+		}
 	}
-	return task, nil
+	return task, err
 }
 
 func getTask(tx *bolt.Tx, id string) *tes.Task {
 	// This is a thin wrapper around getTaskView in order to allow task views
 	// to be added with out changing existing code calling getTask().
-	task, _ := getTaskView(tx, id, tes.TaskView_FULL)
+	task, err := getTaskView(tx, id, tes.TaskView_FULL)
+	if err != nil {
+		log.Error("Error in getTask", err)
+	}
 	return task
 }
 
@@ -248,15 +272,17 @@ func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
 	var err error
 	task := &tes.Task{}
 
-	if view == tes.TaskView_BASIC {
+	switch {
+	case view == tes.TaskView_MINIMAL:
+		err = loadMinimalTaskView(tx, id, task)
+	case view == tes.TaskView_BASIC:
 		err = loadBasicTaskView(tx, id, task)
-	} else if view == tes.TaskView_FULL {
+	case view == tes.TaskView_FULL:
 		err = loadBasicTaskView(tx, id, task)
 		loadTaskLogs(tx, task)
+	default:
+		err = fmt.Errorf("Unknown view: %s", view.String())
 	}
-
-	task.Id = id
-	task.State = getTaskState(tx, id)
 	return task, err
 }
 

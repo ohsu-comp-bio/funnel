@@ -51,14 +51,13 @@ func doList(server string) (string, error) {
 			View:      tes.TaskView(view),
 			PageToken: page,
 		})
-		page = resp.NextPageToken
 		if err != nil {
 			return "", err
 		}
-
 		if len(resp.Tasks) == 0 {
 			break
 		}
+		page = resp.NextPageToken
 		// convert resp to map[string]interface{} for query
 		var out map[string]interface{}
 		j, _ := cli.Marshaler.MarshalToString(resp)

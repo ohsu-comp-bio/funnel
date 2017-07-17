@@ -55,6 +55,10 @@ func doList(server string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
+		if len(resp.Tasks) == 0 {
+			break
+		}
 		// convert resp to map[string]interface{} for query
 		var out map[string]interface{}
 		j, _ := cli.Marshaler.MarshalToString(resp)
@@ -89,5 +93,9 @@ func doList(server string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(tasksJSON), nil
+	response := string(tasksJSON)
+	if response == "null" {
+		return "{}", nil
+	}
+	return response, nil
 }

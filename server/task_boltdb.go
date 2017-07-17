@@ -194,9 +194,13 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 	return tes.State(v)
 }
 
-func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) {
+func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	if b == nil {
+		return fmt.Errorf("task %s not found", id)
+	}
 	proto.Unmarshal(b, task)
+	return nil
 }
 
 func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
@@ -221,32 +225,39 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 // GetTask gets a task, which describes a running task
 func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task *tes.Task
-	err := taskBolt.db.View(func(tx *bolt.Tx) error {
-		task = getTaskView(tx, req.Id, req.View)
-		return nil
+	var err error
+	err = taskBolt.db.View(func(tx *bolt.Tx) error {
+		task, err = getTaskView(tx, req.Id, req.View)
+		return err
 	})
-	return task, err
+	if err != nil {
+		log.Error("GetTask", "error", err, "taskID", req.Id)
+		return nil, grpc.Errorf(codes.NotFound, err.Error())
+	}
+	return task, nil
 }
 
 func getTask(tx *bolt.Tx, id string) *tes.Task {
 	// This is a thin wrapper around getTaskView in order to allow task views
 	// to be added with out changing existing code calling getTask().
-	return getTaskView(tx, id, tes.TaskView_FULL)
+	task, _ := getTaskView(tx, id, tes.TaskView_FULL)
+	return task
 }
 
-func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) *tes.Task {
+func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
+	var err error
 	task := &tes.Task{}
 
 	if view == tes.TaskView_BASIC {
-		loadBasicTaskView(tx, id, task)
+		err = loadBasicTaskView(tx, id, task)
 	} else if view == tes.TaskView_FULL {
-		loadBasicTaskView(tx, id, task)
+		err = loadBasicTaskView(tx, id, task)
 		loadTaskLogs(tx, task)
 	}
+
 	task.Id = id
 	task.State = getTaskState(tx, id)
-
-	return task
+	return task, err
 }
 
 // ListTasks returns a list of taskIDs
@@ -282,7 +293,7 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 		}
 
 		for ; k != nil && i < pageSize; k, _ = c.Next() {
-			task := getTaskView(tx, string(k), req.View)
+			task, _ := getTaskView(tx, string(k), req.View)
 			tasks = append(tasks, task)
 			i++
 		}

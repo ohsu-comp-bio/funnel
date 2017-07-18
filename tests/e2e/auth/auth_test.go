@@ -67,7 +67,6 @@ func TestBasicAuthed(t *testing.T) {
 
 	conf := e2e.DefaultConfig()
 	conf.Server.Password = "abc123"
-	conf.Worker.ServerPassword = "abc123"
 	fun := e2e.NewFunnel(conf)
 	fun.WithLocalBackend()
 	fun.StartServer()

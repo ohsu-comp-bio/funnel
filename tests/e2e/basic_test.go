@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"strings"
 	"testing"
 	"time"
 )
@@ -18,24 +19,24 @@ func TestHelloWorld(t *testing.T) {
 	}
 }
 
-func TestGetUknownTask(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("GetTask returned a task for an unknown id")
-		}
-	}()
-	// this function panics on error
-	// we expect an error to occur in this case since the task does not exist
-	fun.GetView("nonexistent-task-id", tes.TaskView_MINIMAL)
+func TestGetUnknownTask(t *testing.T) {
+	_, err := fun.HTTP.GetTask("nonexistent-task-id", "MINIMAL")
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
+		log.Debug("ERR", err)
+		t.Fatal("expected error")
+	}
 }
 
 func TestGetTaskView(t *testing.T) {
 	var err error
 	var task *tes.Task
 
+	fun.WriteFile("test_contents.txt", "hello world")
+
 	id := fun.Run(`
     --cmd 'echo hello world'
     --name 'foo'
+    --contents in={{ .storage }}/test_contents.txt
   `)
 	fun.Wait(id)
 
@@ -64,10 +65,18 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in basic view")
 	}
 
+	if task.Inputs[0].Contents != "" {
+		t.Fatal("unexpected TaskParameter contents included in basic view")
+	}
+
 	task = fun.GetView(id, tes.TaskView_FULL)
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout in full view")
+	}
+
+	if task.Inputs[0].Contents != "hello world" {
+		t.Fatal("missing TaskParameter contents in full view")
 	}
 
 	// test http proxy
@@ -99,6 +108,10 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in basic view")
 	}
 
+	if task.Inputs[0].Contents != "" {
+		t.Fatal("unexpected TaskParameter contents included in basic view")
+	}
+
 	task, err = fun.HTTP.GetTask(id, "FULL")
 	if err != nil {
 		t.Fatal(err)
@@ -107,6 +120,11 @@ func TestGetTaskView(t *testing.T) {
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout in full view")
 	}
+
+	if task.Inputs[0].Contents != "hello world" {
+		t.Fatal("missing TaskParameter contents in full view")
+	}
+
 }
 
 // TODO this is a bit hacky for now because we're reusing the same

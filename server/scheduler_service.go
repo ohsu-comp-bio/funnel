@@ -142,7 +142,7 @@ func updateAvailableResources(tx *bolt.Tx, worker *pbf.Worker) {
 		DiskGb: worker.GetResources().GetDiskGb(),
 	}
 	for _, taskID := range worker.TaskIds {
-		t := getTask(tx, taskID)
+		t, _ := getTaskView(tx, taskID, tes.TaskView_FULL)
 		res := t.GetResources()
 
 		// Cpus are represented by an unsigned int, and if we blindly

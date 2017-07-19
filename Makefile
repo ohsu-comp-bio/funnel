@@ -2,7 +2,7 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
-VERSION = 0.1.0
+VERSION = 0.2.0
 TESTS=$(shell go list ./... | grep -v /vendor/)
 
 export SHELL=/bin/bash
@@ -114,19 +114,12 @@ upload-release:
 	@mkdir -p build/release
 	@cp build/bin/* build/release/
 	@cp build/funnel-gce-image-installer build/release
-	@for GOOS in darwin linux; do \
-		for GOARCH in amd64; do \
-			GOOS=$$GOOS GOARCH=$$GOARCH \
-				tar -C build/release -czvf build/release/funnel-$$GOOS-$$GOARCH.tar.gz funnel-$$GOOS-$$GOARCH; \
-				rm build/release/funnel-$$GOOS-$$GOARCH; \
-		done; \
-	done
-	#github-release release \
+	-github-release release \
 		-u ohsu-comp-bio \
 		-r funnel \
 		--tag $(VERSION) \
 		--name $(VERSION)
-	@for f in $$(ls -1 build/release); do \
+	for f in $$(ls -1 build/release); do \
 		github-release upload \
 		-u ohsu-comp-bio \
 		-r funnel \

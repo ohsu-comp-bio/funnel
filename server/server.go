@@ -7,8 +7,10 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/webdash"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -23,11 +25,12 @@ type Server struct {
 	RPCAddress             string
 	HTTPPort               string
 	Password               string
+	CertFile               string
+	KeyFile                string
 	TaskServiceServer      tes.TaskServiceServer
 	SchedulerServiceServer pbf.SchedulerServiceServer
 	Handler                http.Handler
 	DisableHTTPCache       bool
-	DialOptions            []grpc.DialOption
 }
 
 // DefaultServer returns a new server instance.
@@ -41,13 +44,12 @@ func DefaultServer(db Database, conf config.Config) *Server {
 		RPCAddress:             ":" + conf.RPCPort,
 		HTTPPort:               conf.HTTPPort,
 		Password:               conf.Server.Password,
+		CertFile:               conf.Server.TLS.CertFile,
+		KeyFile:                conf.Server.TLS.KeyFile,
 		TaskServiceServer:      db,
 		SchedulerServiceServer: db,
 		Handler:                mux,
-		DisableHTTPCache:       conf.DisableHTTPCache,
-		DialOptions: []grpc.DialOption{
-			grpc.WithInsecure(),
-		},
+		DisableHTTPCache: conf.DisableHTTPCache,
 	}
 }
 
@@ -63,14 +65,28 @@ func (s *Server) Serve(pctx context.Context) error {
 		return err
 	}
 
-	grpcServer := grpc.NewServer(
+	srvOpts := []grpc.ServerOption{
 		// API auth check.
 		grpc.UnaryInterceptor(newAuthInterceptor(s.Password)),
-	)
+	}
+
+	// Enable TLS
+	srvOpts, serr := tls(srvOpts, s.CertFile, s.KeyFile)
+	if serr != nil {
+		return serr
+	}
+
+	// gRPC gateway uses dial options to connect the HTTP proxy as a client of the gRPC server.
+	dialOpts := util.DialOpts{}
+	derr := dialOpts.TLS(s.CertFile)
+	if derr != nil {
+		return derr
+	}
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
 	grpcMux := runtime.NewServeMux()
+	grpcServer := grpc.NewServer(srvOpts...)
 	runtime.OtherErrorHandler = handleError
 
 	// Set "cache-control: no-store" to disable response caching.
@@ -90,7 +106,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	if s.TaskServiceServer != nil {
 		tes.RegisterTaskServiceServer(grpcServer, s.TaskServiceServer)
 		err := tes.RegisterTaskServiceHandlerFromEndpoint(
-			ctx, grpcMux, s.RPCAddress, s.DialOptions,
+			ctx, grpcMux, s.RPCAddress, dialOpts,
 		)
 		if err != nil {
 			return err
@@ -101,7 +117,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	if s.SchedulerServiceServer != nil {
 		pbf.RegisterSchedulerServiceServer(grpcServer, s.SchedulerServiceServer)
 		err := pbf.RegisterSchedulerServiceHandlerFromEndpoint(
-			ctx, grpcMux, s.RPCAddress, s.DialOptions,
+			ctx, grpcMux, s.RPCAddress, dialOpts,
 		)
 		if err != nil {
 			return err
@@ -120,7 +136,11 @@ func (s *Server) Serve(pctx context.Context) error {
 	}()
 
 	go func() {
-		srverr = httpServer.ListenAndServe()
+		if s.CertFile != "" {
+			srverr = httpServer.ListenAndServeTLS(s.CertFile, s.KeyFile)
+		} else {
+			srverr = httpServer.ListenAndServe()
+		}
 		cancel()
 	}()
 
@@ -133,6 +153,19 @@ func (s *Server) Serve(pctx context.Context) error {
 	httpServer.Shutdown(context.TODO())
 
 	return srverr
+}
+
+// tls adds a server option to enable TLS with the given cert and key.
+// If cert == "", the option is not added and TLS is not enabled.
+func tls(opts []grpc.ServerOption, cert, key string) ([]grpc.ServerOption, error) {
+	if cert != "" {
+		creds, err := credentials.NewServerTLSFromFile(cert, key)
+		if err != nil {
+			return opts, err
+		}
+		return append(opts, grpc.Creds(creds)), nil
+	}
+	return opts, nil
 }
 
 // handleError handles errors in the HTTP stack, logging errors, stack traces,

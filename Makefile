@@ -101,6 +101,9 @@ cross-compile: depends
 
 # Upload a release to GitHub
 upload-release:
+	#
+	# NOTE! Making a release requires manual steps.
+	# See: website/content/docs/development.md
 	@go get github.com/aktau/github-release
 	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
 		echo 'This command should only be run from the master branch'; \
@@ -161,6 +164,8 @@ website:
 	@find ./config -name '*.txt' -o -name '*.yaml' -exec cp {} website/static/funnel-config-examples/ \;
 	@go get github.com/spf13/hugo
 	hugo --source ./website
+	#
+	# NOTE! release the website requires manual steps.
 	# TODO there's more here
 	# https://gohugo.io/tutorials/github-pages-blog/#deployment-via-gh-pages-branch
 

@@ -1,1 +1,5 @@
-
+make depends
+make
+make lint
+make test
+make test-openstack

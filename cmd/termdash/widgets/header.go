@@ -52,14 +52,6 @@ func (c *TermDashHeader) Height() int {
 	return c.bg.Height
 }
 
-func headerBgBordered() *ui.Par {
-	bg := ui.NewPar("")
-	bg.X = 1
-	bg.Height = 3
-	bg.Bg = ui.ThemeAttr("header.bg")
-	return bg
-}
-
 func headerBg() *ui.Par {
 	bg := ui.NewPar("")
 	bg.X = 1
@@ -83,10 +75,11 @@ func (c *TermDashHeader) SetFilter(val string) {
 
 func (c *TermDashHeader) SetError(val string) {
 	if val == "" {
+		c.bg.Height = 1
 		c.Error.Items = []string{}
 	} else {
-		c.Error.Items = []string{fmt.Sprintf("ERROR: %s", val)}
 		c.bg.Height = 3
+		c.Error.Items = []string{fmt.Sprintf("ERROR: %s", val)}
 	}
 }
 
@@ -109,7 +102,9 @@ func headerPar(x int, s string) *ui.Par {
 
 func headerError(s string) *ui.List {
 	p := ui.NewList()
-	p.Items = []string{s}
+	if s != "" {
+		p.Items = []string{s}
+	}
 	p.X = 0
 	p.Y = 1
 	p.Border = false

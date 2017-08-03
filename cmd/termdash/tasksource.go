@@ -49,6 +49,8 @@ func (cm *TaskSource) listTasks() TaskWidgets {
 		})
 		if err != nil {
 			panic(err)
+		} else {
+			header.SetError("")
 		}
 		for _, t := range resp.Tasks {
 			tasks = append(tasks, NewTaskWidget(t))

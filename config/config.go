@@ -266,6 +266,7 @@ type StorageConfig struct {
 	Local LocalStorage
 	S3    S3Storage
 	GS    []GSStorage
+	Swift SwiftStorage
 }
 
 // LocalStorage describes the directories Funnel can read from and write to
@@ -299,6 +300,22 @@ type S3Storage struct {
 // Valid validates the LocalStorage configuration
 func (l S3Storage) Valid() bool {
 	return (l.Key != "" && l.Secret != "") || l.FromEnv
+}
+
+// SwiftStorage configures the OpenStack Swift object storage backend.
+type SwiftStorage struct {
+	UserName   string
+	Password   string
+	AuthURL    string
+	TenantName string
+	TenantID   string
+	RegionName string
+}
+
+// Valid validates the SwiftStorage configuration.
+func (s SwiftStorage) Valid() bool {
+	return s.UserName != "" && s.Password != "" && s.AuthURL != "" &&
+		s.TenantName != "" && s.TenantID != "" && s.RegionName != ""
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.

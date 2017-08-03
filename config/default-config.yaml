@@ -231,6 +231,14 @@ Worker:
     #     # Automatically discover credentials from the environment.
     #     FromEnv: true
 
+    #Swift:
+    # UserName:
+    # Password:
+    # AuthURL:
+    # TenantName:
+    # TenantID:
+    # RegionName:
+
   # For low-level tuning.
   # How often to send task log updates to the Funnel server.
   # In nanoseconds.

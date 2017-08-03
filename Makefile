@@ -103,6 +103,10 @@ test-backends:
 test-s3:
 	@go test ./tests/e2e/s3 -run-test
 
+# Tests meant to run in an OpenStack environment
+test-openstack:
+	@go test ./tests/e2e/openstack -openstack-e2e-config ${FUNNEL_OPENSTACK_TEST_CONFIG}
+
 # Build the web dashboard
 webdash:
 	@mkdir -p build/webdash

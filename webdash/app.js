@@ -13,9 +13,9 @@ function listAllTasks($http, tasks, page) {
     tasks = []
   }
 
-  var url = "/v1/tasks";
+  var url = "/v1/tasks?view=BASIC";
   if (page) {
-    url += "?page_token=" + page;
+    url += "&page_token=" + page;
   }
 
   return $http.get(url).then(function(result) {
@@ -28,26 +28,31 @@ function listAllTasks($http, tasks, page) {
   });
 }
 
-app.controller('TaskListController', function($scope, NgTableParams, $http) {
+app.controller('TaskListController', function($scope, NgTableParams, $http, $interval) {
   $scope.shortID = shortID;
   $scope.tasks = [];
 
-  listAllTasks($http).then(function(tasks) {
-    console.log(tasks);
-    $scope.tasks = tasks;
-    $scope.tableParams = new NgTableParams(
-      {
-        count: 25
-      }, 
-      {
-        counts: [25, 50, 100],
-        paginationMinBlocks: 2,
-        paginationMaxBlocks: 10,
-        total: tasks.length,
-        dataset: tasks,
-      }
-    );
-  });
+  function refresh() {
+    listAllTasks($http).then(function(tasks) {
+      console.log(tasks);
+      $scope.tasks = tasks;
+      $scope.tableParams = new NgTableParams(
+        {
+          count: 100,
+          sorting: { id: "desc" },
+        }, 
+        {
+          counts: [25, 50, 100],
+          paginationMinBlocks: 2,
+          paginationMaxBlocks: 10,
+          total: tasks.length,
+          dataset: tasks,
+        }
+      );
+    });
+  }
+  refresh();
+  $interval(refresh, 2000);
 
   $scope.cancelTask = function(taskID) {
     var url = "/v1/tasks/" + taskID + ":cancel";
@@ -67,7 +72,7 @@ console.log(workers)
   });
 });
 
-app.controller('TaskInfoController', function($scope, $http, $routeParams, $location) {
+app.controller('TaskInfoController', function($scope, $http, $routeParams, $location, $interval) {
   
   $scope.url = "/v1/tasks/" + $routeParams.task_id + "?view=FULL"
 
@@ -76,13 +81,14 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
     return cmd.join(' ');
   };
 
-  $scope.fetchContent = function() {
+  function refresh() {
     $http.get($scope.url).then(function(result){
       console.log(result.data);
       $scope.task = result.data
     })
   }
-  $scope.fetchContent();
+  refresh();
+  $interval(refresh, 2000);
 
   $scope.serverURL = $location.protocol() + "://" + $location.host() + ":" + $location.port();
 

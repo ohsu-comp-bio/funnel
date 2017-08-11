@@ -148,6 +148,18 @@ func recoverLogErr() {
 	}
 }
 
+// TODO having this hard-coded into the logger is a hack.
+//      ideally, it's configured per-logger instance, but
+//      right now that would require a larger logger refactor.
+
+type contextKey string
+
+// TaskIDKey defines the context value key used to find the task ID.
+const TaskIDKey = contextKey("taskID")
+
+// WorkerIDKey defines the context value key used to find the worker ID.
+const WorkerIDKey = contextKey("workerID")
+
 // converts an argument list to a map, e.g.
 // ("key", value, "key2", value2) => {"key": value, "key2", value2}
 //
@@ -171,11 +183,11 @@ func fields(args ...interface{}) map[string]interface{} {
 		case error:
 			expanded = append(expanded, "error", a)
 		case context.Context:
-			if id, ok := x.Value("taskID").(string); ok {
-				expanded = append(expanded, "taskID", id)
+			if id, ok := x.Value(TaskIDKey).(string); ok {
+				expanded = append(expanded, string(TaskIDKey), id)
 			}
-			if id, ok := x.Value("workerID").(string); ok {
-				expanded = append(expanded, "workerID", id)
+			if id, ok := x.Value(WorkerIDKey).(string); ok {
+				expanded = append(expanded, string(WorkerIDKey), id)
 			}
 		default:
 			expanded = append(expanded, a)

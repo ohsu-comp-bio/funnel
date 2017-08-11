@@ -41,7 +41,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 	defer ticker.Stop()
 
 	go func() {
-		done <- s.Cmd.Run()
+		done <- s.Cmd.Run(subctx)
 	}()
 	go s.inspectContainer(subctx)
 
@@ -49,7 +49,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			// Likely the task was canceled.
-			s.Cmd.Stop()
+			s.Cmd.Stop(subctx)
 			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
 			return ctx.Err()
 

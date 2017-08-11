@@ -122,7 +122,9 @@ func (w *Worker) sync(ctx context.Context) {
 		if w.runners.Add(id) {
 			go func(id string) {
 				r := w.newRunner(w.conf, id)
-				r.Run(ctx)
+				rctx := context.WithValue(ctx, "workerID", w.conf.ID)
+				rctx = context.WithValue(rctx, "taskID", id)
+				r.Run(rctx)
 				w.runners.Remove(id)
 			}(id)
 		}

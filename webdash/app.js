@@ -30,28 +30,29 @@ function listAllTasks($http, tasks, page) {
 
 app.controller('TaskListController', function($scope, NgTableParams, $http, $interval) {
   $scope.shortID = shortID;
-  $scope.tasks = [];
+  var tasks = [];
+
+  $scope.tableParams = new NgTableParams(
+    {
+      count: 100,
+      sorting: { id: "desc" },
+    }, 
+    {
+      counts: [25, 50, 100],
+      paginationMinBlocks: 2,
+      paginationMaxBlocks: 10,
+      dataset: tasks,
+    }
+  );
 
   function refresh() {
-    listAllTasks($http).then(function(tasks) {
-      console.log(tasks);
-      $scope.tasks = tasks;
-      $scope.tableParams = new NgTableParams(
-        {
-          count: 100,
-          sorting: { id: "desc" },
-        }, 
-        {
-          counts: [25, 50, 100],
-          paginationMinBlocks: 2,
-          paginationMaxBlocks: 10,
-          total: tasks.length,
-          dataset: tasks,
-        }
-      );
+    listAllTasks($http).then(function(ts) {
+      tasks.length = 0;
+      Array.prototype.push.apply(tasks, ts);
+      $scope.tableParams.total(tasks.length);
+      $scope.tableParams.reload();
     });
   }
-  refresh();
   $interval(refresh, 2000);
 
   $scope.cancelTask = function(taskID) {

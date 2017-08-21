@@ -29,7 +29,7 @@ Demo:
 #         --stdin gs://pub/input.txt       \
 #         --stdout gs://my-bkt/output.txt
 
-  - Title: Use a remove server
+  - Title: Use a remote server
     Cmd: $ funnel run --server http://funnel.example.com ...
 
   - Title: Example tasks

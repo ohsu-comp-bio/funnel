@@ -21,7 +21,7 @@ func NewDefaultRunner(conf config.Worker, taskID string) Runner {
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, taskID)
 	// TODO handle error
-	svc, _ := newRPCTask(conf, taskID)
+	svc, _ := NewRPCTaskSvc(conf, taskID)
 	log := logger.Sub("runner", "workerID", conf.ID, "taskID", taskID)
 
 	return &DefaultRunner{

@@ -19,7 +19,8 @@ type RPCTask struct {
 	updateTimeout time.Duration
 }
 
-func newRPCTask(conf config.Worker, taskID string) (*RPCTask, error) {
+// NewRPCTaskSvc returns a task service that writes task logs over gRPC to the funnel server.
+func NewRPCTaskSvc(conf config.Worker, taskID string) (*RPCTask, error) {
 	client, err := newTaskClient(conf)
 	if err != nil {
 		return nil, err

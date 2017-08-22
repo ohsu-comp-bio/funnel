@@ -11,7 +11,7 @@ var taskView string
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get [taskID ...]",
-	Short: "get one or more tasks by ID",
+	Short: "Get one or more tasks by ID.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return cmd.Help()

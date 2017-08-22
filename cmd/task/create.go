@@ -11,7 +11,7 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create [task.json ...]",
-	Short: "create one or more tasks to run on the server",
+	Short: "Create one or more tasks to run on the server.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return cmd.Help()

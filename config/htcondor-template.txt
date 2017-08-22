@@ -1,7 +1,7 @@
 universe = vanilla
 getenv = True
 executable = {{.Executable}}
-arguments = worker --config {{.WorkerConfig}}
+arguments = worker start --config {{.WorkerConfig}}
 log = {{.WorkDir}}/condor-event-log
 error = {{.WorkDir}}/funnel-worker-stderr
 output = {{.WorkDir}}/funnel-worker-stdout

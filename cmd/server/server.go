@@ -25,7 +25,7 @@ var flagConf = config.Config{}
 // Cmd represents the `funnel server` CLI command set.
 var Cmd = &cobra.Command{
 	Use:   "server",
-	Short: "Starts a Funnel server.",
+	Short: "Start a Funnel server.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
@@ -38,7 +38,7 @@ var Cmd = &cobra.Command{
 			return err
 		}
 
-		return Run(conf)
+		return Start(conf)
 	},
 }
 
@@ -55,10 +55,10 @@ func init() {
 	flags.StringVar(&flagConf.Scheduler, "scheduler", flagConf.Scheduler, "Name of scheduler to enable")
 }
 
-// Run runs a default Funnel server.
+// Start runs a default Funnel server.
 // This opens a database, and starts an API server and scheduler.
 // This blocks indefinitely.
-func Run(conf config.Config) error {
+func Start(conf config.Config) error {
 	logger.Configure(conf.Logger)
 
 	// make sure the proper defaults are set

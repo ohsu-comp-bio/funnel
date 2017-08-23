@@ -1,11 +1,11 @@
 {
-    "name": "Hello world",
-    "description": "Demonstrates the most basic echo task.",
-    "executors": [
-        {
-            "image_name": "alpine",
-            "cmd": ["echo", "hello world"],
-            "stdout": "stdout"
-        }
-    ]
+  "name": "Hello world",
+  "description": "Demonstrates the most basic echo task.",
+  "executors": [
+    {
+      "image_name": "alpine",
+      "cmd": ["echo", "hello world"],
+      "stdout": "/tmp/stdout"
+    }
+  ]
 }

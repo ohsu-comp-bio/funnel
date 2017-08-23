@@ -153,7 +153,7 @@ gen-mocks:
 
 # Bundle example task messages into Go code.
 bundle-examples:
-	@go-bindata -pkg examples -o examples/bundle.go examples
+	@go-bindata -pkg examples -o examples/bundle.go $(shell find examples/ -name '*.json')
 	@go-bindata -pkg config -o config/bundle.go $(shell find config/ -name '*.txt' -o -name '*.yaml')
 
 # Make everything usually needed to prepare for a pull request

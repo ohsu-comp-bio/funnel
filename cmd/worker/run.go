@@ -34,7 +34,7 @@ func init() {
 		"task-logger",
 		"",
 		fmt.Sprintln("Task logger interface.\n\t",
-			"'rpc' - task logs will be sent via gRPC calls to the funnel server.\n\t",
+			"'rpc' - task logs will be sent via gRPC calls to the funnel server. (default)\n\t",
 			"'in-memory' - store task logs in memory and print the full logs at the end of the run.\n\t",
 			"'log' - task logs are printed to stderr via the logger."),
 	)
@@ -44,6 +44,8 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a task directly, bypassing the server.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		task := &tes.Task{}
 
 		if rawTask == "" && rawTaskFile == "" && taskID == "" {
 			fmt.Printf("No task was provided.\n\n")
@@ -78,10 +80,11 @@ var runCmd = &cobra.Command{
 		}
 
 		// Load tes.Task from raw string (comes from CLI flag).
-		var task tes.Task
-		err := jsonpb.UnmarshalString(rawTask, &task)
-		if err != nil {
-			return err
+		if rawTask != "" {
+			err := jsonpb.UnmarshalString(rawTask, task)
+			if err != nil {
+				return err
+			}
 		}
 
 		if taskID != "" {
@@ -95,64 +98,75 @@ var runCmd = &cobra.Command{
 		workerDconf := config.WorkerInheritConfigVals(flagConf)
 
 		// file vals <- cli val
-		err = mergo.MergeWithOverwrite(&conf.Worker, workerDconf)
+		err := mergo.MergeWithOverwrite(&conf.Worker, workerDconf)
 		if err != nil {
 			return err
 		}
 
-		return runTask(&task, conf)
+		// set to 'rpc' by default if unset
+		if taskSvc == "" {
+			taskSvc = "rpc"
+		}
+
+		return run(task, conf.Worker, taskSvc)
 	},
 }
 
-// runTask handles TaskRunner startup. No Worker is created,
+// run runs a task with the TaskRunner directly. No Worker is created,
 // the task goes directly to a TaskRunner.
-func runTask(task *tes.Task, conf config.Config) error {
-	if err := tes.Validate(task); err != nil {
-		return fmt.Errorf("Invalid task message: %v", err)
+func run(task *tes.Task, conf config.Worker, taskLogger string) error {
+	if conf.ID == "" {
+		conf.ID = scheduler.GenWorkerID("funnel")
 	}
 
-	if conf.Worker.ID == "" && taskSvc == "rpc" {
-		conf.Worker.ID = scheduler.GenWorkerID("funnel")
-	}
-
-	if task.Id == "" {
-		if taskSvc == "rpc" {
-			return fmt.Errorf("No task id provided")
-		}
-		task.Id = util.GenTaskID()
-	}
-
-	logger.Configure(conf.Worker.Logger)
-	log := logger.Sub("runner", "workerID", conf.Worker.ID, "taskID", task.Id)
+	logger.Configure(conf.Logger)
+	log := logger.Sub("runner", "workerID", conf.ID, "taskID", task.Id)
 
 	runner := worker.DefaultRunner{
-		Conf:   conf.Worker,
-		Mapper: worker.NewFileMapper(conf.Worker.WorkDir),
+		Conf:   conf,
+		Mapper: worker.NewFileMapper(conf.WorkDir),
 		Store:  storage.Storage{},
 		Svc:    nil,
 		Log:    log,
 	}
 
-	if taskSvc == "" {
-		taskSvc = "rpc"
-	}
-
-	switch strings.ToLower(taskSvc) {
+	switch strings.ToLower(taskLogger) {
 	case "in-memory":
+		if err := tes.Validate(task); err != nil {
+			return fmt.Errorf("Invalid task message: %v", err)
+		}
+		task.Id = util.GenTaskID()
 		runner.Svc = worker.NewInMemoryTaskSvc(task, log)
 	case "log":
+		if err := tes.Validate(task); err != nil {
+			return fmt.Errorf("Invalid task message: %v", err)
+		}
+		task.Id = util.GenTaskID()
 		runner.Svc = worker.NewLogTaskSvc(task, log)
 	case "rpc":
-		svc, _ := worker.NewRPCTaskSvc(conf.Worker, task.Id)
+		if task.Id == "" {
+			return fmt.Errorf("No task id provided")
+		}
+		svc, _ := worker.NewRPCTaskSvc(conf, task.Id)
 		runner.Svc = svc
 	default:
-		return fmt.Errorf("Unknown task-logger: %s. Must be one of: %s", taskSvc, loggers)
+		return fmt.Errorf("Unknown task-logger: %s. Must be one of: %s", taskLogger, loggers)
 	}
 
 	runner.Run(context.Background())
-	if taskSvc == "in-memory" {
+
+	if taskLogger == "in-memory" {
 		t, _ := runner.Svc.Task()
-		log.Info("Task reached terminal state", "state", t.State, "task", t)
+		log.Info("Task reached terminal state", "state", t.State)
+		m := &jsonpb.Marshaler{
+			EnumsAsInts:  false,
+			EmitDefaults: true,
+			Indent:       "  ",
+			OrigName:     true,
+		}
+		ts, _ := m.MarshalToString(t)
+		fmt.Println(ts)
 	}
+
 	return nil
 }

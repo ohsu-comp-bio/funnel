@@ -26,12 +26,12 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		return Start(conf)
+		return Run(conf)
 	},
 }
 
-// Start runs a worker process with the given config, blocking until the worker exits.
-func Start(conf config.Config) error {
+// Run runs a worker process with the given config, blocking until the worker exits.
+func Run(conf config.Config) error {
 	logger.Configure(conf.Worker.Logger)
 
 	if conf.Worker.ID == "" {

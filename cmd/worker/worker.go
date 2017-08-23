@@ -15,7 +15,7 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	flags := Cmd.Flags()
+	flags := Cmd.PersistentFlags()
 	flags.StringVar(&flagConf.Worker.ID, "id", flagConf.Worker.ID, "Worker ID")
 	flags.DurationVar(&flagConf.Worker.Timeout, "timeout", flagConf.Worker.Timeout, "Timeout in seconds")
 	flags.StringVarP(&configFile, "config", "c", "", "Config File")

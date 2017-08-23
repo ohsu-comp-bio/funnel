@@ -45,10 +45,10 @@ var startCmd = &cobra.Command{
 
 		if conf.Worker.ID != "" {
 			logger.Configure(conf.Worker.Logger)
-			return worker.Start(conf)
+			return worker.Run(conf)
 		}
 
 		logger.Configure(conf.Worker.Logger)
-		return server.Start(conf)
+		return server.Run(conf)
 	},
 }

@@ -21,5 +21,4 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	Cmd.AddCommand(getCmd)
 	Cmd.AddCommand(cancelCmd)
-	Cmd.AddCommand(waitCmd)
 }

@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
-	"runtime/debug"
 )
 
 var log = logger.Sub("server")
@@ -139,7 +138,6 @@ func (s *Server) Serve(pctx context.Context) error {
 // and returning an HTTP error code.
 func handleError(w http.ResponseWriter, req *http.Request, err string, code int) {
 	log.Error("HTTP handler error", "error", err, "url", req.URL)
-	debug.PrintStack()
 	http.Error(w, err, code)
 }
 

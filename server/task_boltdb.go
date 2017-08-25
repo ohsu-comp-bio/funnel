@@ -11,8 +11,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"strings"
 	"time"
 )
 
@@ -21,10 +19,6 @@ import (
 // TaskBucket defines the name of a bucket which maps
 // task ID -> tes.Task struct
 var TaskBucket = []byte("tasks")
-
-// TaskAuthBucket defines the name of a bucket which maps
-// task ID -> JWT token string
-var TaskAuthBucket = []byte("tasks-auth")
 
 // TasksQueued defines the name of a bucket which maps
 // task ID -> nil
@@ -40,17 +34,17 @@ var TasksLog = []byte("tasks-log")
 // ExecutorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
 var ExecutorLogs = []byte("executor-logs")
 
-// Workers maps:
-// worker ID -> funnel.Worker struct
-var Workers = []byte("workers")
+// Nodes maps:
+// node ID -> pbs.Node struct
+var Nodes = []byte("pools")
 
-// TaskWorker Map task ID -> worker ID
-var TaskWorker = []byte("task-worker")
+// TaskNode Map task ID -> node ID
+var TaskNode = []byte("task-node")
 
-// WorkerTasks indexes worker -> tasks
-// Implemented as composite_key(worker ID + task ID) => task ID
-// And searched with prefix scan using worker ID
-var WorkerTasks = []byte("worker-tasks")
+// NodeTasks indexes node -> tasks
+// Implemented as composite_key(node ID + task ID) => task ID
+// And searched with prefix scan using node ID
+var NodeTasks = []byte("node-tasks")
 
 // TaskBolt provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
@@ -62,21 +56,18 @@ type TaskBolt struct {
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
 // the given path, and including the given ServerConfig.
 func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
-	util.EnsurePath(conf.DBPath)
-	db, err := bolt.Open(conf.DBPath, 0600, &bolt.Options{
+	util.EnsurePath(conf.Server.DBPath)
+	db, err := bolt.Open(conf.Server.DBPath, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	//Check to make sure all the required buckets have been created
+	// Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
 		if tx.Bucket(TaskBucket) == nil {
 			tx.CreateBucket(TaskBucket)
-		}
-		if tx.Bucket(TaskAuthBucket) == nil {
-			tx.CreateBucket(TaskAuthBucket)
 		}
 		if tx.Bucket(TasksQueued) == nil {
 			tx.CreateBucket(TasksQueued)
@@ -90,52 +81,18 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 		if tx.Bucket(ExecutorLogs) == nil {
 			tx.CreateBucket(ExecutorLogs)
 		}
-		if tx.Bucket(Workers) == nil {
-			tx.CreateBucket(Workers)
+		if tx.Bucket(Nodes) == nil {
+			tx.CreateBucket(Nodes)
 		}
-		if tx.Bucket(TaskWorker) == nil {
-			tx.CreateBucket(TaskWorker)
+		if tx.Bucket(TaskNode) == nil {
+			tx.CreateBucket(TaskNode)
 		}
-		if tx.Bucket(WorkerTasks) == nil {
-			tx.CreateBucket(WorkerTasks)
+		if tx.Bucket(NodeTasks) == nil {
+			tx.CreateBucket(NodeTasks)
 		}
 		return nil
 	})
 	return &TaskBolt{db: db, conf: conf}, nil
-}
-
-// ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
-func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
-	tasks := make([]*tes.Task, 0)
-	taskBolt.db.View(func(tx *bolt.Tx) error {
-
-		// Iterate over the TasksQueued bucket, reading the first `n` tasks
-		c := tx.Bucket(TasksQueued).Cursor()
-		for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
-			id := string(k)
-			task, _ := getTaskView(tx, id, tes.TaskView_FULL)
-			tasks = append(tasks, task)
-		}
-		return nil
-	})
-	return tasks
-}
-
-// getJWT
-// This function extracts the JWT token from the rpc header and returns the string
-func getJWT(ctx context.Context) string {
-	jwt := ""
-	v, _ := metadata.FromContext(ctx)
-	auth, ok := v["authorization"]
-	if !ok {
-		return jwt
-	}
-	for _, i := range auth {
-		if strings.HasPrefix(i, "JWT ") {
-			jwt = strings.TrimPrefix(i, "JWT ")
-		}
-	}
-	return jwt
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -149,39 +106,27 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 	}
 
 	taskID := util.GenTaskID()
+	idBytes := []byte(taskID)
 	log := log.WithFields("taskID", taskID)
 
-	jwt := getJWT(ctx)
-	log.Debug("JWT", "token", jwt)
+	task.Id = taskID
+	taskString, err := proto.Marshal(task)
+	if err != nil {
+		return nil, err
+	}
 
-	ch := make(chan *tes.CreateTaskResponse, 1)
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		idBytes := []byte(taskID)
-
-		taskopB := tx.Bucket(TaskBucket)
-		task.Id = taskID
-		v, err := proto.Marshal(task)
-		if err != nil {
-			return err
-		}
-		taskopB.Put(idBytes, v)
-
+	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+		tx.Bucket(TaskBucket).Put(idBytes, taskString)
 		tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
-
-		taskopA := tx.Bucket(TaskAuthBucket)
-		taskopA.Put(idBytes, []byte(jwt))
-
-		queueB := tx.Bucket(TasksQueued)
-		queueB.Put(idBytes, []byte{})
-		ch <- &tes.CreateTaskResponse{Id: taskID}
+		tx.Bucket(TasksQueued).Put(idBytes, []byte{})
 		return nil
 	})
 	if err != nil {
-		log.Error("Error processing task", err)
+		log.Error("Error storing task in database", err)
 		return nil, err
 	}
-	a := <-ch
-	return a, err
+
+	return &tes.CreateTaskResponse{Id: taskID}, nil
 }
 
 func getTaskState(tx *bolt.Tx, id string) tes.State {
@@ -344,7 +289,7 @@ func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTask
 	log.Info("Canceling task")
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		// TODO need a test that ensures a canceled task is deleted from the worker
+		// TODO need a test that ensures a canceled task is deleted from the node
 		id := taskop.Id
 		return transitionTaskState(tx, id, tes.State_CANCELED)
 	})
@@ -355,24 +300,6 @@ func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTask
 }
 
 // GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
-// Could include:
-// - resource availability
-// - support storage systems
-// - versions
-// - etc.
 func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	// BUG: this isn't the best translation, probably lossy.
-	//     Maybe ServiceInfo data structure schema needs to be refactored
-	//     For example, you can't have multiple S3 endpoints
-	var out []string
-	if taskBolt.conf.Storage.Local.Valid() {
-		out = append(out, taskBolt.conf.Storage.Local.AllowedDirs...)
-	}
-
-	for _, i := range taskBolt.conf.Storage.S3 {
-		if i.Valid() {
-			out = append(out, i.Endpoint)
-		}
-	}
-	return &tes.ServiceInfo{Name: taskBolt.conf.ServiceName, Storage: out}, nil
+	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
 }

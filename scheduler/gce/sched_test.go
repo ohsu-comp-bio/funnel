@@ -2,27 +2,27 @@ package gce
 
 import (
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	poolmock "github.com/ohsu-comp-bio/funnel/node/mocks"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
-	schedmock "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
 	"github.com/stretchr/testify/mock"
 	"testing"
 )
 
 func TestPreferExisting(t *testing.T) {
-	sched := new(schedmock.Client)
+	pool := new(poolmock.Client)
 	gce := new(gcemock.Client)
 
-	// Set up data for an existing (ALIVE state) worker,
-	// and a template (UNINITIALIZED state) worker.
-	w := pbf.Worker{
-		Resources: &pbf.Resources{
+	// Set up data for an existing (ALIVE state) node,
+	// and a template (UNINITIALIZED state) node.
+	w := pbs.Node{
+		Resources: &pbs.Resources{
 			Cpus:   10,
 			RamGb:  100.0,
 			DiskGb: 100.0,
 		},
-		Available: &pbf.Resources{
+		Available: &pbs.Resources{
 			Cpus:   10,
 			RamGb:  100.0,
 			DiskGb: 100.0,
@@ -31,29 +31,29 @@ func TestPreferExisting(t *testing.T) {
 	}
 	existing := w
 	existing.Id = "existing"
-	existing.State = pbf.WorkerState_ALIVE
+	existing.State = pbs.NodeState_ALIVE
 	template := w
 	template.Id = "template"
 
 	// Return existing and template from mock API clients.
-	sched.On("ListWorkers", mock.Anything, mock.Anything, mock.Anything).
-		Return(&pbf.ListWorkersResponse{
-			Workers: []*pbf.Worker{&existing},
+	pool.On("ListNodes", mock.Anything, mock.Anything, mock.Anything).
+		Return(&pbs.ListNodesResponse{
+			Nodes: []*pbs.Node{&existing},
 		}, nil)
 
-	gce.On("Templates").Return([]pbf.Worker{template})
+	gce.On("Templates").Return([]pbs.Node{template})
 
 	b := Backend{
-		client: sched,
+		client: pool,
 		gce:    gce,
 	}
 
 	// Call schedule many times, to ensure the result is consistent.
 	for i := 0; i < 100; i++ {
 		o := b.Schedule(&tes.Task{})
-		if o == nil || o.Worker.Id != "existing" {
+		if o == nil || o.Node.Id != "existing" {
 			logger.Debug("", "offer", o, "i", i)
-			t.Fatalf("expected schedule to return existing worker")
+			t.Fatalf("expected schedule to return existing node")
 		}
 	}
 }

@@ -12,10 +12,10 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	"github.com/ohsu-comp-bio/funnel/node"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
-	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
 )
 
 // Name of the scheduler backend
@@ -28,7 +28,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 
 	// Create a client for talking to the funnel scheduler
-	client, err := scheduler.NewClient(conf.Worker)
+	client, err := node.NewClient(conf.Scheduler.Node)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
@@ -52,39 +52,39 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 // and interface for both scheduling and scaling.
 type Backend struct {
 	conf   config.Config
-	client scheduler.Client
+	client node.Client
 	gce    Client
 }
 
-// Schedule schedules a task on a Google Cloud VM worker instance.
+// Schedule schedules a task on a Google Cloud VM node instance.
 func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	log.Debug("Running GCE scheduler")
 
 	offers := []*scheduler.Offer{}
-	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("gce"))
+	predicates := append(scheduler.DefaultPredicates, scheduler.NodeHasTag("gce"))
 
-	for _, w := range s.getWorkers() {
-		// Filter out workers that don't match the task request.
+	for _, n := range s.getNodes() {
+		// Filter out nodes that don't match the task request.
 		// Checks CPU, RAM, disk space, ports, etc.
-		if !scheduler.Match(w, j, predicates) {
+		if !scheduler.Match(n, j, predicates) {
 			continue
 		}
 
-		sc := scheduler.DefaultScores(w, j)
+		sc := scheduler.DefaultScores(n, j)
 		/*
 			    TODO?
-			    if w.State == pbf.WorkerState_Alive {
+			    if w.State == pbs.NodeState_Alive {
 					  sc["startup time"] = 1.0
 			    }
 		*/
 		weights := map[string]float32{}
 		sc = sc.Weighted(weights)
 
-		offer := scheduler.NewOffer(w, j, sc)
+		offer := scheduler.NewOffer(n, j, sc)
 		offers = append(offers, offer)
 	}
 
-	// No matching workers were found.
+	// No matching nodes were found.
 	if len(offers) == 0 {
 		return nil
 	}
@@ -93,86 +93,50 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	return offers[0]
 }
 
-// getWorkers returns a list of all GCE workers and appends a set of
-// uninitialized workers, which the scheduler can use to create new worker VMs.
-func (s *Backend) getWorkers() []*pbf.Worker {
+// getNodes returns a list of all GCE nodes and appends a set of
+// uninitialized nodes, which the scheduler can use to create new node VMs.
+func (s *Backend) getNodes() []*pbs.Node {
 
-	// Get the workers from the funnel server
-	workers := []*pbf.Worker{}
-	req := &pbf.ListWorkersRequest{}
-	resp, err := s.client.ListWorkers(context.Background(), req)
+	// Get the nodes from the funnel server
+	nodes := []*pbs.Node{}
+	req := &pbs.ListNodesRequest{}
+	resp, err := s.client.ListNodes(context.Background(), req)
 
 	// If there's an error, return an empty list
 	if err != nil {
-		log.Error("Failed ListWorkers request. Recovering.", err)
-		return workers
+		log.Error("Failed ListNodes request. Recovering.", err)
+		return nodes
 	}
 
-	workers = resp.Workers
+	nodes = resp.Nodes
 
-	// Include unprovisioned (template) workers.
-	// This is how the scheduler can schedule tasks to workers that
+	// Include unprovisioned (template) nodes.
+	// This is how the scheduler can schedule tasks to nodes that
 	// haven't been started yet.
 	for _, t := range s.gce.Templates() {
-		t.Id = scheduler.GenWorkerID("funnel")
-		workers = append(workers, &t)
+		t.Id = scheduler.GenNodeID("funnel")
+		nodes = append(nodes, &t)
 	}
 
-	return workers
+	return nodes
 }
 
-// ShouldStartWorker tells the scaler loop which workers
+// ShouldStartNode tells the scaler loop which nodes
 // belong to this scheduler backend, basically.
-func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
+func (s *Backend) ShouldStartNode(n *pbs.Node) bool {
 	// Only start works that are uninitialized and have a gce template.
-	tpl, ok := w.Metadata["gce-template"]
-	return ok && tpl != "" && w.State == pbf.WorkerState_UNINITIALIZED
+	tpl, ok := n.Metadata["gce-template"]
+	return ok && tpl != "" && n.State == pbs.NodeState_UNINITIALIZED
 }
 
-// StartWorker calls out to GCE APIs to start a new worker instance.
-func (s *Backend) StartWorker(w *pbf.Worker) error {
+// StartNode calls out to GCE APIs to start a new node instance.
+func (s *Backend) StartNode(n *pbs.Node) error {
 
-	// Get the template ID from the worker metadata
-	template, ok := w.Metadata["gce-template"]
+	// Get the template ID from the node metadata
+	template, ok := n.Metadata["gce-template"]
 	if !ok || template == "" {
 		return fmt.Errorf("Could not get GCE template ID from metadata")
 	}
 
-	return s.gce.StartWorker(template, s.conf.RPCAddress(), w.Id)
-}
-
-// MockBackend is a GCE backend that doesn't communicate with
-// Google Cloud APIs, which is useful for testing.
-type MockBackend struct {
-	*Backend
-	Wrapper *gcemock.Wrapper
-}
-
-// NewMockBackend returns a GCE scheduler backend that doesn't
-// communicate with Google Cloud APIs,
-// Useful for testing.
-func NewMockBackend(conf config.Config) (*MockBackend, error) {
-	// Set up a GCE scheduler backend that has a mock client
-	// so that it doesn't actually communicate with GCE.
-
-	gceWrapper := new(gcemock.Wrapper)
-	gceClient := &gceClient{
-		wrapper: gceWrapper,
-		project: conf.Backends.GCE.Project,
-		zone:    conf.Backends.GCE.Zone,
-	}
-
-	schedClient, err := scheduler.NewClient(conf.Worker)
-	if err != nil {
-		return nil, err
-	}
-
-	return &MockBackend{
-		Backend: &Backend{
-			conf:   conf,
-			client: schedClient,
-			gce:    gceClient,
-		},
-		Wrapper: gceWrapper,
-	}, nil
+	return s.gce.StartNode(template, s.conf.Server.RPCAddress(), n.Id)
 }

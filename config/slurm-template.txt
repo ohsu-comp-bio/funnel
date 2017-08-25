@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name {{.WorkerId}}
+#SBATCH --job-name {{.NodeId}}
 #SBATCH --ntasks 1
-#SBATCH --error {{.WorkDir}}/funnel-worker-stderr
-#SBATCH --output {{.WorkDir}}/funnel-worker-stdout
+#SBATCH --error {{.WorkDir}}/funnel-stderr
+#SBATCH --output {{.WorkDir}}/funnel-stdout
 {{if ne .Cpus 0 -}}
 {{printf "#SBATCH --cpus-per-task %d" .Cpus}}
 {{- end}}
@@ -13,4 +13,4 @@
 {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker --config {{.WorkerConfig}}
+{{.Executable}} node start --config {{.Config}}

@@ -28,8 +28,8 @@ func RandomPort() string {
 
 // RandomPortConfig returns a modified config with random HTTP and RPC ports.
 func RandomPortConfig(conf config.Config) config.Config {
-	conf.RPCPort = RandomPort()
-	conf.HTTPPort = RandomPort()
+	conf.Server.RPCPort = RandomPort()
+	conf.Server.HTTPPort = RandomPort()
 	return conf
 }
 
@@ -37,9 +37,18 @@ func RandomPortConfig(conf config.Config) config.Config {
 func TempDirConfig(conf config.Config) config.Config {
 	os.Mkdir("./test_tmp", os.ModePerm)
 	f, _ := ioutil.TempDir("./test_tmp", "funnel-test-")
-	conf.WorkDir = f
+	conf.Scheduler.Node.WorkDir = f
 	conf.Worker.WorkDir = f
-	conf.DBPath = path.Join(f, "funnel.db")
+	conf.Server.DBPath = path.Join(f, "funnel.db")
+	return conf
+}
+
+// LoggerDebugConfig returns a modified config all loggers configured with logger.DebugConfig()
+func LoggerDebugConfig(conf config.Config) config.Config {
+	conf.Server.Logger = logger.DebugConfig()
+	conf.Scheduler.Logger = logger.DebugConfig()
+	conf.Scheduler.Node.Logger = logger.DebugConfig()
+	conf.Worker.Logger = logger.DebugConfig()
 	return conf
 }
 

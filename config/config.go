@@ -13,12 +13,9 @@ import (
 
 // Config describes configuration for Funnel.
 type Config struct {
-	Storage   StorageConfig
-	HostName  string
-	Scheduler string
-	Server    struct {
-		Password string
-	}
+	Server Server
+	// the active scheduler backend
+	Backend  string
 	Backends struct {
 		Local    struct{}
 		HTCondor struct {
@@ -49,185 +46,37 @@ type Config struct {
 			CacheTTL time.Duration
 		}
 	}
-	Worker             Worker
-	DBPath             string
-	HTTPPort           string
-	RPCPort            string
-	WorkDir            string
-	Logger             logger.Config
-	MaxExecutorLogSize int
-	ScheduleRate       time.Duration
-	ScheduleChunk      int
-	// How long to wait for a worker ping before marking it as dead
-	WorkerPingTimeout time.Duration
-	// How long to wait for worker initialization before marking it dead
-	WorkerInitTimeout time.Duration
-	DisableHTTPCache  bool
-	ServiceName       string
+	Scheduler Scheduler
+	// Worker configuration
+	Worker Worker
 }
 
-// HTTPAddress returns the HTTP address based on HostName and HTTPPort
-func (c Config) HTTPAddress() string {
-	return "http://" + c.HostName + ":" + c.HTTPPort
-}
-
-// RPCAddress returns the RPC address based on HostName and RPCPort
-func (c Config) RPCAddress() string {
-	return c.HostName + ":" + c.RPCPort
-}
-
-// DefaultConfig returns configuration with simple defaults.
-func DefaultConfig() Config {
-	workDir := "funnel-work-dir"
-	hostName := "localhost"
-	rpcPort := "9090"
-	cwd, _ := os.Getwd()
-	c := Config{
-		HostName:  hostName,
-		DBPath:    path.Join(workDir, "funnel.db"),
-		HTTPPort:  "8000",
-		RPCPort:   rpcPort,
-		WorkDir:   workDir,
-		Logger:    logger.DefaultConfig(),
-		Scheduler: "local",
-		Storage: StorageConfig{
-			Local: LocalStorage{
-				AllowedDirs: []string{cwd},
-			},
-		},
-		MaxExecutorLogSize: 10000,
-		ScheduleRate:       time.Second,
-		ScheduleChunk:      10,
-		WorkerPingTimeout:  time.Minute,
-		WorkerInitTimeout:  time.Minute * 5,
-		Worker: Worker{
-			ServerAddress: hostName + ":" + rpcPort,
-			WorkDir:       workDir,
-			Timeout:       -1,
-			// TODO these get reset to zero when not found in yaml?
-			UpdateRate:    time.Second * 5,
-			LogUpdateRate: time.Second * 5,
-			LogTailSize:   10000,
-			Logger:        logger.DefaultConfig(),
-			Resources:     Resources{},
-			UpdateTimeout: time.Second,
-			Metadata:      map[string]string{},
-		},
-		DisableHTTPCache: true,
-		ServiceName:      "Funnel",
-	}
-
-	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
-	slurmTemplate, _ := Asset("config/slurm-template.txt")
-	pbsTemplate, _ := Asset("config/pbs-template.txt")
-	geTemplate, _ := Asset("config/gridengine-template.txt")
-
-	c.Backends.HTCondor.Template = string(htcondorTemplate)
-	c.Backends.SLURM.Template = string(slurmTemplate)
-	c.Backends.PBS.Template = string(pbsTemplate)
-	c.Backends.GridEngine.Template = string(geTemplate)
-	c.Backends.GCE.CacheTTL = time.Minute
-	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
-	return c
-}
-
-// Resources describes worker resource config.
-type Resources struct {
-	Cpus   uint32
-	RamGb  float64 // nolint
-	DiskGb float64
-}
-
-// Worker contains worker configuration.
-type Worker struct {
-	ID string
-	// Address of the scheduler, e.g. "1.2.3.4:9090"
-	ServerAddress string
-	// Directory to write task files to
-	WorkDir string
-	// How long (seconds) to wait before tearing down an inactive worker
-	// Default, -1, indicates to tear down the worker immediately after completing
-	// its task
-	Timeout time.Duration
-	// How often the worker sends update requests to the server
-	UpdateRate time.Duration
-	// How often the worker sends task log updates
-	LogUpdateRate time.Duration
-	LogTailSize   int64
-	Storage       StorageConfig
-	Logger        logger.Config
-	Resources     Resources
-	// Timeout duration for UpdateWorker() and UpdateTaskLogs() RPC calls
-	UpdateTimeout  time.Duration
-	Metadata       map[string]string
-	ServerPassword string
-}
-
-// WorkerInheritConfigVals is a utility to help ensure the Worker inherits the proper config values from the parent Config
-func WorkerInheritConfigVals(c Config) Worker {
-	if (c.HostName != "") && (c.RPCPort != "") {
-		c.Worker.ServerAddress = c.HostName + ":" + c.RPCPort
-	}
-	c.Worker.Storage = c.Storage
+// InheritServerProperties sets the ServerAddress and ServerPassword fields
+// in the Worker and Scheduler.Node configs based on the Server config
+func (c *Config) InheritServerProperties() {
+	c.Worker.ServerAddress = c.Server.RPCAddress()
 	c.Worker.ServerPassword = c.Server.Password
-	return c.Worker
-}
 
-// StorageConfig describes configuration for all storage types
-type StorageConfig struct {
-	Local LocalStorage
-	S3    []S3Storage
-	GS    []GSStorage
-}
-
-// LocalStorage describes the directories Funnel can read from and write to
-type LocalStorage struct {
-	AllowedDirs []string
-}
-
-// Valid validates the LocalStorage configuration
-func (l LocalStorage) Valid() bool {
-	return len(l.AllowedDirs) > 0
-}
-
-// GSStorage describes configuration for the Google Cloud storage backend.
-type GSStorage struct {
-	AccountFile string
-	FromEnv     bool
-}
-
-// Valid validates the GSStorage configuration.
-func (g GSStorage) Valid() bool {
-	return g.FromEnv || g.AccountFile != ""
-}
-
-// S3Storage describes the directories Funnel can read from and write to
-type S3Storage struct {
-	Endpoint string
-	Key      string
-	Secret   string
-}
-
-// Valid validates the LocalStorage configuration
-func (l S3Storage) Valid() bool {
-	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
+	c.Scheduler.Node.ServerAddress = c.Server.RPCAddress()
+	c.Scheduler.Node.ServerPassword = c.Server.Password
+	return
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.
-func (c Config) ToYaml() []byte {
+func (c *Config) ToYaml() []byte {
 	// TODO handle error
 	yamlstr, _ := yaml.Marshal(c)
 	return yamlstr
 }
 
 // ToYamlFile writes the configuration to a YAML file.
-func (c Config) ToYamlFile(p string) {
+func (c *Config) ToYamlFile(p string) {
 	// TODO handle error
 	ioutil.WriteFile(p, c.ToYaml(), 0600)
 }
 
 // ToYamlTempFile writes the configuration to a YAML temp. file.
-func (c Config) ToYamlTempFile(name string) (string, func()) {
+func (c *Config) ToYamlTempFile(name string) (string, func()) {
 	// I'm creating a temp. directory instead of a temp. file so that
 	// the file can have an expected name. This is helpful for the HTCondor scheduler.
 	tmpdir, _ := ioutil.TempDir("", "")
@@ -248,6 +97,199 @@ func Parse(raw []byte, conf *Config) error {
 		return err
 	}
 	return nil
+}
+
+// DefaultConfig returns configuration with simple defaults.
+func DefaultConfig() Config {
+	cwd, _ := os.Getwd()
+	workDir := path.Join(cwd, "funnel-work-dir")
+
+	c := Config{
+		Server: Server{
+			HostName:           "localhost",
+			HTTPPort:           "8000",
+			RPCPort:            "9090",
+			ServiceName:        "Funnel",
+			DBPath:             path.Join(workDir, "funnel.db"),
+			MaxExecutorLogSize: 10000,
+			DisableHTTPCache:   true,
+			Logger:             logger.DefaultConfig(),
+		},
+		Backend: "local",
+		Scheduler: Scheduler{
+			ScheduleRate:    time.Second,
+			ScheduleChunk:   10,
+			NodePingTimeout: time.Minute,
+			NodeInitTimeout: time.Minute * 5,
+			Node: Node{
+				WorkDir:       workDir,
+				Timeout:       -1,
+				UpdateRate:    time.Second * 5,
+				UpdateTimeout: time.Second,
+				Metadata:      map[string]string{},
+				Logger:        logger.DefaultConfig(),
+			},
+			Logger: logger.DefaultConfig(),
+		},
+		Worker: Worker{
+			WorkDir: workDir,
+			Storage: StorageConfig{
+				Local: LocalStorage{
+					AllowedDirs: []string{cwd},
+				},
+			},
+			UpdateRate:    time.Second * 5,
+			UpdateTimeout: time.Second,
+			BufferSize:    10000,
+			Logger:        logger.DefaultConfig(),
+		},
+	}
+
+	// set rpc server address and password for worker and node
+	c.InheritServerProperties()
+
+	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
+	slurmTemplate, _ := Asset("config/slurm-template.txt")
+	pbsTemplate, _ := Asset("config/pbs-template.txt")
+	geTemplate, _ := Asset("config/gridengine-template.txt")
+
+	c.Backends.HTCondor.Template = string(htcondorTemplate)
+	c.Backends.SLURM.Template = string(slurmTemplate)
+	c.Backends.PBS.Template = string(pbsTemplate)
+	c.Backends.GridEngine.Template = string(geTemplate)
+
+	c.Backends.GCE.CacheTTL = time.Minute
+	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
+
+	return c
+}
+
+// Server describes configuration for the server.
+type Server struct {
+	ServiceName        string
+	HostName           string
+	HTTPPort           string
+	RPCPort            string
+	Password           string
+	DBPath             string
+	DisableHTTPCache   bool
+	MaxExecutorLogSize int
+	Logger             logger.Config
+}
+
+// HTTPAddress returns the HTTP address based on HostName and HTTPPort
+func (c *Server) HTTPAddress() string {
+	if c.HostName != "" && c.HTTPPort != "" {
+		return "http://" + c.HostName + ":" + c.HTTPPort
+	}
+	return ""
+}
+
+// RPCAddress returns the RPC address based on HostName and RPCPort
+func (c *Server) RPCAddress() string {
+	if c.HostName != "" && c.RPCPort != "" {
+		return c.HostName + ":" + c.RPCPort
+	}
+	return ""
+}
+
+// Scheduler contains funnel's basic scheduler configuration.
+type Scheduler struct {
+	// How often to run a scheduler iteration.
+	ScheduleRate time.Duration
+	// How many tasks to schedule in one iteration.
+	ScheduleChunk int
+	// How long to wait for a node ping before marking it as dead
+	NodePingTimeout time.Duration
+	// How long to wait for node initialization before marking it dead
+	NodeInitTimeout time.Duration
+	// Node configuration
+	Node Node
+	// Logger configuration
+	Logger logger.Config
+}
+
+// Node contains the configuration for a node which used by the funnel's basic scheduler.
+type Node struct {
+	ID string
+	// Directory to write task files to
+	WorkDir   string
+	Resources struct {
+		Cpus   uint32
+		RamGb  float64 // nolint
+		DiskGb float64
+	}
+	// If the node has been idle for longer than the timeout, it will shut down.
+	// -1 means there is no timeout. 0 means timeout immediately after the first task.
+	Timeout time.Duration
+	// How often the node sends update requests to the server.
+	UpdateRate time.Duration
+	// Timeout duration for UpdateNode() gRPC calls
+	UpdateTimeout time.Duration
+	Metadata      map[string]string
+	// RPC address of the Funnel server
+	ServerAddress string
+	// Password for basic auth. with the server APIs.
+	ServerPassword string
+	Logger         logger.Config
+}
+
+// Worker contains worker configuration.
+type Worker struct {
+	// RPC address of the Funnel server
+	ServerAddress string
+	// Password for basic auth. with the server APIs.
+	ServerPassword string
+	// Directory to write task files to
+	WorkDir string
+	// How often the worker sends task log updates
+	UpdateRate time.Duration
+	// Timeout duration for gRPC calls
+	UpdateTimeout time.Duration
+	// Max bytes to store in-memory between updates
+	BufferSize int64
+	Storage    StorageConfig
+	Logger     logger.Config
+}
+
+// StorageConfig describes configuration for all storage types
+type StorageConfig struct {
+	Local LocalStorage
+	S3    []S3Storage
+	GS    []GSStorage
+}
+
+// LocalStorage describes the directories Funnel can read from and write to
+type LocalStorage struct {
+	AllowedDirs []string
+}
+
+// Valid validates the LocalStorage configuration
+func (l *LocalStorage) Valid() bool {
+	return len(l.AllowedDirs) > 0
+}
+
+// GSStorage describes configuration for the Google Cloud storage backend.
+type GSStorage struct {
+	AccountFile string
+	FromEnv     bool
+}
+
+// Valid validates the GSStorage configuration.
+func (g *GSStorage) Valid() bool {
+	return g.FromEnv || g.AccountFile != ""
+}
+
+// S3Storage describes the directories Funnel can read from and write to
+type S3Storage struct {
+	Endpoint string
+	Key      string
+	Secret   string
+}
+
+// Valid validates the LocalStorage configuration
+func (l *S3Storage) Valid() bool {
+	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
 }
 
 // ParseFile parses a Funnel config file, which is formatted in YAML,

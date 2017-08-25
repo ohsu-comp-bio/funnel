@@ -1,26 +1,30 @@
-package scheduler
+package node
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
+	tl "github.com/ohsu-comp-bio/funnel/proto/tasklogger"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"google.golang.org/grpc"
 )
 
-// Client is a client for the scheduler gRPC service.
+// Client is a client for the scheduler and task logger gRPC services.
 type Client interface {
-	pbf.SchedulerServiceClient
+	tl.TaskLoggerServiceClient
+	pbs.SchedulerServiceClient
 	Close()
 }
 
 type client struct {
-	pbf.SchedulerServiceClient
+	tl.TaskLoggerServiceClient
+	pbs.SchedulerServiceClient
 	conn *grpc.ClientConn
 }
 
 // NewClient returns a new Client instance connected to the
-// scheduler at a given address (e.g. "localhost:9090")
-func NewClient(conf config.Worker) (Client, error) {
+// scheduler and task logger services at a given address
+// (e.g. "localhost:9090")
+func NewClient(conf config.Node) (Client, error) {
 	// TODO if this can't connect initially, should it retry?
 	//      give up after max retries? Does grpc.Dial already do this?
 	// Create a connection for gRPC clients
@@ -30,15 +34,16 @@ func NewClient(conf config.Worker) (Client, error) {
 	)
 
 	if err != nil {
-		log.Error("Couldn't open RPC connection to scheduler",
+		log.Error("Couldn't open RPC connection to the scheduler",
 			"error", err,
 			"address", conf.ServerAddress,
 		)
 		return nil, err
 	}
 
-	s := pbf.NewSchedulerServiceClient(conn)
-	return &client{s, conn}, nil
+	t := tl.NewTaskLoggerServiceClient(conn)
+	s := pbs.NewSchedulerServiceClient(conn)
+	return &client{t, s, conn}, nil
 }
 
 // Close closes the client connection.

@@ -10,7 +10,7 @@ import (
 
 func TestWebdash(t *testing.T) {
 	// Get the webdash health check endpoint
-	address := "http://localhost:" + fun.Conf.HTTPPort
+	address := fun.Conf.Server.HTTPAddress()
 	client := http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(address + "/health.html")
 	if err != nil {

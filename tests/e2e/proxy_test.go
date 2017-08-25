@@ -6,7 +6,7 @@ import (
 )
 
 func TestListNoCacheHeader(t *testing.T) {
-	resp, err := http.Get(fun.Conf.HTTPAddress() + "/v1/tasks")
+	resp, err := http.Get(fun.Conf.Server.HTTPAddress() + "/v1/tasks")
 
 	if err != nil {
 		panic(err)
@@ -21,7 +21,7 @@ func TestListNoCacheHeader(t *testing.T) {
 }
 
 func TestGetNoCacheHeader(t *testing.T) {
-	resp, err := http.Get(fun.Conf.HTTPAddress() + "/v1/tasks/1")
+	resp, err := http.Get(fun.Conf.Server.HTTPAddress() + "/v1/tasks/1")
 
 	if err != nil {
 		panic(err)

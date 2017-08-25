@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package scheduler;
+
+import "google/api/annotations.proto";
+
+message Resources {
+  uint32 cpus = 1;
+  // In GB
+  double ram_gb = 2;
+  // In GB
+  double disk_gb = 3;
+}
+
+enum NodeState {
+  UNINITIALIZED = 0;
+  ALIVE = 1;
+  DEAD = 2;
+  GONE = 3;
+  INITIALIZING = 4;
+}
+
+message Node {
+  string id = 1;
+  Resources resources = 5;
+  Resources available = 6;
+  int64 last_ping = 7;
+  NodeState state = 8;
+  bool preemptible = 9;
+  // TODO where does this get updated?
+  repeated int32 active_ports = 10;
+  string zone = 11;
+  // Hostname of the worker host.
+  // TODO where does this get updated?
+  string hostname  = 13;
+  // Version of the record in the database. Used to prevent write conflicts.
+  int64 version = 14;
+  map<string,string> metadata = 15;
+  repeated string task_ids = 16;
+}
+
+message ListNodesRequest {}
+
+message ListNodesResponse {
+  repeated Node nodes = 1;
+}
+
+message UpdateNodeResponse {}
+
+message GetNodeRequest {
+  string id = 1;
+}
+
+/**
+ * Scheduler Service
+ */
+service SchedulerService {
+  rpc UpdateNode(Node) returns (UpdateNodeResponse) {};
+
+  rpc ListNodes(ListNodesRequest) returns (ListNodesResponse) {
+    option (google.api.http) = {
+      get: "/v1/funnel/nodes"
+    };
+  };
+
+  rpc GetNode(GetNodeRequest) returns (Node) {
+    option (google.api.http) = {
+      get: "/v1/funnel/node/{id}"
+    };
+  };
+}

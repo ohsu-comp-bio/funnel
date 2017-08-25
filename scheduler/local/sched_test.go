@@ -3,10 +3,10 @@ package local
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	poolmock "github.com/ohsu-comp-bio/funnel/node/mocks"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	sched "github.com/ohsu-comp-bio/funnel/scheduler"
-	sched_mocks "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
 	. "github.com/stretchr/testify/mock"
 	"testing"
 )
@@ -15,111 +15,111 @@ func init() {
 	logger.Configure(logger.DebugConfig())
 }
 
-func simpleWorker() *pbf.Worker {
-	return &pbf.Worker{
+func simpleNode() *pbs.Node {
+	return &pbs.Node{
 		// This ID MUST match the ID set in setup()
-		// because the local scheduler is built to have only a single worker
-		Id: "test-worker-id",
-		Resources: &pbf.Resources{
+		// because the local scheduler is built to have only a single node
+		Id: "test-node-id",
+		Resources: &pbs.Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		Available: &pbf.Resources{
+		Available: &pbs.Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		State: pbf.WorkerState_ALIVE,
+		State: pbs.NodeState_ALIVE,
 		Zone:  "ok-zone",
 	}
 }
 
-func setup(workers []*pbf.Worker) (*sched_mocks.Client, *Backend) {
+func setup(nodes []*pbs.Node) (*poolmock.Client, *Backend) {
 	conf := config.Config{}
-	mc := new(sched_mocks.Client)
+	mc := new(poolmock.Client)
 
-	// Mock in test workers
-	mc.On("ListWorkers", Anything, Anything, Anything).Return(&pbf.ListWorkersResponse{
-		Workers: workers,
+	// Mock in test nodes
+	mc.On("ListNodes", Anything, Anything, Anything).Return(&pbs.ListNodesResponse{
+		Nodes: nodes,
 	}, nil)
 
 	s := &Backend{
 		conf,
 		mc,
-		"test-worker-id",
+		"test-node-id",
 	}
 	return mc, s
 }
 
-func TestNoWorkers(t *testing.T) {
-	_, s := setup([]*pbf.Worker{})
+func TestNoNodes(t *testing.T) {
+	_, s := setup([]*pbs.Node{})
 	j := &tes.Task{}
 	o := s.Schedule(j)
 	if o != nil {
-		t.Error("Task scheduled on empty workers")
+		t.Error("Task scheduled on empty nodes")
 	}
 }
 
-func TestSingleWorker(t *testing.T) {
-	_, s := setup([]*pbf.Worker{
-		simpleWorker(),
+func TestSingleNode(t *testing.T) {
+	_, s := setup([]*pbs.Node{
+		simpleNode(),
 	})
 
 	j := &tes.Task{}
 	o := s.Schedule(j)
 	if o == nil {
-		t.Error("Failed to schedule task on single worker")
+		t.Error("Failed to schedule task on single node")
 		return
 	}
-	if o.Worker.Id != "test-worker-id" {
-		t.Error("Scheduled task on unexpected worker")
+	if o.Node.Id != "test-node-id" {
+		t.Error("Scheduled task on unexpected node")
 	}
 }
 
-// Test that the scheduler ignores workers it doesn't own.
-func TestIgnoreOtherWorkers(t *testing.T) {
-	other := simpleWorker()
-	other.Id = "other-worker"
+// Test that the scheduler ignores nodes it doesn't own.
+func TestIgnoreOtherNodes(t *testing.T) {
+	other := simpleNode()
+	other.Id = "other-node"
 
-	_, s := setup([]*pbf.Worker{other})
+	_, s := setup([]*pbs.Node{other})
 
 	j := &tes.Task{}
 	o := s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled task to other worker")
+		t.Error("Scheduled task to other node")
 	}
 }
 
-// Test that scheduler ignores workers without the "ALIVE" state
-func TestIgnoreNonAliveWorkers(t *testing.T) {
+// Test that scheduler ignores nodes without the "ALIVE" state
+func TestIgnoreNonAliveNodes(t *testing.T) {
 	j := &tes.Task{}
 
-	for name, val := range pbf.WorkerState_value {
-		w := simpleWorker()
-		w.State = pbf.WorkerState(val)
-		_, s := setup([]*pbf.Worker{w})
+	for name, val := range pbs.NodeState_value {
+		w := simpleNode()
+		w.State = pbs.NodeState(val)
+		_, s := setup([]*pbs.Node{w})
 		o := s.Schedule(j)
 
 		if name == "ALIVE" {
-			// Testing ALIVE just so I know this test is worker as expected
+			// Testing ALIVE just so I know this test is node as expected
 			if o == nil {
-				t.Error("Didn't schedule task to alive worker")
+				t.Error("Didn't schedule task to alive node")
 			}
 		} else {
 			if o != nil {
-				t.Errorf("Scheduled task to non-alive worker: %s", name)
+				t.Errorf("Scheduled task to non-alive node: %s", name)
 				return
 			}
 		}
 	}
 }
 
-// Test whether the scheduler correctly filters workers based on
+// Test whether the scheduler correctly filters nodes based on
 // cpu, ram, disk, etc.
 func TestMatch(t *testing.T) {
-	_, s := setup([]*pbf.Worker{
-		simpleWorker(),
+	_, s := setup([]*pbs.Node{
+		simpleNode(),
 	})
 
 	var o *sched.Offer
@@ -135,7 +135,7 @@ func TestMatch(t *testing.T) {
 	j.Resources.CpuCores = 2
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled task to worker without enough CPU resources")
+		t.Error("Scheduled task to node without enough CPU resources")
 	}
 
 	// test RAM too big
@@ -143,7 +143,7 @@ func TestMatch(t *testing.T) {
 	j.Resources.RamGb = 2.0
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled task to worker without enough RAM resources")
+		t.Error("Scheduled task to node without enough RAM resources")
 	}
 
 	// test disk too big
@@ -151,7 +151,7 @@ func TestMatch(t *testing.T) {
 	j.Resources.SizeGb = 2.0
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled task to worker without enough DiskGb resources")
+		t.Error("Scheduled task to node without enough DiskGb resources")
 	}
 
 	// test zones don't match
@@ -159,7 +159,7 @@ func TestMatch(t *testing.T) {
 	j.Resources.Zones = []string{"test-zone"}
 	o = s.Schedule(j)
 	if o != nil {
-		t.Error("Scheduled task to worker out of zone")
+		t.Error("Scheduled task to node out of zone")
 	}
 
 	// Now test a task that fits

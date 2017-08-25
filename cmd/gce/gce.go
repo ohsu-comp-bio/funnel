@@ -2,8 +2,8 @@ package gce
 
 import (
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/node"
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
-	"github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/scheduler/gce"
@@ -43,12 +43,12 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		if conf.Worker.ID != "" {
-			logger.Configure(conf.Worker.Logger)
-			return worker.Run(conf)
+		if conf.Scheduler.Node.ID != "" {
+			logger.Configure(conf.Scheduler.Node.Logger)
+			return node.Start(conf)
 		}
 
-		logger.Configure(conf.Worker.Logger)
-		return server.Run(conf)
+		logger.Configure(conf.Server.Logger)
+		return server.Start(conf)
 	},
 }

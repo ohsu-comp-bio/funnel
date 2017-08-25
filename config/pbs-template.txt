@@ -1,7 +1,7 @@
 #!/bin/bash
-#PBS -N {{.WorkerId}}
-#PBS -o {{.WorkDir}}/funnel-worker-stdout
-#PBS -e {{.WorkDir}}/funnel-worker-stderr
+#PBS -N {{.NodeId}}
+#PBS -o {{.WorkDir}}/funnel-stdout
+#PBS -e {{.WorkDir}}/funnel-stderr
 {{if ne .Cpus 0 -}}
 {{printf "#PBS -l nodes=1:ppn=%d" .Cpus}}
 {{- end}}
@@ -12,4 +12,4 @@
 {{printf "#PBS -l file=%.0fgb" .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker --config {{.WorkerConfig}}
+{{.Executable}} node start --config {{.Config}}

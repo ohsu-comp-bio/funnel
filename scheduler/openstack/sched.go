@@ -4,7 +4,8 @@ import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	"github.com/ohsu-comp-bio/funnel/node"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
@@ -17,8 +18,8 @@ var log = logger.Sub(Name)
 // NewBackend returns a new Backend instance.
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
 
-	// Create a client for talking to the funnel scheduler
-	client, err := scheduler.NewClient(conf.Worker)
+	// Create a client for talking to the funnel node
+	client, err := node.NewClient(conf.Scheduler.Node)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
@@ -30,18 +31,18 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 // Backend represents the OpenStack backend.
 type Backend struct {
 	conf   config.Config
-	client scheduler.Client
+	client node.Client
 }
 
-// Schedule schedules a task on a OpenStack VM worker instance.
+// Schedule schedules a task on a OpenStack VM node instance.
 func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	log.Debug("Running OpenStack scheduler")
 
 	offers := []*scheduler.Offer{}
-	predicates := append(scheduler.DefaultPredicates, scheduler.WorkerHasTag("openstack"))
+	predicates := append(scheduler.DefaultPredicates, scheduler.NodeHasTag("openstack"))
 
-	for _, w := range s.getWorkers() {
-		// Filter out workers that don't match the task request.
+	for _, w := range s.getNodes() {
+		// Filter out nodes that don't match the task request.
 		// Checks CPU, RAM, disk space, ports, etc.
 		if !scheduler.Match(w, j, predicates) {
 			continue
@@ -50,7 +51,7 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 		sc := scheduler.DefaultScores(w, j)
 		/*
 				    TODO?
-				    if w.State == pbf.WorkerState_Alive {
+				    if w.State == pbs.NodeState_Alive {
 						  sc["startup time"] = 1.0
 				    }
 			sc = sc.Weighted(s.conf.Backends.OpenStack.Weights)
@@ -60,7 +61,7 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 		offers = append(offers, offer)
 	}
 
-	// No matching workers were found.
+	// No matching nodes were found.
 	if len(offers) == 0 {
 		return nil
 	}
@@ -69,22 +70,22 @@ func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
 	return offers[0]
 }
 
-func (s *Backend) getWorkers() []*pbf.Worker {
+func (s *Backend) getNodes() []*pbs.Node {
 
-	// Get the workers from the funnel server
-	workers := []*pbf.Worker{}
-	req := &pbf.ListWorkersRequest{}
-	resp, err := s.client.ListWorkers(context.Background(), req)
+	// Get the nodes from the funnel server
+	nodes := []*pbs.Node{}
+	req := &pbs.ListNodesRequest{}
+	resp, err := s.client.ListNodes(context.Background(), req)
 
 	// If there's an error, return an empty list
 	if err != nil {
-		log.Error("Failed ListWorkers request. Recovering.", err)
-		return workers
+		log.Error("Failed ListNodes request. Recovering.", err)
+		return nodes
 	}
 
-	workers = resp.Workers
+	nodes = resp.Nodes
 
-	// TODO include unprovisioned worker templates from config
+	// TODO include unprovisioned node templates from config
 
-	return workers
+	return nodes
 }

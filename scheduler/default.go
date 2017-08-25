@@ -1,31 +1,31 @@
 package scheduler
 
 import (
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 // DefaultScheduleAlgorithm implements a simple scheduling algorithm
 // that is (currently) common across a few scheduler backends.
-// Given a task, list of workers, and weights, it returns the best Offer or nil.
-func DefaultScheduleAlgorithm(j *tes.Task, workers []*pbf.Worker, weights map[string]float32) *Offer {
+// Given a task, list of nodes, and weights, it returns the best Offer or nil.
+func DefaultScheduleAlgorithm(j *tes.Task, nodes []*pbs.Node, weights map[string]float32) *Offer {
 
 	offers := []*Offer{}
-	for _, w := range workers {
-		// Filter out workers that don't match the task request.
+	for _, n := range nodes {
+		// Filter out nodes that don't match the task request.
 		// Checks CPU, RAM, disk space, ports, etc.
-		if !Match(w, j, DefaultPredicates) {
+		if !Match(n, j, DefaultPredicates) {
 			continue
 		}
 
-		sc := DefaultScores(w, j)
+		sc := DefaultScores(n, j)
 		sc = sc.Weighted(weights)
 
-		offer := NewOffer(w, j, sc)
+		offer := NewOffer(n, j, sc)
 		offers = append(offers, offer)
 	}
 
-	// No matching workers were found.
+	// No matching nodes were found.
 	if len(offers) == 0 {
 		return nil
 	}

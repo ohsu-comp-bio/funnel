@@ -2,163 +2,319 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
-	"github.com/ohsu-comp-bio/funnel/scheduler"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"os"
+	"path"
+	"path/filepath"
 	"time"
 )
 
-// NewWorker returns a new Worker instance
-func NewWorker(conf config.Worker) (*Worker, error) {
-	log := logger.Sub("worker", "workerID", conf.ID)
-	log.Debug("Worker Config", "config.Worker", conf)
+// NewDefaultWorker returns the default task runner used by Funnel,
+// which uses gRPC to read/write task details.
+func NewDefaultWorker(conf config.Worker, taskID string) Worker {
+	// Map files into this baseDir
+	baseDir := path.Join(conf.WorkDir, taskID)
+	// TODO handle error
+	util.EnsureDir(baseDir)
 
-	sched, err := scheduler.NewClient(conf)
-	if err != nil {
-		return nil, err
+	// TODO handle error
+	svc, _ := newRPCTask(conf, taskID)
+	log := logger.Sub("runner", "taskID", taskID)
+
+	return &DefaultWorker{
+		Conf:   conf,
+		Mapper: NewFileMapper(baseDir),
+		Store:  storage.Storage{},
+		Svc:    svc,
+		Log:    log,
+	}
+}
+
+// DefaultWorker is the default task runner, which follows a basic,
+// sequential process of task initialization, execution, finalization,
+// and logging.
+type DefaultWorker struct {
+	Conf   config.Worker
+	Mapper *FileMapper
+	Store  storage.Storage
+	Svc    TaskService
+	Log    logger.Logger
+}
+
+// Run runs the task runner.
+// TODO document behavior of slow consumer of task log updates
+func (r *DefaultWorker) Run(pctx context.Context) {
+
+	// The code here is verbose, but simple; mainly loops and simple error checking.
+	//
+	// The steps are:
+	// - prepare the working directory
+	// - map the task files to the working directory
+	// - log the IP address
+	// - set up the storage configuration
+	// - validate input and output files
+	// - download inputs
+	// - run the steps (docker)
+	// - upload the outputs
+
+	var run helper
+	var task *tes.Task
+
+	task, run.syserr = r.Svc.Task()
+
+	r.Svc.StartTime(time.Now())
+	// Run the final logging/state steps in a deferred function
+	// to ensure they always run, even if there's a missed error.
+	defer func() {
+		r.Svc.EndTime(time.Now())
+
+		switch {
+		case run.taskCanceled:
+			// The task was canceled.
+			r.Log.Info("Canceled")
+			r.Svc.SetState(tes.State_CANCELED)
+		case run.execerr != nil:
+			// One of the executors failed
+			r.Log.Error("Exec error", run.execerr)
+			r.Svc.SetState(tes.State_ERROR)
+		case run.syserr != nil:
+			// Something else failed
+			// TODO should we do something special for run.err == context.Canceled?
+			r.Log.Error("System error", run.syserr)
+			r.Svc.SetState(tes.State_SYSTEM_ERROR)
+		default:
+			r.Svc.SetState(tes.State_COMPLETE)
+		}
+	}()
+
+	// Recover from panics
+	defer handlePanic(func(e error) {
+		run.syserr = e
+	})
+
+	ctx := r.pollForCancel(pctx, func() {
+		run.taskCanceled = true
+	})
+	run.ctx = ctx
+
+	// Create working dir
+	var dir string
+	if run.ok() {
+		dir, run.syserr = filepath.Abs(r.Conf.WorkDir)
+	}
+	if run.ok() {
+		run.syserr = util.EnsureDir(dir)
 	}
 
-	err = util.EnsureDir(conf.WorkDir)
-	if err != nil {
-		return nil, err
+	// Prepare file mapper, which maps task file URLs to host filesystem paths
+	if run.ok() {
+		run.syserr = r.Mapper.MapTask(task)
 	}
 
-	// Detect available resources at startup
-	res := detectResources(conf)
-	timeout := util.NewIdleTimeout(conf.Timeout)
-	state := pbf.WorkerState_UNINITIALIZED
-	return &Worker{
-		conf, sched, log, res,
-		NewDefaultRunner, newRunSet(), timeout, state,
-	}, nil
-}
+	// Grab the IP address of this host. Used to send task metadata updates.
+	var ip string
+	if run.ok() {
+		ip, run.syserr = externalIP()
+	}
 
-// NewNoopWorker returns a new worker that doesn't have any side effects
-// (e.g. storage access, docker calls, etc.) which is useful for testing.
-func NewNoopWorker(conf config.Worker) (*Worker, error) {
-	w, err := NewWorker(conf)
-	w.newRunner = NoopRunnerFactory
-	return w, err
-}
+	// Configure a task-specific storage backend.
+	// This provides download/upload for inputs/outputs.
+	if run.ok() {
+		r.Store, run.syserr = r.Store.WithConfig(r.Conf.Storage)
+	}
 
-// Worker is a worker...
-type Worker struct {
-	conf      config.Worker
-	sched     scheduler.Client
-	log       logger.Logger
-	resources config.Resources
-	newRunner RunnerFactory
-	runners   *runSet
-	timeout   util.IdleTimeout
-	state     pbf.WorkerState
-}
+	if run.ok() {
+		run.syserr = r.validateInputs()
+	}
 
-// Run runs a worker with the given config. This is responsible for communication
-// with the server and starting task runners
-func (w *Worker) Run(ctx context.Context) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	if run.ok() {
+		run.syserr = r.validateOutputs()
+	}
 
-	w.log.Info("Starting worker")
-	w.state = pbf.WorkerState_ALIVE
-	w.checkConnection(ctx)
-
-	ticker := time.NewTicker(w.conf.UpdateRate)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-w.timeout.Done():
-			cancel()
-		case <-ctx.Done():
-			w.timeout.Stop()
-
-			// The worker gets 10 seconds to do a final sync with the scheduler.
-			stopCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-			defer cancel()
-			w.state = pbf.WorkerState_GONE
-			w.sync(stopCtx)
-			w.sched.Close()
-
-			// The runners get 10 seconds to finish up.
-			w.runners.Wait(time.Second * 10)
-			return
-		case <-ticker.C:
-			w.sync(ctx)
-			w.checkIdleTimer()
+	// Download inputs
+	for _, input := range r.Mapper.Inputs {
+		if run.ok() {
+			run.syserr = r.Store.Get(ctx, input.Url, input.Path, input.Type)
 		}
 	}
-}
 
-func (w *Worker) checkConnection(ctx context.Context) {
-	_, err := w.sched.GetWorker(ctx, &pbf.GetWorkerRequest{Id: w.conf.ID})
-
-	if err != nil {
-		log.Error("Couldn't contact server.", err)
-	} else {
-		log.Info("Successfully connected to server.")
-	}
-}
-
-// sync syncs the worker's state with the server. It reports task state changes,
-// handles signals from the server (new task, cancel task, etc), reports resources, etc.
-//
-// TODO Sync should probably use a channel to sync data access.
-//      Probably only a problem for test code, where Sync is called directly.
-func (w *Worker) sync(ctx context.Context) {
-	r, gerr := w.sched.GetWorker(ctx, &pbf.GetWorkerRequest{Id: w.conf.ID})
-
-	if gerr != nil {
-		log.Error("Couldn't get worker state during sync.", gerr)
-		return
+	if run.ok() {
+		r.Svc.SetState(tes.State_RUNNING)
 	}
 
-	// Start task runners. runSet will track task IDs
-	// to ensure there's only one runner per ID, so it's ok
-	// to call this multiple times with the same task ID.
-	for _, id := range r.TaskIds {
-		if w.runners.Add(id) {
-			go func(id string) {
-				r := w.newRunner(w.conf, id)
-				r.Run(ctx)
-				w.runners.Remove(id)
-			}(id)
+	// Run steps
+	for i, d := range task.Executors {
+		s := &stepWorker{
+			TaskID:     task.Id,
+			Conf:       r.Conf,
+			Num:        i,
+			Log:        r.Log.WithFields("step", i),
+			TaskLogger: r.Svc,
+			IP:         ip,
+			Cmd: &DockerCmd{
+				ImageName:     d.ImageName,
+				Cmd:           d.Cmd,
+				Environ:       d.Environ,
+				Volumes:       r.Mapper.Volumes,
+				Workdir:       d.Workdir,
+				Ports:         d.Ports,
+				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
+				// TODO make RemoveContainer configurable
+				RemoveContainer: true,
+			},
+		}
+
+		// Opens stdin/out/err files and updates those fields on "cmd".
+		if run.ok() {
+			run.syserr = r.openStepLogs(s, d)
+		}
+
+		if run.ok() {
+			run.execerr = s.Run(ctx)
 		}
 	}
 
-	// Worker data has been updated. Send back to server for database update.
-	res := detectResources(w.conf)
-	r.Resources = &pbf.Resources{
-		Cpus:   res.Cpus,
-		RamGb:  res.RamGb,
-		DiskGb: res.DiskGb,
-	}
-	r.State = w.state
-
-	// Merge metadata
-	if r.Metadata == nil {
-		r.Metadata = map[string]string{}
-	}
-	for k, v := range w.conf.Metadata {
-		r.Metadata[k] = v
+	// Upload outputs
+	var outputs []*tes.OutputFileLog
+	for _, output := range r.Mapper.Outputs {
+		if run.ok() {
+			r.fixLinks(output.Path)
+			var out []*tes.OutputFileLog
+			out, run.syserr = r.Store.Put(ctx, output.Url, output.Path, output.Type)
+			outputs = append(outputs, out...)
+		}
 	}
 
-	_, err := w.sched.UpdateWorker(context.Background(), r)
-	if err != nil {
-		log.Error("Couldn't save worker update. Recovering.", err)
+	if run.ok() {
+		r.Svc.Outputs(outputs)
 	}
 }
 
-// Check if the worker is idle. If so, start the timeout timer.
-func (w *Worker) checkIdleTimer() {
-	// The worker is idle if there are no task runners.
-	// The worker should not time out if it's not alive (e.g. if it's initializing)
-	idle := w.runners.Count() == 0 && w.state == pbf.WorkerState_ALIVE
-	if idle {
-		w.timeout.Start()
-	} else {
-		w.timeout.Stop()
+// fixLinks walks the output paths, fixing cases where a symlink is
+// broken because it's pointing to a path inside a container volume.
+func (r *DefaultWorker) fixLinks(basepath string) {
+	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
+		if err != nil {
+			// There's an error, so be safe and give up on this file
+			return nil
+		}
+
+		// Only bother to check symlinks
+		if f.Mode()&os.ModeSymlink != 0 {
+			// Test if the file can be opened because it doesn't exist
+			fh, rerr := os.Open(p)
+			fh.Close()
+
+			if rerr != nil && os.IsNotExist(rerr) {
+
+				// Get symlink source path
+				src, err := os.Readlink(p)
+				if err != nil {
+					return nil
+				}
+				// Map symlink source (possible container path) to host path
+				mapped, err := r.Mapper.HostPath(src)
+				if err != nil {
+					return nil
+				}
+
+				// Check whether the mapped path exists
+				fh, err := os.Open(mapped)
+				fh.Close()
+
+				// If the mapped path exists, fix the symlink
+				if err == nil {
+					err := os.Remove(p)
+					if err != nil {
+						return nil
+					}
+					os.Symlink(mapped, p)
+				}
+			}
+		}
+		return nil
+	})
+}
+
+// openLogs opens/creates the logs files for a step and updates those fields.
+func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
+
+	// Find the path for task stdin
+	var err error
+	if d.Stdin != "" {
+		s.Cmd.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
+		if err != nil {
+			s.Log.Error("Couldn't prepare log files", err)
+			return err
+		}
 	}
+
+	// Create file for task stdout
+	if d.Stdout != "" {
+		s.Cmd.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
+		if err != nil {
+			s.Log.Error("Couldn't prepare log files", err)
+			return err
+		}
+	}
+
+	// Create file for task stderr
+	if d.Stderr != "" {
+		s.Cmd.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
+		if err != nil {
+			s.Log.Error("Couldn't prepare log files", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// Validate the input downloads
+func (r *DefaultWorker) validateInputs() error {
+	for _, input := range r.Mapper.Inputs {
+		if !r.Store.Supports(input.Url, input.Path, input.Type) {
+			return fmt.Errorf("Input download not supported by storage: %v", input)
+		}
+	}
+	return nil
+}
+
+// Validate the output uploads
+func (r *DefaultWorker) validateOutputs() error {
+	for _, output := range r.Mapper.Outputs {
+		if !r.Store.Supports(output.Url, output.Path, output.Type) {
+			return fmt.Errorf("Output upload not supported by storage: %v", output)
+		}
+	}
+	return nil
+}
+
+func (r *DefaultWorker) pollForCancel(ctx context.Context, f func()) context.Context {
+	taskctx, cancel := context.WithCancel(ctx)
+
+	// Start a goroutine that polls the server to watch for a canceled state.
+	// If a cancel state is found, "taskctx" is canceled.
+	go func() {
+		ticker := time.NewTicker(r.Conf.UpdateRate)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-taskctx.Done():
+				return
+			case <-ticker.C:
+				state := r.Svc.State()
+				if tes.TerminalState(state) {
+					cancel()
+					f()
+				}
+			}
+		}
+	}()
+	return taskctx
 }

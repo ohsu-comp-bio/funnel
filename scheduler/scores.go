@@ -1,12 +1,12 @@
 package scheduler
 
 import (
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"sort"
 )
 
-// Scores describe how well a task fits a worker.
+// Scores describe how well a task fits a node.
 type Scores map[string]float32
 
 // Scores keys
@@ -35,7 +35,7 @@ func (s Scores) Weighted(w map[string]float32) Scores {
 }
 
 // DefaultScores returns a default set of scores.
-func DefaultScores(w *pbf.Worker, t *tes.Task) Scores {
+func DefaultScores(w *pbs.Node, t *tes.Task) Scores {
 	req := t.GetResources()
 	tot := w.GetResources()
 	avail := w.GetAvailable()

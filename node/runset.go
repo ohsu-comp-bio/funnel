@@ -1,4 +1,4 @@
-package worker
+package node
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ func newRunSet() *runSet {
 }
 
 // runSet tracks a set of concurrent goroutines by ID.
-// Used by the worker service to track a set of running tasks by task ID.
+// Used by the node service to track a set of running tasks by task ID.
 type runSet struct {
 	wg      sync.WaitGroup
 	mtx     sync.Mutex

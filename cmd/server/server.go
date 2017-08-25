@@ -28,41 +28,42 @@ var Cmd = &cobra.Command{
 	Short: "Starts a Funnel server.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var err error
-		var conf = config.DefaultConfig()
+
+		// parse config file
+		conf := config.DefaultConfig()
 		config.ParseFile(configFile, &conf)
 
+		// make sure server address and password is inherited by scheduler nodes and workers
+		conf.InheritServerProperties()
+		flagConf.InheritServerProperties()
+
 		// file vals <- cli val
-		err = mergo.MergeWithOverwrite(&conf, flagConf)
+		err := mergo.MergeWithOverwrite(&conf, flagConf)
 		if err != nil {
 			return err
 		}
 
-		return Run(conf)
+		return Start(conf)
 	},
 }
 
 func init() {
 	flags := Cmd.Flags()
 	flags.StringVarP(&configFile, "config", "c", "", "Config File")
-	flags.StringVar(&flagConf.HostName, "hostname", flagConf.HostName, "Host name or IP")
-	flags.StringVar(&flagConf.RPCPort, "rpc-port", flagConf.RPCPort, "RPC Port")
-	flags.StringVar(&flagConf.WorkDir, "work-dir", flagConf.WorkDir, "Working Directory")
-	flags.StringVar(&flagConf.Logger.Level, "log-level", flagConf.Logger.Level, "Level of logging")
-	flags.StringVar(&flagConf.Logger.OutputFile, "log-path", flagConf.Logger.OutputFile, "File path to write logs to")
-	flags.StringVar(&flagConf.HTTPPort, "http-port", flagConf.HTTPPort, "HTTP Port")
-	flags.StringVar(&flagConf.DBPath, "db-path", flagConf.DBPath, "Database path")
-	flags.StringVar(&flagConf.Scheduler, "scheduler", flagConf.Scheduler, "Name of scheduler to enable")
+	flags.StringVar(&flagConf.Server.HostName, "hostname", flagConf.Server.HostName, "Host name or IP")
+	flags.StringVar(&flagConf.Server.RPCPort, "rpc-port", flagConf.Server.RPCPort, "RPC Port")
+	flags.StringVar(&flagConf.Server.HTTPPort, "http-port", flagConf.Server.HTTPPort, "HTTP Port")
+	flags.StringVar(&flagConf.Server.Logger.Level, "log-level", flagConf.Server.Logger.Level, "Level of logging")
+	flags.StringVar(&flagConf.Server.Logger.OutputFile, "log-path", flagConf.Server.Logger.OutputFile, "File path to write logs to")
+	flags.StringVar(&flagConf.Server.DBPath, "db-path", flagConf.Server.DBPath, "Database path")
+	flags.StringVar(&flagConf.Backend, "backend", flagConf.Backend, "Name of scheduler backend to enable")
 }
 
-// Run runs a default Funnel server.
-// This opens a database, and starts an API server and scheduler.
+// Start starts a default Funnel server.
+// This opens a database, and starts an API server, scheduler and task logger.
 // This blocks indefinitely.
-func Run(conf config.Config) error {
-	logger.Configure(conf.Logger)
-
-	// make sure the proper defaults are set
-	conf.Worker = config.WorkerInheritConfigVals(conf)
+func Start(conf config.Config) error {
+	logger.Configure(conf.Server.Logger)
 
 	db, err := server.NewTaskBolt(conf)
 	if err != nil {
@@ -81,13 +82,13 @@ func Run(conf config.Config) error {
 		slurm.Name:      slurm.NewBackend,
 	}
 
-	backend, lerr := loader.Load(conf.Scheduler, conf)
+	backend, lerr := loader.Load(conf.Backend, conf)
 	if lerr != nil {
 		return lerr
 	}
 
-	srv := server.DefaultServer(db, conf)
-	sched := scheduler.NewScheduler(db, backend, conf)
+	srv := server.DefaultServer(db, conf.Server)
+	sched := scheduler.NewScheduler(db, backend, conf.Scheduler)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"github.com/go-test/deep"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io/ioutil"
 	"testing"
 )
 
-func TestScheduleSingleTaskWorker(t *testing.T) {
-	// Test that task resources get set in worker
+func TestSetupSingleTaskNode(t *testing.T) {
+	// Test that task resources get set in node
 	pre := "test-prefix-"
 	c := config.DefaultConfig()
 	task := &tes.Task{
@@ -23,13 +23,13 @@ func TestScheduleSingleTaskWorker(t *testing.T) {
 		},
 	}
 
-	result := ScheduleSingleTaskWorker(pre, c.Worker, task)
+	result := SetupSingleTaskNode(pre, c.Scheduler.Node, task)
 
 	expected := &Offer{
 		TaskID: "task1",
-		Worker: &pbf.Worker{
+		Node: &pbs.Node{
 			Id: "test-prefix-task1",
-			Resources: &pbf.Resources{
+			Resources: &pbs.Resources{
 				Cpus:   1,
 				RamGb:  4.0,
 				DiskGb: 10.0,
@@ -48,20 +48,18 @@ func TestScheduleSingleTaskWorker(t *testing.T) {
 		t.Fatal("unexpected Offer")
 	}
 
-	// Test that worker config resources override task resources get set in worker
-	c.Worker.Resources = config.Resources{
-		Cpus:   2,
-		RamGb:  8.0,
-		DiskGb: 100.0,
-	}
+	// Test that node config resources override task resources get set in node
+	c.Scheduler.Node.Resources.Cpus = 2
+	c.Scheduler.Node.Resources.RamGb = 8.0
+	c.Scheduler.Node.Resources.DiskGb = 100.0
 
-	result = ScheduleSingleTaskWorker(pre, c.Worker, task)
+	result = SetupSingleTaskNode(pre, c.Scheduler.Node, task)
 
 	expected = &Offer{
 		TaskID: "task1",
-		Worker: &pbf.Worker{
+		Node: &pbs.Node{
 			Id: "test-prefix-task1",
-			Resources: &pbf.Resources{
+			Resources: &pbs.Resources{
 				Cpus:   2,
 				RamGb:  8.0,
 				DiskGb: 100.0,
@@ -81,18 +79,18 @@ func TestScheduleSingleTaskWorker(t *testing.T) {
 	}
 }
 
-func TestSetupTemplatedHPCWorker(t *testing.T) {
+func TestSetupTemplatedHPCNode(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "funnel-test-scheduler")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	c := config.DefaultConfig()
-	c.Worker.WorkDir = tmp
+	c.Scheduler.Node.WorkDir = tmp
 
-	w := &pbf.Worker{
-		Id: "test-worker",
-		Resources: &pbf.Resources{
+	n := &pbs.Node{
+		Id: "test-node",
+		Resources: &pbs.Resources{
 			Cpus:   1,
 			RamGb:  1.0,
 			DiskGb: 10.0,
@@ -101,7 +99,7 @@ func TestSetupTemplatedHPCWorker(t *testing.T) {
 
 	tpl := `
 #!/bin/bash
-#TEST --name {{.WorkerId}}
+#TEST --name {{.NodeId}}
 #TEST --flag
 #TEST -e {{.WorkDir}}/stderr
 #TEST -o {{.WorkDir}}/stdout
@@ -115,10 +113,10 @@ func TestSetupTemplatedHPCWorker(t *testing.T) {
 {{printf "#TEST --disk %.1fGB" .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker --config {{.WorkerConfig}}
+{{.Executable}} node start --config {{.Config}}
 `
 
-	sf, err := SetupTemplatedHPCWorker("slurm-test", tpl, c, w)
+	sf, err := SetupTemplatedHPCNode("slurm-test", tpl, c, n)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,25 +126,25 @@ func TestSetupTemplatedHPCWorker(t *testing.T) {
 		t.Fatal(rerr)
 	}
 
-	workerPath, err := DetectWorkerPath()
+	binaryPath, err := DetectBinaryPath()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expected := `
 #!/bin/bash
-#TEST --name test-worker
+#TEST --name test-node
 #TEST --flag
-#TEST -e %s/test-worker/stderr
-#TEST -o %s/test-worker/stdout
+#TEST -e %s/test-node/stderr
+#TEST -o %s/test-node/stdout
 #TEST --cpus 1
 #TEST --mem 1GB
 #TEST --disk 10.0GB
 
-%s worker --config %s/test-worker/worker.conf.yml
+%s node start --config %s/test-node/node.conf.yml
 `
 
-	expected = fmt.Sprintf(expected, tmp, tmp, workerPath, tmp)
+	expected = fmt.Sprintf(expected, tmp, tmp, binaryPath, tmp)
 
 	if string(actual) != expected {
 		log.Error("Expected", "", expected)

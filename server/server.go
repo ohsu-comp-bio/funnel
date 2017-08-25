@@ -5,7 +5,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
+	tl "github.com/ohsu-comp-bio/funnel/proto/tasklogger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/webdash"
 	"google.golang.org/grpc"
@@ -19,31 +20,33 @@ var log = logger.Sub("server")
 // RPC traffic via gRPC, HTTP traffic for the TES API,
 // and also serves the web dashboard.
 type Server struct {
-	RPCAddress             string
-	HTTPPort               string
-	Password               string
-	TaskServiceServer      tes.TaskServiceServer
-	SchedulerServiceServer pbf.SchedulerServiceServer
-	Handler                http.Handler
-	DisableHTTPCache       bool
-	DialOptions            []grpc.DialOption
+	RPCAddress              string
+	HTTPPort                string
+	Password                string
+	TaskServiceServer       tes.TaskServiceServer
+	TaskLoggerServiceServer tl.TaskLoggerServiceServer
+	SchedulerServiceServer  pbs.SchedulerServiceServer
+	Handler                 http.Handler
+	DisableHTTPCache        bool
+	DialOptions             []grpc.DialOption
 }
 
 // DefaultServer returns a new server instance.
-func DefaultServer(db Database, conf config.Config) *Server {
-	log.Debug("Server Config", "config.Config", conf)
+func DefaultServer(db Database, conf config.Server) *Server {
+	log.Debug("Server Config", "config.Server", conf)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", webdash.Handler())
 
 	return &Server{
-		RPCAddress:             ":" + conf.RPCPort,
-		HTTPPort:               conf.HTTPPort,
-		Password:               conf.Server.Password,
-		TaskServiceServer:      db,
-		SchedulerServiceServer: db,
-		Handler:                mux,
-		DisableHTTPCache:       conf.DisableHTTPCache,
+		RPCAddress:              ":" + conf.RPCPort,
+		HTTPPort:                conf.HTTPPort,
+		Password:                conf.Password,
+		TaskServiceServer:       db,
+		TaskLoggerServiceServer: db,
+		SchedulerServiceServer:  db,
+		Handler:                 mux,
+		DisableHTTPCache:        conf.DisableHTTPCache,
 		DialOptions: []grpc.DialOption{
 			grpc.WithInsecure(),
 		},
@@ -96,10 +99,15 @@ func (s *Server) Serve(pctx context.Context) error {
 		}
 	}
 
+	// Register TaskLogger service
+	if s.TaskLoggerServiceServer != nil {
+		tl.RegisterTaskLoggerServiceServer(grpcServer, s.TaskLoggerServiceServer)
+	}
+
 	// Register Scheduler RPC service
 	if s.SchedulerServiceServer != nil {
-		pbf.RegisterSchedulerServiceServer(grpcServer, s.SchedulerServiceServer)
-		err := pbf.RegisterSchedulerServiceHandlerFromEndpoint(
+		pbs.RegisterSchedulerServiceServer(grpcServer, s.SchedulerServiceServer)
+		err := pbs.RegisterSchedulerServiceHandlerFromEndpoint(
 			ctx, grpcMux, s.RPCAddress, s.DialOptions,
 		)
 		if err != nil {

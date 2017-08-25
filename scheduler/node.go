@@ -27,7 +27,11 @@ func NewNode(conf config.Config) (*Node, error) {
 	}
 
 	// Detect available resources at startup
-	res := detectResources(conf.Scheduler.Node)
+	res, rerr := detectResources(conf.Scheduler.Node)
+	if rerr != nil {
+		log.Error("Error detecting resources", rerr)
+	}
+
 	timeout := util.NewIdleTimeout(conf.Scheduler.Node.Timeout)
 	state := pbs.NodeState_UNINITIALIZED
 
@@ -114,9 +118,9 @@ func (n *Node) checkConnection(ctx context.Context) {
 	// If its a 404 error create a new node
 	s, _ := status.FromError(err)
 	if s.Code() != codes.NotFound {
-		log.Error("Couldn't contact server.", err)
+		n.log.Error("Couldn't contact server.", err)
 	} else {
-		log.Info("Successfully connected to server.")
+		n.log.Info("Successfully connected to server.")
 	}
 }
 
@@ -134,10 +138,10 @@ func (n *Node) sync(ctx context.Context) {
 		// If its a 404 error create a new node
 		s, _ := status.FromError(err)
 		if s.Code() != codes.NotFound {
-			log.Error("Couldn't get node state during sync.", err)
+			n.log.Error("Couldn't get node state during sync.", err)
 			return
 		}
-		log.Info("Starting initial node sync", "nodeID", n.conf.ID)
+		n.log.Info("Starting initial node sync")
 		r = &pbs.Node{Id: n.conf.ID}
 	}
 
@@ -155,7 +159,11 @@ func (n *Node) sync(ctx context.Context) {
 	}
 
 	// Node data has been updated. Send back to server for database update.
-	res := detectResources(n.conf)
+	res, rerr := detectResources(n.conf)
+	if rerr != nil {
+		n.log.Error("Error detecting resources", rerr)
+	}
+
 	r.Resources = &pbs.Resources{
 		Cpus:   res.Cpus,
 		RamGb:  res.RamGb,
@@ -173,7 +181,7 @@ func (n *Node) sync(ctx context.Context) {
 
 	_, err = n.client.UpdateNode(context.Background(), r)
 	if err != nil {
-		log.Error("Couldn't save node update. Recovering.", err)
+		n.log.Error("Couldn't save node update. Recovering.", err)
 	}
 }
 

@@ -36,7 +36,7 @@ func GenNodeID(prefix string) string {
 // detectResources helps determine the amount of resources to report.
 // Resources are determined by inspecting the host, but they
 // can be overridden by config.
-func detectResources(conf config.Node) pbs.Resources {
+func detectResources(conf config.Node) (pbs.Resources, error) {
 	res := pbs.Resources{
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,
@@ -45,18 +45,15 @@ func detectResources(conf config.Node) pbs.Resources {
 
 	cpuinfo, err := pscpu.Info()
 	if err != nil {
-		log.Error("Error detecting cpu cores", err)
-		return res
+		return res, fmt.Errorf("can't detect cpu cores: %s", err)
 	}
 	vmeminfo, err := psmem.VirtualMemory()
 	if err != nil {
-		log.Error("Error detecting memory", err)
-		return res
+		return res, fmt.Errorf("can't detect memory: %s", err)
 	}
 	diskinfo, err := psdisk.Usage(conf.WorkDir)
 	if err != nil {
-		log.Error("Error detecting available disk", err)
-		return res
+		return res, fmt.Errorf("can't detect available disk: %s", err)
 	}
 
 	if conf.Resources.Cpus == 0 {
@@ -77,7 +74,7 @@ func detectResources(conf config.Node) pbs.Resources {
 		res.DiskGb = float64(diskinfo.Free) / float64(gb)
 	}
 
-	return res
+	return res, nil
 }
 
 // SetupSingleTaskNode creates a node per task

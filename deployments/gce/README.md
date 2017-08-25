@@ -2,14 +2,14 @@
 
 DEPRECATED: This guide uses VM images for deployment, but using Docker containers is much quicker and easier. See deployments/gce-cos.
 
-This guide covers deploying a Funnel server and workers to [Google Cloud Compute (GCE)][1].
+This guide covers deploying a Funnel server and nodes to [Google Cloud Compute (GCE)][1].
 You'll need to create a Google Cloud project, and install the [gcloud][2] SDK.
 
 
 ## Create a Funnel VM Image
 
 A Funnel [image][3] provides the basic dependencies and configuration
-needed by both Funnel servers and workers, and allows instances to start
+needed by both Funnel servers and nodes, and allows instances to start
 more quickly and reliably.
 
 Manually creating a GCE image can be tedious, but the Funnel [image installer][4]
@@ -35,24 +35,24 @@ bash ./make-server.sh
 ```
 
 
-<h2>Create a Worker <i class="optional">optional</i></h2>
+<h2>Create a Node <i class="optional">optional</i></h2>
 
-Create a worker;
+Create a node;
 ```bash
-bash ./make-worker.sh
+bash ./make-node.sh
 ```
 
 
-<h2>Create Worker Templates <i class="optional">optional</i></h2>
+<h2>Create Node Templates <i class="optional">optional</i></h2>
 
-Funnel includes a GCE autoscaler which can automatically start workers as needed.
-Funnel uses [instances templates][8] to describe the types of workers available.
+Funnel includes a GCE autoscaler which can automatically start nodes as needed.
+Funnel uses [instances templates][8] to describe the types of nodes available.
 
-The script below creates three templates for workers of various sizes:
+The script below creates three templates for nodes of various sizes:
 1 CPU, 2 CPU, and 4 CPU.
 
 ```bash
-bash ./make-worker-templates.sh
+bash ./make-node-templates.sh
 ```
 
 

@@ -1,7 +1,7 @@
 {
     "instance": {
         "attributes": {
-            "funnel-worker-serveraddress": "funnel-server",
+            "funnel-node-serveraddress": "funnel-server",
             "serial-port-enable": "1"
         },
         "cpuPlatform": "Intel Broadwell",
@@ -14,7 +14,7 @@
                 "type": "PERSISTENT"
             }
         ],
-        "hostname": "funnel-worker-1492486244.c.funnel-proj-id.internal",
+        "hostname": "funnel-node-1492486244.c.funnel-proj-id.internal",
         "id": 1234,
         "image": "",
         "licenses": [
@@ -24,7 +24,7 @@
         ],
         "machineType": "projects/123456/machineTypes/n1-standard-1",
         "maintenanceEvent": "NONE",
-        "name": "funnel-worker-1492486244",
+        "name": "funnel-node-1492486244",
         "networkInterfaces": [
             {
                 "accessConfigs": [

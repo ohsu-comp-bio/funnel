@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"runtime/debug"
 	"testing"
@@ -26,14 +26,14 @@ func TestCpuResourcesFit(t *testing.T) {
 		},
 	}
 
-	w := &pbf.Worker{
-		Id: "test-worker",
-		Resources: &pbf.Resources{
+	w := &pbs.Node{
+		Id: "test-node",
+		Resources: &pbs.Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		Available: &pbf.Resources{
+		Available: &pbs.Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
@@ -68,6 +68,6 @@ func testEmptyTask(t *testing.T, p Predicate, name string) {
 	}()
 
 	j := &tes.Task{}
-	w := &pbf.Worker{}
+	w := &pbs.Node{}
 	p(j, w)
 }

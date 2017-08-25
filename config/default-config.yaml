@@ -1,65 +1,91 @@
-# Path to the database file.
-DBPath: ./funnel-work-dir/funnel.db
-# Port used for HTTP communication and the web dashboard.
-HTTPPort: 8000
-# Port used for RPC communication.
-RPCPort: 9090
-# Working files created during processing will be written in this directory.
-WorkDir: ./funnel-work-dir
-# Hostname of the Funnel server. Mainly, this is used by auto-scalers
-# to configure workers.
-HostName: localhost
 Server:
+  # Path to the database file.
+  DBPath: ./funnel-work-dir/funnel.db
+
+  # Hostname of the Funnel server. Mainly, this is used by auto-scalers
+  # to configure workers.
+  HostName: localhost
+
+  # Port used for HTTP communication and the web dashboard.
+  HTTPPort: 8000
+
+  # Port used for RPC communication.
+  RPCPort: 9090
+
   # Require basic authentication for the server APIs using a password.
   # If used, make sure to properly restrict access to the config file
   # (e.g. chmod 600 funnel.config.yml)
-  #Password: abc123
-Logger:
-  # Logging levels: debug, info, error
-  Level: info
-  # Write logs to this path. If empty, logs are written to stderr.
-  OutputFile: ""
-# Limit the size of task executor logs (stdout/err), in bytes.
-MaxExecutorLogSize: 10000 # 10 KB
-# How often to run a scheduler iteration.
-# In nanoseconds.
-ScheduleRate: 1000000000 # 1 second
-# How many tasks to schedule in one iteration.
-ScheduleChunk: 10
-# How long to wait between updates before marking a worker dead.
-# In nanoseconds.
-WorkerPingTimeout: 60000000000 # 1 minute
-# How long to wait for a worker to start, before marking the worker dead.
-# In nanoseconds.
-WorkerInitTimeout: 300000000000 # 5 minutes
-# Include a "Cache-Control: no-store" HTTP header in Get/List responses
-# to prevent caching by intermediary services.
-DisableHTTPCache: true
+  # Password: abc123
 
-# File storage systems.
-Storage:
-  # Local file system.
-  Local:
-    # Whitelist of local directory paths which Funnel is allowed to access.
-    AllowedDirs:
-      - ./funnel-work-dir/storage
+  # Include a "Cache-Control: no-store" HTTP header in Get/List responses
+  # to prevent caching by intermediary services.
+  DisableHTTPCache: true
 
-  # S3:
-  #   - Endpoint:
-  #     Key:
-  #     Secret:
+  # Limit the size of task executor logs (stdout/err), in bytes.
+  MaxExecutorLogSize: 10000 # 10 KB
 
-  # Google Cloud Storage
-  # GS:
-  #   - # Path to account credentials file.
-  #     # Optional. If possible, this will be automatically discovered.
-  #     AccountFile:
-  #     # Automatically discover credentials from the environment.
-  #     FromEnv: true
+  Logger:
+    # Logging levels: debug, info, error
+    Level: info
+    # Write logs to this path. If empty, logs are written to stderr.
+    OutputFile: ""
+
+Scheduler:
+  # How often to run a scheduler iteration.
+  # In nanoseconds.
+  ScheduleRate: 1000000000 # 1 second
+  # How many tasks to schedule in one iteration.
+  ScheduleChunk: 10
+  # How long to wait between updates before marking a node dead.
+  # In nanoseconds.
+  NodePingTimeout: 60000000000 # 1 minute
+  # How long to wait for a node to start, before marking the worker dead.
+  # In nanoseconds.
+  NodeInitTimeout: 300000000000 # 5 minutes
+  Node:
+    # If empty, a worker ID will be automatically generated.
+    ID: ""
+    # RPC address of the Funnel server
+    ServerAddress: localhost:9090
+
+    # Password for basic auth. with the server APIs.
+    # ServerPassword: abc123
+
+    # Files created during processing will be written in this directory.
+    WorkDir: ./funnel-work-dir
+    # If the worker has been idle for longer than the timeout, it will shut down.
+    # -1 means there is no timeout. 0 means timeout immediately after the first task.
+    Timeout: -1
+
+    # Override available resources.
+    Resources:
+      # CPUs available.
+      # Cpus: 0
+
+      # RAM available, in GB.
+      # RamGb: 0.0
+
+      # Disk space available, in GB.
+      # DiskGb: 0.0
+
+      # For low-level tuning.
+      # How often to sync with the Funnel server.
+      # In nanoseconds.
+      UpdateRate: 5000000000 # 5 seconds
+      # RPC timeout for update/sync call.
+      # In nanoseconds.
+      UpdateTimeout: 1000000000 # 1 second
+
+  Logger:
+    # Logging levels: debug, info, error
+    Level: info
+    # Write logs to this path. If empty, logs are written to stderr.
+    OutputFile: ""
+
 
 # The name of the active scheduler backend
 # Available backends: local, condor, gce, openstack
-Scheduler: local
+Backend: local
 
 # Scheduler backend config
 Backends:
@@ -68,10 +94,10 @@ Backends:
       universe = vanilla
       getenv = True
       executable = {{.Executable}}
-      arguments = worker --config {{.WorkerConfig}}
+      arguments = node start --config {{Config}}
       log = {{.WorkDir}}/condor-event-log
-      error = {{.WorkDir}}/funnel-worker-stderr
-      output = {{.WorkDir}}/funnel-worker-stdout
+      error = {{.WorkDir}}/funnel-stderr
+      output = {{.WorkDir}}/funnel-stdout
       should_transfer_files = YES
       when_to_transfer_output = ON_EXIT_OR_EVICT
       {{if ne .Cpus 0 -}}
@@ -89,9 +115,9 @@ Backends:
   PBS:
     Template: |
       #!bin/bash
-      #PBS -N {{.WorkerId}}
-      #PBS -o {{.WorkDir}}/funnel-worker-stdout
-      #PBS -e {{.WorkDir}}/funnel-worker-stderr
+      #PBS -N {{.NodeId}}
+      #PBS -o {{.WorkDir}}/funnel-stdout
+      #PBS -e {{.WorkDir}}/funnel-stderr
       {{if ne .Cpus 0 -}}
       {{printf "#PBS -l nodes=1:ppn=%d" .Cpus}}
       {{- end}}
@@ -102,14 +128,14 @@ Backends:
       {{printf "#PBS -l file=%.0fgb" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} worker --config {{.WorkerConfig}}
+      {{.Executable}} node start --config {{Config}}
 
   GridEngine:
     Template: |
       #!bin/bash
-      #$ -N {{.WorkerId}}
-      #$ -o {{.WorkDir}}/funnel-worker-stdout
-      #$ -e {{.WorkDir}}/funnel-worker-stderr
+      #$ -N {{.NodeId}}
+      #$ -o {{.WorkDir}}/funnel-stdout
+      #$ -e {{.WorkDir}}/funnel-stderr
       #$ -l nodes=1
       {{if ne .Cpus 0 -}}
       {{printf "#$ -pe mpi %d" .Cpus}}
@@ -121,15 +147,15 @@ Backends:
       {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} worker --config {{.WorkerConfig}}
+      {{.Executable}} node start --config {{Config}}
   
   SLURM:
     Template: |
       #!/bin/bash
-      #SBATCH --job-name {{.WorkerId}}
+      #SBATCH --job-name {{.NodeId}}
       #SBATCH --ntasks 1
-      #SBATCH --error {{.WorkDir}}/funnel-worker-stderr
-      #SBATCH --output {{.WorkDir}}/funnel-worker-stdout
+      #SBATCH --error {{.WorkDir}}/funnel-stderr
+      #SBATCH --output {{.WorkDir}}/funnel-stdout
       {{if ne .Cpus 0 -}}
       {{printf "#SBATCH --cpus-per-task %d" .Cpus}}
       {{- end}}
@@ -140,7 +166,7 @@ Backends:
       {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} worker --config {{.WorkerConfig}}
+      {{.Executable}} node start --config {{Config}}
 
   GCE:
     # Path to account credentials file.
@@ -161,20 +187,14 @@ Backends:
     CacheTTL: 60000000000 # 1 minute
 
 Worker:
-  # If empty, a worker ID will be automatically generated.
-  ID: ""
   # RPC address of the Funnel server
   ServerAddress: localhost:9090
-  # Files created during processing will be written in this directory.
-  WorkDir: ./funnel-work-dir
-  # If the worker has been idle for longer than the timeout, it will shut down.
-  # -1 means there is no timeout. 0 means timeout immediately after the first task.
-  Timeout: -1
-  # Maximum task log (stdout/err) size, in bytes.
-  LogTailSize: 10000 # 10 KB
 
   # Password for basic auth. with the server APIs.
-  #ServerPassword: abc123
+  # ServerPassword: abc123
+
+  # Files created during processing will be written in this directory.
+  WorkDir: ./funnel-work-dir
 
   # File storage systems.
   #
@@ -185,47 +205,33 @@ Worker:
     Local:
       # Whitelist of local directory paths which Funnel is allowed to access.
       AllowedDirs:
-        - ./funnel-work-dir/storage
-    #S3:
-    #  - Endpoint:
-    #    Key:
-    #    Secret:
+        - ./
 
-    # Google Cloud Storage
-    #GS:
-    #   Path to account credentials file.
-    #   Optional. If possible, credentials will be automatically discovered
-    #   from the environment.
-    # - AccountFile:
-    #   Automatically discover credentials from the environment.
-    #   FromEnv: true
+    # S3:
+    #   - Endpoint:
+    #     Key:
+    #     Secret:
+
+    # GS:
+    #     # Path to account credentials file.
+    #     # Optional. If possible, credentials will be automatically discovered
+    #     # from the environment.
+    #   - AccountFile:
+    #     # Automatically discover credentials from the environment.
+    #     FromEnv: true
+
+  # For low-level tuning.
+  # How often to send task log updates to the Funnel server.
+  # In nanoseconds.
+  UpdateRate: 5000000000 # 5 seconds
+  # RPC timeout for update/sync call.
+  # In nanoseconds.
+  UpdateTimeout: 1000000000 # 1 second
+  # Maximum task log (stdout/err) size, in bytes to buffer between updates.
+  BufferSize: 10000 # 10 KB
 
   Logger:
     # Logging levels: debug, info, error
     Level: info
     # Write logs to this path. If empty, logs are written to stderr.
     OutputFile: ""
-
-  # Override available resources.
-  Resources:
-    # CPUs available.
-    # Cpus: 0
-
-    # RAM available, in GB.
-    # RamGb: 0.0
-
-    # Disk space available, in GB.
-    # DiskGb: 0.0
-
-  # For low-level tuning.
-  # RPC timeout for update/sync call.
-  # In nanoseconds.
-  UpdateTimeout: 1000000000 # 1 second
-  # For low-level tuning.
-  # How often to sync with the Funnel server.
-  # In nanoseconds.
-  UpdateRate: 5000000000 # 5 seconds
-  # For low-level tuning.
-  # How often to send task log updates to the Funnel server.
-  # In nanoseconds.
-  LogUpdateRate: 5000000000 # 5 seconds

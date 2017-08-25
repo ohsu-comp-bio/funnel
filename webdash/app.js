@@ -61,15 +61,15 @@ app.controller('TaskListController', function($scope, NgTableParams, $http, $int
   }
 });
 
-app.controller('WorkerListController', function($scope, $http) {
+app.controller('NodeListController', function($scope, $http) {
 
-	$scope.url = "/v1/funnel/workers";
-	$scope.workers = [];
+	$scope.url = "/v1/funnel/nodes";
+	$scope.nodes = [];
 
   $http.get($scope.url).then(function(result) {
-    var workers = result.data.workers || [];
-console.log(workers)
-    $scope.workers = workers;
+    var nodes = result.data.nodes || [];
+console.log(nodes)
+    $scope.nodes = nodes;
   });
 });
 
@@ -107,8 +107,8 @@ app.config(
      when('/tasks/:task_id', {
        templateUrl: 'static/task.html'
      }).
-     when('/workers/', {
-       templateUrl: 'static/worker-list.html'
+     when('/nodes/', {
+       templateUrl: 'static/node-list.html'
      })
    }
   ]

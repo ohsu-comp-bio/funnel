@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"google.golang.org/api/compute/v1"
 	"time"
 )
 
 // Client is the interface the scheduler/scaler uses to interact with the GCE API.
 // Mainly, the scheduler needs to be able to look up an instance template,
-// or start a worker instance.
+// or start a node instance.
 type Client interface {
-	Templates() []pbf.Worker
-	StartWorker(tplName, serverAddress, workerID string) error
+	Templates() []pbs.Node
+	StartNode(tplName, serverAddress, nodeID string) error
 }
 
 // Helper for creating a wrapper before creating a client
@@ -51,9 +51,9 @@ type gceClient struct {
 
 // Templates queries the GCE API to get details about GCE instance templates.
 // If the API client fails to connect, this returns an empty list.
-func (s *gceClient) Templates() []pbf.Worker {
+func (s *gceClient) Templates() []pbs.Node {
 	s.loadTemplates()
-	workers := []pbf.Worker{}
+	nodes := []pbs.Node{}
 
 	for id, tpl := range s.templates {
 
@@ -66,7 +66,7 @@ func (s *gceClient) Templates() []pbf.Worker {
 
 		disks := tpl.Properties.Disks
 
-		res := pbf.Resources{
+		res := pbs.Resources{
 			Cpus:  uint32(mt.GuestCpus),
 			RamGb: float64(mt.MemoryMb) / float64(1024),
 			// TODO is there always at least one disk? Is the first the best choice?
@@ -76,7 +76,7 @@ func (s *gceClient) Templates() []pbf.Worker {
 
 		// Copy resources struct for available
 		avail := res
-		workers = append(workers, pbf.Worker{
+		nodes = append(nodes, pbs.Node{
 			Resources: &res,
 			Available: &avail,
 			Zone:      s.zone,
@@ -86,12 +86,12 @@ func (s *gceClient) Templates() []pbf.Worker {
 			},
 		})
 	}
-	return workers
+	return nodes
 }
 
-// StartWorker calls out to GCE APIs to create a VM instance
-// with a Funnel worker.
-func (s *gceClient) StartWorker(tplName, serverAddress, workerID string) error {
+// StartNode calls out to GCE APIs to create a VM instance
+// with a Funnel node.
+func (s *gceClient) StartNode(tplName, serverAddress, nodeID string) error {
 	s.loadTemplates()
 
 	// Get the instance template from the GCE API
@@ -105,7 +105,7 @@ func (s *gceClient) StartWorker(tplName, serverAddress, workerID string) error {
 	metadata := compute.Metadata{
 		Items: append(props.Metadata.Items,
 			&compute.MetadataItems{
-				Key:   "funnel-worker-serveraddress",
+				Key:   "funnel-node-serveraddress",
 				Value: &serverAddress,
 			},
 		),
@@ -119,7 +119,7 @@ func (s *gceClient) StartWorker(tplName, serverAddress, workerID string) error {
 
 	// Create the instance on GCE
 	instance := compute.Instance{
-		Name:              workerID,
+		Name:              nodeID,
 		CanIpForward:      props.CanIpForward,
 		Description:       props.Description,
 		Disks:             props.Disks,

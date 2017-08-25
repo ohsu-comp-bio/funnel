@@ -1,7 +1,7 @@
 package openstack
 
 import (
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/extensions/keypairs"
@@ -13,8 +13,8 @@ const startScript = `
 sudo systemctl start tes.service
 `
 
-// StartWorker calls out to OpenStack APIs to start a new worker instance.
-func (s *Backend) StartWorker(w *pbf.Worker) error {
+// StartNode calls out to OpenStack APIs to start a new node instance.
+func (s *Backend) StartNode(w *pbs.Node) error {
 
 	// TODO move to client wrapper
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
@@ -38,7 +38,7 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 	}
 
 	conf := s.conf
-	conf.Worker.ID = w.Id
+	conf.Scheduler.Node.ID = w.Id
 	osconf := s.conf.Backends.OpenStack
 
 	_, serr := servers.Create(client, keypairs.CreateOptsExt{
@@ -48,7 +48,7 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 			ImageName:  osconf.Server.ImageName,
 			Networks:   osconf.Server.Networks,
 			// Personality defines files that will be copied to the VM instance on boot.
-			// We use this to upload Funnel worker config.
+			// We use this to upload Funnel node config.
 			Personality: []*servers.File{
 				{
 					Path:     osconf.ConfigPath,
@@ -69,10 +69,10 @@ func (s *Backend) StartWorker(w *pbf.Worker) error {
 	return nil
 }
 
-// ShouldStartWorker tells the scaler loop which workers
+// ShouldStartNode tells the scaler loop which nodes
 // belong to this scheduler backend, basically.
-func (s *Backend) ShouldStartWorker(w *pbf.Worker) bool {
-	// Only start works that are uninitialized and have a gce template.
-	tpl, ok := w.Metadata["openstack"]
-	return ok && tpl != "" && w.State == pbf.WorkerState_UNINITIALIZED
+func (s *Backend) ShouldStartNode(n *pbs.Node) bool {
+	// Only start works that are uninitialized and have a template.
+	tpl, ok := n.Metadata["openstack"]
+	return ok && tpl != "" && n.State == pbs.NodeState_UNINITIALIZED
 }

@@ -15,12 +15,12 @@ Run:
 # Deploy a Funnel server
 ./make-server.sh
 
-# Deploy a Funnel worker
-./make-worker
+# Deploy a Funnel node
+./make-node
 
 # Create Funnel instance templates, which enables Funnel
-# to automatically create workers.
-./make-worker-templates.sh
+# to automatically create nodes.
+./make-node-templates.sh
 ```
 
 [gce]: https://cloud.google.com/compute/

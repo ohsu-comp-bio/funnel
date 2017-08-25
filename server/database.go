@@ -1,7 +1,8 @@
 package server
 
 import (
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
+	tl "github.com/ohsu-comp-bio/funnel/proto/tasklogger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
@@ -9,5 +10,6 @@ import (
 // Mostly, this exists so it can be mocked during testing.
 type Database interface {
 	tes.TaskServiceServer
-	pbf.SchedulerServiceServer
+	tl.TaskLoggerServiceServer
+	pbs.SchedulerServiceServer
 }

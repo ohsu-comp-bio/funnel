@@ -9,7 +9,7 @@ n1-standard-4
 "
 
 for mt in $MACHINE_TYPES; do
-  gcloud compute instance-templates create "funnel-worker-$mt" \
+  gcloud compute instance-templates create "funnel-node-$mt" \
     --scopes compute-rw,storage-rw         \
     --tags funnel                          \
     --image-family cos-stable              \

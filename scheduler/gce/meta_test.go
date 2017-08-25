@@ -55,18 +55,18 @@ func TestGetMetadata(t *testing.T) {
 		t.Fatal("Unexpected project id")
 	}
 
-	if conf.Scheduler != "gce" {
+	if conf.Backend != "gce" {
 		t.Fatal("Unexpected scheduler")
 	}
 
-	// When meta.instance.attributes.funnelWorker != ""
-	// conf.Worker.ID == meta.instance.name
-	if conf.Worker.ID != "funnel-worker-1492486244" {
-		t.Fatal("Unexpected worker ID")
+	// When meta.instance.attributes.funnelNode != ""
+	// conf.Scheduler.Node.ID == meta.instance.name
+	if conf.Scheduler.Node.ID != "funnel-node-1492486244" {
+		t.Fatal("Unexpected node ID")
 	}
 
-	if conf.Worker.Metadata["gce"] != "yes" {
-		t.Fatal("Expected gce tag in worker metadata")
+	if conf.Scheduler.Node.Metadata["gce"] != "yes" {
+		t.Fatal("Expected gce tag in node metadata")
 	}
 
 	if conf.Backends.GCE.Zone != "us-west1-b" {

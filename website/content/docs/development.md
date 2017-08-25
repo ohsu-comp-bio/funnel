@@ -61,16 +61,17 @@ Most development tasks are run through `make`.
 
 | Directory | Description |
 |---|---|
-|`cmd`         | Funnel command line interface.
-|`config`      | Configuration parsing, loading, etc.
-|`proto/tes`   | Generated GA4GH protobuf/gRPC files from [task-execution-schemas][tes].
-|`proto/funnel`| The internal, Funnel-specific protobuf/gRPC files.
-|`logger`      | Logging.
-|`scheduler`   | Scheduler logic and backends.
-|`server`      | Database and server implementing the [TES API][tes] and Scheduler RPC.
-|`storage`     | Filesystem support, e.g. local, Google Cloud Storage, S3, etc.
-|`worker`      | Worker process: task runner, docker, file mapper, etc.
-|`webdash`     | Javascript, CSS, HTML for web dashboard.
+|`cmd`              | Funnel command line interface.
+|`config`           | Configuration parsing, loading, etc.
+|`proto/tasklogger` | Internal, Funnel-specific protobuf/gRPC files for task state and log updates.
+|`proto/tes`        | Generated GA4GH protobuf/gRPC files from [task-execution-schemas][tes].
+|`proto/scheduler`  | Internal, Funnel-specific scheduler protobuf/gRPC files.
+|`logger`           | Logging.
+|`scheduler`        | Basic scheduling/scaling logic and backends.
+|`server`           | Database and server implementing the [TES API][tes] and Scheduler RPC.
+|`storage`          | Filesystem support, e.g. local, Google Cloud Storage, S3, etc.
+|`worker`           | Worker process: task runner, docker, file mapper, etc.
+|`webdash`          | Javascript, CSS, HTML for web dashboard.
 
 ## Go Tests
 

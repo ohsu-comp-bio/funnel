@@ -1,61 +1,61 @@
 package scheduler
 
 import (
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
-// Predicate is a function that checks whether a task fits a worker.
-type Predicate func(*tes.Task, *pbf.Worker) bool
+// Predicate is a function that checks whether a task fits a node.
+type Predicate func(*tes.Task, *pbs.Node) bool
 
-// ResourcesFit determines whether a task fits a worker's resources.
-func ResourcesFit(t *tes.Task, w *pbf.Worker) bool {
+// ResourcesFit determines whether a task fits a node's resources.
+func ResourcesFit(t *tes.Task, n *pbs.Node) bool {
 	req := t.GetResources()
 
 	switch {
-	case w.GetPreemptible() && !req.GetPreemptible():
+	case n.GetPreemptible() && !req.GetPreemptible():
 		log.Debug("Fail preemptible")
 		return false
-	case w.GetAvailable().GetCpus() <= 0:
+	case n.GetAvailable().GetCpus() <= 0:
 		log.Debug("Fail zero cpus available")
 		return false
-	case w.GetAvailable().GetRamGb() <= 0.0:
+	case n.GetAvailable().GetRamGb() <= 0.0:
 		log.Debug("Fail zero ram available")
 		return false
-	case w.GetAvailable().GetDiskGb() <= 0.0:
+	case n.GetAvailable().GetDiskGb() <= 0.0:
 		log.Debug("Fail zero disk available")
 		return false
-	case w.GetAvailable().GetCpus() < req.GetCpuCores():
+	case n.GetAvailable().GetCpus() < req.GetCpuCores():
 		log.Debug(
 			"Fail cpus",
 			"requested", req.GetCpuCores(),
-			"available", w.GetAvailable().GetCpus(),
+			"available", n.GetAvailable().GetCpus(),
 		)
 		return false
-	case w.GetAvailable().GetRamGb() < req.GetRamGb():
+	case n.GetAvailable().GetRamGb() < req.GetRamGb():
 		log.Debug(
 			"Fail ram",
 			"requested", req.GetRamGb(),
-			"available", w.GetAvailable().GetRamGb(),
+			"available", n.GetAvailable().GetRamGb(),
 		)
 		return false
-	case w.GetAvailable().GetDiskGb() < req.GetSizeGb():
+	case n.GetAvailable().GetDiskGb() < req.GetSizeGb():
 		log.Debug(
 			"Fail disk",
 			"requested", req.GetSizeGb(),
-			"available", w.GetAvailable().GetDiskGb(),
+			"available", n.GetAvailable().GetDiskGb(),
 		)
 		return false
 	}
 	return true
 }
 
-// PortsFit determines whether a task's ports fit a worker
-// by checking that the worker has the requested ports available.
-func PortsFit(t *tes.Task, w *pbf.Worker) bool {
-	// Get the set of active ports on the worker
+// PortsFit determines whether a task's ports fit a node
+// by checking that the node has the requested ports available.
+func PortsFit(t *tes.Task, n *pbs.Node) bool {
+	// Get the set of active ports on the node
 	active := map[int32]bool{}
-	for _, p := range w.ActivePorts {
+	for _, p := range n.ActivePorts {
 		active[p] = true
 	}
 	// Loop through the requested ports, fail if they are active.
@@ -74,10 +74,10 @@ func PortsFit(t *tes.Task, w *pbf.Worker) bool {
 	return true
 }
 
-// ZonesFit determines whether a task's zones fit a worker.
-func ZonesFit(t *tes.Task, w *pbf.Worker) bool {
-	if w.Zone == "" {
-		// Worker doesn't have a set zone, so don't bother checking.
+// ZonesFit determines whether a task's zones fit a node.
+func ZonesFit(t *tes.Task, n *pbs.Node) bool {
+	if n.Zone == "" {
+		// Node doesn't have a set zone, so don't bother checking.
 		return true
 	}
 
@@ -87,7 +87,7 @@ func ZonesFit(t *tes.Task, w *pbf.Worker) bool {
 	}
 
 	for _, z := range t.GetResources().GetZones() {
-		if z == w.Zone {
+		if z == n.Zone {
 			return true
 		}
 	}
@@ -95,22 +95,22 @@ func ZonesFit(t *tes.Task, w *pbf.Worker) bool {
 	return false
 }
 
-// NotDead returns true if the worker state is not Dead or Gone.
-func NotDead(j *tes.Task, w *pbf.Worker) bool {
-	return w.State != pbf.WorkerState_DEAD && w.State != pbf.WorkerState_GONE
+// NotDead returns true if the node state is not Dead or Gone.
+func NotDead(j *tes.Task, n *pbs.Node) bool {
+	return n.State != pbs.NodeState_DEAD && n.State != pbs.NodeState_GONE
 }
 
-// WorkerHasTag returns a predicate function which returns true
-// if the worker has the given tag (key in Metadata field).
-func WorkerHasTag(tag string) Predicate {
-	return func(j *tes.Task, w *pbf.Worker) bool {
-		_, ok := w.Metadata[tag]
+// NodeHasTag returns a predicate function which returns true
+// if the node has the given tag (key in Metadata field).
+func NodeHasTag(tag string) Predicate {
+	return func(j *tes.Task, n *pbs.Node) bool {
+		_, ok := n.Metadata[tag]
 		return ok
 	}
 }
 
 // DefaultPredicates is a list of Predicate functions that check
-// the whether a task fits a worker.
+// the whether a task fits a node.
 var DefaultPredicates = []Predicate{
 	ResourcesFit,
 	PortsFit,
@@ -126,10 +126,10 @@ var DefaultPredicates = []Predicate{
 //        for example, if it requests access to storage that isn't available?
 //        maybe set a max. time allowed to be unscheduled before notification
 
-// Match checks whether a task fits a worker using the given Predicate list.
-func Match(worker *pbf.Worker, task *tes.Task, predicates []Predicate) bool {
+// Match checks whether a task fits a node using the given Predicate list.
+func Match(node *pbs.Node, task *tes.Task, predicates []Predicate) bool {
 	for _, pred := range predicates {
-		if ok := pred(task, worker); !ok {
+		if ok := pred(task, node); !ok {
 			return false
 		}
 	}

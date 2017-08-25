@@ -54,26 +54,29 @@ func externalIP() (string, error) {
 }
 
 // getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
-// The exit code is zero if the command completed without error.
-func getExitCode(err error) int {
-	if err != nil {
-		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
-			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
-				return status.ExitStatus()
-			}
-		} else {
-			log.Info("Could not determine exit code. Using default -999", "err", err)
-			return -999
+func getExitCode(err error) (code int, ok bool) {
+	if err == nil {
+		// The error is nil, the command returned successfully, so exit status is 0.
+		ok = true
+		return
+	}
+
+	if exiterr, exitOk := err.(*exec.ExitError); exitOk {
+		if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
+			code = status.ExitStatus()
+			ok = true
+			return
 		}
 	}
-	// The error is nil, the command returned successfully, so exit status is 0.
-	return 0
+
+	// Could not determine exit status
+	return
 }
 
 // detectResources helps determine the amount of resources to report.
 // Resources are determined by inspecting the host, but they
 // can be overridden by config.
-func detectResources(conf config.Worker) config.Resources {
+func detectResources(conf config.Worker) (config.Resources, error) {
 	res := config.Resources{
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,
@@ -82,18 +85,15 @@ func detectResources(conf config.Worker) config.Resources {
 
 	cpuinfo, err := pscpu.Info()
 	if err != nil {
-		log.Error("Error detecting cpu cores", err)
-		return res
+		return res, fmt.Errorf("can't detect cpu cores: %s", err)
 	}
 	vmeminfo, err := psmem.VirtualMemory()
 	if err != nil {
-		log.Error("Error detecting memory", err)
-		return res
+		return res, fmt.Errorf("can't detect memory: %s", err)
 	}
 	diskinfo, err := psdisk.Usage(conf.WorkDir)
 	if err != nil {
-		log.Error("Error detecting available disk", err)
-		return res
+		return res, fmt.Errorf("can't detect available disk: %s", err)
 	}
 
 	if conf.Resources.Cpus == 0 {
@@ -114,7 +114,7 @@ func detectResources(conf config.Worker) config.Resources {
 		res.DiskGb = float64(diskinfo.Free) / float64(gb)
 	}
 
-	return res
+	return res, nil
 }
 
 // recover from panic and call "cb" with an error value.

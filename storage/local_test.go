@@ -197,7 +197,7 @@ func TestSameFile(t *testing.T) {
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 	ioutil.WriteFile(cp2, []byte("bar"), os.ModePerm)
 
-	err = linkFile(cp, op)
+	err = os.Link(cp, op)
 	if err != nil {
 		t.Fatal(err)
 	}

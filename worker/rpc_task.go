@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
@@ -17,14 +18,15 @@ type RPCTask struct {
 	client        *taskClient
 	taskID        string
 	updateTimeout time.Duration
+	log           logger.Logger
 }
 
-func newRPCTask(conf config.Worker, taskID string) (*RPCTask, error) {
+func newRPCTask(conf config.Worker, taskID string, log logger.Logger) (*RPCTask, error) {
 	client, err := newTaskClient(conf)
 	if err != nil {
 		return nil, err
 	}
-	return &RPCTask{client, taskID, conf.UpdateTimeout}, nil
+	return &RPCTask{client, taskID, conf.UpdateTimeout, log}, nil
 }
 
 // Task returns the task descriptor.
@@ -173,7 +175,7 @@ func (r *RPCTask) updateExecutorLogs(up *pbf.UpdateExecutorLogsRequest) error {
 	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
 	_, err := r.client.UpdateExecutorLogs(ctx, up)
 	if err != nil {
-		log.Error("Couldn't update executor logs", err)
+		r.log.Error("Couldn't update executor logs", err)
 	}
 	cleanup()
 	return err
@@ -183,7 +185,7 @@ func (r *RPCTask) updateTaskLogs(up *pbf.UpdateTaskLogsRequest) error {
 	ctx, cleanup := context.WithTimeout(context.Background(), r.updateTimeout)
 	_, err := r.client.UpdateTaskLogs(ctx, up)
 	if err != nil {
-		log.Error("Couldn't update task logs", err)
+		r.log.Error("Couldn't update task logs", err)
 	}
 	cleanup()
 	return err

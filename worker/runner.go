@@ -17,17 +17,17 @@ import (
 // NewDefaultRunner returns the default task runner used by Funnel,
 // which uses gRPC to read/write task details.
 func NewDefaultRunner(conf config.Worker, taskID string) Runner {
+	log := logger.Sub("runner", "workerID", conf.ID, "taskID", taskID)
 
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, taskID)
 	// TODO handle error
-	svc, _ := newRPCTask(conf, taskID)
-	log := logger.Sub("runner", "workerID", conf.ID, "taskID", taskID)
+	svc, _ := newRPCTask(conf, taskID, log)
 
 	return &DefaultRunner{
 		Conf:   conf,
 		Mapper: NewFileMapper(baseDir),
-		Store:  storage.Storage{},
+		Store:  storage.Storage{Log: log},
 		Svc:    svc,
 		Log:    log,
 	}
@@ -137,7 +137,13 @@ func (r *DefaultRunner) Run(pctx context.Context) {
 	// Download inputs
 	for _, input := range r.Mapper.Inputs {
 		if run.ok() {
+			r.Log.Info("Starting download", "url", input.Url, "path", input.Path)
+
 			run.syserr = r.Store.Get(ctx, input.Url, input.Path, input.Type)
+
+			if run.syserr == nil {
+				r.Log.Info("Finished file download", "url", input.Url, "hostPath", input.Path)
+			}
 		}
 	}
 
@@ -183,7 +189,14 @@ func (r *DefaultRunner) Run(pctx context.Context) {
 		if run.ok() {
 			r.fixLinks(output.Path)
 			var out []*tes.OutputFileLog
+
+			r.Log.Info("Starting upload", "url", output.Url, "path", output.Path)
+
 			out, run.syserr = r.Store.Put(ctx, output.Url, output.Path, output.Type)
+
+			if run.ok() {
+				r.Log.Info("Finished file upload", "url", output.Url, "path", output.Path)
+			}
 			outputs = append(outputs, out...)
 		}
 	}

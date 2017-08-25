@@ -19,7 +19,7 @@ type stepRunner struct {
 }
 
 func (s *stepRunner) Run(ctx context.Context) error {
-	log.Debug("Running step", "taskID", s.TaskID, "stepNum", s.Num)
+	s.Log.Debug("Running step")
 
 	// Send update for host IP address.
 	s.TaskLogger.ExecutorStartTime(s.Num, time.Now())
@@ -40,6 +40,9 @@ func (s *stepRunner) Run(ctx context.Context) error {
 	ticker := time.NewTicker(s.Conf.LogUpdateRate)
 	defer ticker.Stop()
 
+	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
+	s.Log.Info("Running command", "cmd", s.Cmd.String())
+
 	go func() {
 		done <- s.Cmd.Run()
 	}()
@@ -49,6 +52,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			// Likely the task was canceled.
+			s.Log.Info("Stopping container", "container", s.Cmd.ContainerName)
 			s.Cmd.Stop()
 			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
 			return ctx.Err()
@@ -59,7 +63,12 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 		case result := <-done:
 			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
-			s.TaskLogger.ExecutorExitCode(s.Num, getExitCode(result))
+			code, ok := getExitCode(result)
+			if !ok {
+				s.Log.Info("Could not determine exit code. Using default -999", "result", result)
+				code = -999
+			}
+			s.TaskLogger.ExecutorExitCode(s.Num, code)
 			return result
 		}
 	}
@@ -83,10 +92,21 @@ func (s *stepRunner) logTails() (*tailer, *tailer) {
 
 // inspectContainer calls Inspect on the DockerCmd, and sends an update with the results.
 func (s *stepRunner) inspectContainer(ctx context.Context) {
-	ports, err := s.Cmd.Inspect(ctx)
-	if err != nil {
-		s.Log.Error("Error inspecting container", err)
-		return
+	s.Log.Info("Inspecting container")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			ports, err := s.Cmd.Inspect(ctx)
+			if err != nil {
+				s.Log.Error("Error inspecting container", err)
+				break
+			}
+
+			s.TaskLogger.ExecutorPorts(s.Num, ports)
+			return
+		}
 	}
-	s.TaskLogger.ExecutorPorts(s.Num, ports)
 }

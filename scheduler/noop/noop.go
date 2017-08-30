@@ -2,7 +2,6 @@ package noop
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/node"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
@@ -15,7 +14,7 @@ const Name = "noop"
 // A noop backend uses a node that doesn't have any side effects,
 // (e.g. file access, docker calls, etc) which is useful for testing.
 func NewBackend(conf config.Config) (*Backend, error) {
-	n, err := node.NewNoopNode(conf)
+	n, err := scheduler.NewNoopNode(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +24,7 @@ func NewBackend(conf config.Config) (*Backend, error) {
 // Backend is a scheduler backend which doesn't have any side effects,
 // (e.g. file access, docker calls, etc) which is useful for testing.
 type Backend struct {
-	Node *node.Node
+	Node *scheduler.Node
 	conf config.Config
 }
 

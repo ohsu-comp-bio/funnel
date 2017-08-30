@@ -3,7 +3,6 @@ package local
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/node"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
@@ -24,7 +23,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 		return nil, err
 	}
 
-	client, err := node.NewClient(conf.Scheduler.Node)
+	client, err := scheduler.NewClient(conf.Scheduler)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
@@ -36,7 +35,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 // Backend represents the local backend.
 type Backend struct {
 	conf   config.Config
-	client node.Client
+	client scheduler.Client
 	nodeID string
 }
 
@@ -78,7 +77,7 @@ func startNode(id string, conf config.Config) error {
 
 	log.Debug("Starting local node")
 
-	n, err := node.NewNode(conf)
+	n, err := scheduler.NewNode(conf)
 	if err != nil {
 		log.Error("Can't create node", err)
 		return err

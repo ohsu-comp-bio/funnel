@@ -63,7 +63,7 @@ app.controller('TaskListController', function($scope, NgTableParams, $http, $int
 
 app.controller('NodeListController', function($scope, $http) {
 
-	$scope.url = "/v1/funnel/nodes";
+	$scope.url = "/v1/nodes";
 	$scope.nodes = [];
 
   $http.get($scope.url).then(function(result) {

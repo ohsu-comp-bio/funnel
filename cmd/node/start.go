@@ -52,13 +52,14 @@ func Start(conf config.Config) error {
 	logger.Configure(conf.Scheduler.Node.Logger)
 
 	if conf.Scheduler.Node.ID == "" {
-		conf.Scheduler.Node.ID = scheduler.GenNodeID("funnel")
+		conf.Scheduler.Node.ID = scheduler.GenNodeID("manual")
 	}
 
 	n, err := scheduler.NewNode(conf)
 	if err != nil {
 		return err
 	}
+
 	n.Start(context.Background())
 	return nil
 }

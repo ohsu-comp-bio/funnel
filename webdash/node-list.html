@@ -1,12 +1,12 @@
 <div ng-controller="NodeListController" class="node-list-page">
   <div class="board">
 
-    <h4>Workers</h4>
+    <h4>Nodes</h4>
 
     <table ng-table="tableParams" class="node-list-table">
-      <tr ng-repeat="node in nodes"> 
-        <td data-title="'ID'" filter="{'node.id': 'text'}" sortable="'node.id'"><a href="#/nodes/{{node.id}}">{{ node.id }}</a></td>
-        <td data-title="'State'" filter="{'node.state': 'text'}" sortable="'state'">{{node.state}}</td>
+      <tr ng-repeat="node in $data"> 
+        <td data-title="'ID'" filter="{'id': 'text'}" sortable="'id'"><a href="/#/nodes/{{node.id}}">{{ node.id }}</a></td>
+        <td data-title="'State'" filter="{'state': 'text'}" sortable="'state'">{{node.state}}</td>
       </tr>
     </table> 
 

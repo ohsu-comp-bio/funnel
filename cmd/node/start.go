@@ -5,7 +5,6 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/node"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/spf13/cobra"
 )
@@ -53,13 +52,14 @@ func Start(conf config.Config) error {
 	logger.Configure(conf.Scheduler.Node.Logger)
 
 	if conf.Scheduler.Node.ID == "" {
-		conf.Scheduler.Node.ID = scheduler.GenNodeID("funnel")
+		conf.Scheduler.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	n, err := node.NewNode(conf)
+	n, err := scheduler.NewNode(conf)
 	if err != nil {
 		return err
 	}
+
 	n.Start(context.Background())
 	return nil
 }

@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/node"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
@@ -28,7 +27,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 
 	// Create a client for talking to the funnel scheduler
-	client, err := node.NewClient(conf.Scheduler.Node)
+	client, err := scheduler.NewClient(conf.Scheduler)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
@@ -52,7 +51,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 // and interface for both scheduling and scaling.
 type Backend struct {
 	conf   config.Config
-	client node.Client
+	client scheduler.Client
 	gce    Client
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/go-test/deep"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/node"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
@@ -33,7 +32,7 @@ func (f *Funnel) AddNode(id string, cpus uint32, ram, disk float64) {
 	conf.Scheduler.Node.Resources.RamGb = ram
 	conf.Scheduler.Node.Resources.DiskGb = disk
 
-	n, err := node.NewNode(conf)
+	n, err := scheduler.NewNode(conf)
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +85,7 @@ func NewFunnel() *Funnel {
 				panic(cerr)
 			}
 
-			n, err := node.NewNode(c)
+			n, err := scheduler.NewNode(c)
 			if err != nil {
 				panic(err)
 			}

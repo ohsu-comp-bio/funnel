@@ -34,7 +34,6 @@ import (
 var log = logger.New("e2e")
 
 func init() {
-	logger.SetGRPCLoggerVerbosity(1)
 	log.Configure(logger.DebugConfig())
 }
 
@@ -127,6 +126,8 @@ func NewFunnel(conf config.Config) *Funnel {
 func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+
+	logger.DisableGRPCLogger()
 
 	opts = append(opts,
 		grpc.WithInsecure(),

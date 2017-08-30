@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/node"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
@@ -19,7 +18,7 @@ var log = logger.Sub(Name)
 func NewBackend(conf config.Config) (scheduler.Backend, error) {
 
 	// Create a client for talking to the funnel node
-	client, err := node.NewClient(conf.Scheduler.Node)
+	client, err := scheduler.NewClient(conf.Scheduler)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
@@ -31,7 +30,7 @@ func NewBackend(conf config.Config) (scheduler.Backend, error) {
 // Backend represents the OpenStack backend.
 type Backend struct {
 	conf   config.Config
-	client node.Client
+	client scheduler.Client
 }
 
 // Schedule schedules a task on a OpenStack VM node instance.

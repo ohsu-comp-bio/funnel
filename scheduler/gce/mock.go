@@ -2,7 +2,7 @@ package gce
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/node"
+	"github.com/ohsu-comp-bio/funnel/scheduler"
 	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
 )
 
@@ -27,7 +27,7 @@ func NewMockBackend(conf config.Config) (*MockBackend, error) {
 		zone:    conf.Backends.GCE.Zone,
 	}
 
-	wpClient, err := node.NewClient(conf.Scheduler.Node)
+	wpClient, err := scheduler.NewClient(conf.Scheduler)
 	if err != nil {
 		return nil, err
 	}

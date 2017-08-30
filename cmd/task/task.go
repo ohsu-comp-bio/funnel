@@ -3,6 +3,7 @@ package task
 import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var tesServer string
@@ -16,7 +17,12 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.PersistentFlags().StringVarP(&tesServer, "server", "S", "http://localhost:8000", "")
+	tesServer = os.Getenv("FUNNEL_SERVER")
+	if tesServer == "" {
+		tesServer = "http://localhost:8000"
+	}
+
+	Cmd.PersistentFlags().StringVarP(&tesServer, "server", "S", tesServer, "")
 	Cmd.AddCommand(listCmd)
 	Cmd.AddCommand(createCmd)
 	Cmd.AddCommand(getCmd)

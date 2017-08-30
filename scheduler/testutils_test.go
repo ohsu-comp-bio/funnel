@@ -1,10 +1,10 @@
-package node
+package scheduler
 
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
-	poolmock "github.com/ohsu-comp-bio/funnel/node/mocks"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
+	schedmock "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"github.com/stretchr/testify/mock"
@@ -31,7 +31,7 @@ func (t *testWorker) Factory(config.Worker, string) worker.Worker {
 // testNode wraps Node with some testing helpers.
 type testNode struct {
 	*Node
-	Client *poolmock.Client
+	Client *schedmock.Client
 	done   chan struct{}
 }
 
@@ -42,7 +42,7 @@ func newTestNode(conf config.Config) testNode {
 
 	// A mock scheduler client allows this code to fake/control the worker's
 	// communication with a scheduler service.
-	s := new(poolmock.Client)
+	s := new(schedmock.Client)
 	n := &Node{
 		conf:       conf.Scheduler.Node,
 		workerConf: conf.Worker,

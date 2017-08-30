@@ -3,10 +3,10 @@ package local
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	poolmock "github.com/ohsu-comp-bio/funnel/node/mocks"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	sched "github.com/ohsu-comp-bio/funnel/scheduler"
+	schedmock "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
 	. "github.com/stretchr/testify/mock"
 	"testing"
 )
@@ -35,9 +35,9 @@ func simpleNode() *pbs.Node {
 	}
 }
 
-func setup(nodes []*pbs.Node) (*poolmock.Client, *Backend) {
+func setup(nodes []*pbs.Node) (*schedmock.Client, *Backend) {
 	conf := config.Config{}
-	mc := new(poolmock.Client)
+	mc := new(schedmock.Client)
 
 	// Mock in test nodes
 	mc.On("ListNodes", Anything, Anything, Anything).Return(&pbs.ListNodesResponse{

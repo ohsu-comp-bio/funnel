@@ -2,16 +2,16 @@ package gce
 
 import (
 	"github.com/ohsu-comp-bio/funnel/logger"
-	poolmock "github.com/ohsu-comp-bio/funnel/node/mocks"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
+	schedmock "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
 	"github.com/stretchr/testify/mock"
 	"testing"
 )
 
 func TestPreferExisting(t *testing.T) {
-	pool := new(poolmock.Client)
+	sched := new(schedmock.Client)
 	gce := new(gcemock.Client)
 
 	// Set up data for an existing (ALIVE state) node,
@@ -36,7 +36,7 @@ func TestPreferExisting(t *testing.T) {
 	template.Id = "template"
 
 	// Return existing and template from mock API clients.
-	pool.On("ListNodes", mock.Anything, mock.Anything, mock.Anything).
+	sched.On("ListNodes", mock.Anything, mock.Anything, mock.Anything).
 		Return(&pbs.ListNodesResponse{
 			Nodes: []*pbs.Node{&existing},
 		}, nil)
@@ -44,7 +44,7 @@ func TestPreferExisting(t *testing.T) {
 	gce.On("Templates").Return([]pbs.Node{template})
 
 	b := Backend{
-		client: pool,
+		client: sched,
 		gce:    gce,
 	}
 

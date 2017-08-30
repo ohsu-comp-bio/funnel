@@ -1,4 +1,4 @@
-package node
+package scheduler
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 func NewNode(conf config.Config) (*Node, error) {
 	log := logger.Sub("node", "nodeID", conf.Scheduler.Node.ID)
 
-	cli, err := NewClient(conf.Scheduler.Node)
+	cli, err := NewClient(conf.Scheduler)
 	if err != nil {
 		return nil, err
 	}

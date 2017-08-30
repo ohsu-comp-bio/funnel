@@ -34,6 +34,7 @@ import (
 var log = logger.New("e2e")
 
 func init() {
+	logger.SetGRPCLoggerVerbosity(1)
 	log.Configure(logger.DebugConfig())
 }
 
@@ -95,6 +96,7 @@ func DefaultConfig() config.Config {
 // NewFunnel creates a new funnel test server with some test
 // configuration automatically set: random ports, temp work dir, etc.
 func NewFunnel(conf config.Config) *Funnel {
+	conf.InheritServerProperties()
 
 	var derr error
 	dcli, derr := util.NewDockerClient()
@@ -122,23 +124,23 @@ func NewFunnel(conf config.Config) *Funnel {
 }
 
 // AddRPCClient configures and connects the RPC client to the server.
-func (f *Funnel) AddRPCClient() error {
+func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	logger.DisableGRPCLogger()
+	opts = append(opts,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
 
 	conn, err := grpc.DialContext(
 		ctx,
 		f.Conf.Server.RPCAddress(),
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
+		opts...,
 	)
 	if err != nil {
 		return err
 	}
-
-	logger.EnableGRPCLogger()
 
 	f.conn = conn
 	f.RPC = tes.NewTaskServiceClient(conn)
@@ -407,6 +409,7 @@ func (f *Funnel) StartServerInDocker(imageName string, backend string, extraArgs
 		err = f.AddRPCClient()
 		if err != nil {
 			log.Error("funnel server failed to start within allocated time", err)
+			panic(err)
 		} else {
 			close(ready)
 		}

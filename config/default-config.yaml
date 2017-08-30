@@ -104,7 +104,7 @@ Backends:
       {{printf "request_cpus = %d" .Cpus}}
       {{- end}}
       {{if ne .RamGb 0.0 -}}
-BB0B      {{printf "request_memory = %.0f GB" .RamGb}}
+      {{printf "request_memory = %.0f GB" .RamGb}}
       {{- end}}
       {{if ne .DiskGb 0.0 -}}
       {{printf "request_disk = %.0f GB" .DiskGb}}

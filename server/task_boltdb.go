@@ -201,6 +201,7 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task *tes.Task
 	var err error
+
 	err = taskBolt.db.View(func(tx *bolt.Tx) error {
 		task, err = getTaskView(tx, req.Id, req.View)
 		return err
@@ -284,18 +285,30 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 }
 
 // CancelTask cancels a task
-func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	log := log.WithFields("taskID", taskop.Id)
+func (taskBolt *TaskBolt) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+	log := log.WithFields("taskID", req.Id)
 	log.Info("Canceling task")
 
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		// TODO need a test that ensures a canceled task is deleted from the node
-		id := taskop.Id
-		return transitionTaskState(tx, id, tes.State_CANCELED)
+	// Check that the task exists
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+		_, err := getTaskView(tx, req.Id, tes.TaskView_MINIMAL)
+		return err
+	})
+	if err != nil {
+		log.Error("CancelTask", "error", err, "taskID", req.Id)
+		if err == errNotFound {
+			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
+		}
+	}
+
+	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+		// TODO need a test that ensures a canceled task is deleted from the worker
+		return transitionTaskState(tx, req.Id, tes.State_CANCELED)
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	return &tes.CancelTaskResponse{}, nil
 }
 

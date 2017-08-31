@@ -61,8 +61,16 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("expected task name to be included basic view")
 	}
 
-	if task.Logs != nil {
-		t.Fatal("unexpected task logs included in basic view")
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in basic view")
+	}
+
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in basic view")
+	}
+
+	if task.Logs[0].Logs[0].Stdout != "" {
+		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
 
 	if task.Inputs[0].Contents != "" {
@@ -72,7 +80,7 @@ func TestGetTaskView(t *testing.T) {
 	task = fun.GetView(id, tes.TaskView_FULL)
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("Missing stdout in full view")
+		t.Fatal("missing ExecutorLog stdout in full view")
 	}
 
 	if task.Inputs[0].Contents != "hello world" {
@@ -104,8 +112,16 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("expected task name to be included basic view")
 	}
 
-	if task.Logs != nil {
-		t.Fatal("unexpected task logs included in basic view")
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in basic view")
+	}
+
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in basic view")
+	}
+
+	if task.Logs[0].Logs[0].Stdout != "" {
+		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
 
 	if task.Inputs[0].Contents != "" {
@@ -118,7 +134,7 @@ func TestGetTaskView(t *testing.T) {
 	}
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("Missing stdout in full view")
+		t.Fatal("missing ExecutorLog stdout in full view")
 	}
 
 	if task.Inputs[0].Contents != "hello world" {
@@ -165,8 +181,16 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("expected task name to be included basic view")
 	}
 
-	if task.Logs != nil {
-		t.Fatal("unexpected task logs included in basic view")
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in basic view")
+	}
+
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in basic view")
+	}
+
+	if task.Logs[0].Logs[0].Stdout != "" {
+		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
 
 	tasks = fun.ListView(tes.TaskView_FULL)
@@ -211,8 +235,16 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("expected task name to be included basic view")
 	}
 
-	if task.Logs != nil {
-		t.Fatal("unexpected task logs included in basic view")
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in basic view")
+	}
+
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in basic view")
+	}
+
+	if task.Logs[0].Logs[0].Stdout != "" {
+		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
 
 	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{

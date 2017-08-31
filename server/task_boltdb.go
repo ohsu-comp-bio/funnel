@@ -159,12 +159,30 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 		return errNotFound
 	}
 	proto.Unmarshal(b, task)
+	loadTaskLogs(tx, task)
+
+	// remove contents from inputs
 	inputs := []*tes.TaskParameter{}
 	for _, v := range task.Inputs {
 		v.Contents = ""
 		inputs = append(inputs, v)
 	}
 	task.Inputs = inputs
+
+	// remove stdout and stderr from Task.Logs.Logs
+	tlogs := []*tes.TaskLog{}
+	for _, tl := range task.Logs {
+		elogs := []*tes.ExecutorLog{}
+		for _, el := range tl.Logs {
+			el.Stdout = ""
+			el.Stderr = ""
+			elogs = append(elogs, el)
+		}
+		tl.Logs = elogs
+		tlogs = append(tlogs, tl)
+	}
+	task.Logs = tlogs
+
 	return loadMinimalTaskView(tx, id, task)
 }
 

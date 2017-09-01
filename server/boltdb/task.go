@@ -1,7 +1,6 @@
-package server
+package boltdb
 
 import (
-	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -47,19 +46,19 @@ var TaskNode = []byte("task-node")
 // And searched with prefix scan using node ID
 var NodeTasks = []byte("node-tasks")
 
-// TaskBolt provides handlers for gRPC endpoints.
+// BoltDB provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
-type TaskBolt struct {
+type BoltDB struct {
 	db      *bolt.DB
 	conf    config.Config
 	backend compute.Backend
 }
 
-// NewTaskBolt returns a new instance of TaskBolt, accessing the database at
+// New returns a new instance of BoltDB, accessing the database at
 // the given path, and including the given ServerConfig.
-func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
-	util.EnsurePath(conf.Server.DBPath)
-	db, err := bolt.Open(conf.Server.DBPath, 0600, &bolt.Options{
+func New(conf config.Config) (*BoltDB, error) {
+	util.EnsurePath(conf.Server.Databases.BoltDB.Path)
+	db, err := bolt.Open(conf.Server.Databases.BoltDB.Path, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})
 	if err != nil {
@@ -94,19 +93,19 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, conf: conf, backend: nil}, nil
+	return &BoltDB{db: db, conf: conf, backend: nil}, nil
 }
 
-// WithComputeBackend configures the TaskBolt instance to use the given
+// WithComputeBackend configures the BoltDB instance to use the given
 // compute.Backend. The compute backend is responsible for dispatching tasks to
 // schedulers / compute resources with its Submit method.
-func (taskBolt *TaskBolt) WithComputeBackend(backend compute.Backend) {
+func (taskBolt *BoltDB) WithComputeBackend(backend compute.Backend) {
 	taskBolt.backend = backend
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
-func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
+func (taskBolt *BoltDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 	log.Debug("CreateTask called", "task", task)
 
 	if err := tes.Validate(task); err != nil {
@@ -162,9 +161,6 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 	v := tes.State_value[string(s)]
 	return tes.State(v)
 }
-
-// errNotFound ...
-var errNotFound = errors.New("not found")
 
 func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
@@ -239,7 +235,7 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 }
 
 // GetTask gets a task, which describes a running task
-func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+func (taskBolt *BoltDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task *tes.Task
 	var err error
 
@@ -275,7 +271,7 @@ func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
 }
 
 // ListTasks returns a list of taskIDs
-func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
 	var tasks []*tes.Task
 	pageSize := 256
@@ -326,7 +322,7 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 }
 
 // CancelTask cancels a task
-func (taskBolt *TaskBolt) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+func (taskBolt *BoltDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	log := log.WithFields("taskID", req.Id)
 	log.Info("Canceling task")
 
@@ -354,6 +350,6 @@ func (taskBolt *TaskBolt) CancelTask(ctx context.Context, req *tes.CancelTaskReq
 }
 
 // GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
-func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
+func (taskBolt *BoltDB) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
 	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
 }

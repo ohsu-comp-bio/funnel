@@ -1,4 +1,4 @@
-package server
+package boltdb
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 )
 
 // QueueTask adds a task to the scheduler queue.
-func (taskBolt *TaskBolt) QueueTask(task *tes.Task) error {
+func (taskBolt *BoltDB) QueueTask(task *tes.Task) error {
 	taskID := task.Id
 	idBytes := []byte(taskID)
 
@@ -31,7 +31,7 @@ func (taskBolt *TaskBolt) QueueTask(task *tes.Task) error {
 }
 
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
-func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
+func (taskBolt *BoltDB) ReadQueue(n int) []*tes.Task {
 	tasks := make([]*tes.Task, 0)
 	taskBolt.db.View(func(tx *bolt.Tx) error {
 
@@ -49,7 +49,7 @@ func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
 
 // AssignTask assigns a task to a node. This updates the task state to Initializing,
 // and updates the node (calls UpdateNode()).
-func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbs.Node) error {
+func (taskBolt *BoltDB) AssignTask(t *tes.Task, w *pbs.Node) error {
 	return taskBolt.db.Update(func(tx *bolt.Tx) error {
 		// TODO this is important! write a test for this line.
 		//      when a task is assigned, its state is immediately Initializing
@@ -78,7 +78,7 @@ func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbs.Node) error {
 // UpdateNode is an RPC endpoint that is used by nodes to send heartbeats
 // and status updates, such as completed tasks. The server responds with updated
 // information for the node, such as canceled tasks.
-func (taskBolt *TaskBolt) UpdateNode(ctx context.Context, req *pbs.Node) (*pbs.UpdateNodeResponse, error) {
+func (taskBolt *BoltDB) UpdateNode(ctx context.Context, req *pbs.Node) (*pbs.UpdateNodeResponse, error) {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 		return updateNode(tx, req)
 	})
@@ -186,7 +186,7 @@ func updateAvailableResources(tx *bolt.Tx, node *pbs.Node) {
 }
 
 // GetNode gets a node
-func (taskBolt *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
+func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
 	var node *pbs.Node
 	var err error
 
@@ -209,7 +209,7 @@ func (taskBolt *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) 
 
 // CheckNodes is used by the scheduler to check for dead/gone nodes.
 // This is not an RPC endpoint
-func (taskBolt *TaskBolt) CheckNodes() error {
+func (taskBolt *BoltDB) CheckNodes() error {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(Nodes)
 		c := bucket.Cursor()
@@ -266,7 +266,7 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.
-func (taskBolt *TaskBolt) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
+func (taskBolt *BoltDB) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
 	resp := &pbs.ListNodesResponse{}
 	resp.Nodes = []*pbs.Node{}
 

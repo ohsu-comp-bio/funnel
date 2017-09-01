@@ -98,7 +98,7 @@ func NewFunnel() *Funnel {
 		}).
 		Return(nil, nil)
 
-	fun.Scheduler = scheduler.NewScheduler(fun.DB, backend, conf.Scheduler)
+	fun.Scheduler = scheduler.NewScheduler(fun.SDB, backend, conf.Scheduler)
 	fun.StartServer()
 
 	return fun
@@ -127,7 +127,7 @@ func TestMultipleTasks(t *testing.T) {
 	// because the Disk resources would first be reported by the GCE instance template,
 	// but once the node sent an update, the resource information was incorrectly
 	// reported and merged.
-	resp, _ := fun.DB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	resp, _ := fun.SDB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
 	if len(resp.Nodes) != 1 {
 		t.Fatal("Expected one node")
 	}

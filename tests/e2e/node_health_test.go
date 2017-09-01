@@ -14,13 +14,13 @@ func TestNodeDead(t *testing.T) {
 	conf.Scheduler.NodePingTimeout = time.Millisecond
 	srv := NewFunnel(conf)
 
-	srv.DB.UpdateNode(context.Background(), &pbs.Node{
+	srv.SDB.UpdateNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_ALIVE,
 	})
 
 	time.Sleep(conf.Scheduler.NodePingTimeout * 2)
-	srv.DB.CheckNodes()
+	srv.SDB.CheckNodes()
 
 	nodes := srv.ListNodes()
 	if nodes[0].State != pbs.NodeState_DEAD {
@@ -36,13 +36,13 @@ func TestNodeInitFail(t *testing.T) {
 	srv := NewFunnel(conf)
 	srv.StartServer()
 
-	srv.DB.UpdateNode(context.Background(), &pbs.Node{
+	srv.SDB.UpdateNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_INITIALIZING,
 	})
 
 	time.Sleep(conf.Scheduler.NodeInitTimeout * 2)
-	srv.DB.CheckNodes()
+	srv.SDB.CheckNodes()
 	nodes := srv.ListNodes()
 
 	if nodes[0].State != pbs.NodeState_DEAD {
@@ -50,7 +50,7 @@ func TestNodeInitFail(t *testing.T) {
 	}
 }
 
-// Test that a dead node is deleted from the DB after
+// Test that a dead node is deleted from the SDB after
 // a configurable duration.
 func TestNodeDeadTimeout(t *testing.T) {
 	conf := DefaultConfig()
@@ -58,14 +58,14 @@ func TestNodeDeadTimeout(t *testing.T) {
 	conf.Scheduler.NodeDeadTimeout = time.Millisecond
 	srv := NewFunnel(conf)
 
-	srv.DB.UpdateNode(context.Background(), &pbs.Node{
+	srv.SDB.UpdateNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_DEAD,
 	})
-	srv.DB.CheckNodes()
+	srv.SDB.CheckNodes()
 
 	time.Sleep(conf.Scheduler.NodeDeadTimeout * 2)
-	srv.DB.CheckNodes()
+	srv.SDB.CheckNodes()
 	nodes := srv.ListNodes()
 
 	if len(nodes) > 0 {

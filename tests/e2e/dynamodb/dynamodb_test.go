@@ -1,14 +1,59 @@
-package e2e
+package dynamodb
 
 import (
 	"context"
+	"flag"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
+	"github.com/ohsu-comp-bio/funnel/tests/testutils"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"os"
 	"strings"
 	"testing"
 	"time"
 )
+
+var log = logger.New("e2e-dynamodb")
+var fun *e2e.Funnel
+var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
+
+func TestMain(m *testing.M) {
+	log.Configure(logger.DebugConfig())
+
+	flag.Parse()
+	if !*runTest {
+		log.Info("Skipping dynamodb e2e tests...")
+		os.Exit(0)
+	}
+
+	tableBasename := testutils.RandomString(6)
+
+	c := e2e.DefaultConfig()
+	c.Server.Database = "dynamodb"
+	c.Server.Databases.DynamoDB.Region = "us-west-2"
+	c.Server.Databases.DynamoDB.TableBasename = tableBasename
+	c.Worker.EventWriter = "dynamodb"
+	c.Worker.EventWriters.DynamoDB.Region = "us-west-2"
+	c.Worker.EventWriters.DynamoDB.TableBasename = tableBasename
+
+	fun = e2e.NewFunnel(c)
+	fun.StartServer()
+	defer deleteTables(c.Server.Databases.DynamoDB)
+	ok := checkTablesAreALive(c.Server.Databases.DynamoDB)
+	if !ok {
+		log.Error("Dynamodb tables were not active within timeout")
+		return
+	}
+
+	m.Run()
+	return
+}
 
 func TestHelloWorld(t *testing.T) {
 	id := fun.Run(`
@@ -172,6 +217,7 @@ func TestListTaskView(t *testing.T) {
 	fun.Wait(id)
 
 	tasks = fun.ListView(tes.TaskView_MINIMAL)
+	t.Log(tasks)
 	task = tasks[0]
 
 	if task.Id == "" {
@@ -372,6 +418,7 @@ func TestExecutorLogLength(t *testing.T) {
 	task := fun.Get(id)
 	fun.Cancel(id)
 	if len(task.Logs[0].Logs) != 2 {
+		t.Log(len(task.Logs[0].Logs))
 		t.Fatal("Unexpected executor log count")
 	}
 }
@@ -457,82 +504,27 @@ func TestOutputFileLog(t *testing.T) {
 	}
 }
 
-func TestPagination(t *testing.T) {
-	c := DefaultConfig()
-	c.Backend = "noop"
-	f := NewFunnel(c)
-	f.StartServer()
-	ctx := context.Background()
-
-	// Ensure database is empty
-	r0, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
-	if len(r0.Tasks) != 0 {
-		t.Fatal("expected empty database")
-	}
-
-	for i := 0; i < 2050; i++ {
-		f.Run(`--sh 'echo 1'`)
-	}
-
-	r1, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
-
-	// Default page size is 256
-	if len(r1.Tasks) != 256 {
-		t.Error("wrong default page size")
-	}
-
-	r2, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
-		PageSize: 2,
-	})
-
-	// Minimum page size is 50
-	if len(r2.Tasks) != 50 {
-		t.Error("wrong minimum page size")
-	}
-
-	r3, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
-		PageSize: 5000,
-	})
-
-	if len(r3.Tasks) != 2048 {
-		t.Error("wrong max page size")
-	}
-
-	r4, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
-		PageSize: 500,
-	})
-
-	if len(r4.Tasks) != 500 {
-		t.Error("wrong requested page size")
-	}
-
-	if r4.NextPageToken == "" {
-		t.Error("expected next page token")
-	}
-
-	// Get all pages
-	var tasks []*tes.Task
-	tasks = append(tasks, r4.Tasks...)
-	for r4.NextPageToken != "" {
-		r4, _ = f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
-			PageSize:  500,
-			PageToken: r4.NextPageToken,
-		})
-		tasks = append(tasks, r4.Tasks...)
-	}
-
-	if len(tasks) != 2050 {
-		log.Error("TASK COUNT", tasks)
-		t.Error("unexpected task count")
-	}
-}
-
 // Smaller test for debugging getting the full set of pages
 func TestSmallPagination(t *testing.T) {
-	c := DefaultConfig()
+	tableBasename := testutils.RandomString(6)
+	c := e2e.DefaultConfig()
 	c.Backend = "noop"
-	f := NewFunnel(c)
+	c.Server.Database = "dynamodb"
+	c.Server.Databases.DynamoDB.Region = "us-west-2"
+	c.Server.Databases.DynamoDB.TableBasename = tableBasename
+	c.Worker.EventWriter = "dynamodb"
+	c.Worker.EventWriters.DynamoDB.Region = "us-west-2"
+	c.Worker.EventWriters.DynamoDB.TableBasename = tableBasename
+
+	f := e2e.NewFunnel(c)
 	f.StartServer()
+	defer deleteTables(c.Server.Databases.DynamoDB)
+	ok := checkTablesAreALive(c.Server.Databases.DynamoDB)
+	if !ok {
+		log.Error("Dynamodb tables were not active within timeout")
+		return
+	}
+
 	ctx := context.Background()
 
 	// Ensure database is empty
@@ -541,7 +533,7 @@ func TestSmallPagination(t *testing.T) {
 		t.Fatal("expected empty database")
 	}
 
-	for i := 0; i < 150; i++ {
+	for i := 0; i < 75; i++ {
 		f.Run(`--sh 'echo 1'`)
 	}
 
@@ -560,6 +552,7 @@ func TestSmallPagination(t *testing.T) {
 
 		// Check a bug where the end of the last page was being included
 		// in the start of the next page.
+		t.Log("r4:", r4)
 		if len(r4.Tasks) > 0 && r4.Tasks[0].Id == tasks[len(tasks)-1].Id {
 			t.Error("Page start/end bug")
 		}
@@ -567,7 +560,7 @@ func TestSmallPagination(t *testing.T) {
 		tasks = append(tasks, r4.Tasks...)
 	}
 
-	if len(tasks) != 150 {
+	if len(tasks) != 75 {
 		log.Error("TASK COUNT", len(tasks))
 		t.Error("unexpected task count")
 	}
@@ -582,4 +575,44 @@ func TestTaskError(t *testing.T) {
 	if task.State != tes.State_ERROR {
 		t.Fatal("Unexpected task state")
 	}
+}
+
+func tableIsAlive(ctx context.Context, cli *dynamodb.DynamoDB, name string) bool {
+	ticker := time.NewTicker(time.Millisecond * 500).C
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-ticker:
+			r, _ := cli.DescribeTable(&dynamodb.DescribeTableInput{TableName: aws.String(name)})
+			if *r.Table.TableStatus == "ACTIVE" {
+				return true
+			}
+		}
+	}
+}
+
+func checkTablesAreALive(conf config.DynamoDB) bool {
+	sess, _ := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
+	cli := dynamodb.New(sess)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	defer cancel()
+
+	a := tableIsAlive(ctx, cli, conf.TableBasename+"-task")
+	b := tableIsAlive(ctx, cli, conf.TableBasename+"-contents")
+	c := tableIsAlive(ctx, cli, conf.TableBasename+"-stdout")
+	d := tableIsAlive(ctx, cli, conf.TableBasename+"-stderr")
+
+	return a && b && c && d
+}
+
+func deleteTables(conf config.DynamoDB) error {
+	sess, _ := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
+	cli := dynamodb.New(sess)
+
+	cli.DeleteTable(&dynamodb.DeleteTableInput{TableName: aws.String(conf.TableBasename + "-task")})
+	cli.DeleteTable(&dynamodb.DeleteTableInput{TableName: aws.String(conf.TableBasename + "-contents")})
+	cli.DeleteTable(&dynamodb.DeleteTableInput{TableName: aws.String(conf.TableBasename + "-stdout")})
+	cli.DeleteTable(&dynamodb.DeleteTableInput{TableName: aws.String(conf.TableBasename + "-stderr")})
+	return nil
 }

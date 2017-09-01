@@ -39,7 +39,7 @@ func TempDirConfig(conf config.Config) config.Config {
 	f, _ := ioutil.TempDir("./test_tmp", "funnel-test-")
 	conf.Scheduler.Node.WorkDir = f
 	conf.Worker.WorkDir = f
-	conf.Server.DBPath = path.Join(f, "funnel.db")
+	conf.Server.Databases.BoltDB.Path = path.Join(f, "funnel.db")
 	return conf
 }
 

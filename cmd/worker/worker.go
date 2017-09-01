@@ -17,7 +17,7 @@ var Cmd = &cobra.Command{
 func init() {
 	flags := Cmd.PersistentFlags()
 	flags.StringVarP(&configFile, "config", "c", "", "Config File")
-	flags.StringVar(&flagConf.Worker.ServerAddress, "server-address", flagConf.Worker.ServerAddress, "RPC address of Funnel server")
+	flags.StringVar(&flagConf.Worker.EventWriters.RPC.ServerAddress, "server-address", flagConf.Worker.EventWriters.RPC.ServerAddress, "RPC address of Funnel server")
 	flags.StringVar(&flagConf.Worker.WorkDir, "work-dir", flagConf.Worker.WorkDir, "Working Directory")
 	flags.StringVar(&flagConf.Worker.Logger.Level, "log-level", flagConf.Worker.Logger.Level, "Level of logging")
 	flags.StringVar(&flagConf.Worker.Logger.OutputFile, "log-path", flagConf.Worker.Logger.OutputFile, "File path to write logs to")

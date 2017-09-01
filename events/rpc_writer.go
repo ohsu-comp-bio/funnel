@@ -20,17 +20,17 @@ func NewRPCWriter(conf config.Worker) (*RPCWriter, error) {
 	defer cancel()
 
 	conn, err := grpc.DialContext(ctx,
-		conf.ServerAddress,
+		conf.EventWriters.RPC.ServerAddress,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		util.PerRPCPassword(conf.ServerPassword),
+		util.PerRPCPassword(conf.EventWriters.RPC.ServerPassword),
 	)
 	if err != nil {
 		return nil, err
 	}
 	cli := NewEventServiceClient(conn)
 
-	return &RPCWriter{cli, conf.UpdateTimeout}, nil
+	return &RPCWriter{cli, conf.EventWriters.RPC.UpdateTimeout}, nil
 }
 
 func (r *RPCWriter) Write(e *Event) error {

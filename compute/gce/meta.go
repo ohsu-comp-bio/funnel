@@ -40,7 +40,7 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 			conf.Scheduler.Node.ID = meta.Instance.Name
 		}
 		conf.Scheduler.Node.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
-		conf.Worker.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
+		conf.Worker.EventWriters.RPC.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
 	}
 
 	if meta.Project.ProjectID != "" {

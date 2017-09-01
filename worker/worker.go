@@ -18,23 +18,33 @@ import (
 // NewDefaultWorker returns the default task runner used by Funnel,
 // which uses gRPC to read/write task details.
 func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
+	var err error
+	var reader TaskReader
+	var writer events.Writer
+
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, taskID)
 
-	// TODO handle error
-	err := util.EnsureDir(baseDir)
+	err = util.EnsureDir(baseDir)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create worker baseDir: %v", err)
+		return nil, fmt.Errorf("failed to create worker baseDir: %v", err)
 	}
 
-	rsvc, err := newRPCTaskReader(conf, taskID)
+	reader, err = newRPCTaskReader(conf, taskID)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to instantiate TaskReader: %v", err)
+		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
 	}
 
-	rpcWriter, err := events.NewRPCWriter(conf)
+	switch conf.EventWriter {
+	case "dynamodb":
+		writer, err = events.NewDynamoDBEventWriter(conf.EventWriters.DynamoDB)
+	case "rpc":
+		writer, err = events.NewRPCWriter(conf)
+	default:
+		err = fmt.Errorf("unknown EventWriter")
+	}
 	if err != nil {
-		return nil, fmt.Errorf("error creating EventService RPC client: %v", err)
+		return nil, fmt.Errorf("error instantiating EventWriter: %v", err)
 	}
 
 	logWriter := events.NewLogger("worker")
@@ -43,8 +53,8 @@ func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
 		Conf:       conf,
 		Mapper:     NewFileMapper(baseDir),
 		Store:      storage.Storage{},
-		TaskReader: rsvc,
-		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, events.MultiWriter(rpcWriter, logWriter)),
+		TaskReader: reader,
+		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, events.MultiWriter(writer, logWriter)),
 	}, nil
 }
 

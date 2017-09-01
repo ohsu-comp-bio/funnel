@@ -7,6 +7,7 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
+
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	"github.com/ohsu-comp-bio/funnel/compute"
@@ -18,6 +19,8 @@ import (
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server"
+	"github.com/ohsu-comp-bio/funnel/server/boltdb"
+	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/tests/testutils"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
@@ -53,9 +56,10 @@ type Funnel struct {
 	StorageDir string
 
 	// Components
-	DB        *server.TaskBolt
+	DB        server.Database
 	Server    *server.Server
 	Scheduler *scheduler.Scheduler
+	SDB       scheduler.Database
 
 	// Internal
 	startTime string
@@ -101,24 +105,27 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(derr)
 	}
 
-	db, dberr := server.NewTaskBolt(conf)
-	if dberr != nil {
-		panic(dberr)
+	var db server.Database
+	var err error
+
+	switch conf.Server.Database {
+	case "boltdb":
+		db, err = boltdb.New(conf)
+	case "dynamodb":
+		db, err = dynamodb.New(conf.Server.Databases.DynamoDB)
+	}
+	if err != nil {
+		panic(err)
 	}
 
 	var backend compute.Backend
-	var err error
-
 	switch conf.Backend {
 	case "local":
 		backend = local.NewBackend(conf)
 	case "noop":
 		backend = noop.NewBackend(conf)
 	case "gce":
-		backend = scheduler.NewComputeBackend(db)
-	}
-	if err != nil {
-		panic(err)
+		backend = scheduler.NewComputeBackend(db.(scheduler.Database))
 	}
 
 	db.WithComputeBackend(backend)
@@ -131,6 +138,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		Conf:       conf,
 		StorageDir: conf.Worker.Storage.Local.AllowedDirs[0],
 		DB:         db,
+		SDB:        db.(scheduler.Database),
 		Server:     srv,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
 		rate:       time.Millisecond * 500,

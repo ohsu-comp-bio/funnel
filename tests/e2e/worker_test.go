@@ -57,6 +57,7 @@ func TestDefaultWorkerRun(t *testing.T) {
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
+
 	w.Run(context.Background())
 	f.Wait(id)
 

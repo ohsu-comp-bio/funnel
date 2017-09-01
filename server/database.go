@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/ohsu-comp-bio/funnel/compute"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	tl "github.com/ohsu-comp-bio/funnel/proto/tasklogger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -12,4 +13,5 @@ type Database interface {
 	tes.TaskServiceServer
 	tl.TaskLoggerServiceServer
 	pbs.SchedulerServiceServer
+	WithComputeBackend(compute.Backend)
 }

@@ -67,7 +67,8 @@ Most development tasks are run through `make`.
 |`proto/tes`        | Generated GA4GH protobuf/gRPC files from [task-execution-schemas][tes].
 |`proto/scheduler`  | Internal, Funnel-specific scheduler protobuf/gRPC files.
 |`logger`           | Logging.
-|`scheduler`        | Basic scheduling/scaling logic and backends.
+|`compute`          | Compute backends.
+|`compute/scheduler`| Basic scheduling/scaling for compute backends.
 |`server`           | Database and server implementing the [TES API][tes] and Scheduler RPC.
 |`storage`          | Filesystem support, e.g. local, Google Cloud Storage, S3, etc.
 |`worker`           | Worker process: task runner, docker, file mapper, etc.
@@ -76,7 +77,7 @@ Most development tasks are run through `make`.
 ## Go Tests
 
 Run all tests: `make go-test`   
-Run the scheduler tests: `go test ./scheduler/...`  
+Run the worker tests: `go test ./worker/...`  
 Run the worker tests with "Cancel" in the name: `go test ./worker -run Cancel`  
 
 You get the idea. See the `go test` docs for more.

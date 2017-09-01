@@ -459,7 +459,9 @@ func TestOutputFileLog(t *testing.T) {
 }
 
 func TestPagination(t *testing.T) {
-	f := NewFunnel(DefaultConfig())
+	c := DefaultConfig()
+	c.Backend = "noop"
+	f := NewFunnel(c)
 	f.StartServer()
 	ctx := context.Background()
 
@@ -469,7 +471,7 @@ func TestPagination(t *testing.T) {
 		t.Fatal("expected empty database")
 	}
 
-	for i := 0; i < 3000; i++ {
+	for i := 0; i < 2050; i++ {
 		f.Run(`--cmd 'echo 1'`)
 	}
 
@@ -520,7 +522,7 @@ func TestPagination(t *testing.T) {
 		tasks = append(tasks, r4.Tasks...)
 	}
 
-	if len(tasks) != 3000 {
+	if len(tasks) != 2050 {
 		log.Error("TASK COUNT", tasks)
 		t.Error("unexpected task count")
 	}
@@ -528,7 +530,9 @@ func TestPagination(t *testing.T) {
 
 // Smaller test for debugging getting the full set of pages
 func TestSmallPagination(t *testing.T) {
-	f := NewFunnel(DefaultConfig())
+	c := DefaultConfig()
+	c.Backend = "noop"
+	f := NewFunnel(c)
 	f.StartServer()
 	ctx := context.Background()
 

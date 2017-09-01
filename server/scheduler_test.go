@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -11,7 +10,6 @@ import (
 
 // Test a scheduled task is removed from the task queue.
 func TestScheduledTaskRemovedFromQueue(t *testing.T) {
-
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
 
@@ -21,7 +19,6 @@ func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 		t.Fatal("Couldn't open database")
 	}
 
-	ctx := context.Background()
 	task := &tes.Task{
 		Id: "task-1",
 		Executors: []*tes.Executor{
@@ -31,7 +28,11 @@ func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 			},
 		},
 	}
-	db.CreateTask(ctx, task)
+
+	err := db.QueueTask(task)
+	if err != nil {
+		t.Fatal("QueueTask failed", err)
+	}
 
 	res := db.ReadQueue(10)
 	if len(res) != 1 {

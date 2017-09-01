@@ -3,9 +3,9 @@ package node
 import (
 	"context"
 	"github.com/imdario/mergo"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/spf13/cobra"
 )
 

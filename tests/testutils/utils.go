@@ -43,15 +43,6 @@ func TempDirConfig(conf config.Config) config.Config {
 	return conf
 }
 
-// LoggerDebugConfig returns a modified config all loggers configured with logger.DebugConfig()
-func LoggerDebugConfig(conf config.Config) config.Config {
-	conf.Server.Logger = logger.DebugConfig()
-	conf.Scheduler.Logger = logger.DebugConfig()
-	conf.Scheduler.Node.Logger = logger.DebugConfig()
-	conf.Worker.Logger = logger.DebugConfig()
-	return conf
-}
-
 // RandomString generates a random string of length n
 func RandomString(n int) string {
 	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

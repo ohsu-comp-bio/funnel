@@ -3,12 +3,12 @@ package gce
 import (
 	"context"
 	"github.com/go-test/deep"
+	"github.com/ohsu-comp-bio/funnel/compute/gce"
+	gcemock "github.com/ohsu-comp-bio/funnel/compute/gce/mocks"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/scheduler"
-	"github.com/ohsu-comp-bio/funnel/scheduler/gce"
-	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/api/compute/v1"
@@ -17,6 +17,10 @@ import (
 )
 
 var log = logger.New("gce-e2e")
+
+func init() {
+	log.Configure(logger.DebugConfig())
+}
 
 type Funnel struct {
 	*e2e.Funnel
@@ -42,6 +46,7 @@ func (f *Funnel) AddNode(id string, cpus uint32, ram, disk float64) {
 
 func NewFunnel() *Funnel {
 	conf := e2e.DefaultConfig()
+	conf.Backend = "gce"
 
 	// NOTE: matches hard-coded values in mock wrapper
 	conf.Backends.GCE.Project = "test-proj"

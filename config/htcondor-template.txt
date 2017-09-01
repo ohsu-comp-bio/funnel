@@ -1,7 +1,7 @@
 universe = vanilla
 getenv = True
 executable = {{.Executable}}
-arguments = node run --config {{.Config}}
+arguments = worker run --config {{.Config}} --task-id {{.TaskId}}
 log = {{.WorkDir}}/condor-event-log
 error = {{.WorkDir}}/funnel-stderr
 output = {{.WorkDir}}/funnel-stdout

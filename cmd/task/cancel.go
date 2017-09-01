@@ -9,7 +9,7 @@ import (
 // cancelCmd represents the cancel command
 var cancelCmd = &cobra.Command{
 	Use:   "cancel [taskID ...]",
-	Short: "cancel one or more tasks by ID",
+	Short: "Cancel one or more tasks by ID.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return cmd.Help()

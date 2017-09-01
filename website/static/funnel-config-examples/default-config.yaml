@@ -30,6 +30,7 @@ Server:
     # Write logs to this path. If empty, logs are written to stderr.
     OutputFile: ""
 
+# The scheduler is used for the GCE, Openstack, and Manual compute backends. 
 Scheduler:
   # How often to run a scheduler iteration.
   # In nanoseconds.
@@ -77,15 +78,15 @@ Scheduler:
       # In nanoseconds.
       UpdateTimeout: 1000000000 # 1 second
 
-  Logger:
-    # Logging levels: debug, info, error
-    Level: info
-    # Write logs to this path. If empty, logs are written to stderr.
-    OutputFile: ""
+      Logger:
+        # Logging levels: debug, info, error
+        Level: info
+        # Write logs to this path. If empty, logs are written to stderr.
+        OutputFile: ""
 
 
-# The name of the active scheduler backend
-# Available backends: local, condor, gce, openstack
+# The name of the active compute backend
+# Available backends: local, htcondor, slurm, pbs, gridengine, manual, gce, openstack
 Backend: local
 
 # Scheduler backend config
@@ -95,7 +96,7 @@ Backends:
       universe = vanilla
       getenv = True
       executable = {{.Executable}}
-      arguments = node run --config {{Config}}
+      arguments = worker run --config {{.Config}} --task-id {{.TaskId}}
       log = {{.WorkDir}}/condor-event-log
       error = {{.WorkDir}}/funnel-stderr
       output = {{.WorkDir}}/funnel-stdout
@@ -129,7 +130,7 @@ Backends:
       {{printf "#PBS -l file=%.0fgb" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} node run --config {{Config}}
+      {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
 
   GridEngine:
     Template: |
@@ -148,7 +149,7 @@ Backends:
       {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} node run --config {{Config}}
+      {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
   
   SLURM:
     Template: |
@@ -167,7 +168,7 @@ Backends:
       {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} node run --config {{Config}}
+      {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
 
   GCE:
     # Path to account credentials file.

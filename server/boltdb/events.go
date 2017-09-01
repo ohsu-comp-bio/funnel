@@ -1,4 +1,4 @@
-package server
+package boltdb
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ const (
 )
 
 // CreateEvent creates an event for the server to handle.
-func (taskBolt *TaskBolt) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
+func (taskBolt *BoltDB) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
 	var err error
 
 	tl := &tes.TaskLog{}

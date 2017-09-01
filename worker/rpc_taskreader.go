@@ -19,11 +19,12 @@ func newRPCTaskReader(conf config.Worker, taskID string) (*RPCTaskReader, error)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx,
-		conf.ServerAddress,
+	conn, err := grpc.DialContext(
+		ctx,
+		conf.EventWriters.RPC.ServerAddress,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		util.PerRPCPassword(conf.ServerPassword),
+		util.PerRPCPassword(conf.EventWriters.RPC.ServerPassword),
 	)
 	if err != nil {
 		return nil, err

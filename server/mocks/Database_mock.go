@@ -1,5 +1,6 @@
 package mocks
 
+import compute "github.com/ohsu-comp-bio/funnel/compute"
 import context "golang.org/x/net/context"
 import events "github.com/ohsu-comp-bio/funnel/events"
 import mock "github.com/stretchr/testify/mock"
@@ -217,4 +218,9 @@ func (_m *Database) UpdateNode(_a0 context.Context, _a1 *scheduler.Node) (*sched
 	}
 
 	return r0, r1
+}
+
+// WithComputeBackend provides a mock function with given fields: _a0
+func (_m *Database) WithComputeBackend(_a0 compute.Backend) {
+	_m.Called(_a0)
 }

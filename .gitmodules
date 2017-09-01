@@ -124,3 +124,7 @@
 [submodule "vendor/github.com/aws/aws-sdk-go"]
 	path = vendor/github.com/aws/aws-sdk-go
 	url = https://github.com/aws/aws-sdk-go
+[submodule "vendor/github.com/getlantern/deepcopy"]
+	path = vendor/github.com/getlantern/deepcopy
+	url = https://github.com/getlantern/deepcopy
+

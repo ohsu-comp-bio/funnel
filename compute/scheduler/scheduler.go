@@ -12,7 +12,7 @@ import (
 // Mostly, this exists so it can be mocked during testing.
 type Database interface {
 	QueueTask(*tes.Task) error
-	ReadQueue(n int) []*tes.Task
+	ReadQueue(int) []*tes.Task
 	AssignTask(*tes.Task, *pbs.Node) error
 	CheckNodes() error
 	ListNodes(context.Context, *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error)

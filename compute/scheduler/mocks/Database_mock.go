@@ -61,13 +61,27 @@ func (_m *Database) ListNodes(_a0 context.Context, _a1 *scheduler.ListNodesReque
 	return r0, r1
 }
 
-// ReadQueue provides a mock function with given fields: n
-func (_m *Database) ReadQueue(n int) []*tes.Task {
-	ret := _m.Called(n)
+// QueueTask provides a mock function with given fields: _a0
+func (_m *Database) QueueTask(_a0 *tes.Task) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*tes.Task) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ReadQueue provides a mock function with given fields: _a0
+func (_m *Database) ReadQueue(_a0 int) []*tes.Task {
+	ret := _m.Called(_a0)
 
 	var r0 []*tes.Task
 	if rf, ok := ret.Get(0).(func(int) []*tes.Task); ok {
-		r0 = rf(n)
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*tes.Task)

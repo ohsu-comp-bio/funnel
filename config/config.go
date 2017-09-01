@@ -52,8 +52,8 @@ type Config struct {
 // InheritServerProperties sets the ServerAddress and ServerPassword fields
 // in the Worker and Scheduler.Node configs based on the Server config
 func InheritServerProperties(c Config) Config {
-	c.Worker.ServerAddress = c.Server.RPCAddress()
-	c.Worker.ServerPassword = c.Server.Password
+	c.Worker.EventWriters.RPC.ServerAddress = c.Server.RPCAddress()
+	c.Worker.EventWriters.RPC.ServerPassword = c.Server.Password
 
 	c.Scheduler.Node.ServerAddress = c.Server.RPCAddress()
 	c.Scheduler.Node.ServerPassword = c.Server.Password
@@ -71,7 +71,6 @@ func DefaultConfig() Config {
 			HTTPPort:           "8000",
 			RPCPort:            "9090",
 			ServiceName:        "Funnel",
-			DBPath:             path.Join(workDir, "funnel.db"),
 			MaxExecutorLogSize: 10000,
 			DisableHTTPCache:   true,
 			Logger:             logger.DefaultConfig(),
@@ -100,15 +99,22 @@ func DefaultConfig() Config {
 					AllowedDirs: []string{cwd},
 				},
 			},
-			UpdateRate:    time.Second * 5,
-			UpdateTimeout: time.Second,
-			BufferSize:    10000,
-			Logger:        logger.DefaultConfig(),
+			UpdateRate: time.Second * 5,
+			BufferSize: 10000,
+			Logger:     logger.DefaultConfig(),
 		},
 	}
 
 	// set rpc server address and password for worker and node
 	c = InheritServerProperties(c)
+
+	c.Server.Database = "boltdb"
+	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
+	c.Server.Databases.DynamoDB.TableBasename = "funnel"
+
+	c.Worker.EventWriter = "rpc"
+	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
+	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -128,12 +134,18 @@ func DefaultConfig() Config {
 
 // Server describes configuration for the server.
 type Server struct {
-	ServiceName        string
-	HostName           string
-	HTTPPort           string
-	RPCPort            string
-	Password           string
-	DBPath             string
+	ServiceName string
+	HostName    string
+	HTTPPort    string
+	RPCPort     string
+	Password    string
+	Database    string
+	Databases   struct {
+		BoltDB struct {
+			Path string
+		}
+		DynamoDB DynamoDB
+	}
 	DisableHTTPCache   bool
 	MaxExecutorLogSize int
 	Logger             logger.Config
@@ -202,20 +214,35 @@ type Node struct {
 
 // Worker contains worker configuration.
 type Worker struct {
-	// RPC address of the Funnel server
-	ServerAddress string
-	// Password for basic auth. with the server APIs.
-	ServerPassword string
 	// Directory to write task files to
 	WorkDir string
 	// How often the worker sends task log updates
 	UpdateRate time.Duration
-	// Timeout duration for gRPC calls
-	UpdateTimeout time.Duration
 	// Max bytes to store in-memory between updates
-	BufferSize int64
-	Storage    StorageConfig
-	Logger     logger.Config
+	BufferSize   int64
+	Storage      StorageConfig
+	Logger       logger.Config
+	EventWriter  string
+	EventWriters struct {
+		RPC struct {
+			// RPC address of the Funnel server
+			ServerAddress string
+			// Password for basic auth. with the server APIs.
+			ServerPassword string
+			// Timeout duration for gRPC calls
+			UpdateTimeout time.Duration
+		}
+		DynamoDB DynamoDB
+	}
+}
+
+// DynamoDB describes the configuration for Amazon DynamoDB backed processes
+// such as the event writer and server.
+type DynamoDB struct {
+	Region        string
+	Key           string
+	Secret        string
+	TableBasename string
 }
 
 // StorageConfig describes configuration for all storage types

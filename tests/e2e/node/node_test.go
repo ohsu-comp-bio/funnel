@@ -29,7 +29,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	defer cancel()
 	go n.Run(ctx)
 
-	srv.DB.CheckNodes()
+	srv.SDB.CheckNodes()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
 
 	nodes := srv.ListNodes()
@@ -39,7 +39,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 
 	cancel()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
-	srv.DB.CheckNodes()
+	srv.SDB.CheckNodes()
 	nodes = srv.ListNodes()
 
 	if len(nodes) != 0 {

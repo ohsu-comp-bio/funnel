@@ -23,7 +23,7 @@ func init() {
 	flags.StringVar(&flagConf.Server.Logger.Level, "log-level", flagConf.Server.Logger.Level, "Level of logging")
 	flags.StringVar(&flagConf.Server.Logger.OutputFile, "log-path", flagConf.Server.Logger.OutputFile, "File path to write logs to")
 	flags.StringVar(&flagConf.Server.Logger.Formatter, "log-format", flagConf.Server.Logger.Formatter, "Log format. ['json', 'text']")
-	flags.StringVar(&flagConf.Server.DBPath, "db-path", flagConf.Server.DBPath, "Database path")
-	flags.StringVar(&flagConf.Backend, "backend", flagConf.Backend, "Name of scheduler backend to enable")
+	flags.StringVar(&flagConf.Server.Database, "database", flagConf.Server.Database, "Name of database backend to enable")
+	flags.StringVar(&flagConf.Backend, "backend", flagConf.Backend, "Name of compute backend to enable")
 	Cmd.AddCommand(runCmd)
 }

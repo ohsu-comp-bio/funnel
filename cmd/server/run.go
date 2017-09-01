@@ -17,6 +17,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/server"
+	"github.com/ohsu-comp-bio/funnel/server/boltdb"
+	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/spf13/cobra"
 	"strings"
 )
@@ -58,10 +60,14 @@ func Run(conf config.Config) error {
 	var db server.Database
 	var err error
 
-	db, err = server.NewTaskBolt(conf)
+	switch strings.ToLower(conf.Server.Database) {
+	case "boltdb":
+		db, err = boltdb.New(conf)
+	case "dynamodb":
+		db, err = dynamodb.New(conf.Server.Databases.DynamoDB)
+	}
 	if err != nil {
-		log.Error("Couldn't open database", err)
-		return err
+		return fmt.Errorf("error occurred while connecting to or creating the database: %v", err)
 	}
 
 	srv := server.DefaultServer(db, conf.Server)
@@ -79,7 +85,7 @@ func Run(conf config.Config) error {
 	case "gce", "manual", "openstack":
 		sdb, ok := db.(scheduler.Database)
 		if !ok {
-			return fmt.Errorf("Database doesn't satisfy the scheduler interface")
+			return fmt.Errorf("database doesn't satisfy the scheduler interface")
 		}
 
 		backend = scheduler.NewComputeBackend(sdb)
@@ -94,13 +100,13 @@ func Run(conf config.Config) error {
 			sbackend, err = openstack.NewBackend(conf)
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("error occurred while setting up backend: %v", err)
 		}
 
 		sched := scheduler.NewScheduler(sdb, sbackend, conf.Scheduler)
 		err := sched.Start(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("error occurred while running the scheduler: %v", err)
 		}
 	case "gridengine":
 		backend = gridengine.NewBackend(conf)

@@ -1,4 +1,4 @@
-package server
+package boltdb
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -14,7 +14,7 @@ func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 	conf = testutils.TempDirConfig(conf)
 
 	// Create database
-	db, dberr := NewTaskBolt(conf)
+	db, dberr := New(conf)
 	if dberr != nil {
 		t.Fatal("Couldn't open database")
 	}

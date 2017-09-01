@@ -1,7 +1,7 @@
 ---
 Demo:
   - Title: Start Funnel
-    Cmd: $ funnel server
+    Cmd: $ funnel server run
 
   - Title: Run a task
     Desc: Returns a task ID.

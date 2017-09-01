@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ -N {{.NodeId}}
+#$ -N {{.TaskId}}
 #$ -o {{.WorkDir}}/funnel-stdout
 #$ -e {{.WorkDir}}/funnel-stderr
 {{if ne .Cpus 0 -}}
@@ -12,4 +12,4 @@
 {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
 {{- end}}
 
-{{.Executable}} node run --config {{.Config}}
+{{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}

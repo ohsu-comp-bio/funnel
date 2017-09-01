@@ -25,7 +25,6 @@ func TestBasicAuthFail(t *testing.T) {
 	conf := e2e.DefaultConfig()
 	conf.Server.Password = "abc123"
 	fun := e2e.NewFunnel(conf)
-	fun.WithLocalBackend()
 	fun.StartServer()
 
 	var err error
@@ -68,7 +67,6 @@ func TestBasicAuthed(t *testing.T) {
 	conf := e2e.DefaultConfig()
 	conf.Server.Password = "abc123"
 	fun := e2e.NewFunnel(conf)
-	fun.WithLocalBackend()
 	fun.StartServer()
 	fun.AddRPCClient(util.PerRPCPassword("abc123"))
 

@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Cmd represents the node command
+// Cmd represents the `funnel node` command set
 var Cmd = &cobra.Command{
 	Use:     "node",
 	Aliases: []string{"nodes"},

@@ -7,30 +7,26 @@ menu:
     weight: 20
 ---
 
-# Open Grid Engine (SGE)
+# Open Grid Engine
 
-Funnel can be configured to start workers via [Open Grid Engine][sge].  
-
-Workers will start, execute a single task, then exit immediately so that they don't
-unfairly hold slots in the SGE queue. Funnel accesses SGE by making calls
+Funnel can be configured to submit workers to [Open Grid Engine][ge] by making calls
 to `qsub`.
 
-The Funnel server process needs to run on the same machine as the SGE master.  
-Configure Funnel to use SGE by including the following config:
+The Funnel server process needs to run on the same machine as the Grid Engine master.
+Configure Funnel to use Grid Engine by including the following config:
 
 ```YAML
 {{< gridengine-template >}}
 ```
-
 The following variables are available for use in the template:
 
 | Variable    |  Description |
 |:------------|:-------------|
-|WorkerId     |  funnel worker id |
-|Executable   |  path to funnel binary |
-|WorkerConfig |  path to the funnel worker config file |
-|WorkDir      |  funnel working directory |
-|Cpus         |  requested cpu cores |
+|TaskId       | funnel task id |
+|Executable   | path to funnel binary |
+|Config       | path to the funnel worker config file |
+|WorkDir      | funnel working directory |
+|Cpus         | requested cpu cores |
 |RamGb        | requested ram |
 |DiskGb       | requested free disk space |
 |Zone         | requested zone (could be used for queue name) |
@@ -38,9 +34,4 @@ The following variables are available for use in the template:
 
 See https://golang.org/pkg/text/template for information on creating templates.
 
-To start Funnel with a config file:
-```shell
-$ funnel server --config ./your-config.yaml
-```
-
-[sge]: http://gridscheduler.sourceforge.net/documentation.html
+[ge]: http://gridscheduler.sourceforge.net/documentation.html

@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N {{.NodeId}}
+#PBS -N {{.TaskId}}
 #PBS -o {{.WorkDir}}/funnel-stdout
 #PBS -e {{.WorkDir}}/funnel-stderr
 {{if ne .Cpus 0 -}}
@@ -12,4 +12,4 @@
 {{printf "#PBS -l file=%.0fgb" .DiskGb}}
 {{- end}}
 
-{{.Executable}} node run --config {{.Config}}
+{{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}

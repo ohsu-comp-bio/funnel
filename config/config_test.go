@@ -10,7 +10,7 @@ Scheduler:
       Cpus: 42
       RamGb: 2.5
       DiskGb: 50.0
-  `
+`
 	conf := Config{}
 	Parse([]byte(yaml), &conf)
 

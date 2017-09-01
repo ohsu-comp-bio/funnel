@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name {{.NodeId}}
+#SBATCH --job-name {{.TaskId}}
 #SBATCH --ntasks 1
 #SBATCH --error {{.WorkDir}}/funnel-stderr
 #SBATCH --output {{.WorkDir}}/funnel-stdout
@@ -13,4 +13,4 @@
 {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
 {{- end}}
 
-{{.Executable}} node run --config {{.Config}}
+{{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}

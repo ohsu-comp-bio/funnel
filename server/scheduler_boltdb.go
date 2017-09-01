@@ -14,6 +14,22 @@ import (
 	"time"
 )
 
+// QueueTask adds a task to the scheduler queue.
+func (taskBolt *TaskBolt) QueueTask(task *tes.Task) error {
+	taskID := task.Id
+	idBytes := []byte(taskID)
+
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+		tx.Bucket(TasksQueued).Put(idBytes, []byte{})
+		return nil
+	})
+	if err != nil {
+		log.Error("Error queuing task", err)
+		return err
+	}
+	return nil
+}
+
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
 	tasks := make([]*tes.Task, 0)

@@ -9,18 +9,21 @@ import (
 	docker "github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
+	"github.com/ohsu-comp-bio/funnel/compute"
+	"github.com/ohsu-comp-bio/funnel/compute/local"
+	"github.com/ohsu-comp-bio/funnel/compute/noop"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/scheduler"
-	"github.com/ohsu-comp-bio/funnel/scheduler/local"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tests/testutils"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -66,10 +69,12 @@ func DefaultConfig() config.Config {
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
-	conf = testutils.LoggerDebugConfig(conf)
+	conf.Server.Logger = logger.DebugConfig()
+	conf.Scheduler.Node.Logger = logger.DebugConfig()
+	conf.Worker.Logger = logger.DebugConfig()
 	conf.Scheduler.ScheduleRate = time.Millisecond * 700
 	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
-	conf.Worker.UpdateRate = time.Millisecond * 1300
+	conf.Worker.UpdateRate = time.Millisecond * 300
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
@@ -98,7 +103,6 @@ func DefaultConfig() config.Config {
 func NewFunnel(conf config.Config) *Funnel {
 	conf = config.InheritServerProperties(conf)
 
-	var derr error
 	dcli, derr := util.NewDockerClient()
 	if derr != nil {
 		panic(derr)
@@ -108,6 +112,23 @@ func NewFunnel(conf config.Config) *Funnel {
 	if dberr != nil {
 		panic(dberr)
 	}
+
+	var backend compute.Backend
+	var err error
+
+	switch conf.Backend {
+	case "local":
+		backend = local.NewBackend(conf)
+	case "noop":
+		backend = noop.NewBackend(conf)
+	case "gce":
+		backend = scheduler.NewComputeBackend(db)
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	db.WithComputeBackend(backend)
 
 	srv := server.DefaultServer(db, conf.Server)
 
@@ -119,7 +140,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		DB:         db,
 		Server:     srv,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
-		rate:       conf.Scheduler.ScheduleRate,
+		rate:       time.Millisecond * 500,
 	}
 }
 
@@ -154,15 +175,6 @@ func (f *Funnel) Cleanup() {
 	f.conn.Close()
 }
 
-// WithLocalBackend configures the instance to use the local scheduler backend.
-func (f *Funnel) WithLocalBackend() {
-	backend, berr := local.NewBackend(f.Conf)
-	if berr != nil {
-		panic(berr)
-	}
-	f.Scheduler = scheduler.NewScheduler(f.DB, backend, f.Conf.Scheduler)
-}
-
 // StartServer starts the server
 func (f *Funnel) StartServer() {
 	go f.Server.Serve(context.Background())
@@ -170,14 +182,42 @@ func (f *Funnel) StartServer() {
 		go f.Scheduler.Start(context.Background())
 	}
 
-	err := f.AddRPCClient()
+	err := f.PollForServerStart()
 	if err != nil {
-		log.Error("funnel server failed to start within allocated time", err)
+		log.Error("failed to start funnel server", err)
+		panic(err)
+	}
+
+	err = f.AddRPCClient()
+	if err != nil {
+		log.Error("failed to add RPC client", err)
 		panic(err)
 	}
 
 	log.Debug("Funnel server started")
-	time.Sleep(time.Second)
+}
+
+// PollForServerStart polls the server http address to check if the server is running.
+func (f *Funnel) PollForServerStart() error {
+	ready := make(chan struct{})
+	go func() {
+		for {
+			_, err := http.Get(f.Conf.Server.HTTPAddress())
+			if err == nil {
+				close(ready)
+				break
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+	}()
+
+	select {
+	case <-ready:
+		time.Sleep(time.Second * 1)
+		return nil
+	case <-time.After(time.Second * 30):
+		return fmt.Errorf("timeout error - server didn't start within 30 seconds")
+	}
 }
 
 // WaitForDockerDestroy waits for a "destroy" event
@@ -390,7 +430,7 @@ func (f *Funnel) StartServerInDocker(imageName string, backend string, extraArgs
 		"-v", fmt.Sprintf("%s:%s", configPath, configPath),
 	}
 	args = append(args, extraArgs...)
-	args = append(args, imageName, "funnel", "server", "--config",
+	args = append(args, imageName, "funnel", "server", "run", "--config",
 		configPath, "--backend", backend)
 
 	cmd := exec.Command("docker", args...)
@@ -406,13 +446,19 @@ func (f *Funnel) StartServerInDocker(imageName string, backend string, extraArgs
 
 	ready := make(chan struct{})
 	go func() {
+		err := f.PollForServerStart()
+		if err != nil {
+			log.Error("failed to start funnel server", err)
+			panic(err)
+		}
+
 		err = f.AddRPCClient()
 		if err != nil {
-			log.Error("funnel server failed to start within allocated time", err)
+			log.Error("failed to add RPC client", err)
 			panic(err)
-		} else {
-			close(ready)
 		}
+
+		close(ready)
 	}()
 
 	select {

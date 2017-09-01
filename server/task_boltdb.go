@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
+	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
@@ -49,8 +50,9 @@ var NodeTasks = []byte("node-tasks")
 // TaskBolt provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
 type TaskBolt struct {
-	db   *bolt.DB
-	conf config.Config
+	db      *bolt.DB
+	conf    config.Config
+	backend compute.Backend
 }
 
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
@@ -92,7 +94,14 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 		}
 		return nil
 	})
-	return &TaskBolt{db: db, conf: conf}, nil
+	return &TaskBolt{db: db, conf: conf, backend: nil}, nil
+}
+
+// WithComputeBackend configures the TaskBolt instance to use the given
+// compute.Backend. The compute backend is responsible for dispatching tasks to
+// schedulers / compute resources with its Submit method.
+func (taskBolt *TaskBolt) WithComputeBackend(backend compute.Backend) {
+	taskBolt.backend = backend
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -118,11 +127,25 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 		tx.Bucket(TaskBucket).Put(idBytes, taskString)
 		tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
-		tx.Bucket(TasksQueued).Put(idBytes, []byte{})
 		return nil
 	})
 	if err != nil {
 		log.Error("Error storing task in database", err)
+		return nil, err
+	}
+
+	err = taskBolt.backend.Submit(task)
+	if err != nil {
+		log.Error("Error submitting task to compute backend", err)
+		derr := taskBolt.db.Update(func(tx *bolt.Tx) error {
+			tx.Bucket(TaskBucket).Delete(idBytes)
+			tx.Bucket(TaskState).Delete(idBytes)
+			return nil
+		})
+		if derr != nil {
+			log.Error("Error storing task in database", err)
+			err = fmt.Errorf("%v\n%v", err, derr)
+		}
 		return nil, err
 	}
 

@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/logrusorgru/aurora"
@@ -117,12 +118,7 @@ func (l *logger) Info(msg string, args ...interface{}) {
 //     log.Error("Couldn't start server", err)
 func (l *logger) Error(msg string, args ...interface{}) {
 	defer recoverLogErr()
-	var f map[string]interface{}
-	if len(args) == 1 {
-		f = fields("error", args[0])
-	} else {
-		f = fields(args...)
-	}
+	f := fields(args...)
 	l.base.WithFields(f).Error(msg)
 }
 
@@ -152,21 +148,64 @@ func recoverLogErr() {
 	}
 }
 
+// TODO having this hard-coded into the logger is a hack.
+//      ideally, it's configured per-logger instance, but
+//      right now that would require a larger logger refactor.
+
+type contextKey string
+
+// TaskIDKey defines the context value key used to find the task ID.
+const TaskIDKey = contextKey("taskID")
+
+// WorkerIDKey defines the context value key used to find the worker ID.
+const WorkerIDKey = contextKey("workerID")
+
 // converts an argument list to a map, e.g.
 // ("key", value, "key2", value2) => {"key": value, "key2", value2}
+//
+// Some arguments have special processing rules:
+// - errors will be automatically expanded to have the key "error".
+//
+// - contexts will be searched for particular values, such as task ID.
+//   The context values searched for are:
+//   - taskID
+//   - workerID
+//
+//   e.g.
+//   ctx = context.WithValue("taskID", 1234)
+//   fields("foo", fooval, ctx, err) returns
+//   {"foo": fooval, "taskID", 1234, "error", err}.
+
 func fields(args ...interface{}) map[string]interface{} {
-	f := make(map[string]interface{}, len(args)/2)
-	if len(args) == 1 {
-		f["unknown"] = args[0]
+	var expanded []interface{}
+	for _, a := range args {
+		switch x := a.(type) {
+		case error:
+			expanded = append(expanded, "error", a)
+		case context.Context:
+			if id, ok := x.Value(TaskIDKey).(string); ok {
+				expanded = append(expanded, string(TaskIDKey), id)
+			}
+			if id, ok := x.Value(WorkerIDKey).(string); ok {
+				expanded = append(expanded, string(WorkerIDKey), id)
+			}
+		default:
+			expanded = append(expanded, a)
+		}
+	}
+
+	f := make(map[string]interface{}, len(expanded)/2)
+	if len(expanded) == 1 {
+		f["unknown"] = expanded[0]
 		return f
 	}
-	for i := 0; i < len(args); i += 2 {
-		k := args[i].(string)
-		v := args[i+1]
+	for i := 0; i < len(expanded); i += 2 {
+		k := expanded[i].(string)
+		v := expanded[i+1]
 		f[k] = v
 	}
-	if len(args)%2 != 0 {
-		f["unknown"] = args[len(args)-1]
+	if len(expanded)%2 != 0 {
+		f["unknown"] = expanded[len(expanded)-1]
 	}
 	return f
 }

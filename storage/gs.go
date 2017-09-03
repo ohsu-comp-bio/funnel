@@ -68,7 +68,7 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 
 // Get copies an object from GS to the host path.
 func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-	log.Info("Starting download", "url", rawurl)
+	log.Info("Starting download", ctx, "url", rawurl)
 
 	url, perr := parse(rawurl)
 	if perr != nil {
@@ -81,7 +81,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		if err != nil {
 			return err
 		}
-		log.Info("Finished file download", "url", rawurl, "hostPath", hostPath)
+		log.Info("Finished file download", ctx, "url", rawurl, "hostPath", hostPath)
 		return nil
 
 	} else if class == tes.FileType_DIRECTORY {
@@ -94,7 +94,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 				return err
 			}
 		}
-		log.Info("Finished directory download", "url", rawurl, "hostPath", hostPath)
+		log.Info("Finished directory download", ctx, "url", rawurl, "hostPath", hostPath)
 		return nil
 	}
 	return fmt.Errorf("Unknown file class: %s", class)
@@ -121,7 +121,7 @@ func download(call *storage.ObjectsGetCall, hostPath string) error {
 
 // Put copies an object (file) from the host path to GS.
 func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	log.Info("Starting upload", "url", rawurl)
+	log.Info("Starting upload", ctx, "url", rawurl)
 
 	var out []*tes.OutputFileLog
 
@@ -161,7 +161,7 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 		return nil, fmt.Errorf("Unknown file class: %s", class)
 	}
 
-	log.Info("Finished upload", "url", rawurl, "hostPath", hostPath)
+	log.Info("Finished upload", ctx, "url", rawurl, "hostPath", hostPath)
 	return out, nil
 }
 

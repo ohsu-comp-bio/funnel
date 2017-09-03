@@ -33,7 +33,7 @@ func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
 
 // Get copies an object from S3 to the host path.
 func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-	log.Info("Starting download", "url", url)
+	log.Info("Starting download", ctx, "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)
 
@@ -42,7 +42,7 @@ func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class
 		if err != nil {
 			return err
 		}
-		log.Info("Successfully saved", "hostPath", hostPath)
+		log.Info("Successfully saved", ctx, "hostPath", hostPath)
 		return nil
 	} else if class == Directory {
 		return fmt.Errorf("S3 directories not yet supported")
@@ -53,7 +53,7 @@ func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class
 // Put copies an object (file) from the host path to S3.
 func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
 
-	log.Info("Starting upload", "url", url)
+	log.Info("Starting upload", ctx, "url", url)
 	path := strings.TrimPrefix(url, S3Protocol)
 	// TODO it's easy to create an error if this starts with a "/"
 	//      maybe just strip it?
@@ -65,7 +65,7 @@ func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class
 		if err != nil {
 			return nil, err
 		}
-		log.Info("Successfully uploaded", "hostPath", hostPath)
+		log.Info("Successfully uploaded", ctx, "hostPath", hostPath)
 		return []*tes.OutputFileLog{
 			{Url: url, Path: hostPath, SizeBytes: fileSize(hostPath)},
 		}, nil

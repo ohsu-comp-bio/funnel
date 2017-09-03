@@ -34,7 +34,7 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-	log.Info("Starting download", "url", url, "hostPath", hostPath)
+	log.Info("Starting download", ctx, "url", url, "hostPath", hostPath)
 	path, ok := getPath(url)
 
 	if !ok {
@@ -66,13 +66,13 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	if err != nil {
 		return err
 	}
-	log.Info("Finished download", "url", url, "hostPath", hostPath)
+	log.Info("Finished download", ctx, "url", url, "hostPath", hostPath)
 	return nil
 }
 
 // Put copies a file from the hostPath into storage.
 func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	log.Info("Starting upload", "url", url, "hostPath", hostPath)
+	log.Info("Starting upload", ctx, "url", url, "hostPath", hostPath)
 	path, ok := getPath(url)
 
 	if !ok {
@@ -123,7 +123,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 		return nil, err
 	}
 
-	log.Info("Finished upload", "url", url, "hostPath", hostPath)
+	log.Info("Finished upload", ctx, "url", url, "hostPath", hostPath)
 	return out, nil
 }
 

@@ -198,15 +198,21 @@ func newTaskClient(conf config.Worker) (*taskClient, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx,
-		conf.ServerAddress,
-		grpc.WithInsecure(),
+	opts := util.DialOpts{
 		grpc.WithBlock(),
-		util.PerRPCPassword(conf.ServerPassword),
-	)
+	}
+	opts.Password(conf.ServerPassword)
+
+	err := opts.TLS(conf.TLS.CertFile)
 	if err != nil {
 		return nil, err
 	}
+
+	conn, err := grpc.DialContext(ctx, conf.ServerAddress, opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	t := tes.NewTaskServiceClient(conn)
 	s := pbf.NewSchedulerServiceClient(conn)
 	return &taskClient{t, s}, nil

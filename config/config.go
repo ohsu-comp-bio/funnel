@@ -18,6 +18,10 @@ type Config struct {
 	Scheduler string
 	Server    struct {
 		Password string
+		TLS      struct {
+			CertFile string
+			KeyFile  string
+		}
 	}
 	Backends struct {
 		Local    struct{}
@@ -161,6 +165,9 @@ type Worker struct {
 	UpdateTimeout  time.Duration
 	Metadata       map[string]string
 	ServerPassword string
+	TLS            struct {
+		CertFile string
+	}
 }
 
 // WorkerInheritConfigVals is a utility to help ensure the Worker inherits the proper config values from the parent Config

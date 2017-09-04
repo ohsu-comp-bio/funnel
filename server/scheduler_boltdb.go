@@ -105,7 +105,7 @@ func updateNode(tx *bolt.Tx, req *pbs.Node) error {
 		// If the node has acknowledged that the task is complete,
 		// unlink the task from the node.
 		switch state {
-		case Canceled, Complete, Error, SystemError:
+		case tes.State_CANCELED, tes.State_COMPLETE, tes.State_ERROR, tes.State_SYSTEM_ERROR:
 			key := append([]byte(req.Id), []byte(id)...)
 			tx.Bucket(nodeTasks).Delete(key)
 			// update disk usage once a task completes

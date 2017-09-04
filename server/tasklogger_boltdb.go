@@ -10,19 +10,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-// State variables for convenience
-const (
-	Unknown      = tes.State_UNKNOWN
-	Queued       = tes.State_QUEUED
-	Running      = tes.State_RUNNING
-	Paused       = tes.State_PAUSED
-	Complete     = tes.State_COMPLETE
-	Error        = tes.State_ERROR
-	SystemError  = tes.State_SYSTEM_ERROR
-	Canceled     = tes.State_CANCELED
-	Initializing = tes.State_INITIALIZING
-)
-
 // UpdateTaskState updates a task's state in the database.
 func (taskBolt *TaskBolt) UpdateTaskState(ctx context.Context, req *tl.UpdateTaskStateRequest) (*tl.UpdateTaskStateResponse, error) {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -34,6 +21,19 @@ func (taskBolt *TaskBolt) UpdateTaskState(ctx context.Context, req *tl.UpdateTas
 func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 	idBytes := []byte(id)
 	current := getTaskState(tx, id)
+
+	// State variables for convenience
+	const (
+		Unknown      = tes.State_UNKNOWN
+		Queued       = tes.State_QUEUED
+		Running      = tes.State_RUNNING
+		Paused       = tes.State_PAUSED
+		Complete     = tes.State_COMPLETE
+		Error        = tes.State_ERROR
+		SystemError  = tes.State_SYSTEM_ERROR
+		Canceled     = tes.State_CANCELED
+		Initializing = tes.State_INITIALIZING
+	)
 
 	switch {
 	case target == current:

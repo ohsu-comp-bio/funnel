@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	// File represents the file type
-	File = tes.FileType_FILE
-	// Directory represents the directory type
-	Directory = tes.FileType_DIRECTORY
+	// file represents the file type
+	file = tes.FileType_FILE
+	// directory represents the directory type
+	directory = tes.FileType_DIRECTORY
 )
 
 // Backend provides an interface for a storage backend.
@@ -28,8 +28,6 @@ type Backend interface {
 	Get(ctx context.Context, url string, path string, class tes.FileType) error
 	Put(ctx context.Context, url string, path string, class tes.FileType) ([]*tes.OutputFileLog, error)
 	// Determines whether this backends supports the given request (url/path/class).
-	// A backend normally uses this to match the url prefix (e.g. "s3://")
-	// TODO would it be useful if this included the request type (Get/Put)?
 	Supports(url string, path string, class tes.FileType) bool
 }
 

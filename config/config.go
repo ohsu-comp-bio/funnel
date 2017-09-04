@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/ghodss/yaml"
+	bundle "github.com/ohsu-comp-bio/funnel/config/internal"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
@@ -148,10 +149,10 @@ func DefaultConfig() Config {
 	// set rpc server address and password for worker and node
 	c.InheritServerProperties()
 
-	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
-	slurmTemplate, _ := Asset("config/slurm-template.txt")
-	pbsTemplate, _ := Asset("config/pbs-template.txt")
-	geTemplate, _ := Asset("config/gridengine-template.txt")
+	htcondorTemplate, _ := bundle.Asset("config/htcondor-template.txt")
+	slurmTemplate, _ := bundle.Asset("config/slurm-template.txt")
+	pbsTemplate, _ := bundle.Asset("config/pbs-template.txt")
+	geTemplate, _ := bundle.Asset("config/gridengine-template.txt")
 
 	c.Backends.HTCondor.Template = string(htcondorTemplate)
 	c.Backends.SLURM.Template = string(slurmTemplate)

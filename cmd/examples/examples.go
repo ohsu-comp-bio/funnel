@@ -2,8 +2,8 @@ package examples
 
 import (
 	"fmt"
+	ex "github.com/ohsu-comp-bio/funnel/cmd/examples/internal"
 	"github.com/ohsu-comp-bio/funnel/config"
-	ex "github.com/ohsu-comp-bio/funnel/examples"
 	"github.com/spf13/cobra"
 	"path/filepath"
 	"strings"

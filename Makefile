@@ -63,7 +63,7 @@ lint:
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
 	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell --vendor \
-	 -s proto --exclude 'examples/bundle.go' --exclude 'config/bundle.go' --exclude "cmd/termdash" \
+	 -s proto --exclude 'cmd/examples/internal/bundle.go' --exclude 'config/bundle.go' --exclude "cmd/termdash" \
 	 --exclude 'webdash/web.go' --exclude 'funnel-work-dir' ./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 
@@ -157,7 +157,7 @@ gen-mocks:
 
 # Bundle example task messages into Go code.
 bundle-examples:
-	@go-bindata -pkg examples -o examples/bundle.go $(shell find examples/ -name '*.json')
+	@go-bindata -pkg examples -o cmd/examples/internal/bundle.go $(shell find examples/ -name '*.json')
 	@go-bindata -pkg config -o config/bundle.go $(shell find config/ -name '*.txt' -o -name '*.yaml')
 
 # Make everything usually needed to prepare for a pull request

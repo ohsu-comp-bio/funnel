@@ -22,7 +22,7 @@ func init() {
 		tesServer = "http://localhost:8000"
 	}
 
-	Cmd.PersistentFlags().StringVarP(&tesServer, "server", "S", tesServer, "")
+	Cmd.PersistentFlags().StringVarP(&tesServer, "server", "S", tesServer, `may be set by FUNNEL_SERVER env var`)
 	Cmd.AddCommand(listCmd)
 	Cmd.AddCommand(createCmd)
 	Cmd.AddCommand(getCmd)

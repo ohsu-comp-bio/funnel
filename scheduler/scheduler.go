@@ -1,3 +1,5 @@
+// Package scheduler handles scheduling queued tasks to compute resources,
+// and manages compute backend plugins.
 package scheduler
 
 import (

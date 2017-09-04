@@ -1,3 +1,4 @@
+// Package worker handles running tasks: file transfer, container execution, task logging, etc.
 package worker
 
 import (

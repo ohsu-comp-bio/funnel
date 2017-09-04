@@ -1,3 +1,4 @@
+// Package storage provides access to multiple file storage systems via a common interface.
 package storage
 
 // NOTE!

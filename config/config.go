@@ -1,3 +1,4 @@
+// Package config provides application configuration for most components: server, worker, etc.
 package config
 
 import (

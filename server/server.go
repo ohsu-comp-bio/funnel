@@ -1,3 +1,5 @@
+// Package server handles serving HTTP/RPC APIs for TES, task logging, and scheduling,
+// as well as database access.
 package server
 
 import (

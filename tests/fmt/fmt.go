@@ -1,4 +1,4 @@
-// This provides a simple program which transforms the output of `go test`
+// Package fmt provides a simple program which transforms the output of `go test`
 // in order to make it more readable.
 package main
 

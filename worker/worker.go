@@ -28,7 +28,7 @@ func NewDefaultWorker(conf config.Worker, taskID string) Worker {
 
 	return &DefaultWorker{
 		Conf:   conf,
-		Mapper: NewFileMapper(baseDir),
+		Mapper: newFileMapper(baseDir),
 		Store:  storage.Storage{},
 		Svc:    svc,
 		Log:    log,
@@ -40,7 +40,7 @@ func NewDefaultWorker(conf config.Worker, taskID string) Worker {
 // and logging.
 type DefaultWorker struct {
 	Conf   config.Worker
-	Mapper *FileMapper
+	Mapper *fileMapper
 	Store  storage.Storage
 	Svc    TaskService
 	Log    logger.Logger

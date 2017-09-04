@@ -5,7 +5,7 @@ package termdash
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
+	"github.com/ohsu-comp-bio/funnel/cmd/termdash/internal/config"
 	"regexp"
 )
 

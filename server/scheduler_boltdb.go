@@ -12,9 +12,9 @@ import (
 )
 
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
-func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
+func (tb *TaskBolt) ReadQueue(n int) []*tes.Task {
 	tasks := make([]*tes.Task, 0)
-	taskBolt.db.View(func(tx *bolt.Tx) error {
+	tb.db.View(func(tx *bolt.Tx) error {
 
 		// Iterate over the TasksQueued bucket, reading the first `n` tasks
 		c := tx.Bucket(tasksQueued).Cursor()
@@ -30,8 +30,8 @@ func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
 
 // AssignTask assigns a task to a node. This updates the task state to Initializing,
 // and updates the node (calls UpdateNode()).
-func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbs.Node) error {
-	return taskBolt.db.Update(func(tx *bolt.Tx) error {
+func (tb *TaskBolt) AssignTask(t *tes.Task, w *pbs.Node) error {
+	return tb.db.Update(func(tx *bolt.Tx) error {
 		// TODO this is important! write a test for this line.
 		//      when a task is assigned, its state is immediately Initializing
 		//      even before the node has received it.
@@ -59,8 +59,8 @@ func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbs.Node) error {
 // UpdateNode is an RPC endpoint that is used by nodes to send heartbeats
 // and status updates, such as completed tasks. The server responds with updated
 // information for the node, such as canceled tasks.
-func (taskBolt *TaskBolt) UpdateNode(ctx context.Context, req *pbs.Node) (*pbs.UpdateNodeResponse, error) {
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+func (tb *TaskBolt) UpdateNode(ctx context.Context, req *pbs.Node) (*pbs.UpdateNodeResponse, error) {
+	err := tb.db.Update(func(tx *bolt.Tx) error {
 		return updateNode(tx, req)
 	})
 	resp := &pbs.UpdateNodeResponse{}
@@ -164,9 +164,9 @@ func updateAvailableResources(tx *bolt.Tx, node *pbs.Node) {
 }
 
 // GetNode gets a node
-func (taskBolt *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
+func (tb *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
 	var node *pbs.Node
-	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+	err := tb.db.View(func(tx *bolt.Tx) error {
 		node = getNode(tx, req.Id)
 		return nil
 	})
@@ -175,8 +175,8 @@ func (taskBolt *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) 
 
 // CheckNodes is used by the scheduler to check for dead/gone nodes.
 // This is not an RPC endpoint
-func (taskBolt *TaskBolt) CheckNodes() error {
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+func (tb *TaskBolt) CheckNodes() error {
+	err := tb.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(nodes)
 		c := bucket.Cursor()
 
@@ -203,11 +203,11 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 				node.State == pbs.NodeState_INITIALIZING {
 
 				// The node is initializing, which has a more liberal timeout.
-				if d > taskBolt.conf.Scheduler.NodeInitTimeout {
+				if d > tb.conf.Scheduler.NodeInitTimeout {
 					// Looks like the node failed to initialize. Mark it dead
 					node.State = pbs.NodeState_DEAD
 				}
-			} else if d > taskBolt.conf.Scheduler.NodePingTimeout {
+			} else if d > tb.conf.Scheduler.NodePingTimeout {
 				// The node is stale/dead
 				node.State = pbs.NodeState_DEAD
 			} else {
@@ -226,11 +226,11 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.
-func (taskBolt *TaskBolt) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
+func (tb *TaskBolt) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
 	resp := &pbs.ListNodesResponse{}
 	resp.Nodes = []*pbs.Node{}
 
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+	err := tb.db.Update(func(tx *bolt.Tx) error {
 
 		bucket := tx.Bucket(nodes)
 		c := bucket.Cursor()

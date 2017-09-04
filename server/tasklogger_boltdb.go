@@ -11,8 +11,8 @@ import (
 )
 
 // UpdateTaskState updates a task's state in the database.
-func (taskBolt *TaskBolt) UpdateTaskState(ctx context.Context, req *tl.UpdateTaskStateRequest) (*tl.UpdateTaskStateResponse, error) {
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+func (tb *TaskBolt) UpdateTaskState(ctx context.Context, req *tl.UpdateTaskStateRequest) (*tl.UpdateTaskStateResponse, error) {
+	err := tb.db.Update(func(tx *bolt.Tx) error {
 		return transitionTaskState(tx, req.Id, req.State)
 	})
 	return &tl.UpdateTaskStateResponse{}, err
@@ -83,10 +83,10 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 // UpdateTaskLogs is an internal API endpoint that allows the worker to update
 // task logs (start time, end time, output files, etc).
-func (taskBolt *TaskBolt) UpdateTaskLogs(ctx context.Context, req *tl.UpdateTaskLogsRequest) (*tl.UpdateTaskLogsResponse, error) {
+func (tb *TaskBolt) UpdateTaskLogs(ctx context.Context, req *tl.UpdateTaskLogsRequest) (*tl.UpdateTaskLogsResponse, error) {
 	log.Debug("Update task logs", req)
 
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+	err := tb.db.Update(func(tx *bolt.Tx) error {
 		tasklog := &tes.TaskLog{}
 
 		// Try to load existing task log
@@ -125,14 +125,14 @@ func (taskBolt *TaskBolt) UpdateTaskLogs(ctx context.Context, req *tl.UpdateTask
 
 // UpdateExecutorLogs is an API endpoint that updates the logs of a task.
 // This is used by workers to communicate task updates to the server.
-func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *tl.UpdateExecutorLogsRequest) (*tl.UpdateExecutorLogsResponse, error) {
+func (tb *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *tl.UpdateExecutorLogsRequest) (*tl.UpdateExecutorLogsResponse, error) {
 	log.Debug("Update task executor logs", req)
 
-	taskBolt.db.Update(func(tx *bolt.Tx) error {
+	tb.db.Update(func(tx *bolt.Tx) error {
 		bL := tx.Bucket(executorLogs)
 
 		// max size (bytes) for stderr and stdout streams to keep in db
-		max := taskBolt.conf.Server.MaxExecutorLogSize
+		max := tb.conf.Server.MaxExecutorLogSize
 		key := []byte(fmt.Sprint(req.Id, req.Step))
 
 		if req.Log != nil {

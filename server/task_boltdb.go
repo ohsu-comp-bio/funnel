@@ -95,7 +95,7 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
-func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
+func (tb *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 	log.Debug("CreateTask called", "task", task)
 
 	if err := tes.Validate(task); err != nil {
@@ -113,7 +113,7 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 		return nil, err
 	}
 
-	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+	err = tb.db.Update(func(tx *bolt.Tx) error {
 		tx.Bucket(taskBucket).Put(idBytes, taskString)
 		tx.Bucket(taskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
 		tx.Bucket(tasksQueued).Put(idBytes, []byte{})
@@ -196,10 +196,10 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 }
 
 // GetTask gets a task, which describes a running task
-func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+func (tb *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task *tes.Task
 	var err error
-	err = taskBolt.db.View(func(tx *bolt.Tx) error {
+	err = tb.db.View(func(tx *bolt.Tx) error {
 		task, err = getTaskView(tx, req.Id, req.View)
 		return err
 	})
@@ -231,7 +231,7 @@ func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
 }
 
 // ListTasks returns a list of taskIDs
-func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+func (tb *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
 	var tasks []*tes.Task
 	pageSize := 256
@@ -246,7 +246,7 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 		}
 	}
 
-	taskBolt.db.View(func(tx *bolt.Tx) error {
+	tb.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket(taskBucket).Cursor()
 
 		i := 0
@@ -282,11 +282,11 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 }
 
 // CancelTask cancels a task
-func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+func (tb *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	log := log.WithFields("taskID", taskop.Id)
 	log.Info("Canceling task")
 
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+	err := tb.db.Update(func(tx *bolt.Tx) error {
 		// TODO need a test that ensures a canceled task is deleted from the node
 		id := taskop.Id
 		return transitionTaskState(tx, id, tes.State_CANCELED)
@@ -298,6 +298,6 @@ func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTask
 }
 
 // GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
-func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
+func (tb *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
+	return &tes.ServiceInfo{Name: tb.conf.Server.ServiceName}, nil
 }

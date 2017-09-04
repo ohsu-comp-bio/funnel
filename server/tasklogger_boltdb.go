@@ -62,21 +62,21 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 	case Canceled, Complete, Error, SystemError:
 		// Remove from queue
-		tx.Bucket(TasksQueued).Delete(idBytes)
+		tx.Bucket(tasksQueued).Delete(idBytes)
 
 	case Running, Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
 			log.Error("Unexpected transition", "current", current, "target", target)
 			return errors.New("Unexpected transition to Initializing")
 		}
-		tx.Bucket(TasksQueued).Delete(idBytes)
+		tx.Bucket(tasksQueued).Delete(idBytes)
 
 	default:
 		log.Error("Unknown target state", "target", target)
 		return errors.New("Unknown task state")
 	}
 
-	tx.Bucket(TaskState).Put(idBytes, []byte(target.String()))
+	tx.Bucket(taskState).Put(idBytes, []byte(target.String()))
 	log.Info("Set task state", "taskID", id, "state", target.String())
 	return nil
 }
@@ -90,7 +90,7 @@ func (taskBolt *TaskBolt) UpdateTaskLogs(ctx context.Context, req *tl.UpdateTask
 		tasklog := &tes.TaskLog{}
 
 		// Try to load existing task log
-		b := tx.Bucket(TasksLog).Get([]byte(req.Id))
+		b := tx.Bucket(tasksLog).Get([]byte(req.Id))
 		if b != nil {
 			proto.Unmarshal(b, tasklog)
 		}
@@ -117,7 +117,7 @@ func (taskBolt *TaskBolt) UpdateTaskLogs(ctx context.Context, req *tl.UpdateTask
 		}
 
 		logbytes, _ := proto.Marshal(tasklog)
-		tx.Bucket(TasksLog).Put([]byte(req.Id), logbytes)
+		tx.Bucket(tasksLog).Put([]byte(req.Id), logbytes)
 		return nil
 	})
 	return &tl.UpdateTaskLogsResponse{}, err
@@ -129,7 +129,7 @@ func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *tl.Update
 	log.Debug("Update task executor logs", req)
 
 	taskBolt.db.Update(func(tx *bolt.Tx) error {
-		bL := tx.Bucket(ExecutorLogs)
+		bL := tx.Bucket(executorLogs)
 
 		// max size (bytes) for stderr and stdout streams to keep in db
 		max := taskBolt.conf.Server.MaxExecutorLogSize
@@ -166,7 +166,7 @@ func (taskBolt *TaskBolt) UpdateExecutorLogs(ctx context.Context, req *tl.Update
 
 			// Save the updated log
 			logbytes, _ := proto.Marshal(req.Log)
-			tx.Bucket(ExecutorLogs).Put(key, logbytes)
+			tx.Bucket(executorLogs).Put(key, logbytes)
 		}
 
 		return nil

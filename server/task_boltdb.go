@@ -14,37 +14,35 @@ import (
 	"time"
 )
 
-// TODO these should probably be unexported names
-
-// TaskBucket defines the name of a bucket which maps
+// taskBucket defines the name of a bucket which maps
 // task ID -> tes.Task struct
-var TaskBucket = []byte("tasks")
+var taskBucket = []byte("tasks")
 
-// TasksQueued defines the name of a bucket which maps
+// tasksQueued defines the name of a bucket which maps
 // task ID -> nil
-var TasksQueued = []byte("tasks-queued")
+var tasksQueued = []byte("tasks-queued")
 
-// TaskState maps: task ID -> state string
-var TaskState = []byte("tasks-state")
+// taskState maps: task ID -> state string
+var taskState = []byte("tasks-state")
 
-// TasksLog defines the name of a bucket which maps
+// tasksLog defines the name of a bucket which maps
 // task ID -> tes.TaskLog struct
-var TasksLog = []byte("tasks-log")
+var tasksLog = []byte("tasks-log")
 
-// ExecutorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
-var ExecutorLogs = []byte("executor-logs")
+// executorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
+var executorLogs = []byte("executor-logs")
 
-// Nodes maps:
+// nodes maps:
 // node ID -> pbs.Node struct
-var Nodes = []byte("pools")
+var nodes = []byte("nodes")
 
-// TaskNode Map task ID -> node ID
-var TaskNode = []byte("task-node")
+// taskNode Map task ID -> node ID
+var taskNode = []byte("task-node")
 
-// NodeTasks indexes node -> tasks
+// nodeTasks indexes node -> tasks
 // Implemented as composite_key(node ID + task ID) => task ID
 // And searched with prefix scan using node ID
-var NodeTasks = []byte("node-tasks")
+var nodeTasks = []byte("node-tasks")
 
 // TaskBolt provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
@@ -66,29 +64,29 @@ func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
 
 	// Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
-		if tx.Bucket(TaskBucket) == nil {
-			tx.CreateBucket(TaskBucket)
+		if tx.Bucket(taskBucket) == nil {
+			tx.CreateBucket(taskBucket)
 		}
-		if tx.Bucket(TasksQueued) == nil {
-			tx.CreateBucket(TasksQueued)
+		if tx.Bucket(tasksQueued) == nil {
+			tx.CreateBucket(tasksQueued)
 		}
-		if tx.Bucket(TaskState) == nil {
-			tx.CreateBucket(TaskState)
+		if tx.Bucket(taskState) == nil {
+			tx.CreateBucket(taskState)
 		}
-		if tx.Bucket(TasksLog) == nil {
-			tx.CreateBucket(TasksLog)
+		if tx.Bucket(tasksLog) == nil {
+			tx.CreateBucket(tasksLog)
 		}
-		if tx.Bucket(ExecutorLogs) == nil {
-			tx.CreateBucket(ExecutorLogs)
+		if tx.Bucket(executorLogs) == nil {
+			tx.CreateBucket(executorLogs)
 		}
-		if tx.Bucket(Nodes) == nil {
-			tx.CreateBucket(Nodes)
+		if tx.Bucket(nodes) == nil {
+			tx.CreateBucket(nodes)
 		}
-		if tx.Bucket(TaskNode) == nil {
-			tx.CreateBucket(TaskNode)
+		if tx.Bucket(taskNode) == nil {
+			tx.CreateBucket(taskNode)
 		}
-		if tx.Bucket(NodeTasks) == nil {
-			tx.CreateBucket(NodeTasks)
+		if tx.Bucket(nodeTasks) == nil {
+			tx.CreateBucket(nodeTasks)
 		}
 		return nil
 	})
@@ -116,9 +114,9 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 	}
 
 	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-		tx.Bucket(TaskBucket).Put(idBytes, taskString)
-		tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
-		tx.Bucket(TasksQueued).Put(idBytes, []byte{})
+		tx.Bucket(taskBucket).Put(idBytes, taskString)
+		tx.Bucket(taskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
+		tx.Bucket(tasksQueued).Put(idBytes, []byte{})
 		return nil
 	})
 	if err != nil {
@@ -131,7 +129,7 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 
 func getTaskState(tx *bolt.Tx, id string) tes.State {
 	idBytes := []byte(id)
-	s := tx.Bucket(TaskState).Get(idBytes)
+	s := tx.Bucket(taskState).Get(idBytes)
 	if s == nil {
 		return tes.State_UNKNOWN
 	}
@@ -144,7 +142,7 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 var ErrTaskNotFound = errors.New("no task found for id")
 
 func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	b := tx.Bucket(taskBucket).Get([]byte(id))
 	if b == nil {
 		return ErrTaskNotFound
 	}
@@ -154,7 +152,7 @@ func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 }
 
 func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	b := tx.Bucket(taskBucket).Get([]byte(id))
 	if b == nil {
 		return ErrTaskNotFound
 	}
@@ -169,7 +167,7 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 }
 
 func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	b := tx.Bucket(taskBucket).Get([]byte(id))
 	if b == nil {
 		return ErrTaskNotFound
 	}
@@ -182,13 +180,13 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 	tasklog := &tes.TaskLog{}
 	task.Logs = []*tes.TaskLog{tasklog}
 
-	b := tx.Bucket(TasksLog).Get([]byte(task.Id))
+	b := tx.Bucket(tasksLog).Get([]byte(task.Id))
 	if b != nil {
 		proto.Unmarshal(b, tasklog)
 	}
 
 	for i := range task.Executors {
-		o := tx.Bucket(ExecutorLogs).Get([]byte(fmt.Sprint(task.Id, i)))
+		o := tx.Bucket(executorLogs).Get([]byte(fmt.Sprint(task.Id, i)))
 		if o != nil {
 			var execlog tes.ExecutorLog
 			proto.Unmarshal(o, &execlog)
@@ -249,7 +247,7 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 	}
 
 	taskBolt.db.View(func(tx *bolt.Tx) error {
-		c := tx.Bucket(TaskBucket).Cursor()
+		c := tx.Bucket(taskBucket).Cursor()
 
 		i := 0
 

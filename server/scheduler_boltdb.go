@@ -17,7 +17,7 @@ func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
 	taskBolt.db.View(func(tx *bolt.Tx) error {
 
 		// Iterate over the TasksQueued bucket, reading the first `n` tasks
-		c := tx.Bucket(TasksQueued).Cursor()
+		c := tx.Bucket(tasksQueued).Cursor()
 		for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
 			id := string(k)
 			task, _ := getTaskView(tx, id, tes.TaskView_FULL)
@@ -44,11 +44,11 @@ func (taskBolt *TaskBolt) AssignTask(t *tes.Task, w *pbs.Node) error {
 		// TODO the database needs tests for this stuff. Getting errors during dev
 		//      because it's easy to forget to link everything.
 		key := append(nodeIDBytes, taskIDBytes...)
-		err = tx.Bucket(NodeTasks).Put(key, taskIDBytes)
+		err = tx.Bucket(nodeTasks).Put(key, taskIDBytes)
 		if err != nil {
 			return err
 		}
-		err = tx.Bucket(TaskNode).Put(taskIDBytes, nodeIDBytes)
+		err = tx.Bucket(taskNode).Put(taskIDBytes, nodeIDBytes)
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func updateNode(tx *bolt.Tx, req *pbs.Node) error {
 		switch state {
 		case Canceled, Complete, Error, SystemError:
 			key := append([]byte(req.Id), []byte(id)...)
-			tx.Bucket(NodeTasks).Delete(key)
+			tx.Bucket(nodeTasks).Delete(key)
 			// update disk usage once a task completes
 			if req.GetResources().GetDiskGb() > 0 {
 				node.Resources.DiskGb = req.Resources.DiskGb
@@ -177,7 +177,7 @@ func (taskBolt *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) 
 // This is not an RPC endpoint
 func (taskBolt *TaskBolt) CheckNodes() error {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(Nodes)
+		bucket := tx.Bucket(nodes)
 		c := bucket.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
@@ -185,7 +185,7 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 			proto.Unmarshal(v, node)
 
 			if node.State == pbs.NodeState_GONE {
-				tx.Bucket(Nodes).Delete(k)
+				tx.Bucket(nodes).Delete(k)
 				continue
 			}
 
@@ -232,7 +232,7 @@ func (taskBolt *TaskBolt) ListNodes(ctx context.Context, req *pbs.ListNodesReque
 
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
-		bucket := tx.Bucket(Nodes)
+		bucket := tx.Bucket(nodes)
 		c := bucket.Cursor()
 
 		for k, _ := c.First(); k != nil; k, _ = c.Next() {
@@ -254,13 +254,13 @@ func getNode(tx *bolt.Tx, id string) *pbs.Node {
 		Id: id,
 	}
 
-	data := tx.Bucket(Nodes).Get([]byte(id))
+	data := tx.Bucket(nodes).Get([]byte(id))
 	if data != nil {
 		proto.Unmarshal(data, node)
 	}
 
 	// Prefix scan for keys that start with node ID
-	c := tx.Bucket(NodeTasks).Cursor()
+	c := tx.Bucket(nodeTasks).Cursor()
 	prefix := []byte(id)
 	for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 		taskID := string(v)
@@ -287,5 +287,5 @@ func putNode(tx *bolt.Tx, node *pbs.Node) error {
 	p := proto.Clone(node).(*pbs.Node)
 	p.TaskIds = nil
 	data, _ := proto.Marshal(p)
-	return tx.Bucket(Nodes).Put([]byte(p.Id), data)
+	return tx.Bucket(nodes).Put([]byte(p.Id), data)
 }

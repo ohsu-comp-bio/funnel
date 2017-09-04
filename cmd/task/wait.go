@@ -1,14 +1,11 @@
-package wait
+package task
 
 import (
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/spf13/cobra"
 )
 
-var tesServer string
-
-// Cmd represents the run command
-var Cmd = &cobra.Command{
+var waitCmd = &cobra.Command{
 	Use:   "wait [taskID...]",
 	Short: "Wait for one or more tasks to complete.\n",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -24,8 +21,4 @@ var Cmd = &cobra.Command{
 		}
 		return nil
 	},
-}
-
-func init() {
-	Cmd.PersistentFlags().StringVarP(&tesServer, "server", "S", "http://localhost:8000", "")
 }

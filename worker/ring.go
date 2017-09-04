@@ -1,4 +1,4 @@
-package ring
+package worker
 
 // Copied and modified from: https://github.com/armon/circbuf
 /*
@@ -28,25 +28,25 @@ import (
 	"fmt"
 )
 
-// Buffer implements a circular buffer. It is a fixed size,
+// ringBuffer implements a circular buffer. It is a fixed size,
 // and new writes overwrite older data, such that for a buffer
 // of size N, for any amount of writes, only the last N bytes
 // are retained.
-type Buffer struct {
+type ringBuffer struct {
 	data        []byte
 	size        int64
 	writeCursor int64
 	written     int64
 }
 
-// NewBuffer creates a new buffer of a given size. The size
+// NewringBuffer creates a new buffer of a given size. The size
 // must be greater than 0.
-func NewBuffer(size int64) (*Buffer, error) {
+func newRingBuffer(size int64) (*ringBuffer, error) {
 	if size <= 0 {
 		return nil, fmt.Errorf("Size must be positive")
 	}
 
-	b := &Buffer{
+	b := &ringBuffer{
 		size: size,
 		data: make([]byte, size),
 	}
@@ -55,7 +55,7 @@ func NewBuffer(size int64) (*Buffer, error) {
 
 // Write writes up to len(buf) bytes to the internal ring,
 // overriding older data if necessary.
-func (b *Buffer) Write(buf []byte) (int, error) {
+func (b *ringBuffer) Write(buf []byte) (int, error) {
 	// Account for total bytes written
 	n := len(buf)
 	b.written += int64(n)
@@ -79,18 +79,18 @@ func (b *Buffer) Write(buf []byte) (int, error) {
 }
 
 // Size returns the size of the buffer
-func (b *Buffer) Size() int64 {
+func (b *ringBuffer) Size() int64 {
 	return b.size
 }
 
 // TotalWritten provides the total number of bytes written
-func (b *Buffer) TotalWritten() int64 {
+func (b *ringBuffer) TotalWritten() int64 {
 	return b.written
 }
 
 // Bytes provides a slice of the bytes written. This
 // slice should not be written to.
-func (b *Buffer) Bytes() []byte {
+func (b *ringBuffer) Bytes() []byte {
 	switch {
 	case b.written >= b.size && b.writeCursor == 0:
 		return b.data
@@ -105,12 +105,12 @@ func (b *Buffer) Bytes() []byte {
 }
 
 // Reset resets the buffer so it has no content.
-func (b *Buffer) Reset() {
+func (b *ringBuffer) Reset() {
 	b.writeCursor = 0
 	b.written = 0
 }
 
 // String returns the contents of the buffer as a string
-func (b *Buffer) String() string {
+func (b *ringBuffer) String() string {
 	return string(b.Bytes())
 }

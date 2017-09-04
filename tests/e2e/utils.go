@@ -110,9 +110,9 @@ func NewFunnel(conf config.Config) *Funnel {
 	}
 
 	srv := server.DefaultServer(conf.Server)
-	srv.TaskServiceServer = db
-	srv.SchedulerServiceServer = db
-	srv.TaskLoggerServiceServer = db
+	srv.Services.Tasks = db
+	srv.Services.Scheduler = db
+	srv.Services.TaskLogger = db
 
 	return &Funnel{
 		HTTP:       client.NewClient(conf.Server.HTTPAddress()),

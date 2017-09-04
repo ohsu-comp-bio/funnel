@@ -100,6 +100,18 @@ app.controller('NodeListController', function($scope, NgTableParams, $http, $int
   });
 });
 
+function getServerURL($location) {
+  var proto = $location.protocol();
+  var port = $location.port();
+
+  // If the port is a standard HTTP(S) port, don't include it in the URL.
+  if ((proto == "https" && port == 443) || (proto == "http" && port == 80)) {
+    return proto + "://" + $location.host();
+  }
+
+  return proto + "://" + $location.host() + ":" + port;
+}
+
 app.controller('TaskInfoController', function($scope, $http, $routeParams, $location, $interval) {
   
   $scope.url = "/v1/tasks/" + $routeParams.task_id
@@ -107,7 +119,7 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
   $scope.cmdStr = function(cmd) {
     return cmd.join(' ');
   };
-  $scope.serverURL = $location.protocol() + "://" + $location.host() + ":" + $location.port();
+  $scope.serverURL = getServerURL($location)
 
   $scope.cancelTask = function() {
     $http.post($scope.url + ":cancel");
@@ -136,7 +148,7 @@ app.controller('NodeInfoController', function($scope, $http, $routeParams, $loca
   
   $scope.url = "/v1/nodes/" + $routeParams.node_id
   $scope.node = {};
-  $scope.serverURL = $location.protocol() + "://" + $location.host() + ":" + $location.port();
+  $scope.serverURL = getServerURL($location)
 
   function refresh() {
     $http.get($scope.url)

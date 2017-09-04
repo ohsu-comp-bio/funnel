@@ -2,13 +2,14 @@ package server
 
 import (
 	"context"
+	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	tl "github.com/ohsu-comp-bio/funnel/proto/tasklogger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/webdash"
+	webdash "github.com/ohsu-comp-bio/funnel/server/internal"
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
@@ -49,7 +50,7 @@ func DefaultServer(conf config.Server) *Server {
 	log.Debug("Server Config", "config.Server", conf)
 
 	mux := http.NewServeMux()
-	mux.Handle("/", webdash.Handler())
+	mux.Handle("/", webdashHandler())
 
 	return &Server{
 		RPCAddress:       ":" + conf.RPCPort,
@@ -166,4 +167,20 @@ func disableCache(next http.Handler) http.HandlerFunc {
 		resp.Header().Set("Cache-Control", "no-store")
 		next.ServeHTTP(resp, req)
 	}
+}
+
+// Handler handles static webdash files
+func webdashHandler() *http.ServeMux {
+	// Static files are bundled into webdash
+	fs := http.FileServer(&assetfs.AssetFS{
+		Asset:     webdash.Asset,
+		AssetDir:  webdash.AssetDir,
+		AssetInfo: webdash.AssetInfo,
+		Prefix:    "webdash",
+	})
+	// Set up URL path handlers
+	mux := http.NewServeMux()
+	mux.Handle("/", fs)
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	return mux
 }

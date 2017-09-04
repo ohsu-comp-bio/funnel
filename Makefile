@@ -93,7 +93,7 @@ webdash:
 	@./webdash/node_modules/.bin/node-sass webdash/style.scss build/webdash/style.css
 	@cp webdash/*.html build/webdash/
 	@go get -u github.com/jteeuwen/go-bindata/...
-	@go-bindata -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
+	@go-bindata -pkg webdash -prefix "build/" -o server/internal/webdash.go build/webdash
 
 # Build binaries for all OS/Architectures
 cross-compile: depends

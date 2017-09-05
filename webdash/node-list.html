@@ -5,7 +5,7 @@
 
     <table ng-table="tableParams" class="node-list-table">
       <tr ng-repeat="node in $data"> 
-        <td data-title="'ID'" filter="{'id': 'text'}" sortable="'id'"><a href="#/nodes/{{node.id}}">{{ node.id }}</a></td>
+        <td data-title="'ID'" filter="{'id': 'text'}" sortable="'id'"><a href="/#/nodes/{{node.id}}">{{ node.id }}</a></td>
         <td data-title="'State'" filter="{'state': 'text'}" sortable="'state'">{{node.state}}</td>
       </tr>
     </table> 

@@ -12,10 +12,10 @@ import (
 var configFile string
 var flagConf = config.Config{}
 
-// startCmd represents the node start command
-var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Start a Funnel node.",
+// runCmd represents the node run command
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run a Funnel node.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		// parse config file
@@ -23,8 +23,8 @@ var startCmd = &cobra.Command{
 		config.ParseFile(configFile, &conf)
 
 		// make sure server address and password is inherited by scheduler nodes and workers
-		conf.InheritServerProperties()
-		flagConf.InheritServerProperties()
+		conf = config.InheritServerProperties(conf)
+		flagConf = config.InheritServerProperties(flagConf)
 
 		// file vals <- cli val
 		err := mergo.MergeWithOverwrite(&conf, flagConf)
@@ -32,12 +32,12 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		return Start(conf)
+		return Run(conf)
 	},
 }
 
 func init() {
-	flags := startCmd.Flags()
+	flags := runCmd.Flags()
 	flags.StringVar(&flagConf.Scheduler.Node.ID, "id", flagConf.Scheduler.Node.ID, "Node ID")
 	flags.StringVar(&flagConf.Scheduler.Node.ServerAddress, "server-address", flagConf.Scheduler.Node.ServerAddress, "Address of scheduler gRPC endpoint")
 	flags.DurationVar(&flagConf.Scheduler.Node.Timeout, "timeout", flagConf.Scheduler.Node.Timeout, "Timeout in seconds")
@@ -47,8 +47,8 @@ func init() {
 	flags.StringVarP(&configFile, "config", "c", "", "Config File")
 }
 
-// Start starts a node with the given config, blocking until the node exits.
-func Start(conf config.Config) error {
+// Run runs a node with the given config, blocking until the node exits.
+func Run(conf config.Config) error {
 	logger.Configure(conf.Scheduler.Node.Logger)
 
 	if conf.Scheduler.Node.ID == "" {
@@ -60,6 +60,6 @@ func Start(conf config.Config) error {
 		return err
 	}
 
-	n.Start(context.Background())
+	n.Run(context.Background())
 	return nil
 }

@@ -6,7 +6,7 @@ User=funnel
 Group=funnel
 Restart=always
 WorkingDirectory=/opt/funnel
-ExecStart=/opt/funnel/funnel gce start
+ExecStart=/opt/funnel/funnel gce run
 
 [Install]
 WantedBy=multi-user.target

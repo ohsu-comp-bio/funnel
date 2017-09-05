@@ -88,14 +88,14 @@ func DefaultConfig() config.Config {
 		},
 	}
 
-	conf.InheritServerProperties()
+	conf = config.InheritServerProperties(conf)
 	return conf
 }
 
 // NewFunnel creates a new funnel test server with some test
 // configuration automatically set: random ports, temp work dir, etc.
 func NewFunnel(conf config.Config) *Funnel {
-	conf.InheritServerProperties()
+	conf = config.InheritServerProperties(conf)
 
 	var derr error
 	dcli, derr := util.NewDockerClient()

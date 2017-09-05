@@ -113,7 +113,7 @@ func TestSetupTemplatedHPCNode(t *testing.T) {
 {{printf "#TEST --disk %.1fGB" .DiskGb}}
 {{- end}}
 
-{{.Executable}} node start --config {{.Config}}
+{{.Executable}} node run --config {{.Config}}
 `
 
 	sf, err := SetupTemplatedHPCNode("slurm-test", tpl, c, n)
@@ -141,7 +141,7 @@ func TestSetupTemplatedHPCNode(t *testing.T) {
 #TEST --mem 1GB
 #TEST --disk 10.0GB
 
-%s node start --config %s/test-node/node.conf.yml
+%s node run --config %s/test-node/node.conf.yml
 `
 
 	expected = fmt.Sprintf(expected, tmp, tmp, binaryPath, tmp)

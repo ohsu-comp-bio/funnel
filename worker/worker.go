@@ -35,7 +35,7 @@ func NewDefaultWorker(conf config.Worker, taskID string) Worker {
 	}
 }
 
-// DefaultWorker is the default task runner, which follows a basic,
+// DefaultWorker is the default task worker, which follows a basic,
 // sequential process of task initialization, execution, finalization,
 // and logging.
 type DefaultWorker struct {
@@ -46,7 +46,7 @@ type DefaultWorker struct {
 	Log    logger.Logger
 }
 
-// Run runs the task runner.
+// Run runs the Worker.
 // TODO document behavior of slow consumer of task log updates
 func (r *DefaultWorker) Run(pctx context.Context) {
 

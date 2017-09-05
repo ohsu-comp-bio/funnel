@@ -18,11 +18,11 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.AddCommand(startCmd)
+	Cmd.AddCommand(runCmd)
 }
 
-var startCmd = &cobra.Command{
-	Use: "start",
+var runCmd = &cobra.Command{
+	Use: "run",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := config.DefaultConfig()
 
@@ -45,10 +45,10 @@ var startCmd = &cobra.Command{
 
 		if conf.Scheduler.Node.ID != "" {
 			logger.Configure(conf.Scheduler.Node.Logger)
-			return node.Start(conf)
+			return node.Run(conf)
 		}
 
 		logger.Configure(conf.Server.Logger)
-		return server.Start(conf)
+		return server.Run(conf)
 	},
 }

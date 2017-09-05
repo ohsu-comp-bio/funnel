@@ -16,7 +16,7 @@ write_files:
 
     [Service]
     Environment=DOCKER_GROUP_ID=412
-    ExecStart=/usr/bin/docker run --rm -u 4949 --group-add ${DOCKER_GROUP_ID} --name=funnel -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /var/db/funnel:/opt/funnel/funnel-work-dir -w /opt/funnel -p 80:8000 -p 9090:9090 docker.io/ohsucompbio/funnel:latest gce start
+    ExecStart=/usr/bin/docker run --rm -u 4949 --group-add ${DOCKER_GROUP_ID} --name=funnel -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v /var/db/funnel:/opt/funnel/funnel-work-dir -w /opt/funnel -p 80:8000 -p 9090:9090 docker.io/ohsucompbio/funnel:latest gce run
     ExecStop=/usr/bin/docker stop funnel
     ExecStopPost=/usr/bin/docker rm funnel
 

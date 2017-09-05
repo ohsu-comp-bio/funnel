@@ -141,10 +141,9 @@ func SetupTemplatedHPCNode(name string, tpl string, conf config.Config, n *pbs.N
 	nconf.Resources.RamGb = n.Resources.RamGb
 	nconf.Resources.DiskGb = n.Resources.DiskGb
 
-	c := conf
-	c.Scheduler.Node = nconf
+	conf.Scheduler.Node = nconf
 	confPath := path.Join(workdir, "node.conf.yml")
-	c.ToYamlFile(confPath)
+	conf.ToYamlFile(confPath)
 
 	binaryPath, err := DetectBinaryPath()
 	if err != nil {

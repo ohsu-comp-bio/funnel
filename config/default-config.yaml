@@ -39,11 +39,11 @@ Scheduler:
   # How long to wait between updates before marking a node dead.
   # In nanoseconds.
   NodePingTimeout: 60000000000 # 1 minute
-  # How long to wait for a node to start, before marking the worker dead.
+  # How long to wait for a node to start, before marking the node dead.
   # In nanoseconds.
   NodeInitTimeout: 300000000000 # 5 minutes
   Node:
-    # If empty, a worker ID will be automatically generated.
+    # If empty, a node ID will be automatically generated.
     ID: ""
     # RPC address of the Funnel server
     ServerAddress: localhost:9090
@@ -53,11 +53,12 @@ Scheduler:
 
     # Files created during processing will be written in this directory.
     WorkDir: ./funnel-work-dir
-    # If the worker has been idle for longer than the timeout, it will shut down.
+    # If the node has been idle for longer than the timeout, it will shut down.
     # -1 means there is no timeout. 0 means timeout immediately after the first task.
     Timeout: -1
 
-    # Override available resources.
+    # A Node will automatically try to detect what resources are available to it. 
+    # Defining Resources in the Node configuration overrides this behavior.
     Resources:
       # CPUs available.
       # Cpus: 0
@@ -94,7 +95,7 @@ Backends:
       universe = vanilla
       getenv = True
       executable = {{.Executable}}
-      arguments = node start --config {{Config}}
+      arguments = node run --config {{Config}}
       log = {{.WorkDir}}/condor-event-log
       error = {{.WorkDir}}/funnel-stderr
       output = {{.WorkDir}}/funnel-stdout
@@ -128,7 +129,7 @@ Backends:
       {{printf "#PBS -l file=%.0fgb" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} node start --config {{Config}}
+      {{.Executable}} node run --config {{Config}}
 
   GridEngine:
     Template: |
@@ -147,7 +148,7 @@ Backends:
       {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} node start --config {{Config}}
+      {{.Executable}} node run --config {{Config}}
   
   SLURM:
     Template: |
@@ -166,7 +167,7 @@ Backends:
       {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
       {{- end}}
 
-      {{.Executable}} node start --config {{Config}}
+      {{.Executable}} node run --config {{Config}}
 
   GCE:
     # Path to account credentials file.
@@ -179,8 +180,8 @@ Backends:
     # If possible, this will be automatically discovered.
     Zone: ""
     Weights:
-      # Prefer workers that start up quickly.
-      # Workers that are already online have instant startup time.
+      # Prefer nodes that start up quickly.
+      # Nodes that are already online have instant startup time.
       PreferQuickStartup: 1.0
     # How long to cache GCE API results (machine list, templates, etc)
     # before refreshing.

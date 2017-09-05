@@ -73,7 +73,7 @@ func (t *testNode) Start() context.CancelFunc {
 	t.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
 		Return(&pbs.Node{}, nil)
 	go func() {
-		t.Node.Start(ctx)
+		t.Node.Run(ctx)
 		close(t.done)
 	}()
 	return cancel

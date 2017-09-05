@@ -140,13 +140,13 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 	return tes.State(v)
 }
 
-// ErrTaskNotFound ...
-var ErrTaskNotFound = errors.New("no task found for id")
+// errNotFound ...
+var errNotFound = errors.New("not found")
 
 func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
-		return ErrTaskNotFound
+		return errNotFound
 	}
 	task.Id = id
 	task.State = getTaskState(tx, id)
@@ -156,7 +156,7 @@ func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
-		return ErrTaskNotFound
+		return errNotFound
 	}
 	proto.Unmarshal(b, task)
 	inputs := []*tes.TaskParameter{}
@@ -171,7 +171,7 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
-		return ErrTaskNotFound
+		return errNotFound
 	}
 	proto.Unmarshal(b, task)
 	loadTaskLogs(tx, task)
@@ -208,8 +208,8 @@ func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) 
 
 	if err != nil {
 		log.Error("GetTask", "error", err, "taskID", req.Id)
-		if err == ErrTaskNotFound {
-			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: %s", err.Error(), req.Id))
+		if err == errNotFound {
+			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
 		}
 	}
 	return task, err

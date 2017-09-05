@@ -1,0 +1,73 @@
+<div ng-controller="NodeInfoController">
+  <div class="board">
+    <h4>Node {{node.id}}</h4>
+    <br>
+    <br>
+    <table class="task-desc-table">
+      <tbody>
+        <tr>
+          <td>ID</td>
+          <td>{{ node.id }}</td>
+        </tr>
+        <tr>
+          <td>State</td>
+          <td>{{ node.state }}</td>
+        </tr>
+        <tr>
+          <td>Last Ping</td>
+          <td>{{ node.last_ping }}</td>
+        </tr>
+        <tr>
+          <td>Version</td>
+          <td>{{ node.version }}</td>
+        </tr>
+        <tr>
+          <td>Tasks</td>
+          <td><div ng-repeat="id in node.task_ids"><a href="/#/tasks/{{id}}">{{ id }}</a></div></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h5>Total Resources</h5>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Cpus</th>
+          <th>Ram</th>
+          <th>Disk</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ node.resources.cpus }}</td>
+          <td>{{ node.resources.ram_gb }} GB</td>
+          <td>{{ node.resources.disk_gb }} GB</td>
+        </tr>
+      </tbody>
+    </table>
+
+   <h5>Available Resources</h5>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Cpus</th>
+          <th>Ram</th>
+          <th>Disk</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ node.available.cpus }}</td>
+          <td>{{ node.available.ram_gb }} GB</td>
+          <td>{{ node.available.disk_gb }} GB</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <h5>API</h5>
+    <div>
+      <code>curl {{ serverURL }}/v1/nodes/{{ node.id }}</code>
+    </div>
+
+  </div>
+</div>

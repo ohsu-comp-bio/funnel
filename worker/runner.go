@@ -30,8 +30,11 @@ func NewDefaultRunner(conf config.Worker, taskID string) Runner {
 		Mapper: NewFileMapper(baseDir),
 		Store:  storage.Storage{Log: log},
 		Read:   &rpcTaskReader{client, taskID},
-		Write:  &rpcTaskWriter{client, taskID, conf.UpdateTimeout, log},
-		Log:    log,
+		Write: multiWriter{
+			&logTaskWriter{log},
+			&rpcTaskWriter{client, taskID, conf.UpdateTimeout, log},
+		},
+		Log: log,
 	}
 }
 

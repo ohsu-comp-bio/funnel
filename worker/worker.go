@@ -12,7 +12,7 @@ import (
 
 // NewWorker returns a new Worker instance
 func NewWorker(conf config.Worker) (*Worker, error) {
-	log := logger.Sub("worker", "workerID", conf.ID)
+	log := logger.New("worker", "workerID", conf.ID)
 	log.Debug("Worker Config", "config.Worker", conf)
 
 	sched, err := scheduler.NewClient(conf)
@@ -26,7 +26,11 @@ func NewWorker(conf config.Worker) (*Worker, error) {
 	}
 
 	// Detect available resources at startup
-	res := detectResources(conf)
+	res, err := detectResources(conf)
+	if err != nil {
+		log.Error("Error detecting resources", err)
+	}
+
 	timeout := util.NewIdleTimeout(conf.Timeout)
 	state := pbf.WorkerState_UNINITIALIZED
 	return &Worker{
@@ -96,9 +100,9 @@ func (w *Worker) checkConnection(ctx context.Context) {
 	_, err := w.sched.GetWorker(ctx, &pbf.GetWorkerRequest{Id: w.conf.ID})
 
 	if err != nil {
-		log.Error("Couldn't contact server.", err)
+		w.log.Error("Couldn't contact server.", err)
 	} else {
-		log.Info("Successfully connected to server.")
+		w.log.Info("Successfully connected to server.")
 	}
 }
 
@@ -111,7 +115,7 @@ func (w *Worker) sync(ctx context.Context) {
 	r, gerr := w.sched.GetWorker(ctx, &pbf.GetWorkerRequest{Id: w.conf.ID})
 
 	if gerr != nil {
-		log.Error("Couldn't get worker state during sync.", gerr)
+		w.log.Error("Couldn't get worker state during sync.", gerr)
 		return
 	}
 
@@ -129,7 +133,11 @@ func (w *Worker) sync(ctx context.Context) {
 	}
 
 	// Worker data has been updated. Send back to server for database update.
-	res := detectResources(w.conf)
+	res, err := detectResources(w.conf)
+	if err != nil {
+		w.log.Error("Error detecting resources", err)
+	}
+
 	r.Resources = &pbf.Resources{
 		Cpus:   res.Cpus,
 		RamGb:  res.RamGb,
@@ -145,9 +153,9 @@ func (w *Worker) sync(ctx context.Context) {
 		r.Metadata[k] = v
 	}
 
-	_, err := w.sched.UpdateWorker(context.Background(), r)
-	if err != nil {
-		log.Error("Couldn't save worker update. Recovering.", err)
+	_, uerr := w.sched.UpdateWorker(context.Background(), r)
+	if uerr != nil {
+		w.log.Error("Couldn't save worker update. Recovering.", uerr)
 	}
 }
 

@@ -4,16 +4,11 @@ import (
 	"context"
 	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
 )
-
-func init() {
-	log.Configure(logger.DebugConfig())
-}
 
 // Test calling stopping a worker by canceling its context
 func TestStopWorker(t *testing.T) {
@@ -117,7 +112,7 @@ func TestWorkerRunnerCreated(t *testing.T) {
 	w.sync(context.Background())
 	time.Sleep(time.Second)
 
-	log.Debug("COUNT", count)
+	t.Log("COUNT", count)
 	if count != 2 {
 		t.Fatal("Unexpected worker runner count")
 	}
@@ -140,7 +135,7 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	w.sync(context.Background())
 	time.Sleep(time.Second)
 
-	log.Debug("COUNT", w.runners.Count())
+	t.Log("COUNT", w.runners.Count())
 	if w.runners.Count() != 0 {
 		t.Fatal("Unexpected runner count")
 	}
@@ -151,7 +146,7 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	w.sync(context.Background())
 	time.Sleep(time.Second)
 
-	log.Debug("COUNT", w.runners.Count())
+	t.Log("COUNT", w.runners.Count())
 	if w.runners.Count() != 0 {
 		t.Fatal("Unexpected runner count")
 	}
@@ -174,7 +169,7 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 	time.Sleep(time.Second)
 
 	if w.runners.Count() != 0 {
-		log.Debug("COUNT", w.runners.Count())
+		t.Log("COUNT", w.runners.Count())
 		t.Fatal("Unexpected runner count")
 	}
 }

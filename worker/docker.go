@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
@@ -28,16 +27,8 @@ type DockerCmd struct {
 	Stderr          io.Writer
 }
 
-// Run runs the Docker command and blocks until done.
-func (dcmd DockerCmd) Run() error {
-	// (Hopefully) temporary hack to sync docker API version info.
-	// Don't need the client here, just the logic inside NewDockerClient().
-	_, derr := util.NewDockerClient()
-	if derr != nil {
-		log.Error("Can't connect to Docker", derr)
-		return derr
-	}
-
+// Args builds a list of arguments that would be passed to the docker CLI command.
+func (dcmd DockerCmd) Args() []string {
 	args := []string{"run", "-i"}
 
 	if dcmd.RemoveContainer {
@@ -54,10 +45,6 @@ func (dcmd DockerCmd) Run() error {
 		for i := range dcmd.Ports {
 			hostPort := dcmd.Ports[i].Host
 			containerPort := dcmd.Ports[i].Container
-			// TODO move to validation?
-			if hostPort <= 1024 && hostPort != 0 {
-				return fmt.Errorf("Error cannot use restricted ports")
-			}
 			args = append(args, "-p", fmt.Sprintf("%d:%d", hostPort, containerPort))
 		}
 	}
@@ -77,10 +64,23 @@ func (dcmd DockerCmd) Run() error {
 
 	args = append(args, dcmd.ImageName)
 	args = append(args, dcmd.Cmd...)
+	return args
+}
 
-	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
-	log.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
-	cmd := exec.Command("docker", args...)
+func (dcmd DockerCmd) String() string {
+	return "docker " + strings.Join(dcmd.Args(), " ")
+}
+
+// Run runs the Docker command and blocks until done.
+func (dcmd DockerCmd) Run() error {
+	// (Hopefully) temporary hack to sync docker API version info.
+	// Don't need the client here, just the logic inside NewDockerClient().
+	_, derr := util.NewDockerClient()
+	if derr != nil {
+		return fmt.Errorf("Can't connect to docker: %s", derr)
+	}
+
+	cmd := exec.Command("docker", dcmd.Args()...)
 
 	if dcmd.Stdin != nil {
 		cmd.Stdin = dcmd.Stdin
@@ -96,58 +96,47 @@ func (dcmd DockerCmd) Run() error {
 
 // Inspect returns metadata about the container (calls "docker inspect").
 func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
-	log.Info("Fetching container metadata")
 	dclient, derr := util.NewDockerClient()
 	if derr != nil {
 		return nil, derr
 	}
 	// close the docker client connection
 	defer dclient.Close()
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, nil
-		default:
-			metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
-			if client.IsErrContainerNotFound(err) {
-				break
-			}
-			if err != nil {
-				log.Error("Error inspecting container", err)
-				break
-			}
-			if metadata.State.Running == true {
-				var portMap []*tes.Ports
-				// extract exposed host port from
-				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
-				for k, v := range metadata.NetworkSettings.Ports {
-					// will end up taking the last binding listed
-					for i := range v {
-						p := strings.Split(string(k), "/")
-						containerPort, err := strconv.Atoi(p[0])
-						if err != nil {
-							return nil, err
-						}
-						hostPort, err := strconv.Atoi(v[i].HostPort)
-						if err != nil {
-							return nil, err
-						}
-						portMap = append(portMap, &tes.Ports{
-							Container: uint32(containerPort),
-							Host:      uint32(hostPort),
-						})
-						log.Debug("Found port mapping:", "host", hostPort, "container", containerPort)
-					}
+
+	metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
+	if err != nil {
+		return nil, err
+	}
+
+	if metadata.State.Running == true {
+		var portMap []*tes.Ports
+		// extract exposed host port from
+		// https://godoc.org/github.com/docker/go-connections/nat#PortMap
+		for k, v := range metadata.NetworkSettings.Ports {
+			// will end up taking the last binding listed
+			for i := range v {
+				p := strings.Split(string(k), "/")
+				containerPort, err := strconv.Atoi(p[0])
+				if err != nil {
+					return nil, err
 				}
-				return portMap, nil
+				hostPort, err := strconv.Atoi(v[i].HostPort)
+				if err != nil {
+					return nil, err
+				}
+				portMap = append(portMap, &tes.Ports{
+					Container: uint32(containerPort),
+					Host:      uint32(hostPort),
+				})
 			}
 		}
+		return portMap, nil
 	}
+	return nil, nil
 }
 
 // Stop stops the container.
 func (dcmd DockerCmd) Stop() error {
-	log.Info("Stopping container", "container", dcmd.ContainerName)
 	dclient, derr := util.NewDockerClient()
 	if derr != nil {
 		return derr

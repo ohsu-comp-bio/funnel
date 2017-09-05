@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
 	sched_mocks "github.com/ohsu-comp-bio/funnel/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/util"
@@ -38,8 +39,15 @@ func newTestWorker(conf config.Worker) testWorker {
 
 	conf.WorkDir, _ = ioutil.TempDir("", "funnel-test-storage-")
 
-	log.Debug("WORKDIR", conf.WorkDir)
 	err := util.EnsureDir(conf.WorkDir)
+	if err != nil {
+		panic(err)
+	}
+
+	log := logger.New("test-worker", "workerID", conf.ID)
+	log.Configure(logger.DebugConfig())
+
+	res, err := detectResources(conf)
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +59,7 @@ func newTestWorker(conf config.Worker) testWorker {
 		conf:      conf,
 		sched:     s,
 		log:       log,
-		resources: detectResources(conf),
+		resources: res,
 		newRunner: NoopRunnerFactory,
 		runners:   newRunSet(),
 		timeout:   util.NewIdleTimeout(conf.Timeout),

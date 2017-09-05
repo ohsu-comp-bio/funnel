@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"os"
 	"path/filepath"
@@ -39,6 +40,7 @@ type Backend interface {
 // For a given storage url, the storage backend is usually determined by the url prefix,
 // e.g. "s3://my-bucket/file" will access the S3 backend.
 type Storage struct {
+	Log      logger.Logger
 	backends []Backend
 }
 
@@ -91,10 +93,9 @@ func (storage Storage) WithBackend(b Backend) Storage {
 func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 
 	if conf.Local.Valid() {
-		local, err := NewLocalBackend(conf.Local)
+		local, err := NewLocalBackend(conf.Local, storage.Log)
 		if err != nil {
-			log.Error("Local storage backend", err)
-			return storage, err
+			return storage, fmt.Errorf("can't configure local storage backend: %s", err)
 		}
 		storage = storage.WithBackend(local)
 	}
@@ -103,8 +104,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		if c.Valid() {
 			s3, err := NewS3Backend(c)
 			if err != nil {
-				log.Error("S3 storage backend", err)
-				return storage, err
+				return storage, fmt.Errorf("can't configure S3 storage backend: %s", err)
 			}
 			storage = storage.WithBackend(s3)
 		}
@@ -114,8 +114,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		if c.Valid() {
 			gs, nerr := NewGSBackend(c)
 			if nerr != nil {
-				log.Error("Google Storage backend", nerr)
-				return storage, nerr
+				return storage, fmt.Errorf("can't configure Google storage backend: %s", nerr)
 			}
 			storage = storage.WithBackend(gs)
 		}

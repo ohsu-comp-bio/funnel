@@ -2,16 +2,12 @@ package worker
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"time"
 )
 
-// RunnerFactory is a function which creates a new task runner instance.
-type RunnerFactory func(c config.Worker, taskID string) Runner
-
-// Runner is a type which runs a task.
-type Runner interface {
+// Worker is a type which runs a task.
+type Worker interface {
 	Run(context.Context)
 }
 

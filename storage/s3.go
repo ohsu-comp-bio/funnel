@@ -9,9 +9,6 @@ import (
 	"strings"
 )
 
-// S3Protocol defines the expected URL prefix for S3, "s3://"
-const S3Protocol = "s3://"
-
 // S3Backend provides access to an S3 object store.
 type S3Backend struct {
 	client *minio.Client
@@ -34,17 +31,17 @@ func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
 // Get copies an object from S3 to the host path.
 func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
 	log.Info("Starting download", "url", url)
-	path := strings.TrimPrefix(url, S3Protocol)
+	path := strings.TrimPrefix(url, "s3://")
 	split := strings.SplitN(path, "/", 2)
 
-	if class == File {
+	if class == file {
 		err := s3.client.FGetObject(split[0], split[1], hostPath)
 		if err != nil {
 			return err
 		}
 		log.Info("Successfully saved", "hostPath", hostPath)
 		return nil
-	} else if class == Directory {
+	} else if class == directory {
 		return fmt.Errorf("S3 directories not yet supported")
 	}
 	return fmt.Errorf("Unknown file class: %s", class)
@@ -54,13 +51,13 @@ func (s3 *S3Backend) Get(ctx context.Context, url string, hostPath string, class
 func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
 
 	log.Info("Starting upload", "url", url)
-	path := strings.TrimPrefix(url, S3Protocol)
+	path := strings.TrimPrefix(url, "s3://")
 	// TODO it's easy to create an error if this starts with a "/"
 	//      maybe just strip it?
 	split := strings.SplitN(path, "/", 2)
 
 	switch class {
-	case File:
+	case file:
 		_, err := s3.client.FPutObject(split[0], split[1], hostPath, "application/data")
 		if err != nil {
 			return nil, err
@@ -70,7 +67,7 @@ func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class
 			{Url: url, Path: hostPath, SizeBytes: fileSize(hostPath)},
 		}, nil
 
-	case Directory:
+	case directory:
 		return nil, fmt.Errorf("S3 directories not yet supported")
 
 	default:
@@ -81,5 +78,5 @@ func (s3 *S3Backend) Put(ctx context.Context, url string, hostPath string, class
 // Supports indicates whether this backend supports the given storage request.
 // For S3, the url must start with "s3://".
 func (s3 *S3Backend) Supports(url string, hostPath string, class tes.FileType) bool {
-	return strings.HasPrefix(url, S3Protocol)
+	return strings.HasPrefix(url, "s3://")
 }

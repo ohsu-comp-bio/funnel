@@ -11,7 +11,7 @@ import (
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/ohsu-comp-bio/funnel/scheduler/local"
@@ -34,6 +34,7 @@ import (
 var log = logger.New("e2e")
 
 func init() {
+	logger.SetGRPCLoggerVerbosity(1)
 	log.Configure(logger.DebugConfig())
 }
 
@@ -65,18 +66,17 @@ func DefaultConfig() config.Config {
 	conf := config.DefaultConfig()
 	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
-	conf.Logger = logger.DebugConfig()
-	conf.Worker.LogUpdateRate = time.Millisecond * 1300
+	conf = testutils.LoggerDebugConfig(conf)
+	conf.Scheduler.ScheduleRate = time.Millisecond * 700
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
 	conf.Worker.UpdateRate = time.Millisecond * 1300
-	conf.Worker.Logger = logger.DebugConfig()
-	conf.ScheduleRate = time.Millisecond * 700
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 
 	util.EnsureDir(storageDir)
 
-	conf.Storage = config.StorageConfig{
+	conf.Worker.Storage = config.StorageConfig{
 		Local: config.LocalStorage{
 			AllowedDirs: []string{storageDir, wd},
 		},
@@ -88,14 +88,15 @@ func DefaultConfig() config.Config {
 			},
 		},
 	}
-	conf.Worker = config.WorkerInheritConfigVals(conf)
+
+	conf.InheritServerProperties()
 	return conf
 }
 
 // NewFunnel creates a new funnel test server with some test
 // configuration automatically set: random ports, temp work dir, etc.
 func NewFunnel(conf config.Config) *Funnel {
-	conf.Worker = config.WorkerInheritConfigVals(conf)
+	conf.InheritServerProperties()
 
 	var derr error
 	dcli, derr := util.NewDockerClient()
@@ -108,17 +109,20 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(dberr)
 	}
 
-	srv := server.DefaultServer(db, conf)
+	srv := server.DefaultServer(conf.Server)
+	srv.Services.Tasks = db
+	srv.Services.Scheduler = db
+	srv.Services.TaskLogger = db
 
 	return &Funnel{
-		HTTP:       client.NewClient("http://localhost:" + conf.HTTPPort),
+		HTTP:       client.NewClient(conf.Server.HTTPAddress()),
 		Docker:     dcli,
 		Conf:       conf,
-		StorageDir: conf.Storage.Local.AllowedDirs[0],
+		StorageDir: conf.Worker.Storage.Local.AllowedDirs[0],
 		DB:         db,
 		Server:     srv,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
-		rate:       conf.ScheduleRate,
+		rate:       conf.Scheduler.ScheduleRate,
 	}
 }
 
@@ -127,8 +131,6 @@ func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	logger.DisableGRPCLogger()
-
 	opts = append(opts,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
@@ -136,14 +138,13 @@ func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
 
 	conn, err := grpc.DialContext(
 		ctx,
-		f.Conf.RPCAddress(),
+		f.Conf.Server.RPCAddress(),
 		opts...,
 	)
 	if err != nil {
 		return err
 	}
 
-	logger.EnableGRPCLogger()
 	f.conn = conn
 	f.RPC = tes.NewTaskServiceClient(conn)
 	return nil
@@ -152,7 +153,7 @@ func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
 // Cleanup cleans up test resources
 func (f *Funnel) Cleanup() {
 	os.RemoveAll(f.StorageDir)
-	os.RemoveAll(f.Conf.WorkDir)
+	os.RemoveAll(f.Conf.Worker.WorkDir)
 	f.conn.Close()
 }
 
@@ -162,7 +163,7 @@ func (f *Funnel) WithLocalBackend() {
 	if berr != nil {
 		panic(berr)
 	}
-	f.Scheduler = scheduler.NewScheduler(f.DB, backend, f.Conf)
+	f.Scheduler = scheduler.NewScheduler(f.DB, backend, f.Conf.Scheduler)
 }
 
 // StartServer starts the server
@@ -348,7 +349,7 @@ func (f *Funnel) ReadFile(name string) string {
 }
 
 // StartServerInDocker starts a funnel server in a docker image
-func (f *Funnel) StartServerInDocker(imageName string, scheduler string, extraArgs []string) {
+func (f *Funnel) StartServerInDocker(imageName string, backend string, extraArgs []string) {
 	// find the funnel-linux-amd64 binary
 	// TODO there must be a better way than this hardcoded path
 	funnelBinary, err := filepath.Abs(filepath.Join(
@@ -365,12 +366,12 @@ func (f *Funnel) StartServerInDocker(imageName string, scheduler string, extraAr
 	}
 
 	// write config file
-	configPath, _ := filepath.Abs(filepath.Join(f.Conf.WorkDir, "config.yml"))
+	configPath, _ := filepath.Abs(filepath.Join(f.Conf.Worker.WorkDir, "config.yml"))
 	f.Conf.ToYamlFile(configPath)
 	os.Chmod(configPath, 0644)
 
-	httpPort, _ := strconv.ParseInt(f.Conf.HTTPPort, 0, 32)
-	rpcPort, _ := strconv.ParseInt(f.Conf.RPCPort, 0, 32)
+	httpPort, _ := strconv.ParseInt(f.Conf.Server.HTTPPort, 0, 32)
+	rpcPort, _ := strconv.ParseInt(f.Conf.Server.RPCPort, 0, 32)
 
 	// detect gid of /var/run/docker.sock
 	fi, err = os.Stat("/var/run/docker.sock")
@@ -393,7 +394,7 @@ func (f *Funnel) StartServerInDocker(imageName string, scheduler string, extraAr
 	}
 	args = append(args, extraArgs...)
 	args = append(args, imageName, "funnel", "server", "--config",
-		configPath, "--scheduler", scheduler)
+		configPath, "--backend", backend)
 
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
@@ -411,6 +412,7 @@ func (f *Funnel) StartServerInDocker(imageName string, scheduler string, extraAr
 		err = f.AddRPCClient()
 		if err != nil {
 			log.Error("funnel server failed to start within allocated time", err)
+			panic(err)
 		} else {
 			close(ready)
 		}
@@ -461,8 +463,8 @@ func (f *Funnel) CleanupTestServerContainer() {
 	return
 }
 
-// ListWorkers calls db.ListWorkers.
-func (f *Funnel) ListWorkers() []*pbf.Worker {
-	resp, _ := f.DB.ListWorkers(context.Background(), &pbf.ListWorkersRequest{})
-	return resp.Workers
+// ListNodes calls db.ListNodes.
+func (f *Funnel) ListNodes() []*pbs.Node {
+	resp, _ := f.DB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	return resp.Nodes
 }

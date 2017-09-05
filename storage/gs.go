@@ -126,7 +126,7 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 	var out []*tes.OutputFileLog
 
 	switch class {
-	case File:
+	case file:
 		err := gs.put(ctx, rawurl, hostPath)
 		if err != nil {
 			return nil, err
@@ -137,7 +137,7 @@ func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, cl
 			SizeBytes: fileSize(hostPath),
 		})
 
-	case Directory:
+	case directory:
 		files, err := walkFiles(hostPath)
 
 		for _, f := range files {

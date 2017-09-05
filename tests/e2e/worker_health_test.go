@@ -2,49 +2,49 @@ package e2e
 
 import (
 	"context"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"testing"
 	"time"
 )
 
-// Test the simple case of a worker that is alive,
+// Test the simple case of a node that is alive,
 // then doesn't ping in time, and it marked dead
 func TestWorkerDead(t *testing.T) {
 	conf := DefaultConfig()
-	conf.WorkerPingTimeout = time.Millisecond
+	conf.Scheduler.NodePingTimeout = time.Millisecond
 	srv := NewFunnel(conf)
 
-	srv.DB.UpdateWorker(context.Background(), &pbf.Worker{
-		Id:    "test-worker",
-		State: pbf.WorkerState_ALIVE,
+	srv.DB.UpdateNode(context.Background(), &pbs.Node{
+		Id:    "test-node",
+		State: pbs.NodeState_ALIVE,
 	})
 
-	time.Sleep(conf.WorkerPingTimeout * 2)
-	srv.DB.CheckWorkers()
+	time.Sleep(conf.Scheduler.NodePingTimeout * 2)
+	srv.DB.CheckNodes()
 
-	workers := srv.ListWorkers()
-	if workers[0].State != pbf.WorkerState_DEAD {
-		t.Error("Expected worker to be dead")
+	nodes := srv.ListNodes()
+	if nodes[0].State != pbs.NodeState_DEAD {
+		t.Error("Expected node to be dead")
 	}
 }
 
-// Test what happens when a worker never starts.
+// Test what happens when a node never starts.
 // It should be marked as dead.
-func TestWorkerInitFail(t *testing.T) {
+func TestNodeInitFail(t *testing.T) {
 	conf := DefaultConfig()
-	conf.WorkerInitTimeout = time.Millisecond
+	conf.Scheduler.NodeInitTimeout = time.Millisecond
 	srv := NewFunnel(conf)
 
-	srv.DB.UpdateWorker(context.Background(), &pbf.Worker{
-		Id:    "test-worker",
-		State: pbf.WorkerState_INITIALIZING,
+	srv.DB.UpdateNode(context.Background(), &pbs.Node{
+		Id:    "test-node",
+		State: pbs.NodeState_INITIALIZING,
 	})
 
-	time.Sleep(conf.WorkerInitTimeout * 2)
-	srv.DB.CheckWorkers()
-	workers := srv.ListWorkers()
+	time.Sleep(conf.Scheduler.NodeInitTimeout * 2)
+	srv.DB.CheckNodes()
+	nodes := srv.ListNodes()
 
-	if workers[0].State != pbf.WorkerState_DEAD {
-		t.Error("Expected worker to be dead")
+	if nodes[0].State != pbs.NodeState_DEAD {
+		t.Error("Expected node to be dead")
 	}
 }

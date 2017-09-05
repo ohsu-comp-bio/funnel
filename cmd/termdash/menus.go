@@ -5,9 +5,9 @@ package termdash
 
 import (
 	ui "github.com/gizak/termui"
-	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
-	"github.com/ohsu-comp-bio/funnel/cmd/termdash/widgets"
-	"github.com/ohsu-comp-bio/funnel/cmd/termdash/widgets/menu"
+	"github.com/ohsu-comp-bio/funnel/cmd/termdash/internal/config"
+	"github.com/ohsu-comp-bio/funnel/cmd/termdash/internal/widgets"
+	"github.com/ohsu-comp-bio/funnel/cmd/termdash/internal/widgets/menu"
 )
 
 var helpDialog = []menu.Item{

@@ -46,16 +46,16 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	}
 
 	var err error
-	if class == File {
+	if class == file {
 		err = linkFile(path, hostPath)
-	} else if class == Directory {
+	} else if class == directory {
 		err = filepath.Walk(path, func(p string, f os.FileInfo, err error) error {
 			if !f.IsDir() {
 				rel, err := filepath.Rel(path, p)
 				if err != nil {
 					return err
 				}
-				return local.Get(ctx, p, filepath.Join(hostPath, rel), File)
+				return local.Get(ctx, p, filepath.Join(hostPath, rel), file)
 			}
 			return nil
 		})
@@ -87,7 +87,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 	var err error
 
 	switch class {
-	case File:
+	case file:
 		err = linkFile(hostPath, path)
 		out = append(out, &tes.OutputFileLog{
 			Url:       url,
@@ -95,7 +95,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 			SizeBytes: fileSize(hostPath),
 		})
 
-	case Directory:
+	case directory:
 
 		var files []hostfile
 		files, err = walkFiles(hostPath)

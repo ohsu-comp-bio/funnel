@@ -20,7 +20,7 @@ func TestInsertTempError(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Backends.GCE.Project = "test-proj"
 	conf.Backends.GCE.Zone = "test-zone"
-	conf.Worker.ID = "test-worker"
+	conf.Scheduler.Node.ID = "test-node"
 	wpr := new(gce_mocks.Wrapper)
 	wpr.SetupMockInstanceTemplates()
 	wpr.SetupMockMachineTypes()
@@ -32,13 +32,13 @@ func TestInsertTempError(t *testing.T) {
 
 	// Set InsertInstance to return an error
 	wpr.On("InsertInstance", "test-proj", "test-zone", mock.Anything).Return(nil, errors.New("TEST"))
-	// Try to start the worker a few times
+	// Try to start the node a few times
 	// Do this a few times to exacerbate any errors.
 	// e.g. a previous bug would build up a longer config string after every failure
 	//      because cached data was being incorrectly shared.
-	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
-	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
-	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
 	wpr.AssertExpectations(t)
 	// Clear the previous expected calls
 	wpr.ExpectedCalls = nil
@@ -46,7 +46,7 @@ func TestInsertTempError(t *testing.T) {
 	wpr.SetupMockMachineTypes()
 
 	// Now set InsertInstance to success
-	addr := conf.RPCAddress()
+	addr := conf.Server.RPCAddress()
 	expected := &compute.Instance{
 		// TODO test that these fields get passed through from the template correctly.
 		//      i.e. mock a more complex template
@@ -62,12 +62,12 @@ func TestInsertTempError(t *testing.T) {
 				},
 			},
 		},
-		Name:        "test-worker",
+		Name:        "test-node",
 		MachineType: "zones/test-zone/machineTypes/test-mt",
 		Metadata: &compute.Metadata{
 			Items: []*compute.MetadataItems{
 				{
-					Key:   "funnel-worker-serveraddress",
+					Key:   "funnel-node-serveraddress",
 					Value: &addr,
 				},
 			},
@@ -78,6 +78,6 @@ func TestInsertTempError(t *testing.T) {
 	}
 	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
-	client.StartWorker("test-tpl", conf.Worker.ServerAddress, conf.Worker.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
 	wpr.AssertExpectations(t)
 }

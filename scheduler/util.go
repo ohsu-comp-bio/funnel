@@ -4,9 +4,13 @@ import (
 	"fmt"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
+	pscpu "github.com/shirou/gopsutil/cpu"
+	psdisk "github.com/shirou/gopsutil/disk"
+	psmem "github.com/shirou/gopsutil/mem"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,8 +18,8 @@ import (
 	"time"
 )
 
-// DetectWorkerPath detects the path to the "funnel" binary
-func DetectWorkerPath() (string, error) {
+// DetectBinaryPath detects the path to the "funnel" binary
+func DetectBinaryPath() (string, error) {
 	path, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("Failed to detect path of funnel binary")
@@ -23,14 +27,61 @@ func DetectWorkerPath() (string, error) {
 	return path, err
 }
 
-// GenWorkerID returns a UUID string.
-func GenWorkerID(prefix string) string {
+// GenNodeID returns a UUID string.
+func GenNodeID(prefix string) string {
 	u, _ := uuid.NewV4()
-	return fmt.Sprintf("%s-worker-%s", prefix, u.String())
+	return fmt.Sprintf("%s-node-%s", prefix, u.String())
 }
 
-// ScheduleSingleTaskWorker creates a worker per task
-func ScheduleSingleTaskWorker(prefix string, c config.Worker, t *tes.Task) *Offer {
+// detectResources helps determine the amount of resources to report.
+// Resources are determined by inspecting the host, but they
+// can be overridden by config.
+func detectResources(conf config.Node) pbs.Resources {
+	res := pbs.Resources{
+		Cpus:   conf.Resources.Cpus,
+		RamGb:  conf.Resources.RamGb,
+		DiskGb: conf.Resources.DiskGb,
+	}
+
+	cpuinfo, err := pscpu.Info()
+	if err != nil {
+		log.Error("Error detecting cpu cores", err)
+		return res
+	}
+	vmeminfo, err := psmem.VirtualMemory()
+	if err != nil {
+		log.Error("Error detecting memory", err)
+		return res
+	}
+	diskinfo, err := psdisk.Usage(conf.WorkDir)
+	if err != nil {
+		log.Error("Error detecting available disk", err)
+		return res
+	}
+
+	if conf.Resources.Cpus == 0 {
+		// TODO is cores the best metric? with hyperthreading,
+		//      runtime.NumCPU() and pscpu.Counts() return 8
+		//      on my 4-core mac laptop
+		for _, cpu := range cpuinfo {
+			res.Cpus += uint32(cpu.Cores)
+		}
+	}
+
+	gb := math.Pow(1000, 3)
+	if conf.Resources.RamGb == 0.0 {
+		res.RamGb = float64(vmeminfo.Total) / float64(gb)
+	}
+
+	if conf.Resources.DiskGb == 0.0 {
+		res.DiskGb = float64(diskinfo.Free) / float64(gb)
+	}
+
+	return res
+}
+
+// SetupSingleTaskNode creates a node per task
+func SetupSingleTaskNode(prefix string, c config.Node, t *tes.Task) *Offer {
 	disk := c.Resources.DiskGb
 	if disk == 0.0 {
 		disk = t.GetResources().GetSizeGb()
@@ -49,50 +100,53 @@ func ScheduleSingleTaskWorker(prefix string, c config.Worker, t *tes.Task) *Offe
 	tzones := t.GetResources().GetZones()
 	project := t.GetProject()
 
-	w := &pbf.Worker{
+	n := &pbs.Node{
 		Id: prefix + t.Id,
-		Resources: &pbf.Resources{
+		Resources: &pbs.Resources{
 			Cpus:   cpus,
 			RamGb:  ram,
 			DiskGb: disk,
 		},
 	}
 
-	w.Metadata = map[string]string{"project": project}
+	n.Metadata = map[string]string{"project": project}
 
 	if len(tzones) >= 1 {
 		// TODO figure out zone mapping when len(tzones) > 1
-		w.Zone = tzones[0]
+		n.Zone = tzones[0]
 	}
 
-	return NewOffer(w, t, Scores{})
+	return NewOffer(n, t, Scores{})
 }
 
-// SetupTemplatedHPCWorker sets up a worker in a HPC environment with a shared
+// SetupTemplatedHPCNode sets up a node in a HPC environment with a shared
 // file system. It generates a submission file based on a template for
 // schedulers such as SLURM, HTCondor, SGE, PBS/Torque, etc
-func SetupTemplatedHPCWorker(name string, tpl string, conf config.Config, w *pbf.Worker) (string, error) {
+func SetupTemplatedHPCNode(name string, tpl string, conf config.Config, n *pbs.Node) (string, error) {
 	var err error
 
+	nconf := conf.Scheduler.Node
+
 	// TODO document that these working dirs need manual cleanup
-	workdir := path.Join(conf.Worker.WorkDir, w.Id)
+	workdir := path.Join(nconf.WorkDir, n.Id)
 	workdir, _ = filepath.Abs(workdir)
 	err = util.EnsureDir(workdir)
 	if err != nil {
 		return "", err
 	}
 
-	wc := conf
-	wc.Worker.ID = w.Id
-	wc.Worker.Timeout = 5 * time.Second
-	wc.Worker.Resources.Cpus = w.Resources.Cpus
-	wc.Worker.Resources.RamGb = w.Resources.RamGb
-	wc.Worker.Resources.DiskGb = w.Resources.DiskGb
+	nconf.ID = n.Id
+	nconf.Timeout = 5 * time.Second
+	nconf.Resources.Cpus = n.Resources.Cpus
+	nconf.Resources.RamGb = n.Resources.RamGb
+	nconf.Resources.DiskGb = n.Resources.DiskGb
 
-	confPath := path.Join(workdir, "worker.conf.yml")
-	wc.ToYamlFile(confPath)
+	c := conf
+	c.Scheduler.Node = nconf
+	confPath := path.Join(workdir, "node.conf.yml")
+	c.ToYamlFile(confPath)
 
-	workerPath, err := DetectWorkerPath()
+	binaryPath, err := DetectBinaryPath()
 	if err != nil {
 		return "", err
 	}
@@ -111,15 +165,15 @@ func SetupTemplatedHPCWorker(name string, tpl string, conf config.Config, w *pbf
 	}
 
 	err = submitTpl.Execute(f, map[string]interface{}{
-		"WorkerId":     w.Id,
-		"Executable":   workerPath,
-		"WorkerConfig": confPath,
-		"WorkDir":      workdir,
-		"Cpus":         int(w.Resources.Cpus),
-		"RamGb":        w.Resources.RamGb,
-		"DiskGb":       w.Resources.DiskGb,
-		"Zone":         w.Zone,
-		"Project":      w.Metadata["project"],
+		"NodeId":     n.Id,
+		"Executable": binaryPath,
+		"Config":     confPath,
+		"WorkDir":    workdir,
+		"Cpus":       int(n.Resources.Cpus),
+		"RamGb":      n.Resources.RamGb,
+		"DiskGb":     n.Resources.DiskGb,
+		"Zone":       n.Zone,
+		"Project":    n.Metadata["project"],
 	})
 	if err != nil {
 		return "", err

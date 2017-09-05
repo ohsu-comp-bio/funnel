@@ -1,12 +1,11 @@
 package worker
 
 import (
-	"github.com/ohsu-comp-bio/funnel/util/ring"
 	"sync"
 )
 
 func newTailer(size int64, out func(string)) (*tailer, error) {
-	buf, err := ring.NewBuffer(size)
+	buf, err := newRingBuffer(size)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +14,7 @@ func newTailer(size int64, out func(string)) (*tailer, error) {
 
 type tailer struct {
 	out func(string)
-	buf *ring.Buffer
+	buf *ringBuffer
 	mtx sync.Mutex
 }
 

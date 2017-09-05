@@ -1,7 +1,7 @@
 package termdash
 
 import (
-	"github.com/ohsu-comp-bio/funnel/cmd/termdash/compact"
+	"github.com/ohsu-comp-bio/funnel/cmd/termdash/internal/compact"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 

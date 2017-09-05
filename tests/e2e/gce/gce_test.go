@@ -3,15 +3,13 @@ package gce
 import (
 	"context"
 	"github.com/go-test/deep"
-	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 	"github.com/ohsu-comp-bio/funnel/scheduler/gce"
 	gcemock "github.com/ohsu-comp-bio/funnel/scheduler/gce/mocks"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
-	"github.com/ohsu-comp-bio/funnel/worker"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/api/compute/v1"
 	"testing"
@@ -26,20 +24,19 @@ type Funnel struct {
 	InstancesInserted []*compute.Instance
 }
 
-func (f *Funnel) AddWorker(id string, cpus uint32, ram, disk float64) {
-	x := f.Conf.Worker
-	x.ID = id
-	x.Metadata["gce"] = "yes"
-	x.Resources = config.Resources{
-		Cpus:   cpus,
-		RamGb:  ram,
-		DiskGb: disk,
-	}
-	w, err := worker.NewWorker(x)
+func (f *Funnel) AddNode(id string, cpus uint32, ram, disk float64) {
+	conf := f.Conf
+	conf.Scheduler.Node.ID = id
+	conf.Scheduler.Node.Metadata["gce"] = "yes"
+	conf.Scheduler.Node.Resources.Cpus = cpus
+	conf.Scheduler.Node.Resources.RamGb = ram
+	conf.Scheduler.Node.Resources.DiskGb = disk
+
+	n, err := scheduler.NewNode(conf)
 	if err != nil {
 		panic(err)
 	}
-	go w.Run(context.Background())
+	go n.Start(context.Background())
 	time.Sleep(time.Second * 2)
 }
 
@@ -63,7 +60,7 @@ func NewFunnel() *Funnel {
 	backend.Wrapper.SetupMockMachineTypes()
 	backend.Wrapper.SetupMockInstanceTemplates()
 
-	// Set up the mock Google Cloud plugin so that it starts a local worker.
+	// Set up the mock Google Cloud plugin so that it starts a local node.
 	backend.Wrapper.On("InsertInstance", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			log.Debug("INSERT")
@@ -75,8 +72,8 @@ func NewFunnel() *Funnel {
 			meta.Instance.Hostname = "localhost"
 
 			for _, item := range opts.Metadata.Items {
-				if item.Key == "funnel-worker-serveraddress" {
-					meta.Instance.Attributes.FunnelWorkerServerAddress = *item.Value
+				if item.Key == "funnel-node-serveraddress" {
+					meta.Instance.Attributes.FunnelNodeServerAddress = *item.Value
 				}
 			}
 
@@ -88,15 +85,15 @@ func NewFunnel() *Funnel {
 				panic(cerr)
 			}
 
-			w, err := worker.NewWorker(c.Worker)
+			n, err := scheduler.NewNode(c)
 			if err != nil {
 				panic(err)
 			}
-			go w.Run(context.Background())
+			go n.Start(context.Background())
 		}).
 		Return(nil, nil)
 
-	fun.Scheduler = scheduler.NewScheduler(fun.DB, backend, conf)
+	fun.Scheduler = scheduler.NewScheduler(fun.DB, backend, conf.Scheduler)
 	fun.StartServer()
 
 	return fun
@@ -119,20 +116,20 @@ func TestMultipleTasks(t *testing.T) {
 		t.Fatal("Expected tasks to complete successfully")
 	}
 
-	// This test stems from a bug found during testing GCE worker init.
+	// This test stems from a bug found during testing GCE node init.
 	//
 	// The problem was that the scheduler could schedule one task but not two,
 	// because the Disk resources would first be reported by the GCE instance template,
-	// but once the worker sent an update, the resource information was incorrectly
+	// but once the node sent an update, the resource information was incorrectly
 	// reported and merged.
-	resp, _ := fun.DB.ListWorkers(context.Background(), &pbf.ListWorkersRequest{})
-	if len(resp.Workers) != 1 {
-		t.Fatal("Expected one worker")
+	resp, _ := fun.DB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	if len(resp.Nodes) != 1 {
+		t.Fatal("Expected one node")
 	}
 }
 
 // Test that the correct information is being passed to the Google Cloud API
-// during worker creation.
+// during node creation.
 func TestWrapper(t *testing.T) {
 	fun := NewFunnel()
 
@@ -143,20 +140,20 @@ func TestWrapper(t *testing.T) {
 	fun.WaitForRunning(id)
 	defer fun.Cancel(id)
 
-	// Check the worker
-	workers := fun.ListWorkers()
-	log.Debug("Workers", workers)
-	if len(workers) != 1 {
-		t.Error("Expected a single worker")
+	// Check the node
+	nodes := fun.ListNodes()
+	log.Debug("Nodes", nodes)
+	if len(nodes) != 1 {
+		t.Error("Expected a single node")
 		return
 	}
-	w := workers[0]
+	n := nodes[0]
 
-	if w.Metadata["gce-template"] != "test-tpl" {
-		t.Error("Worker has incorrect template")
+	if n.Metadata["gce-template"] != "test-tpl" {
+		t.Error("node has incorrect template")
 	}
 
-	addr := fun.Conf.RPCAddress()
+	addr := fun.Conf.Server.RPCAddress()
 	d := deep.Equal(fun.InstancesInserted, []*compute.Instance{
 		{
 			// TODO test that these fields get passed through from the template correctly.
@@ -173,12 +170,12 @@ func TestWrapper(t *testing.T) {
 					},
 				},
 			},
-			Name:        w.Id,
+			Name:        n.Id,
 			MachineType: "zones/test-zone/machineTypes/test-mt",
 			Metadata: &compute.Metadata{
 				Items: []*compute.MetadataItems{
 					{
-						Key:   "funnel-worker-serveraddress",
+						Key:   "funnel-node-serveraddress",
 						Value: &addr,
 					},
 				},
@@ -193,12 +190,12 @@ func TestWrapper(t *testing.T) {
 	}
 }
 
-// TestSchedToExisting tests the case where an existing worker has capacity
+// TestSchedToExisting tests the case where an existing node has capacity
 // available for the task. In this case, there are no instance templates,
-// so the scheduler will not create any new workers.
+// so the scheduler will not create any new nodes.
 func TestSchedToExisting(t *testing.T) {
 	fun := NewFunnel()
-	fun.AddWorker("existing", 10, 100.0, 1000.0)
+	fun.AddNode("existing", 10, 100.0, 1000.0)
 
 	// Run a task
 	id := fun.Run(`
@@ -207,28 +204,28 @@ func TestSchedToExisting(t *testing.T) {
 	fun.WaitForRunning(id)
 	defer fun.Cancel(id)
 
-	workers := fun.ListWorkers()
+	nodes := fun.ListNodes()
 
-	if len(workers) != 1 {
-		t.Error("Expected a single worker")
+	if len(nodes) != 1 {
+		t.Error("Expected a single node")
 	}
 
-	log.Debug("Workers", workers)
-	w := workers[0]
+	log.Debug("Nodes", nodes)
+	n := nodes[0]
 
-	if w.Id != "existing" {
-		t.Error("Task scheduled to unexpected worker")
+	if n.Id != "existing" {
+		t.Error("Task scheduled to unexpected node")
 	}
 }
 
-// TestSchedStartWorker tests the case where the scheduler wants to start a new
-// GCE worker instance from a instance template defined in the configuration.
+// TestSchedStartNode tests the case where the scheduler wants to start a new
+// GCE node instance from a instance template defined in the configuration.
 // The scheduler calls the GCE API to get the template details and assigns
-// a task to that unintialized worker. The scaler then calls the GCE API to
-// start the worker.
-func TestSchedStartWorker(t *testing.T) {
+// a task to that unintialized node. The scaler then calls the GCE API to
+// start the node.
+func TestSchedStartNode(t *testing.T) {
 	fun := NewFunnel()
-	fun.AddWorker("existing", 1, 100.0, 1000.0)
+	fun.AddNode("existing", 1, 100.0, 1000.0)
 
 	id := fun.Run(`
     --cmd 'sleep 100'
@@ -237,26 +234,26 @@ func TestSchedStartWorker(t *testing.T) {
 
 	fun.WaitForRunning(id)
 	defer fun.Cancel(id)
-	workers := fun.ListWorkers()
+	nodes := fun.ListNodes()
 
-	if len(workers) != 2 {
-		log.Debug("Workers", workers)
-		t.Error("Expected new worker to be added to database")
+	if len(nodes) != 2 {
+		log.Debug("Nodes", nodes)
+		t.Error("Expected new node to be added to database")
 		return
 	}
 
-	log.Debug("Workers", workers)
-	if workers[1].TaskIds[0] != id {
-		t.Error("Expected worker to have task ID")
+	log.Debug("Nodes", nodes)
+	if nodes[1].TaskIds[0] != id {
+		t.Error("Expected node to have task ID")
 	}
 }
 
-// TestPreferExistingWorker tests the case where there is an existing worker
-// AND instance templates available. The existing worker has capacity for the task,
-// and the task should be scheduled to the existing worker.
-func TestPreferExistingWorker(t *testing.T) {
+// TestPreferExistingNode tests the case where there is an existing node
+// AND instance templates available. The existing node has capacity for the task,
+// and the task should be scheduled to the existing node.
+func TestPreferExistingNode(t *testing.T) {
 	fun := NewFunnel()
-	fun.AddWorker("existing", 10, 100.0, 1000.0)
+	fun.AddNode("existing", 10, 100.0, 1000.0)
 
 	id := fun.Run(`
     --cmd 'sleep 100'
@@ -264,23 +261,23 @@ func TestPreferExistingWorker(t *testing.T) {
 
 	fun.WaitForRunning(id)
 	defer fun.Cancel(id)
-	workers := fun.ListWorkers()
+	nodes := fun.ListNodes()
 
-	if len(workers) != 1 {
-		t.Error("Expected no new workers to be created")
+	if len(nodes) != 1 {
+		t.Error("Expected no new nodes to be created")
 	}
 
-	expected := workers[0]
-	log.Debug("Workers", workers)
+	expected := nodes[0]
+	log.Debug("Nodes", nodes)
 
 	if expected.Id != "existing" {
-		t.Error("Task was scheduled to the wrong worker")
+		t.Error("Task was scheduled to the wrong node")
 	}
 }
 
-// Test submit multiple tasks at once when no workers exist. Multiple workers
+// Test submit multiple tasks at once when no nodes exist. Multiple nodes
 // should be started.
-func TestSchedStartMultipleWorker(t *testing.T) {
+func TestSchedStartMultipleNode(t *testing.T) {
 	fun := NewFunnel()
 
 	// NOTE: the machine type hard-coded in scheduler/gce/mocks/Wrapper_helpers.go
@@ -307,18 +304,18 @@ func TestSchedStartMultipleWorker(t *testing.T) {
 	defer fun.Cancel(id2)
 	defer fun.Cancel(id3)
 	defer fun.Cancel(id4)
-	workers := fun.ListWorkers()
+	nodes := fun.ListNodes()
 
-	if len(workers) != 4 {
-		log.Debug("WORKERS", workers)
-		t.Error("Expected multiple workers")
+	if len(nodes) != 4 {
+		log.Debug("NODES", nodes)
+		t.Error("Expected multiple nodes")
 	}
 }
 
-// Test that assigning a task to a worker correctly updates the available resources.
+// Test that assigning a task to a node correctly updates the available resources.
 func TestUpdateAvailableResources(t *testing.T) {
 	fun := NewFunnel()
-	fun.AddWorker("existing", 10, 100.0, 1000.0)
+	fun.AddNode("existing", 10, 100.0, 1000.0)
 
 	id := fun.Run(`
     --cmd 'sleep 100'
@@ -327,14 +324,14 @@ func TestUpdateAvailableResources(t *testing.T) {
 
 	fun.WaitForRunning(id)
 	defer fun.Cancel(id)
-	workers := fun.ListWorkers()
+	nodes := fun.ListNodes()
 
-	if len(workers) != 1 || workers[0].Id != "existing" {
-		log.Debug("WORKERS", workers)
-		t.Error("Expected a single, existing worker")
+	if len(nodes) != 1 || nodes[0].Id != "existing" {
+		log.Debug("NODES", nodes)
+		t.Error("Expected a single, existing node")
 	}
 
-	if workers[0].Available.Cpus != 8 {
+	if nodes[0].Available.Cpus != 8 {
 		t.Error("Unexpected cpu count")
 	}
 }
@@ -342,8 +339,8 @@ func TestUpdateAvailableResources(t *testing.T) {
 // Try to reproduce a bug where available CPUs seems to overflow
 func TestUpdateBugAvailableResources(t *testing.T) {
 	fun := NewFunnel()
-	fun.AddWorker("existing-1", 8, 100.0, 1000.0)
-	fun.AddWorker("existing-2", 8, 100.0, 1000.0)
+	fun.AddNode("existing-1", 8, 100.0, 1000.0)
+	fun.AddNode("existing-2", 8, 100.0, 1000.0)
 
 	id1 := fun.Run(`
     --cmd 'sleep 100'
@@ -362,15 +359,15 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	defer fun.Cancel(id1)
 	defer fun.Cancel(id2)
 	defer fun.Cancel(id3)
-	workers := fun.ListWorkers()
+	nodes := fun.ListNodes()
 
-	log.Debug("WORKERS", workers)
+	log.Debug("NODES", nodes)
 
-	if len(workers) != 2 {
-		t.Error("unexpected worker count")
+	if len(nodes) != 2 {
+		t.Error("unexpected node count")
 	}
 
-	tot := workers[0].Available.Cpus + workers[1].Available.Cpus
+	tot := nodes[0].Available.Cpus + nodes[1].Available.Cpus
 
 	if tot != 4 {
 		t.Error("Expected total available cpu count to be 4")

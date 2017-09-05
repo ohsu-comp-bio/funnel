@@ -19,7 +19,7 @@ func TestMapTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := FileMapper{
+	f := fileMapper{
 		dir: tmp,
 	}
 

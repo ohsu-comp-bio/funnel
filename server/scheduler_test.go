@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbf "github.com/ohsu-comp-bio/funnel/proto/funnel"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests/testutils"
 	"testing"
@@ -38,8 +38,8 @@ func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 		t.Fatal("Expected task in queue")
 	}
 
-	db.AssignTask(task, &pbf.Worker{
-		Id: "worker-1",
+	db.AssignTask(task, &pbs.Node{
+		Id: "node-1",
 	})
 
 	res2 := db.ReadQueue(10)

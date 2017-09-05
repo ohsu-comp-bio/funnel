@@ -11,46 +11,38 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"strings"
 	"time"
 )
 
-// TODO these should probably be unexported names
-
-// TaskBucket defines the name of a bucket which maps
+// taskBucket defines the name of a bucket which maps
 // task ID -> tes.Task struct
-var TaskBucket = []byte("tasks")
+var taskBucket = []byte("tasks")
 
-// TaskAuthBucket defines the name of a bucket which maps
-// task ID -> JWT token string
-var TaskAuthBucket = []byte("tasks-auth")
-
-// TasksQueued defines the name of a bucket which maps
+// tasksQueued defines the name of a bucket which maps
 // task ID -> nil
-var TasksQueued = []byte("tasks-queued")
+var tasksQueued = []byte("tasks-queued")
 
-// TaskState maps: task ID -> state string
-var TaskState = []byte("tasks-state")
+// taskState maps: task ID -> state string
+var taskState = []byte("tasks-state")
 
-// TasksLog defines the name of a bucket which maps
+// tasksLog defines the name of a bucket which maps
 // task ID -> tes.TaskLog struct
-var TasksLog = []byte("tasks-log")
+var tasksLog = []byte("tasks-log")
 
-// ExecutorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
-var ExecutorLogs = []byte("executor-logs")
+// executorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
+var executorLogs = []byte("executor-logs")
 
-// Workers maps:
-// worker ID -> funnel.Worker struct
-var Workers = []byte("workers")
+// nodes maps:
+// node ID -> pbs.Node struct
+var nodes = []byte("nodes")
 
-// TaskWorker Map task ID -> worker ID
-var TaskWorker = []byte("task-worker")
+// taskNode Map task ID -> node ID
+var taskNode = []byte("task-node")
 
-// WorkerTasks indexes worker -> tasks
-// Implemented as composite_key(worker ID + task ID) => task ID
-// And searched with prefix scan using worker ID
-var WorkerTasks = []byte("worker-tasks")
+// nodeTasks indexes node -> tasks
+// Implemented as composite_key(node ID + task ID) => task ID
+// And searched with prefix scan using node ID
+var nodeTasks = []byte("node-tasks")
 
 // TaskBolt provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
@@ -62,85 +54,48 @@ type TaskBolt struct {
 // NewTaskBolt returns a new instance of TaskBolt, accessing the database at
 // the given path, and including the given ServerConfig.
 func NewTaskBolt(conf config.Config) (*TaskBolt, error) {
-	util.EnsurePath(conf.DBPath)
-	db, err := bolt.Open(conf.DBPath, 0600, &bolt.Options{
+	util.EnsurePath(conf.Server.DBPath)
+	db, err := bolt.Open(conf.Server.DBPath, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	//Check to make sure all the required buckets have been created
+	// Check to make sure all the required buckets have been created
 	db.Update(func(tx *bolt.Tx) error {
-		if tx.Bucket(TaskBucket) == nil {
-			tx.CreateBucket(TaskBucket)
+		if tx.Bucket(taskBucket) == nil {
+			tx.CreateBucket(taskBucket)
 		}
-		if tx.Bucket(TaskAuthBucket) == nil {
-			tx.CreateBucket(TaskAuthBucket)
+		if tx.Bucket(tasksQueued) == nil {
+			tx.CreateBucket(tasksQueued)
 		}
-		if tx.Bucket(TasksQueued) == nil {
-			tx.CreateBucket(TasksQueued)
+		if tx.Bucket(taskState) == nil {
+			tx.CreateBucket(taskState)
 		}
-		if tx.Bucket(TaskState) == nil {
-			tx.CreateBucket(TaskState)
+		if tx.Bucket(tasksLog) == nil {
+			tx.CreateBucket(tasksLog)
 		}
-		if tx.Bucket(TasksLog) == nil {
-			tx.CreateBucket(TasksLog)
+		if tx.Bucket(executorLogs) == nil {
+			tx.CreateBucket(executorLogs)
 		}
-		if tx.Bucket(ExecutorLogs) == nil {
-			tx.CreateBucket(ExecutorLogs)
+		if tx.Bucket(nodes) == nil {
+			tx.CreateBucket(nodes)
 		}
-		if tx.Bucket(Workers) == nil {
-			tx.CreateBucket(Workers)
+		if tx.Bucket(taskNode) == nil {
+			tx.CreateBucket(taskNode)
 		}
-		if tx.Bucket(TaskWorker) == nil {
-			tx.CreateBucket(TaskWorker)
-		}
-		if tx.Bucket(WorkerTasks) == nil {
-			tx.CreateBucket(WorkerTasks)
+		if tx.Bucket(nodeTasks) == nil {
+			tx.CreateBucket(nodeTasks)
 		}
 		return nil
 	})
 	return &TaskBolt{db: db, conf: conf}, nil
 }
 
-// ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
-func (taskBolt *TaskBolt) ReadQueue(n int) []*tes.Task {
-	tasks := make([]*tes.Task, 0)
-	taskBolt.db.View(func(tx *bolt.Tx) error {
-
-		// Iterate over the TasksQueued bucket, reading the first `n` tasks
-		c := tx.Bucket(TasksQueued).Cursor()
-		for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
-			id := string(k)
-			task, _ := getTaskView(tx, id, tes.TaskView_FULL)
-			tasks = append(tasks, task)
-		}
-		return nil
-	})
-	return tasks
-}
-
-// getJWT
-// This function extracts the JWT token from the rpc header and returns the string
-func getJWT(ctx context.Context) string {
-	jwt := ""
-	v, _ := metadata.FromContext(ctx)
-	auth, ok := v["authorization"]
-	if !ok {
-		return jwt
-	}
-	for _, i := range auth {
-		if strings.HasPrefix(i, "JWT ") {
-			jwt = strings.TrimPrefix(i, "JWT ")
-		}
-	}
-	return jwt
-}
-
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
-func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
+func (tb *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 	log.Debug("CreateTask called", "task", task)
 
 	if err := tes.Validate(task); err != nil {
@@ -149,44 +104,32 @@ func (taskBolt *TaskBolt) CreateTask(ctx context.Context, task *tes.Task) (*tes.
 	}
 
 	taskID := util.GenTaskID()
+	idBytes := []byte(taskID)
 	log := log.WithFields("taskID", taskID)
 
-	jwt := getJWT(ctx)
-	log.Debug("JWT", "token", jwt)
+	task.Id = taskID
+	taskString, err := proto.Marshal(task)
+	if err != nil {
+		return nil, err
+	}
 
-	ch := make(chan *tes.CreateTaskResponse, 1)
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		idBytes := []byte(taskID)
-
-		taskopB := tx.Bucket(TaskBucket)
-		task.Id = taskID
-		v, err := proto.Marshal(task)
-		if err != nil {
-			return err
-		}
-		taskopB.Put(idBytes, v)
-
-		tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
-
-		taskopA := tx.Bucket(TaskAuthBucket)
-		taskopA.Put(idBytes, []byte(jwt))
-
-		queueB := tx.Bucket(TasksQueued)
-		queueB.Put(idBytes, []byte{})
-		ch <- &tes.CreateTaskResponse{Id: taskID}
+	err = tb.db.Update(func(tx *bolt.Tx) error {
+		tx.Bucket(taskBucket).Put(idBytes, taskString)
+		tx.Bucket(taskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
+		tx.Bucket(tasksQueued).Put(idBytes, []byte{})
 		return nil
 	})
 	if err != nil {
-		log.Error("Error processing task", err)
+		log.Error("Error storing task in database", err)
 		return nil, err
 	}
-	a := <-ch
-	return a, err
+
+	return &tes.CreateTaskResponse{Id: taskID}, nil
 }
 
 func getTaskState(tx *bolt.Tx, id string) tes.State {
 	idBytes := []byte(id)
-	s := tx.Bucket(TaskState).Get(idBytes)
+	s := tx.Bucket(taskState).Get(idBytes)
 	if s == nil {
 		return tes.State_UNKNOWN
 	}
@@ -195,13 +138,12 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 	return tes.State(v)
 }
 
-// ErrTaskNotFound ...
-var ErrTaskNotFound = errors.New("no task found for id")
+var errTaskNotFound = errors.New("no task found for id")
 
 func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	b := tx.Bucket(taskBucket).Get([]byte(id))
 	if b == nil {
-		return ErrTaskNotFound
+		return errTaskNotFound
 	}
 	task.Id = id
 	task.State = getTaskState(tx, id)
@@ -209,9 +151,9 @@ func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 }
 
 func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	b := tx.Bucket(taskBucket).Get([]byte(id))
 	if b == nil {
-		return ErrTaskNotFound
+		return errTaskNotFound
 	}
 	proto.Unmarshal(b, task)
 	inputs := []*tes.TaskParameter{}
@@ -224,9 +166,9 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 }
 
 func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
+	b := tx.Bucket(taskBucket).Get([]byte(id))
 	if b == nil {
-		return ErrTaskNotFound
+		return errTaskNotFound
 	}
 	proto.Unmarshal(b, task)
 	loadTaskLogs(tx, task)
@@ -237,13 +179,13 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 	tasklog := &tes.TaskLog{}
 	task.Logs = []*tes.TaskLog{tasklog}
 
-	b := tx.Bucket(TasksLog).Get([]byte(task.Id))
+	b := tx.Bucket(tasksLog).Get([]byte(task.Id))
 	if b != nil {
 		proto.Unmarshal(b, tasklog)
 	}
 
 	for i := range task.Executors {
-		o := tx.Bucket(ExecutorLogs).Get([]byte(fmt.Sprint(task.Id, i)))
+		o := tx.Bucket(executorLogs).Get([]byte(fmt.Sprint(task.Id, i)))
 		if o != nil {
 			var execlog tes.ExecutorLog
 			proto.Unmarshal(o, &execlog)
@@ -253,17 +195,17 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 }
 
 // GetTask gets a task, which describes a running task
-func (taskBolt *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+func (tb *TaskBolt) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task *tes.Task
 	var err error
-	err = taskBolt.db.View(func(tx *bolt.Tx) error {
+	err = tb.db.View(func(tx *bolt.Tx) error {
 		task, err = getTaskView(tx, req.Id, req.View)
 		return err
 	})
 
 	if err != nil {
 		log.Error("GetTask", "error", err, "taskID", req.Id)
-		if err == ErrTaskNotFound {
+		if err == errTaskNotFound {
 			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: %s", err.Error(), req.Id))
 		}
 	}
@@ -288,7 +230,7 @@ func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
 }
 
 // ListTasks returns a list of taskIDs
-func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+func (tb *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
 	var tasks []*tes.Task
 	pageSize := 256
@@ -303,8 +245,8 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 		}
 	}
 
-	taskBolt.db.View(func(tx *bolt.Tx) error {
-		c := tx.Bucket(TaskBucket).Cursor()
+	tb.db.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket(taskBucket).Cursor()
 
 		i := 0
 
@@ -339,12 +281,12 @@ func (taskBolt *TaskBolt) ListTasks(ctx context.Context, req *tes.ListTasksReque
 }
 
 // CancelTask cancels a task
-func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+func (tb *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	log := log.WithFields("taskID", taskop.Id)
 	log.Info("Canceling task")
 
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		// TODO need a test that ensures a canceled task is deleted from the worker
+	err := tb.db.Update(func(tx *bolt.Tx) error {
+		// TODO need a test that ensures a canceled task is deleted from the node
 		id := taskop.Id
 		return transitionTaskState(tx, id, tes.State_CANCELED)
 	})
@@ -355,24 +297,6 @@ func (taskBolt *TaskBolt) CancelTask(ctx context.Context, taskop *tes.CancelTask
 }
 
 // GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
-// Could include:
-// - resource availability
-// - support storage systems
-// - versions
-// - etc.
-func (taskBolt *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	// BUG: this isn't the best translation, probably lossy.
-	//     Maybe ServiceInfo data structure schema needs to be refactored
-	//     For example, you can't have multiple S3 endpoints
-	var out []string
-	if taskBolt.conf.Storage.Local.Valid() {
-		out = append(out, taskBolt.conf.Storage.Local.AllowedDirs...)
-	}
-
-	for _, i := range taskBolt.conf.Storage.S3 {
-		if i.Valid() {
-			out = append(out, i.Endpoint)
-		}
-	}
-	return &tes.ServiceInfo{Name: taskBolt.conf.ServiceName, Storage: out}, nil
+func (tb *TaskBolt) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
+	return &tes.ServiceInfo{Name: tb.conf.Server.ServiceName}, nil
 }

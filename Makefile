@@ -22,12 +22,17 @@ proto:
 		--go_out=plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		tes.proto
-	 @cd proto/funnel && protoc \
+	 @cd proto/tasklogger && protoc \
 	   $(PROTO_INC) \
 	 	-I ../tes \
 	 	--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
 	 	--grpc-gateway_out=logtostderr=true:. \
-	 	funnel.proto
+	 	tasklogger.proto
+	@cd proto/scheduler && protoc \
+	   $(PROTO_INC) \
+	 	--go_out=plugins=grpc:. \
+	 	--grpc-gateway_out=logtostderr=true:. \
+	 	scheduler.proto
 
 # Update submodules and build code
 depends:
@@ -58,8 +63,8 @@ lint:
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
 	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell --vendor \
-	 -s proto --exclude 'examples/bundle.go' --exclude 'config/bundle.go' --exclude "cmd/termdash" \
-	 --exclude 'webdash/web.go' --exclude 'funnel-work-dir' ./...
+	 -s proto --exclude 'cmd/examples/internal/bundle.go' --exclude 'config/internal/bundle.go' --exclude "cmd/termdash" \
+	 --exclude 'server/internal/webdash.go' --exclude 'funnel-work-dir' ./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 
 # Run fast-running Go tests
@@ -88,7 +93,7 @@ webdash:
 	@./webdash/node_modules/.bin/node-sass webdash/style.scss build/webdash/style.css
 	@cp webdash/*.html build/webdash/
 	@go get -u github.com/jteeuwen/go-bindata/...
-	@go-bindata -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
+	@go-bindata -pkg webdash -prefix "build/" -o server/internal/webdash.go build/webdash
 
 # Build binaries for all OS/Architectures
 cross-compile: depends
@@ -147,21 +152,20 @@ gen-mocks:
 	@go get github.com/vektra/mockery/...
 	@mockery -dir scheduler/gce -name Client -print > scheduler/gce/mocks/Client_mock.go
 	@mockery -dir scheduler/gce -name Wrapper -print > scheduler/gce/mocks/Wrapper_mock.go
-	@mockery -dir server -name Database -print > server/mocks/Database_mock.go
 	@mockery -dir scheduler -name Database -print > scheduler/mocks/Database_mock.go
 	@mockery -dir scheduler -name Client -print > scheduler/mocks/Client_mock.go
 
 # Bundle example task messages into Go code.
 bundle-examples:
-	@go-bindata -pkg examples -o examples/bundle.go $(shell find examples/ -name '*.json')
-	@go-bindata -pkg config -o config/bundle.go $(shell find config/ -name '*.txt' -o -name '*.yaml')
+	@go-bindata -pkg examples -o cmd/examples/internal/bundle.go $(shell find . -path './examples/*.json' -o -path './config/*.txt' -o -path './config/*.yaml')
+	@go-bindata -pkg config -o config/internal/bundle.go $(shell find config/ -name '*.txt')
 
 # Make everything usually needed to prepare for a pull request
 full: proto install prune_deps add_deps tidy lint test website webdash
 
 # Build the website
 website:
-	@find ./config -name '*.txt' -o -name '*.yaml' -exec cp {} website/static/funnel-config-examples/ \;
+	@find ./config -name '*.txt' -o -name '*.yaml' | xargs -I % cp % ./website/static/funnel-config-examples/
 	@go get github.com/spf13/hugo
 	hugo --source ./website
 	#

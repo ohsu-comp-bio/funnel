@@ -3,11 +3,14 @@ package server
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"time"
 )
 
@@ -115,6 +118,9 @@ func updateNode(tx *bolt.Tx, req *pbs.Node) error {
 		}
 	}
 
+	if node.Metadata == nil {
+		node.Metadata = map[string]string{}
+	}
 	for k, v := range req.Metadata {
 		node.Metadata[k] = v
 	}
@@ -166,10 +172,22 @@ func updateAvailableResources(tx *bolt.Tx, node *pbs.Node) {
 // GetNode gets a node
 func (taskBolt *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
 	var node *pbs.Node
-	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+	var err error
+
+	err = taskBolt.db.View(func(tx *bolt.Tx) error {
+		data := tx.Bucket(Nodes).Get([]byte(req.Id))
+		if data == nil {
+			return errNotFound
+		}
 		node = getNode(tx, req.Id)
 		return nil
 	})
+	if err != nil {
+		log.Error("GetNode", "error", err, "nodeID", req.Id)
+		if err == errNotFound {
+			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
+		}
+	}
 	return node, err
 }
 
@@ -256,6 +274,7 @@ func getNode(tx *bolt.Tx, id string) *pbs.Node {
 
 	data := tx.Bucket(Nodes).Get([]byte(id))
 	if data != nil {
+		// TODO handle error
 		proto.Unmarshal(data, node)
 	}
 

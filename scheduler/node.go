@@ -7,6 +7,8 @@ import (
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 )
 
@@ -121,15 +123,23 @@ func (n *Node) checkConnection(ctx context.Context) {
 // TODO Sync should probably use a channel to sync data access.
 //      Probably only a problem for test code, where Sync is called directly.
 func (n *Node) sync(ctx context.Context) {
-	r, gerr := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
+	var r *pbs.Node
+	var err error
 
-	if gerr != nil {
-		log.Error("Couldn't get node state during sync.", gerr)
-		return
+	r, err = n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
+	if err != nil {
+		// If its a 404 error create a new node
+		s, _ := status.FromError(err)
+		if s.Code() != codes.NotFound {
+			log.Error("Couldn't get node state during sync.", err)
+			return
+		}
+		log.Info("Starting initial node sync", "nodeID", n.conf.ID)
+		r = &pbs.Node{Id: n.conf.ID}
 	}
 
 	// Start task workers. runSet will track task IDs
-	// to ensure there's only one runner per ID, so it's ok
+	// to ensure there's only one worker per ID, so it's ok
 	// to call this multiple times with the same task ID.
 	for _, id := range r.TaskIds {
 		if n.workers.Add(id) {
@@ -158,15 +168,15 @@ func (n *Node) sync(ctx context.Context) {
 		r.Metadata[k] = v
 	}
 
-	_, err := n.client.UpdateNode(context.Background(), r)
+	_, err = n.client.UpdateNode(context.Background(), r)
 	if err != nil {
 		log.Error("Couldn't save node update. Recovering.", err)
 	}
 }
 
-// Check if the worker pool is idle. If so, start the timeout timer.
+// Check if the node is idle. If so, start the timeout timer.
 func (n *Node) checkIdleTimer() {
-	// The pool is idle if there are no task runners.
+	// The pool is idle if there are no task workers.
 	// The pool should not time out if it's not alive (e.g. if it's initializing)
 	idle := n.workers.Count() == 0 && n.state == pbs.NodeState_ALIVE
 	if idle {

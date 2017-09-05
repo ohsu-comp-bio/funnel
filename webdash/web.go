@@ -114,7 +114,7 @@ func webdashBundleJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/bundle.js", size: 1305850, mode: os.FileMode(420), modTime: time.Unix(1504893437, 0)}
+	info := bindataFileInfo{name: "webdash/bundle.js", size: 1305850, mode: os.FileMode(420), modTime: time.Unix(1504894462, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -134,7 +134,7 @@ func webdashError404Html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/error404.html", size: 121, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/error404.html", size: 121, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -154,7 +154,7 @@ func webdashHealthHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/health.html", size: 3, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/health.html", size: 3, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -174,7 +174,7 @@ func webdashIndexHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/index.html", size: 1143, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/index.html", size: 1143, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -194,12 +194,12 @@ func webdashListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/list.html", size: 948, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/list.html", size: 948, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _webdashNodeListHtml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x74\x90\xc1\x4a\x04\x31\x0c\x86\xef\xf3\x14\x21\x0a\x3d\x8d\xbd\xec\x49\x3a\xbd\xe8\x45\x10\x11\x7c\x82\xec\x36\xbb\x53\xa8\xd3\xa5\x0d\x8b\x30\xcc\xbb\x4b\x3a\xa3\x22\xec\x9e\x92\xfc\x7f\x92\x2f\xad\x0b\xf1\x02\xd3\xa9\x3f\xe4\x49\x4a\x4e\x89\xcb\x80\x6f\x39\xf0\x6b\xac\xf2\xf4\xab\x21\x1c\x12\xd5\x3a\xe0\x94\x03\xf7\x29\x56\xe9\xcf\x74\x62\xf4\x1d\x40\xdb\xb0\xd9\xfb\x4c\x25\xa0\xef\x3a\x00\x00\x37\xee\xbc\xae\xaa\xce\x8e\xbb\x1f\x4d\x68\x9f\x58\x81\x2d\x19\xb0\x85\x77\x2a\xf4\x59\xaf\x40\x9a\xdb\x28\xeb\x70\xd1\xc9\xc2\x67\x26\x59\xdb\x20\x4e\x70\x1f\x48\x08\x3d\x6c\x5d\xda\x17\x40\xb5\x5e\xa2\x28\xc3\xbc\x3c\x1b\x84\x63\x4c\xa2\xaf\x9b\x4d\x0c\xe6\x11\x8c\xf0\x97\x98\x05\xa1\xe6\xb2\xdd\xa2\x06\x7a\x47\x30\x16\x3e\x0e\x78\x67\x95\x50\xed\x3c\x6b\x7c\x88\x61\x59\xd0\xcf\x33\x6c\x15\x2c\x8b\xb3\xe4\x9d\x95\xe0\x6f\xa3\x3f\x84\x84\xff\xd1\x6b\x53\xae\x1f\xb0\x7a\x4a\x69\x90\x56\x2a\xe6\x0f\xe1\xac\x94\x35\x77\xb6\x4d\x79\xd0\x9f\x75\x36\xc4\x8b\xef\xb6\xf0\x1d\x00\x00\xff\xff\xcd\x09\x77\xbf\xd5\x01\x00\x00")
+var _webdashNodeListHtml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x74\x90\xc1\x4a\x04\x31\x0c\x86\xef\xf3\x14\x21\x0a\x3d\x8d\xbd\xec\x49\x3a\xbd\xe8\x45\x10\x11\x7c\x82\xec\x36\xbb\x53\xa8\xd3\xa5\x0d\x8b\x30\xcc\xbb\x4b\x3a\xa3\x22\xec\x9e\x92\xfc\x7f\x92\x2f\xad\x0b\xf1\x02\xd3\xa9\x3f\xe4\x49\x4a\x4e\x89\xcb\x80\x6f\x39\xf0\x6b\xac\xf2\xf4\xab\x21\x1c\x12\xd5\x3a\xe0\x94\x03\xf7\x29\x56\xe9\xcf\x74\x62\xf4\x1d\x40\xdb\xb0\xd9\xfb\x4c\x25\xa0\xef\x3a\x00\x00\x37\xee\xbc\xae\xaa\xce\x8e\xbb\x1f\x4d\x68\x9f\x58\x81\x2d\x19\xb0\x85\x77\x2a\xf4\x59\xaf\x40\x9a\xdb\x28\xeb\x70\xd1\xc9\xc2\x67\x26\x59\xdb\x20\x4e\x70\x1f\x48\x08\x3d\x6c\x5d\xda\x17\x40\xb5\x5e\xa2\x28\xc3\xbc\x3c\x1b\x84\x63\x4c\xa2\xaf\x9b\x4d\x0c\xe6\x11\x8c\xf0\x97\x98\x05\xa1\xe6\xb2\xdd\xa2\x06\x7a\x47\x30\x16\x3e\x0e\x68\xef\xac\x22\xaa\x9d\x67\x8d\x0f\x31\x2c\x0b\xfa\x79\x86\xad\x82\x65\x71\x96\xbc\xb3\x12\xfc\x6d\xf6\x87\x90\xf0\x3f\x7c\x6d\xca\xf5\x0b\x56\x4f\x29\x0d\xd2\x4a\xc5\xfc\x21\x9c\x95\xb2\xe6\xce\xb6\x29\x0f\xfa\xb5\xce\x86\x78\xf1\xdd\x16\xbe\x03\x00\x00\xff\xff\x4a\x19\x01\xd7\xd6\x01\x00\x00")
 
 func webdashNodeListHtmlBytes() ([]byte, error) {
 	return bindataRead(
@@ -214,7 +214,7 @@ func webdashNodeListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/node-list.html", size: 469, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/node-list.html", size: 470, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -234,7 +234,7 @@ func webdashNodeHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/node.html", size: 1632, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/node.html", size: 1632, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -254,7 +254,7 @@ func webdashStyleCss() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/style.css", size: 353098, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/style.css", size: 353098, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -274,7 +274,7 @@ func webdashTaskHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/task.html", size: 3645, mode: os.FileMode(420), modTime: time.Unix(1504893438, 0)}
+	info := bindataFileInfo{name: "webdash/task.html", size: 3645, mode: os.FileMode(420), modTime: time.Unix(1504894463, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

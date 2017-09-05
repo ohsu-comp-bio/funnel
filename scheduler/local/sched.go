@@ -82,6 +82,6 @@ func startNode(id string, conf config.Config) error {
 		log.Error("Can't create node", err)
 		return err
 	}
-	go n.Start(context.Background())
+	go n.Run(context.Background())
 	return nil
 }

@@ -68,9 +68,9 @@ type Node struct {
 	state      pbs.NodeState
 }
 
-// Start starts a node with the given config. This is responsible for communication
+// Run runs a node with the given config. This is responsible for communication
 // with the server and starting task workers
-func (n *Node) Start(ctx context.Context) {
+func (n *Node) Run(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

@@ -36,7 +36,7 @@ var ExecutorLogs = []byte("executor-logs")
 
 // Nodes maps:
 // node ID -> pbs.Node struct
-var Nodes = []byte("pools")
+var Nodes = []byte("nodes")
 
 // TaskNode Map task ID -> node ID
 var TaskNode = []byte("task-node")

@@ -1,4 +1,4 @@
-## funnel gce start
+## funnel gce run
 
 
 
@@ -8,7 +8,7 @@
 
 
 ```
-funnel gce start
+funnel gce run
 ```
 
 ### SEE ALSO

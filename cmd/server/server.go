@@ -25,7 +25,7 @@ var flagConf = config.Config{}
 // Cmd represents the `funnel server` CLI command set.
 var Cmd = &cobra.Command{
 	Use:   "server",
-	Short: "Starts a Funnel server.",
+	Short: "Runs a Funnel server.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -34,8 +34,8 @@ var Cmd = &cobra.Command{
 		config.ParseFile(configFile, &conf)
 
 		// make sure server address and password is inherited by scheduler nodes and workers
-		conf.InheritServerProperties()
-		flagConf.InheritServerProperties()
+		conf = config.InheritServerProperties(conf)
+		flagConf = config.InheritServerProperties(flagConf)
 
 		// file vals <- cli val
 		err := mergo.MergeWithOverwrite(&conf, flagConf)
@@ -43,7 +43,7 @@ var Cmd = &cobra.Command{
 			return err
 		}
 
-		return Start(conf)
+		return Run(conf)
 	},
 }
 
@@ -59,10 +59,10 @@ func init() {
 	flags.StringVar(&flagConf.Backend, "backend", flagConf.Backend, "Name of scheduler backend to enable")
 }
 
-// Start starts a default Funnel server.
-// This opens a database, and starts an API server, scheduler and task logger.
+// Run runs a default Funnel server.
+// This opens a database, and runs an API server, scheduler and task logger.
 // This blocks indefinitely.
-func Start(conf config.Config) error {
+func Run(conf config.Config) error {
 	logger.Configure(conf.Server.Logger)
 
 	db, err := server.NewTaskBolt(conf)

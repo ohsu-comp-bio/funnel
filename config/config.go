@@ -14,7 +14,7 @@ import (
 // Config describes configuration for Funnel.
 type Config struct {
 	Server Server
-	// the active scheduler backend
+	// the active compute backend
 	Backend  string
 	Backends struct {
 		Local    struct{}
@@ -35,7 +35,6 @@ type Config struct {
 			ConfigPath string
 			Server     os_servers.CreateOpts
 		}
-		// Google Cloud Compute
 		GCE struct {
 			AccountFile string
 			Project     string
@@ -47,56 +46,18 @@ type Config struct {
 		}
 	}
 	Scheduler Scheduler
-	// Worker configuration
-	Worker Worker
+	Worker    Worker
 }
 
 // InheritServerProperties sets the ServerAddress and ServerPassword fields
 // in the Worker and Scheduler.Node configs based on the Server config
-func (c *Config) InheritServerProperties() {
+func InheritServerProperties(c Config) Config {
 	c.Worker.ServerAddress = c.Server.RPCAddress()
 	c.Worker.ServerPassword = c.Server.Password
 
 	c.Scheduler.Node.ServerAddress = c.Server.RPCAddress()
 	c.Scheduler.Node.ServerPassword = c.Server.Password
-	return
-}
-
-// ToYaml formats the configuration into YAML and returns the bytes.
-func (c *Config) ToYaml() []byte {
-	// TODO handle error
-	yamlstr, _ := yaml.Marshal(c)
-	return yamlstr
-}
-
-// ToYamlFile writes the configuration to a YAML file.
-func (c *Config) ToYamlFile(p string) {
-	// TODO handle error
-	ioutil.WriteFile(p, c.ToYaml(), 0600)
-}
-
-// ToYamlTempFile writes the configuration to a YAML temp. file.
-func (c *Config) ToYamlTempFile(name string) (string, func()) {
-	// I'm creating a temp. directory instead of a temp. file so that
-	// the file can have an expected name. This is helpful for the HTCondor scheduler.
-	tmpdir, _ := ioutil.TempDir("", "")
-
-	cleanup := func() {
-		os.RemoveAll(tmpdir)
-	}
-
-	p := filepath.Join(tmpdir, name)
-	c.ToYamlFile(p)
-	return p, cleanup
-}
-
-// Parse parses a YAML doc into the given Config instance.
-func Parse(raw []byte, conf *Config) error {
-	err := yaml.Unmarshal(raw, conf)
-	if err != nil {
-		return err
-	}
-	return nil
+	return c
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -146,7 +107,7 @@ func DefaultConfig() Config {
 	}
 
 	// set rpc server address and password for worker and node
-	c.InheritServerProperties()
+	c = InheritServerProperties(c)
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -178,7 +139,7 @@ type Server struct {
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort
-func (c *Server) HTTPAddress() string {
+func (c Server) HTTPAddress() string {
 	if c.HostName != "" && c.HTTPPort != "" {
 		return "http://" + c.HostName + ":" + c.HTTPPort
 	}
@@ -209,11 +170,13 @@ type Scheduler struct {
 	Logger logger.Config
 }
 
-// Node contains the configuration for a node which used by the funnel's basic scheduler.
+// Node contains the configuration for a node. Nodes track available resources
+// for funnel's basic scheduler.
 type Node struct {
-	ID string
-	// Directory to write task files to
-	WorkDir   string
+	ID      string
+	WorkDir string
+	// A Node will automatically try to detect what resources are available to it.
+	// Defining Resources in the Node configuration overrides this behavior.
 	Resources struct {
 		Cpus   uint32
 		RamGb  float64 // nolint
@@ -265,7 +228,7 @@ type LocalStorage struct {
 }
 
 // Valid validates the LocalStorage configuration
-func (l *LocalStorage) Valid() bool {
+func (l LocalStorage) Valid() bool {
 	return len(l.AllowedDirs) > 0
 }
 
@@ -276,7 +239,7 @@ type GSStorage struct {
 }
 
 // Valid validates the GSStorage configuration.
-func (g *GSStorage) Valid() bool {
+func (g GSStorage) Valid() bool {
 	return g.FromEnv || g.AccountFile != ""
 }
 
@@ -288,8 +251,45 @@ type S3Storage struct {
 }
 
 // Valid validates the LocalStorage configuration
-func (l *S3Storage) Valid() bool {
+func (l S3Storage) Valid() bool {
 	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
+}
+
+// ToYaml formats the configuration into YAML and returns the bytes.
+func (c Config) ToYaml() []byte {
+	// TODO handle error
+	yamlstr, _ := yaml.Marshal(c)
+	return yamlstr
+}
+
+// ToYamlFile writes the configuration to a YAML file.
+func (c Config) ToYamlFile(p string) {
+	// TODO handle error
+	ioutil.WriteFile(p, c.ToYaml(), 0600)
+}
+
+// ToYamlTempFile writes the configuration to a YAML temp. file.
+func (c Config) ToYamlTempFile(name string) (string, func()) {
+	// I'm creating a temp. directory instead of a temp. file so that
+	// the file can have an expected name. This is helpful for the HTCondor scheduler.
+	tmpdir, _ := ioutil.TempDir("", "")
+
+	cleanup := func() {
+		os.RemoveAll(tmpdir)
+	}
+
+	p := filepath.Join(tmpdir, name)
+	c.ToYamlFile(p)
+	return p, cleanup
+}
+
+// Parse parses a YAML doc into the given Config instance.
+func Parse(raw []byte, conf *Config) error {
+	err := yaml.Unmarshal(raw, conf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // ParseFile parses a Funnel config file, which is formatted in YAML,

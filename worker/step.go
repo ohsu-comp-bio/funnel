@@ -9,21 +9,20 @@ import (
 )
 
 type stepRunner struct {
-	TaskID     string
-	Conf       config.Worker
-	Num        int
-	Cmd        *DockerCmd
-	Log        logger.Logger
-	TaskLogger TaskLogger
-	IP         string
+	Conf  config.Worker
+	Num   int
+	Cmd   *DockerCmd
+	Log   logger.Logger
+	Write TaskWriter
+	IP    string
 }
 
 func (s *stepRunner) Run(ctx context.Context) error {
 	s.Log.Debug("Running step")
 
 	// Send update for host IP address.
-	s.TaskLogger.ExecutorStartTime(s.Num, time.Now())
-	s.TaskLogger.ExecutorHostIP(s.Num, s.IP)
+	s.Write.ExecutorStartTime(s.Num, time.Now())
+	s.Write.ExecutorHostIP(s.Num, s.IP)
 
 	// subctx helps ensure that these goroutines are cleaned up,
 	// even when the task is canceled.
@@ -54,7 +53,7 @@ func (s *stepRunner) Run(ctx context.Context) error {
 			// Likely the task was canceled.
 			s.Log.Info("Stopping container", "container", s.Cmd.ContainerName)
 			s.Cmd.Stop()
-			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
+			s.Write.ExecutorEndTime(s.Num, time.Now())
 			return ctx.Err()
 
 		case <-ticker.C:
@@ -62,13 +61,13 @@ func (s *stepRunner) Run(ctx context.Context) error {
 			stderr.Flush()
 
 		case result := <-done:
-			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
+			s.Write.ExecutorEndTime(s.Num, time.Now())
 			code, ok := getExitCode(result)
 			if !ok {
 				s.Log.Info("Could not determine exit code. Using default -999", "result", result)
 				code = -999
 			}
-			s.TaskLogger.ExecutorExitCode(s.Num, code)
+			s.Write.ExecutorExitCode(s.Num, code)
 			return result
 		}
 	}
@@ -76,10 +75,10 @@ func (s *stepRunner) Run(ctx context.Context) error {
 
 func (s *stepRunner) logTails() (*tailer, *tailer) {
 	stdout, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.TaskLogger.AppendExecutorStdout(s.Num, c)
+		s.Write.AppendExecutorStdout(s.Num, c)
 	})
 	stderr, _ := newTailer(s.Conf.LogTailSize, func(c string) {
-		s.TaskLogger.AppendExecutorStderr(s.Num, c)
+		s.Write.AppendExecutorStderr(s.Num, c)
 	})
 	if s.Cmd.Stdout != nil {
 		s.Cmd.Stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
@@ -105,7 +104,7 @@ func (s *stepRunner) inspectContainer(ctx context.Context) {
 				break
 			}
 
-			s.TaskLogger.ExecutorPorts(s.Num, ports)
+			s.Write.ExecutorPorts(s.Num, ports)
 			return
 		}
 	}

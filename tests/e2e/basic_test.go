@@ -3,6 +3,8 @@ package e2e
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strings"
 	"testing"
 	"time"
@@ -20,10 +22,22 @@ func TestHelloWorld(t *testing.T) {
 }
 
 func TestGetUnknownTask(t *testing.T) {
-	_, err := fun.HTTP.GetTask("nonexistent-task-id", "MINIMAL")
+	var err error
+
+	_, err = fun.HTTP.GetTask("nonexistent-task-id", "MINIMAL")
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
-		log.Debug("ERR", err)
-		t.Fatal("expected error")
+		log.Debug("error", err)
+		t.Fatal("expected not found error")
+	}
+
+	_, err = fun.RPC.GetTask(
+		context.Background(),
+		&tes.GetTaskRequest{Id: "nonexistent-task-id", View: tes.TaskView_MINIMAL},
+	)
+	s, _ := status.FromError(err)
+	if err == nil || s.Code() != codes.NotFound {
+		log.Debug("error", err)
+		t.Fatal("expected not found error")
 	}
 }
 
@@ -322,6 +336,27 @@ func TestCancel(t *testing.T) {
 	task := fun.Get(id)
 	if task.State != tes.State_CANCELED {
 		t.Fatal("Unexpected state")
+	}
+}
+
+// Test canceling a task that doesn't exist
+func TestCancelUnknownTask(t *testing.T) {
+	var err error
+
+	_, err = fun.HTTP.CancelTask("nonexistent-task-id")
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
+		log.Debug("error", err)
+		t.Fatal("expected not found error")
+	}
+
+	_, err = fun.RPC.CancelTask(
+		context.Background(),
+		&tes.CancelTaskRequest{Id: "nonexistent-task-id"},
+	)
+	s, _ := status.FromError(err)
+	if err == nil || s.Code() != codes.NotFound {
+		log.Debug("error", err)
+		t.Fatal("expected not found error")
 	}
 }
 

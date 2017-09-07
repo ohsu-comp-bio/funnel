@@ -115,7 +115,7 @@ func TestSetupTemplatedHPCWorker(t *testing.T) {
 {{printf "#TEST --disk %.1fGB" .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker --config {{.WorkerConfig}}
+{{.Executable}} worker start --config {{.WorkerConfig}}
 `
 
 	sf, err := SetupTemplatedHPCWorker("slurm-test", tpl, c, w)
@@ -143,7 +143,7 @@ func TestSetupTemplatedHPCWorker(t *testing.T) {
 #TEST --mem 1GB
 #TEST --disk 10.0GB
 
-%s worker --config %s/test-worker/worker.conf.yml
+%s worker start --config %s/test-worker/worker.conf.yml
 `
 
 	expected = fmt.Sprintf(expected, tmp, tmp, workerPath, tmp)

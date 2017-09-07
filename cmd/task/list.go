@@ -19,7 +19,7 @@ var (
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list all tasks",
+	Short: "List all tasks.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r, err := doList(tesServer)
 		if err != nil {

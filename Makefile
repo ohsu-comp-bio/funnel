@@ -80,6 +80,9 @@ test-backends:
 test-verbose:
 	@go run tests/fmt/fmt.go -v $(TESTS)
 
+test-cleanup:
+	@find . -name test_tmp -type d | xargs rm -r
+
 # Build the web dashboard
 webdash:
 	@mkdir -p build/webdash

@@ -19,7 +19,7 @@ var (
 // Cmd represents the worker command
 var Cmd = &cobra.Command{
 	Use:   "dashboard",
-	Short: "Starts a Funnel dashboard in your terminal.",
+	Short: "Start a Funnel dashboard in your terminal.",
 	Run: func(cmd *cobra.Command, args []string) {
 		termdash(tesServer)
 	},

@@ -12,4 +12,4 @@
 {{printf "#PBS -l file=%.0fgb" .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker --config {{.WorkerConfig}}
+{{.Executable}} worker start --config {{.WorkerConfig}}

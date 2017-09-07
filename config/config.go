@@ -221,7 +221,7 @@ type Worker struct {
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
 	Local LocalStorage
-	S3    []S3Storage
+	S3    S3Storage
 	GS    []GSStorage
 }
 
@@ -248,14 +248,14 @@ func (g GSStorage) Valid() bool {
 
 // S3Storage describes the directories Funnel can read from and write to
 type S3Storage struct {
-	Endpoint string
-	Key      string
-	Secret   string
+	Key     string
+	Secret  string
+	FromEnv bool
 }
 
 // Valid validates the LocalStorage configuration
 func (l S3Storage) Valid() bool {
-	return l.Endpoint != "" && l.Key != "" && l.Secret != ""
+	return (l.Key != "" && l.Secret != "") || l.FromEnv
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.

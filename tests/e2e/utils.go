@@ -85,13 +85,6 @@ func DefaultConfig() config.Config {
 		Local: config.LocalStorage{
 			AllowedDirs: []string{storageDir, wd},
 		},
-		S3: []config.S3Storage{
-			{
-				Endpoint: "localhost:9999",
-				Key:      "AKIAIOSFODNN7EXAMPLE",
-				Secret:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-			},
-		},
 	}
 
 	conf = config.InheritServerProperties(conf)

@@ -22,9 +22,6 @@
 [submodule "vendor/gopkg.in/yaml.v2"]
 	path = vendor/gopkg.in/yaml.v2
 	url = https://gopkg.in/yaml.v2
-[submodule "vendor/github.com/minio/minio-go"]
-	path = vendor/github.com/minio/minio-go
-	url = https://github.com/minio/minio-go
 [submodule "vendor/github.com/rackspace/gophercloud"]
 	path = vendor/github.com/rackspace/gophercloud
 	url = https://github.com/rackspace/gophercloud
@@ -124,12 +121,6 @@
 [submodule "vendor/golang.org/x/text"]
 	path = vendor/golang.org/x/text
 	url = https://go.googlesource.com/text
-[submodule "vendor/github.com/go-ini/ini"]
-	path = vendor/github.com/go-ini/ini
-	url = https://github.com/go-ini/ini
-[submodule "vendor/github.com/minio/go-homedir"]
-	path = vendor/github.com/minio/go-homedir
-	url = https://github.com/minio/go-homedir
-[submodule "vendor/golang.org/x/sys"]
-	path = vendor/golang.org/x/sys
-	url = https://go.googlesource.com/sys
+[submodule "vendor/github.com/aws/aws-sdk-go"]
+	path = vendor/github.com/aws/aws-sdk-go
+	url = https://github.com/aws/aws-sdk-go

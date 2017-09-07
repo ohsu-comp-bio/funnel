@@ -89,6 +89,9 @@ test-short:
 test:
 	@go run tests/fmt/fmt.go $(TESTS)
 
+test-verbose:
+	@go run tests/fmt/fmt.go -v $(TESTS)
+
 # Run backend tests
 test-backends:
 	@go test -timeout 120s ./tests/e2e/slurm -run-test
@@ -96,8 +99,9 @@ test-backends:
 	@go test -timeout 120s ./tests/e2e/htcondor -run-test
 	@go test -timeout 120s ./tests/e2e/pbs -run-test
 
-test-verbose:
-	@go run tests/fmt/fmt.go -v $(TESTS)
+# Run s3 tests
+test-s3:
+	@go test ./tests/e2e/s3 -run-test
 
 # Build the web dashboard
 webdash:

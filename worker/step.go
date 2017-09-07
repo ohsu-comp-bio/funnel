@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"io"
@@ -83,10 +84,22 @@ func (s *stepWorker) logTails() (*tailer, *tailer) {
 
 // inspectContainer calls Inspect on the DockerCmd, and sends an update with the results.
 func (s *stepWorker) inspectContainer(ctx context.Context) {
-	ports, err := s.Cmd.Inspect(ctx)
-	if err != nil {
-		s.Log.Error("Error inspecting container", err)
-		return
+	t := time.NewTimer(time.Second)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			s.Log.Info("Inspecting container")
+
+			ports, err := s.Cmd.Inspect(ctx)
+			if err != nil && !client.IsErrContainerNotFound(err) {
+				s.Log.Error("Error inspecting container", err)
+				break
+			}
+			s.TaskLogger.ExecutorPorts(s.Num, ports)
+			return
+		}
 	}
-	s.TaskLogger.ExecutorPorts(s.Num, ports)
 }

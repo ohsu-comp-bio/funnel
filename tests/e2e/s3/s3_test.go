@@ -1,69 +1,135 @@
 package s3
 
 import (
+	"context"
+	"flag"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
+	"io/ioutil"
 	"os"
-	"os/exec"
-	"strings"
 	"testing"
 )
 
-var log = logger.New("e2e-s3")
 var fun *e2e.Funnel
+var log = logger.New("e2e-s3")
+var conf config.Config
+var runTest = flag.Bool("run-test", false, "run e2e test")
 
 func TestMain(m *testing.M) {
 	log.Configure(logger.DebugConfig())
+	flag.Parse()
 
-	fun = e2e.NewFunnel(e2e.DefaultConfig())
+	flag.Parse()
+	if !*runTest {
+		log.Info("Skipping s3 e2e tests...")
+		os.Exit(0)
+	}
+
+	conf = e2e.DefaultConfig()
+	conf.Worker.Storage.S3 = config.S3Storage{FromEnv: true}
+	fun = e2e.NewFunnel(conf)
 	fun.StartServer()
 
-	// Start minio
-	dockerPath, _ := exec.LookPath("docker")
-	args := []string{dockerPath, "run",
-		"-p", "9999:9999",
-		"--rm",
-		"--name", "fun-minio-test",
-		"-e", "MINIO_ACCESS_KEY=" + fun.Conf.Worker.Storage.S3[0].Key,
-		"-e", "MINIO_SECRET_KEY=" + fun.Conf.Worker.Storage.S3[0].Secret,
-		"-v", fun.StorageDir + ":/export",
-		"minio/minio", "server", "/export",
-	}
-	log.Debug("Start minio", strings.Join(args, " "))
+	os.Exit(m.Run())
+}
 
-	cmd := exec.Command(args[0], args[1:]...)
-	err := cmd.Start()
+func TestS3StorageTask(t *testing.T) {
+	task := &tes.Task{
+		Name: "s3 e2e",
+		Inputs: []*tes.TaskParameter{
+			{
+				Url:  "s3://strucka-dev/test-file.txt",
+				Path: "/opt/inputs/test-file.txt",
+				Type: tes.FileType_FILE,
+			},
+			{
+				Url:  "s3://strucka-dev/test-directory",
+				Path: "/opt/inputs/test-directory",
+				Type: tes.FileType_DIRECTORY,
+			},
+		},
+		Outputs: []*tes.TaskParameter{
+			{
+				Path: "/opt/workdir/test-output-file.txt",
+				Url:  "s3://strucka-dev/test_tmp/test-output-file.txt",
+				Type: tes.FileType_FILE,
+			},
+			{
+				Path: "/opt/workdir/test-output-directory",
+				Url:  "s3://strucka-dev/test_tmp/test-output-directory",
+				Type: tes.FileType_DIRECTORY,
+			},
+		},
+		Executors: []*tes.Executor{
+			{
+				ImageName: "alpine:latest",
+				Cmd: []string{
+					"sh",
+					"-c",
+					"echo $(find /opt/inputs -type f) > test-output-file.txt; mkdir test-output-directory; cp *.txt test-output-directory/",
+				},
+				Workdir: "/opt/workdir",
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	resp, err := fun.RPC.CreateTask(ctx, task)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
-	// Run the tests
-	e := m.Run()
+	taskFinal := fun.Wait(resp.Id)
 
-	// Clean up minio
-	log.Debug("Stop minio")
-	exec.Command(dockerPath, "rm", "-fv", "fun-minio-test").Run()
+	if taskFinal.State != tes.State_COMPLETE {
+		t.Fatal("Unexpected task failure")
+	}
 
-	// Finish
-	os.Exit(e)
+	expected := "/opt/inputs/test-file.txt /opt/inputs/test-directory/bar.txt /opt/inputs/test-directory/foo.txt\n"
+
+	s := storage.Storage{}
+	s, err = s.WithConfig(conf.Worker.Storage)
+	if err != nil {
+		t.Fatal("Error configuring storage", err)
+	}
+
+	err = s.Get(ctx, "s3://strucka-dev/test_tmp/test-output-file.txt", "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
+	if err != nil {
+		t.Fatal("Failed get", err)
+	}
+
+	b, err := ioutil.ReadFile("./test_tmp/test-s3-file.txt")
+	if err != nil {
+		t.Fatal("Failed read", err)
+	}
+
+	actual := string(b)
+
+	if actual != expected {
+		t.Log("expected:", expected)
+		t.Log("actual:  ", actual)
+		t.Fatal("unexpected content")
+	}
+
+	err = s.Get(ctx, "s3://strucka-dev/test_tmp/test-output-directory", "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	if err != nil {
+		t.Fatal("Failed get", err)
+	}
+
+	b, err = ioutil.ReadFile("./test_tmp/test-s3-directory/test-output-file.txt")
+	if err != nil {
+		t.Fatal("Failed read", err)
+	}
+
+	actual = string(b)
+
+	if actual != expected {
+		t.Log("expected:", expected)
+		t.Log("actual:  ", actual)
+		t.Fatal("unexpected content")
+	}
 }
-
-func TestS3(t *testing.T) {
-	id := fun.Run(`
-    --sh "sh -c 'echo foo > $out'"
-    -o out=s3://bkt/test_output
-  `)
-	fun.Wait(id)
-}
-
-/*
-S3_SECRET_KEY = BUCKET_NAME = "tes-test"
-
-func TestS3(t *testing.T) {
-  fun.Storage.Put("s3://bkt/test_input", "test_input", tes.FileType_FILE)
-  fun.Storage.Get("s3://bkt/test_output", "test_output", tes.FileType_FILE)
-  if readFile("test_output") != "hello-s3" {
-    t.Fatal("unexpected s3 output content")
-  }
-}
-*/

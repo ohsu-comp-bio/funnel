@@ -12,7 +12,7 @@ func TestStorageWithConfig(t *testing.T) {
 			AllowedDirs: []string{"/tmp"},
 		},
 		GS: []config.GSStorage{},
-		S3: []config.S3Storage{},
+		S3: config.S3Storage{},
 	}
 	s := Storage{}
 	sc, err := s.WithConfig(c)
@@ -33,17 +33,9 @@ func TestStorageWithConfig(t *testing.T) {
 				FromEnv: true,
 			},
 		},
-		S3: []config.S3Storage{
-			{
-				Endpoint: "localhost:9999",
-				Key:      "testkey",
-				Secret:   "testsecret",
-			},
-			// Invalid config
-			{
-				Key:    "testkey",
-				Secret: "testsecret",
-			},
+		S3: config.S3Storage{
+			Key:    "testkey",
+			Secret: "testsecret",
 		},
 	}
 	sc, err = s.WithConfig(c)

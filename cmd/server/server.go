@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"github.com/imdario/mergo"
+	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
@@ -64,6 +65,7 @@ func init() {
 // This blocks indefinitely.
 func Run(conf config.Config) error {
 	logger.Configure(conf.Server.Logger)
+	version.Log(log)
 
 	db, err := server.NewTaskBolt(conf)
 	if err != nil {

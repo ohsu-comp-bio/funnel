@@ -8,6 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/cmd/task"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash"
+	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/spf13/cobra"
 )
 
@@ -28,4 +29,5 @@ func init() {
 	RootCmd.AddCommand(server.Cmd)
 	RootCmd.AddCommand(task.Cmd)
 	RootCmd.AddCommand(termdash.Cmd)
+	RootCmd.AddCommand(version.Cmd)
 }

@@ -10,9 +10,11 @@ PATH := ${PATH}:${GOPATH}/bin
 export PATH
 
 PROTO_INC=-I ./  -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+V=github.com/ohsu-comp-bio/funnel/cmd/version
 
 # Build the code
 install: depends
+	@go generate github.com/ohsu-comp-bio/funnel/cmd/version
 	@go install github.com/ohsu-comp-bio/funnel
 
 # Generate the protobuf/gRPC code

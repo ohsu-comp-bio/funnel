@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -25,6 +26,7 @@ func NewDefaultWorker(conf config.Worker, taskID string) Worker {
 	// TODO handle error
 	svc, _ := newRPCTask(conf, taskID)
 	log := logger.Sub("runner", "taskID", taskID)
+	version.Log(log)
 
 	return &DefaultWorker{
 		Conf:   conf,

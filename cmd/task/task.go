@@ -56,17 +56,19 @@ func runPerID(cmd *cobra.Command, args []string, h perIDHandler) error {
 	}
 
 	// Read arguments from stdin
-	s := bufio.NewScanner(os.Stdin)
-	for s.Scan() {
-		arg := s.Text()
-		if err := h(cli, arg); err != nil {
+	if stdinPiped() {
+		s := bufio.NewScanner(os.Stdin)
+		for s.Scan() {
+			arg := s.Text()
+			if err := h(cli, arg); err != nil {
+				return err
+			}
+		}
+
+		// Check for scanner error
+		if err := s.Err(); err != nil {
 			return err
 		}
-	}
-
-	// Check for scanner error
-	if err := s.Err(); err != nil {
-		return err
 	}
 
 	return nil

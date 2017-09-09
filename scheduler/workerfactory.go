@@ -5,7 +5,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
-// WorkerFactory is a function which creates a new task runner instance.
+// WorkerFactory is a function which creates a new worker instance.
 type WorkerFactory func(c config.Worker, taskID string) worker.Worker
 
 // NoopWorkerFactory returns a new NoopWorker.

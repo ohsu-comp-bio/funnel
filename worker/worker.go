@@ -25,7 +25,7 @@ func NewDefaultWorker(conf config.Worker, taskID string) Worker {
 
 	// TODO handle error
 	svc, _ := newRPCTask(conf, taskID)
-	log := logger.Sub("runner", "taskID", taskID)
+	log := logger.Sub("worker", "taskID", taskID)
 	version.Log(log)
 
 	return &DefaultWorker{

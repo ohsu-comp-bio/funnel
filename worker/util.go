@@ -71,12 +71,12 @@ func handlePanic(cb func(error)) {
 		if e, ok := r.(error); ok {
 			cb(e)
 		} else {
-			cb(fmt.Errorf("Unknown task runner panic: %+v", r))
+			cb(fmt.Errorf("Unknown worker panic: %+v", r))
 		}
 	}
 }
 
-// helper aims to simplify the error and context checking in the runner code.
+// helper aims to simplify the error and context checking in the worker code.
 type helper struct {
 	syserr       error
 	execerr      error

@@ -1,2 +1,3 @@
-*.pb.go -diff
-mocks/*_mock.go
+*.pb.go -diff linguist-generated=true
+mocks/*_mock.go -diff linguist-generated=true
+cmd/version/data.go -diff linguist-generated=true

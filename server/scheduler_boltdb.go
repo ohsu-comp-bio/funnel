@@ -183,7 +183,7 @@ func (taskBolt *TaskBolt) GetNode(ctx context.Context, req *pbs.GetNodeRequest) 
 		return nil
 	})
 	if err != nil {
-		log.Error("GetNode", "error", err, "nodeID", req.Id)
+		log.Debug("GetNode", "error", err, "nodeID", req.Id)
 		if err == errNotFound {
 			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
 		}

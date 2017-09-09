@@ -79,6 +79,7 @@ func (n *Node) Run(ctx context.Context) {
 	n.log.Info("Starting node")
 	n.state = pbs.NodeState_ALIVE
 	n.checkConnection(ctx)
+	n.sync(ctx)
 
 	ticker := time.NewTicker(n.conf.UpdateRate)
 	defer ticker.Stop()
@@ -110,7 +111,9 @@ func (n *Node) Run(ctx context.Context) {
 func (n *Node) checkConnection(ctx context.Context) {
 	_, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
 
-	if err != nil {
+	// If its a 404 error create a new node
+	s, _ := status.FromError(err)
+	if s.Code() != codes.NotFound {
 		log.Error("Couldn't contact server.", err)
 	} else {
 		log.Info("Successfully connected to server.")

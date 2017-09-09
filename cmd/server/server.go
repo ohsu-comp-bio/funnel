@@ -73,6 +73,18 @@ func Run(conf config.Config) error {
 		return err
 	}
 
+	srv := server.DefaultServer(db, conf.Server)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start server
+	var srverr error
+	go func() {
+		srverr = srv.Serve(ctx)
+		cancel()
+	}()
+
 	loader := scheduler.BackendLoader{
 		gce.Name:        gce.NewBackend,
 		htcondor.Name:   htcondor.NewBackend,
@@ -89,18 +101,7 @@ func Run(conf config.Config) error {
 		return lerr
 	}
 
-	srv := server.DefaultServer(db, conf.Server)
 	sched := scheduler.NewScheduler(db, backend, conf.Scheduler)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Start server
-	var srverr error
-	go func() {
-		srverr = srv.Serve(ctx)
-		cancel()
-	}()
 
 	// Start scheduler
 	err = sched.Start(ctx)

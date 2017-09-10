@@ -1,0 +1,28 @@
+{
+	"state": "COMPLETE",
+	"name": "Funnel run: echo a",
+	"resources": {
+
+	},
+	"executors": [
+		{
+			"imageName": "alpine",
+			"cmd": [
+				"echo",
+				"a"
+			],
+			"workdir": "/opt/funnel",
+			"stdout": "/opt/funnel/outputs/stdout-0",
+			"stderr": "/opt/funnel/outputs/stderr-0"
+		}
+	],
+	"logs": [
+		{
+			"logs": [
+				{
+					"stdout": "a\n",
+				}
+			],
+		}
+	]
+}

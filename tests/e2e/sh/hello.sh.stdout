@@ -1,0 +1,29 @@
+{
+	"state": "COMPLETE",
+	"name": "Funnel run: echo hello world",
+	"resources": {
+
+	},
+	"executors": [
+		{
+			"imageName": "alpine",
+			"cmd": [
+				"echo",
+				"hello",
+				"world"
+			],
+			"workdir": "/opt/funnel",
+			"stdout": "/opt/funnel/outputs/stdout-0",
+			"stderr": "/opt/funnel/outputs/stderr-0"
+		}
+	],
+	"logs": [
+		{
+			"logs": [
+				{
+					"stdout": "hello world\n",
+				}
+			],
+		}
+	]
+}

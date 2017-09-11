@@ -2,8 +2,8 @@ package version
 
 // Build and version details
 const (
-	GitCommit = "ef02e23"
-	GitBranch = "versioning"
-	BuildDate = "Fri Sep  8 13:21:21 PDT 2017"
-	Version   = "0.2.0-20-gef02e23-dirty"
+	GitCommit = "d52c856"
+	GitBranch = "user-conf"
+	BuildDate = "Sun Sep 10 12:23:23 PDT 2017"
+	Version   = "0.2.0-25-gd52c856-dirty"
 )

@@ -138,6 +138,7 @@ func defaultVals(vals *flagVals) {
 		vals.name = "Funnel run: " + vals.execs[0].cmd
 	}
 
+	vals.server = os.Getenv("FUNNEL_SERVER")
 	if vals.server == "" {
 		vals.server = "http://localhost:8000"
 	}

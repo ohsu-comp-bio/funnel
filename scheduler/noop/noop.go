@@ -2,13 +2,13 @@ package noop
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
 
-// Name of the the scheduler backend
-const Name = "noop"
+var log = logger.Sub("noop")
 
 // NewBackend returns a new noop scheduler backend.
 // A noop backend uses a node that doesn't have any side effects,
@@ -16,6 +16,7 @@ const Name = "noop"
 func NewBackend(conf config.Config) (*Backend, error) {
 	n, err := scheduler.NewNoopNode(conf)
 	if err != nil {
+		log.Error("Failed to create noop node", err)
 		return nil, err
 	}
 	return &Backend{n, conf}, nil
@@ -32,6 +33,8 @@ type Backend struct {
 // one node and tasks are always scheduled to that node without
 // any logic or filtering (just dead simple).
 func (s *Backend) Schedule(j *tes.Task) *scheduler.Offer {
+	log.Debug("Running noop scheduler")
+
 	n := &pbs.Node{
 		Id:    s.conf.Scheduler.Node.ID,
 		State: pbs.NodeState_ALIVE,

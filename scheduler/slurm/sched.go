@@ -11,19 +11,19 @@ import (
 	"strings"
 )
 
-// Name of the scheduler backend
-const Name = "slurm"
+// name of the scheduler backend
+const name = "slurm"
 
-var log = logger.Sub(Name)
+var log = logger.Sub(name)
 
 // prefix is a string prefixed to slurm node IDs, so that slurm
 // nodes can be identified by ShouldStartNode() below.
-const prefix = "slurm-node-"
+const prefix = name + "-node-"
 
 // NewBackend returns a new SLURM Backend instance.
-func NewBackend(conf config.Config) (scheduler.Backend, error) {
+func NewBackend(conf config.Config) (*Backend, error) {
 	return &Backend{
-		name:     Name,
+		name:     name,
 		conf:     conf,
 		template: conf.Backends.SLURM.Template,
 	}, nil

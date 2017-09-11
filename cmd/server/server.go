@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler/slurm"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 var log = logger.New("server cmd")
@@ -85,20 +87,31 @@ func Run(conf config.Config) error {
 		cancel()
 	}()
 
-	loader := scheduler.BackendLoader{
-		gce.Name:        gce.NewBackend,
-		htcondor.Name:   htcondor.NewBackend,
-		openstack.Name:  openstack.NewBackend,
-		local.Name:      local.NewBackend,
-		manual.Name:     manual.NewBackend,
-		pbs.Name:        pbs.NewBackend,
-		gridengine.Name: gridengine.NewBackend,
-		slurm.Name:      slurm.NewBackend,
-	}
+	// Select scheduler backend
+	var backend scheduler.Backend
 
-	backend, lerr := loader.Load(conf.Backend, conf)
-	if lerr != nil {
-		return lerr
+	switch strings.ToLower(conf.Backend) {
+	case "htcondor":
+		backend, err = htcondor.NewBackend(conf)
+	case "local":
+		backend, err = local.NewBackend(conf)
+	case "gce":
+		backend, err = gce.NewBackend(conf)
+	case "gridengine":
+		backend, err = gridengine.NewBackend(conf)
+	case "manual":
+		backend, err = manual.NewBackend(conf)
+	case "openstack":
+		backend, err = openstack.NewBackend(conf)
+	case "pbs":
+		backend, err = pbs.NewBackend(conf)
+	case "slurm":
+		backend, err = slurm.NewBackend(conf)
+	default:
+		err = fmt.Errorf("unknown scheduler backend %s", conf.Backend)
+	}
+	if err != nil {
+		return err
 	}
 
 	sched := scheduler.NewScheduler(db, backend, conf.Scheduler)

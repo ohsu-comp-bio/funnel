@@ -1,11 +1,8 @@
 package scheduler
 
 import (
-	"fmt"
-	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"strings"
 )
 
 // Backend is responsible for scheduling a task. It has a single method which
@@ -48,25 +45,4 @@ func NewOffer(n *pbs.Node, t *tes.Task, s Scores) *Offer {
 		Node:   n,
 		Scores: s,
 	}
-}
-
-// BackendFactory is a function which creates a new scheduler backend.
-// Various backends (Condor, GCE, local, etc.) implement this, which
-// allows BackendLoader to load a backend by name (e.g. config.Backend).
-type BackendFactory func(config.Config) (Backend, error)
-
-// BackendLoader helps load a scheduler backend by name (e.g. config.Backend).
-type BackendLoader map[string]BackendFactory
-
-// Load finds a scheduler backend by name and returns a new instance.
-func (bl BackendLoader) Load(name string, conf config.Config) (Backend, error) {
-	name = strings.ToLower(name)
-	factory, ok := bl[name]
-
-	if !ok {
-		log.Error("Unknown scheduler backend", "name", name)
-		return nil, fmt.Errorf("Unknown scheduler backend %s", name)
-	}
-
-	return factory(conf)
 }

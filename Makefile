@@ -10,12 +10,19 @@ PATH := ${PATH}:${GOPATH}/bin
 export PATH
 
 PROTO_INC=-I ./  -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
-V=github.com/ohsu-comp-bio/funnel/cmd/version
+
+V=github.com/ohsu-comp-bio/funnel/version
+VERSION_LDFLAGS=\
+ -X "$(V).BuildDate=$(shell date)" \
+ -X "$(V).GitCommit=$(shell git rev-parse --short HEAD)" \
+ -X "$(V).GitBranch=$(shell git symbolic-ref -q --short HEAD)" \
+ -X "$(V).GitUpstream=$(shell git rev-parse --abbrev-ref --symbolic-full-name @{u} 2> /dev/null)" \
+ -X "$(V).Version=$(shell git describe --tags --long --dirty)"
 
 # Build the code
 install: depends
-	@go generate github.com/ohsu-comp-bio/funnel/cmd/version
-	@go install github.com/ohsu-comp-bio/funnel
+	@touch version/version.go
+	@go install -ldflags '$(VERSION_LDFLAGS)' github.com/ohsu-comp-bio/funnel
 
 # Generate the protobuf/gRPC code
 proto:
@@ -102,7 +109,9 @@ cross-compile: depends
 	@echo '=== Cross compiling... ==='
 	@for GOOS in darwin linux; do \
 		for GOARCH in amd64; do \
-			GOOS=$$GOOS GOARCH=$$GOARCH go build -o build/bin/funnel-$$GOOS-$$GOARCH .; \
+			GOOS=$$GOOS GOARCH=$$GOARCH go build -a \
+				-ldflags '$(VERSION_LDFLAGS)' \
+				-o build/bin/funnel-$$GOOS-$$GOARCH .; \
 		done; \
 	done
 

@@ -11,19 +11,19 @@ import (
 	"strings"
 )
 
-// Name of the scheduler backend
-const Name = "htcondor"
+// name of the scheduler backend
+const name = "htcondor"
 
-var log = logger.Sub(Name)
+var log = logger.Sub(name)
 
 // prefix is a string prefixed to condor node IDs, so that condor
 // nodes can be identified by ShouldStartNode() below.
-const prefix = "htcondor-node-"
+const prefix = name + "-node-"
 
 // NewBackend returns a new HTCondor Backend instance.
-func NewBackend(conf config.Config) (scheduler.Backend, error) {
+func NewBackend(conf config.Config) (*Backend, error) {
 	return &Backend{
-		name:     "htcondor",
+		name:     name,
 		conf:     conf,
 		template: conf.Backends.HTCondor.Template,
 	}, nil

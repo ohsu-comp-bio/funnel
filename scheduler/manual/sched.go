@@ -9,14 +9,10 @@ import (
 	"github.com/ohsu-comp-bio/funnel/scheduler"
 )
 
-// Name of the scheduler backend.
-const Name = "manual"
-
-var log = logger.Sub(Name)
+var log = logger.Sub("manual")
 
 // NewBackend returns a new Backend instance.
-func NewBackend(conf config.Config) (scheduler.Backend, error) {
-
+func NewBackend(conf config.Config) (*Backend, error) {
 	// Create a client for talking to the funnel scheduler
 	client, err := scheduler.NewClient(conf.Scheduler)
 	if err != nil {

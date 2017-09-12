@@ -9,13 +9,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Name of the scheduler backend.
-const Name = "local"
-
-var log = logger.Sub(Name)
+var log = logger.Sub("local")
 
 // NewBackend returns a new Backend instance.
-func NewBackend(conf config.Config) (scheduler.Backend, error) {
+func NewBackend(conf config.Config) (*Backend, error) {
 	id := scheduler.GenNodeID("local")
 
 	err := startNode(id, conf)

@@ -16,7 +16,7 @@ VERSION_LDFLAGS=\
  -X "$(V).BuildDate=$(shell date)" \
  -X "$(V).GitCommit=$(shell git rev-parse --short HEAD)" \
  -X "$(V).GitBranch=$(shell git symbolic-ref -q --short HEAD)" \
- -X "$(V).GitUpstream=$(shell git rev-parse --abbrev-ref --symbolic-full-name @{u} 2> /dev/null)" \
+ -X "$(V).GitUpstream=$(shell git remote get-url $(shell git config branch.$(shell git symbolic-ref -q --short HEAD).remote) 2> /dev/null)" \
  -X "$(V).Version=$(shell git describe --tags --long --dirty)"
 
 # Build the code

@@ -12,26 +12,28 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 )
 
 // NewDefaultWorker returns the default task runner used by Funnel,
 // which uses gRPC to read/write task details.
 func NewDefaultWorker(conf config.Worker, taskID string) Worker {
+	log := logger.Sub("worker", "taskID", taskID)
+
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, taskID)
 	// TODO handle error
 	util.EnsureDir(baseDir)
 
 	// TODO handle error
-	svc, _ := newRPCTask(conf, taskID)
-	log := logger.Sub("worker", "taskID", taskID)
+	svc, _ := newRPCTask(conf, taskID, log)
 	version.Log(log)
 
 	return &DefaultWorker{
 		Conf:   conf,
 		Mapper: NewFileMapper(baseDir),
-		Store:  storage.Storage{},
+		Store:  storage.Storage{Log: log},
 		Svc:    svc,
 		Log:    log,
 	}
@@ -96,7 +98,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	// Recover from panics
 	defer handlePanic(func(e error) {
-		run.syserr = e
+		run.syserr = fmt.Errorf("%s:\n%s", e.Error(), string(debug.Stack()))
 	})
 
 	ctx := r.pollForCancel(pctx, func() {

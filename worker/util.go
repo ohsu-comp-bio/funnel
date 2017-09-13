@@ -49,20 +49,23 @@ func externalIP() (string, error) {
 }
 
 // getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
-// The exit code is zero if the command completed without error.
-func getExitCode(err error) int {
-	if err != nil {
-		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
-			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
-				return status.ExitStatus()
-			}
-		} else {
-			log.Info("Could not determine exit code. Using default -999", "err", err)
-			return -999
+func getExitCode(err error) (code int, ok bool) {
+	if err == nil {
+		// The error is nil, the command returned successfully, so exit status is 0.
+		ok = true
+		return
+	}
+
+	if exiterr, exitOk := err.(*exec.ExitError); exitOk {
+		if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
+			code = status.ExitStatus()
+			ok = true
+			return
 		}
 	}
-	// The error is nil, the command returned successfully, so exit status is 0.
-	return 0
+
+	// Could not determine exit status
+	return
 }
 
 // recover from panic and call "cb" with an error value.

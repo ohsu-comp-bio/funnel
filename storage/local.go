@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io"
 	"os"
@@ -16,11 +17,12 @@ import (
 // LocalBackend provides access to a local-disk storage system.
 type LocalBackend struct {
 	allowedDirs []string
+	log         logger.Logger
 }
 
 // NewLocalBackend returns a LocalBackend instance, configured to limit
 // file system access to the given allowed directories.
-func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
+func NewLocalBackend(conf config.LocalStorage, log logger.Logger) (*LocalBackend, error) {
 	allowed := []string{}
 	for _, d := range conf.AllowedDirs {
 		a, err := filepath.Abs(d)
@@ -29,12 +31,11 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 		}
 		allowed = append(allowed, a)
 	}
-	return &LocalBackend{allowed}, nil
+	return &LocalBackend{allowed, log}, nil
 }
 
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path, ok := getPath(url)
 
 	if !ok {
@@ -47,7 +48,7 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 
 	var err error
 	if class == File {
-		err = linkFile(path, hostPath)
+		err = local.linkFile(path, hostPath)
 	} else if class == Directory {
 		err = filepath.Walk(path, func(p string, f os.FileInfo, err error) error {
 			if !f.IsDir() {
@@ -66,13 +67,11 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	if err != nil {
 		return err
 	}
-	log.Info("Finished download", "url", url, "hostPath", hostPath)
 	return nil
 }
 
 // Put copies a file from the hostPath into storage.
 func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path, ok := getPath(url)
 
 	if !ok {
@@ -88,7 +87,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 
 	switch class {
 	case File:
-		err = linkFile(hostPath, path)
+		err = local.linkFile(hostPath, path)
 		out = append(out, &tes.OutputFileLog{
 			Url:       url,
 			Path:      path,
@@ -102,7 +101,7 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 
 		for _, f := range files {
 			u := filepath.Join(path, f.rel)
-			err := linkFile(f.abs, u)
+			err := local.linkFile(f.abs, u)
 
 			if err != nil {
 				return nil, err
@@ -123,7 +122,6 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 		return nil, err
 	}
 
-	log.Info("Finished upload", "url", url, "hostPath", hostPath)
 	return out, nil
 }
 
@@ -156,7 +154,6 @@ func copyFile(source string, dest string) (err error) {
 		return err
 	}
 	if same {
-		log.Debug("source and dest are the same file - skipping...")
 		return nil
 	}
 	// Open source file for copying
@@ -185,7 +182,7 @@ func copyFile(source string, dest string) (err error) {
 }
 
 // Hard links file source to destination dest.
-func linkFile(source string, dest string) error {
+func (local *LocalBackend) linkFile(source string, dest string) error {
 	var err error
 	// without this resulting link could be a symlink
 	parent, err := filepath.EvalSymlinks(source)
@@ -197,7 +194,7 @@ func linkFile(source string, dest string) error {
 		return err
 	}
 	if same {
-		log.Debug("source and dest are the same file - skipping...")
+		local.log.Debug("source and dest are the same file - skipping...")
 		return nil
 	}
 	// make parent dirs if they dont exist
@@ -211,7 +208,7 @@ func linkFile(source string, dest string) error {
 	}
 	err = os.Link(parent, dest)
 	if err != nil {
-		log.Debug("Failed to link file; attempting copy",
+		local.log.Debug("Failed to link file; attempting copy",
 			"linkErr", err,
 			"source", source,
 			"dest", dest)

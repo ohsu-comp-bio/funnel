@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package events;
+
+import "tes.proto";
+import "timestamp.proto";
+import "google/api/annotations.proto";
+
+enum Type {
+  UNKNOWN = 0;
+  STATE = 1;
+  START_TIME = 2; 
+  END_TIME = 3;
+  OUTPUTS = 4;
+  METADATA = 5;
+  EXECUTOR_START_TIME = 6;
+  EXECUTOR_END_TIME = 7;
+  EXIT_CODE = 8;
+  HOST_IP = 9;
+  PORTS = 10;
+  STDOUT = 11;
+  STDERR = 12;
+  SYSLOG = 13;
+}
+
+message Event {
+  // The first group of fields is always set.
+
+  // Event type
+  Type type = 1;
+  // Task ID
+  string id = 2;
+  // Task attempt ID
+  uint32 attempt = 3;
+  // Event timestamp
+  google.protobuf.Timestamp timestamp = 4;
+
+  // The fields below are event specific.
+
+  // Task event fields:
+  // Only one field is set per event type.
+  tes.State state = 5;
+  google.protobuf.Timestamp start_time = 6;
+  google.protobuf.Timestamp end_time = 7;
+  repeated tes.OutputFileLog outputs = 8;
+  map<string, string> metadata = 9;
+
+  // Executor events:
+  // index is always set for executor events.
+  uint32 index = 10;
+
+  // Only one field is set per executor event type.
+  google.protobuf.Timestamp executor_start_time = 11;
+  google.protobuf.Timestamp executor_end_time = 12;
+  int32  exit_code = 13;
+  string host_ip = 14;
+  repeated tes.Ports ports = 15;
+  string stdout = 16;
+  string stderr = 17;
+
+  // System events:
+  SystemLog system_log = 18;
+}
+
+message SystemLog {
+  string msg = 1;
+  string level = 2;
+  map<string, string> fields = 3;
+}
+
+message WriteEventResponse{}
+
+/**
+ * Event Service
+ */
+service EventService {
+  rpc WriteEvent(Event) returns (WriteEventResponse) {};
+}

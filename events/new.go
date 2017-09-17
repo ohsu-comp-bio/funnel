@@ -25,7 +25,7 @@ func NewStartTime(taskID string, attempt uint32, t time.Time) *Event {
 		Id:        taskID,
 		Attempt:   attempt,
 		Timestamp: ptypes.TimestampNow(),
-		StartTime: convertTime(t),
+		StartTime: Timestamp(t),
 	}
 }
 
@@ -36,7 +36,7 @@ func NewEndTime(taskID string, attempt uint32, t time.Time) *Event {
 		Id:        taskID,
 		Attempt:   attempt,
 		Timestamp: ptypes.TimestampNow(),
-		EndTime:   convertTime(t),
+		EndTime:   Timestamp(t),
 	}
 }
 
@@ -70,7 +70,7 @@ func NewExecutorStartTime(taskID string, attempt uint32, index uint32, t time.Ti
 		Id:                taskID,
 		Attempt:           attempt,
 		Timestamp:         ptypes.TimestampNow(),
-		ExecutorStartTime: convertTime(t),
+		ExecutorStartTime: Timestamp(t),
 		Index:             index,
 	}
 }
@@ -83,7 +83,7 @@ func NewExecutorEndTime(taskID string, attempt uint32, index uint32, t time.Time
 		Id:              taskID,
 		Attempt:         attempt,
 		Timestamp:       ptypes.TimestampNow(),
-		ExecutorEndTime: convertTime(t),
+		ExecutorEndTime: Timestamp(t),
 		Index:           index,
 	}
 }
@@ -168,7 +168,10 @@ func NewSystemLog(taskID string, attempt uint32, msg, lvl string, f map[string]s
 	}
 }
 
-func convertTime(t time.Time) *tspb.Timestamp {
+func Timestamp(t time.Time) *tspb.Timestamp {
 	p, _ := ptypes.TimestampProto(t)
 	return p
+}
+func TimestampString(t *tspb.Timestamp) string {
+	return ptypes.TimestampString(t)
 }

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -32,8 +33,8 @@ func NewDefaultWorker(conf config.Worker, taskID string) Worker {
 		Conf:   conf,
 		Mapper: NewFileMapper(baseDir),
 		Store:  storage.Storage{},
-		Svc:    svc,
-		Log:    log,
+		Read:   svc,
+		Log:    NewEventLogger(taskID, 0, svc),
 	}
 }
 
@@ -44,8 +45,8 @@ type DefaultWorker struct {
 	Conf   config.Worker
 	Mapper *FileMapper
 	Store  storage.Storage
-	Svc    TaskService
-	Log    logger.Logger
+	Read   TaskReader
+	Log    EventLogger
 }
 
 // Run runs the Worker.
@@ -67,30 +68,34 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	var run helper
 	var task *tes.Task
 
-	task, run.syserr = r.Svc.Task()
+	task, run.syserr = r.Read.Task()
 
-	r.Svc.StartTime(time.Now())
+	r.Log.StartTime(time.Now())
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
-		r.Svc.EndTime(time.Now())
+		r.Log.EndTime(time.Now())
 
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
-			r.Log.Info("Canceled")
-			r.Svc.SetState(tes.State_CANCELED)
+			r.Log.Info("Canceled", nil)
+			r.Log.State(tes.State_CANCELED)
 		case run.execerr != nil:
 			// One of the executors failed
-			r.Log.Error("Exec error", run.execerr)
-			r.Svc.SetState(tes.State_ERROR)
+			r.Log.Error("Exec error", map[string]string{
+				"error": run.execerr.Error(),
+			})
+			r.Log.State(tes.State_ERROR)
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
-			r.Log.Error("System error", run.syserr)
-			r.Svc.SetState(tes.State_SYSTEM_ERROR)
+			r.Log.Error("System error", map[string]string{
+				"error": run.syserr.Error(),
+			})
+			r.Log.State(tes.State_SYSTEM_ERROR)
 		default:
-			r.Svc.SetState(tes.State_COMPLETE)
+			r.Log.State(tes.State_COMPLETE)
 		}
 	}()
 
@@ -146,18 +151,17 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	}
 
 	if run.ok() {
-		r.Svc.SetState(tes.State_RUNNING)
+		r.Log.State(tes.State_RUNNING)
 	}
 
 	// Run steps
 	for i, d := range task.Executors {
 		s := &stepWorker{
-			TaskID:     task.Id,
-			Conf:       r.Conf,
-			Num:        i,
-			Log:        r.Log.WithFields("step", i),
-			TaskLogger: r.Svc,
-			IP:         ip,
+			TaskID: task.Id,
+			Conf:   r.Conf,
+			Num:    i,
+			Log:    r.Log,
+			IP:     ip,
 			Cmd: &DockerCmd{
 				ImageName:     d.ImageName,
 				Cmd:           d.Cmd,
@@ -170,6 +174,11 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 				RemoveContainer: true,
 			},
 		}
+
+		// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
+		r.Log.Info("Docker run command", map[string]string{
+			"cmd": "docker " + strings.Join(s.Cmd.Args(), " "),
+		})
 
 		// Opens stdin/out/err files and updates those fields on "cmd".
 		if run.ok() {
@@ -193,7 +202,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	}
 
 	if run.ok() {
-		r.Svc.Outputs(outputs)
+		r.Log.Outputs(outputs)
 	}
 }
 
@@ -251,7 +260,9 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 	if d.Stdin != "" {
 		s.Cmd.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
 		if err != nil {
-			s.Log.Error("Couldn't prepare log files", err)
+			s.Log.Error("Couldn't prepare log files", map[string]string{
+				"error": err.Error(),
+			})
 			return err
 		}
 	}
@@ -260,7 +271,9 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 	if d.Stdout != "" {
 		s.Cmd.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
 		if err != nil {
-			s.Log.Error("Couldn't prepare log files", err)
+			s.Log.Error("Couldn't prepare log files", map[string]string{
+				"error": err.Error(),
+			})
 			return err
 		}
 	}
@@ -269,7 +282,9 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 	if d.Stderr != "" {
 		s.Cmd.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
 		if err != nil {
-			s.Log.Error("Couldn't prepare log files", err)
+			s.Log.Error("Couldn't prepare log files", map[string]string{
+				"error": err.Error(),
+			})
 			return err
 		}
 	}
@@ -310,7 +325,7 @@ func (r *DefaultWorker) pollForCancel(ctx context.Context, f func()) context.Con
 			case <-taskctx.Done():
 				return
 			case <-ticker.C:
-				state := r.Svc.State()
+				state := r.Read.State()
 				if tes.TerminalState(state) {
 					cancel()
 					f()

@@ -61,11 +61,11 @@ func (e EventLogger) HostIP(i int, ip string) error {
 // Stdout returns an io.Writer which writes an executor stdout event
 // for each call to io.Writer.Write.
 func (e EventLogger) Stdout(i int) io.Writer {
-	return &events.StdoutWriter{e.AttemptWriter, uint32(i)}
+	return &events.StdoutWriter{AttemptWriter: e.AttemptWriter, Index: uint32(i)}
 }
 
 // Stderr returns an io.Writer which writes an executor stderr event
 // for each call to io.Writer.Write.
 func (e EventLogger) Stderr(i int) io.Writer {
-	return &events.StderrWriter{e.AttemptWriter, uint32(i)}
+	return &events.StderrWriter{AttemptWriter: e.AttemptWriter, Index: uint32(i)}
 }

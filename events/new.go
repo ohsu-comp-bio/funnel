@@ -168,10 +168,13 @@ func NewSystemLog(taskID string, attempt uint32, msg, lvl string, f map[string]s
 	}
 }
 
+// Timestamp converts a time.Time to a timestamp.
 func Timestamp(t time.Time) *tspb.Timestamp {
 	p, _ := ptypes.TimestampProto(t)
 	return p
 }
+
+// TimestampString converts a timestamp to an RFC3339 formatted string.
 func TimestampString(t *tspb.Timestamp) string {
 	return ptypes.TimestampString(t)
 }

@@ -34,7 +34,7 @@ func (dcmd DockerCmd) Run() error {
 	// Don't need the client here, just the logic inside NewDockerClient().
 	_, derr := util.NewDockerClient()
 	if derr != nil {
-		return fmt.Errorf("Can't connect to Docker", derr)
+		return fmt.Errorf("Can't connect to Docker: %s", derr)
 	}
 
 	cmd := exec.Command("docker", dcmd.Args()...)
@@ -51,6 +51,8 @@ func (dcmd DockerCmd) Run() error {
 	return cmd.Run()
 }
 
+// Args returns the arguments to the "docker" command.
+// Roughly: run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]
 func (dcmd DockerCmd) Args() []string {
 	args := []string{"run", "-i"}
 

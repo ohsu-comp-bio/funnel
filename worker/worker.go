@@ -175,7 +175,6 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 			},
 		}
 
-		// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 		r.Log.Info("Docker run command", map[string]string{
 			"cmd": "docker " + strings.Join(s.Cmd.Args(), " "),
 		})

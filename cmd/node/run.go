@@ -6,7 +6,9 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
+	"syscall"
 )
 
 var configFile string
@@ -60,6 +62,9 @@ func Run(conf config.Config) error {
 		return err
 	}
 
-	n.Run(context.Background())
+	ctx := context.Background()
+	ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	n.Run(ctx)
+
 	return nil
 }

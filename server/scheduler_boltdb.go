@@ -241,6 +241,12 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 					// Looks like the node failed to initialize. Mark it dead
 					node.State = pbs.NodeState_DEAD
 				}
+			} else if node.State == pbs.NodeState_DEAD &&
+				// The node has been dead for long enough, delete it.
+				d > taskBolt.conf.Scheduler.NodeDeadTimeout {
+				tx.Bucket(Nodes).Delete(k)
+				continue
+
 			} else if d > taskBolt.conf.Scheduler.NodePingTimeout {
 				// The node is stale/dead
 				node.State = pbs.NodeState_DEAD

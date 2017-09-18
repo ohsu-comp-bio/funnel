@@ -82,6 +82,7 @@ func DefaultConfig() Config {
 			ScheduleChunk:   10,
 			NodePingTimeout: time.Minute,
 			NodeInitTimeout: time.Minute * 5,
+			NodeDeadTimeout: time.Minute * 5,
 			Node: Node{
 				WorkDir:       workDir,
 				Timeout:       -1,
@@ -164,6 +165,8 @@ type Scheduler struct {
 	NodePingTimeout time.Duration
 	// How long to wait for node initialization before marking it dead
 	NodeInitTimeout time.Duration
+	// How long to wait before deleting a dead node from the DB.
+	NodeDeadTimeout time.Duration
 	// Node configuration
 	Node Node
 	// Logger configuration

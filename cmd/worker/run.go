@@ -48,7 +48,10 @@ var runCmd = &cobra.Command{
 // Run configures and runs a Worker
 func Run(conf config.Worker, taskID string) error {
 	logger.Configure(conf.Logger)
-	w := worker.NewDefaultWorker(conf, taskID)
+	w, err := worker.NewDefaultWorker(conf, taskID)
+	if err != nil {
+		return err
+	}
 	w.Run(context.Background())
 	return nil
 }

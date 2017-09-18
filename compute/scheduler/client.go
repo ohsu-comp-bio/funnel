@@ -2,21 +2,21 @@ package scheduler
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	tl "github.com/ohsu-comp-bio/funnel/proto/tasklogger"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"google.golang.org/grpc"
 )
 
-// Client is a client for the scheduler and task logger gRPC services.
+// Client is a client for the scheduler and event gRPC services.
 type Client interface {
-	tl.TaskLoggerServiceClient
+	events.EventServiceClient
 	pbs.SchedulerServiceClient
 	Close()
 }
 
 type client struct {
-	tl.TaskLoggerServiceClient
+	events.EventServiceClient
 	pbs.SchedulerServiceClient
 	conn *grpc.ClientConn
 }
@@ -41,9 +41,9 @@ func NewClient(conf config.Scheduler) (Client, error) {
 		return nil, err
 	}
 
-	t := tl.NewTaskLoggerServiceClient(conn)
+	e := events.NewEventServiceClient(conn)
 	s := pbs.NewSchedulerServiceClient(conn)
-	return &client{t, s, conn}, nil
+	return &client{e, s, conn}, nil
 }
 
 // Close closes the client connection.

@@ -4,27 +4,22 @@ import (
 	"context"
 	"github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"io"
 	"time"
 )
 
 type stepWorker struct {
-	TaskID     string
-	Conf       config.Worker
-	Num        int
-	Cmd        *DockerCmd
-	Log        logger.Logger
-	TaskLogger TaskLogger
-	IP         string
+	Conf  config.Worker
+	Cmd   *DockerCmd
+	Event *events.ExecutorWriter
+	IP    string
 }
 
 func (s *stepWorker) Run(ctx context.Context) error {
-	log.Debug("Running step", "taskID", s.TaskID, "stepNum", s.Num)
-
 	// Send update for host IP address.
-	s.TaskLogger.ExecutorStartTime(s.Num, time.Now())
-	s.TaskLogger.ExecutorHostIP(s.Num, s.IP)
+	s.Event.StartTime(time.Now())
+	s.Event.HostIP(s.IP)
 
 	// subctx helps ensure that these goroutines are cleaned up,
 	// even when the task is canceled.
@@ -51,7 +46,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			// Likely the task was canceled.
 			s.Cmd.Stop()
-			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
+			s.Event.EndTime(time.Now())
 			return ctx.Err()
 
 		case <-ticker.C:
@@ -59,8 +54,8 @@ func (s *stepWorker) Run(ctx context.Context) error {
 			stderr.Flush()
 
 		case result := <-done:
-			s.TaskLogger.ExecutorEndTime(s.Num, time.Now())
-			s.TaskLogger.ExecutorExitCode(s.Num, getExitCode(result))
+			s.Event.EndTime(time.Now())
+			s.Event.ExitCode(getExitCode(result))
 			return result
 		}
 	}
@@ -68,10 +63,10 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 func (s *stepWorker) logTails() (*tailer, *tailer) {
 	stdout, _ := newTailer(s.Conf.BufferSize, func(c string) {
-		s.TaskLogger.AppendExecutorStdout(s.Num, c)
+		s.Event.Stdout(c)
 	})
 	stderr, _ := newTailer(s.Conf.BufferSize, func(c string) {
-		s.TaskLogger.AppendExecutorStderr(s.Num, c)
+		s.Event.Stderr(c)
 	})
 	if s.Cmd.Stdout != nil {
 		s.Cmd.Stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
@@ -91,14 +86,14 @@ func (s *stepWorker) inspectContainer(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			s.Log.Info("Inspecting container")
+			s.Event.Info("Inspecting container")
 
 			ports, err := s.Cmd.Inspect(ctx)
 			if err != nil && !client.IsErrContainerNotFound(err) {
-				s.Log.Error("Error inspecting container", err)
+				s.Event.Error("Error inspecting container", err)
 				break
 			}
-			s.TaskLogger.ExecutorPorts(s.Num, ports)
+			s.Event.Ports(ports)
 			return
 		}
 	}

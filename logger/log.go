@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/logrusorgru/aurora"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
 	"io/ioutil"
 	"os"
@@ -36,7 +37,7 @@ type Logger interface {
 
 // New returns a new Logger instance.
 func New(ns string, args ...interface{}) Logger {
-	f := fields(args...)
+	f := util.ArgListToMap(args...)
 	f["ns"] = ns
 	log := logrus.New()
 	base := log.WithFields(f)
@@ -52,7 +53,7 @@ type logger struct {
 
 // Sub returns a new sub-logger instance.
 func (l *logger) Sub(ns string, args ...interface{}) Logger {
-	f := fields(args...)
+	f := util.ArgListToMap(args...)
 	f["ns"] = ns
 	sl := l.logrus.WithFields(f)
 	return &logger{l.logrus, sl}
@@ -93,7 +94,7 @@ func (l *logger) Discard() {
 //     log.Debug("Some message here", "key1", value1, "key2", value2)
 func (l *logger) Debug(msg string, args ...interface{}) {
 	defer recoverLogErr()
-	f := fields(args...)
+	f := util.ArgListToMap(args...)
 	l.base.WithFields(f).Debug(msg)
 }
 
@@ -103,7 +104,7 @@ func (l *logger) Debug(msg string, args ...interface{}) {
 //     log.Info("Some message here", "key1", value1, "key2", value2)
 func (l *logger) Info(msg string, args ...interface{}) {
 	defer recoverLogErr()
-	f := fields(args...)
+	f := util.ArgListToMap(args...)
 	l.base.WithFields(f).Info(msg)
 }
 
@@ -119,9 +120,9 @@ func (l *logger) Error(msg string, args ...interface{}) {
 	defer recoverLogErr()
 	var f map[string]interface{}
 	if len(args) == 1 {
-		f = fields("error", args[0])
+		f = util.ArgListToMap("error", args[0])
 	} else {
-		f = fields(args...)
+		f = util.ArgListToMap(args...)
 	}
 	l.base.WithFields(f).Error(msg)
 }
@@ -129,7 +130,7 @@ func (l *logger) Error(msg string, args ...interface{}) {
 // WithFields returns a new Logger instance with the given fields added to all log messages.
 func (l *logger) WithFields(args ...interface{}) Logger {
 	defer recoverLogErr()
-	f := fields(args...)
+	f := util.ArgListToMap(args...)
 	base := l.base.WithFields(f)
 	return &logger{l.logrus, base}
 }
@@ -150,23 +151,4 @@ func recoverLogErr() {
 	if r := recover(); r != nil {
 		fmt.Println("Recovered from logging panic", r)
 	}
-}
-
-// converts an argument list to a map, e.g.
-// ("key", value, "key2", value2) => {"key": value, "key2", value2}
-func fields(args ...interface{}) map[string]interface{} {
-	f := make(map[string]interface{}, len(args)/2)
-	if len(args) == 1 {
-		f["unknown"] = args[0]
-		return f
-	}
-	for i := 0; i < len(args); i += 2 {
-		k := args[i].(string)
-		v := args[i+1]
-		f[k] = v
-	}
-	if len(args)%2 != 0 {
-		f["unknown"] = args[len(args)-1]
-	}
-	return f
 }

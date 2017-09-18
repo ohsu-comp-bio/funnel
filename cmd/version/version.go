@@ -2,7 +2,6 @@ package version
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/version"
 	"github.com/spf13/cobra"
 )
@@ -27,8 +26,13 @@ var Cmd = &cobra.Command{
 	},
 }
 
-// Log logs build and version information to the given logger.
-func Log(l logger.Logger) {
-	l.Info("Version", "GitCommit", version.GitCommit, "GitBranch", version.GitBranch,
-		"BuildDate", version.BuildDate, "Version", version.Version)
+// LogFields logs build and version information to the given logger.
+func LogFields() []interface{} {
+	return []interface{}{
+		"GitCommit", version.GitCommit,
+		"GitBranch", version.GitBranch,
+		"GitUpstream", version.GitUpstream,
+		"BuildDate", version.BuildDate,
+		"Version", version.Version,
+	}
 }

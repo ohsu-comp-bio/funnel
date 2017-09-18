@@ -53,7 +53,10 @@ func TestDefaultWorkerRun(t *testing.T) {
     --cmd 'echo hello world'
   `)
 
-	w := worker.NewDefaultWorker(c.Worker, id)
+	w, err := worker.NewDefaultWorker(c.Worker, id)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
 	w.Run(context.Background())
 	f.Wait(id)
 

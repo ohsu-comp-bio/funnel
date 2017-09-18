@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/client"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
@@ -26,6 +27,7 @@ type DockerCmd struct {
 	Stdin           io.Reader
 	Stdout          io.Writer
 	Stderr          io.Writer
+	Event           *events.ExecutorWriter
 }
 
 // Run runs the Docker command and blocks until done.
@@ -34,7 +36,7 @@ func (dcmd DockerCmd) Run() error {
 	// Don't need the client here, just the logic inside NewDockerClient().
 	_, derr := util.NewDockerClient()
 	if derr != nil {
-		log.Error("Can't connect to Docker", derr)
+		dcmd.Event.Error("Can't connect to Docker", derr)
 		return derr
 	}
 
@@ -79,7 +81,7 @@ func (dcmd DockerCmd) Run() error {
 	args = append(args, dcmd.Cmd...)
 
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
-	log.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
+	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)
 
 	if dcmd.Stdin != nil {
@@ -96,7 +98,7 @@ func (dcmd DockerCmd) Run() error {
 
 // Inspect returns metadata about the container (calls "docker inspect").
 func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
-	log.Info("Fetching container metadata")
+	dcmd.Event.Info("Fetching container metadata")
 	dclient, derr := util.NewDockerClient()
 	if derr != nil {
 		return nil, derr
@@ -113,7 +115,7 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
 				break
 			}
 			if err != nil {
-				log.Error("Error inspecting container", err)
+				dcmd.Event.Error("Error inspecting container", err)
 				break
 			}
 			if metadata.State.Running == true {
@@ -136,7 +138,7 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
 							Container: uint32(containerPort),
 							Host:      uint32(hostPort),
 						})
-						log.Debug("Found port mapping:", "host", hostPort, "container", containerPort)
+						dcmd.Event.Debug("Found port mapping:", "host", hostPort, "container", containerPort)
 					}
 				}
 				return portMap, nil
@@ -147,7 +149,7 @@ func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
 
 // Stop stops the container.
 func (dcmd DockerCmd) Stop() error {
-	log.Info("Stopping container", "container", dcmd.ContainerName)
+	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
 	dclient, derr := util.NewDockerClient()
 	if derr != nil {
 		return derr

@@ -2,8 +2,8 @@ package perf
 
 import (
 	"context"
-	tl "github.com/ohsu-comp-bio/funnel/proto/tasklogger"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"google.golang.org/grpc"
 	"sync"
@@ -81,19 +81,22 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 					if err != nil {
 						panic(err)
 					}
-					cli := tl.NewTaskLoggerServiceClient(conn)
+					cli := events.NewEventServiceClient(conn)
 					_ = cli
 					ticker := time.NewTicker(time.Millisecond * 20)
 
 					for {
 						select {
 						case <-ticker.C:
-							cli.UpdateExecutorLogs(context.Background(), &tl.UpdateExecutorLogsRequest{
-								Id:   id,
-								Step: 0,
-								Log: &tes.ExecutorLog{
+							cli.CreateEvent(context.Background(), &events.Event{
+								Id:      id,
+								Attempt: 0,
+								Index:   0,
+								Type:    events.Type_EXECUTOR_STDOUT,
+								Data: &events.Event_Stdout{
 									Stdout: content,
 								},
+								Timestamp: ptypes.TimestampNow(),
 							})
 						case <-done:
 							return

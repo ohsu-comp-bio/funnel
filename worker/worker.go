@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util"
@@ -17,35 +17,46 @@ import (
 
 // NewDefaultWorker returns the default task runner used by Funnel,
 // which uses gRPC to read/write task details.
-func NewDefaultWorker(conf config.Worker, taskID string) Worker {
+func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
 	// Map files into this baseDir
 	baseDir := path.Join(conf.WorkDir, taskID)
-	// TODO handle error
-	util.EnsureDir(baseDir)
 
 	// TODO handle error
-	svc, _ := newRPCTask(conf, taskID)
-	log := logger.Sub("worker", "taskID", taskID)
-	version.Log(log)
+	err := util.EnsureDir(baseDir)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create worker baseDir: %v", err)
+	}
+
+	rsvc, err := newRPCTaskReader(conf, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to instantiate TaskReader: %v", err)
+	}
+
+	rpcWriter, err := events.NewRPCWriter(conf)
+	if err != nil {
+		return nil, fmt.Errorf("error creating EventService RPC client: %v", err)
+	}
+
+	logWriter := events.NewLogger("worker")
 
 	return &DefaultWorker{
-		Conf:   conf,
-		Mapper: NewFileMapper(baseDir),
-		Store:  storage.Storage{},
-		Svc:    svc,
-		Log:    log,
-	}
+		Conf:       conf,
+		Mapper:     NewFileMapper(baseDir),
+		Store:      storage.Storage{},
+		TaskReader: rsvc,
+		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, events.MultiWriter(rpcWriter, logWriter)),
+	}, nil
 }
 
 // DefaultWorker is the default task worker, which follows a basic,
 // sequential process of task initialization, execution, finalization,
 // and logging.
 type DefaultWorker struct {
-	Conf   config.Worker
-	Mapper *FileMapper
-	Store  storage.Storage
-	Svc    TaskService
-	Log    logger.Logger
+	Conf       config.Worker
+	Mapper     *FileMapper
+	Store      storage.Storage
+	TaskReader TaskReader
+	Event      *events.TaskWriter
 }
 
 // Run runs the Worker.
@@ -67,30 +78,36 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	var run helper
 	var task *tes.Task
 
-	task, run.syserr = r.Svc.Task()
+	r.Event.Info("Version", version.LogFields()...)
 
-	r.Svc.StartTime(time.Now())
+	task, run.syserr = r.TaskReader.Task()
+
+	if run.ok() {
+		r.Event.State(tes.State_INITIALIZING)
+	}
+
+	r.Event.StartTime(time.Now())
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
-		r.Svc.EndTime(time.Now())
+		r.Event.EndTime(time.Now())
 
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
-			r.Log.Info("Canceled")
-			r.Svc.SetState(tes.State_CANCELED)
+			r.Event.Info("Canceled")
+			r.Event.State(tes.State_CANCELED)
 		case run.execerr != nil:
 			// One of the executors failed
-			r.Log.Error("Exec error", run.execerr)
-			r.Svc.SetState(tes.State_ERROR)
+			r.Event.Error("Exec error", run.execerr)
+			r.Event.State(tes.State_ERROR)
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
-			r.Log.Error("System error", run.syserr)
-			r.Svc.SetState(tes.State_SYSTEM_ERROR)
+			r.Event.Error("System error", run.syserr)
+			r.Event.State(tes.State_SYSTEM_ERROR)
 		default:
-			r.Svc.SetState(tes.State_COMPLETE)
+			r.Event.State(tes.State_COMPLETE)
 		}
 	}()
 
@@ -146,18 +163,15 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	}
 
 	if run.ok() {
-		r.Svc.SetState(tes.State_RUNNING)
+		r.Event.State(tes.State_RUNNING)
 	}
 
 	// Run steps
 	for i, d := range task.Executors {
 		s := &stepWorker{
-			TaskID:     task.Id,
-			Conf:       r.Conf,
-			Num:        i,
-			Log:        r.Log.WithFields("step", i),
-			TaskLogger: r.Svc,
-			IP:         ip,
+			Conf:  r.Conf,
+			Event: r.Event.NewExecutorWriter(uint32(i)),
+			IP:    ip,
 			Cmd: &DockerCmd{
 				ImageName:     d.ImageName,
 				Cmd:           d.Cmd,
@@ -168,6 +182,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
 				// TODO make RemoveContainer configurable
 				RemoveContainer: true,
+				Event:           r.Event.NewExecutorWriter(uint32(i)),
 			},
 		}
 
@@ -193,7 +208,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	}
 
 	if run.ok() {
-		r.Svc.Outputs(outputs)
+		r.Event.Outputs(outputs)
 	}
 }
 
@@ -251,7 +266,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 	if d.Stdin != "" {
 		s.Cmd.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
 		if err != nil {
-			s.Log.Error("Couldn't prepare log files", err)
+			s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
@@ -260,7 +275,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 	if d.Stdout != "" {
 		s.Cmd.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
 		if err != nil {
-			s.Log.Error("Couldn't prepare log files", err)
+			s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
@@ -269,7 +284,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 	if d.Stderr != "" {
 		s.Cmd.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
 		if err != nil {
-			s.Log.Error("Couldn't prepare log files", err)
+			s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
@@ -310,7 +325,7 @@ func (r *DefaultWorker) pollForCancel(ctx context.Context, f func()) context.Con
 			case <-taskctx.Done():
 				return
 			case <-ticker.C:
-				state := r.Svc.State()
+				state, _ := r.TaskReader.State()
 				if tes.TerminalState(state) {
 					cancel()
 					f()

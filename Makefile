@@ -27,21 +27,23 @@ install: depends
 # Generate the protobuf/gRPC code
 proto:
 	@cd proto/tes && protoc \
-	  $(PROTO_INC) \
+		$(PROTO_INC) \
 		--go_out=plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		tes.proto
-	 @cd proto/tasklogger && protoc \
-	   $(PROTO_INC) \
-	 	-I ../tes \
-	 	--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
-	 	--grpc-gateway_out=logtostderr=true:. \
-	 	tasklogger.proto
 	@cd proto/scheduler && protoc \
-	   $(PROTO_INC) \
-	 	--go_out=plugins=grpc:. \
-	 	--grpc-gateway_out=logtostderr=true:. \
-	 	scheduler.proto
+		$(PROTO_INC) \
+		--go_out=plugins=grpc:. \
+		--grpc-gateway_out=logtostderr=true:. \
+		scheduler.proto
+	@cd events && protoc \
+		$(PROTO_INC) \
+		-I ../proto/tes \
+		-I $(shell pwd)/vendor/github.com/golang/protobuf/ptypes/struct/ \
+		-I $(shell pwd)/vendor/github.com/golang/protobuf/ptypes/timestamp/ \
+		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
+		--grpc-gateway_out=logtostderr=true:. \
+		events.proto
 
 # Update submodules and build code
 depends:
@@ -53,7 +55,7 @@ serve-doc:
 	godoc --http=:6060
 
 # Add new vendored dependencies
-add_deps: 
+add_deps:
 	@go get github.com/dpw/vendetta
 	@vendetta ./
 
@@ -71,9 +73,12 @@ lint:
 	@go get github.com/alecthomas/gometalinter
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
-	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell --vendor \
-	 -s proto --exclude 'examples/bundle.go' --exclude 'config/bundle.go' --exclude "cmd/termdash" \
-	 --exclude 'webdash/web.go' --exclude 'funnel-work-dir' ./...
+	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell \
+		--vendor \
+		-e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
+		-s "cmd/termdash" \
+		-e 'webdash/web.go' -s 'funnel-work-dir' \
+		./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 
 # Run fast-running Go tests
@@ -85,7 +90,7 @@ test:
 	@go run tests/fmt/fmt.go $(TESTS)
 
 # Run backend tests
-test-backends:	
+test-backends:
 	@go test -timeout 120s ./tests/e2e/slurm -run-test
 	@go test -timeout 120s ./tests/e2e/gridengine -run-test
 	@go test -timeout 120s ./tests/e2e/htcondor -run-test
@@ -126,7 +131,7 @@ upload-release:
 		exit 1; \
 	fi
 	@if [ -z "$$GITHUB_TOKEN" ]; then \
-	  echo 'GITHUB_TOKEN is required but not set. Generate one in your GitHub settings at https://github.com/settings/tokens and set it to an environment variable with `export GITHUB_TOKEN=123456...`'; \
+		echo 'GITHUB_TOKEN is required but not set. Generate one in your GitHub settings at https://github.com/settings/tokens and set it to an environment variable with `export GITHUB_TOKEN=123456...`'; \
 		exit 1; \
 	fi
 	@make gce-installer

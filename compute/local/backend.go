@@ -24,7 +24,10 @@ type Backend struct {
 // running immediately.
 func (b *Backend) Submit(task *tes.Task) error {
 	log.Debug("Submitting to local", "taskID", task.Id)
-	w := worker.NewDefaultWorker(b.conf.Worker, task.Id)
+	w, err := worker.NewDefaultWorker(b.conf.Worker, task.Id)
+	if err != nil {
+		return err
+	}
 	go w.Run(context.Background())
 	return nil
 }

@@ -147,7 +147,8 @@ func (n *Node) sync(ctx context.Context) {
 	for _, id := range r.TaskIds {
 		if n.workers.Add(id) {
 			go func(id string) {
-				r := n.newWorker(n.workerConf, id)
+				// TODO handle error
+				r, _ := n.newWorker(n.workerConf, id)
 				r.Run(ctx)
 				n.workers.Remove(id)
 			}(id)

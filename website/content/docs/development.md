@@ -63,7 +63,7 @@ Most development tasks are run through `make`.
 |---|---|
 |`cmd`              | Funnel command line interface.
 |`config`           | Configuration parsing, loading, etc.
-|`proto/tasklogger` | Internal, Funnel-specific protobuf/gRPC files for task state and log updates.
+|`events`           | Internal, Funnel-specific protobuf/gRPC/Go files for task state and log updates.
 |`proto/tes`        | Generated GA4GH protobuf/gRPC files from [task-execution-schemas][tes].
 |`proto/scheduler`  | Internal, Funnel-specific scheduler protobuf/gRPC files.
 |`logger`           | Logging.

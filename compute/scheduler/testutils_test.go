@@ -14,18 +14,18 @@ import (
 )
 
 func testWorkerFactoryFunc(f func(r testWorker)) WorkerFactory {
-	return func(config.Worker, string) worker.Worker {
+	return func(config.Worker, string) (worker.Worker, error) {
 		t := testWorker{}
 		f(t)
-		return &t
+		return &t, nil
 	}
 }
 
 type testWorker struct{}
 
 func (t *testWorker) Run(context.Context) {}
-func (t *testWorker) Factory(config.Worker, string) worker.Worker {
-	return t
+func (t *testWorker) Factory(config.Worker, string) (worker.Worker, error) {
+	return t, nil
 }
 
 // testNode wraps Node with some testing helpers.

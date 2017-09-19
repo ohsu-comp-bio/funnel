@@ -42,6 +42,14 @@ proto:
 	 	--go_out=plugins=grpc:. \
 	 	--grpc-gateway_out=logtostderr=true:. \
 	 	scheduler.proto
+	@cd events && protoc \
+		$(PROTO_INC) \
+		-I ../proto/tes \
+		-I $(shell pwd)/vendor/github.com/golang/protobuf/ptypes/struct/ \
+		-I $(shell pwd)/vendor/github.com/golang/protobuf/ptypes/timestamp/ \
+		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
+		--grpc-gateway_out=logtostderr=true:. \
+		events.proto
 
 # Update submodules and build code
 depends:
@@ -71,9 +79,12 @@ lint:
 	@go get github.com/alecthomas/gometalinter
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
-	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell --vendor \
-	 -s proto --exclude 'examples/bundle.go' --exclude 'config/bundle.go' --exclude "cmd/termdash" \
-	 --exclude 'webdash/web.go' --exclude 'funnel-work-dir' ./...
+	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell \
+		--vendor \
+		-e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
+		-s "cmd/termdash" \
+	 	-e 'webdash/web.go' -s 'funnel-work-dir' \
+		./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 
 # Run fast-running Go tests

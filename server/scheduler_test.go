@@ -39,9 +39,12 @@ func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 		t.Fatal("Expected task in queue")
 	}
 
-	db.AssignTask(task, &pbs.Node{
+	err = db.AssignTask(task, &pbs.Node{
 		Id: "node-1",
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	res2 := db.ReadQueue(10)
 	if len(res2) != 0 {

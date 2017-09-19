@@ -19,18 +19,16 @@ const (
 
 // Transitioner defines the interface for handling task state transitions.
 type Transitioner interface {
+	// The implementation should put an existing task in the queue.
+	Queue() error
 	// The implementation should remove the task from the queue and set the state given by "to".
 	Dequeue(to State) error
-	// The implementation should put an existing task back in the queue (used for restarts).
-	Requeue() error
 	// The implementation should set the state of the task.
 	SetState(to State) error
 }
 
 // Transition validates a task state transition and, if valid, calls the corresponding
-// function on the given Transitioner. Valid transitions are:
-//
-// - Queued -> Initializing, Running, Canceled
+// function on the given Transitioner.
 func Transition(from, to State, t Transitioner) error {
 
 	if from == to {
@@ -38,11 +36,17 @@ func Transition(from, to State, t Transitioner) error {
 	}
 
 	switch from {
+	case Unknown:
+
+		switch to {
+		case Queued:
+			return t.Queue()
+		}
+
 	case Queued:
 
 		switch to {
-		case Initializing, Running, Canceled,
-			SystemError, Error:
+		case Initializing, Running, Canceled, SystemError:
 			return t.Dequeue(to)
 		}
 
@@ -63,7 +67,7 @@ func Transition(from, to State, t Transitioner) error {
 	case Error, SystemError, Canceled:
 
 		if to == Queued {
-			return t.Requeue()
+			return t.Queue()
 		}
 
 	case Paused:

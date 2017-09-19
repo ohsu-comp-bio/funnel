@@ -16,13 +16,10 @@ import (
 
 // QueueTask adds a task to the scheduler queue.
 func (taskBolt *TaskBolt) QueueTask(task *tes.Task) error {
-	taskID := task.Id
-	idBytes := []byte(taskID)
-
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		tx.Bucket(TasksQueued).Put(idBytes, []byte{})
-		return nil
+		return transitionTaskState(tx, task.Id, tes.Queued)
 	})
+
 	if err != nil {
 		log.Error("Error queuing task", err)
 		return err
@@ -244,8 +241,7 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 			} else if node.State == pbs.NodeState_DEAD &&
 				// The node has been dead for long enough, delete it.
 				d > taskBolt.conf.Scheduler.NodeDeadTimeout {
-				tx.Bucket(Nodes).Delete(k)
-				continue
+				node.State = pbs.NodeState_GONE
 
 			} else if d > taskBolt.conf.Scheduler.NodePingTimeout {
 				// The node is stale/dead
@@ -253,11 +249,30 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 			} else {
 				node.State = pbs.NodeState_ALIVE
 			}
-			// TODO when to delete nodes from the database?
-			//      is dead node deletion an automatic garbage collection process?
-			err := putNode(tx, node)
-			if err != nil {
-				return err
+
+			// Clean up node.
+			if node.State == pbs.NodeState_GONE {
+
+				// Delete node
+				tx.Bucket(Nodes).Delete(k)
+
+				// Re-queue tasks.
+				// Prefix scan for keys that start with node ID
+				c := tx.Bucket(NodeTasks).Cursor()
+				prefix := []byte(node.Id)
+				for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+
+					taskID := string(v)
+					// Explicitly ignoring errors from transition, because there's nothing we can
+					// do at this point if it fails.
+					_ = transitionTaskState(tx, taskID, tes.Queued)
+					tx.Bucket(NodeTasks).Delete(k)
+				}
+			} else {
+				err := putNode(tx, node)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil

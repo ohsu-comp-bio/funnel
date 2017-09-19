@@ -2,7 +2,7 @@ package node
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/scheduler"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"testing"
 	"time"

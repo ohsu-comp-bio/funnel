@@ -73,11 +73,11 @@ func Transition(from, to State, t Transitioner) error {
 		}
 
 	case Paused:
-		return fmt.Errorf("Paused state is not implemented.")
+		return fmt.Errorf("paused state is not implemented")
 
 	default:
-		return fmt.Errorf("Unknown state: %s", from)
+		return fmt.Errorf("unknown state: %s", from)
 	}
-	return fmt.Errorf("Unhandled state transition from %s to %s",
+	return fmt.Errorf("unhandled state transition from %s to %s",
 		from, to)
 }

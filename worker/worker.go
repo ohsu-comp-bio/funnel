@@ -192,7 +192,16 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		}
 
 		if run.ok() {
-			run.execerr = s.Run(ctx)
+			res := s.Run(ctx)
+			code := getExitCode(res)
+			s.Event.ExitCode(code)
+
+			// exit code 125 signals an error with the docker daemon.
+			if code == 125 {
+				run.syserr = res
+			} else {
+				run.execerr = res
+			}
 		}
 	}
 

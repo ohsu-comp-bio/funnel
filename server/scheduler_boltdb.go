@@ -16,8 +16,9 @@ import (
 
 // QueueTask adds a task to the scheduler queue.
 func (taskBolt *TaskBolt) QueueTask(task *tes.Task) error {
+	idBytes := []byte(task.Id)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		return transitionTaskState(tx, task.Id, tes.Queued)
+		return tx.Bucket(TasksQueued).Put(idBytes, []byte{})
 	})
 
 	if err != nil {
@@ -215,11 +216,6 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 			node := &pbs.Node{}
 			proto.Unmarshal(v, node)
 
-			if node.State == pbs.NodeState_GONE {
-				tx.Bucket(Nodes).Delete(k)
-				continue
-			}
-
 			if node.LastPing == 0 {
 				// This shouldn't be happening, because nodes should be
 				// created with LastPing, but give it the benefit of the doubt
@@ -246,8 +242,6 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 			} else if d > taskBolt.conf.Scheduler.NodePingTimeout {
 				// The node is stale/dead
 				node.State = pbs.NodeState_DEAD
-			} else {
-				node.State = pbs.NodeState_ALIVE
 			}
 
 			// Clean up node.
@@ -263,9 +257,10 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 				for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 
 					taskID := string(v)
-					// Explicitly ignoring errors from transition, because there's nothing we can
-					// do at this point if it fails.
-					_ = transitionTaskState(tx, taskID, tes.Queued)
+					err := transitionTaskState(tx, taskID, tes.Queued)
+					if err != nil {
+						log.Error("can't restart task", err)
+					}
 					tx.Bucket(NodeTasks).Delete(k)
 				}
 			} else {

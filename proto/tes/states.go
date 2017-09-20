@@ -1,8 +1,6 @@
 package tes
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // State variables for convenience
 const (
@@ -53,6 +51,8 @@ func Transition(from, to State, t Transitioner) error {
 	case Initializing:
 
 		switch to {
+		case Queued:
+			return t.Queue()
 		case Running, Error, SystemError, Canceled:
 			return t.SetState(to)
 		}
@@ -60,6 +60,8 @@ func Transition(from, to State, t Transitioner) error {
 	case Running:
 
 		switch to {
+		case Queued:
+			return t.Queue()
 		case Complete, Error, SystemError, Canceled:
 			return t.SetState(to)
 		}

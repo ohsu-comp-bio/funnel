@@ -2,7 +2,8 @@ package node
 
 import (
 	"context"
-	"github.com/imdario/mergo"
+	"fmt"
+	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -20,18 +21,9 @@ var runCmd = &cobra.Command{
 	Short: "Run a Funnel node.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		// parse config file
-		conf := config.DefaultConfig()
-		config.ParseFile(configFile, &conf)
-
-		// make sure server address and password is inherited by scheduler nodes and workers
-		conf = config.InheritServerProperties(conf)
-		flagConf = config.InheritServerProperties(flagConf)
-
-		// file vals <- cli val
-		err := mergo.MergeWithOverwrite(&conf, flagConf)
+		conf, err := cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
 		if err != nil {
-			return err
+			return fmt.Errorf("error processing config: %v", err)
 		}
 
 		return Run(conf)

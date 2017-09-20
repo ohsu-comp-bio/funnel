@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/imdario/mergo"
+	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/worker"
@@ -27,18 +27,9 @@ var runCmd = &cobra.Command{
 			return cmd.Help()
 		}
 
-		// parse config file
-		conf := config.DefaultConfig()
-		config.ParseFile(configFile, &conf)
-
-		// make sure server address and password is inherited by the worker
-		conf = config.InheritServerProperties(conf)
-		flagConf = config.InheritServerProperties(flagConf)
-
-		// file vals <- cli val
-		err := mergo.MergeWithOverwrite(&conf, flagConf)
+		conf, err := util.MergeConfigFileWithFlags(configFile, flagConf)
 		if err != nil {
-			return err
+			return fmt.Errorf("error processing config: %v", err)
 		}
 
 		return Run(conf.Worker, taskID)

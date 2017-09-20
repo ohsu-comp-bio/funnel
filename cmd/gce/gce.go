@@ -1,6 +1,7 @@
 package gce
 
 import (
+	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/node"
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
@@ -49,6 +50,6 @@ var runCmd = &cobra.Command{
 		}
 
 		logger.Configure(conf.Server.Logger)
-		return server.Run(conf)
+		return server.Run(context.Background(), conf)
 	},
 }

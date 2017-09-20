@@ -16,13 +16,11 @@ import (
 
 // QueueTask adds a task to the scheduler queue.
 func (taskBolt *TaskBolt) QueueTask(task *tes.Task) error {
-	taskID := task.Id
-	idBytes := []byte(taskID)
-
+	idBytes := []byte(task.Id)
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		tx.Bucket(TasksQueued).Put(idBytes, []byte{})
-		return nil
+		return tx.Bucket(TasksQueued).Put(idBytes, []byte{})
 	})
+
 	if err != nil {
 		log.Error("Error queuing task", err)
 		return err
@@ -124,7 +122,7 @@ func updateNode(tx *bolt.Tx, req *pbs.Node) error {
 		// If the node has acknowledged that the task is complete,
 		// unlink the task from the node.
 		switch state {
-		case Canceled, Complete, Error, SystemError:
+		case tes.Canceled, tes.Complete, tes.Error, tes.SystemError:
 			key := append([]byte(req.Id), []byte(id)...)
 			tx.Bucket(NodeTasks).Delete(key)
 			// update disk usage once a task completes
@@ -218,11 +216,6 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 			node := &pbs.Node{}
 			proto.Unmarshal(v, node)
 
-			if node.State == pbs.NodeState_GONE {
-				tx.Bucket(Nodes).Delete(k)
-				continue
-			}
-
 			if node.LastPing == 0 {
 				// This shouldn't be happening, because nodes should be
 				// created with LastPing, but give it the benefit of the doubt
@@ -241,17 +234,40 @@ func (taskBolt *TaskBolt) CheckNodes() error {
 					// Looks like the node failed to initialize. Mark it dead
 					node.State = pbs.NodeState_DEAD
 				}
+			} else if node.State == pbs.NodeState_DEAD &&
+				// The node has been dead for long enough, delete it.
+				d > taskBolt.conf.Scheduler.NodeDeadTimeout {
+				node.State = pbs.NodeState_GONE
+
 			} else if d > taskBolt.conf.Scheduler.NodePingTimeout {
 				// The node is stale/dead
 				node.State = pbs.NodeState_DEAD
-			} else {
-				node.State = pbs.NodeState_ALIVE
 			}
-			// TODO when to delete nodes from the database?
-			//      is dead node deletion an automatic garbage collection process?
-			err := putNode(tx, node)
-			if err != nil {
-				return err
+
+			// Clean up node.
+			if node.State == pbs.NodeState_GONE {
+
+				// Delete node
+				tx.Bucket(Nodes).Delete(k)
+
+				// Re-queue tasks.
+				// Prefix scan for keys that start with node ID
+				c := tx.Bucket(NodeTasks).Cursor()
+				prefix := []byte(node.Id)
+				for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+
+					taskID := string(v)
+					err := transitionTaskState(tx, taskID, tes.Queued)
+					if err != nil {
+						log.Error("can't restart task", err)
+					}
+					tx.Bucket(NodeTasks).Delete(k)
+				}
+			} else {
+				err := putNode(tx, node)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil

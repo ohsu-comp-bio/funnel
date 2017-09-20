@@ -34,6 +34,7 @@ func TestNodeInitFail(t *testing.T) {
 	conf := DefaultConfig()
 	conf.Scheduler.NodeInitTimeout = time.Millisecond
 	srv := NewFunnel(conf)
+	srv.StartServer()
 
 	srv.DB.UpdateNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
@@ -46,5 +47,28 @@ func TestNodeInitFail(t *testing.T) {
 
 	if nodes[0].State != pbs.NodeState_DEAD {
 		t.Error("Expected node to be dead")
+	}
+}
+
+// Test that a dead node is deleted from the DB after
+// a configurable duration.
+func TestNodeDeadTimeout(t *testing.T) {
+	conf := DefaultConfig()
+	conf.Scheduler.NodeInitTimeout = time.Millisecond
+	conf.Scheduler.NodeDeadTimeout = time.Millisecond
+	srv := NewFunnel(conf)
+
+	srv.DB.UpdateNode(context.Background(), &pbs.Node{
+		Id:    "test-node",
+		State: pbs.NodeState_DEAD,
+	})
+	srv.DB.CheckNodes()
+
+	time.Sleep(conf.Scheduler.NodeDeadTimeout * 2)
+	srv.DB.CheckNodes()
+	nodes := srv.ListNodes()
+
+	if len(nodes) > 0 {
+		t.Error("expected node to be deleted")
 	}
 }

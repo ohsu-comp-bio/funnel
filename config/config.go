@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -49,18 +50,81 @@ type Config struct {
 	Worker    Worker
 }
 
-// InheritServerProperties sets the ServerAddress and ServerPassword fields
-// in the Worker and Scheduler.Node configs based on the Server config
-func InheritServerProperties(c Config) Config {
-	c.Worker.TaskReaders.RPC.ServerAddress = c.Server.RPCAddress()
-	c.Worker.TaskReaders.RPC.ServerPassword = c.Server.Password
+// EnsureServerProperties ensures that the server address and server password
+// is consistent between the worker, node, and server.
+//
+// Precedence:
+// Server > Node > TaskReader > EventWriter
+func EnsureServerProperties(conf Config) Config {
+	conf = ensureServerAddress(conf)
+	conf = ensureServerPassword(conf)
+	return conf
+}
 
-	c.Worker.EventWriters.RPC.ServerAddress = c.Server.RPCAddress()
-	c.Worker.EventWriters.RPC.ServerPassword = c.Server.Password
+func ensureServerAddress(conf Config) Config {
+	defaults := DefaultConfig()
+	empty := Config{}
 
-	c.Scheduler.Node.ServerAddress = c.Server.RPCAddress()
-	c.Scheduler.Node.ServerPassword = c.Server.Password
-	return c
+	if conf.Server.RPCAddress() != defaults.Server.RPCAddress() && conf.Server.RPCAddress() != empty.Server.RPCAddress() {
+		conf.Worker.EventWriters.RPC.ServerAddress = conf.Server.RPCAddress()
+		conf.Worker.TaskReaders.RPC.ServerAddress = conf.Server.RPCAddress()
+		conf.Scheduler.Node.ServerAddress = conf.Server.RPCAddress()
+	}
+
+	if conf.Scheduler.Node.ServerAddress != conf.Server.RPCAddress() && conf.Scheduler.Node.ServerAddress != empty.Scheduler.Node.ServerAddress {
+		parts := strings.Split(conf.Scheduler.Node.ServerAddress, ":")
+		conf.Server.HostName = parts[0]
+		conf.Server.RPCPort = parts[1]
+		conf.Worker.TaskReaders.RPC.ServerAddress = conf.Scheduler.Node.ServerAddress
+		conf.Worker.EventWriters.RPC.ServerAddress = conf.Scheduler.Node.ServerAddress
+	}
+
+	if conf.Worker.TaskReaders.RPC.ServerAddress != conf.Server.RPCAddress() && conf.Worker.TaskReaders.RPC.ServerAddress != empty.Worker.TaskReaders.RPC.ServerAddress {
+		parts := strings.Split(conf.Worker.TaskReaders.RPC.ServerAddress, ":")
+		conf.Server.HostName = parts[0]
+		conf.Server.RPCPort = parts[1]
+		conf.Scheduler.Node.ServerAddress = conf.Worker.TaskReaders.RPC.ServerAddress
+		conf.Worker.EventWriters.RPC.ServerAddress = conf.Worker.TaskReaders.RPC.ServerAddress
+	}
+
+	if conf.Worker.EventWriters.RPC.ServerAddress != conf.Server.RPCAddress() && conf.Worker.EventWriters.RPC.ServerAddress != empty.Worker.EventWriters.RPC.ServerAddress {
+		parts := strings.Split(conf.Worker.EventWriters.RPC.ServerAddress, ":")
+		conf.Server.HostName = parts[0]
+		conf.Server.RPCPort = parts[1]
+		conf.Scheduler.Node.ServerAddress = conf.Worker.EventWriters.RPC.ServerAddress
+		conf.Worker.TaskReaders.RPC.ServerAddress = conf.Worker.EventWriters.RPC.ServerAddress
+	}
+
+	return conf
+}
+
+func ensureServerPassword(conf Config) Config {
+	defaults := DefaultConfig()
+	empty := Config{}
+
+	if conf.Server.Password != defaults.Server.Password && conf.Server.Password != empty.Server.Password {
+		conf.Worker.EventWriters.RPC.ServerPassword = conf.Server.Password
+		conf.Worker.TaskReaders.RPC.ServerPassword = conf.Server.Password
+		conf.Scheduler.Node.ServerPassword = conf.Server.Password
+	}
+
+	if conf.Scheduler.Node.ServerPassword != conf.Server.Password && conf.Scheduler.Node.ServerPassword != empty.Scheduler.Node.ServerPassword {
+		conf.Server.Password = conf.Scheduler.Node.ServerPassword
+		conf.Worker.EventWriters.RPC.ServerPassword = conf.Scheduler.Node.ServerPassword
+		conf.Worker.TaskReaders.RPC.ServerPassword = conf.Scheduler.Node.ServerPassword
+	}
+
+	if conf.Worker.TaskReaders.RPC.ServerPassword != conf.Server.Password && conf.Worker.TaskReaders.RPC.ServerPassword != empty.Worker.TaskReaders.RPC.ServerPassword {
+		conf.Server.Password = conf.Worker.TaskReaders.RPC.ServerPassword
+		conf.Scheduler.Node.ServerPassword = conf.Worker.TaskReaders.RPC.ServerPassword
+	}
+
+	if conf.Worker.EventWriters.RPC.ServerPassword != conf.Server.Password && conf.Worker.EventWriters.RPC.ServerPassword != empty.Worker.EventWriters.RPC.ServerPassword {
+		conf.Server.Password = conf.Worker.EventWriters.RPC.ServerPassword
+		conf.Scheduler.Node.ServerPassword = conf.Worker.EventWriters.RPC.ServerPassword
+	}
+
+	return conf
 }
 
 // DefaultConfig returns configuration with simple defaults.
@@ -68,16 +132,18 @@ func DefaultConfig() Config {
 	cwd, _ := os.Getwd()
 	workDir := path.Join(cwd, "funnel-work-dir")
 
+	server := Server{
+		HostName:           "localhost",
+		HTTPPort:           "8000",
+		RPCPort:            "9090",
+		ServiceName:        "Funnel",
+		MaxExecutorLogSize: 10000,
+		DisableHTTPCache:   true,
+		Logger:             logger.DefaultConfig(),
+	}
+
 	c := Config{
-		Server: Server{
-			HostName:           "localhost",
-			HTTPPort:           "8000",
-			RPCPort:            "9090",
-			ServiceName:        "Funnel",
-			MaxExecutorLogSize: 10000,
-			DisableHTTPCache:   true,
-			Logger:             logger.DefaultConfig(),
-		},
+		Server:  server,
 		Backend: "local",
 		Scheduler: Scheduler{
 			ScheduleRate:    time.Second,
@@ -86,12 +152,14 @@ func DefaultConfig() Config {
 			NodeInitTimeout: time.Minute * 5,
 			NodeDeadTimeout: time.Minute * 5,
 			Node: Node{
-				WorkDir:       workDir,
-				Timeout:       -1,
-				UpdateRate:    time.Second * 5,
-				UpdateTimeout: time.Second,
-				Metadata:      map[string]string{},
-				Logger:        logger.DefaultConfig(),
+				ServerAddress:  server.RPCAddress(),
+				ServerPassword: server.Password,
+				WorkDir:        workDir,
+				Timeout:        -1,
+				UpdateRate:     time.Second * 5,
+				UpdateTimeout:  time.Second,
+				Metadata:       map[string]string{},
+				Logger:         logger.DefaultConfig(),
 			},
 			Logger: logger.DefaultConfig(),
 		},
@@ -108,17 +176,18 @@ func DefaultConfig() Config {
 		},
 	}
 
-	// set rpc server address and password for worker and node
-	c = InheritServerProperties(c)
-
 	c.Server.Database = "boltdb"
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
 	c.Server.Databases.DynamoDB.TableBasename = "funnel"
 
 	c.Worker.TaskReader = "rpc"
+	c.Worker.TaskReaders.RPC.ServerAddress = server.RPCAddress()
+	c.Worker.TaskReaders.RPC.ServerPassword = server.Password
 	c.Worker.TaskReaders.DynamoDB.TableBasename = "funnel"
 
 	c.Worker.ActiveEventWriters = []string{"rpc", "log"}
+	c.Worker.EventWriters.RPC.ServerAddress = server.RPCAddress()
+	c.Worker.EventWriters.RPC.ServerPassword = server.Password
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
 	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
 

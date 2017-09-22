@@ -226,10 +226,10 @@ func stripStoragePrefix(url string) string {
 }
 
 func resolvePath(url string) string {
-	local := strings.HasPrefix(url, "/") || strings.HasPrefix(url, ".") ||
-		strings.HasPrefix(url, "~")
 	re := regexp.MustCompile("[a-z0-9]+://")
 	prefixed := re.MatchString(url)
+	local := strings.HasPrefix(url, "/") || strings.HasPrefix(url, ".") ||
+		strings.HasPrefix(url, "~") || !prefixed
 
 	switch {
 	case local:

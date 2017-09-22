@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 
 func TestS3(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'echo foo > $out'"
+    --sh "sh -c 'echo foo > $out'"
     -o out=s3://bkt/test_output
   `)
 	fun.Wait(id)

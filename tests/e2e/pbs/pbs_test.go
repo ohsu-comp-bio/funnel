@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 
 func TestHelloWorld(t *testing.T) {
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
   `)
 	task := fun.Wait(id)
 
@@ -42,7 +42,7 @@ func TestHelloWorld(t *testing.T) {
 
 func TestResourceRequest(t *testing.T) {
 	id := fun.Run(`
-    --cmd 'echo I need resources!' --cpu 1 --ram 2 --disk 5
+    --sh 'echo I need resources!' --cpu 1 --ram 2 --disk 5
   `)
 	task := fun.Wait(id)
 

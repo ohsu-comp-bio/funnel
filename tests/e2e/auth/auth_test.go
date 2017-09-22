@@ -54,7 +54,7 @@ func TestBasicAuthFail(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	_, err = fun.RunE(`--cmd 'echo hello'`)
+	_, err = fun.RunE(`--sh 'echo hello'`)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -74,7 +74,7 @@ func TestBasicAuthed(t *testing.T) {
 	log.Debug("CLI", fun.HTTP)
 
 	// Run a task to completion
-	id2 := fun.Run(`--cmd 'echo hello'`)
+	id2 := fun.Run(`--sh 'echo hello'`)
 	t2 := fun.Wait(id2)
 	if t2.State != tes.State_COMPLETE {
 		t.Fatal("expected task to complete")

@@ -23,7 +23,7 @@ func BenchmarkRunSerialNoNodes(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		fun.Run(`
-      --cmd 'echo'
+      --sh 'echo'
     `)
 	}
 }
@@ -44,7 +44,7 @@ func BenchmarkRunConcurrentNoNodes(b *testing.B) {
 		go func() {
 			defer wg.Done()
 			fun.Run(`
-        --cmd 'echo'
+        --sh 'echo'
       `)
 		}()
 	}
@@ -116,7 +116,7 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 		go func() {
 			defer wg.Done()
 			ids <- fun.Run(`
-        --cmd 'echo'
+        --sh 'echo'
       `)
 		}()
 	}

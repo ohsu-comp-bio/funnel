@@ -17,7 +17,7 @@ func TestWorkerCmdRun(t *testing.T) {
 	// this only writes the task to the DB since the 'noop'
 	// compute backend is in use
 	id := f.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
   `)
 
 	err := workerCmd.Run(c.Worker, id)
@@ -50,7 +50,7 @@ func TestDefaultWorkerRun(t *testing.T) {
 	// this only writes the task to the DB since the 'noop'
 	// compute backend is in use
 	id := f.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
   `)
 
 	w, err := worker.NewDefaultWorker(c.Worker, id)

@@ -10,7 +10,7 @@ import (
 // Test that a file can be passed as an input and output.
 func TestFileMount(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'cat $in > $out'"
+    --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in
     -o out={{ .storage }}/test_out
   `)
@@ -28,7 +28,7 @@ func TestFileMount(t *testing.T) {
 func TestLocalFilesystemHardLinkInput(t *testing.T) {
 	fun.WriteFile("test_hard_link_input", "content")
 	id := fun.Run(`
-    --cmd "echo foo"
+    --sh "echo foo"
     -i in={{ .storage }}/test_hard_link_input
   `)
 	task := fun.Wait(id)
@@ -52,7 +52,7 @@ func TestLocalFilesystemHardLinkInput(t *testing.T) {
 // Test using a symlink as an input file.
 func TestSymlinkInput(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'cat $in > $out'"
+    --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in_symlink
     -o out={{ .storage }}/test_out
   `)
@@ -65,7 +65,7 @@ func TestSymlinkInput(t *testing.T) {
 // Test using a broken symlink as an input file.
 func TestBrokenSymlinkInput(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'cat $in > $out'"
+    --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_broken_symlink
     -o out={{ .storage }}/test_out
   `)
@@ -86,7 +86,7 @@ func TestBrokenSymlinkInput(t *testing.T) {
 */
 func TestSymlinkOutput(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'"
+    --sh "sh -c 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'"
     -o sym={{ .storage }}/out-sym
     -O dir={{ .storage }}/out-dir
   `)
@@ -111,7 +111,7 @@ func TestSymlinkOutput(t *testing.T) {
 
 func TestOverwriteOutput(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'echo foo > $out; chmod go+w $out'"
+    --sh "sh -c 'echo foo > $out; chmod go+w $out'"
     -o out={{ .storage }}/test_out
   `)
 	task := fun.Wait(id)
@@ -123,7 +123,7 @@ func TestOverwriteOutput(t *testing.T) {
 	// this time around since the output file exists copyFile will be called
 	// in storage.Put
 	id = fun.Run(`
-    --cmd "sh -c 'echo foo > $out; chmod go+w $out'"
+    --sh "sh -c 'echo foo > $out; chmod go+w $out'"
     -o out={{ .storage }}/test_out
   `)
 	task = fun.Wait(id)

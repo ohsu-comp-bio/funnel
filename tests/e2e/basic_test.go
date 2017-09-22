@@ -12,7 +12,7 @@ import (
 
 func TestHelloWorld(t *testing.T) {
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
   `)
 	task := fun.Wait(id)
 
@@ -48,7 +48,7 @@ func TestGetTaskView(t *testing.T) {
 	fun.WriteFile("test_contents.txt", "hello world")
 
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
     --name 'foo'
     --contents in={{ .storage }}/test_contents.txt
   `)
@@ -167,7 +167,7 @@ func TestListTaskView(t *testing.T) {
 	var err error
 
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
     --name 'foo'
   `)
 	fun.Wait(id)
@@ -279,7 +279,7 @@ func TestListTaskView(t *testing.T) {
 // amount of logs are written (which was once a bug).
 func TestSingleCharLog(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'echo a; sleep 100'"
+    --sh "sh -c 'echo a; sleep 100'"
   `)
 	fun.WaitForRunning(id)
 	time.Sleep(time.Second * 2)
@@ -294,8 +294,8 @@ func TestSingleCharLog(t *testing.T) {
 /* TODO need ports in funnel run
 func TestPortLog(t *testing.T) {
   id := fun.Run(`
-    --cmd 'echo start'
-    --cmd 'sleep 10'
+    --sh 'echo start'
+    --sh 'sleep 10'
   `)
   fun.WaitForExec(id, 2)
   task := fun.Get(id)
@@ -308,7 +308,7 @@ func TestPortLog(t *testing.T) {
 // Test that a completed task cannot change state.
 func TestCompleteStateImmutable(t *testing.T) {
 	id := fun.Run(`
-    --cmd 'echo hello'
+    --sh 'echo hello'
   `)
 	fun.Wait(id)
 	err := fun.Cancel(id)
@@ -324,9 +324,9 @@ func TestCompleteStateImmutable(t *testing.T) {
 // Test canceling a task
 func TestCancel(t *testing.T) {
 	id := fun.Run(`
-    --cmd 'echo start'
-    --cmd 'sleep 1000'
-    --cmd 'echo never'
+    --sh 'echo start'
+    --sh 'sleep 1000'
+    --sh 'echo never'
   `)
 	fun.WaitForExec(id, 1)
 	fun.Cancel(id)
@@ -365,9 +365,9 @@ func TestCancelUnknownTask(t *testing.T) {
 // won't show up in Task.Logs[0].Logs
 func TestExecutorLogLength(t *testing.T) {
 	id := fun.Run(`
-    --cmd 'echo first'
-    --cmd 'sleep 10'
-    --cmd 'echo done'
+    --sh 'echo first'
+    --sh 'sleep 10'
+    --sh 'echo done'
   `)
 	fun.WaitForExec(id, 2)
 	task := fun.Get(id)
@@ -382,8 +382,8 @@ func TestExecutorLogLength(t *testing.T) {
 // task complete after *all* steps have completed.
 func TestMarkCompleteBug(t *testing.T) {
 	id := fun.Run(`
-    --cmd 'echo step 1'
-    --cmd 'sleep 100'
+    --sh 'echo step 1'
+    --sh 'sleep 100'
   `)
 	fun.WaitForRunning(id)
 	fun.WaitForExec(id, 2)
@@ -395,7 +395,7 @@ func TestMarkCompleteBug(t *testing.T) {
 }
 
 func TestTaskStartEndTimeLogs(t *testing.T) {
-	id := fun.Run(`--cmd 'echo 1'`)
+	id := fun.Run(`--sh 'echo 1'`)
 	task := fun.Wait(id)
 	if task.Logs[0].StartTime == "" {
 		t.Fatal("missing task start time log")
@@ -472,7 +472,7 @@ func TestPagination(t *testing.T) {
 	}
 
 	for i := 0; i < 2050; i++ {
-		f.Run(`--cmd 'echo 1'`)
+		f.Run(`--sh 'echo 1'`)
 	}
 
 	r1, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
@@ -543,7 +543,7 @@ func TestSmallPagination(t *testing.T) {
 	}
 
 	for i := 0; i < 150; i++ {
-		f.Run(`--cmd 'echo 1'`)
+		f.Run(`--sh 'echo 1'`)
 	}
 
 	r4, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
@@ -576,7 +576,7 @@ func TestSmallPagination(t *testing.T) {
 
 func TestTaskError(t *testing.T) {
 	id := fun.Run(`
-    --cmd "sh -c 'exit 1'"
+    --sh "sh -c 'exit 1'"
   `)
 	task := fun.Wait(id)
 

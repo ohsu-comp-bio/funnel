@@ -85,7 +85,7 @@ func TestParse(t *testing.T) {
 			Executors: []*tes.Executor{
 				{
 					ImageName: "busybox",
-					Cmd:       []string{"echo", "hello"},
+					Cmd:       []string{"sh", "-c", "echo hello"},
 					Workdir:   "myworkdir",
 					Stdout:    "/opt/funnel/outputs/stdout-0",
 					Stderr:    "/opt/funnel/outputs/stderr-0",
@@ -141,7 +141,7 @@ func TestParse(t *testing.T) {
     --env e2=e2v
     --stdout ./testdata/stdout-first
     -x '--name foo'
-    --cmd 'echo two'
+    --exec 'echo two'
     --stdout ./testdata/stdout-second
     --vol /volone
     --vol /voltwo

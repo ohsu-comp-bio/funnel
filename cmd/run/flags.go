@@ -31,7 +31,8 @@ type flagVals struct {
 	extra        []string
 	extraFiles   []string
 	scatterFiles []string
-	cmds         []string
+	exec         []string
+	sh           []string
 
 	// Internal tracking of executors. Not set by flags.
 	execs []executor
@@ -81,7 +82,8 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	f.StringSliceVarP(&v.extra, "extra", "x", v.extra, "")
 	f.StringSliceVarP(&v.extraFiles, "extra-file", "X", v.extraFiles, "")
 	f.StringSliceVar(&v.scatterFiles, "scatter", v.scatterFiles, "")
-	f.StringSliceVar(&v.cmds, "cmd", v.cmds, "")
+	f.StringSliceVar(&v.sh, "sh", v.sh, "")
+	f.StringSliceVar(&v.exec, "exec", v.exec, "")
 
 	// Disable sorting in order to visit flags in primordial order below.
 	// See buildExecs()
@@ -159,8 +161,8 @@ func parseTopLevelArgs(vals *flagVals, args []string) error {
 	// Prepend command string given as positional argument to the args.
 	// Prepend it as a flag so that it works better with parseTaskArgs().
 	if len(flags.Args()) == 1 {
-		cmd := flags.Args()[0]
-		args = append([]string{"--cmd", cmd}, args...)
+		shCmd := flags.Args()[0]
+		args = append([]string{"--sh", shCmd}, args...)
 	}
 	parseTaskArgs(vals, args)
 
@@ -187,10 +189,13 @@ func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
 	var exec *executor
 	flags.ParseAll(args, func(f *pflag.Flag, value string) error {
 		switch f.Name {
-		case "cmd":
+		case "sh", "exec":
 			if exec != nil {
 				// Append the current executor and start a new one.
 				vals.execs = append(vals.execs, *exec)
+			}
+			if f.Name == "sh" {
+				value = fmt.Sprintf("sh -c \"%s\"", value)
 			}
 			exec = &executor{
 				cmd: value,

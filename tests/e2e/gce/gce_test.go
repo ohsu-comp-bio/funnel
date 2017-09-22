@@ -108,12 +108,12 @@ func TestMultipleTasks(t *testing.T) {
 	fun := NewFunnel()
 
 	id := fun.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
   `)
 	task1 := fun.Wait(id)
 
 	id2 := fun.Run(`
-    --cmd 'echo hello world'
+    --sh 'echo hello world'
   `)
 	task2 := fun.Wait(id2)
 
@@ -140,7 +140,7 @@ func TestWrapper(t *testing.T) {
 
 	// Run a task
 	id := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
   `)
 	fun.WaitForRunning(id)
 	defer fun.Cancel(id)
@@ -204,7 +204,7 @@ func TestSchedToExisting(t *testing.T) {
 
 	// Run a task
 	id := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
   `)
 	fun.WaitForRunning(id)
 	defer fun.Cancel(id)
@@ -233,7 +233,7 @@ func TestSchedStartNode(t *testing.T) {
 	fun.AddNode("existing", 1, 100.0, 1000.0)
 
 	id := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 3
   `)
 
@@ -261,7 +261,7 @@ func TestPreferExistingNode(t *testing.T) {
 	fun.AddNode("existing", 10, 100.0, 1000.0)
 
 	id := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
   `)
 
 	fun.WaitForRunning(id)
@@ -288,19 +288,19 @@ func TestSchedStartMultipleNode(t *testing.T) {
 	// NOTE: the machine type hard-coded in scheduler/gce/mocks/Wrapper_helpers.go
 	//       has 3 CPUs.
 	id1 := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 2
   `)
 	id2 := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 2
   `)
 	id3 := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 2
   `)
 	id4 := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 2
   `)
 
@@ -323,7 +323,7 @@ func TestUpdateAvailableResources(t *testing.T) {
 	fun.AddNode("existing", 10, 100.0, 1000.0)
 
 	id := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 2
   `)
 
@@ -348,15 +348,15 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	fun.AddNode("existing-2", 8, 100.0, 1000.0)
 
 	id1 := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 4
   `)
 	id2 := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 4
   `)
 	id3 := fun.Run(`
-    --cmd 'sleep 100'
+    --sh 'sleep 100'
     --cpu 4
   `)
 

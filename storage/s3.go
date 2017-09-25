@@ -57,7 +57,7 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 
 	var err error
 
-	region, err := s3manager.GetBucketRegion(context.Background(), s3b.sess, bucket, "us-east-1")
+	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, bucket, "us-east-1")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
 			return fmt.Errorf("unable to find bucket %s's region not found", bucket)
@@ -79,21 +79,43 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 		}
 		defer hostFile.Close()
 
-		_, err = manager.Download(hostFile, &s3.GetObjectInput{
+		_, err = manager.DownloadWithContext(ctx, hostFile, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		})
 
 	case Directory:
-		d := directoryDownloader{
-			bucket:     bucket,
-			dirName:    key + "/",
-			hostPath:   hostPath,
-			Downloader: manager,
-		}
-		err = client.ListObjectsPages(
-			&s3.ListObjectsInput{Bucket: &bucket, Prefix: &key},
-			d.eachPage,
+		err = client.ListObjectsV2PagesWithContext(
+			ctx,
+			&s3.ListObjectsV2Input{Bucket: &bucket, Prefix: &key},
+			func(page *s3.ListObjectsV2Output, more bool) bool {
+				for _, obj := range page.Contents {
+					if *obj.Key != key+"/" {
+						// Create the directories in the path
+						file := filepath.Join(hostPath, strings.TrimPrefix(*obj.Key, key+"/"))
+						if err := os.MkdirAll(filepath.Dir(file), 0775); err != nil {
+							panic(err)
+						}
+
+						// Setup the local file
+						fd, err := os.Create(file)
+						if err != nil {
+							panic(err)
+						}
+						defer fd.Close()
+
+						// Download the file using the AWS SDK
+						_, err = manager.DownloadWithContext(ctx, fd, &s3.GetObjectInput{
+							Bucket: aws.String(bucket),
+							Key:    obj.Key,
+						})
+						if err != nil {
+							panic(err)
+						}
+					}
+				}
+				return true
+			},
 		)
 
 	default:
@@ -103,6 +125,7 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 	if err != nil {
 		return err
 	}
+
 	log.Info("Finished download", "url", url, "hostPath", hostPath)
 	return nil
 }
@@ -116,7 +139,7 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 	bucket := split[0]
 	key := split[1]
 
-	region, err := s3manager.GetBucketRegion(context.Background(), s3b.sess, bucket, "us-east-1")
+	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, bucket, "us-east-1")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
 			return nil, fmt.Errorf("unable to find bucket %s's region not found", bucket)
@@ -137,7 +160,7 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 			return nil, fmt.Errorf("failed to open file %q, %v", hostPath, err)
 		}
 		defer f.Close()
-		_, err = manager.Upload(&s3manager.UploadInput{
+		_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 			Body:   f,
@@ -164,7 +187,7 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 				return nil, fmt.Errorf("failed to open file %q, %v", f.abs, err)
 			}
 			defer fh.Close()
-			_, err = manager.Upload(&s3manager.UploadInput{
+			_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
 				Bucket: aws.String(bucket),
 				Key:    aws.String(key + "/" + f.rel),
 				Body:   fh,
@@ -191,45 +214,4 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 // For S3, the url must start with "s3://".
 func (s3b *S3Backend) Supports(url string, hostPath string, class tes.FileType) bool {
 	return strings.HasPrefix(url, S3Protocol)
-}
-
-type directoryDownloader struct {
-	*s3manager.Downloader
-	bucket   string
-	dirName  string
-	hostPath string
-}
-
-func (d *directoryDownloader) eachPage(page *s3.ListObjectsOutput, more bool) bool {
-	for _, obj := range page.Contents {
-		if *obj.Key != d.dirName {
-			err := d.downloadToFile(*obj.Key)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-	return true
-}
-
-func (d *directoryDownloader) downloadToFile(key string) error {
-	// Create the directories in the path
-	file := filepath.Join(d.hostPath, strings.TrimPrefix(key, d.dirName))
-	if err := os.MkdirAll(filepath.Dir(file), 0775); err != nil {
-		return err
-	}
-
-	// Setup the local file
-	fd, err := os.Create(file)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	// Download the file using the AWS SDK
-	_, err = d.Download(fd, &s3.GetObjectInput{
-		Bucket: &d.bucket,
-		Key:    &key,
-	})
-	return err
 }

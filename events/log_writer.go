@@ -54,7 +54,6 @@ func (el *Logger) Write(ev *Event) error {
 		for k, v := range ev.GetSystemLog().Fields {
 			args = append(args, k, v)
 		}
-		log.Debug("DEBUG", "args", args, "", ts)
 		switch ev.GetSystemLog().Level {
 		case "error":
 			log.Error(ev.GetSystemLog().Msg, args...)

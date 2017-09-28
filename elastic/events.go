@@ -1,16 +1,27 @@
-package server
+package main
 
-import elastic "gopkg.in/olivere/elastic.v5"
 import (
+  "bytes"
   "context"
-	proto "github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
+  elastic "gopkg.in/olivere/elastic.v5"
+  "github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+  "reflect"
 )
 
 type Config struct {
+  Index string
+  URL string
   MaxLogSize int
+}
+
+func DefaultConfig() Config {
+  return Config{
+    Index: "funnel",
+    URL: "http://127.0.0.1:9200",
+    MaxLogSize: 10000,
+  }
 }
 
 type Elastic struct {
@@ -18,107 +29,112 @@ type Elastic struct {
   conf Config
 }
 
-func NewElastic(url string) (*Elastic, error) {
-	client, err := elastic.NewClient(
-		elastic.SetURL(url),
+func NewElastic(conf Config) (*Elastic, error) {
+	client, err := elastic.NewSimpleClient()
+  /*
+		elastic.SetURL(conf.URL),
 	)
+  */
   if err != nil {
     return nil, err
   }
-  conf := Config{MaxLogSize: 1000}
   return &Elastic{client, conf}, nil
 }
 
 func (es *Elastic) Init(ctx context.Context) error {
-	if exists, err := client.IndexExists("funnel").Do(ctx); err != nil {
+	if exists, err := es.client.IndexExists(es.conf.Index).Do(ctx); err != nil {
     return err
 	} else if !exists {
-		if _, err := client.CreateIndex("funnel").Do(ctx); err != nil {
+		if _, err := es.client.CreateIndex(es.conf.Index).Do(ctx); err != nil {
       return err
 		}
 	}
   return nil
 }
 
-func (es *Elastic) GetTask(ctx context.Context, id string) error {
-  get1, err := es.client.Get().
-    Index("funnel").
+func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
+  _, err := es.client.Update().
+    Index(es.conf.Index).
     Type("task").
-    Id("1").
+    Id(task.Id).
+    Doc(task).
+    DocAsUpsert(true).
+    Do(ctx)
+  return err
+}
+
+func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
+  res, err := es.client.Search().
+    Index(es.conf.Index).
+    Type("task").
     Do(ctx)
 
+  if err != nil {
+    return nil, err
+  }
+
+  var tasks []*tes.Task
+  var task tes.Task
+  for _, item := range res.Each(reflect.TypeOf(task)) {
+    t := item.(tes.Task)
+    tasks = append(tasks, &t)
+  }
+
+  return tasks, nil
+}
+
+func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
+  res, err := es.client.Get().
+    Index(es.conf.Index).
+    Type("task").
+    Id(id).
+    Do(ctx)
+
+  if err != nil {
+    return nil, err
+  }
+
+  //fmt.Printf("Got document %s in version %d from index %s, type %s\n", res.Id, res.Version, res.Index, res.Type, res.Source)
+
+  task := &tes.Task{}
+  err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), task)
+  if err != nil {
+    return nil, err
+  }
+  return task, nil
+}
+
+func (es *Elastic) Write(ev *events.Event) error {
+  ctx := context.Background()
+
+  task, err := es.GetTask(ctx, ev.Id)
   if err != nil {
     return err
   }
 
-if get1.Found {
-    fmt.Printf("Got document %s in version %d from index %s, type %s\n", get1.Id, get1.Version, get1.Index, get1.Type)
-}
-}
+  err := events.TaskBuilder{task}.Write(ev)
+  if err != nil {
+    return err
+  }
 
-func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
-}
-
-// CreateEvent creates an event for the server to handle.
-func (es *Elastic) CreateEvent(ctx context.Context, ev *events.Event) (*events.CreateEventResponse, error) {
-	var err error
-
-	tl := &tes.TaskLog{}
-	el := &tes.ExecutorLog{}
-
-	switch req.Type {
-	case events.Type_TASK_STATE:
-    t.State = ev.GetState()
-
-	case events.Type_TASK_START_TIME:
-		tl.StartTime = ptypes.TimestampString(req.GetStartTime())
-
-	case events.Type_TASK_END_TIME:
-		tl.EndTime = ptypes.TimestampString(req.GetEndTime())
-
-	case events.Type_TASK_OUTPUTS:
-		tl.Outputs = req.GetOutputs().Value
-
-	case events.Type_TASK_METADATA:
-		tl.Metadata = req.GetMetadata().Value
-
-	case events.Type_EXECUTOR_START_TIME:
-		el.StartTime = ptypes.TimestampString(req.GetStartTime())
-
-	case events.Type_EXECUTOR_END_TIME:
-		el.EndTime = ptypes.TimestampString(req.GetEndTime())
-
-	case events.Type_EXECUTOR_EXIT_CODE:
-		el.ExitCode = req.GetExitCode()
-
-	case events.Type_EXECUTOR_HOST_IP:
-		el.HostIp = req.GetHostIp()
-
-	case events.Type_EXECUTOR_PORTS:
-		el.Ports = req.GetPorts().Value
-
-	case events.Type_EXECUTOR_STDOUT:
-		el.Stdout = req.GetStdout()
-
-	case events.Type_EXECUTOR_STDERR:
-		el.Stderr = req.GetStderr()
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &events.CreateEventResponse{}, nil
+  _, err = es.client.Update().
+    Index(es.conf.Index).
+    Type("task").
+    Id(task.Id).
+    Doc(task).
+    Do(ctx)
+  return err
 }
 
 func tail(s string, sizeBytes int) string {
   b := []byte(s)
-  if len(b) > size {
-    return b[:size]
+  if len(b) > sizeBytes {
+    return string(b[:sizeBytes])
   }
   return string(b)
 }
 
+/*
 func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 	// Check if there is an existing task log
 	o := tx.Bucket(ExecutorLogs).Get([]byte(id))
@@ -135,3 +151,4 @@ func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 		el = existing
 	}
 }
+*/

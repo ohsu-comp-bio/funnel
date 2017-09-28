@@ -46,18 +46,20 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		return Run(conf)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		return Run(ctx, conf)
 	},
 }
 
 // Run runs a default Funnel server.
 // This opens a database, and starts an API server, scheduler and task logger.
-// This blocks indefinitely.
-func Run(conf config.Config) error {
+func Run(ctx context.Context, conf config.Config) error {
 	logger.Configure(conf.Server.Logger)
 
 	var backend compute.Backend
 	var db server.Database
+	var sched *scheduler.Scheduler
 	var err error
 
 	switch strings.ToLower(conf.Server.Database) {
@@ -71,15 +73,6 @@ func Run(conf config.Config) error {
 	}
 
 	srv := server.DefaultServer(db, conf.Server)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Start server
-	var srverr error
-	go func() {
-		srverr = srv.Serve(ctx)
-		cancel()
-	}()
 
 	switch strings.ToLower(conf.Backend) {
 	case "gce", "manual", "openstack":
@@ -103,11 +96,7 @@ func Run(conf config.Config) error {
 			return fmt.Errorf("error occurred while setting up backend: %v", err)
 		}
 
-		sched := scheduler.NewScheduler(sdb, sbackend, conf.Scheduler)
-		err := sched.Start(ctx)
-		if err != nil {
-			return fmt.Errorf("error occurred while running the scheduler: %v", err)
-		}
+		sched = scheduler.NewScheduler(sdb, sbackend, conf.Scheduler)
 	case "gridengine":
 		backend = gridengine.NewBackend(conf)
 	case "htcondor":
@@ -125,9 +114,21 @@ func Run(conf config.Config) error {
 	db.WithComputeBackend(backend)
 
 	// Block
-	<-ctx.Done()
-	if srverr != nil {
-		log.Error("Server error", srverr)
+
+	// Start server
+	errch := make(chan error)
+	go func() {
+		errch <- srv.Serve(ctx)
+	}()
+
+	// Start Scheduler
+	if sched != nil {
+		go func() {
+			errch <- sched.Run(ctx)
+		}()
 	}
-	return srverr
+
+	// Block until done.
+	// Server and scheduler must be stopped via the context.
+	return <-errch
 }

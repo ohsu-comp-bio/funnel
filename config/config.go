@@ -45,6 +45,7 @@ type Config struct {
 			}
 			CacheTTL time.Duration
 		}
+		Batch AWSBatch
 	}
 	Scheduler Scheduler
 	Worker    Worker
@@ -61,6 +62,20 @@ func EnsureServerProperties(conf Config) Config {
 	conf.Worker.TaskReaders.RPC.ServerPassword = conf.Server.Password
 	conf.Scheduler.Node.ServerPassword = conf.Server.Password
 	return conf
+}
+
+// AWSBatch describes the configuration for the AWS Batch compute backend.
+//
+// The job definition value can be either a name:revision
+// or the Amazon Resource Name (ARN).
+//
+// The job queue values can be either a name or the Amazon Resource Name (ARN).
+type AWSBatch struct {
+	JobDef   string
+	JobQueue string
+	Key      string
+	Secret   string
+	Region   string
 }
 
 // DefaultConfig returns configuration with simple defaults.

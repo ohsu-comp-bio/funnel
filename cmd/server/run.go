@@ -5,6 +5,7 @@ import (
 	"fmt"
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute"
+	"github.com/ohsu-comp-bio/funnel/compute/batch"
 	"github.com/ohsu-comp-bio/funnel/compute/gce"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
@@ -99,6 +100,11 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			DB:      sdb,
 			Conf:    conf.Scheduler,
 			Backend: sbackend,
+
+	case "batch", "aws-batch":
+		backend, err = batch.NewBackend(conf.Backends.Batch)
+		if err != nil {
+			return err
 		}
 	case "gridengine":
 		backend = gridengine.NewBackend(conf)

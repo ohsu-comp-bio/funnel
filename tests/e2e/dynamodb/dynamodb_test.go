@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	c.Server.Database = "dynamodb"
 	c.Server.Databases.DynamoDB.Region = "us-west-2"
 	c.Server.Databases.DynamoDB.TableBasename = tableBasename
-	c.Worker.EventWriter = "dynamodb"
+	c.Worker.ActiveEventWriters = []string{"dynamodb", "log"}
 	c.Worker.EventWriters.DynamoDB.Region = "us-west-2"
 	c.Worker.EventWriters.DynamoDB.TableBasename = tableBasename
 
@@ -512,7 +512,7 @@ func TestSmallPagination(t *testing.T) {
 	c.Server.Database = "dynamodb"
 	c.Server.Databases.DynamoDB.Region = "us-west-2"
 	c.Server.Databases.DynamoDB.TableBasename = tableBasename
-	c.Worker.EventWriter = "dynamodb"
+	c.Worker.ActiveEventWriters = []string{"dynamodb", "log"}
 	c.Worker.EventWriters.DynamoDB.Region = "us-west-2"
 	c.Worker.EventWriters.DynamoDB.TableBasename = tableBasename
 

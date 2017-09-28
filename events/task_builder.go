@@ -5,11 +5,11 @@ import (
 )
 
 type TaskBuilder struct {
-  *tes.Task
+	*tes.Task
 }
 
 func (tb TaskBuilder) Write(ev *Event) error {
-  t := tb.Task
+	t := tb.Task
 	t.Id = ev.Id
 	attempt := int(ev.Attempt)
 	index := int(ev.Index)

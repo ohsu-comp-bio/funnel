@@ -1,137 +1,139 @@
-package main
+package elastic
 
 import (
-  "bytes"
-  "context"
-  elastic "gopkg.in/olivere/elastic.v5"
-  "github.com/golang/protobuf/jsonpb"
+	"bytes"
+	"context"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-  "reflect"
+	elastic "gopkg.in/olivere/elastic.v5"
+	"reflect"
 )
 
 type Config struct {
-  Index string
-  URL string
-  MaxLogSize int
+	Index string
+	URL   string
 }
 
 func DefaultConfig() Config {
-  return Config{
-    Index: "funnel",
-    URL: "http://127.0.0.1:9200",
-    MaxLogSize: 10000,
-  }
+	return Config{
+		Index: "funnel",
+		URL:   "http://127.0.0.1:9200",
+	}
 }
 
 type Elastic struct {
-  client *elastic.Client
-  conf Config
+	client *elastic.Client
+	conf   Config
 }
 
 func NewElastic(conf Config) (*Elastic, error) {
 	client, err := elastic.NewSimpleClient()
-  /*
-		elastic.SetURL(conf.URL),
-	)
-  */
-  if err != nil {
-    return nil, err
-  }
-  return &Elastic{client, conf}, nil
+	/*
+			elastic.SetURL(conf.URL),
+		)
+	*/
+	if err != nil {
+		return nil, err
+	}
+	return &Elastic{client, conf}, nil
 }
 
 func (es *Elastic) Init(ctx context.Context) error {
 	if exists, err := es.client.IndexExists(es.conf.Index).Do(ctx); err != nil {
-    return err
+		return err
 	} else if !exists {
 		if _, err := es.client.CreateIndex(es.conf.Index).Do(ctx); err != nil {
-      return err
+			return err
 		}
 	}
-  return nil
+	return nil
 }
 
 func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
-  _, err := es.client.Update().
-    Index(es.conf.Index).
-    Type("task").
-    Id(task.Id).
-    Doc(task).
-    DocAsUpsert(true).
-    Do(ctx)
-  return err
+	_, err := es.client.Update().
+		Index(es.conf.Index).
+		Type("task").
+		Id(task.Id).
+		Doc(task).
+		DocAsUpsert(true).
+		Do(ctx)
+	return err
 }
 
 func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
-  res, err := es.client.Search().
-    Index(es.conf.Index).
-    Type("task").
-    Do(ctx)
+	res, err := es.client.Search().
+		Index(es.conf.Index).
+		Type("task").
+		Do(ctx)
 
-  if err != nil {
-    return nil, err
-  }
+	if err != nil {
+		return nil, err
+	}
 
-  var tasks []*tes.Task
-  var task tes.Task
-  for _, item := range res.Each(reflect.TypeOf(task)) {
-    t := item.(tes.Task)
-    tasks = append(tasks, &t)
-  }
+	var tasks []*tes.Task
+	var task tes.Task
+	for _, item := range res.Each(reflect.TypeOf(task)) {
+		t := item.(tes.Task)
+		tasks = append(tasks, &t)
+	}
 
-  return tasks, nil
+	return tasks, nil
 }
 
 func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
-  res, err := es.client.Get().
-    Index(es.conf.Index).
-    Type("task").
-    Id(id).
-    Do(ctx)
+	res, err := es.client.Get().
+		Index(es.conf.Index).
+		Type("task").
+		Id(id).
+		Do(ctx)
 
-  if err != nil {
-    return nil, err
-  }
+	if err != nil {
+		return nil, err
+	}
 
-  //fmt.Printf("Got document %s in version %d from index %s, type %s\n", res.Id, res.Version, res.Index, res.Type, res.Source)
+	//fmt.Printf("Got document %s in version %d from index %s, type %s\n", res.Id, res.Version, res.Index, res.Type, res.Source)
 
-  task := &tes.Task{}
-  err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), task)
-  if err != nil {
-    return nil, err
-  }
-  return task, nil
+	task := &tes.Task{}
+	err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), task)
+	if err != nil {
+		return nil, err
+	}
+	return task, nil
 }
 
 func (es *Elastic) Write(ev *events.Event) error {
-  ctx := context.Background()
+	ctx := context.Background()
 
-  task, err := es.GetTask(ctx, ev.Id)
-  if err != nil {
-    return err
-  }
+	if ev.Type == events.Type_TASK_CREATED {
+		return es.CreateTask(ctx, ev.GetTask())
+	}
 
-  err := events.TaskBuilder{task}.Write(ev)
-  if err != nil {
-    return err
-  }
+	task, err := es.GetTask(ctx, ev.Id)
+	if err != nil {
+		return err
+	}
 
-  _, err = es.client.Update().
-    Index(es.conf.Index).
-    Type("task").
-    Id(task.Id).
-    Doc(task).
-    Do(ctx)
-  return err
+	err = events.TaskBuilder{task}.Write(ev)
+	if err != nil {
+		return err
+	}
+
+	_, err = es.client.Update().
+		Index(es.conf.Index).
+		Type("task").
+		Id(task.Id).
+		Doc(task).
+		Do(ctx)
+	return err
 }
 
 func tail(s string, sizeBytes int) string {
-  b := []byte(s)
-  if len(b) > sizeBytes {
-    return string(b[:sizeBytes])
-  }
-  return string(b)
+	b := []byte(s)
+	if len(b) > sizeBytes {
+		return string(b[:sizeBytes])
+	}
+	return string(b)
 }
 
 /*

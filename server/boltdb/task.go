@@ -6,6 +6,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
@@ -352,4 +353,24 @@ func (taskBolt *BoltDB) CancelTask(ctx context.Context, req *tes.CancelTaskReque
 // GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
 func (taskBolt *BoltDB) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
 	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
+}
+
+func (taskBolt *TaskBolt) ReadEvents(w events.Writer) error {
+	return taskBolt.db.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket(TaskBucket).Cursor()
+
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+			task, err := getTaskView(tx, string(k), tes.TaskView_FULL)
+			if err != nil {
+				return err
+			}
+
+			ev := events.NewTaskCreated(task)
+			err = w.Write(ev)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

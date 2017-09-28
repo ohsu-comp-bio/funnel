@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+func NewTaskCreated(task *tes.Task) *Event {
+	return &Event{
+		Id:        task.Id,
+		Timestamp: ptypes.TimestampNow(),
+		Type:      Type_TASK_CREATED,
+		Data: &Event_Task{
+			Task: task,
+		},
+	}
+}
+
 // NewState creates a state change event.
 func NewState(taskID string, attempt uint32, s tes.State) *Event {
 	return &Event{

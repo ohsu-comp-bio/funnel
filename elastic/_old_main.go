@@ -14,8 +14,6 @@ import (
 
 var Done = fmt.Errorf("iterator done")
 
-var address = "10.96.11.130"
-
 func main() {
 	ctx := context.Background()
 
@@ -34,20 +32,6 @@ func main() {
 
 		task := tes.Task{
 			Id: ev.TaskID,
-		}
-
-		up := client.Update().
-			Index("funnel").
-			Type("task").
-			Id(ev.TaskID).
-			Doc(task).
-			Refresh("true").
-			DocAsUpsert(true)
-
-		if _, err := up.Do(ctx); err != nil {
-			fmt.Println("Err", task)
-		} else {
-			fmt.Println("Write", task)
 		}
 	}
 }

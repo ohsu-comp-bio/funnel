@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/ohsu-comp-bio/funnel/cmd/boltdb"
+	"github.com/ohsu-comp-bio/funnel/cmd/elastic"
 	"github.com/ohsu-comp-bio/funnel/cmd/examples"
 	"github.com/ohsu-comp-bio/funnel/cmd/gce"
 	"github.com/ohsu-comp-bio/funnel/cmd/node"
@@ -21,6 +23,8 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
+	RootCmd.AddCommand(boltdb.Cmd)
+	RootCmd.AddCommand(elastic.Cmd)
 	RootCmd.AddCommand(examples.Cmd)
 	RootCmd.AddCommand(gce.Cmd)
 	RootCmd.AddCommand(genBashCompletionCmd)

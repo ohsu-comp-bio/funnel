@@ -110,9 +110,9 @@ func NewFunnel(conf config.Config) *Funnel {
 
 	switch conf.Server.Database {
 	case "boltdb":
-		db, err = boltdb.New(conf)
+		db, err = boltdb.NewBoltDB(conf)
 	case "dynamodb":
-		db, err = dynamodb.New(conf.Server.Databases.DynamoDB)
+		db, err = dynamodb.NewDynamoDB(conf.Server.Databases.DynamoDB)
 	}
 	if err != nil {
 		panic(err)

@@ -54,9 +54,9 @@ type BoltDB struct {
 	backend compute.Backend
 }
 
-// New returns a new instance of BoltDB, accessing the database at
+// NewBoltDB returns a new instance of BoltDB, accessing the database at
 // the given path, and including the given ServerConfig.
-func New(conf config.Config) (*BoltDB, error) {
+func NewBoltDB(conf config.Config) (*BoltDB, error) {
 	util.EnsurePath(conf.Server.Databases.BoltDB.Path)
 	db, err := bolt.Open(conf.Server.Databases.BoltDB.Path, 0600, &bolt.Options{
 		Timeout: time.Second * 5,

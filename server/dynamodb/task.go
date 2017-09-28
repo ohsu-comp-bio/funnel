@@ -28,9 +28,9 @@ type DynamoDB struct {
 	stderrTable    string
 }
 
-// New returns a new instance of DynamoDB, accessing the database at
+// NewDynamoDB returns a new instance of DynamoDB, accessing the database at
 // the given url, and including the given ServerConfig.
-func New(conf config.DynamoDB) (*DynamoDB, error) {
+func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
 	sess, err := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating dynamodb client: %v", err)

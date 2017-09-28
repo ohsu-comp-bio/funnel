@@ -52,6 +52,9 @@ type Config struct {
 // InheritServerProperties sets the ServerAddress and ServerPassword fields
 // in the Worker and Scheduler.Node configs based on the Server config
 func InheritServerProperties(c Config) Config {
+	c.Worker.TaskReaders.RPC.ServerAddress = c.Server.RPCAddress()
+	c.Worker.TaskReaders.RPC.ServerPassword = c.Server.Password
+
 	c.Worker.EventWriters.RPC.ServerAddress = c.Server.RPCAddress()
 	c.Worker.EventWriters.RPC.ServerPassword = c.Server.Password
 
@@ -112,7 +115,10 @@ func DefaultConfig() Config {
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
 	c.Server.Databases.DynamoDB.TableBasename = "funnel"
 
-	c.Worker.EventWriter = "rpc"
+	c.Worker.TaskReader = "rpc"
+	c.Worker.TaskReaders.DynamoDB.TableBasename = "funnel"
+
+	c.Worker.ActiveEventWriters = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
 	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
 
@@ -219,11 +225,21 @@ type Worker struct {
 	// How often the worker sends task log updates
 	UpdateRate time.Duration
 	// Max bytes to store in-memory between updates
-	BufferSize   int64
-	Storage      StorageConfig
-	Logger       logger.Config
-	EventWriter  string
-	EventWriters struct {
+	BufferSize  int64
+	Storage     StorageConfig
+	Logger      logger.Config
+	TaskReader  string
+	TaskReaders struct {
+		RPC struct {
+			// RPC address of the Funnel server
+			ServerAddress string
+			// Password for basic auth. with the server APIs.
+			ServerPassword string
+		}
+		DynamoDB DynamoDB
+	}
+	ActiveEventWriters []string
+	EventWriters       struct {
 		RPC struct {
 			// RPC address of the Funnel server
 			ServerAddress string

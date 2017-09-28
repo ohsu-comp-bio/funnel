@@ -14,7 +14,7 @@ func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 	conf = testutils.TempDirConfig(conf)
 
 	// Create database
-	db, dberr := New(conf)
+	db, dberr := NewBoltDB(conf)
 	if dberr != nil {
 		t.Fatal("Couldn't open database")
 	}

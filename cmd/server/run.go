@@ -62,9 +62,9 @@ func Run(conf config.Config) error {
 
 	switch strings.ToLower(conf.Server.Database) {
 	case "boltdb":
-		db, err = boltdb.New(conf)
+		db, err = boltdb.NewBoltDB(conf)
 	case "dynamodb":
-		db, err = dynamodb.New(conf.Server.Databases.DynamoDB)
+		db, err = dynamodb.NewDynamoDB(conf.Server.Databases.DynamoDB)
 	}
 	if err != nil {
 		return fmt.Errorf("error occurred while connecting to or creating the database: %v", err)

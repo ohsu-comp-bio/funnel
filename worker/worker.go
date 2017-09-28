@@ -15,8 +15,7 @@ import (
 	"time"
 )
 
-// NewDefaultWorker returns the default task runner used by Funnel,
-// which uses gRPC to read/write task details.
+// NewDefaultWorker returns a new configured DefaultWorker instance.
 func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
 	var err error
 	var reader TaskReader
@@ -30,31 +29,40 @@ func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
 		return nil, fmt.Errorf("failed to create worker baseDir: %v", err)
 	}
 
-	reader, err = newRPCTaskReader(conf, taskID)
+	switch conf.TaskReader {
+	case "rpc":
+		reader, err = newRPCTaskReader(conf, taskID)
+	case "dynamodb":
+		reader, err = newDynamoDBTaskReader(conf.TaskReaders.DynamoDB, taskID)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
 	}
 
-	switch conf.EventWriter {
-	case "dynamodb":
-		writer, err = events.NewDynamoDBEventWriter(conf.EventWriters.DynamoDB)
-	case "rpc":
-		writer, err = events.NewRPCWriter(conf)
-	default:
-		err = fmt.Errorf("unknown EventWriter")
+	writers := []events.Writer{}
+	for _, w := range conf.ActiveEventWriters {
+		switch w {
+		case "dynamodb":
+			writer, err = events.NewDynamoDBEventWriter(conf.EventWriters.DynamoDB)
+		case "log":
+			writer = events.NewLogger("worker")
+		case "rpc":
+			writer, err = events.NewRPCWriter(conf)
+		default:
+			err = fmt.Errorf("unknown EventWriter")
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
+		}
+		writers = append(writers, writer)
 	}
-	if err != nil {
-		return nil, fmt.Errorf("error instantiating EventWriter: %v", err)
-	}
-
-	logWriter := events.NewLogger("worker")
 
 	return &DefaultWorker{
 		Conf:       conf,
 		Mapper:     NewFileMapper(baseDir),
 		Store:      storage.Storage{},
 		TaskReader: reader,
-		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, events.MultiWriter(writer, logWriter)),
+		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, events.MultiWriter(writers...)),
 	}, nil
 }
 

@@ -1,7 +1,4 @@
 Server:
-  # Path to the database file.
-  DBPath: ./funnel-work-dir/funnel.db
-
   # Hostname of the Funnel server. Mainly, this is used by auto-scalers
   # to configure workers.
   HostName: localhost
@@ -23,6 +20,24 @@ Server:
 
   # Limit the size of task executor logs (stdout/err), in bytes.
   MaxExecutorLogSize: 10000 # 10 KB
+
+  # The name of the active server database backend
+  # Available backends: boltdb, dynamodb
+  Database: boltdb
+  Databases:
+    BoltDB:
+      # Path to the database file
+      Path: ./funnel-work-dir/funnel.db
+
+    # DynamoDB:
+    #   # Basename to use for dynamodb tables
+    #   TableBasename: "funnel"
+    #   # AWS Access key ID
+    #   Key: ""
+    #   # AWS Secret Access Key
+    #   Secret: ""
+    #   # AWS region
+    #   Region: ""
 
   Logger:
     # Logging levels: debug, info, error
@@ -189,12 +204,6 @@ Backends:
     CacheTTL: 60000000000 # 1 minute
 
 Worker:
-  # RPC address of the Funnel server
-  ServerAddress: localhost:9090
-
-  # Password for basic auth. with the server APIs.
-  # ServerPassword: abc123
-
   # Files created during processing will be written in this directory.
   WorkDir: ./funnel-work-dir
 
@@ -226,11 +235,58 @@ Worker:
   # How often to send task log updates to the Funnel server.
   # In nanoseconds.
   UpdateRate: 5000000000 # 5 seconds
-  # RPC timeout for update/sync call.
-  # In nanoseconds.
-  UpdateTimeout: 1000000000 # 1 second
+
   # Maximum task log (stdout/err) size, in bytes to buffer between updates.
   BufferSize: 10000 # 10 KB
+
+  # The name of the active task reader backend.
+  # Available backends: rpc, dynamodb
+  TaskReader: rpc
+  TaskReaders:
+    # Read tasks from funnel over gRPC
+    RPC:
+      # RPC address of the Funnel server
+      ServerAddress: localhost:8000
+      # Password for basic auth. with the server APIs.
+      # ServerPassword: abc123
+
+    # Read tasks directly from DynamoDB.  
+    # DynamoDB:
+    #   # Basename to use for dynamodb tables
+    #   TableBasename: "funnel"
+    #   # AWS Access key ID
+    #   Key: ""
+    #   # AWS Secret Access Key
+    #   Secret: ""
+    #   # AWS region
+    #   Region: ""
+
+  # The name of the active event writer backend.
+  # Available backends: rpc, log, dynamodb
+  ActiveEventWriters: 
+    - rpc
+    - log
+  EventWriters:
+    # Write events over gRPC
+    RPC:
+      # RPC address of the Funnel server
+      ServerAddress: localhost:8000
+      # Password for basic auth. with the server APIs.
+      # ServerPassword: abc123
+      # RPC timeout for update/sync call.
+      # In nanoseconds.
+      UpdateTimeout: 1000000000 # 1 second
+
+    # Translate events and store their content in DynamoDB.
+    # DynamoDB:
+    #   # Basename to use for dynamodb tables
+    #   TableBasename: "funnel"
+    #   # AWS Access key ID
+    #   Key: ""
+    #   # AWS Secret Access Key
+    #   Secret: ""
+    #   # AWS region
+    #   Region: ""
 
   Logger:
     # Logging levels: debug, info, error

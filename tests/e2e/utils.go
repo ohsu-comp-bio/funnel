@@ -177,7 +177,7 @@ func (f *Funnel) Cleanup() {
 func (f *Funnel) StartServer() {
 	go f.Server.Serve(context.Background())
 	if f.Scheduler != nil {
-		go f.Scheduler.Start(context.Background())
+		go f.Scheduler.Run(context.Background())
 	}
 
 	err := f.PollForServerStart()

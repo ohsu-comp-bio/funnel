@@ -31,12 +31,12 @@ type Scheduler struct {
 	backend Backend
 }
 
-// Start starts the scheduling loop. This blocks.
+// Run starts the scheduling loop. This blocks.
 //
 // The scheduler will take a chunk of tasks from the queue,
 // request the the configured backend schedule them, and
 // act on offers made by the backend.
-func (s *Scheduler) Start(ctx context.Context) error {
+func (s *Scheduler) Run(ctx context.Context) error {
 	ticker := time.NewTicker(s.conf.ScheduleRate)
 	for {
 		select {

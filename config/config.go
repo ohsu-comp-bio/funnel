@@ -65,13 +65,16 @@ func EnsureServerProperties(conf Config) Config {
 }
 
 // AWSBatch describes the configuration for the AWS Batch compute backend.
-//
-// The job definition value can be either a name:revision
-// or the Amazon Resource Name (ARN).
-//
-// The job queue values can be either a name or the Amazon Resource Name (ARN).
 type AWSBatch struct {
-	JobDef   string
+	// JobDefConfig represents configuration of the AWS Batch
+	// base Job Definition.
+	JobDef struct {
+		Name          string
+		Image         string
+		DefaultMemory int64
+		DefaultVcpus  int64
+	}
+	// JobQueue can be either a name or the Amazon Resource Name (ARN).
 	JobQueue string
 	Key      string
 	Secret   string
@@ -157,6 +160,11 @@ func DefaultConfig() Config {
 
 	c.Backends.GCE.CacheTTL = time.Minute
 	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
+
+	c.Backends.Batch.JobDef.Name = "funnel-job-def"
+	c.Backends.Batch.JobDef.Image = "docker.io/adamstruck/funnel:batch"
+	c.Backends.Batch.JobDef.DefaultMemory = 128
+	c.Backends.Batch.JobDef.DefaultVcpus = 1
 
 	return c
 }

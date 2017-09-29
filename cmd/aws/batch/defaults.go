@@ -8,7 +8,7 @@ import (
 var defaultsCmd = &cobra.Command{
 	Use:     "default",
 	Aliases: []string{"defaults"},
-	Short:   "Print the default compute environment, job queue, and job definitions",
+	Short:   "Print the default compute environment and job queue",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		cli, err := newBatchSvc(conf, true)
@@ -25,13 +25,6 @@ var defaultsCmd = &cobra.Command{
 
 		fmt.Println("JobQueue:")
 		_, err = cli.CreateJobQueue()
-		if err != nil {
-			return err
-		}
-		fmt.Println("")
-
-		fmt.Println("JobDef:")
-		_, err = cli.CreateJobDef()
 		if err != nil {
 			return err
 		}

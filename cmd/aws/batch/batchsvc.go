@@ -118,52 +118,6 @@ func (b *batchsvc) CreateJobQueue() (*batch.CreateJobQueueOutput, error) {
 	return batchCli.CreateJobQueue(input)
 }
 
-func (b *batchsvc) CreateJobDef() (*batch.RegisterJobDefinitionOutput, error) {
-	batchCli := batch.New(b.sess)
-	input := &batch.RegisterJobDefinitionInput{
-		ContainerProperties: &batch.ContainerProperties{
-			Image:      aws.String(b.conf.JobDef.Image),
-			Memory:     aws.Int64(b.conf.JobDef.Memory),
-			Vcpus:      aws.Int64(b.conf.JobDef.VCPUs),
-			Privileged: aws.Bool(true),
-			MountPoints: []*batch.MountPoint{
-				{
-					SourceVolume:  aws.String("docker_sock"),
-					ContainerPath: aws.String("/var/run/docker.sock"),
-				},
-			},
-			Volumes: []*batch.Volume{
-				{
-					Name: aws.String("docker_sock"),
-					Host: &batch.Host{
-						SourcePath: aws.String("/var/run/docker.sock"),
-					},
-				},
-			},
-			Command: []*string{
-				aws.String("worker"),
-				aws.String("run"),
-				aws.String("--task-id"),
-				// This is a template variable that will be replaced with the taskID.
-				aws.String("Ref::taskID"),
-			},
-		},
-		JobDefinitionName: aws.String(b.conf.JobDef.Name),
-		Type:              aws.String("container"),
-	}
-
-	if b.dryRun {
-		s, err := json.MarshalIndent(input, "", "  ")
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(string(s))
-		return nil, nil
-	}
-
-	return batchCli.RegisterJobDefinition(input)
-}
-
 func convertStringSlice(s []string) []*string {
 	var ret []*string
 	for _, t := range s {

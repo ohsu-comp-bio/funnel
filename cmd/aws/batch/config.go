@@ -7,7 +7,6 @@ type Config struct {
 	Key        string
 	Secret     string
 	ComputeEnv ComputeEnvConfig
-	JobDef     JobDefConfig
 	JobQueue   JobQueueConfig
 }
 
@@ -32,15 +31,6 @@ type JobQueueConfig struct {
 	ComputeEnvs []string
 }
 
-// JobDefConfig represents configuration of the AWS Batch
-// base Job Definition.
-type JobDefConfig struct {
-	Name   string
-	Image  string
-	Memory int64
-	VCPUs  int64
-}
-
 // DefaultConfig returns default configuration of AWS.
 func DefaultConfig() Config {
 	return Config{
@@ -60,12 +50,6 @@ func DefaultConfig() Config {
 			ComputeEnvs: []string{
 				"funnel-compute-environment",
 			},
-		},
-		JobDef: JobDefConfig{
-			Name:   "funnel-job-def",
-			Image:  "docker.io/adamstruck/funnel:batch",
-			Memory: 128,
-			VCPUs:  1,
 		},
 	}
 }

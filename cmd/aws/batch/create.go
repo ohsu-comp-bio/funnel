@@ -9,15 +9,13 @@ import (
 
 func init() {
 	c := createCmd.Flags()
-	c.StringVar(&conf.JobDef.Image, "container", conf.JobDef.Image,
-		"Funnel worker Docker container to run")
 	c.StringVar(&conf.Region, "region", conf.Region,
 		"Region in which to create the Batch resources")
 }
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a compute environment, job queue, and job definition in a specified region",
+	Short: "Create a compute environment and job queue in a specified region",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log := logger.New("batch create cmd")
 
@@ -68,29 +66,6 @@ var createCmd = &cobra.Command{
 			log.Error("JobQueue already exists",
 				"Name", *b.JobQueues[0].JobQueueName,
 				"Arn", *b.JobQueues[0].JobQueueArn,
-			)
-		}
-
-		c, err := batchCli.DescribeJobDefinitions(&batch.DescribeJobDefinitionsInput{
-			JobDefinitionName: aws.String(conf.JobDef.Name),
-			Status:            aws.String("ACTIVE"),
-		})
-		if err != nil {
-			return err
-		}
-		if len(c.JobDefinitions) == 0 {
-			r, err := cli.CreateJobDef()
-			if err != nil {
-				return err
-			}
-			log.Info("Registered JobDefinition",
-				"Name", *r.JobDefinitionName,
-				"Arn", *r.JobDefinitionArn,
-			)
-		} else {
-			log.Error("JobDefinition already exists",
-				"Name", *c.JobDefinitions[0].JobDefinitionName,
-				"Arn", *c.JobDefinitions[0].JobDefinitionArn,
 			)
 		}
 

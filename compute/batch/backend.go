@@ -21,9 +21,48 @@ func NewBackend(conf config.AWSBatch) (*Backend, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
 	}
+
+	batchCli := batch.New(sess)
+
+	response, err := batchCli.RegisterJobDefinition(&batch.RegisterJobDefinitionInput{
+		ContainerProperties: &batch.ContainerProperties{
+			Image:      aws.String(conf.JobDef.Image),
+			Memory:     aws.Int64(conf.JobDef.DefaultMemory),
+			Vcpus:      aws.Int64(conf.JobDef.DefaultVcpus),
+			Privileged: aws.Bool(true),
+			MountPoints: []*batch.MountPoint{
+				{
+					SourceVolume:  aws.String("docker_sock"),
+					ContainerPath: aws.String("/var/run/docker.sock"),
+				},
+			},
+			Volumes: []*batch.Volume{
+				{
+					Name: aws.String("docker_sock"),
+					Host: &batch.Host{
+						SourcePath: aws.String("/var/run/docker.sock"),
+					},
+				},
+			},
+			Command: []*string{
+				aws.String("worker"),
+				aws.String("run"),
+				aws.String("--task-id"),
+				// This is a template variable that will be replaced with the taskID.
+				aws.String("Ref::taskID"),
+			},
+		},
+		JobDefinitionName: aws.String(conf.JobDef.Name),
+		Type:              aws.String("container"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create base funnel job definition: %v", err)
+	}
+
 	return &Backend{
-		client: batch.New(sess),
+		client: batchCli,
 		conf:   conf,
+		jobDef: *response.JobDefinitionArn,
 	}, nil
 }
 
@@ -31,6 +70,7 @@ func NewBackend(conf config.AWSBatch) (*Backend, error) {
 type Backend struct {
 	client *batch.Batch
 	conf   config.AWSBatch
+	jobDef string
 }
 
 // Submit submits a task to the AWS batch service.
@@ -38,7 +78,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 	log.Debug("Submitting to batch", "taskID", task.Id)
 
 	req := &batch.SubmitJobInput{
-		JobDefinition: aws.String(b.conf.JobDef),
+		JobDefinition: aws.String(b.jobDef),
 		JobName:       aws.String(safeJobName(task.Name)),
 		JobQueue:      aws.String(b.conf.JobQueue),
 		Parameters: map[string]*string{

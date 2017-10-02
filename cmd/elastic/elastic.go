@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/elastic"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/spf13/cobra"
 	"os"
@@ -18,6 +19,8 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(importCmd)
+  Cmd.AddCommand(readQueueCmd)
+  Cmd.AddCommand(createCmd)
 }
 
 var importCmd = &cobra.Command{
@@ -59,6 +62,62 @@ var importCmd = &cobra.Command{
 	},
 }
 
+var readQueueCmd = &cobra.Command{
+	Use: "read-queue",
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+    ctx := context.Background()
+    c := elastic.DefaultConfig()
+    es, err := elastic.NewElastic(c)
+    if err != nil {
+      panic(err)
+    }
+
+    err = es.Init(ctx)
+
+    if err != nil {
+      panic(err)
+    }
+
+    tasks  := es.ReadQueue(5)
+    for _, task := range tasks {
+      fmt.Println("tasks", task)
+    }
+    return nil
+  },
+}
+
+var createCmd = &cobra.Command{
+	Use: "create-task",
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+    ctx := context.Background()
+    c := elastic.DefaultConfig()
+    es, err := elastic.NewElastic(c)
+    if err != nil {
+      panic(err)
+    }
+
+    err = es.Init(ctx)
+
+    if err != nil {
+      panic(err)
+    }
+
+    task := &tes.Task{
+      Id: util.GenTaskID(),
+      State: tes.State_QUEUED,
+      Executors: []*tes.Executor{
+        {
+          ImageName: "alpine",
+          Cmd: []string{"echo", "hello"},
+        },
+      },
+    }
+    return es.CreateTask(ctx, task)
+  },
+}
+
 func prototype() {
 
 	ctx := context.Background()
@@ -94,7 +153,6 @@ func prototype() {
 	  if err != nil {
 	    panic(err)
 	  }
-	*/
 
 	ev := events.NewState(id, 0, tes.State_QUEUED)
 	err = es.Write(ev)
@@ -107,6 +165,12 @@ func prototype() {
 		panic(err)
 	}
 
+	for _, task := range tasks {
+		fmt.Println("tasks", task)
+	}
+  */
+
+  tasks  := es.ReadQueue(5)
 	for _, task := range tasks {
 		fmt.Println("tasks", task)
 	}

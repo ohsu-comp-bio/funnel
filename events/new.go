@@ -18,6 +18,7 @@ func NewTaskCreated(task *tes.Task) *Event {
 }
 
 // NewState creates a state change event.
+// TODO attempt doesn't make sense for state
 func NewState(taskID string, attempt uint32, s tes.State) *Event {
 	return &Event{
 		Id:        taskID,

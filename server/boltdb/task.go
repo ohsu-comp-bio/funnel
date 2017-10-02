@@ -355,7 +355,7 @@ func (taskBolt *BoltDB) GetServiceInfo(ctx context.Context, info *tes.ServiceInf
 	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
 }
 
-func (taskBolt *TaskBolt) ReadEvents(w events.Writer) error {
+func (taskBolt *BoltDB) ReadEvents(w events.Writer) error {
 	return taskBolt.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket(TaskBucket).Cursor()
 

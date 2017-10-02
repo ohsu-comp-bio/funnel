@@ -61,7 +61,7 @@ func (t *Task) GetExecLog(attempt int, i int) *ExecutorLog {
 	// Grow slice length if necessary
 	for j := len(tl.Logs); j <= i; j++ {
 		tl.Logs = append(tl.Logs, &ExecutorLog{})
-  }
+	}
 
 	return tl.Logs[i]
 }

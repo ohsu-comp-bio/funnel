@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/server"
+	"github.com/ohsu-comp-bio/funnel/server/boltdb"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +24,9 @@ var exportCmd = &cobra.Command{
 		}
 
 		conf := config.Config{}
-		conf.Server.DBPath = args[0]
+		conf.Server.Databases.BoltDB.Path = args[0]
 
-		db, err := server.NewTaskBolt(conf)
+		db, err := boltdb.NewBoltDB(conf)
 		if err != nil {
 			return err
 		}

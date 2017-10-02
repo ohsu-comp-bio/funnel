@@ -2,16 +2,15 @@ package boltdb
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"time"
 )
 
 // QueueTask adds a task to the scheduler queue.
@@ -71,8 +70,24 @@ func (taskBolt *BoltDB) AssignTask(t *tes.Task, w *pbs.Node) error {
 		if err != nil {
 			return err
 		}
-		return updateNode(tx, w)
+
+		return taskBolt.updateNode(tx, w)
 	})
+}
+
+func (taskBolt *BoltDB) updateNode(tx *bolt.Tx, req *pbs.Node) error {
+	ctx := context.Background()
+	node := getNode(tx, req.Id)
+
+	terminalTaskIDs, err := scheduler.UpdateNode(ctx, taskBolt, node, req)
+	if err != nil {
+		return err
+	}
+	for _, id := range terminalTaskIDs {
+		key := append([]byte(req.Id), []byte(id)...)
+		tx.Bucket(NodeTasks).Delete(key)
+	}
+	return putNode(tx, node)
 }
 
 // UpdateNode is an RPC endpoint that is used by nodes to send heartbeats
@@ -80,109 +95,10 @@ func (taskBolt *BoltDB) AssignTask(t *tes.Task, w *pbs.Node) error {
 // information for the node, such as canceled tasks.
 func (taskBolt *BoltDB) UpdateNode(ctx context.Context, req *pbs.Node) (*pbs.UpdateNodeResponse, error) {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
-		return updateNode(tx, req)
+		return taskBolt.updateNode(tx, req)
 	})
 	resp := &pbs.UpdateNodeResponse{}
 	return resp, err
-}
-
-func updateNode(tx *bolt.Tx, req *pbs.Node) error {
-	// Get node
-	node := getNode(tx, req.Id)
-
-	if node.Version != 0 && req.Version != 0 && node.Version != req.Version {
-		return errors.New("Version outdated")
-	}
-
-	node.LastPing = time.Now().Unix()
-	node.State = req.GetState()
-
-	if req.Resources != nil {
-		if node.Resources == nil {
-			node.Resources = &pbs.Resources{}
-		}
-		// Merge resources
-		if req.Resources.Cpus > 0 {
-			node.Resources.Cpus = req.Resources.Cpus
-		}
-		if req.Resources.RamGb > 0 {
-			node.Resources.RamGb = req.Resources.RamGb
-		}
-	}
-
-	// update disk usage while idle
-	if len(req.TaskIds) == 0 {
-		if req.GetResources().GetDiskGb() > 0 {
-			node.Resources.DiskGb = req.Resources.DiskGb
-		}
-	}
-
-	// Reconcile node's task states with database
-	for _, id := range req.TaskIds {
-		state := getTaskState(tx, id)
-
-		// If the node has acknowledged that the task is complete,
-		// unlink the task from the node.
-		switch state {
-		case Canceled, Complete, Error, SystemError:
-			key := append([]byte(req.Id), []byte(id)...)
-			tx.Bucket(NodeTasks).Delete(key)
-			// update disk usage once a task completes
-			if req.GetResources().GetDiskGb() > 0 {
-				node.Resources.DiskGb = req.Resources.DiskGb
-			}
-		}
-	}
-
-	if node.Metadata == nil {
-		node.Metadata = map[string]string{}
-	}
-	for k, v := range req.Metadata {
-		node.Metadata[k] = v
-	}
-
-	// TODO move to on-demand helper. i.e. don't store in DB
-	updateAvailableResources(tx, node)
-	node.Version = time.Now().Unix()
-	return putNode(tx, node)
-}
-
-// TODO include active ports. maybe move Available out of the protobuf message
-//      and expect this helper to be used?
-func updateAvailableResources(tx *bolt.Tx, node *pbs.Node) {
-	// Calculate available resources
-	a := pbs.Resources{
-		Cpus:   node.GetResources().GetCpus(),
-		RamGb:  node.GetResources().GetRamGb(),
-		DiskGb: node.GetResources().GetDiskGb(),
-	}
-	for _, taskID := range node.TaskIds {
-		t, _ := getTaskView(tx, taskID, tes.TaskView_FULL)
-		res := t.GetResources()
-
-		// Cpus are represented by an unsigned int, and if we blindly
-		// subtract it will rollover to a very large number. So check first.
-		rcpus := res.GetCpuCores()
-		if rcpus >= a.Cpus {
-			a.Cpus = 0
-		} else {
-			a.Cpus -= rcpus
-		}
-
-		a.RamGb -= res.GetRamGb()
-		a.DiskGb -= res.GetSizeGb()
-
-		if a.Cpus < 0 {
-			a.Cpus = 0
-		}
-		if a.RamGb < 0.0 {
-			a.RamGb = 0.0
-		}
-		if a.DiskGb < 0.0 {
-			a.DiskGb = 0.0
-		}
-	}
-	node.Available = &a
 }
 
 // GetNode gets a node
@@ -210,59 +126,41 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*
 // CheckNodes is used by the scheduler to check for dead/gone nodes.
 // This is not an RPC endpoint
 func (taskBolt *BoltDB) CheckNodes() error {
-	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
+	var nodes []*pbs.Node
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(Nodes)
 		c := bucket.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			node := &pbs.Node{}
 			proto.Unmarshal(v, node)
+			nodes = append(nodes, node)
+		}
+		return nil
+	})
 
+	if err != nil {
+		return err
+	}
+
+	updated := scheduler.UpdateNodeState(nodes, taskBolt.conf.Scheduler)
+	if updated == nil {
+		return nil
+	}
+
+	return taskBolt.db.Update(func(tx *bolt.Tx) error {
+		for _, node := range updated {
 			if node.State == pbs.NodeState_GONE {
-				tx.Bucket(Nodes).Delete(k)
-				continue
-			}
-
-			if node.LastPing == 0 {
-				// This shouldn't be happening, because nodes should be
-				// created with LastPing, but give it the benefit of the doubt
-				// and leave it alone.
-				continue
-			}
-
-			lastPing := time.Unix(node.LastPing, 0)
-			d := time.Since(lastPing)
-
-			if node.State == pbs.NodeState_UNINITIALIZED ||
-				node.State == pbs.NodeState_INITIALIZING {
-
-				// The node is initializing, which has a more liberal timeout.
-				if d > taskBolt.conf.Scheduler.NodeInitTimeout {
-					// Looks like the node failed to initialize. Mark it dead
-					node.State = pbs.NodeState_DEAD
-				}
-			} else if node.State == pbs.NodeState_DEAD &&
-				// The node has been dead for long enough, delete it.
-				d > taskBolt.conf.Scheduler.NodeDeadTimeout {
-				tx.Bucket(Nodes).Delete(k)
-				continue
-
-			} else if d > taskBolt.conf.Scheduler.NodePingTimeout {
-				// The node is stale/dead
-				node.State = pbs.NodeState_DEAD
+				tx.Bucket(Nodes).Delete([]byte(node.Id))
 			} else {
-				node.State = pbs.NodeState_ALIVE
-			}
-			// TODO when to delete nodes from the database?
-			//      is dead node deletion an automatic garbage collection process?
-			err := putNode(tx, node)
-			if err != nil {
-				return err
+				err := putNode(tx, node)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil
 	})
-	return err
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.

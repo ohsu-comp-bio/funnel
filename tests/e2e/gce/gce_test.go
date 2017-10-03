@@ -52,21 +52,22 @@ func NewFunnel() *Funnel {
 	conf.Backends.GCE.Project = "test-proj"
 	conf.Backends.GCE.Zone = "test-zone"
 
-	backend, err := gce.NewMockBackend(conf)
+	gceWrapper := new(gcemock.Wrapper)
+	backend, err := gce.NewMockBackend(conf, gceWrapper)
 	if err != nil {
 		panic(err)
 	}
 
 	fun := &Funnel{
 		Funnel: e2e.NewFunnel(conf),
-		GCE:    backend.Wrapper,
+		GCE:    gceWrapper,
 	}
 
-	backend.Wrapper.SetupMockMachineTypes()
-	backend.Wrapper.SetupMockInstanceTemplates()
+	gceWrapper.SetupMockMachineTypes()
+	gceWrapper.SetupMockInstanceTemplates()
 
 	// Set up the mock Google Cloud plugin so that it starts a local node.
-	backend.Wrapper.On("InsertInstance", mock.Anything, mock.Anything, mock.Anything).
+	gceWrapper.On("InsertInstance", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
 			log.Debug("INSERT")
 			opts := args[2].(*compute.Instance)

@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -52,13 +51,7 @@ func UpdateAvailableResources(ctx context.Context, tasks tes.TaskServiceServer, 
 }
 
 func UpdateNode(ctx context.Context, tasks tes.TaskServiceServer, node *pbs.Node, req *pbs.Node) ([]string, error) {
-	var terminalTaskIDs []string
 
-	if node.Version != 0 && req.Version != 0 && node.Version != req.Version {
-		return nil, errors.New("Version outdated")
-	}
-
-	node.LastPing = time.Now().Unix()
 	node.State = req.GetState()
 
 	if req.Resources != nil {
@@ -82,6 +75,7 @@ func UpdateNode(ctx context.Context, tasks tes.TaskServiceServer, node *pbs.Node
 	}
 
 	// Reconcile node's task states with database
+	var terminalTaskIDs []string
 	for _, id := range req.TaskIds {
 		task, _ := tasks.GetTask(ctx, &tes.GetTaskRequest{
 			Id:   id,
@@ -109,7 +103,6 @@ func UpdateNode(ctx context.Context, tasks tes.TaskServiceServer, node *pbs.Node
 	}
 
 	UpdateAvailableResources(ctx, tasks, node)
-	node.Version = time.Now().Unix()
 	return terminalTaskIDs, nil
 }
 
@@ -123,14 +116,14 @@ func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
 			continue
 		}
 
-		if node.LastPing == 0 {
+		if node.Version == 0 {
 			// This shouldn't be happening, because nodes should be
 			// created with LastPing, but give it the benefit of the doubt
 			// and leave it alone.
 			continue
 		}
 
-		lastPing := time.Unix(node.LastPing, 0)
+		lastPing := time.Unix(node.Version, 0)
 		d := time.Since(lastPing)
 
 		if node.State == pbs.NodeState_UNINITIALIZED || node.State == pbs.NodeState_INITIALIZING {

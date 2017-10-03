@@ -26,6 +26,10 @@ const (
 
 // CreateEvent creates an event for the server to handle.
 func (taskBolt *BoltDB) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
+	return &events.CreateEventResponse{}, taskBolt.Write(req)
+}
+
+func (taskBolt *BoltDB) Write(ev *events.Event) error {
 	var err error
 
 	tl := &tes.TaskLog{}
@@ -34,84 +38,80 @@ func (taskBolt *BoltDB) CreateEvent(ctx context.Context, req *events.Event) (*ev
 	// used to trim stdout and stderr in ExecutorLog
 	max := taskBolt.conf.Server.MaxExecutorLogSize
 
-	switch req.Type {
+	switch ev.Type {
 	case events.Type_TASK_STATE:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return transitionTaskState(tx, req.Id, req.GetState())
+			return transitionTaskState(tx, ev.Id, ev.GetState())
 		})
 
 	case events.Type_TASK_START_TIME:
-		tl.StartTime = ptypes.TimestampString(req.GetStartTime())
+		tl.StartTime = ptypes.TimestampString(ev.GetStartTime())
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateTaskLogs(tx, req.Id, tl)
+			return updateTaskLogs(tx, ev.Id, tl)
 		})
 
 	case events.Type_TASK_END_TIME:
-		tl.EndTime = ptypes.TimestampString(req.GetEndTime())
+		tl.EndTime = ptypes.TimestampString(ev.GetEndTime())
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateTaskLogs(tx, req.Id, tl)
+			return updateTaskLogs(tx, ev.Id, tl)
 		})
 
 	case events.Type_TASK_OUTPUTS:
-		tl.Outputs = req.GetOutputs().Value
+		tl.Outputs = ev.GetOutputs().Value
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateTaskLogs(tx, req.Id, tl)
+			return updateTaskLogs(tx, ev.Id, tl)
 		})
 
 	case events.Type_TASK_METADATA:
-		tl.Metadata = req.GetMetadata().Value
+		tl.Metadata = ev.GetMetadata().Value
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateTaskLogs(tx, req.Id, tl)
+			return updateTaskLogs(tx, ev.Id, tl)
 		})
 
 	case events.Type_EXECUTOR_START_TIME:
-		el.StartTime = ptypes.TimestampString(req.GetStartTime())
+		el.StartTime = ptypes.TimestampString(ev.GetStartTime())
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(ev.Id, ev.Index), el, max)
 		})
 
 	case events.Type_EXECUTOR_END_TIME:
-		el.EndTime = ptypes.TimestampString(req.GetEndTime())
+		el.EndTime = ptypes.TimestampString(ev.GetEndTime())
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(ev.Id, ev.Index), el, max)
 		})
 
 	case events.Type_EXECUTOR_EXIT_CODE:
-		el.ExitCode = req.GetExitCode()
+		el.ExitCode = ev.GetExitCode()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(ev.Id, ev.Index), el, max)
 		})
 
 	case events.Type_EXECUTOR_HOST_IP:
-		el.HostIp = req.GetHostIp()
+		el.HostIp = ev.GetHostIp()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(ev.Id, ev.Index), el, max)
 		})
 
 	case events.Type_EXECUTOR_PORTS:
-		el.Ports = req.GetPorts().Value
+		el.Ports = ev.GetPorts().Value
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(ev.Id, ev.Index), el, max)
 		})
 
 	case events.Type_EXECUTOR_STDOUT:
-		el.Stdout = req.GetStdout()
+		el.Stdout = ev.GetStdout()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(ev.Id, ev.Index), el, max)
 		})
 
 	case events.Type_EXECUTOR_STDERR:
-		el.Stderr = req.GetStderr()
+		el.Stderr = ev.GetStderr()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(ev.Id, ev.Index), el, max)
 		})
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &events.CreateEventResponse{}, nil
+	return err
 }
 
 func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {

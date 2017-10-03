@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+// TODO redefine node so it's not scheduler specific
+//      it just pulls from a queue.
+
 // NewNode returns a new Node instance
 func NewNode(conf config.Config) (*Node, error) {
 	log := logger.Sub("node", "nodeID", conf.Scheduler.Node.ID)
@@ -172,7 +175,7 @@ func (n *Node) sync(ctx context.Context) {
 		r.Metadata[k] = v
 	}
 
-	_, err = n.client.UpdateNode(context.Background(), r)
+	_, err = n.client.PutNode(context.Background(), r)
 	if err != nil {
 		log.Error("Couldn't save node update. Recovering.", err)
 	}

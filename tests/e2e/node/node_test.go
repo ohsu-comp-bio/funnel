@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 
 	srv := e2e.NewFunnel(conf)
 	srv.StartServer()
+	sch := scheduler.NewScheduler(srv.SDB, dummyBackend{}, conf.Scheduler)
 
 	srv.Conf.Scheduler.Node.ID = "test-node-gone-on-cancel"
 	n, err := scheduler.NewNode(srv.Conf)
@@ -29,7 +31,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	defer cancel()
 	go n.Run(ctx)
 
-	srv.SDB.CheckNodes()
+	sch.CheckNodes()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
 
 	nodes := srv.ListNodes()
@@ -39,10 +41,21 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 
 	cancel()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
-	srv.SDB.CheckNodes()
+	sch.CheckNodes()
 	nodes = srv.ListNodes()
 
 	if len(nodes) != 0 {
 		t.Error("expected node to be deleted")
 	}
+}
+
+type dummyBackend struct {
+	offerfunc func(*tes.Task) *scheduler.Offer
+}
+
+func (d dummyBackend) GetOffer(t *tes.Task) *scheduler.Offer {
+	if d.offerfunc != nil {
+		return d.offerfunc(t)
+	}
+	return nil
 }

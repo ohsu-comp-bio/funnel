@@ -7,6 +7,39 @@ import (
 	"time"
 )
 
+func SubtractResources(t *tes.Task, in *pbs.Resources) *pbs.Resources {
+	out := &pbs.Resources{
+		Cpus:   in.GetCpus(),
+		RamGb:  in.GetRamGb(),
+		DiskGb: in.GetDiskGb(),
+	}
+  tres := t.GetResources()
+
+  // Cpus are represented by an unsigned int, and if we blindly
+  // subtract it will rollover to a very large number. So check first.
+  rcpus := tres.GetCpuCores()
+  if rcpus >= out.Cpus {
+    out.Cpus = 0
+  } else {
+    out.Cpus -= rcpus
+  }
+
+  out.RamGb -= tres.GetRamGb()
+  out.DiskGb -= tres.GetSizeGb()
+
+  // Check minimum values.
+  if out.Cpus < 0 {
+    out.Cpus = 0
+  }
+  if out.RamGb < 0.0 {
+    out.RamGb = 0.0
+  }
+  if out.DiskGb < 0.0 {
+    out.DiskGb = 0.0
+  }
+  return out
+}
+
 // AvailableResources calculates available resources given a list of tasks
 // and base resources.
 //
@@ -19,30 +52,7 @@ func AvailableResources(tasks []*tes.Task, res *pbs.Resources) *pbs.Resources {
 		DiskGb: res.GetDiskGb(),
 	}
 	for _, t := range tasks {
-		res := t.GetResources()
-
-		// Cpus are represented by an unsigned int, and if we blindly
-		// subtract it will rollover to a very large number. So check first.
-		rcpus := res.GetCpuCores()
-		if rcpus >= a.Cpus {
-			a.Cpus = 0
-		} else {
-			a.Cpus -= rcpus
-		}
-
-		a.RamGb -= res.GetRamGb()
-		a.DiskGb -= res.GetSizeGb()
-
-		// Check minimum values.
-		if a.Cpus < 0 {
-			a.Cpus = 0
-		}
-		if a.RamGb < 0.0 {
-			a.RamGb = 0.0
-		}
-		if a.DiskGb < 0.0 {
-			a.DiskGb = 0.0
-		}
+    a = SubtractResources(t, a)
 	}
 	return a
 }

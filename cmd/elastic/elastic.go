@@ -12,6 +12,7 @@ import (
 	"os"
 )
 
+// Cmd provides the "elastic" command.
 var Cmd = &cobra.Command{
 	Use: "elastic",
 }
@@ -54,7 +55,5 @@ var importCmd = &cobra.Command{
 			}
 			fmt.Println("Imported", ev.Id)
 		}
-
-		return nil
 	},
 }

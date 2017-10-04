@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Cmd provides the "boltdb" command.
 var Cmd = &cobra.Command{
 	Use: "boltdb",
 }

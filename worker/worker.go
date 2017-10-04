@@ -7,7 +7,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/rpc"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"os"
@@ -288,28 +287,4 @@ func (r *DefaultWorker) validateOutputs(store *storage.Storage, mapper *FileMapp
 		}
 	}
 	return nil
-}
-
-func PollForCancel(ctx context.Context, id string, c *rpc.TESClient) context.Context {
-	taskctx, cancel := context.WithCancel(ctx)
-
-	// Start a goroutine that polls the server to watch for a canceled state.
-	// If a cancel state is found, "taskctx" is canceled.
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-taskctx.Done():
-				return
-			case <-ticker.C:
-				state, _ := c.State(id)
-				if tes.TerminalState(state) {
-					cancel()
-				}
-			}
-		}
-	}()
-	return taskctx
 }

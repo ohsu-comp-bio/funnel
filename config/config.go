@@ -117,8 +117,8 @@ func DefaultConfig() Config {
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
 	c.Server.Databases.DynamoDB.TableBasename = "funnel"
 
-  c.Server.Databases.Elastic.Index = "funnel"
-  c.Server.Databases.Elastic.URL = "http://localhost:9200"
+	c.Server.Databases.Elastic.Index = "funnel"
+	c.Server.Databases.Elastic.URL = "http://localhost:9200"
 
 	c.Worker.EventWriters.Active = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
@@ -140,9 +140,10 @@ func DefaultConfig() Config {
 	return c
 }
 
+// Elastic configures elasticsearch database backend.
 type Elastic struct {
-  Index string
-  URL   string
+	Index string
+	URL   string
 }
 
 // Server describes configuration for the server.
@@ -157,7 +158,7 @@ type Server struct {
 		BoltDB struct {
 			Path string
 		}
-    Elastic Elastic
+		Elastic  Elastic
 		DynamoDB DynamoDB
 	}
 	DisableHTTPCache   bool
@@ -237,6 +238,7 @@ type Worker struct {
 	EventWriters EventWriters
 }
 
+// RPC configures RPC client connections.
 type RPC struct {
 	// RPC address of the Funnel server
 	ServerAddress string
@@ -246,6 +248,7 @@ type RPC struct {
 	UpdateTimeout time.Duration
 }
 
+// EventWriters configures the writers which a worker will write events to.
 type EventWriters struct {
 	Active   []string
 	RPC      RPC

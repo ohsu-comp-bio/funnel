@@ -341,6 +341,8 @@ func (taskBolt *BoltDB) GetServiceInfo(ctx context.Context, info *tes.ServiceInf
 	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
 }
 
+// ReadEvents reads all events from the database and writes them to the given writer.
+// Only "Task Created" events are written, one per task in the database.
 func (taskBolt *BoltDB) ReadEvents(w events.Writer) error {
 	return taskBolt.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket(TaskBucket).Cursor()

@@ -15,9 +15,9 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/elastic"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/server"
-	"github.com/ohsu-comp-bio/funnel/elastic"
 	"github.com/spf13/cobra"
 	"strings"
 )
@@ -59,8 +59,8 @@ func Run(ctx context.Context, conf config.Config) error {
 	var backend compute.Backend
 	var sched *scheduler.Scheduler
 
-  db, eserr := elastic.NewTES(conf.Server.Databases.Elastic)
-  db.Init(ctx)
+	db, eserr := elastic.NewTES(conf.Server.Databases.Elastic)
+	db.Init(ctx)
 	if eserr != nil {
 		return fmt.Errorf("error occurred while connecting to or creating the database: %v", eserr)
 	}

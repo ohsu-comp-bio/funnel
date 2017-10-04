@@ -34,8 +34,10 @@ func (discard) Write(*Event) error {
 	return nil
 }
 
+// Discard is a writer which discards all events.
 var Discard = discard{}
 
+// FromConfig returns a Writer based on the given config.
 func FromConfig(conf config.EventWriters) (Writer, error) {
 	var writers []Writer
 	for _, w := range conf.Active {

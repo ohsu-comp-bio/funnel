@@ -112,7 +112,7 @@ func TestScheduledTaskRemovedFromQueue(t *testing.T) {
 	})
 
 	// Get the node back, so we have the correct db version.
-	node, err := db.GetNode(ctx, &pbs.GetNodeRequest{"node-1"})
+	node, err := db.GetNode(ctx, &pbs.GetNodeRequest{Id: "node-1"})
 	if err != nil {
 		panic(err)
 	}

@@ -13,6 +13,7 @@ type DynamoDBTaskReader struct {
 	taskID string
 }
 
+// NewDynamoDBTaskReader returns a new reader.
 func NewDynamoDBTaskReader(conf config.DynamoDB, taskID string) (*DynamoDBTaskReader, error) {
 	db, err := dynamodb.NewDynamoDB(conf)
 	if err != nil {

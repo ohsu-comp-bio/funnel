@@ -14,6 +14,8 @@ type TESClient struct {
 	tes.TaskServiceClient
 }
 
+// NewTESClient returns a new TES RPC client with the given configuration,
+// including transport security, basic password auth, and dial timeout.
 func NewTESClient(conf config.RPC) (*TESClient, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
@@ -32,7 +34,7 @@ func NewTESClient(conf config.RPC) (*TESClient, error) {
 	return &TESClient{cli}, nil
 }
 
-// Task returns the task descriptor.
+// FullTask returns the task descriptor.
 func (r *TESClient) FullTask(id string) (*tes.Task, error) {
 	return r.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,

@@ -11,22 +11,25 @@ import (
 	"reflect"
 )
 
+// Elastic provides an elasticsearch database server backend.
 type Elastic struct {
 	client *elastic.Client
 	conf   config.Elastic
 }
 
+// NewElastic returns a new Elastic instance.
 func NewElastic(conf config.Elastic) (*Elastic, error) {
-  // TODO simple client doesn't work for clusters
+	// TODO simple client doesn't work for clusters
 	client, err := elastic.NewSimpleClient(
 		elastic.SetURL(conf.URL),
-  )
+	)
 	if err != nil {
 		return nil, err
 	}
 	return &Elastic{client, conf}, nil
 }
 
+// Init initializing the Elasticsearch indices.
 func (es *Elastic) Init(ctx context.Context) error {
 	if exists, err := es.client.IndexExists(es.conf.Index).Do(ctx); err != nil {
 		return err
@@ -38,6 +41,7 @@ func (es *Elastic) Init(ctx context.Context) error {
 	return nil
 }
 
+// CreateTask creates a new task.
 func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 	_, err := es.client.Update().
 		Index(es.conf.Index).
@@ -49,13 +53,14 @@ func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 	return err
 }
 
+// ListTasks lists tasks, duh.
 func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
 	res, err := es.client.Search().
 		Index(es.conf.Index).
 		Type("task").
-    // TODO
-    Size(1000).
-    // TODO sorting is broken
+		// TODO
+		Size(1000).
+		// TODO sorting is broken
 		Do(ctx)
 
 	if err != nil {
@@ -72,6 +77,7 @@ func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
 	return tasks, nil
 }
 
+// GetTask gets a task by ID.
 func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 	res, err := es.client.Get().
 		Index(es.conf.Index).
@@ -91,6 +97,7 @@ func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 	return task, nil
 }
 
+// Write writes a task update event.
 func (es *Elastic) Write(ev *events.Event) error {
 	ctx := context.Background()
 
@@ -103,7 +110,7 @@ func (es *Elastic) Write(ev *events.Event) error {
 		return err
 	}
 
-	err = events.TaskBuilder{task}.Write(ev)
+	err = events.TaskBuilder{Task: task}.Write(ev)
 	if err != nil {
 		return err
 	}
@@ -117,6 +124,7 @@ func (es *Elastic) Write(ev *events.Event) error {
 	return err
 }
 
+/*
 func tail(s string, sizeBytes int) string {
 	b := []byte(s)
 	if len(b) > sizeBytes {
@@ -125,7 +133,6 @@ func tail(s string, sizeBytes int) string {
 	return string(b)
 }
 
-/*
 func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 	// Check if there is an existing task log
 	o := tx.Bucket(ExecutorLogs).Get([]byte(id))

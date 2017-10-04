@@ -45,6 +45,10 @@ func (taskBolt *BoltDB) ReadQueue(n int) []*tes.Task {
 	return tasks
 }
 
+// PutNode put a node object into the database.
+//
+// For optimisic locking, if the node already exists and node.Version
+// doesn't match the version in the database, an error is returned.
 func (taskBolt *BoltDB) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
@@ -93,8 +97,10 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*
 	return node, nil
 }
 
+// DeleteNode deletes the given node.
+// Currently, the node's version field is not checked.
 func (taskBolt *BoltDB) DeleteNode(ctx context.Context, node *pbs.Node) error {
-  // TODO we don't check version on delete. should we?
+	// TODO we don't check version on delete. should we?
 	return taskBolt.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(Nodes).Delete([]byte(node.Id))
 	})

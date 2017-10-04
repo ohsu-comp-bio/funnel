@@ -93,9 +93,9 @@ func (s *Scheduler) CheckNodes() error {
 // and calls the given scheduler backend. If the backend returns a valid offer, the
 // task is assigned to the offered node.
 func (s *Scheduler) Schedule(ctx context.Context) error {
-  err := s.CheckNodes()
+	err := s.CheckNodes()
 	if err != nil {
-    log.Error("Error checking nodes", err)
+		log.Error("Error checking nodes", err)
 	}
 
 	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {

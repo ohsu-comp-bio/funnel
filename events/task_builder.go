@@ -4,10 +4,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
+// TaskBuilder aggregates events into an in-memory Task object.
 type TaskBuilder struct {
 	*tes.Task
 }
 
+// Write updates the Task object.
 func (tb TaskBuilder) Write(ev *Event) error {
 	t := tb.Task
 	t.Id = ev.Id

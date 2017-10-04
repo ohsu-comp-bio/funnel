@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// NewTaskCreated creates a new event representing a task being created.
 func NewTaskCreated(task *tes.Task) *Event {
 	return &Event{
 		Id:        task.Id,

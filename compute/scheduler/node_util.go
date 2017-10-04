@@ -7,37 +7,39 @@ import (
 	"time"
 )
 
+// SubtractResources subtracts the resources requested by "task" from
+// the node resources "in".
 func SubtractResources(t *tes.Task, in *pbs.Resources) *pbs.Resources {
 	out := &pbs.Resources{
 		Cpus:   in.GetCpus(),
 		RamGb:  in.GetRamGb(),
 		DiskGb: in.GetDiskGb(),
 	}
-  tres := t.GetResources()
+	tres := t.GetResources()
 
-  // Cpus are represented by an unsigned int, and if we blindly
-  // subtract it will rollover to a very large number. So check first.
-  rcpus := tres.GetCpuCores()
-  if rcpus >= out.Cpus {
-    out.Cpus = 0
-  } else {
-    out.Cpus -= rcpus
-  }
+	// Cpus are represented by an unsigned int, and if we blindly
+	// subtract it will rollover to a very large number. So check first.
+	rcpus := tres.GetCpuCores()
+	if rcpus >= out.Cpus {
+		out.Cpus = 0
+	} else {
+		out.Cpus -= rcpus
+	}
 
-  out.RamGb -= tres.GetRamGb()
-  out.DiskGb -= tres.GetSizeGb()
+	out.RamGb -= tres.GetRamGb()
+	out.DiskGb -= tres.GetSizeGb()
 
-  // Check minimum values.
-  if out.Cpus < 0 {
-    out.Cpus = 0
-  }
-  if out.RamGb < 0.0 {
-    out.RamGb = 0.0
-  }
-  if out.DiskGb < 0.0 {
-    out.DiskGb = 0.0
-  }
-  return out
+	// Check minimum values.
+	if out.Cpus < 0 {
+		out.Cpus = 0
+	}
+	if out.RamGb < 0.0 {
+		out.RamGb = 0.0
+	}
+	if out.DiskGb < 0.0 {
+		out.DiskGb = 0.0
+	}
+	return out
 }
 
 // AvailableResources calculates available resources given a list of tasks
@@ -52,11 +54,13 @@ func AvailableResources(tasks []*tes.Task, res *pbs.Resources) *pbs.Resources {
 		DiskGb: res.GetDiskGb(),
 	}
 	for _, t := range tasks {
-    a = SubtractResources(t, a)
+		a = SubtractResources(t, a)
 	}
 	return a
 }
 
+// UpdateNodeState checks whether a node is dead/gone based on the last
+// time it pinged.
 func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
 	var updated []*pbs.Node
 	for _, node := range nodes {

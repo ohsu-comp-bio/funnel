@@ -2,17 +2,17 @@ package elastic
 
 import "github.com/ohsu-comp-bio/funnel/logger"
 import (
-  "bytes"
-  "time"
+	"bytes"
 	"fmt"
-  "golang.org/x/net/context"
 	"github.com/golang/protobuf/jsonpb"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	elastic "gopkg.in/olivere/elastic.v5"
-	"reflect"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	elastic "gopkg.in/olivere/elastic.v5"
+	"reflect"
+	"time"
 )
 
 var log = logger.Sub("elastic")
@@ -62,14 +62,14 @@ func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 		Id(req.Id).
 		Do(ctx)
 
-  if elastic.IsNotFound(err) {
+	if elastic.IsNotFound(err) {
 		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
 	}
 	if err != nil {
 		return nil, err
 	}
 
-  node := &pbs.Node{}
+	node := &pbs.Node{}
 	err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), node)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,10 @@ func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 	return node, nil
 }
 
-// PutNode
+// PutNode puts a node in the database.
+//
+// For optimisic locking, if the node already exists and node.Version
+// doesn't match the version in the database, an error is returned.
 func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
 	res, err := es.client.Get().
 		Index(es.conf.Index).
@@ -85,36 +88,37 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 		Id(node.Id).
 		Do(ctx)
 
-  existing := &pbs.Node{}
-  if err == nil {
-    jsonpb.Unmarshal(bytes.NewReader(*res.Source), existing)
-  }
+	existing := &pbs.Node{}
+	if err == nil {
+		jsonpb.Unmarshal(bytes.NewReader(*res.Source), existing)
+	}
 
-  if existing.GetVersion() != 0 && node.Version != existing.GetVersion() {
-    return nil, fmt.Errorf("Version outdated")
-  }
-  node.Version = time.Now().UnixNano()
+	if existing.GetVersion() != 0 && node.Version != existing.GetVersion() {
+		return nil, fmt.Errorf("Version outdated")
+	}
+	node.Version = time.Now().UnixNano()
 
-  mar := jsonpb.Marshaler{}
-  s, _ := mar.MarshalToString(node)
+	mar := jsonpb.Marshaler{}
+	s, _ := mar.MarshalToString(node)
 
-  _, err = es.client.Index().
-    Index(es.conf.Index).
-    Type("node").
-    Id(node.Id).
-    BodyString(s).
-    Do(ctx)
-  log.Debug("MARSH", s, err)
+	_, err = es.client.Index().
+		Index(es.conf.Index).
+		Type("node").
+		Id(node.Id).
+		BodyString(s).
+		Do(ctx)
+	log.Debug("MARSH", s, err)
 	return &pbs.PutNodeResponse{}, err
 }
 
+// DeleteNode deletes a node by ID.
 func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) error {
-  _, err := es.client.Delete().
-    Index(es.conf.Index).
-    Type("node").
-    Id(node.Id).
-    Do(ctx)
-  return err
+	_, err := es.client.Delete().
+		Index(es.conf.Index).
+		Type("node").
+		Id(node.Id).
+		Do(ctx)
+	return err
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.
@@ -129,12 +133,12 @@ func (es *Elastic) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*p
 	}
 
 	resp := &pbs.ListNodesResponse{}
-  for _, hit := range res.Hits.Hits {
-    node := &pbs.Node{}
-    err = jsonpb.Unmarshal(bytes.NewReader(*hit.Source), node)
-    if err != nil {
-      return nil, err
-    }
+	for _, hit := range res.Hits.Hits {
+		node := &pbs.Node{}
+		err = jsonpb.Unmarshal(bytes.NewReader(*hit.Source), node)
+		if err != nil {
+			return nil, err
+		}
 		resp.Nodes = append(resp.Nodes, node)
 	}
 

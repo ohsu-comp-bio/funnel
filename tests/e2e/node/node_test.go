@@ -162,7 +162,7 @@ type countingWorker struct {
 }
 
 func (c *countingWorker) Run(context.Context, *tes.Task) {
-	c.count += 1
+	c.count++
 }
 
 type harness struct {

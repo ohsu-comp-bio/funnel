@@ -105,7 +105,6 @@ func (n *Node) Run(ctx context.Context) error {
 			n.checkIdleTimer()
 		}
 	}
-	return nil
 }
 
 func limitedWait(dur time.Duration, wg *sync.WaitGroup) error {
@@ -137,12 +136,12 @@ func (n *Node) checkConnection(ctx context.Context) {
 func (n *Node) runTask(ctx context.Context, task *tes.Task) {
 	n.log.Debug("Starting worker for task", task.Id)
 
-	tctx := worker.PollForCancel(ctx, task.Id, n.tesc)
+	tctx := pollForCancel(ctx, task.Id, n.tesc)
 	n.worker.Run(tctx, task)
 	// Make sure the task is cleaned up from the node's task map.
 	defer n.tasks.Delete(task.Id)
 
-  log.Debug("AFTER")
+	log.Debug("AFTER")
 	// task cannot fully complete until it has successfully
 	// removed the assigned task ID from the database.
 	ticker := time.NewTicker(n.conf.UpdateRate)
@@ -153,7 +152,7 @@ func (n *Node) runTask(ctx context.Context, task *tes.Task) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-      log.Debug("UPDATE TICK")
+			log.Debug("UPDATE TICK")
 			r, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
 			if err != nil {
 				log.Error("Couldn't get node state during task sync.", err)
@@ -168,7 +167,7 @@ func (n *Node) runTask(ctx context.Context, task *tes.Task) {
 					break
 				}
 			}
-      log.Debug("UPDATE", r)
+			log.Debug("UPDATE", r)
 
 			_, err = n.client.PutNode(context.Background(), r)
 			if err != nil {
@@ -274,4 +273,28 @@ func (n *Node) checkIdleTimer() {
 	} else {
 		n.timeout.Stop()
 	}
+}
+
+func pollForCancel(ctx context.Context, id string, c *rpc.TESClient) context.Context {
+	taskctx, cancel := context.WithCancel(ctx)
+
+	// Start a goroutine that polls the server to watch for a canceled state.
+	// If a cancel state is found, "taskctx" is canceled.
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-taskctx.Done():
+				return
+			case <-ticker.C:
+				state, _ := c.State(id)
+				if tes.TerminalState(state) {
+					cancel()
+				}
+			}
+		}
+	}()
+	return taskctx
 }

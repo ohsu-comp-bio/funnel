@@ -10,6 +10,7 @@ import (
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
+	"github.com/ohsu-comp-bio/funnel/worker"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/api/compute/v1"
 	"testing"
@@ -36,7 +37,12 @@ func (f *Funnel) AddNode(id string, cpus uint32, ram, disk float64) {
 	conf.Scheduler.Node.Resources.RamGb = ram
 	conf.Scheduler.Node.Resources.DiskGb = disk
 
-	n, err := scheduler.NewNode(conf)
+	w, err := worker.NewDefaultWorker(conf.Worker)
+	if err != nil {
+		panic(err)
+	}
+
+	n, err := scheduler.NewNode(conf, w)
 	if err != nil {
 		panic(err)
 	}
@@ -53,10 +59,6 @@ func NewFunnel() *Funnel {
 	conf.Backends.GCE.Zone = "test-zone"
 
 	gceWrapper := new(gcemock.Wrapper)
-	backend, err := gce.NewMockBackend(conf, gceWrapper)
-	if err != nil {
-		panic(err)
-	}
 
 	fun := &Funnel{
 		Funnel: e2e.NewFunnel(conf),
@@ -86,12 +88,18 @@ func NewFunnel() *Funnel {
 			meta.Instance.Zone = conf.Backends.GCE.Zone
 			meta.Project.ProjectID = conf.Backends.GCE.Project
 			c, cerr := gce.WithMetadataConfig(conf, meta)
+      c.Scheduler.Node.ID = "gce-test-node"
 
 			if cerr != nil {
 				panic(cerr)
 			}
 
-			n, err := scheduler.NewNode(c)
+			w, err := worker.NewDefaultWorker(conf.Worker)
+			if err != nil {
+				panic(err)
+			}
+
+			n, err := scheduler.NewNode(c, w)
 			if err != nil {
 				panic(err)
 			}
@@ -99,6 +107,10 @@ func NewFunnel() *Funnel {
 		}).
 		Return(nil, nil)
 
+	backend, err := gce.NewMockBackend(conf, gceWrapper)
+	if err != nil {
+		panic(err)
+	}
 	fun.Scheduler = scheduler.NewScheduler(fun.SDB, backend, conf.Scheduler)
 	fun.StartServer()
 

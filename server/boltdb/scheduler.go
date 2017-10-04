@@ -46,33 +46,26 @@ func (taskBolt *BoltDB) ReadQueue(n int) []*tes.Task {
 }
 
 func (taskBolt *BoltDB) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
-	existing := &pbs.Node{}
+	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
-	err := taskBolt.db.View(func(tx *bolt.Tx) error {
+		existing := &pbs.Node{}
 		data := tx.Bucket(Nodes).Get([]byte(node.Id))
-		if data == nil {
-			return errNotFound
+		if data != nil {
+			proto.Unmarshal(data, existing)
 		}
 
-		return proto.Unmarshal(data, existing)
-	})
+		if existing.GetVersion() != 0 && node.Version != existing.GetVersion() {
+			return fmt.Errorf("Version outdated")
+		}
 
-	if err == nil && node.Version != 0 && existing.Version != 0 && node.Version != existing.Version {
-		return nil, fmt.Errorf("Version outdated")
-	}
-
-	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-		node.Version = time.Now().Unix()
+		node.Version = time.Now().UnixNano()
 		data, err := proto.Marshal(node)
 		if err != nil {
 			return err
 		}
 		return tx.Bucket(Nodes).Put([]byte(node.Id), data)
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &pbs.PutNodeResponse{}, nil
+	return &pbs.PutNodeResponse{}, err
 }
 
 // GetNode gets a node

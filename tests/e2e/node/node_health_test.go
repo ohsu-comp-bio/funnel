@@ -1,4 +1,4 @@
-package e2e
+package node
 
 import (
 	"context"
@@ -6,13 +6,14 @@ import (
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server/boltdb"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"testing"
 	"time"
 )
 
 // Test the simple case of a node that is alive,
 // then doesn't ping in time, and it marked dead
-func TestNodeDead(t *testing.T) {
+func TestNodeHealthDead(t *testing.T) {
 	ctx := context.Background()
 	db, sch := setupSchedTest()
 
@@ -22,7 +23,10 @@ func TestNodeDead(t *testing.T) {
 	})
 
 	time.Sleep(time.Millisecond * 2)
-	sch.CheckNodes()
+	err := sch.CheckNodes()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	resp, err := db.ListNodes(ctx, &pbs.ListNodesRequest{})
 	if err != nil {
@@ -35,7 +39,7 @@ func TestNodeDead(t *testing.T) {
 
 // Test what happens when a node never starts.
 // It should be marked as dead.
-func TestNodeInitFail(t *testing.T) {
+func TestNodeHealthInitFail(t *testing.T) {
 	ctx := context.Background()
 	db, sch := setupSchedTest()
 
@@ -59,12 +63,13 @@ func TestNodeInitFail(t *testing.T) {
 
 // Test that a dead node is deleted from the SDB after
 // a configurable duration.
-func TestNodeDeadTimeout(t *testing.T) {
+func TestNodeHealthDeadTimeout(t *testing.T) {
 	ctx := context.Background()
 	db, sch := setupSchedTest()
 
 	db.PutNode(ctx, &pbs.Node{
-		Id:    "test-node",
+		Id: "test-node",
+		// NOTE: the node starts dead
 		State: pbs.NodeState_DEAD,
 	})
 
@@ -82,19 +87,8 @@ func TestNodeDeadTimeout(t *testing.T) {
 	}
 }
 
-type dummyBackend struct {
-	offerfunc func(*tes.Task) *scheduler.Offer
-}
-
-func (d dummyBackend) GetOffer(t *tes.Task) *scheduler.Offer {
-	if d.offerfunc != nil {
-		return d.offerfunc(t)
-	}
-	return nil
-}
-
 func setupSchedTest() (*boltdb.BoltDB, *scheduler.Scheduler) {
-	conf := DefaultConfig()
+	conf := e2e.DefaultConfig()
 	conf.Scheduler.NodePingTimeout = time.Millisecond
 	conf.Scheduler.NodeInitTimeout = time.Millisecond
 	conf.Scheduler.NodeDeadTimeout = time.Millisecond
@@ -107,4 +101,10 @@ func setupSchedTest() (*boltdb.BoltDB, *scheduler.Scheduler) {
 
 	sch := scheduler.NewScheduler(db, back, conf.Scheduler)
 	return db, sch
+}
+
+type dummyBackend struct{}
+
+func (dummyBackend) GetOffer(t *tes.Task) *scheduler.Offer {
+	return nil
 }

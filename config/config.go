@@ -14,6 +14,7 @@ import (
 // Config describes configuration for Funnel.
 type Config struct {
 	Server Server
+	RPC    RPC
 	// the active compute backend
 	Backend  string
 	Backends struct {
@@ -52,14 +53,14 @@ type Config struct {
 // InheritServerProperties sets the ServerAddress and ServerPassword fields
 // in the Worker and Scheduler.Node configs based on the Server config
 func InheritServerProperties(c Config) Config {
-	c.Worker.TaskReaders.RPC.ServerAddress = c.Server.RPCAddress()
-	c.Worker.TaskReaders.RPC.ServerPassword = c.Server.Password
-
 	c.Worker.EventWriters.RPC.ServerAddress = c.Server.RPCAddress()
 	c.Worker.EventWriters.RPC.ServerPassword = c.Server.Password
 
-	c.Scheduler.Node.ServerAddress = c.Server.RPCAddress()
-	c.Scheduler.Node.ServerPassword = c.Server.Password
+	c.Scheduler.Node.RPC.ServerAddress = c.Server.RPCAddress()
+	c.Scheduler.Node.RPC.ServerPassword = c.Server.Password
+
+	c.RPC.ServerAddress = c.Server.RPCAddress()
+	c.RPC.ServerPassword = c.Server.Password
 	return c
 }
 
@@ -86,6 +87,7 @@ func DefaultConfig() Config {
 			NodeInitTimeout: time.Minute * 5,
 			NodeDeadTimeout: time.Minute * 5,
 			Node: Node{
+				// TODO I broke this
 				WorkDir:       workDir,
 				Timeout:       -1,
 				UpdateRate:    time.Second * 5,
@@ -115,10 +117,7 @@ func DefaultConfig() Config {
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
 	c.Server.Databases.DynamoDB.TableBasename = "funnel"
 
-	c.Worker.TaskReader = "rpc"
-	c.Worker.TaskReaders.DynamoDB.TableBasename = "funnel"
-
-	c.Worker.ActiveEventWriters = []string{"rpc", "log"}
+	c.Worker.EventWriters.Active = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
 	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
 
@@ -194,7 +193,8 @@ type Scheduler struct {
 // Node contains the configuration for a node. Nodes track available resources
 // for funnel's basic scheduler.
 type Node struct {
-	ID      string
+	ID string
+	// TODO I broke this
 	WorkDir string
 	// A Node will automatically try to detect what resources are available to it.
 	// Defining Resources in the Node configuration overrides this behavior.
@@ -208,14 +208,11 @@ type Node struct {
 	Timeout time.Duration
 	// How often the node sends update requests to the server.
 	UpdateRate time.Duration
-	// Timeout duration for UpdateNode() gRPC calls
+	// Timeout duration for PutNode() gRPC calls
 	UpdateTimeout time.Duration
 	Metadata      map[string]string
-	// RPC address of the Funnel server
-	ServerAddress string
-	// Password for basic auth. with the server APIs.
-	ServerPassword string
-	Logger         logger.Config
+	Logger        logger.Config
+	RPC           RPC
 }
 
 // Worker contains worker configuration.
@@ -225,31 +222,25 @@ type Worker struct {
 	// How often the worker sends task log updates
 	UpdateRate time.Duration
 	// Max bytes to store in-memory between updates
-	BufferSize  int64
-	Storage     StorageConfig
-	Logger      logger.Config
-	TaskReader  string
-	TaskReaders struct {
-		RPC struct {
-			// RPC address of the Funnel server
-			ServerAddress string
-			// Password for basic auth. with the server APIs.
-			ServerPassword string
-		}
-		DynamoDB DynamoDB
-	}
-	ActiveEventWriters []string
-	EventWriters       struct {
-		RPC struct {
-			// RPC address of the Funnel server
-			ServerAddress string
-			// Password for basic auth. with the server APIs.
-			ServerPassword string
-			// Timeout duration for gRPC calls
-			UpdateTimeout time.Duration
-		}
-		DynamoDB DynamoDB
-	}
+	BufferSize   int64
+	Storage      StorageConfig
+	Logger       logger.Config
+	EventWriters EventWriters
+}
+
+type RPC struct {
+	// RPC address of the Funnel server
+	ServerAddress string
+	// Password for basic auth. with the server APIs.
+	ServerPassword string
+	// Timeout duration for gRPC calls
+	UpdateTimeout time.Duration
+}
+
+type EventWriters struct {
+	Active   []string
+	RPC      RPC
+	DynamoDB DynamoDB
 }
 
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes

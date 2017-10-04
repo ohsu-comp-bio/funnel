@@ -15,7 +15,7 @@ var log = logger.Sub("manual")
 func NewBackend(conf config.Config) (*Backend, error) {
 
 	// Create a client for talking to the funnel scheduler
-	client, err := scheduler.NewClient(conf.Scheduler)
+	client, err := scheduler.NewClient(conf.Scheduler.Node.RPC)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err
@@ -32,11 +32,16 @@ type Backend struct {
 
 // GetOffer returns an offer based on available funnel nodes.
 func (s *Backend) GetOffer(j *tes.Task) *scheduler.Offer {
-	log.Debug("Running manual backend")
 
 	offers := []*scheduler.Offer{}
+	nodes := s.getNodes()
 
-	for _, n := range s.getNodes() {
+	log.Debug("Running manual backend",
+		"task", j,
+		"nodes", nodes,
+	)
+
+	for _, n := range nodes {
 		// Only schedule tasks to nodes that are "ALIVE"
 		if n.State != pbs.NodeState_ALIVE {
 			continue

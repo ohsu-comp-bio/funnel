@@ -36,9 +36,9 @@ func TestInsertTempError(t *testing.T) {
 	// Do this a few times to exacerbate any errors.
 	// e.g. a previous bug would build up a longer config string after every failure
 	//      because cached data was being incorrectly shared.
-	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
-	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
-	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.RPC.ServerAddress, conf.Scheduler.Node.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.RPC.ServerAddress, conf.Scheduler.Node.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.RPC.ServerAddress, conf.Scheduler.Node.ID)
 	wpr.AssertExpectations(t)
 	// Clear the previous expected calls
 	wpr.ExpectedCalls = nil
@@ -78,6 +78,6 @@ func TestInsertTempError(t *testing.T) {
 	}
 	wpr.On("InsertInstance", "test-proj", "test-zone", expected).Return(nil, nil)
 
-	client.StartNode("test-tpl", conf.Scheduler.Node.ServerAddress, conf.Scheduler.Node.ID)
+	client.StartNode("test-tpl", conf.Scheduler.Node.RPC.ServerAddress, conf.Scheduler.Node.ID)
 	wpr.AssertExpectations(t)
 }

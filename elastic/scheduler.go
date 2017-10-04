@@ -3,7 +3,6 @@ package elastic
 import (
 	"context"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/events"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	elastic "gopkg.in/olivere/elastic.v5"
@@ -45,26 +44,6 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 	}
 
 	return tasks
-}
-
-// AssignTask assigns a task to a node. This updates the task state to Initializing,
-// and updates the node (calls UpdateNode()).
-func (es *Elastic) AssignTask(t *tes.Task, w *pbs.Node) error {
-	err := es.Write(events.NewState(t.Id, 0, tes.State_INITIALIZING))
-	if err != nil {
-		return err
-	}
-
-	ctx := context.Background()
-	node, err := es.GetNode(ctx, &pbs.GetNodeRequest{
-		Id: w.Id,
-	})
-	if err != nil {
-		return err
-	}
-
-	node.TaskIds = append(node.TaskIds, t.Id)
-	return es.PutNode(ctx, node)
 }
 
 // GetNode gets a node

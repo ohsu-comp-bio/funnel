@@ -25,7 +25,7 @@ func NewMockBackend(conf config.Config, w Wrapper) (*MockBackend, error) {
 		zone:    conf.Backends.GCE.Zone,
 	}
 
-	wpClient, err := scheduler.NewClient(conf.Scheduler)
+	wpClient, err := scheduler.NewClient(conf.Scheduler.Node.RPC)
 	if err != nil {
 		return nil, err
 	}

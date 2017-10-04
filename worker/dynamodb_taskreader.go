@@ -13,7 +13,7 @@ type DynamoDBTaskReader struct {
 	taskID string
 }
 
-func newDynamoDBTaskReader(conf config.DynamoDB, taskID string) (*DynamoDBTaskReader, error) {
+func NewDynamoDBTaskReader(conf config.DynamoDB, taskID string) (*DynamoDBTaskReader, error) {
 	db, err := dynamodb.NewDynamoDB(conf)
 	if err != nil {
 		return nil, err

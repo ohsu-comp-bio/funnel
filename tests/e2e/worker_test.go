@@ -20,7 +20,7 @@ func TestWorkerCmdRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err := workerCmd.Run(c.Worker, id)
+	err := workerCmd.Run(c, id)
 	if err != nil {
 		log.Error("err", err)
 		t.Fatal("unexpected error")
@@ -52,16 +52,20 @@ func TestDefaultWorkerRun(t *testing.T) {
 	id := f.Run(`
     --sh 'echo hello world'
   `)
+	task, err := f.HTTP.GetTask(id, "FULL")
+	if err != nil {
+		t.Fatal("unexpected error")
+	}
 
-	w, err := worker.NewDefaultWorker(c.Worker, id)
+	w, err := worker.NewDefaultWorker(c.Worker)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
 
-	w.Run(context.Background())
+	w.Run(context.Background(), task)
 	f.Wait(id)
 
-	task, err := f.HTTP.GetTask(id, "FULL")
+	task, err = f.HTTP.GetTask(id, "FULL")
 	if err != nil {
 		log.Error("err", err)
 		t.Fatal("unexpected error")

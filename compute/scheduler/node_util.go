@@ -1,28 +1,24 @@
 package scheduler
 
 import (
-	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"time"
 )
 
+// AvailableResources calculates available resources given a list of tasks
+// and base resources.
+//
 // TODO include active ports. maybe move Available out of the protobuf message
 //      and expect this helper to be used?
-func UpdateAvailableResources(ctx context.Context, tasks tes.TaskServiceServer, node *pbs.Node) {
-	// Calculate available resources
-	a := pbs.Resources{
-		Cpus:   node.GetResources().GetCpus(),
-		RamGb:  node.GetResources().GetRamGb(),
-		DiskGb: node.GetResources().GetDiskGb(),
+func AvailableResources(tasks []*tes.Task, res *pbs.Resources) *pbs.Resources {
+	a := &pbs.Resources{
+		Cpus:   res.GetCpus(),
+		RamGb:  res.GetRamGb(),
+		DiskGb: res.GetDiskGb(),
 	}
-	for _, taskID := range node.TaskIds {
-		t, _ := tasks.GetTask(ctx, &tes.GetTaskRequest{
-			Id:   taskID,
-			View: tes.TaskView_FULL,
-		})
-
+	for _, t := range tasks {
 		res := t.GetResources()
 
 		// Cpus are represented by an unsigned int, and if we blindly
@@ -37,6 +33,7 @@ func UpdateAvailableResources(ctx context.Context, tasks tes.TaskServiceServer, 
 		a.RamGb -= res.GetRamGb()
 		a.DiskGb -= res.GetSizeGb()
 
+		// Check minimum values.
 		if a.Cpus < 0 {
 			a.Cpus = 0
 		}
@@ -47,63 +44,7 @@ func UpdateAvailableResources(ctx context.Context, tasks tes.TaskServiceServer, 
 			a.DiskGb = 0.0
 		}
 	}
-	node.Available = &a
-}
-
-func UpdateNode(ctx context.Context, tasks tes.TaskServiceServer, node *pbs.Node, req *pbs.Node) ([]string, error) {
-
-	node.State = req.GetState()
-
-	if req.Resources != nil {
-		if node.Resources == nil {
-			node.Resources = &pbs.Resources{}
-		}
-		// Merge resources
-		if req.Resources.Cpus > 0 {
-			node.Resources.Cpus = req.Resources.Cpus
-		}
-		if req.Resources.RamGb > 0 {
-			node.Resources.RamGb = req.Resources.RamGb
-		}
-	}
-
-	// update disk usage while idle
-	if len(req.TaskIds) == 0 {
-		if req.GetResources().GetDiskGb() > 0 {
-			node.Resources.DiskGb = req.Resources.DiskGb
-		}
-	}
-
-	// Reconcile node's task states with database
-	var terminalTaskIDs []string
-	for _, id := range req.TaskIds {
-		task, _ := tasks.GetTask(ctx, &tes.GetTaskRequest{
-			Id:   id,
-			View: tes.TaskView_MINIMAL,
-		})
-		state := task.GetState()
-
-		// If the node has acknowledged that the task is complete,
-		// unlink the task from the node.
-		switch state {
-		case tes.State_CANCELED, tes.State_COMPLETE, tes.State_ERROR, tes.State_SYSTEM_ERROR:
-			terminalTaskIDs = append(terminalTaskIDs, id)
-			// update disk usage once a task completes
-			if req.GetResources().GetDiskGb() > 0 {
-				node.Resources.DiskGb = req.Resources.DiskGb
-			}
-		}
-	}
-
-	if node.Metadata == nil {
-		node.Metadata = map[string]string{}
-	}
-	for k, v := range req.Metadata {
-		node.Metadata[k] = v
-	}
-
-	UpdateAvailableResources(ctx, tasks, node)
-	return terminalTaskIDs, nil
+	return a
 }
 
 func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
@@ -123,7 +64,7 @@ func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
 			continue
 		}
 
-		lastPing := time.Unix(node.Version, 0)
+		lastPing := time.Unix(0, node.Version)
 		d := time.Since(lastPing)
 
 		if node.State == pbs.NodeState_UNINITIALIZED || node.State == pbs.NodeState_INITIALIZING {
@@ -141,9 +82,6 @@ func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
 		} else if d > conf.NodePingTimeout {
 			// The node hasn't pinged in awhile, mark it dead.
 			node.State = pbs.NodeState_DEAD
-
-		} else {
-			node.State = pbs.NodeState_ALIVE
 		}
 
 		if prevState != node.State {

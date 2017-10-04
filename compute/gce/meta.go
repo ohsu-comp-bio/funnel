@@ -39,7 +39,7 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 		if conf.Scheduler.Node.ID == "" {
 			conf.Scheduler.Node.ID = meta.Instance.Name
 		}
-		conf.Scheduler.Node.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
+		conf.Scheduler.Node.RPC.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
 		conf.Worker.EventWriters.RPC.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
 	}
 
@@ -64,7 +64,7 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 	// If the configuration contains a node ID, assume that a node
 	// process should be started (instead of a server).
 	if conf.Scheduler.Node.ID != "" {
-		if conf.Scheduler.Node.ServerAddress == "" {
+		if conf.Scheduler.Node.RPC.ServerAddress == "" {
 			log.Error("Empty server address while starting node")
 			return conf, fmt.Errorf("Empty server address while starting node")
 		}

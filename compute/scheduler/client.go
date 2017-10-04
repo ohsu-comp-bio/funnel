@@ -24,19 +24,19 @@ type client struct {
 // NewClient returns a new Client instance connected to the
 // scheduler and task logger services at a given address
 // (e.g. "localhost:9090")
-func NewClient(conf config.Scheduler) (Client, error) {
+func NewClient(conf config.RPC) (Client, error) {
 	// TODO if this can't connect initially, should it retry?
 	//      give up after max retries? Does grpc.Dial already do this?
 	// Create a connection for gRPC clients
-	conn, err := grpc.Dial(conf.Node.ServerAddress,
+	conn, err := grpc.Dial(conf.ServerAddress,
 		grpc.WithInsecure(),
-		util.PerRPCPassword(conf.Node.ServerPassword),
+		util.PerRPCPassword(conf.ServerPassword),
 	)
 
 	if err != nil {
 		log.Error("Couldn't open RPC connection to the scheduler",
 			"error", err,
-			"address", conf.Node.ServerAddress,
+			"address", conf.ServerAddress,
 		)
 		return nil, err
 	}

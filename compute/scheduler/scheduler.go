@@ -99,6 +99,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 	}
 
 	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {
+    log.Debug("scheduling task")
 		offer := s.backend.GetOffer(task)
 		if offer != nil {
 			log.Info("Assigning task to node",
@@ -110,11 +111,16 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 			// TODO this is important! write a test for this line.
 			//      when a task is assigned, its state is immediately Initializing
 			//      even before the node has received it.
-			err = s.db.Write(events.NewState(task.Id, 0, tes.State_INITIALIZING))
 			offer.Node.TaskIds = append(offer.Node.TaskIds, task.Id)
 			_, err = s.db.PutNode(ctx, offer.Node)
 			if err != nil {
 				log.Error("Error in AssignTask", err)
+				continue
+			}
+
+			err = s.db.Write(events.NewState(task.Id, 0, tes.State_INITIALIZING))
+			if err != nil {
+				log.Error("Error marking task as initializing", err)
 			}
 		} else {
 			log.Debug("Scheduling failed for task", "taskID", task.Id)

@@ -78,6 +78,10 @@ func DefaultConfig() config.Config {
 	conf.Worker.Logger = logger.DebugConfig()
 	conf.Scheduler.ScheduleRate = time.Millisecond * 700
 	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
+	conf.Scheduler.NodeInitTimeout = time.Second * 10
+	conf.Scheduler.NodePingTimeout = time.Second * 10
+	conf.Scheduler.NodeDeadTimeout = time.Second * 10
+	conf.Scheduler.Node.ID = "test-node-" + util.GenTaskID()
 	conf.Worker.UpdateRate = time.Millisecond * 300
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
@@ -178,15 +182,20 @@ func (f *Funnel) Cleanup() {
 
 // StartServer starts the server
 func (f *Funnel) StartServer() {
-	go f.Server.Serve(context.Background())
-	if f.Scheduler != nil {
-		go f.Scheduler.Run(context.Background())
-	}
+	f.StartServerContext(context.Background())
+}
+
+func (f *Funnel) StartServerContext(ctx context.Context) {
+	go f.Server.Serve(ctx)
 
 	err := f.PollForServerStart()
 	if err != nil {
 		log.Error("failed to start funnel server", err)
 		panic(err)
+	}
+
+	if f.Scheduler != nil {
+		go f.Scheduler.Run(ctx)
 	}
 
 	err = f.AddRPCClient()

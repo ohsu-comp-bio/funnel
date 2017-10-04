@@ -99,7 +99,6 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 	}
 
 	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {
-    log.Debug("scheduling task")
 		offer := s.backend.GetOffer(task)
 		if offer != nil {
 			log.Info("Assigning task to node",

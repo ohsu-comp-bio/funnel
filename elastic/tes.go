@@ -1,6 +1,7 @@
 package elastic
 
 import (
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 // TES provides the TES API endpoints, backed by elasticsearch.
@@ -51,7 +53,11 @@ func (et *TES) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskR
 
 // GetTask gets a task by ID.
 func (et *TES) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
-	return et.Elastic.GetTask(ctx, req.Id)
+	resp, err := et.Elastic.GetTask(ctx, req.Id)
+	if elastic.IsNotFound(err) {
+		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: task ID: %s", err.Error(), req.Id))
+	}
+	return resp, err
 }
 
 func getPageSize(req *tes.ListTasksRequest) int {

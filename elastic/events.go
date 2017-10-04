@@ -101,8 +101,23 @@ func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 func (es *Elastic) Write(ev *events.Event) error {
 	ctx := context.Background()
 
-	if ev.Type == events.Type_TASK_CREATED {
+	switch ev.Type {
+	case events.Type_TASK_CREATED:
 		return es.CreateTask(ctx, ev.GetTask())
+
+	case events.Type_SYSTEM_LOG:
+		mar := jsonpb.Marshaler{}
+		s, err := mar.MarshalToString(ev)
+		if err != nil {
+			return err
+		}
+
+		_, err = es.client.Index().
+			Index(es.conf.Index).
+			Type("task-syslog").
+			BodyString(s).
+			Do(ctx)
+		return err
 	}
 
 	task, err := es.GetTask(ctx, ev.Id)

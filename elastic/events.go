@@ -4,35 +4,23 @@ import (
 	"bytes"
 	"context"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	elastic "gopkg.in/olivere/elastic.v5"
 	"reflect"
 )
 
-type Config struct {
-	Index string
-	URL   string
-}
-
-func DefaultConfig() Config {
-	return Config{
-		Index: "funnel",
-		URL:   "http://127.0.0.1:9200",
-	}
-}
-
 type Elastic struct {
 	client *elastic.Client
-	conf   Config
+	conf   config.Elastic
 }
 
-func NewElastic(conf Config) (*Elastic, error) {
-	client, err := elastic.NewSimpleClient()
-	/*
-			elastic.SetURL(conf.URL),
-		)
-	*/
+func NewElastic(conf config.Elastic) (*Elastic, error) {
+  // TODO simple client doesn't work for clusters
+	client, err := elastic.NewSimpleClient(
+		elastic.SetURL(conf.URL),
+  )
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +55,7 @@ func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
 		Type("task").
     // TODO
     Size(1000).
+    // TODO sorting is broken
 		Do(ctx)
 
 	if err != nil {
@@ -93,8 +82,6 @@ func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//fmt.Printf("Got document %s in version %d from index %s, type %s\n", res.Id, res.Version, res.Index, res.Type, res.Source)
 
 	task := &tes.Task{}
 	err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), task)

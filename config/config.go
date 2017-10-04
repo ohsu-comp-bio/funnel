@@ -117,6 +117,9 @@ func DefaultConfig() Config {
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
 	c.Server.Databases.DynamoDB.TableBasename = "funnel"
 
+  c.Server.Databases.Elastic.Index = "funnel"
+  c.Server.Databases.Elastic.URL = "http://localhost:9200"
+
 	c.Worker.EventWriters.Active = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
 	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
@@ -137,6 +140,11 @@ func DefaultConfig() Config {
 	return c
 }
 
+type Elastic struct {
+  Index string
+  URL   string
+}
+
 // Server describes configuration for the server.
 type Server struct {
 	ServiceName string
@@ -149,6 +157,7 @@ type Server struct {
 		BoltDB struct {
 			Path string
 		}
+    Elastic Elastic
 		DynamoDB DynamoDB
 	}
 	DisableHTTPCache   bool

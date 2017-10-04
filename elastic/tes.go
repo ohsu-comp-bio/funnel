@@ -6,6 +6,7 @@ import (
   "github.com/ohsu-comp-bio/funnel/util"
   "github.com/ohsu-comp-bio/funnel/events"
   "github.com/ohsu-comp-bio/funnel/compute"
+  "github.com/ohsu-comp-bio/funnel/config"
   "google.golang.org/grpc"
   "google.golang.org/grpc/codes"
 )
@@ -15,7 +16,7 @@ type TES struct {
   Backend compute.Backend
 }
 
-func NewTES(conf Config) (*TES, error) {
+func NewTES(conf config.Elastic) (*TES, error) {
   es, err := NewElastic(conf)
   return &TES{Elastic: es}, err
 }

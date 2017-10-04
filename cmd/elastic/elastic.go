@@ -12,6 +12,8 @@ import (
 	"os"
 )
 
+var configFile string
+
 // Cmd provides the "elastic" command.
 var Cmd = &cobra.Command{
 	Use: "elastic",
@@ -19,6 +21,8 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(importCmd)
+	flags := Cmd.PersistentFlags()
+	flags.StringVarP(&configFile, "config", "c", "", "Config file")
 }
 
 var importCmd = &cobra.Command{
@@ -28,6 +32,9 @@ var importCmd = &cobra.Command{
 		// Set up database.
 		ctx := context.Background()
 		c := config.DefaultConfig()
+		config.ParseFile(configFile, &c)
+		c = config.InheritServerProperties(c)
+
 		es, err := elastic.NewElastic(c.Server.Databases.Elastic)
 		if err != nil {
 			return err

@@ -17,8 +17,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/server"
-	"github.com/ohsu-comp-bio/funnel/server/boltdb"
-	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
+	"github.com/ohsu-comp-bio/funnel/elastic"
 	"github.com/spf13/cobra"
 	"strings"
 )
@@ -58,30 +57,21 @@ func Run(ctx context.Context, conf config.Config) error {
 	logger.Configure(conf.Server.Logger)
 
 	var backend compute.Backend
-	var db server.Database
 	var sched *scheduler.Scheduler
-	var err error
 
-	switch strings.ToLower(conf.Server.Database) {
-	case "boltdb":
-		db, err = boltdb.NewBoltDB(conf)
-	case "dynamodb":
-		db, err = dynamodb.NewDynamoDB(conf.Server.Databases.DynamoDB)
-	}
-	if err != nil {
-		return fmt.Errorf("error occurred while connecting to or creating the database: %v", err)
+  db, eserr := elastic.NewTES(elastic.DefaultConfig())
+  db.Init(ctx)
+	if eserr != nil {
+		return fmt.Errorf("error occurred while connecting to or creating the database: %v", eserr)
 	}
 
 	srv := server.DefaultServer(db, conf.Server)
 
+	var err error
 	switch strings.ToLower(conf.Backend) {
 	case "gce", "manual", "openstack":
-		sdb, ok := db.(scheduler.Database)
-		if !ok {
-			return fmt.Errorf("database doesn't satisfy the scheduler interface")
-		}
 
-		backend = scheduler.NewComputeBackend(sdb)
+		backend = scheduler.NewComputeBackend(db)
 
 		var sbackend scheduler.Backend
 		switch strings.ToLower(conf.Backend) {
@@ -96,7 +86,7 @@ func Run(ctx context.Context, conf config.Config) error {
 			return fmt.Errorf("error occurred while setting up backend: %v", err)
 		}
 
-		sched = scheduler.NewScheduler(sdb, sbackend, conf.Scheduler)
+		sched = scheduler.NewScheduler(db, sbackend, conf.Scheduler)
 	case "gridengine":
 		backend = gridengine.NewBackend(conf)
 	case "htcondor":

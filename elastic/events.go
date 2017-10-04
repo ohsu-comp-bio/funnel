@@ -65,6 +65,8 @@ func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
 	res, err := es.client.Search().
 		Index(es.conf.Index).
 		Type("task").
+    // TODO
+    Size(1000).
 		Do(ctx)
 
 	if err != nil {

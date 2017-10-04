@@ -16,7 +16,7 @@ type Database interface {
 	ReadQueue(int) []*tes.Task
 	ListNodes(context.Context, *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error)
 	PutNode(context.Context, *pbs.Node) (*pbs.PutNodeResponse, error)
-	DeleteNode(ctx context.Context, id string) error
+	DeleteNode(context.Context, *pbs.Node) error
 	Write(ev *events.Event) error
 }
 
@@ -75,7 +75,7 @@ func (s *Scheduler) CheckNodes() error {
 		var err error
 
 		if node.State == pbs.NodeState_GONE {
-			err = s.db.DeleteNode(ctx, node.Id)
+			err = s.db.DeleteNode(ctx, node)
 		} else {
 			_, err = s.db.PutNode(ctx, node)
 		}
@@ -93,9 +93,9 @@ func (s *Scheduler) CheckNodes() error {
 // and calls the given scheduler backend. If the backend returns a valid offer, the
 // task is assigned to the offered node.
 func (s *Scheduler) Schedule(ctx context.Context) error {
-	err := s.CheckNodes()
+  err := s.CheckNodes()
 	if err != nil {
-		return err
+    log.Error("Error checking nodes", err)
 	}
 
 	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {

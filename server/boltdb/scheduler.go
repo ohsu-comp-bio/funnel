@@ -93,9 +93,10 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*
 	return node, nil
 }
 
-func (taskBolt *BoltDB) DeleteNode(ctx context.Context, id string) error {
+func (taskBolt *BoltDB) DeleteNode(ctx context.Context, node *pbs.Node) error {
+  // TODO we don't check version on delete. should we?
 	return taskBolt.db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket(Nodes).Delete([]byte(id))
+		return tx.Bucket(Nodes).Delete([]byte(node.Id))
 	})
 }
 

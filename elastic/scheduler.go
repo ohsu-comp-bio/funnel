@@ -107,7 +107,6 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 		Id(node.Id).
 		BodyString(s).
 		Do(ctx)
-	log.Debug("MARSH", s, err)
 	return &pbs.PutNodeResponse{}, err
 }
 

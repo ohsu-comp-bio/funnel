@@ -30,7 +30,6 @@ func TestNodeUpdated(t *testing.T) {
 	// Set up a dummy worker that sleeps
 	w := &worker.NoopWorker{
 		OnRun: func(context.Context, *tes.Task) {
-			log.Debug("SLEEPING")
 			time.Sleep(time.Second)
 		},
 	}

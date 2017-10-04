@@ -141,7 +141,6 @@ func (n *Node) runTask(ctx context.Context, task *tes.Task) {
 	// Make sure the task is cleaned up from the node's task map.
 	defer n.tasks.Delete(task.Id)
 
-	log.Debug("AFTER")
 	// task cannot fully complete until it has successfully
 	// removed the assigned task ID from the database.
 	ticker := time.NewTicker(n.conf.UpdateRate)
@@ -152,7 +151,6 @@ func (n *Node) runTask(ctx context.Context, task *tes.Task) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			log.Debug("UPDATE TICK")
 			r, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
 			if err != nil {
 				log.Error("Couldn't get node state during task sync.", err)
@@ -167,7 +165,6 @@ func (n *Node) runTask(ctx context.Context, task *tes.Task) {
 					break
 				}
 			}
-			log.Debug("UPDATE", r)
 
 			_, err = n.client.PutNode(context.Background(), r)
 			if err != nil {

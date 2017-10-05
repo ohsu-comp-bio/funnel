@@ -14,6 +14,7 @@ import (
 // Config describes configuration for Funnel.
 type Config struct {
 	Server Server
+	RPC    RPC
 	// the active compute backend
 	Backend  string
 	Backends struct {
@@ -52,14 +53,14 @@ type Config struct {
 // InheritServerProperties sets the ServerAddress and ServerPassword fields
 // in the Worker and Scheduler.Node configs based on the Server config
 func InheritServerProperties(c Config) Config {
-	c.Worker.TaskReaders.RPC.ServerAddress = c.Server.RPCAddress()
-	c.Worker.TaskReaders.RPC.ServerPassword = c.Server.Password
-
 	c.Worker.EventWriters.RPC.ServerAddress = c.Server.RPCAddress()
 	c.Worker.EventWriters.RPC.ServerPassword = c.Server.Password
 
-	c.Scheduler.Node.ServerAddress = c.Server.RPCAddress()
-	c.Scheduler.Node.ServerPassword = c.Server.Password
+	c.Scheduler.Node.RPC.ServerAddress = c.Server.RPCAddress()
+	c.Scheduler.Node.RPC.ServerPassword = c.Server.Password
+
+	c.RPC.ServerAddress = c.Server.RPCAddress()
+	c.RPC.ServerPassword = c.Server.Password
 	return c
 }
 
@@ -115,10 +116,10 @@ func DefaultConfig() Config {
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
 	c.Server.Databases.DynamoDB.TableBasename = "funnel"
 
-	c.Worker.TaskReader = "rpc"
-	c.Worker.TaskReaders.DynamoDB.TableBasename = "funnel"
+	c.Server.Databases.Elastic.Index = "funnel"
+	c.Server.Databases.Elastic.URL = "http://localhost:9200"
 
-	c.Worker.ActiveEventWriters = []string{"rpc", "log"}
+	c.Worker.EventWriters.Active = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
 	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
 
@@ -138,6 +139,12 @@ func DefaultConfig() Config {
 	return c
 }
 
+// Elastic configures elasticsearch database backend.
+type Elastic struct {
+	Index string
+	URL   string
+}
+
 // Server describes configuration for the server.
 type Server struct {
 	ServiceName string
@@ -150,6 +157,7 @@ type Server struct {
 		BoltDB struct {
 			Path string
 		}
+		Elastic  Elastic
 		DynamoDB DynamoDB
 	}
 	DisableHTTPCache   bool
@@ -208,14 +216,11 @@ type Node struct {
 	Timeout time.Duration
 	// How often the node sends update requests to the server.
 	UpdateRate time.Duration
-	// Timeout duration for UpdateNode() gRPC calls
+	// Timeout duration for PutNode() gRPC calls
 	UpdateTimeout time.Duration
 	Metadata      map[string]string
-	// RPC address of the Funnel server
-	ServerAddress string
-	// Password for basic auth. with the server APIs.
-	ServerPassword string
-	Logger         logger.Config
+	Logger        logger.Config
+	RPC           RPC
 }
 
 // Worker contains worker configuration.
@@ -225,31 +230,27 @@ type Worker struct {
 	// How often the worker sends task log updates
 	UpdateRate time.Duration
 	// Max bytes to store in-memory between updates
-	BufferSize  int64
-	Storage     StorageConfig
-	Logger      logger.Config
-	TaskReader  string
-	TaskReaders struct {
-		RPC struct {
-			// RPC address of the Funnel server
-			ServerAddress string
-			// Password for basic auth. with the server APIs.
-			ServerPassword string
-		}
-		DynamoDB DynamoDB
-	}
-	ActiveEventWriters []string
-	EventWriters       struct {
-		RPC struct {
-			// RPC address of the Funnel server
-			ServerAddress string
-			// Password for basic auth. with the server APIs.
-			ServerPassword string
-			// Timeout duration for gRPC calls
-			UpdateTimeout time.Duration
-		}
-		DynamoDB DynamoDB
-	}
+	BufferSize   int64
+	Storage      StorageConfig
+	Logger       logger.Config
+	EventWriters EventWriters
+}
+
+// RPC configures RPC client connections.
+type RPC struct {
+	// RPC address of the Funnel server
+	ServerAddress string
+	// Password for basic auth. with the server APIs.
+	ServerPassword string
+	// Timeout duration for gRPC calls
+	UpdateTimeout time.Duration
+}
+
+// EventWriters configures the writers which a worker will write events to.
+type EventWriters struct {
+	Active   []string
+	RPC      RPC
+	DynamoDB DynamoDB
 }
 
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes

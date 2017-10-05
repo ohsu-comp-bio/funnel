@@ -6,6 +6,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
@@ -37,14 +38,6 @@ var ExecutorLogs = []byte("executor-logs")
 // Nodes maps:
 // node ID -> pbs.Node struct
 var Nodes = []byte("nodes")
-
-// TaskNode Map task ID -> node ID
-var TaskNode = []byte("task-node")
-
-// NodeTasks indexes node -> tasks
-// Implemented as composite_key(node ID + task ID) => task ID
-// And searched with prefix scan using node ID
-var NodeTasks = []byte("node-tasks")
 
 // BoltDB provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
@@ -84,12 +77,6 @@ func NewBoltDB(conf config.Config) (*BoltDB, error) {
 		}
 		if tx.Bucket(Nodes) == nil {
 			tx.CreateBucket(Nodes)
-		}
-		if tx.Bucket(TaskNode) == nil {
-			tx.CreateBucket(TaskNode)
-		}
-		if tx.Bucket(NodeTasks) == nil {
-			tx.CreateBucket(NodeTasks)
 		}
 		return nil
 	})
@@ -352,4 +339,26 @@ func (taskBolt *BoltDB) CancelTask(ctx context.Context, req *tes.CancelTaskReque
 // GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
 func (taskBolt *BoltDB) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
 	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
+}
+
+// ReadEvents reads all events from the database and writes them to the given writer.
+// Only "Task Created" events are written, one per task in the database.
+func (taskBolt *BoltDB) ReadEvents(w events.Writer) error {
+	return taskBolt.db.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket(TaskBucket).Cursor()
+
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+			task, err := getTaskView(tx, string(k), tes.TaskView_FULL)
+			if err != nil {
+				return err
+			}
+
+			ev := events.NewTaskCreated(task)
+			err = w.Write(ev)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

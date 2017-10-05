@@ -15,7 +15,7 @@ var log = logger.Sub("openstack")
 func NewBackend(conf config.Config) (*Backend, error) {
 
 	// Create a client for talking to the funnel scheduler
-	client, err := scheduler.NewClient(conf.Scheduler)
+	client, err := scheduler.NewClient(conf.Scheduler.Node.RPC)
 	if err != nil {
 		log.Error("Can't connect scheduler client", err)
 		return nil, err

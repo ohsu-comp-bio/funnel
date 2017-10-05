@@ -16,6 +16,7 @@ type Offer struct {
 
 // NewOffer returns a new Offer instance.
 func NewOffer(n *pbs.Node, t *tes.Task, s Scores) *Offer {
+	n.Available = SubtractResources(t, n.Available)
 	return &Offer{
 		TaskID: t.Id,
 		Node:   n,

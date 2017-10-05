@@ -19,17 +19,17 @@ func (db *DynamoDB) ReadQueue(n int) []*tes.Task {
 }
 
 // AssignTask assigns a task to a node. This updates the task state to Initializing,
-// and updates the node (calls UpdateNode()).
+// and updates the node (calls PutNode()).
 func (db *DynamoDB) AssignTask(t *tes.Task, w *pbs.Node) error {
 	log.Error("AssignTask - Not Implemented")
 	return nil
 }
 
-// UpdateNode is an RPC endpoint that is used by nodes to send heartbeats
+// PutNode is an RPC endpoint that is used by nodes to send heartbeats
 // and status updates, such as completed tasks. The server responds with updated
 // information for the node, such as canceled tasks.
-func (db *DynamoDB) UpdateNode(ctx context.Context, req *pbs.Node) (*pbs.UpdateNodeResponse, error) {
-	log.Error("UpdateNode - Not Implemented")
+func (db *DynamoDB) PutNode(ctx context.Context, req *pbs.Node) (*pbs.PutNodeResponse, error) {
+	log.Error("PutNode - Not Implemented")
 	return nil, nil
 }
 

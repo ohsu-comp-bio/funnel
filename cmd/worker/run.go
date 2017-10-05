@@ -6,6 +6,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/rpc"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"github.com/spf13/cobra"
 )
@@ -41,17 +42,31 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		return Run(conf.Worker, taskID)
+		return Run(conf, taskID)
 	},
 }
 
 // Run configures and runs a Worker
-func Run(conf config.Worker, taskID string) error {
-	logger.Configure(conf.Logger)
-	w, err := worker.NewDefaultWorker(conf, taskID)
+func Run(conf config.Config, taskID string) error {
+	logger.Configure(conf.Worker.Logger)
+
+	reader, err := rpc.NewTESClient(conf.RPC)
+
+	if err != nil {
+		return fmt.Errorf("failed to instantiate TaskReader: %v", err)
+	}
+
+	w, err := worker.NewDefaultWorker(conf.Worker)
 	if err != nil {
 		return err
 	}
-	w.Run(context.Background())
+
+	ctx := context.Background()
+	task, err := reader.FullTask(taskID)
+	if err != nil {
+		return err
+	}
+
+	w.Run(ctx, task)
 	return nil
 }

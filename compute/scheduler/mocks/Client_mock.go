@@ -18,14 +18,7 @@ func (_m *Client) Close() {
 
 // CreateEvent provides a mock function with given fields: ctx, in, opts
 func (_m *Client) CreateEvent(ctx context.Context, in *events.Event, opts ...grpc.CallOption) (*events.CreateEventResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+	ret := _m.Called(ctx, in, opts)
 
 	var r0 *events.CreateEventResponse
 	if rf, ok := ret.Get(0).(func(context.Context, *events.Event, ...grpc.CallOption) *events.CreateEventResponse); ok {
@@ -48,14 +41,7 @@ func (_m *Client) CreateEvent(ctx context.Context, in *events.Event, opts ...grp
 
 // GetNode provides a mock function with given fields: ctx, in, opts
 func (_m *Client) GetNode(ctx context.Context, in *protoscheduler.GetNodeRequest, opts ...grpc.CallOption) (*protoscheduler.Node, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+	ret := _m.Called(ctx, in, opts)
 
 	var r0 *protoscheduler.Node
 	if rf, ok := ret.Get(0).(func(context.Context, *protoscheduler.GetNodeRequest, ...grpc.CallOption) *protoscheduler.Node); ok {
@@ -78,14 +64,7 @@ func (_m *Client) GetNode(ctx context.Context, in *protoscheduler.GetNodeRequest
 
 // ListNodes provides a mock function with given fields: ctx, in, opts
 func (_m *Client) ListNodes(ctx context.Context, in *protoscheduler.ListNodesRequest, opts ...grpc.CallOption) (*protoscheduler.ListNodesResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+	ret := _m.Called(ctx, in, opts)
 
 	var r0 *protoscheduler.ListNodesResponse
 	if rf, ok := ret.Get(0).(func(context.Context, *protoscheduler.ListNodesRequest, ...grpc.CallOption) *protoscheduler.ListNodesResponse); ok {
@@ -106,23 +85,16 @@ func (_m *Client) ListNodes(ctx context.Context, in *protoscheduler.ListNodesReq
 	return r0, r1
 }
 
-// UpdateNode provides a mock function with given fields: ctx, in, opts
-func (_m *Client) UpdateNode(ctx context.Context, in *protoscheduler.Node, opts ...grpc.CallOption) (*protoscheduler.UpdateNodeResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
+// PutNode provides a mock function with given fields: ctx, in, opts
+func (_m *Client) PutNode(ctx context.Context, in *protoscheduler.Node, opts ...grpc.CallOption) (*protoscheduler.PutNodeResponse, error) {
+	ret := _m.Called(ctx, in, opts)
 
-	var r0 *protoscheduler.UpdateNodeResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *protoscheduler.Node, ...grpc.CallOption) *protoscheduler.UpdateNodeResponse); ok {
+	var r0 *protoscheduler.PutNodeResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *protoscheduler.Node, ...grpc.CallOption) *protoscheduler.PutNodeResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*protoscheduler.UpdateNodeResponse)
+			r0 = ret.Get(0).(*protoscheduler.PutNodeResponse)
 		}
 	}
 

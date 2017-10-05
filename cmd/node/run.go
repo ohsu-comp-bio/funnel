@@ -7,6 +7,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/worker"
 	"github.com/spf13/cobra"
 	"syscall"
 )
@@ -41,7 +42,7 @@ var runCmd = &cobra.Command{
 func init() {
 	flags := runCmd.Flags()
 	flags.StringVar(&flagConf.Scheduler.Node.ID, "id", flagConf.Scheduler.Node.ID, "Node ID")
-	flags.StringVar(&flagConf.Scheduler.Node.ServerAddress, "server-address", flagConf.Scheduler.Node.ServerAddress, "Address of scheduler gRPC endpoint")
+	flags.StringVar(&flagConf.Scheduler.Node.RPC.ServerAddress, "server-address", flagConf.Scheduler.Node.RPC.ServerAddress, "Address of scheduler gRPC endpoint")
 	flags.DurationVar(&flagConf.Scheduler.Node.Timeout, "timeout", flagConf.Scheduler.Node.Timeout, "Timeout in seconds")
 	flags.StringVar(&flagConf.Scheduler.Node.WorkDir, "work-dir", flagConf.Scheduler.Node.WorkDir, "Working Directory")
 	flags.StringVar(&flagConf.Scheduler.Node.Logger.Level, "log-level", flagConf.Scheduler.Node.Logger.Level, "Level of logging")
@@ -57,7 +58,12 @@ func Run(conf config.Config) error {
 		conf.Scheduler.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	n, err := scheduler.NewNode(conf)
+	w, err := worker.NewDefaultWorker(conf.Worker)
+	if err != nil {
+		return err
+	}
+
+	n, err := scheduler.NewNode(conf, w)
 	if err != nil {
 		return err
 	}

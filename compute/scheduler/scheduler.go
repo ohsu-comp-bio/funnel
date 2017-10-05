@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
@@ -13,10 +14,10 @@ import (
 type Database interface {
 	QueueTask(*tes.Task) error
 	ReadQueue(int) []*tes.Task
-	AssignTask(*tes.Task, *pbs.Node) error
-	CheckNodes() error
 	ListNodes(context.Context, *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error)
-	UpdateNode(context.Context, *pbs.Node) (*pbs.UpdateNodeResponse, error)
+	PutNode(context.Context, *pbs.Node) (*pbs.PutNodeResponse, error)
+	DeleteNode(context.Context, *pbs.Node) error
+	Write(ev *events.Event) error
 }
 
 // NewScheduler returns a new Scheduler instance.
@@ -31,12 +32,12 @@ type Scheduler struct {
 	backend Backend
 }
 
-// Start starts the scheduling loop. This blocks.
+// Run starts the scheduling loop. This blocks.
 //
 // The scheduler will take a chunk of tasks from the queue,
 // request the the configured backend schedule them, and
 // act on offers made by the backend.
-func (s *Scheduler) Start(ctx context.Context) error {
+func (s *Scheduler) Run(ctx context.Context) error {
 	ticker := time.NewTicker(s.conf.ScheduleRate)
 	for {
 		select {
@@ -58,14 +59,43 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	}
 }
 
+// CheckNodes is used by the scheduler to check for dead/gone nodes.
+// This is not an RPC endpoint
+func (s *Scheduler) CheckNodes() error {
+	ctx := context.Background()
+	resp, err := s.db.ListNodes(ctx, &pbs.ListNodesRequest{})
+
+	if err != nil {
+		return err
+	}
+
+	updated := UpdateNodeState(resp.Nodes, s.conf)
+
+	for _, node := range updated {
+		var err error
+
+		if node.State == pbs.NodeState_GONE {
+			err = s.db.DeleteNode(ctx, node)
+		} else {
+			_, err = s.db.PutNode(ctx, node)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Schedule does a scheduling iteration. It checks the health of nodes
 // in the database, gets a chunk of tasks from the queue (configurable by config.Scheduler.ScheduleChunk),
 // and calls the given scheduler backend. If the backend returns a valid offer, the
 // task is assigned to the offered node.
 func (s *Scheduler) Schedule(ctx context.Context) error {
-	err := s.db.CheckNodes()
+	err := s.CheckNodes()
 	if err != nil {
-		return err
+		log.Error("Error checking nodes", err)
 	}
 
 	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {
@@ -76,9 +106,20 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 				"nodeID", offer.Node.Id,
 				"node", offer.Node,
 			)
-			err = s.db.AssignTask(task, offer.Node)
+
+			// TODO this is important! write a test for this line.
+			//      when a task is assigned, its state is immediately Initializing
+			//      even before the node has received it.
+			offer.Node.TaskIds = append(offer.Node.TaskIds, task.Id)
+			_, err = s.db.PutNode(ctx, offer.Node)
 			if err != nil {
 				log.Error("Error in AssignTask", err)
+				continue
+			}
+
+			err = s.db.Write(events.NewState(task.Id, 0, tes.State_INITIALIZING))
+			if err != nil {
+				log.Error("Error marking task as initializing", err)
 			}
 		} else {
 			log.Debug("Scheduling failed for task", "taskID", task.Id)
@@ -120,7 +161,7 @@ func (s *Scheduler) Scale(ctx context.Context) error {
 		// TODO should the Scaler instance handle this? Is it possible
 		//      that Initializing is the wrong state in some cases?
 		n.State = pbs.NodeState_INITIALIZING
-		_, err := s.db.UpdateNode(ctx, n)
+		_, err := s.db.PutNode(ctx, n)
 
 		if err != nil {
 			// TODO an error here would likely result in multiple nodes

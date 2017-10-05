@@ -16,53 +16,16 @@ import (
 )
 
 // NewDefaultWorker returns a new configured DefaultWorker instance.
-func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
-	var err error
-	var reader TaskReader
-	var writer events.Writer
+func NewDefaultWorker(conf config.Worker) (Worker, error) {
 
-	// Map files into this baseDir
-	baseDir := path.Join(conf.WorkDir, taskID)
-
-	err = util.EnsureDir(baseDir)
+	ev, err := events.FromConfig(conf.EventWriters)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create worker baseDir: %v", err)
-	}
-
-	switch conf.TaskReader {
-	case "rpc":
-		reader, err = newRPCTaskReader(conf, taskID)
-	case "dynamodb":
-		reader, err = newDynamoDBTaskReader(conf.TaskReaders.DynamoDB, taskID)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
-	}
-
-	writers := []events.Writer{}
-	for _, w := range conf.ActiveEventWriters {
-		switch w {
-		case "dynamodb":
-			writer, err = events.NewDynamoDBEventWriter(conf.EventWriters.DynamoDB)
-		case "log":
-			writer = events.NewLogger("worker")
-		case "rpc":
-			writer, err = events.NewRPCWriter(conf)
-		default:
-			err = fmt.Errorf("unknown EventWriter")
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
-		}
-		writers = append(writers, writer)
+		return nil, err
 	}
 
 	return &DefaultWorker{
-		Conf:       conf,
-		Mapper:     NewFileMapper(baseDir),
-		Store:      storage.Storage{},
-		TaskReader: reader,
-		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, events.MultiWriter(writers...)),
+		Conf:  conf,
+		Event: ev,
 	}, nil
 }
 
@@ -70,16 +33,13 @@ func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
 // sequential process of task initialization, execution, finalization,
 // and logging.
 type DefaultWorker struct {
-	Conf       config.Worker
-	Mapper     *FileMapper
-	Store      storage.Storage
-	TaskReader TaskReader
-	Event      *events.TaskWriter
+	Conf  config.Worker
+	Event events.Writer
 }
 
 // Run runs the Worker.
 // TODO document behavior of slow consumer of task log updates
-func (r *DefaultWorker) Run(pctx context.Context) {
+func (r *DefaultWorker) Run(ctx context.Context, task *tes.Task) {
 
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
@@ -94,38 +54,42 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	// - upload the outputs
 
 	var run helper
-	var task *tes.Task
+	run.ctx = ctx
 
-	r.Event.Info("Version", version.LogFields()...)
+	ev := events.NewTaskWriter(task.Id, 0, r.Conf.Logger.Level, r.Event)
+	ev.Info("Version", version.LogFields()...)
 
-	task, run.syserr = r.TaskReader.Task()
+	// Map files into this baseDir
+	baseDir := path.Join(r.Conf.WorkDir, task.Id)
 
-	if run.ok() {
-		r.Event.State(tes.State_INITIALIZING)
+	err := util.EnsureDir(baseDir)
+	if err != nil {
+		run.syserr = fmt.Errorf("failed to create worker baseDir: %v", err)
 	}
 
-	r.Event.StartTime(time.Now())
+	mapper := NewFileMapper(baseDir)
+
+	if run.ok() {
+		ev.State(tes.State_INITIALIZING)
+	}
+
+	ev.StartTime(time.Now())
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
-		r.Event.EndTime(time.Now())
+		ev.EndTime(time.Now())
 
 		switch {
-		case run.taskCanceled:
-			// The task was canceled.
-			r.Event.Info("Canceled")
-			r.Event.State(tes.State_CANCELED)
 		case run.execerr != nil:
 			// One of the executors failed
-			r.Event.Error("Exec error", run.execerr)
-			r.Event.State(tes.State_ERROR)
+			ev.Error("Exec error", run.execerr)
+			ev.State(tes.State_ERROR)
 		case run.syserr != nil:
 			// Something else failed
-			// TODO should we do something special for run.err == context.Canceled?
-			r.Event.Error("System error", run.syserr)
-			r.Event.State(tes.State_SYSTEM_ERROR)
+			ev.Error("System error", run.syserr)
+			ev.State(tes.State_SYSTEM_ERROR)
 		default:
-			r.Event.State(tes.State_COMPLETE)
+			ev.State(tes.State_COMPLETE)
 		}
 	}()
 
@@ -133,11 +97,6 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	defer handlePanic(func(e error) {
 		run.syserr = e
 	})
-
-	ctx := r.pollForCancel(pctx, func() {
-		run.taskCanceled = true
-	})
-	run.ctx = ctx
 
 	// Create working dir
 	var dir string
@@ -150,7 +109,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	// Prepare file mapper, which maps task file URLs to host filesystem paths
 	if run.ok() {
-		run.syserr = r.Mapper.MapTask(task)
+		run.syserr = mapper.MapTask(task)
 	}
 
 	// Grab the IP address of this host. Used to send task metadata updates.
@@ -161,52 +120,53 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	// Configure a task-specific storage backend.
 	// This provides download/upload for inputs/outputs.
+	store := storage.Storage{}
 	if run.ok() {
-		r.Store, run.syserr = r.Store.WithConfig(r.Conf.Storage)
+		store, run.syserr = store.WithConfig(r.Conf.Storage)
 	}
 
 	if run.ok() {
-		run.syserr = r.validateInputs()
+		run.syserr = r.validateInputs(&store, mapper)
 	}
 
 	if run.ok() {
-		run.syserr = r.validateOutputs()
+		run.syserr = r.validateOutputs(&store, mapper)
 	}
 
 	// Download inputs
-	for _, input := range r.Mapper.Inputs {
+	for _, input := range mapper.Inputs {
 		if run.ok() {
-			run.syserr = r.Store.Get(ctx, input.Url, input.Path, input.Type)
+			run.syserr = store.Get(ctx, input.Url, input.Path, input.Type)
 		}
 	}
 
 	if run.ok() {
-		r.Event.State(tes.State_RUNNING)
+		ev.State(tes.State_RUNNING)
 	}
 
 	// Run steps
 	for i, d := range task.Executors {
 		s := &stepWorker{
 			Conf:  r.Conf,
-			Event: r.Event.NewExecutorWriter(uint32(i)),
+			Event: ev.NewExecutorWriter(uint32(i)),
 			IP:    ip,
 			Cmd: &DockerCmd{
 				ImageName:     d.ImageName,
 				Cmd:           d.Cmd,
 				Environ:       d.Environ,
-				Volumes:       r.Mapper.Volumes,
+				Volumes:       mapper.Volumes,
 				Workdir:       d.Workdir,
 				Ports:         d.Ports,
 				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
 				// TODO make RemoveContainer configurable
 				RemoveContainer: true,
-				Event:           r.Event.NewExecutorWriter(uint32(i)),
+				Event:           ev.NewExecutorWriter(uint32(i)),
 			},
 		}
 
 		// Opens stdin/out/err files and updates those fields on "cmd".
 		if run.ok() {
-			run.syserr = r.openStepLogs(s, d)
+			run.syserr = r.openStepLogs(mapper, s, d)
 		}
 
 		if run.ok() {
@@ -216,23 +176,23 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	// Upload outputs
 	var outputs []*tes.OutputFileLog
-	for _, output := range r.Mapper.Outputs {
+	for _, output := range mapper.Outputs {
 		if run.ok() {
-			r.fixLinks(output.Path)
+			r.fixLinks(mapper, output.Path)
 			var out []*tes.OutputFileLog
-			out, run.syserr = r.Store.Put(ctx, output.Url, output.Path, output.Type)
+			out, run.syserr = store.Put(ctx, output.Url, output.Path, output.Type)
 			outputs = append(outputs, out...)
 		}
 	}
 
 	if run.ok() {
-		r.Event.Outputs(outputs)
+		ev.Outputs(outputs)
 	}
 }
 
 // fixLinks walks the output paths, fixing cases where a symlink is
 // broken because it's pointing to a path inside a container volume.
-func (r *DefaultWorker) fixLinks(basepath string) {
+func (r *DefaultWorker) fixLinks(mapper *FileMapper, basepath string) {
 	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
 		if err != nil {
 			// There's an error, so be safe and give up on this file
@@ -253,7 +213,7 @@ func (r *DefaultWorker) fixLinks(basepath string) {
 					return nil
 				}
 				// Map symlink source (possible container path) to host path
-				mapped, err := r.Mapper.HostPath(src)
+				mapped, err := mapper.HostPath(src)
 				if err != nil {
 					return nil
 				}
@@ -277,12 +237,12 @@ func (r *DefaultWorker) fixLinks(basepath string) {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
+func (r *DefaultWorker) openStepLogs(m *FileMapper, s *stepWorker, d *tes.Executor) error {
 
 	// Find the path for task stdin
 	var err error
 	if d.Stdin != "" {
-		s.Cmd.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
+		s.Cmd.Stdin, err = m.OpenHostFile(d.Stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -291,7 +251,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Cmd.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
+		s.Cmd.Stdout, err = m.CreateHostFile(d.Stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -300,7 +260,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Cmd.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
+		s.Cmd.Stderr, err = m.CreateHostFile(d.Stderr)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -310,9 +270,9 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 }
 
 // Validate the input downloads
-func (r *DefaultWorker) validateInputs() error {
-	for _, input := range r.Mapper.Inputs {
-		if !r.Store.Supports(input.Url, input.Path, input.Type) {
+func (r *DefaultWorker) validateInputs(store *storage.Storage, mapper *FileMapper) error {
+	for _, input := range mapper.Inputs {
+		if !store.Supports(input.Url, input.Path, input.Type) {
 			return fmt.Errorf("Input download not supported by storage: %v", input)
 		}
 	}
@@ -320,36 +280,11 @@ func (r *DefaultWorker) validateInputs() error {
 }
 
 // Validate the output uploads
-func (r *DefaultWorker) validateOutputs() error {
-	for _, output := range r.Mapper.Outputs {
-		if !r.Store.Supports(output.Url, output.Path, output.Type) {
+func (r *DefaultWorker) validateOutputs(store *storage.Storage, mapper *FileMapper) error {
+	for _, output := range mapper.Outputs {
+		if !store.Supports(output.Url, output.Path, output.Type) {
 			return fmt.Errorf("Output upload not supported by storage: %v", output)
 		}
 	}
 	return nil
-}
-
-func (r *DefaultWorker) pollForCancel(ctx context.Context, f func()) context.Context {
-	taskctx, cancel := context.WithCancel(ctx)
-
-	// Start a goroutine that polls the server to watch for a canceled state.
-	// If a cancel state is found, "taskctx" is canceled.
-	go func() {
-		ticker := time.NewTicker(r.Conf.UpdateRate)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-taskctx.Done():
-				return
-			case <-ticker.C:
-				state, _ := r.TaskReader.State()
-				if tes.TerminalState(state) {
-					cancel()
-					f()
-				}
-			}
-		}
-	}()
-	return taskctx
 }

@@ -6,7 +6,20 @@ import (
 	"time"
 )
 
+// NewTaskCreated creates a new event representing a task being created.
+func NewTaskCreated(task *tes.Task) *Event {
+	return &Event{
+		Id:        task.Id,
+		Timestamp: ptypes.TimestampNow(),
+		Type:      Type_TASK_CREATED,
+		Data: &Event_Task{
+			Task: task,
+		},
+	}
+}
+
 // NewState creates a state change event.
+// TODO attempt doesn't make sense for state
 func NewState(taskID string, attempt uint32, s tes.State) *Event {
 	return &Event{
 		Id:        taskID,

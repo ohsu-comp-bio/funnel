@@ -2,11 +2,11 @@ package elastic
 
 import (
 	"bytes"
-	"context"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 	elastic "gopkg.in/olivere/elastic.v5"
 	"reflect"
 )
@@ -46,6 +46,7 @@ func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 		Index(es.conf.Index).
 		Type("task").
 		Id(task.Id).
+		// TODO need to be consistent with jsonpb
 		Doc(task).
 		DocAsUpsert(true).
 		Do(ctx)
@@ -53,12 +54,11 @@ func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 }
 
 // ListTasks lists tasks, duh.
-func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
+func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) ([]*tes.Task, error) {
 	res, err := es.client.Search().
 		Index(es.conf.Index).
 		Type("task").
-		// TODO
-		Size(1000).
+		Size(getPageSize(req)).
 		// TODO sorting is broken
 		Do(ctx)
 
@@ -69,11 +69,35 @@ func (es *Elastic) ListTasks(ctx context.Context) ([]*tes.Task, error) {
 	var tasks []*tes.Task
 	var task tes.Task
 	for _, item := range res.Each(reflect.TypeOf(task)) {
-		t := item.(tes.Task)
-		tasks = append(tasks, &t)
+		i := item.(tes.Task)
+		t := &i
+
+		switch req.View {
+		case tes.TaskView_BASIC:
+			t = t.GetBasicView()
+		case tes.TaskView_MINIMAL:
+			t = t.GetMinimalView()
+		}
+
+		tasks = append(tasks, t)
 	}
 
 	return tasks, nil
+}
+
+func getPageSize(req *tes.ListTasksRequest) int {
+	pageSize := 256
+
+	if req.PageSize != 0 {
+		pageSize = int(req.GetPageSize())
+		if pageSize > 2048 {
+			pageSize = 2048
+		}
+		if pageSize < 50 {
+			pageSize = 50
+		}
+	}
+	return pageSize
 }
 
 // GetTask gets a task by ID.

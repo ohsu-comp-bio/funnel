@@ -57,27 +57,26 @@ func (et *TES) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task,
 	if elastic.IsNotFound(err) {
 		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: task ID: %s", err.Error(), req.Id))
 	}
-	return resp, err
-}
 
-func getPageSize(req *tes.ListTasksRequest) int {
-	pageSize := 256
-
-	if req.PageSize != 0 {
-		pageSize = int(req.GetPageSize())
-		if pageSize > 2048 {
-			pageSize = 2048
-		}
-		if pageSize < 50 {
-			pageSize = 50
-		}
+	if err != nil {
+		return nil, err
 	}
-	return pageSize
+
+	switch req.View {
+	case tes.TaskView_BASIC:
+		resp = resp.GetBasicView()
+	case tes.TaskView_MINIMAL:
+		resp = resp.GetMinimalView()
+	}
+
+	return resp, nil
 }
 
 // ListTasks lists tasks.
+// TODO list is maybe where the having the TES api separated from the core
+//      database breaks down.
 func (et *TES) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-	tasks, err := et.Elastic.ListTasks(ctx)
+	tasks, err := et.Elastic.ListTasks(ctx, req)
 	if err != nil {
 		return nil, err
 	}

@@ -19,8 +19,7 @@ type Elastic struct {
 
 // NewElastic returns a new Elastic instance.
 func NewElastic(conf config.Elastic) (*Elastic, error) {
-	// TODO simple client doesn't work for clusters
-	client, err := elastic.NewSimpleClient(
+	client, err := elastic.NewClient(
 		elastic.SetURL(conf.URL),
 	)
 	if err != nil {

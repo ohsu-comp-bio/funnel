@@ -60,10 +60,10 @@ func Run(ctx context.Context, conf config.Config) error {
 	var sched *scheduler.Scheduler
 
 	db, eserr := elastic.NewTES(conf.Server.Databases.Elastic)
-	db.Init(ctx)
 	if eserr != nil {
 		return fmt.Errorf("error occurred while connecting to or creating the database: %v", eserr)
 	}
+	db.Init(ctx)
 
 	srv := server.DefaultServer(db, conf.Server)
 

@@ -87,7 +87,6 @@ func DefaultConfig() Config {
 			NodeInitTimeout: time.Minute * 5,
 			NodeDeadTimeout: time.Minute * 5,
 			Node: Node{
-				// TODO I broke this
 				WorkDir:       workDir,
 				Timeout:       -1,
 				UpdateRate:    time.Second * 5,
@@ -203,8 +202,7 @@ type Scheduler struct {
 // Node contains the configuration for a node. Nodes track available resources
 // for funnel's basic scheduler.
 type Node struct {
-	ID string
-	// TODO I broke this
+	ID      string
 	WorkDir string
 	// A Node will automatically try to detect what resources are available to it.
 	// Defining Resources in the Node configuration overrides this behavior.

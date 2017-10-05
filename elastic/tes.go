@@ -86,7 +86,8 @@ func (et *TES) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.L
 
 // CancelTask cancels a task by ID.
 func (et *TES) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	return nil, nil
+	err := et.Elastic.Write(events.NewState(req.Id, 0, tes.State_CANCELED))
+	return &tes.CancelTaskResponse{}, err
 }
 
 // GetServiceInfo returns service metadata.

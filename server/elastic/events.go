@@ -19,7 +19,7 @@ type Elastic struct {
 
 // NewElastic returns a new Elastic instance.
 func NewElastic(conf config.Elastic) (*Elastic, error) {
-	client, err := elastic.NewClient(
+	client, err := elastic.NewSimpleClient(
 		elastic.SetURL(conf.URL),
 	)
 	if err != nil {

@@ -122,6 +122,7 @@ func DefaultConfig() Config {
 	c.Worker.EventWriters.Active = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
 	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
+  c.Worker.EventWriters.Elastic = c.Server.Databases.Elastic
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -251,6 +252,7 @@ type EventWriters struct {
 	Active   []string
 	RPC      RPC
 	DynamoDB DynamoDB
+  Elastic  Elastic
 }
 
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes

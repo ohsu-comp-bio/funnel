@@ -21,6 +21,7 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(importCmd)
+	Cmd.AddCommand(countCmd)
 	flags := Cmd.PersistentFlags()
 	flags.StringVarP(&configFile, "config", "c", "", "Config file")
 }
@@ -62,5 +63,23 @@ var importCmd = &cobra.Command{
 			}
 			fmt.Println("Imported", ev.Id)
 		}
+	},
+}
+
+var countCmd = &cobra.Command{
+	Use: "count",
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		// Set up database.
+		c := config.DefaultConfig()
+		config.ParseFile(configFile, &c)
+		c = config.InheritServerProperties(c)
+
+		es, err := elastic.NewElastic(c.Server.Databases.Elastic)
+		if err != nil {
+			return err
+		}
+		es.Counts()
+		return nil
 	},
 }

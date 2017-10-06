@@ -2,6 +2,7 @@ package elastic
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/net/context"
 	elastic "gopkg.in/olivere/elastic.v5"
 	"reflect"
+	"strconv"
 )
 
 // Elastic provides an elasticsearch database server backend.
@@ -26,6 +28,30 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 		return nil, err
 	}
 	return &Elastic{client, conf}, nil
+}
+
+func (es *Elastic) Counts() {
+	agg := elastic.NewTermsAggregation().Field("state.keyword").Size(10).OrderByCountDesc()
+	res, err := es.client.Search().
+		Index(es.conf.Index).
+		Type("task").
+		Aggregation("state-counts", agg).
+		Pretty(true).
+		Do(context.Background())
+
+	if err != nil {
+		panic(err)
+	}
+	a, found := res.Aggregations.Terms("state-counts")
+	if !found {
+		panic("not found")
+	}
+	for _, b := range a.Buckets {
+		k := b.Key.(string)
+		i64, _ := strconv.ParseInt(k, 10, 32)
+		i := int32(i64)
+		fmt.Println(k, tes.State_name[i], b.DocCount)
+	}
 }
 
 // Init initializing the Elasticsearch indices.

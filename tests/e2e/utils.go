@@ -39,6 +39,16 @@ import (
 
 var log = logger.New("e2e")
 
+// HelloWorld is a simple, valid task that is easy to reuse in tests.
+var HelloWorld = &tes.Task{
+	Executors: []*tes.Executor{
+		{
+			ImageName: "alpine",
+			Cmd:       []string{"echo", "hello world"},
+		},
+	},
+}
+
 func init() {
 	logger.SetGRPCLoggerVerbosity(1)
 	log.Configure(logger.DebugConfig())
@@ -147,23 +157,10 @@ func NewFunnel(conf config.Config) *Funnel {
 
 // AddRPCClient configures and connects the RPC client to the server.
 func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-
-	opts = append(opts,
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	)
-
-	conn, err := grpc.DialContext(
-		ctx,
-		f.Conf.Server.RPCAddress(),
-		opts...,
-	)
+	conn, err := NewRPCConn(f.Conf, opts...)
 	if err != nil {
 		return err
 	}
-
 	f.conn = conn
 	f.RPC = tes.NewTaskServiceClient(conn)
 	return nil
@@ -511,4 +508,26 @@ func (f *Funnel) CleanupTestServerContainer() {
 func (f *Funnel) ListNodes() []*pbs.Node {
 	resp, _ := f.DB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
 	return resp.Nodes
+}
+
+// NewRPCConn returns a new grpc.ClientConn, to make creating TES clients easier.
+func NewRPCConn(conf config.Config, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	opts = append(opts,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+
+	conn, err := grpc.DialContext(
+		ctx,
+		conf.Server.RPCAddress(),
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
 }

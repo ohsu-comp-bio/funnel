@@ -61,11 +61,6 @@ Scheduler:
   Node:
     # If empty, a node ID will be automatically generated.
     ID: ""
-    # RPC address of the Funnel server
-    ServerAddress: localhost:9090
-
-    # Password for basic auth. with the server APIs.
-    # ServerPassword: abc123
 
     # Files created during processing will be written in this directory.
     WorkDir: ./funnel-work-dir
@@ -251,13 +246,6 @@ Worker:
   # Available backends: rpc, dynamodb
   TaskReader: rpc
   TaskReaders:
-    # Read tasks from funnel over gRPC
-    RPC:
-      # RPC address of the Funnel server
-      ServerAddress: localhost:8000
-      # Password for basic auth. with the server APIs.
-      # ServerPassword: abc123
-
     # Read tasks directly from DynamoDB.  
     # DynamoDB:
     #   # Basename to use for dynamodb tables
@@ -277,10 +265,6 @@ Worker:
   EventWriters:
     # Write events over gRPC
     RPC:
-      # RPC address of the Funnel server
-      ServerAddress: localhost:8000
-      # Password for basic auth. with the server APIs.
-      # ServerPassword: abc123
       # RPC timeout for update/sync call.
       # In nanoseconds.
       UpdateTimeout: 1000000000 # 1 second

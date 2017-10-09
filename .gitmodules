@@ -128,3 +128,6 @@
 	path = vendor/github.com/getlantern/deepcopy
 	url = https://github.com/getlantern/deepcopy
 
+[submodule "vendor/github.com/ncw/swift"]
+	path = vendor/github.com/ncw/swift
+	url = https://github.com/ncw/swift

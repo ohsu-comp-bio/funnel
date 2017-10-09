@@ -14,14 +14,21 @@ import (
 
 var configFile string
 var flagConf = config.Config{}
+var serverAddress string
 
 // runCmd represents the node run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a Funnel node.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+		var conf config.Config
 
-		conf, err := cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
+		flagConf, err = cmdutil.ParseServerAddressFlag(serverAddress, flagConf)
+		if err != nil {
+			return fmt.Errorf("error parsing the server address: %v", err)
+		}
+		conf, err = cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
 		if err != nil {
 			return fmt.Errorf("error processing config: %v", err)
 		}
@@ -33,7 +40,7 @@ var runCmd = &cobra.Command{
 func init() {
 	flags := runCmd.Flags()
 	flags.StringVar(&flagConf.Scheduler.Node.ID, "id", flagConf.Scheduler.Node.ID, "Node ID")
-	flags.StringVar(&flagConf.Scheduler.Node.ServerAddress, "server-address", flagConf.Scheduler.Node.ServerAddress, "Address of scheduler gRPC endpoint")
+	flags.StringVar(&serverAddress, "server-address", "", "Address of scheduler gRPC endpoint")
 	flags.DurationVar(&flagConf.Scheduler.Node.Timeout, "timeout", flagConf.Scheduler.Node.Timeout, "Timeout in seconds")
 	flags.StringVar(&flagConf.Scheduler.Node.WorkDir, "work-dir", flagConf.Scheduler.Node.WorkDir, "Working Directory")
 	flags.StringVar(&flagConf.Scheduler.Node.Logger.Level, "log-level", flagConf.Scheduler.Node.Logger.Level, "Level of logging")

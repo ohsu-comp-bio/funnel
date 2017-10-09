@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -52,78 +51,14 @@ type Config struct {
 
 // EnsureServerProperties ensures that the server address and server password
 // is consistent between the worker, node, and server.
-//
-// Precedence:
-// Server > Node > TaskReader > EventWriter
 func EnsureServerProperties(conf Config) Config {
-	conf = ensureServerAddress(conf)
-	conf = ensureServerPassword(conf)
-	return conf
-}
+	conf.Worker.EventWriters.RPC.ServerAddress = conf.Server.RPCAddress()
+	conf.Worker.TaskReaders.RPC.ServerAddress = conf.Server.RPCAddress()
+	conf.Scheduler.Node.ServerAddress = conf.Server.RPCAddress()
 
-func ensureServerAddress(conf Config) Config {
-	defaults := DefaultConfig()
-	empty := Config{}
-
-	if conf.Server.RPCAddress() != defaults.Server.RPCAddress() && conf.Server.RPCAddress() != empty.Server.RPCAddress() {
-		conf.Worker.EventWriters.RPC.ServerAddress = conf.Server.RPCAddress()
-		conf.Worker.TaskReaders.RPC.ServerAddress = conf.Server.RPCAddress()
-		conf.Scheduler.Node.ServerAddress = conf.Server.RPCAddress()
-	}
-
-	if conf.Scheduler.Node.ServerAddress != conf.Server.RPCAddress() && conf.Scheduler.Node.ServerAddress != empty.Scheduler.Node.ServerAddress {
-		parts := strings.Split(conf.Scheduler.Node.ServerAddress, ":")
-		conf.Server.HostName = parts[0]
-		conf.Server.RPCPort = parts[1]
-		conf.Worker.TaskReaders.RPC.ServerAddress = conf.Scheduler.Node.ServerAddress
-		conf.Worker.EventWriters.RPC.ServerAddress = conf.Scheduler.Node.ServerAddress
-	}
-
-	if conf.Worker.TaskReaders.RPC.ServerAddress != conf.Server.RPCAddress() && conf.Worker.TaskReaders.RPC.ServerAddress != empty.Worker.TaskReaders.RPC.ServerAddress {
-		parts := strings.Split(conf.Worker.TaskReaders.RPC.ServerAddress, ":")
-		conf.Server.HostName = parts[0]
-		conf.Server.RPCPort = parts[1]
-		conf.Scheduler.Node.ServerAddress = conf.Worker.TaskReaders.RPC.ServerAddress
-		conf.Worker.EventWriters.RPC.ServerAddress = conf.Worker.TaskReaders.RPC.ServerAddress
-	}
-
-	if conf.Worker.EventWriters.RPC.ServerAddress != conf.Server.RPCAddress() && conf.Worker.EventWriters.RPC.ServerAddress != empty.Worker.EventWriters.RPC.ServerAddress {
-		parts := strings.Split(conf.Worker.EventWriters.RPC.ServerAddress, ":")
-		conf.Server.HostName = parts[0]
-		conf.Server.RPCPort = parts[1]
-		conf.Scheduler.Node.ServerAddress = conf.Worker.EventWriters.RPC.ServerAddress
-		conf.Worker.TaskReaders.RPC.ServerAddress = conf.Worker.EventWriters.RPC.ServerAddress
-	}
-
-	return conf
-}
-
-func ensureServerPassword(conf Config) Config {
-	defaults := DefaultConfig()
-	empty := Config{}
-
-	if conf.Server.Password != defaults.Server.Password && conf.Server.Password != empty.Server.Password {
-		conf.Worker.EventWriters.RPC.ServerPassword = conf.Server.Password
-		conf.Worker.TaskReaders.RPC.ServerPassword = conf.Server.Password
-		conf.Scheduler.Node.ServerPassword = conf.Server.Password
-	}
-
-	if conf.Scheduler.Node.ServerPassword != conf.Server.Password && conf.Scheduler.Node.ServerPassword != empty.Scheduler.Node.ServerPassword {
-		conf.Server.Password = conf.Scheduler.Node.ServerPassword
-		conf.Worker.EventWriters.RPC.ServerPassword = conf.Scheduler.Node.ServerPassword
-		conf.Worker.TaskReaders.RPC.ServerPassword = conf.Scheduler.Node.ServerPassword
-	}
-
-	if conf.Worker.TaskReaders.RPC.ServerPassword != conf.Server.Password && conf.Worker.TaskReaders.RPC.ServerPassword != empty.Worker.TaskReaders.RPC.ServerPassword {
-		conf.Server.Password = conf.Worker.TaskReaders.RPC.ServerPassword
-		conf.Scheduler.Node.ServerPassword = conf.Worker.TaskReaders.RPC.ServerPassword
-	}
-
-	if conf.Worker.EventWriters.RPC.ServerPassword != conf.Server.Password && conf.Worker.EventWriters.RPC.ServerPassword != empty.Worker.EventWriters.RPC.ServerPassword {
-		conf.Server.Password = conf.Worker.EventWriters.RPC.ServerPassword
-		conf.Scheduler.Node.ServerPassword = conf.Worker.EventWriters.RPC.ServerPassword
-	}
-
+	conf.Worker.EventWriters.RPC.ServerPassword = conf.Server.Password
+	conf.Worker.TaskReaders.RPC.ServerPassword = conf.Server.Password
+	conf.Scheduler.Node.ServerPassword = conf.Server.Password
 	return conf
 }
 

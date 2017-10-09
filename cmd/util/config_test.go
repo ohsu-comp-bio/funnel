@@ -6,10 +6,13 @@ import (
 )
 
 func TestMergeConfigFileWithFlags(t *testing.T) {
-	serverAddress := "test:9090"
+	serverAddress := "test:9999"
 
 	flagConf := config.Config{}
-	flagConf.Scheduler.Node.ServerAddress = serverAddress
+	flagConf, err := ParseServerAddressFlag(serverAddress, flagConf)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
 	result, err := MergeConfigFileWithFlags("", flagConf)
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -49,7 +52,7 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 		t.Fatal("unexpected  server address in worker config")
 	}
 
-	if result.Backend == "" {
+	if result.Backend != "local" {
 		t.Fatal("expected Config.Backend to equal default value from config.DefaultValue()")
 	}
 }

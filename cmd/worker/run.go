@@ -21,13 +21,19 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a task directly, bypassing the server.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+		var conf config.Config
 
 		if taskID == "" {
 			fmt.Printf("No taskID was provided.\n\n")
 			return cmd.Help()
 		}
 
-		conf, err := util.MergeConfigFileWithFlags(configFile, flagConf)
+		flagConf, err = util.ParseServerAddressFlag(serverAddress, flagConf)
+		if err != nil {
+			return fmt.Errorf("error parsing the server address: %v", err)
+		}
+		conf, err = util.MergeConfigFileWithFlags(configFile, flagConf)
 		if err != nil {
 			return fmt.Errorf("error processing config: %v", err)
 		}

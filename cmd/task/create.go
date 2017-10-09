@@ -4,38 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 )
-
-// createCmd represents the create command
-var createCmd = &cobra.Command{
-	Use:   "create [task.json ...]",
-	Short: "Create one or more tasks to run on the server.",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-
-		res, err := doCreate(tesServer, args)
-		if err != nil {
-			return err
-		}
-
-		for _, x := range res {
-			fmt.Println(x)
-		}
-
-		return nil
-	},
-}
 
 func isJSON(s string) bool {
 	var js map[string]interface{}
 	return json.Unmarshal([]byte(s), &js) == nil
 }
 
-func doCreate(server string, messages []string) ([]string, error) {
+func Create(server string, messages []string) error {
 	cli := client.NewClient(server)
 	res := []string{}
 
@@ -48,15 +25,20 @@ func doCreate(server string, messages []string) ([]string, error) {
 		} else {
 			taskMessage, err = ioutil.ReadFile(task)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
 		r, err := cli.CreateTask(taskMessage)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		res = append(res, r.Id)
 	}
-	return res, nil
+
+	for _, x := range res {
+		fmt.Println(x)
+	}
+
+	return nil
 }

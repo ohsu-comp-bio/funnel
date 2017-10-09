@@ -46,14 +46,14 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		return Run(conf)
+		return Run(context.Background(), conf)
 	},
 }
 
 // Run runs a default Funnel server.
 // This opens a database, and starts an API server, scheduler and task logger.
 // This blocks indefinitely.
-func Run(conf config.Config) error {
+func Run(ctx context.Context, conf config.Config) error {
 	logger.Configure(conf.Server.Logger)
 
 	var backend compute.Backend

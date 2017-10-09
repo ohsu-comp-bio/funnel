@@ -6,42 +6,15 @@ import (
 	"github.com/elgs/jsonql"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/spf13/cobra"
 	"strings"
 )
 
-var (
-	taskListView string
-	taskName     string
-	taskState    string
-)
-
-// listCmd represents the list command
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all tasks.",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		r, err := doList(tesServer)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s\n", r)
-		return nil
-	},
-}
-
-func init() {
-	listCmd.Flags().StringVarP(&taskListView, "view", "v", "BASIC", "Task view")
-	listCmd.Flags().StringVarP(&taskState, "state", "s", "", "Task state")
-	listCmd.Flags().StringVarP(&taskName, "name", "n", "", "Task name")
-}
-
-func doList(server string) (string, error) {
+func List(server, taskListView, taskState, taskName string) error {
 	cli := client.NewClient(server)
 
 	view, ok := tes.TaskView_value[taskListView]
 	if !ok {
-		return "", fmt.Errorf("Unknown task view: %s", taskListView)
+		return fmt.Errorf("Unknown task view: %s", taskListView)
 	}
 
 	var page string
@@ -52,7 +25,7 @@ func doList(server string) (string, error) {
 			PageToken: page,
 		})
 		if err != nil {
-			return "", err
+			return err
 		}
 		if len(resp.Tasks) == 0 {
 			break
@@ -84,17 +57,19 @@ func doList(server string) (string, error) {
 		var err error
 		tasks, err = parser.Query(strings.Join(queries, " && "))
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
 
 	tasksJSON, err := json.Marshal(tasks)
 	if err != nil {
-		return "", err
+		return err
 	}
 	response := string(tasksJSON)
 	if response == "null" {
-		return "{}", nil
+		response = "{}"
 	}
-	return response, nil
+
+	fmt.Printf("%s\n", response)
+	return nil
 }

@@ -1,29 +1,67 @@
 package server
 
 import (
+	"context"
+	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/spf13/cobra"
 )
 
-var configFile string
-var flagConf = config.Config{}
-
-// Cmd represents the `funnel server` command set
-var Cmd = &cobra.Command{
-	Use:   "server",
-	Short: "Funnel server commands.",
+// NewCommand returns the node command
+func NewCommand() *cobra.Command {
+	cmd, _ := newCommandHooks()
+	return cmd
 }
 
-func init() {
-	flags := Cmd.PersistentFlags()
-	flags.StringVarP(&configFile, "config", "c", "", "Config File")
-	flags.StringVar(&flagConf.Server.HostName, "hostname", flagConf.Server.HostName, "Host name or IP")
-	flags.StringVar(&flagConf.Server.RPCPort, "rpc-port", flagConf.Server.RPCPort, "RPC Port")
-	flags.StringVar(&flagConf.Server.HTTPPort, "http-port", flagConf.Server.HTTPPort, "HTTP Port")
-	flags.StringVar(&flagConf.Server.Logger.Level, "log-level", flagConf.Server.Logger.Level, "Level of logging")
-	flags.StringVar(&flagConf.Server.Logger.OutputFile, "log-path", flagConf.Server.Logger.OutputFile, "File path to write logs to")
-	flags.StringVar(&flagConf.Server.Logger.Formatter, "log-format", flagConf.Server.Logger.Formatter, "Log format. ['json', 'text']")
-	flags.StringVar(&flagConf.Server.Database, "database", flagConf.Server.Database, "Name of database backend to enable")
-	flags.StringVar(&flagConf.Backend, "backend", flagConf.Backend, "Name of compute backend to enable")
-	Cmd.AddCommand(runCmd)
+type hooks struct {
+	Run func(ctx context.Context, conf config.Config) error
+}
+
+func newCommandHooks() (*cobra.Command, *hooks) {
+	hooks := &hooks{
+		Run: Run,
+	}
+
+	var (
+		configFile string
+		conf       config.Config
+		flagConf   config.Config
+	)
+
+	cmd := &cobra.Command{
+		Use:   "server",
+		Short: "Funnel server commands.",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+
+			conf, err = util.MergeConfigFileWithFlags(configFile, flagConf)
+			if err != nil {
+				return fmt.Errorf("error processing config: %v", err)
+			}
+
+			return nil
+		},
+	}
+	f := cmd.PersistentFlags()
+	f.StringVarP(&configFile, "config", "c", "", "Config File")
+	f.StringVar(&flagConf.Server.HostName, "hostname", flagConf.Server.HostName, "Host name or IP")
+	f.StringVar(&flagConf.Server.RPCPort, "rpc-port", flagConf.Server.RPCPort, "RPC Port")
+	f.StringVar(&flagConf.Server.HTTPPort, "http-port", flagConf.Server.HTTPPort, "HTTP Port")
+	f.StringVar(&flagConf.Server.Logger.Level, "log-level", flagConf.Server.Logger.Level, "Level of logging")
+	f.StringVar(&flagConf.Server.Logger.OutputFile, "log-path", flagConf.Server.Logger.OutputFile, "File path to write logs to")
+	f.StringVar(&flagConf.Server.Database, "database", flagConf.Server.Database, "Name of database backend to enable")
+	f.StringVar(&flagConf.Backend, "backend", flagConf.Backend, "Name of compute backend to enable")
+
+	run := &cobra.Command{
+		Use:   "run",
+		Short: "Runs a Funnel server.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return hooks.Run(context.Background(), conf)
+		},
+	}
+
+	cmd.AddCommand(run)
+
+	return cmd, hooks
 }

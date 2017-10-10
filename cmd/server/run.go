@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/compute/gce"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
@@ -19,27 +18,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/server/boltdb"
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
-	"github.com/spf13/cobra"
 	"strings"
 )
-
-var log = logger.New("server run cmd")
-
-// runCmd represents the `funnel server run` command.
-var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "Runs a Funnel server.",
-	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
-
-		conf, err := util.MergeConfigFileWithFlags(configFile, flagConf)
-		if err != nil {
-			return fmt.Errorf("error processing config: %v", err)
-		}
-
-		return Run(context.Background(), conf)
-	},
-}
 
 // Run runs a default Funnel server.
 // This opens a database, and starts an API server, scheduler and task logger.

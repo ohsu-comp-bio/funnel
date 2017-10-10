@@ -52,8 +52,6 @@ func FromConfig(conf config.EventWriters) (Writer, error) {
 			writer = NewLogger("worker")
 		case "rpc":
 			writer, err = NewRPCWriter(conf.RPC)
-    case "elastic":
-      writer, err = NewElasticWriter(conf.Elastic)
 		default:
 			err = fmt.Errorf("unknown EventWriter")
 		}

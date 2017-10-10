@@ -15,8 +15,11 @@ import (
 
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {
-	client *elastic.Client
-	conf   config.Elastic
+	client    *elastic.Client
+	conf      config.Elastic
+	taskIndex string
+	logsIndex string
+	nodeIndex string
 }
 
 // NewElastic returns a new Elastic instance.
@@ -27,14 +30,19 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Elastic{client, conf}, nil
+	return &Elastic{
+		client,
+		conf,
+		conf.IndexPrefix + "-tasks",
+		conf.IndexPrefix + "-logs",
+		conf.IndexPrefix + "-nodes",
+	}, nil
 }
 
 func (es *Elastic) Counts() {
 	agg := elastic.NewTermsAggregation().Field("state.keyword").Size(10).OrderByCountDesc()
 	res, err := es.client.Search().
-		Index(es.conf.Index).
-		Type("task").
+		Index(es.taskIndex).
 		Aggregation("state-counts", agg).
 		Pretty(true).
 		Do(context.Background())
@@ -54,14 +62,28 @@ func (es *Elastic) Counts() {
 	}
 }
 
-// Init initializing the Elasticsearch indices.
-func (es *Elastic) Init(ctx context.Context) error {
-	if exists, err := es.client.IndexExists(es.conf.Index).Do(ctx); err != nil {
+func (es *Elastic) initIndex(ctx context.Context, name string) error {
+	exists, err := es.client.
+		IndexExists(name).
+		Do(ctx)
+
+	if err != nil {
 		return err
 	} else if !exists {
-		if _, err := es.client.CreateIndex(es.conf.Index).Do(ctx); err != nil {
+		if _, err := es.client.CreateIndex(name).Do(ctx); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// Init initializing the Elasticsearch indices.
+func (es *Elastic) Init(ctx context.Context) error {
+	if err := es.initIndex(ctx, es.taskIndex); err != nil {
+		return err
+	}
+	if err := es.initIndex(ctx, es.logsIndex); err != nil {
+		return err
 	}
 	return nil
 }
@@ -69,8 +91,7 @@ func (es *Elastic) Init(ctx context.Context) error {
 // CreateTask creates a new task.
 func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 	_, err := es.client.Update().
-		Index(es.conf.Index).
-		Type("task").
+		Index(es.taskIndex).
 		Id(task.Id).
 		// TODO need to be consistent with jsonpb
 		Doc(task).
@@ -82,8 +103,7 @@ func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 // ListTasks lists tasks, duh.
 func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) ([]*tes.Task, error) {
 	res, err := es.client.Search().
-		Index(es.conf.Index).
-		Type("task").
+		Index(es.taskIndex).
 		Size(getPageSize(req)).
 		// TODO sorting is broken
 		Do(ctx)
@@ -129,8 +149,7 @@ func getPageSize(req *tes.ListTasksRequest) int {
 // GetTask gets a task by ID.
 func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 	res, err := es.client.Get().
-		Index(es.conf.Index).
-		Type("task").
+		Index(es.taskIndex).
 		Id(id).
 		Do(ctx)
 
@@ -147,9 +166,8 @@ func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 }
 
 func (es *Elastic) UpdateTask(ctx context.Context, task *tes.Task) error {
-	_, err = es.client.Update().
-		Index(es.conf.Index).
-		Type("task").
+	_, err := es.client.Update().
+		Index(es.taskIndex).
 		Id(task.Id).
 		Doc(task).
 		Do(ctx)
@@ -157,18 +175,17 @@ func (es *Elastic) UpdateTask(ctx context.Context, task *tes.Task) error {
 }
 
 func (es *Elastic) CreateSyslog(ctx context.Context, ev *events.Event) error {
-  mar := jsonpb.Marshaler{}
-  s, err := mar.MarshalToString(ev)
-  if err != nil {
-    return err
-  }
+	mar := jsonpb.Marshaler{}
+	s, err := mar.MarshalToString(ev)
+	if err != nil {
+		return err
+	}
 
-  _, err = es.client.Index().
-    Index(es.conf.Index).
-    Type("task-syslog").
-    BodyString(s).
-    Do(ctx)
-  return err
+	_, err = es.client.Index().
+		Index(es.logsIndex).
+		BodyString(s).
+		Do(ctx)
+	return err
 }
 
 /*
@@ -197,3 +214,28 @@ func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 	}
 }
 */
+
+// Write writes a task update event.
+func (es *Elastic) Write(ev *events.Event) error {
+	ctx := context.Background()
+
+	switch ev.Type {
+	case events.Type_TASK_CREATED:
+		return es.CreateTask(ctx, ev.GetTask())
+
+	case events.Type_SYSTEM_LOG:
+		return es.CreateSyslog(ctx, ev)
+	}
+
+	task, err := es.GetTask(ctx, ev.Id)
+	if err != nil {
+		return err
+	}
+
+	err = events.TaskBuilder{Task: task}.Write(ev)
+	if err != nil {
+		return err
+	}
+
+	return es.UpdateTask(ctx, task)
+}

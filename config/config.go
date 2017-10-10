@@ -116,13 +116,13 @@ func DefaultConfig() Config {
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
 	c.Server.Databases.DynamoDB.TableBasename = "funnel"
 
-	c.Server.Databases.Elastic.Index = "funnel"
+	c.Server.Databases.Elastic.IndexPrefix = "funnel"
 	c.Server.Databases.Elastic.URL = "http://localhost:9200"
 
 	c.Worker.EventWriters.Active = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
 	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
-  c.Worker.EventWriters.Elastic = c.Server.Databases.Elastic
+	c.Worker.EventWriters.Elastic = c.Server.Databases.Elastic
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -142,8 +142,8 @@ func DefaultConfig() Config {
 
 // Elastic configures elasticsearch database backend.
 type Elastic struct {
-	Index string
-	URL   string
+	IndexPrefix string
+	URL         string
 }
 
 // Server describes configuration for the server.
@@ -252,7 +252,7 @@ type EventWriters struct {
 	Active   []string
 	RPC      RPC
 	DynamoDB DynamoDB
-  Elastic  Elastic
+	Elastic  Elastic
 }
 
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes

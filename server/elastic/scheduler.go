@@ -28,8 +28,7 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 
 	q := elastic.NewTermQuery("state", tes.State_QUEUED)
 	res, err := es.client.Search().
-		Index(es.conf.Index).
-		Type("task").
+		Index(es.taskIndex).
 		// TODO
 		//Sort("id", true).
 		Query(q).
@@ -57,8 +56,7 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 // GetNode gets a node
 func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
 	res, err := es.client.Get().
-		Index(es.conf.Index).
-		Type("node").
+		Index(es.nodeIndex).
 		Id(req.Id).
 		Do(ctx)
 
@@ -83,8 +81,7 @@ func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 // doesn't match the version in the database, an error is returned.
 func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
 	res, err := es.client.Get().
-		Index(es.conf.Index).
-		Type("node").
+		Index(es.nodeIndex).
 		Id(node.Id).
 		Do(ctx)
 
@@ -102,8 +99,7 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 	s, _ := mar.MarshalToString(node)
 
 	_, err = es.client.Index().
-		Index(es.conf.Index).
-		Type("node").
+		Index(es.nodeIndex).
 		Id(node.Id).
 		BodyString(s).
 		Do(ctx)
@@ -113,8 +109,7 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 // DeleteNode deletes a node by ID.
 func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) error {
 	_, err := es.client.Delete().
-		Index(es.conf.Index).
-		Type("node").
+		Index(es.nodeIndex).
 		Id(node.Id).
 		Do(ctx)
 	return err
@@ -123,8 +118,7 @@ func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) error {
 // ListNodes is an API endpoint that returns a list of nodes.
 func (es *Elastic) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
 	res, err := es.client.Search().
-		Index(es.conf.Index).
-		Type("node").
+		Index(es.nodeIndex).
 		Do(ctx)
 
 	if err != nil {

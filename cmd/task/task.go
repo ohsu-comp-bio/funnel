@@ -1,113 +1,153 @@
 package task
 
 import (
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
+	"io"
 	"os"
 )
 
 var log = logger.New("task cmd")
 
-type Hooks struct {
-	Create func(server string, messages []string) error
-	Get    func(server string, ids []string, taskView string) error
-	List   func(server, view, state, name string) error
-	Cancel func(server string, ids []string) error
-	Wait   func(server string, ids []string) error
+// NewCommand returns the "task" subcommands.
+func NewCommand() *cobra.Command {
+	cmd, _ := newCommandHooks()
+	return cmd
 }
 
-var DefaultHooks = Hooks{
-	Create: Create,
-	Get:    Get,
-	List:   List,
-	Cancel: Cancel,
-	Wait:   Wait,
-}
+func newCommandHooks() (*cobra.Command, *hooks) {
 
-func NewCommand(hooks Hooks) *cobra.Command {
+	h := &hooks{
+		Create: Create,
+		Get:    Get,
+		List:   List,
+		Cancel: Cancel,
+		Wait:   Wait,
+	}
 
 	defaultTesServer := "http://localhost:8000"
 	tesServer := defaultTesServer
-
-	var (
-		taskView  string
-		taskName  string
-		taskState string
-	)
 
 	cmd := &cobra.Command{
 		Use:     "task",
 		Aliases: []string{"tasks"},
 		Short:   "Make API calls to a TES server.",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			f := cmd.PersistentFlags()
-			f.StringVarP(&tesServer, "server", "S", tesServer, "")
 			if tesServer == defaultTesServer {
-				tesServer = os.Getenv("FUNNEL_SERVER")
+				if val := os.Getenv("FUNNEL_SERVER"); val != "" {
+					tesServer = val
+				}
 			}
 		},
 	}
+	f := cmd.PersistentFlags()
+	f.StringVarP(&tesServer, "server", "S", defaultTesServer, "")
 
-	cmd.AddCommand(&cobra.Command{
+	create := &cobra.Command{
 		Use:   "create [task.json ...]",
 		Short: "Create one or more tasks to run on the server.",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cmd.Help()
-			}
-			return hooks.Create(tesServer, args)
+			return h.Create(tesServer, args, cmd.OutOrStdout())
 		},
-	})
+	}
 
-	cmd.AddCommand(&cobra.Command{
+	var (
+		taskName  string
+		taskState string
+	)
+	listView := choiceVar{val: "BASIC"}
+
+	list := &cobra.Command{
 		Use:   "list",
 		Short: "List all tasks.",
-		PreRun: func(cmd *cobra.Command, args []string) {
-			f := cmd.Flags()
-			f.StringVarP(&taskView, "view", "v", "BASIC", "Task view")
-			f.StringVarP(&taskState, "state", "s", "", "Task state")
-			f.StringVarP(&taskName, "name", "n", "", "Task name")
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return hooks.List(tesServer, taskView, taskState, taskName)
+			return h.List(tesServer, listView.val, taskState, taskName, cmd.OutOrStdout())
 		},
-	})
+	}
 
-	cmd.AddCommand(&cobra.Command{
+	lf := list.Flags()
+	listView.AddChoices("BASIC", "MINIMAL", "FULL")
+	lf.VarP(&listView, "view", "v", "Task view")
+	lf.StringVarP(&taskState, "state", "s", "", "Task state")
+	lf.StringVarP(&taskName, "name", "n", "", "Task name")
+
+	getView := choiceVar{val: "FULL"}
+	getView.AddChoices("BASIC", "MINIMAL", "FULL")
+
+	get := &cobra.Command{
 		Use:   "get [taskID ...]",
 		Short: "Get one or more tasks by ID.",
-		PreRun: func(cmd *cobra.Command, args []string) {
-			cmd.Flags().StringVarP(&taskView, "view", "v", "FULL", "Task view")
-		},
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cmd.Help()
-			}
-			return hooks.Get(tesServer, args, taskView)
+			return h.Get(tesServer, args, getView.val, cmd.OutOrStdout())
 		},
-	})
+	}
 
-	cmd.AddCommand(&cobra.Command{
+	gf := get.Flags()
+	gf.VarP(&getView, "view", "v", "Task view")
+
+	cancel := &cobra.Command{
 		Use:   "cancel [taskID ...]",
 		Short: "Cancel one or more tasks by ID.",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cmd.Help()
-			}
-			return hooks.Cancel(tesServer, args)
+			return h.Cancel(tesServer, args, cmd.OutOrStdout())
 		},
-	})
+	}
 
-	cmd.AddCommand(&cobra.Command{
+	wait := &cobra.Command{
 		Use:   "wait [taskID...]",
 		Short: "Wait for one or more tasks to complete.\n",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cmd.Help()
-			}
-			return hooks.Wait(tesServer, args)
+			return h.Wait(tesServer, args)
 		},
-	})
+	}
 
-	return cmd
+	cmd.AddCommand(create, get, list, cancel, wait)
+	return cmd, h
+}
+
+type hooks struct {
+	Create func(server string, messages []string, w io.Writer) error
+	Get    func(server string, ids []string, view string, w io.Writer) error
+	List   func(server, view, state, name string, w io.Writer) error
+	Cancel func(server string, ids []string, w io.Writer) error
+	Wait   func(server string, ids []string) error
+}
+
+type choiceVar struct {
+	choices map[string]bool
+	val     string
+}
+
+func (c *choiceVar) AddChoices(choices ...string) {
+	if c.choices == nil {
+		c.choices = map[string]bool{}
+	}
+	for _, choice := range choices {
+		c.choices[choice] = true
+	}
+}
+
+func (c *choiceVar) String() string {
+	return c.val
+}
+
+func (c *choiceVar) Set(v string) error {
+	if _, ok := c.choices[v]; !ok {
+		return fmt.Errorf("invalid choice: %s", v)
+	}
+	c.val = v
+	return nil
+}
+
+func (c *choiceVar) Get() interface{} {
+	return c.val
+}
+
+func (c *choiceVar) Type() string {
+	return "string"
 }

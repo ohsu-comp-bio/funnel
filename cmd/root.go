@@ -28,7 +28,7 @@ func init() {
 	RootCmd.AddCommand(node.Cmd)
 	RootCmd.AddCommand(run.Cmd)
 	RootCmd.AddCommand(server.Cmd)
-	RootCmd.AddCommand(task.NewCommand(task.DefaultHooks))
+	RootCmd.AddCommand(task.NewCommand())
 	RootCmd.AddCommand(termdash.Cmd)
 	RootCmd.AddCommand(version.Cmd)
 	RootCmd.AddCommand(worker.Cmd)

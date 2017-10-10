@@ -6,10 +6,15 @@ import (
 	"github.com/elgs/jsonql"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"io"
 	"strings"
 )
 
-func List(server, taskListView, taskState, taskName string) error {
+// List runs the "task list" CLI command, which connects to the server,
+// calls ListTasks() and requests the given task view. Results may be filtered
+// client-side using the "taskState" and "taskName" args. Output is written
+// to the given writer.
+func List(server, taskListView, taskState, taskName string, writer io.Writer) error {
 	cli := client.NewClient(server)
 
 	view, ok := tes.TaskView_value[taskListView]
@@ -70,6 +75,6 @@ func List(server, taskListView, taskState, taskName string) error {
 		response = "{}"
 	}
 
-	fmt.Printf("%s\n", response)
+	fmt.Fprintf(writer, "%s\n", response)
 	return nil
 }

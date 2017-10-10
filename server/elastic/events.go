@@ -93,12 +93,16 @@ func (es *Elastic) Init(ctx context.Context) error {
 
 // CreateTask creates a new task.
 func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
-	_, err := es.client.Update().
+	mar := jsonpb.Marshaler{}
+	s, err := mar.MarshalToString(task)
+	if err != nil {
+		return err
+	}
+
+	_, err = es.client.Index().
 		Index(es.taskIndex).
 		Id(task.Id).
-		// TODO need to be consistent with jsonpb
-		Doc(task).
-		DocAsUpsert(true).
+		BodyString(s).
 		Do(ctx)
 	return err
 }
@@ -169,10 +173,17 @@ func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 }
 
 func (es *Elastic) UpdateTask(ctx context.Context, task *tes.Task) error {
-	_, err := es.client.Update().
+	mar := jsonpb.Marshaler{}
+	s, err := mar.MarshalToString(task)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = es.client.Index().
 		Index(es.taskIndex).
 		Id(task.Id).
-		Doc(task).
+		BodyString(s).
 		Do(ctx)
 	return err
 }

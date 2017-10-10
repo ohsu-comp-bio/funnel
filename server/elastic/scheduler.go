@@ -96,7 +96,10 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 	node.Version = time.Now().UnixNano()
 
 	mar := jsonpb.Marshaler{}
-	s, _ := mar.MarshalToString(node)
+	s, err := mar.MarshalToString(node)
+	if err != nil {
+		return nil, err
+	}
 
 	_, err = es.client.Index().
 		Index(es.nodeIndex).

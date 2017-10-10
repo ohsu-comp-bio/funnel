@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"io"
 	"io/ioutil"
 )
 
-func isJSON(s string) bool {
-	var js map[string]interface{}
-	return json.Unmarshal([]byte(s), &js) == nil
-}
-
-func Create(server string, messages []string) error {
+// Create runs the "task create" CLI command, connecting to the server,
+// calling CreateTask, and writing output to the given writer.
+// Tasks are loaded from the "messages" arg. "messages" may contain either
+// file paths or JSON objects.
+func Create(server string, messages []string, writer io.Writer) error {
 	cli := client.NewClient(server)
 	res := []string{}
 
@@ -37,8 +37,13 @@ func Create(server string, messages []string) error {
 	}
 
 	for _, x := range res {
-		fmt.Println(x)
+		fmt.Fprintln(writer, x)
 	}
 
 	return nil
+}
+
+func isJSON(s string) bool {
+	var js map[string]interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
 }

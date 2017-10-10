@@ -3,9 +3,12 @@ package task
 import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"io"
 )
 
-func Cancel(server string, ids []string) error {
+// Cancel runs the "task cancel" CLI command, which connects to the server,
+// calls CancelTask() on each ID, and writes output to the given writer.
+func Cancel(server string, ids []string, writer io.Writer) error {
 	cli := client.NewClient(server)
 	res := []string{}
 
@@ -23,7 +26,7 @@ func Cancel(server string, ids []string) error {
 	}
 
 	for _, x := range res {
-		fmt.Println(x)
+		fmt.Fprintln(writer, x)
 	}
 	return nil
 }

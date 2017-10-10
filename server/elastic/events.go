@@ -15,11 +15,11 @@ import (
 
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {
-	client    *elastic.Client
-	conf      config.Elastic
-	taskIndex string
-	logsIndex string
-	nodeIndex string
+	client      *elastic.Client
+	conf        config.Elastic
+	taskIndex   string
+	nodeIndex   string
+	eventsIndex string
 }
 
 // NewElastic returns a new Elastic instance.
@@ -34,8 +34,8 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 		client,
 		conf,
 		conf.IndexPrefix + "-tasks",
-		conf.IndexPrefix + "-logs",
 		conf.IndexPrefix + "-nodes",
+		conf.IndexPrefix + "-events",
 	}, nil
 }
 
@@ -82,7 +82,10 @@ func (es *Elastic) Init(ctx context.Context) error {
 	if err := es.initIndex(ctx, es.taskIndex); err != nil {
 		return err
 	}
-	if err := es.initIndex(ctx, es.logsIndex); err != nil {
+	if err := es.initIndex(ctx, es.nodeIndex); err != nil {
+		return err
+	}
+	if err := es.initIndex(ctx, es.eventsIndex); err != nil {
 		return err
 	}
 	return nil
@@ -174,20 +177,6 @@ func (es *Elastic) UpdateTask(ctx context.Context, task *tes.Task) error {
 	return err
 }
 
-func (es *Elastic) CreateSyslog(ctx context.Context, ev *events.Event) error {
-	mar := jsonpb.Marshaler{}
-	s, err := mar.MarshalToString(ev)
-	if err != nil {
-		return err
-	}
-
-	_, err = es.client.Index().
-		Index(es.logsIndex).
-		BodyString(s).
-		Do(ctx)
-	return err
-}
-
 /*
 func tail(s string, sizeBytes int) string {
 	b := []byte(s)
@@ -219,12 +208,20 @@ func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 func (es *Elastic) Write(ev *events.Event) error {
 	ctx := context.Background()
 
-	switch ev.Type {
-	case events.Type_TASK_CREATED:
-		return es.CreateTask(ctx, ev.GetTask())
+	mar := jsonpb.Marshaler{}
+	s, err := mar.MarshalToString(ev)
 
-	case events.Type_SYSTEM_LOG:
-		return es.CreateSyslog(ctx, ev)
+	_, err = es.client.Index().
+		Index(es.eventsIndex).
+		BodyString(s).
+		Do(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if ev.Type == events.Type_TASK_CREATED {
+		return es.CreateTask(ctx, ev.GetTask())
 	}
 
 	task, err := es.GetTask(ctx, ev.Id)

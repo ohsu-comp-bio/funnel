@@ -19,7 +19,7 @@ type Database interface {
 	ListNodes(context.Context, *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error)
 	PutNode(context.Context, *pbs.Node) (*pbs.PutNodeResponse, error)
 	DeleteNode(context.Context, *pbs.Node) error
-	Write(ev *events.Event) error
+	Write(context.Context, *events.Event) error
 }
 
 // Scheduler handles scheduling tasks to nodes and support many backends.
@@ -113,7 +113,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 				continue
 			}
 
-			err = s.DB.Write(events.NewState(task.Id, 0, tes.State_INITIALIZING))
+			err = s.DB.Write(ctx, events.NewState(task.Id, 0, tes.State_INITIALIZING))
 			if err != nil {
 				s.Log.Error("Error marking task as initializing", err)
 			}

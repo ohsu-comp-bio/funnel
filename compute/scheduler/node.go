@@ -148,13 +148,7 @@ func (n *Node) sync(ctx context.Context) {
 	// to call this multiple times with the same task ID.
 	for _, id := range r.TaskIds {
 		if n.workers.Add(id) {
-			go func(id string) {
-				// TODO handle error
-				log := n.log.WithFields("ns", "worker", "taskID", id)
-				r, _ := n.newWorker(n.workerConf, id, log)
-				r.Run(ctx)
-				n.workers.Remove(id)
-			}(id)
+			go n.runTask(ctx, id)
 		}
 	}
 
@@ -184,6 +178,53 @@ func (n *Node) sync(ctx context.Context) {
 	})
 	if err != nil {
 		n.log.Error("Couldn't save node update. Recovering.", err)
+	}
+}
+
+func (n *Node) runTask(ctx context.Context, id string) {
+	log := n.log.WithFields("ns", "worker", "taskID", id)
+	// TODO handle error
+	r, _ := n.newWorker(n.workerConf, id, log)
+	r.Run(ctx)
+	defer n.workers.Remove(id)
+
+	// task cannot fully complete until it has successfully removed the
+	// assigned ID from the node database. this helps prevent tasks from
+	// running multiple times.
+	ticker := time.NewTicker(n.conf.UpdateRate)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			r, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
+			if err != nil {
+				log.Error("couldn't get node state during task sync.", err)
+				// break out of "select", but not "for".
+				// i.e. try again later
+				break
+			}
+
+			// Find the finished task ID in the node's assigned IDs and remove it.
+			var ids []string
+			for _, tid := range r.TaskIds {
+				if tid != id {
+					ids = append(ids, tid)
+				}
+			}
+			r.TaskIds = ids
+
+			_, err = n.client.PutNode(ctx, r)
+			if err != nil {
+				log.Error("couldn't save node update during task sync.", err)
+				// break out of "select", but not "for".
+				// i.e. try again later
+				break
+			}
+			// Update was successful, return.
+			return
+		}
 	}
 }
 

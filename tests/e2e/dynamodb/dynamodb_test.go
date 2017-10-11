@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -596,7 +597,9 @@ func tableIsAlive(ctx context.Context, cli *dynamodb.DynamoDB, name string) bool
 }
 
 func checkTablesAreALive(conf config.DynamoDB) bool {
-	sess, _ := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
+	awsConf := util.NewAWSConfigWithCreds(conf.Credentials.Key, conf.Credentials.Secret)
+	awsConf.WithRegion(conf.Region)
+	sess, _ := session.NewSession(awsConf)
 	cli := dynamodb.New(sess)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
@@ -610,7 +613,9 @@ func checkTablesAreALive(conf config.DynamoDB) bool {
 }
 
 func deleteTables(conf config.DynamoDB) error {
-	sess, _ := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
+	awsConf := util.NewAWSConfigWithCreds(conf.Credentials.Key, conf.Credentials.Secret)
+	awsConf.WithRegion(conf.Region)
+	sess, _ := session.NewSession(awsConf)
 	cli := dynamodb.New(sess)
 
 	cli.DeleteTable(&dynamodb.DeleteTableInput{TableName: aws.String(conf.TableBasename + "-task")})

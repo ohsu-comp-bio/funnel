@@ -12,7 +12,9 @@ import (
 )
 
 func newBatchSvc(conf Config, dryRun bool) (*batchsvc, error) {
-	sess, err := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
+	awsConf := util.NewAWSConfigWithCreds("", "")
+	awsConf.WithRegion(conf.Region)
+	sess, err := session.NewSession(awsConf)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating aws session: %v", err)
 	}

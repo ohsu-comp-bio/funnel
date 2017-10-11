@@ -59,14 +59,13 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	case "dynamodb":
 		db, err = dynamodb.NewDynamoDB(conf.Server.Databases.DynamoDB)
 	case "elastic":
-		es, eserr := elastic.NewTES(conf.Server.Databases.Elastic)
-		if eserr != nil {
-			err = eserr
-		} else {
-			db = es
-			es.Init(context.Background())
-		}
+		db, err = elastic.NewTES(conf.Server.Databases.Elastic)
 	}
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while connecting to or creating the database: %v", err)
+	}
+
+	err = db.Init(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while connecting to or creating the database: %v", err)
 	}
@@ -100,11 +99,11 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			DB:      sdb,
 			Conf:    conf.Scheduler,
 			Backend: sbackend,
-
+		}
 	case "batch", "aws-batch":
-		backend, err = batch.NewBackend(conf.Backends.Batch)
+		backend, err = batch.NewBackend(conf)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	case "gridengine":
 		backend = gridengine.NewBackend(conf)

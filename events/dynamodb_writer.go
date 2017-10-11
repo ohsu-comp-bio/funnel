@@ -3,6 +3,7 @@ package events
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/golang/protobuf/ptypes"
@@ -25,7 +26,9 @@ type DynamoDBEventWriter struct {
 
 // NewDynamoDBEventWriter returns a new DynamoDBEventWriter instance.
 func NewDynamoDBEventWriter(conf config.DynamoDB) (*DynamoDBEventWriter, error) {
-	sess, err := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
+	awsConf := util.NewAWSConfigWithCreds(conf.Credentials.Key, conf.Credentials.Secret)
+	awsConf.WithRegion(conf.Region)
+	sess, err := session.NewSession(awsConf)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating dynamodb client: %v", err)
 	}

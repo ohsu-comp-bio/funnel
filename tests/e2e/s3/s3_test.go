@@ -27,7 +27,6 @@ func TestMain(m *testing.M) {
 	}
 
 	conf = e2e.DefaultConfig()
-	conf.Worker.Storage.S3 = config.S3Storage{FromEnv: true}
 	fun = e2e.NewFunnel(conf)
 	fun.StartServer()
 

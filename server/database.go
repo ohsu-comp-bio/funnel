@@ -5,6 +5,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 )
 
 // Database represents the interface to the database used by the scheduler, scaler, etc.
@@ -14,4 +15,5 @@ type Database interface {
 	events.EventServiceServer
 	pbs.SchedulerServiceServer
 	WithComputeBackend(compute.Backend)
+	Init(context.Context) error
 }

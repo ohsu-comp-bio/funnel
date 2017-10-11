@@ -5,8 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/ohsu-comp-bio/funnel/compute"
-	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
@@ -14,48 +12,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"strconv"
 )
-
-// DynamoDB provides handlers for gRPC endpoints
-// Data is stored/retrieved from the Amazon DynamoDB NoSQL database.
-type DynamoDB struct {
-	client         *dynamodb.DynamoDB
-	backend        compute.Backend
-	partitionKey   string
-	partitionValue string
-	taskTable      string
-	contentsTable  string
-	stdoutTable    string
-	stderrTable    string
-}
-
-// NewDynamoDB returns a new instance of DynamoDB, accessing the database at
-// the given url, and including the given ServerConfig.
-func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
-	sess, err := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
-	if err != nil {
-		return nil, fmt.Errorf("error occurred creating dynamodb client: %v", err)
-	}
-
-	db := &DynamoDB{
-		client:         dynamodb.New(sess),
-		partitionKey:   "hid",
-		partitionValue: "0",
-		taskTable:      conf.TableBasename + "-task",
-		contentsTable:  conf.TableBasename + "-contents",
-		stdoutTable:    conf.TableBasename + "-stdout",
-		stderrTable:    conf.TableBasename + "-stderr",
-	}
-
-	err = db.createTables()
-	return db, err
-}
-
-// WithComputeBackend configures the DynamoDB instance to use the given
-// compute.Backend. The compute backend is responsible for dispatching tasks to
-// schedulers / compute resources with its Submit method.
-func (db *DynamoDB) WithComputeBackend(backend compute.Backend) {
-	db.backend = backend
-}
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.

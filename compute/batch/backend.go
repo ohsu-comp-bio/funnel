@@ -4,36 +4,42 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"regexp"
 	"time"
 )
 
-var log = logger.Sub("batch")
-
 // NewBackend returns a new local Backend instance.
-func NewBackend(conf config.AWSBatch) (*Backend, error) {
-	sess, err := util.NewAWSSession(conf.Key, conf.Secret, conf.Region)
+func NewBackend(conf config.Config) (*Backend, error) {
+	batchConf := conf.Backends.Batch
+
+	awsConf := util.NewAWSConfigWithCreds(batchConf.Credentials.Key, batchConf.Credentials.Secret)
+	awsConf.WithRegion(batchConf.Region)
+	sess, err := session.NewSession(awsConf)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
 	}
 
 	batchCli := batch.New(sess)
 
-	response, err := batchCli.RegisterJobDefinition(&batch.RegisterJobDefinitionInput{
+	jobDef := &batch.RegisterJobDefinitionInput{
 		ContainerProperties: &batch.ContainerProperties{
-			Image:      aws.String(conf.JobDef.Image),
-			Memory:     aws.Int64(conf.JobDef.DefaultMemory),
-			Vcpus:      aws.Int64(conf.JobDef.DefaultVcpus),
+			Image:      aws.String(batchConf.JobDef.Image),
+			Memory:     aws.Int64(batchConf.JobDef.DefaultMemory),
+			Vcpus:      aws.Int64(batchConf.JobDef.DefaultVcpus),
 			Privileged: aws.Bool(true),
 			MountPoints: []*batch.MountPoint{
 				{
 					SourceVolume:  aws.String("docker_sock"),
 					ContainerPath: aws.String("/var/run/docker.sock"),
+				},
+				{
+					SourceVolume:  aws.String("funnel-work-dir"),
+					ContainerPath: aws.String(conf.Worker.WorkDir),
 				},
 			},
 			Volumes: []*batch.Volume{
@@ -43,25 +49,45 @@ func NewBackend(conf config.AWSBatch) (*Backend, error) {
 						SourcePath: aws.String("/var/run/docker.sock"),
 					},
 				},
+				{
+					Name: aws.String("funnel-work-dir"),
+					Host: &batch.Host{
+						SourcePath: aws.String(conf.Worker.WorkDir),
+					},
+				},
 			},
 			Command: []*string{
 				aws.String("worker"),
 				aws.String("run"),
+				aws.String("--WorkDir"),
+				aws.String(conf.Worker.WorkDir),
+				aws.String("--TaskReader"),
+				aws.String(conf.Worker.TaskReader),
+				aws.String("--DynamoDB.Region"),
+				aws.String(conf.Worker.EventWriters.DynamoDB.Region),
+				aws.String("--DynamoDB.TableBasename"),
+				aws.String(conf.Worker.EventWriters.DynamoDB.TableBasename),
 				aws.String("--task-id"),
 				// This is a template variable that will be replaced with the taskID.
 				aws.String("Ref::taskID"),
 			},
+			JobRoleArn: aws.String(batchConf.JobDef.JobRoleArn),
 		},
-		JobDefinitionName: aws.String(conf.JobDef.Name),
+		JobDefinitionName: aws.String(batchConf.JobDef.Name),
 		Type:              aws.String("container"),
-	})
+	}
+	for _, val := range conf.Worker.ActiveEventWriters {
+		jobDef.ContainerProperties.Command = append(jobDef.ContainerProperties.Command, aws.String("--ActiveEventWriters"), aws.String(val))
+	}
+
+	response, err := batchCli.RegisterJobDefinition(jobDef)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base funnel job definition: %v", err)
 	}
 
 	return &Backend{
 		client: batchCli,
-		conf:   conf,
+		conf:   conf.Backends.Batch,
 		jobDef: *response.JobDefinitionArn,
 	}, nil
 }
@@ -75,7 +101,6 @@ type Backend struct {
 
 // Submit submits a task to the AWS batch service.
 func (b *Backend) Submit(task *tes.Task) error {
-	log.Debug("Submitting to batch", "taskID", task.Id)
 
 	req := &batch.SubmitJobInput{
 		JobDefinition: aws.String(b.jobDef),

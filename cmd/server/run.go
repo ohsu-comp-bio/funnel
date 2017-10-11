@@ -18,6 +18,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/server/boltdb"
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
+	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"strings"
 )
 
@@ -35,6 +36,14 @@ func Run(ctx context.Context, conf config.Config) error {
 		db, err = boltdb.NewBoltDB(conf)
 	case "dynamodb":
 		db, err = dynamodb.NewDynamoDB(conf.Server.Databases.DynamoDB)
+	case "elastic":
+		es, eserr := elastic.NewTES(conf.Server.Databases.Elastic)
+		if eserr != nil {
+			err = eserr
+		} else {
+			db = es
+			es.Init(ctx)
+		}
 	}
 	if err != nil {
 		return fmt.Errorf("error occurred while connecting to or creating the database: %v", err)

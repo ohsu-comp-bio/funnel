@@ -2,7 +2,14 @@ package tes
 
 import (
 	"github.com/getlantern/deepcopy"
+	"golang.org/x/net/context"
 )
+
+// TaskGetter defines a more minimal TES interface for cases where
+// code only needs to call GetTask.
+type TaskGetter interface {
+	GetTask(context.Context, *GetTaskRequest) (*Task, error)
+}
 
 // RunnableState returns true if the state is RUNNING or INITIALIZING
 func RunnableState(s State) bool {
@@ -43,4 +50,29 @@ func (task *Task) GetMinimalView() *Task {
 		Id:    id,
 		State: state,
 	}
+}
+
+// GetTaskLog gets the task log entry at the given index "i".
+// If the entry doesn't exist, empty logs will be appended up to "i".
+func (task *Task) GetTaskLog(i int) *TaskLog {
+
+	// Grow slice length if necessary
+	for j := len(task.Logs); j <= i; j++ {
+		task.Logs = append(task.Logs, &TaskLog{})
+	}
+
+	return task.Logs[i]
+}
+
+// GetExecLog gets the executor log entry at the given index "i".
+// If the entry doesn't exist, empty logs will be appended up to "i".
+func (task *Task) GetExecLog(attempt int, i int) *ExecutorLog {
+	tl := task.GetTaskLog(attempt)
+
+	// Grow slice length if necessary
+	for j := len(tl.Logs); j <= i; j++ {
+		tl.Logs = append(tl.Logs, &ExecutorLog{})
+	}
+
+	return tl.Logs[i]
 }

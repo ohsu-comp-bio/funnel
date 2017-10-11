@@ -9,9 +9,8 @@ import (
 )
 
 // UpdateNode helps scheduler database backend update a node when PutNode() is called.
-func UpdateNode(ctx context.Context, cli tes.TaskServiceServer, node, existing *pbs.Node) error {
+func UpdateNode(ctx context.Context, cli tes.TaskGetter, node, existing *pbs.Node) error {
 	var tasks []*tes.Task
-	var ids []string
 
 	// Clean up terminal tasks.
 	for _, id := range node.TaskIds {
@@ -24,7 +23,6 @@ func UpdateNode(ctx context.Context, cli tes.TaskServiceServer, node, existing *
 		}
 		// If the task isn't in a terminal state, leave it assigned to the node.
 		if !tes.TerminalState(task.GetState()) {
-			ids = append(ids, id)
 			tasks = append(tasks, task)
 		}
 	}

@@ -24,11 +24,13 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	}
 
 	var (
-		configFile    string
-		conf          config.Config
-		flagConf      config.Config
-		serverAddress string
-		taskID        string
+		configFile            string
+		conf                  config.Config
+		flagConf              config.Config
+		serverAddress         string
+		dynamodbRegion        string
+		dynamodbTableBasename string
+		taskID                string
 	)
 
 	cmd := &cobra.Command{
@@ -47,15 +49,28 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 				return fmt.Errorf("error processing config: %v", err)
 			}
 
+			if dynamodbRegion != "" {
+				conf.Worker.EventWriters.DynamoDB.Region = dynamodbRegion
+				conf.Worker.TaskReaders.DynamoDB.Region = dynamodbRegion
+			}
+			if dynamodbTableBasename != "" {
+				conf.Worker.EventWriters.DynamoDB.TableBasename = dynamodbTableBasename
+				conf.Worker.TaskReaders.DynamoDB.TableBasename = dynamodbTableBasename
+			}
+
 			return nil
 		},
 	}
 	f := cmd.PersistentFlags()
 	f.StringVarP(&configFile, "config", "c", "", "Config File")
-	f.StringVar(&serverAddress, "server-address", "", "RPC address of Funnel server")
-	f.StringVar(&flagConf.Worker.WorkDir, "work-dir", flagConf.Worker.WorkDir, "Working Directory")
-	f.StringVar(&flagConf.Worker.Logger.Level, "log-level", flagConf.Worker.Logger.Level, "Level of logging")
-	f.StringVar(&flagConf.Worker.Logger.OutputFile, "log-path", flagConf.Worker.Logger.OutputFile, "File path to write logs to")
+	f.StringVar(&flagConf.Worker.WorkDir, "WorkDir", flagConf.Worker.WorkDir, "Working Directory")
+	f.StringVar(&flagConf.Worker.Logger.Level, "Logger.Level", flagConf.Worker.Logger.Level, "Level of logging")
+	f.StringVar(&flagConf.Worker.Logger.OutputFile, "Logger.OutputFile", flagConf.Worker.Logger.OutputFile, "File path to write logs to")
+	f.StringVar(&flagConf.Worker.TaskReader, "TaskReader", flagConf.Worker.TaskReader, "Name of the task reader backend to use")
+	f.StringSliceVar(&flagConf.Worker.ActiveEventWriters, "ActiveEventWriters", flagConf.Worker.ActiveEventWriters, "Name of an event writer backend to use. This flag can be used multiple times")
+	f.StringVar(&serverAddress, "RPC.ServerAddress", "", "RPC address of Funnel server - used by TaskReader and EventWriter")
+	f.StringVar(&dynamodbRegion, "DynamoDB.Region", "", "AWS region of DynamoDB tables - used by TaskReader and EventWriter")
+	f.StringVar(&dynamodbTableBasename, "DynamoDB.TableBasename", "", "Basename of DynamoDB tables - used by TaskReader and EventWriter")
 
 	run := &cobra.Command{
 		Use:   "run",

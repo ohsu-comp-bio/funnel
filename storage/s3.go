@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,19 +26,10 @@ type S3Backend struct {
 
 // NewS3Backend creates an S3Backend session instance
 func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
+	awsConf := util.NewAWSConfigWithCreds(conf.Credentials.Key, conf.Credentials.Secret)
+	awsConf.WithMaxRetries(5)
 
-	c := aws.NewConfig().WithMaxRetries(5)
-
-	// Initialize a session object.
-	if !conf.FromEnv {
-		creds := credentials.NewStaticCredentialsFromCreds(credentials.Value{
-			AccessKeyID:     conf.Key,
-			SecretAccessKey: conf.Secret,
-		})
-		c.WithCredentials(creds)
-	}
-
-	sess, err := session.NewSession(c)
+	sess, err := session.NewSession(awsConf)
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +45,10 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 	bucket := split[0]
 	key := split[1]
 
-	var err error
-
 	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, bucket, "us-east-1")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
-			return fmt.Errorf("unable to find bucket %s's region not found", bucket)
+			return fmt.Errorf("unable to find bucket %s's region not found: %v", bucket, aerr)
 		}
 		return err
 	}
@@ -72,16 +61,23 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 	switch class {
 	case File:
 		// Create a file to write the S3 Object contents to.
-		hostFile, oerr := os.Create(hostPath)
-		if oerr != nil {
+		hf, err := os.Create(hostPath)
+		if err != nil {
 			return fmt.Errorf("failed to create file %q, %v", hostPath, err)
 		}
-		defer hostFile.Close()
 
-		_, err = manager.DownloadWithContext(ctx, hostFile, &s3.GetObjectInput{
+		_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		})
+		if err != nil {
+			return err
+		}
+
+		err = hf.Close()
+		if err != nil {
+			return err
+		}
 
 	case Directory:
 		err = client.ListObjectsV2PagesWithContext(
@@ -97,17 +93,21 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 						}
 
 						// Setup the local file
-						fd, err := os.Create(file)
+						hf, err := os.Create(file)
 						if err != nil {
 							panic(err)
 						}
-						defer fd.Close()
 
 						// Download the file using the AWS SDK
-						_, err = manager.DownloadWithContext(ctx, fd, &s3.GetObjectInput{
+						_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
 							Bucket: aws.String(bucket),
 							Key:    obj.Key,
 						})
+						if err != nil {
+							panic(err)
+						}
+
+						err = hf.Close()
 						if err != nil {
 							panic(err)
 						}
@@ -116,13 +116,12 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 				return true
 			},
 		)
+		if err != nil {
+			return err
+		}
 
 	default:
-		err = fmt.Errorf("Unknown file class: %s", class)
-	}
-
-	if err != nil {
-		return err
+		return fmt.Errorf("Unknown file class: %s", class)
 	}
 
 	return nil
@@ -152,16 +151,20 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 
 	switch class {
 	case File:
-		f, err := os.Open(hostPath)
+		fh, err := os.Open(hostPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open file %q, %v", hostPath, err)
 		}
-		defer f.Close()
 		_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
-			Body:   f,
+			Body:   fh,
 		})
+		if err != nil {
+			return nil, err
+		}
+
+		err = fh.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -192,6 +195,12 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 			if err != nil {
 				return nil, err
 			}
+
+			err = fh.Close()
+			if err != nil {
+				return nil, err
+			}
+
 			out = append(out, &tes.OutputFileLog{
 				Url:       u,
 				Path:      f.abs,

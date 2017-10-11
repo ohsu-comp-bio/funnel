@@ -64,23 +64,6 @@ func EnsureServerProperties(conf Config) Config {
 	return conf
 }
 
-// AWSBatch describes the configuration for the AWS Batch compute backend.
-type AWSBatch struct {
-	// JobDefConfig represents configuration of the AWS Batch
-	// base Job Definition.
-	JobDef struct {
-		Name          string
-		Image         string
-		DefaultMemory int64
-		DefaultVcpus  int64
-	}
-	// JobQueue can be either a name or the Amazon Resource Name (ARN).
-	JobQueue string
-	Key      string
-	Secret   string
-	Region   string
-}
-
 // DefaultConfig returns configuration with simple defaults.
 func DefaultConfig() Config {
 	cwd, _ := os.Getwd()
@@ -291,12 +274,34 @@ type Elastic struct {
 	URL         string
 }
 
+// AWSCredentials describes the configuration for creating AWS Session instances
+type AWSCredentials struct {
+	Key    string
+	Secret string
+}
+
+// AWSBatch describes the configuration for the AWS Batch compute backend.
+type AWSBatch struct {
+	// JobDefConfig represents configuration of the AWS Batch
+	// base Job Definition.
+	JobDef struct {
+		Name          string
+		Image         string
+		DefaultMemory int64
+		DefaultVcpus  int64
+		JobRoleArn    string
+	}
+	// JobQueue can be either a name or the Amazon Resource Name (ARN).
+	JobQueue    string
+	Region      string
+	Credentials AWSCredentials
+}
+
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes
 // such as the event writer and server.
 type DynamoDB struct {
+	Credentials   AWSCredentials
 	Region        string
-	Key           string
-	Secret        string
 	TableBasename string
 }
 
@@ -331,14 +336,12 @@ func (g GSStorage) Valid() bool {
 
 // S3Storage describes the directories Funnel can read from and write to
 type S3Storage struct {
-	Key     string
-	Secret  string
-	FromEnv bool
+	Credentials AWSCredentials
 }
 
 // Valid validates the LocalStorage configuration
-func (l S3Storage) Valid() bool {
-	return (l.Key != "" && l.Secret != "") || l.FromEnv
+func (s S3Storage) Valid() bool {
+	return (s.Credentials.Key != "" && s.Credentials.Secret != "") || (s.Credentials.Key == "" && s.Credentials.Secret == "")
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.

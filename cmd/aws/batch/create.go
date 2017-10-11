@@ -17,7 +17,7 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a compute environment and job queue in a specified region",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log := logger.New("batch create cmd")
+		log := logger.NewLogger("aws-batch-create", logger.DefaultConfig())
 
 		cli, err := newBatchSvc(conf, false)
 		if err != nil {

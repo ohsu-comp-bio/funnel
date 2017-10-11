@@ -4,8 +4,6 @@ package batch
 // the compute environment, job queue, and base job definition.
 type Config struct {
 	Region     string
-	Key        string
-	Secret     string
 	ComputeEnv ComputeEnvConfig
 	JobQueue   JobQueueConfig
 }

@@ -19,7 +19,7 @@ func TestStorageWithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sc.backends) != 1 {
+	if len(sc.backends) != 2 {
 		t.Fatal("unexpected number of Storage backends")
 	}
 
@@ -34,8 +34,10 @@ func TestStorageWithConfig(t *testing.T) {
 			},
 		},
 		S3: config.S3Storage{
-			Key:    "testkey",
-			Secret: "testsecret",
+			Credentials: config.AWSCredentials{
+				Key:    "testkey",
+				Secret: "testsecret",
+			},
 		},
 	}
 	sc, err = s.WithConfig(c)

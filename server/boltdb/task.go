@@ -38,14 +38,6 @@ var ExecutorLogs = []byte("executor-logs")
 // node ID -> pbs.Node struct
 var Nodes = []byte("nodes")
 
-// TaskNode Map task ID -> node ID
-var TaskNode = []byte("task-node")
-
-// NodeTasks indexes node -> tasks
-// Implemented as composite_key(node ID + task ID) => task ID
-// And searched with prefix scan using node ID
-var NodeTasks = []byte("node-tasks")
-
 // BoltDB provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
 type BoltDB struct {
@@ -84,12 +76,6 @@ func NewBoltDB(conf config.Config) (*BoltDB, error) {
 		}
 		if tx.Bucket(Nodes) == nil {
 			tx.CreateBucket(Nodes)
-		}
-		if tx.Bucket(TaskNode) == nil {
-			tx.CreateBucket(TaskNode)
-		}
-		if tx.Bucket(NodeTasks) == nil {
-			tx.CreateBucket(NodeTasks)
 		}
 		return nil
 	})

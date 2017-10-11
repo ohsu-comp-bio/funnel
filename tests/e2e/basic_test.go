@@ -281,7 +281,7 @@ func TestSingleCharLog(t *testing.T) {
     --sh "sh -c 'echo a; sleep 100'"
   `)
 	fun.WaitForRunning(id)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 3)
 	task := fun.Get(id)
 	if task.Logs[0].Logs[0].Stdout != "a\n" {
 		t.Fatal("Missing logs")

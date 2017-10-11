@@ -26,6 +26,10 @@ const (
 
 // CreateEvent creates an event for the server to handle.
 func (taskBolt *BoltDB) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
+	return &events.CreateEventResponse{}, taskBolt.Write(req)
+}
+
+func (taskBolt *BoltDB) Write(req *events.Event) error {
 	var err error
 
 	tl := &tes.TaskLog{}
@@ -107,11 +111,7 @@ func (taskBolt *BoltDB) CreateEvent(ctx context.Context, req *events.Event) (*ev
 		})
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &events.CreateEventResponse{}, nil
+	return err
 }
 
 func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {

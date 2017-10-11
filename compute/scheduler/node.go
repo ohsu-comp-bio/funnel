@@ -156,23 +156,25 @@ func (n *Node) sync(ctx context.Context) {
 	}
 
 	// Node data has been updated. Send back to server for database update.
-	res := detectResources(n.conf)
-	r.Resources = &pbs.Resources{
-		Cpus:   res.Cpus,
-		RamGb:  res.RamGb,
-		DiskGb: res.DiskGb,
-	}
-	r.State = n.state
+	n.resources = detectResources(n.conf)
 
 	// Merge metadata
-	if r.Metadata == nil {
-		r.Metadata = map[string]string{}
-	}
+	meta := map[string]string{}
 	for k, v := range n.conf.Metadata {
-		r.Metadata[k] = v
+		meta[k] = v
+	}
+	for k, v := range r.GetMetadata() {
+		meta[k] = v
 	}
 
-	_, err = n.client.UpdateNode(context.Background(), r)
+	_, err = n.client.PutNode(context.Background(), &pbs.Node{
+		Id:        n.conf.ID,
+		Resources: &n.resources,
+		State:     n.state,
+		Version:   r.GetVersion(),
+		Metadata:  meta,
+		TaskIds:   r.TaskIds,
+	})
 	if err != nil {
 		log.Error("Couldn't save node update. Recovering.", err)
 	}

@@ -197,16 +197,16 @@ func (_m *Database) ListTasks(_a0 context.Context, _a1 *tes.ListTasksRequest) (*
 	return r0, r1
 }
 
-// UpdateNode provides a mock function with given fields: _a0, _a1
-func (_m *Database) UpdateNode(_a0 context.Context, _a1 *scheduler.Node) (*scheduler.UpdateNodeResponse, error) {
+// PutNode provides a mock function with given fields: _a0, _a1
+func (_m *Database) PutNode(_a0 context.Context, _a1 *scheduler.Node) (*scheduler.PutNodeResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *scheduler.UpdateNodeResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *scheduler.Node) *scheduler.UpdateNodeResponse); ok {
+	var r0 *scheduler.PutNodeResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *scheduler.Node) *scheduler.PutNodeResponse); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*scheduler.UpdateNodeResponse)
+			r0 = ret.Get(0).(*scheduler.PutNodeResponse)
 		}
 	}
 

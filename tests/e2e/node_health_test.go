@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"testing"
 	"time"
@@ -13,14 +14,15 @@ func TestNodeDead(t *testing.T) {
 	conf := DefaultConfig()
 	conf.Scheduler.NodePingTimeout = time.Millisecond
 	srv := NewFunnel(conf)
+	srv.Scheduler = scheduler.NewScheduler(srv.SDB, nil, conf.Scheduler)
 
-	srv.SDB.UpdateNode(context.Background(), &pbs.Node{
+	srv.SDB.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_ALIVE,
 	})
 
 	time.Sleep(conf.Scheduler.NodePingTimeout * 2)
-	srv.SDB.CheckNodes()
+	srv.Scheduler.CheckNodes()
 
 	nodes := srv.ListNodes()
 	if nodes[0].State != pbs.NodeState_DEAD {
@@ -34,15 +36,16 @@ func TestNodeInitFail(t *testing.T) {
 	conf := DefaultConfig()
 	conf.Scheduler.NodeInitTimeout = time.Millisecond
 	srv := NewFunnel(conf)
+	srv.Scheduler = scheduler.NewScheduler(srv.SDB, nil, conf.Scheduler)
 	srv.StartServer()
 
-	srv.SDB.UpdateNode(context.Background(), &pbs.Node{
+	srv.SDB.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_INITIALIZING,
 	})
 
 	time.Sleep(conf.Scheduler.NodeInitTimeout * 2)
-	srv.SDB.CheckNodes()
+	srv.Scheduler.CheckNodes()
 	nodes := srv.ListNodes()
 
 	if nodes[0].State != pbs.NodeState_DEAD {
@@ -57,15 +60,16 @@ func TestNodeDeadTimeout(t *testing.T) {
 	conf.Scheduler.NodeInitTimeout = time.Millisecond
 	conf.Scheduler.NodeDeadTimeout = time.Millisecond
 	srv := NewFunnel(conf)
+	srv.Scheduler = scheduler.NewScheduler(srv.SDB, nil, conf.Scheduler)
 
-	srv.SDB.UpdateNode(context.Background(), &pbs.Node{
+	srv.SDB.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_DEAD,
 	})
-	srv.SDB.CheckNodes()
+	srv.Scheduler.CheckNodes()
 
 	time.Sleep(conf.Scheduler.NodeDeadTimeout * 2)
-	srv.SDB.CheckNodes()
+	srv.Scheduler.CheckNodes()
 	nodes := srv.ListNodes()
 
 	if len(nodes) > 0 {

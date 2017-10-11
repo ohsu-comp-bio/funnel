@@ -55,9 +55,9 @@ func newTestNode(conf config.Config) testNode {
 		state:      pbs.NodeState_ALIVE,
 	}
 
-	s.On("UpdateNode", mock.Anything, mock.Anything).
+	s.On("PutNode", mock.Anything, mock.Anything).
 		Return(nil, nil)
-	s.On("UpdateNode", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	s.On("PutNode", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, nil)
 	s.On("Close").Return(nil)
 

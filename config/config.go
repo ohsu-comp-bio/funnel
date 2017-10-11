@@ -212,7 +212,7 @@ type Node struct {
 	Timeout time.Duration
 	// How often the node sends update requests to the server.
 	UpdateRate time.Duration
-	// Timeout duration for UpdateNode() gRPC calls
+	// Timeout duration for PutNode() gRPC calls
 	UpdateTimeout time.Duration
 	Metadata      map[string]string
 	// RPC address of the Funnel server

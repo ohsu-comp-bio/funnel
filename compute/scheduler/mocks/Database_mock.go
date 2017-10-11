@@ -1,6 +1,7 @@
 package mocks
 
 import context "golang.org/x/net/context"
+import events "github.com/ohsu-comp-bio/funnel/events"
 import mock "github.com/stretchr/testify/mock"
 import scheduler "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 import tes "github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -10,27 +11,13 @@ type Database struct {
 	mock.Mock
 }
 
-// AssignTask provides a mock function with given fields: _a0, _a1
-func (_m *Database) AssignTask(_a0 *tes.Task, _a1 *scheduler.Node) error {
+// DeleteNode provides a mock function with given fields: _a0, _a1
+func (_m *Database) DeleteNode(_a0 context.Context, _a1 *scheduler.Node) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*tes.Task, *scheduler.Node) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *scheduler.Node) error); ok {
 		r0 = rf(_a0, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// CheckNodes provides a mock function with given fields:
-func (_m *Database) CheckNodes() error {
-	ret := _m.Called()
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -53,6 +40,29 @@ func (_m *Database) ListNodes(_a0 context.Context, _a1 *scheduler.ListNodesReque
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *scheduler.ListNodesRequest) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// PutNode provides a mock function with given fields: _a0, _a1
+func (_m *Database) PutNode(_a0 context.Context, _a1 *scheduler.Node) (*scheduler.PutNodeResponse, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *scheduler.PutNodeResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *scheduler.Node) *scheduler.PutNodeResponse); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*scheduler.PutNodeResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *scheduler.Node) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -91,25 +101,16 @@ func (_m *Database) ReadQueue(_a0 int) []*tes.Task {
 	return r0
 }
 
-// UpdateNode provides a mock function with given fields: _a0, _a1
-func (_m *Database) UpdateNode(_a0 context.Context, _a1 *scheduler.Node) (*scheduler.UpdateNodeResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// Write provides a mock function with given fields: ev
+func (_m *Database) Write(ev *events.Event) error {
+	ret := _m.Called(ev)
 
-	var r0 *scheduler.UpdateNodeResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *scheduler.Node) *scheduler.UpdateNodeResponse); ok {
-		r0 = rf(_a0, _a1)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*events.Event) error); ok {
+		r0 = rf(ev)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*scheduler.UpdateNodeResponse)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *scheduler.Node) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }

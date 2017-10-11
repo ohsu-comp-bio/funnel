@@ -18,6 +18,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10
 
 	srv := e2e.NewFunnel(conf)
+	srv.Scheduler = scheduler.NewScheduler(srv.SDB, nil, conf.Scheduler)
 	srv.StartServer()
 
 	srv.Conf.Scheduler.Node.ID = "test-node-gone-on-cancel"
@@ -29,7 +30,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	defer cancel()
 	go n.Run(ctx)
 
-	srv.SDB.CheckNodes()
+	srv.Scheduler.CheckNodes()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
 
 	nodes := srv.ListNodes()
@@ -39,7 +40,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 
 	cancel()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
-	srv.SDB.CheckNodes()
+	srv.Scheduler.CheckNodes()
 	nodes = srv.ListNodes()
 
 	if len(nodes) != 0 {

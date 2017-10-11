@@ -18,31 +18,23 @@ func (db *DynamoDB) ReadQueue(n int) []*tes.Task {
 	return nil
 }
 
-// AssignTask assigns a task to a node. This updates the task state to Initializing,
-// and updates the node (calls UpdateNode()).
-func (db *DynamoDB) AssignTask(t *tes.Task, w *pbs.Node) error {
-	log.Error("AssignTask - Not Implemented")
-	return nil
-}
-
-// UpdateNode is an RPC endpoint that is used by nodes to send heartbeats
+// PutNode is an RPC endpoint that is used by nodes to send heartbeats
 // and status updates, such as completed tasks. The server responds with updated
 // information for the node, such as canceled tasks.
-func (db *DynamoDB) UpdateNode(ctx context.Context, req *pbs.Node) (*pbs.UpdateNodeResponse, error) {
-	log.Error("UpdateNode - Not Implemented")
+func (db *DynamoDB) PutNode(ctx context.Context, req *pbs.Node) (*pbs.PutNodeResponse, error) {
+	log.Error("PutNode - Not Implemented")
 	return nil, nil
 }
 
 // GetNode gets a node
 func (db *DynamoDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
-	log.Error("GetNodes - Not Implemented")
+	log.Error("GetNode - Not Implemented")
 	return nil, nil
 }
 
-// CheckNodes is used by the scheduler to check for dead/gone nodes.
-// This is not an RPC endpoint
-func (db *DynamoDB) CheckNodes() error {
-	log.Error("CheckNodes - Not Implemented")
+// DeleteNode deletes a node
+func (db *DynamoDB) DeleteNode(ctx context.Context, req *pbs.Node) error {
+	log.Error("DeleteNode - Not Implemented")
 	return nil
 }
 

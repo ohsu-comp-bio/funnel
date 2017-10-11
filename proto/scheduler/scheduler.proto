@@ -24,13 +24,12 @@ message Node {
   string id = 1;
   Resources resources = 5;
   Resources available = 6;
-  int64 last_ping = 7;
   NodeState state = 8;
   bool preemptible = 9;
   repeated int32 active_ports = 10;
   string zone = 11;
   string hostname  = 13;
-  // Version of the record in the database. Used to prevent write conflicts.
+  // Timestamp version of the record in the database. Used to prevent write conflicts and as the last ping time.
   int64 version = 14;
   map<string,string> metadata = 15;
   repeated string task_ids = 16;
@@ -42,7 +41,7 @@ message ListNodesResponse {
   repeated Node nodes = 1;
 }
 
-message UpdateNodeResponse {}
+message PutNodeResponse {}
 
 message GetNodeRequest {
   string id = 1;
@@ -52,7 +51,7 @@ message GetNodeRequest {
  * Scheduler Service
  */
 service SchedulerService {
-  rpc UpdateNode(Node) returns (UpdateNodeResponse) {};
+  rpc PutNode(Node) returns (PutNodeResponse) {};
 
   rpc ListNodes(ListNodesRequest) returns (ListNodesResponse) {
     option (google.api.http) = {

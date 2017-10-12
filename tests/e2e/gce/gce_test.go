@@ -96,6 +96,7 @@ func NewFunnel() *Funnel {
 		Backend: backend,
 		Conf:    conf.Scheduler,
 	}
+	fun.Srv.Scheduler = fun.Scheduler
 	fun.StartServer()
 
 	return fun

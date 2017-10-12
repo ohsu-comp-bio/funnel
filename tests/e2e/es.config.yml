@@ -1,0 +1,6 @@
+Server:
+  Database: elastic
+  Databases:
+    Elastic:
+      IndexPrefix: test
+      URL: http://localhost:9200

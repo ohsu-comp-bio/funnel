@@ -18,7 +18,11 @@ func (tb TaskBuilder) Write(ev *Event) error {
 
 	switch ev.Type {
 	case Type_TASK_STATE:
-		t.State = ev.GetState()
+		to := ev.GetState()
+		if err := tes.ValidateTransition(t.GetState(), ev.GetState()); err != nil {
+			return err
+		}
+		t.State = to
 
 	case Type_TASK_START_TIME:
 		t.GetTaskLog(attempt).StartTime = TimestampString(ev.GetStartTime())

@@ -43,6 +43,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			return nil
 		},
 	}
+
 	f := cmd.PersistentFlags()
 	f.StringVarP(&configFile, "config", "c", "", "Config File")
 	f.StringVar(&flagConf.Server.HostName, "hostname", flagConf.Server.HostName, "Host name or IP")

@@ -334,12 +334,10 @@ func TestCancel(t *testing.T) {
   `)
 	fun.WaitForExec(id, 1)
 	fun.Cancel(id)
-	// TODO docker details and container ID are very Funnel specific
-	//      how could we generalize this to be reusued as TES conformance?
 	fun.WaitForDockerDestroy(id + "-0")
 	task := fun.Get(id)
 	if task.State != tes.State_CANCELED {
-		t.Fatal("Unexpected state")
+		t.Fatalf("Unexpected state: %s", task.State.String())
 	}
 }
 
@@ -403,11 +401,14 @@ func TestTaskStartEndTimeLogs(t *testing.T) {
 	setLogOutput(t)
 	id := fun.Run(`--sh 'echo 1'`)
 	task := fun.Wait(id)
+	// Some databases require a small amount of time to process the updates,
+	// such as EndTime, which will happen just before fun.Wait() exists above.
+	time.Sleep(time.Millisecond * 100)
 	if task.Logs[0].StartTime == "" {
 		t.Fatal("missing task start time log")
 	}
 	if task.Logs[0].EndTime == "" {
-		t.Fatal("missing task end time log")
+		t.Fatalf("missing task end time log: %#v", task.Logs[0])
 	}
 }
 

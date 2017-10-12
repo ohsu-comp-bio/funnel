@@ -92,6 +92,13 @@ test:
 test-verbose:
 	@go test -v $(TESTS)
 
+test-elasticsearch:
+	@docker rm -f funnel-es-test > /dev/null || echo
+	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:5.6.3 > /dev/null
+	@sleep 10
+	@go run tests/fmt/fmt.go ./tests/e2e/ -funnel-config es.config.yml
+	@docker rm -f funnel-es-test > /dev/null || echo
+
 # Run backend tests
 test-backends:
 	@go test -timeout 120s ./tests/e2e/slurm -run-test

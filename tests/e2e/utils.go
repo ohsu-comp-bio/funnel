@@ -10,17 +10,13 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
-	"github.com/ohsu-comp-bio/funnel/compute"
-	"github.com/ohsu-comp-bio/funnel/compute/local"
-	"github.com/ohsu-comp-bio/funnel/compute/noop"
+	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server"
-	"github.com/ohsu-comp-bio/funnel/server/boltdb"
-	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/tests/testutils"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
@@ -74,6 +70,7 @@ type Funnel struct {
 	Server    *server.Server
 	Scheduler *scheduler.Scheduler
 	SDB       scheduler.Database
+	Srv       *servercmd.Server
 
 	// Internal
 	startTime string
@@ -84,7 +81,12 @@ type Funnel struct {
 // DefaultConfig returns a default configuration useful for testing,
 // including temp storage dirs, random ports, S3 + minio config, etc.
 func DefaultConfig() config.Config {
-	conf := config.DefaultConfig()
+	return TestifyConfig(config.DefaultConfig())
+}
+
+// TestifyConfig modifies a ports, directory paths, etc. to avoid
+// conflicts between tests.
+func TestifyConfig(conf config.Config) config.Config {
 	conf = testutils.TempDirConfig(conf)
 	conf = testutils.RandomPortConfig(conf)
 	conf.Server.Logger = logger.DebugConfig()
@@ -93,6 +95,7 @@ func DefaultConfig() config.Config {
 	conf.Scheduler.ScheduleRate = time.Millisecond * 700
 	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
 	conf.Worker.UpdateRate = time.Millisecond * 300
+	conf.Server.Databases.Elastic.IndexPrefix += "-" + util.GenTaskID()
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
@@ -119,41 +122,21 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(derr)
 	}
 
-	var db server.Database
-	var err error
-
-	switch conf.Server.Database {
-	case "boltdb":
-		db, err = boltdb.NewBoltDB(conf)
-	case "dynamodb":
-		db, err = dynamodb.NewDynamoDB(conf.Server.Databases.DynamoDB)
-	}
+	srv, err := servercmd.NewServer(conf)
 	if err != nil {
 		panic(err)
 	}
-
-	var backend compute.Backend
-	switch conf.Backend {
-	case "local":
-		backend = local.NewBackend(conf, log)
-	case "noop":
-		backend = noop.NewBackend(conf)
-	case "gce":
-		backend = scheduler.NewComputeBackend(db.(scheduler.Database))
-	}
-
-	db.WithComputeBackend(backend)
-
-	srv := server.DefaultServer(db, conf.Server)
 
 	return &Funnel{
 		HTTP:       client.NewClient(conf.Server.HTTPAddress()),
 		Docker:     dcli,
 		Conf:       conf,
 		StorageDir: conf.Worker.Storage.Local.AllowedDirs[0],
-		DB:         db,
-		SDB:        db.(scheduler.Database),
-		Server:     srv,
+		DB:         srv.DB,
+		SDB:        srv.SDB,
+		Server:     srv.Server,
+		Srv:        srv,
+		Scheduler:  srv.Scheduler,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
 		rate:       time.Millisecond * 500,
 	}
@@ -179,10 +162,7 @@ func (f *Funnel) Cleanup() {
 
 // StartServer starts the server
 func (f *Funnel) StartServer() {
-	go f.Server.Serve(context.Background())
-	if f.Scheduler != nil {
-		go f.Scheduler.Run(context.Background())
-	}
+	go f.Srv.Run(context.Background())
 
 	err := f.PollForServerStart()
 	if err != nil {

@@ -13,6 +13,7 @@ import (
 // that it is gone, and the server will delete the node.
 func TestNodeGoneOnCanceledContext(t *testing.T) {
 	conf := e2e.DefaultConfig()
+	conf.Backend = "manual"
 	conf.Scheduler.NodeInitTimeout = time.Second * 10
 	conf.Scheduler.NodePingTimeout = time.Second * 10
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10

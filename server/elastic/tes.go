@@ -92,6 +92,9 @@ func (et *TES) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.L
 // CancelTask cancels a task by ID.
 func (et *TES) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	err := et.Elastic.Write(ctx, events.NewState(req.Id, 0, tes.State_CANCELED))
+	if elastic.IsNotFound(err) {
+		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: task ID: %s", err.Error(), req.Id))
+	}
 	return &tes.CancelTaskResponse{}, err
 }
 

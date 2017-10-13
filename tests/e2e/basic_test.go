@@ -401,9 +401,9 @@ func TestTaskStartEndTimeLogs(t *testing.T) {
 	setLogOutput(t)
 	id := fun.Run(`--sh 'echo 1'`)
 	task := fun.Wait(id)
-	// Some databases require a small amount of time to process the updates,
+	// Some databases require more time to process the updates,
 	// such as EndTime, which will happen just before fun.Wait() exists above.
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 500)
 	if task.Logs[0].StartTime == "" {
 		t.Fatal("missing task start time log")
 	}

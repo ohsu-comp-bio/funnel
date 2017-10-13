@@ -8,6 +8,7 @@ import (
 // Worker is a type which runs a task.
 type Worker interface {
 	Run(context.Context)
+	Close() error
 }
 
 // TaskReader is a type which reads task information

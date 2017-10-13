@@ -310,3 +310,7 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 	_, err = db.client.UpdateItemWithContext(ctx, item)
 	return err
 }
+
+func (ew *DynamoDBEventWriter) Close() error {
+	return nil
+}

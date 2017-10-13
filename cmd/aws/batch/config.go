@@ -6,6 +6,7 @@ type Config struct {
 	Region     string
 	ComputeEnv ComputeEnvConfig
 	JobQueue   JobQueueConfig
+	JobRole    JobRoleConfig
 }
 
 // ComputeEnvConfig represents configuration of the AWS Batch
@@ -26,16 +27,56 @@ type ComputeEnvConfig struct {
 // Job Queue.
 type JobQueueConfig struct {
 	Name        string
+	Priority    int64
 	ComputeEnvs []string
 }
 
-// DefaultConfig returns default configuration of AWS.
+// Policy represents an AWS policy
+type Policy struct {
+	Version   string
+	Statement []Statement
+}
+
+// Statement represents an AWS policy statement
+type Statement struct {
+	Effect   string
+	Action   []string
+	Resource string
+}
+
+// AssumeRolePolicy represents an AWS policy
+type AssumeRolePolicy struct {
+	Version   string
+	Statement []RoleStatement
+}
+
+// RoleStatement represents an AWS policy statement
+type RoleStatement struct {
+	Sid       string
+	Effect    string
+	Action    string
+	Principal map[string]string
+}
+
+// JobRoleConfig represents configuration of the AWS Batch
+// JobRole.
+type JobRoleConfig struct {
+	RoleName           string
+	S3PolicyName       string
+	DynamoDBPolicyName string
+	Policies           struct {
+		AssumeRole AssumeRolePolicy
+		S3         Policy
+		DynamoDB   Policy
+	}
+}
+
+// DefaultConfig returns default configuration of for AWS Batch resource creation.
 func DefaultConfig() Config {
-	return Config{
+	c := Config{
 		Region: "us-west-2",
 		ComputeEnv: ComputeEnvConfig{
 			Name:          "funnel-compute-environment",
-			InstanceRole:  "ecsInstanceRole",
 			InstanceTypes: []string{"optimal"},
 			MinVCPUs:      0,
 			MaxVCPUs:      256,
@@ -44,10 +85,61 @@ func DefaultConfig() Config {
 			},
 		},
 		JobQueue: JobQueueConfig{
-			Name: "funnel-job-queue",
+			Name:     "funnel-job-queue",
+			Priority: 1,
 			ComputeEnvs: []string{
 				"funnel-compute-environment",
 			},
 		},
+		JobRole: JobRoleConfig{
+			RoleName:           "FunnelEcsTaskRole",
+			DynamoDBPolicyName: "FunnelDynamoDB",
+			S3PolicyName:       "FunnelS3",
+		},
 	}
+
+	c.JobRole.Policies.AssumeRole = AssumeRolePolicy{
+		Version: "2012-10-17",
+		Statement: []RoleStatement{
+			{
+				Effect:    "Allow",
+				Principal: map[string]string{"Service": "ecs-tasks.amazonaws.com"},
+				Action:    "sts:AssumeRole",
+			},
+		},
+	}
+	c.JobRole.Policies.S3 = Policy{
+		Version: "2012-10-17",
+		Statement: []Statement{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"s3:GetBucketLocation",
+					"s3:GetObject",
+					"s3:ListObjects",
+					"s3:ListBucket",
+					"s3:CreateBucket",
+					"s3:PutObject",
+				},
+				Resource: "*",
+			},
+		},
+	}
+	c.JobRole.Policies.DynamoDB = Policy{
+		Version: "2012-10-17",
+		Statement: []Statement{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"dynamodb:GetItem",
+					"dynamodb:PutItem",
+					"dynamodb:UpdateItem",
+					"dynamodb:Query",
+				},
+				Resource: "*",
+			},
+		},
+	}
+
+	return c
 }

@@ -224,11 +224,11 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"config/default-config.yaml": configDefaultConfigYaml,
+	"config/default-config.yaml":     configDefaultConfigYaml,
 	"config/gridengine-template.txt": configGridengineTemplateTxt,
-	"config/htcondor-template.txt": configHtcondorTemplateTxt,
-	"config/pbs-template.txt": configPbsTemplateTxt,
-	"config/slurm-template.txt": configSlurmTemplateTxt,
+	"config/htcondor-template.txt":   configHtcondorTemplateTxt,
+	"config/pbs-template.txt":        configPbsTemplateTxt,
+	"config/slurm-template.txt":      configSlurmTemplateTxt,
 }
 
 // AssetDir returns the file names below a certain
@@ -270,13 +270,14 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
-	"config": &bintree{nil, map[string]*bintree{
-		"default-config.yaml": &bintree{configDefaultConfigYaml, map[string]*bintree{}},
-		"gridengine-template.txt": &bintree{configGridengineTemplateTxt, map[string]*bintree{}},
-		"htcondor-template.txt": &bintree{configHtcondorTemplateTxt, map[string]*bintree{}},
-		"pbs-template.txt": &bintree{configPbsTemplateTxt, map[string]*bintree{}},
-		"slurm-template.txt": &bintree{configSlurmTemplateTxt, map[string]*bintree{}},
+	"config": {nil, map[string]*bintree{
+		"default-config.yaml":     {configDefaultConfigYaml, map[string]*bintree{}},
+		"gridengine-template.txt": {configGridengineTemplateTxt, map[string]*bintree{}},
+		"htcondor-template.txt":   {configHtcondorTemplateTxt, map[string]*bintree{}},
+		"pbs-template.txt":        {configPbsTemplateTxt, map[string]*bintree{}},
+		"slurm-template.txt":      {configSlurmTemplateTxt, map[string]*bintree{}},
 	}},
 }}
 
@@ -326,4 +327,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

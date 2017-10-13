@@ -3,6 +3,7 @@ package events
 // Writer provides write access to a task's events
 type Writer interface {
 	Write(*Event) error
+	Close() error
 }
 
 type multiwriter []Writer
@@ -19,6 +20,13 @@ func (mw multiwriter) Write(ev *Event) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (mw multiwriter) Close() error {
+	for _, w := range mw {
+		w.Close()
 	}
 	return nil
 }

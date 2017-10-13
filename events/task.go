@@ -125,3 +125,7 @@ func (ew *TaskWriter) NewExecutorWriter(index uint32) *ExecutorWriter {
 		sys: &SystemLogWriter{ew.sys.lvl, g.sys, ew.out},
 	}
 }
+
+func (ew *TaskWriter) Close() error {
+	return ew.out.Close()
+}

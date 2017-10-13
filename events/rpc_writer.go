@@ -39,3 +39,7 @@ func (r *RPCWriter) Write(e *Event) error {
 	cleanup()
 	return err
 }
+
+func (r *RPCWriter) Close() error {
+	return nil
+}

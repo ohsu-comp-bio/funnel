@@ -62,3 +62,7 @@ func (el *Logger) Write(ev *Event) error {
 	}
 	return nil
 }
+
+func (el *Logger) Close() error {
+	return nil
+}

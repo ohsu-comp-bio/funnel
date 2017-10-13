@@ -46,6 +46,11 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 	}, nil
 }
 
+func (es *Elastic) Close() error {
+  es.client.Stop()
+  return nil
+}
+
 func (es *Elastic) initIndex(ctx context.Context, name, body string) error {
 	exists, err := es.client.
 		IndexExists(name).

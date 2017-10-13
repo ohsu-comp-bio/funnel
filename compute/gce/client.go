@@ -59,8 +59,6 @@ func (s *gceClient) Templates() []pbs.Node {
 
 		mt, ok := s.machineTypes[tpl.Properties.MachineType]
 		if !ok {
-			log.Error("Couldn't find machine type. Skipping template",
-				"machineType", tpl.Properties.MachineType)
 			continue
 		}
 
@@ -131,13 +129,11 @@ func (s *gceClient) StartNode(tplName, serverAddress, nodeID string) error {
 		Metadata:          &metadata,
 	}
 
-	op, ierr := s.wrapper.InsertInstance(s.project, s.zone, &instance)
+	_, ierr := s.wrapper.InsertInstance(s.project, s.zone, &instance)
 	if ierr != nil {
-		log.Error("Couldn't insert GCE VM instance", ierr)
-		return ierr
+		return fmt.Errorf("Couldn't insert GCE VM instance: %s", ierr)
 	}
 
-	log.Debug("GCE VM instance created", "details", op)
 	return nil
 }
 
@@ -152,17 +148,12 @@ func (s *gceClient) loadTemplates() {
 	// Get the machine types available
 	mtresp, mterr := s.wrapper.ListMachineTypes(s.project, s.zone)
 	if mterr != nil {
-		log.Error("Couldn't get GCE machine list",
-			"error", mterr,
-			"project", s.project,
-			"zone", s.zone)
 		return
 	}
 
 	// Get the instance template from the GCE API
 	itresp, iterr := s.wrapper.ListInstanceTemplates(s.project)
 	if iterr != nil {
-		log.Error("Couldn't get GCE instance templates", iterr)
 		return
 	}
 

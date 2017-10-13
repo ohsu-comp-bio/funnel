@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-var log = logger.New("gce-e2e")
-
 func init() {
 	log.Configure(logger.DebugConfig())
 }

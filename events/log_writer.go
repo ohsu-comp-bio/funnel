@@ -6,12 +6,7 @@ import (
 
 // Logger writes events to a funnel logger.
 type Logger struct {
-	Log logger.Logger
-}
-
-// NewLogger creates an event logger and a funnel logger with the given name.
-func NewLogger(name string) *Logger {
-	return &Logger{logger.Sub(name)}
+	Log *logger.Logger
 }
 
 // Write writes an event to the logger.

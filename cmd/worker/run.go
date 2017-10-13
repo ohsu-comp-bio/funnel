@@ -9,8 +9,7 @@ import (
 
 // Run configures and runs a Worker
 func Run(conf config.Worker, taskID string) error {
-	logger.Configure(conf.Logger)
-	w, err := worker.NewDefaultWorker(conf, taskID)
+	w, err := worker.NewDefaultWorker(conf, taskID, logger.NewLogger("worker", conf.Logger))
 	if err != nil {
 		return err
 	}

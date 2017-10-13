@@ -13,8 +13,8 @@ import (
 )
 
 // NewNode returns a new Node instance
-func NewNode(conf config.Config) (*Node, error) {
-	log := logger.Sub("node", "nodeID", conf.Scheduler.Node.ID)
+func NewNode(conf config.Config, log *logger.Logger) (*Node, error) {
+	log = log.WithFields("nodeID", conf.Scheduler.Node.ID)
 
 	cli, err := NewClient(conf.Scheduler)
 	if err != nil {
@@ -27,14 +27,16 @@ func NewNode(conf config.Config) (*Node, error) {
 	}
 
 	// Detect available resources at startup
-	res := detectResources(conf.Scheduler.Node)
+	res, derr := detectResources(conf.Scheduler.Node)
+	if derr != nil {
+		log.Error("error detecting resources", "error", derr)
+	}
+
 	timeout := util.NewIdleTimeout(conf.Scheduler.Node.Timeout)
 	state := pbs.NodeState_UNINITIALIZED
 
 	workerConf := conf.Worker
 	workerConf.WorkDir = conf.Scheduler.Node.WorkDir
-
-	log.Debug("config", "node", conf.Scheduler.Node, "worker", workerConf)
 
 	return &Node{
 		conf:       conf.Scheduler.Node,
@@ -51,8 +53,8 @@ func NewNode(conf config.Config) (*Node, error) {
 
 // NewNoopNode returns a new node that doesn't have any side effects
 // (e.g. storage access, docker calls, etc.) which is useful for testing.
-func NewNoopNode(conf config.Config) (*Node, error) {
-	n, err := NewNode(conf)
+func NewNoopNode(conf config.Config, log *logger.Logger) (*Node, error) {
+	n, err := NewNode(conf, log)
 	n.newWorker = NoopWorkerFactory
 	return n, err
 }
@@ -62,7 +64,7 @@ type Node struct {
 	conf       config.Node
 	workerConf config.Worker
 	client     Client
-	log        logger.Logger
+	log        *logger.Logger
 	resources  pbs.Resources
 	newWorker  WorkerFactory
 	workers    *runSet
@@ -114,9 +116,9 @@ func (n *Node) checkConnection(ctx context.Context) {
 	// If its a 404 error create a new node
 	s, _ := status.FromError(err)
 	if s.Code() != codes.NotFound {
-		log.Error("Couldn't contact server.", err)
+		n.log.Error("Couldn't contact server.", err)
 	} else {
-		log.Info("Successfully connected to server.")
+		n.log.Info("Successfully connected to server.")
 	}
 }
 
@@ -134,10 +136,10 @@ func (n *Node) sync(ctx context.Context) {
 		// If its a 404 error create a new node
 		s, _ := status.FromError(err)
 		if s.Code() != codes.NotFound {
-			log.Error("Couldn't get node state during sync.", err)
+			n.log.Error("Couldn't get node state during sync.", err)
 			return
 		}
-		log.Info("Starting initial node sync", "nodeID", n.conf.ID)
+		n.log.Info("Starting initial node sync")
 		r = &pbs.Node{Id: n.conf.ID}
 	}
 
@@ -148,7 +150,8 @@ func (n *Node) sync(ctx context.Context) {
 		if n.workers.Add(id) {
 			go func(id string) {
 				// TODO handle error
-				r, _ := n.newWorker(n.workerConf, id)
+				log := n.log.WithFields("ns", "worker", "taskID", id)
+				r, _ := n.newWorker(n.workerConf, id, log)
 				r.Run(ctx)
 				n.workers.Remove(id)
 			}(id)
@@ -156,7 +159,11 @@ func (n *Node) sync(ctx context.Context) {
 	}
 
 	// Node data has been updated. Send back to server for database update.
-	n.resources = detectResources(n.conf)
+	var derr error
+	n.resources, derr = detectResources(n.conf)
+	if derr != nil {
+		n.log.Error("error detecting resources", "error", derr)
+	}
 
 	// Merge metadata
 	meta := map[string]string{}
@@ -176,7 +183,7 @@ func (n *Node) sync(ctx context.Context) {
 		TaskIds:   r.TaskIds,
 	})
 	if err != nil {
-		log.Error("Couldn't save node update. Recovering.", err)
+		n.log.Error("Couldn't save node update. Recovering.", err)
 	}
 }
 

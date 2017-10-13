@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
@@ -34,11 +35,8 @@ func NewClient(conf config.Scheduler) (Client, error) {
 	)
 
 	if err != nil {
-		log.Error("Couldn't open RPC connection to the scheduler",
-			"error", err,
-			"address", conf.Node.ServerAddress,
-		)
-		return nil, err
+		return nil, fmt.Errorf("couldn't open RPC connection to the scheduler at %s: %s",
+			conf.Node.ServerAddress, err)
 	}
 
 	e := events.NewEventServiceClient(conn)

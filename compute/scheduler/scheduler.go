@@ -1,8 +1,10 @@
 package scheduler
 
 import (
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
@@ -20,16 +22,12 @@ type Database interface {
 	Write(ev *events.Event) error
 }
 
-// NewScheduler returns a new Scheduler instance.
-func NewScheduler(db Database, backend Backend, conf config.Scheduler) *Scheduler {
-	return &Scheduler{db, conf, backend}
-}
-
 // Scheduler handles scheduling tasks to nodes and support many backends.
 type Scheduler struct {
-	db      Database
-	conf    config.Scheduler
-	backend Backend
+	Log     *logger.Logger
+	DB      Database
+	Conf    config.Scheduler
+	Backend Backend
 }
 
 // Run starts the scheduling loop. This blocks.
@@ -38,7 +36,7 @@ type Scheduler struct {
 // request the the configured backend schedule them, and
 // act on offers made by the backend.
 func (s *Scheduler) Run(ctx context.Context) error {
-	ticker := time.NewTicker(s.conf.ScheduleRate)
+	ticker := time.NewTicker(s.Conf.ScheduleRate)
 	for {
 		select {
 		case <-ctx.Done():
@@ -47,13 +45,11 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			var err error
 			err = s.Schedule(ctx)
 			if err != nil {
-				log.Error("Schedule error", err)
-				return err
+				return fmt.Errorf("schedule error: %s", err)
 			}
 			err = s.Scale(ctx)
 			if err != nil {
-				log.Error("Scale error", err)
-				return err
+				return fmt.Errorf("scale error: %s", err)
 			}
 		}
 	}
@@ -63,21 +59,21 @@ func (s *Scheduler) Run(ctx context.Context) error {
 // This is not an RPC endpoint
 func (s *Scheduler) CheckNodes() error {
 	ctx := context.Background()
-	resp, err := s.db.ListNodes(ctx, &pbs.ListNodesRequest{})
+	resp, err := s.DB.ListNodes(ctx, &pbs.ListNodesRequest{})
 
 	if err != nil {
 		return err
 	}
 
-	updated := UpdateNodeState(resp.Nodes, s.conf)
+	updated := UpdateNodeState(resp.Nodes, s.Conf)
 
 	for _, node := range updated {
 		var err error
 
 		if node.State == pbs.NodeState_GONE {
-			err = s.db.DeleteNode(ctx, node)
+			err = s.DB.DeleteNode(ctx, node)
 		} else {
-			_, err = s.db.PutNode(ctx, node)
+			_, err = s.DB.PutNode(ctx, node)
 		}
 
 		if err != nil {
@@ -95,13 +91,13 @@ func (s *Scheduler) CheckNodes() error {
 func (s *Scheduler) Schedule(ctx context.Context) error {
 	err := s.CheckNodes()
 	if err != nil {
-		log.Error("Error checking nodes", err)
+		s.Log.Error("Error checking nodes", err)
 	}
 
-	for _, task := range s.db.ReadQueue(s.conf.ScheduleChunk) {
-		offer := s.backend.GetOffer(task)
+	for _, task := range s.DB.ReadQueue(s.Conf.ScheduleChunk) {
+		offer := s.Backend.GetOffer(task)
 		if offer != nil {
-			log.Info("Assigning task to node",
+			s.Log.Info("Assigning task to node",
 				"taskID", task.Id,
 				"nodeID", offer.Node.Id,
 				"node", offer.Node,
@@ -111,18 +107,18 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 			//      when a task is assigned, its state is immediately Initializing
 			//      even before the node has received it.
 			offer.Node.TaskIds = append(offer.Node.TaskIds, task.Id)
-			_, err = s.db.PutNode(ctx, offer.Node)
+			_, err = s.DB.PutNode(ctx, offer.Node)
 			if err != nil {
-				log.Error("Error in AssignTask", err)
+				s.Log.Error("Error in AssignTask", err)
 				continue
 			}
 
-			err = s.db.Write(events.NewState(task.Id, 0, tes.State_INITIALIZING))
+			err = s.DB.Write(events.NewState(task.Id, 0, tes.State_INITIALIZING))
 			if err != nil {
-				log.Error("Error marking task as initializing", err)
+				s.Log.Error("Error marking task as initializing", err)
 			}
 		} else {
-			log.Debug("Scheduling failed for task", "taskID", task.Id)
+			s.Log.Debug("Scheduling failed for task", "taskID", task.Id)
 		}
 	}
 	return nil
@@ -133,16 +129,16 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 // and shutdown.
 func (s *Scheduler) Scale(ctx context.Context) error {
 
-	b, isScaler := s.backend.(Scaler)
+	b, isScaler := s.Backend.(Scaler)
 	// If the scheduler backend doesn't implement the Scaler interface,
 	// stop here.
 	if !isScaler {
 		return nil
 	}
 
-	resp, err := s.db.ListNodes(ctx, &pbs.ListNodesRequest{})
+	resp, err := s.DB.ListNodes(ctx, &pbs.ListNodesRequest{})
 	if err != nil {
-		log.Error("Failed ListNodes request. Recovering.", err)
+		s.Log.Error("Failed ListNodes request. Recovering.", err)
 		return nil
 	}
 
@@ -154,14 +150,14 @@ func (s *Scheduler) Scale(ctx context.Context) error {
 
 		serr := b.StartNode(n)
 		if serr != nil {
-			log.Error("Error starting node", serr)
+			s.Log.Error("Error starting node", serr)
 			continue
 		}
 
 		// TODO should the Scaler instance handle this? Is it possible
 		//      that Initializing is the wrong state in some cases?
 		n.State = pbs.NodeState_INITIALIZING
-		_, err := s.db.PutNode(ctx, n)
+		_, err := s.DB.PutNode(ctx, n)
 
 		if err != nil {
 			// TODO an error here would likely result in multiple nodes
@@ -170,7 +166,7 @@ func (s *Scheduler) Scale(ctx context.Context) error {
 			//
 			//      If the scheduler and database API live on the same server,
 			//      this *should* be very unlikely.
-			log.Error("Error marking node as initializing", err)
+			s.Log.Error("Error marking node as initializing", err)
 		}
 	}
 	return nil

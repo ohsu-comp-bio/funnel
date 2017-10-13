@@ -1,7 +1,6 @@
 package boltdb
 
 import (
-	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -130,18 +129,15 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 	case tes.TerminalState(current) && !tes.TerminalState(target):
 		// Error when trying to switch out of a terminal state to a non-terminal one.
-		log.Error("Unexpected transition", "current", current, "target", target)
-		return errors.New("Unexpected transition to Initializing")
+		return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())
 
 	case target == Queued:
-		log.Error("Can't transition to Queued state")
-		return errors.New("Can't transition to Queued state")
+		return fmt.Errorf("Can't transition to Queued state")
 	}
 
 	switch target {
 	case Unknown, Paused:
-		log.Error("Unimplemented task state", "state", target)
-		return errors.New("Unimplemented task state")
+		return fmt.Errorf("Unimplemented task state %s", target.String())
 
 	case Canceled, Complete, Error, SystemError:
 		// Remove from queue
@@ -149,18 +145,15 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 	case Running, Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
-			log.Error("Unexpected transition", "current", current, "target", target)
-			return errors.New("Unexpected transition to Initializing")
+			return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())
 		}
 		tx.Bucket(TasksQueued).Delete(idBytes)
 
 	default:
-		log.Error("Unknown target state", "target", target)
-		return errors.New("Unknown task state")
+		return fmt.Errorf("Unknown target state: %s", target.String())
 	}
 
 	tx.Bucket(TaskState).Put(idBytes, []byte(target.String()))
-	log.Info("Set task state", "taskID", id, "state", target.String())
 	return nil
 }
 

@@ -92,16 +92,14 @@ func (taskBolt *BoltDB) WithComputeBackend(backend compute.Backend) {
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (taskBolt *BoltDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	log.Debug("CreateTask called", "task", task)
 
 	if err := tes.Validate(task); err != nil {
-		log.Error("Invalid task message", "error", err)
+		err := fmt.Errorf("invalid task message: %s", err)
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
 	taskID := util.GenTaskID()
 	idBytes := []byte(taskID)
-	log := log.WithFields("taskID", taskID)
 
 	task.Id = taskID
 	taskString, err := proto.Marshal(task)
@@ -115,21 +113,19 @@ func (taskBolt *BoltDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cr
 		return nil
 	})
 	if err != nil {
-		log.Error("Error storing task in database", err)
-		return nil, err
+		return nil, fmt.Errorf("error storing task in database: %s", err)
 	}
 
 	err = taskBolt.backend.Submit(task)
 	if err != nil {
-		log.Error("Error submitting task to compute backend", err)
+		err = fmt.Errorf("error submitting task to compute backend: %s", err)
 		derr := taskBolt.db.Update(func(tx *bolt.Tx) error {
 			tx.Bucket(TaskBucket).Delete(idBytes)
 			tx.Bucket(TaskState).Delete(idBytes)
 			return nil
 		})
 		if derr != nil {
-			log.Error("Error storing task in database", err)
-			err = fmt.Errorf("%v\n%v", err, derr)
+			err = fmt.Errorf("error storing task in database: %v\n%v", err, derr)
 		}
 		return nil, err
 	}
@@ -231,7 +227,6 @@ func (taskBolt *BoltDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*
 	})
 
 	if err != nil {
-		log.Error("GetTask", "error", err, "taskID", req.Id)
 		if err == errNotFound {
 			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
 		}
@@ -309,8 +304,6 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 
 // CancelTask cancels a task
 func (taskBolt *BoltDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	log := log.WithFields("taskID", req.Id)
-	log.Info("Canceling task")
 
 	// Check that the task exists
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
@@ -318,7 +311,6 @@ func (taskBolt *BoltDB) CancelTask(ctx context.Context, req *tes.CancelTaskReque
 		return err
 	})
 	if err != nil {
-		log.Error("CancelTask", "error", err, "taskID", req.Id)
 		if err == errNotFound {
 			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
 		}

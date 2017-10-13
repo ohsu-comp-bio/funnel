@@ -12,12 +12,9 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
-
-var log = logger.Sub("gce")
 
 // NewBackend returns a new Google Cloud Engine Backend instance.
 func NewBackend(conf config.Config) (*Backend, error) {
@@ -26,15 +23,13 @@ func NewBackend(conf config.Config) (*Backend, error) {
 	// Create a client for talking to the funnel scheduler
 	client, err := scheduler.NewClient(conf.Scheduler)
 	if err != nil {
-		log.Error("Can't connect scheduler client", err)
-		return nil, err
+		return nil, fmt.Errorf("can't connect scheduler client: %s", err)
 	}
 
 	// Create a client for talking to the GCE API
 	gce, gerr := newClientFromConfig(conf)
 	if gerr != nil {
-		log.Error("Can't connect GCE client", gerr)
-		return nil, gerr
+		return nil, fmt.Errorf("can't connect GCE client: %s", gerr)
 	}
 
 	return &Backend{
@@ -54,8 +49,6 @@ type Backend struct {
 
 // GetOffer returns an offer based on available Google Cloud VM node instances.
 func (s *Backend) GetOffer(j *tes.Task) *scheduler.Offer {
-	log.Debug("Running GCE backend")
-
 	offers := []*scheduler.Offer{}
 	predicates := append(scheduler.DefaultPredicates, scheduler.NodeHasTag("gce"))
 
@@ -100,7 +93,6 @@ func (s *Backend) getNodes() []*pbs.Node {
 
 	// If there's an error, return an empty list
 	if err != nil {
-		log.Error("Failed ListNodes request. Recovering.", err)
 		return nodes
 	}
 

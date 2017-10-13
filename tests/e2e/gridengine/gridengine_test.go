@@ -8,7 +8,6 @@ import (
 	"testing"
 )
 
-var log = logger.New("e2e-gridengine")
 var fun *e2e.Funnel
 var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
 

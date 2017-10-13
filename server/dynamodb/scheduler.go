@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"fmt"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
@@ -8,13 +9,11 @@ import (
 
 // QueueTask adds a task to the scheduler queue.
 func (db *DynamoDB) QueueTask(task *tes.Task) error {
-	log.Error("QueueTask - Not Implemented")
-	return nil
+	return fmt.Errorf("QueueTask - Not Implemented")
 }
 
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (db *DynamoDB) ReadQueue(n int) []*tes.Task {
-	log.Error("ReadQueue - Not Implemented")
 	return nil
 }
 
@@ -22,24 +21,20 @@ func (db *DynamoDB) ReadQueue(n int) []*tes.Task {
 // and status updates, such as completed tasks. The server responds with updated
 // information for the node, such as canceled tasks.
 func (db *DynamoDB) PutNode(ctx context.Context, req *pbs.Node) (*pbs.PutNodeResponse, error) {
-	log.Error("PutNode - Not Implemented")
-	return nil, nil
+	return nil, fmt.Errorf("PutNode - Not Implemented")
 }
 
 // GetNode gets a node
 func (db *DynamoDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
-	log.Error("GetNode - Not Implemented")
-	return nil, nil
+	return nil, fmt.Errorf("GetNode - Not Implemented")
 }
 
 // DeleteNode deletes a node
 func (db *DynamoDB) DeleteNode(ctx context.Context, req *pbs.Node) error {
-	log.Error("DeleteNode - Not Implemented")
-	return nil
+	return fmt.Errorf("DeleteNode - Not Implemented")
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.
 func (db *DynamoDB) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
-	log.Error("ListNodes - Not Implemented")
-	return nil, nil
+	return nil, fmt.Errorf("ListNodes - Not Implemented")
 }

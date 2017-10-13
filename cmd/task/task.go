@@ -2,13 +2,10 @@ package task
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
 )
-
-var log = logger.New("task cmd")
 
 // NewCommand returns the "task" subcommands.
 func NewCommand() *cobra.Command {

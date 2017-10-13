@@ -27,8 +27,6 @@ type HPCBackend struct {
 
 // Submit submits a task via "qsub"
 func (b *HPCBackend) Submit(task *tes.Task) error {
-	log.Debug("Submitting task to backend", "backend", b.name, "taskID", task.Id)
-
 	submitPath, err := b.setupTemplatedHPCSubmit(task)
 	if err != nil {
 		return err

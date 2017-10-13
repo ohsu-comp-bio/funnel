@@ -93,8 +93,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 	if conf.Local.Valid() {
 		local, err := NewLocalBackend(conf.Local)
 		if err != nil {
-			log.Error("Local storage backend", err)
-			return storage, err
+			return storage, fmt.Errorf("failed to configure local storage backend: %s", err)
 		}
 		storage = storage.WithBackend(local)
 	}
@@ -102,8 +101,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 	if conf.S3.Valid() {
 		s3, err := NewS3Backend(conf.S3)
 		if err != nil {
-			log.Error("S3 storage backend", err)
-			return storage, err
+			return storage, fmt.Errorf("failed to configure S3 storage backend: %s", err)
 		}
 		storage = storage.WithBackend(s3)
 	}
@@ -112,8 +110,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		if c.Valid() {
 			gs, nerr := NewGSBackend(c)
 			if nerr != nil {
-				log.Error("Google Storage backend", nerr)
-				return storage, nerr
+				return storage, fmt.Errorf("failed to configure Google Storage backend: %s", nerr)
 			}
 			storage = storage.WithBackend(gs)
 		}
@@ -122,8 +119,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 	if conf.Swift.Valid() {
 		s, err := NewSwiftBackend(conf.Swift)
 		if err != nil {
-			log.Error("Swift storage backend", err)
-			return storage, err
+			return storage, fmt.Errorf("failed to config Swift storage backend: %s", err)
 		}
 		storage = storage.WithBackend(s)
 	}

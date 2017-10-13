@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -14,8 +13,6 @@ import (
 	"net"
 	"net/http"
 )
-
-var log = logger.Sub("server")
 
 // Server represents a Funnel server. The server handles
 // RPC traffic via gRPC, HTTP traffic for the TES API,
@@ -30,12 +27,11 @@ type Server struct {
 	Handler                http.Handler
 	DisableHTTPCache       bool
 	DialOptions            []grpc.DialOption
+	Log                    *logger.Logger
 }
 
 // DefaultServer returns a new server instance.
 func DefaultServer(db Database, conf config.Server) *Server {
-	log.Debug("Server Config", "config.Server", conf)
-
 	mux := http.NewServeMux()
 	mux.Handle("/", webdash.Handler())
 
@@ -57,8 +53,6 @@ func DefaultServer(db Database, conf config.Server) *Server {
 // Serve starts the server and does not block. This will open TCP ports
 // for both RPC and HTTP.
 func (s *Server) Serve(pctx context.Context) error {
-	log.Info("Version", version.LogFields()...)
-
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
 
@@ -76,7 +70,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
 	grpcMux := runtime.NewServeMux()
-	runtime.OtherErrorHandler = handleError
+	runtime.OtherErrorHandler = s.handleError
 
 	// Set "cache-control: no-store" to disable response caching.
 	// Without this, some servers (e.g. GCE) will cache a response from ListTasks, GetTask, etc.
@@ -134,7 +128,7 @@ func (s *Server) Serve(pctx context.Context) error {
 		cancel()
 	}()
 
-	log.Info("Server listening",
+	s.Log.Info("Server listening",
 		"httpPort", s.HTTPPort, "rpcAddress", s.RPCAddress,
 	)
 
@@ -147,8 +141,8 @@ func (s *Server) Serve(pctx context.Context) error {
 
 // handleError handles errors in the HTTP stack, logging errors, stack traces,
 // and returning an HTTP error code.
-func handleError(w http.ResponseWriter, req *http.Request, err string, code int) {
-	log.Error("HTTP handler error", "error", err, "url", req.URL)
+func (s *Server) handleError(w http.ResponseWriter, req *http.Request, err string, code int) {
+	s.Log.Error("HTTP handler error", "error", err, "url", req.URL)
 	http.Error(w, err, code)
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util"
@@ -16,7 +17,7 @@ import (
 )
 
 // NewDefaultWorker returns a new configured DefaultWorker instance.
-func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
+func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (Worker, error) {
 	var err error
 	var reader TaskReader
 	var writer events.Writer
@@ -45,7 +46,7 @@ func NewDefaultWorker(conf config.Worker, taskID string) (Worker, error) {
 		case "dynamodb":
 			writer, err = events.NewDynamoDBEventWriter(conf.EventWriters.DynamoDB)
 		case "log":
-			writer = events.NewLogger("worker")
+			writer = &events.Logger{Log: log}
 		case "rpc":
 			writer, err = events.NewRPCWriter(conf)
 		default:
@@ -117,12 +118,12 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 			r.Event.State(tes.State_CANCELED)
 		case run.execerr != nil:
 			// One of the executors failed
-			r.Event.Error("Exec error", run.execerr)
+			r.Event.Error("Exec error", "error", run.execerr)
 			r.Event.State(tes.State_ERROR)
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
-			r.Event.Error("System error", run.syserr)
+			r.Event.Error("System error", "error", run.syserr)
 			r.Event.State(tes.State_SYSTEM_ERROR)
 		default:
 			r.Event.State(tes.State_COMPLETE)
@@ -176,7 +177,14 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	// Download inputs
 	for _, input := range r.Mapper.Inputs {
 		if run.ok() {
-			run.syserr = r.Store.Get(ctx, input.Url, input.Path, input.Type)
+			r.Event.Info("Starting download", "url", input.Url)
+			err := r.Store.Get(ctx, input.Url, input.Path, input.Type)
+			if err != nil {
+				run.syserr = err
+				r.Event.Error("Download failed", "url", input.Url, "error", err)
+			} else {
+				r.Event.Info("Download finished", "url", input.Url)
+			}
 		}
 	}
 
@@ -218,9 +226,15 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	var outputs []*tes.OutputFileLog
 	for _, output := range r.Mapper.Outputs {
 		if run.ok() {
+			r.Event.Info("Starting upload", "url", output.Url)
 			r.fixLinks(output.Path)
-			var out []*tes.OutputFileLog
-			out, run.syserr = r.Store.Put(ctx, output.Url, output.Path, output.Type)
+			out, err := r.Store.Put(ctx, output.Url, output.Path, output.Type)
+			if err != nil {
+				run.syserr = err
+				r.Event.Error("Upload failed", "url", output.Url, "error", err)
+			} else {
+				r.Event.Info("Upload finished", "url", output.Url)
+			}
 			outputs = append(outputs, out...)
 		}
 	}

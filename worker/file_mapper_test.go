@@ -3,16 +3,11 @@ package worker
 import (
 	"fmt"
 	"github.com/go-test/deep"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io/ioutil"
 	"os"
 	"testing"
 )
-
-func init() {
-	logger.Configure(logger.DebugConfig())
-}
 
 func TestMapTask(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "funnel-test-mapper")
@@ -130,10 +125,10 @@ func TestMapTask(t *testing.T) {
 	}
 
 	if diff := deep.Equal(f.Inputs, ei); diff != nil {
-		log.Debug("Expected", fmt.Sprintf("%+v", ei))
-		log.Debug("Actual", fmt.Sprintf("%+v", f.Inputs))
+		t.Log("Expected", fmt.Sprintf("%+v", ei))
+		t.Log("Actual", fmt.Sprintf("%+v", f.Inputs))
 		for _, d := range diff {
-			log.Debug("Diff", d)
+			t.Log("Diff", d)
 		}
 		t.Fatal("unexpected mapper inputs")
 	}
@@ -147,19 +142,19 @@ func TestMapTask(t *testing.T) {
 	}
 
 	if diff := deep.Equal(f.Outputs, eo); diff != nil {
-		log.Debug("Expected", fmt.Sprintf("%+v", eo))
-		log.Debug("Actual", fmt.Sprintf("%+v", f.Outputs))
+		t.Log("Expected", fmt.Sprintf("%+v", eo))
+		t.Log("Actual", fmt.Sprintf("%+v", f.Outputs))
 		for _, d := range diff {
-			log.Debug("Diff", d)
+			t.Log("Diff", d)
 		}
 		t.Fatal("unexpected mapper outputs")
 	}
 
 	if diff := deep.Equal(f.Volumes, ev); diff != nil {
-		log.Debug("Expected", fmt.Sprintf("%+v", ev))
-		log.Debug("Actual", fmt.Sprintf("%+v", f.Volumes))
+		t.Log("Expected", fmt.Sprintf("%+v", ev))
+		t.Log("Actual", fmt.Sprintf("%+v", f.Volumes))
 		for _, d := range diff {
-			log.Debug("Diff", d)
+			t.Log("Diff", d)
 		}
 		t.Fatal("unexpected mapper volumes")
 	}

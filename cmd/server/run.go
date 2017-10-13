@@ -25,8 +25,6 @@ import (
 // This opens a database, and starts an API server, scheduler and task logger.
 // This blocks indefinitely.
 func Run(ctx context.Context, conf config.Config) error {
-	logger.Configure(conf.Server.Logger)
-
 	var backend compute.Backend
 	var db server.Database
 	var sched *scheduler.Scheduler
@@ -43,6 +41,7 @@ func Run(ctx context.Context, conf config.Config) error {
 	}
 
 	srv := server.DefaultServer(db, conf.Server)
+	srv.Log = logger.NewLogger("server", conf.Server.Logger)
 
 	switch strings.ToLower(conf.Backend) {
 	case "gce", "manual", "openstack":
@@ -66,13 +65,18 @@ func Run(ctx context.Context, conf config.Config) error {
 			return fmt.Errorf("error occurred while setting up backend: %v", err)
 		}
 
-		sched = scheduler.NewScheduler(sdb, sbackend, conf.Scheduler)
+		sched = &scheduler.Scheduler{
+			Log:     logger.NewLogger("scheduler", conf.Server.Logger),
+			DB:      sdb,
+			Conf:    conf.Scheduler,
+			Backend: sbackend,
+		}
 	case "gridengine":
 		backend = gridengine.NewBackend(conf)
 	case "htcondor":
 		backend = htcondor.NewBackend(conf)
 	case "local":
-		backend = local.NewBackend(conf)
+		backend = local.NewBackend(conf, logger.NewLogger("local", conf.Server.Logger))
 	case "pbs":
 		backend = pbs.NewBackend(conf)
 	case "slurm":

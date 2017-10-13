@@ -34,7 +34,6 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-	log.Info("Starting download", "url", url, "hostPath", hostPath)
 	path, ok := getPath(url)
 
 	if !ok {
@@ -66,13 +65,11 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	if err != nil {
 		return err
 	}
-	log.Info("Finished download", "url", url, "hostPath", hostPath)
 	return nil
 }
 
 // Put copies a file from the hostPath into storage.
 func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 	path, ok := getPath(url)
 
 	if !ok {
@@ -123,7 +120,6 @@ func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string,
 		return nil, err
 	}
 
-	log.Info("Finished upload", "url", url, "hostPath", hostPath)
 	return out, nil
 }
 
@@ -156,7 +152,6 @@ func copyFile(source string, dest string) (err error) {
 		return err
 	}
 	if same {
-		log.Debug("source and dest are the same file - skipping...")
 		return nil
 	}
 	// Open source file for copying
@@ -197,7 +192,6 @@ func linkFile(source string, dest string) error {
 		return err
 	}
 	if same {
-		log.Debug("source and dest are the same file - skipping...")
 		return nil
 	}
 	// make parent dirs if they dont exist
@@ -211,10 +205,6 @@ func linkFile(source string, dest string) error {
 	}
 	err = os.Link(parent, dest)
 	if err != nil {
-		log.Debug("Failed to link file; attempting copy",
-			"linkErr", err,
-			"source", source,
-			"dest", dest)
 		err = copyFile(source, dest)
 	}
 	return err

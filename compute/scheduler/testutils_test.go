@@ -42,13 +42,14 @@ func newTestNode(conf config.Config) testNode {
 
 	// A mock scheduler client allows this code to fake/control the worker's
 	// communication with a scheduler service.
+	res, _ := detectResources(conf.Scheduler.Node)
 	s := new(schedmock.Client)
 	n := &Node{
 		conf:       conf.Scheduler.Node,
 		workerConf: conf.Worker,
 		client:     s,
 		log:        log,
-		resources:  detectResources(conf.Scheduler.Node),
+		resources:  res,
 		newWorker:  NoopWorkerFactory,
 		workers:    newRunSet(),
 		timeout:    util.NewIdleTimeout(conf.Scheduler.Node.Timeout),

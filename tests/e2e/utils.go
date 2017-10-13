@@ -37,8 +37,6 @@ import (
 	"time"
 )
 
-var log = logger.New("e2e")
-
 // HelloWorld is a simple, valid task that is easy to reuse in tests.
 var HelloWorld = &tes.Task{
 	Executors: []*tes.Executor{

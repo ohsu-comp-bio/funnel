@@ -48,7 +48,6 @@ func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
 
 // Get copies an object from S3 to the host path.
 func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-	log.Info("Starting download", "url", url)
 
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)
@@ -126,13 +125,11 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 		return err
 	}
 
-	log.Info("Finished download", "url", url, "hostPath", hostPath)
 	return nil
 }
 
 // Put copies an object (file) from the host path to S3.
 func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	log.Info("Starting upload", "url", url, "hostPath", hostPath)
 
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)
@@ -206,7 +203,6 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 		return nil, fmt.Errorf("Unknown file class: %s", class)
 	}
 
-	log.Info("Finished upload", "url", url, "hostPath", hostPath)
 	return out, nil
 }
 

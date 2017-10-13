@@ -2,14 +2,12 @@ package manual
 
 import (
 	"context"
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
-
-var log = logger.Sub("manual")
 
 // NewBackend returns a new Backend instance.
 func NewBackend(conf config.Config) (*Backend, error) {
@@ -17,8 +15,7 @@ func NewBackend(conf config.Config) (*Backend, error) {
 	// Create a client for talking to the funnel scheduler
 	client, err := scheduler.NewClient(conf.Scheduler)
 	if err != nil {
-		log.Error("Can't connect scheduler client", err)
-		return nil, err
+		return nil, fmt.Errorf("Can't connect scheduler client: %s", err)
 	}
 
 	return &Backend{conf, client}, nil
@@ -32,8 +29,6 @@ type Backend struct {
 
 // GetOffer returns an offer based on available funnel nodes.
 func (s *Backend) GetOffer(j *tes.Task) *scheduler.Offer {
-	log.Debug("Running manual backend")
-
 	offers := []*scheduler.Offer{}
 
 	for _, n := range s.getNodes() {
@@ -70,7 +65,6 @@ func (s *Backend) getNodes() []*pbs.Node {
 
 	// If there's an error, return an empty list
 	if err != nil {
-		log.Error("Failed ListNodes request. Recovering.", err)
 		return nodes
 	}
 

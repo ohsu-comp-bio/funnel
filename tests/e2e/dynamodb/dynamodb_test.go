@@ -19,7 +19,6 @@ import (
 	"time"
 )
 
-var log = logger.New("e2e-dynamodb")
 var fun *e2e.Funnel
 var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
 

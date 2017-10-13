@@ -8,6 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
 	elastic "gopkg.in/olivere/elastic.v5"
+	"time"
 )
 
 // Elastic provides an elasticsearch database server backend.
@@ -24,6 +25,11 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(conf.URL),
 		elastic.SetSniff(false),
+		elastic.SetRetrier(
+			elastic.NewBackoffRetrier(
+				elastic.NewExponentialBackoff(time.Millisecond*50, time.Minute),
+			),
+		),
 	)
 	if err != nil {
 		return nil, err

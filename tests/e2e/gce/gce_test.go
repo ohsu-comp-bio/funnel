@@ -6,104 +6,35 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/gce"
 	gcemock "github.com/ohsu-comp-bio/funnel/compute/gce/mocks"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
-	"github.com/stretchr/testify/mock"
 	"google.golang.org/api/compute/v1"
 	"testing"
-	"time"
 )
 
-type Funnel struct {
-	*e2e.Funnel
-	GCE               *gcemock.Wrapper
-	InstancesInserted []*compute.Instance
+func Config() config.Config {
+	conf := e2e.DefaultConfig()
+	conf.Backend = "gce-mock"
+	conf.Backends.GCE.Project = "test-proj"
+	conf.Backends.GCE.Zone = "test-zone"
+	return conf
 }
 
-func (f *Funnel) AddNode(id string, cpus uint32, ram, disk float64) {
-	conf := f.Conf
+func NodeConfig(conf config.Config, id string, cpus uint32, ram, disk float64) config.Config {
 	conf.Scheduler.Node.ID = id
 	conf.Scheduler.Node.Metadata["gce"] = "yes"
 	conf.Scheduler.Node.Resources.Cpus = cpus
 	conf.Scheduler.Node.Resources.RamGb = ram
 	conf.Scheduler.Node.Resources.DiskGb = disk
-
-	n, err := scheduler.NewNode(conf, nil)
-	if err != nil {
-		panic(err)
-	}
-	go n.Run(context.Background())
-	time.Sleep(time.Second * 2)
-}
-
-func NewFunnel() *Funnel {
-	conf := e2e.DefaultConfig()
-	conf.Backend = "gce"
-
-	// NOTE: matches hard-coded values in mock wrapper
-	conf.Backends.GCE.Project = "test-proj"
-	conf.Backends.GCE.Zone = "test-zone"
-
-	gceWrapper := new(gcemock.Wrapper)
-	backend, err := gce.NewMockBackend(conf, gceWrapper)
-	if err != nil {
-		panic(err)
-	}
-
-	fun := &Funnel{
-		Funnel: e2e.NewFunnel(conf),
-		GCE:    gceWrapper,
-	}
-
-	gceWrapper.SetupMockMachineTypes()
-	gceWrapper.SetupMockInstanceTemplates()
-
-	// Set up the mock Google Cloud plugin so that it starts a local node.
-	gceWrapper.On("InsertInstance", mock.Anything, mock.Anything, mock.Anything).
-		Run(func(args mock.Arguments) {
-			opts := args[2].(*compute.Instance)
-			fun.InstancesInserted = append(fun.InstancesInserted, opts)
-
-			meta := &gce.Metadata{}
-			meta.Instance.Name = opts.Name
-			meta.Instance.Hostname = "localhost"
-
-			for _, item := range opts.Metadata.Items {
-				if item.Key == "funnel-node-serveraddress" {
-					meta.Instance.Attributes.FunnelNodeServerAddress = *item.Value
-				}
-			}
-
-			meta.Instance.Zone = conf.Backends.GCE.Zone
-			meta.Project.ProjectID = conf.Backends.GCE.Project
-			c, cerr := gce.WithMetadataConfig(conf, meta)
-
-			if cerr != nil {
-				panic(cerr)
-			}
-
-			n, err := scheduler.NewNode(c, nil)
-			if err != nil {
-				panic(err)
-			}
-			go n.Run(context.Background())
-		}).
-		Return(nil, nil)
-
-	fun.Scheduler = &scheduler.Scheduler{
-		DB:      fun.SDB,
-		Backend: backend,
-		Conf:    conf.Scheduler,
-	}
-	fun.Srv.Scheduler = fun.Scheduler
-	fun.StartServer()
-
-	return fun
+	return conf
 }
 
 func TestMultipleTasks(t *testing.T) {
-	fun := NewFunnel()
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
 
 	id := fun.Run(`
     --sh 'echo hello world'
@@ -134,7 +65,8 @@ func TestMultipleTasks(t *testing.T) {
 // Test that the correct information is being passed to the Google Cloud API
 // during node creation.
 func TestWrapper(t *testing.T) {
-	fun := NewFunnel()
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
 
 	// Run a task
 	id := fun.Run(`
@@ -155,8 +87,9 @@ func TestWrapper(t *testing.T) {
 		t.Error("node has incorrect template")
 	}
 
+	sbackend := fun.Srv.SBackend.(*gce.MockBackend)
 	addr := fun.Conf.Server.RPCAddress()
-	d := deep.Equal(fun.InstancesInserted, []*compute.Instance{
+	d := deep.Equal(sbackend.InstancesInserted, []*compute.Instance{
 		{
 			// TODO test that these fields get passed through from the template correctly.
 			//      i.e. mock a more complex template
@@ -196,8 +129,9 @@ func TestWrapper(t *testing.T) {
 // available for the task. In this case, there are no instance templates,
 // so the scheduler will not create any new nodes.
 func TestSchedToExisting(t *testing.T) {
-	fun := NewFunnel()
-	fun.AddNode("existing", 10, 100.0, 1000.0)
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
+	fun.AddNode(NodeConfig(fun.Conf, "existing", 10, 100.0, 1000.0))
 
 	// Run a task
 	id := fun.Run(`
@@ -225,8 +159,9 @@ func TestSchedToExisting(t *testing.T) {
 // a task to that unintialized node. The scaler then calls the GCE API to
 // start the node.
 func TestSchedStartNode(t *testing.T) {
-	fun := NewFunnel()
-	fun.AddNode("existing", 1, 100.0, 1000.0)
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
+	fun.AddNode(NodeConfig(fun.Conf, "existing", 1, 100.0, 1000.0))
 
 	id := fun.Run(`
     --sh 'sleep 100'
@@ -251,8 +186,9 @@ func TestSchedStartNode(t *testing.T) {
 // AND instance templates available. The existing node has capacity for the task,
 // and the task should be scheduled to the existing node.
 func TestPreferExistingNode(t *testing.T) {
-	fun := NewFunnel()
-	fun.AddNode("existing", 10, 100.0, 1000.0)
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
+	fun.AddNode(NodeConfig(fun.Conf, "existing", 10, 100.0, 1000.0))
 
 	id := fun.Run(`
     --sh 'sleep 100'
@@ -276,7 +212,8 @@ func TestPreferExistingNode(t *testing.T) {
 // Test submit multiple tasks at once when no nodes exist. Multiple nodes
 // should be started.
 func TestSchedStartMultipleNode(t *testing.T) {
-	fun := NewFunnel()
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
 
 	// NOTE: the machine type hard-coded in scheduler/gce/mocks/Wrapper_helpers.go
 	//       has 3 CPUs.
@@ -311,8 +248,9 @@ func TestSchedStartMultipleNode(t *testing.T) {
 
 // Test that assigning a task to a node correctly updates the available resources.
 func TestUpdateAvailableResources(t *testing.T) {
-	fun := NewFunnel()
-	fun.AddNode("existing", 10, 100.0, 1000.0)
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
+	fun.AddNode(NodeConfig(fun.Conf, "existing", 10, 100.0, 1000.0))
 
 	id := fun.Run(`
     --sh 'sleep 100'
@@ -334,9 +272,10 @@ func TestUpdateAvailableResources(t *testing.T) {
 
 // Try to reproduce a bug where available CPUs seems to overflow
 func TestUpdateBugAvailableResources(t *testing.T) {
-	fun := NewFunnel()
-	fun.AddNode("existing-1", 8, 100.0, 1000.0)
-	fun.AddNode("existing-2", 8, 100.0, 1000.0)
+	fun := e2e.NewFunnel(Config())
+	fun.StartServer()
+	fun.AddNode(NodeConfig(fun.Conf, "existing-1", 8, 100.0, 1000.0))
+	fun.AddNode(NodeConfig(fun.Conf, "existing-2", 8, 100.0, 1000.0))
 
 	id1 := fun.Run(`
     --sh 'sleep 100'

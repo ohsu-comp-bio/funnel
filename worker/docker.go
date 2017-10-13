@@ -39,6 +39,8 @@ func (dcmd DockerCmd) Run() error {
 		dcmd.Event.Error("Can't connect to Docker", derr)
 		return derr
 	}
+	pullcmd := exec.Command("docker", "pull", dcmd.ImageName)
+	pullcmd.Run()
 
 	args := []string{"run", "-i"}
 

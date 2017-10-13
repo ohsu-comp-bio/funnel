@@ -1,6 +1,7 @@
 package openstack
 
 import (
+	"fmt"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
@@ -19,22 +20,19 @@ func (s *Backend) StartNode(w *pbs.Node) error {
 	// TODO move to client wrapper
 	authOpts, aerr := openstack.AuthOptionsFromEnv()
 	if aerr != nil {
-		log.Error("Auth options failed", aerr)
-		return aerr
+		return fmt.Errorf("openstack auth options failed: %s", aerr)
 	}
 
 	provider, perr := openstack.AuthenticatedClient(authOpts)
 	if perr != nil {
-		log.Error("Provider failed", perr)
-		return perr
+		return fmt.Errorf("openstack provider failed: %s", perr)
 	}
 
 	client, cerr := openstack.NewComputeV2(provider,
 		gophercloud.EndpointOpts{Type: "compute", Name: "nova"})
 
 	if cerr != nil {
-		log.Error("Provider failed", cerr)
-		return cerr
+		return fmt.Errorf("openstack provider failed: %s", cerr)
 	}
 
 	conf := s.conf
@@ -63,8 +61,7 @@ func (s *Backend) StartNode(w *pbs.Node) error {
 	}).Extract()
 
 	if serr != nil {
-		log.Error("Error creating server", serr)
-		return serr
+		return fmt.Errorf("can't create openstack vm instance: %s", serr)
 	}
 	return nil
 }

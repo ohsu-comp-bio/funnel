@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
@@ -375,15 +376,13 @@ func ParseFile(relpath string, conf *Config) error {
 	// Read file
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		logger.Error("Failure reading config", "path", path, "error", err)
-		return err
+		return fmt.Errorf("Failure reading config at path %s: %s", path, err)
 	}
 
 	// Parse file
 	perr := Parse(source, conf)
 	if perr != nil {
-		logger.Error("Failure reading config", "path", path, "error", perr)
-		return perr
+		return fmt.Errorf("Failure reading config at path %s: %s", path, err)
 	}
 	return nil
 }

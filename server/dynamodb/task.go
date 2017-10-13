@@ -60,16 +60,12 @@ func (db *DynamoDB) WithComputeBackend(backend compute.Backend) {
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (db *DynamoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	log.Debug("CreateTask called", "task", task)
-
 	verr := tes.Validate(task)
 	if verr != nil {
-		log.Error("Invalid task message", "error", verr)
 		return nil, grpc.Errorf(codes.InvalidArgument, verr.Error())
 	}
 
 	taskID := util.GenTaskID()
-	log := log.WithFields("taskID", taskID)
 
 	task.Id = taskID
 	task.State = tes.State_QUEUED
@@ -86,14 +82,12 @@ func (db *DynamoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.Create
 
 	err = db.backend.Submit(task)
 	if err != nil {
-		log.Error("Error submitting task to compute backend", err)
-
 		derr := db.deleteTask(ctx, task.Id)
 		if derr != nil {
 			err = fmt.Errorf("%v\n%v", err, fmt.Errorf("failed to delete task items from DynamoDB, %v", derr))
 		}
 
-		return nil, err
+		return nil, fmt.Errorf("couldn't submit to compute backend: %s", err)
 	}
 
 	return &tes.CreateTaskResponse{Id: taskID}, nil
@@ -210,7 +204,6 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 
 // CancelTask cancels a task
 func (db *DynamoDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	log := log.WithFields("taskID", req.Id)
 
 	// call GetTask prior to cancel to ensure that the task exists
 	t, err := db.GetTask(ctx, &tes.GetTaskRequest{Id: req.Id, View: tes.TaskView_MINIMAL})
@@ -220,10 +213,8 @@ func (db *DynamoDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) 
 	switch t.GetState() {
 	case tes.State_COMPLETE, tes.State_ERROR, tes.State_SYSTEM_ERROR:
 		err = fmt.Errorf("illegal state transition from %s to %s", t.GetState().String(), tes.State_CANCELED.String())
-		log.Error("Cannot cancel task", err)
-		return nil, err
+		return nil, fmt.Errorf("cannot cancel task: %s", err)
 	case tes.State_CANCELED:
-		log.Info("Canceled task")
 		return &tes.CancelTaskResponse{}, nil
 	}
 
@@ -254,7 +245,6 @@ func (db *DynamoDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) 
 		return nil, err
 	}
 
-	log.Info("Canceled task")
 	return &tes.CancelTaskResponse{}, nil
 }
 

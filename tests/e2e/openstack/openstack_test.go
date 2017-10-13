@@ -15,7 +15,6 @@ import (
 
 var fun *e2e.Funnel
 var confPath = flag.String("openstack-e2e-config", "", "OpenStack end-to-end test config file")
-var log = logger.New("e2e-openstack")
 var conf config.Config
 
 func TestMain(m *testing.M) {

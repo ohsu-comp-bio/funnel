@@ -8,8 +8,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
-//var log = logging.Init()
-
 type Compact struct {
 	Status *Status
 	ID     *TextCol

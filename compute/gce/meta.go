@@ -14,8 +14,6 @@ import (
 // loading metadata from GCE's instance metadata.
 // https://cloud.google.com/compute/docs/storing-retrieving-metadata
 func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, error) {
-	log.Info("Discovering GCE environment")
-
 	conf.Backend = "gce"
 	defaultHostName := conf.Server.HostName
 
@@ -65,7 +63,6 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 	// process should be started (instead of a server).
 	if conf.Scheduler.Node.ID != "" {
 		if conf.Scheduler.Node.ServerAddress == "" {
-			log.Error("Empty server address while starting node")
 			return conf, fmt.Errorf("Empty server address while starting node")
 		}
 		conf.Worker.Storage.GS = append(conf.Worker.Storage.GS,

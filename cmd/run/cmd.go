@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/spf13/cobra"
 	"os"
@@ -15,8 +14,6 @@ import (
 // Usage/help docs are defined in usage.go.
 // If you're updating flags, you probably need to update that file.
 // *********************************************************************
-
-var log = logger.New("run")
 
 // Cmd represents the run command
 var Cmd = &cobra.Command{

@@ -18,7 +18,6 @@ func checkCreateErr(err error) error {
 	if aerr, ok := err.(awserr.Error); ok {
 		switch aerr.Code() {
 		case dynamodb.ErrCodeResourceInUseException:
-			log.Debug("NewDynamoDB", "warning", "table already exists")
 			return nil
 		}
 	}

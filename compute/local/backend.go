@@ -8,23 +8,21 @@ import (
 	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
-var log = logger.Sub("local")
-
 // NewBackend returns a new local Backend instance.
-func NewBackend(conf config.Config) *Backend {
-	return &Backend{conf}
+func NewBackend(conf config.Config, log *logger.Logger) *Backend {
+	return &Backend{conf, log}
 }
 
 // Backend represents the local backend.
 type Backend struct {
 	conf config.Config
+	log  *logger.Logger
 }
 
 // Submit submits a task. For the Local backend this results in the task
 // running immediately.
 func (b *Backend) Submit(task *tes.Task) error {
-	log.Debug("Submitting to local", "taskID", task.Id)
-	w, err := worker.NewDefaultWorker(b.conf.Worker, task.Id)
+	w, err := worker.NewDefaultWorker(b.conf.Worker, task.Id, b.log)
 	if err != nil {
 		return err
 	}

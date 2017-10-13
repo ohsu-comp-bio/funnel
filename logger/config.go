@@ -71,7 +71,7 @@ func DebugConfig() Config {
 }
 
 // Configure configures the logging level and output path.
-func (l *logger) Configure(conf Config) {
+func (l *Logger) Configure(conf Config) {
 	l.SetLevel(conf.Level)
 
 	switch conf.Formatter {

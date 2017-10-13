@@ -2,11 +2,8 @@ package noop
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
-
-var log = logger.Sub("noop")
 
 // NewBackend returns a new noop Backend instance.
 func NewBackend(conf config.Config) *Backend {
@@ -21,6 +18,5 @@ type Backend struct {
 
 // Submit submits a task. For the noop backend this does nothing.
 func (b *Backend) Submit(task *tes.Task) error {
-	log.Debug("Submitting to noop", "taskID", task.Id)
 	return nil
 }

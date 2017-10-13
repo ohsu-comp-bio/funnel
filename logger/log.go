@@ -21,46 +21,23 @@ const (
 // Formatter defines a log output formatter.
 type Formatter logrus.Formatter
 
-// Logger is responsible for logging messages from code.
-type Logger interface {
-	Sub(string, ...interface{}) Logger
-	SetFormatter(Formatter)
-	SetLevel(string)
-	SetOutput(io.Writer)
-	Discard()
-	Debug(string, ...interface{})
-	Info(string, ...interface{})
-	Error(string, ...interface{})
-	WithFields(...interface{}) Logger
-	Configure(Config)
-}
-
-// New returns a new Logger instance.
-func New(ns string, args ...interface{}) Logger {
-	f := util.ArgListToMap(args...)
-	f["ns"] = ns
+// NewLogger returns a new Logger instance.
+func NewLogger(ns string, conf Config) *Logger {
 	log := logrus.New()
-	base := log.WithFields(f)
-	l := &logger{log, base}
-	l.Configure(DefaultConfig())
+	base := log.WithFields(map[string]interface{}{"ns": ns})
+	l := &Logger{log, base}
+	l.Configure(conf)
 	return l
 }
 
-type logger struct {
+// Logger handles structured, configurable application logging.
+type Logger struct {
 	logrus *logrus.Logger
 	base   *logrus.Entry
 }
 
-// Sub returns a new sub-logger instance.
-func (l *logger) Sub(ns string, args ...interface{}) Logger {
-	f := util.ArgListToMap(args...)
-	f["ns"] = ns
-	sl := l.logrus.WithFields(f)
-	return &logger{l.logrus, sl}
-}
-
 // SetLevel sets the level of the logger.
-func (l *logger) SetLevel(lvl string) {
+func (l *Logger) SetLevel(lvl string) {
 	switch strings.ToLower(lvl) {
 	case "debug":
 		l.logrus.Level = logrus.DebugLevel
@@ -74,17 +51,17 @@ func (l *logger) SetLevel(lvl string) {
 }
 
 // SetFormatter sets the formatter of the logger.
-func (l *logger) SetFormatter(f Formatter) {
+func (l *Logger) SetFormatter(f Formatter) {
 	l.logrus.Formatter = f
 }
 
 // SetOutput sets the output of the logger.
-func (l *logger) SetOutput(o io.Writer) {
+func (l *Logger) SetOutput(o io.Writer) {
 	l.logrus.Out = o
 }
 
 // Discard configures the logger to discard all logs.
-func (l *logger) Discard() {
+func (l *Logger) Discard() {
 	l.SetOutput(ioutil.Discard)
 }
 
@@ -92,7 +69,10 @@ func (l *logger) Discard() {
 //
 // After the first argument, arguments are key-value pairs which are written as structured logs.
 //     log.Debug("Some message here", "key1", value1, "key2", value2)
-func (l *logger) Debug(msg string, args ...interface{}) {
+func (l *Logger) Debug(msg string, args ...interface{}) {
+	if l == nil {
+		return
+	}
 	defer recoverLogErr()
 	f := util.ArgListToMap(args...)
 	l.base.WithFields(f).Debug(msg)
@@ -102,7 +82,10 @@ func (l *logger) Debug(msg string, args ...interface{}) {
 //
 // After the first argument, arguments are key-value pairs which are written as structured logs.
 //     log.Info("Some message here", "key1", value1, "key2", value2)
-func (l *logger) Info(msg string, args ...interface{}) {
+func (l *Logger) Info(msg string, args ...interface{}) {
+	if l == nil {
+		return
+	}
 	defer recoverLogErr()
 	f := util.ArgListToMap(args...)
 	l.base.WithFields(f).Info(msg)
@@ -116,7 +99,10 @@ func (l *logger) Info(msg string, args ...interface{}) {
 // Error has a two-argument version that can be used as a shortcut.
 //     err := startServer()
 //     log.Error("Couldn't start server", err)
-func (l *logger) Error(msg string, args ...interface{}) {
+func (l *Logger) Error(msg string, args ...interface{}) {
+	if l == nil {
+		return
+	}
 	defer recoverLogErr()
 	var f map[string]interface{}
 	if len(args) == 1 {
@@ -128,11 +114,14 @@ func (l *logger) Error(msg string, args ...interface{}) {
 }
 
 // WithFields returns a new Logger instance with the given fields added to all log messages.
-func (l *logger) WithFields(args ...interface{}) Logger {
+func (l *Logger) WithFields(args ...interface{}) *Logger {
+	if l == nil {
+		return l
+	}
 	defer recoverLogErr()
 	f := util.ArgListToMap(args...)
 	base := l.base.WithFields(f)
-	return &logger{l.logrus, base}
+	return &Logger{l.logrus, base}
 }
 
 // PrintSimpleError prints out an error message with a red "ERROR:" prefix.

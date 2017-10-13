@@ -11,13 +11,13 @@ import (
 
 // Run runs a node with the given config, blocking until the node exits.
 func Run(conf config.Config) error {
-	logger.Configure(conf.Scheduler.Node.Logger)
+	log := logger.NewLogger("node", conf.Scheduler.Node.Logger)
 
 	if conf.Scheduler.Node.ID == "" {
 		conf.Scheduler.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	n, err := scheduler.NewNode(conf)
+	n, err := scheduler.NewNode(conf, log)
 	if err != nil {
 		return err
 	}

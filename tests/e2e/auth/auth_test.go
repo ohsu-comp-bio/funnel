@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"github.com/ohsu-comp-bio/funnel/util"
@@ -9,8 +8,6 @@ import (
 	"strings"
 	"testing"
 )
-
-var log = logger.Sub("e2e-auth")
 
 var extask = `{
   "executors": [

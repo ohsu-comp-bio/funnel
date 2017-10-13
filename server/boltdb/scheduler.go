@@ -22,8 +22,7 @@ func (taskBolt *BoltDB) QueueTask(task *tes.Task) error {
 		return nil
 	})
 	if err != nil {
-		log.Error("Error queuing task", err)
-		return err
+		return fmt.Errorf("can't queue task: %s", err)
 	}
 	return nil
 }
@@ -95,7 +94,6 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*
 	}
 
 	if err != nil {
-		log.Debug("GetNode", "error", err, "nodeID", req.Id)
 		return nil, err
 	}
 	return node, nil

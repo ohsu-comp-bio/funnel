@@ -7,11 +7,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/compute/gce"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
 )
-
-var log = logger.New("gce cmd")
 
 // Cmd represents the 'funnel gce" CLI command set.
 var Cmd = &cobra.Command{
@@ -31,12 +28,8 @@ var runCmd = &cobra.Command{
 		// If not, fail.
 		meta, merr := gce.LoadMetadata()
 		if merr != nil {
-			log.Error("Error getting GCE metadata", merr)
 			return fmt.Errorf("can't find GCE metadata. This command requires a GCE environment")
 		}
-
-		log.Info("Loaded GCE metadata")
-		log.Debug("GCE metadata", meta)
 
 		var err error
 		conf, err = gce.WithMetadataConfig(conf, meta)
@@ -45,11 +38,9 @@ var runCmd = &cobra.Command{
 		}
 
 		if conf.Scheduler.Node.ID != "" {
-			logger.Configure(conf.Scheduler.Node.Logger)
 			return node.Run(conf)
 		}
 
-		logger.Configure(conf.Server.Logger)
 		return server.Run(context.Background(), conf)
 	},
 }

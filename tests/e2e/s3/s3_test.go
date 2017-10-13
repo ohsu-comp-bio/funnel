@@ -14,7 +14,6 @@ import (
 )
 
 var fun *e2e.Funnel
-var log = logger.New("e2e-s3")
 var conf config.Config
 var runTest = flag.Bool("run-test", false, "run e2e test")
 

@@ -493,6 +493,16 @@ func (f *Funnel) ListNodes() []*pbs.Node {
 	return resp.Nodes
 }
 
+// AddNode starts an in-memory node routine.
+func (f *Funnel) AddNode(conf config.Config) {
+	n, err := scheduler.NewNode(conf)
+	if err != nil {
+		panic(err)
+	}
+	go n.Run(context.Background())
+	time.Sleep(time.Second * 2)
+}
+
 // NewRPCConn returns a new grpc.ClientConn, to make creating TES clients easier.
 func NewRPCConn(conf config.Config, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)

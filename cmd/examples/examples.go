@@ -54,7 +54,7 @@ var Cmd = &cobra.Command{
 			}
 		}
 
-		print(string(data))
+		fmt.Println(string(data))
 		return nil
 	},
 }

@@ -39,6 +39,12 @@ Server:
     #   # AWS region
     #   Region: ""
 
+    Elastic:
+      # Prefix to use for indexes (task, events, nodes)
+      IndexPrefix: "funnel"
+      # URL of the elasticsearch server.
+      URL: http://localhost:9200
+
   Logger:
     # Logging levels: debug, info, error
     Level: info

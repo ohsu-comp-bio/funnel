@@ -2,14 +2,7 @@ package tes
 
 import (
 	"github.com/getlantern/deepcopy"
-	"golang.org/x/net/context"
 )
-
-// TaskGetter defines a more minimal TES interface for cases where
-// code only needs to call GetTask.
-type TaskGetter interface {
-	GetTask(context.Context, *GetTaskRequest) (*Task, error)
-}
 
 // RunnableState returns true if the state is RUNNING or INITIALIZING
 func RunnableState(s State) bool {

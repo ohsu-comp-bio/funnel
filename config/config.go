@@ -145,7 +145,7 @@ func DefaultConfig() Config {
 	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
 
 	c.Backends.Batch.JobDef.Name = "funnel-job-def"
-	c.Backends.Batch.JobDef.Image = "docker.io/adamstruck/funnel:batch"
+	c.Backends.Batch.JobDef.Image = "docker.io/ohsu-comp-bio/funnel:latest"
 	c.Backends.Batch.JobDef.DefaultMemory = 128
 	c.Backends.Batch.JobDef.DefaultVcpus = 1
 

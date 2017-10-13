@@ -32,12 +32,13 @@ Server:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   # AWS Access key ID
-    #   Key: ""
-    #   # AWS Secret Access Key
-    #   Secret: ""
     #   # AWS region
     #   Region: ""
+    #   Credentials:
+    #     # AWS Access key ID
+    #     Key: ""
+    #     # AWS Secret Access Key
+    #     Secret: ""
 
     Elastic:
       # Prefix to use for indexes (task, events, nodes)
@@ -204,6 +205,25 @@ Backends:
     # before refreshing.
     CacheTTL: 60000000000 # 1 minute
 
+  # Batch describes the configuration for the AWS Batch compute backend.
+  Batch:
+    # JobDefConfig represents configuration of the AWS Batch
+    # base Job Definition.
+    JobDef:
+      Name: "funnel-job-def"
+      Image: "docker.io/ohsu-comp-bio/funnel:latest"
+      DefaultMemory: 128
+      DefaultVcpus:  1
+      JobRoleArn: ""
+    # JobQueue can be either a name or the Amazon Resource Name (ARN).
+    JobQueue: ""
+    # AWS region of the specified job queue and to create the job definition in
+    Region: ""
+    Credentials:
+      Key: ""
+      Secret: ""
+
+
 Worker:
   # Files created during processing will be written in this directory.
   WorkDir: ./funnel-work-dir
@@ -220,9 +240,11 @@ Worker:
         - ./
 
     # S3:
-    #   - Endpoint:
-    #     Key:
-    #     Secret:
+    #   Credentials:
+    #       # AWS Access key ID
+    #       Key: ""
+    #       # AWS Secret Access Key
+    #       Secret: ""
 
     # GS:
     #     # Path to account credentials file.
@@ -232,13 +254,13 @@ Worker:
     #     # Automatically discover credentials from the environment.
     #     FromEnv: true
 
-    #Swift:
-    # UserName:
-    # Password:
-    # AuthURL:
-    # TenantName:
-    # TenantID:
-    # RegionName:
+    # Swift:
+    #   UserName:
+    #   Password:
+    #   AuthURL:
+    #   TenantName:
+    #   TenantID:
+    #   RegionName:
 
   # For low-level tuning.
   # How often to send task log updates to the Funnel server.
@@ -256,12 +278,13 @@ Worker:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   # AWS Access key ID
-    #   Key: ""
-    #   # AWS Secret Access Key
-    #   Secret: ""
     #   # AWS region
     #   Region: ""
+    #   Credentials:
+    #     # AWS Access key ID
+    #     Key: ""
+    #     # AWS Secret Access Key
+    #     Secret: ""
 
   # The name of the active event writer backend.
   # Available backends: rpc, log, dynamodb
@@ -279,12 +302,13 @@ Worker:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   # AWS Access key ID
-    #   Key: ""
-    #   # AWS Secret Access Key
-    #   Secret: ""
     #   # AWS region
     #   Region: ""
+    #   Credentials:
+    #     # AWS Access key ID
+    #     Key: ""
+    #     # AWS Secret Access Key
+    #     Secret: ""
 
   Logger:
     # Logging levels: debug, info, error

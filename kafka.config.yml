@@ -1,0 +1,7 @@
+Backend: manual
+Worker:
+  ActiveEventWriters: ["rpc", "log", "kafka"]
+  EventWriters:
+    Kafka:
+      Topic: funnel-events
+      Servers: ["10.50.50.49:9092"]

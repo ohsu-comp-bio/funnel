@@ -33,9 +33,20 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"testing"
 	"text/template"
 	"time"
 )
+
+var log = logger.NewLogger("e2e", testutils.LogConfig())
+
+func init() {
+	logger.ConfigureGRPC(1, log)
+}
+
+func setLogOutput(t *testing.T) {
+	log.SetOutput(testutils.TestingWriter(t))
+}
 
 // HelloWorld is a simple, valid task that is easy to reuse in tests.
 var HelloWorld = &tes.Task{
@@ -45,11 +56,6 @@ var HelloWorld = &tes.Task{
 			Cmd:       []string{"echo", "hello world"},
 		},
 	},
-}
-
-func init() {
-	logger.SetGRPCLoggerVerbosity(1)
-	log.Configure(logger.DebugConfig())
 }
 
 // Funnel provides a test server and RPC/HTTP clients
@@ -129,7 +135,7 @@ func NewFunnel(conf config.Config) *Funnel {
 	var backend compute.Backend
 	switch conf.Backend {
 	case "local":
-		backend = local.NewBackend(conf)
+		backend = local.NewBackend(conf, log)
 	case "noop":
 		backend = noop.NewBackend(conf)
 	case "gce":
@@ -318,7 +324,6 @@ func (f *Funnel) RunTask(t *tes.Task) (string, error) {
 	if cerr != nil {
 		return "", cerr
 	}
-	log.Debug("Created Task", "id", resp.Id)
 	return resp.Id, nil
 }
 

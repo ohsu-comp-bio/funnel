@@ -8,8 +8,8 @@ import (
 )
 
 // Run configures and runs a Worker
-func Run(conf config.Worker, taskID string) error {
-	w, err := worker.NewDefaultWorker(conf, taskID, logger.NewLogger("worker", conf.Logger))
+func Run(conf config.Worker, taskID string, log *logger.Logger) error {
+	w, err := worker.NewDefaultWorker(conf, taskID, log)
 	if err != nil {
 		return err
 	}

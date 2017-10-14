@@ -34,6 +34,8 @@ type TextFormatConfig struct {
 	// that log extremely frequently and don't use the JSON formatter this may not
 	// be desired.
 	DisableSorting bool
+
+	Indent string
 }
 
 // Config provides configuration for a logger.
@@ -51,19 +53,6 @@ func DefaultConfig() Config {
 		Level:     "info",
 		Formatter: "text",
 		TextFormat: TextFormatConfig{
-			FullTimestamp:   true,
-			TimestampFormat: logrus.DefaultTimestampFormat,
-		},
-	}
-}
-
-// DebugConfig returns a Config instance with default values useful for testing/debugging.
-func DebugConfig() Config {
-	return Config{
-		Level:     "debug",
-		Formatter: "text",
-		TextFormat: TextFormatConfig{
-			ForceColors:     true,
 			FullTimestamp:   true,
 			TimestampFormat: logrus.DefaultTimestampFormat,
 		},

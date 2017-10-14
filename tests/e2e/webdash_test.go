@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -9,6 +8,7 @@ import (
 )
 
 func TestWebdash(t *testing.T) {
+	setLogOutput(t)
 	// Get the webdash health check endpoint
 	address := fun.Conf.Server.HTTPAddress()
 	client := http.Client{Timeout: 10 * time.Second}
@@ -25,7 +25,6 @@ func TestWebdash(t *testing.T) {
 	}
 
 	if string(b) != "OK\n" {
-		logger.Error("webdash check", string(b))
-		t.Fatal("Webdash health check fail")
+		t.Fatal("Webdash health check fail", string(b))
 	}
 }

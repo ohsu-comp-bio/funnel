@@ -87,10 +87,10 @@ test-short:
 
 # Run all tests
 test:
-	@go run tests/fmt/fmt.go $(TESTS)
+	@go test $(TESTS)
 
 test-verbose:
-	@go run tests/fmt/fmt.go -v $(TESTS)
+	@go test -v $(TESTS)
 
 # Run backend tests
 test-backends:

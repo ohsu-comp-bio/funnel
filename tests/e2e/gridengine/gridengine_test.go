@@ -12,11 +12,9 @@ var fun *e2e.Funnel
 var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
 
 func TestMain(m *testing.M) {
-	log.Configure(logger.DebugConfig())
-
 	flag.Parse()
 	if !*runTest {
-		log.Info("Skipping grid engine e2e tests...")
+		logger.Debug("Skipping grid engine e2e tests...")
 		os.Exit(0)
 	}
 

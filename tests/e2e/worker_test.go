@@ -9,6 +9,7 @@ import (
 )
 
 func TestWorkerCmdRun(t *testing.T) {
+	setLogOutput(t)
 	c := DefaultConfig()
 	c.Backend = "noop"
 	f := NewFunnel(c)
@@ -20,16 +21,14 @@ func TestWorkerCmdRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err := workerCmd.Run(c.Worker, id)
+	err := workerCmd.Run(c.Worker, id, log)
 	if err != nil {
-		log.Error("err", err)
-		t.Fatal("unexpected error")
+		t.Fatal("unexpected error", err)
 	}
 
 	task, err := f.HTTP.GetTask(id, "FULL")
 	if err != nil {
-		log.Error("err", err)
-		t.Fatal("unexpected error")
+		t.Fatal("unexpected error", err)
 	}
 
 	if task.State != tes.State_COMPLETE {
@@ -42,6 +41,7 @@ func TestWorkerCmdRun(t *testing.T) {
 }
 
 func TestDefaultWorkerRun(t *testing.T) {
+	setLogOutput(t)
 	c := DefaultConfig()
 	c.Backend = "noop"
 	f := NewFunnel(c)
@@ -53,7 +53,7 @@ func TestDefaultWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	w, err := worker.NewDefaultWorker(c.Worker, id)
+	w, err := worker.NewDefaultWorker(c.Worker, id, nil)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -63,8 +63,7 @@ func TestDefaultWorkerRun(t *testing.T) {
 
 	task, err := f.HTTP.GetTask(id, "FULL")
 	if err != nil {
-		log.Error("err", err)
-		t.Fatal("unexpected error")
+		t.Fatal("unexpected error", err)
 	}
 
 	if task.State != tes.State_COMPLETE {

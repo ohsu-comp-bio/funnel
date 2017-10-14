@@ -4,21 +4,16 @@ import (
 	"context"
 	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
 )
 
-func init() {
-	log.Configure(logger.DebugConfig())
-}
-
 // Test calling stopping a node by canceling its context
 func TestStopNode(t *testing.T) {
 	conf := config.DefaultConfig()
-	n := newTestNode(conf)
+	n := newTestNode(conf, t)
 
 	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
 		Return(&pbs.Node{}, nil)
@@ -37,7 +32,7 @@ func TestStopNode(t *testing.T) {
 // error from client.GetNode().
 func TestGetNodeFail(t *testing.T) {
 	conf := config.DefaultConfig()
-	n := newTestNode(conf)
+	n := newTestNode(conf, t)
 
 	// Set GetNode to return an error
 	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
@@ -52,12 +47,12 @@ func TestNodeTimeout(t *testing.T) {
 	conf.Scheduler.Node.Timeout = time.Millisecond
 	conf.Scheduler.Node.UpdateRate = time.Millisecond * 2
 
-	n := newTestNode(conf)
+	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
 	w := testWorker{}
 	// Hook the test worker up to the node's worker factory.
-	n.newWorker = w.Factory
+	n.newWorker = WorkerFactory(w.Factory)
 
 	// Set up scheduler mock to return a task
 	n.AddTasks("task-1")
@@ -75,7 +70,7 @@ func TestNodeTimeout(t *testing.T) {
 // Test that a node does nothing where there are no assigned tasks.
 func TestNoTasks(t *testing.T) {
 	conf := config.DefaultConfig()
-	n := newTestNode(conf)
+	n := newTestNode(conf, t)
 
 	// Tell the scheduler mock to return nothing
 	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
@@ -104,7 +99,7 @@ func TestNoTasks(t *testing.T) {
 // Test that a worker gets created for each task.
 func TestNodeWorkerCreated(t *testing.T) {
 	conf := config.DefaultConfig()
-	n := newTestNode(conf)
+	n := newTestNode(conf, t)
 
 	// Count the number of times the worker factory was called
 	var count int
@@ -117,9 +112,8 @@ func TestNodeWorkerCreated(t *testing.T) {
 	n.sync(context.Background())
 	time.Sleep(time.Second)
 
-	log.Debug("COUNT", count)
 	if count != 2 {
-		t.Fatal("Unexpected node worker count")
+		t.Fatalf("Unexpected node worker count: %d", count)
 	}
 }
 
@@ -127,12 +121,12 @@ func TestNodeWorkerCreated(t *testing.T) {
 // Tests a bugfix.
 func TestFinishedTaskNotRerun(t *testing.T) {
 	conf := config.DefaultConfig()
-	n := newTestNode(conf)
+	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
 	w := testWorker{}
 	// Hook the test worker up to the node's worker factory.
-	n.newWorker = w.Factory
+	n.newWorker = WorkerFactory(w.Factory)
 
 	n.AddTasks("task-1")
 
@@ -140,9 +134,8 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	n.sync(context.Background())
 	time.Sleep(time.Second)
 
-	log.Debug("COUNT", n.workers.Count())
 	if n.workers.Count() != 0 {
-		t.Fatal("Unexpected worker count")
+		t.Fatalf("Unexpected worker count: %d", n.workers.Count())
 	}
 
 	// There was a bug where later syncs would end up re-running the task.
@@ -151,21 +144,20 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	n.sync(context.Background())
 	time.Sleep(time.Second)
 
-	log.Debug("COUNT", n.workers.Count())
 	if n.workers.Count() != 0 {
-		t.Fatal("Unexpected worker count")
+		t.Fatalf("Unexpected worker count: %d", n.workers.Count())
 	}
 }
 
 // Test that tasks are removed from the node's runset when they finish.
 func TestFinishedTaskRunsetCount(t *testing.T) {
 	conf := config.DefaultConfig()
-	n := newTestNode(conf)
+	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
 	w := testWorker{}
 	// Hook the test worker up to the node's worker factory.
-	n.newWorker = w.Factory
+	n.newWorker = WorkerFactory(w.Factory)
 
 	n.AddTasks("task-1")
 
@@ -174,7 +166,6 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 	time.Sleep(time.Second)
 
 	if n.workers.Count() != 0 {
-		log.Debug("COUNT", n.workers.Count())
-		t.Fatal("Unexpected worker count")
+		t.Fatalf("Unexpected worker count: %d", n.workers.Count())
 	}
 }

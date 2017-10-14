@@ -18,11 +18,15 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10
 
 	srv := e2e.NewFunnel(conf)
-	srv.Scheduler = scheduler.NewScheduler(srv.SDB, nil, conf.Scheduler)
+	srv.Scheduler = &scheduler.Scheduler{
+		DB:      srv.SDB,
+		Backend: nil,
+		Conf:    conf.Scheduler,
+	}
 	srv.StartServer()
 
 	srv.Conf.Scheduler.Node.ID = "test-node-gone-on-cancel"
-	n, err := scheduler.NewNode(srv.Conf)
+	n, err := scheduler.NewNode(srv.Conf, nil)
 	if err != nil {
 		t.Fatal("failed to start node")
 	}

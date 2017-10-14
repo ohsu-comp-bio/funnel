@@ -6,7 +6,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/gce"
 	gcemock "github.com/ohsu-comp-bio/funnel/compute/gce/mocks"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
@@ -15,10 +14,6 @@ import (
 	"testing"
 	"time"
 )
-
-func init() {
-	log.Configure(logger.DebugConfig())
-}
 
 type Funnel struct {
 	*e2e.Funnel
@@ -34,7 +29,7 @@ func (f *Funnel) AddNode(id string, cpus uint32, ram, disk float64) {
 	conf.Scheduler.Node.Resources.RamGb = ram
 	conf.Scheduler.Node.Resources.DiskGb = disk
 
-	n, err := scheduler.NewNode(conf)
+	n, err := scheduler.NewNode(conf, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +62,6 @@ func NewFunnel() *Funnel {
 	// Set up the mock Google Cloud plugin so that it starts a local node.
 	gceWrapper.On("InsertInstance", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
-			log.Debug("INSERT")
 			opts := args[2].(*compute.Instance)
 			fun.InstancesInserted = append(fun.InstancesInserted, opts)
 
@@ -89,7 +83,7 @@ func NewFunnel() *Funnel {
 				panic(cerr)
 			}
 
-			n, err := scheduler.NewNode(c)
+			n, err := scheduler.NewNode(c, nil)
 			if err != nil {
 				panic(err)
 			}
@@ -97,7 +91,11 @@ func NewFunnel() *Funnel {
 		}).
 		Return(nil, nil)
 
-	fun.Scheduler = scheduler.NewScheduler(fun.SDB, backend, conf.Scheduler)
+	fun.Scheduler = &scheduler.Scheduler{
+		DB:      fun.SDB,
+		Backend: backend,
+		Conf:    conf.Scheduler,
+	}
 	fun.StartServer()
 
 	return fun
@@ -146,7 +144,6 @@ func TestWrapper(t *testing.T) {
 
 	// Check the node
 	nodes := fun.ListNodes()
-	log.Debug("Nodes", nodes)
 	if len(nodes) != 1 {
 		t.Error("Expected a single node")
 		return
@@ -214,7 +211,6 @@ func TestSchedToExisting(t *testing.T) {
 		t.Error("Expected a single node")
 	}
 
-	log.Debug("Nodes", nodes)
 	n := nodes[0]
 
 	if n.Id != "existing" {
@@ -241,12 +237,10 @@ func TestSchedStartNode(t *testing.T) {
 	nodes := fun.ListNodes()
 
 	if len(nodes) != 2 {
-		log.Debug("Nodes", nodes)
 		t.Error("Expected new node to be added to database")
 		return
 	}
 
-	log.Debug("Nodes", nodes)
 	if nodes[1].TaskIds[0] != id {
 		t.Error("Expected node to have task ID")
 	}
@@ -272,7 +266,6 @@ func TestPreferExistingNode(t *testing.T) {
 	}
 
 	expected := nodes[0]
-	log.Debug("Nodes", nodes)
 
 	if expected.Id != "existing" {
 		t.Error("Task was scheduled to the wrong node")
@@ -311,7 +304,6 @@ func TestSchedStartMultipleNode(t *testing.T) {
 	nodes := fun.ListNodes()
 
 	if len(nodes) != 4 {
-		log.Debug("NODES", nodes)
 		t.Error("Expected multiple nodes")
 	}
 }
@@ -331,7 +323,6 @@ func TestUpdateAvailableResources(t *testing.T) {
 	nodes := fun.ListNodes()
 
 	if len(nodes) != 1 || nodes[0].Id != "existing" {
-		log.Debug("NODES", nodes)
 		t.Error("Expected a single, existing node")
 	}
 
@@ -364,8 +355,6 @@ func TestUpdateBugAvailableResources(t *testing.T) {
 	defer fun.Cancel(id2)
 	defer fun.Cancel(id3)
 	nodes := fun.ListNodes()
-
-	log.Debug("NODES", nodes)
 
 	if len(nodes) != 2 {
 		t.Error("unexpected node count")

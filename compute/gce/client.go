@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"google.golang.org/api/compute/v1"
 	"time"
@@ -18,7 +19,7 @@ type Client interface {
 }
 
 // Helper for creating a wrapper before creating a client
-func newClientFromConfig(conf config.Config) (Client, error) {
+func newClientFromConfig(conf config.Config) (*gceClient, error) {
 	w, err := newWrapper(context.Background(), conf)
 	if err != nil {
 		return nil, err
@@ -47,18 +48,24 @@ type gceClient struct {
 	// For now at least, the client is specific to a single project + zone
 	project string
 	zone    string
+	log     *logger.Logger
 }
 
 // Templates queries the GCE API to get details about GCE instance templates.
 // If the API client fails to connect, this returns an empty list.
 func (s *gceClient) Templates() []pbs.Node {
-	s.loadTemplates()
+	loaderr := s.loadTemplates()
+	if loaderr != nil {
+		s.log.Error("error loading GCE templates", loaderr)
+	}
 	nodes := []pbs.Node{}
 
 	for id, tpl := range s.templates {
 
 		mt, ok := s.machineTypes[tpl.Properties.MachineType]
 		if !ok {
+			s.log.Error("error finding GCE template machine type",
+				"name", tpl.Properties.MachineType)
 			continue
 		}
 
@@ -90,7 +97,10 @@ func (s *gceClient) Templates() []pbs.Node {
 // StartNode calls out to GCE APIs to create a VM instance
 // with a Funnel node.
 func (s *gceClient) StartNode(tplName, serverAddress, nodeID string) error {
-	s.loadTemplates()
+	loaderr := s.loadTemplates()
+	if loaderr != nil {
+		s.log.Error("error loading GCE templates", loaderr)
+	}
 
 	// Get the instance template from the GCE API
 	tpl, ok := s.templates[tplName]
@@ -138,23 +148,23 @@ func (s *gceClient) StartNode(tplName, serverAddress, nodeID string) error {
 }
 
 // loadTemplates loads all the project's instance templates from the GCE API
-func (s *gceClient) loadTemplates() {
+func (s *gceClient) loadTemplates() error {
 	// Don't query the GCE API if we have cache results
 	if s.cacheTime.IsZero() && time.Since(s.cacheTime) < s.cacheTTL {
-		return
+		return nil
 	}
 	s.cacheTime = time.Now()
 
 	// Get the machine types available
 	mtresp, mterr := s.wrapper.ListMachineTypes(s.project, s.zone)
 	if mterr != nil {
-		return
+		return mterr
 	}
 
 	// Get the instance template from the GCE API
 	itresp, iterr := s.wrapper.ListInstanceTemplates(s.project)
 	if iterr != nil {
-		return
+		return iterr
 	}
 
 	s.machineTypes = map[string]*compute.MachineType{}
@@ -170,6 +180,7 @@ func (s *gceClient) loadTemplates() {
 			s.templates[t.Name] = t
 		}
 	}
+	return nil
 }
 
 func hasTag(t *compute.InstanceTemplate) bool {

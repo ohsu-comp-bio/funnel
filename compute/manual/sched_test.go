@@ -4,16 +4,11 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	schedmock "github.com/ohsu-comp-bio/funnel/compute/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	. "github.com/stretchr/testify/mock"
 	"testing"
 )
-
-func init() {
-	logger.Configure(logger.DebugConfig())
-}
 
 func simpleNode() *pbs.Node {
 	return &pbs.Node{

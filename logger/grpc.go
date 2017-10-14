@@ -7,20 +7,16 @@ import (
 )
 
 func init() {
-	// grpclog says to only call this from init(), so here we are
-	grpclog.SetLoggerV2(&grpclogger{
-		verbosity: 2,
-		log:       NewLogger("grpc", DefaultConfig()),
-	})
+	ConfigureGRPC(2, NewLogger("grpc", DefaultConfig()))
 }
 
-// SetGRPCLoggerVerbosity configures the GRPC logger verboisty level.
+// ConfigureGRPC configures the GRPC logger verboisty level.
 //   All logs in transport package only go to verbose level 2.
 //   All logs in other packages in grpc are logged in spite of the verbosity level.
-func SetGRPCLoggerVerbosity(verbosity int) {
+func ConfigureGRPC(verbosity int, log *Logger) {
 	grpclog.SetLoggerV2(&grpclogger{
 		verbosity: verbosity,
-		log:       NewLogger("grpc", DefaultConfig()),
+		log:       log,
 	})
 }
 

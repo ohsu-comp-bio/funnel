@@ -50,8 +50,7 @@ func TestGetTask(t *testing.T) {
 	}
 
 	if body.Id != "test-id" {
-		log.Debug("RESPONSE", body)
-		t.Error("Unexpected response")
+		t.Errorf("Unexpected response: %#v", body)
 	}
 }
 
@@ -77,8 +76,7 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	}
 
 	if body.Id != "test-id" {
-		log.Debug("RESPONSE", body)
-		t.Error("Unexpected response")
+		t.Errorf("Unexpected response: %#v", body)
 	}
 }
 

@@ -23,11 +23,9 @@ var fun *e2e.Funnel
 var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
 
 func TestMain(m *testing.M) {
-	log.Configure(logger.DebugConfig())
-
 	flag.Parse()
 	if !*runTest {
-		log.Info("Skipping dynamodb e2e tests...")
+		logger.Debug("Skipping dynamodb e2e tests...")
 		os.Exit(0)
 	}
 
@@ -46,8 +44,7 @@ func TestMain(m *testing.M) {
 	defer deleteTables(c.Server.Databases.DynamoDB)
 	ok := checkTablesAreALive(c.Server.Databases.DynamoDB)
 	if !ok {
-		log.Error("Dynamodb tables were not active within timeout")
-		return
+		panic("Dynamodb tables were not active within timeout")
 	}
 
 	m.Run()
@@ -70,7 +67,6 @@ func TestGetUnknownTask(t *testing.T) {
 
 	_, err = fun.HTTP.GetTask("nonexistent-task-id", "MINIMAL")
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
-		log.Debug("error", err)
 		t.Fatal("expected not found error")
 	}
 
@@ -80,7 +76,6 @@ func TestGetUnknownTask(t *testing.T) {
 	)
 	s, _ := status.FromError(err)
 	if err == nil || s.Code() != codes.NotFound {
-		log.Debug("error", err)
 		t.Fatal("expected not found error")
 	}
 }
@@ -216,7 +211,6 @@ func TestListTaskView(t *testing.T) {
 	fun.Wait(id)
 
 	tasks = fun.ListView(tes.TaskView_MINIMAL)
-	t.Log(tasks)
 	task = tasks[0]
 
 	if task.Id == "" {
@@ -389,7 +383,6 @@ func TestCancelUnknownTask(t *testing.T) {
 
 	_, err = fun.HTTP.CancelTask("nonexistent-task-id")
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
-		log.Debug("error", err)
 		t.Fatal("expected not found error")
 	}
 
@@ -399,7 +392,6 @@ func TestCancelUnknownTask(t *testing.T) {
 	)
 	s, _ := status.FromError(err)
 	if err == nil || s.Code() != codes.NotFound {
-		log.Debug("error", err)
 		t.Fatal("expected not found error")
 	}
 }
@@ -476,7 +468,6 @@ func TestOutputFileLog(t *testing.T) {
 	})
 
 	task := fun.Wait(id)
-	log.Debug("TEST", "task", task)
 
 	out := task.Logs[0].Outputs
 
@@ -520,8 +511,7 @@ func TestSmallPagination(t *testing.T) {
 	defer deleteTables(c.Server.Databases.DynamoDB)
 	ok := checkTablesAreALive(c.Server.Databases.DynamoDB)
 	if !ok {
-		log.Error("Dynamodb tables were not active within timeout")
-		return
+		t.Fatal("Dynamodb tables were not active within timeout")
 	}
 
 	ctx := context.Background()
@@ -560,7 +550,6 @@ func TestSmallPagination(t *testing.T) {
 	}
 
 	if len(tasks) != 75 {
-		log.Error("TASK COUNT", len(tasks))
 		t.Error("unexpected task count")
 	}
 }

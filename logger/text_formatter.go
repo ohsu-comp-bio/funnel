@@ -60,7 +60,7 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 	nsColor := levelColor | aurora.BoldFm
 
-	fmt.Fprintf(b, "%-20s %s\n", aurora.Colorize(ns, nsColor), entry.Message)
+	fmt.Fprintf(b, "%s%-20s %s\n", f.Indent, aurora.Colorize(ns, nsColor), entry.Message)
 
 	for _, k := range f.entryDataKeys(entry) {
 		v := entry.Data[k]
@@ -96,7 +96,7 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		default:
 			v = pretty.Sprint(x)
 		}
-		fmt.Fprintf(b, "%-20s %v\n", aurora.Colorize(k, levelColor), v)
+		fmt.Fprintf(b, "%s%-20s %v\n", f.Indent, aurora.Colorize(k, levelColor), v)
 	}
 
 	b.WriteByte('\n')

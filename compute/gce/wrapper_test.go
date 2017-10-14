@@ -4,15 +4,10 @@ import (
 	"errors"
 	gce_mocks "github.com/ohsu-comp-bio/funnel/compute/gce/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/api/compute/v1"
 	"testing"
 )
-
-func init() {
-	logger.Configure(logger.DebugConfig())
-}
 
 // Tests what happens when the InsertInstance() call fails the first couple times.
 func TestInsertTempError(t *testing.T) {

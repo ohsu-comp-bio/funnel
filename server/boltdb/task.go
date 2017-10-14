@@ -94,7 +94,7 @@ func (taskBolt *BoltDB) WithComputeBackend(backend compute.Backend) {
 func (taskBolt *BoltDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 
 	if err := tes.Validate(task); err != nil {
-		err := fmt.Errorf("invalid task message: %s", err)
+		err := fmt.Errorf("invalid task message:\n%s", err)
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 

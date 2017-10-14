@@ -83,8 +83,8 @@ func TestSetupTemplatedHPCSubmit(t *testing.T) {
 	expected = fmt.Sprintf(expected, tmp, tmp, binaryPath, tmp)
 
 	if string(actual) != expected {
-		log.Error("Expected", "", expected)
-		log.Error("Actual", "", string(actual))
+		t.Log("Expected", "", expected)
+		t.Log("Actual", "", string(actual))
 		t.Fatal("Unexpected content")
 	}
 }

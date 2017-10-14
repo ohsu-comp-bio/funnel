@@ -9,6 +9,7 @@ import (
 
 // Test that a file can be passed as an input and output.
 func TestFileMount(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in
@@ -17,15 +18,14 @@ func TestFileMount(t *testing.T) {
 	task := fun.Wait(id)
 	c := fun.ReadFile("test_out")
 	if c != "hello\n" {
-		log.Error("TASK", task)
-		log.Error("CONTENT", c)
-		t.Fatal("Unexpected output file")
+		t.Fatal("Unexpected output file", task, c)
 	}
 }
 
 // Test that the local storage system hard links input files.
 // TODO this test is unix specific because it uses syscall?
 func TestLocalFilesystemHardLinkInput(t *testing.T) {
+	setLogOutput(t)
 	fun.WriteFile("test_hard_link_input", "content")
 	id := fun.Run(`
     --sh "echo foo"
@@ -51,6 +51,7 @@ func TestLocalFilesystemHardLinkInput(t *testing.T) {
 
 // Test using a symlink as an input file.
 func TestSymlinkInput(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in_symlink
@@ -64,6 +65,7 @@ func TestSymlinkInput(t *testing.T) {
 
 // Test using a broken symlink as an input file.
 func TestBrokenSymlinkInput(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_broken_symlink
@@ -85,6 +87,7 @@ func TestBrokenSymlinkInput(t *testing.T) {
   is being tested here.
 */
 func TestSymlinkOutput(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh "sh -c 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'"
     -o sym={{ .storage }}/out-sym
@@ -110,6 +113,7 @@ func TestSymlinkOutput(t *testing.T) {
 }
 
 func TestOverwriteOutput(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh "sh -c 'echo foo > $out; chmod go+w $out'"
     -o out={{ .storage }}/test_out

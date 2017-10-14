@@ -40,20 +40,20 @@ func TestCpuResourcesFit(t *testing.T) {
 		},
 	}
 
-	if !ResourcesFit(j, w) {
+	if ResourcesFit(j, w) != nil {
 		t.Error("Execpted resources to fit")
 	}
 
 	w.Available.Cpus = 0.0
 
-	if ResourcesFit(j, w) {
+	if ResourcesFit(j, w) == nil {
 		t.Error("Execpted resources NOT to fit")
 	}
 
 	w.Available.Cpus = 1.0
 	j.Resources.CpuCores = 2
 
-	if ResourcesFit(j, w) {
+	if ResourcesFit(j, w) == nil {
 		t.Error("Execpted resources NOT to fit")
 	}
 }

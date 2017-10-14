@@ -4,6 +4,7 @@ import (
 	"context"
 	schedmock "github.com/ohsu-comp-bio/funnel/compute/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
@@ -14,17 +15,17 @@ import (
 )
 
 func testWorkerFactoryFunc(f func(r testWorker)) WorkerFactory {
-	return func(config.Worker, string) (worker.Worker, error) {
+	return WorkerFactory(func(config.Worker, string, *logger.Logger) (worker.Worker, error) {
 		t := testWorker{}
 		f(t)
 		return &t, nil
-	}
+	})
 }
 
 type testWorker struct{}
 
 func (t *testWorker) Run(context.Context) {}
-func (t *testWorker) Factory(config.Worker, string) (worker.Worker, error) {
+func (t *testWorker) Factory(config.Worker, string, *logger.Logger) (worker.Worker, error) {
 	return t, nil
 }
 
@@ -35,10 +36,11 @@ type testNode struct {
 	done   chan struct{}
 }
 
-func newTestNode(conf config.Config) testNode {
+func newTestNode(conf config.Config, t *testing.T) testNode {
 	workDir, _ := ioutil.TempDir("", "funnel-test-storage-")
 	conf.Scheduler.Node.WorkDir = workDir
 	conf.Worker.WorkDir = workDir
+	log := logger.NewLogger("test-node", logger.DebugConfig())
 
 	// A mock scheduler client allows this code to fake/control the worker's
 	// communication with a scheduler service.

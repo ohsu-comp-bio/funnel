@@ -27,7 +27,6 @@ func TestBasicAuthFail(t *testing.T) {
 	var err error
 	_, err = fun.HTTP.GetTask("1", "MINIMAL")
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		log.Debug("ERR", err)
 		t.Fatal("expected error")
 	}
 
@@ -35,19 +34,16 @@ func TestBasicAuthFail(t *testing.T) {
 		View: tes.TaskView_MINIMAL,
 	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		log.Debug("ERR", err)
 		t.Fatal("expected error")
 	}
 
 	_, err = fun.HTTP.CreateTask([]byte(extask))
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		log.Debug("ERR", err)
 		t.Fatal("expected error")
 	}
 
 	_, err = fun.HTTP.CancelTask("1")
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		log.Debug("ERR", err)
 		t.Fatal("expected error")
 	}
 
@@ -68,7 +64,6 @@ func TestBasicAuthed(t *testing.T) {
 	fun.AddRPCClient(util.PerRPCPassword("abc123"))
 
 	var err error
-	log.Debug("CLI", fun.HTTP)
 
 	// Run a task to completion
 	id2 := fun.Run(`--sh 'echo hello'`)

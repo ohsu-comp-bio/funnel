@@ -12,12 +12,13 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 // NewBackend returns a new Google Cloud Engine Backend instance.
-func NewBackend(conf config.Config) (*Backend, error) {
+func NewBackend(conf config.Config, log *logger.Logger) (*Backend, error) {
 	// TODO need GCE scheduler config validation. If zone is missing, nothing works.
 
 	// Create a client for talking to the funnel scheduler
@@ -31,11 +32,13 @@ func NewBackend(conf config.Config) (*Backend, error) {
 	if gerr != nil {
 		return nil, fmt.Errorf("can't connect GCE client: %s", gerr)
 	}
+	gce.log = log
 
 	return &Backend{
 		conf:   conf,
 		client: client,
 		gce:    gce,
+		log:    log,
 	}, nil
 }
 
@@ -45,6 +48,7 @@ type Backend struct {
 	conf   config.Config
 	client scheduler.Client
 	gce    Client
+	log    *logger.Logger
 }
 
 // GetOffer returns an offer based on available Google Cloud VM node instances.
@@ -93,6 +97,7 @@ func (s *Backend) getNodes() []*pbs.Node {
 
 	// If there's an error, return an empty list
 	if err != nil {
+		s.log.Error("failed GCE getNodes", err)
 		return nodes
 	}
 

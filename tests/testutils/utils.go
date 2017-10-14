@@ -1,13 +1,16 @@
 package testutils
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
+	"testing"
 	"time"
 )
 
@@ -15,7 +18,6 @@ func init() {
 	// nanoseconds are important because the tests run faster than a millisecond
 	// which can cause port conflicts
 	rand.Seed(time.Now().UTC().UnixNano())
-	logger.Configure(logger.DebugConfig())
 }
 
 // RandomPort returns a random port string between 10000 and 20000.
@@ -51,4 +53,31 @@ func RandomString(n int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
+}
+
+// TestingWriter returns an io.Writer that writes each line via t.Log
+func TestingWriter(t *testing.T) io.Writer {
+	reader, writer := io.Pipe()
+	scanner := bufio.NewScanner(reader)
+	go func() {
+		for scanner.Scan() {
+			// Carriage return removes testing's file:line number and indent.
+			// In this case, the file and line will always be "utils.go:62".
+			// Go 1.9 introduced t.Helper() to fix this, but something about
+			// this function being in a goroutine seems to break that.
+			// Carriage return is the hack for now.
+			t.Log("\r" + scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			t.Error("testing writer scanner error", err)
+		}
+	}()
+	return writer
+}
+
+// LogConfig returns logger configuration useful for tests, which has a text indent.
+func LogConfig() logger.Config {
+	conf := logger.DebugConfig()
+	conf.TextFormat.Indent = "        "
+	return conf
 }

@@ -3,15 +3,10 @@ package run
 import (
 	"github.com/go-test/deep"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"os"
 	"testing"
 )
-
-func init() {
-	logger.Configure(logger.DebugConfig())
-}
 
 func TestParse(t *testing.T) {
 	cwd, err := os.Getwd()
@@ -171,11 +166,11 @@ func TestParse(t *testing.T) {
 			Indent:       "\t",
 		}
 		s, _ := m.MarshalToString(expected[0])
-		log.Debug("Expected", s)
+		t.Log("Expected", s)
 		q, _ := m.MarshalToString(result[0])
-		log.Debug("Actual", q)
+		t.Log("Actual", q)
 		for _, d := range diff {
-			log.Debug("Diff", d)
+			t.Log("Diff", d)
 		}
 		t.Fatal("unexpected results")
 	}

@@ -18,12 +18,11 @@ var conf config.Config
 var runTest = flag.Bool("run-test", false, "run e2e test")
 
 func TestMain(m *testing.M) {
-	log.Configure(logger.DebugConfig())
 	flag.Parse()
 
 	flag.Parse()
 	if !*runTest {
-		log.Info("Skipping s3 e2e tests...")
+		logger.Debug("Skipping s3 e2e tests...")
 		os.Exit(0)
 	}
 

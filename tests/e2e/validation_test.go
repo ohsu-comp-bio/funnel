@@ -9,23 +9,23 @@ import (
 )
 
 func TestTaskNoExecutorsValidationError(t *testing.T) {
+	setLogOutput(t)
 	_, err := fun.RunTask(&tes.Task{})
-	log.Debug("VALID ERR", err)
 	if err == nil {
-		t.Fatal("expected validation error")
+		t.Error("expected validation error")
 	}
-	expected := `Task.Executors: at least one executor is required
+	expected := `invalid task message:
+Task.Executors: at least one executor is required
 `
 
 	e := grpc.ErrorDesc(err)
-	log.Debug("VALID ERR", e)
 	if e != expected {
-		log.Debug("DIFF", diff.LineDiff(e, expected))
-		t.Fatal("unexpected error message")
+		t.Error("unexpected error message", diff.LineDiff(e, expected))
 	}
 }
 
 func TestTaskInputContentsValidationError(t *testing.T) {
+	setLogOutput(t)
 	_, err := fun.RunTask(&tes.Task{
 		Inputs: []*tes.TaskParameter{
 			{
@@ -34,20 +34,19 @@ func TestTaskInputContentsValidationError(t *testing.T) {
 			},
 		},
 	})
-	log.Debug("VALID ERR", err)
 	if err == nil {
-		t.Fatal("expected validation error")
+		t.Error("expected validation error")
 	}
 
 	e := grpc.ErrorDesc(err)
-	log.Debug("VALID ERR", e)
 
 	if !strings.Contains(e, "Task.Inputs[0].Contents") {
-		t.Fatal("unexpected error message")
+		t.Error("unexpected error message")
 	}
 }
 
 func TestTaskInputContentsValidation(t *testing.T) {
+	setLogOutput(t)
 	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{
@@ -64,11 +63,12 @@ func TestTaskInputContentsValidation(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Fatal("unexpected validation error")
+		t.Error("unexpected validation error")
 	}
 }
 
 func TestTaskValidationError(t *testing.T) {
+	setLogOutput(t)
 	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{},
@@ -83,10 +83,11 @@ func TestTaskValidationError(t *testing.T) {
 	})
 
 	if err == nil {
-		t.Fatal("expected validation error")
+		t.Error("expected validation error")
 	}
 
-	expected := `Task.Executors[0].ImageName: required, but empty
+	expected := `invalid task message:
+Task.Executors[0].ImageName: required, but empty
 Task.Executors[0].Cmd: required, but empty
 Task.Inputs[0].Url: required, but empty
 Task.Inputs[0].Path: required, but empty
@@ -96,9 +97,7 @@ Task.Volumes[0]: must be an absolute path
 `
 
 	e := grpc.ErrorDesc(err)
-	log.Debug("VALID ERR", e)
 	if e != expected {
-		log.Debug("DIFF", diff.LineDiff(e, expected))
-		t.Fatal("expected volumes error message")
+		t.Errorf("expected volumes error message. diff:\n%s", diff.LineDiff(e, expected))
 	}
 }

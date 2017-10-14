@@ -55,7 +55,7 @@ func Run(ctx context.Context, conf config.Config) error {
 		var sbackend scheduler.Backend
 		switch strings.ToLower(conf.Backend) {
 		case "gce":
-			sbackend, err = gce.NewBackend(conf)
+			sbackend, err = gce.NewBackend(conf, logger.NewLogger("gce", conf.Server.Logger))
 		case "manual":
 			sbackend, err = manual.NewBackend(conf)
 		case "openstack":

@@ -27,7 +27,7 @@ type S3Backend struct {
 // NewS3Backend creates an S3Backend session instance
 func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
 	awsConf := util.NewAWSConfigWithCreds(conf.Credentials.Key, conf.Credentials.Secret)
-	awsConf.WithMaxRetries(5)
+	awsConf.WithMaxRetries(10)
 
 	sess, err := session.NewSession(awsConf)
 	if err != nil {

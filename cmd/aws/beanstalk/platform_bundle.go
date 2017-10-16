@@ -12,9 +12,11 @@ import (
 var dockerfileTpl = `
 FROM {{.Image}}
 
-ADD ./config.yaml /opt/config.yaml
+ADD ./config.yaml /opt/funnel/config.yaml
 
-ENTRYPOINT ["funnel", "server", "run", "--config", "/opt/config.yaml"]
+EXPOSE 8000
+
+ENTRYPOINT ["/opt/funnel/funnel", "server", "run", "--config", "/opt/funnel/config.yaml"]
 `
 
 func createBundle(zipPath string, image string, confPath string) error {

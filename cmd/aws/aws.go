@@ -2,6 +2,7 @@ package aws
 
 import (
 	"github.com/ohsu-comp-bio/funnel/cmd/aws/batch"
+	"github.com/ohsu-comp-bio/funnel/cmd/aws/beanstalk"
 	"github.com/spf13/cobra"
 )
 
@@ -13,4 +14,5 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(batch.Cmd)
+	Cmd.AddCommand(beanstalk.DeployCmd)
 }

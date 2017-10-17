@@ -2,9 +2,12 @@ package beanstalk
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/storage"
 	"os"
 	"text/template"
 )
@@ -90,4 +93,13 @@ func createBundle(zipPath string, image string, confPath string) error {
 	}
 
 	return nil
+}
+
+func uploadBundle(ctx context.Context, src string, dest string) error {
+	s3, err := storage.NewS3Backend(config.S3Storage{})
+	if err != nil {
+		return err
+	}
+	_, err = s3.Put(ctx, dest, src, tes.FileType_FILE)
+	return err
 }

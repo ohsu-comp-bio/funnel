@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/iam"
+	awsutil "github.com/ohsu-comp-bio/funnel/cmd/aws/util"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"sort"
 	"strings"
@@ -40,7 +41,7 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, 
 		ComputeEnvironments: []*string{aws.String(b.conf.ComputeEnv.Name)},
 	})
 	if len(resp.ComputeEnvironments) > 0 {
-		return resp.ComputeEnvironments[0], errResourceExists{}
+		return resp.ComputeEnvironments[0], &awsutil.ErrResourceExists{}
 	}
 
 	securityGroupIds := []string{}
@@ -74,9 +75,9 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, 
 	if err == nil {
 		serviceRole = *grres.Role.Arn
 	} else {
-		bsrPolicy := AssumeRolePolicy{
+		bsrPolicy := awsutil.AssumeRolePolicy{
 			Version: "2012-10-17",
-			Statement: []RoleStatement{
+			Statement: []awsutil.RoleStatement{
 				{
 					Effect:    "Allow",
 					Principal: map[string]string{"Service": "batch.amazonaws.com"},
@@ -112,9 +113,9 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, 
 	if err == nil {
 		instanceRole = *ip.InstanceProfile.Arn
 	} else {
-		irPolicy := AssumeRolePolicy{
+		irPolicy := awsutil.AssumeRolePolicy{
 			Version: "2012-10-17",
-			Statement: []RoleStatement{
+			Statement: []awsutil.RoleStatement{
 				{
 					Effect:    "Allow",
 					Principal: map[string]string{"Service": "ec2.amazonaws.com"},
@@ -153,12 +154,12 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, 
 		ComputeEnvironmentName: aws.String(b.conf.ComputeEnv.Name),
 		ComputeResources: &batch.ComputeResource{
 			InstanceRole:     aws.String(instanceRole),
-			InstanceTypes:    convertStringSlice(b.conf.ComputeEnv.InstanceTypes),
+			InstanceTypes:    awsutil.ConvertStringSlice(b.conf.ComputeEnv.InstanceTypes),
 			MaxvCpus:         aws.Int64(b.conf.ComputeEnv.MaxVCPUs),
 			MinvCpus:         aws.Int64(b.conf.ComputeEnv.MinVCPUs),
-			SecurityGroupIds: convertStringSlice(securityGroupIds),
-			Subnets:          convertStringSlice(subnets),
-			Tags:             convertStringMap(b.conf.ComputeEnv.Tags),
+			SecurityGroupIds: awsutil.ConvertStringSlice(securityGroupIds),
+			Subnets:          awsutil.ConvertStringSlice(subnets),
+			Tags:             awsutil.ConvertStringMap(b.conf.ComputeEnv.Tags),
 			Type:             aws.String("EC2"),
 		},
 		ServiceRole: aws.String(serviceRole),
@@ -189,7 +190,7 @@ func (b *batchsvc) CreateJobQueue() (*batch.JobQueueDetail, error) {
 		JobQueues: []*string{aws.String(conf.JobQueue.Name)},
 	})
 	if len(resp.JobQueues) > 0 {
-		return resp.JobQueues[0], errResourceExists{}
+		return resp.JobQueues[0], &awsutil.ErrResourceExists{}
 	}
 
 	var envs []*batch.ComputeEnvironmentOrder
@@ -230,7 +231,7 @@ func (b *batchsvc) CreateJobRole() (string, error) {
 		RoleName: aws.String(b.conf.JobRole.RoleName),
 	})
 	if err == nil {
-		return *resp.Role.Arn, errResourceExists{}
+		return *resp.Role.Arn, &awsutil.ErrResourceExists{}
 	}
 
 	roleb, err := json.Marshal(b.conf.JobRole.Policies.AssumeRole)
@@ -264,7 +265,7 @@ func (b *batchsvc) AttachRolePolicies() error {
 			policies += *v
 		}
 		if strings.Contains(policies, b.conf.JobRole.DynamoDBPolicyName) && strings.Contains(policies, b.conf.JobRole.S3PolicyName) {
-			return errResourceExists{}
+			return &awsutil.ErrResourceExists{}
 		}
 	}
 
@@ -312,7 +313,7 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 		if len(resp.JobDefinitions) > 0 {
 			jobDefs := resp.JobDefinitions
 			sort.Sort(byRevision(jobDefs))
-			return jobDefs[0], errResourceExists{}
+			return jobDefs[0], awsutil.ErrResourceExists{}
 		}
 	}
 
@@ -323,14 +324,14 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 	} else {
 		jobRole, err = b.CreateJobRole()
 		if err != nil {
-			_, ok := err.(errResourceExists)
+			_, ok := err.(awsutil.ErrResourceExists)
 			if !ok {
 				return nil, err
 			}
 		}
 		err = b.AttachRolePolicies()
 		if err != nil {
-			_, ok := err.(errResourceExists)
+			_, ok := err.(awsutil.ErrResourceExists)
 			if !ok {
 				return nil, err
 			}
@@ -411,20 +412,4 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 		return jobDefs[0], nil
 	}
 	return nil, fmt.Errorf("unexpected error - failed to get JobDefintion")
-}
-
-func convertStringSlice(s []string) []*string {
-	var ret []*string
-	for _, t := range s {
-		ret = append(ret, aws.String(t))
-	}
-	return ret
-}
-
-func convertStringMap(s map[string]string) map[string]*string {
-	m := map[string]*string{}
-	for k, v := range s {
-		m[k] = aws.String(v)
-	}
-	return m
 }

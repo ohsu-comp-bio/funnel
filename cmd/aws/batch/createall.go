@@ -2,6 +2,7 @@ package batch
 
 import (
 	"fmt"
+	awsutil "github.com/ohsu-comp-bio/funnel/cmd/aws/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"

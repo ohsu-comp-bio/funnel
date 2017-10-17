@@ -24,6 +24,8 @@ func init() {
 	f.StringVar(&region, "region", region, "AWS region in which to deploy Funnel server")
 }
 
+// DeployCmd represent the command responsible for deploying a Funnel server on
+// Amazon ElasticBeanstalk.
 var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy a Funnel server to Elastic Beanstalk.",
@@ -45,7 +47,7 @@ func deploy(image string, confPath string, bucket string, region string) error {
 		return fmt.Errorf("error creating platform bundle: %v", err)
 	}
 
-	svc, err := newSvc(context.Background(), region)
+	svc, err := newSvc(context.Background(), defaultConfig(), version.Version, region)
 	if err != nil {
 		return fmt.Errorf("error creating aws session: %v", err)
 	}
@@ -54,7 +56,16 @@ func deploy(image string, confPath string, bucket string, region string) error {
 		return fmt.Errorf("error uploading platform bundle: %v", err)
 	}
 
-	resp, err := svc.createApplication(s3Zip, version.Version)
-	fmt.Println(resp)
+	ar, err := svc.createApplication(s3Zip)
+	if err != nil {
+		fmt.Println(fmt.Errorf("error creating application: %v", err))
+	}
+	fmt.Println(ar)
+	er, err := svc.createEnvironment()
+	if err != nil {
+		return fmt.Errorf("error creating environment: %v", err)
+	}
+	fmt.Println(er)
+
 	return err
 }

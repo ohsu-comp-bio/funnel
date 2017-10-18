@@ -36,6 +36,12 @@ type Logger struct {
 	base   *logrus.Entry
 }
 
+// Sub is a shortcut for l.WithFields("ns", ns), it creates a new logger
+// which inherits the parent's configuration but changes the namespace.
+func (l *Logger) Sub(ns string) *Logger {
+	return l.WithFields("ns", ns)
+}
+
 // SetLevel sets the level of the logger.
 func (l *Logger) SetLevel(lvl string) {
 	switch strings.ToLower(lvl) {

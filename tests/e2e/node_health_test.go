@@ -2,9 +2,9 @@ package e2e
 
 import (
 	"context"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-  "github.com/ohsu-comp-bio/funnel/scheduler"
 	"testing"
 	"time"
 )

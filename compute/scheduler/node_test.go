@@ -13,6 +13,7 @@ import (
 // Test calling stopping a node by canceling its context
 func TestStopNode(t *testing.T) {
 	conf := config.DefaultConfig()
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 2
 	n := newTestNode(conf, t)
 
 	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
@@ -32,6 +33,7 @@ func TestStopNode(t *testing.T) {
 // error from client.GetNode().
 func TestGetNodeFail(t *testing.T) {
 	conf := config.DefaultConfig()
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 2
 	n := newTestNode(conf, t)
 
 	// Set GetNode to return an error
@@ -70,6 +72,7 @@ func TestNodeTimeout(t *testing.T) {
 // Test that a node does nothing where there are no assigned tasks.
 func TestNoTasks(t *testing.T) {
 	conf := config.DefaultConfig()
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 2
 	n := newTestNode(conf, t)
 
 	// Tell the scheduler mock to return nothing
@@ -99,6 +102,7 @@ func TestNoTasks(t *testing.T) {
 // Test that a worker gets created for each task.
 func TestNodeWorkerCreated(t *testing.T) {
 	conf := config.DefaultConfig()
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 2
 	n := newTestNode(conf, t)
 
 	// Count the number of times the worker factory was called
@@ -121,6 +125,7 @@ func TestNodeWorkerCreated(t *testing.T) {
 // Tests a bugfix.
 func TestFinishedTaskNotRerun(t *testing.T) {
 	conf := config.DefaultConfig()
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 2
 	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
@@ -152,6 +157,7 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 // Test that tasks are removed from the node's runset when they finish.
 func TestFinishedTaskRunsetCount(t *testing.T) {
 	conf := config.DefaultConfig()
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 2
 	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.

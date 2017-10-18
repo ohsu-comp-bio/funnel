@@ -28,6 +28,9 @@ func (t *testWorker) Run(context.Context) {}
 func (t *testWorker) Factory(config.Worker, string, *logger.Logger) (worker.Worker, error) {
 	return t, nil
 }
+func (t *testWorker) Close() error {
+	return nil
+}
 
 // testNode wraps Node with some testing helpers.
 type testNode struct {

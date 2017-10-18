@@ -25,8 +25,9 @@ type DefaultWorker struct {
 	Event      *events.TaskWriter
 }
 
-func (d *DefaultWorker) Close() error {
-	return d.Event.Close()
+// Close cleans up worker resources, e.g. closing the event writers.
+func (r *DefaultWorker) Close() error {
+	return r.Event.Close()
 }
 
 // Run runs the Worker.

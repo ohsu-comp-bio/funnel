@@ -126,6 +126,7 @@ func (ew *TaskWriter) NewExecutorWriter(index uint32) *ExecutorWriter {
 	}
 }
 
+// Close closes the writer.
 func (ew *TaskWriter) Close() error {
 	return ew.out.Close()
 }

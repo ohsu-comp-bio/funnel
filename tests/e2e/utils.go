@@ -122,7 +122,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(derr)
 	}
 
-	srv, err := servercmd.NewServer(conf)
+	srv, err := servercmd.NewServer(conf, log)
 	if err != nil {
 		panic(err)
 	}
@@ -495,7 +495,7 @@ func (f *Funnel) ListNodes() []*pbs.Node {
 
 // AddNode starts an in-memory node routine.
 func (f *Funnel) AddNode(conf config.Config) {
-	n, err := scheduler.NewNode(conf)
+	n, err := scheduler.NewNode(conf, logger.NewLogger("e2e-node", conf.Scheduler.Node.Logger))
 	if err != nil {
 		panic(err)
 	}

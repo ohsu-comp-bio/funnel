@@ -25,7 +25,8 @@ import (
 
 // Run runs the "server run" command.
 func Run(ctx context.Context, conf config.Config) error {
-	s, err := NewServer(conf)
+	log := logger.NewLogger("server", conf.Server.Logger)
+	s, err := NewServer(conf, log)
 	if err != nil {
 		return err
 	}
@@ -42,7 +43,7 @@ type Server struct {
 }
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
-func NewServer(conf config.Config) (*Server, error) {
+func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	var backend compute.Backend
 	var db server.Database
 	var sdb scheduler.Database
@@ -80,7 +81,7 @@ func NewServer(conf config.Config) (*Server, error) {
 
 		switch strings.ToLower(conf.Backend) {
 		case "gce":
-			sbackend, err = gce.NewBackend(conf, logger.NewLogger("gce", conf.Server.Logger))
+			sbackend, err = gce.NewBackend(conf, log.Sub("gce"))
 		case "gce-mock":
 			sbackend, err = gce.NewMockBackend(conf)
 		case "manual":
@@ -93,7 +94,7 @@ func NewServer(conf config.Config) (*Server, error) {
 		}
 
 		sched = &scheduler.Scheduler{
-			Log:     logger.NewLogger("scheduler", conf.Server.Logger),
+			Log:     log.Sub("scheduler"),
 			DB:      sdb,
 			Conf:    conf.Scheduler,
 			Backend: sbackend,
@@ -103,7 +104,7 @@ func NewServer(conf config.Config) (*Server, error) {
 	case "htcondor":
 		backend = htcondor.NewBackend(conf)
 	case "local":
-		backend = local.NewBackend(conf, logger.NewLogger("local", conf.Server.Logger))
+		backend = local.NewBackend(conf, log.Sub("local"))
 	case "noop":
 		backend = noop.NewBackend(conf)
 	case "pbs":
@@ -116,7 +117,7 @@ func NewServer(conf config.Config) (*Server, error) {
 
 	db.WithComputeBackend(backend)
 	srv := server.DefaultServer(db, conf.Server)
-	srv.Log = logger.NewLogger("server", conf.Server.Logger)
+	srv.Log = log
 
 	return &Server{srv, sched, db, sdb, sbackend}, nil
 }

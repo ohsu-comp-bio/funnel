@@ -265,7 +265,7 @@ func (b *batchsvc) AttachRolePolicies() error {
 			policies += *v
 		}
 		if strings.Contains(policies, b.conf.JobRole.DynamoDBPolicyName) && strings.Contains(policies, b.conf.JobRole.S3PolicyName) {
-			return &awsutil.ErrResourceExists{}
+			return awsutil.ErrResourceExists{}
 		}
 	}
 

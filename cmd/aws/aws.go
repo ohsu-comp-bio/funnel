@@ -14,5 +14,5 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(batch.Cmd)
-	Cmd.AddCommand(beanstalk.DeployCmd)
+	Cmd.AddCommand(beanstalk.Cmd)
 }

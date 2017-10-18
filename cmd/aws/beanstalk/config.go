@@ -12,7 +12,7 @@ type beanstalkConfig struct {
 }
 
 type beanstalkInstanceRole struct {
-	RoleName string
+	Name     string
 	Policies struct {
 		AssumeRole awsutil.AssumeRolePolicy
 		Batch      awsutil.Policy
@@ -26,10 +26,10 @@ func defaultConfig() beanstalkConfig {
 		CNAMEPrefix:       "funnel",
 		EnvironmentName:   "funnel",
 		SolutionStackName: "64bit Amazon Linux 2017.03 v2.7.4 running Docker 17.03.2-ce",
-		InstanceType:      "t2.mciro",
+		InstanceType:      "t2.micro",
 	}
 
-	c.IamInstanceProfile.RoleName = "funnelEBSInstanceRole"
+	c.IamInstanceProfile.Name = "FunnelEBSInstanceRole"
 	c.IamInstanceProfile.Policies.AssumeRole = awsutil.AssumeRolePolicy{
 		Version: "2012-10-17",
 		Statement: []awsutil.RoleStatement{
@@ -60,6 +60,7 @@ func defaultConfig() beanstalkConfig {
 			{
 				Effect: "Allow",
 				Action: []string{
+					"dynamodb:CreateTable",
 					"dynamodb:GetItem",
 					"dynamodb:PutItem",
 					"dynamodb:UpdateItem",

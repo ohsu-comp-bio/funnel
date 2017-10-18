@@ -21,11 +21,12 @@ import (
 
 var fun *e2e.Funnel
 var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
+var log = logger.NewLogger("dynamo-e2e", testutils.LogConfig())
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	if !*runTest {
-		logger.Debug("Skipping dynamodb e2e tests...")
+		log.Debug("Skipping dynamodb e2e tests...")
 		os.Exit(0)
 	}
 
@@ -52,6 +53,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestHelloWorld(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh 'echo hello world'
   `)
@@ -63,6 +65,7 @@ func TestHelloWorld(t *testing.T) {
 }
 
 func TestGetUnknownTask(t *testing.T) {
+	setLogOutput(t)
 	var err error
 
 	_, err = fun.HTTP.GetTask("nonexistent-task-id", "MINIMAL")
@@ -81,6 +84,7 @@ func TestGetUnknownTask(t *testing.T) {
 }
 
 func TestGetTaskView(t *testing.T) {
+	setLogOutput(t)
 	var err error
 	var task *tes.Task
 
@@ -200,6 +204,7 @@ func TestGetTaskView(t *testing.T) {
 //      results of all of those. It works for the moment, but
 //      should probably run against a clean environment.
 func TestListTaskView(t *testing.T) {
+	setLogOutput(t)
 	var tasks []*tes.Task
 	var task *tes.Task
 	var err error
@@ -316,6 +321,7 @@ func TestListTaskView(t *testing.T) {
 // This ensures that the streaming works even when a small
 // amount of logs are written (which was once a bug).
 func TestSingleCharLog(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh "sh -c 'echo a; sleep 100'"
   `)
@@ -345,6 +351,7 @@ func TestPortLog(t *testing.T) {
 
 // Test that a completed task cannot change state.
 func TestCompleteStateImmutable(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh 'echo hello'
   `)
@@ -361,6 +368,7 @@ func TestCompleteStateImmutable(t *testing.T) {
 
 // Test canceling a task
 func TestCancel(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh 'echo start'
     --sh 'sleep 1000'
@@ -379,6 +387,7 @@ func TestCancel(t *testing.T) {
 
 // Test canceling a task that doesn't exist
 func TestCancelUnknownTask(t *testing.T) {
+	setLogOutput(t)
 	var err error
 
 	_, err = fun.HTTP.CancelTask("nonexistent-task-id")
@@ -400,6 +409,7 @@ func TestCancelUnknownTask(t *testing.T) {
 // have been started or completed, i.e. steps that have yet to be started
 // won't show up in Task.Logs[0].Logs
 func TestExecutorLogLength(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh 'echo first'
     --sh 'sleep 10'
@@ -418,6 +428,7 @@ func TestExecutorLogLength(t *testing.T) {
 // the first step completed, but the correct behavior is to mark the
 // task complete after *all* steps have completed.
 func TestMarkCompleteBug(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh 'echo step 1'
     --sh 'sleep 100'
@@ -432,6 +443,7 @@ func TestMarkCompleteBug(t *testing.T) {
 }
 
 func TestTaskStartEndTimeLogs(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`--sh 'echo 1'`)
 	task := fun.Wait(id)
 	if task.Logs[0].StartTime == "" {
@@ -443,6 +455,7 @@ func TestTaskStartEndTimeLogs(t *testing.T) {
 }
 
 func TestOutputFileLog(t *testing.T) {
+	setLogOutput(t)
 	dir := fun.Tempdir()
 
 	id, _ := fun.RunTask(&tes.Task{
@@ -496,6 +509,7 @@ func TestOutputFileLog(t *testing.T) {
 
 // Smaller test for debugging getting the full set of pages
 func TestSmallPagination(t *testing.T) {
+	setLogOutput(t)
 	tableBasename := testutils.RandomString(6)
 	c := e2e.DefaultConfig()
 	c.Backend = "noop"
@@ -555,6 +569,7 @@ func TestSmallPagination(t *testing.T) {
 }
 
 func TestTaskError(t *testing.T) {
+	setLogOutput(t)
 	id := fun.Run(`
     --sh "sh -c 'exit 1'"
   `)
@@ -603,4 +618,8 @@ func deleteTables(conf config.DynamoDB) error {
 	cli.DeleteTable(&dynamodb.DeleteTableInput{TableName: aws.String(conf.TableBasename + "-stdout")})
 	cli.DeleteTable(&dynamodb.DeleteTableInput{TableName: aws.String(conf.TableBasename + "-stderr")})
 	return nil
+}
+
+func setLogOutput(t *testing.T) {
+	log.SetOutput(testutils.TestingWriter(t))
 }

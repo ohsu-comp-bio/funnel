@@ -10,13 +10,12 @@ import (
 
 var fun *e2e.Funnel
 var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
-var log = logger.NewLogger("pbs", logger.DebugConfig())
 
 func TestMain(m *testing.M) {
 
 	flag.Parse()
 	if !*runTest {
-		log.Info("Skipping PBS/Torque e2e tests...")
+		logger.Debug("Skipping PBS/Torque e2e tests...")
 		os.Exit(0)
 	}
 

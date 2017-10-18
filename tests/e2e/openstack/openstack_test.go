@@ -16,13 +16,12 @@ import (
 var fun *e2e.Funnel
 var confPath = flag.String("openstack-e2e-config", "", "OpenStack end-to-end test config file")
 var conf config.Config
-var log = logger.NewLogger("openstack", logger.DebugConfig())
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 
 	if *confPath == "" {
-		log.Info("Skipping openstack e2e tests, no config")
+		logger.Debug("Skipping openstack e2e tests, no config")
 		os.Exit(0)
 	}
 

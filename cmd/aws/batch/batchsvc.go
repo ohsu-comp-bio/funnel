@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"sort"
 	"strings"
 )
 
@@ -51,7 +52,7 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.CreateComputeEnvironmentOu
 		return &batch.CreateComputeEnvironmentOutput{
 			ComputeEnvironmentArn:  resp.ComputeEnvironments[0].ComputeEnvironmentArn,
 			ComputeEnvironmentName: resp.ComputeEnvironments[0].ComputeEnvironmentName,
-		}, &errResourceExists{}
+		}, errResourceExists{}
 	}
 
 	securityGroupIds := []string{}
@@ -186,7 +187,7 @@ func (b *batchsvc) CreateJobQueue() (*batch.CreateJobQueueOutput, error) {
 		return &batch.CreateJobQueueOutput{
 			JobQueueArn:  resp.JobQueues[0].JobQueueArn,
 			JobQueueName: resp.JobQueues[0].JobQueueName,
-		}, &errResourceExists{}
+		}, errResourceExists{}
 	}
 
 	var envs []*batch.ComputeEnvironmentOrder
@@ -207,21 +208,19 @@ func (b *batchsvc) CreateJobQueue() (*batch.CreateJobQueueOutput, error) {
 	return batchCli.CreateJobQueue(input)
 }
 
-func (b *batchsvc) CreateJobRole() (*iam.CreateRoleOutput, error) {
+func (b *batchsvc) CreateJobRole() (string, error) {
 	iamCli := iam.New(b.sess)
 
 	resp, err := iamCli.GetRole(&iam.GetRoleInput{
 		RoleName: aws.String(b.conf.JobRole.RoleName),
 	})
 	if err == nil {
-		return &iam.CreateRoleOutput{
-			Role: resp.Role,
-		}, &errResourceExists{}
+		return *resp.Role.Arn, errResourceExists{}
 	}
 
 	roleb, err := json.Marshal(b.conf.JobRole.Policies.AssumeRole)
 	if err != nil {
-		return nil, fmt.Errorf("error creating assume role policy")
+		return "", fmt.Errorf("error creating assume role policy")
 	}
 
 	cr, err := iamCli.CreateRole(&iam.CreateRoleInput{
@@ -229,10 +228,10 @@ func (b *batchsvc) CreateJobRole() (*iam.CreateRoleOutput, error) {
 		RoleName:                 aws.String(b.conf.JobRole.RoleName),
 	})
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("error creating role: %v", err)
 	}
 
-	return cr, nil
+	return *cr.Role.Arn, nil
 }
 
 func (b *batchsvc) AttachRolePolicies() error {
@@ -250,7 +249,7 @@ func (b *batchsvc) AttachRolePolicies() error {
 			policies += *v
 		}
 		if strings.Contains(policies, b.conf.JobRole.DynamoDBPolicyName) && strings.Contains(policies, b.conf.JobRole.S3PolicyName) {
-			return &errResourceExists{}
+			return errResourceExists{}
 		}
 	}
 
@@ -283,6 +282,113 @@ func (b *batchsvc) AttachRolePolicies() error {
 	}
 
 	return nil
+}
+
+func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.RegisterJobDefinitionOutput, error) {
+	batchCli := batch.New(b.sess)
+
+	if !overwrite {
+		// TODO need paging if there are more than 100 revisions
+		resp, err := batchCli.DescribeJobDefinitions(&batch.DescribeJobDefinitionsInput{
+			JobDefinitionName: aws.String(b.conf.JobDef.Name),
+			Status:            aws.String("ACTIVE"),
+			MaxResults:        aws.Int64(100),
+		})
+		if err == nil {
+			if len(resp.JobDefinitions) > 0 {
+				jobDefs := resp.JobDefinitions
+				sort.Sort(byRevision(jobDefs))
+				latest := jobDefs[0]
+				return &batch.RegisterJobDefinitionOutput{
+					JobDefinitionArn:  latest.JobDefinitionArn,
+					JobDefinitionName: latest.JobDefinitionName,
+					Revision:          latest.Revision,
+				}, errResourceExists{}
+			}
+		}
+	}
+
+	var jobRole string
+	var err error
+	if b.conf.JobDef.JobRoleArn != "" {
+		jobRole = b.conf.JobDef.JobRoleArn
+	} else {
+		jobRole, err = b.CreateJobRole()
+		if err != nil {
+			_, ok := err.(errResourceExists)
+			if !ok {
+				return nil, err
+			}
+		}
+		err = b.AttachRolePolicies()
+		if err != nil {
+			_, ok := err.(errResourceExists)
+			if !ok {
+				return nil, err
+			}
+		}
+	}
+
+	jobDef := &batch.RegisterJobDefinitionInput{
+		ContainerProperties: &batch.ContainerProperties{
+			Image:      aws.String(b.conf.JobDef.Image),
+			Memory:     aws.Int64(b.conf.JobDef.MemoryMiB),
+			Vcpus:      aws.Int64(b.conf.JobDef.VCPUs),
+			Privileged: aws.Bool(true),
+			MountPoints: []*batch.MountPoint{
+				{
+					SourceVolume:  aws.String("docker_sock"),
+					ContainerPath: aws.String("/var/run/docker.sock"),
+				},
+				{
+					SourceVolume:  aws.String("funnel-work-dir"),
+					ContainerPath: aws.String(b.conf.FunnelWorker.WorkDir),
+				},
+			},
+			Volumes: []*batch.Volume{
+				{
+					Name: aws.String("docker_sock"),
+					Host: &batch.Host{
+						SourcePath: aws.String("/var/run/docker.sock"),
+					},
+				},
+				{
+					Name: aws.String("funnel-work-dir"),
+					Host: &batch.Host{
+						SourcePath: aws.String(b.conf.FunnelWorker.WorkDir),
+					},
+				},
+			},
+			Command: []*string{
+				aws.String("worker"),
+				aws.String("run"),
+				aws.String("--WorkDir"),
+				aws.String(b.conf.FunnelWorker.WorkDir),
+				aws.String("--TaskReader"),
+				aws.String(b.conf.FunnelWorker.TaskReader),
+				aws.String("--DynamoDB.Region"),
+				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.Region),
+				aws.String("--DynamoDB.TableBasename"),
+				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.TableBasename),
+				aws.String("--task-id"),
+				// This is a template variable that will be replaced with the taskID.
+				aws.String("Ref::taskID"),
+			},
+			JobRoleArn: aws.String(jobRole),
+		},
+		JobDefinitionName: aws.String(b.conf.JobDef.Name),
+		Type:              aws.String("container"),
+	}
+	for _, val := range b.conf.FunnelWorker.ActiveEventWriters {
+		jobDef.ContainerProperties.Command = append(jobDef.ContainerProperties.Command, aws.String("--ActiveEventWriters"), aws.String(val))
+	}
+
+	rjd, err := batchCli.RegisterJobDefinition(jobDef)
+	if err != nil {
+		return nil, fmt.Errorf("error registering JobDefinition: %v", err)
+	}
+
+	return rjd, nil
 }
 
 func convertStringSlice(s []string) []*string {

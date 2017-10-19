@@ -144,10 +144,8 @@ func DefaultConfig() Config {
 	c.Backends.GCE.CacheTTL = time.Minute
 	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
 
-	c.Backends.Batch.JobDef.Name = "funnel-job-def"
-	c.Backends.Batch.JobDef.Image = "docker.io/ohsu-comp-bio/funnel:latest"
-	c.Backends.Batch.JobDef.DefaultMemory = 128
-	c.Backends.Batch.JobDef.DefaultVcpus = 1
+	c.Backends.Batch.JobDefinition = "funnel-job-def"
+	c.Backends.Batch.JobQueue = "funnel-job-queue"
 
 	return c
 }
@@ -282,15 +280,8 @@ type AWSCredentials struct {
 
 // AWSBatch describes the configuration for the AWS Batch compute backend.
 type AWSBatch struct {
-	// JobDefConfig represents configuration of the AWS Batch
-	// base Job Definition.
-	JobDef struct {
-		Name          string
-		Image         string
-		DefaultMemory int64
-		DefaultVcpus  int64
-		JobRoleArn    string
-	}
+	// JobDefinition can be either a name or the Amazon Resource Name (ARN).
+	JobDefinition string
 	// JobQueue can be either a name or the Amazon Resource Name (ARN).
 	JobQueue    string
 	Region      string

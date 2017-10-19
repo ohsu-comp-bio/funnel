@@ -5,6 +5,7 @@ import (
 )
 
 var conf = DefaultConfig()
+var funnelConfigFile string
 
 // Cmd represents the task command
 var Cmd = &cobra.Command{
@@ -14,4 +15,5 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(createCmd)
+	Cmd.AddCommand(updateCmd)
 }

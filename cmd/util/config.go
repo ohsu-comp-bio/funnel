@@ -14,14 +14,17 @@ import (
 func MergeConfigFileWithFlags(file string, flagConf config.Config) (config.Config, error) {
 	// parse config file if it exists
 	conf := config.DefaultConfig()
-	config.ParseFile(file, &conf)
+	err := config.ParseFile(file, &conf)
+	if err != nil {
+		return conf, err
+	}
 
 	// make sure server address and password is inherited by scheduler nodes and workers
 	conf = config.EnsureServerProperties(conf)
 	flagConf = config.EnsureServerProperties(flagConf)
 
 	// file vals <- cli val
-	err := mergo.MergeWithOverwrite(&conf, flagConf)
+	err = mergo.MergeWithOverwrite(&conf, flagConf)
 	if err != nil {
 		return conf, err
 	}

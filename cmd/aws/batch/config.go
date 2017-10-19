@@ -1,12 +1,19 @@
 package batch
 
+import (
+	"github.com/ohsu-comp-bio/funnel/config"
+	"time"
+)
+
 // Config represents configuration of the AWS proxy, including
 // the compute environment, job queue, and base job definition.
 type Config struct {
-	Region     string
-	ComputeEnv ComputeEnvConfig
-	JobQueue   JobQueueConfig
-	JobRole    JobRoleConfig
+	Region       string
+	ComputeEnv   ComputeEnvConfig
+	JobQueue     JobQueueConfig
+	JobDef       JobDefinitionConfig
+	JobRole      JobRoleConfig
+	FunnelWorker config.Worker
 }
 
 // ComputeEnvConfig represents configuration of the AWS Batch
@@ -29,6 +36,15 @@ type JobQueueConfig struct {
 	Name        string
 	Priority    int64
 	ComputeEnvs []string
+}
+
+// JobDefinitionConfig represents configuration of the AWS Batch Job Definition
+type JobDefinitionConfig struct {
+	Name       string
+	Image      string
+	MemoryMiB  int64
+	VCPUs      int64
+	JobRoleArn string
 }
 
 // Policy represents an AWS policy
@@ -73,8 +89,9 @@ type JobRoleConfig struct {
 
 // DefaultConfig returns default configuration of for AWS Batch resource creation.
 func DefaultConfig() Config {
+	region := "us-west-2"
 	c := Config{
-		Region: "us-west-2",
+		Region: region,
 		ComputeEnv: ComputeEnvConfig{
 			Name:          "funnel-compute-environment",
 			InstanceTypes: []string{"optimal"},
@@ -95,6 +112,12 @@ func DefaultConfig() Config {
 			RoleName:           "FunnelEcsTaskRole",
 			DynamoDBPolicyName: "FunnelDynamoDB",
 			S3PolicyName:       "FunnelS3",
+		},
+		JobDef: JobDefinitionConfig{
+			Name:      "funnel-job-def",
+			Image:     "docker.io/ohsucompbio/funnel:latest",
+			VCPUs:     1,
+			MemoryMiB: 128,
 		},
 	}
 
@@ -140,6 +163,16 @@ func DefaultConfig() Config {
 			},
 		},
 	}
+
+	c.FunnelWorker.WorkDir = "/opt/funnel-work-dir"
+	c.FunnelWorker.UpdateRate = time.Second * 10
+	c.FunnelWorker.BufferSize = 10000
+	c.FunnelWorker.TaskReader = "dynamodb"
+	c.FunnelWorker.TaskReaders.DynamoDB.TableBasename = "funnel"
+	c.FunnelWorker.TaskReaders.DynamoDB.Region = region
+	c.FunnelWorker.ActiveEventWriters = []string{"dynamodb", "log"}
+	c.FunnelWorker.EventWriters.DynamoDB.TableBasename = "funnel"
+	c.FunnelWorker.EventWriters.DynamoDB.Region = region
 
 	return c
 }

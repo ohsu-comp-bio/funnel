@@ -8,7 +8,7 @@ import (
 // Cmd represents the task command
 var Cmd = &cobra.Command{
 	Use:   "aws",
-	Short: "Utilities for managing funnel resources on AWS",
+	Short: "Development utilities for creating funnel resources on AWS",
 }
 
 func init() {

@@ -3,6 +3,7 @@ package e2e
 import (
 	"bytes"
 	"errors"
+	"flag"
 	"fmt"
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
@@ -34,10 +35,12 @@ import (
 	"time"
 )
 
+var configFile string
 var log = logger.NewLogger("e2e", testutils.LogConfig())
 
 func init() {
 	logger.ConfigureGRPC(1, log)
+	flag.StringVar(&configFile, "funnel-config", configFile, "Funnel config file. Must be an absolute path.")
 }
 
 func setLogOutput(t *testing.T) {
@@ -81,7 +84,16 @@ type Funnel struct {
 // DefaultConfig returns a default configuration useful for testing,
 // including temp storage dirs, random ports, S3 + minio config, etc.
 func DefaultConfig() config.Config {
-	return TestifyConfig(config.DefaultConfig())
+	conf := config.DefaultConfig()
+	// Get config from test command line flag, if present.
+	if configFile != "" {
+		err := config.ParseFile(configFile, &conf)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return TestifyConfig(conf)
 }
 
 // TestifyConfig modifies a ports, directory paths, etc. to avoid

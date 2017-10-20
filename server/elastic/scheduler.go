@@ -22,11 +22,16 @@ func (es *Elastic) QueueTask(task *tes.Task) error {
 func (es *Elastic) ReadQueue(n int) []*tes.Task {
 	ctx := context.Background()
 
+	sort := elastic.NewFieldSort("tags.TimestampNano").
+		Desc().
+		// Handles the case where there are no documents in the index.
+		UnmappedType("long")
+
 	q := elastic.NewTermQuery("state.keyword", tes.State_QUEUED.String())
 	res, err := es.client.Search().
 		Index(es.taskIndex).
 		Type("task").
-		Sort("tags.CreatedAt", true).
+		SortBy(sort).
 		Query(q).
 		Do(ctx)
 

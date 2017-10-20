@@ -51,7 +51,18 @@ func (es *Elastic) initIndex(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	} else if !exists {
-		if _, err := es.client.CreateIndex(name).Do(ctx); err != nil {
+		body := `{
+    "mappings": {
+      "task":{
+        "properties":{
+          "tags.TimestampNano": {
+            "type": "long"
+          }
+        }
+      }
+    }
+    }`
+		if _, err := es.client.CreateIndex(name).Body(body).Do(ctx); err != nil {
 			return err
 		}
 	}
@@ -90,24 +101,38 @@ func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 }
 
 // ListTasks lists tasks, duh.
-func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) ([]*tes.Task, error) {
-	res, err := es.client.Search().
-		Index(es.taskIndex).
-		Type("task").
-		Size(getPageSize(req)).
-		Sort("tags.CreatedAt", false).
-		Do(ctx)
+func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+	sort := elastic.NewFieldSort("tags.TimestampNano").
+		Desc().
+		// Handles the case where there are no documents in the index.
+		UnmappedType("long")
 
+	pageSize := getPageSize(req)
+	q := es.client.Search().
+		Index(es.taskIndex).
+		Type("task")
+
+	if req.PageToken != "" {
+		q = q.SearchAfter(req.PageToken)
+	}
+
+	q = q.SortBy(sort).Size(pageSize)
+
+	res, err := q.Do(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var tasks []*tes.Task
-	for _, hit := range res.Hits.Hits {
+	resp := &tes.ListTasksResponse{}
+	for i, hit := range res.Hits.Hits {
 		t := &tes.Task{}
 		err := jsonpb.Unmarshal(bytes.NewReader(*hit.Source), t)
 		if err != nil {
 			return nil, err
+		}
+
+		if i == pageSize-1 {
+			resp.NextPageToken = t.Tags["TimestampNano"]
 		}
 
 		switch req.View {
@@ -117,10 +142,10 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) ([]
 			t = t.GetMinimalView()
 		}
 
-		tasks = append(tasks, t)
+		resp.Tasks = append(resp.Tasks, t)
 	}
 
-	return tasks, nil
+	return resp, nil
 }
 
 func getPageSize(req *tes.ListTasksRequest) int {

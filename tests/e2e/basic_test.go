@@ -474,7 +474,10 @@ func TestPagination(t *testing.T) {
 	ctx := context.Background()
 
 	// Ensure database is empty
-	r0, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
+	r0, err := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r0.Tasks) != 0 {
 		t.Fatal("expected empty database")
 	}
@@ -482,6 +485,7 @@ func TestPagination(t *testing.T) {
 	for i := 0; i < 2050; i++ {
 		f.Run(`--sh 'echo 1'`)
 	}
+	time.Sleep(time.Second * 10)
 
 	r1, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
 
@@ -531,7 +535,7 @@ func TestPagination(t *testing.T) {
 	}
 
 	if len(tasks) != 2050 {
-		t.Error("unexpected task count", tasks)
+		t.Error("unexpected task count", len(tasks), "expected 2050")
 	}
 }
 
@@ -545,27 +549,39 @@ func TestSmallPagination(t *testing.T) {
 	ctx := context.Background()
 
 	// Ensure database is empty
-	r0, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
+	r0, err := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r0.Tasks) != 0 {
 		t.Fatal("expected empty database")
 	}
 
 	for i := 0; i < 150; i++ {
 		f.Run(`--sh 'echo 1'`)
+		//time.Sleep(time.Millisecond)
 	}
+	time.Sleep(time.Second * 5)
 
-	r4, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+	r4, err := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
 		PageSize: 50,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Get all pages
 	var tasks []*tes.Task
 	tasks = append(tasks, r4.Tasks...)
 	for r4.NextPageToken != "" {
-		r4, _ = f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+		r4, err = f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
 			PageSize:  50,
 			PageToken: r4.NextPageToken,
 		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("Next page token", r4.NextPageToken, len(r4.Tasks))
 
 		// Check a bug where the end of the last page was being included
 		// in the start of the next page.

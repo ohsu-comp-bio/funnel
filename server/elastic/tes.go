@@ -44,7 +44,7 @@ func (et *TES) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskR
 	if task.Tags == nil {
 		task.Tags = map[string]string{}
 	}
-	task.Tags["CreatedAt"] = time.Now().Format(time.RFC3339)
+	task.Tags["TimestampNano"] = fmt.Sprintf("%d", time.Now().UnixNano())
 
 	if err := et.Elastic.CreateTask(ctx, task); err != nil {
 		return nil, err
@@ -83,11 +83,7 @@ func (et *TES) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task,
 // TODO list is maybe where the having the TES api separated from the core
 //      database breaks down.
 func (et *TES) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-	tasks, err := et.Elastic.ListTasks(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return &tes.ListTasksResponse{Tasks: tasks}, nil
+	return et.Elastic.ListTasks(ctx, req)
 }
 
 // CancelTask cancels a task by ID.

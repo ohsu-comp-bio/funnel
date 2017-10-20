@@ -113,6 +113,7 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 		Index(es.nodeIndex).
 		Type("node").
 		Id(node.Id).
+		Refresh("true").
 		BodyString(s).
 		Do(ctx)
 	return &pbs.PutNodeResponse{}, err
@@ -124,6 +125,7 @@ func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) error {
 		Index(es.nodeIndex).
 		Type("node").
 		Id(node.Id).
+		Refresh("true").
 		Do(ctx)
 	return err
 }

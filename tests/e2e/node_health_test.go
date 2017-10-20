@@ -26,7 +26,11 @@ func TestNodeDead(t *testing.T) {
 		State: pbs.NodeState_ALIVE,
 	})
 
-	time.Sleep(conf.Scheduler.NodePingTimeout * 2)
+	// Some databases need time to sync the PutNode.
+	time.Sleep(time.Millisecond * 100)
+	// Wait for node to ping timeout.
+	time.Sleep(conf.Scheduler.NodePingTimeout)
+	// Should mark node as dead.
 	srv.Scheduler.CheckNodes()
 
 	nodes := srv.ListNodes()
@@ -53,7 +57,7 @@ func TestNodeInitFail(t *testing.T) {
 		State: pbs.NodeState_INITIALIZING,
 	})
 
-	time.Sleep(conf.Scheduler.NodeInitTimeout * 2)
+	time.Sleep(conf.Scheduler.NodeInitTimeout)
 	srv.Scheduler.CheckNodes()
 	nodes := srv.ListNodes()
 
@@ -80,7 +84,7 @@ func TestNodeDeadTimeout(t *testing.T) {
 	})
 	srv.Scheduler.CheckNodes()
 
-	time.Sleep(conf.Scheduler.NodeDeadTimeout * 2)
+	time.Sleep(conf.Scheduler.NodeDeadTimeout)
 	srv.Scheduler.CheckNodes()
 	nodes := srv.ListNodes()
 
@@ -91,8 +95,8 @@ func TestNodeDeadTimeout(t *testing.T) {
 
 func nodeTestConfig(conf config.Config) config.Config {
 	conf.Backend = "manual"
-	conf.Scheduler.NodePingTimeout = time.Millisecond
-	conf.Scheduler.NodeInitTimeout = time.Millisecond
-	conf.Scheduler.NodeDeadTimeout = time.Millisecond
+	conf.Scheduler.NodePingTimeout = time.Millisecond * 300
+	conf.Scheduler.NodeInitTimeout = time.Millisecond * 300
+	conf.Scheduler.NodeDeadTimeout = time.Millisecond * 300
 	return conf
 }

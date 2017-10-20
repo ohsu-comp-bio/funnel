@@ -37,22 +37,16 @@ type batchsvc struct {
 	conf Config
 }
 
-func (b *batchsvc) CreateComputeEnvironment() (*batch.CreateComputeEnvironmentOutput, error) {
+func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, error) {
 	batchCli := batch.New(b.sess)
 	ec2Cli := ec2.New(b.sess)
 	iamCli := iam.New(b.sess)
 
-	resp, err := batchCli.DescribeComputeEnvironments(&batch.DescribeComputeEnvironmentsInput{
+	resp, _ := batchCli.DescribeComputeEnvironments(&batch.DescribeComputeEnvironmentsInput{
 		ComputeEnvironments: []*string{aws.String(b.conf.ComputeEnv.Name)},
 	})
-	if err != nil {
-		return nil, err
-	}
 	if len(resp.ComputeEnvironments) > 0 {
-		return &batch.CreateComputeEnvironmentOutput{
-			ComputeEnvironmentArn:  resp.ComputeEnvironments[0].ComputeEnvironmentArn,
-			ComputeEnvironmentName: resp.ComputeEnvironments[0].ComputeEnvironmentName,
-		}, errResourceExists{}
+		return resp.ComputeEnvironments[0], errResourceExists{}
 	}
 
 	securityGroupIds := []string{}
@@ -66,7 +60,6 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.CreateComputeEnvironmentOu
 		for _, s := range sgres.SecurityGroups {
 			securityGroupIds = append(securityGroupIds, *s.GroupId)
 		}
-
 	}
 
 	subnets := []string{}
@@ -170,24 +163,31 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.CreateComputeEnvironmentOu
 		State:       aws.String("ENABLED"),
 		Type:        aws.String("MANAGED"),
 	}
+	_, err = batchCli.CreateComputeEnvironment(input)
+	if err != nil {
+		return nil, fmt.Errorf("error creating ComputeEnvironment: %v", err)
+	}
 
-	return batchCli.CreateComputeEnvironment(input)
-}
-
-func (b *batchsvc) CreateJobQueue() (*batch.CreateJobQueueOutput, error) {
-	batchCli := batch.New(b.sess)
-
-	resp, err := batchCli.DescribeJobQueues(&batch.DescribeJobQueuesInput{
-		JobQueues: []*string{aws.String(conf.JobQueue.Name)},
+	resp, err = batchCli.DescribeComputeEnvironments(&batch.DescribeComputeEnvironmentsInput{
+		ComputeEnvironments: []*string{aws.String(b.conf.ComputeEnv.Name)},
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting ComputeEnvironmentDetail: %v", err)
 	}
+	if len(resp.ComputeEnvironments) > 0 {
+		return resp.ComputeEnvironments[0], nil
+	}
+	return nil, fmt.Errorf("unexpected error - failed to get ComputeEnvironmentDetail")
+}
+
+func (b *batchsvc) CreateJobQueue() (*batch.JobQueueDetail, error) {
+	batchCli := batch.New(b.sess)
+
+	resp, _ := batchCli.DescribeJobQueues(&batch.DescribeJobQueuesInput{
+		JobQueues: []*string{aws.String(conf.JobQueue.Name)},
+	})
 	if len(resp.JobQueues) > 0 {
-		return &batch.CreateJobQueueOutput{
-			JobQueueArn:  resp.JobQueues[0].JobQueueArn,
-			JobQueueName: resp.JobQueues[0].JobQueueName,
-		}, errResourceExists{}
+		return resp.JobQueues[0], errResourceExists{}
 	}
 
 	var envs []*batch.ComputeEnvironmentOrder
@@ -204,8 +204,21 @@ func (b *batchsvc) CreateJobQueue() (*batch.CreateJobQueueOutput, error) {
 		Priority:                aws.Int64(b.conf.JobQueue.Priority),
 		State:                   aws.String("ENABLED"),
 	}
+	_, err := batchCli.CreateJobQueue(input)
+	if err != nil {
+		return nil, fmt.Errorf("error creating JobQueue: %v", err)
+	}
 
-	return batchCli.CreateJobQueue(input)
+	resp, err = batchCli.DescribeJobQueues(&batch.DescribeJobQueuesInput{
+		JobQueues: []*string{aws.String(conf.JobQueue.Name)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error getting JobQueueDetail: %v", err)
+	}
+	if len(resp.JobQueues) > 0 {
+		return resp.JobQueues[0], nil
+	}
+	return nil, fmt.Errorf("unexpected error - failed to get JobQueueDetail")
 }
 
 func (b *batchsvc) CreateJobRole() (string, error) {
@@ -284,27 +297,20 @@ func (b *batchsvc) AttachRolePolicies() error {
 	return nil
 }
 
-func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.RegisterJobDefinitionOutput, error) {
+func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, error) {
 	batchCli := batch.New(b.sess)
 
 	if !overwrite {
 		// TODO need paging if there are more than 100 revisions
-		resp, err := batchCli.DescribeJobDefinitions(&batch.DescribeJobDefinitionsInput{
+		resp, _ := batchCli.DescribeJobDefinitions(&batch.DescribeJobDefinitionsInput{
 			JobDefinitionName: aws.String(b.conf.JobDef.Name),
 			Status:            aws.String("ACTIVE"),
 			MaxResults:        aws.Int64(100),
 		})
-		if err == nil {
-			if len(resp.JobDefinitions) > 0 {
-				jobDefs := resp.JobDefinitions
-				sort.Sort(byRevision(jobDefs))
-				latest := jobDefs[0]
-				return &batch.RegisterJobDefinitionOutput{
-					JobDefinitionArn:  latest.JobDefinitionArn,
-					JobDefinitionName: latest.JobDefinitionName,
-					Revision:          latest.Revision,
-				}, errResourceExists{}
-			}
+		if len(resp.JobDefinitions) > 0 {
+			jobDefs := resp.JobDefinitions
+			sort.Sort(byRevision(jobDefs))
+			return jobDefs[0], errResourceExists{}
 		}
 	}
 
@@ -383,12 +389,26 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.RegisterJobDefini
 		jobDef.ContainerProperties.Command = append(jobDef.ContainerProperties.Command, aws.String("--ActiveEventWriters"), aws.String(val))
 	}
 
-	rjd, err := batchCli.RegisterJobDefinition(jobDef)
+	_, err = batchCli.RegisterJobDefinition(jobDef)
 	if err != nil {
 		return nil, fmt.Errorf("error registering JobDefinition: %v", err)
 	}
 
-	return rjd, nil
+	// TODO need paging if there are more than 100 revisions
+	resp, err := batchCli.DescribeJobDefinitions(&batch.DescribeJobDefinitionsInput{
+		JobDefinitionName: aws.String(b.conf.JobDef.Name),
+		Status:            aws.String("ACTIVE"),
+		MaxResults:        aws.Int64(100),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error getting JobDefintion: %v", err)
+	}
+	if len(resp.JobDefinitions) > 0 {
+		jobDefs := resp.JobDefinitions
+		sort.Sort(byRevision(jobDefs))
+		return jobDefs[0], nil
+	}
+	return nil, fmt.Errorf("unexpected error - failed to get JobDefintion")
 }
 
 func convertStringSlice(s []string) []*string {

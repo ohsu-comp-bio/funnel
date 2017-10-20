@@ -27,10 +27,10 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create-resources",
+	Use:   "create-all-resources",
 	Short: "Create a compute environment, job queue and job definition in a specified region",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log := logger.NewLogger("batch-create-resources", logger.DefaultConfig())
+		log := logger.NewLogger("batch-create-all-resources", logger.DefaultConfig())
 
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}
@@ -46,15 +46,9 @@ var createCmd = &cobra.Command{
 		a, err := cli.CreateComputeEnvironment()
 		switch err.(type) {
 		case nil:
-			log.Info("Created ComputeEnvironment",
-				"Name", *a.ComputeEnvironmentName,
-				"Arn", *a.ComputeEnvironmentArn,
-			)
+			log.Info("Created ComputeEnvironment", "description", a)
 		case errResourceExists:
-			log.Error("ComputeEnvironment already exists",
-				"Name", *a.ComputeEnvironmentName,
-				"Arn", *a.ComputeEnvironmentArn,
-			)
+			log.Error("ComputeEnvironment already exists", "description", a)
 		default:
 			return fmt.Errorf("failed to create ComputeEnvironment: %v", err)
 		}
@@ -62,15 +56,9 @@ var createCmd = &cobra.Command{
 		b, err := cli.CreateJobQueue()
 		switch err.(type) {
 		case nil:
-			log.Info("Created JobQueue",
-				"Name", *b.JobQueueName,
-				"Arn", *b.JobQueueArn,
-			)
+			log.Info("Created JobQueue", "description", b)
 		case errResourceExists:
-			log.Error("JobQueue already exists",
-				"Name", *b.JobQueueName,
-				"Arn", *b.JobQueueArn,
-			)
+			log.Error("JobQueue already exists", "description", b)
 		default:
 			return fmt.Errorf("failed to create JobQueue: %v", err)
 		}
@@ -78,17 +66,9 @@ var createCmd = &cobra.Command{
 		c, err := cli.CreateJobDefinition(false)
 		switch err.(type) {
 		case nil:
-			log.Info("Created JobDefinition",
-				"Name", *c.JobDefinitionName,
-				"Arn", *c.JobDefinitionArn,
-				"Revision", *c.Revision,
-			)
+			log.Info("Created JobDefinition", "description", c)
 		case errResourceExists:
-			log.Error("JobDefinition already exists",
-				"Name", *c.JobDefinitionName,
-				"Arn", *c.JobDefinitionArn,
-				"Revision", *c.Revision,
-			)
+			log.Error("JobDefinition already exists", "description", c)
 		default:
 			return fmt.Errorf("failed to create JobDefinition: %v", err)
 		}

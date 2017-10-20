@@ -7,7 +7,7 @@ import (
 var conf = DefaultConfig()
 var funnelConfigFile string
 
-// Cmd represents the task command
+// Cmd represents the aws batch command
 var Cmd = &cobra.Command{
 	Use:   "batch",
 	Short: "Utilities for managing funnel resources on AWS Batch",
@@ -15,5 +15,5 @@ var Cmd = &cobra.Command{
 
 func init() {
 	Cmd.AddCommand(createCmd)
-	Cmd.AddCommand(updateCmd)
+	Cmd.AddCommand(jobdefCmd)
 }

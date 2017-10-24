@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"gopkg.in/olivere/elastic.v5"
-	"time"
 )
 
 // TES provides the TES API endpoints, backed by elasticsearch.
@@ -44,7 +43,6 @@ func (et *TES) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskR
 	if task.Tags == nil {
 		task.Tags = map[string]string{}
 	}
-	task.Tags["TimestampNano"] = fmt.Sprintf("%d", time.Now().UnixNano())
 
 	if err := et.Elastic.CreateTask(ctx, task); err != nil {
 		return nil, err

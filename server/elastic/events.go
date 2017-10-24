@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+var idFieldSort = elastic.NewFieldSort("id").
+	Desc().
+	// Handles the case where there are no documents in the index.
+	UnmappedType("keyword")
+
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {
 	client      *elastic.Client
@@ -43,7 +48,7 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 	}, nil
 }
 
-func (es *Elastic) initIndex(ctx context.Context, name string) error {
+func (es *Elastic) initIndex(ctx context.Context, name, body string) error {
 	exists, err := es.client.
 		IndexExists(name).
 		Do(ctx)
@@ -51,17 +56,6 @@ func (es *Elastic) initIndex(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	} else if !exists {
-		body := `{
-    "mappings": {
-      "task":{
-        "properties":{
-          "tags.TimestampNano": {
-            "type": "long"
-          }
-        }
-      }
-    }
-    }`
 		if _, err := es.client.CreateIndex(name).Body(body).Do(ctx); err != nil {
 			return err
 		}
@@ -71,13 +65,24 @@ func (es *Elastic) initIndex(ctx context.Context, name string) error {
 
 // Init initializing the Elasticsearch indices.
 func (es *Elastic) Init(ctx context.Context) error {
-	if err := es.initIndex(ctx, es.taskIndex); err != nil {
+	taskMappings := `{
+    "mappings": {
+      "task":{
+        "properties":{
+          "id": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }`
+	if err := es.initIndex(ctx, es.taskIndex, taskMappings); err != nil {
 		return err
 	}
-	if err := es.initIndex(ctx, es.nodeIndex); err != nil {
+	if err := es.initIndex(ctx, es.nodeIndex, ""); err != nil {
 		return err
 	}
-	if err := es.initIndex(ctx, es.eventsIndex); err != nil {
+	if err := es.initIndex(ctx, es.eventsIndex, ""); err != nil {
 		return err
 	}
 	return nil
@@ -102,10 +107,6 @@ func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 
 // ListTasks lists tasks, duh.
 func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-	sort := elastic.NewFieldSort("tags.TimestampNano").
-		Desc().
-		// Handles the case where there are no documents in the index.
-		UnmappedType("long")
 
 	pageSize := getPageSize(req)
 	q := es.client.Search().
@@ -116,7 +117,7 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		q = q.SearchAfter(req.PageToken)
 	}
 
-	q = q.SortBy(sort).Size(pageSize)
+	q = q.SortBy(idFieldSort).Size(pageSize)
 
 	res, err := q.Do(ctx)
 	if err != nil {
@@ -132,7 +133,7 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		}
 
 		if i == pageSize-1 {
-			resp.NextPageToken = t.Tags["TimestampNano"]
+			resp.NextPageToken = t.Id
 		}
 
 		switch req.View {

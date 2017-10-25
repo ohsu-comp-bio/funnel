@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -17,7 +18,7 @@ func Run(conf config.Config) error {
 		conf.Scheduler.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	n, err := scheduler.NewNode(conf, log)
+	n, err := scheduler.NewNode(conf, log, workerCmd.NewDefaultWorker)
 	if err != nil {
 		return err
 	}

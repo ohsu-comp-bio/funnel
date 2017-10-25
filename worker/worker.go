@@ -6,66 +6,13 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 )
-
-// NewDefaultWorker returns a new configured DefaultWorker instance.
-func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (Worker, error) {
-	var err error
-	var reader TaskReader
-	var writer events.Writer
-
-	// Map files into this baseDir
-	baseDir := path.Join(conf.WorkDir, taskID)
-
-	err = util.EnsureDir(baseDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create worker baseDir: %v", err)
-	}
-
-	switch conf.TaskReader {
-	case "rpc":
-		reader, err = newRPCTaskReader(conf, taskID)
-	case "dynamodb":
-		reader, err = newDynamoDBTaskReader(conf.TaskReaders.DynamoDB, taskID)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
-	}
-
-	writers := []events.Writer{}
-	for _, w := range conf.ActiveEventWriters {
-		switch w {
-		case "dynamodb":
-			writer, err = events.NewDynamoDBEventWriter(conf.EventWriters.DynamoDB)
-		case "log":
-			writer = &events.Logger{Log: log}
-		case "rpc":
-			writer, err = events.NewRPCWriter(conf)
-		default:
-			err = fmt.Errorf("unknown EventWriter")
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
-		}
-		writers = append(writers, writer)
-	}
-
-	return &DefaultWorker{
-		Conf:       conf,
-		Mapper:     NewFileMapper(baseDir),
-		Store:      storage.Storage{},
-		TaskReader: reader,
-		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, events.MultiWriter(writers...)),
-	}, nil
-}
 
 // DefaultWorker is the default task worker, which follows a basic,
 // sequential process of task initialization, execution, finalization,

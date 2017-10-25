@@ -4,3 +4,5 @@ Server:
     Elastic:
       IndexPrefix: test
       URL: http://localhost:9200
+Worker:
+  ActiveEventWriters: ["elastic", "log"]

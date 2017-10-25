@@ -12,6 +12,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
+	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -108,6 +109,7 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
 	conf.Worker.UpdateRate = time.Millisecond * 300
 	conf.Server.Databases.Elastic.IndexPrefix += "-" + util.GenTaskID()
+	conf.Worker.EventWriters.Elastic = conf.Server.Databases.Elastic
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
@@ -507,7 +509,7 @@ func (f *Funnel) ListNodes() []*pbs.Node {
 
 // AddNode starts an in-memory node routine.
 func (f *Funnel) AddNode(conf config.Config) {
-	n, err := scheduler.NewNode(conf, logger.NewLogger("e2e-node", conf.Scheduler.Node.Logger))
+	n, err := scheduler.NewNode(conf, logger.NewLogger("e2e-node", conf.Scheduler.Node.Logger), workercmd.NewDefaultWorker)
 	if err != nil {
 		panic(err)
 	}

@@ -15,7 +15,8 @@ type RPCTaskReader struct {
 	taskID string
 }
 
-func newRPCTaskReader(conf config.Worker, taskID string) (*RPCTaskReader, error) {
+// NewRPCTaskReader returns a new RPC-based task reader.
+func NewRPCTaskReader(conf config.Worker, taskID string) (*RPCTaskReader, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 

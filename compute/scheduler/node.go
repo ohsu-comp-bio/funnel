@@ -6,14 +6,13 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"github.com/ohsu-comp-bio/funnel/worker"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
 )
 
 // NewNode returns a new Node instance
-func NewNode(conf config.Config, log *logger.Logger) (*Node, error) {
+func NewNode(conf config.Config, log *logger.Logger, factory WorkerFactory) (*Node, error) {
 	log = log.WithFields("nodeID", conf.Scheduler.Node.ID)
 
 	cli, err := NewClient(conf.Scheduler)
@@ -44,7 +43,7 @@ func NewNode(conf config.Config, log *logger.Logger) (*Node, error) {
 		client:     cli,
 		log:        log,
 		resources:  res,
-		newWorker:  worker.NewDefaultWorker,
+		newWorker:  factory,
 		workers:    newRunSet(),
 		timeout:    timeout,
 		state:      state,
@@ -54,9 +53,7 @@ func NewNode(conf config.Config, log *logger.Logger) (*Node, error) {
 // NewNoopNode returns a new node that doesn't have any side effects
 // (e.g. storage access, docker calls, etc.) which is useful for testing.
 func NewNoopNode(conf config.Config, log *logger.Logger) (*Node, error) {
-	n, err := NewNode(conf, log)
-	n.newWorker = NoopWorkerFactory
-	return n, err
+	return NewNode(conf, log, NoopWorkerFactory)
 }
 
 // Node is a structure used for tracking available resources on a compute resource.

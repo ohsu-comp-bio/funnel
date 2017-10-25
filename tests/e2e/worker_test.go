@@ -4,7 +4,6 @@ import (
 	"context"
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/worker"
 	"testing"
 )
 
@@ -53,7 +52,7 @@ func TestDefaultWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	w, err := worker.NewDefaultWorker(c.Worker, id, nil)
+	w, err := workerCmd.NewDefaultWorker(c.Worker, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

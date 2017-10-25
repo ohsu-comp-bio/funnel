@@ -25,10 +25,17 @@ const (
 
 // CreateEvent creates an event for the server to handle.
 func (taskBolt *BoltDB) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
-	return &events.CreateEventResponse{}, taskBolt.Write(ctx, req)
+	return &events.CreateEventResponse{}, taskBolt.WriteContext(ctx, req)
 }
 
-func (taskBolt *BoltDB) Write(ctx context.Context, req *events.Event) error {
+// Write writes task events to the database, updating the task record they
+// are related to. System log events are ignored.
+func (taskBolt *BoltDB) Write(req *events.Event) error {
+	return taskBolt.WriteContext(context.Background(), req)
+}
+
+// WriteContext is Write, but with context.
+func (taskBolt *BoltDB) WriteContext(ctx context.Context, req *events.Event) error {
 	var err error
 
 	tl := &tes.TaskLog{}

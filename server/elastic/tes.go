@@ -86,7 +86,7 @@ func (et *TES) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.L
 
 // CancelTask cancels a task by ID.
 func (et *TES) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	err := et.Elastic.Write(ctx, events.NewState(req.Id, 0, tes.State_CANCELED))
+	err := et.Elastic.WriteContext(ctx, events.NewState(req.Id, 0, tes.State_CANCELED))
 	if elastic.IsNotFound(err) {
 		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: task ID: %s", err.Error(), req.Id))
 	}
@@ -100,7 +100,7 @@ func (et *TES) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest)
 
 // CreateEvent writes a task event to the database.
 func (et *TES) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
-	err := et.Elastic.Write(ctx, req)
+	err := et.Elastic.WriteContext(ctx, req)
 	if err != nil {
 		return nil, err
 	}

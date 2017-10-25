@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/compute/gce"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
@@ -83,7 +84,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		case "gce":
 			sbackend, err = gce.NewBackend(conf, log.Sub("gce"))
 		case "gce-mock":
-			sbackend, err = gce.NewMockBackend(conf)
+			sbackend, err = gce.NewMockBackend(conf, workerCmd.NewDefaultWorker)
 		case "manual":
 			sbackend, err = manual.NewBackend(conf)
 		case "openstack":
@@ -104,7 +105,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	case "htcondor":
 		backend = htcondor.NewBackend(conf)
 	case "local":
-		backend = local.NewBackend(conf, log.Sub("local"))
+		backend = local.NewBackend(conf, log.Sub("local"), workerCmd.NewDefaultWorker)
 	case "noop":
 		backend = noop.NewBackend(conf)
 	case "pbs":

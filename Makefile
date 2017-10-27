@@ -3,7 +3,7 @@ $(error GOPATH is not set)
 endif
 
 VERSION = 0.3.0
-TESTS=$(shell go list ./... | grep -v /vendor/)
+TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v kafka)
 
 export SHELL=/bin/bash
 PATH := ${PATH}:${GOPATH}/bin
@@ -227,6 +227,14 @@ docker: cross-compile
 	cp build/bin/funnel-linux-amd64 build/docker/funnel
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t funnel .
+
+start-kafka:
+	@docker rm -f funnel-kafka > /dev/null || echo
+	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
+
+test-kafka: start-kafka
+	@go test ./tests/e2e/kafka
+	@docker rm -f funnel-kafka > /dev/null || echo
 
 # Remove build/development files.
 clean:

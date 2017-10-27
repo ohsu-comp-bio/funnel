@@ -47,3 +47,51 @@ func (k *KafkaWriter) Write(ev *Event) error {
 	_, _, err = k.producer.SendMessage(msg)
 	return err
 }
+
+// KafkaReader reads events to a Kafka topic and writes them
+// to a Writer.
+type KafkaReader struct {
+	conf config.Kafka
+	con  sarama.Consumer
+	pcon sarama.PartitionConsumer
+}
+
+// NewKafkaReader creates a new event reader for reading events from a Kafka topic and writing them to the given Writer.
+func NewKafkaReader(conf config.Kafka, w Writer) (*KafkaReader, error) {
+	con, err := sarama.NewConsumer(conf.Servers, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO better handling of partition and offset.
+	p, err := con.ConsumePartition(conf.Topic, 0, sarama.OffsetNewest)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		for msg := range p.Messages() {
+			ev := &Event{}
+			err := Unmarshal(msg.Value, ev)
+			if err != nil {
+				// TODO
+				continue
+			}
+			w.Write(ev)
+		}
+	}()
+	return &KafkaReader{conf, con, p}, nil
+}
+
+// Close closes the Kafka reader, cleaning up resources.
+func (k *KafkaReader) Close() error {
+	err := k.con.Close()
+	perr := k.pcon.Close()
+	if err != nil {
+		return err
+	}
+	if perr != nil {
+		return perr
+	}
+	return nil
+}

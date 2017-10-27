@@ -4,4 +4,4 @@ Worker:
   EventWriters:
     Kafka:
       Topic: funnel-events
-      Servers: ["10.50.50.49:9092"]
+      Servers: ["localhost:9092"]

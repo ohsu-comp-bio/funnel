@@ -46,9 +46,10 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 	}, nil
 }
 
+// Close closes the database client.
 func (es *Elastic) Close() error {
-  es.client.Stop()
-  return nil
+	es.client.Stop()
+	return nil
 }
 
 func (es *Elastic) initIndex(ctx context.Context, name, body string) error {

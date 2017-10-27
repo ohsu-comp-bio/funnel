@@ -23,5 +23,6 @@ script:
   - make test-backends
   - make test-elasticsearch
   - make test-mongodb
+  - make test-kafka
 notifications:
   email: false

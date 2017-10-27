@@ -130,3 +130,9 @@
 [submodule "vendor/github.com/ncw/swift"]
 	path = vendor/github.com/ncw/swift
 	url = https://github.com/ncw/swift
+[submodule "vendor/gopkg.in/olivere/elastic.v5"]
+	path = vendor/gopkg.in/olivere/elastic.v5
+	url = https://gopkg.in/olivere/elastic.v5
+[submodule "vendor/github.com/pkg/errors"]
+	path = vendor/github.com/pkg/errors
+	url = https://github.com/pkg/errors

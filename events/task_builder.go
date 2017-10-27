@@ -60,3 +60,8 @@ func (tb TaskBuilder) Write(ev *Event) error {
 
 	return nil
 }
+
+// Close is a noop.
+func (tb TaskBuilder) Close() error {
+	return nil
+}

@@ -89,9 +89,8 @@ type JobRoleConfig struct {
 
 // DefaultConfig returns default configuration of for AWS Batch resource creation.
 func DefaultConfig() Config {
-	region := "us-west-2"
 	c := Config{
-		Region: region,
+		Region: "",
 		ComputeEnv: ComputeEnvConfig{
 			Name:          "funnel-compute-environment",
 			InstanceTypes: []string{"optimal"},
@@ -169,10 +168,10 @@ func DefaultConfig() Config {
 	c.FunnelWorker.BufferSize = 10000
 	c.FunnelWorker.TaskReader = "dynamodb"
 	c.FunnelWorker.TaskReaders.DynamoDB.TableBasename = "funnel"
-	c.FunnelWorker.TaskReaders.DynamoDB.Region = region
+	c.FunnelWorker.TaskReaders.DynamoDB.Region = ""
 	c.FunnelWorker.ActiveEventWriters = []string{"dynamodb", "log"}
 	c.FunnelWorker.EventWriters.DynamoDB.TableBasename = "funnel"
-	c.FunnelWorker.EventWriters.DynamoDB.Region = region
+	c.FunnelWorker.EventWriters.DynamoDB.Region = ""
 
 	return c
 }

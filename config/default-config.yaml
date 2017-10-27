@@ -103,7 +103,7 @@ Scheduler:
 
 
 # The name of the active compute backend
-# Available backends: local, htcondor, slurm, pbs, gridengine, manual, gce, openstack
+# Available backends: local, htcondor, slurm, pbs, gridengine, manual, gce, openstack, aws-batch
 Backend: local
 
 # Scheduler backend config
@@ -207,16 +207,10 @@ Backends:
 
   # Batch describes the configuration for the AWS Batch compute backend.
   Batch:
-    # JobDefConfig represents configuration of the AWS Batch
-    # base Job Definition.
-    JobDef:
-      Name: "funnel-job-def"
-      Image: "docker.io/ohsu-comp-bio/funnel:latest"
-      DefaultMemory: 128
-      DefaultVcpus:  1
-      JobRoleArn: ""
+    # JobDefinition can be either a name or the Amazon Resource Name (ARN).
+    JobDefinition: "funnel-job-def"
     # JobQueue can be either a name or the Amazon Resource Name (ARN).
-    JobQueue: ""
+    JobQueue: "funnel-job-queue"
     # AWS region of the specified job queue and to create the job definition in
     Region: ""
     Credentials:

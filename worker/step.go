@@ -55,7 +55,6 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 		case result := <-done:
 			s.Event.EndTime(time.Now())
-			s.Event.ExitCode(getExitCode(result))
 			return result
 		}
 	}

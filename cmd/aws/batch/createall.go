@@ -12,11 +12,11 @@ func init() {
 	f.StringVar(&funnelConfigFile, "config", funnelConfigFile, "Funnel configuration file")
 	f.StringVar(&conf.Region, "region", conf.Region, "Region in which to create the Batch resources")
 	f.StringVar(&conf.ComputeEnv.Name, "ComputeEnv.Name", conf.ComputeEnv.Name, "The name of the compute environment.")
-	f.Int64Var(&conf.ComputeEnv.MinVCPUs, "ComputEnv.MinVCPUs", conf.ComputeEnv.MinVCPUs, "The minimum number of EC2 vCPUs that an environment should maintain. (default 0)")
-	f.Int64Var(&conf.ComputeEnv.MaxVCPUs, "ComputEnv.MaxVCPUs", conf.ComputeEnv.MaxVCPUs, "The maximum number of EC2 vCPUs that an environment can reach.")
+	f.Int64Var(&conf.ComputeEnv.MinVCPUs, "ComputeEnv.MinVCPUs", conf.ComputeEnv.MinVCPUs, "The minimum number of EC2 vCPUs that an environment should maintain. (default 0)")
+	f.Int64Var(&conf.ComputeEnv.MaxVCPUs, "ComputeEnv.MaxVCPUs", conf.ComputeEnv.MaxVCPUs, "The maximum number of EC2 vCPUs that an environment can reach.")
 	f.StringSliceVar(&conf.ComputeEnv.SecurityGroupIds, "ComputEnv.SecurityGroupIds", conf.ComputeEnv.SecurityGroupIds, "The EC2 security groups that are associated with instances launched in the compute environment. If none are specified all security groups will be used.")
-	f.StringSliceVar(&conf.ComputeEnv.Subnets, "ComputEnv.Subnets", conf.ComputeEnv.Subnets, "The VPC subnets into which the compute resources are launched. If none are specified all subnets will be used.")
-	f.StringSliceVar(&conf.ComputeEnv.InstanceTypes, "ComputEnv.InstanceTypes", conf.ComputeEnv.InstanceTypes, "The instances types that may be launched. You can also choose optimal to pick instance types on the fly that match the demand of your job queues.")
+	f.StringSliceVar(&conf.ComputeEnv.Subnets, "ComputeEnv.Subnets", conf.ComputeEnv.Subnets, "The VPC subnets into which the compute resources are launched. If none are specified all subnets will be used.")
+	f.StringSliceVar(&conf.ComputeEnv.InstanceTypes, "ComputeEnv.InstanceTypes", conf.ComputeEnv.InstanceTypes, "The instances types that may be launched. You can also choose optimal to pick instance types on the fly that match the demand of your job queues.")
 	f.StringVar(&conf.JobQueue.Name, "JobQueue.Name", conf.JobQueue.Name, "The name of the job queue.")
 	f.Int64Var(&conf.JobQueue.Priority, "JobQueue.Priority", conf.JobQueue.Priority, "The priority of the job queue. Priority is determined in descending order.")
 	f.StringVar(&conf.JobDef.Name, "JobDef.Name", conf.JobDef.Name, "The name of the job definition.")
@@ -31,6 +31,13 @@ var createCmd = &cobra.Command{
 	Short: "Create a compute environment, job queue and job definition in a specified region",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log := logger.NewLogger("batch-create-all-resources", logger.DefaultConfig())
+
+		if conf.Region == "" {
+			return fmt.Errorf("error must provide a region")
+		}
+
+		conf.FunnelWorker.TaskReaders.DynamoDB.Region = conf.Region
+		conf.FunnelWorker.EventWriters.DynamoDB.Region = conf.Region
 
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}

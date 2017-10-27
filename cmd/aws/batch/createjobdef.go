@@ -27,6 +27,13 @@ var jobdefCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log := logger.NewLogger("batch-create-job-def", logger.DefaultConfig())
 
+		if conf.Region == "" {
+			return fmt.Errorf("error must provide a region")
+		}
+
+		conf.FunnelWorker.TaskReaders.DynamoDB.Region = conf.Region
+		conf.FunnelWorker.EventWriters.DynamoDB.Region = conf.Region
+
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}
 			config.ParseFile(funnelConfigFile, &funnelConf)

@@ -14,6 +14,7 @@ import (
 // NewNode returns a new Node instance
 func NewNode(conf config.Config, log *logger.Logger, factory WorkerFactory) (*Node, error) {
 	log = log.WithFields("nodeID", conf.Scheduler.Node.ID)
+	log.Debug("NewNode", "config", conf)
 
 	cli, err := NewClient(conf.Scheduler)
 	if err != nil {

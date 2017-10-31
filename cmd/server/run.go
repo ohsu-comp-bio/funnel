@@ -47,6 +47,8 @@ type Server struct {
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
 func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
+	log.Debug("NewServer", "config", conf)
+
 	var backend compute.Backend
 	var db server.Database
 	var sdb scheduler.Database

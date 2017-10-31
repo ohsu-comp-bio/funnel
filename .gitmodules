@@ -130,3 +130,6 @@
 [submodule "vendor/gopkg.in/mgo.v2"]
 	path = vendor/gopkg.in/mgo.v2
 	url = https://gopkg.in/mgo.v2
+[submodule "vendor/github.com/grpc-ecosystem/go-grpc-middleware"]
+	path = vendor/github.com/grpc-ecosystem/go-grpc-middleware
+	url = https://github.com/grpc-ecosystem/go-grpc-middleware

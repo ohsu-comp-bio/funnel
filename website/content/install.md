@@ -32,7 +32,7 @@ Check out the [development docs][dev] for more detail.
 
 
 
-[linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.2.0/funnel-linux-amd64.tar.gz
-[mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.2.0/funnel-darwin-amd64.tar.gz
+[linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.3.0/funnel-linux-amd64-0.3.0.tar.gz
+[mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.3.0/funnel-darwin-amd64-0.3.0.tar.gz
 [dev]: /docs/development/
 [docker]: https://docker.io

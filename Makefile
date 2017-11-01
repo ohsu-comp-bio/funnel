@@ -2,7 +2,7 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
-VERSION = 0.2.0
+VERSION = 0.3.0
 TESTS=$(shell go list ./... | grep -v /vendor/)
 
 export SHELL=/bin/bash
@@ -17,7 +17,7 @@ VERSION_LDFLAGS=\
  -X "$(V).GitCommit=$(shell git rev-parse --short HEAD)" \
  -X "$(V).GitBranch=$(shell git symbolic-ref -q --short HEAD)" \
  -X "$(V).GitUpstream=$(shell git remote get-url $(shell git config branch.$(shell git symbolic-ref -q --short HEAD).remote) 2> /dev/null)" \
- -X "$(V).Version=$(shell git describe --tags --long --dirty)"
+ -X "$(V).Version=$(VERSION)"
 
 # Build the code
 install: depends
@@ -149,23 +149,22 @@ upload-release:
 		echo 'GITHUB_TOKEN is required but not set. Generate one in your GitHub settings at https://github.com/settings/tokens and set it to an environment variable with `export GITHUB_TOKEN=123456...`'; \
 		exit 1; \
 	fi
-	@make gce-installer
-	@mkdir -p build/release
-	@cp build/bin/* build/release/
-	@cp build/funnel-gce-image-installer build/release
 	-github-release release \
 		-u ohsu-comp-bio \
 		-r funnel \
 		--tag $(VERSION) \
 		--name $(VERSION)
-	for f in $$(ls -1 build/release); do \
+	for f in $$(ls -1 build/bin); do \
+		mkdir -p build/release/$$f-$(VERSION); \
+		cp build/bin/$$f build/release/$$f-$(VERSION)/funnel; \
+		tar -C build/release/$$f-$(VERSION) -czf build/release/$$f-$(VERSION).tar.gz .; \
 		github-release upload \
 		-u ohsu-comp-bio \
 		-r funnel \
-		--name $$f \
+		--name $$f-$(VERSION).tar.gz \
 		--tag $(VERSION) \
 		--replace \
-		--file ./build/release/$$f; \
+		--file ./build/release/$$f-$(VERSION).tar.gz; \
 	done
 
 # Build the GCE image installer

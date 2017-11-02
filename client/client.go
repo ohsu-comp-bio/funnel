@@ -7,10 +7,11 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"golang.org/x/net/context"
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
+	"regexp"
 	"time"
 )
 
@@ -18,14 +19,16 @@ import (
 // Create/List/Get/Cancel Task endpoints. "address" is the address
 // of the TES server.
 func NewClient(address string) *Client {
-
 	password := os.Getenv("FUNNEL_SERVER_PASSWORD")
+
 	// Strip trailing slash. A quick and dirty fix.
-	address = strings.TrimSuffix(address, "/")
+	re := regexp.MustCompile("/+$")
+	address = re.ReplaceAllString(address, "")
+
 	return &Client{
 		address: address,
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 		Marshaler: &jsonpb.Marshaler{
 			EnumsAsInts:  false,
@@ -45,15 +48,13 @@ type Client struct {
 }
 
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
-func (c *Client) GetTask(id string, view string) (*tes.Task, error) {
-	if !validateView(view) {
-		return nil, fmt.Errorf("Invalid view. Must be one of MINIMAL, BASIC, FULL")
-	}
+func (c *Client) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	// Send request
-	u := c.address + "/v1/tasks/" + id + "?view=" + view
-	req, _ := http.NewRequest("GET", u, nil)
-	req.SetBasicAuth("funnel", c.Password)
-	body, err := util.CheckHTTPResponse(c.client.Do(req))
+	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View.String()
+	hreq, _ := http.NewRequest("GET", u, nil)
+	hreq.WithContext(ctx)
+	hreq.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func (c *Client) GetTask(id string, view string) (*tes.Task, error) {
 }
 
 // ListTasks returns the result of GET /v1/tasks
-func (c *Client) ListTasks(req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 	// Build url query parameters
 	v := url.Values{}
 	addString(v, "project", req.GetProject())
@@ -79,6 +80,7 @@ func (c *Client) ListTasks(req *tes.ListTasksRequest) (*tes.ListTasksResponse, e
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
 	hreq, _ := http.NewRequest("GET", u, nil)
+	hreq.WithContext(ctx)
 	hreq.SetBasicAuth("funnel", c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
@@ -94,20 +96,26 @@ func (c *Client) ListTasks(req *tes.ListTasksRequest) (*tes.ListTasksResponse, e
 }
 
 // CreateTask POSTs a Task message to /v1/tasks
-func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
-	var err error
-	err = isValidTask(msg)
+func (c *Client) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
+	verr := tes.Validate(task)
+	if verr != nil {
+		return nil, fmt.Errorf("invalid task message: %v", verr)
+	}
+
+	var b bytes.Buffer
+	m := &jsonpb.Marshaler{}
+	err := m.Marshal(&b, task)
 	if err != nil {
-		return nil, fmt.Errorf("Not a valid Task message: %s", err)
+		return nil, fmt.Errorf("error marshaling task message: %v", err)
 	}
 
 	// Send request
-	r := bytes.NewReader(msg)
 	u := c.address + "/v1/tasks"
-	req, _ := http.NewRequest("POST", u, r)
-	req.Header.Add("Content-Type", "application/json")
-	req.SetBasicAuth("funnel", c.Password)
-	body, err := util.CheckHTTPResponse(c.client.Do(req))
+	hreq, _ := http.NewRequest("POST", u, &b)
+	hreq.WithContext(ctx)
+	hreq.Header.Add("Content-Type", "application/json")
+	hreq.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
 	}
@@ -122,12 +130,13 @@ func (c *Client) CreateTask(msg []byte) (*tes.CreateTaskResponse, error) {
 }
 
 // CancelTask POSTs to /v1/tasks/{id}:cancel
-func (c *Client) CancelTask(id string) (*tes.CancelTaskResponse, error) {
-	u := c.address + "/v1/tasks/" + id + ":cancel"
-	req, _ := http.NewRequest("POST", u, nil)
-	req.Header.Add("Content-Type", "application/json")
-	req.SetBasicAuth("funnel", c.Password)
-	body, err := util.CheckHTTPResponse(c.client.Do(req))
+func (c *Client) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+	u := c.address + "/v1/tasks/" + req.Id + ":cancel"
+	hreq, _ := http.NewRequest("POST", u, nil)
+	hreq.WithContext(ctx)
+	hreq.Header.Add("Content-Type", "application/json")
+	hreq.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +151,12 @@ func (c *Client) CancelTask(id string) (*tes.CancelTaskResponse, error) {
 }
 
 // GetServiceInfo returns result of GET /v1/tasks/service-info
-func (c *Client) GetServiceInfo() (*tes.ServiceInfo, error) {
+func (c *Client) GetServiceInfo(ctx context.Context, req *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
 	u := c.address + "/v1/tasks/service-info"
-	body, err := util.CheckHTTPResponse(c.client.Get(u))
+	hreq, _ := http.NewRequest("GET", u, nil)
+	hreq.WithContext(ctx)
+	hreq.SetBasicAuth("funnel", c.Password)
+	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
 	}
@@ -160,11 +172,14 @@ func (c *Client) GetServiceInfo() (*tes.ServiceInfo, error) {
 
 // WaitForTask polls /v1/tasks/{id} for each Id provided and returns
 // once all tasks are in a terminal state.
-func (c *Client) WaitForTask(taskIDs ...string) error {
+func (c *Client) WaitForTask(ctx context.Context, taskIDs ...string) error {
 	for range time.NewTicker(time.Second * 2).C {
 		done := false
 		for _, id := range taskIDs {
-			r, err := c.GetTask(id, "MINIMAL")
+			r, err := c.GetTask(ctx, &tes.GetTaskRequest{
+				Id:   id,
+				View: tes.TaskView_MINIMAL,
+			})
 			if err != nil {
 				return err
 			}
@@ -183,21 +198,4 @@ func (c *Client) WaitForTask(taskIDs ...string) error {
 		}
 	}
 	return nil
-}
-
-func isValidTask(b []byte) error {
-	var js tes.Task
-	err := jsonpb.UnmarshalString(string(b), &js)
-	if err != nil {
-		return err
-	}
-	verr := tes.Validate(&js)
-	if verr != nil {
-		return verr
-	}
-	return nil
-}
-
-func validateView(s string) bool {
-	return s == "MINIMAL" || s == "BASIC" || s == "FULL"
 }

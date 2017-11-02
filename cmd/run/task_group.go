@@ -2,8 +2,9 @@ package run
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 	"sync"
 )
 
@@ -45,24 +46,24 @@ func (tg *taskGroup) wait() error {
 }
 
 func (tg *taskGroup) _run(task *tes.Task, wait bool, waitFor []string) error {
-	// Marshal message to JSON
-	taskJSON, merr := tg.client.Marshaler.MarshalToString(task)
-	if merr != nil {
-		return merr
-	}
 
 	if tg.printTask {
+		// Marshal message to JSON
+		taskJSON, merr := tg.client.Marshaler.MarshalToString(task)
+		if merr != nil {
+			return merr
+		}
 		fmt.Println(taskJSON)
 		return nil
 	}
 
 	if len(waitFor) > 0 {
 		for _, tid := range waitFor {
-			tg.client.WaitForTask(tid)
+			tg.client.WaitForTask(context.Background(), tid)
 		}
 	}
 
-	resp, rerr := tg.client.CreateTask([]byte(taskJSON))
+	resp, rerr := tg.client.CreateTask(context.Background(), task)
 	if rerr != nil {
 		return rerr
 	}
@@ -71,7 +72,7 @@ func (tg *taskGroup) _run(task *tes.Task, wait bool, waitFor []string) error {
 	fmt.Println(taskID)
 
 	if wait {
-		return tg.client.WaitForTask(taskID)
+		return tg.client.WaitForTask(context.Background(), taskID)
 	}
 	return nil
 }

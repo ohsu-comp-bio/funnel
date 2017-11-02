@@ -25,7 +25,10 @@ func TestWorkerCmdRun(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	task, err := f.HTTP.GetTask(id, "FULL")
+	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_FULL,
+	})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -60,7 +63,10 @@ func TestDefaultWorkerRun(t *testing.T) {
 	w.Run(context.Background())
 	f.Wait(id)
 
-	task, err := f.HTTP.GetTask(id, "FULL")
+	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_FULL,
+	})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

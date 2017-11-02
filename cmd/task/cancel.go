@@ -2,7 +2,9 @@ package task
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/ohsu-comp-bio/funnel/client"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 	"io"
 )
 
@@ -13,7 +15,7 @@ func Cancel(server string, ids []string, writer io.Writer) error {
 	res := []string{}
 
 	for _, taskID := range ids {
-		resp, err := cli.CancelTask(taskID)
+		resp, err := cli.CancelTask(context.Background(), &tes.CancelTaskRequest{Id: taskID})
 		if err != nil {
 			return err
 		}

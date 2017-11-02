@@ -273,3 +273,14 @@ func (mapper *FileMapper) AddOutput(output *tes.TaskParameter) error {
 func (mapper *FileMapper) IsSubpath(p string, base string) bool {
 	return strings.HasPrefix(p, base)
 }
+
+// ContainerPath returns an unmapped path.
+//
+// The mapper's base dir is stripped from the path.
+// e.g. If the mapper is configured with a base dir of "/tmp/mapped_files", then
+// mapper.ContainerPath("/tmp/mapped_files/home/ubuntu/myfile") will return "/home/ubuntu/myfile".
+func (mapper *FileMapper) ContainerPath(src string) string {
+	p := strings.TrimPrefix(src, mapper.dir)
+	p = path.Clean("/" + p)
+	return p
+}

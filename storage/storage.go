@@ -13,6 +13,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -26,7 +27,7 @@ const (
 // New storage backends must support this interface.
 type Backend interface {
 	Get(ctx context.Context, url string, path string, class tes.FileType) error
-	Put(ctx context.Context, url string, path string, class tes.FileType) ([]*tes.OutputFileLog, error)
+	PutFile(ctx context.Context, url string, path string) error
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
 	// TODO would it be useful if this included the request type (Get/Put)?
@@ -50,6 +51,7 @@ func (storage Storage) Get(ctx context.Context, url string, path string, class t
 	if err != nil {
 		return err
 	}
+
 	return backend.Get(ctx, url, path, class)
 }
 
@@ -61,7 +63,43 @@ func (storage Storage) Put(ctx context.Context, url string, path string, class t
 	if err != nil {
 		return nil, err
 	}
-	return backend.Put(ctx, url, path, class)
+
+	var out []*tes.OutputFileLog
+
+	switch class {
+	case File:
+		err = backend.PutFile(ctx, url, path)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, &tes.OutputFileLog{
+			Url:       url,
+			Path:      path,
+			SizeBytes: fileSize(path),
+		})
+	case Directory:
+		var files []hostfile
+		files, err = walkFiles(path)
+
+		for _, f := range files {
+			u := strings.TrimSuffix(url, "/") + "/" + f.rel
+			err = backend.PutFile(ctx, u, f.abs)
+			if err != nil {
+				return nil, err
+			}
+
+			out = append(out, &tes.OutputFileLog{
+				Url:       u,
+				Path:      f.abs,
+				SizeBytes: f.size,
+			})
+		}
+
+	default:
+		return nil, fmt.Errorf("Unknown file class: %s", class)
+	}
+
+	return out, nil
 }
 
 // Supports indicates whether the storage supports the given request.

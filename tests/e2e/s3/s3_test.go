@@ -86,7 +86,7 @@ func TestS3StorageTask(t *testing.T) {
 		t.Fatal("Unexpected task failure")
 	}
 
-	expected := "/opt/inputs/test-file.txt /opt/inputs/test-directory/bar.txt /opt/inputs/test-directory/foo.txt\n"
+	expected := "/opt/inputs/test-directory/bar.txt /opt/inputs/test-directory/foo.txt /opt/inputs/test-file.txt\n"
 
 	s := storage.Storage{}
 	s, err = s.WithConfig(conf.Worker.Storage)

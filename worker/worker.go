@@ -185,6 +185,10 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 			outputs = append(outputs, out...)
 		}
 	}
+	// unmap paths for OutputFileLog
+	for _, o := range outputs {
+		o.Path = r.Mapper.ContainerPath(o.Path)
+	}
 
 	if run.ok() {
 		r.Event.Outputs(outputs)

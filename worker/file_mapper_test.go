@@ -158,4 +158,10 @@ func TestMapTask(t *testing.T) {
 		}
 		t.Fatal("unexpected mapper volumes")
 	}
+
+	if f.ContainerPath(f.Outputs[0].Path) != task.Outputs[0].Path {
+		t.Log("Expected", task.Outputs[0].Path)
+		t.Log("Actual", f.ContainerPath(f.Outputs[0].Path))
+		t.Fatal("path unmapping failed")
+	}
 }

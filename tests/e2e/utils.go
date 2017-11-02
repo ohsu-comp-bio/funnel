@@ -9,7 +9,7 @@ import (
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 
-	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/ohsu-comp-bio/funnel/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
 	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"

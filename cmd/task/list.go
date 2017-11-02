@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/elgs/jsonql"
-	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 	"io"
 	"strings"
 )
@@ -25,7 +26,7 @@ func List(server, taskListView, taskState, taskName string, writer io.Writer) er
 	var page string
 	var taskArr []interface{}
 	for {
-		resp, err := cli.ListTasks(&tes.ListTasksRequest{
+		resp, err := cli.ListTasks(context.Background(), &tes.ListTasksRequest{
 			View:      tes.TaskView(view),
 			PageToken: page,
 		})

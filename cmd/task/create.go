@@ -1,35 +1,38 @@
 package task
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/golang/protobuf/proto"
+	"github.com/ohsu-comp-bio/funnel/client"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
 )
 
 // Create runs the "task create" CLI command, connecting to the server,
 // calling CreateTask, and writing output to the given writer.
-// Tasks are loaded from the "messages" arg. "messages" may contain either
-// file paths or JSON objects.
-func Create(server string, messages []string, writer io.Writer) error {
+// Tasks are loaded from the "files" arg. "files" are file paths to JSON objects.
+func Create(server string, files []string, writer io.Writer) error {
 	cli := client.NewClient(server)
 	res := []string{}
 
-	for _, task := range messages {
+	for _, taskFile := range files {
 		var err error
 		var taskMessage []byte
+		var task tes.Task
 
-		if isJSON(task) {
-			taskMessage = []byte(task)
-		} else {
-			taskMessage, err = ioutil.ReadFile(task)
-			if err != nil {
-				return err
-			}
+		taskMessage, err = ioutil.ReadFile(taskFile)
+		if err != nil {
+			return err
 		}
 
-		r, err := cli.CreateTask(taskMessage)
+		err = proto.Unmarshal(taskMessage, &task)
+		if err != nil {
+			return err
+		}
+
+		r, err := cli.CreateTask(context.Background(), &task)
 		if err != nil {
 			return err
 		}
@@ -41,9 +44,4 @@ func Create(server string, messages []string, writer io.Writer) error {
 	}
 
 	return nil
-}
-
-func isJSON(s string) bool {
-	var js map[string]interface{}
-	return json.Unmarshal([]byte(s), &js) == nil
 }

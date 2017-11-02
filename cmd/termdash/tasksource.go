@@ -2,8 +2,9 @@ package termdash
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 	"sort"
 	"sync"
 )
@@ -43,7 +44,7 @@ func (cm *TaskSource) listTasks() TaskWidgets {
 	}()
 
 	for {
-		resp, err := cm.client.ListTasks(&tes.ListTasksRequest{
+		resp, err := cm.client.ListTasks(context.Background(), &tes.ListTasksRequest{
 			View:      tes.TaskView_BASIC,
 			PageToken: page,
 		})
@@ -89,7 +90,10 @@ func (cm *TaskSource) Get(id string) *TaskWidget {
 		}
 	}()
 
-	task, err := cm.client.GetTask(id, "FULL")
+	task, err := cm.client.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_FULL,
+	})
 	if err != nil {
 		panic(err)
 	}

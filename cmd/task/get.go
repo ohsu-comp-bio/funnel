@@ -2,7 +2,9 @@ package task
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/client"
+	"github.com/ohsu-comp-bio/funnel/client"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 	"io"
 )
 
@@ -13,8 +15,16 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 	cli := client.NewClient(server)
 	res := []string{}
 
+	view, ok := tes.TaskView_value[taskView]
+	if !ok {
+		return fmt.Errorf("Unknown task view: %s", taskView)
+	}
+
 	for _, taskID := range ids {
-		resp, err := cli.GetTask(taskID, taskView)
+		resp, err := cli.GetTask(context.Background(), &tes.GetTaskRequest{
+			Id:   taskID,
+			View: tes.TaskView(view),
+		})
 		if err != nil {
 			return err
 		}

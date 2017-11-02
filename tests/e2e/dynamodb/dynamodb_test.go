@@ -69,9 +69,12 @@ func TestGetUnknownTask(t *testing.T) {
 	setLogOutput(t)
 	var err error
 
-	_, err = fun.HTTP.GetTask("nonexistent-task-id", "MINIMAL")
+	_, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   "nonexistent-task-id",
+		View: tes.TaskView_MINIMAL,
+	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
-		t.Fatal("expected not found error")
+		t.Fatalf("expected not found error: %s", err)
 	}
 
 	_, err = fun.RPC.GetTask(
@@ -80,7 +83,7 @@ func TestGetUnknownTask(t *testing.T) {
 	)
 	s, _ := status.FromError(err)
 	if err == nil || s.Code() != codes.NotFound {
-		t.Fatal("expected not found error")
+		t.Fatal("expected not found error", err)
 	}
 }
 
@@ -146,7 +149,10 @@ func TestGetTaskView(t *testing.T) {
 	}
 
 	// test http proxy
-	task, err = fun.HTTP.GetTask(id, "MINIMAL")
+	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_MINIMAL,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +167,10 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	task, err = fun.HTTP.GetTask(id, "BASIC")
+	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_BASIC,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,7 +195,10 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected TaskParameter contents included in basic view")
 	}
 
-	task, err = fun.HTTP.GetTask(id, "FULL")
+	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_FULL,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +272,7 @@ func TestListTaskView(t *testing.T) {
 
 	// test http proxy
 	var r *tes.ListTasksResponse
-	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+	r, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
 		View: tes.TaskView_MINIMAL,
 	})
 	if err != nil {
@@ -281,7 +293,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+	r, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
 		View: tes.TaskView_BASIC,
 	})
 	if err != nil {
@@ -305,7 +317,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
 
-	r, err = fun.HTTP.ListTasks(&tes.ListTasksRequest{
+	r, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
 		View: tes.TaskView_FULL,
 	})
 	if err != nil {
@@ -391,7 +403,9 @@ func TestCancelUnknownTask(t *testing.T) {
 	setLogOutput(t)
 	var err error
 
-	_, err = fun.HTTP.CancelTask("nonexistent-task-id")
+	_, err = fun.HTTP.CancelTask(context.Background(), &tes.CancelTaskRequest{
+		Id: "nonexistent-task-id",
+	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
 		t.Fatal("expected not found error")
 	}

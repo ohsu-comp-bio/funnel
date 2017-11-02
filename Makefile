@@ -81,10 +81,6 @@ lint:
 		./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 
-# Run fast-running Go tests
-test-short:
-	@go test -short $(TESTS)
-
 # Run all tests
 test:
 	@go test $(TESTS)

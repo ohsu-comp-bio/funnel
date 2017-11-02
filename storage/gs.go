@@ -114,51 +114,8 @@ func download(call *storage.ObjectsGetCall, hostPath string) error {
 	return nil
 }
 
-// Put copies an object (file) from the host path to GS.
-func (gs *GSBackend) Put(ctx context.Context, rawurl string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	var out []*tes.OutputFileLog
-
-	switch class {
-	case File:
-		err := gs.put(ctx, rawurl, hostPath)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, &tes.OutputFileLog{
-			Url:       rawurl,
-			Path:      hostPath,
-			SizeBytes: fileSize(hostPath),
-		})
-
-	case Directory:
-		files, err := walkFiles(hostPath)
-
-		for _, f := range files {
-			u := rawurl + "/" + f.rel
-			out = append(out, &tes.OutputFileLog{
-				Url:       u,
-				Path:      f.abs,
-				SizeBytes: f.size,
-			})
-			err := gs.put(ctx, u, f.abs)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-	default:
-		return nil, fmt.Errorf("Unknown file class: %s", class)
-	}
-
-	return out, nil
-}
-
-func (gs *GSBackend) put(ctx context.Context, rawurl, hostPath string) error {
-
+// PutFile copies an object (file) from the host path to GS.
+func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
 	url, perr := parse(rawurl)
 	if perr != nil {
 		return perr

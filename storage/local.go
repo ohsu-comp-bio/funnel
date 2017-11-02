@@ -68,59 +68,19 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	return nil
 }
 
-// Put copies a file from the hostPath into storage.
-func (local *LocalBackend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
+// PutFile copies a file from the hostPath into storage.
+func (local *LocalBackend) PutFile(ctx context.Context, url string, hostPath string) error {
 	path, ok := getPath(url)
 
 	if !ok {
-		return nil, fmt.Errorf("local storage does not support put on %s", url)
+		return fmt.Errorf("local storage does not support put on %s", url)
 	}
 
 	if !isAllowed(path, local.allowedDirs) {
-		return nil, fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
+		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
 	}
 
-	var out []*tes.OutputFileLog
-	var err error
-
-	switch class {
-	case File:
-		err = linkFile(hostPath, path)
-		out = append(out, &tes.OutputFileLog{
-			Url:       url,
-			Path:      path,
-			SizeBytes: fileSize(hostPath),
-		})
-
-	case Directory:
-
-		var files []hostfile
-		files, err = walkFiles(hostPath)
-
-		for _, f := range files {
-			u := filepath.Join(path, f.rel)
-			err := linkFile(f.abs, u)
-
-			if err != nil {
-				return nil, err
-			}
-
-			out = append(out, &tes.OutputFileLog{
-				Url:       u,
-				Path:      f.abs,
-				SizeBytes: f.size,
-			})
-		}
-
-	default:
-		return nil, fmt.Errorf("Unknown file class: %s", class)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
+	return linkFile(hostPath, path)
 }
 
 // Supports indicates whether this backend supports the given storage request.

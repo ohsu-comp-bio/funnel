@@ -30,10 +30,11 @@ func authed(t *testing.T) *GSBackend {
 func TestAnonymousGet(t *testing.T) {
 	ctx := context.Background()
 	conf := config.GSStorage{}
-	gs, err := NewGSBackend(conf)
+	g, err := NewGSBackend(conf)
 	if err != nil {
 		t.Fatal(err)
 	}
+	gs := Storage{}.WithBackend(g)
 
 	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", tes.FileType_FILE)
 	if gerr != nil {
@@ -43,7 +44,8 @@ func TestAnonymousGet(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	ctx := context.Background()
-	gs := authed(t)
+	g := authed(t)
+	gs := Storage{}.WithBackend(g)
 
 	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/downloaded", tes.FileType_FILE)
 	if gerr != nil {
@@ -53,7 +55,8 @@ func TestGet(t *testing.T) {
 
 func TestPut(t *testing.T) {
 	ctx := context.Background()
-	gs := authed(t)
+	g := authed(t)
+	gs := Storage{}.WithBackend(g)
 
 	_, gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com/go_test_put", "_test_files/for_put", tes.FileType_FILE)
 	if gerr != nil {
@@ -63,7 +66,8 @@ func TestPut(t *testing.T) {
 
 func TestTrimSlashes(t *testing.T) {
 	ctx := context.Background()
-	gs := authed(t)
+	g := authed(t)
+	gs := Storage{}.WithBackend(g)
 
 	_, gerr := gs.Put(ctx, "gs://ohsu-cromwell-testing.appspot.com///go_test_put", "_test_files/for_put", tes.FileType_FILE)
 	if gerr != nil {

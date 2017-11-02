@@ -127,8 +127,8 @@ func (s3b *S3Backend) Get(ctx context.Context, url string, hostPath string, clas
 	return nil
 }
 
-// Put copies an object (file) from the host path to S3.
-func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, class tes.FileType) ([]*tes.OutputFileLog, error) {
+// PutFile copies an object (file) from the host path to S3.
+func (s3b *S3Backend) PutFile(ctx context.Context, url string, hostPath string) error {
 
 	path := strings.TrimPrefix(url, S3Protocol)
 	split := strings.SplitN(path, "/", 2)
@@ -138,81 +138,29 @@ func (s3b *S3Backend) Put(ctx context.Context, url string, hostPath string, clas
 	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, bucket, "us-east-1")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
-			return nil, fmt.Errorf("unable to find bucket %s's region not found", bucket)
+			return fmt.Errorf("unable to find bucket %s's region not found", bucket)
 		}
-		return nil, err
+		return err
 	}
 
 	// Create a uploader with the session and default options
 	sess := s3b.sess.Copy(&aws.Config{Region: aws.String(region)})
 	manager := s3manager.NewUploader(sess)
 
-	var out []*tes.OutputFileLog
-
-	switch class {
-	case File:
-		fh, err := os.Open(hostPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open file %q, %v", hostPath, err)
-		}
-		_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-			Body:   fh,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		err = fh.Close()
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, &tes.OutputFileLog{
-			Url:       url,
-			Path:      hostPath,
-			SizeBytes: fileSize(hostPath),
-		})
-
-	case Directory:
-		files, err := walkFiles(hostPath)
-		if err != nil {
-			return nil, err
-		}
-		for _, f := range files {
-			u := url + "/" + f.rel
-			fh, err := os.Open(f.abs)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open file %q, %v", f.abs, err)
-			}
-			defer fh.Close()
-			_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
-				Bucket: aws.String(bucket),
-				Key:    aws.String(key + "/" + f.rel),
-				Body:   fh,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			err = fh.Close()
-			if err != nil {
-				return nil, err
-			}
-
-			out = append(out, &tes.OutputFileLog{
-				Url:       u,
-				Path:      f.abs,
-				SizeBytes: f.size,
-			})
-		}
-
-	default:
-		return nil, fmt.Errorf("Unknown file class: %s", class)
+	fh, err := os.Open(hostPath)
+	if err != nil {
+		return fmt.Errorf("failed to open file %q, %v", hostPath, err)
+	}
+	_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   fh,
+	})
+	if err != nil {
+		return err
 	}
 
-	return out, nil
+	return fh.Close()
 }
 
 // Supports indicates whether this backend supports the given storage request.

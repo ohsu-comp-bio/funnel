@@ -29,7 +29,7 @@ func TestLocalGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	logger.Debug("TEMP DIR", tmp)
-	l := LocalBackend{allowedDirs: []string{tmp}}
+	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	// File test
 	ip := path.Join(tmp, "input.txt")
@@ -78,7 +78,7 @@ func TestLocalGetPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	logger.Debug("TEMP DIR", tmp)
-	l := LocalBackend{allowedDirs: []string{tmp}}
+	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
@@ -106,7 +106,7 @@ func TestLocalPut(t *testing.T) {
 		t.Fatal(err)
 	}
 	logger.Debug("TEMP DIR", tmp)
-	l := LocalBackend{allowedDirs: []string{tmp}}
+	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	// File test
 	cp := path.Join(tmp, "container.txt")
@@ -132,7 +132,6 @@ func TestLocalPut(t *testing.T) {
 	cdf := path.Join(cd, "other.txt")
 	od := path.Join(tmp, "subout")
 	ioutil.WriteFile(cdf, []byte("bar"), os.ModePerm)
-
 	_, gerr = l.Put(ctx, "file://"+od, cd, tes.FileType_DIRECTORY)
 	if gerr != nil {
 		t.Fatal(gerr)
@@ -155,7 +154,7 @@ func TestLocalPutPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	logger.Debug("TEMP DIR", tmp)
-	l := LocalBackend{allowedDirs: []string{tmp}}
+	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")

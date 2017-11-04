@@ -223,6 +223,12 @@ func (n *Node) runTask(ctx context.Context, id string) {
 		}
 	}()
 
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("caught panic task worker", r)
+		}
+	}()
+
 	r, err := n.newWorker(n.workerConf, id, log)
 	if err != nil {
 		log.Error("error creating worker", err)

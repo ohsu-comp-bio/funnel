@@ -74,7 +74,7 @@ app.controller('NodeListController', function($scope, NgTableParams, $http, $int
   $scope.tableParams = new NgTableParams(
     {
       count: 25,
-      sorting: { state: "asc" },
+      sorting: { id: "asc" },
     }, 
     {
       counts: [25, 50, 100],

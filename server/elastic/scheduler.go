@@ -130,6 +130,7 @@ func (es *Elastic) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*p
 	res, err := es.client.Search().
 		Index(es.nodeIndex).
 		Type("node").
+		Size(1000).
 		Do(ctx)
 
 	if err != nil {

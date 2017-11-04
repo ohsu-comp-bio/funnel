@@ -26,7 +26,8 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 	res, err := es.client.Search().
 		Index(es.taskIndex).
 		Type("task").
-		SortBy(idFieldSort).
+		Size(n).
+		Sort("id", true).
 		Query(q).
 		Do(ctx)
 
@@ -70,6 +71,8 @@ func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 	if err != nil {
 		return nil, err
 	}
+	// Must happen after the unmarshal
+	node.Version = *res.Version
 	return node, nil
 }
 
@@ -78,19 +81,26 @@ func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 // For optimisic locking, if the node already exists and node.Version
 // doesn't match the version in the database, an error is returned.
 func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
-	res, err := es.client.Get().
+	g := es.client.Get().
 		Index(es.nodeIndex).
 		Type("node").
-		Id(node.Id).
-		Do(ctx)
+		Preference("_primary").
+		Id(node.Id)
+
+		// If the version is 0, then this should be creating a new node.
+	if node.GetVersion() != 0 {
+		g = g.Version(node.GetVersion())
+	}
+
+	res, err := g.Do(ctx)
+
+	if err != nil && !elastic.IsNotFound(err) {
+		return nil, err
+	}
 
 	existing := &pbs.Node{}
 	if err == nil {
 		jsonpb.Unmarshal(bytes.NewReader(*res.Source), existing)
-	}
-
-	if existing.GetVersion() != 0 && node.Version != existing.GetVersion() {
-		return nil, fmt.Errorf("Version outdated")
 	}
 
 	err = scheduler.UpdateNode(ctx, &TES{Elastic: es}, node, existing)
@@ -104,13 +114,18 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 		return nil, err
 	}
 
-	_, err = es.client.Index().
+	i := es.client.Index().
 		Index(es.nodeIndex).
 		Type("node").
 		Id(node.Id).
 		Refresh("true").
-		BodyString(s).
-		Do(ctx)
+		BodyString(s)
+
+	if node.GetVersion() != 0 {
+		i = i.Version(node.GetVersion())
+	}
+	_, err = i.Do(ctx)
+
 	return &pbs.PutNodeResponse{}, err
 }
 
@@ -120,6 +135,7 @@ func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) error {
 		Index(es.nodeIndex).
 		Type("node").
 		Id(node.Id).
+		Version(node.Version).
 		Refresh("true").
 		Do(ctx)
 	return err
@@ -130,6 +146,8 @@ func (es *Elastic) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*p
 	res, err := es.client.Search().
 		Index(es.nodeIndex).
 		Type("node").
+		Version(true).
+		Size(1000).
 		Do(ctx)
 
 	if err != nil {
@@ -143,6 +161,7 @@ func (es *Elastic) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*p
 		if err != nil {
 			return nil, err
 		}
+		node.Version = *hit.Version
 		resp.Nodes = append(resp.Nodes, node)
 	}
 

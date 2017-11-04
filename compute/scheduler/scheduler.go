@@ -109,13 +109,21 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 			offer.Node.TaskIds = append(offer.Node.TaskIds, task.Id)
 			_, err = s.DB.PutNode(ctx, offer.Node)
 			if err != nil {
-				s.Log.Error("Error in AssignTask", err)
+				s.Log.Error("Error in AssignTask",
+					"error", err,
+					"taskID", task.Id,
+					"nodeID", offer.Node.Id,
+				)
 				continue
 			}
 
 			err = s.DB.WriteContext(ctx, events.NewState(task.Id, 0, tes.State_INITIALIZING))
 			if err != nil {
-				s.Log.Error("Error marking task as initializing", err)
+				s.Log.Error("Error marking task as initializing",
+					"error", err,
+					"taskID", task.Id,
+					"nodeID", offer.Node.Id,
+				)
 			}
 		} else {
 			s.Log.Debug("Scheduling failed for task", "taskID", task.Id)

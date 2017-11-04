@@ -33,6 +33,7 @@ message Node {
   int64 version = 14;
   map<string,string> metadata = 15;
   repeated string task_ids = 16;
+  int64 last_ping = 17;
 }
 
 message ListNodesRequest {}

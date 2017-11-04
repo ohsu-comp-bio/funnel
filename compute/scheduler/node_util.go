@@ -29,8 +29,8 @@ func UpdateNode(ctx context.Context, cli tes.TaskServiceServer, node, existing *
 
 	// Update available resources.
 	node.Available = AvailableResources(tasks, node.Resources)
-	// Update version.
-	node.Version = time.Now().UnixNano()
+	// Update last ping time.
+	node.LastPing = time.Now().UnixNano()
 
 	// Merge metadata
 	meta := map[string]string{}
@@ -108,14 +108,14 @@ func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
 			continue
 		}
 
-		if node.Version == 0 {
+		if node.LastPing == 0 {
 			// This shouldn't be happening, because nodes should be
 			// created with LastPing, but give it the benefit of the doubt
 			// and leave it alone.
 			continue
 		}
 
-		lastPing := time.Unix(0, node.Version)
+		lastPing := time.Unix(0, node.LastPing)
 		d := time.Since(lastPing)
 
 		if node.State == pbs.NodeState_UNINITIALIZED || node.State == pbs.NodeState_INITIALIZING {

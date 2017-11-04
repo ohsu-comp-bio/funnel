@@ -180,6 +180,7 @@ func (n *Node) sync(ctx context.Context) {
 
 func (n *Node) runTask(ctx context.Context, id string) {
 	log := n.log.WithFields("ns", "worker", "taskID", id)
+	log.Info("Running task")
 
 	defer n.workers.Remove(id)
 	defer func() {
@@ -235,6 +236,7 @@ func (n *Node) runTask(ctx context.Context, id string) {
 		return
 	}
 	r.Run(ctx)
+	log.Info("Task complete")
 }
 
 // Check if the node is idle. If so, start the timeout timer.

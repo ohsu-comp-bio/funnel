@@ -196,6 +196,7 @@ func (es *Elastic) updateTask(ctx context.Context, task *tes.Task) error {
 		Index(es.taskIndex).
 		Type("task").
 		Id(task.Id).
+		Refresh("true").
 		BodyString(s).
 		Do(ctx)
 	return err

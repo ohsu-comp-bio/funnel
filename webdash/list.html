@@ -1,17 +1,24 @@
 <div ng-controller="TaskListController" class="task-list-page">
-  <div class="board">
 
-    <h4>Tasks</h4>
-
-    <table ng-table="tableParams" class="task-list-table">
-      <tr ng-repeat="task in $data"> 
-        <td data-title="'ID'" filter="{id: 'text'}" sortable="'id'"><a href="/#/tasks/{{task.id}}">{{ shortID(task.id) }}</a></td>
-        <td data-title="'State'" filter="{state: 'text'}" sortable="'state'">{{task.state}}</td>
-        <td data-title="'Name'" filter="{name: 'text'}" sortable="'name'">{{task.name}}</td>
-        <td data-title="'Description'" filter="{description: 'text'}" sortable="'description'">{{task.description}}</td>
-        <td><button class="btn-cancel mdl-button--icon" ng-disabled="task.state == 'COMPLETE' || task.state == 'ERROR' || task.state == 'CANCELED' || task.state == 'SYSTEM_ERROR'" ng-click=cancelTask(task.id)><i class="material-icons">clear</i></button></td>
+  <table class="task-list-table">
+    <thead>
+      <th>ID</th>
+      <th>State</th>
+      <th>Name</th>
+      <th></th>
+    </thead>
+    <tbody>
+      <tr ng-repeat="task in tasks track by task.id" ng-class="task.state + '-state'"> 
+        <td class="task-list-id"><a href="/#/tasks/{{task.id}}">{{ task.id }}</a></td>
+        <td>{{ task.state }}</td>
+        <td class="task-list-name">{{ task.name }}</td>
+        <td class="task-list-cancel"><button
+          class="btn-cancel mdl-button--icon"
+          ng-hide="isDone(task)"
+          ng-click=cancelTask(task.id)><i class="material-icons">clear</i></button></td>
       </tr>
-    </table> 
+    </tbody>
+  </table> 
+  <div class="pager" ng-show="nextPage"><a href="{{ nextPage }}">Next page</a></div>
 
-  </div>
 </div>

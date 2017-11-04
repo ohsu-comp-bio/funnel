@@ -25,9 +25,11 @@
 
   .drawer {
     @extend .mdl-layout__drawer, .mdl-color--blue-grey-900, .mdl-color-text--blue-grey-50;
+    border: 0;
 
     nav {
       @extend .mdl-navigation, .mdl-color--blue-grey-800;
+      padding-top: 0;
 
       a {
         @extend .mdl-navigation__link;
@@ -39,34 +41,78 @@
 
 main {
   @extend .mdl-layout__content;
-
-  .board {
-    @extend .mdl-color--white, .mdl-shadow--2dp, .mdl-cell, .mdl-cell--12-col;
-  }
+  overflow: scroll;
 }
 
-.board {
-  padding: 10px;
+.node-list-table,
+.task-list-table {
+  @extend .mdl-data-table;
 
-  h4 {
-    margin: 0px;
-    margin-bottom: 20px;
+  width: 100%;
+  td, tr, th {
+    text-align: left;
   }
 }
 
 .node-list-table,
-.task-list-table, .task-desc-table, .data-table {
+.task-list-table {
+  .DEAD-state,
+  .SYSTEM_ERROR-state,
+  .ERROR-state {
+    border-right: 10px solid #bd0d0d;
+  }
+  .COMPLETE-state {
+    border-right: 10px solid #39aa56;
+  }
+  .INITILIZING-state,
+  .RUNNING-state {
+    border-right: 10px solid #cdb62c;
+  }
+  .CANCELED-state {
+    border-right: 10px solid #ddd;
+  }
+  .UNKNOWN-state, .QUEUED-state {
+    border-right: 10px solid white;
+  }
+}
+
+.pager {
+  text-align: right;
+  padding: 10px 50px;
+}
+
+.data-table,
+.task-desc-table {
+  .DEAD-state,
+  .SYSTEM_ERROR-state,
+  .ERROR-state {
+    color: #bd0d0d;
+  }
+  .COMPLETE-state {
+    color: #39aa56;
+  }
+  .INITILIZING-state,
+  .RUNNING-state {
+    color: #cdb62c;
+  }
+}
+
+.task-desc-table, .data-table {
   @extend .mdl-data-table;
+
   width: 100%;
-  table-layout: fixed;
+  border-width: 0;
+  margin-top: 20px;
 
   td {
     text-align: left;
-    white-space: pre-wrap; /* css-3 */
-    white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
-    white-space: -pre-wrap; /* Opera 4-6 */
-    white-space: -o-pre-wrap; /* Opera 7 */
-    word-wrap: break-word; /* Internet Explorer 5.5+ */
+    border: 0;
+    padding: 5px;
+    height: 20px;
+  }
+
+  tbody tr {
+    height: 20px;
   }
 
   th {
@@ -74,27 +120,8 @@ main {
   }
 }
 
-.task-list-table {
-
-  td, th { 
-    &:nth-child(1) {
-      width: 10%;
-    }
-    &:nth-child(2) {
-      width: 10%;
-    }
-    &:nth-child(3) {
-      width: 30%;
-    }
-    &:nth-child(4) {
-      width: 30%;
-    }
-    &:nth-child(5) {
-      width: 5%;
-    }
-  }
-}
-
+.executor-table,
+.data-table,
 .task-desc-table {
   tr {
     width: 100%;
@@ -103,6 +130,7 @@ main {
     &:nth-child(1) {
       width: 15%;
       font-weight: bold;
+      color: #636363;
     }
     &:nth-child(2) {
       width: 85%;
@@ -110,14 +138,23 @@ main {
   }
 }
 
-th.header.sortable.sort-asc,
-th.header.sortable.sort-desc {
-  background-color: transparent;
+.task-list-name {
+  width: 100%;
 }
 
-.ng-table-pager {
-  margin: 20px 0 20px 0;
-  height: 50px
+.executor-table {
+  margin-bottom: 20px;
+}
+
+.layout header .header-row {
+  padding-left: 20px;
+}
+
+main h6 {
+  padding-left: 20px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  margin-top: 50px;
 }
 
 .btn-group {
@@ -137,6 +174,10 @@ th.header.sortable.sort-desc {
   &:not(:last-child) {
     border-right: none;
   }
+}
+
+.btn-cancel-simple {
+  margin-left: 20px;
 }
 
 .btn-cancel, .mdl-button--icon, .mdl-button--raised {
@@ -163,49 +204,4 @@ th.header.sortable.sort-desc {
     background-color: #FF3D00;
     border-color: #FF3D00;
   }
-}
-
-.pagination {
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  display: inline-block;
-}
-
-.pagination li {
-  display: inline;
-}
-
-.pagination li:first-child a {
-  color: #000000;
-  border-left-width: 1px;
-}
-
-.pagination a {
-  float: left;
-  padding: 0 14px;
-  line-height: 34px;
-  color: #000000;
-  text-decoration: none;
-  border: 1px solid #ddd;
-  border-left-width: 0;
-}
-
-.pagination a:hover {
-  background-color: #F5F5F5;
-  color: #000000;
-  cursor: pointer;
-}
-
-.pagination .active a, 
-.pagination .active a:hover {
-  background-color: #ddd;
-  color: #000000;
-  cursor: default;
-}
-
-.pagination .disabled a {
-  color: #fff;
-  background-color: transparent;
-  cursor: default;
 }

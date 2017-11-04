@@ -1,14 +1,17 @@
 <div ng-controller="NodeListController" class="node-list-page">
-  <div class="board">
+  <table class="node-list-table">
+    <thead>
+      <th>ID</th>
+      <th>Tasks</th>
+      <th>State</th>
+    </thead>
+    <tbody>
+    <tr ng-repeat="node in nodes track by node.id" ng-class="node.state + '-state'"> 
+      <td><a href="/#/nodes/{{node.id}}">{{ node.id }}</a></td>
+      <td>{{ node.tasks.length }}</td>
+      <td>{{ node.state }}</td>
+    </tr>
+    </tbody>
+  </table> 
 
-    <h4>Nodes</h4>
-
-    <table ng-table="tableParams" class="node-list-table">
-      <tr ng-repeat="node in $data"> 
-        <td data-title="'ID'" filter="{'id': 'text'}" sortable="'id'"><a href="/#/nodes/{{node.id}}">{{ node.id }}</a></td>
-        <td data-title="'State'" filter="{'state': 'text'}" sortable="'state'">{{node.state}}</td>
-      </tr>
-    </table> 
-
-  </div>
 </div>

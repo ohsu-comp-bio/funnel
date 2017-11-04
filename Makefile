@@ -110,14 +110,21 @@ test-s3:
 test-openstack:
 	@go test ./tests/e2e/openstack -openstack-e2e-config ${FUNNEL_OPENSTACK_TEST_CONFIG}
 
-# Build the web dashboard
-webdash:
-	@mkdir -p build/webdash
+webdash-install:
 	@npm install --prefix ./webdash
+	@go get -u github.com/jteeuwen/go-bindata/...
+
+webdash-prep:
+	@mkdir -p build/webdash
 	@./webdash/node_modules/.bin/browserify webdash/app.js -o build/webdash/bundle.js
 	@./webdash/node_modules/.bin/node-sass webdash/style.scss build/webdash/style.css
 	@cp webdash/*.html build/webdash/
-	@go get -u github.com/jteeuwen/go-bindata/...
+
+webdash-debug: webdash-prep
+	@go-bindata -debug -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
+
+# Build the web dashboard
+webdash: webdash-prep
 	@go-bindata -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
 
 # Build binaries for all OS/Architectures

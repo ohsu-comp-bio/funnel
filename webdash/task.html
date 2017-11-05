@@ -1,127 +1,135 @@
 <div ng-controller="TaskInfoController">
-    <table class="task-desc-table">
-      <tr>
+
+  <header>
+    <div class="header-row">
+      <span class="header-title">Tasks</span>
+      <div class="header-spacer"></div>
+    </div>
+  </header>
+
+  <table class="task-desc-table">
+    <tr>
+      <td>Name</td>
+      <td>{{ task.name }}</td>
+    </tr>
+    <tr>
+      <td>ID</td>
+      <td>{{ task.id}}</td>
+    </tr>
+    <tr ng-show="task.description">
+      <td>Description</td>
+      <td>{{ task.description }}</td>
+    </tr>
+    <tr>
+      <td>State</td>
+      <td><span ng-class="task.state + '-state'">{{ task.state }}</span> <button class="btn-cancel-simple" ng-click="cancelTask(task.id)" ng-hide="isDone(task)">Cancel</button>
+      </td>
+    </tr>
+    <tr ng-show="resources(task)">
+      <td>Resources</td>
+      <td>{{ resources(task) }}</td>
+    </tr>
+    <tr ng-show="task.logs[0].start_time">
+      <td>Start Time</td>
+      <td>{{ task.logs[0].start_time | date:"medium" }}</td>
+    </tr>
+    <tr ng-show="task.logs[0].end_time">
+      <td>End Time</td>
+      <td>{{ task.logs[0].end_time | date:"medium" }}</td>
+    </tr>
+  </table>
+
+  <div ng-show="task.inputs">
+    <h6>Inputs</h6>
+    <table class="data-table" ng-repeat="input in task.inputs track by $index">
+      <tr ng-show="input.name">
         <td>Name</td>
-        <td>{{ task.name }}</td>
+        <td>{{ input.name }}</td>
+      </tr>
+      <tr ng-show="input.description">
+        <td>{{ input.description }}</td>
       </tr>
       <tr>
-        <td>ID</td>
-        <td>{{ task.id}}</td>
-      </tr>
-      <tr ng-show="task.description">
-        <td>Description</td>
-        <td>{{ task.description }}</td>
+        <td>URL</td>
+        <td>{{ input.url }}</td>
       </tr>
       <tr>
-        <td>State</td>
-        <td><span ng-class="task.state + '-state'">{{ task.state }}</span> <button class="btn-cancel-simple" ng-click="cancelTask(task.id)" ng-hide="isDone(task)">Cancel</button>
-        </td>
+        <td>Path</td>
+        <td>{{ input.path }}</td>
       </tr>
-      <tr ng-show="resources(task)">
-        <td>Resources</td>
-        <td>{{ resources(task) }}</td>
-      </tr>
-      <tr ng-show="task.logs[0].start_time">
-        <td>Start Time</td>
-        <td>{{ task.logs[0].start_time | date:"medium" }}</td>
-      </tr>
-      <tr ng-show="task.logs[0].end_time">
-        <td>End Time</td>
-        <td>{{ task.logs[0].end_time | date:"medium" }}</td>
+      <tr ng-show="input.type == 'DIRECTORY'">
+        <td>Directory</td>
+        <td>Yes</td>
       </tr>
     </table>
+  </div>
 
-    <div ng-show="task.inputs">
-      <h6>Inputs</h6>
-      <table class="data-table" ng-repeat="input in task.inputs track by $index">
-        <tr ng-show="input.name">
-          <td>Name</td>
-          <td>{{ input.name }}</td>
-        </tr>
-        <tr ng-show="input.description">
-          <td>{{ input.description }}</td>
-        </tr>
-        <tr>
-          <td>URL</td>
-          <td>{{ input.url }}</td>
-        </tr>
-        <tr>
-          <td>Path</td>
-          <td>{{ input.path }}</td>
-        </tr>
-        <tr ng-show="input.type == 'DIRECTORY'">
-          <td>Directory</td>
-          <td>Yes</td>
-        </tr>
-      </table>
-    </div>
-
-    <div ng-show="task.outputs">
-      <h6>Outputs</h6>
-      <table class="data-table" ng-repeat="output in task.outputs track by $index">
-        <tr ng-show="output.name">
-          <td>Name</td>
-          <td>{{ output.name }}</td>
-        </tr>
-        <tr ng-show="output.description">
-          <td>{{ output.description }}</td>
-        </tr>
-        <tr>
-          <td>URL</td>
-          <td>{{ output.url }}</td>
-        </tr>
-        <tr>
-          <td>Path</td>
-          <td>{{ output.path }}</td>
-        </tr>
-        <tr ng-show="output.type == 'DIRECTORY'">
-          <td>Directory</td>
-          <td>Yes</td>
-        </tr>
-      </table>
-    </div>
-
-    <h6>Executors</h6>
-    <table class="data-table executor-table"
-      ng-repeat="cmd in task.executors track by $index"
-      ng-init="logs = task.logs[0].logs[$index]">
-
-      <tr>
-        <td>Command</td>
-        <td><code>{{ cmdStr(cmd.cmd) }}</code></td>
+  <div ng-show="task.outputs">
+    <h6>Outputs</h6>
+    <table class="data-table" ng-repeat="output in task.outputs track by $index">
+      <tr ng-show="output.name">
+        <td>Name</td>
+        <td>{{ output.name }}</td>
+      </tr>
+      <tr ng-show="output.description">
+        <td>{{ output.description }}</td>
       </tr>
       <tr>
-        <td>Image</td>
-        <td>{{ cmd.image_name }}</td>
+        <td>URL</td>
+        <td>{{ output.url }}</td>
       </tr>
-
-      <tr ng-show="logs.exit_code != undefined">
-        <td>Exit Code</td>
-        <td>{{ logs.exit_code }}</td>
+      <tr>
+        <td>Path</td>
+        <td>{{ output.path }}</td>
       </tr>
-      <tr ng-show="logs.start_time">
-        <td>Start Time</td>
-        <td>{{ logs.start_time | date:"medium" }}</td>
-      </tr>
-      <tr ng-show="logs.end_time">
-        <td>End Time</td>
-        <td>{{ logs.end_time | date:"medium" }}</td>
-      </tr>
-      <tr ng-show="logs.stdout">
-        <td>Stdout</td>
-        <td>{{ logs.stdout }}</td>
-      </tr>
-      <tr ng-show="logs.stderr">
-        <td>Stderr</td>
-        <td>{{ logs.stderr }}</td>
+      <tr ng-show="output.type == 'DIRECTORY'">
+        <td>Directory</td>
+        <td>Yes</td>
       </tr>
     </table>
-    
-    <h6>API</h6>
-    <table class="data-table">
-      <tr>
-        <td>curl</td>
-        <td><code>curl {{ serverURL }}/v1/tasks/{{ task.id }}</code></td>
-      </tr>
-    </table>
+  </div>
+
+  <h6>Executors</h6>
+  <table class="data-table executor-table"
+    ng-repeat="cmd in task.executors track by $index"
+    ng-init="logs = task.logs[0].logs[$index]">
+
+    <tr>
+      <td>Command</td>
+      <td><code>{{ cmdStr(cmd.cmd) }}</code></td>
+    </tr>
+    <tr>
+      <td>Image</td>
+      <td>{{ cmd.image_name }}</td>
+    </tr>
+
+    <tr ng-show="logs.exit_code != undefined">
+      <td>Exit Code</td>
+      <td>{{ logs.exit_code }}</td>
+    </tr>
+    <tr ng-show="logs.start_time">
+      <td>Start Time</td>
+      <td>{{ logs.start_time | date:"medium" }}</td>
+    </tr>
+    <tr ng-show="logs.end_time">
+      <td>End Time</td>
+      <td>{{ logs.end_time | date:"medium" }}</td>
+    </tr>
+    <tr ng-show="logs.stdout">
+      <td>Stdout</td>
+      <td>{{ logs.stdout }}</td>
+    </tr>
+    <tr ng-show="logs.stderr">
+      <td>Stderr</td>
+      <td>{{ logs.stderr }}</td>
+    </tr>
+  </table>
+  
+  <h6>API</h6>
+  <table class="data-table">
+    <tr>
+      <td>curl</td>
+      <td><code>curl {{ serverURL }}/v1/tasks/{{ task.id }}</code></td>
+    </tr>
+  </table>
 </div>

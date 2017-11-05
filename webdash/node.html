@@ -1,43 +1,50 @@
 <div ng-controller="NodeInfoController">
-    <table class="data-table">
-      <tbody>
-        <tr>
-          <td>ID</td>
-          <td>{{ node.id }}</td>
-        </tr>
-        <tr>
-          <td>State</td>
-          <td ng-class="node.state + '-state'">{{ node.state }}</td>
-        </tr>
-        <tr>
-          <td>Resources</td>
-          <td>{{ resources(node.resources) }}</td>
-        </tr>
-        <tr>
-          <td>Available</td>
-          <td>{{ resources(node.available) }}</td>
-        </tr>
-        <tr>
-          <td>Last Ping</td>
-          <td>{{ node.last_ping }}</td>
-        </tr>
-        <tr>
-          <td>Version</td>
-          <td>{{ node.version }}</td>
-        </tr>
-        <tr>
-          <td>Tasks</td>
-          <td><div ng-repeat="id in node.task_ids"><a href="/#/tasks/{{id}}">{{ id }}</a></div></td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <h6>API</h6>
-    <table class="data-table">
-      <tr>
-        <td>curl</td>
-        <td><code>curl {{ serverURL }}/v1/nodes/{{ node.id }}</code></td>
-      </tr>
-    </table>
 
+  <header>
+    <div class="header-row">
+      <span class="header-title">Node {{ node.id }}</span>
+      <div class="header-spacer"></div>
+    </div>
+  </header>
+
+  <table class="data-table">
+    <tbody>
+      <tr>
+        <td>ID</td>
+        <td>{{ node.id }}</td>
+      </tr>
+      <tr>
+        <td>State</td>
+        <td ng-class="node.state + '-state'">{{ node.state }}</td>
+      </tr>
+      <tr>
+        <td>Resources</td>
+        <td>{{ resources(node.resources) }}</td>
+      </tr>
+      <tr>
+        <td>Available</td>
+        <td>{{ resources(node.available) }}</td>
+      </tr>
+      <tr>
+        <td>Last Ping</td>
+        <td>{{ node.last_ping }}</td>
+      </tr>
+      <tr>
+        <td>Version</td>
+        <td>{{ node.version }}</td>
+      </tr>
+      <tr>
+        <td>Tasks</td>
+        <td><div ng-repeat="id in node.task_ids"><a href="/#/tasks/{{id}}">{{ id }}</a></div></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <h6>API</h6>
+  <table class="data-table">
+    <tr>
+      <td>curl</td>
+      <td><code>curl {{ serverURL }}/v1/nodes/{{ node.id }}</code></td>
+    </tr>
+  </table>
 </div>

@@ -1,4 +1,11 @@
 <div ng-controller="TaskListController" class="task-list-page">
+  <header>
+    <div class="header-row">
+      <span class="header-title">Tasks</span>
+      <div class="header-spacer"></div>
+      <div class="pager" ng-show="nextPage"><a href="{{ nextPage }}">Next page</a></div>
+    </div>
+  </header>
 
   <table class="task-list-table">
     <thead>
@@ -19,6 +26,5 @@
       </tr>
     </tbody>
   </table> 
-  <div class="pager" ng-show="nextPage"><a href="{{ nextPage }}">Next page</a></div>
 
 </div>

@@ -22,7 +22,7 @@ app.controller('TaskListController', function($scope, $http, $interval, $routePa
   $scope.tasks = [];
   $scope.isDone = isDone;
   $scope.serverURL = getServerURL($location)
-  var page = $routeParams.page;
+  var page = $routeParams.page_token;
 
   $scope.cancelTask = function(taskID) {
     var url = "/v1/tasks/" + taskID + ":cancel";

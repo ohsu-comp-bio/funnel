@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/golang/gddo/httputil"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -24,7 +25,6 @@ type Server struct {
 	TaskServiceServer      tes.TaskServiceServer
 	EventServiceServer     events.EventServiceServer
 	SchedulerServiceServer pbs.SchedulerServiceServer
-	Handler                http.Handler
 	DisableHTTPCache       bool
 	DialOptions            []grpc.DialOption
 	Log                    *logger.Logger
@@ -32,9 +32,6 @@ type Server struct {
 
 // DefaultServer returns a new server instance.
 func DefaultServer(db Database, conf config.Server) *Server {
-	mux := http.NewServeMux()
-	mux.Handle("/", webdash.Handler())
-
 	return &Server{
 		RPCAddress:             ":" + conf.RPCPort,
 		HTTPPort:               conf.HTTPPort,
@@ -42,7 +39,6 @@ func DefaultServer(db Database, conf config.Server) *Server {
 		TaskServiceServer:      db,
 		EventServiceServer:     db,
 		SchedulerServiceServer: db,
-		Handler:                mux,
 		DisableHTTPCache:       conf.DisableHTTPCache,
 		DialOptions: []grpc.DialOption{
 			grpc.WithInsecure(),
@@ -72,18 +68,26 @@ func (s *Server) Serve(pctx context.Context) error {
 	grpcMux := runtime.NewServeMux()
 	runtime.OtherErrorHandler = s.handleError
 
-	// Set "cache-control: no-store" to disable response caching.
-	// Without this, some servers (e.g. GCE) will cache a response from ListTasks, GetTask, etc.
-	// which results in confusion about the stale data.
-	if s.DisableHTTPCache {
-		mux.Handle("/v1/", disableCache(grpcMux))
-	}
+	dashmux := http.NewServeMux()
+	dashmux.Handle("/", webdash.RootHandler())
+	mux.Handle("/static/", http.StripPrefix("/static/", webdash.FileServer()))
 
-	if s.Handler != nil {
-		mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-			s.Handler.ServeHTTP(resp, req)
-		})
-	}
+	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+
+		switch negotiate(req) {
+		case "html":
+			// HTML was requested (by the browser)
+			dashmux.ServeHTTP(resp, req)
+		default:
+			// Set "cache-control: no-store" to disable response caching.
+			// Without this, some servers (e.g. GCE) will cache a response from ListTasks, GetTask, etc.
+			// which results in confusion about the stale data.
+			if s.DisableHTTPCache {
+				resp.Header().Set("Cache-Control", "no-store")
+			}
+			grpcMux.ServeHTTP(resp, req)
+		}
+	})
 
 	// Register TES service
 	if s.TaskServiceServer != nil {
@@ -146,11 +150,26 @@ func (s *Server) handleError(w http.ResponseWriter, req *http.Request, err strin
 	http.Error(w, err, code)
 }
 
-// Set a cache-control header that disables response caching
-// and pass through to the next mux.
-func disableCache(next http.Handler) http.HandlerFunc {
-	return func(resp http.ResponseWriter, req *http.Request) {
-		resp.Header().Set("Cache-Control", "no-store")
-		next.ServeHTTP(resp, req)
+// negotiate determines the response type based on request headers and parameters.
+// Returns either "html" or "json".
+func negotiate(req *http.Request) string {
+	// Allow overriding the type from a URL parameter.
+	// /v1/tasks?json will force a JSON response.
+	q := req.URL.Query()
+	if _, html := q["html"]; html {
+		return "html"
+	}
+	if _, json := q["json"]; json {
+		return "json"
+	}
+	// Content negotiation means that both the dashboard's HTML and the API's JSON
+	// may be served at the same path.
+	// In Go 1.10 we'll be able to move to a core library for this,
+	// https://github.com/golang/go/issues/19307
+	switch httputil.NegotiateContentType(req, []string{"text/*", "text/html"}, "text/*") {
+	case "text/html":
+		return "html"
+	default:
+		return "json"
 	}
 }

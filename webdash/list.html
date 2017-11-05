@@ -16,7 +16,7 @@
     </thead>
     <tbody>
       <tr ng-repeat="task in tasks track by task.id" ng-class="task.state + '-state'"> 
-        <td class="task-list-id"><a href="/#/tasks/{{task.id}}">{{ task.id }}</a></td>
+        <td class="task-list-id"><a href="/v1/tasks/{{task.id}}">{{ task.id }}</a></td>
         <td>{{ task.state }}</td>
         <td class="task-list-name">{{ task.name }}</td>
         <td class="task-list-cancel"><button

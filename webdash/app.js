@@ -40,7 +40,7 @@ app.controller('TaskListController', function($scope, $http, $interval, $routePa
         $scope.tasks = response.data.tasks;
         $scope.tasks.sort(idDesc);
         if (response.data.next_page_token) {
-          $scope.nextPage = $scope.serverURL + "/#/tasks?page_token=" + response.data.next_page_token;
+          $scope.nextPage = $scope.serverURL + "/v1/tasks?page_token=" + response.data.next_page_token;
         } else {
           $scope.nextPage = "";
         }
@@ -182,50 +182,44 @@ app.service('Page', function($rootScope){
 
 app.run(['$rootScope', 'Page', function($rootScope, Page) {
   $rootScope.$on("$routeChangeSuccess", function(event, current, previous){
-    Page.setTitle(current.$$route.title || '');
+    if (current.$$route) {
+      Page.setTitle(current.$$route.title);
+    }
   });
 }]);
 
 app.config(
   ['$routeProvider', '$locationProvider',
    function AppConfig($routeProvider, $locationProvider) {
+     var taskList = {
+       templateUrl: '/static/list.html',
+       title: "Tasks",
+     }
+     var taskInfo = {
+       templateUrl: '/static/task.html',
+     }
+     var nodeList = {
+       templateUrl: '/static/node-list.html',
+       title: "Nodes",
+     }
+     var nodeInfo =  {
+       templateUrl: '/static/node.html',
+     }
+
      $routeProvider.
-       when('/', {
-         redirectTo: '/tasks',
-       }).
-       when('/v1/tasks', {
-         redirectTo: '/tasks',
-       }).
-       when('/tasks', {
-         templateUrl: 'static/list.html',
-         title: "Tasks",
-       }).
-       when('/v1/tasks/:task_id', {
-         redirectTo: '/tasks/:task_id',
-       }).
-       when('/tasks/:task_id', {
-         templateUrl: 'static/task.html',
-       }).
-       when('/v1/nodes', {
-         redirectTo: '/nodes',
-       }).
-       when('/nodes', {
-         templateUrl: 'static/node-list.html',
-         title: "Nodes",
-       }).
-       when('/v1/nodes/:node_id', {
-         redirectTo: '/nodes/:node_id',
-       }).
-       when('/nodes/:node_id', {
-         templateUrl: 'static/node.html',
-       }).
-       when('/notfound', {
-         templateUrl: 'static/error404.html'
-       }).
+       when('/', taskList).
+       when('/tasks', taskList).
+       when('/v1/tasks', taskList).
+       when('/tasks/:task_id', taskInfo).
+       when('/v1/tasks/:task_id', taskInfo).
+       when('/nodes', nodeList).
+       when('/v1/nodes', nodeList).
+       when('/nodes/:node_id', nodeInfo).
+       when('/v1/nodes/:node_id', nodeInfo).
        otherwise({
-         templateUrl: 'static/error404.html'
+         templateUrl: '/static/error404.html'
        });
-     $locationProvider.html5Mode(false);
+     $locationProvider.html5Mode(true);
    }
   ]
 );

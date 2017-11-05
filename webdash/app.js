@@ -91,7 +91,7 @@ function getServerURL($location) {
 app.controller('TaskInfoController', function($scope, $http, $routeParams, $location, $interval, Page) {
   
   $scope.url = "/v1/tasks/" + $routeParams.task_id;
-  Page.setHeader("Task " + $routeParams.task_id);
+  Page.setTitle("Task " + $routeParams.task_id);
   $scope.task = {};
   $scope.cmdStr = function(cmd) {
     return cmd.join(' ');
@@ -137,7 +137,7 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
 app.controller('NodeInfoController', function($scope, $http, $routeParams, $location, $interval, Page, $filter) {
   
   $scope.url = "/v1/nodes/" + $routeParams.node_id;
-  Page.setHeader("Node " + $routeParams.node_id);
+  Page.setTitle("Node " + $routeParams.node_id);
   $scope.node = {};
   $scope.serverURL = getServerURL($location)
   $scope.resources = function(r) {
@@ -172,19 +172,17 @@ app.controller('Error404Controller', function() {});
 app.service('Page', function($rootScope){
   $rootScope.page = {
     title: "Funnel",
-    header: "",
   }
   return {
-    setHeader: function(header){
-      $rootScope.page.title = header + " | Funnel";
-      $rootScope.page.header = header;
+    setTitle: function(title){
+      $rootScope.page.title = title + " | Funnel";
     }
   }
 });
 
 app.run(['$rootScope', 'Page', function($rootScope, Page) {
   $rootScope.$on("$routeChangeSuccess", function(event, current, previous){
-    Page.setHeader(current.$$route.title || '');
+    Page.setTitle(current.$$route.title || '');
   });
 }]);
 

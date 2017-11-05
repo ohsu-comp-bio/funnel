@@ -12,7 +12,7 @@ func TestWebdash(t *testing.T) {
 	// Get the webdash health check endpoint
 	address := fun.Conf.Server.HTTPAddress()
 	client := http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(address + "/health.html")
+	resp, err := client.Get(address + "/static/health.html")
 	if err != nil {
 		t.Fatal(err)
 	}

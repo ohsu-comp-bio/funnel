@@ -39,18 +39,18 @@ type Buffer struct {
 	written     int64
 }
 
-// NewBuffer creates a new buffer of a given size. The size
-// must be greater than 0.
-func NewBuffer(size int64) (*Buffer, error) {
+// NewBuffer creates a new buffer of a given size.
+// NewBuffer panics if the size is not greater than 0.
+func NewBuffer(size int64) *Buffer {
 	if size <= 0 {
-		return nil, fmt.Errorf("Size must be positive")
+		panic(fmt.Errorf("Size must be positive"))
 	}
 
 	b := &Buffer{
 		size: size,
 		data: make([]byte, size),
 	}
-	return b, nil
+	return b
 }
 
 // Write writes up to len(buf) bytes to the internal ring,
@@ -107,6 +107,11 @@ func (b *Buffer) Bytes() []byte {
 // Reset resets the buffer so it has no content.
 func (b *Buffer) Reset() {
 	b.writeCursor = 0
+	b.written = 0
+}
+
+// ResetTotalWritten resets the TotalWritten count.
+func (b *Buffer) ResetTotalWritten() {
 	b.written = 0
 }
 

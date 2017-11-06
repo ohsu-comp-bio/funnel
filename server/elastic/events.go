@@ -18,11 +18,10 @@ var idFieldSort = elastic.NewFieldSort("id").
 
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {
-	client      *elastic.Client
-	conf        config.Elastic
-	taskIndex   string
-	nodeIndex   string
-	eventsIndex string
+	client    *elastic.Client
+	conf      config.Elastic
+	taskIndex string
+	nodeIndex string
 }
 
 // NewElastic returns a new Elastic instance.
@@ -44,7 +43,6 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 		conf,
 		conf.IndexPrefix + "-tasks",
 		conf.IndexPrefix + "-nodes",
-		conf.IndexPrefix + "-events",
 	}, nil
 }
 
@@ -71,6 +69,20 @@ func (es *Elastic) Init(ctx context.Context) error {
         "properties":{
           "id": {
             "type": "keyword"
+          },
+          "state": {
+            "type": "keyword"
+          },
+          "inputs": {
+            "type": "nested"
+          },
+          "logs": {
+            "type": "nested",
+            "properties": {
+              "logs": {
+                "type": "nested"
+              }
+            }
           }
         }
       }
@@ -80,9 +92,6 @@ func (es *Elastic) Init(ctx context.Context) error {
 		return err
 	}
 	if err := es.initIndex(ctx, es.nodeIndex, ""); err != nil {
-		return err
-	}
-	if err := es.initIndex(ctx, es.eventsIndex, ""); err != nil {
 		return err
 	}
 	return nil
@@ -119,6 +128,13 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 
 	q = q.SortBy(idFieldSort).Size(pageSize)
 
+	switch req.View {
+	case tes.TaskView_BASIC:
+		q = q.FetchSource(true).FetchSourceContext(basic)
+	case tes.TaskView_MINIMAL:
+		q = q.FetchSource(true).FetchSourceContext(minimal)
+	}
+
 	res, err := q.Do(ctx)
 	if err != nil {
 		return nil, err
@@ -136,26 +152,31 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 			resp.NextPageToken = t.Id
 		}
 
-		switch req.View {
-		case tes.TaskView_BASIC:
-			t = t.GetBasicView()
-		case tes.TaskView_MINIMAL:
-			t = t.GetMinimalView()
-		}
-
 		resp.Tasks = append(resp.Tasks, t)
 	}
 
 	return resp, nil
 }
 
+var minimal = elastic.NewFetchSourceContext(true).Include("id", "state")
+var basic = elastic.NewFetchSourceContext(true).
+	Exclude("logs.logs.stderr", "logs.logs.stdout", "inputs.contents")
+
 // GetTask gets a task by ID.
-func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
-	res, err := es.client.Get().
+func (es *Elastic) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+	g := es.client.Get().
 		Index(es.taskIndex).
 		Type("task").
-		Id(id).
-		Do(ctx)
+		Id(req.Id)
+
+	switch req.View {
+	case tes.TaskView_BASIC:
+		g = g.FetchSource(true).FetchSourceContext(basic)
+	case tes.TaskView_MINIMAL:
+		g = g.FetchSource(true).FetchSourceContext(minimal)
+	}
+
+	res, err := g.Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -169,78 +190,131 @@ func (es *Elastic) GetTask(ctx context.Context, id string) (*tes.Task, error) {
 	return task, nil
 }
 
-func (es *Elastic) updateTask(ctx context.Context, task *tes.Task) error {
-	mar := jsonpb.Marshaler{}
-	s, err := mar.MarshalToString(task)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = es.client.Index().
-		Index(es.taskIndex).
-		Type("task").
-		Id(task.Id).
-		Refresh("true").
-		BodyString(s).
-		Do(ctx)
-	return err
-}
-
-/*
-func tail(s string, sizeBytes int) string {
-	b := []byte(s)
-	if len(b) > sizeBytes {
-		return string(b[:sizeBytes])
-	}
-	return string(b)
-}
-
-func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
-	// Check if there is an existing task log
-	o := tx.Bucket(ExecutorLogs).Get([]byte(id))
-	if o != nil {
-		// There is an existing log in the DB, load it
-		existing := &tes.ExecutorLog{}
-
-    el.Stdout = tail(existing.Stdout + el.Stdout, es.conf.MaxLogSize)
-    el.Stderr = tail(existing.Stderr + el.Stderr, es.conf.MaxLogSize)
-
-		// Merge the updates into the existing.
-		proto.Merge(existing, el)
-		// existing is updated, so set that to el which will get saved below.
-		el = existing
-	}
-}
-*/
 func (es *Elastic) Write(ev *events.Event) error {
 	return es.WriteContext(context.Background(), ev)
 }
 
+var updateTaskLogs = `
+if (ctx._source.logs == null) {
+  ctx._source.logs = new ArrayList();
+}
+
+// Ensure the task logs array is long enough.
+for (; params.attempt > ctx._source.logs.length - 1; ) {
+  Map m = new HashMap();
+  m.logs = new ArrayList();
+  ctx._source.logs.add(m);
+}
+
+// Set the field.
+ctx._source.logs[params.attempt][params.field] = params.value;
+`
+
+var updateExecutorLogs = `
+if (ctx._source.logs == null) {
+  ctx._source.logs = new ArrayList();
+}
+
+// Ensure the task logs array is long enough.
+for (; params.attempt > ctx._source.logs.length - 1; ) {
+  Map m = new HashMap();
+  m.logs = new ArrayList();
+  ctx._source.logs.add(m);
+}
+
+// Ensure the executor logs array is long enough.
+for (; params.index > ctx._source.logs[params.attempt].logs.length - 1; ) {
+  Map m = new HashMap();
+  ctx._source.logs[params.attempt].logs.add(m);
+}
+
+// Set the field.
+ctx._source.logs[params.attempt].logs[params.index][params.field] = params.value;
+`
+
+func taskLogUpdate(attempt uint32, field string, value interface{}) *elastic.Script {
+	return elastic.NewScript(updateTaskLogs).
+		Lang("painless").
+		Param("attempt", attempt).
+		Param("field", field).
+		Param("value", value)
+}
+
+func execLogUpdate(attempt, index uint32, field string, value interface{}) *elastic.Script {
+	return elastic.NewScript(updateExecutorLogs).
+		Lang("painless").
+		Param("attempt", attempt).
+		Param("index", index).
+		Param("field", field).
+		Param("value", value)
+}
+
 // WriteContext writes a task update event.
 func (es *Elastic) WriteContext(ctx context.Context, ev *events.Event) error {
-	mar := jsonpb.Marshaler{}
-	s, err := mar.MarshalToString(ev)
-
-	_, err = es.client.Index().
-		Index(es.eventsIndex).
-		Type("event").
-		BodyString(s).
-		Do(ctx)
-
-	if err != nil {
-		return err
+	// Skipping system logs for now. Will add them to the task logs when this PR is resolved (soon):
+	// https://github.com/ga4gh/task-execution-schemas/pull/80
+	if ev.Type == events.Type_SYSTEM_LOG {
+		return nil
 	}
 
-	task, err := es.GetTask(ctx, ev.Id)
-	if err != nil {
-		return err
+	u := es.client.Update().
+		Index(es.taskIndex).
+		Type("task").
+		Id(ev.Id)
+
+	switch ev.Type {
+	case events.Type_TASK_STATE:
+		u = u.Doc(map[string]string{"state": ev.GetState().String()})
+
+	case events.Type_TASK_START_TIME:
+		u = u.Script(taskLogUpdate(ev.Attempt, "start_time", events.TimestampString(ev.GetStartTime())))
+
+	case events.Type_TASK_END_TIME:
+		u = u.Script(taskLogUpdate(ev.Attempt, "end_time", events.TimestampString(ev.GetEndTime())))
+
+	case events.Type_TASK_OUTPUTS:
+		u = u.Script(taskLogUpdate(ev.Attempt, "outputs", ev.GetOutputs().Value))
+
+	case events.Type_TASK_METADATA:
+		u = u.Script(taskLogUpdate(ev.Attempt, "metadata", ev.GetMetadata().Value))
+
+	case events.Type_EXECUTOR_START_TIME:
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "start_time", events.TimestampString(ev.GetStartTime())))
+
+	case events.Type_EXECUTOR_END_TIME:
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "end_time", events.TimestampString(ev.GetEndTime())))
+
+	case events.Type_EXECUTOR_EXIT_CODE:
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "exit_code", ev.GetExitCode()))
+
+	case events.Type_EXECUTOR_HOST_IP:
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "host_ip", ev.GetHostIp()))
+
+	case events.Type_EXECUTOR_PORTS:
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "ports", ev.GetPorts().Value))
+
+	case events.Type_EXECUTOR_STDOUT:
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "stdout", ev.GetStdout()))
+
+	case events.Type_EXECUTOR_STDERR:
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "stderr", ev.GetStderr()))
 	}
 
-	err = events.TaskBuilder{Task: task}.Write(ev)
-	if err != nil {
-		return err
-	}
+	_, err := u.Do(ctx)
+	return err
+}
 
-	return es.updateTask(ctx, task)
+func getPageSize(req *tes.ListTasksRequest) int {
+	pageSize := 256
+
+	if req.PageSize != 0 {
+		pageSize = int(req.GetPageSize())
+		if pageSize > 2048 {
+			pageSize = 2048
+		}
+		if pageSize < 50 {
+			pageSize = 50
+		}
+	}
+	return pageSize
 }

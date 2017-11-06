@@ -7,6 +7,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
+	"github.com/ohsu-comp-bio/funnel/server/mongodb"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
@@ -42,6 +43,8 @@ func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (wo
 		reader, err = worker.NewRPCTaskReader(conf, taskID)
 	case "dynamodb":
 		reader, err = worker.NewDynamoDBTaskReader(conf.TaskReaders.DynamoDB, taskID)
+		// case "mongodb":
+		// 	reader, err = worker.NewMongoDBTaskReader(conf.TaskReaders.MongoDB, taskID)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
@@ -58,6 +61,8 @@ func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (wo
 			writer, err = events.NewRPCWriter(conf)
 		case "elastic":
 			writer, err = elastic.NewElastic(conf.EventWriters.Elastic)
+		case "mongodb":
+			writer, err = mongodb.NewMongoDB(conf.EventWriters.MongoDB)
 		default:
 			err = fmt.Errorf("unknown EventWriter")
 		}

@@ -164,6 +164,7 @@ type Server struct {
 		}
 		DynamoDB DynamoDB
 		Elastic  Elastic
+		MongoDB  MongoDB
 	}
 	DisableHTTPCache   bool
 	MaxExecutorLogSize int
@@ -263,7 +264,20 @@ type Worker struct {
 		}
 		DynamoDB DynamoDB
 		Elastic  Elastic
+		MongoDB  MongoDB
 	}
+}
+
+// MongoDB configures access to an MongoDB database.
+type MongoDB struct {
+	// Addrs holds the addresses for the seed servers.
+	Addrs []string
+	// Database is the default database name used when the Session.DB method
+	// is called with an empty name.
+	Database   string
+	Collection string
+	Username   string
+	Password   string
 }
 
 // Elastic configures access to an Elasticsearch database.

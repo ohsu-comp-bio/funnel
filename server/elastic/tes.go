@@ -58,23 +58,11 @@ func (et *TES) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskR
 
 // GetTask gets a task by ID.
 func (et *TES) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
-	resp, err := et.Elastic.GetTask(ctx, req.Id)
+	resp, err := et.Elastic.GetTask(ctx, req)
 	if elastic.IsNotFound(err) {
 		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: task ID: %s", err.Error(), req.Id))
 	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	switch req.View {
-	case tes.TaskView_BASIC:
-		resp = resp.GetBasicView()
-	case tes.TaskView_MINIMAL:
-		resp = resp.GetMinimalView()
-	}
-
-	return resp, nil
+	return resp, err
 }
 
 // ListTasks lists tasks.

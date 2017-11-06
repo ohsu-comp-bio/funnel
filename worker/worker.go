@@ -269,6 +269,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 			return err
 		}
 	}
+
 	return nil
 }
 

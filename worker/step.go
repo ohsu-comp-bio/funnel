@@ -26,16 +26,18 @@ func (s *stepWorker) Run(ctx context.Context) error {
 	subctx, cleanup := context.WithCancel(ctx)
 	defer cleanup()
 
-	// tailLogs modifies the cmd Stdout/err fields, so should be called before Run.
+	// Tail the stdout/err log streams.
+	stdout, stderr := s.Event.TailLogs(ctx, s.Conf.BufferSize, s.Conf.UpdateRate)
+	if s.Cmd.Stdout != nil {
+		stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
+	}
+	if s.Cmd.Stderr != nil {
+		stderr = io.MultiWriter(s.Cmd.Stderr, stderr)
+	}
+	s.Cmd.Stdout = stdout
+	s.Cmd.Stderr = stderr
+
 	done := make(chan error, 1)
-
-	stdout, stderr := s.logTails()
-	defer stdout.Flush()
-	defer stderr.Flush()
-
-	ticker := time.NewTicker(s.Conf.UpdateRate)
-	defer ticker.Stop()
-
 	go func() {
 		done <- s.Cmd.Run()
 	}()
@@ -49,32 +51,12 @@ func (s *stepWorker) Run(ctx context.Context) error {
 			s.Event.EndTime(time.Now())
 			return ctx.Err()
 
-		case <-ticker.C:
-			stdout.Flush()
-			stderr.Flush()
-
 		case result := <-done:
 			s.Event.EndTime(time.Now())
 			s.Event.ExitCode(getExitCode(result))
 			return result
 		}
 	}
-}
-
-func (s *stepWorker) logTails() (*tailer, *tailer) {
-	stdout, _ := newTailer(s.Conf.BufferSize, func(c string) {
-		s.Event.Stdout(c)
-	})
-	stderr, _ := newTailer(s.Conf.BufferSize, func(c string) {
-		s.Event.Stderr(c)
-	})
-	if s.Cmd.Stdout != nil {
-		s.Cmd.Stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
-	}
-	if s.Cmd.Stderr != nil {
-		s.Cmd.Stderr = io.MultiWriter(s.Cmd.Stderr, stderr)
-	}
-	return stdout, stderr
 }
 
 // inspectContainer calls Inspect on the DockerCmd, and sends an update with the results.

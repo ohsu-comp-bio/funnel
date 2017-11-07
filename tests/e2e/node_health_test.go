@@ -21,10 +21,13 @@ func TestNodeDead(t *testing.T) {
 		Conf:    conf.Scheduler,
 	}
 
-	srv.SDB.PutNode(context.Background(), &pbs.Node{
+	_, err := srv.SDB.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_ALIVE,
 	})
+	if err != nil {
+		t.Error(err)
+	}
 
 	// Some databases need time to sync the PutNode.
 	time.Sleep(time.Millisecond * 100)
@@ -34,7 +37,11 @@ func TestNodeDead(t *testing.T) {
 	srv.Scheduler.CheckNodes()
 
 	nodes := srv.ListNodes()
+	if len(nodes) < 1 {
+		t.Error("expected node was not returned by ListNodes")
+	}
 	if nodes[0].State != pbs.NodeState_DEAD {
+		t.Log("Node:", nodes[0])
 		t.Error("Expected node to be dead")
 	}
 }
@@ -52,16 +59,23 @@ func TestNodeInitFail(t *testing.T) {
 	}
 	srv.StartServer()
 
-	srv.SDB.PutNode(context.Background(), &pbs.Node{
+	_, err := srv.SDB.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_INITIALIZING,
 	})
+	if err != nil {
+		t.Error(err)
+	}
 
 	time.Sleep(conf.Scheduler.NodeInitTimeout)
 	srv.Scheduler.CheckNodes()
 	nodes := srv.ListNodes()
 
+	if len(nodes) < 1 {
+		t.Error("expected node was not returned by ListNodes")
+	}
 	if nodes[0].State != pbs.NodeState_DEAD {
+		t.Log("Node:", nodes[0])
 		t.Error("Expected node to be dead")
 	}
 }
@@ -78,10 +92,14 @@ func TestNodeDeadTimeout(t *testing.T) {
 		Conf:    conf.Scheduler,
 	}
 
-	srv.SDB.PutNode(context.Background(), &pbs.Node{
+	_, err := srv.SDB.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_DEAD,
 	})
+	if err != nil {
+		t.Error(err)
+	}
+
 	srv.Scheduler.CheckNodes()
 
 	time.Sleep(conf.Scheduler.NodeDeadTimeout)
@@ -89,6 +107,7 @@ func TestNodeDeadTimeout(t *testing.T) {
 	nodes := srv.ListNodes()
 
 	if len(nodes) > 0 {
+		t.Log("nodes:", nodes)
 		t.Error("expected node to be deleted")
 	}
 }

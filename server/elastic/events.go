@@ -260,6 +260,7 @@ func (es *Elastic) WriteContext(ctx context.Context, ev *events.Event) error {
 	u := es.client.Update().
 		Index(es.taskIndex).
 		Type("task").
+		RetryOnConflict(3).
 		Id(ev.Id)
 
 	switch ev.Type {

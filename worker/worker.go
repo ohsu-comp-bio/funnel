@@ -48,11 +48,9 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	task, run.syserr = r.TaskReader.Task()
 
-	if run.ok() {
-		r.Event.State(tes.State_INITIALIZING)
-	}
-
+	r.Event.State(tes.State_INITIALIZING)
 	r.Event.StartTime(time.Now())
+
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {

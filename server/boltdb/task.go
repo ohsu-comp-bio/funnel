@@ -92,20 +92,6 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	}
 	task.Inputs = inputs
 
-	// remove stdout and stderr from Task.Logs.Logs
-	tlogs := []*tes.TaskLog{}
-	for _, tl := range task.Logs {
-		elogs := []*tes.ExecutorLog{}
-		for _, el := range tl.Logs {
-			el.Stdout = ""
-			el.Stderr = ""
-			elogs = append(elogs, el)
-		}
-		tl.Logs = elogs
-		tlogs = append(tlogs, tl)
-	}
-	task.Logs = tlogs
-
 	return loadMinimalTaskView(tx, id, task)
 }
 
@@ -116,6 +102,24 @@ func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	}
 	proto.Unmarshal(b, task)
 	loadTaskLogs(tx, task)
+
+	// Load executor stdout/err
+	for _, tl := range task.Logs {
+		for j, el := range tl.Logs {
+			key := fmt.Sprint(id, j)
+
+			b := tx.Bucket(ExecutorStdout).Get([]byte(key))
+			if b != nil {
+				el.Stdout = string(b)
+			}
+
+			b = tx.Bucket(ExecutorStdout).Get([]byte(key))
+			if b != nil {
+				el.Stderr = string(b)
+			}
+		}
+	}
+
 	return loadMinimalTaskView(tx, id, task)
 }
 

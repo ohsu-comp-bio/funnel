@@ -292,11 +292,9 @@ func TestListTaskView(t *testing.T) {
 // amount of logs are written (which was once a bug).
 func TestSingleCharLog(t *testing.T) {
 	setLogOutput(t)
-	id := fun.Run(`
-    --sh "sh -c 'echo a; sleep 100'"
-  `)
+	id := fun.Run(`'echo a; sleep 100'`)
 	fun.WaitForRunning(id)
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 5)
 	task := fun.Get(id)
 	if task.Logs[0].Logs[0].Stdout != "a\n" {
 		t.Fatal("Missing logs")

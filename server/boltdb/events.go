@@ -41,9 +41,6 @@ func (taskBolt *BoltDB) WriteContext(ctx context.Context, req *events.Event) err
 	tl := &tes.TaskLog{}
 	el := &tes.ExecutorLog{}
 
-	// used to trim stdout and stderr in ExecutorLog
-	max := taskBolt.conf.Server.MaxExecutorLogSize
-
 	switch req.Type {
 	case events.Type_TASK_STATE:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
@@ -77,43 +74,41 @@ func (taskBolt *BoltDB) WriteContext(ctx context.Context, req *events.Event) err
 	case events.Type_EXECUTOR_START_TIME:
 		el.StartTime = ptypes.TimestampString(req.GetStartTime())
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
 	case events.Type_EXECUTOR_END_TIME:
 		el.EndTime = ptypes.TimestampString(req.GetEndTime())
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
 	case events.Type_EXECUTOR_EXIT_CODE:
 		el.ExitCode = req.GetExitCode()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
 	case events.Type_EXECUTOR_HOST_IP:
 		el.HostIp = req.GetHostIp()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
 	case events.Type_EXECUTOR_PORTS:
 		el.Ports = req.GetPorts().Value
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
 	case events.Type_EXECUTOR_STDOUT:
-		el.Stdout = req.GetStdout()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorStdout(tx, fmt.Sprint(req.Id, req.Index), req.GetStdout())
 		})
 
 	case events.Type_EXECUTOR_STDERR:
-		el.Stderr = req.GetStderr()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el, max)
+			return updateExecutorStderr(tx, fmt.Sprint(req.Id, req.Index), req.GetStderr())
 		})
 	}
 
@@ -204,31 +199,19 @@ func updateTaskLogs(tx *bolt.Tx, id string, tl *tes.TaskLog) error {
 	return tx.Bucket(TasksLog).Put([]byte(id), logbytes)
 }
 
-func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog, max int) error {
+func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 	// Check if there is an existing task log
 	o := tx.Bucket(ExecutorLogs).Get([]byte(id))
 	if o != nil {
 		// There is an existing log in the DB, load it
 		existing := &tes.ExecutorLog{}
-		// max bytes to be stored in the db
 		err := proto.Unmarshal(o, existing)
 		if err != nil {
 			return err
 		}
 
-		stdout := []byte(existing.Stdout + el.Stdout)
-		stderr := []byte(existing.Stderr + el.Stderr)
-
-		// Trim the stdout/err logs to the max size if needed
-		if len(stdout) > max {
-			stdout = stdout[:max]
-		}
-		if len(stderr) > max {
-			stderr = stderr[:max]
-		}
-
-		el.Stdout = string(stdout)
-		el.Stderr = string(stderr)
+		el.Stdout = ""
+		el.Stderr = ""
 
 		// Merge the updates into the existing.
 		proto.Merge(existing, el)
@@ -242,4 +225,12 @@ func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog, max int) er
 		return err
 	}
 	return tx.Bucket(ExecutorLogs).Put([]byte(id), logbytes)
+}
+
+func updateExecutorStdout(tx *bolt.Tx, id, stdout string) error {
+	return tx.Bucket(ExecutorStdout).Put([]byte(id), []byte(stdout))
+}
+
+func updateExecutorStderr(tx *bolt.Tx, id, stderr string) error {
+	return tx.Bucket(ExecutorStderr).Put([]byte(id), []byte(stderr))
 }

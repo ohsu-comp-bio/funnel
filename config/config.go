@@ -70,13 +70,12 @@ func DefaultConfig() Config {
 	workDir := path.Join(cwd, "funnel-work-dir")
 
 	server := Server{
-		HostName:           "localhost",
-		HTTPPort:           "8000",
-		RPCPort:            "9090",
-		ServiceName:        "Funnel",
-		MaxExecutorLogSize: 10000,
-		DisableHTTPCache:   true,
-		Logger:             logger.DefaultConfig(),
+		HostName:         "localhost",
+		HTTPPort:         "8000",
+		RPCPort:          "9090",
+		ServiceName:      "Funnel",
+		DisableHTTPCache: true,
+		Logger:           logger.DefaultConfig(),
 	}
 
 	c := Config{
@@ -183,9 +182,8 @@ type Server struct {
 		Elastic  Elastic
 		MongoDB  MongoDB
 	}
-	DisableHTTPCache   bool
-	MaxExecutorLogSize int
-	Logger             logger.Config
+	DisableHTTPCache bool
+	Logger           logger.Config
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort

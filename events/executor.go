@@ -158,10 +158,6 @@ func TailLogs(ctx context.Context, taskID string, attempt, index uint32, size in
 	// immediately, without waiting for the ticker, as long as
 	// they are not exceeding the rate limit.
 	limiter := rate.NewLimiter(rate.Every(interval), 1)
-	// The ticker helps ensure content gets flushed at a regular
-	// interval, so nothing is buffered for too long.
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
 
 	stdoutbuf := ring.NewBuffer(size)
 	stderrbuf := ring.NewBuffer(size)
@@ -221,6 +217,11 @@ func TailLogs(ctx context.Context, taskID string, attempt, index uint32, size in
 
 	// input writes and flush routine.
 	go func() {
+		// The ticker helps ensure content gets flushed at a regular
+		// interval, so nothing is buffered for too long.
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -229,7 +230,9 @@ func TailLogs(ctx context.Context, taskID string, attempt, index uint32, size in
 				close(eventch)
 				return
 			case <-ticker.C:
-				if limiter.Allow() {
+				w := stdoutbuf.TotalWritten() + stderrbuf.TotalWritten()
+				// Don't use a limiter token if not content has been written.
+				if w > 0 && limiter.Allow() {
 					flushboth(immediate)
 				}
 			case b := <-stdoutch:

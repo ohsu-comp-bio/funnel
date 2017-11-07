@@ -27,7 +27,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 	defer cleanup()
 
 	// Tail the stdout/err log streams.
-	stdout, stderr := s.Event.TailLogs(ctx, s.Conf.BufferSize, s.Conf.UpdateRate)
+	stdout, stderr := s.Event.TailLogs(subctx, s.Conf.BufferSize, s.Conf.UpdateRate)
 	if s.Cmd.Stdout != nil {
 		stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
 	}

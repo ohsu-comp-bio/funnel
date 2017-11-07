@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"golang.org/x/net/context"
@@ -10,9 +11,12 @@ import (
 )
 
 type MongoDB struct {
-	client  *mgo.Session
+	sess    *mgo.Session
 	backend compute.Backend
 	conf    config.MongoDB
+	tasks   *mgo.Collection
+	// nodes   *mgo.Collection
+	// events  *mgo.Collection
 }
 
 func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
@@ -29,14 +33,35 @@ func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 		return nil, err
 	}
 	return &MongoDB{
-		client: sess,
-		conf:   conf,
+		sess:  sess,
+		conf:  conf,
+		tasks: sess.DB(conf.Database).C(conf.Collection),
 	}, nil
 }
 
 // Init creates tables in MongoDB.
 func (db *MongoDB) Init(ctx context.Context) error {
-	return db.client.DB(db.conf.Database).C(db.conf.Collection).Create(&mgo.CollectionInfo{})
+	names, err := db.sess.DB(db.conf.Database).CollectionNames()
+	if err != nil {
+		return fmt.Errorf("error listing collection names in database %s: %v", db.conf.Database, err)
+	}
+	for _, n := range names {
+		if n == db.conf.Collection {
+			return nil
+		}
+	}
+	err = db.tasks.Create(&mgo.CollectionInfo{})
+	if err != nil {
+		return fmt.Errorf("error creating collection in database %s: %v", db.conf.Database, err)
+	}
+	return db.tasks.EnsureIndex(mgo.Index{
+		Key:        []string{"id"},
+		Unique:     true,
+		DropDups:   true,
+		Background: true,
+		Sparse:     true,
+	})
+	return nil
 }
 
 // WithComputeBackend configures the MongoDB instance to use the given

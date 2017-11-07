@@ -1,0 +1,19 @@
+Server:
+  Database: mongodb
+  Databases:
+    MongoDB:
+      Addrs: 
+        - localhost:27000
+Worker:
+  TaskReader: mongodb
+  TaskReaders:
+    MongoDB:
+      Addrs: 
+        - localhost:27000
+  ActiveEventWriters:
+    - log
+    - mongodb
+  EventWriters:
+    MongoDB:
+      Addrs: 
+        - localhost:27000

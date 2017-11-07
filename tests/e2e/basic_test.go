@@ -595,7 +595,6 @@ func TestSmallPagination(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Log("Next page token", r4.NextPageToken, len(r4.Tasks))
 
 		// Check a bug where the end of the last page was being included
 		// in the start of the next page.

@@ -89,11 +89,18 @@ test-verbose:
 	@go test -v $(TESTS)
 
 test-elasticsearch:
-	@docker rm -f funnel-es-test > /dev/null || echo
+	@docker rm -f funnel-es-test  > /dev/null 2>&1
 	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:5.6.3 > /dev/null
 	@sleep 30
 	@go test ./tests/e2e/ -funnel-config es.config.yml
-	@docker rm -f funnel-es-test > /dev/null || echo
+	@docker rm -f funnel-es-test  > /dev/null 2>&1
+
+test-mongodb:
+	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
+	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
+	@sleep 10
+	@go test ./tests/e2e/ -funnel-config mongo.config.yml
+	@docker rm -f funnel-mongodb-test  > /dev/null 2>&1 || echo 
 
 # Run backend tests
 test-backends:

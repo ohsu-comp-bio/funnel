@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
@@ -66,7 +65,7 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 
 // ListTasks returns a list of taskIDs
 func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-	var pageSize int = 256
+	var pageSize = 256
 	if req.PageSize != 0 {
 		pageSize = int(req.GetPageSize())
 		if pageSize > 2048 {
@@ -117,7 +116,10 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 
 // CancelTask cancels a task
 func (db *MongoDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	task, err := db.GetTask(ctx, &tes.GetTaskRequest{req.Id, tes.TaskView_MINIMAL})
+	task, err := db.GetTask(ctx, &tes.GetTaskRequest{
+		Id:   req.Id,
+		View: tes.TaskView_MINIMAL,
+	})
 	if err != nil {
 		return nil, err
 	}

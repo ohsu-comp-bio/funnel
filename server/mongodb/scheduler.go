@@ -5,16 +5,23 @@ import (
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // QueueTask adds a task to the scheduler queue.
 func (db *MongoDB) QueueTask(task *tes.Task) error {
-	return fmt.Errorf("QueueTask - Not Implemented")
+	return nil
 }
 
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (db *MongoDB) ReadQueue(n int) []*tes.Task {
-	return nil
+	var tasks []*tes.Task
+	err := db.tasks.Find(bson.M{"state": tes.State_QUEUED}).Select(basicView).All(&tasks)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return tasks
 }
 
 // PutNode is an RPC endpoint that is used by nodes to send heartbeats

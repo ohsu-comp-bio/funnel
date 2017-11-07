@@ -11,6 +11,9 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var basicView = bson.M{"logs.logs.stdout": 0, "logs.logs.stderr": 0, "inputs.contents": 0}
+var minimalView = bson.M{"id": 1, "state": 1}
+
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (db *MongoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
@@ -45,19 +48,22 @@ func (db *MongoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateT
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task tes.Task
-	err := db.tasks.Find(bson.M{"id": req.Id}).One(&task)
+	var q *mgo.Query
+
+	q = db.tasks.Find(bson.M{"id": req.Id})
+	switch req.View {
+	case tes.TaskView_BASIC:
+		q = q.Select(basicView)
+	case tes.TaskView_MINIMAL:
+		q = q.Select(minimalView)
+	}
+
+	err := q.One(&task)
 	if err != nil {
 		if err == mgo.ErrNotFound {
 			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", mgo.ErrNotFound.Error(), req.Id))
 		}
 		return nil, err
-	}
-
-	switch req.View {
-	case tes.TaskView_BASIC:
-		task = *task.GetBasicView()
-	case tes.TaskView_MINIMAL:
-		task = *task.GetMinimalView()
 	}
 
 	return &task, nil
@@ -85,27 +91,22 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	}
 	q = q.Limit(pageSize)
 
-	var resp []*tes.Task
-	err = q.All(&resp)
-	if err != nil {
-		return nil, err
+	switch req.View {
+	case tes.TaskView_BASIC:
+		q = q.Select(basicView)
+	case tes.TaskView_MINIMAL:
+		q = q.Select(minimalView)
 	}
 
 	var tasks []*tes.Task
-	for _, task := range resp {
-		switch req.View {
-		case tes.TaskView_BASIC:
-			task = task.GetBasicView()
-		case tes.TaskView_MINIMAL:
-			task = task.GetMinimalView()
-		}
-		tasks = append(tasks, task)
+	err = q.All(&tasks)
+	if err != nil {
+		return nil, err
 	}
 
 	out := tes.ListTasksResponse{
 		Tasks: tasks,
 	}
-
 	// TODO figure out when not to return a next page token
 	if len(tasks) > 0 {
 		out.NextPageToken = tasks[len(tasks)-1].Id

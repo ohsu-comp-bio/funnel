@@ -29,6 +29,12 @@ var TasksLog = []byte("tasks-log")
 // ExecutorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
 var ExecutorLogs = []byte("executor-logs")
 
+// ExecutorStdout maps (task ID + executor index) -> tes.ExecutorLog.Stdout string
+var ExecutorStdout = []byte("executor-stdout")
+
+// ExecutorStderr maps (task ID + executor index) -> tes.ExecutorLog.Stderr string
+var ExecutorStderr = []byte("executor-stderr")
+
 // Nodes maps:
 // node ID -> pbs.Node struct
 var Nodes = []byte("nodes")
@@ -73,6 +79,12 @@ func (taskBolt *BoltDB) Init(ctx context.Context) error {
 		}
 		if tx.Bucket(ExecutorLogs) == nil {
 			tx.CreateBucket(ExecutorLogs)
+		}
+		if tx.Bucket(ExecutorStdout) == nil {
+			tx.CreateBucket(ExecutorStdout)
+		}
+		if tx.Bucket(ExecutorStderr) == nil {
+			tx.CreateBucket(ExecutorStderr)
 		}
 		if tx.Bucket(Nodes) == nil {
 			tx.CreateBucket(Nodes)

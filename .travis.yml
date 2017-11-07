@@ -13,6 +13,7 @@ before_install:
   - docker pull ohsucompbio/gridengine
   - docker pull ohsucompbio/pbs-torque
   - docker pull docker.elastic.co/elasticsearch/elasticsearch:5.6.3
+  - docker pull mongo:3.5.13
 install:
   - make depends
   - make
@@ -22,5 +23,6 @@ script:
   - make test
   - make test-backends
   - make test-elasticsearch
+  - make test-mongodb
 notifications:
   email: false

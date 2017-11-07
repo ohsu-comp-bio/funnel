@@ -113,23 +113,37 @@ func DefaultConfig() Config {
 		},
 	}
 
+	dynamo := DynamoDB{
+		TableBasename: "funnel",
+	}
+	elastic := Elastic{
+		URL:         "http://localhost:9200",
+		IndexPrefix: "funnel",
+	}
+	mongo := MongoDB{
+		Addrs:    []string{"localhost"},
+		Database: "funnel",
+	}
+
 	c.Server.Database = "boltdb"
 	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
-	c.Server.Databases.DynamoDB.TableBasename = "funnel"
-	c.Server.Databases.Elastic.IndexPrefix = "funnel"
-	c.Server.Databases.Elastic.URL = "http://localhost:9200"
+	c.Server.Databases.DynamoDB = dynamo
+	c.Server.Databases.Elastic = elastic
+	c.Server.Databases.MongoDB = mongo
 
 	c.Worker.TaskReader = "rpc"
 	c.Worker.TaskReaders.RPC.ServerAddress = server.RPCAddress()
 	c.Worker.TaskReaders.RPC.ServerPassword = server.Password
-	c.Worker.TaskReaders.DynamoDB.TableBasename = "funnel"
+	c.Worker.TaskReaders.DynamoDB = dynamo
+	c.Worker.TaskReaders.MongoDB = mongo
 
 	c.Worker.ActiveEventWriters = []string{"rpc", "log"}
 	c.Worker.EventWriters.RPC.ServerAddress = server.RPCAddress()
 	c.Worker.EventWriters.RPC.ServerPassword = server.Password
 	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
-	c.Worker.EventWriters.DynamoDB.TableBasename = "funnel"
-	c.Worker.EventWriters.Elastic = c.Server.Databases.Elastic
+	c.Worker.EventWriters.DynamoDB = dynamo
+	c.Worker.EventWriters.Elastic = elastic
+	c.Worker.EventWriters.MongoDB = mongo
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -251,6 +265,7 @@ type Worker struct {
 			ServerPassword string
 		}
 		DynamoDB DynamoDB
+		MongoDB  MongoDB
 	}
 	ActiveEventWriters []string
 	EventWriters       struct {
@@ -272,12 +287,10 @@ type Worker struct {
 type MongoDB struct {
 	// Addrs holds the addresses for the seed servers.
 	Addrs []string
-	// Database is the default database name used when the Session.DB method
-	// is called with an empty name.
-	Database   string
-	Collection string
-	Username   string
-	Password   string
+	// Database is the database name used within MongoDB to store funnel data.
+	Database string
+	Username string
+	Password string
 }
 
 // Elastic configures access to an Elasticsearch database.

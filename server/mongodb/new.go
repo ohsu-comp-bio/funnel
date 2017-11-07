@@ -6,10 +6,9 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"golang.org/x/net/context"
 	mgo "gopkg.in/mgo.v2"
-	// "gopkg.in/mgo.v2/bson"
-	// "time"
 )
 
+// MongoDB provides an MongoDB database server backend.
 type MongoDB struct {
 	sess    *mgo.Session
 	backend compute.Backend
@@ -19,11 +18,12 @@ type MongoDB struct {
 	// events  *mgo.Collection
 }
 
+// NewMongoDB returns a new MongoDB instance.
 func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 	sess, err := mgo.DialWithInfo(&mgo.DialInfo{
-		Addrs: conf.Addrs,
-		// Username: conf.Username,
-		// Password: conf.Password,
+		Addrs:    conf.Addrs,
+		Username: conf.Username,
+		Password: conf.Password,
 		Database: conf.Database,
 		// DialServer: func(addr *mgo.ServerAddr) (net.Conn, error) {
 		// 	return tls.Dial("tcp", addr.String(), &tls.Config{})
@@ -35,7 +35,7 @@ func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 	return &MongoDB{
 		sess:  sess,
 		conf:  conf,
-		tasks: sess.DB(conf.Database).C(conf.Collection),
+		tasks: sess.DB(conf.Database).C("tasks"),
 	}, nil
 }
 
@@ -46,7 +46,7 @@ func (db *MongoDB) Init(ctx context.Context) error {
 		return fmt.Errorf("error listing collection names in database %s: %v", db.conf.Database, err)
 	}
 	for _, n := range names {
-		if n == db.conf.Collection {
+		if n == "tasks" {
 			return nil
 		}
 	}
@@ -61,7 +61,6 @@ func (db *MongoDB) Init(ctx context.Context) error {
 		Background: true,
 		Sparse:     true,
 	})
-	return nil
 }
 
 // WithComputeBackend configures the MongoDB instance to use the given

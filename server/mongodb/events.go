@@ -26,7 +26,10 @@ func (db *MongoDB) WriteContext(ctx context.Context, req *events.Event) error {
 
 	switch req.Type {
 	case events.Type_TASK_STATE:
-		res, err := db.GetTask(ctx, &tes.GetTaskRequest{req.Id, tes.TaskView_MINIMAL})
+		res, err := db.GetTask(ctx, &tes.GetTaskRequest{
+			Id:   req.Id,
+			View: tes.TaskView_MINIMAL,
+		})
 		if err != nil {
 			return fmt.Errorf("error fetch current state: %v", err)
 		}

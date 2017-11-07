@@ -110,6 +110,9 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.Worker.UpdateRate = time.Millisecond * 300
 	conf.Server.Databases.Elastic.IndexPrefix += "-" + util.GenTaskID()
 	conf.Worker.EventWriters.Elastic = conf.Server.Databases.Elastic
+	conf.Server.Databases.MongoDB.Database += "-" + util.GenTaskID()
+	conf.Worker.EventWriters.MongoDB = conf.Server.Databases.MongoDB
+	conf.Worker.TaskReaders.MongoDB = conf.Server.Databases.MongoDB
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()

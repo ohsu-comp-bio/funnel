@@ -27,6 +27,10 @@ func (b *Backend) Submit(task *tes.Task) error {
 	if err != nil {
 		return err
 	}
-	go w.Run(context.Background())
+	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		w.Run(ctx)
+	}()
 	return nil
 }

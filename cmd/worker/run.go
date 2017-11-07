@@ -44,7 +44,7 @@ func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (wo
 	case "dynamodb":
 		reader, err = worker.NewDynamoDBTaskReader(conf.TaskReaders.DynamoDB, taskID)
 		// case "mongodb":
-		// 	reader, err = worker.NewMongoDBTaskReader(conf.TaskReaders.MongoDB, taskID)
+		//   reader, err = worker.NewMongoDBTaskReader(conf.TaskReaders.MongoDB, taskID)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)

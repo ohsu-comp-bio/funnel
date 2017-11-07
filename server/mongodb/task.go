@@ -24,6 +24,12 @@ func (db *MongoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateT
 	task.Id = taskID
 	task.State = tes.State_QUEUED
 
+	task.Logs = []*tes.TaskLog{
+		{
+			Logs: []*tes.ExecutorLog{},
+		},
+	}
+
 	err := db.tasks.Insert(task)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write task to db: %v", err)
@@ -40,7 +46,6 @@ func (db *MongoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateT
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task tes.Task
-
 	err := db.tasks.Find(bson.M{"id": req.Id}).One(&task)
 	if err != nil {
 		if err == mgo.ErrNotFound {
@@ -112,16 +117,18 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 
 // CancelTask cancels a task
 func (db *MongoDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	var err error
-
-	err = db.tasks.Find(bson.M{"id": req.Id}).One(nil)
+	task, err := db.GetTask(ctx, &tes.GetTaskRequest{req.Id, tes.TaskView_MINIMAL})
 	if err != nil {
-		if err == mgo.ErrNotFound {
-			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", mgo.ErrNotFound.Error(), req.Id))
-		}
+		return nil, err
 	}
 
-	_, err = db.tasks.Upsert(bson.M{"id": req.Id}, bson.M{"$set": bson.M{"state": tes.State_CANCELED}})
+	from := task.State
+	to := tes.State_CANCELED
+	if err := tes.ValidateTransition(from, to); err != nil {
+		return nil, err
+	}
+
+	err = db.tasks.Update(bson.M{"id": req.Id}, bson.M{"$set": bson.M{"state": to}})
 
 	return &tes.CancelTaskResponse{}, err
 }

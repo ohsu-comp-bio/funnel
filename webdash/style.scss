@@ -78,6 +78,11 @@ main {
 .pager {
   text-align: right;
   padding: 10px 50px;
+
+  a {
+    @extend .mdl-button;
+    @extend .mdl-button--raised;
+  }
 }
 
 .data-table,

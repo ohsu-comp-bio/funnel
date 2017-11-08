@@ -202,8 +202,8 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 			k, _ = c.Prev()
 		} else {
 			// No pagination, so take the last key.
-      // Keys (task IDs) are in ascending order, and we want the first page
-      // to be the most recent task, so that's at the end of the list.
+			// Keys (task IDs) are in ascending order, and we want the first page
+			// to be the most recent task, so that's at the end of the list.
 			k, _ = c.Last()
 		}
 

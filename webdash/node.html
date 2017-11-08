@@ -7,6 +7,11 @@
     </div>
   </header>
 
+  <div ng-show="notFound">
+    <h5 style="text-align: center">Not Found</h5>
+  </div>
+
+  <div ng-show="loaded">
   <table class="data-table">
     <tbody>
       <tr>
@@ -47,4 +52,5 @@
       <td><code>curl {{ serverURL }}/v1/nodes/{{ node.id }}</code></td>
     </tr>
   </table>
+  </div>
 </div>

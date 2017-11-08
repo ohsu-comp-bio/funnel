@@ -122,9 +122,17 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
   }
 
   function refresh() {
-    $http.get($scope.url + "?view=FULL").success(function(data, status, headers, config) {
+    $http.get($scope.url + "?view=FULL")
+    .success(function(data, status, headers, config) {
       $scope.task = data;
+      $scope.loaded = true;
     })
+    .error(function(data, status, headers, config){
+      if (status == 404) {
+        $scope.notFound = true;
+        $interval.cancel(stop);
+      }
+    });
   }
   refresh();
   stop = $interval(refresh, 2000);
@@ -155,8 +163,16 @@ app.controller('NodeInfoController', function($scope, $http, $routeParams, $loca
   }
 
   function refresh() {
-    $http.get($scope.url).success(function(data, status, headers, config) {
+    $http.get($scope.url)
+    .success(function(data, status, headers, config) {
       $scope.node = data;
+      $scope.loaded = true;
+    })
+    .error(function(data, status, headers, config){
+      if (status == 404) {
+        $scope.notFound = true;
+        $interval.cancel(stop);
+      }
     });
   }
   refresh();

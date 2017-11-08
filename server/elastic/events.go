@@ -108,7 +108,7 @@ func (es *Elastic) CreateTask(ctx context.Context, task *tes.Task) error {
 // ListTasks lists tasks, duh.
 func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
-	pageSize := getPageSize(req)
+	pageSize := tes.GetPageSize(req.GetPageSize())
 	q := es.client.Search().
 		Index(es.taskIndex).
 		Type("task")
@@ -147,21 +147,6 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	}
 
 	return resp, nil
-}
-
-func getPageSize(req *tes.ListTasksRequest) int {
-	pageSize := 256
-
-	if req.PageSize != 0 {
-		pageSize = int(req.GetPageSize())
-		if pageSize > 2048 {
-			pageSize = 2048
-		}
-		if pageSize < 50 {
-			pageSize = 50
-		}
-	}
-	return pageSize
 }
 
 // GetTask gets a task by ID.

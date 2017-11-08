@@ -15,7 +15,9 @@ func TestServerRunManualPanic(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go server.Run(ctx, conf)
+	go func() {
+		server.Run(ctx, conf)
+	}()
 
 	conn, err := NewRPCConn(conf)
 	if err != nil {

@@ -69,3 +69,26 @@ func (task *Task) GetExecLog(attempt int, i int) *ExecutorLog {
 
 	return tl.Logs[i]
 }
+
+// GetPageSize takes in the page size from a request and returns a new page size
+// taking into account the minimum, maximum and default as documented in the TES spec.
+func GetPageSize(reqSize uint32) int {
+	// default page size
+	var pageSize = 256
+
+	if reqSize != 0 {
+		pageSize = int(reqSize)
+
+		// max page size
+		if pageSize > 2048 {
+			pageSize = 2048
+		}
+
+		// min page size
+		if pageSize < 50 {
+			pageSize = 50
+		}
+	}
+
+	return pageSize
+}

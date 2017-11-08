@@ -2,11 +2,16 @@
 
   <header>
     <div class="header-row">
-      <span class="header-title">Tasks</span>
+      <span class="header-title">Task {{ task.id }}</span>
       <div class="header-spacer"></div>
     </div>
   </header>
 
+  <div ng-show="notFound">
+    <h5 style="text-align: center">Not Found</h5>
+  </div>
+
+  <div ng-show="loaded">
   <table class="task-desc-table">
     <tr>
       <td>Name</td>
@@ -132,4 +137,5 @@
       <td><code>curl {{ serverURL }}/v1/tasks/{{ task.id }}</code></td>
     </tr>
   </table>
+  </div>
 </div>

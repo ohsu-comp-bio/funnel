@@ -11,7 +11,8 @@ import (
 
 // CreateEvent creates an event for the server to handle.
 func (db *MongoDB) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
-	return nil, fmt.Errorf("CreateEvent - Not Implemented")
+	err := db.WriteContext(ctx, req)
+	return &events.CreateEventResponse{}, err
 }
 
 // Write writes task events to the database, updating the task record they

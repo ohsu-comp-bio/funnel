@@ -20,7 +20,7 @@ func (db *MongoDB) QueueTask(task *tes.Task) error {
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (db *MongoDB) ReadQueue(n int) []*tes.Task {
 	var tasks []*tes.Task
-	err := db.tasks.Find(bson.M{"state": tes.State_QUEUED}).Select(basicView).All(&tasks)
+	err := db.tasks.Find(bson.M{"state": tes.State_QUEUED}).Select(basicView).Limit(n).All(&tasks)
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -56,13 +56,10 @@ func (db *MongoDB) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 func (db *MongoDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
 	var node pbs.Node
 	err := db.nodes.Find(bson.M{"id": req.Id}).One(&node)
-	if err != nil {
-		if err == mgo.ErrNotFound {
-			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
-		}
-		return nil, err
+	if err == mgo.ErrNotFound {
+		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
 	}
-	return &node, nil
+	return &node, err
 }
 
 // DeleteNode deletes a node

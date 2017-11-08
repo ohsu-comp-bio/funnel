@@ -71,16 +71,7 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 
 // ListTasks returns a list of taskIDs
 func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-	var pageSize = 256
-	if req.PageSize != 0 {
-		pageSize = int(req.GetPageSize())
-		if pageSize > 2048 {
-			pageSize = 2048
-		}
-		if pageSize < 50 {
-			pageSize = 50
-		}
-	}
+	pageSize := tes.GetPageSize(req.GetPageSize())
 
 	var q *mgo.Query
 	var err error

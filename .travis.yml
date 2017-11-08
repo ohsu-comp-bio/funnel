@@ -7,7 +7,6 @@ services:
 go:
   - 1.8
 before_install:
-  - docker pull minio/minio
   - docker pull ohsucompbio/htcondor
   - docker pull ohsucompbio/slurm
   - docker pull ohsucompbio/gridengine

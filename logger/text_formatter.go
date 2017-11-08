@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/kr/pretty"
 	"github.com/logrusorgru/aurora"
@@ -14,6 +15,9 @@ import (
 )
 
 var baseTimestamp = time.Now()
+var jsonmar = jsonpb.Marshaler{
+	Indent: "  ",
+}
 
 type textFormatter struct {
 	TextFormatConfig
@@ -90,7 +94,11 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		case float64:
 		case bool:
 		case proto.Message:
-			v = pretty.Sprint(x)
+			if s, err := jsonmar.MarshalToString(x); err == nil {
+				v = s
+			} else {
+				v = pretty.Sprint(x)
+			}
 		case fmt.Stringer:
 		case error:
 		default:

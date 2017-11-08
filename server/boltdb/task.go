@@ -199,13 +199,15 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 		if req.PageToken != "" {
 			// Seek moves to the key, but the start of the page is the next key.
 			c.Seek([]byte(req.PageToken))
-			k, _ = c.Next()
+			k, _ = c.Prev()
 		} else {
-			// No pagination, so take the first key.
-			k, _ = c.First()
+			// No pagination, so take the last key.
+      // Keys (task IDs) are in ascending order, and we want the first page
+      // to be the most recent task, so that's at the end of the list.
+			k, _ = c.Last()
 		}
 
-		for ; k != nil && i < pageSize; k, _ = c.Next() {
+		for ; k != nil && i < pageSize; k, _ = c.Prev() {
 			task, _ := getTaskView(tx, string(k), req.View)
 			tasks = append(tasks, task)
 			i++

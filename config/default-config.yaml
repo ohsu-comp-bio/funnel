@@ -22,7 +22,7 @@ Server:
   MaxExecutorLogSize: 10000 # 10 KB
 
   # The name of the active server database backend
-  # Available backends: boltdb, dynamodb
+  # Available backends: boltdb, dynamodb, elastic, mongodb
   Database: boltdb
   Databases:
     BoltDB:
@@ -40,11 +40,20 @@ Server:
     #     # AWS Secret Access Key
     #     Secret: ""
 
-    Elastic:
-      # Prefix to use for indexes (task, events, nodes)
-      IndexPrefix: "funnel"
-      # URL of the elasticsearch server.
-      URL: http://localhost:9200
+    # Elastic:
+    #   # Prefix to use for indexes (task, events, nodes)
+    #   IndexPrefix: "funnel"
+    #   # URL of the elasticsearch server.
+    #   URL: http://localhost:9200
+
+    # MongoDB:
+    #   # Addrs holds the addresses for the seed servers.
+    #   Addrs:
+    #     - "localhost"
+    #   # Database is the database name used within MongoDB to store funnel data.
+    #   Database: "funnel"
+    #   Username: ""
+    #   Password: ""
 
   Logger:
     # Logging levels: debug, info, error
@@ -265,10 +274,10 @@ Worker:
   BufferSize: 10000 # 10 KB
 
   # The name of the active task reader backend.
-  # Available backends: rpc, dynamodb
+  # Available backends: rpc, dynamodb, elastic, mongodb
   TaskReader: rpc
   TaskReaders:
-    # Read tasks directly from DynamoDB.  
+
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
@@ -280,8 +289,23 @@ Worker:
     #     # AWS Secret Access Key
     #     Secret: ""
 
+    # Elastic:
+    #   # Prefix to use for indexes (task, events, nodes)
+    #   IndexPrefix: "funnel"
+    #   # URL of the elasticsearch server.
+    #   URL: http://localhost:9200
+
+    # MongoDB:
+    #   # Addrs holds the addresses for the seed servers.
+    #   Addrs:
+    #     - "localhost"
+    #   # Database is the database name used within MongoDB to store funnel data.
+    #   Database: "funnel"
+    #   Username: ""
+    #   Password: ""
+
   # The name of the active event writer backend.
-  # Available backends: rpc, log, dynamodb
+  # Available backends: rpc, log, dynamodb, elastic, mongodb
   ActiveEventWriters: 
     - rpc
     - log
@@ -304,6 +328,21 @@ Worker:
     #     # AWS Secret Access Key
     #     Secret: ""
 
+    # Elastic:
+    #   # Prefix to use for indexes (task, events, nodes)
+    #   IndexPrefix: "funnel"
+    #   # URL of the elasticsearch server.
+    #   URL: http://localhost:9200
+
+    # MongoDB:
+    #   # Addrs holds the addresses for the seed servers.
+    #   Addrs:
+    #     - "localhost"
+    #   # Database is the database name used within MongoDB to store funnel data.
+    #   Database: "funnel"
+    #   Username: ""
+    #   Password: ""
+      
   Logger:
     # Logging levels: debug, info, error
     Level: info

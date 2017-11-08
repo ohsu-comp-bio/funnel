@@ -119,6 +119,7 @@ webdash-prep:
 	@./webdash/node_modules/.bin/browserify webdash/app.js -o build/webdash/bundle.js
 	@./webdash/node_modules/.bin/node-sass webdash/style.scss build/webdash/style.css
 	@cp webdash/*.html build/webdash/
+	@cp webdash/favicon.ico build/webdash/
 
 webdash-debug: webdash-prep
 	@go-bindata -debug -pkg webdash -prefix "build/" -o webdash/web.go build/webdash

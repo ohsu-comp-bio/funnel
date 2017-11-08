@@ -51,8 +51,9 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	}
 
 	var (
-		taskName  string
-		taskState string
+		pageToken string
+		pageSize  uint32
+		listAll   bool
 	)
 	listView := choiceVar{val: "BASIC"}
 
@@ -60,19 +61,18 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Use:   "list",
 		Short: "List all tasks.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return h.List(tesServer, listView.val, taskState, taskName, cmd.OutOrStdout())
+			return h.List(tesServer, listView.val, pageToken, pageSize, listAll, cmd.OutOrStdout())
 		},
 	}
 
 	lf := list.Flags()
 	listView.AddChoices("BASIC", "MINIMAL", "FULL")
 	lf.VarP(&listView, "view", "v", "Task view")
-	lf.StringVarP(&taskState, "state", "s", "", "Task state")
-	lf.StringVarP(&taskName, "name", "n", "", "Task name")
+	lf.StringVarP(&pageToken, "page-token", "p", pageToken, "Page token")
+	lf.Uint32VarP(&pageSize, "page-size", "s", pageSize, "Page size")
+	lf.BoolVar(&listAll, "all", listAll, "List all tasks")
 
 	getView := choiceVar{val: "FULL"}
-	getView.AddChoices("BASIC", "MINIMAL", "FULL")
-
 	get := &cobra.Command{
 		Use:   "get [taskID ...]",
 		Short: "Get one or more tasks by ID.",
@@ -83,6 +83,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	}
 
 	gf := get.Flags()
+	getView.AddChoices("BASIC", "MINIMAL", "FULL")
 	gf.VarP(&getView, "view", "v", "Task view")
 
 	cancel := &cobra.Command{
@@ -110,7 +111,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 type hooks struct {
 	Create func(server string, messages []string, w io.Writer) error
 	Get    func(server string, ids []string, view string, w io.Writer) error
-	List   func(server, view, state, name string, w io.Writer) error
+	List   func(server, view, pageToken string, pageSize uint32, all bool, w io.Writer) error
 	Cancel func(server string, ids []string, w io.Writer) error
 	Wait   func(server string, ids []string) error
 }

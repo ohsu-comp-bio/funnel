@@ -41,7 +41,7 @@ func TestGetDefaultView(t *testing.T) {
 func TestList(t *testing.T) {
 	cmd, h := newCommandHooks()
 
-	h.List = func(server, view, state, name string, w io.Writer) error {
+	h.List = func(server, view, state string, size uint32, all bool, w io.Writer) error {
 		if view != "FULL" {
 			t.Errorf("expected FULL view, got '%s'", view)
 		}
@@ -62,7 +62,7 @@ func TestServerDefault(t *testing.T) {
 		}
 		return nil
 	}
-	h.List = func(server, view, state, name string, w io.Writer) error {
+	h.List = func(server, view, state string, size uint32, all bool, w io.Writer) error {
 		if server != "http://localhost:8000" {
 			t.Errorf("expected localhost default, got '%s'", server)
 		}
@@ -116,7 +116,7 @@ func TestServerEnv(t *testing.T) {
 		}
 		return nil
 	}
-	h.List = func(server, view, state, name string, w io.Writer) error {
+	h.List = func(server, view, state string, size uint32, all bool, w io.Writer) error {
 		if server != "foobar" {
 			t.Error("expected foobar")
 		}

@@ -70,15 +70,6 @@
 [submodule "vendor/github.com/spf13/pflag"]
 	path = vendor/github.com/spf13/pflag
 	url = https://github.com/spf13/pflag
-[submodule "vendor/github.com/elgs/jsonql"]
-	path = vendor/github.com/elgs/jsonql
-	url = https://github.com/elgs/jsonql
-[submodule "vendor/github.com/elgs/gojq"]
-	path = vendor/github.com/elgs/gojq
-	url = https://github.com/elgs/gojq
-[submodule "vendor/github.com/elgs/gosplitargs"]
-	path = vendor/github.com/elgs/gosplitargs
-	url = https://github.com/elgs/gosplitargs
 [submodule "vendor/github.com/elazarl/go-bindata-assetfs"]
 	path = vendor/github.com/elazarl/go-bindata-assetfs
 	url = https://github.com/elazarl/go-bindata-assetfs

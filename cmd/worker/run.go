@@ -6,6 +6,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
 	"github.com/ohsu-comp-bio/funnel/storage"
@@ -27,6 +29,7 @@ func Run(conf config.Worker, taskID string, log *logger.Logger) error {
 // NewDefaultWorker returns a new configured DefaultWorker instance.
 func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (worker.Worker, error) {
 	var err error
+	var db tes.TaskServiceServer
 	var reader worker.TaskReader
 	var writer events.Writer
 
@@ -40,25 +43,33 @@ func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (wo
 
 	switch conf.TaskReader {
 	case "rpc":
-		reader, err = worker.NewRPCTaskReader(conf, taskID)
+		reader, err = worker.NewRPCTaskReader(conf.TaskReaders.RPC, taskID)
 	case "dynamodb":
-		reader, err = worker.NewDynamoDBTaskReader(conf.TaskReaders.DynamoDB, taskID)
-		// case "mongodb":
-		// 	reader, err = worker.NewMongoDBTaskReader(conf.TaskReaders.MongoDB, taskID)
+		db, err = dynamodb.NewDynamoDB(conf.TaskReaders.DynamoDB)
+	case "elastic":
+		db, err = elastic.NewTES(conf.EventWriters.Elastic)
+	case "mongodb":
+		db, err = mongodb.NewMongoDB(conf.TaskReaders.MongoDB)
+	default:
+		err = fmt.Errorf("unknown TaskReader")
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
 	}
 
+	if reader == nil {
+		reader = worker.NewGenericTaskReader(db.GetTask, taskID)
+	}
+
 	writers := []events.Writer{}
 	for _, w := range conf.ActiveEventWriters {
 		switch w {
-		case "dynamodb":
-			writer, err = events.NewDynamoDBEventWriter(conf.EventWriters.DynamoDB)
 		case "log":
 			writer = &events.Logger{Log: log}
 		case "rpc":
-			writer, err = events.NewRPCWriter(conf)
+			writer, err = events.NewRPCWriter(conf.EventWriters.RPC)
+		case "dynamodb":
+			writer, err = dynamodb.NewDynamoDB(conf.EventWriters.DynamoDB)
 		case "elastic":
 			writer, err = elastic.NewElastic(conf.EventWriters.Elastic)
 		case "mongodb":

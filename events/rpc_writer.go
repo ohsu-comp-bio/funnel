@@ -15,22 +15,22 @@ type RPCWriter struct {
 }
 
 // NewRPCWriter returns a new RPCWriter instance.
-func NewRPCWriter(conf config.Worker) (*RPCWriter, error) {
+func NewRPCWriter(conf config.RPC) (*RPCWriter, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	conn, err := grpc.DialContext(ctx,
-		conf.EventWriters.RPC.ServerAddress,
+		conf.ServerAddress,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		util.PerRPCPassword(conf.EventWriters.RPC.ServerPassword),
+		util.PerRPCPassword(conf.ServerPassword),
 	)
 	if err != nil {
 		return nil, err
 	}
 	cli := NewEventServiceClient(conn)
 
-	return &RPCWriter{cli, conf.EventWriters.RPC.UpdateTimeout}, nil
+	return &RPCWriter{cli, conf.Timeout}, nil
 }
 
 func (r *RPCWriter) Write(e *Event) error {

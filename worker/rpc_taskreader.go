@@ -16,16 +16,16 @@ type RPCTaskReader struct {
 }
 
 // NewRPCTaskReader returns a new RPC-based task reader.
-func NewRPCTaskReader(conf config.Worker, taskID string) (*RPCTaskReader, error) {
+func NewRPCTaskReader(conf config.RPC, taskID string) (*RPCTaskReader, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	conn, err := grpc.DialContext(
 		ctx,
-		conf.EventWriters.RPC.ServerAddress,
+		conf.ServerAddress,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		util.PerRPCPassword(conf.EventWriters.RPC.ServerPassword),
+		util.PerRPCPassword(conf.ServerPassword),
 	)
 	if err != nil {
 		return nil, err

@@ -113,6 +113,11 @@ func DefaultConfig() Config {
 		},
 	}
 
+	rpc := RPC{
+		ServerAddress:  server.RPCAddress(),
+		ServerPassword: server.Password,
+		Timeout:        time.Second,
+	}
 	dynamo := DynamoDB{
 		TableBasename: "funnel",
 	}
@@ -132,15 +137,13 @@ func DefaultConfig() Config {
 	c.Server.Databases.MongoDB = mongo
 
 	c.Worker.TaskReader = "rpc"
-	c.Worker.TaskReaders.RPC.ServerAddress = server.RPCAddress()
-	c.Worker.TaskReaders.RPC.ServerPassword = server.Password
+	c.Worker.TaskReaders.RPC = rpc
 	c.Worker.TaskReaders.DynamoDB = dynamo
+	c.Worker.TaskReaders.Elastic = elastic
 	c.Worker.TaskReaders.MongoDB = mongo
 
 	c.Worker.ActiveEventWriters = []string{"rpc", "log"}
-	c.Worker.EventWriters.RPC.ServerAddress = server.RPCAddress()
-	c.Worker.EventWriters.RPC.ServerPassword = server.Password
-	c.Worker.EventWriters.RPC.UpdateTimeout = time.Second
+	c.Worker.EventWriters.RPC = rpc
 	c.Worker.EventWriters.DynamoDB = dynamo
 	c.Worker.EventWriters.Elastic = elastic
 	c.Worker.EventWriters.MongoDB = mongo
@@ -258,29 +261,28 @@ type Worker struct {
 	Logger      logger.Config
 	TaskReader  string
 	TaskReaders struct {
-		RPC struct {
-			// RPC address of the Funnel server
-			ServerAddress string
-			// Password for basic auth. with the server APIs.
-			ServerPassword string
-		}
-		DynamoDB DynamoDB
-		MongoDB  MongoDB
-	}
-	ActiveEventWriters []string
-	EventWriters       struct {
-		RPC struct {
-			// RPC address of the Funnel server
-			ServerAddress string
-			// Password for basic auth. with the server APIs.
-			ServerPassword string
-			// Timeout duration for gRPC calls
-			UpdateTimeout time.Duration
-		}
+		RPC      RPC
 		DynamoDB DynamoDB
 		Elastic  Elastic
 		MongoDB  MongoDB
 	}
+	ActiveEventWriters []string
+	EventWriters       struct {
+		RPC      RPC
+		DynamoDB DynamoDB
+		Elastic  Elastic
+		MongoDB  MongoDB
+	}
+}
+
+// RPC configures access to the Funnel RPC server.
+type RPC struct {
+	// RPC address of the Funnel server
+	ServerAddress string
+	// Password for basic auth. with the server APIs.
+	ServerPassword string
+	// Timeout duration for gRPC calls
+	Timeout time.Duration
 }
 
 // MongoDB configures access to an MongoDB database.

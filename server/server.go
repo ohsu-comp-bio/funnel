@@ -70,7 +70,9 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	dashmux := http.NewServeMux()
 	dashmux.Handle("/", webdash.RootHandler())
-	mux.Handle("/static/", http.StripPrefix("/static/", webdash.FileServer()))
+	dashfs := webdash.FileServer()
+	mux.Handle("/favicon.ico", dashfs)
+	mux.Handle("/static/", http.StripPrefix("/static/", dashfs))
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 

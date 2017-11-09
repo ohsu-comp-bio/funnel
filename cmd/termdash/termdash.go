@@ -48,9 +48,9 @@ func termdash(tesHTTPServerAddress string) {
 	defer Shutdown()
 
 	// init grid, cursor, header
+	header = widgets.NewTermDashHeader()
 	cursor = NewGridCursor(tesHTTPServerAddress)
 	cGrid = compact.NewGrid()
-	header = widgets.NewTermDashHeader()
 
 	for {
 		exit := Display()

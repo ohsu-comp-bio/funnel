@@ -30,7 +30,7 @@ func NewInput() *Input {
 	i := &Input{
 		Block:       *ui.NewBlock(),
 		Label:       "input",
-		MaxLen:      20,
+		MaxLen:      40,
 		TextFgColor: ui.ThemeAttr("menu.text.fg"),
 		TextBgColor: ui.ThemeAttr("menu.text.bg"),
 		padding:     Padding{4, 2},

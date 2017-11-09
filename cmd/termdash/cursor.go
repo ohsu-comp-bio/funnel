@@ -16,11 +16,19 @@ type GridCursor struct {
 
 func NewGridCursor(tesHTTPServerAddress string) *GridCursor {
 	return &GridCursor{
-		tSource: NewTaskSource(tesHTTPServerAddress),
+		tSource: NewTaskSource(tesHTTPServerAddress, 100),
 	}
 }
 
 func (gc *GridCursor) Len() int { return len(gc.filtered) }
+
+func (gc *GridCursor) NextPageExists() bool {
+	return gc.tSource.GetNextPage() != ""
+}
+
+func (gc *GridCursor) PreviousPageExists() bool {
+	return gc.tSource.GetPreviousPage() != ""
+}
 
 func (gc *GridCursor) Selected() *TaskWidget {
 	idx := gc.Idx()
@@ -36,13 +44,13 @@ func (gc *GridCursor) RefreshTask(id string) *TaskWidget {
 }
 
 // Refresh task list
-func (gc *GridCursor) RefreshTaskList() (lenChanged bool) {
+func (gc *GridCursor) RefreshTaskList(previous, next bool) (lenChanged bool) {
 	oldLen := gc.Len()
 
 	// Tasks filtered by display bool
 	gc.filtered = TaskWidgets{}
 	var cursorVisible bool
-	for _, t := range gc.tSource.All() {
+	for _, t := range gc.tSource.List(previous, next) {
 		if t.display {
 			if t.Task.Id == gc.selectedID {
 				t.Widgets.ID.Highlight()
@@ -69,7 +77,7 @@ func (gc *GridCursor) RefreshTaskList() (lenChanged bool) {
 
 // Set an initial cursor position, if possible
 func (gc *GridCursor) Reset() {
-	for _, t := range gc.tSource.All() {
+	for _, t := range gc.tSource.List(false, false) {
 		t.Widgets.ID.UnHighlight()
 	}
 	if gc.Len() > 0 {

@@ -264,9 +264,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 			},
 			UpdateExpression: aws.String("SET stdout = :stdout, attempt = :attempt, #index = :index"),
 			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-				":e": {
-					L: []*dynamodb.AttributeValue{},
-				},
 				":stdout": {
 					S: aws.String(e.GetStdout()),
 				},
@@ -296,9 +293,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 			},
 			UpdateExpression: aws.String("SET stderr = :stderr, attempt = :attempt, #index = :index"),
 			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-				":e": {
-					L: []*dynamodb.AttributeValue{},
-				},
 				":stderr": {
 					S: aws.String(e.GetStderr()),
 				},

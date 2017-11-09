@@ -262,24 +262,13 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 			ExpressionAttributeNames: map[string]*string{
 				"#index": aws.String("index"),
 			},
-			UpdateExpression: aws.String("SET stdout = list_append(if_not_exists(stdout, :e), :stdout), attempt = :attempt, #index = :index"),
+			UpdateExpression: aws.String("SET stdout = :stdout, attempt = :attempt, #index = :index"),
 			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 				":e": {
 					L: []*dynamodb.AttributeValue{},
 				},
 				":stdout": {
-					L: []*dynamodb.AttributeValue{
-						{
-							M: map[string]*dynamodb.AttributeValue{
-								"value": {
-									S: aws.String(e.GetStdout()),
-								},
-								"timestamp": {
-									S: aws.String(ptypes.TimestampString(ptypes.TimestampNow())),
-								},
-							},
-						},
-					},
+					S: aws.String(e.GetStdout()),
 				},
 				":attempt": {
 					N: aws.String(strconv.Itoa(int(e.Attempt))),
@@ -305,24 +294,13 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 			ExpressionAttributeNames: map[string]*string{
 				"#index": aws.String("index"),
 			},
-			UpdateExpression: aws.String("SET stderr = list_append(if_not_exists(stderr, :e), :stderr), attempt = :attempt, #index = :index"),
+			UpdateExpression: aws.String("SET stderr = :stderr, attempt = :attempt, #index = :index"),
 			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 				":e": {
 					L: []*dynamodb.AttributeValue{},
 				},
 				":stderr": {
-					L: []*dynamodb.AttributeValue{
-						{
-							M: map[string]*dynamodb.AttributeValue{
-								"value": {
-									S: aws.String(e.GetStderr()),
-								},
-								"timestamp": {
-									S: aws.String(ptypes.TimestampString(ptypes.TimestampNow())),
-								},
-							},
-						},
-					},
+					S: aws.String(e.GetStderr()),
 				},
 				":attempt": {
 					N: aws.String(strconv.Itoa(int(e.Attempt))),

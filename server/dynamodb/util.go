@@ -9,9 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"sort"
 	"strconv"
-	"time"
 )
 
 func checkCreateErr(err error) error {
@@ -416,16 +414,7 @@ func (db *DynamoDB) getExecutorOutput(ctx context.Context, in map[string]*dynamo
 			for _, item := range page.Items {
 				i, _ := strconv.ParseInt(*item["index"].N, 10, 64)
 				a, _ := strconv.ParseInt(*item["attempt"].N, 10, 64)
-				var logs elogs
-				for _, part := range item[val].L {
-					t, _ := time.Parse(time.RFC3339, *part.M["timestamp"].S)
-					logs = append(logs, elog{val: *part.M["value"].S, timestamp: t})
-				}
-				sort.Sort(logs)
-				var out string
-				for _, v := range logs {
-					out += v.val
-				}
+				out := *item["stdout"].N
 				in["logs"].L[a].M["logs"].L[i].M[val] = &dynamodb.AttributeValue{
 					S: aws.String(out),
 				}
@@ -440,23 +429,4 @@ func (db *DynamoDB) getExecutorOutput(ctx context.Context, in map[string]*dynamo
 		return err
 	}
 	return nil
-}
-
-type elog struct {
-	val       string
-	timestamp time.Time
-}
-
-type elogs []elog
-
-func (slice elogs) Len() int {
-	return len(slice)
-}
-
-func (slice elogs) Less(i, j int) bool {
-	return slice[i].timestamp.Before(slice[j].timestamp)
-}
-
-func (slice elogs) Swap(i, j int) {
-	slice[i], slice[j] = slice[j], slice[i]
 }

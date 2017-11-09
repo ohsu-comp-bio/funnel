@@ -22,7 +22,10 @@ func NewKafkaWriter(conf config.Kafka) (*KafkaWriter, error) {
 
 // Close closes the Kafka producer, cleaning up resources.
 func (k *KafkaWriter) Close() error {
-	return k.producer.Close()
+	if k.producer != nil {
+		return k.producer.Close()
+	}
+	return nil
 }
 
 // Write writes the event. Events may be sent in batches in the background by the
@@ -85,8 +88,13 @@ func NewKafkaReader(conf config.Kafka, w Writer) (*KafkaReader, error) {
 
 // Close closes the Kafka reader, cleaning up resources.
 func (k *KafkaReader) Close() error {
-	err := k.con.Close()
-	perr := k.pcon.Close()
+	var err, perr error
+	if k.con != nil {
+		err = k.con.Close()
+	}
+	if k.pcon != nil {
+		perr = k.pcon.Close()
+	}
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,7 @@ import (
 )
 
 var fun *e2e.Funnel
-var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
+var runTest = flag.Bool("run-test", false, "run e2e tests with dynamo")
 var log = logger.NewLogger("dynamo-e2e", testutils.LogConfig())
 
 func TestMain(m *testing.M) {
@@ -339,7 +339,7 @@ func TestSingleCharLog(t *testing.T) {
     --sh "sh -c 'echo a; sleep 100'"
   `)
 	fun.WaitForRunning(id)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 5)
 	task := fun.Get(id)
 	if task.Logs[0].Logs[0].Stdout != "a\n" {
 		t.Fatal("Missing logs")

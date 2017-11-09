@@ -414,9 +414,10 @@ func (db *DynamoDB) getExecutorOutput(ctx context.Context, in map[string]*dynamo
 			for _, item := range page.Items {
 				i, _ := strconv.ParseInt(*item["index"].N, 10, 64)
 				a, _ := strconv.ParseInt(*item["attempt"].N, 10, 64)
-				out := *item["stdout"].N
-				in["logs"].L[a].M["logs"].L[i].M[val] = &dynamodb.AttributeValue{
-					S: aws.String(out),
+				if out, ok := item[val]; ok {
+					in["logs"].L[a].M["logs"].L[i].M[val] = &dynamodb.AttributeValue{
+						S: aws.String(*out.S),
+					}
 				}
 			}
 			if page.LastEvaluatedKey == nil {

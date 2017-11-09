@@ -32,14 +32,16 @@ func (db *MongoDB) ReadQueue(n int) []*tes.Task {
 // and status updates, such as completed tasks. The server responds with updated
 // information for the node, such as canceled tasks.
 func (db *MongoDB) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
+	q := bson.M{"id": node.Id}
+
+	if node.GetVersion() != 0 {
+		q["version"] = node.GetVersion()
+	}
+
 	var existing pbs.Node
 	err := db.nodes.Find(bson.M{"id": node.Id}).One(&existing)
 	if err != nil && err != mgo.ErrNotFound {
 		return nil, err
-	}
-
-	if existing.GetVersion() != 0 && node.Version != existing.GetVersion() {
-		return nil, fmt.Errorf("Version outdated")
 	}
 
 	err = scheduler.UpdateNode(ctx, db, node, &existing)
@@ -47,7 +49,9 @@ func (db *MongoDB) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 		return nil, err
 	}
 
-	_, err = db.nodes.Upsert(bson.M{"id": node.Id}, node)
+	node.Version = node.GetVersion() + 1
+
+	_, err = db.nodes.Upsert(q, node)
 
 	return &pbs.PutNodeResponse{}, err
 }

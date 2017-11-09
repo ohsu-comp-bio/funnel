@@ -11,7 +11,7 @@ import (
 )
 
 var helpDialog = []menu.Item{
-	{Label: "[a] - toggle display of all tasks", Val: ""},
+	{Label: "[a] - toggle active filter", Val: ""},
 	{Label: "[f] - filter displayed tasks", Val: ""},
 	{Label: "[h] - open this help dialog", Val: ""},
 	{Label: "[H] - toggle dashboard header", Val: ""},

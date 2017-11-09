@@ -13,7 +13,7 @@ var switches = []*Switch{
 	{
 		Key:   "allTasks",
 		Val:   false,
-		Label: "Show All Tasks",
+		Label: "Clear All Filters",
 	},
 	{
 		Key:   "enableHeader",

@@ -10,70 +10,84 @@ import (
 )
 
 type TesTaskSource interface {
-	All() TaskWidgets
+	List(bool, bool) TaskWidgets
 	Get(string) *TaskWidget
+	GetNextPage() string
+	GetPreviousPage() string
 }
 
 type TaskSource struct {
-	client *client.Client
-	tasks  TaskWidgets
-	lock   sync.RWMutex
+	client   *client.Client
+	pageSize uint32
+	pPage    []string
+	cPage    string
+	nPage    string
+	tasks    TaskWidgets
+	lock     sync.RWMutex
 }
 
-func NewTaskSource(tesHTTPServerAddress string) *TaskSource {
+func NewTaskSource(tesHTTPServerAddress string, pageSize uint32) *TaskSource {
 	// init funnel http client
 	cli := client.NewClient(tesHTTPServerAddress)
-	cm := &TaskSource{
-		client: cli,
-		lock:   sync.RWMutex{},
+	ts := &TaskSource{
+		client:   cli,
+		pageSize: pageSize,
+		lock:     sync.RWMutex{},
 	}
-	cm.tasks = cm.listTasks()
-	return cm
+	ts.tasks = ts.listTasks(false, false)
+	return ts
 }
 
-func (cm *TaskSource) listTasks() TaskWidgets {
+func (ts *TaskSource) listTasks(previous, next bool) TaskWidgets {
 	var tasks TaskWidgets
-	var page string
 
-	defer func() {
-		if r := recover(); r != nil {
-			if header != nil {
-				header.SetError(fmt.Sprintf("%v", r))
+	if next && !previous {
+		if ts.nPage != "" {
+			if ts.cPage != "" {
+				ts.pPage = append(ts.pPage, ts.cPage)
 			}
+			ts.cPage = ts.nPage
 		}
-	}()
-
-	for {
-		resp, err := cm.client.ListTasks(context.Background(), &tes.ListTasksRequest{
-			View:      tes.TaskView_BASIC,
-			PageToken: page,
-		})
-		if err != nil {
-			panic(err)
+	} else if previous && !next {
+		if len(ts.pPage) > 0 {
+			ts.cPage = ts.pPage[len(ts.pPage)-1]
+			ts.pPage = ts.pPage[:len(ts.pPage)-1]
 		} else {
-			header.SetError("")
-		}
-		for _, t := range resp.Tasks {
-			tasks = append(tasks, NewTaskWidget(t))
-		}
-		page = resp.NextPageToken
-		if page == "" {
-			break
+			ts.cPage = ""
 		}
 	}
+
+	resp, err := ts.client.ListTasks(context.Background(), &tes.ListTasksRequest{
+		View:      tes.TaskView_BASIC,
+		PageSize:  ts.pageSize,
+		PageToken: ts.cPage,
+	})
+	if err != nil {
+		header.SetError(fmt.Sprintf("%v", err))
+		return nil
+	} else {
+		// header.SetError(fmt.Sprintf("Previous: %s; Next: %s; Current: %s", ts.pPage, ts.nPage, ts.cPage))
+		header.SetError("")
+	}
+	ts.nPage = resp.NextPageToken
+
+	for _, t := range resp.Tasks {
+		tasks = append(tasks, NewTaskWidget(t))
+	}
+
 	return tasks
 }
 
-// Return array of all tasks, sorted by field
-func (cm *TaskSource) All() TaskWidgets {
-	cm.tasks = cm.listTasks()
+// Return array of tasks, sorted by field
+func (ts *TaskSource) List(previous, next bool) TaskWidgets {
+	ts.tasks = ts.listTasks(previous, next)
 
-	cm.lock.Lock()
+	ts.lock.Lock()
 	var tasks TaskWidgets
-	for _, t := range cm.tasks {
+	for _, t := range ts.tasks {
 		tasks = append(tasks, t)
 	}
-	cm.lock.Unlock()
+	ts.lock.Unlock()
 
 	sort.Sort(tasks)
 	tasks.Filter()
@@ -81,7 +95,7 @@ func (cm *TaskSource) All() TaskWidgets {
 }
 
 // Get a single task, by ID
-func (cm *TaskSource) Get(id string) *TaskWidget {
+func (ts *TaskSource) Get(id string) *TaskWidget {
 	defer func() {
 		if r := recover(); r != nil {
 			if header != nil {
@@ -90,7 +104,7 @@ func (cm *TaskSource) Get(id string) *TaskWidget {
 		}
 	}()
 
-	task, err := cm.client.GetTask(context.Background(), &tes.GetTaskRequest{
+	task, err := ts.client.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
 		View: tes.TaskView_FULL,
 	})
@@ -98,4 +112,17 @@ func (cm *TaskSource) Get(id string) *TaskWidget {
 		panic(err)
 	}
 	return NewTaskWidget(task)
+}
+
+func (ts *TaskSource) GetNextPage() string {
+	return ts.nPage
+}
+
+func (ts *TaskSource) GetPreviousPage() string {
+	if len(ts.pPage) > 0 {
+		return ts.pPage[len(ts.pPage)-1]
+	} else if ts.cPage != "" {
+		return ts.cPage
+	}
+	return ""
 }

@@ -16,7 +16,8 @@ func RedrawRows(clr bool) {
 	// build layout
 	y := 1
 	if config.GetSwitchVal("enableHeader") {
-		header.SetCount(cursor.Len())
+		header.SetPrevious(cursor.PreviousPageExists())
+		header.SetNext(cursor.NextPageExists())
 		header.SetFilter(config.GetVal("filterStr"))
 		y += header.Height()
 	}
@@ -65,8 +66,18 @@ func ExpandView(t *TaskWidget) {
 }
 
 func RefreshDisplay() {
-	needsClear := cursor.RefreshTaskList()
+	needsClear := cursor.RefreshTaskList(false, false)
 	RedrawRows(needsClear)
+}
+
+func NextPage() {
+	cursor.RefreshTaskList(false, true)
+	RedrawRows(true)
+}
+
+func PreviousPage() {
+	cursor.RefreshTaskList(true, false)
+	RedrawRows(true)
 }
 
 func Display() bool {
@@ -77,14 +88,13 @@ func Display() bool {
 
 	// initial draw
 	header.Align()
-	cursor.RefreshTaskList()
+	cursor.RefreshTaskList(false, false)
 	RedrawRows(true)
 
 	HandleKeys("up", cursor.Up)
 	HandleKeys("down", cursor.Down)
-
-	HandleKeys("pgup", cursor.PgUp)
-	HandleKeys("pgdown", cursor.PgDown)
+	HandleKeys("left", PreviousPage)
+	HandleKeys("right", NextPage)
 
 	HandleKeys("exit", ui.StopLoop)
 	HandleKeys("help", func() {

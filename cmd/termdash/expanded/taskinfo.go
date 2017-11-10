@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var displayInfo = []string{"id", "state", "name", "description", "project", "tags"}
+var displayInfo = []string{"id", "state", "name", "description", "tags"}
 
 type TaskInfo struct {
 	*ui.Table
@@ -26,7 +26,6 @@ func NewTaskInfo(t *tes.Task) *TaskInfo {
 	i.Set("state", t.State.String())
 	i.Set("name", t.Name)
 	i.Set("description", t.Description)
-	i.Set("project", t.Project)
 	var tags []string
 	for k, v := range t.Tags {
 		tags = append(tags, fmt.Sprintf("%s: %s", k, v))

@@ -71,7 +71,6 @@ func (c *Client) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Tas
 func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 	// Build url query parameters
 	v := url.Values{}
-	addString(v, "project", req.GetProject())
 	addString(v, "name_prefix", req.GetNamePrefix())
 	addUInt32(v, "page_size", req.GetPageSize())
 	addString(v, "page_token", req.GetPageToken())

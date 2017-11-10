@@ -101,13 +101,13 @@ func (_m *Database) ReadQueue(_a0 int) []*tes.Task {
 	return r0
 }
 
-// Write provides a mock function with given fields: ev
-func (_m *Database) Write(ev *events.Event) error {
-	ret := _m.Called(ev)
+// WriteContext provides a mock function with given fields: _a0, _a1
+func (_m *Database) WriteContext(_a0 context.Context, _a1 *events.Event) error {
+	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*events.Event) error); ok {
-		r0 = rf(ev)
+	if rf, ok := ret.Get(0).(func(context.Context, *events.Event) error); ok {
+		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
 	}

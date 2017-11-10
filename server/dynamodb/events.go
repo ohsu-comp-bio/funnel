@@ -312,6 +312,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 }
 
 // Close closes the writer.
-func (ew *DynamoDBEventWriter) Close() error {
+func (db *DynamoDB) Close() error {
 	return nil
 }

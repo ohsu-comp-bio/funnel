@@ -6,7 +6,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -33,13 +32,10 @@ func (et *TES) WithComputeBackend(b compute.Backend) {
 // CreateTask creates a new task.
 func (et *TES) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 
-	if err := tes.Validate(task); err != nil {
-		err := fmt.Errorf("invalid task message:\n%s", err)
+	if err := tes.InitTask(task); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	task.Id = util.GenTaskID()
-	task.State = tes.State_QUEUED
 	if task.Tags == nil {
 		task.Tags = map[string]string{}
 	}

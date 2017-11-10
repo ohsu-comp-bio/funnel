@@ -6,7 +6,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"path"
 	"strings"
@@ -137,7 +136,7 @@ func TestLargeLogRate(t *testing.T) {
 	conf.UpdateRate = time.Millisecond * 500
 	conf.BufferSize = 100
 	task := tes.Task{
-		Id: "test-task-" + util.GenTaskID(),
+		Id: "test-task-" + tes.GenerateID(),
 		Executors: []*tes.Executor{
 			{
 				Image:   "alpine",

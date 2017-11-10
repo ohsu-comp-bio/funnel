@@ -90,20 +90,6 @@ func (db *MongoDB) WriteContext(ctx context.Context, req *events.Event) error {
 			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.exitcode", req.Attempt, req.Index): exitCode}},
 		)
 
-	case events.Type_EXECUTOR_HOST_IP:
-		hostIP := req.GetHostIp()
-		err = db.tasks.Update(
-			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.hostip", req.Attempt, req.Index): hostIP}},
-		)
-
-	case events.Type_EXECUTOR_PORTS:
-		ports := req.GetPorts().Value
-		err = db.tasks.Update(
-			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.ports", req.Attempt, req.Index): ports}},
-		)
-
 	case events.Type_EXECUTOR_STDOUT:
 		stdout := req.GetStdout()
 		err = db.tasks.Update(

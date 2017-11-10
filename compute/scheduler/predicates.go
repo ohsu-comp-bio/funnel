@@ -44,30 +44,6 @@ func ResourcesFit(t *tes.Task, n *pbs.Node) error {
 	return nil
 }
 
-// PortsFit determines whether a task's ports fit a node
-// by checking that the node has the requested ports available.
-func PortsFit(t *tes.Task, n *pbs.Node) error {
-	// Get the set of active ports on the node
-	active := map[int32]bool{}
-	for _, p := range n.ActivePorts {
-		active[p] = true
-	}
-	// Loop through the requested ports, fail if they are active.
-	for _, d := range t.GetExecutors() {
-		for _, p := range d.Ports {
-			h := p.GetHost()
-			if h == 0 {
-				// "0" means "assign a random port, so skip checking this one.
-				continue
-			}
-			if b := active[int32(h)]; b {
-				return fmt.Errorf("Fail ports")
-			}
-		}
-	}
-	return nil
-}
-
 // ZonesFit determines whether a task's zones fit a node.
 func ZonesFit(t *tes.Task, n *pbs.Node) error {
 	if n.Zone == "" {
@@ -111,7 +87,6 @@ func NodeHasTag(tag string) Predicate {
 // the whether a task fits a node.
 var DefaultPredicates = []Predicate{
 	ResourcesFit,
-	PortsFit,
 	ZonesFit,
 	NotDead,
 }

@@ -81,9 +81,6 @@ func SubtractResources(t *tes.Task, in *pbs.Resources) *pbs.Resources {
 
 // AvailableResources calculates available resources given a list of tasks
 // and base resources.
-//
-// TODO include active ports. maybe move Available out of the protobuf message
-//      and expect this helper to be used?
 func AvailableResources(tasks []*tes.Task, res *pbs.Resources) *pbs.Resources {
 	a := &pbs.Resources{
 		Cpus:   res.GetCpus(),

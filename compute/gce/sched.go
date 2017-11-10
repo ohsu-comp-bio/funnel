@@ -58,7 +58,7 @@ func (s *Backend) GetOffer(j *tes.Task) *scheduler.Offer {
 
 	for _, n := range s.getNodes() {
 		// Filter out nodes that don't match the task request.
-		// Checks CPU, RAM, disk space, ports, etc.
+		// Checks CPU, RAM, disk space, etc.
 		if !scheduler.Match(n, j, predicates) {
 			continue
 		}

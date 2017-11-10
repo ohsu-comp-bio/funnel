@@ -347,21 +347,6 @@ func TestSingleCharLog(t *testing.T) {
 	fun.Cancel(id)
 }
 
-// Test that port mappings are being logged.
-/* TODO need ports in funnel run
-func TestPortLog(t *testing.T) {
-  id := fun.Run(`
-    --sh 'echo start'
-    --sh 'sleep 10'
-  `)
-  fun.WaitForExec(id, 2)
-  task := fun.Get(id)
-  if task.Logs[0].Logs[0].Ports[0].Host != 5000 {
-    t.Fatal("Unexpected port logs")
-  }
-}
-*/
-
 // Test that a completed task cannot change state.
 func TestCompleteStateImmutable(t *testing.T) {
 	setLogOutput(t)

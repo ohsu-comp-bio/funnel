@@ -16,9 +16,7 @@ type stepWorker struct {
 }
 
 func (s *stepWorker) Run(ctx context.Context) error {
-	// Send update for host IP address.
 	s.Event.StartTime(time.Now())
-	s.Event.HostIP(s.IP)
 
 	// subctx helps ensure that these goroutines are cleaned up,
 	// even when the task is canceled.

@@ -100,8 +100,6 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 			Stdin:     stdin,
 			Stdout:    stdoutPath,
 			Stderr:    stderrPath,
-			// TODO no ports
-			Ports: nil,
 		})
 	}
 

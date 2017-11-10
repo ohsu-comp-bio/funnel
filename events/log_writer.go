@@ -36,10 +36,6 @@ func (el *Logger) Write(ev *Event) error {
 		log.Info(ts, "end_time", TimestampString(ev.GetEndTime()))
 	case Type_EXECUTOR_EXIT_CODE:
 		log.Info(ts, "exit_code", ev.GetExitCode())
-	case Type_EXECUTOR_HOST_IP:
-		log.Info(ts, "host_ip", ev.GetHostIp())
-	case Type_EXECUTOR_PORTS:
-		log.Info(ts, "ports", ev.GetPorts().Value)
 	case Type_EXECUTOR_STDOUT:
 		log.Info(ts, "stdout", ev.GetStdout())
 	case Type_EXECUTOR_STDERR:

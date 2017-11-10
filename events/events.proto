@@ -14,10 +14,6 @@ message Outputs {
   repeated tes.OutputFileLog value = 1;
 }
 
-message Ports {
-  repeated tes.Ports value = 1;
-}
-
 message SystemLog {
   string msg = 1;
   string level = 2;
@@ -34,8 +30,6 @@ enum Type {
   EXECUTOR_START_TIME = 6;
   EXECUTOR_END_TIME = 7;
   EXECUTOR_EXIT_CODE = 8;
-  EXECUTOR_HOST_IP = 9;
-  EXECUTOR_PORTS = 10;
   EXECUTOR_STDOUT = 11;
   EXECUTOR_STDERR = 12;
   SYSTEM_LOG = 13;
@@ -51,8 +45,6 @@ message Event {
     Outputs outputs = 6;
     Metadata metadata = 7;
     int32 exit_code = 10;
-    string host_ip = 11;
-    Ports ports = 12;
     string stdout = 13;
     string stderr = 14;
     SystemLog system_log = 15;

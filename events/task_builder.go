@@ -45,12 +45,6 @@ func (tb TaskBuilder) Write(ev *Event) error {
 	case Type_EXECUTOR_EXIT_CODE:
 		t.GetExecLog(attempt, index).ExitCode = ev.GetExitCode()
 
-	case Type_EXECUTOR_HOST_IP:
-		t.GetExecLog(attempt, index).HostIp = ev.GetHostIp()
-
-	case Type_EXECUTOR_PORTS:
-		t.GetExecLog(attempt, index).Ports = ev.GetPorts().Value
-
 	case Type_EXECUTOR_STDOUT:
 		t.GetExecLog(attempt, index).Stdout += ev.GetStdout()
 

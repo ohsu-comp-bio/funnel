@@ -11,7 +11,7 @@ func RunnableState(s State) bool {
 
 // TerminalState returns true if the state is COMPLETE, ERROR, SYSTEM_ERROR, or CANCELED
 func TerminalState(s State) bool {
-	return s == State_COMPLETE || s == State_ERROR || s == State_SYSTEM_ERROR ||
+	return s == State_COMPLETE || s == State_EXECUTOR_ERROR || s == State_SYSTEM_ERROR ||
 		s == State_CANCELED
 }
 
@@ -22,7 +22,7 @@ func (task *Task) GetBasicView() *Task {
 
 	// remove contents from inputs
 	for _, v := range view.Inputs {
-		v.Contents = ""
+		v.Content = ""
 	}
 
 	// remove stdout and stderr from Task.Logs.Logs

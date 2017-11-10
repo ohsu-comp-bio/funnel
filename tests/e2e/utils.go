@@ -52,8 +52,8 @@ func setLogOutput(t *testing.T) {
 var HelloWorld = &tes.Task{
 	Executors: []*tes.Executor{
 		{
-			ImageName: "alpine",
-			Cmd:       []string{"echo", "hello world"},
+			Image:   "alpine",
+			Command: []string{"echo", "hello world"},
 		},
 	},
 }

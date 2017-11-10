@@ -166,7 +166,7 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 
 var minimal = elastic.NewFetchSourceContext(true).Include("id", "state")
 var basic = elastic.NewFetchSourceContext(true).
-	Exclude("logs.logs.stderr", "logs.logs.stdout", "inputs.contents")
+	Exclude("logs.logs.stderr", "logs.logs.stdout", "inputs.content")
 
 // GetTask gets a task by ID.
 func (es *Elastic) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {

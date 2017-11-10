@@ -24,13 +24,13 @@ Task.Executors: at least one executor is required
 	}
 }
 
-func TestTaskInputContentsValidationError(t *testing.T) {
+func TestTaskInputContentValidationError(t *testing.T) {
 	setLogOutput(t)
 	_, err := fun.RunTask(&tes.Task{
-		Inputs: []*tes.TaskParameter{
+		Inputs: []*tes.Input{
 			{
-				Contents: "foo",
-				Url:      "bar",
+				Content: "foo",
+				Url:     "bar",
 			},
 		},
 	})
@@ -40,25 +40,25 @@ func TestTaskInputContentsValidationError(t *testing.T) {
 
 	e := grpc.ErrorDesc(err)
 
-	if !strings.Contains(e, "Task.Inputs[0].Contents") {
+	if !strings.Contains(e, "Task.Inputs[0].Content") {
 		t.Error("unexpected error message")
 	}
 }
 
-func TestTaskInputContentsValidation(t *testing.T) {
+func TestTaskInputContentValidation(t *testing.T) {
 	setLogOutput(t)
 	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{
-				ImageName: "alpine",
-				Cmd:       []string{"echo"},
+				Image:   "alpine",
+				Command: []string{"echo"},
 			},
 		},
-		Inputs: []*tes.TaskParameter{
+		Inputs: []*tes.Input{
 			{
-				Contents: "foo",
-				Url:      "",
-				Path:     "/bar",
+				Content: "foo",
+				Url:     "",
+				Path:    "/bar",
 			},
 		},
 	})
@@ -73,10 +73,10 @@ func TestTaskValidationError(t *testing.T) {
 		Executors: []*tes.Executor{
 			{},
 		},
-		Inputs: []*tes.TaskParameter{
+		Inputs: []*tes.Input{
 			{},
 		},
-		Outputs: []*tes.TaskParameter{
+		Outputs: []*tes.Output{
 			{},
 		},
 		Volumes: []string{"not-absolute"},
@@ -87,8 +87,8 @@ func TestTaskValidationError(t *testing.T) {
 	}
 
 	expected := `invalid task message:
-Task.Executors[0].ImageName: required, but empty
-Task.Executors[0].Cmd: required, but empty
+Task.Executors[0].Image: required, but empty
+Task.Executors[0].Command: required, but empty
 Task.Inputs[0].Url: required, but empty
 Task.Inputs[0].Path: required, but empty
 Task.Outputs[0].Url: required, but empty

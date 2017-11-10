@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 func TestS3StorageTask(t *testing.T) {
 	task := &tes.Task{
 		Name: "s3 e2e",
-		Inputs: []*tes.TaskParameter{
+		Inputs: []*tes.Input{
 			{
 				Url:  "s3://strucka-dev/test-file.txt",
 				Path: "/opt/inputs/test-file.txt",
@@ -48,7 +48,7 @@ func TestS3StorageTask(t *testing.T) {
 				Type: tes.FileType_DIRECTORY,
 			},
 		},
-		Outputs: []*tes.TaskParameter{
+		Outputs: []*tes.Output{
 			{
 				Path: "/opt/workdir/test-output-file.txt",
 				Url:  "s3://strucka-dev/test_tmp/test-output-file.txt",
@@ -62,8 +62,8 @@ func TestS3StorageTask(t *testing.T) {
 		},
 		Executors: []*tes.Executor{
 			{
-				ImageName: "alpine:latest",
-				Cmd: []string{
+				Image: "alpine:latest",
+				Command: []string{
 					"sh",
 					"-c",
 					"echo $(find /opt/inputs -type f) > test-output-file.txt; mkdir test-output-directory; cp *.txt test-output-directory/",

@@ -4,12 +4,12 @@
   "resources": {
     "cpu_cores": 4,
     "ram_gb": 15,
-    "size_gb": 100
+    "disk_gb": 100
   },
   "executors": [
     {
-      "image_name": "alpine",
-      "cmd": ["sleep", "1"]
+      "image": "alpine",
+      "command": ["sleep", "1"]
     }
   ]
 }

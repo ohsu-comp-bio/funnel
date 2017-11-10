@@ -3,8 +3,8 @@
   "description": "Demonstrates the most basic echo task.",
   "executors": [
     {
-      "image_name": "alpine",
-      "cmd": ["echo", "hello world"],
+      "image": "alpine",
+      "command": ["echo", "hello world"],
       "stdout": "/tmp/stdout"
     }
   ]

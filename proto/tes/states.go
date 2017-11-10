@@ -4,15 +4,15 @@ import "fmt"
 
 // State variables for convenience
 const (
-	Unknown      = State_UNKNOWN
-	Queued       = State_QUEUED
-	Running      = State_RUNNING
-	Paused       = State_PAUSED
-	Complete     = State_COMPLETE
-	Error        = State_ERROR
-	SystemError  = State_SYSTEM_ERROR
-	Canceled     = State_CANCELED
-	Initializing = State_INITIALIZING
+	Unknown       = State_UNKNOWN
+	Queued        = State_QUEUED
+	Running       = State_RUNNING
+	Paused        = State_PAUSED
+	Complete      = State_COMPLETE
+	ExecutorError = State_EXECUTOR_ERROR
+	SystemError   = State_SYSTEM_ERROR
+	Canceled      = State_CANCELED
+	Initializing  = State_INITIALIZING
 )
 
 func transitionError(from, to State) error {
@@ -48,7 +48,7 @@ func ValidateTransition(from, to State) error {
 		switch to {
 		case Unknown, Queued:
 			return transitionError(from, to)
-		case Running, Error, SystemError, Canceled:
+		case Running, ExecutorError, SystemError, Canceled:
 			return nil
 		}
 
@@ -57,11 +57,11 @@ func ValidateTransition(from, to State) error {
 		switch to {
 		case Unknown, Queued:
 			return transitionError(from, to)
-		case Complete, Error, SystemError, Canceled:
+		case Complete, ExecutorError, SystemError, Canceled:
 			return nil
 		}
 
-	case Error, SystemError, Canceled, Complete:
+	case ExecutorError, SystemError, Canceled, Complete:
 		// May not transition out of terminal state.
 		return transitionError(from, to)
 

@@ -140,8 +140,8 @@ func TestLargeLogRate(t *testing.T) {
 		Id: "test-task-" + util.GenTaskID(),
 		Executors: []*tes.Executor{
 			{
-				ImageName: "alpine",
-				Cmd:       []string{"dd", "if=/dev/urandom", "bs=10000", "count=1"},
+				Image:   "alpine",
+				Command: []string{"dd", "if=/dev/urandom", "bs=10000", "count=1"},
 			},
 		},
 	}

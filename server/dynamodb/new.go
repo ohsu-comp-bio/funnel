@@ -18,7 +18,7 @@ type DynamoDB struct {
 	partitionKey   string
 	partitionValue string
 	taskTable      string
-	contentsTable  string
+	contentTable   string
 	stdoutTable    string
 	stderrTable    string
 }
@@ -38,7 +38,7 @@ func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
 		partitionKey:   "hid",
 		partitionValue: "0",
 		taskTable:      conf.TableBasename + "-task",
-		contentsTable:  conf.TableBasename + "-contents",
+		contentTable:   conf.TableBasename + "-content",
 		stdoutTable:    conf.TableBasename + "-stdout",
 		stderrTable:    conf.TableBasename + "-stderr",
 	}

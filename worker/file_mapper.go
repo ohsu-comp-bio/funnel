@@ -21,8 +21,8 @@ import (
 // manage all these paths.
 type FileMapper struct {
 	Volumes []Volume
-	Inputs  []*tes.TaskParameter
-	Outputs []*tes.TaskParameter
+	Inputs  []*tes.Input
+	Outputs []*tes.Output
 	dir     string
 }
 
@@ -45,8 +45,8 @@ func NewFileMapper(dir string) *FileMapper {
 	dir, _ = filepath.Abs(dir)
 	return &FileMapper{
 		Volumes: []Volume{},
-		Inputs:  []*tes.TaskParameter{},
-		Outputs: []*tes.TaskParameter{},
+		Inputs:  []*tes.Input{},
+		Outputs: []*tes.Output{},
 		dir:     dir,
 	}
 }
@@ -195,12 +195,12 @@ func (mapper *FileMapper) AddTmpVolume(mountPoint string) error {
 	return nil
 }
 
-// AddInput adds an input to the mapped files for the given TaskParameter.
-// A copy of the TaskParameter will be added to mapper.Inputs, with the
+// AddInput adds an input to the mapped files for the given tes.Input.
+// A copy of the tes.Input will be added to mapper.Inputs, with the
 // "Path" field updated to the mapped host path.
 //
 // If the path can't be mapped an error is returned.
-func (mapper *FileMapper) AddInput(input *tes.TaskParameter) error {
+func (mapper *FileMapper) AddInput(input *tes.Input) error {
 	hostPath, err := mapper.HostPath(input.Path)
 	if err != nil {
 		return err
@@ -217,28 +217,28 @@ func (mapper *FileMapper) AddInput(input *tes.TaskParameter) error {
 		return err
 	}
 
-	// If 'contents' field is set create the file
-	if input.Contents != "" {
-		err := ioutil.WriteFile(hostPath, []byte(input.Contents), 0775)
+	// If 'content' field is set create the file
+	if input.Content != "" {
+		err := ioutil.WriteFile(hostPath, []byte(input.Content), 0775)
 		if err != nil {
-			return fmt.Errorf("Error writing contents of input TaskParameter to file %v", err)
+			return fmt.Errorf("Error writing content of task input to file %v", err)
 		}
 		return nil
 	}
 
-	// Create a TaskParameter for the input with a path mapped to the host
-	hostIn := proto.Clone(input).(*tes.TaskParameter)
+	// Create a tes.Input for the input with a path mapped to the host
+	hostIn := proto.Clone(input).(*tes.Input)
 	hostIn.Path = hostPath
 	mapper.Inputs = append(mapper.Inputs, hostIn)
 	return nil
 }
 
-// AddOutput adds an output to the mapped files for the given TaskParameter.
-// A copy of the TaskParameter will be added to mapper.Outputs, with the
+// AddOutput adds an output to the mapped files for the given tes.Output.
+// A copy of the tes.Output will be added to mapper.Outputs, with the
 // "Path" field updated to the mapped host path.
 //
 // If the path can't be mapped, an error is returned.
-func (mapper *FileMapper) AddOutput(output *tes.TaskParameter) error {
+func (mapper *FileMapper) AddOutput(output *tes.Output) error {
 	hostPath, err := mapper.HostPath(output.Path)
 	if err != nil {
 		return err
@@ -262,8 +262,8 @@ func (mapper *FileMapper) AddOutput(output *tes.TaskParameter) error {
 		return err
 	}
 
-	// Create a TaskParameter for the out with a path mapped to the host
-	hostOut := proto.Clone(output).(*tes.TaskParameter)
+	// Create a tes.Output for the out with a path mapped to the host
+	hostOut := proto.Clone(output).(*tes.Output)
 	hostOut.Path = hostPath
 	mapper.Outputs = append(mapper.Outputs, hostOut)
 	return nil

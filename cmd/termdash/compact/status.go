@@ -38,7 +38,7 @@ func (s *Status) Set(val string) {
 		color = ui.ColorWhite
 	case "RUNNING", "INITIALIZING":
 		color = ui.ColorGreen
-	case "COMPLETE", "ERROR", "CANCELED", "SYSTEM_ERRROR":
+	case "COMPLETE", "EXECUTOR_ERROR", "CANCELED", "SYSTEM_ERRROR":
 		color = ui.ColorRed
 	case "UNKNOWN", "PAUSED":
 		text = fmt.Sprintf("%s%s", vBar, vBar)

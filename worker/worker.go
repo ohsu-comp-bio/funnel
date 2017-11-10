@@ -69,7 +69,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		case run.execerr != nil:
 			// One of the executors failed
 			r.Event.Error("Exec error", "error", run.execerr)
-			r.Event.State(tes.State_ERROR)
+			r.Event.State(tes.State_EXECUTOR_ERROR)
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
@@ -141,10 +141,10 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		s := &stepWorker{
 			Conf:  r.Conf,
 			Event: r.Event.NewExecutorWriter(uint32(i)),
-			Cmd: &DockerCmd{
-				ImageName:     d.ImageName,
-				Cmd:           d.Cmd,
-				Environ:       d.Environ,
+			Command: &DockerCommand{
+				Image:         d.Image,
+				Command:       d.Command,
+				Env:           d.Env,
 				Volumes:       r.Mapper.Volumes,
 				Workdir:       d.Workdir,
 				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
@@ -242,7 +242,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 	// Find the path for task stdin
 	var err error
 	if d.Stdin != "" {
-		s.Cmd.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
+		s.Command.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -251,7 +251,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Cmd.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
+		s.Command.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -260,7 +260,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Cmd.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
+		s.Command.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err

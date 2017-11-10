@@ -21,13 +21,13 @@ func TestSetupTemplatedHPCSubmit(t *testing.T) {
 		Id: "test-taskid",
 		Executors: []*tes.Executor{
 			{
-				Cmd: []string{"echo test"},
+				Command: []string{"echo test"},
 			},
 		},
 		Resources: &tes.Resources{
 			CpuCores: 1,
 			RamGb:    1.0,
-			SizeGb:   10.0,
+			DiskGb:   10.0,
 		},
 	}
 

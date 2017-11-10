@@ -49,12 +49,12 @@ func TestGetTaskView(t *testing.T) {
 	var err error
 	var task *tes.Task
 
-	fun.WriteFile("test_contents.txt", "hello world")
+	fun.WriteFile("test_content.txt", "hello world")
 
 	id := fun.Run(`
     --sh 'echo hello world'
     --name 'foo'
-    --contents in={{ .storage }}/test_contents.txt
+    --content in={{ .storage }}/test_content.txt
   `)
 	fun.Wait(id)
 
@@ -91,8 +91,8 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
 
-	if task.Inputs[0].Contents != "" {
-		t.Fatal("unexpected TaskParameter contents included in basic view")
+	if task.Inputs[0].Content != "" {
+		t.Fatal("unexpected Input content included in basic view")
 	}
 
 	task = fun.GetView(id, tes.TaskView_FULL)
@@ -101,8 +101,8 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("missing ExecutorLog stdout in full view")
 	}
 
-	if task.Inputs[0].Contents != "hello world" {
-		t.Fatal("missing TaskParameter contents in full view")
+	if task.Inputs[0].Content != "hello world" {
+		t.Fatal("missing Input content in full view")
 	}
 
 	// test http proxy
@@ -148,8 +148,8 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
 
-	if task.Inputs[0].Contents != "" {
-		t.Fatal("unexpected TaskParameter contents included in basic view")
+	if task.Inputs[0].Content != "" {
+		t.Fatal("unexpected Input content included in basic view")
 	}
 
 	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
@@ -164,8 +164,8 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("missing ExecutorLog stdout in full view")
 	}
 
-	if task.Inputs[0].Contents != "hello world" {
-		t.Fatal("missing TaskParameter contents in full view")
+	if task.Inputs[0].Content != "hello world" {
+		t.Fatal("missing Input content in full view")
 	}
 }
 
@@ -416,13 +416,13 @@ func TestOutputFileLog(t *testing.T) {
 	id, _ := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{
-				ImageName: "alpine",
-				Cmd: []string{
+				Image: "alpine",
+				Command: []string{
 					"sh", "-c", "mkdir /tmp/outdir; echo fooo > /tmp/outdir/fooofile; echo ba > /tmp/outdir/bafile; echo bar > /tmp/barfile",
 				},
 			},
 		},
-		Outputs: []*tes.TaskParameter{
+		Outputs: []*tes.Output{
 			{
 				Url:  dir + "/outdir",
 				Path: "/tmp/outdir",
@@ -600,7 +600,7 @@ func TestTaskError(t *testing.T) {
   `)
 	task := fun.Wait(id)
 
-	if task.State != tes.State_ERROR {
+	if task.State != tes.State_EXECUTOR_ERROR {
 		t.Fatal("Unexpected task state")
 	}
 }

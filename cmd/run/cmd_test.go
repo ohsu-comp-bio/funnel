@@ -18,7 +18,7 @@ func TestParse(t *testing.T) {
 		{
 			Name:        "foo",
 			Description: "mydesc",
-			Inputs: []*tes.TaskParameter{
+			Inputs: []*tes.Input{
 				{
 					Name: "f1",
 					Url:  "file://" + cwd + "/testdata/f1.txt",
@@ -36,12 +36,12 @@ func TestParse(t *testing.T) {
 					Type: tes.FileType_DIRECTORY,
 				},
 				{
-					Name:     "c1",
-					Path:     "/opt/funnel/inputs" + cwd + "/testdata/contents.txt",
-					Contents: "test content\n",
+					Name:    "c1",
+					Path:    "/opt/funnel/inputs" + cwd + "/testdata/content.txt",
+					Content: "test content\n",
 				},
 			},
-			Outputs: []*tes.TaskParameter{
+			Outputs: []*tes.Output{
 				{
 					Name: "stdout-0",
 					Url:  "file://" + cwd + "/testdata/stdout-first",
@@ -73,18 +73,18 @@ func TestParse(t *testing.T) {
 				CpuCores:    8,
 				Preemptible: true,
 				RamGb:       32.0,
-				SizeGb:      100.0,
+				DiskGb:      100.0,
 				Zones:       []string{"zone1", "zone2"},
 			},
 			Executors: []*tes.Executor{
 				{
-					ImageName: "busybox",
-					Cmd:       []string{"sh", "-c", "echo hello"},
-					Workdir:   "myworkdir",
-					Stdout:    "/opt/funnel/outputs/stdout-0",
-					Stderr:    "/opt/funnel/outputs/stderr-0",
-					Environ: map[string]string{
-						"c1": "/opt/funnel/inputs" + cwd + "/testdata/contents.txt",
+					Image:   "busybox",
+					Command: []string{"sh", "-c", "echo hello"},
+					Workdir: "myworkdir",
+					Stdout:  "/opt/funnel/outputs/stdout-0",
+					Stderr:  "/opt/funnel/outputs/stderr-0",
+					Env: map[string]string{
+						"c1": "/opt/funnel/inputs" + cwd + "/testdata/content.txt",
 						"e1": "e1v",
 						"e2": "e2v",
 						"f1": "/opt/funnel/inputs" + cwd + "/testdata/f1.txt",
@@ -95,13 +95,13 @@ func TestParse(t *testing.T) {
 					},
 				},
 				{
-					ImageName: "busybox",
-					Cmd:       []string{"echo", "two"},
-					Workdir:   "myworkdir",
-					Stdout:    "/opt/funnel/outputs/stdout-1",
-					Stderr:    "/opt/funnel/outputs/stderr-1",
-					Environ: map[string]string{
-						"c1": "/opt/funnel/inputs" + cwd + "/testdata/contents.txt",
+					Image:   "busybox",
+					Command: []string{"echo", "two"},
+					Workdir: "myworkdir",
+					Stdout:  "/opt/funnel/outputs/stdout-1",
+					Stderr:  "/opt/funnel/outputs/stderr-1",
+					Env: map[string]string{
+						"c1": "/opt/funnel/inputs" + cwd + "/testdata/content.txt",
 						"e1": "e1v",
 						"e2": "e2v",
 						"f1": "/opt/funnel/inputs" + cwd + "/testdata/f1.txt",
@@ -150,7 +150,7 @@ func TestParse(t *testing.T) {
     -S http://localhost:9001
     -p
     -w myworkdir
-    -C c1=./testdata/contents.txt
+    -C c1=./testdata/content.txt
   `)
 
 	if perr != nil {

@@ -84,10 +84,10 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	proto.Unmarshal(b, task)
 	loadTaskLogs(tx, task)
 
-	// remove contents from inputs
-	inputs := []*tes.TaskParameter{}
+	// remove content from inputs
+	inputs := []*tes.Input{}
 	for _, v := range task.Inputs {
-		v.Contents = ""
+		v.Content = ""
 		inputs = append(inputs, v)
 	}
 	task.Inputs = inputs

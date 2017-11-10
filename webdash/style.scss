@@ -57,7 +57,7 @@ main {
 .task-list-table {
   .DEAD-state,
   .SYSTEM_ERROR-state,
-  .ERROR-state {
+  .EXECUTOR_ERROR-state {
     border-right: 10px solid #bd0d0d;
   }
   .COMPLETE-state {
@@ -89,7 +89,7 @@ main {
 .task-desc-table {
   .DEAD-state,
   .SYSTEM_ERROR-state,
-  .ERROR-state {
+  .EXECUTOR_ERROR-state {
     color: #bd0d0d;
   }
   .COMPLETE-state {

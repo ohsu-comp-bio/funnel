@@ -14,7 +14,7 @@ function idDesc(a, b) {
 }
 
 function isDone(task) {
-  return task.state == 'COMPLETE' || task.state == 'ERROR' || task.state == 'CANCELED' || task.state == 'SYSTEM_ERROR';
+  return task.state == 'COMPLETE' || task.state == 'EXECUTOR_ERROR' || task.state == 'CANCELED' || task.state == 'SYSTEM_ERROR';
 }
 
 app.controller('TaskListController', function($scope, $http, $interval, $routeParams, $location) {
@@ -107,8 +107,8 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
     if (r.ram_gb) {
       s += ", " + r.ram_gb + " GB RAM";
     }
-    if (r.size_gb) {
-      s += ", " + r.size_gb + " GB disk space";
+    if (r.disk_gb) {
+      s += ", " + r.disk_gb + " GB disk space";
     }
     if (r.preemptible) {
       s += ", preemptible";

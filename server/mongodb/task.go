@@ -11,7 +11,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var basicView = bson.M{"logs.logs.stdout": 0, "logs.logs.stderr": 0, "inputs.contents": 0}
+var basicView = bson.M{"logs.logs.stdout": 0, "logs.logs.stderr": 0, "inputs.content": 0}
 var minimalView = bson.M{"id": 1, "state": 1}
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.

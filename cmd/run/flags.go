@@ -54,7 +54,7 @@ type flagVals struct {
 	inputDirs   []string
 	outputs     []string
 	outputDirs  []string
-	contents    []string
+	content     []string
 	environ     []string
 	tags        []string
 	volumes     []string
@@ -100,7 +100,7 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	f.StringSliceVar(&v.stdin, "stdin", v.stdin, "")
 	f.StringSliceVar(&v.stdout, "stdout", v.stdout, "")
 	f.StringSliceVar(&v.stderr, "stderr", v.stderr, "")
-	f.StringSliceVarP(&v.contents, "contents", "C", v.contents, "")
+	f.StringSliceVarP(&v.content, "content", "C", v.content, "")
 
 	// Resoures
 	f.IntVar(&v.cpu, "cpu", v.cpu, "")

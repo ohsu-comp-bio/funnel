@@ -13,8 +13,8 @@ import (
 var extask = &tes.Task{
 	Executors: []*tes.Executor{
 		{
-			ImageName: "alpine",
-			Cmd:       []string{"echo", "hello world"},
+			Image:   "alpine",
+			Command: []string{"echo", "hello world"},
 		},
 	},
 }

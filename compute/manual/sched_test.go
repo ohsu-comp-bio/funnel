@@ -129,7 +129,7 @@ func TestMatch(t *testing.T) {
 
 	// test disk too big
 	j = blankTask()
-	j.Resources.SizeGb = 2.0
+	j.Resources.DiskGb = 2.0
 	o = s.GetOffer(j)
 	if o != nil {
 		t.Error("Scheduled task to node without enough DiskGb resources")
@@ -147,7 +147,7 @@ func TestMatch(t *testing.T) {
 	j = blankTask()
 	j.Resources.CpuCores = 1
 	j.Resources.RamGb = 1.0
-	j.Resources.SizeGb = 1.0
+	j.Resources.DiskGb = 1.0
 	j.Resources.Zones = []string{"ok-zone", "not-ok-zone"}
 	o = s.GetOffer(j)
 	if o == nil {

@@ -21,8 +21,8 @@
   ],
   "executors": [
     {
-      "image_name": "alpine",
-      "cmd": ["md5sum", "/tmp/in"],
+      "image": "alpine",
+      "command": ["md5sum", "/tmp/in"],
       "stdout": "/tmp/out"
     }
   ]

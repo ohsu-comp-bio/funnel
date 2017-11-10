@@ -3,8 +3,8 @@
   "description": "Task inputs and outputs can be Google Cloud Storage URLs.",
   "executors": [
     {
-      "image_name": "ubuntu",
-      "cmd": ["md5sum", "/tmp/file.zip"],
+      "image": "ubuntu",
+      "command": ["md5sum", "/tmp/file.zip"],
       "stdout": "/tmp/stdout"
     }
   ],

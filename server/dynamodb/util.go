@@ -59,7 +59,7 @@ func (db *DynamoDB) createTables() error {
 	}
 
 	table = &dynamodb.CreateTableInput{
-		TableName: aws.String(db.contentsTable),
+		TableName: aws.String(db.contentTable),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
 				AttributeName: aws.String("id"),
@@ -196,26 +196,26 @@ func (db *DynamoDB) createTask(ctx context.Context, task *tes.Task) error {
 	return err
 }
 
-func (db *DynamoDB) createTaskInputContents(ctx context.Context, task *tes.Task) error {
+func (db *DynamoDB) createTaskInputContent(ctx context.Context, task *tes.Task) error {
 	av := make(map[string]*dynamodb.AttributeValue)
 
 	for i, v := range task.Inputs {
-		if v.Contents != "" {
+		if v.Content != "" {
 			av["id"] = &dynamodb.AttributeValue{
 				S: aws.String(task.Id),
 			}
 			av["index"] = &dynamodb.AttributeValue{
 				N: aws.String(strconv.Itoa(i)),
 			}
-			av["contents"] = &dynamodb.AttributeValue{
-				S: aws.String(v.Contents),
+			av["content"] = &dynamodb.AttributeValue{
+				S: aws.String(v.Content),
 			}
 			av["created_at"] = &dynamodb.AttributeValue{
 				S: aws.String(ptypes.TimestampString(ptypes.TimestampNow())),
 			}
 
 			item := &dynamodb.PutItemInput{
-				TableName: aws.String(db.contentsTable),
+				TableName: aws.String(db.contentTable),
 				Item:      av,
 			}
 
@@ -249,7 +249,7 @@ func (db *DynamoDB) deleteTask(ctx context.Context, id string) error {
 	}
 
 	query := &dynamodb.QueryInput{
-		TableName:              aws.String(db.contentsTable),
+		TableName:              aws.String(db.contentTable),
 		Limit:                  aws.Int64(10),
 		ScanIndexForward:       aws.Bool(false),
 		ConsistentRead:         aws.Bool(true),
@@ -271,7 +271,7 @@ func (db *DynamoDB) deleteTask(ctx context.Context, id string) error {
 		func(page *dynamodb.QueryOutput, lastPage bool) bool {
 			for _, res := range page.Items {
 				item = &dynamodb.DeleteItemInput{
-					TableName: aws.String(db.contentsTable),
+					TableName: aws.String(db.contentTable),
 					Key: map[string]*dynamodb.AttributeValue{
 						"id":    res["id"],
 						"index": res["index"],
@@ -345,9 +345,9 @@ func (db *DynamoDB) getFullView(ctx context.Context, id string) (*dynamodb.GetIt
 		return resp, err
 	}
 
-	err = db.getContents(ctx, resp.Item)
+	err = db.getContent(ctx, resp.Item)
 	if err != nil {
-		return resp, fmt.Errorf("failed to retrieve input contents: %v", err)
+		return resp, fmt.Errorf("failed to retrieve input content: %v", err)
 	}
 
 	err = db.getExecutorOutput(ctx, resp.Item, "stdout", db.stdoutTable)
@@ -363,9 +363,9 @@ func (db *DynamoDB) getFullView(ctx context.Context, id string) (*dynamodb.GetIt
 	return resp, nil
 }
 
-func (db *DynamoDB) getContents(ctx context.Context, in map[string]*dynamodb.AttributeValue) error {
+func (db *DynamoDB) getContent(ctx context.Context, in map[string]*dynamodb.AttributeValue) error {
 	query := &dynamodb.QueryInput{
-		TableName:              aws.String(db.contentsTable),
+		TableName:              aws.String(db.contentTable),
 		Limit:                  aws.Int64(10),
 		ScanIndexForward:       aws.Bool(false),
 		ConsistentRead:         aws.Bool(true),
@@ -381,7 +381,7 @@ func (db *DynamoDB) getContents(ctx context.Context, in map[string]*dynamodb.Att
 		func(page *dynamodb.QueryOutput, lastPage bool) bool {
 			for _, item := range page.Items {
 				i, _ := strconv.ParseInt(*item["index"].N, 10, 64)
-				in["inputs"].L[i].M["contents"] = item["contents"]
+				in["inputs"].L[i].M["content"] = item["content"]
 			}
 			if page.LastEvaluatedKey == nil {
 				return false

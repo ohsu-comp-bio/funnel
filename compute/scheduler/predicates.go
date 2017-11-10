@@ -34,10 +34,10 @@ func ResourcesFit(t *tes.Task, n *pbs.Node) error {
 			req.GetRamGb(),
 			n.GetAvailable().GetRamGb(),
 		)
-	case n.GetAvailable().GetDiskGb() < req.GetSizeGb():
+	case n.GetAvailable().GetDiskGb() < req.GetDiskGb():
 		return fmt.Errorf(
 			"Fail disk, requested %f, available %f",
-			req.GetSizeGb(),
+			req.GetDiskGb(),
 			n.GetAvailable().GetDiskGb(),
 		)
 	}

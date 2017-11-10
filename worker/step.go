@@ -9,10 +9,10 @@ import (
 )
 
 type stepWorker struct {
-	Conf  config.Worker
-	Cmd   *DockerCmd
-	Event *events.ExecutorWriter
-	IP    string
+	Conf    config.Worker
+	Command *DockerCommand
+	Event   *events.ExecutorWriter
+	IP      string
 }
 
 func (s *stepWorker) Run(ctx context.Context) error {
@@ -25,25 +25,25 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 	// Tail the stdout/err log streams.
 	stdout, stderr := s.Event.TailLogs(subctx, s.Conf.BufferSize, s.Conf.UpdateRate)
-	if s.Cmd.Stdout != nil {
-		stdout = io.MultiWriter(s.Cmd.Stdout, stdout)
+	if s.Command.Stdout != nil {
+		stdout = io.MultiWriter(s.Command.Stdout, stdout)
 	}
-	if s.Cmd.Stderr != nil {
-		stderr = io.MultiWriter(s.Cmd.Stderr, stderr)
+	if s.Command.Stderr != nil {
+		stderr = io.MultiWriter(s.Command.Stderr, stderr)
 	}
-	s.Cmd.Stdout = stdout
-	s.Cmd.Stderr = stderr
+	s.Command.Stdout = stdout
+	s.Command.Stderr = stderr
 
 	done := make(chan error, 1)
 	go func() {
-		done <- s.Cmd.Run()
+		done <- s.Command.Run()
 	}()
 
 	for {
 		select {
 		case <-ctx.Done():
 			// Likely the task was canceled.
-			s.Cmd.Stop()
+			s.Command.Stop()
 			s.Event.EndTime(time.Now())
 			return ctx.Err()
 

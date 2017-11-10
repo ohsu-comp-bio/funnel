@@ -185,7 +185,7 @@ func (c *Client) WaitForTask(ctx context.Context, taskIDs ...string) error {
 			switch r.State {
 			case tes.State_COMPLETE:
 				done = true
-			case tes.State_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
+			case tes.State_EXECUTOR_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
 				errMsg := fmt.Sprintf("Task %s exited with state %s", id, r.State.String())
 				return errors.New(errMsg)
 			default:

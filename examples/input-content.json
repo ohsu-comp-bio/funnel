@@ -1,13 +1,13 @@
 {
-  "name": "Input file contents and output file",
-  "description": "Demonstrates using the 'contents' field for inputs to create a file on the host system",
+  "name": "Input file content and output file",
+  "description": "Demonstrates using the 'content' field for inputs to create a file on the host system",
   "inputs": [
     {
       "name": "cat input",
       "description": "Input to md5sum. /tmp/in will be created on the host system.",
       "type": "FILE",
       "path": "/tmp/in",
-      "contents": "Hello World\n"
+      "content": "Hello World\n"
     }
   ],
   "outputs": [
@@ -21,8 +21,8 @@
   ],
   "executors": [
     {
-      "image_name": "alpine",
-      "cmd": ["cat", "/tmp/in"],
+      "image": "alpine",
+      "command": ["cat", "/tmp/in"],
       "stdout": "/tmp/out"
     }
   ]

@@ -42,7 +42,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		Resources: &tes.Resources{
 			CpuCores:    uint32(vals.cpu),
 			RamGb:       vals.ram,
-			SizeGb:      vals.disk,
+			DiskGb:      vals.disk,
 			Zones:       vals.zones,
 			Preemptible: vals.preemptible,
 		},
@@ -68,7 +68,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		var stdin string
 		if exec.stdin != "" {
 			stdin = stdinPath
-			task.Inputs = append(task.Inputs, &tes.TaskParameter{
+			task.Inputs = append(task.Inputs, &tes.Input{
 				Name: fmt.Sprintf("stdin-%d", i),
 				Url:  resolvePath(exec.stdin),
 				Path: stdinPath,
@@ -76,7 +76,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		}
 
 		if exec.stdout != "" {
-			task.Outputs = append(task.Outputs, &tes.TaskParameter{
+			task.Outputs = append(task.Outputs, &tes.Output{
 				Name: fmt.Sprintf("stdout-%d", i),
 				Url:  resolvePath(exec.stdout),
 				Path: stdoutPath,
@@ -84,7 +84,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		}
 
 		if exec.stderr != "" {
-			task.Outputs = append(task.Outputs, &tes.TaskParameter{
+			task.Outputs = append(task.Outputs, &tes.Output{
 				Name: fmt.Sprintf("stderr-%d", i),
 				Url:  resolvePath(exec.stderr),
 				Path: stderrPath,
@@ -92,13 +92,13 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		}
 
 		task.Executors = append(task.Executors, &tes.Executor{
-			ImageName: vals.container,
-			Cmd:       cmd,
-			Workdir:   vals.workdir,
-			Environ:   environ,
-			Stdin:     stdin,
-			Stdout:    stdoutPath,
-			Stderr:    stderrPath,
+			Image:   vals.container,
+			Command: cmd,
+			Workdir: vals.workdir,
+			Env:     environ,
+			Stdin:   stdin,
+			Stdout:  stdoutPath,
+			Stderr:  stderrPath,
 		})
 	}
 
@@ -116,7 +116,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		url := resolvePath(v)
 		path := "/opt/funnel/inputs/" + stripStoragePrefix(url)
 		setenv(k, path)
-		task.Inputs = append(task.Inputs, &tes.TaskParameter{
+		task.Inputs = append(task.Inputs, &tes.Input{
 			Name: k,
 			Url:  url,
 			Path: path,
@@ -128,7 +128,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		url := resolvePath(v)
 		path := "/opt/funnel/inputs/" + stripStoragePrefix(url)
 		setenv(k, path)
-		task.Inputs = append(task.Inputs, &tes.TaskParameter{
+		task.Inputs = append(task.Inputs, &tes.Input{
 			Name: k,
 			Url:  url,
 			Path: path,
@@ -136,14 +136,14 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		})
 	}
 
-	for _, raw := range vals.contents {
+	for _, raw := range vals.content {
 		k, v := parseCliVar(raw)
 		path := "/opt/funnel/inputs/" + stripStoragePrefix(resolvePath(v))
 		setenv(k, path)
-		task.Inputs = append(task.Inputs, &tes.TaskParameter{
-			Name:     k,
-			Path:     path,
-			Contents: getContents(v),
+		task.Inputs = append(task.Inputs, &tes.Input{
+			Name:    k,
+			Path:    path,
+			Content: getContent(v),
 		})
 	}
 
@@ -152,7 +152,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		url := resolvePath(v)
 		path := "/opt/funnel/outputs/" + stripStoragePrefix(url)
 		setenv(k, path)
-		task.Outputs = append(task.Outputs, &tes.TaskParameter{
+		task.Outputs = append(task.Outputs, &tes.Output{
 			Name: k,
 			Url:  url,
 			Path: path,
@@ -164,7 +164,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		url := resolvePath(v)
 		path := "/opt/funnel/outputs/" + stripStoragePrefix(url)
 		setenv(k, path)
-		task.Outputs = append(task.Outputs, &tes.TaskParameter{
+		task.Outputs = append(task.Outputs, &tes.Output{
 			Name: k,
 			Url:  url,
 			Path: path,
@@ -184,7 +184,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	return
 }
 
-func getContents(p string) string {
+func getContent(p string) string {
 	b, err := ioutil.ReadFile(p)
 	if err != nil {
 		panic(err)

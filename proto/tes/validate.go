@@ -29,12 +29,12 @@ func Validate(t *Task) ValidationError {
 	}
 
 	for i, exec := range t.Executors {
-		if exec.ImageName == "" {
-			errs.add("Task.Executors[%d].ImageName: required, but empty", i)
+		if exec.Image == "" {
+			errs.add("Task.Executors[%d].Image: required, but empty", i)
 		}
 
-		if len(exec.Cmd) == 0 {
-			errs.add("Task.Executors[%d].Cmd: required, but empty", i)
+		if len(exec.Command) == 0 {
+			errs.add("Task.Executors[%d].Command: required, but empty", i)
 		}
 
 		if exec.Workdir != "" && !strings.HasPrefix(exec.Workdir, "/") {
@@ -55,9 +55,9 @@ func Validate(t *Task) ValidationError {
 	}
 
 	for i, input := range t.Inputs {
-		if input.Contents != "" && input.Url != "" {
-			errs.add("Task.Inputs[%d].Contents: Url is non-empty", i)
-		} else if input.Url == "" && input.Contents == "" {
+		if input.Content != "" && input.Url != "" {
+			errs.add("Task.Inputs[%d].Content: Url is non-empty", i)
+		} else if input.Url == "" && input.Content == "" {
 			errs.add("Task.Inputs[%d].Url: required, but empty", i)
 		}
 
@@ -81,10 +81,6 @@ func Validate(t *Task) ValidationError {
 
 		if output.Path != "" && !strings.HasPrefix(output.Path, "/") {
 			errs.add("task.Outputs[%d].Path: must be an absolute path", i)
-		}
-
-		if output.Contents != "" {
-			errs.add("Task.Outputs[%d].Contents: not allowed", i)
 		}
 	}
 

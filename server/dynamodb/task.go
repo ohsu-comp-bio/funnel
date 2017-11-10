@@ -31,7 +31,7 @@ func (db *DynamoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.Create
 		return nil, fmt.Errorf("failed to write task items to DynamoDB, %v", err)
 	}
 
-	err = db.createTaskInputContents(ctx, task)
+	err = db.createTaskInputContent(ctx, task)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write task items to DynamoDB, %v", err)
 	}
@@ -136,7 +136,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	if req.View == tes.TaskView_FULL {
 		for _, item := range response.Items {
 			// TODO handle errors
-			_ = db.getContents(ctx, item)
+			_ = db.getContent(ctx, item)
 			_ = db.getExecutorOutput(ctx, item, "stdout", db.stdoutTable)
 			_ = db.getExecutorOutput(ctx, item, "stderr", db.stderrTable)
 		}
@@ -167,7 +167,7 @@ func (db *DynamoDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) 
 		return nil, err
 	}
 	switch t.GetState() {
-	case tes.State_COMPLETE, tes.State_ERROR, tes.State_SYSTEM_ERROR:
+	case tes.State_COMPLETE, tes.State_EXECUTOR_ERROR, tes.State_SYSTEM_ERROR:
 		err = fmt.Errorf("illegal state transition from %s to %s", t.GetState().String(), tes.State_CANCELED.String())
 		return nil, fmt.Errorf("cannot cancel task: %s", err)
 	case tes.State_CANCELED:

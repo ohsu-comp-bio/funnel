@@ -24,7 +24,7 @@ func TestMapTask(t *testing.T) {
 	}
 
 	task := &tes.Task{
-		Inputs: []*tes.TaskParameter{
+		Inputs: []*tes.Input{
 			{
 				Name: "f1",
 				Url:  "file://" + cwd + "/testdata/f1.txt",
@@ -37,12 +37,12 @@ func TestMapTask(t *testing.T) {
 				Type: tes.FileType_DIRECTORY,
 			},
 			{
-				Name:     "c1",
-				Path:     "/opt/funnel/inputs/testdata/contents.txt",
-				Contents: "test content\n",
+				Name:    "c1",
+				Path:    "/opt/funnel/inputs/testdata/contents.txt",
+				Content: "test content\n",
 			},
 		},
-		Outputs: []*tes.TaskParameter{
+		Outputs: []*tes.Output{
 			{
 				Name: "stdout-0",
 				Url:  "file://" + cwd + "/testdata/stdout-first",
@@ -63,7 +63,7 @@ func TestMapTask(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ei := []*tes.TaskParameter{
+	ei := []*tes.Input{
 		{
 			Name: "f1",
 			Url:  "file://" + cwd + "/testdata/f1.txt",
@@ -77,7 +77,7 @@ func TestMapTask(t *testing.T) {
 		},
 	}
 
-	eo := []*tes.TaskParameter{
+	eo := []*tes.Output{
 		{
 			Name: "stdout-0",
 			Url:  "file://" + cwd + "/testdata/stdout-first",

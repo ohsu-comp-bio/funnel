@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util/ring"
 	"golang.org/x/time/rate"
 	"io"

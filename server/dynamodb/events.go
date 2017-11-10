@@ -130,11 +130,11 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 				},
 			}
 
-		case tes.State_ERROR:
+		case tes.State_EXECUTOR_ERROR:
 			item.ConditionExpression = aws.String("#state IN (:i, :r)")
 			item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 				":to": {
-					N: aws.String(strconv.Itoa(int(tes.State_ERROR))),
+					N: aws.String(strconv.Itoa(int(tes.State_EXECUTOR_ERROR))),
 				},
 				":i": {
 					N: aws.String(strconv.Itoa(int(tes.State_INITIALIZING))),

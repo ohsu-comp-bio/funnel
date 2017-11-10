@@ -12,15 +12,15 @@ import (
 
 // State variables for convenience
 const (
-	Unknown      = tes.State_UNKNOWN
-	Queued       = tes.State_QUEUED
-	Running      = tes.State_RUNNING
-	Paused       = tes.State_PAUSED
-	Complete     = tes.State_COMPLETE
-	Error        = tes.State_ERROR
-	SystemError  = tes.State_SYSTEM_ERROR
-	Canceled     = tes.State_CANCELED
-	Initializing = tes.State_INITIALIZING
+	Unknown       = tes.State_UNKNOWN
+	Queued        = tes.State_QUEUED
+	Running       = tes.State_RUNNING
+	Paused        = tes.State_PAUSED
+	Complete      = tes.State_COMPLETE
+	ExecutorError = tes.State_EXECUTOR_ERROR
+	SystemError   = tes.State_SYSTEM_ERROR
+	Canceled      = tes.State_CANCELED
+	Initializing  = tes.State_INITIALIZING
 )
 
 // CreateEvent creates an event for the server to handle.
@@ -129,7 +129,7 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 	case Unknown, Paused:
 		return fmt.Errorf("Unimplemented task state %s", target.String())
 
-	case Canceled, Complete, Error, SystemError:
+	case Canceled, Complete, ExecutorError, SystemError:
 		// Remove from queue
 		tx.Bucket(TasksQueued).Delete(idBytes)
 

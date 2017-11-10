@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
 	"os/exec"
@@ -12,15 +11,15 @@ import (
 	"time"
 )
 
-// DockerCmd is responsible for configuring and running a docker container.
-type DockerCmd struct {
-	ImageName       string
-	Cmd             []string
+// DockerCommand is responsible for configuring and running a docker container.
+type DockerCommand struct {
+	Image           string
+	Command         []string
 	Volumes         []Volume
 	Workdir         string
 	ContainerName   string
 	RemoveContainer bool
-	Environ         map[string]string
+	Env             map[string]string
 	Stdin           io.Reader
 	Stdout          io.Writer
 	Stderr          io.Writer
@@ -28,7 +27,7 @@ type DockerCmd struct {
 }
 
 // Run runs the Docker command and blocks until done.
-func (dcmd DockerCmd) Run() error {
+func (dcmd DockerCommand) Run() error {
 	// (Hopefully) temporary hack to sync docker API version info.
 	// Don't need the client here, just the logic inside NewDockerClient().
 	_, derr := util.NewDockerClient()
@@ -37,7 +36,7 @@ func (dcmd DockerCmd) Run() error {
 		return derr
 	}
 
-	pullcmd := exec.Command("docker", "pull", dcmd.ImageName)
+	pullcmd := exec.Command("docker", "pull", dcmd.Image)
 	pullcmd.Run()
 
 	args := []string{"run", "-i"}
@@ -46,8 +45,8 @@ func (dcmd DockerCmd) Run() error {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.Environ != nil {
-		for k, v := range dcmd.Environ {
+	if dcmd.Env != nil {
+		for k, v := range dcmd.Env {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 	}
@@ -65,8 +64,8 @@ func (dcmd DockerCmd) Run() error {
 		args = append(args, "-v", arg)
 	}
 
-	args = append(args, dcmd.ImageName)
-	args = append(args, dcmd.Cmd...)
+	args = append(args, dcmd.Image)
+	args = append(args, dcmd.Command...)
 
 	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
 	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
@@ -85,7 +84,7 @@ func (dcmd DockerCmd) Run() error {
 }
 
 // Stop stops the container.
-func (dcmd DockerCmd) Stop() error {
+func (dcmd DockerCommand) Stop() error {
 	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
 	dclient, derr := util.NewDockerClient()
 	if derr != nil {

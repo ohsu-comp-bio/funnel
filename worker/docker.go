@@ -18,7 +18,6 @@ type DockerCmd struct {
 	Cmd             []string
 	Volumes         []Volume
 	Workdir         string
-	Ports           []*tes.Ports
 	ContainerName   string
 	RemoveContainer bool
 	Environ         map[string]string
@@ -50,18 +49,6 @@ func (dcmd DockerCmd) Run() error {
 	if dcmd.Environ != nil {
 		for k, v := range dcmd.Environ {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
-		}
-	}
-
-	if dcmd.Ports != nil {
-		for i := range dcmd.Ports {
-			hostPort := dcmd.Ports[i].Host
-			containerPort := dcmd.Ports[i].Container
-			// TODO move to validation?
-			if hostPort <= 1024 && hostPort != 0 {
-				return fmt.Errorf("Error cannot use restricted ports")
-			}
-			args = append(args, "-p", fmt.Sprintf("%d:%d", hostPort, containerPort))
 		}
 	}
 

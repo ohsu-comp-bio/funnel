@@ -89,18 +89,6 @@ func (taskBolt *BoltDB) WriteContext(ctx context.Context, req *events.Event) err
 			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
-	case events.Type_EXECUTOR_HOST_IP:
-		el.HostIp = req.GetHostIp()
-		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
-		})
-
-	case events.Type_EXECUTOR_PORTS:
-		el.Ports = req.GetPorts().Value
-		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
-		})
-
 	case events.Type_EXECUTOR_STDOUT:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorStdout(tx, fmt.Sprint(req.Id, req.Index), req.GetStdout())

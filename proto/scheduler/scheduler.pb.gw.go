@@ -92,15 +92,7 @@ func RegisterSchedulerServiceHandlerFromEndpoint(ctx context.Context, mux *runti
 // RegisterSchedulerServiceHandler registers the http handlers for service SchedulerService to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
 func RegisterSchedulerServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterSchedulerServiceHandlerClient(ctx, mux, NewSchedulerServiceClient(conn))
-}
-
-// RegisterSchedulerServiceHandler registers the http handlers for service SchedulerService to "mux".
-// The handlers forward requests to the grpc endpoint over the given implementation of "SchedulerServiceClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "SchedulerServiceClient"
-// doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "SchedulerServiceClient" to call the correct interceptors.
-func RegisterSchedulerServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SchedulerServiceClient) error {
+	client := NewSchedulerServiceClient(conn)
 
 	mux.Handle("GET", pattern_SchedulerService_ListNodes_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(ctx)

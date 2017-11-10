@@ -13,7 +13,7 @@ func DefaultScheduleAlgorithm(j *tes.Task, nodes []*pbs.Node, weights map[string
 	offers := []*Offer{}
 	for _, n := range nodes {
 		// Filter out nodes that don't match the task request.
-		// Checks CPU, RAM, disk space, ports, etc.
+		// Checks CPU, RAM, disk space, etc.
 		if !Match(n, j, DefaultPredicates) {
 			continue
 		}

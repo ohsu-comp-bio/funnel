@@ -52,13 +52,6 @@ func Validate(t *Task) ValidationError {
 		if exec.Stderr != "" && !strings.HasPrefix(exec.Stderr, "/") {
 			errs.add("Task.Executors[%d].Stderr: must be an absolute path", i)
 		}
-
-		for j, port := range exec.Ports {
-			if port.Container == 0 {
-				errs.add("Task.Executors[%d].Ports[%d].Container: required, but empty", i, j)
-			}
-			// TODO spec lists 1024 as minimum. Should that be removed? What if you want port 80?
-		}
 	}
 
 	for i, input := range t.Inputs {

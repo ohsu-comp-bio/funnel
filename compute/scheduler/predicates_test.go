@@ -7,10 +7,6 @@ import (
 	"testing"
 )
 
-func TestPortsFitEmptyTask(t *testing.T) {
-	testEmptyTask(t, PortsFit, "PortsFit")
-}
-
 func TestZonesFitEmptyTask(t *testing.T) {
 	testEmptyTask(t, ZonesFit, "ZonesFit")
 }

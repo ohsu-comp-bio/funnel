@@ -294,12 +294,6 @@ func (es *Elastic) WriteContext(ctx context.Context, ev *events.Event) error {
 	case events.Type_EXECUTOR_EXIT_CODE:
 		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "exit_code", ev.GetExitCode()))
 
-	case events.Type_EXECUTOR_HOST_IP:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "host_ip", ev.GetHostIp()))
-
-	case events.Type_EXECUTOR_PORTS:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "ports", ev.GetPorts().Value))
-
 	case events.Type_EXECUTOR_STDOUT:
 		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "stdout", ev.GetStdout()))
 

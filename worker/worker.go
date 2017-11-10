@@ -104,12 +104,6 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		run.syserr = r.Mapper.MapTask(task)
 	}
 
-	// Grab the IP address of this host. Used to send task metadata updates.
-	var ip string
-	if run.ok() {
-		ip, run.syserr = externalIP()
-	}
-
 	// Configure a task-specific storage backend.
 	// This provides download/upload for inputs/outputs.
 	if run.ok() {
@@ -147,14 +141,12 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		s := &stepWorker{
 			Conf:  r.Conf,
 			Event: r.Event.NewExecutorWriter(uint32(i)),
-			IP:    ip,
 			Cmd: &DockerCmd{
 				ImageName:     d.ImageName,
 				Cmd:           d.Cmd,
 				Environ:       d.Environ,
 				Volumes:       r.Mapper.Volumes,
 				Workdir:       d.Workdir,
-				Ports:         d.Ports,
 				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
 				// TODO make RemoveContainer configurable
 				RemoveContainer: true,

@@ -38,16 +38,6 @@ func (eg *ExecutorGenerator) ExitCode(x int) *Event {
 	return NewExitCode(eg.taskID, eg.attempt, eg.index, int32(x))
 }
 
-// Ports updates an executor's ports log.
-func (eg *ExecutorGenerator) Ports(ports []*tes.Ports) *Event {
-	return NewPorts(eg.taskID, eg.attempt, eg.index, ports)
-}
-
-// HostIP updates an executor's host IP log.
-func (eg *ExecutorGenerator) HostIP(ip string) *Event {
-	return NewHostIP(eg.taskID, eg.attempt, eg.index, ip)
-}
-
 // Stdout appends to an executor's stdout log.
 func (eg *ExecutorGenerator) Stdout(s string) *Event {
 	return NewStdout(eg.taskID, eg.attempt, eg.index, s)
@@ -103,16 +93,6 @@ func (ew *ExecutorWriter) EndTime(t time.Time) error {
 // ExitCode updates an executor's exit code log.
 func (ew *ExecutorWriter) ExitCode(x int) error {
 	return ew.out.Write(ew.gen.ExitCode(x))
-}
-
-// Ports updates an executor's ports log.
-func (ew *ExecutorWriter) Ports(ports []*tes.Ports) error {
-	return ew.out.Write(ew.gen.Ports(ports))
-}
-
-// HostIP updates an executor's host IP log.
-func (ew *ExecutorWriter) HostIP(ip string) error {
-	return ew.out.Write(ew.gen.HostIP(ip))
 }
 
 // Stdout appends to an executor's stdout log.

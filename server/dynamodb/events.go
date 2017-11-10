@@ -227,27 +227,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 			},
 		}
 
-	case events.Type_EXECUTOR_HOST_IP:
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].host_ip = :c", e.Attempt, e.Index))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				S: aws.String(e.GetHostIp()),
-			},
-		}
-
-	case events.Type_EXECUTOR_PORTS:
-		val, err := dynamodbattribute.MarshalMap(e.GetPorts().Value)
-		if err != nil {
-			return fmt.Errorf("failed to DynamoDB marshal ExecutorLog Ports, %v", err)
-		}
-
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].ports = :c", e.Attempt, e.Index))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				M: val,
-			},
-		}
-
 	case events.Type_EXECUTOR_STDOUT:
 		item = &dynamodb.UpdateItemInput{
 			TableName: aws.String(db.stdoutTable),

@@ -120,38 +120,6 @@ func NewExitCode(taskID string, attempt uint32, index uint32, x int32) *Event {
 	}
 }
 
-// NewPorts creates an executor port metadata event
-// for the executor at the given index.
-func NewPorts(taskID string, attempt uint32, index uint32, ports []*tes.Ports) *Event {
-	return &Event{
-		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
-		Type:      Type_EXECUTOR_PORTS,
-		Attempt:   attempt,
-		Index:     index,
-		Data: &Event_Ports{
-			Ports: &Ports{
-				Value: ports,
-			},
-		},
-	}
-}
-
-// NewHostIP creates an executor host IP metadata event
-// for the executor at the given index.
-func NewHostIP(taskID string, attempt uint32, index uint32, ip string) *Event {
-	return &Event{
-		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
-		Type:      Type_EXECUTOR_HOST_IP,
-		Attempt:   attempt,
-		Index:     index,
-		Data: &Event_HostIp{
-			HostIp: ip,
-		},
-	}
-}
-
 // NewStdout creates an executor stdout chunk event
 // for the executor at the given index.
 func NewStdout(taskID string, attempt uint32, index uint32, s string) *Event {

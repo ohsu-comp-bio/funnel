@@ -89,9 +89,9 @@ func TestDefaultWorkerRun(t *testing.T) {
 
 func TestLargeLogTail(t *testing.T) {
 	setLogOutput(t)
-	// Generate 1MB 1000 times to stdout.
+	// Generate lots of random data to stdout.
 	// At the end, echo "\n\nhello\n".
-	id := fun.Run(`'dd if=/dev/urandom count=1000 bs=1000000; echo; echo; echo hello'`)
+	id := fun.Run(`'dd if=/dev/urandom count=5 bs=10000; echo; echo; echo hello'`)
 	task := fun.Wait(id)
 	if !strings.HasSuffix(task.Logs[0].Logs[0].Stdout, "\n\nhello\n") {
 		t.Error("unexpected stdout tail")
@@ -138,7 +138,7 @@ func TestLargeLogRate(t *testing.T) {
 		Executors: []*tes.Executor{
 			{
 				ImageName: "alpine",
-				Cmd:       []string{"dd", "if=/dev/urandom", "bs=1000000"},
+				Cmd:       []string{"dd", "if=/dev/urandom", "bs=10000", "count=1"},
 			},
 		},
 	}

@@ -2,6 +2,7 @@ package batch
 
 import (
 	"fmt"
+	awsutil "github.com/ohsu-comp-bio/funnel/cmd/aws/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
@@ -49,7 +50,7 @@ var jobdefCmd = &cobra.Command{
 		switch err.(type) {
 		case nil:
 			log.Info("Created JobDefinition", "description", c)
-		case errResourceExists:
+		case awsutil.ErrResourceExists:
 			log.Error("JobDefinition already exists", "description", c)
 		default:
 			return fmt.Errorf("failed to create JobDefinition: %v", err)

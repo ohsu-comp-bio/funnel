@@ -1,6 +1,7 @@
 package batch
 
 import (
+	awsutil "github.com/ohsu-comp-bio/funnel/cmd/aws/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"time"
 )
@@ -47,33 +48,6 @@ type JobDefinitionConfig struct {
 	JobRoleArn string
 }
 
-// Policy represents an AWS policy
-type Policy struct {
-	Version   string
-	Statement []Statement
-}
-
-// Statement represents an AWS policy statement
-type Statement struct {
-	Effect   string
-	Action   []string
-	Resource string
-}
-
-// AssumeRolePolicy represents an AWS policy
-type AssumeRolePolicy struct {
-	Version   string
-	Statement []RoleStatement
-}
-
-// RoleStatement represents an AWS policy statement
-type RoleStatement struct {
-	Sid       string
-	Effect    string
-	Action    string
-	Principal map[string]string
-}
-
 // JobRoleConfig represents configuration of the AWS Batch
 // JobRole.
 type JobRoleConfig struct {
@@ -81,9 +55,9 @@ type JobRoleConfig struct {
 	S3PolicyName       string
 	DynamoDBPolicyName string
 	Policies           struct {
-		AssumeRole AssumeRolePolicy
-		S3         Policy
-		DynamoDB   Policy
+		AssumeRole awsutil.AssumeRolePolicy
+		S3         awsutil.Policy
+		DynamoDB   awsutil.Policy
 	}
 }
 
@@ -108,7 +82,7 @@ func DefaultConfig() Config {
 			},
 		},
 		JobRole: JobRoleConfig{
-			RoleName:           "FunnelEcsTaskRole",
+			RoleName:           "FunnelECSTaskRole",
 			DynamoDBPolicyName: "FunnelDynamoDB",
 			S3PolicyName:       "FunnelS3",
 		},
@@ -120,9 +94,9 @@ func DefaultConfig() Config {
 		},
 	}
 
-	c.JobRole.Policies.AssumeRole = AssumeRolePolicy{
+	c.JobRole.Policies.AssumeRole = awsutil.AssumeRolePolicy{
 		Version: "2012-10-17",
-		Statement: []RoleStatement{
+		Statement: []awsutil.RoleStatement{
 			{
 				Effect:    "Allow",
 				Principal: map[string]string{"Service": "ecs-tasks.amazonaws.com"},
@@ -130,9 +104,9 @@ func DefaultConfig() Config {
 			},
 		},
 	}
-	c.JobRole.Policies.S3 = Policy{
+	c.JobRole.Policies.S3 = awsutil.Policy{
 		Version: "2012-10-17",
-		Statement: []Statement{
+		Statement: []awsutil.Statement{
 			{
 				Effect: "Allow",
 				Action: []string{
@@ -147,9 +121,9 @@ func DefaultConfig() Config {
 			},
 		},
 	}
-	c.JobRole.Policies.DynamoDB = Policy{
+	c.JobRole.Policies.DynamoDB = awsutil.Policy{
 		Version: "2012-10-17",
-		Statement: []Statement{
+		Statement: []awsutil.Statement{
 			{
 				Effect: "Allow",
 				Action: []string{

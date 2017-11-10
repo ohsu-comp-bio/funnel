@@ -2,6 +2,7 @@ package batch
 
 import (
 	"fmt"
+	awsutil "github.com/ohsu-comp-bio/funnel/cmd/aws/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
@@ -54,7 +55,7 @@ var createCmd = &cobra.Command{
 		switch err.(type) {
 		case nil:
 			log.Info("Created ComputeEnvironment", "description", a)
-		case errResourceExists:
+		case awsutil.ErrResourceExists:
 			log.Error("ComputeEnvironment already exists", "description", a)
 		default:
 			return fmt.Errorf("failed to create ComputeEnvironment: %v", err)
@@ -64,7 +65,7 @@ var createCmd = &cobra.Command{
 		switch err.(type) {
 		case nil:
 			log.Info("Created JobQueue", "description", b)
-		case errResourceExists:
+		case awsutil.ErrResourceExists:
 			log.Error("JobQueue already exists", "description", b)
 		default:
 			return fmt.Errorf("failed to create JobQueue: %v", err)
@@ -74,7 +75,7 @@ var createCmd = &cobra.Command{
 		switch err.(type) {
 		case nil:
 			log.Info("Created JobDefinition", "description", c)
-		case errResourceExists:
+		case awsutil.ErrResourceExists:
 			log.Error("JobDefinition already exists", "description", c)
 		default:
 			return fmt.Errorf("failed to create JobDefinition: %v", err)

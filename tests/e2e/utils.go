@@ -229,10 +229,8 @@ func (f *Funnel) WaitForDockerDestroy(id string) {
 	fil.Add("type", "container")
 	fil.Add("container", id)
 	fil.Add("event", "destroy")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
 
-	s, err := f.Docker.Events(ctx, dockerTypes.EventsOptions{
+	s, err := f.Docker.Events(context.Background(), dockerTypes.EventsOptions{
 		Since:   string(f.startTime),
 		Filters: fil,
 	})

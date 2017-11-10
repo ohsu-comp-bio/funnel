@@ -108,7 +108,7 @@ func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 				el.Stdout = string(b)
 			}
 
-			b = tx.Bucket(ExecutorStdout).Get([]byte(key))
+			b = tx.Bucket(ExecutorStderr).Get([]byte(key))
 			if b != nil {
 				el.Stderr = string(b)
 			}

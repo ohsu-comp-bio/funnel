@@ -17,7 +17,6 @@ func TestParse(t *testing.T) {
 	expected := []*tes.Task{
 		{
 			Name:        "foo",
-			Project:     "myproj",
 			Description: "mydesc",
 			Inputs: []*tes.TaskParameter{
 				{
@@ -149,7 +148,6 @@ func TestParse(t *testing.T) {
     -O o9=./testdata/o9
     --stderr ./testdata/stderr-second
     -S http://localhost:9001
-    --project myproj
     -p
     -w myworkdir
     -C c1=./testdata/contents.txt

@@ -38,7 +38,6 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	// Build the task message
 	task = &tes.Task{
 		Name:        vals.name,
-		Project:     vals.project,
 		Description: vals.description,
 		Resources: &tes.Resources{
 			CpuCores:    uint32(vals.cpu),

@@ -36,7 +36,6 @@ Resource request flags:
 Other flags:
   -n, --name         Task name.
       --description  Task description.
-      --project      Associated project ID.
       --tag          Arbitrary key-value tags, e.g. tagname=tagvalue
   -e, --env          Environment variables, e.g. envvar=foo
   -w, --workdir      Containter working directory.

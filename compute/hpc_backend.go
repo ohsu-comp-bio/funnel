@@ -93,7 +93,6 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		"RamGb":      task.Resources.RamGb,
 		"DiskGb":     task.Resources.SizeGb,
 		"Zone":       zone,
-		"Project":    task.Project,
 	})
 	if err != nil {
 		return "", err

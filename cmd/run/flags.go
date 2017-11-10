@@ -43,7 +43,6 @@ type flagVals struct {
 	//      but could possibly be separate.
 	workdir     string
 	container   string
-	project     string
 	description string
 	stdin       []string
 	stdout      []string
@@ -113,7 +112,6 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	// Other
 	f.StringVarP(&v.name, "name", "n", v.name, "")
 	f.StringVar(&v.description, "description", v.description, "")
-	f.StringVar(&v.project, "project", v.project, "")
 	f.StringSliceVar(&v.volumes, "vol", v.volumes, "")
 	f.StringSliceVar(&v.tags, "tag", v.tags, "")
 	f.StringSliceVarP(&v.environ, "env", "e", v.environ, "")

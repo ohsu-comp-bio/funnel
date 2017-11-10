@@ -3,13 +3,11 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -97,57 +95,6 @@ func (dcmd DockerCmd) Run() error {
 		cmd.Stderr = dcmd.Stderr
 	}
 	return cmd.Run()
-}
-
-// Inspect returns metadata about the container (calls "docker inspect").
-func (dcmd DockerCmd) Inspect(ctx context.Context) ([]*tes.Ports, error) {
-	dcmd.Event.Info("Fetching container metadata")
-	dclient, derr := util.NewDockerClient()
-	if derr != nil {
-		return nil, derr
-	}
-	// close the docker client connection
-	defer dclient.Close()
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, nil
-		default:
-			metadata, err := dclient.ContainerInspect(ctx, dcmd.ContainerName)
-			if client.IsErrContainerNotFound(err) {
-				break
-			}
-			if err != nil {
-				dcmd.Event.Error("Error inspecting container", err)
-				break
-			}
-			if metadata.State.Running == true {
-				var portMap []*tes.Ports
-				// extract exposed host port from
-				// https://godoc.org/github.com/docker/go-connections/nat#PortMap
-				for k, v := range metadata.NetworkSettings.Ports {
-					// will end up taking the last binding listed
-					for i := range v {
-						p := strings.Split(string(k), "/")
-						containerPort, err := strconv.Atoi(p[0])
-						if err != nil {
-							return nil, err
-						}
-						hostPort, err := strconv.Atoi(v[i].HostPort)
-						if err != nil {
-							return nil, err
-						}
-						portMap = append(portMap, &tes.Ports{
-							Container: uint32(containerPort),
-							Host:      uint32(hostPort),
-						})
-						dcmd.Event.Debug("Found port mapping:", "host", hostPort, "container", containerPort)
-					}
-				}
-				return portMap, nil
-			}
-		}
-	}
 }
 
 // Stop stops the container.

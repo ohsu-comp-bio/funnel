@@ -111,6 +111,9 @@ func (e *eventCounter) Write(ev *events.Event) error {
 	}
 	return nil
 }
+func (e *eventCounter) Close() error {
+	return nil
+}
 
 type taskReader struct {
 	task *tes.Task

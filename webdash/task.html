@@ -34,6 +34,10 @@
       <td>Resources</td>
       <td>{{ resources(task) }}</td>
     </tr>
+    <tr>
+      <td>Creation Time</td>
+      <td>{{ task.creation_time | date:"medium" }}</td>
+    </tr>
     <tr ng-show="task.logs[0].start_time">
       <td>Start Time</td>
       <td>{{ task.logs[0].start_time | date:"medium" }}</td>

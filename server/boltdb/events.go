@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
@@ -48,13 +47,13 @@ func (taskBolt *BoltDB) WriteContext(ctx context.Context, req *events.Event) err
 		})
 
 	case events.Type_TASK_START_TIME:
-		tl.StartTime = ptypes.TimestampString(req.GetStartTime())
+		tl.StartTime = req.GetStartTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateTaskLogs(tx, req.Id, tl)
 		})
 
 	case events.Type_TASK_END_TIME:
-		tl.EndTime = ptypes.TimestampString(req.GetEndTime())
+		tl.EndTime = req.GetEndTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateTaskLogs(tx, req.Id, tl)
 		})
@@ -72,13 +71,13 @@ func (taskBolt *BoltDB) WriteContext(ctx context.Context, req *events.Event) err
 		})
 
 	case events.Type_EXECUTOR_START_TIME:
-		el.StartTime = ptypes.TimestampString(req.GetStartTime())
+		el.StartTime = req.GetStartTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
 	case events.Type_EXECUTOR_END_TIME:
-		el.EndTime = ptypes.TimestampString(req.GetEndTime())
+		el.EndTime = req.GetEndTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})

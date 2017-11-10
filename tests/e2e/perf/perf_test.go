@@ -2,7 +2,6 @@ package perf
 
 import (
 	"context"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"google.golang.org/grpc"
@@ -96,7 +95,7 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 								Data: &events.Event_Stdout{
 									Stdout: content,
 								},
-								Timestamp: ptypes.TimestampNow(),
+								Timestamp: time.Now().Format(time.RFC3339Nano),
 							})
 						case <-done:
 							return

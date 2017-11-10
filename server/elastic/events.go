@@ -274,10 +274,10 @@ func (es *Elastic) WriteContext(ctx context.Context, ev *events.Event) error {
 		u = u.Doc(map[string]string{"state": ev.GetState().String()})
 
 	case events.Type_TASK_START_TIME:
-		u = u.Script(taskLogUpdate(ev.Attempt, "start_time", events.TimestampString(ev.GetStartTime())))
+		u = u.Script(taskLogUpdate(ev.Attempt, "start_time", ev.GetStartTime()))
 
 	case events.Type_TASK_END_TIME:
-		u = u.Script(taskLogUpdate(ev.Attempt, "end_time", events.TimestampString(ev.GetEndTime())))
+		u = u.Script(taskLogUpdate(ev.Attempt, "end_time", ev.GetEndTime()))
 
 	case events.Type_TASK_OUTPUTS:
 		u = u.Script(taskLogUpdate(ev.Attempt, "outputs", ev.GetOutputs().Value))
@@ -286,10 +286,10 @@ func (es *Elastic) WriteContext(ctx context.Context, ev *events.Event) error {
 		u = u.Script(taskLogUpdate(ev.Attempt, "metadata", ev.GetMetadata().Value))
 
 	case events.Type_EXECUTOR_START_TIME:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "start_time", events.TimestampString(ev.GetStartTime())))
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "start_time", ev.GetStartTime()))
 
 	case events.Type_EXECUTOR_END_TIME:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "end_time", events.TimestampString(ev.GetEndTime())))
+		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "end_time", ev.GetEndTime()))
 
 	case events.Type_EXECUTOR_EXIT_CODE:
 		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "exit_code", ev.GetExitCode()))

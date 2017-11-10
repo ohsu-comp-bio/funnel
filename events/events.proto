@@ -3,7 +3,6 @@ syntax = "proto3";
 package events;
 
 import "tes.proto";
-import "timestamp.proto";
 import "google/api/annotations.proto";
 
 message Metadata {
@@ -37,11 +36,11 @@ enum Type {
 
 message Event {
   string id = 1;
-  google.protobuf.Timestamp timestamp = 2;
+  string timestamp = 2;
   oneof data {
     tes.State state = 3;
-    google.protobuf.Timestamp start_time = 4;
-    google.protobuf.Timestamp end_time = 5;
+    string start_time = 4;
+    string end_time = 5;
     Outputs outputs = 6;
     Metadata metadata = 7;
     int32 exit_code = 10;

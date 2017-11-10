@@ -1,7 +1,6 @@
 package events
 
 import (
-	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"time"
 )
@@ -10,7 +9,7 @@ import (
 func NewState(taskID string, attempt uint32, s tes.State) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_TASK_STATE,
 		Attempt:   attempt,
 		Data: &Event_State{
@@ -23,11 +22,11 @@ func NewState(taskID string, attempt uint32, s tes.State) *Event {
 func NewStartTime(taskID string, attempt uint32, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_TASK_START_TIME,
 		Attempt:   attempt,
 		Data: &Event_StartTime{
-			StartTime: Timestamp(t),
+			StartTime: t.Format(time.RFC3339Nano),
 		},
 	}
 }
@@ -36,11 +35,11 @@ func NewStartTime(taskID string, attempt uint32, t time.Time) *Event {
 func NewEndTime(taskID string, attempt uint32, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_TASK_END_TIME,
 		Attempt:   attempt,
 		Data: &Event_EndTime{
-			EndTime: Timestamp(t),
+			EndTime: t.Format(time.RFC3339Nano),
 		},
 	}
 }
@@ -49,7 +48,7 @@ func NewEndTime(taskID string, attempt uint32, t time.Time) *Event {
 func NewOutputs(taskID string, attempt uint32, f []*tes.OutputFileLog) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_TASK_OUTPUTS,
 		Attempt:   attempt,
 		Data: &Event_Outputs{
@@ -64,7 +63,7 @@ func NewOutputs(taskID string, attempt uint32, f []*tes.OutputFileLog) *Event {
 func NewMetadata(taskID string, attempt uint32, m map[string]string) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_TASK_METADATA,
 		Attempt:   attempt,
 		Data: &Event_Metadata{
@@ -80,12 +79,12 @@ func NewMetadata(taskID string, attempt uint32, m map[string]string) *Event {
 func NewExecutorStartTime(taskID string, attempt uint32, index uint32, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_EXECUTOR_START_TIME,
 		Attempt:   attempt,
 		Index:     index,
 		Data: &Event_StartTime{
-			StartTime: Timestamp(t),
+			StartTime: t.Format(time.RFC3339Nano),
 		},
 	}
 }
@@ -95,12 +94,12 @@ func NewExecutorStartTime(taskID string, attempt uint32, index uint32, t time.Ti
 func NewExecutorEndTime(taskID string, attempt uint32, index uint32, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_EXECUTOR_END_TIME,
 		Attempt:   attempt,
 		Index:     index,
 		Data: &Event_EndTime{
-			EndTime: Timestamp(t),
+			EndTime: t.Format(time.RFC3339Nano),
 		},
 	}
 }
@@ -110,7 +109,7 @@ func NewExecutorEndTime(taskID string, attempt uint32, index uint32, t time.Time
 func NewExitCode(taskID string, attempt uint32, index uint32, x int32) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_EXECUTOR_EXIT_CODE,
 		Attempt:   attempt,
 		Index:     index,
@@ -125,7 +124,7 @@ func NewExitCode(taskID string, attempt uint32, index uint32, x int32) *Event {
 func NewStdout(taskID string, attempt uint32, index uint32, s string) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_EXECUTOR_STDOUT,
 		Attempt:   attempt,
 		Index:     index,
@@ -140,7 +139,7 @@ func NewStdout(taskID string, attempt uint32, index uint32, s string) *Event {
 func NewStderr(taskID string, attempt uint32, index uint32, s string) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_EXECUTOR_STDERR,
 		Attempt:   attempt,
 		Index:     index,
@@ -154,7 +153,7 @@ func NewStderr(taskID string, attempt uint32, index uint32, s string) *Event {
 func NewSystemLog(taskID string, attempt uint32, index uint32, lvl string, msg string, fields map[string]string) *Event {
 	return &Event{
 		Id:        taskID,
-		Timestamp: ptypes.TimestampNow(),
+		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_SYSTEM_LOG,
 		Attempt:   attempt,
 		Index:     index,

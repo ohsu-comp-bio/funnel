@@ -21,7 +21,7 @@ func GenerateID() string {
 func InitTask(task *Task) error {
 	task.Id = GenerateID()
 	task.State = Queued
-	task.CreationTime = time.Now().Format(time.RFC3339)
+	task.CreationTime = time.Now().Format(time.RFC3339Nano)
 	if err := Validate(task); err != nil {
 		return fmt.Errorf("invalid task message:\n%s", err)
 	}

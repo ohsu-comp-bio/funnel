@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"strconv"
 )
@@ -167,10 +166,6 @@ func (db *DynamoDB) createTask(ctx context.Context, task *tes.Task) error {
 		S: aws.String(db.partitionValue),
 	}
 
-	av["created_at"] = &dynamodb.AttributeValue{
-		S: aws.String(ptypes.TimestampString(ptypes.TimestampNow())),
-	}
-
 	// Add nil fields to make updates easier
 	av["logs"] = &dynamodb.AttributeValue{
 		L: []*dynamodb.AttributeValue{
@@ -209,9 +204,6 @@ func (db *DynamoDB) createTaskInputContent(ctx context.Context, task *tes.Task) 
 			}
 			av["content"] = &dynamodb.AttributeValue{
 				S: aws.String(v.Content),
-			}
-			av["created_at"] = &dynamodb.AttributeValue{
-				S: aws.String(ptypes.TimestampString(ptypes.TimestampNow())),
 			}
 
 			item := &dynamodb.PutItemInput{

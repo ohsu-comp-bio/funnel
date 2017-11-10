@@ -102,3 +102,9 @@ func (db *MongoDB) Init(ctx context.Context) error {
 func (db *MongoDB) WithComputeBackend(backend compute.Backend) {
 	db.backend = backend
 }
+
+// Close closes the database session.
+func (db *MongoDB) Close() error {
+	db.sess.Close()
+	return nil
+}

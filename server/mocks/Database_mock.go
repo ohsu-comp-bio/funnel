@@ -151,6 +151,20 @@ func (_m *Database) GetTask(_a0 context.Context, _a1 *tes.GetTaskRequest) (*tes.
 	return r0, r1
 }
 
+// Init provides a mock function with given fields: _a0
+func (_m *Database) Init(_a0 context.Context) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ListNodes provides a mock function with given fields: _a0, _a1
 func (_m *Database) ListNodes(_a0 context.Context, _a1 *scheduler.ListNodesRequest) (*scheduler.ListNodesResponse, error) {
 	ret := _m.Called(_a0, _a1)

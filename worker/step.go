@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"github.com/docker/docker/client"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"io"
@@ -41,7 +40,6 @@ func (s *stepWorker) Run(ctx context.Context) error {
 	go func() {
 		done <- s.Cmd.Run()
 	}()
-	go s.inspectContainer(subctx)
 
 	for {
 		select {
@@ -55,28 +53,6 @@ func (s *stepWorker) Run(ctx context.Context) error {
 			s.Event.EndTime(time.Now())
 			s.Event.ExitCode(getExitCode(result))
 			return result
-		}
-	}
-}
-
-// inspectContainer calls Inspect on the DockerCmd, and sends an update with the results.
-func (s *stepWorker) inspectContainer(ctx context.Context) {
-	t := time.NewTimer(time.Second)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			s.Event.Info("Inspecting container")
-
-			ports, err := s.Cmd.Inspect(ctx)
-			if err != nil && !client.IsErrContainerNotFound(err) {
-				s.Event.Error("Error inspecting container", err)
-				break
-			}
-			s.Event.Ports(ports)
-			return
 		}
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
@@ -166,7 +165,7 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].start_time = :c", e.Attempt))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
-				S: aws.String(ptypes.TimestampString(e.GetStartTime())),
+				S: aws.String(e.GetStartTime()),
 			},
 		}
 
@@ -174,7 +173,7 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].end_time = :c", e.Attempt))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
-				S: aws.String(ptypes.TimestampString(e.GetEndTime())),
+				S: aws.String(e.GetEndTime()),
 			},
 		}
 
@@ -207,7 +206,7 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].start_time = :c", e.Attempt, e.Index))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
-				S: aws.String(ptypes.TimestampString(e.GetStartTime())),
+				S: aws.String(e.GetStartTime()),
 			},
 		}
 
@@ -215,7 +214,7 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].end_time = :c", e.Attempt, e.Index))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
-				S: aws.String(ptypes.TimestampString(e.GetEndTime())),
+				S: aws.String(e.GetEndTime()),
 			},
 		}
 

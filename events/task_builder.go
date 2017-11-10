@@ -25,10 +25,10 @@ func (tb TaskBuilder) Write(ev *Event) error {
 		t.State = to
 
 	case Type_TASK_START_TIME:
-		t.GetTaskLog(attempt).StartTime = TimestampString(ev.GetStartTime())
+		t.GetTaskLog(attempt).StartTime = ev.GetStartTime()
 
 	case Type_TASK_END_TIME:
-		t.GetTaskLog(attempt).EndTime = TimestampString(ev.GetEndTime())
+		t.GetTaskLog(attempt).EndTime = ev.GetEndTime()
 
 	case Type_TASK_OUTPUTS:
 		t.GetTaskLog(attempt).Outputs = ev.GetOutputs().Value
@@ -37,10 +37,10 @@ func (tb TaskBuilder) Write(ev *Event) error {
 		t.GetTaskLog(attempt).Metadata = ev.GetMetadata().Value
 
 	case Type_EXECUTOR_START_TIME:
-		t.GetExecLog(attempt, index).StartTime = TimestampString(ev.GetStartTime())
+		t.GetExecLog(attempt, index).StartTime = ev.GetStartTime()
 
 	case Type_EXECUTOR_END_TIME:
-		t.GetExecLog(attempt, index).EndTime = TimestampString(ev.GetEndTime())
+		t.GetExecLog(attempt, index).EndTime = ev.GetEndTime()
 
 	case Type_EXECUTOR_EXIT_CODE:
 		t.GetExecLog(attempt, index).ExitCode = ev.GetExitCode()

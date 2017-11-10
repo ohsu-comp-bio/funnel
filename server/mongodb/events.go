@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
@@ -42,14 +41,14 @@ func (db *MongoDB) WriteContext(ctx context.Context, req *events.Event) error {
 		err = db.tasks.Update(bson.M{"id": req.Id}, bson.M{"$set": bson.M{"state": to}})
 
 	case events.Type_TASK_START_TIME:
-		startTime := ptypes.TimestampString(req.GetStartTime())
+		startTime := req.GetStartTime()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
 			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.starttime", req.Attempt): startTime}},
 		)
 
 	case events.Type_TASK_END_TIME:
-		endTime := ptypes.TimestampString(req.GetEndTime())
+		endTime := req.GetEndTime()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
 			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.endtime", req.Attempt): endTime}},
@@ -70,14 +69,14 @@ func (db *MongoDB) WriteContext(ctx context.Context, req *events.Event) error {
 		)
 
 	case events.Type_EXECUTOR_START_TIME:
-		startTime := ptypes.TimestampString(req.GetStartTime())
+		startTime := req.GetStartTime()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
 			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.starttime", req.Attempt, req.Index): startTime}},
 		)
 
 	case events.Type_EXECUTOR_END_TIME:
-		endTime := ptypes.TimestampString(req.GetEndTime())
+		endTime := req.GetEndTime()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
 			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.endtime", req.Attempt, req.Index): endTime}},

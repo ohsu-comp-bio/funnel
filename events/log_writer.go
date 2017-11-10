@@ -16,24 +16,24 @@ func (el *Logger) Write(ev *Event) error {
 		"taskID", ev.Id,
 		"attempt", ev.Attempt,
 		"index", ev.Index,
-		"timestamp", TimestampString(ev.Timestamp),
+		"timestamp", ev.Timestamp,
 	)
 
 	switch ev.Type {
 	case Type_TASK_STATE:
 		log.Info(ts, "state", ev.GetState().String())
 	case Type_TASK_START_TIME:
-		log.Info(ts, "start_time", TimestampString(ev.GetStartTime()))
+		log.Info(ts, "start_time", ev.GetStartTime())
 	case Type_TASK_END_TIME:
-		log.Info(ts, "end_time", TimestampString(ev.GetEndTime()))
+		log.Info(ts, "end_time", ev.GetEndTime())
 	case Type_TASK_OUTPUTS:
 		log.Info(ts, "outputs", ev.GetOutputs().Value)
 	case Type_TASK_METADATA:
 		log.Info(ts, "metadata", ev.GetMetadata().Value)
 	case Type_EXECUTOR_START_TIME:
-		log.Info(ts, "start_time", TimestampString(ev.GetStartTime()))
+		log.Info(ts, "start_time", ev.GetStartTime())
 	case Type_EXECUTOR_END_TIME:
-		log.Info(ts, "end_time", TimestampString(ev.GetEndTime()))
+		log.Info(ts, "end_time", ev.GetEndTime())
 	case Type_EXECUTOR_EXIT_CODE:
 		log.Info(ts, "exit_code", ev.GetExitCode())
 	case Type_EXECUTOR_STDOUT:

@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,15 +15,9 @@ import (
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (db *DynamoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	verr := tes.Validate(task)
-	if verr != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, verr.Error())
+	if err := tes.InitTask(task); err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
-
-	taskID := util.GenTaskID()
-
-	task.Id = taskID
-	task.State = tes.State_QUEUED
 
 	err := db.createTask(ctx, task)
 	if err != nil {
@@ -46,7 +39,7 @@ func (db *DynamoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.Create
 		return nil, fmt.Errorf("couldn't submit to compute backend: %s", err)
 	}
 
-	return &tes.CreateTaskResponse{Id: taskID}, nil
+	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }
 
 // GetTask gets a task, which describes a running task

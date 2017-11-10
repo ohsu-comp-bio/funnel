@@ -5,7 +5,6 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -15,15 +14,11 @@ import (
 // This is part of the TES implementation.
 func (taskBolt *BoltDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 
-	if err := tes.Validate(task); err != nil {
-		err := fmt.Errorf("invalid task message:\n%s", err)
+	if err := tes.InitTask(task); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	taskID := util.GenTaskID()
-	idBytes := []byte(taskID)
-
-	task.Id = taskID
+	idBytes := []byte(task.Id)
 	taskString, err := proto.Marshal(task)
 	if err != nil {
 		return nil, err
@@ -52,7 +47,7 @@ func (taskBolt *BoltDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cr
 		return nil, err
 	}
 
-	return &tes.CreateTaskResponse{Id: taskID}, nil
+	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }
 
 func getTaskState(tx *bolt.Tx, id string) tes.State {

@@ -108,9 +108,9 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.Scheduler.ScheduleRate = time.Millisecond * 700
 	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
 	conf.Worker.UpdateRate = time.Millisecond * 300
-	conf.Server.Databases.Elastic.IndexPrefix += "-" + util.GenTaskID()
+	conf.Server.Databases.Elastic.IndexPrefix += "-" + tes.GenerateID()
 	conf.Worker.EventWriters.Elastic = conf.Server.Databases.Elastic
-	conf.Server.Databases.MongoDB.Database += "-" + util.GenTaskID()
+	conf.Server.Databases.MongoDB.Database += "-" + tes.GenerateID()
 	conf.Worker.EventWriters.MongoDB = conf.Server.Databases.MongoDB
 	conf.Worker.TaskReaders.MongoDB = conf.Server.Databases.MongoDB
 

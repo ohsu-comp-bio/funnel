@@ -1,8 +1,32 @@
 package tes
 
 import (
+	"fmt"
 	"github.com/getlantern/deepcopy"
+	"github.com/rs/xid"
+	"time"
 )
+
+// GenerateID generates a task ID string.
+// IDs are globally unique and sortable.
+func GenerateID() string {
+	id := xid.New()
+	return id.String()
+}
+
+// InitTask intializes task fields which are commonly set by CreateTask,
+// such as Id, CreationTime, State, etc. If the task fails validation,
+// an error is returned. See Validate().
+// The given task is modified.
+func InitTask(task *Task) error {
+	task.Id = GenerateID()
+	task.State = Queued
+	task.CreationTime = time.Now().Format(time.RFC3339)
+	if err := Validate(task); err != nil {
+		return fmt.Errorf("invalid task message:\n%s", err)
+	}
+	return nil
+}
 
 // RunnableState returns true if the state is RUNNING or INITIALIZING
 func RunnableState(s State) bool {

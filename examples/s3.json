@@ -1,0 +1,19 @@
+{
+  "name": "S3 Storage example",
+  "description": "Task inputs and outputs can be Cloud Storage URLs.",
+  "executors": [
+    {
+      "image": "ubuntu",
+      "command": ["md5sum", "/tmp/file.xml"],
+      "stdout": "/tmp/stdout"
+    }
+  ],
+  "inputs": [
+    {
+      "name": "input",
+      "description": "Download a public file from AWS S3 Storage (IRS form 990 data)",
+      "url": "s3://irs-form-990/200931393493000150_public.xml",
+      "path": "/tmp/file.xml"
+    }
+  ]
+}

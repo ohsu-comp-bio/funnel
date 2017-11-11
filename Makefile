@@ -117,6 +117,11 @@ test-s3:
 test-openstack:
 	@go test ./tests/e2e/openstack -openstack-e2e-config ${FUNNEL_OPENSTACK_TEST_CONFIG}
 
+test-dynamo:
+	@go test ./tests/e2e/ -funnel-config dynamo.config.yml
+
+clean-dynamo-tests:
+
 webdash-install:
 	@npm install --prefix ./webdash
 	@go get -u github.com/jteeuwen/go-bindata/...

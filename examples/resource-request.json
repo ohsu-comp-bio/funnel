@@ -3,8 +3,8 @@
   "description": "Demonstrates a task requesting 4 CPU cores, 15 GB RAM, and 100 GB disk space.",
   "resources": {
     "cpu_cores": 4,
-    "ram_gb": 15,
-    "disk_gb": 100
+    "ramGb": 15,
+    "diskGb": 100
   },
   "executors": [
     {

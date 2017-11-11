@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"strconv"
+	"time"
 )
 
 func checkCreateErr(err error) error {
@@ -152,6 +153,43 @@ func (db *DynamoDB) createTables() error {
 	if checkCreateErr(err) != nil {
 		return err
 	}
+	return db.waitForTables()
+}
+
+func (db *DynamoDB) tableIsAlive(ctx context.Context, name string) error {
+	ticker := time.NewTicker(time.Millisecond * 500).C
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker:
+			r, _ := db.client.DescribeTable(&dynamodb.DescribeTableInput{
+				TableName: aws.String(name),
+			})
+			if *r.Table.TableStatus == "ACTIVE" {
+				return nil
+			}
+		}
+	}
+}
+
+func (db *DynamoDB) waitForTables() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	defer cancel()
+
+	if err := db.tableIsAlive(ctx, db.taskTable); err != nil {
+		return err
+	}
+	if err := db.tableIsAlive(ctx, db.contentTable); err != nil {
+		return err
+	}
+	if err := db.tableIsAlive(ctx, db.stdoutTable); err != nil {
+		return err
+	}
+	if err := db.tableIsAlive(ctx, db.stderrTable); err != nil {
+		return err
+	}
+
 	return nil
 }
 

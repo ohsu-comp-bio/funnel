@@ -1,0 +1,12 @@
+Server:
+  Database: dynamodb
+  Databases:
+    DynamoDB:
+      Region: us-west-2
+
+Worker:
+  TaskReader: dynamodb
+  ActiveEventWriters: ["dynamodb", "log"]
+  EventWriter:
+    DynamoDB:
+      Region: us-west-2

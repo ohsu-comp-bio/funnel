@@ -114,6 +114,10 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.Worker.EventWriters.MongoDB = conf.Server.Databases.MongoDB
 	conf.Worker.TaskReaders.MongoDB = conf.Server.Databases.MongoDB
 
+	dynTableBasename := "funnel-e2e-tests-" + testutils.RandomString(6)
+	conf.Server.Databases.DynamoDB.TableBasename = dynTableBasename
+	conf.Worker.EventWriters.DynamoDB.TableBasename = dynTableBasename
+
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 

@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"time"
 )
@@ -20,7 +21,7 @@ func NewTaskGenerator(taskID string, attempt uint32) *TaskGenerator {
 
 // State sets the state of the task.
 func (eg *TaskGenerator) State(s tes.State) *Event {
-	return NewState(eg.taskID, eg.attempt, s)
+	return NewState(eg.taskID, s)
 }
 
 // StartTime updates the task's start time log.
@@ -77,27 +78,27 @@ func NewTaskWriter(taskID string, attempt uint32, logLevel string, w Writer) *Ta
 
 // State sets the state of the task.
 func (ew *TaskWriter) State(s tes.State) error {
-	return ew.out.Write(ew.gen.State(s))
+	return ew.out.WriteEvent(context.Background(), ew.gen.State(s))
 }
 
 // StartTime updates the task's start time log.
 func (ew *TaskWriter) StartTime(t time.Time) error {
-	return ew.out.Write(ew.gen.StartTime(t))
+	return ew.out.WriteEvent(context.Background(), ew.gen.StartTime(t))
 }
 
 // EndTime updates the task's end time log.
 func (ew *TaskWriter) EndTime(t time.Time) error {
-	return ew.out.Write(ew.gen.EndTime(t))
+	return ew.out.WriteEvent(context.Background(), ew.gen.EndTime(t))
 }
 
 // Outputs updates the task's output file log.
 func (ew *TaskWriter) Outputs(f []*tes.OutputFileLog) error {
-	return ew.out.Write(ew.gen.Outputs(f))
+	return ew.out.WriteEvent(context.Background(), ew.gen.Outputs(f))
 }
 
 // Metadata updates the task's metadata log.
 func (ew *TaskWriter) Metadata(m map[string]string) error {
-	return ew.out.Write(ew.gen.Metadata(m))
+	return ew.out.WriteEvent(context.Background(), ew.gen.Metadata(m))
 }
 
 // Info creates an info level system log message.
@@ -124,9 +125,4 @@ func (ew *TaskWriter) NewExecutorWriter(index uint32) *ExecutorWriter {
 		out: ew.out,
 		sys: &SystemLogWriter{ew.sys.lvl, g.sys, ew.out},
 	}
-}
-
-// Close closes the writer.
-func (ew *TaskWriter) Close() error {
-	return ew.out.Close()
 }

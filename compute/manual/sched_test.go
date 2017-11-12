@@ -30,9 +30,9 @@ func simpleNode() *pbs.Node {
 	}
 }
 
-func setup(nodes []*pbs.Node) (*schedmock.Nodes, *scheduler.Scheduler) {
+func setup(nodes []*pbs.Node) (*schedmock.SchedulerServiceServer, *scheduler.Scheduler) {
 	conf := config.Config{}
-	mc := new(schedmock.Nodes)
+	mc := new(schedmock.SchedulerServiceServer)
 
 	// Mock in test nodes
 	mc.On("ListNodes", Anything, Anything, Anything).Return(&pbs.ListNodesResponse{

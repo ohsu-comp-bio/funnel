@@ -1,6 +1,7 @@
 package tes
 
 import (
+	"errors"
 	"fmt"
 	"github.com/getlantern/deepcopy"
 	"github.com/golang/protobuf/jsonpb"
@@ -17,6 +18,9 @@ var Marshaler = jsonpb.Marshaler{
 func MarshalToString(t *Task) (string, error) {
 	return Marshaler.MarshalToString(t)
 }
+
+// ErrNotFound is returned when a task is not found.
+var ErrNotFound = errors.New("task not found")
 
 // GenerateID generates a task ID string.
 // IDs are globally unique and sortable.

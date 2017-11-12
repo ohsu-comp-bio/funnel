@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"regexp"
@@ -30,6 +31,16 @@ func NewBackend(batchConf config.AWSBatch) (*Backend, error) {
 type Backend struct {
 	client *batch.Batch
 	conf   config.AWSBatch
+}
+
+// WriteEvent writes an event to the compute backend.
+// Currently, only TASK_CREATED is handled, which calls Submit.
+func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
+	switch ev.Type {
+	case events.Type_TASK_CREATED:
+		return b.Submit(ev.GetTask())
+	}
+	return nil
 }
 
 // Submit submits a task to the AWS batch service.

@@ -25,11 +25,6 @@ type DefaultWorker struct {
 	Event      *events.TaskWriter
 }
 
-// Close cleans up worker resources, e.g. closing the event writers.
-func (r *DefaultWorker) Close() error {
-	return r.Event.Close()
-}
-
 // Run runs the Worker.
 // TODO document behavior of slow consumer of task log updates
 func (r *DefaultWorker) Run(pctx context.Context) {

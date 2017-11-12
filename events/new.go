@@ -5,13 +5,24 @@ import (
 	"time"
 )
 
+// NewTaskCreated creates a state change event.
+func NewTaskCreated(task *tes.Task) *Event {
+	return &Event{
+		Id:        task.Id,
+		Timestamp: time.Now().Format(time.RFC3339Nano),
+		Type:      Type_TASK_CREATED,
+		Data: &Event_Task{
+			Task: task,
+		},
+	}
+}
+
 // NewState creates a state change event.
-func NewState(taskID string, attempt uint32, s tes.State) *Event {
+func NewState(taskID string, s tes.State) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_TASK_STATE,
-		Attempt:   attempt,
 		Data: &Event_State{
 			State: s,
 		},

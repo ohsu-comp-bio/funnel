@@ -12,11 +12,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// QueueTask adds a task to the scheduler queue.
-func (db *MongoDB) QueueTask(task *tes.Task) error {
-	return nil
-}
-
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (db *MongoDB) ReadQueue(n int) []*tes.Task {
 	var tasks []*tes.Task
@@ -67,12 +62,12 @@ func (db *MongoDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 }
 
 // DeleteNode deletes a node
-func (db *MongoDB) DeleteNode(ctx context.Context, req *pbs.Node) error {
+func (db *MongoDB) DeleteNode(ctx context.Context, req *pbs.Node) (*pbs.DeleteNodeResponse, error) {
 	err := db.nodes.Remove(bson.M{"id": req.Id})
 	if err == mgo.ErrNotFound {
-		return grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
+		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
 	}
-	return err
+	return nil, err
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.

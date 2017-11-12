@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// QueueTask adds a task to the scheduler queue.
-func (taskBolt *BoltDB) QueueTask(task *tes.Task) error {
+// queueTask adds a task to the scheduler queue.
+func (taskBolt *BoltDB) queueTask(task *tes.Task) error {
 	taskID := task.Id
 	idBytes := []byte(taskID)
 
@@ -101,9 +101,9 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*
 
 // DeleteNode deletes the given node.
 // Currently, the node's version field is not checked.
-func (taskBolt *BoltDB) DeleteNode(ctx context.Context, node *pbs.Node) error {
+func (taskBolt *BoltDB) DeleteNode(ctx context.Context, node *pbs.Node) (*pbs.DeleteNodeResponse, error) {
 	// TODO we don't check version on delete. should we?
-	return taskBolt.db.Update(func(tx *bolt.Tx) error {
+	return &pbs.DeleteNodeResponse{}, taskBolt.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(Nodes).Delete([]byte(node.Id))
 	})
 }

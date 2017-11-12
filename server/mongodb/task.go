@@ -1,43 +1,14 @@
 package mongodb
 
 import (
-	"fmt"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
 var basicView = bson.M{"logs.logs.stdout": 0, "logs.logs.stderr": 0, "inputs.content": 0}
 var minimalView = bson.M{"id": 1, "state": 1}
-
-// CreateTask provides an HTTP/gRPC endpoint for creating a task.
-// This is part of the TES implementation.
-func (db *MongoDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	if err := tes.InitTask(task); err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	task.Logs = []*tes.TaskLog{
-		{
-			Logs: []*tes.ExecutorLog{},
-		},
-	}
-
-	err := db.tasks.Insert(task)
-	if err != nil {
-		return nil, fmt.Errorf("failed to write task to db: %v", err)
-	}
-
-	err = db.backend.Submit(task)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't submit to compute backend: %v", err)
-	}
-
-	return &tes.CreateTaskResponse{Id: task.Id}, nil
-}
 
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
@@ -53,10 +24,10 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 	}
 
 	err := q.One(&task)
+	if err == mgo.ErrNotFound {
+		return nil, tes.ErrNotFound
+	}
 	if err != nil {
-		if err == mgo.ErrNotFound {
-			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", mgo.ErrNotFound.Error(), req.Id))
-		}
 		return nil, err
 	}
 
@@ -98,30 +69,4 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	}
 
 	return &out, nil
-}
-
-// CancelTask cancels a task
-func (db *MongoDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	task, err := db.GetTask(ctx, &tes.GetTaskRequest{
-		Id:   req.Id,
-		View: tes.TaskView_MINIMAL,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	from := task.State
-	to := tes.State_CANCELED
-	if err := tes.ValidateTransition(from, to); err != nil {
-		return nil, err
-	}
-
-	err = db.tasks.Update(bson.M{"id": req.Id}, bson.M{"$set": bson.M{"state": to}})
-
-	return &tes.CancelTaskResponse{}, err
-}
-
-// GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
-func (db *MongoDB) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	return &tes.ServiceInfo{}, nil
 }

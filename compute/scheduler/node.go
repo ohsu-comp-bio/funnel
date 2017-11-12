@@ -13,7 +13,7 @@ import (
 )
 
 // NewNode returns a new Node instance
-func NewNode(conf config.Config, log *logger.Logger, factory WorkerFactory) (*Node, error) {
+func NewNode(conf config.Config, log *logger.Logger, factory Worker) (*Node, error) {
 	log = log.WithFields("nodeID", conf.Scheduler.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
@@ -55,7 +55,7 @@ func NewNode(conf config.Config, log *logger.Logger, factory WorkerFactory) (*No
 // NewNoopNode returns a new node that doesn't have any side effects
 // (e.g. storage access, docker calls, etc.) which is useful for testing.
 func NewNoopNode(conf config.Config, log *logger.Logger) (*Node, error) {
-	return NewNode(conf, log, NoopWorkerFactory)
+	return NewNode(conf, log, NoopWorker)
 }
 
 // Node is a structure used for tracking available resources on a compute resource.
@@ -65,7 +65,7 @@ type Node struct {
 	client     Client
 	log        *logger.Logger
 	resources  pbs.Resources
-	newWorker  WorkerFactory
+	newWorker  Worker
 	workers    *runSet
 	timeout    util.IdleTimeout
 	state      pbs.NodeState
@@ -232,12 +232,11 @@ func (n *Node) runTask(ctx context.Context, id string) {
 		}
 	}()
 
-	r, err := n.newWorker(n.workerConf, id, log)
+	err := n.newWorker(ctx, n.workerConf, id, log)
 	if err != nil {
 		log.Error("error creating worker", err)
 		return
 	}
-	r.Run(ctx)
 	log.Info("Task complete")
 }
 

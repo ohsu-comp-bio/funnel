@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -15,7 +16,7 @@ func NewCommand() *cobra.Command {
 }
 
 type hooks struct {
-	Run func(conf config.Worker, taskID string, log *logger.Logger) error
+	Run func(ctx context.Context, conf config.Worker, taskID string, log *logger.Logger) error
 }
 
 func newCommandHooks() (*cobra.Command, *hooks) {
@@ -81,7 +82,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 				return fmt.Errorf("no taskID was provided")
 			}
 			log := logger.NewLogger("worker", conf.Worker.Logger)
-			return hooks.Run(conf.Worker, taskID, log)
+			return hooks.Run(context.Background(), conf.Worker, taskID, log)
 		},
 	}
 	f = run.Flags()

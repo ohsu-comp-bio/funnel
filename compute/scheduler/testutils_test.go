@@ -7,30 +7,11 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"github.com/ohsu-comp-bio/funnel/worker"
 	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"testing"
 	"time"
 )
-
-func testWorkerFactoryFunc(f func(r testWorker)) WorkerFactory {
-	return WorkerFactory(func(config.Worker, string, *logger.Logger) (worker.Worker, error) {
-		t := testWorker{}
-		f(t)
-		return &t, nil
-	})
-}
-
-type testWorker struct{}
-
-func (t *testWorker) Run(context.Context) {}
-func (t *testWorker) Factory(config.Worker, string, *logger.Logger) (worker.Worker, error) {
-	return t, nil
-}
-func (t *testWorker) Close() error {
-	return nil
-}
 
 // testNode wraps Node with some testing helpers.
 type testNode struct {
@@ -55,7 +36,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 		client:     s,
 		log:        log,
 		resources:  res,
-		newWorker:  NoopWorkerFactory,
+		newWorker:  NoopWorker,
 		workers:    newRunSet(),
 		timeout:    util.NewIdleTimeout(conf.Scheduler.Node.Timeout),
 		state:      pbs.NodeState_ALIVE,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -52,9 +53,9 @@ func TestNodeTimeout(t *testing.T) {
 	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
-	w := testWorker{}
+	//w := testWorker{}
 	// Hook the test worker up to the node's worker factory.
-	n.newWorker = WorkerFactory(w.Factory)
+	//n.newWorker = Worker(w.Factory)
 
 	// Set up scheduler mock to return a task
 	n.AddTasks("task-1")
@@ -81,10 +82,10 @@ func TestNoTasks(t *testing.T) {
 
 	// Count the number of times the worker factory was called
 	var count int
-	// Hook the test worker up to the node's worker factory.
-	n.newWorker = testWorkerFactoryFunc(func(r testWorker) {
+	n.newWorker = func(context.Context, config.Worker, string, *logger.Logger) error {
 		count++
-	})
+		return nil
+	}
 
 	n.sync(context.Background())
 	n.sync(context.Background())
@@ -107,10 +108,10 @@ func TestNodeWorkerCreated(t *testing.T) {
 
 	// Count the number of times the worker factory was called
 	var count int
-	// Hook the test worker up to the node's worker factory.
-	n.newWorker = testWorkerFactoryFunc(func(r testWorker) {
+	n.newWorker = func(context.Context, config.Worker, string, *logger.Logger) error {
 		count++
-	})
+		return nil
+	}
 
 	n.AddTasks("task-1", "task-2")
 	n.sync(context.Background())
@@ -129,9 +130,9 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
-	w := testWorker{}
+	//w := testWorker{}
 	// Hook the test worker up to the node's worker factory.
-	n.newWorker = WorkerFactory(w.Factory)
+	//n.newWorker = Worker(w.Factory)
 
 	n.AddTasks("task-1")
 
@@ -161,9 +162,9 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
-	w := testWorker{}
+	//w := testWorker{}
 	// Hook the test worker up to the node's worker factory.
-	n.newWorker = WorkerFactory(w.Factory)
+	//n.newWorker = Worker(w.Factory)
 
 	n.AddTasks("task-1")
 

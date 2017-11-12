@@ -18,7 +18,7 @@ func Run(conf config.Config) error {
 		conf.Scheduler.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	n, err := scheduler.NewNode(conf, log, workerCmd.NewDefaultWorker)
+	n, err := scheduler.NewNode(conf, log, workerCmd.Run)
 	if err != nil {
 		return err
 	}

@@ -6,49 +6,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 )
-
-// CreateTask provides an HTTP/gRPC endpoint for creating a task.
-// This is part of the TES implementation.
-func (taskBolt *BoltDB) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-
-	if err := tes.InitTask(task); err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	idBytes := []byte(task.Id)
-	taskString, err := proto.Marshal(task)
-	if err != nil {
-		return nil, err
-	}
-
-	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-		tx.Bucket(TaskBucket).Put(idBytes, taskString)
-		tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error storing task in database: %s", err)
-	}
-
-	err = taskBolt.backend.Submit(task)
-	if err != nil {
-		err = fmt.Errorf("error submitting task to compute backend: %s", err)
-		derr := taskBolt.db.Update(func(tx *bolt.Tx) error {
-			tx.Bucket(TaskBucket).Delete(idBytes)
-			tx.Bucket(TaskState).Delete(idBytes)
-			return nil
-		})
-		if derr != nil {
-			err = fmt.Errorf("error storing task in database: %v\n%v", err, derr)
-		}
-		return nil, err
-	}
-
-	return &tes.CreateTaskResponse{Id: task.Id}, nil
-}
 
 func getTaskState(tx *bolt.Tx, id string) tes.State {
 	idBytes := []byte(id)
@@ -64,7 +22,7 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
-		return errNotFound
+		return tes.ErrNotFound
 	}
 	task.Id = id
 	task.State = getTaskState(tx, id)
@@ -74,7 +32,7 @@ func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
-		return errNotFound
+		return tes.ErrNotFound
 	}
 	proto.Unmarshal(b, task)
 	loadTaskLogs(tx, task)
@@ -93,7 +51,7 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
-		return errNotFound
+		return tes.ErrNotFound
 	}
 	proto.Unmarshal(b, task)
 	loadTaskLogs(tx, task)
@@ -146,12 +104,6 @@ func (taskBolt *BoltDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*
 		task, err = getTaskView(tx, req.Id, req.View)
 		return err
 	})
-
-	if err != nil {
-		if err == errNotFound {
-			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
-		}
-	}
 	return task, err
 }
 
@@ -213,34 +165,4 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 	}
 
 	return &out, nil
-}
-
-// CancelTask cancels a task
-func (taskBolt *BoltDB) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-
-	// Check that the task exists
-	err := taskBolt.db.View(func(tx *bolt.Tx) error {
-		_, err := getTaskView(tx, req.Id, tes.TaskView_MINIMAL)
-		return err
-	})
-	if err != nil {
-		if err == errNotFound {
-			return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
-		}
-	}
-
-	err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-		// TODO need a test that ensures a canceled task is deleted from the worker
-		return transitionTaskState(tx, req.Id, tes.State_CANCELED)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &tes.CancelTaskResponse{}, nil
-}
-
-// GetServiceInfo provides an endpoint for Funnel clients to get information about this server.
-func (taskBolt *BoltDB) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	return &tes.ServiceInfo{Name: taskBolt.conf.Server.ServiceName}, nil
 }

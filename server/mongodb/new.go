@@ -2,19 +2,16 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"golang.org/x/net/context"
 	mgo "gopkg.in/mgo.v2"
 )
 
 // MongoDB provides an MongoDB database server backend.
 type MongoDB struct {
-	sess    *mgo.Session
-	backend compute.Backend
-	conf    config.MongoDB
-	tasks   *mgo.Collection
-	nodes   *mgo.Collection
+	sess  *mgo.Session
+	conf  config.MongoDB
+	tasks *mgo.Collection
+	nodes *mgo.Collection
 	// events  *mgo.Collection
 }
 
@@ -32,16 +29,20 @@ func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MongoDB{
+	db := &MongoDB{
 		sess:  sess,
 		conf:  conf,
 		tasks: sess.DB(conf.Database).C("tasks"),
 		nodes: sess.DB(conf.Database).C("nodes"),
-	}, nil
+	}
+	if err := db.init(); err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
-// Init creates tables in MongoDB.
-func (db *MongoDB) Init(ctx context.Context) error {
+// init creates tables in MongoDB.
+func (db *MongoDB) init() error {
 	names, err := db.sess.DB(db.conf.Database).CollectionNames()
 	if err != nil {
 		return fmt.Errorf("error listing collection names in database %s: %v", db.conf.Database, err)
@@ -94,13 +95,6 @@ func (db *MongoDB) Init(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// WithComputeBackend configures the MongoDB instance to use the given
-// compute.Backend. The compute backend is responsible for dispatching tasks to
-// schedulers / compute resources with its Submit method.
-func (db *MongoDB) WithComputeBackend(backend compute.Backend) {
-	db.backend = backend
 }
 
 // Close closes the database session.

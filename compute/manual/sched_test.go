@@ -30,18 +30,18 @@ func simpleNode() *pbs.Node {
 	}
 }
 
-func setup(nodes []*pbs.Node) (*schedmock.Client, *Backend) {
+func setup(nodes []*pbs.Node) (*schedmock.Nodes, *scheduler.Scheduler) {
 	conf := config.Config{}
-	mc := new(schedmock.Client)
+	mc := new(schedmock.Nodes)
 
 	// Mock in test nodes
 	mc.On("ListNodes", Anything, Anything, Anything).Return(&pbs.ListNodesResponse{
 		Nodes: nodes,
 	}, nil)
 
-	s := &Backend{
-		conf,
-		mc,
+	s := &scheduler.Scheduler{
+		Conf:  conf.Scheduler,
+		Nodes: mc,
 	}
 	return mc, s
 }

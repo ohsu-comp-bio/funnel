@@ -16,12 +16,12 @@ func TestNodeDead(t *testing.T) {
 	conf := nodeTestConfig(tests.DefaultConfig())
 	srv := tests.NewFunnel(conf)
 	srv.Scheduler = &scheduler.Scheduler{
-		DB:      srv.SDB,
-		Backend: nil,
-		Conf:    conf.Scheduler,
+		DB:    srv.DB.(scheduler.Database),
+		Nodes: srv.DB.(scheduler.Nodes),
+		Conf:  conf.Scheduler,
 	}
 
-	_, err := srv.SDB.PutNode(context.Background(), &pbs.Node{
+	_, err := srv.Scheduler.Nodes.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_ALIVE,
 	})
@@ -52,13 +52,13 @@ func TestNodeInitFail(t *testing.T) {
 	conf := nodeTestConfig(tests.DefaultConfig())
 	srv := tests.NewFunnel(conf)
 	srv.Scheduler = &scheduler.Scheduler{
-		DB:      srv.SDB,
-		Backend: nil,
-		Conf:    conf.Scheduler,
+		DB:    srv.DB.(scheduler.Database),
+		Nodes: srv.DB.(scheduler.Nodes),
+		Conf:  conf.Scheduler,
 	}
 	srv.StartServer()
 
-	_, err := srv.SDB.PutNode(context.Background(), &pbs.Node{
+	_, err := srv.Scheduler.Nodes.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_INITIALIZING,
 	})
@@ -79,18 +79,18 @@ func TestNodeInitFail(t *testing.T) {
 	}
 }
 
-// Test that a dead node is deleted from the SDB after
+// Test that a dead node is deleted after
 // a configurable duration.
 func TestNodeDeadTimeout(t *testing.T) {
 	conf := nodeTestConfig(tests.DefaultConfig())
 	srv := tests.NewFunnel(conf)
 	srv.Scheduler = &scheduler.Scheduler{
-		DB:      srv.SDB,
-		Backend: nil,
-		Conf:    conf.Scheduler,
+		DB:    srv.DB.(scheduler.Database),
+		Nodes: srv.DB.(scheduler.Nodes),
+		Conf:  conf.Scheduler,
 	}
 
-	_, err := srv.SDB.PutNode(context.Background(), &pbs.Node{
+	_, err := srv.Scheduler.Nodes.PutNode(context.Background(), &pbs.Node{
 		Id:    "test-node",
 		State: pbs.NodeState_DEAD,
 	})
@@ -111,7 +111,7 @@ func TestNodeDeadTimeout(t *testing.T) {
 }
 
 func nodeTestConfig(conf config.Config) config.Config {
-	conf.Backend = "manual"
+	conf.Backend = "noop"
 	conf.Scheduler.NodePingTimeout = time.Millisecond * 300
 	conf.Scheduler.NodeInitTimeout = time.Millisecond * 300
 	conf.Scheduler.NodeDeadTimeout = time.Millisecond * 300

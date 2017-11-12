@@ -53,7 +53,6 @@ type Funnel struct {
 	DB        server.Database
 	Server    *server.Server
 	Scheduler *scheduler.Scheduler
-	SDB       scheduler.Database
 	Srv       *servercmd.Server
 
 	// Internal
@@ -83,7 +82,6 @@ func NewFunnel(conf config.Config) *Funnel {
 		Conf:       conf,
 		StorageDir: conf.Worker.Storage.Local.AllowedDirs[0],
 		DB:         srv.DB,
-		SDB:        srv.SDB,
 		Server:     srv.Server,
 		Srv:        srv,
 		Scheduler:  srv.Scheduler,
@@ -440,7 +438,7 @@ func (f *Funnel) CleanupTestServerContainer() {
 
 // ListNodes calls db.ListNodes.
 func (f *Funnel) ListNodes() []*pbs.Node {
-	resp, err := f.SDB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	resp, err := f.Scheduler.Nodes.ListNodes(context.Background(), &pbs.ListNodesRequest{})
 	if err != nil {
 		panic(err)
 	}

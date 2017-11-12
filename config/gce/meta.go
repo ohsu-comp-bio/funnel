@@ -7,14 +7,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"io/ioutil"
 	"net/http"
-	"strings"
 )
 
 // WithMetadataConfig loads config from a GCE VM environment, in particular
 // loading metadata from GCE's instance metadata.
 // https://cloud.google.com/compute/docs/storing-retrieving-metadata
 func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, error) {
-	conf.Backend = "gce"
 	defaultHostName := conf.Server.HostName
 
 	// Load full config doc from metadata
@@ -40,24 +38,6 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 		conf.Scheduler.Node.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
 		conf.Worker.EventWriters.RPC.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
 	}
-
-	if meta.Project.ProjectID != "" {
-		conf.Backends.GCE.Project = meta.Project.ProjectID
-	}
-
-	// TODO need to parse zone?
-	if meta.Instance.Zone != "" {
-		zone := meta.Instance.Zone
-		// Parse zone out of metadata format
-		// e.g. "projects/1234/zones/us-west1-b" => "us-west1-b"
-		idx := strings.LastIndex(zone, "/")
-		if idx != -1 {
-			zone = zone[idx+1:]
-		}
-		conf.Backends.GCE.Zone = zone
-	}
-
-	conf.Scheduler.Node.Metadata["gce"] = "yes"
 
 	// If the configuration contains a node ID, assume that a node
 	// process should be started (instead of a server).

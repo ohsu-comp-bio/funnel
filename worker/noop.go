@@ -10,8 +10,3 @@ type NoopWorker struct{}
 
 // Run doesn't do anything, it's an empty function.
 func (NoopWorker) Run(context.Context) {}
-
-// Close is a noop.
-func (NoopWorker) Close() error {
-	return nil
-}

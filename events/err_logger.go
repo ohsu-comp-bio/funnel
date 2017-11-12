@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
@@ -10,8 +11,10 @@ type ErrLogger struct {
 	Log *logger.Logger
 }
 
-func (e *ErrLogger) Write(ev *Event) error {
-	err := e.Writer.Write(ev)
+// WriteEvent writes the event to the underlying event writer. If an error is returned
+// from that write, ErrLogger will log the error to the give logger, and return the error.
+func (e *ErrLogger) WriteEvent(ctx context.Context, ev *Event) error {
+	err := e.Writer.WriteEvent(ctx, ev)
 	if err != nil {
 		e.Log.Error("error writing event", err)
 	}

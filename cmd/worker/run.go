@@ -17,21 +17,11 @@ import (
 )
 
 // Run configures and runs a Worker
-func Run(conf config.Worker, taskID string, log *logger.Logger) error {
-	w, err := NewDefaultWorker(conf, taskID, log)
-	if err != nil {
-		return err
-	}
-	w.Run(context.Background())
-	return nil
-}
-
-// NewDefaultWorker returns a new configured DefaultWorker instance.
-func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (worker.Worker, error) {
-	log.Debug("NewDefaultWorker", "config", conf, "taskID", taskID)
+func Run(ctx context.Context, conf config.Worker, taskID string, log *logger.Logger) error {
+	log.Debug("Run Worker", "config", conf, "taskID", taskID)
 
 	var err error
-	var db tes.TaskServiceServer
+	var db tes.ReadOnlyServer
 	var reader worker.TaskReader
 	var writer events.Writer
 
@@ -40,7 +30,7 @@ func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (wo
 
 	err = fsutil.EnsureDir(baseDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create worker baseDir: %v", err)
+		return fmt.Errorf("failed to create worker baseDir: %v", err)
 	}
 
 	switch conf.TaskReader {
@@ -49,14 +39,14 @@ func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (wo
 	case "dynamodb":
 		db, err = dynamodb.NewDynamoDB(conf.TaskReaders.DynamoDB)
 	case "elastic":
-		db, err = elastic.NewTES(conf.EventWriters.Elastic)
+		db, err = elastic.NewElastic(ctx, conf.EventWriters.Elastic)
 	case "mongodb":
 		db, err = mongodb.NewMongoDB(conf.TaskReaders.MongoDB)
 	default:
 		err = fmt.Errorf("unknown TaskReader")
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
+		return fmt.Errorf("failed to instantiate TaskReader: %v", err)
 	}
 
 	if reader == nil {
@@ -73,28 +63,33 @@ func NewDefaultWorker(conf config.Worker, taskID string, log *logger.Logger) (wo
 		case "dynamodb":
 			writer, err = dynamodb.NewDynamoDB(conf.EventWriters.DynamoDB)
 		case "elastic":
-			writer, err = elastic.NewElastic(conf.EventWriters.Elastic)
+			writer, err = elastic.NewElastic(ctx, conf.EventWriters.Elastic)
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.EventWriters.MongoDB)
 		case "kafka":
-			writer, err = events.NewKafkaWriter(conf.EventWriters.Kafka)
+			k, kerr := events.NewKafkaWriter(conf.EventWriters.Kafka)
+			defer k.Close()
+			err = kerr
+			writer = k
 		default:
 			err = fmt.Errorf("unknown EventWriter")
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
+			return fmt.Errorf("failed to instantiate EventWriter: %v", err)
 		}
 		writers = append(writers, writer)
 	}
 
-	m := events.MultiWriter(writers...)
-	ew := &events.ErrLogger{Writer: m, Log: log}
+	m := events.MultiWriter(writers)
+	ew := &events.ErrLogger{Writer: &m, Log: log}
 
-	return &worker.DefaultWorker{
+	w := &worker.DefaultWorker{
 		Conf:       conf,
 		Mapper:     worker.NewFileMapper(baseDir),
 		Store:      storage.Storage{},
 		TaskReader: reader,
 		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, ew),
-	}, nil
+	}
+	w.Run(ctx)
+	return nil
 }

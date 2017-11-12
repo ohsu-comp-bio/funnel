@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
@@ -9,8 +10,8 @@ type Logger struct {
 	Log *logger.Logger
 }
 
-// Write writes an event to the logger.
-func (el *Logger) Write(ev *Event) error {
+// WriteEvent writes an event to the logger.
+func (el *Logger) WriteEvent(ctx context.Context, ev *Event) error {
 	ts := ev.Type.String()
 	log := el.Log.WithFields(
 		"taskID", ev.Id,
@@ -56,10 +57,5 @@ func (el *Logger) Write(ev *Event) error {
 	default:
 		log.Info(ts, "event", ev)
 	}
-	return nil
-}
-
-// Close closes the writer.
-func (el *Logger) Close() error {
 	return nil
 }

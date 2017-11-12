@@ -4,7 +4,6 @@ import (
 	"github.com/golang/gddo/httputil"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
@@ -20,31 +19,14 @@ import (
 // RPC traffic via gRPC, HTTP traffic for the TES API,
 // and also serves the web dashboard.
 type Server struct {
-	RPCAddress             string
-	HTTPPort               string
-	Password               string
-	TaskServiceServer      tes.TaskServiceServer
-	EventServiceServer     events.EventServiceServer
-	SchedulerServiceServer pbs.SchedulerServiceServer
-	DisableHTTPCache       bool
-	DialOptions            []grpc.DialOption
-	Log                    *logger.Logger
-}
-
-// DefaultServer returns a new server instance.
-func DefaultServer(db Database, conf config.Server) *Server {
-	return &Server{
-		RPCAddress:             ":" + conf.RPCPort,
-		HTTPPort:               conf.HTTPPort,
-		Password:               conf.Password,
-		TaskServiceServer:      db,
-		EventServiceServer:     db,
-		SchedulerServiceServer: db,
-		DisableHTTPCache:       conf.DisableHTTPCache,
-		DialOptions: []grpc.DialOption{
-			grpc.WithInsecure(),
-		},
-	}
+	RPCAddress       string
+	HTTPPort         string
+	Password         string
+	Tasks            tes.TaskServiceServer
+	Events           events.EventServiceServer
+	Nodes            pbs.SchedulerServiceServer
+	DisableHTTPCache bool
+	Log              *logger.Logger
 }
 
 // Return a new interceptor function that logs all requests at the Debug level
@@ -88,6 +70,10 @@ func (s *Server) Serve(pctx context.Context) error {
 		),
 	)
 
+	dialOpts := []grpc.DialOption{
+		grpc.WithInsecure(),
+	}
+
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
 	mar := runtime.JSONPb(tes.Marshaler)
@@ -118,10 +104,10 @@ func (s *Server) Serve(pctx context.Context) error {
 	})
 
 	// Register TES service
-	if s.TaskServiceServer != nil {
-		tes.RegisterTaskServiceServer(grpcServer, s.TaskServiceServer)
+	if s.Tasks != nil {
+		tes.RegisterTaskServiceServer(grpcServer, s.Tasks)
 		err := tes.RegisterTaskServiceHandlerFromEndpoint(
-			ctx, grpcMux, s.RPCAddress, s.DialOptions,
+			ctx, grpcMux, s.RPCAddress, dialOpts,
 		)
 		if err != nil {
 			return err
@@ -129,15 +115,15 @@ func (s *Server) Serve(pctx context.Context) error {
 	}
 
 	// Register Events service
-	if s.EventServiceServer != nil {
-		events.RegisterEventServiceServer(grpcServer, s.EventServiceServer)
+	if s.Events != nil {
+		events.RegisterEventServiceServer(grpcServer, s.Events)
 	}
 
 	// Register Scheduler RPC service
-	if s.SchedulerServiceServer != nil {
-		pbs.RegisterSchedulerServiceServer(grpcServer, s.SchedulerServiceServer)
+	if s.Nodes != nil {
+		pbs.RegisterSchedulerServiceServer(grpcServer, s.Nodes)
 		err := pbs.RegisterSchedulerServiceHandlerFromEndpoint(
-			ctx, grpcMux, s.RPCAddress, s.DialOptions,
+			ctx, grpcMux, s.RPCAddress, dialOpts,
 		)
 		if err != nil {
 			return err

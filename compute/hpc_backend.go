@@ -1,8 +1,10 @@
 package compute
 
 import (
+	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"os"
@@ -23,6 +25,16 @@ type HPCBackend struct {
 	submit   string
 	conf     config.Config
 	template string
+}
+
+// WriteEvent writes an event to the compute backend.
+// Currently, only TASK_CREATED is handled, which calls Submit.
+func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
+	switch ev.Type {
+	case events.Type_TASK_CREATED:
+		return b.Submit(ev.GetTask())
+	}
+	return nil
 }
 
 // Submit submits a task via "qsub"

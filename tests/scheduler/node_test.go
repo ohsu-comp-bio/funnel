@@ -5,6 +5,7 @@ import (
 	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"testing"
@@ -21,29 +22,30 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	conf.Scheduler.NodePingTimeout = time.Second * 10
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10
 
+	bg := context.Background()
+	log := logger.NewLogger("node", tests.LogConfig())
+	tests.SetLogOutput(log, t)
 	srv := tests.NewFunnel(conf)
-	srv.Scheduler = &scheduler.Scheduler{
-		DB:    srv.DB.(scheduler.Database),
-		Nodes: srv.DB.(scheduler.Nodes),
-		Conf:  conf.Scheduler,
-	}
 	srv.StartServer()
 
 	srv.Conf.Scheduler.Node.ID = "test-node-gone-on-cancel"
-	n, err := scheduler.NewNode(
-		srv.Conf, logger.NewLogger("node", tests.LogConfig()), workercmd.NewDefaultWorker,
-	)
+	n, err := scheduler.NewNode(srv.Conf, log, workercmd.Run)
 	if err != nil {
 		t.Fatal("failed to start node")
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(bg)
 	defer cancel()
 	go n.Run(ctx)
 
 	srv.Scheduler.CheckNodes()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
 
-	nodes := srv.ListNodes()
+	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &pbs.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes := resp.Nodes
+
 	if len(nodes) != 1 {
 		t.Fatal("failed to register node", nodes)
 	}
@@ -51,7 +53,12 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	cancel()
 	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
 	srv.Scheduler.CheckNodes()
-	nodes = srv.ListNodes()
+
+	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &pbs.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes = resp.Nodes
 
 	if len(nodes) != 0 {
 		t.Error("expected node to be deleted")
@@ -66,13 +73,13 @@ func TestManualBackend(t *testing.T) {
 	conf.Scheduler.NodePingTimeout = time.Second * 10
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10
 
+	log := logger.NewLogger("node", tests.LogConfig())
+	tests.SetLogOutput(log, t)
 	srv := tests.NewFunnel(conf)
 	srv.StartServer()
 
 	srv.Conf.Scheduler.Node.ID = "test-node-manual"
-	n, err := scheduler.NewNode(
-		srv.Conf, logger.NewLogger("node", tests.LogConfig()), workercmd.NewDefaultWorker,
-	)
+	n, err := scheduler.NewNode(srv.Conf, log, workercmd.Run)
 	if err != nil {
 		t.Fatal("failed to create node")
 	}
@@ -82,7 +89,7 @@ func TestManualBackend(t *testing.T) {
 	go n.Run(ctx)
 
 	tasks := []string{}
-	for i := 1; i <= 10; i++ {
+	for i := 0; i < 10; i++ {
 		id := srv.Run(`
       --sh 'echo hello world'
     `)
@@ -91,12 +98,13 @@ func TestManualBackend(t *testing.T) {
 
 	for _, id := range tasks {
 		task := srv.Wait(id)
+		time.Sleep(time.Millisecond * 100)
 		if task.State != tes.State_COMPLETE {
 			t.Fatal("unexpected task state")
 		}
 
 		if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-			t.Fatal("Missing stdout")
+			t.Fatalf("Missing stdout for task %s", id)
 		}
 	}
 }

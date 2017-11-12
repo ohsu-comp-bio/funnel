@@ -13,11 +13,6 @@ import (
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
-// QueueTask adds a task to the scheduler queue.
-func (es *Elastic) QueueTask(task *tes.Task) error {
-	return nil
-}
-
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (es *Elastic) ReadQueue(n int) []*tes.Task {
 	ctx := context.Background()
@@ -102,7 +97,7 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 		jsonpb.Unmarshal(bytes.NewReader(*res.Source), existing)
 	}
 
-	err = scheduler.UpdateNode(ctx, &TES{Elastic: es}, node, existing)
+	err = scheduler.UpdateNode(ctx, es, node, existing)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +124,7 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 }
 
 // DeleteNode deletes a node by ID.
-func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) error {
+func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) (*pbs.DeleteNodeResponse, error) {
 	_, err := es.client.Delete().
 		Index(es.nodeIndex).
 		Type("node").
@@ -137,7 +132,7 @@ func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) error {
 		Version(node.Version).
 		Refresh("true").
 		Do(ctx)
-	return err
+	return &pbs.DeleteNodeResponse{}, err
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.

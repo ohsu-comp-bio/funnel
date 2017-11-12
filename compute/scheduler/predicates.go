@@ -72,6 +72,14 @@ func NotDead(j *tes.Task, n *pbs.Node) error {
 	return fmt.Errorf("Fail not dead")
 }
 
+// Alive returns true if the node state is not Dead or Gone.
+func Alive(j *tes.Task, n *pbs.Node) error {
+	if n.State != pbs.NodeState_ALIVE {
+		return fmt.Errorf("Fail not alive")
+	}
+	return nil
+}
+
 // NodeHasTag returns a predicate function which returns true
 // if the node has the given tag (key in Metadata field).
 func NodeHasTag(tag string) Predicate {
@@ -81,14 +89,6 @@ func NodeHasTag(tag string) Predicate {
 		}
 		return nil
 	}
-}
-
-// DefaultPredicates is a list of Predicate functions that check
-// the whether a task fits a node.
-var DefaultPredicates = []Predicate{
-	ResourcesFit,
-	ZonesFit,
-	NotDead,
 }
 
 // TODO should have a predicate which understands authorization

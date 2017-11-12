@@ -5,6 +5,15 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
+// DefaultPredicates is a list of Predicate functions that check
+// the whether a task fits a node.
+var DefaultPredicates = []Predicate{
+	ResourcesFit,
+	ZonesFit,
+	NotDead,
+	Alive,
+}
+
 // DefaultScheduleAlgorithm implements a simple scheduling algorithm
 // that is (currently) common across a few scheduler backends.
 // Given a task, list of nodes, and weights, it returns the best Offer or nil.

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
@@ -19,7 +20,7 @@ func TestPersistentPreRun(t *testing.T) {
 	defer cleanup()
 
 	c, h := newCommandHooks()
-	h.Run = func(conf config.Worker, taskID string, l *logger.Logger) error {
+	h.Run = func(ctx context.Context, conf config.Worker, taskID string, l *logger.Logger) error {
 		if conf.WorkDir != workDir {
 			t.Fatal("unexpected WorkDir in worker config")
 		}

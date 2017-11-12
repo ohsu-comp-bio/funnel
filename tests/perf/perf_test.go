@@ -87,7 +87,7 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 					for {
 						select {
 						case <-ticker.C:
-							cli.CreateEvent(context.Background(), &events.Event{
+							cli.WriteEvent(context.Background(), &events.Event{
 								Id:      id,
 								Attempt: 0,
 								Index:   0,

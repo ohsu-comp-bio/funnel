@@ -81,27 +81,27 @@ func NewExecutorWriter(taskID string, attempt uint32, index uint32, logLevel str
 
 // StartTime updates the task's start time log.
 func (ew *ExecutorWriter) StartTime(t time.Time) error {
-	return ew.out.Write(ew.gen.StartTime(t))
+	return ew.out.WriteEvent(context.Background(), ew.gen.StartTime(t))
 }
 
 // EndTime updates the task's end time log.
 func (ew *ExecutorWriter) EndTime(t time.Time) error {
-	return ew.out.Write(ew.gen.EndTime(t))
+	return ew.out.WriteEvent(context.Background(), ew.gen.EndTime(t))
 }
 
 // ExitCode updates an executor's exit code log.
 func (ew *ExecutorWriter) ExitCode(x int) error {
-	return ew.out.Write(ew.gen.ExitCode(x))
+	return ew.out.WriteEvent(context.Background(), ew.gen.ExitCode(x))
 }
 
 // Stdout appends to an executor's stdout log.
 func (ew *ExecutorWriter) Stdout(s string) error {
-	return ew.out.Write(ew.gen.Stdout(s))
+	return ew.out.WriteEvent(context.Background(), ew.gen.Stdout(s))
 }
 
 // Stderr appends to an executor's stderr log.
 func (ew *ExecutorWriter) Stderr(s string) error {
-	return ew.out.Write(ew.gen.Stderr(s))
+	return ew.out.WriteEvent(context.Background(), ew.gen.Stderr(s))
 }
 
 // Info writes an info level system log message.
@@ -190,7 +190,9 @@ func TailLogs(ctx context.Context, taskID string, attempt, index uint32, size in
 	// output event writer routine
 	go func() {
 		for e := range eventch {
-			out.Write(e)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+			out.WriteEvent(ctx, e)
+			cancel()
 		}
 	}()
 

@@ -1,37 +1,38 @@
 package mongodb
 
 import (
+	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// CreateEvent creates an event for the server to handle.
-func (db *MongoDB) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
-	err := db.WriteContext(ctx, req)
-	return &events.CreateEventResponse{}, err
-}
-
-// Write writes task events to the database, updating the task record they
-// are related to. System log events are ignored.
-func (db *MongoDB) Write(req *events.Event) error {
-	return db.WriteContext(context.Background(), req)
-}
-
-// WriteContext is Write, but with context.
-func (db *MongoDB) WriteContext(ctx context.Context, req *events.Event) error {
+// WriteEvent creates an event for the server to handle.
+func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 	var err error
 
 	switch req.Type {
+	case events.Type_TASK_CREATED:
+		task := req.GetTask()
+		task.Logs = []*tes.TaskLog{
+			{
+				Logs: []*tes.ExecutorLog{},
+			},
+		}
+
+		err := db.tasks.Insert(task)
+		if err != nil {
+			return fmt.Errorf("failed to write task to db: %v", err)
+		}
+
 	case events.Type_TASK_STATE:
 		res, err := db.GetTask(ctx, &tes.GetTaskRequest{
 			Id:   req.Id,
 			View: tes.TaskView_MINIMAL,
 		})
 		if err != nil {
-			return fmt.Errorf("error fetch current state: %v", err)
+			return err
 		}
 		from := res.State
 		to := req.GetState()

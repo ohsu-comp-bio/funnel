@@ -1,8 +1,9 @@
 package noop
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/events"
 )
 
 // NewBackend returns a new noop Backend instance.
@@ -16,7 +17,7 @@ type Backend struct {
 	conf config.Config
 }
 
-// Submit submits a task. For the noop backend this does nothing.
-func (b *Backend) Submit(task *tes.Task) error {
+// WriteEvent is a noop and returns nil.
+func (b *Backend) WriteEvent(context.Context, *events.Event) error {
 	return nil
 }

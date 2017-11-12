@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/util"
 )
@@ -39,7 +40,7 @@ type SystemLogWriter struct {
 // Info writes an Event for an 'info' level log message
 func (sle *SystemLogWriter) Info(msg string, args ...interface{}) error {
 	if sle.lvl != "error" {
-		return sle.out.Write(sle.gen.Info(msg, args...))
+		return sle.out.WriteEvent(context.Background(), sle.gen.Info(msg, args...))
 	}
 	return nil
 }
@@ -47,14 +48,14 @@ func (sle *SystemLogWriter) Info(msg string, args ...interface{}) error {
 // Debug writes an  for a 'debug' level log message
 func (sle *SystemLogWriter) Debug(msg string, args ...interface{}) error {
 	if sle.lvl == "debug" {
-		return sle.out.Write(sle.gen.Debug(msg, args...))
+		return sle.out.WriteEvent(context.Background(), sle.gen.Debug(msg, args...))
 	}
 	return nil
 }
 
 // Error writes an Event for an 'error' level log message
 func (sle *SystemLogWriter) Error(msg string, args ...interface{}) error {
-	return sle.out.Write(sle.gen.Error(msg, args...))
+	return sle.out.WriteEvent(context.Background(), sle.gen.Error(msg, args...))
 }
 
 // converts an argument list to a map, e.g.

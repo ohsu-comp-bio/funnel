@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -43,7 +44,7 @@ func TestKafkaWorkerRun(t *testing.T) {
 	task := &tes.Task{}
 	b := events.TaskBuilder{Task: task}
 	l := &events.Logger{Log: log}
-	m := events.MultiWriter(b, l)
+	m := &events.MultiWriter{b, l}
 
 	r, err := events.NewKafkaReader(conf.Worker.EventWriters.Kafka, m)
 	defer r.Close()
@@ -57,7 +58,7 @@ func TestKafkaWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err = workerCmd.Run(conf.Worker, id, log)
+	err = workerCmd.Run(context.Background(), conf.Worker, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

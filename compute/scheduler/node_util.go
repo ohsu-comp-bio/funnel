@@ -9,7 +9,7 @@ import (
 )
 
 // UpdateNode helps scheduler database backend update a node when PutNode() is called.
-func UpdateNode(ctx context.Context, cli tes.TaskServiceServer, node, existing *pbs.Node) error {
+func UpdateNode(ctx context.Context, cli tes.ReadOnlyServer, node, existing *pbs.Node) error {
 	var tasks []*tes.Task
 
 	// Clean up terminal tasks.

@@ -32,6 +32,7 @@ enum Type {
   EXECUTOR_STDOUT = 11;
   EXECUTOR_STDERR = 12;
   SYSTEM_LOG = 13;
+  TASK_CREATED = 14;
 }
 
 message Event {
@@ -47,17 +48,18 @@ message Event {
     string stdout = 13;
     string stderr = 14;
     SystemLog system_log = 15;
+    tes.Task task = 19;
   }
   uint32 attempt = 16;
   uint32 index = 17;
   Type type = 18;
 }
 
-message CreateEventResponse{}
+message WriteEventResponse{}
 
 /**
  * Event Service
  */
 service EventService {
-  rpc CreateEvent(Event) returns (CreateEventResponse) {};
+  rpc WriteEvent(Event) returns (WriteEventResponse) {};
 }

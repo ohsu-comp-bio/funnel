@@ -43,6 +43,7 @@ message ListNodesResponse {
 }
 
 message PutNodeResponse {}
+message DeleteNodeResponse {}
 
 message GetNodeRequest {
   string id = 1;
@@ -53,6 +54,7 @@ message GetNodeRequest {
  */
 service SchedulerService {
   rpc PutNode(Node) returns (PutNodeResponse) {};
+  rpc DeleteNode(Node) returns (DeleteNodeResponse) {};
 
   rpc ListNodes(ListNodesRequest) returns (ListNodesResponse) {
     option (google.api.http) = {

@@ -9,11 +9,9 @@ import (
 	"github.com/ohsu-comp-bio/funnel/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
-	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
@@ -50,7 +48,6 @@ type Funnel struct {
 	StorageDir string
 
 	// Components
-	DB        server.Database
 	Server    *server.Server
 	Scheduler *scheduler.Scheduler
 	Srv       *servercmd.Server
@@ -86,7 +83,6 @@ func NewFunnel(conf config.Config) *Funnel {
 		Docker:     dcli,
 		Conf:       conf,
 		StorageDir: conf.Worker.Storage.Local.AllowedDirs[0],
-		DB:         srv.DB,
 		Server:     srv.Server,
 		Srv:        srv,
 		Scheduler:  srv.Scheduler,
@@ -439,25 +435,6 @@ func (f *Funnel) CleanupTestServerContainer() {
 	s := f.findTestServerContainers()
 	f.killTestServerContainers(s)
 	return
-}
-
-// ListNodes calls db.ListNodes.
-func (f *Funnel) ListNodes() []*pbs.Node {
-	resp, err := f.Scheduler.Nodes.ListNodes(context.Background(), &pbs.ListNodesRequest{})
-	if err != nil {
-		panic(err)
-	}
-	return resp.Nodes
-}
-
-// AddNode starts an in-memory node routine.
-func (f *Funnel) AddNode(conf config.Config) {
-	n, err := scheduler.NewNode(conf, logger.NewLogger("e2e-node", conf.Scheduler.Node.Logger), workercmd.NewDefaultWorker)
-	if err != nil {
-		panic(err)
-	}
-	go n.Run(context.Background())
-	time.Sleep(time.Second * 2)
 }
 
 // NewRPCConn returns a new grpc.ClientConn, to make creating TES clients easier.

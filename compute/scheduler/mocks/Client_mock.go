@@ -16,21 +16,21 @@ func (_m *Client) Close() {
 	_m.Called()
 }
 
-// CreateEvent provides a mock function with given fields: ctx, in, opts
-func (_m *Client) CreateEvent(ctx context.Context, in *events.Event, opts ...grpc.CallOption) (*events.CreateEventResponse, error) {
+// DeleteNode provides a mock function with given fields: ctx, in, opts
+func (_m *Client) DeleteNode(ctx context.Context, in *protoscheduler.Node, opts ...grpc.CallOption) (*protoscheduler.DeleteNodeResponse, error) {
 	ret := _m.Called(ctx, in, opts)
 
-	var r0 *events.CreateEventResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *events.Event, ...grpc.CallOption) *events.CreateEventResponse); ok {
+	var r0 *protoscheduler.DeleteNodeResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *protoscheduler.Node, ...grpc.CallOption) *protoscheduler.DeleteNodeResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*events.CreateEventResponse)
+			r0 = ret.Get(0).(*protoscheduler.DeleteNodeResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *events.Event, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *protoscheduler.Node, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -100,6 +100,29 @@ func (_m *Client) PutNode(ctx context.Context, in *protoscheduler.Node, opts ...
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *protoscheduler.Node, ...grpc.CallOption) error); ok {
+		r1 = rf(ctx, in, opts...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// WriteEvent provides a mock function with given fields: ctx, in, opts
+func (_m *Client) WriteEvent(ctx context.Context, in *events.Event, opts ...grpc.CallOption) (*events.WriteEventResponse, error) {
+	ret := _m.Called(ctx, in, opts)
+
+	var r0 *events.WriteEventResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *events.Event, ...grpc.CallOption) *events.WriteEventResponse); ok {
+		r0 = rf(ctx, in, opts...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*events.WriteEventResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *events.Event, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)

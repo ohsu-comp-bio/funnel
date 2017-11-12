@@ -226,7 +226,15 @@ func (db *DynamoDB) createTask(ctx context.Context, task *tes.Task) error {
 	}
 
 	_, err = db.client.PutItemWithContext(ctx, item)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to write task items to DynamoDB, %v", err)
+	}
+
+	err = db.createTaskInputContent(ctx, task)
+	if err != nil {
+		return fmt.Errorf("failed to write task items to DynamoDB, %v", err)
+	}
+	return nil
 }
 
 func (db *DynamoDB) createTaskInputContent(ctx context.Context, task *tes.Task) error {

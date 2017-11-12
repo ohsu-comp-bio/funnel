@@ -1,12 +1,12 @@
 package boltdb
 
 import (
+	"context"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"golang.org/x/net/context"
 )
 
 // State variables for convenience
@@ -22,20 +22,46 @@ const (
 	Initializing  = tes.State_INITIALIZING
 )
 
-// CreateEvent creates an event for the server to handle.
-func (taskBolt *BoltDB) CreateEvent(ctx context.Context, req *events.Event) (*events.CreateEventResponse, error) {
-	return &events.CreateEventResponse{}, taskBolt.WriteContext(ctx, req)
-}
+// WriteEvent creates an event for the server to handle.
+func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error {
+	// Skipping system logs for now. Will add them to the task logs when this PR is resolved (soon):
+	// https://github.com/ga4gh/task-execution-schemas/pull/80
+	if req.Type == events.Type_SYSTEM_LOG {
+		return nil
+	}
 
-// Write writes task events to the database, updating the task record they
-// are related to. System log events are ignored.
-func (taskBolt *BoltDB) Write(req *events.Event) error {
-	return taskBolt.WriteContext(context.Background(), req)
-}
-
-// WriteContext is Write, but with context.
-func (taskBolt *BoltDB) WriteContext(ctx context.Context, req *events.Event) error {
 	var err error
+
+	if req.Type == events.Type_TASK_CREATED {
+		task := req.GetTask()
+		idBytes := []byte(task.Id)
+		taskString, err := proto.Marshal(task)
+		if err != nil {
+			return err
+		}
+		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+			tx.Bucket(TaskBucket).Put(idBytes, taskString)
+			tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("error storing task in database: %s", err)
+		}
+		err = taskBolt.queueTask(task)
+		if err != nil {
+			return fmt.Errorf("error queueing task in database: %s", err)
+		}
+		return nil
+	}
+
+	// Check that the task exists
+	err = taskBolt.db.View(func(tx *bolt.Tx) error {
+		_, err := getTaskView(tx, req.Id, tes.TaskView_MINIMAL)
+		return err
+	})
+	if err != nil {
+		return err
+	}
 
 	tl := &tes.TaskLog{}
 	el := &tes.ExecutorLog{}

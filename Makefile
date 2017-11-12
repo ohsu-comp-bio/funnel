@@ -233,7 +233,7 @@ gce-installer: cross-compile
 gen-mocks:
 	@go get github.com/vektra/mockery/...
 	@mockery -dir compute/scheduler -name Client -print > compute/scheduler/mocks/Client_mock.go
-	@mockery -dir compute/scheduler -name Nodes -print > compute/scheduler/mocks/Nodes_mock.go
+	@mockery -dir proto/scheduler -name SchedulerServiceServer -print > compute/scheduler/mocks/Nodes_mock.go
 
 # Bundle example task messages into Go code.
 bundle-examples:

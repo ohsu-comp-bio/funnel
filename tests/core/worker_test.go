@@ -26,7 +26,7 @@ func TestWorkerCmdRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err := workerCmd.Run(c.Worker, id, log)
+	err := workerCmd.Run(context.Background(), c.Worker, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -61,12 +61,10 @@ func TestDefaultWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	w, err := workerCmd.NewDefaultWorker(c.Worker, id, log)
+	err := workerCmd.Run(context.Background(), c.Worker, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
-
-	w.Run(context.Background())
 	f.Wait(id)
 
 	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
@@ -90,16 +88,13 @@ type eventCounter struct {
 	stdout, stderr int
 }
 
-func (e *eventCounter) Write(ev *events.Event) error {
+func (e *eventCounter) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_EXECUTOR_STDOUT:
 		e.stdout++
 	case events.Type_EXECUTOR_STDERR:
 		e.stderr++
 	}
-	return nil
-}
-func (e *eventCounter) Close() error {
 	return nil
 }
 
@@ -139,7 +134,7 @@ func TestLargeLogRate(t *testing.T) {
 
 	counts := &eventCounter{}
 	logger := &events.Logger{Log: log}
-	m := events.MultiWriter(logger, counts)
+	m := &events.MultiWriter{logger, counts}
 
 	w := worker.DefaultWorker{
 		Conf:       conf,

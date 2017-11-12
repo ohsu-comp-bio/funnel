@@ -10,7 +10,7 @@ import (
 )
 
 func loadTestData(name string) []byte {
-	b, err := ioutil.ReadFile("testdata/" + name + ".json")
+	b, err := ioutil.ReadFile(name + ".json")
 	if err != nil {
 		panic(err)
 	}
@@ -51,25 +51,9 @@ func TestGetMetadata(t *testing.T) {
 		t.Fatal(cerr)
 	}
 
-	if conf.Backends.GCE.Project != "funnel-proj-id" {
-		t.Fatal("Unexpected project id")
-	}
-
-	if conf.Backend != "gce" {
-		t.Fatal("Unexpected scheduler")
-	}
-
 	// When meta.instance.attributes.funnelNode != ""
 	// conf.Scheduler.Node.ID == meta.instance.name
 	if conf.Scheduler.Node.ID != "funnel-node-1492486244" {
 		t.Fatal("Unexpected node ID")
-	}
-
-	if conf.Scheduler.Node.Metadata["gce"] != "yes" {
-		t.Fatal("Expected gce tag in node metadata")
-	}
-
-	if conf.Backends.GCE.Zone != "us-west1-b" {
-		t.Fatal("Unexpected zone")
 	}
 }

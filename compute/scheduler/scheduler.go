@@ -11,23 +11,37 @@ import (
 	"time"
 )
 
+// Nodes defines the database interface the scheduler uses for
+// accessing nodes.
+type Nodes interface {
+	ListNodes(context.Context, *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error)
+	PutNode(context.Context, *pbs.Node) (*pbs.PutNodeResponse, error)
+	DeleteNode(context.Context, *pbs.Node) error
+}
+
 // Database represents the interface to the database used by the scheduler, scaler, etc.
 // Mostly, this exists so it can be mocked during testing.
 type Database interface {
 	QueueTask(*tes.Task) error
 	ReadQueue(int) []*tes.Task
-	ListNodes(context.Context, *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error)
-	PutNode(context.Context, *pbs.Node) (*pbs.PutNodeResponse, error)
-	DeleteNode(context.Context, *pbs.Node) error
 	WriteContext(context.Context, *events.Event) error
 }
 
 // Scheduler handles scheduling tasks to nodes and support many backends.
 type Scheduler struct {
-	Log     *logger.Logger
-	DB      Database
-	Conf    config.Scheduler
-	Backend Backend
+	Log   *logger.Logger
+	DB    Database
+	Nodes Nodes
+	Conf  config.Scheduler
+}
+
+// Submit submits a task via gRPC call to the funnel scheduler backend
+func (s *Scheduler) Submit(task *tes.Task) error {
+	err := s.DB.QueueTask(task)
+	if err != nil {
+		return fmt.Errorf("Failed to submit task %s to the scheduler queue: %s", task.Id, err)
+	}
+	return nil
 }
 
 // Run starts the scheduling loop. This blocks.
@@ -47,10 +61,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("schedule error: %s", err)
 			}
-			err = s.Scale(ctx)
-			if err != nil {
-				return fmt.Errorf("scale error: %s", err)
-			}
 		}
 	}
 }
@@ -59,7 +69,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 // This is not an RPC endpoint
 func (s *Scheduler) CheckNodes() error {
 	ctx := context.Background()
-	resp, err := s.DB.ListNodes(ctx, &pbs.ListNodesRequest{})
+	resp, err := s.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
 
 	if err != nil {
 		return err
@@ -71,9 +81,9 @@ func (s *Scheduler) CheckNodes() error {
 		var err error
 
 		if node.State == pbs.NodeState_GONE {
-			err = s.DB.DeleteNode(ctx, node)
+			err = s.Nodes.DeleteNode(ctx, node)
 		} else {
-			_, err = s.DB.PutNode(ctx, node)
+			_, err = s.Nodes.PutNode(ctx, node)
 		}
 
 		if err != nil {
@@ -85,7 +95,7 @@ func (s *Scheduler) CheckNodes() error {
 }
 
 // Schedule does a scheduling iteration. It checks the health of nodes
-// in the database, gets a chunk of tasks from the queue (configurable by config.Scheduler.ScheduleChunk),
+// in the database, gets a chunk of tasks from the queue (configurable by config.ScheduleChunk),
 // and calls the given scheduler backend. If the backend returns a valid offer, the
 // task is assigned to the offered node.
 func (s *Scheduler) Schedule(ctx context.Context) error {
@@ -95,7 +105,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 	}
 
 	for _, task := range s.DB.ReadQueue(s.Conf.ScheduleChunk) {
-		offer := s.Backend.GetOffer(task)
+		offer := s.GetOffer(task)
 		if offer != nil {
 			s.Log.Info("Assigning task to node",
 				"taskID", task.Id,
@@ -107,7 +117,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 			//      when a task is assigned, its state is immediately Initializing
 			//      even before the node has received it.
 			offer.Node.TaskIds = append(offer.Node.TaskIds, task.Id)
-			_, err = s.DB.PutNode(ctx, offer.Node)
+			_, err = s.Nodes.PutNode(ctx, offer.Node)
 			if err != nil {
 				s.Log.Error("Error in AssignTask",
 					"error", err,
@@ -132,50 +142,38 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 	return nil
 }
 
-// Scale implements some common logic for allowing scheduler backends
-// to poll the database, looking for nodes that need to be started
-// and shutdown.
-func (s *Scheduler) Scale(ctx context.Context) error {
+// GetOffer returns an offer based on available funnel nodes.
+func (s *Scheduler) GetOffer(j *tes.Task) *Offer {
+	offers := []*Offer{}
 
-	b, isScaler := s.Backend.(Scaler)
-	// If the scheduler backend doesn't implement the Scaler interface,
-	// stop here.
-	if !isScaler {
-		return nil
+	// Get the nodes from the funnel server
+	nodes := []*pbs.Node{}
+	resp, err := s.Nodes.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	if err == nil {
+		nodes = resp.Nodes
 	}
 
-	resp, err := s.DB.ListNodes(ctx, &pbs.ListNodesRequest{})
-	if err != nil {
-		s.Log.Error("Failed ListNodes request. Recovering.", err)
-		return nil
-	}
-
-	for _, n := range resp.Nodes {
-
-		if !b.ShouldStartNode(n) {
+	for _, n := range nodes {
+		// Only schedule tasks to nodes that are "ALIVE"
+		if n.State != pbs.NodeState_ALIVE {
+			continue
+		}
+		// Filter out nodes that don't match the task request.
+		// Checks CPU, RAM, disk space, etc.
+		if !Match(n, j, DefaultPredicates) {
 			continue
 		}
 
-		serr := b.StartNode(n)
-		if serr != nil {
-			s.Log.Error("Error starting node", serr)
-			continue
-		}
-
-		// TODO should the Scaler instance handle this? Is it possible
-		//      that Initializing is the wrong state in some cases?
-		n.State = pbs.NodeState_INITIALIZING
-		_, err := s.DB.PutNode(ctx, n)
-
-		if err != nil {
-			// TODO an error here would likely result in multiple nodes
-			//      being started unintentionally. Not sure what the best
-			//      solution is. Possibly a list of failed nodes.
-			//
-			//      If the scheduler and database API live on the same server,
-			//      this *should* be very unlikely.
-			s.Log.Error("Error marking node as initializing", err)
-		}
+		sc := DefaultScores(n, j)
+		offer := NewOffer(n, j, sc)
+		offers = append(offers, offer)
 	}
-	return nil
+
+	// No matching nodes were found.
+	if len(offers) == 0 {
+		return nil
+	}
+
+	SortByAverageScore(offers)
+	return offers[0]
 }

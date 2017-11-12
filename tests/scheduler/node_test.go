@@ -23,9 +23,9 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 
 	srv := tests.NewFunnel(conf)
 	srv.Scheduler = &scheduler.Scheduler{
-		DB:      srv.SDB,
-		Backend: nil,
-		Conf:    conf.Scheduler,
+		DB:    srv.DB.(scheduler.Database),
+		Nodes: srv.DB.(scheduler.Nodes),
+		Conf:  conf.Scheduler,
 	}
 	srv.StartServer()
 
@@ -88,8 +88,6 @@ func TestManualBackend(t *testing.T) {
     `)
 		tasks = append(tasks, id)
 	}
-
-	// srv.SDB.ReadQueue(15)
 
 	for _, id := range tasks {
 		task := srv.Wait(id)

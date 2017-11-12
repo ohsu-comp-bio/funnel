@@ -6,13 +6,10 @@ import (
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/compute/batch"
-	"github.com/ohsu-comp-bio/funnel/compute/gce"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
 	"github.com/ohsu-comp-bio/funnel/compute/local"
-	"github.com/ohsu-comp-bio/funnel/compute/manual"
 	"github.com/ohsu-comp-bio/funnel/compute/noop"
-	"github.com/ohsu-comp-bio/funnel/compute/openstack"
 	"github.com/ohsu-comp-bio/funnel/compute/pbs"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
@@ -40,9 +37,7 @@ func Run(ctx context.Context, conf config.Config) error {
 type Server struct {
 	*server.Server
 	*scheduler.Scheduler
-	DB       server.Database
-	SDB      scheduler.Database
-	SBackend scheduler.Backend
+	DB server.Database
 }
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
@@ -53,7 +48,6 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	var db server.Database
 	var sdb scheduler.Database
 	var sched *scheduler.Scheduler
-	var sbackend scheduler.Backend
 	var err error
 
 	switch strings.ToLower(conf.Server.Database) {
@@ -76,35 +70,24 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	}
 
 	switch strings.ToLower(conf.Backend) {
-	case "gce", "manual", "openstack", "gce-mock":
+	case "manual":
 		var ok bool
 		sdb, ok = db.(scheduler.Database)
 		if !ok {
 			return nil, fmt.Errorf("database doesn't satisfy the scheduler interface")
 		}
-
-		backend = scheduler.NewComputeBackend(sdb)
-
-		switch strings.ToLower(conf.Backend) {
-		case "gce":
-			sbackend, err = gce.NewBackend(conf, log.Sub("gce"))
-		case "gce-mock":
-			sbackend, err = gce.NewMockBackend(conf, workerCmd.NewDefaultWorker)
-		case "manual":
-			sbackend, err = manual.NewBackend(conf)
-		case "openstack":
-			sbackend, err = openstack.NewBackend(conf)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error occurred while setting up backend: %v", err)
+		nodedb, ok := db.(scheduler.Nodes)
+		if !ok {
+			return nil, fmt.Errorf("database doesn't satisfy the scheduler interface")
 		}
 
 		sched = &scheduler.Scheduler{
-			Log:     log.Sub("scheduler"),
-			DB:      sdb,
-			Conf:    conf.Scheduler,
-			Backend: sbackend,
+			Log:   log.Sub("scheduler"),
+			DB:    sdb,
+			Nodes: nodedb,
+			Conf:  conf.Scheduler,
 		}
+		backend = sched
 
 	case "aws-batch":
 		backend, err = batch.NewBackend(conf.Backends.Batch)
@@ -131,7 +114,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	srv := server.DefaultServer(db, conf.Server)
 	srv.Log = log
 
-	return &Server{srv, sched, db, sdb, sbackend}, nil
+	return &Server{srv, sched, db}, nil
 }
 
 // Run runs a default Funnel server.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	os_servers "github.com/rackspace/gophercloud/openstack/compute/v2/servers"
 	"io/ioutil"
 	"os"
 	"path"
@@ -30,20 +29,6 @@ type Config struct {
 		}
 		GridEngine struct {
 			Template string
-		}
-		OpenStack struct {
-			KeyPair    string
-			ConfigPath string
-			Server     os_servers.CreateOpts
-		}
-		GCE struct {
-			AccountFile string
-			Project     string
-			Zone        string
-			Weights     struct {
-				PreferQuickStartup float32
-			}
-			CacheTTL time.Duration
 		}
 		Batch AWSBatch
 	}
@@ -159,9 +144,6 @@ func DefaultConfig() Config {
 	c.Backends.SLURM.Template = string(slurmTemplate)
 	c.Backends.PBS.Template = string(pbsTemplate)
 	c.Backends.GridEngine.Template = string(geTemplate)
-
-	c.Backends.GCE.CacheTTL = time.Minute
-	c.Backends.GCE.Weights.PreferQuickStartup = 1.0
 
 	c.Backends.Batch.JobDefinition = "funnel-job-def"
 	c.Backends.Batch.JobQueue = "funnel-job-queue"

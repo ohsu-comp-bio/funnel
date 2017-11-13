@@ -89,6 +89,7 @@ test-verbose:
 	@go test -v $(TESTS)
 
 test-elasticsearch:
+	@docker pull docker.elastic.co/elasticsearch/elasticsearch:5.6.3
 	@docker rm -f funnel-es-test  > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:5.6.3 > /dev/null
 	@sleep 30
@@ -96,6 +97,7 @@ test-elasticsearch:
 	@docker rm -f funnel-es-test  > /dev/null 2>&1 || echo
 
 test-mongodb:
+	@docker pull mongo:3.5.13
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
 	@sleep 10
@@ -104,6 +106,10 @@ test-mongodb:
 
 # Run backend tests
 test-backends:
+	@docker pull ohsucompbio/htcondor
+	@docker pull ohsucompbio/slurm
+	@docker pull ohsucompbio/gridengine
+	@docker pull ohsucompbio/pbs-torque
 	@go test -timeout 120s ./tests/e2e/slurm -run-test
 	@go test -timeout 120s ./tests/e2e/gridengine -run-test
 	@go test -timeout 120s ./tests/e2e/htcondor -run-test

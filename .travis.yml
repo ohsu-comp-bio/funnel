@@ -11,13 +11,6 @@ cache:
     - vendor
 go:
   - 1.8
-before_install:
-  - docker pull ohsucompbio/htcondor
-  - docker pull ohsucompbio/slurm
-  - docker pull ohsucompbio/gridengine
-  - docker pull ohsucompbio/pbs-torque
-  - docker pull docker.elastic.co/elasticsearch/elasticsearch:5.6.3
-  - docker pull mongo:3.5.13
 install:
   - make depends
   - make

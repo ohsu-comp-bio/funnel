@@ -2,27 +2,36 @@ os:
   - linux
 language: go
 sudo: required
+
 services:
   - docker
+  - elasticsearch
+go:
+  - 1.8
+
 cache:
   directories:
     - $GOPATH/src
     - $GOPATH/pkg
     - vendor
 
+before_script:
+  - sleep 10
 git:
   submodules: false
-go:
-  - 1.8
 install:
   - make depends
   - make
+
 jobs:
   include:
     - stage: all
-    - script: make lint
+      script: make lint
     - script: make test
-    - script: make test-backends
+    - script: make test-htcondor
+    - script: make test-slurm
+    - script: make test-gridengine
+    - script: make test-pbs-torque
     - script: make test-elasticsearch
     - script: make test-mongodb
     - script: make test-kafka

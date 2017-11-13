@@ -21,13 +21,20 @@ before_install:
 install:
   - make depends
   - make
-  - make cross-compile
-script: 
-  - make lint
-  - make test
-  - make test-backends
-  - make test-elasticsearch
-  - make test-mongodb
-  - make test-kafka
+jobs:
+  include:
+    - stage: lint
+      script: make lint
+    - stage: test
+      script: make test
+    - stage: test-backends
+      script: make test-backends
+    - stage: test-elasticsearch
+      script: make test-elasticsearch
+    - stage: test-mongodb
+      script: make test-mongodb
+    - stage: test-kafka
+      script: make test-kafka
+
 notifications:
   email: false

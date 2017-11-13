@@ -16,10 +16,9 @@ install:
   - make
 jobs:
   include:
-    - stage: lint
-      script: make lint
-    - stage: test
-      script: make test
+    - stage: all
+    - script: make lint
+    - script: make test
     - script: make test-backends
     - script: make test-elasticsearch
     - script: make test-mongodb

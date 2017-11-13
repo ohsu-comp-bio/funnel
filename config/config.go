@@ -179,6 +179,10 @@ type AWSBatch struct {
 	AWSConfig
 }
 
+type Datastore struct {
+	Project string
+}
+
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes
 // such as the event writer and server.
 type DynamoDB struct {

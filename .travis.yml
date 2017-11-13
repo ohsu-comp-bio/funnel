@@ -27,14 +27,10 @@ jobs:
       script: make lint
     - stage: test
       script: make test
-    - stage: test-backends
-      script: make test-backends
-    - stage: test-elasticsearch
-      script: make test-elasticsearch
-    - stage: test-mongodb
-      script: make test-mongodb
-    - stage: test-kafka
-      script: make test-kafka
+    - script: make test-backends
+    - script: make test-elasticsearch
+    - script: make test-mongodb
+    - script: make test-kafka
 
 notifications:
   email: false

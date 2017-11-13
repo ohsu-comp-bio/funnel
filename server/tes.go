@@ -36,7 +36,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 
 	if err != nil {
 		ts.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-		return nil, fmt.Errorf("error submitting task to compute backend: %s", err)
+		return nil, fmt.Errorf("can't create task: %s", err)
 	}
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil

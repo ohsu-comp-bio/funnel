@@ -261,6 +261,14 @@ docker: cross-compile
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t funnel .
 
+start-datastore:
+	@gcloud beta emulators datastore start &
+
+stop-datastore:
+	@curl -XPOST localhost:8081/shutdown
+
+test-datastore: start-datastore
+	
 # Remove build/development files.
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools

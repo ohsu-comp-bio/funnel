@@ -11,12 +11,9 @@ go:
 
 cache:
   directories:
-    - $GOPATH/src
     - $GOPATH/pkg
     - vendor
 
-before_script:
-  - sleep 10
 git:
   submodules: false
 install:
@@ -28,31 +25,33 @@ jobs:
     - stage: all
       script: make lint
       env:
-        - NAME=lint
+        - n=lint
     - script: make test
       env:
-        - NAME=test
+        - n=test
     - script: make test-htcondor
       env:
-        - NAME=htcondor
+        - n=htcondor
     - script: make test-slurm
       env:
-        - NAME=slurm
+        - n=slurm
     - script: make test-gridengine
       env:
-        - NAME=gridengine
+        - n=gridengine
     - script: make test-pbs-torque
       env:
-        - NAME=pbs
+        - n=pbs
     - script: make test-elasticsearch
+      before_script:
+        - sleep 10
       env:
-        - NAME=elastic
+        - n=elastic
     - script: make test-mongodb
       env:
-        - NAME=mongo
+        - n=mongo
     - script: make test-kafka
       env:
-        - NAME=kafka
+        - n=kafka
 
 notifications:
   email: false

@@ -27,14 +27,32 @@ jobs:
   include:
     - stage: all
       script: make lint
+      env:
+        - NAME=lint
     - script: make test
+      env:
+        - NAME=test
     - script: make test-htcondor
+      env:
+        - NAME=htcondor
     - script: make test-slurm
+      env:
+        - NAME=slurm
     - script: make test-gridengine
+      env:
+        - NAME=gridengine
     - script: make test-pbs-torque
+      env:
+        - NAME=pbs
     - script: make test-elasticsearch
+      env:
+        - NAME=elastic
     - script: make test-mongodb
+      env:
+        - NAME=mongo
     - script: make test-kafka
+      env:
+        - NAME=kafka
 
 notifications:
   email: false

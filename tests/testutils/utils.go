@@ -77,7 +77,7 @@ func TestingWriter(t *testing.T) io.Writer {
 
 // LogConfig returns logger configuration useful for tests, which has a text indent.
 func LogConfig() logger.Config {
-	conf := logger.DebugConfig()
+	conf := logger.DefaultConfig()
 	conf.TextFormat.Indent = "        "
 	return conf
 }

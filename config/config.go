@@ -146,8 +146,9 @@ func DefaultConfig() Config {
 	c.Worker.EventWriters.DynamoDB = dynamo
 	c.Worker.EventWriters.Elastic = elastic
 	c.Worker.EventWriters.MongoDB = mongo
-
 	c.Worker.EventWriters.Kafka.Topic = "funnel"
+
+	c.Worker.Storage.S3.AWS.MaxRetries = 10
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -308,8 +309,21 @@ type Kafka struct {
 	Topic   string
 }
 
-// AWSCredentials describes the configuration for creating AWS Session instances
-type AWSCredentials struct {
+// AWSConfig describes the configuration for creating AWS Session instances
+type AWSConfig struct {
+	// An optional endpoint URL (hostname only or fully qualified URI)
+	// that overrides the default generated endpoint for a client.
+	Endpoint string
+	// The region to send requests to. This parameter is required and must
+	// be configured on a per-client basis for all AWS services in funnel with the
+	// exception of S3Storage.
+	Region string
+	// The maximum number of times that a request will be retried for failures.
+	// By default defers the max retry setting to the service
+	// specific configuration. Set to a value > 0 to override.
+	MaxRetries int
+	// If both the key and secret are empty AWS credentials will be read from
+	// the environment.
 	Key    string
 	Secret string
 }
@@ -319,16 +333,14 @@ type AWSBatch struct {
 	// JobDefinition can be either a name or the Amazon Resource Name (ARN).
 	JobDefinition string
 	// JobQueue can be either a name or the Amazon Resource Name (ARN).
-	JobQueue    string
-	Region      string
-	Credentials AWSCredentials
+	JobQueue string
+	AWS      AWSConfig
 }
 
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes
 // such as the event writer and server.
 type DynamoDB struct {
-	Credentials   AWSCredentials
-	Region        string
+	AWS           AWSConfig
 	TableBasename string
 }
 
@@ -363,12 +375,12 @@ func (g GSStorage) Valid() bool {
 
 // S3Storage describes the directories Funnel can read from and write to
 type S3Storage struct {
-	Credentials AWSCredentials
+	AWS AWSConfig
 }
 
 // Valid validates the LocalStorage configuration
 func (s S3Storage) Valid() bool {
-	return (s.Credentials.Key != "" && s.Credentials.Secret != "") || (s.Credentials.Key == "" && s.Credentials.Secret == "")
+	return (s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.

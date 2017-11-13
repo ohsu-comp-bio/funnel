@@ -2,11 +2,21 @@ Server:
   Database: dynamodb
   Databases:
     DynamoDB:
-      Region: us-west-2
+      AWS:
+        Endpoint: http://localhost:8000
+        Region: us-west-2
 
 Worker:
   TaskReader: dynamodb
+  TaskReaders:
+    DynamoDB:
+      AWS:
+        Endpoint: http://localhost:8000
+        Region: us-west-2
+    
   ActiveEventWriters: ["dynamodb", "log"]
   EventWriter:
     DynamoDB:
-      Region: us-west-2
+      AWS:
+        Endpoint: http://localhost:8000
+        Region: us-west-2

@@ -2,11 +2,10 @@ package dynamodb
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/util"
+	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"golang.org/x/net/context"
 )
 
@@ -26,9 +25,7 @@ type DynamoDB struct {
 // NewDynamoDB returns a new instance of DynamoDB, accessing the database at
 // the given url, and including the given ServerConfig.
 func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
-	awsConf := util.NewAWSConfigWithCreds(conf.Credentials.Key, conf.Credentials.Secret)
-	awsConf.WithRegion(conf.Region)
-	sess, err := session.NewSession(awsConf)
+	sess, err := util.NewAWSSession(conf.AWS)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating dynamodb client: %v", err)
 	}

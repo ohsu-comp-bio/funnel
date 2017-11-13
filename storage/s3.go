@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,10 +26,7 @@ type S3Backend struct {
 
 // NewS3Backend creates an S3Backend session instance
 func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
-	awsConf := util.NewAWSConfigWithCreds(conf.Credentials.Key, conf.Credentials.Secret)
-	awsConf.WithMaxRetries(5)
-
-	sess, err := session.NewSession(awsConf)
+	sess, err := util.NewAWSSession(conf.AWS)
 	if err != nil {
 		return nil, err
 	}

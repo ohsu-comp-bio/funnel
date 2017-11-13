@@ -44,8 +44,8 @@ func init() {
 	flag.StringVar(&configFile, "funnel-config", configFile, "Funnel config file. Must be an absolute path.")
 }
 
-func setLogOutput(t *testing.T) {
-	log.SetOutput(testutils.TestingWriter(t))
+func SetLogOutput(l *logger.Logger, t *testing.T) {
+	l.SetOutput(testutils.TestingWriter(t))
 }
 
 // HelloWorld is a simple, valid task that is easy to reuse in tests.
@@ -119,6 +119,7 @@ func TestifyConfig(conf config.Config) config.Config {
 	dynTableBasename := "funnel-e2e-tests-" + testutils.RandomString(6)
 	conf.Server.Databases.DynamoDB.TableBasename = dynTableBasename
 	conf.Worker.EventWriters.DynamoDB.TableBasename = dynTableBasename
+	conf.Worker.TaskReaders.DynamoDB.TableBasename = dynTableBasename
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()

@@ -317,21 +317,8 @@ func (f *Funnel) ReadFile(name string) string {
 }
 
 // StartServerInDocker starts a funnel server in a docker image
-func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
-	// find the funnel-linux-amd64 binary
-	// TODO there must be a better way than this hardcoded path
-	funnelBinary, err := filepath.Abs(filepath.Join(
-		"../../build/bin/funnel-linux-amd64",
-	))
-	if err != nil {
-		log.Error("Error finding funnel-linux-amd64 binary. Run `make cross-compile`", err)
-		panic(err)
-	}
-	fi, err := os.Stat(funnelBinary)
-	if os.IsNotExist(err) || fi.Mode().IsDir() || !strings.Contains(fi.Mode().String(), "x") {
-		log.Error("Error finding funnel-linux-amd64 binary. Run `make cross-compile`")
-		panic(errors.New(""))
-	}
+func (f *Funnel) StartServerInDocker(imageName string,  extraArgs []string) {
+	funnelBinary, err := filepath.Abs(exec.LookPath("funnel"))
 
 	// write config file
 	configPath, _ := filepath.Abs(filepath.Join(f.Conf.Worker.WorkDir, "config.yml"))

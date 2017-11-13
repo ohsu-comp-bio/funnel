@@ -2,12 +2,12 @@ package task
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
 	"io"
-	"io/ioutil"
+	"os"
 )
 
 // Create runs the "task create" CLI command, connecting to the server,
@@ -19,17 +19,17 @@ func Create(server string, files []string, writer io.Writer) error {
 
 	for _, taskFile := range files {
 		var err error
-		var taskMessage []byte
 		var task tes.Task
 
-		taskMessage, err = ioutil.ReadFile(taskFile)
+		f, err := os.Open(taskFile)
+		defer f.Close()
 		if err != nil {
 			return err
 		}
 
-		err = proto.Unmarshal(taskMessage, &task)
+		err = jsonpb.Unmarshal(f, &task)
 		if err != nil {
-			return err
+			return fmt.Errorf("can't load task: %s", err)
 		}
 
 		r, err := cli.CreateTask(context.Background(), &task)

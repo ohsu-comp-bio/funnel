@@ -50,8 +50,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			}
 
 			if dynamodbRegion != "" {
-				conf.Worker.EventWriters.DynamoDB.Region = dynamodbRegion
-				conf.Worker.TaskReaders.DynamoDB.Region = dynamodbRegion
+				conf.Worker.EventWriters.DynamoDB.AWS.Region = dynamodbRegion
+				conf.Worker.TaskReaders.DynamoDB.AWS.Region = dynamodbRegion
 			}
 			if dynamodbTableBasename != "" {
 				conf.Worker.EventWriters.DynamoDB.TableBasename = dynamodbTableBasename

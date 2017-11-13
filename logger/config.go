@@ -69,13 +69,8 @@ func (l *Logger) Configure(conf Config) {
 			conf: conf.JSONFormat,
 		})
 
-	case "":
-		// Default to text
-		fallthrough
-	case "text":
-		fallthrough
+	// Default to text
 	default:
-		// Default to text
 		l.SetFormatter(&textFormatter{
 			conf.TextFormat,
 			jsonFormatter{

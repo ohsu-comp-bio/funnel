@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"regexp"
 	"time"
 )
@@ -16,9 +15,7 @@ import (
 // NewBackend returns a new local Backend instance.
 func NewBackend(batchConf config.AWSBatch) (*Backend, error) {
 
-	awsConf := util.NewAWSConfigWithCreds(batchConf.Credentials.Key, batchConf.Credentials.Secret)
-	awsConf.WithRegion(batchConf.Region)
-	sess, err := session.NewSession(awsConf)
+	sess, err := util.NewAWSSession(batchConf.AWS)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
 	}

@@ -117,10 +117,12 @@ test-s3:
 test-openstack:
 	@go test ./tests/e2e/openstack -openstack-e2e-config ${FUNNEL_OPENSTACK_TEST_CONFIG}
 
-test-dynamo:
+test-dynamodb:
+	@docker rm -f funnel-dynaomdb-test > /dev/null 2>&1 || echo
+	@docker run -d --name funnel-dynaomdb-test -p 8000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
+	@sleep 10
 	@go test ./tests/e2e/ -funnel-config dynamo.config.yml
-
-clean-dynamo-tests:
+	@docker rm -f funnel-dynamodb-	test  > /dev/null 2>&1 || echo 
 
 webdash-install:
 	@npm install --prefix ./webdash

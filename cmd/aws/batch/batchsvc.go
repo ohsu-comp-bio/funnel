@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/ohsu-comp-bio/funnel/util"
+	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"sort"
 	"strings"
 )
@@ -20,9 +20,7 @@ func (e errResourceExists) Error() string {
 }
 
 func newBatchSvc(conf Config) (*batchsvc, error) {
-	awsConf := util.NewAWSConfigWithCreds("", "")
-	awsConf.WithRegion(conf.Region)
-	sess, err := session.NewSession(awsConf)
+	sess, err := util.NewAWSSession(conf.Session)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating aws session: %v", err)
 	}
@@ -381,7 +379,7 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 				aws.String("--TaskReader"),
 				aws.String(b.conf.FunnelWorker.TaskReader),
 				aws.String("--DynamoDB.Region"),
-				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.Region),
+				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.Session.Region),
 				aws.String("--DynamoDB.TableBasename"),
 				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.TableBasename),
 				aws.String("--task-id"),

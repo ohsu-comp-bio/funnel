@@ -1,15 +1,16 @@
-package e2e
+package core
 
 import (
 	"github.com/andreyvit/diff"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"google.golang.org/grpc"
 	"strings"
 	"testing"
 )
 
 func TestTaskNoExecutorsValidationError(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	_, err := fun.RunTask(&tes.Task{})
 	if err == nil {
 		t.Error("expected validation error")
@@ -25,7 +26,7 @@ Task.Executors: at least one executor is required
 }
 
 func TestTaskInputContentValidationError(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	_, err := fun.RunTask(&tes.Task{
 		Inputs: []*tes.Input{
 			{
@@ -46,7 +47,7 @@ func TestTaskInputContentValidationError(t *testing.T) {
 }
 
 func TestTaskInputContentValidation(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{
@@ -68,7 +69,7 @@ func TestTaskInputContentValidation(t *testing.T) {
 }
 
 func TestTaskValidationError(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	_, err := fun.RunTask(&tes.Task{
 		Executors: []*tes.Executor{
 			{},

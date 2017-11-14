@@ -1,12 +1,13 @@
-package e2e
+package server
 
 import (
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"net/http"
 	"testing"
 )
 
 func TestListNoCacheHeader(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	resp, err := http.Get(fun.Conf.Server.HTTPAddress() + "/v1/tasks")
 
 	if err != nil {
@@ -20,7 +21,7 @@ func TestListNoCacheHeader(t *testing.T) {
 }
 
 func TestGetNoCacheHeader(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	resp, err := http.Get(fun.Conf.Server.HTTPAddress() + "/v1/tasks/1")
 
 	if err != nil {

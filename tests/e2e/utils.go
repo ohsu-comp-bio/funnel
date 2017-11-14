@@ -42,8 +42,10 @@ var log = logger.NewLogger("e2e", testutils.LogConfig())
 func init() {
 	logger.ConfigureGRPC(1, log)
 	flag.StringVar(&configFile, "funnel-config", configFile, "Funnel config file. Must be an absolute path.")
+	flag.Parse()
 }
 
+// SetLogOutput provides a method for connecting funnel logso the the test logger
 func SetLogOutput(l *logger.Logger, t *testing.T) {
 	l.SetOutput(testutils.TestingWriter(t))
 }
@@ -87,6 +89,7 @@ type Funnel struct {
 func DefaultConfig() config.Config {
 	conf := config.DefaultConfig()
 	conf.Worker.Storage.Swift.Disabled = true
+	conf.Worker.Storage.S3.Disabled = true
 
 	// Get config from test command line flag, if present.
 	if configFile != "" {
@@ -95,7 +98,6 @@ func DefaultConfig() config.Config {
 			panic(err)
 		}
 	}
-
 	return TestifyConfig(conf)
 }
 
@@ -126,10 +128,8 @@ func TestifyConfig(conf config.Config) config.Config {
 
 	util.EnsureDir(storageDir)
 
-	conf.Worker.Storage = config.StorageConfig{
-		Local: config.LocalStorage{
-			AllowedDirs: []string{storageDir, wd},
-		},
+	conf.Worker.Storage.Local = config.LocalStorage{
+		AllowedDirs: []string{storageDir, wd},
 	}
 
 	conf = config.EnsureServerProperties(conf)
@@ -389,7 +389,7 @@ func (f *Funnel) ReadFile(name string) string {
 }
 
 // StartServerInDocker starts a funnel server in a docker image
-func (f *Funnel) StartServerInDocker(imageName string, backend string, extraArgs []string) {
+func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
 	// find the funnel-linux-amd64 binary
 	// TODO there must be a better way than this hardcoded path
 	funnelBinary, err := filepath.Abs(filepath.Join(
@@ -433,8 +433,7 @@ func (f *Funnel) StartServerInDocker(imageName string, backend string, extraArgs
 		"-v", fmt.Sprintf("%s:%s", configPath, configPath),
 	}
 	args = append(args, extraArgs...)
-	args = append(args, imageName, "funnel", "server", "run", "--config",
-		configPath, "--backend", backend)
+	args = append(args, imageName, "funnel", "server", "run", "--config", configPath)
 
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout

@@ -1,4 +1,4 @@
-package e2e
+package core
 
 import (
 	"context"
@@ -6,18 +6,18 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"path"
-	"strings"
 	"testing"
 	"time"
 )
 
 func TestWorkerCmdRun(t *testing.T) {
-	setLogOutput(t)
-	c := DefaultConfig()
+	e2e.SetLogOutput(log, t)
+	c := e2e.DefaultConfig()
 	c.Backend = "noop"
-	f := NewFunnel(c)
+	f := e2e.NewFunnel(c)
 	f.StartServer()
 
 	// this only writes the task to the DB since the 'noop'
@@ -49,10 +49,10 @@ func TestWorkerCmdRun(t *testing.T) {
 }
 
 func TestDefaultWorkerRun(t *testing.T) {
-	setLogOutput(t)
-	c := DefaultConfig()
+	e2e.SetLogOutput(log, t)
+	c := e2e.DefaultConfig()
 	c.Backend = "noop"
-	f := NewFunnel(c)
+	f := e2e.NewFunnel(c)
 	f.StartServer()
 
 	// this only writes the task to the DB since the 'noop'
@@ -83,17 +83,6 @@ func TestDefaultWorkerRun(t *testing.T) {
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("missing stdout")
-	}
-}
-
-func TestLargeLogTail(t *testing.T) {
-	setLogOutput(t)
-	// Generate lots of random data to stdout.
-	// At the end, echo "\n\nhello\n".
-	id := fun.Run(`'dd if=/dev/urandom count=5 bs=10000; echo; echo; echo hello'`)
-	task := fun.Wait(id)
-	if !strings.HasSuffix(task.Logs[0].Logs[0].Stdout, "\n\nhello\n") {
-		t.Error("unexpected stdout tail")
 	}
 }
 
@@ -129,10 +118,10 @@ func (r taskReader) State() (tes.State, error) {
 // The task dumps megabytes of random data to stdout. The test waits
 // 10 seconds and checks how many stdout events were generated.
 func TestLargeLogRate(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	// Generate 1MB 1000 times to stdout.
 	// At the end, echo "\n\nhello\n".
-	conf := DefaultConfig().Worker
+	conf := e2e.DefaultConfig().Worker
 	conf.UpdateRate = time.Millisecond * 500
 	conf.BufferSize = 100
 	task := tes.Task{

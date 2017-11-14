@@ -1,15 +1,29 @@
-package e2e
+package storage
 
 import (
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"os"
 	"syscall"
 	"testing"
 )
 
+var log = logger.NewLogger("funnel-e2e-storage", logger.DefaultConfig())
+var fun *e2e.Funnel
+var conf config.Config
+
+func TestMain(m *testing.M) {
+	conf := e2e.DefaultConfig()
+	fun = e2e.NewFunnel(conf)
+	fun.StartServer()
+	os.Exit(m.Run())
+}
+
 // Test that a file can be passed as an input and output.
 func TestFileMount(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in
@@ -25,7 +39,7 @@ func TestFileMount(t *testing.T) {
 // Test that the local storage system hard links input files.
 // TODO this test is unix specific because it uses syscall?
 func TestLocalFilesystemHardLinkInput(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	fun.WriteFile("test_hard_link_input", "content")
 	id := fun.Run(`
     --sh "echo foo"
@@ -51,7 +65,7 @@ func TestLocalFilesystemHardLinkInput(t *testing.T) {
 
 // Test using a symlink as an input file.
 func TestSymlinkInput(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_in_symlink
@@ -65,7 +79,7 @@ func TestSymlinkInput(t *testing.T) {
 
 // Test using a broken symlink as an input file.
 func TestBrokenSymlinkInput(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh "sh -c 'cat $in > $out'"
     -i in=./testdata/test_broken_symlink
@@ -87,7 +101,7 @@ func TestBrokenSymlinkInput(t *testing.T) {
   is being tested here.
 */
 func TestSymlinkOutput(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh "sh -c 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'"
     -o sym={{ .storage }}/out-sym
@@ -113,7 +127,7 @@ func TestSymlinkOutput(t *testing.T) {
 }
 
 func TestOverwriteOutput(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh "sh -c 'echo foo > $out; chmod go+w $out'"
     -o out={{ .storage }}/test_out

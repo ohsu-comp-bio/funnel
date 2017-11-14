@@ -12,7 +12,7 @@ func TestStorageWithConfig(t *testing.T) {
 			AllowedDirs: []string{"/tmp"},
 		},
 		GS:    []config.GSStorage{},
-		S3:    config.S3Storage{},
+		S3: config.S3Storage{Disabled: true},
 		Swift: config.SwiftStorage{Disabled: true},
 	}
 	s := Storage{}
@@ -20,7 +20,7 @@ func TestStorageWithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sc.backends) != 2 {
+	if len(sc.backends) != 1 {
 		t.Fatal("unexpected number of Storage backends")
 	}
 
@@ -35,7 +35,8 @@ func TestStorageWithConfig(t *testing.T) {
 			},
 		},
 		S3: config.S3Storage{
-			Credentials: config.AWSCredentials{
+			Disabled: false,
+			AWS: config.AWSConfig{
 				Key:    "testkey",
 				Secret: "testsecret",
 			},

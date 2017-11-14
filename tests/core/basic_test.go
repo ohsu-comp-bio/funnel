@@ -617,10 +617,11 @@ func TestLargeLogTail(t *testing.T) {
 	// Generate lots of random data to stdout.
 	// At the end, echo "\n\nhello\n".
 	id := fun.Run(`
-    --sh 'dd if=/dev/urandom count=5 bs=10000; echo; echo; echo hello'
+    --sh 'base64 /dev/urandom | head -c 1000000; echo; echo; echo hello'
   `)
 	task := fun.Wait(id)
 	if !strings.HasSuffix(task.Logs[0].Logs[0].Stdout, "\n\nhello\n") {
+		t.Log("actual:", task.Logs[0].Logs[0].Stdout)
 		t.Error("unexpected stdout tail")
 	}
 }

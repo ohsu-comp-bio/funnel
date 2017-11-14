@@ -35,7 +35,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 				S: aws.String(e.Id),
 			},
 		},
-		ReturnValues: aws.String("UPDATED_NDB"),
 	}
 
 	// create the log structure for the attempt if it doesnt already exist
@@ -55,7 +54,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 				M: map[string]*dynamodb.AttributeValue{},
 			},
 		},
-		ReturnValues: aws.String("UPDATED_NDB"),
 	}
 	_, err := db.client.UpdateItem(attemptItem)
 	if err != nil {
@@ -79,7 +77,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 				M: map[string]*dynamodb.AttributeValue{},
 			},
 		},
-		ReturnValues: aws.String("UPDATED_NDB"),
 	}
 	_, err = db.client.UpdateItem(indexItem)
 	if err != nil {
@@ -227,6 +224,7 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 
 	case events.Type_EXECUTOR_STDOUT:
+		stdout := e.GetStdout()
 		item = &dynamodb.UpdateItemInput{
 			TableName: aws.String(db.stdoutTable),
 			Key: map[string]*dynamodb.AttributeValue{
@@ -243,7 +241,7 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 			UpdateExpression: aws.String("SET stdout = :stdout, attempt = :attempt, #index = :index"),
 			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 				":stdout": {
-					S: aws.String(e.GetStdout()),
+					S: aws.String(stdout),
 				},
 				":attempt": {
 					N: aws.String(strconv.Itoa(int(e.Attempt))),
@@ -252,7 +250,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 					N: aws.String(strconv.Itoa(int(e.Index))),
 				},
 			},
-			ReturnValues: aws.String("UPDATED_NDB"),
 		}
 
 	case events.Type_EXECUTOR_STDERR:
@@ -281,7 +278,6 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 					N: aws.String(strconv.Itoa(int(e.Index))),
 				},
 			},
-			ReturnValues: aws.String("UPDATED_NDB"),
 		}
 	}
 

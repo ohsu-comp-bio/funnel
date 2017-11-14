@@ -319,7 +319,7 @@ func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
 	// find the funnel-linux-amd64 binary
 	// TODO there must be a better way than this hardcoded path
 	funnelBinary, err := filepath.Abs(filepath.Join(
-		"../../../build/bin/funnel-linux-amd64",
+		"../../build/bin/funnel-linux-amd64",
 	))
 	if err != nil {
 		log.Error("Error finding funnel-linux-amd64 binary. Run `make cross-compile`", err)

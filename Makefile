@@ -106,13 +106,13 @@ test-mongodb:
 	@docker rm -f funnel-mongodb-test  > /dev/null 2>&1 || echo 
 
 test-dynamodb:
-	@docker rm -f funnel-dynaomdb-test > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-dynaomdb-test -p 8000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
+	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
+	@docker run -d --name funnel-dynamodb-test -p 8000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
 	@sleep 10
 	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/dynamo.config.yml
-	@docker rm -f funnel-dynamodb-	test  > /dev/null 2>&1 || echo 
+	@docker rm -f funnel-dynamodb-test  > /dev/null 2>&1 || echo 
 
-test-kafka: start-kafka
+test-kafka:
 	@docker rm -f funnel-kafka > /dev/null || echo
 	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
 	@sleep 10

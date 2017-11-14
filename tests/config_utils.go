@@ -49,22 +49,22 @@ func DefaultConfig() config.Config {
 func TestifyConfig(conf config.Config) config.Config {
 	conf = TempDirConfig(conf)
 	conf = RandomPortConfig(conf)
-	conf.Server.Logger = logger.DebugConfig()
-	conf.Scheduler.Node.Logger = logger.DebugConfig()
-	conf.Worker.Logger = logger.DebugConfig()
-	conf.Scheduler.ScheduleRate = time.Millisecond * 700
-	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
+
+	conf.Scheduler.ScheduleRate = time.Millisecond * 500
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 300
 	conf.Worker.UpdateRate = time.Millisecond * 300
-	conf.Server.Databases.Elastic.IndexPrefix += "-" + tes.GenerateID()
+
+	conf.Server.Databases.Elastic.IndexPrefix = "funnel-e2e-tests-" + RandomString(6)
 	conf.Worker.EventWriters.Elastic = conf.Server.Databases.Elastic
-	conf.Server.Databases.MongoDB.Database += "-" + tes.GenerateID()
+	conf.Worker.TaskReaders.Elastic = conf.Server.Databases.Elastic
+
+	conf.Server.Databases.MongoDB.Database = "funnel-e2e-tests-" + RandomString(6)
 	conf.Worker.EventWriters.MongoDB = conf.Server.Databases.MongoDB
 	conf.Worker.TaskReaders.MongoDB = conf.Server.Databases.MongoDB
 
-	dynTableBasename := "funnel-e2e-tests-" + RandomString(6)
-	conf.Server.Databases.DynamoDB.TableBasename = dynTableBasename
-	conf.Worker.EventWriters.DynamoDB.TableBasename = dynTableBasename
-	conf.Worker.TaskReaders.DynamoDB.TableBasename = dynTableBasename
+	conf.Server.Databases.DynamoDB.TableBasename = "funnel-e2e-tests-" + RandomString(6)
+	conf.Worker.EventWriters.DynamoDB = conf.Server.Databases.DynamoDB
+	conf.Worker.TaskReaders.DynamoDB = conf.Server.Databases.DynamoDB
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
@@ -106,7 +106,7 @@ func TempDirConfig(conf config.Config) config.Config {
 
 // RandomString generates a random string of length n
 func RandomString(n int) string {
-	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 	b := make([]rune, n)
 	for i := range b {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]

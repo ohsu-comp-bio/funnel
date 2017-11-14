@@ -5,6 +5,8 @@ Server:
       AWS:
         Endpoint: http://localhost:8000
         Region: us-west-2
+        Key: "test"
+        Secret: "test"
 
 Worker:
   TaskReader: dynamodb
@@ -13,10 +15,14 @@ Worker:
       AWS:
         Endpoint: http://localhost:8000
         Region: us-west-2
+        Key: "test"
+        Secret: "test"
     
-  ActiveEventWriters: ["dynamodb", "log"]
-  EventWriter:
+  ActiveEventWriters: ["log", "dynamodb"]
+  EventWriters:
     DynamoDB:
       AWS:
         Endpoint: http://localhost:8000
         Region: us-west-2
+        Key: "test"
+        Secret: "test"

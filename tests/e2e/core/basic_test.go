@@ -1,8 +1,9 @@
-package e2e
+package core
 
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"strings"
@@ -11,11 +12,15 @@ import (
 )
 
 func TestHelloWorld(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh 'echo hello world'
   `)
 	task := fun.Wait(id)
+
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("unexpected task state")
+	}
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout")
@@ -23,7 +28,7 @@ func TestHelloWorld(t *testing.T) {
 }
 
 func TestGetUnknownTask(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	var err error
 
 	_, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
@@ -45,7 +50,7 @@ func TestGetUnknownTask(t *testing.T) {
 }
 
 func TestGetTaskView(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	var err error
 	var task *tes.Task
 
@@ -174,7 +179,7 @@ func TestGetTaskView(t *testing.T) {
 //      results of all of those. It works for the moment, but
 //      should probably run against a clean environment.
 func TestListTaskView(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	var tasks []*tes.Task
 	var task *tes.Task
 	var err error
@@ -291,8 +296,10 @@ func TestListTaskView(t *testing.T) {
 // This ensures that the streaming works even when a small
 // amount of logs are written (which was once a bug).
 func TestSingleCharLog(t *testing.T) {
-	setLogOutput(t)
-	id := fun.Run(`'echo a; sleep 100'`)
+	e2e.SetLogOutput(log, t)
+	id := fun.Run(`
+    --sh 'echo a; sleep 100'
+  `)
 	fun.WaitForRunning(id)
 	time.Sleep(time.Second * 5)
 	task := fun.Get(id)
@@ -304,7 +311,7 @@ func TestSingleCharLog(t *testing.T) {
 
 // Test that a completed task cannot change state.
 func TestCompleteStateImmutable(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh 'echo hello'
   `)
@@ -321,7 +328,7 @@ func TestCompleteStateImmutable(t *testing.T) {
 
 // Test canceling a task
 func TestCancel(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh 'echo start'
     --sh 'sleep 1000'
@@ -338,7 +345,7 @@ func TestCancel(t *testing.T) {
 
 // Test canceling a task that doesn't exist
 func TestCancelUnknownTask(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	var err error
 
 	_, err = fun.HTTP.CancelTask(context.Background(), &tes.CancelTaskRequest{
@@ -362,7 +369,7 @@ func TestCancelUnknownTask(t *testing.T) {
 // have been started or completed, i.e. steps that have yet to be started
 // won't show up in Task.Logs[0].Logs
 func TestExecutorLogLength(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh 'echo first'
     --sh 'sleep 10'
@@ -380,7 +387,7 @@ func TestExecutorLogLength(t *testing.T) {
 // the first step completed, but the correct behavior is to mark the
 // task complete after *all* steps have completed.
 func TestMarkCompleteBug(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh 'echo step 1'
     --sh 'sleep 100'
@@ -395,7 +402,7 @@ func TestMarkCompleteBug(t *testing.T) {
 }
 
 func TestTaskStartEndTimeLogs(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`--sh 'echo 1'`)
 	task := fun.Wait(id)
 	// Some databases require more time to process the updates,
@@ -410,7 +417,7 @@ func TestTaskStartEndTimeLogs(t *testing.T) {
 }
 
 func TestOutputFileLog(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	dir := fun.Tempdir()
 
 	id, _ := fun.RunTask(&tes.Task{
@@ -463,10 +470,10 @@ func TestOutputFileLog(t *testing.T) {
 }
 
 func TestPagination(t *testing.T) {
-	setLogOutput(t)
-	c := DefaultConfig()
+	e2e.SetLogOutput(log, t)
+	c := e2e.DefaultConfig()
 	c.Backend = "noop"
-	f := NewFunnel(c)
+	f := e2e.NewFunnel(c)
 	f.StartServer()
 	ctx := context.Background()
 
@@ -538,10 +545,10 @@ func TestPagination(t *testing.T) {
 
 // Smaller test for debugging getting the full set of pages
 func TestSmallPagination(t *testing.T) {
-	setLogOutput(t)
-	c := DefaultConfig()
+	e2e.SetLogOutput(log, t)
+	c := e2e.DefaultConfig()
 	c.Backend = "noop"
-	f := NewFunnel(c)
+	f := e2e.NewFunnel(c)
 	f.StartServer()
 	ctx := context.Background()
 
@@ -594,7 +601,7 @@ func TestSmallPagination(t *testing.T) {
 }
 
 func TestTaskError(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	id := fun.Run(`
     --sh "sh -c 'exit 1'"
   `)
@@ -602,5 +609,18 @@ func TestTaskError(t *testing.T) {
 
 	if task.State != tes.State_EXECUTOR_ERROR {
 		t.Fatal("Unexpected task state")
+	}
+}
+
+func TestLargeLogTail(t *testing.T) {
+	e2e.SetLogOutput(log, t)
+	// Generate lots of random data to stdout.
+	// At the end, echo "\n\nhello\n".
+	id := fun.Run(`
+    --sh 'dd if=/dev/urandom count=5 bs=10000; echo; echo; echo hello'
+  `)
+	task := fun.Wait(id)
+	if !strings.HasSuffix(task.Logs[0].Logs[0].Stdout, "\n\nhello\n") {
+		t.Error("unexpected stdout tail")
 	}
 }

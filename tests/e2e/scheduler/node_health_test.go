@@ -1,10 +1,11 @@
-package node
+package scheduler
 
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"testing"
 	"time"
 )
@@ -12,9 +13,8 @@ import (
 // Test the simple case of a node that is alive,
 // then doesn't ping in time, and it marked dead
 func TestNodeDead(t *testing.T) {
-	setLogOutput(t)
-	conf := nodeTestConfig(DefaultConfig())
-	srv := NewFunnel(conf)
+	conf := nodeTestConfig(e2e.DefaultConfig())
+	srv := e2e.NewFunnel(conf)
 	srv.Scheduler = &scheduler.Scheduler{
 		DB:      srv.SDB,
 		Backend: nil,
@@ -49,9 +49,8 @@ func TestNodeDead(t *testing.T) {
 // Test what happens when a node never starts.
 // It should be marked as dead.
 func TestNodeInitFail(t *testing.T) {
-	setLogOutput(t)
-	conf := nodeTestConfig(DefaultConfig())
-	srv := NewFunnel(conf)
+	conf := nodeTestConfig(e2e.DefaultConfig())
+	srv := e2e.NewFunnel(conf)
 	srv.Scheduler = &scheduler.Scheduler{
 		DB:      srv.SDB,
 		Backend: nil,
@@ -83,9 +82,8 @@ func TestNodeInitFail(t *testing.T) {
 // Test that a dead node is deleted from the SDB after
 // a configurable duration.
 func TestNodeDeadTimeout(t *testing.T) {
-	setLogOutput(t)
-	conf := nodeTestConfig(DefaultConfig())
-	srv := NewFunnel(conf)
+	conf := nodeTestConfig(e2e.DefaultConfig())
+	srv := e2e.NewFunnel(conf)
 	srv.Scheduler = &scheduler.Scheduler{
 		DB:      srv.SDB,
 		Backend: nil,

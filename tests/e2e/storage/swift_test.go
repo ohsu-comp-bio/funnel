@@ -1,42 +1,20 @@
-package openstack
+package storage
 
 import (
 	"context"
-	"flag"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"io/ioutil"
-	"os"
 	"testing"
 )
 
-var fun *e2e.Funnel
-var confPath = flag.String("openstack-e2e-config", "", "OpenStack end-to-end test config file")
-var conf config.Config
-
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	if *confPath == "" {
-		logger.Debug("Skipping openstack e2e tests, no config")
-		os.Exit(0)
-	}
-
-	conf = e2e.DefaultConfig()
-	if err := config.ParseFile(*confPath, &conf); err != nil {
-		panic(err)
-	}
-
-	fun = e2e.NewFunnel(conf)
-	fun.StartServer()
-
-	os.Exit(m.Run())
-}
-
 func TestSwiftStorageTask(t *testing.T) {
+	e2e.SetLogOutput(log, t)
+	if !conf.Worker.Storage.Swift.Valid() {
+		t.Skipf("Skipping swift e2e tests...")
+	}
+
 	id := fun.Run(`
     --sh 'md5sum $in > $out'
     -i in=swift://buchanan-scratch/funnel
@@ -73,6 +51,11 @@ func TestSwiftStorageTask(t *testing.T) {
 }
 
 func TestSwiftDirStorageTask(t *testing.T) {
+	e2e.SetLogOutput(log, t)
+	if !conf.Worker.Storage.Swift.Valid() {
+		t.Skipf("Skipping swift e2e tests...")
+	}
+
 	id := fun.Run(`
     --sh 'mkdir -p $out/dir; md5sum $in > $out/dir/md5.txt'
     -i in=swift://buchanan-scratch/funnel

@@ -12,15 +12,14 @@ var fun *e2e.Funnel
 var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
 
 func TestMain(m *testing.M) {
-
-	flag.Parse()
-	if !*runTest {
+	conf := e2e.DefaultConfig()
+	if conf.Backend != "pbs" {
 		logger.Debug("Skipping PBS/Torque e2e tests...")
 		os.Exit(0)
 	}
 
-	fun = e2e.NewFunnel(e2e.DefaultConfig())
-	fun.StartServerInDocker("ohsucompbio/pbs-torque:latest", "pbs", []string{"--hostname", "docker", "--privileged"})
+	fun = e2e.NewFunnel(conf)
+	fun.StartServerInDocker("ohsucompbio/pbs-torque:latest", []string{"--hostname", "docker", "--privileged"})
 	defer fun.CleanupTestServerContainer()
 
 	m.Run()

@@ -375,12 +375,13 @@ func (g GSStorage) Valid() bool {
 
 // S3Storage describes the directories Funnel can read from and write to
 type S3Storage struct {
-	AWS AWSConfig
+	Disabled bool
+	AWS      AWSConfig
 }
 
 // Valid validates the LocalStorage configuration
 func (s S3Storage) Valid() bool {
-	return (s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")
+	return ((s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")) && !s.Disabled
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.

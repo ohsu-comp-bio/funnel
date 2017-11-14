@@ -3,7 +3,8 @@ $(error GOPATH is not set)
 endif
 
 VERSION = 0.4.0
-TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v kafka)
+TESTS=$(shell go list ./... | grep -v /vendor/)
+CONFIGDIR=$(shell pwd)/tests/e2e
 
 export SHELL=/bin/bash
 PATH := ${PATH}:${GOPATH}/bin
@@ -92,37 +93,47 @@ test-elasticsearch:
 	@docker rm -f funnel-es-test  > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:5.6.3 > /dev/null
 	@sleep 30
-	@go test ./tests/e2e/ -funnel-config es.config.yml
+	@go test ./tests/e2e/core/ -funnel-config $(CONFIGDIR)/elastic.config.yml
+	@go test ./tests/e2e/scheduler/ -funnel-config $(CONFIGDIR)/elastic.config.yml
 	@docker rm -f funnel-es-test  > /dev/null 2>&1 || echo
 
 test-mongodb:
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
 	@sleep 10
-	@go test ./tests/e2e/ -funnel-config mongo.config.yml
+	@go test ./tests/e2e/core/ -funnel-config $(CONFIGDIR)/mongo.config.yml
+	@go test ./tests/e2e/scheduler/ -funnel-config $(CONFIGDIR)/mongo.config.yml	
 	@docker rm -f funnel-mongodb-test  > /dev/null 2>&1 || echo 
-
-# Run backend tests
-test-backends:
-	@go test -timeout 120s ./tests/e2e/slurm -run-test
-	@go test -timeout 120s ./tests/e2e/gridengine -run-test
-	@go test -timeout 120s ./tests/e2e/htcondor -run-test
-	@go test -timeout 120s ./tests/e2e/pbs -run-test
-
-# Run s3 tests
-test-s3:
-	@go test ./tests/e2e/s3 -run-test
-
-# Tests meant to run in an OpenStack environment
-test-openstack:
-	@go test ./tests/e2e/openstack -openstack-e2e-config ${FUNNEL_OPENSTACK_TEST_CONFIG}
 
 test-dynamodb:
 	@docker rm -f funnel-dynaomdb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-dynaomdb-test -p 8000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
 	@sleep 10
-	@go test ./tests/e2e/ -funnel-config dynamo.config.yml
+	@go test ./tests/e2e/core/ -funnel-config $(CONFIGDIR)/dynamo.config.yml
 	@docker rm -f funnel-dynamodb-	test  > /dev/null 2>&1 || echo 
+
+test-kafka: start-kafka
+	@docker rm -f funnel-kafka > /dev/null || echo
+	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
+	@sleep 10
+	@go test ./tests/e2e/kafka/
+	@docker rm -f funnel-kafka > /dev/null || echo
+
+# Run backend tests
+test-backends:
+	@go test -timeout 120s ./tests/e2e/slurm -funnel-config $(CONFIGDIR)/slurm.config.yml
+	@go test -timeout 120s ./tests/e2e/gridengine -funnel-config $(CONFIGDIR)/gridengine.config.yml
+	@go test -timeout 120s ./tests/e2e/htcondor -funnel-config $(CONFIGDIR)/htcondor.config.yml
+	@go test -timeout 120s ./tests/e2e/pbs -funnel-config $(CONFIGDIR)/pbs.config.yml
+
+# Run s3 tests
+test-s3:
+	@go test ./tests/e2e/storage -funnel-config $(CONFIGDIR)/s3.config.yml
+
+# Tests meant to run in an OpenStack environment
+test-swift:
+	# @go test ./tests/e2e/storage -funnel-config $(CONFIGDIR)/swift.config.yml
+	@go test ./tests/e2e/storage -funnel-config ${FUNNEL_OPENSTACK_TEST_CONFIG}
 
 webdash-install:
 	@npm install --prefix ./webdash
@@ -231,14 +242,6 @@ docker: cross-compile
 	cp build/bin/funnel-linux-amd64 build/docker/funnel
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t funnel .
-
-start-kafka:
-	@docker rm -f funnel-kafka > /dev/null || echo
-	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
-
-test-kafka: start-kafka
-	@go test ./tests/e2e/kafka
-	@docker rm -f funnel-kafka > /dev/null || echo
 
 # Remove build/development files.
 clean:

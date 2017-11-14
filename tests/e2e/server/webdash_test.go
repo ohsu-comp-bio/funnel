@@ -1,6 +1,7 @@
-package e2e
+package server
 
 import (
+	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -8,7 +9,7 @@ import (
 )
 
 func TestWebdash(t *testing.T) {
-	setLogOutput(t)
+	e2e.SetLogOutput(log, t)
 	// Get the webdash health check endpoint
 	address := fun.Conf.Server.HTTPAddress()
 	client := http.Client{Timeout: 10 * time.Second}

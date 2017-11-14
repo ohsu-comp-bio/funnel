@@ -1,7 +1,6 @@
 package slurm
 
 import (
-	"flag"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"os"
@@ -9,17 +8,16 @@ import (
 )
 
 var fun *e2e.Funnel
-var runTest = flag.Bool("run-test", false, "run e2e tests with dockerized scheduler")
 
 func TestMain(m *testing.M) {
-	flag.Parse()
-	if !*runTest {
+	conf := e2e.DefaultConfig()
+	if conf.Backend != "slurm" {
 		logger.Debug("Skipping slurm e2e tests...")
 		os.Exit(0)
 	}
 
-	fun = e2e.NewFunnel(e2e.DefaultConfig())
-	fun.StartServerInDocker("ohsucompbio/slurm:latest", "slurm", []string{"--hostname", "ernie"})
+	fun = e2e.NewFunnel(conf)
+	fun.StartServerInDocker("ohsucompbio/slurm:latest", []string{"--hostname", "ernie"})
 	defer fun.CleanupTestServerContainer()
 
 	m.Run()

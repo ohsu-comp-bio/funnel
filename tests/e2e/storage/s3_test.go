@@ -1,39 +1,20 @@
-package s3
+package storage
 
 import (
 	"context"
-	"flag"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests/e2e"
 	"io/ioutil"
-	"os"
 	"testing"
 )
 
-var fun *e2e.Funnel
-var conf config.Config
-var runTest = flag.Bool("run-test", false, "run e2e test")
-
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	flag.Parse()
-	if !*runTest {
-		logger.Debug("Skipping s3 e2e tests...")
-		os.Exit(0)
+func TestS3StorageTask(t *testing.T) {
+	e2e.SetLogOutput(log, t)
+	if conf.Worker.Storage.S3.Valid() {
+		t.Skipf("Skipping s3 e2e tests...")
 	}
 
-	conf = e2e.DefaultConfig()
-	fun = e2e.NewFunnel(conf)
-	fun.StartServer()
-
-	os.Exit(m.Run())
-}
-
-func TestS3StorageTask(t *testing.T) {
 	task := &tes.Task{
 		Name: "s3 e2e",
 		Inputs: []*tes.Input{

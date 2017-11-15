@@ -17,7 +17,10 @@ may explicitly set the credentials in the worker config:
 Worker:
   Storage:
     S3:
-      Credentials:
+      Disabled: false
+      AWS:
+        # The maximum number of times that a request will be retried for failures.
+        MaxRetries: 10
         # AWS Access key ID
         Key: ""
         # AWS Secret Access Key

@@ -32,9 +32,9 @@ Server:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   # AWS region
-    #   Region: ""
-    #   Credentials:
+    #   AWS:
+    #     # AWS region
+    #     Region: ""
     #     # AWS Access key ID
     #     Key: ""
     #     # AWS Secret Access Key
@@ -243,11 +243,13 @@ Worker:
         - ./
 
     # S3:
-    #   Credentials:
-    #       # AWS Access key ID
-    #       Key: ""
-    #       # AWS Secret Access Key
-    #       Secret: ""
+    #   AWS:
+    #     # The maximum number of times that a request will be retried for failures.
+    #     MaxRetries: 10
+    #     # AWS Access key ID
+    #     Key: ""
+    #     # AWS Secret Access Key
+    #     Secret: ""
 
     # GS:
     #     # Path to account credentials file.
@@ -281,9 +283,9 @@ Worker:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   # AWS region
-    #   Region: ""
-    #   Credentials:
+    #   AWS:
+    #     # AWS region
+    #     Region: ""
     #     # AWS Access key ID
     #     Key: ""
     #     # AWS Secret Access Key
@@ -320,9 +322,9 @@ Worker:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   # AWS region
-    #   Region: ""
-    #   Credentials:
+    #   AWS:
+    #     # AWS region
+    #     Region: ""
     #     # AWS Access key ID
     #     Key: ""
     #     # AWS Secret Access Key

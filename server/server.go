@@ -90,10 +90,8 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
-	mar := &runtime.JSONPb{
-		Indent: "   ",
-	}
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", mar))
+	mar := runtime.JSONPb(tes.Marshaler)
+	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
 	runtime.OtherErrorHandler = s.handleError
 
 	dashmux := http.NewServeMux()

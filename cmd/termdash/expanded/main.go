@@ -5,7 +5,6 @@ package expanded
 
 import (
 	ui "github.com/gizak/termui"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"strings"
 )
@@ -13,11 +12,6 @@ import (
 var (
 	sizeError = termSizeError()
 	colWidth  = [2]int{65, 0} // left,right column width
-	marshaler = &jsonpb.Marshaler{
-		EnumsAsInts:  false,
-		EmitDefaults: false,
-		Indent:       "  ",
-	}
 )
 
 type Expanded struct {
@@ -33,7 +27,7 @@ type Expanded struct {
 }
 
 func NewExpanded(t *tes.Task) *Expanded {
-	ts, _ := marshaler.MarshalToString(t)
+	ts, _ := tes.MarshalToString(t)
 	ts = strings.Replace(ts, `\n`, "\n", -1)
 	return &Expanded{
 		TaskJSON: NewJSON(ts),
@@ -48,7 +42,7 @@ func NewExpanded(t *tes.Task) *Expanded {
 }
 
 func (e *Expanded) Update(t *tes.Task) {
-	ts, _ := marshaler.MarshalToString(t)
+	ts, _ := tes.MarshalToString(t)
 	ts = strings.Replace(ts, `\n`, "\n", -1)
 	e.TaskJSON.Set(ts)
 	// e.TaskInfo.Set(t)

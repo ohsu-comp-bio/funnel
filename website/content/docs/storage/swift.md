@@ -23,9 +23,10 @@ Worker:
         RegionName:
 ```
 
-The config currently only supports OpenStack v2 auth, which unfortunately requires the password to be saved in the config file. Make sure to protect this file appropriately. See [issue #336](https://github.com/ohsu-comp-bio/funnel/issues/336).
+The config currently only supports OpenStack v2 auth. See [issue #336](https://github.com/ohsu-comp-bio/funnel/issues/336).
 
-In the future, Swift will be enabled by default, with automatic detection of credentials from the environment. See [issue #253](https://github.com/ohsu-comp-bio/funnel/issues/253).
+As always, if you set the password in this file, make sure you protect it appropriately. Alternatively, the Swift client
+can pull credentials from these environment variables: https://godoc.org/github.com/ncw/swift#Connection.ApplyEnvironment  
 
 Swift currently fails while uploading large objects. See [issue #257](https://github.com/ohsu-comp-bio/funnel/issues/257).
 

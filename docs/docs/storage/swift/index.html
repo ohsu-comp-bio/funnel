@@ -299,9 +299,10 @@ in the worker config:</p>
         RegionName:
 </code></pre>
 
-<p>The config currently only supports OpenStack v2 auth, which unfortunately requires the password to be saved in the config file. Make sure to protect this file appropriately. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/336">issue #336</a>.</p>
+<p>The config currently only supports OpenStack v2 auth. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/336">issue #336</a>.</p>
 
-<p>In the future, Swift will be enabled by default, with automatic detection of credentials from the environment. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/253">issue #253</a>.</p>
+<p>As always, if you set the password in this file, make sure you protect it appropriately. Alternatively, the Swift client
+can pull credentials from these environment variables: <a href="https://godoc.org/github.com/ncw/swift#Connection.ApplyEnvironment">https://godoc.org/github.com/ncw/swift#Connection.ApplyEnvironment</a></p>
 
 <p>Swift currently fails while uploading large objects. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/257">issue #257</a>.</p>
 

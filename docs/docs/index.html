@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.21-DEV" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>Overview &middot; Funnel</title>
+  
+
+  
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/poole.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/darcula.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/syntax.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/theme.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/funnel.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://ohsu-comp-bio.github.io/funnel/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="https://ohsu-comp-bio.github.io/funnel/favicon.png">
+
+  <script src="https://ohsu-comp-bio.github.io/funnel/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+  <div class="global-header">
+    <div class="global-header-container">
+      <div class="global-header-home">
+        <a href="https://ohsu-comp-bio.github.io/funnel/"><h1>Funnel</h1></a>
+      </div>
+      <ul class="global-header-nav">
+          <li><a href="https://ohsu-comp-bio.github.io/funnel/download/">Download</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
+          <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
+          <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+        </ul>
+      <div class="global-header-ohsucb">
+        <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
+      </div>
+    </div>
+  </div>
+
+
+<div class="content section group">
+
+  <div class="sidebar col span_3_of_12">
+    <ul class="sidebar-nav">
+      
+      
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/download/"
+             class="sidebar-nav-item "
+          >Download</a></li>
+          
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/docs/"
+             class="sidebar-nav-item  active"
+          >Overview</a></li>
+          
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/docs/tasks/"
+             class="sidebar-nav-item "
+          >Tasks</a></li>
+          
+        
+        <li>
+          
+          <span class="intermediate">Storage</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/local/"
+                   class="sidebar-nav-item "
+                >Local</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
+                   class="sidebar-nav-item "
+                >AWS S3</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
+                   class="sidebar-nav-item "
+                >Google Storage</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
+                   class="sidebar-nav-item "
+                >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Compute</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/"
+                   class="sidebar-nav-item "
+                >Deploying a cluster</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/"
+                   class="sidebar-nav-item "
+                >AWS Batch</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/"
+                   class="sidebar-nav-item "
+                >Grid Engine</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/"
+                   class="sidebar-nav-item "
+                >HTCondor</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
+                   class="sidebar-nav-item "
+                >PBS/Torque</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/slurm/"
+                   class="sidebar-nav-item "
+                >Slurm</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Databases</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/"
+                   class="sidebar-nav-item "
+                >Embedded</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
+                   class="sidebar-nav-item "
+                >DynamoDB</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/"
+                   class="sidebar-nav-item "
+                >Elasticsearch</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
+                   class="sidebar-nav-item "
+                >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Security</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/security/basic/"
+                   class="sidebar-nav-item "
+                >Basic Auth</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Development</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/development/developers/"
+                   class="sidebar-nav-item "
+                >Funnel Developers</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://godoc.org/github.com/ohsu-comp-bio/funnel"
+                   class="sidebar-nav-item "
+                >Reference</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
+            </ul>
+          </li>
+          
+          
+        
+      
+    </ul>
+  </div>
+
+  <div class="main col span_8_of_12">
+    
+
+<h1 id="overview">Overview</h1>
+
+<p>Funnel makes distributed, batch processing easier by providing a simple task API and a set of
+components which can easily adapted to a vareity of platforms.</p>
+
+<h3 id="task">Task</h3>
+
+<p>A task defines a unit of work: metadata, input files to download, a sequence of Docker containers + commands to run,
+output files to upload, state, and logs. The API allows you to create, get, list, and cancel tasks.</p>
+
+<p>Tasks are accessed via the <code>funnel task</code> command. There&rsquo;s an HTTP client in the <a href="https://github.com/ohsu-comp-bio/funnel/tree/master/client">client package</a>,
+and a set of utilities and a gRPC client in the <a href="https://github.com/ohsu-comp-bio/funnel/tree/master/proto/tes">proto/tes package</a>.</p>
+
+<p>There&rsquo;s a lot more you can do with the task API. See the <a href="https://ohsu-comp-bio.github.io/funnel/docs/tasks/">tasks docs</a> for more.</p>
+
+<h3 id="server">Server</h3>
+
+<p>The server serves the task API, web dashboard, and optionally runs a task scheduler.
+It serves both HTTP/JSON and gRPC/Protobuf.</p>
+
+<p>The server is accessible via the <code>funnel server</code> command and the <a href="https://github.com/ohsu-comp-bio/funnel/tree/master/server">server package</a>.</p>
+
+<h3 id="storage">Storage</h3>
+
+<p>Storage provides access to file systems such as S3, Google Storage, and local filesystems.
+Tasks define locations where files should be downloaded from and uploaded to. Workers handle
+the downloading/uploading.</p>
+
+<p>See the <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/">storage docs</a> for more information on configuring storage backends.
+The storage clients are available in the <a href="https://github.com/ohsu-comp-bio/funnel/tree/master/storage">storage package</a>.</p>
+
+<h3 id="worker">Worker</h3>
+
+<p>A worker is reponsible for executing a task. There is one worker per task. A worker:</p>
+
+<ul>
+<li>downloads the inputs</li>
+<li>runs the sequence of executors (usually via Docker)</li>
+<li>uploads the outputs</li>
+</ul>
+
+<p>Along the way, the worker writes logs to event streams and databases:</p>
+
+<ul>
+<li>start/end time</li>
+<li>state changes (initializing, running, error, etc)</li>
+<li>executor start/end times</li>
+<li>executor exit codes</li>
+<li>executor stdout/err logs</li>
+<li>a list of output files uploaded, with sizes</li>
+<li>system logs, such as host name, docker command, system error messages, etc.</li>
+</ul>
+
+<p>The worker is accessible via the <code>funnel worker</code> command and the <a href="https://github.com/ohsu-comp-bio/funnel/tree/master/worker">worker package</a>.</p>
+
+<h3 id="node-scheduler">Node Scheduler</h3>
+
+<p>A node is a service that stays online and manages a pool of task workers. A Funnel cluster
+runs a node on each VM. Nodes communicate with a Funnel scheduler, which assigns tasks
+to nodes based on available resources. Nodes handle starting workers when for each assigned
+task.</p>
+
+<p>Nodes aren&rsquo;t always required. In some cases it often makes sense to rely on an existing,
+external system for scheduling tasks and managing cluster resources, such as AWS Batch
+or HPC systems like HTCondor, Slurm, Grid Engine, etc. Funnel provides integration with
+these services that doesn&rsquo;t include nodes or scheduling by Funnel.</p>
+
+<p>See <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/">Deploying a cluster</a> for more information about running a cluster of nodes.</p>
+
+<p>The node is accessible via the <code>funnel node</code> command and the <a href="https://github.com/ohsu-comp-bio/funnel/tree/master/compute/scheduler">scheduler package</a>.</p>
+
+  </div>
+
+</div>
+</body>
+</html>

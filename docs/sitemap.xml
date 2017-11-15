@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/security/basic/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/development/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/download/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/events/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/development/developers/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/local/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/security/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/slurm/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/tags/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/tasks/</loc>
+  </url>
+  
+</urlset>

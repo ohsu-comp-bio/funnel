@@ -2,7 +2,7 @@ baseURL: https://ohsu-comp-bio.github.io/funnel/
 canonifyURLs: true
 languageCode: en-us
 title: Funnel
-publishDir: docs
+publishDir: ../docs
 menu:
   main:
     - name: Reference

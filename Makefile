@@ -207,17 +207,11 @@ full: proto install prune_deps add_deps tidy lint test website webdash
 
 # Build the website
 website:
-	@find ./config -name '*.txt' -o -name '*.yaml' | xargs -I % cp % ./website/static/funnel-config-examples/
 	@go get github.com/spf13/hugo
 	hugo --source ./website
-	#
-	# NOTE! release the website requires manual steps.
-	# TODO there's more here
-	# https://gohugo.io/tutorials/github-pages-blog/#deployment-via-gh-pages-branch
 
 # Serve the Funnel website on localhost:1313
 website-dev:
-	@find ./config -name '*.txt' -o -name '*.yaml' -exec cp {} website/static/funnel-config-examples/ \;
 	@go get github.com/spf13/hugo
 	hugo --source ./website -w server
 

@@ -1,0 +1,245 @@
+.global-header {
+  background-color: #23241f;
+  padding: .3rem .5rem;
+}
+
+.global-header-container {
+  display: flex;
+  align-items: center;
+}
+
+.global-header-container h1,
+.global-header-container h2 {
+  margin: 0;
+  padding: 0;
+  color: white;
+}
+.global-header-container h1 {
+  font-size: 1.2rem;
+}
+.global-header-container h2 {
+  font-size: .9rem;
+}
+
+.global-header-container,
+.homepage {
+  max-width: 50rem;
+  margin: 0 auto;
+}
+
+.homepage-intro .col {
+  padding: 0 1rem;
+}
+.homepage-intro li {
+  font-size: 0.8rem;
+}
+
+.global-header-nav {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  margin-left: 3rem;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media only screen and (max-width: 600px) {
+  .global-header-container,
+	.global-header-nav { 
+    flex-direction: column;
+	}
+  .global-header-home,
+  .global-header-ohsucb {
+    margin: .5rem 0;
+  }
+  .global-header-nav {
+    margin: 0;
+  }
+  .global-header-nav li {
+    margin: .5rem 0;
+  }
+
+  .homepage-demo .col h1,
+  .homepage-demo .col p {
+    margin-left: .3rem;
+  }
+
+  .content {
+    padding: 0 .7rem;
+  }
+
+  .sidebar {
+    padding: 1rem;
+    padding-bottom: 0;
+  }
+
+  .sidebar-nav li {
+    margin: .3rem 0;
+  }
+}
+
+.sidebar-nav {
+  font-size: .9rem;
+}
+.sidebar-nav span.intermediate {
+  color: #23241f;
+}
+
+.global-header-nav li {
+  display: inline-block;
+  padding: 0 0.5rem;
+  font-size: .9rem;
+}
+
+.global-header-nav li a {
+  color: white;
+}
+
+.global-header a:hover,
+.global-header a:hover h1,
+.global-header a:hover h2,
+.global-header-nav li a:hover {
+  color: #9ed9ff;
+  text-decoration: none;
+}
+
+.lead {
+  font-size: .8rem;
+}
+
+.lead a {
+  color: #b8d4e0;
+}
+
+.homepage h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.homepage-lead {
+  background-color: #f1f1f1;
+  padding: 2rem 2rem 1rem 2rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.homepage-lead-container {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.homepage-lead h1 {
+  margin: 0;
+}
+
+.homepage-footer {
+  height: 100px;
+}
+
+.homepage-notice {
+  background-color: #fffcbf;
+  padding: 1rem 3rem;
+  border-radius: 10px;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.homepage-notice h4 {
+  font-size: 1rem;
+}
+
+.homepage-notice h3,
+.homepage-notice p {
+  margin: 0;
+}
+
+.homepage-lead .download-button,
+.homepage-lead .docs-button {
+  padding: 10px 30px;
+  border-radius: 5px;
+  border: 0;
+  color: white;
+  font-size: .7rem;
+  display: inline-block;
+  margin: 0.1rem 0.2rem;
+}
+.docs-button {
+  border-radius: 5px;
+  border: 0;
+  color: white;
+  font-size: .7rem;
+  background-color: #4ca0ea;
+  padding: 10px 30px;
+}
+
+.homepage-lead .download-button {
+  background-color: #29b429;
+}
+
+.homepage .row {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.homepage-demo {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+
+.homepage-demo h1.demo-header {
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.homepage-demo h1 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.homepage-demo p {
+  margin: .7rem 0;
+  padding-right: .7rem;
+  font-size: .8rem;
+}
+
+.homepage h3 {
+  font-size: 1rem;
+}
+
+.homepage-more {
+  text-align: center;
+}
+
+.homepage p {
+  font-size: .8rem;
+}
+
+pre {
+  padding: 0;
+}
+
+.homepage-demo .section {
+  margin-bottom: 2rem;
+}
+
+.homepage-demo pre {
+  margin: 0;
+}
+.homepage-demo code {
+  width: 100%;
+  display: block;
+  font-size: .8rem;
+  border-radius: 0;
+}
+
+.optional {
+  font-size: 1rem;
+  color: #aaa;
+  font-style: normal;
+}

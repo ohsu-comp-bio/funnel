@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.21-DEV" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>Funnel Developers &middot; Funnel</title>
+  
+
+  
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/poole.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/darcula.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/syntax.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/theme.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/funnel.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://ohsu-comp-bio.github.io/funnel/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="https://ohsu-comp-bio.github.io/funnel/favicon.png">
+
+  <script src="https://ohsu-comp-bio.github.io/funnel/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+  <div class="global-header">
+    <div class="global-header-container">
+      <div class="global-header-home">
+        <a href="https://ohsu-comp-bio.github.io/funnel/"><h1>Funnel</h1></a>
+      </div>
+      <ul class="global-header-nav">
+          <li><a href="https://ohsu-comp-bio.github.io/funnel/download/">Download</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
+          <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
+          <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+        </ul>
+      <div class="global-header-ohsucb">
+        <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
+      </div>
+    </div>
+  </div>
+
+
+<div class="content section group">
+
+  <div class="sidebar col span_3_of_12">
+    <ul class="sidebar-nav">
+      
+      
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/download/"
+             class="sidebar-nav-item "
+          >Download</a></li>
+          
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/docs/"
+             class="sidebar-nav-item "
+          >Overview</a></li>
+          
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/docs/tasks/"
+             class="sidebar-nav-item "
+          >Tasks</a></li>
+          
+        
+        <li>
+          
+          <span class="intermediate">Storage</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/local/"
+                   class="sidebar-nav-item "
+                >Local</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
+                   class="sidebar-nav-item "
+                >AWS S3</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
+                   class="sidebar-nav-item "
+                >Google Storage</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
+                   class="sidebar-nav-item "
+                >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Compute</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/"
+                   class="sidebar-nav-item "
+                >Deploying a cluster</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/"
+                   class="sidebar-nav-item "
+                >AWS Batch</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/"
+                   class="sidebar-nav-item "
+                >Grid Engine</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/"
+                   class="sidebar-nav-item "
+                >HTCondor</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
+                   class="sidebar-nav-item "
+                >PBS/Torque</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/slurm/"
+                   class="sidebar-nav-item "
+                >Slurm</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Databases</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/"
+                   class="sidebar-nav-item "
+                >Embedded</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
+                   class="sidebar-nav-item "
+                >DynamoDB</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/"
+                   class="sidebar-nav-item "
+                >Elasticsearch</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
+                   class="sidebar-nav-item "
+                >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Security</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/security/basic/"
+                   class="sidebar-nav-item "
+                >Basic Auth</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Development</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/development/developers/"
+                   class="sidebar-nav-item  active"
+                >Funnel Developers</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://godoc.org/github.com/ohsu-comp-bio/funnel"
+                   class="sidebar-nav-item "
+                >Reference</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
+            </ul>
+          </li>
+          
+          
+        
+      
+    </ul>
+  </div>
+
+  <div class="main col span_8_of_12">
+    
+
+<h1 id="developer-tools">Developer Tools</h1>
+
+<p>Funnel uses:</p>
+
+<ul>
+<li><a href="https://golang.org">Go</a> for the majority of the code.</li>
+<li><a href="https://github.com/ga4gh/task-execution-schemas">Task Execution Schemas</a> for task APIs.</li>
+<li><a href="https://github.com/google/protobuf">Protobuf</a> + <a href="http://www.grpc.io/">gRPC</a> for RPC communication.</li>
+<li><a href="https://github.com/grpc-ecosystem/grpc-gateway">gRPC Gateway</a> for HTTP communication.</li>
+<li><a href="https://angularjs.org/">Angular</a> and <a href="http://sass-lang.com/">SASS</a> for the web dashboard.</li>
+<li><a href="https://www.gnu.org/software/make/">GNU Make</a> for development tasks.</li>
+<li><a href="https://docker.io">Docker</a> for executing task containers.</li>
+<li><a href="https://github.com/dpw/vendetta">vendetta</a> for Go dependency vendoring.</li>
+<li>and more.</li>
+</ul>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<p>These are the tools you&rsquo;ll need to install:</p>
+
+<ul>
+<li><a href="https://golang.org">Go 1.8</a></li>
+<li><a href="https://www.gnu.org/software/make/">Make</a></li>
+<li><a href="https://docker.io">Docker</a> (tested with v1.12, v1.13)</li>
+<li><a href="https://github.com/google/protobuf">Protocol Buffers</a> if making changes to the schema.</li>
+<li><a href="https://nodejs.org">NodeJS</a> and <a href="https://www.npmjs.com/">NPM</a> for web dashboard development.</li>
+</ul>
+
+<h2 id="build">Build</h2>
+
+<p>Most development tasks are run through <code>make</code>.</p>
+
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>make</code></td>
+<td>Build the code.</td>
+</tr>
+
+<tr>
+<td><code>make test</code></td>
+<td>Run both unit and end-to-end tests.</td>
+</tr>
+
+<tr>
+<td><code>make test-short</code></td>
+<td>Run only fast-running tests.</td>
+</tr>
+
+<tr>
+<td><code>make test-verbose</code></td>
+<td>Run tests in verbose mode.</td>
+</tr>
+
+<tr>
+<td><code>make test-backends</code></td>
+<td>Run end-to-end tests against dockerized HPC scheduler backends.</td>
+</tr>
+
+<tr>
+<td><code>make proto</code></td>
+<td>Regenerate code from protobuf schemas (requires protoc)</td>
+</tr>
+
+<tr>
+<td><code>make tidy</code></td>
+<td>Reformat code</td>
+</tr>
+
+<tr>
+<td><code>make lint</code></td>
+<td>Run code style and other checks.</td>
+</tr>
+
+<tr>
+<td><code>make full</code></td>
+<td>Run all steps needed to check the code before making a pull request.</td>
+</tr>
+
+<tr>
+<td><code>make clean</code></td>
+<td>Remove build/development files.</td>
+</tr>
+
+<tr>
+<td><code>make add_deps</code></td>
+<td>Add new vendored dependencies.</td>
+</tr>
+
+<tr>
+<td><code>make prune_deps</code></td>
+<td>Prune unused vendored dependencies.</td>
+</tr>
+
+<tr>
+<td><code>make serve-doc</code></td>
+<td>Serve API reference (godoc) docs on <code>localhost:6060</code></td>
+</tr>
+
+<tr>
+<td><code>make web</code></td>
+<td>Build the web dashboard Javascript/CSS bundle.</td>
+</tr>
+
+<tr>
+<td><code>make cross-compile</code></td>
+<td>Build binaries for all OS/Architectures.</td>
+</tr>
+
+<tr>
+<td><code>make gce-installer</code></td>
+<td>Build the GCE image installer.</td>
+</tr>
+
+<tr>
+<td><code>make gen-mocks</code></td>
+<td>Generate mocks for testing.</td>
+</tr>
+
+<tr>
+<td><code>make website-dev</code></td>
+<td>Serve the Funnel website on localhost:1313</td>
+</tr>
+
+<tr>
+<td><code>make upload-release</code></td>
+<td>Upload release binaries to GitHub.</td>
+</tr>
+
+<tr>
+<td><code>make bundle-examples</code></td>
+<td>Bundle example task messages into Go code.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="source">Source</h2>
+
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>cmd</code></td>
+<td>Funnel command line interface.</td>
+</tr>
+
+<tr>
+<td><code>config</code></td>
+<td>Configuration parsing, loading, etc.</td>
+</tr>
+
+<tr>
+<td><code>events</code></td>
+<td>Internal, Funnel-specific protobuf/gRPC/Go files for task state and log updates.</td>
+</tr>
+
+<tr>
+<td><code>proto/tes</code></td>
+<td>Generated GA4GH protobuf/gRPC files from <a href="https://github.com/ga4gh/task-execution-schemas">task-execution-schemas</a>.</td>
+</tr>
+
+<tr>
+<td><code>proto/scheduler</code></td>
+<td>Internal, Funnel-specific scheduler protobuf/gRPC files.</td>
+</tr>
+
+<tr>
+<td><code>logger</code></td>
+<td>Logging.</td>
+</tr>
+
+<tr>
+<td><code>compute</code></td>
+<td>Compute backends.</td>
+</tr>
+
+<tr>
+<td><code>compute/scheduler</code></td>
+<td>Basic scheduling/scaling for compute backends.</td>
+</tr>
+
+<tr>
+<td><code>server</code></td>
+<td>Database and server implementing the <a href="https://github.com/ga4gh/task-execution-schemas">TES API</a> and Scheduler RPC.</td>
+</tr>
+
+<tr>
+<td><code>storage</code></td>
+<td>Filesystem support, e.g. local, Google Cloud Storage, S3, etc.</td>
+</tr>
+
+<tr>
+<td><code>worker</code></td>
+<td>Worker process: task runner, docker, file mapper, etc.</td>
+</tr>
+
+<tr>
+<td><code>webdash</code></td>
+<td>Javascript, CSS, HTML for web dashboard.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="go-tests">Go Tests</h2>
+
+<p>Run all tests: <code>make go-test</code><br />
+Run the worker tests: <code>go test ./worker/...</code><br />
+Run the worker tests with &ldquo;Cancel&rdquo; in the name: <code>go test ./worker -run Cancel</code></p>
+
+<p>You get the idea. See the <code>go test</code> docs for more.</p>
+
+<h2 id="mocking">Mocking</h2>
+
+<p>The <a href="https://github.com/stretchr/testify">testify</a> and <a href="https://github.com/vektra/mockery">mockery</a> tools are used to generate and use
+mock interfaces in test code, for example, to mock the Google Cloud APIs.</p>
+
+<h2 id="vendoring">Vendoring</h2>
+
+<p>Go dependencies are vendored under /vendor.<br />
+Don&rsquo;t manually add new submodules, use <code>make add_deps</code>.</p>
+
+<h2 id="submodules">Submodules</h2>
+
+<p>Funnel has git submodules. The Makefile usually handles this for you, but if needed,
+<code>git submodule update --init --recursive</code> will get all the submodules.</p>
+
+<h2 id="release-process">Release Process</h2>
+
+<p>This list is a work in progress:</p>
+
+<ul>
+<li>edit Makefile to update version</li>
+<li>set up GitHub API auth using a token (see Makefile)</li>
+<li>run <code>make upload-release</code></li>
+<li>edit website/content/install.md to replace download links</li>
+<li>edit website/layouts/index.html to replace the download button text</li>
+<li>release the website</li>
+</ul>
+
+<p>Does that seem too manual and error-prone to you? You&rsquo;re right! See: <a href="https://github.com/ohsu-comp-bio/funnel/issues/186">https://github.com/ohsu-comp-bio/funnel/issues/186</a></p>
+
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.21-DEV" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>Tasks &middot; Funnel</title>
+  
+
+  
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/poole.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/darcula.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/syntax.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/theme.css">
+  <link rel="stylesheet" href="https://ohsu-comp-bio.github.io/funnel/css/funnel.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://ohsu-comp-bio.github.io/funnel/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="https://ohsu-comp-bio.github.io/funnel/favicon.png">
+
+  <script src="https://ohsu-comp-bio.github.io/funnel/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+  <div class="global-header">
+    <div class="global-header-container">
+      <div class="global-header-home">
+        <a href="https://ohsu-comp-bio.github.io/funnel/"><h1>Funnel</h1></a>
+      </div>
+      <ul class="global-header-nav">
+          <li><a href="https://ohsu-comp-bio.github.io/funnel/download/">Download</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
+          <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
+          <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+        </ul>
+      <div class="global-header-ohsucb">
+        <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
+      </div>
+    </div>
+  </div>
+
+
+<div class="content section group">
+
+  <div class="sidebar col span_3_of_12">
+    <ul class="sidebar-nav">
+      
+      
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/download/"
+             class="sidebar-nav-item "
+          >Download</a></li>
+          
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/docs/"
+             class="sidebar-nav-item "
+          >Overview</a></li>
+          
+        
+        <li>
+          
+          <a href="https://ohsu-comp-bio.github.io/funnel/docs/tasks/"
+             class="sidebar-nav-item  active"
+          >Tasks</a></li>
+          
+        
+        <li>
+          
+          <span class="intermediate">Storage</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/local/"
+                   class="sidebar-nav-item "
+                >Local</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
+                   class="sidebar-nav-item "
+                >AWS S3</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
+                   class="sidebar-nav-item "
+                >Google Storage</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
+                   class="sidebar-nav-item "
+                >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Compute</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/"
+                   class="sidebar-nav-item "
+                >Deploying a cluster</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/"
+                   class="sidebar-nav-item "
+                >AWS Batch</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/"
+                   class="sidebar-nav-item "
+                >Grid Engine</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/"
+                   class="sidebar-nav-item "
+                >HTCondor</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
+                   class="sidebar-nav-item "
+                >PBS/Torque</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/slurm/"
+                   class="sidebar-nav-item "
+                >Slurm</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Databases</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/"
+                   class="sidebar-nav-item "
+                >Embedded</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
+                   class="sidebar-nav-item "
+                >DynamoDB</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/"
+                   class="sidebar-nav-item "
+                >Elasticsearch</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
+                   class="sidebar-nav-item "
+                >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Security</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/security/basic/"
+                   class="sidebar-nav-item "
+                >Basic Auth</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Development</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/development/developers/"
+                   class="sidebar-nav-item "
+                >Funnel Developers</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://godoc.org/github.com/ohsu-comp-bio/funnel"
+                   class="sidebar-nav-item "
+                >Reference</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
+            </ul>
+          </li>
+          
+          
+        
+      
+    </ul>
+  </div>
+
+  <div class="main col span_8_of_12">
+    
+
+<h1 id="tasks">Tasks</h1>
+
+<p>A task defines a unit of work:</p>
+
+<ul>
+<li>metadata</li>
+<li>input files to download</li>
+<li>a sequence of Docker containers + commands to run,</li>
+<li>output files to upload</li>
+<li>state</li>
+<li>logs</li>
+</ul>
+
+<p>The example task below downloads a file named <code>hello.txt</code> from S3 and calls <code>cat hello.txt</code> using the <a href="https://hub.docker.com/_/alpine/">alpine</a> container.</p>
+
+<pre><code>{
+  &quot;name&quot;: &quot;Hello world&quot;,
+  &quot;inputs&quot;: [{
+    # URL to download file from.
+    &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
+    # Path to download file to.
+    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+  }],
+  &quot;outputs&quot;: [{
+    # URL to upload file to.
+    &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
+    # Local path to upload file from.
+    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+  }],
+  &quot;executors&quot;: [{
+      # Container image name.
+      &quot;image&quot;: &quot;alpine&quot;,
+      # Command to run (argv).
+      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;]
+  }]
+}
+</code></pre>
+
+<p>Tasks have multiple &ldquo;executors&rdquo;; containers and commands run in a sequence.
+Funnel runs executors via Docker.</p>
+
+<p>Tasks also have state and logs:</p>
+
+<pre><code class="language-JSON">{
+  &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
+  &quot;state&quot;: &quot;COMPLETE&quot;,
+  &quot;name&quot;: &quot;Hello world&quot;,
+  &quot;inputs&quot;: [
+    {
+      &quot;url&quot;: &quot;gs://funnel-bucket/hello.txt&quot;,
+      &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+    }
+  ],
+  &quot;executors&quot;: [
+    {
+      &quot;image&quot;: &quot;alpine&quot;,
+      &quot;command&quot;: [
+        &quot;cat&quot;,
+        &quot;/inputs/hello.txt&quot;
+      ]
+    }
+  ],
+  &quot;logs&quot;: [
+    {
+      &quot;logs&quot;: [
+        {
+          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
+          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
+          &quot;stdout&quot;: &quot;Hello, Funnel!\n&quot;
+        }
+      ],
+      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
+      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+    }
+  ],
+  &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+}
+</code></pre>
+
+<p>There are logs for each task attempt and each executor. Notice that the stdout is
+conveniently captured by <code>logs[0].logs[0].stdout</code>.</p>
+
+<h3 id="task-api">Task API</h3>
+
+<p>The API lets you create, get, list, and cancel tasks.</p>
+
+<h3 id="create">Create</h3>
+
+<pre><code>POST /v1/tasks
+{
+  &quot;name&quot;: &quot;Hello world&quot;,
+  &quot;inputs&quot;: [{
+    &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
+    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+  }],
+  &quot;executors&quot;: [{
+      &quot;image&quot;: &quot;alpine&quot;,
+      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;]
+  }]
+}
+
+
+# The response is a task ID:
+b85khc2rl6qkqbhg8vig
+</code></pre>
+
+<h3 id="get">Get</h3>
+
+<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig
+
+{&quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;, &quot;state&quot;: &quot;COMPLETE&quot;}
+</code></pre>
+
+<p>By default, the minimal task view is returned which describes only the ID and state.
+In order to get the original task with some basic logs, use the &ldquo;BASIC&rdquo; task view:</p>
+
+<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
+{
+  &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
+  &quot;state&quot;: &quot;COMPLETE&quot;,
+  &quot;name&quot;: &quot;Hello world&quot;,
+  &quot;inputs&quot;: [
+    {
+      &quot;url&quot;: &quot;gs://funnel-bucket/hello.txt&quot;,
+      &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+    }
+  ],
+  &quot;executors&quot;: [
+    {
+      &quot;image&quot;: &quot;alpine&quot;,
+      &quot;command&quot;: [
+        &quot;cat&quot;,
+        &quot;/inputs/hello.txt&quot;
+      ]
+    }
+  ],
+  &quot;logs&quot;: [
+    {
+      &quot;logs&quot;: [
+        {
+          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
+          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
+        }
+      ],
+      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
+      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+    }
+  ],
+  &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+}
+</code></pre>
+
+<p>The &ldquo;BASIC&rdquo; doesn&rsquo;t include some fields such as stdout/err logs, because these fields may be potentially large.
+In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
+
+<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
+{
+  &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
+  &quot;state&quot;: &quot;COMPLETE&quot;,
+  &quot;name&quot;: &quot;Hello world&quot;,
+  &quot;inputs&quot;: [
+    {
+      &quot;url&quot;: &quot;gs://funnel-bucket/hello.txt&quot;,
+      &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+    }
+  ],
+  &quot;executors&quot;: [
+    {
+      &quot;image&quot;: &quot;alpine&quot;,
+      &quot;command&quot;: [
+        &quot;cat&quot;,
+        &quot;/inputs/hello.txt&quot;
+      ]
+    }
+  ],
+  &quot;logs&quot;: [
+    {
+      &quot;logs&quot;: [
+        {
+          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
+          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
+          &quot;stdout&quot;: &quot;Hello, Funnel!\n&quot;
+        }
+      ],
+      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
+      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+    }
+  ],
+  &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+}
+</code></pre>
+
+<h3 id="list">List</h3>
+
+<pre><code>GET /v1/tasks
+{
+  &quot;tasks&quot;: [
+    {
+      &quot;id&quot;: &quot;b85l8tirl6qkqbhg8vj0&quot;,
+      &quot;state&quot;: &quot;COMPLETE&quot;
+    },
+    {
+      &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
+      &quot;state&quot;: &quot;COMPLETE&quot;
+    },
+    {
+      &quot;id&quot;: &quot;b85kgt2rl6qkpuptua70&quot;,
+      &quot;state&quot;: &quot;SYSTEM_ERROR&quot;
+    },
+    {
+      &quot;id&quot;: &quot;b857gnirl6qjfou61fh0&quot;,
+      &quot;state&quot;: &quot;SYSTEM_ERROR&quot;
+    }
+  ]
+}
+</code></pre>
+
+<p>List has the same task views as Get: MINIMAL, BASIC, and FULL.</p>
+
+<p>The task list is paginated:</p>
+
+<pre><code>GET /v1/tasks?page_token=1h123h12j2h3k
+{
+  &quot;next_page_token&quot;: &quot;1n3n1j23k12n3k123&quot;,
+  &quot;tasks&quot;: [
+    {
+      &quot;id&quot;: &quot;b85l8tirl6qkqbhg8vj0&quot;,
+      &quot;state&quot;: &quot;COMPLETE&quot;
+    },
+    # ... more tasks here ...
+  ]
+}
+</code></pre>
+
+<h3 id="cancel">Cancel</h3>
+
+<p>Tasks cannot be modified by the user after creation, with one exception – they can be canceled.</p>
+
+<pre><code>POST /v1/tasks/b85l8tirl6qkqbhg8vj0:cancel
+</code></pre>
+
+<h3 id="full-task-spec">Full task spec</h3>
+
+<p>Here&rsquo;s a more detailed description of a task.<br />
+For a full, in-depth spec, read the TES standard&rsquo;s <a href="https://github.com/ga4gh/task-execution-schemas/blob/master/task_execution.proto">task_execution.proto</a>.</p>
+
+<pre><code>{
+    # The task's ID. Set by the server.
+    # Output only.
+    &quot;id&quot;: &quot;1234567&quot;,
+
+    # The task's state. Possible states:
+    #   QUEUED
+    #   INITILIZING
+    #   RUNNING
+    #   PAUSED
+    #   COMPLETE
+    #   EXECUTOR_ERROR
+    #   SYSTEM_ERROR
+    #   CANCELED
+    #
+    # Output only.
+    &quot;state&quot;: &quot;QUEUED&quot;,
+
+    # Metadata
+    &quot;name&quot;:        &quot;Task name.&quot;,
+    &quot;description&quot;: &quot;Task description.&quot;,
+    &quot;tags&quot;: {
+      &quot;custom-tag-1&quot;: &quot;tag-value-1&quot;,
+      &quot;custom-tag-2&quot;: &quot;tag-value-2&quot;,
+    },
+
+    # Resource requests
+    &quot;resources&quot;: {
+      # Number of CPU cores requested.
+      &quot;cpuCores&quot;: 1,
+
+      # RAM request, in gigabytes.
+      &quot;ramGb&quot;:    1.0,
+
+      # Disk space request, in gigabytes.
+      &quot;diskGb&quot;:   100.0,
+
+      # Request preemptible machines,
+      # e.g. preemptible VM in Google Cloud, an instance from the AWS Spot Market, etc.
+      &quot;preemptible&quot;: false,
+
+       # Request that the task run in these compute zones.
+       &quot;zones&quot;: [&quot;zone1&quot;, &quot;zone2&quot;],
+    },
+
+    # Input files will be downloaded by the worker.
+    # This example uses s3, but Funnel supports multiple filesystems.
+    &quot;inputs&quot;: [
+      {
+        &quot;name&quot;: &quot;Input file.&quot;,
+        &quot;description&quot;: &quot;Input file description.&quot;,
+
+        # URL to download file from.
+        &quot;url&quot;:  &quot;s3://my-bucket/object/path/file.txt&quot;,
+        # Path to download file to.
+        &quot;path&quot;: &quot;/container/input.txt&quot;
+      },
+      {
+        &quot;name&quot;: &quot;Input directory.&quot;,
+        &quot;description&quot;: &quot;Directories are also supported.&quot;,
+        &quot;url&quot;:  &quot;s3://my-bucket/my-data/&quot;,
+        &quot;path&quot;: &quot;/inputs/my-data/&quot;,
+        &quot;type&quot;: &quot;DIRECTORY&quot;
+      },
+
+      # A task may include the file content directly in the task message.
+      # This is sometimes useful for small files such as scripts,
+      # which you want to include without talking directly to the filesystem.
+      {
+        &quot;path&quot;: &quot;/inputs/script.py&quot;,
+        &quot;content&quot;: &quot;import socket; print socket.gethostname()&quot;
+      }
+    ],
+
+    # Output files will be uploaded to storage by the worker.
+    &quot;outputs&quot;: [
+      {
+        &quot;name&quot;: &quot;Output file.&quot;,
+        &quot;description&quot;: &quot;Output file description.&quot;,
+        &quot;url&quot;:  &quot;s3://my-bucket/output-data/results.txt&quot;,
+        &quot;path&quot;: &quot;/outputs/results.txt&quot;
+      },
+      {
+        &quot;name&quot;: &quot;Output directory.&quot;,
+        &quot;description&quot;: &quot;Directories are also supported.&quot;,
+        &quot;url&quot;:  &quot;s3://my-bucket/output-data/output-dir/&quot;,
+        &quot;path&quot;: &quot;/outputs/data-dir/&quot;,
+        &quot;type&quot;: &quot;DIRECTORY&quot;
+      }
+    ],
+
+    # Executors define a sequence of containers + commands to run.
+    # Execution stop on the first non-zero exit code.
+    &quot;executors&quot;: [
+      {
+        # Container image name.
+        # Funnel supports running executor containers via Docker.
+        &quot;image&quot;: &quot;ubuntu&quot;,
+
+        # Command arguments (argv).
+        # The first item is the executable to run.
+        &quot;command&quot;: [&quot;my-tool-1&quot;, &quot;/container/input&quot;],
+
+        # Local file path to read stdin from.
+        &quot;stdin&quot;: &quot;/inputs/stdin.txt&quot;,
+
+        # Local file path to write stdout to.
+        &quot;stdout&quot;: &quot;/container/output&quot;,
+
+        # Local file path to write stderr to.
+        &quot;stderr&quot;: &quot;/container/stderr&quot;,
+
+        # Set the working directory before executing the command.
+        &quot;workdir&quot;: &quot;/data/workdir&quot;,
+
+        # Environment variables
+        &quot;env&quot;: {
+          &quot;ENV1&quot;: &quot;value1&quot;,
+          &quot;ENV2&quot;: &quot;value2&quot;,
+        }
+      },
+
+      # Second executor runs after the first completes, on the same machine.
+      {
+        &quot;image&quot;: &quot;ubuntu&quot;,
+        &quot;command&quot;: [&quot;md5sum&quot;, &quot;/container/input&quot;],
+        &quot;stdout&quot;: &quot;/container/output&quot;,
+        &quot;stderr&quot;: &quot;/container/stderr&quot;,
+        &quot;workdir&quot;: &quot;/tmp&quot;
+      }
+    ]
+
+    # Date/time the task was created.
+    # Set the the server.
+    # Output only.
+    &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+
+    # Task logs.
+    # Output only.
+    #
+    # If there's a system error, the task may be attempted multiple times,
+    # so this field is a list of attempts. In most cases, there will be only
+    # one or zero entries here.
+    &quot;logs&quot;: [
+
+      # Attempt start/end times, in RFC3339 format.
+      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
+      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+
+      # Arbitrary metadata set by Funnel.
+      &quot;metadata&quot;: {
+        &quot;hostname&quot;: &quot;worker-1&quot;,
+      },
+
+      # Arbitrary system logs which Funnel thinks are useful to the user.
+      &quot;systemLogs&quot;: [
+        &quot;task was assigned to worker 1&quot;,
+        &quot;docker command: docker run -v /vol:/data alpine cmd arg1 arg2&quot;,
+      ],
+
+      # Log of files uploaded to storage by the worker,
+      # including all files in directories, with file sizes.
+      &quot;outputs&quot;: [
+        {
+          &quot;url&quot;: &quot;s3://my-bucket/output-data/results.txt&quot;,
+          &quot;path&quot;: &quot;/outputs/results.txt&quot;,
+          &quot;sizeBytes&quot;: 123
+        },
+        {
+          &quot;url&quot;: &quot;s3://my-bucket/output-data/output-dir/file1.txt&quot;,
+          &quot;path&quot;: &quot;/outputs/data-dir/file1.txt&quot;,
+          &quot;sizeBytes&quot;: 123
+        },
+        {
+          &quot;url&quot;: &quot;s3://my-bucket/output-data/output-dir/file2.txt&quot;,
+          &quot;path&quot;: &quot;/outputs/data-dir/file2.txt&quot;,
+          &quot;sizeBytes&quot;: 123
+        }
+        {
+          &quot;url&quot;: &quot;s3://my-bucket/output-data/output-dir/subdir/file3.txt&quot;,
+          &quot;path&quot;: &quot;/outputs/data-dir/subdir/file3.txt&quot;,
+          &quot;sizeBytes&quot;: 123
+        }
+      ],
+
+      # Executor logs. One entry per executor.
+      &quot;logs&quot;: [
+        {
+          # Executor start/end time, in RFC3339 format.
+          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
+          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
+
+          # Executor stdout/err. Only available in the FULL task view.
+          #
+          # There is a size limit for these fields, which is configurable
+          # and defaults to 10KB. If more than 10KB is generated, only the
+          # tail will be logged. If the full output is needed, the task
+          # may use Executor.stdout and an output to upload the full content
+          # to storage.
+          &quot;stdout&quot;: &quot;Hello, Funnel!&quot;,
+          &quot;stderr&quot;: &quot;&quot;,
+
+          # Exit code
+          &quot;exitCode&quot;: 0,
+        },
+        {
+          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
+          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
+          &quot;stdout&quot;: &quot;Hello, Funnel!\n&quot;
+        }
+      ],
+    }
+  ],
+}
+</code></pre>
+
+  </div>
+
+</div>
+</body>
+</html>

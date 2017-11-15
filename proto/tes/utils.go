@@ -3,9 +3,20 @@ package tes
 import (
 	"fmt"
 	"github.com/getlantern/deepcopy"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/rs/xid"
 	"time"
 )
+
+// Marshaler marshals tasks to indented JSON.
+var Marshaler = jsonpb.Marshaler{
+	Indent: "  ",
+}
+
+// MarshalToString marshals a task to an indented JSON string.
+func MarshalToString(t *Task) (string, error) {
+	return Marshaler.MarshalToString(t)
+}
 
 // GenerateID generates a task ID string.
 // IDs are globally unique and sortable.

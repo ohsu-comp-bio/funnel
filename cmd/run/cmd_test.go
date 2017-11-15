@@ -2,7 +2,6 @@ package run
 
 import (
 	"github.com/go-test/deep"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"os"
 	"testing"
@@ -158,14 +157,9 @@ func TestParse(t *testing.T) {
 	}
 
 	if diff := deep.Equal(result, expected); diff != nil {
-		m := jsonpb.Marshaler{
-			EnumsAsInts:  false,
-			EmitDefaults: false,
-			Indent:       "\t",
-		}
-		s, _ := m.MarshalToString(expected[0])
+		s, _ := tes.MarshalToString(expected[0])
 		t.Log("Expected", s)
-		q, _ := m.MarshalToString(result[0])
+		q, _ := tes.MarshalToString(result[0])
 		t.Log("Actual", q)
 		for _, d := range diff {
 			t.Log("Diff", d)

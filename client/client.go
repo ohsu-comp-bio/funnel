@@ -30,12 +30,8 @@ func NewClient(address string) *Client {
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		Marshaler: &jsonpb.Marshaler{
-			EnumsAsInts:  false,
-			EmitDefaults: false,
-			Indent:       "\t",
-		},
-		Password: password,
+		Marshaler: &tes.Marshaler,
+		Password:  password,
 	}
 }
 
@@ -102,8 +98,7 @@ func (c *Client) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTas
 	}
 
 	var b bytes.Buffer
-	m := &jsonpb.Marshaler{}
-	err := m.Marshal(&b, task)
+	err := tes.Marshaler.Marshal(&b, task)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling task message: %v", err)
 	}

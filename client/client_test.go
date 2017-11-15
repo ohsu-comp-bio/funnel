@@ -1,7 +1,6 @@
 package client
 
 import (
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
 	"net"
@@ -36,9 +35,8 @@ func TestGetTask(t *testing.T) {
 	// Set up test server response
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
-		m := jsonpb.Marshaler{}
 		ta := tes.Task{Id: "test-id"}
-		m.Marshal(w, &ta)
+		tes.Marshaler.Marshal(w, &ta)
 	})
 
 	ts := testServer(mux)
@@ -65,9 +63,8 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	// Set up test server response
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
-		m := jsonpb.Marshaler{}
 		ta := tes.Task{Id: "test-id"}
-		m.Marshal(w, &ta)
+		tes.Marshaler.Marshal(w, &ta)
 	})
 
 	ts := testServer(mux)
@@ -99,18 +96,8 @@ func TestClientTimeout(t *testing.T) {
 	ts := testServer(mux)
 	defer ts.Close()
 
-	c := &Client{
-		address: "http://localhost:20001",
-		client: &http.Client{
-			Timeout: 1 * time.Second,
-		},
-		Marshaler: &jsonpb.Marshaler{
-			EnumsAsInts:  false,
-			EmitDefaults: false,
-			Indent:       "\t",
-		},
-		Password: "",
-	}
+	c := NewClient("http://localhost:20001")
+	c.client.Timeout = 1 * time.Second
 
 	_, err := c.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   "test-id",

@@ -4,6 +4,7 @@ import (
 	"context"
 	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"testing"
@@ -29,7 +30,9 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	srv.StartServer()
 
 	srv.Conf.Scheduler.Node.ID = "test-node-gone-on-cancel"
-	n, err := scheduler.NewNode(srv.Conf, nil, workercmd.NewDefaultWorker)
+	n, err := scheduler.NewNode(
+		srv.Conf, logger.NewLogger("node", tests.LogConfig()), workercmd.NewDefaultWorker,
+	)
 	if err != nil {
 		t.Fatal("failed to start node")
 	}
@@ -64,17 +67,14 @@ func TestManualBackend(t *testing.T) {
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10
 
 	srv := tests.NewFunnel(conf)
-	srv.Scheduler = &scheduler.Scheduler{
-		DB:      srv.SDB,
-		Backend: nil,
-		Conf:    conf.Scheduler,
-	}
 	srv.StartServer()
 
-	srv.Conf.Scheduler.Node.ID = "test-node"
-	n, err := scheduler.NewNode(srv.Conf, nil, workercmd.NewDefaultWorker)
+	srv.Conf.Scheduler.Node.ID = "test-node-manual"
+	n, err := scheduler.NewNode(
+		srv.Conf, logger.NewLogger("node", tests.LogConfig()), workercmd.NewDefaultWorker,
+	)
 	if err != nil {
-		t.Fatal("failed to start node")
+		t.Fatal("failed to create node")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -88,6 +88,8 @@ func TestManualBackend(t *testing.T) {
     `)
 		tasks = append(tasks, id)
 	}
+
+	// srv.SDB.ReadQueue(15)
 
 	for _, id := range tasks {
 		task := srv.Wait(id)

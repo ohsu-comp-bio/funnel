@@ -22,7 +22,7 @@ func (es *Elastic) QueueTask(task *tes.Task) error {
 func (es *Elastic) ReadQueue(n int) []*tes.Task {
 	ctx := context.Background()
 
-	q := elastic.NewTermQuery("state.keyword", tes.State_QUEUED.String())
+	q := elastic.NewTermQuery("state", tes.State_QUEUED.String())
 	res, err := es.client.Search().
 		Index(es.taskIndex).
 		Type("task").
@@ -30,7 +30,6 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 		Sort("id", true).
 		Query(q).
 		Do(ctx)
-
 	if err != nil {
 		fmt.Println(err)
 		return nil

@@ -1,8 +1,5 @@
 Server:
-  Database: elastic
-  Databases:
-    Elastic:
-      IndexPrefix: test
-      URL: http://localhost:9200
+  Database: "elastic"
 Worker:
+  TaskReader: "elastic"
   ActiveEventWriters: ["elastic", "log"]

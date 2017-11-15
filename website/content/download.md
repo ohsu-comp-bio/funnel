@@ -36,6 +36,7 @@ Milestone: https://github.com/ohsu-comp-bio/funnel/milestone/2?closed=1
 Notes:
 
 - Upgrade task API to TES v0.3
+  - **This is a database schema change. Tasks from previous versions are not compatible.**
 - Added MongoDB support.
 - Added Kafka event stream support.
 - Bug fix for OutputFileLog path.

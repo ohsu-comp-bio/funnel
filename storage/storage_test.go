@@ -12,7 +12,7 @@ func TestStorageWithConfig(t *testing.T) {
 			AllowedDirs: []string{"/tmp"},
 		},
 		GS:    []config.GSStorage{},
-		S3: config.S3Storage{Disabled: true},
+		S3:    config.S3Storage{Disabled: true},
 		Swift: config.SwiftStorage{Disabled: true},
 	}
 	s := Storage{}

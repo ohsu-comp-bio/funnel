@@ -113,11 +113,11 @@ test-dynamodb:
 	@docker rm -f funnel-dynamodb-test  > /dev/null 2>&1 || echo 
 
 test-kafka:
-	@docker rm -f funnel-kafka > /dev/null || echo
+	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
 	@sleep 10
 	@go test ./tests/kafka/
-	@docker rm -f funnel-kafka > /dev/null || echo
+	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
 
 # Run backend tests
 test-backends:

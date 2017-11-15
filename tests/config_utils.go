@@ -50,7 +50,7 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf = TempDirConfig(conf)
 	conf = RandomPortConfig(conf)
 
-	conf.Scheduler.ScheduleRate = time.Millisecond * 700
+	conf.Scheduler.ScheduleRate = time.Millisecond * 500
 	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
 	conf.Worker.UpdateRate = time.Millisecond * 300
 

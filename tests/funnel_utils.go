@@ -112,7 +112,9 @@ func (f *Funnel) Cleanup() {
 
 // StartServer starts the server
 func (f *Funnel) StartServer() {
-	go f.Srv.Run(context.Background())
+	go func() {
+		f.Srv.Run(context.Background())
+	}()
 
 	err := f.PollForServerStart()
 	if err != nil {

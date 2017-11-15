@@ -2,27 +2,56 @@ os:
   - linux
 language: go
 sudo: required
+
 services:
   - docker
+  - elasticsearch
 go:
   - 1.8
-before_install:
-  - docker pull ohsucompbio/htcondor
-  - docker pull ohsucompbio/slurm
-  - docker pull ohsucompbio/gridengine
-  - docker pull ohsucompbio/pbs-torque
-  - docker pull docker.elastic.co/elasticsearch/elasticsearch:5.6.3
-  - docker pull mongo:3.5.13
+
+cache:
+  directories:
+    - $GOPATH/pkg
+    - vendor
+
+git:
+  submodules: false
 install:
   - make depends
   - make
-  - make cross-compile
-script: 
-  - make lint
-  - make test
-  - make test-backends
-  - make test-elasticsearch
-  - make test-mongodb
-  - make test-kafka
+
+jobs:
+  include:
+    - stage: all
+      script: make lint
+      env:
+        - n=lint
+    - script: make test
+      env:
+        - n=test
+    - script: make test-htcondor
+      env:
+        - n=htcondor
+    - script: make test-slurm
+      env:
+        - n=slurm
+    - script: make test-gridengine
+      env:
+        - n=gridengine
+    - script: make test-pbs-torque
+      env:
+        - n=pbs
+    - script: make test-elasticsearch
+      before_script:
+        - sleep 10
+      env:
+        - n=elastic
+    - script: make test-mongodb
+      env:
+        - n=mongo
+    - script: make test-kafka
+      env:
+        - n=kafka
+
 notifications:
   email: false

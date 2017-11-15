@@ -88,25 +88,35 @@ test:
 test-verbose:
 	@go test -v $(TESTS)
 
-test-elasticsearch:
+start-elasticsearch:
 	@docker rm -f funnel-es-test  > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:5.6.3 > /dev/null
-	@sleep 30
+
+test-elasticsearch:
 	@go test ./tests/e2e/ -funnel-config es.config.yml
-	@docker rm -f funnel-es-test  > /dev/null 2>&1 || echo
 
 test-mongodb:
+	@docker pull mongo:3.5.13
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
 	@sleep 10
 	@go test ./tests/e2e/ -funnel-config mongo.config.yml
 	@docker rm -f funnel-mongodb-test  > /dev/null 2>&1 || echo 
 
-# Run backend tests
-test-backends:
-	@go test -timeout 120s ./tests/e2e/slurm -run-test
-	@go test -timeout 120s ./tests/e2e/gridengine -run-test
+test-htcondor:
+	@docker pull ohsucompbio/htcondor
 	@go test -timeout 120s ./tests/e2e/htcondor -run-test
+
+test-slurm:
+	@docker pull ohsucompbio/slurm
+	@go test -timeout 120s ./tests/e2e/slurm -run-test
+
+test-gridengine:
+	@docker pull ohsucompbio/gridengine
+	@go test -timeout 120s ./tests/e2e/gridengine -run-test
+
+test-pbs-torque:
+	@docker pull ohsucompbio/pbs-torque
 	@go test -timeout 120s ./tests/e2e/pbs -run-test
 
 # Run s3 tests

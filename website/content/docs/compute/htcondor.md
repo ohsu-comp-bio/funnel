@@ -1,22 +1,20 @@
 ---
-title: Open Grid Engine
-
+title: HTCondor
 menu:
   main:
-    parent: guides
+    parent: Compute
     weight: 20
 ---
+# HTCondor
 
-# Open Grid Engine
+Funnel can be configured to submit workers to [HTCondor][htcondor] by making 
+calls to `condor_submit`.
 
-Funnel can be configured to submit workers to [Open Grid Engine][ge] by making calls
-to `qsub`.
-
-The Funnel server process needs to run on the same machine as the Grid Engine master.
-Configure Funnel to use Grid Engine by including the following config:
+The Funnel server process needs to run on the same machine as the HTCondor master.
+Configure Funnel to use HTCondor by including the following config:
 
 ```YAML
-{{< gridengine-template >}}
+{{< htcondor-template >}}
 ```
 The following variables are available for use in the template:
 
@@ -34,4 +32,4 @@ The following variables are available for use in the template:
 
 See https://golang.org/pkg/text/template for information on creating templates.
 
-[ge]: http://gridscheduler.sourceforge.net/documentation.html
+[htcondor]: https://research.cs.wisc.edu/htcondor/

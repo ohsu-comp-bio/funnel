@@ -1,19 +1,19 @@
 ---
-title: AWS Deployment
-
+title: AWS Batch
 menu:
   main:
-    parent: guides
+    parent: Compute
     weight: 20
 ---
 
-# Amazon Web Services
+
+# Amazon Batch
 
 This guide covers deploying a Funnel server that leverages [DynamoDB][0] for storage
 and [Batch][1] for task execution. You'll need to set up several resources 
 using either the Funnel CLI or through the provided Amazon web console.
 
-## Create Required AWS Batch Resources
+### Create Required AWS Batch Resources
 
 For Funnel to execute tasks on Batch, you must define a Compute Environment,
 Job Queue and Job Definition. Additionally, you must define an IAM role for your 
@@ -131,6 +131,10 @@ Worker:
         Key: ""
         Secret: ""
 ```
+
+### Known issues
+
+Disk size and host volume management extra setup. The `Task.Resources.DiskGb` field does not have any effect. See [issue 317](https://github.com/ohsu-comp-bio/funnel/issues/317).
 
 [0]: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html
 [1]: http://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html

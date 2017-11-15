@@ -3,62 +3,80 @@ title: Overview
 menu:
   main:
     identifier: docs
-    weight: -100
+    weight: -1000
 ---
 
 # Overview
 
-Funnel aims to make batch processing tasks easier to manage by providing a simple
-toolkit that supports a wide variety of cluster types. Our goal is to enable you
-to spend less time worrying about task management and more time processing data.
+Funnel makes distributed, batch processing easier by providing a simple task API and a set of
+components which can easily adapted to a vareity of platforms.
 
-## Background
+### Task
 
-### How Does Funnel Work?
+A task defines a unit of work: metadata, input files to download, a sequence of Docker containers + commands to run,
+output files to upload, state, and logs. The API allows you to create, get, list, and cancel tasks.
 
-Funnel is a combination of a server and worker processes. First, you define a task.
-A task describes input and output files, (Docker) containers and commands, resource
-requirements, and some other metadata. You send that task to the Funnel server,
-which puts it in the queue until a worker is available. When an appropriate Funnel
-worker is available, it downloads the inputs, executes the commands in (Docker)
-containers, and uploads the outputs.
+Tasks are accessed via the `funnel task` command. There's an HTTP client in the [client package][clientpkg],
+and a set of utilities and a gRPC client in the [proto/tes package][tespkg].
 
-Funnel also comes with some tools related to managing workers and tasks. There's
-a dashboard, a scheduler, an autoscaler, some rudimentary workflow tools, and more.
+There's a lot more you can do with the task API. See the [tasks docs](/docs/tasks/) for more.
 
-### Why Does Funnel Exist?
+### Server
 
-Here at OHSU Computational Biology, a typical project involves coordinating dozens
-of tasks across hundreds of CPUs in a cluster of machines in order to process hundreds
-of files. That's standard fare for most computational groups these days, and for some
-groups it's "thousands" or "millions" instead of "hundreds".
+The server serves the task API, web dashboard, and optionally runs a task scheduler.
+It serves both HTTP/JSON and gRPC/Protobuf.
 
-Because we're part of a worldwide scientific community, it's important that we're able
-to easily share our work. If we create a variant calling pipeline with 50 steps,
-we need people outside OHSU to run that pipeline easily and efficiently.
+The server is accessible via the `funnel server` command and the [server package][serverpkg].
 
-There's a long list of projects making great strides in the tools we use to tackle
-this type of work, but they have a common problem. Every group of users has grown
-a different set of tools for managing and interacting with their cluster. Some use
-HTCondor and NFS. Some use Open Grid Engine and Lustre. Some prefer cloud providers,
-but which one? Google? Amazon? Each cluster comes with a different interface to learn
-(and a new set of problems to debug too).
+### Storage
 
-Tool authors usually end up writing (and hopefully maintaining) a set of
-compute and storage plugins for each type of cluster. Many authors don't have
-time for that, and their tools end up being limited to their environment.
-Some tools were never meant to be shared, instead they were originally just
-a prototype or a set of helper scripts for working with AWS instances.
+Storage provides access to file systems such as S3, Google Storage, and local filesystems.
+Tasks define locations where files should be downloaded from and uploaded to. Workers handle
+the downloading/uploading.
 
-The [GA4GH Task Execution Schemas][tes] (TES) group aims to ease problems by
-designing a simple API for data processing tasks that can be easily layered on top of,
-or easily plugged into, most existing cluster. Funnel started as the first
-implementation of the TES API.
+See the [storage docs](/docs/storage/) for more information on configuring storage backends.
+The storage clients are available in the [storage package][storagepkg].
 
-Funnel aims to ease these problems. Our goal is to enable easy management of tasks
-and tools that need to work across many types of clusters.
+### Worker
 
-[galaxy]: https://galaxyproject.org/
-[cwl]: http://commonwl.org/
-[wdl]: https://software.broadinstitute.org/wdl/
+A worker is reponsible for executing a task. There is one worker per task. A worker:
+
+- downloads the inputs
+- runs the sequence of executors (usually via Docker)
+- uploads the outputs
+
+Along the way, the worker writes logs to event streams and databases:
+
+- start/end time
+- state changes (initializing, running, error, etc)
+- executor start/end times
+- executor exit codes
+- executor stdout/err logs
+- a list of output files uploaded, with sizes
+- system logs, such as host name, docker command, system error messages, etc.
+
+The worker is accessible via the `funnel worker` command and the [worker package][workerpkg].
+
+### Node Scheduler
+
+A node is a service that stays online and manages a pool of task workers. A Funnel cluster
+runs a node on each VM. Nodes communicate with a Funnel scheduler, which assigns tasks
+to nodes based on available resources. Nodes handle starting workers when for each assigned
+task.
+
+Nodes aren't always required. In some cases it often makes sense to rely on an existing,
+external system for scheduling tasks and managing cluster resources, such as AWS Batch
+or HPC systems like HTCondor, Slurm, Grid Engine, etc. Funnel provides integration with
+these services that doesn't include nodes or scheduling by Funnel.
+
+See [Deploying a cluster](/docs/compute/deployment/) for more information about running a cluster of nodes.
+
+The node is accessible via the `funnel node` command and the [scheduler package][schedpkg].
+
 [tes]: https://github.com/ga4gh/task-execution-schemas
+[serverpkg]: https://github.com/ohsu-comp-bio/funnel/tree/master/server
+[workerpkg]: https://github.com/ohsu-comp-bio/funnel/tree/master/worker
+[schedpkg]: https://github.com/ohsu-comp-bio/funnel/tree/master/compute/scheduler
+[clientpkg]: https://github.com/ohsu-comp-bio/funnel/tree/master/client
+[tespkg]: https://github.com/ohsu-comp-bio/funnel/tree/master/proto/tes
+[storagepkg]: https://github.com/ohsu-comp-bio/funnel/tree/master/storage

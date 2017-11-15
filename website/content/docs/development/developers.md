@@ -38,7 +38,6 @@ Most development tasks are run through `make`.
 |---|---|
 |`make`              | Build the code.
 |`make test`         | Run both unit and end-to-end tests.
-|`make test-short`   | Run only fast-running tests.
 |`make test-verbose` | Run tests in verbose mode.
 |`make test-backends`| Run end-to-end tests against dockerized HPC scheduler backends.
 |`make proto`        | Regenerate code from protobuf schemas (requires protoc)
@@ -69,7 +68,7 @@ Most development tasks are run through `make`.
 |`logger`           | Logging.
 |`compute`          | Compute backends.
 |`compute/scheduler`| Basic scheduling/scaling for compute backends.
-|`server`           | Database and server implementing the [TES API][tes] and Scheduler RPC.
+|`server`           | Databases and server implementing the [TES API][tes] and Scheduler RPC.
 |`storage`          | Filesystem support, e.g. local, Google Cloud Storage, S3, etc.
 |`worker`           | Worker process: task runner, docker, file mapper, etc.
 |`webdash`          | Javascript, CSS, HTML for web dashboard.

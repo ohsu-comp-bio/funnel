@@ -82,8 +82,11 @@ Start the server:
 funnel server run --config /path/to/config.yaml
 ```
 
-Here is an example of the configuration you would need for the server had you 
-run `funnel aws batch create-all-resources --region us-west-2`:
+Below is an example of the configuration you would need for the server had you 
+run `funnel aws batch create-all-resources --region us-west-2`. Note that the `Key`
+and `Secret` fields are left blank in the configuration of the componenets. This is because 
+Funnel will, by default, try to will try to automatically load credentials from the environment. 
+Alternatively, you may explicitly set the credentials in the config.
 
 ```YAML
 Server:
@@ -91,8 +94,8 @@ Server:
   Databases:
     Dynamodb:
       TableBasename: "funnel"
-      Region: "us-west-2"
-      Credentials:
+      AWS:
+        Region: "us-west-2"
         Key: ""
         Secret: ""
 
@@ -101,18 +104,18 @@ Backends:
   Batch:
     JobDefinition: "funnel-job-def"
     JobQueue: "funnel-job-queue" 
-    Region: "us-west-2"
-    Credentials:
-      Key: ""
-      Secret: ""
+      AWS:
+        Region: "us-west-2"
+        Key: ""
+        Secret: ""
             
 Worker:
   TaskReader: "dynamodb"
   TaskReaders:
     Dynamodb:
       TableBasename: "funnel"
-      Region: "us-west-2"
-      Credentials:
+      AWS:
+        Region: "us-west-2"
         Key: ""
         Secret: ""
   ActiveEventWriters:
@@ -121,15 +124,14 @@ Worker:
   EventWriters:
     Dynamodb:
       TableBasename: "funnel"
-      Region: "us-west-2"
-      Credentials:
+      AWS:
+        Region: "us-west-2"
         Key: ""
         Secret: ""
   Storage:
-    S3:
-      Credentials:
-        Key: ""
-        Secret: ""
+    AWS:
+      Key: ""
+      Secret: ""
 ```
 
 ### Known issues

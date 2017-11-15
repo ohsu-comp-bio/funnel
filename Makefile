@@ -2,7 +2,7 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
-VERSION = 0.3.0
+VERSION = 0.4.0
 TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v kafka)
 
 export SHELL=/bin/bash
@@ -146,8 +146,11 @@ cross-compile: depends
 		done; \
 	done
 
+clean-release:
+	rm -rf ./build/release
+
 # Upload a release to GitHub
-upload-release:
+upload-release: clean-release cross-compile
 	#
 	# NOTE! Making a release requires manual steps.
 	# See: website/content/docs/development.md

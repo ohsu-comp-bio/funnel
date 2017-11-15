@@ -7,8 +7,8 @@ menu:
 
 ### Download
 
-- [linux <small>[funnel-linux-amd64-0.3.0.tar.gz]</small>][linux-64-bin]
-- [mac <small>[funnel-darwin-amd64-0.3.0.tar.gz]</small>][mac-64-bin]
+- [linux <small>[funnel-linux-amd64-0.4.0.tar.gz]</small>][linux-64-bin]
+- [mac <small>[funnel-darwin-amd64-0.4.0.tar.gz]</small>][mac-64-bin]
 - <small>Windows is not supported (yet), sorry!</small>
 
 Funnel is a single binary.  
@@ -26,9 +26,9 @@ Funnel requires Go 1.8+. Check out the [development docs][dev] for more detail.
 
 ### Release History
 
-#### 0.4 (in progress, not released yet)
+#### 0.4.0
 
-Date: TBD  
+Date: Nov 15, 2017  
 Tag: https://github.com/ohsu-comp-bio/funnel/releases/tag/0.4.0  
 Changes: https://github.com/ohsu-comp-bio/funnel/compare/0.3.0...0.4.0  
 Milestone: https://github.com/ohsu-comp-bio/funnel/milestone/2?closed=1  
@@ -49,7 +49,7 @@ Notes:
 - cmd/task/create bugfix, couldn't read task input file.
 - Website and docs rewrite.
 
-#### 0.3
+#### 0.3.0
 
 Date: Nov 1, 2017  
 Tag: https://github.com/ohsu-comp-bio/funnel/releases/tag/0.3.0  
@@ -73,7 +73,7 @@ Notes:
   - Added `funnel version`
   - `funnel wait` moved to `funnel task wait`
 
-#### 0.2
+#### 0.2.0
 
 Date: Jul 18, 2017  
 Tag: https://github.com/ohsu-comp-bio/funnel/releases/tag/0.2.0  
@@ -85,7 +85,7 @@ Notes:
 - Implemented pagination for ListTasks endpoint, in server only.
 - Added basic auth. support
 
-##### 0.1
+##### 0.1.0
 
 Released: Jun 5, 2017
 

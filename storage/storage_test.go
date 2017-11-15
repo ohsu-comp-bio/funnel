@@ -11,8 +11,9 @@ func TestStorageWithConfig(t *testing.T) {
 		Local: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GS: []config.GSStorage{},
-		S3: config.S3Storage{},
+		GS:    []config.GSStorage{},
+		S3:    config.S3Storage{},
+		Swift: config.SwiftStorage{Disabled: true},
 	}
 	s := Storage{}
 	sc, err := s.WithConfig(c)
@@ -39,6 +40,7 @@ func TestStorageWithConfig(t *testing.T) {
 				Secret: "testsecret",
 			},
 		},
+		Swift: config.SwiftStorage{Disabled: true},
 	}
 	sc, err = s.WithConfig(c)
 	if err != nil {

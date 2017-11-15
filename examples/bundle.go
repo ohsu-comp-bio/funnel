@@ -266,13 +266,13 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"examples/google-storage.json": examplesGoogleStorageJson,
-	"examples/hello-world.json": examplesHelloWorldJson,
-	"examples/input-content.json": examplesInputContentJson,
-	"examples/log-streaming.json": examplesLogStreamingJson,
-	"examples/md5sum.json": examplesMd5sumJson,
+	"examples/google-storage.json":   examplesGoogleStorageJson,
+	"examples/hello-world.json":      examplesHelloWorldJson,
+	"examples/input-content.json":    examplesInputContentJson,
+	"examples/log-streaming.json":    examplesLogStreamingJson,
+	"examples/md5sum.json":           examplesMd5sumJson,
 	"examples/resource-request.json": examplesResourceRequestJson,
-	"examples/s3.json": examplesS3Json,
+	"examples/s3.json":               examplesS3Json,
 }
 
 // AssetDir returns the file names below a certain
@@ -314,15 +314,16 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
-	"examples": &bintree{nil, map[string]*bintree{
-		"google-storage.json": &bintree{examplesGoogleStorageJson, map[string]*bintree{}},
-		"hello-world.json": &bintree{examplesHelloWorldJson, map[string]*bintree{}},
-		"input-content.json": &bintree{examplesInputContentJson, map[string]*bintree{}},
-		"log-streaming.json": &bintree{examplesLogStreamingJson, map[string]*bintree{}},
-		"md5sum.json": &bintree{examplesMd5sumJson, map[string]*bintree{}},
-		"resource-request.json": &bintree{examplesResourceRequestJson, map[string]*bintree{}},
-		"s3.json": &bintree{examplesS3Json, map[string]*bintree{}},
+	"examples": {nil, map[string]*bintree{
+		"google-storage.json":   {examplesGoogleStorageJson, map[string]*bintree{}},
+		"hello-world.json":      {examplesHelloWorldJson, map[string]*bintree{}},
+		"input-content.json":    {examplesInputContentJson, map[string]*bintree{}},
+		"log-streaming.json":    {examplesLogStreamingJson, map[string]*bintree{}},
+		"md5sum.json":           {examplesMd5sumJson, map[string]*bintree{}},
+		"resource-request.json": {examplesResourceRequestJson, map[string]*bintree{}},
+		"s3.json":               {examplesS3Json, map[string]*bintree{}},
 	}},
 }}
 
@@ -372,4 +373,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

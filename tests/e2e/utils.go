@@ -86,6 +86,8 @@ type Funnel struct {
 // including temp storage dirs, random ports, S3 + minio config, etc.
 func DefaultConfig() config.Config {
 	conf := config.DefaultConfig()
+	conf.Worker.Storage.Swift.Disabled = true
+
 	// Get config from test command line flag, if present.
 	if configFile != "" {
 		err := config.ParseFile(configFile, &conf)

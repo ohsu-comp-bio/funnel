@@ -35,7 +35,7 @@ import (
 var log = logger.NewLogger("e2e", LogConfig())
 
 func init() {
-	logger.ConfigureGRPC(1, log)
+	logger.ConfigureGRPC(1, logger.NewLogger("grpc", LogConfig()))
 }
 
 // Funnel provides a test server and RPC/HTTP clients
@@ -435,7 +435,10 @@ func (f *Funnel) CleanupTestServerContainer() {
 
 // ListNodes calls db.ListNodes.
 func (f *Funnel) ListNodes() []*pbs.Node {
-	resp, _ := f.DB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	resp, err := f.SDB.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	if err != nil {
+		panic(err)
+	}
 	return resp.Nodes
 }
 

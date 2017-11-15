@@ -50,8 +50,8 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf = TempDirConfig(conf)
 	conf = RandomPortConfig(conf)
 
-	conf.Scheduler.ScheduleRate = time.Millisecond * 500
-	conf.Scheduler.Node.UpdateRate = time.Millisecond * 300
+	conf.Scheduler.ScheduleRate = time.Millisecond * 700
+	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
 	conf.Worker.UpdateRate = time.Millisecond * 300
 
 	conf.Server.Databases.Elastic.IndexPrefix = "funnel-e2e-tests-" + RandomString(6)
@@ -142,6 +142,7 @@ func TestingWriter(t *testing.T) io.Writer {
 // LogConfig returns logger configuration useful for tests, which has a text indent.
 func LogConfig() logger.Config {
 	conf := logger.DefaultConfig()
+	conf.TextFormat.ForceColors = true
 	conf.TextFormat.Indent = "        "
 	return conf
 }

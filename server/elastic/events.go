@@ -2,11 +2,14 @@ package elastic
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	elastic "gopkg.in/olivere/elastic.v5"
 	"time"
 )
@@ -271,7 +274,22 @@ func (es *Elastic) WriteContext(ctx context.Context, ev *events.Event) error {
 
 	switch ev.Type {
 	case events.Type_TASK_STATE:
-		u = u.Doc(map[string]string{"state": ev.GetState().String()})
+		res, err := es.GetTask(ctx, &tes.GetTaskRequest{
+			Id:   ev.Id,
+			View: tes.TaskView_MINIMAL,
+		})
+		if elastic.IsNotFound(err) {
+			return grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: task ID: %s", err.Error(), ev.Id))
+		}
+		if err != nil {
+			return fmt.Errorf("error fetch current state: %v", err)
+		}
+		from := res.State
+		to := ev.GetState()
+		if err := tes.ValidateTransition(from, to); err != nil {
+			return err
+		}
+		u = u.Doc(map[string]string{"state": to.String()})
 
 	case events.Type_TASK_START_TIME:
 		u = u.Script(taskLogUpdate(ev.Attempt, "start_time", ev.GetStartTime()))

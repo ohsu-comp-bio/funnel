@@ -14,11 +14,6 @@ import (
 	"time"
 )
 
-var idFieldSort = elastic.NewFieldSort("id").
-	Desc().
-	// Handles the case where there are no documents in the index.
-	UnmappedType("keyword")
-
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {
 	client    *elastic.Client
@@ -135,7 +130,7 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		q = q.SearchAfter(req.PageToken)
 	}
 
-	q = q.SortBy(idFieldSort).Size(pageSize)
+	q = q.Sort("id", true).Size(pageSize)
 
 	switch req.View {
 	case tes.TaskView_BASIC:

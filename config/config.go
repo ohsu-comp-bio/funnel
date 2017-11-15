@@ -373,6 +373,7 @@ func (s S3Storage) Valid() bool {
 
 // SwiftStorage configures the OpenStack Swift object storage backend.
 type SwiftStorage struct {
+	Disabled   bool
 	UserName   string
 	Password   string
 	AuthURL    string
@@ -383,8 +384,16 @@ type SwiftStorage struct {
 
 // Valid validates the SwiftStorage configuration.
 func (s SwiftStorage) Valid() bool {
-	return s.UserName != "" && s.Password != "" && s.AuthURL != "" &&
-		s.TenantName != "" && s.TenantID != "" && s.RegionName != ""
+	user := s.UserName != "" || os.Getenv("OS_USERNAME") != ""
+	password := s.Password != "" || os.Getenv("OS_PASSWORD") != ""
+	authURL := s.AuthURL != "" || os.Getenv("OS_AUTH_URL") != ""
+	tenantName := s.TenantName != "" || os.Getenv("OS_TENANT_NAME") != "" || os.Getenv("OS_PROJECT_NAME") != ""
+	tenantID := s.TenantID != "" || os.Getenv("OS_TENANT_ID") != "" || os.Getenv("OS_PROJECT_ID") != ""
+	region := s.RegionName != "" || os.Getenv("OS_REGION_NAME") != ""
+
+	valid := user && password && authURL && tenantName && tenantID && region
+
+	return !s.Disabled && valid
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.

@@ -35,8 +35,15 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 		Region:   conf.RegionName,
 	}
 
+	// Read environment variables and apply them to the Connection structure.
+	// Won't overwrite any parameters which are already set in the Connection struct.
+	err := c.ApplyEnvironment()
+	if err != nil {
+		return nil, err
+	}
+
 	// Authenticate
-	err := c.Authenticate()
+	err = c.Authenticate()
 	if err != nil {
 		return nil, err
 	}

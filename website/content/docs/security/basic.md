@@ -1,12 +1,10 @@
 ---
 title: Basic Auth
-
 menu:
   main:
-    parent: guides
-    weight: 30
+    parent: Security
+    weight: 10
 ---
-
 # Basic Auth
 
 By default, a Funnel server allows open access to its API endpoints, but it 
@@ -30,3 +28,7 @@ To use the password, set the `FUNNEL_SERVER_PASSWORD` environment variable:
 $ export FUNNEL_SERVER_PASSWORD=abc123
 $ funnel task list
 ```
+
+### Known issues
+
+The basic auth user is hard-coded to `funnel`. See [issue #341](https://github.com/ohsu-comp-bio/funnel/issues/341).

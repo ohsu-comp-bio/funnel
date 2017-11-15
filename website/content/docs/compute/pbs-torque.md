@@ -1,22 +1,20 @@
 ---
-title: HTCondor
-
+title: PBS/Torque
 menu:
   main:
-    parent: guides
+    parent: Compute
     weight: 20
 ---
+# PBS/Torque
 
-# HTCondor
+Funnel can be configured to submit workers to [PBS/Torque][pbs] by making calls
+to `qsub`.
 
-Funnel can be configured to submit workers to [HTCondor][htcondor] by making 
-calls to `condor_submit`.
-
-The Funnel server process needs to run on the same machine as the HTCondor master.
-Configure Funnel to use HTCondor by including the following config:
+The Funnel server process needs to run on the same machine as the PBS master.
+Configure Funnel to use PBS by including the following config:
 
 ```YAML
-{{< htcondor-template >}}
+{{< pbs-template >}}
 ```
 The following variables are available for use in the template:
 
@@ -34,4 +32,4 @@ The following variables are available for use in the template:
 
 See https://golang.org/pkg/text/template for information on creating templates.
 
-[htcondor]: https://research.cs.wisc.edu/htcondor/
+[pbs]: http://www.adaptivecomputing.com/products/open-source/torque/

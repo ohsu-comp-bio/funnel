@@ -1,19 +1,17 @@
 ---
-title: SLURM
-
+title: Slurm
 menu:
   main:
-    parent: guides
+    parent: Compute
     weight: 20
 ---
+# Slurm
 
-# SLURM
-
-Funnel can be configured to submit workers to [SLURM][slurm] by making calls
+Funnel can be configured to submit workers to [Slurm][slurm] by making calls
 to `sbatch`.
 
-The Funnel server process needs to run on the same machine as the SLURM master.  
-Configure Funnel to use SLURM by including the following config:
+The Funnel server process needs to run on the same machine as the Slurm master.  
+Configure Funnel to use Slurm by including the following config:
 
 ```YAML
 {{< slurm-template >}}

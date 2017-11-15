@@ -7,11 +7,9 @@
       {{ $page := . }}
       {{ range $i, $menu := .Site.Menus }}
         {{ range $menu }}
-        <li><a
-          href="{{ .URL }}"
-          class="sidebar-nav-item {{ if $page.IsMenuCurrent "main" . }} active{{end}}"
-          >{{ .Pre }}{{ .Name }}</a></li>
+        <li>
           {{ if .HasChildren }}
+          <span class="intermediate">{{ .Pre }}{{ .Name }}</span></li>
           {{ range .Children }}
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
@@ -22,6 +20,10 @@
             </ul>
           </li>
           {{ end }}
+          {{ else }}
+          <a href="{{ .URL }}"
+             class="sidebar-nav-item {{ if $page.IsMenuCurrent "main" . }} active{{end}}"
+          >{{ .Pre }}{{ .Name }}</a></li>
           {{ end }}
         {{ end }}
       {{end}}

@@ -2,48 +2,272 @@
 {{ partial "head.html" . }}
 
 <div class="homepage-lead"><div class="homepage-lead-container">
-  <h1>Funnel runs your tasks.</h1>
-  <p>Given a task, Funnel will find a worker in a cluster,
-     download input files, run the task in Docker,
-     upload output files, and capture logs.</p>
-  <a href="{{ .Site.BaseURL }}install" class="download-button">Download</a>
-  <a href="{{ .Site.BaseURL }}docs/" class="docs-button">Learn more</a>
+  <p>Funnel is a toolkit for distributed task execution with a simple API.</p>
+  <a href="{{ .Site.BaseURL }}download" class="download-button">Download</a>
+  <a href="#intro" class="docs-button">Get Started</a>
 </div></div>
 
 <div class="homepage">
 
-  <div class="homepage-notice">
-    <h3>Funnel is alpha quality.</h3>
-    <p>Funnel is a young project and there's still a lot to do.
-       It's usable, but important things are broken and missing.
-       <!--Check out the roadmap.--></p>
+  <div class="homepage-intro">
+
+    <div class="section group">
+
+      <div class="col span_4_of_12">
+        <h3>Simple API</h3>
+        <p>A task describes metadata, state, input/output files, resource requests, commands,
+           and logs.</p>
+        <p>The task API has four actions: create, get, list, and cancel.</p>
+        <p>Funnel serves both HTTP/JSON and gRPC/Protobuf.</p>
+        <h3>Standards based</h3>
+        <p>The Task API is developed via an <a href="https://github.com/ga4gh/task-execution-schemas">open standard effort</a>.</p>
+      </div>
+
+      <div class="col span_4_of_12">
+        <h3>Workers</h3>
+        <p>Given a task, Funnel will queue it, schedule it to a worker, and track its state
+           and logs.</p>
+        <p>A worker will download input files, run a sequence of Docker
+           containers, upload output files, and emits events and logs along the way.</p>
+        <h3>Cross platform</h3>
+        <p>We use Funnel on AWS, Google Cloud, OpenStack, and the good ol' university HPC cluster.</p>
+      </div>
+
+      <div class="col span_4_of_12">
+        <h3>Adaptable</h3>
+        <p>A wide variety of options make Funnel easily adaptable:
+          <ul>
+            <li>BoltDB</li>
+            <li>Elasticsearch</li>
+            <li>MongoDB</li>
+            <li>AWS Batch, S3, DynamoDB</li>
+            <li>OpenStack Swift</li>
+            <li>Google Storage</li>
+            <li>Kafka</li>
+            <li>HPC support: HTCondor, Slurm, etc.</li>
+            <li>and more</li>
+          </ul>
+        </p>
+      </div>
+
+    </div>
+
+    <div class="section group">
+
+    </div>
+     
   </div>
 
   <hr>
 
   <div class="homepage-demo">
-    <h2>Check it out.</h2>
+    <h1 class="demo-header" id="intro">A quick introduction</h1>
 
-    {{ range .Params.Demo }}
       <div class="section group">
         <div class="col span_4_of_12">
-          <h1>{{ .Title }}</h1>
-          <p>{{ .Desc }}</p>
+
+          <h1>Define a task</h1>
+          <p>A task describes metadata, state, input/output files, resource requests,
+             commands, and logs.</p>
+
+          <p>For a full description of the task fields,<br>
+          see the <a href="{{ .Site.BaseURL }}docs/task-api/">task API docs</a> and the <a href="https://github.com/ga4gh/task-execution-schemas/blob/d283bcb8d011c0603594daded1b28581520064f7/task_execution.proto">the task schema</a>.</p>
         </div>
+
         <div class="col span_8_of_12">
-          <pre><code class="language-shell">{{ .Cmd }}</code></pre>
+          <pre><code class="language-shell">$ funnel examples hello-world</code></pre>
+          <pre><code class="language-json">{
+  "name": "Hello world",
+  "description": "Demonstrates the most basic echo task.",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": ["echo", "hello world"],
+      "stdout": "/tmp/stdout"
+    }
+  ]
+}</code></pre>
         </div>
       </div>
-    {{ end }}
 
-    <!--<p style="text-align: center"><strong>The list goes on.</strong> Check out the guides for more.</p>-->
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>Start a Funnel server</h1>
+          <p>localhost:8000 is the HTTP API and web dashboard.</p>
+          <p>localhost:9090 is the gRPC API.</p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel server run</code></pre>
+          <pre><code class="language-json">server               Server listening
+httpPort             8000
+rpcAddress           :9090
+</code></pre>
+        </div>
+      </div>
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>Create a task</h1>
+          <p>The output is the task ID.</p>
+          <p>This example uses the development server, which will
+             run the task locally via Docker.</p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel examples hello-world &gt; hello-world.json</code></pre>
+          <pre><code class="language-shell">$ funnel task create hello-world.json</code></pre>
+          <pre><code class="language-shell">b8581farl6qjjnvdhqn0</code></pre>
+        </div>
+      </div>
+
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>Get the task</h1>
+          <p>The output is the task with state and logs.</p>
+          <p>By default, the CLI returns the "full" task view, which includes all logs plus stdout/err content.</p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel task get b8581farl6qjjnvdhqn0</code></pre>
+          <pre><code class="language-json">{
+  "id": "b8581farl6qjjnvdhqn0",
+  "state": "COMPLETE",
+  "name": "Hello world",
+  "description": "Demonstrates the most basic echo task.",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": [
+        "echo",
+        "hello world"
+      ],
+      "stdout": "/tmp/stdout"
+    }
+  ],
+  "logs": [
+    {
+      "logs": [
+        {
+          "startTime": "2017-11-13T21:35:57.548592769-08:00",
+          "endTime": "2017-11-13T21:36:01.871905687-08:00",
+          "stdout": "hello world\n"
+        }
+      ],
+      "startTime": "2017-11-13T21:35:57.547408797-08:00",
+      "endTime": "2017-11-13T21:36:01.87496482-08:00"
+    }
+  ],
+  "creationTime": "2017-11-13T21:35:57.543528992-08:00"
+}</code></pre>
+        </div>
+      </div>
+
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>List the tasks</h1>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel task list --view MINIMAL</code></pre>
+          <pre><code class="language-json">{
+  "tasks": [
+    {
+      "id": "b8581farl6qjjnvdhqn0",
+      "state": "COMPLETE"
+    },
+    ...
+  ]
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>Quickly create tasks</h1>
+          <p>The "run" command makes it easy to quickly create a task. By default,
+             commands are wrapped in "sh -c" and run in the "alpine" container.</p>
+          <p>Use the "--print" flag to print the task instead of running it immediately.</p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel run 'md5sum $src' --in src=~/src.txt --print</code></pre>
+          <pre><code class="language-json">{
+  "name": "Funnel run: sh -c \"md5sum $src\"",
+  "inputs": [
+    {
+      "name": "src",
+      "url": "file:///Users/buchanae/src.txt",
+      "path": "/opt/funnel/inputs/Users/buchanae/src.txt"
+    }
+  ],
+  "resources": {
+
+  },
+  "executors": [
+    {
+      "image": "alpine",
+      "command": [
+        "sh",
+        "-c",
+        "md5sum $src"
+      ],
+      "workdir": "/opt/funnel",
+      "stdout": "/opt/funnel/outputs/stdout-0",
+      "stderr": "/opt/funnel/outputs/stderr-0",
+      "env": {
+        "src": "/opt/funnel/inputs/Users/buchanae/src.txt"
+      }
+    }
+  ],
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>Monitor tasks in the dashboard</h1>
+          <p>Tasks can be monitored in a terminal dashboard.</p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel dashboard</code></pre>
+          <p><img src="{{ .Site.BaseURL }}img/termdash.png" /></p>
+        </div>
+      </div>
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <p>There's also a web dashboard at http://localhost:8000</p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <p><img src="{{ .Site.BaseURL }}img/webdash.png" /></p>
+        </div>
+      </div>
+
+      <div class="section group">
+        <div class="col span_4_of_12">
+          <h1>Next Steps</h1>
+          <p>There's a lot more to learn about tasks and Funnel. More information can be
+             found in the <a href="{{ .Site.BaseURL }}docs/">docs</a> and the CLI help.</p>
+          <p>
+            <a href="{{ .Site.BaseURL }}docs/" class="docs-button">View the docs</a>
+          </p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel help</code></pre>
+        </div>
+      </div>
   </div>
 
   <hr>
 
   <div class="homepage-more">
-
-    <h2>Join us!</h2>
 
     <div class="section group">
 
@@ -59,36 +283,15 @@
 
       <div class="col span_4_of_12">
         <h3>Give feedback.</h3>
-        <p>We love hearing from users.<br>
-           Tell us what you think.</p>
+        <p>
+           <a href="https://github.com/ohsu-comp-bio/funnel/issues">Let us know</a> what you think.</p>
       </div>
 
     </div>
 
-    <hr>
+  </div>
 
-    <h2>There's more.</h2>
-
-    <div class="section group">
-
-      <div class="col span_4_of_12">
-        <h3>Standards based.</h3>
-        <p>Funnel is based on an <a href="https://github.com/ga4gh/task-execution-schemas">open standard effort</a> from the GA4GH.</p>
-      </div>
-
-      <div class="col span_4_of_12">
-        <h3>Open source.</h3>
-        <p>Funnel is <a href="https://opensource.org/licenses/MIT">MIT licensed</a>.<br>Do as you please.</p>
-      </div>
-
-      <!--div class="col span_4_of_12">
-        <h3>Related projects.</h3>
-        <p>Need something here.</p>
-      </div-->
-
-    </div>
-
-    <div class="homepage-footer"></div>
+  <div class="homepage-footer"></div>
 
 </div></div>
 

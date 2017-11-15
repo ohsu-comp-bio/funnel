@@ -211,8 +211,8 @@ Worker: ActiveEventWriters: - log - mongodb EventWriters: MongoDB: Addrs: - &amp
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</guid>
       <description>OpenStack Swift Funnel supports using OpenStack Swift for file storage.
 The Swift client is NOT enabled by default, you must explicitly give the credentials in the worker config:
-Worker: Storage: Swift: UserName: Password: AuthURL: TenantName: TenantID: RegionName:  The config currently only supports OpenStack v2 auth, which unfortunately requires the password to be saved in the config file. Make sure to protect this file appropriately. See issue #336.
-In the future, Swift will be enabled by default, with automatic detection of credentials from the environment.</description>
+Worker: Storage: Swift: UserName: Password: AuthURL: TenantName: TenantID: RegionName:  The config currently only supports OpenStack v2 auth. See issue #336.
+As always, if you set the password in this file, make sure you protect it appropriately. Alternatively, the Swift client can pull credentials from these environment variables: https://godoc.</description>
     </item>
     
     <item>

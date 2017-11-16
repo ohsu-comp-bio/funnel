@@ -2,7 +2,6 @@ package tests
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
@@ -25,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -317,8 +317,24 @@ func (f *Funnel) ReadFile(name string) string {
 }
 
 // StartServerInDocker starts a funnel server in a docker image
-func (f *Funnel) StartServerInDocker(imageName string,  extraArgs []string) {
-	funnelBinary, err := filepath.Abs(exec.LookPath("funnel"))
+func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
+	var funnelBinary string
+	var err error
+	gopath := os.Getenv("GOPATH")
+
+	if runtime.GOOS == "linux" {
+		funnelBinary, err = filepath.Abs(filepath.Join(
+			gopath, "bin/", "funnel",
+		))
+	} else {
+		funnelBinary, err = filepath.Abs(filepath.Join(
+			gopath, "src/github.com/ohsu-comp-bio/funnel/build/bin/", "funnel-linux-amd64",
+		))
+	}
+	if err != nil {
+		log.Error("Error finding funnel binary", err)
+		panic(err)
+	}
 
 	// write config file
 	configPath, _ := filepath.Abs(filepath.Join(f.Conf.Worker.WorkDir, "config.yml"))
@@ -329,7 +345,7 @@ func (f *Funnel) StartServerInDocker(imageName string,  extraArgs []string) {
 	rpcPort, _ := strconv.ParseInt(f.Conf.Server.RPCPort, 0, 32)
 
 	// detect gid of /var/run/docker.sock
-	fi, err = os.Stat("/var/run/docker.sock")
+	fi, err := os.Stat("/var/run/docker.sock")
 	if err != nil {
 		panic(err)
 	}

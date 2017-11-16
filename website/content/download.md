@@ -7,9 +7,12 @@ menu:
 
 ### Download
 
-- [linux <small>[funnel-linux-amd64-0.4.0.tar.gz]</small>][linux-64-bin]
-- [mac <small>[funnel-darwin-amd64-0.4.0.tar.gz]</small>][mac-64-bin]
+- [linux <small>[funnel-linux-amd64-0.4.1.tar.gz]</small>][linux-64-bin]
+- [mac <small>[funnel-darwin-amd64-0.4.1.tar.gz]</small>][mac-64-bin]
 - <small>Windows is not supported (yet), sorry!</small>
+
+[linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.4.1/funnel-linux-amd64-0.4.1.tar.gz
+[mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.4.1/funnel-darwin-amd64-0.4.1.tar.gz
 
 Funnel is a single binary.  
 Funnel requires [Docker][docker].  
@@ -25,6 +28,17 @@ $ go get github.com/ohsu-comp-bio/funnel
 Funnel requires Go 1.8+. Check out the [development docs][dev] for more detail.
 
 ### Release History
+
+#### 0.4.1
+
+Date: Nov 16, 2017
+Tag: https://github.com/ohsu-comp-bio/funnel/releases/tag/0.4.1  
+Changes: https://github.com/ohsu-comp-bio/funnel/compare/0.4.0...0.4.1  
+Milestone: https://github.com/ohsu-comp-bio/funnel/milestone/4?closed=1  
+
+Notes:
+
+- Fix for regression in Elasticserach scheduler database backend.
 
 #### 0.4.0
 
@@ -93,7 +107,5 @@ Released: Jun 5, 2017
 Tag: https://github.com/ohsu-comp-bio/funnel/releases/tag/0.1.0
 
 
-[linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.3.0/funnel-linux-amd64-0.3.0.tar.gz
-[mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.3.0/funnel-darwin-amd64-0.3.0.tar.gz
 [dev]: /docs/development/
 [docker]: https://docker.io

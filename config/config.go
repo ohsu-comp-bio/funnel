@@ -381,7 +381,8 @@ type S3Storage struct {
 
 // Valid validates the LocalStorage configuration
 func (s S3Storage) Valid() bool {
-	return ((s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")) && !s.Disabled
+	creds := (s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")
+	return creds && !s.Disabled
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.

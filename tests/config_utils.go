@@ -41,6 +41,7 @@ func DefaultConfig() config.Config {
 			panic(err)
 		}
 	}
+
 	return TestifyConfig(conf)
 }
 

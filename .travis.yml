@@ -12,10 +12,11 @@ services:
 cache:
   directories:
     - $GOPATH/pkg
-    - vendor
+    - $GOPATH/src/github.com/ohsu-comp-bio/funnel/.git/modules
+    - $GOPATH/src/github.com/ohsu-comp-bio/funnel/vendor
 
 git:
-  submodules: true
+  submodules: false
 
 install:
   - make depends

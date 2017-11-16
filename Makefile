@@ -82,13 +82,6 @@ lint:
 		./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 
-test-travis:
-ifeq ($(BUILD_TYPE), lint)
-	make lint
-else
-	make test-${BUILD_TYPE}
-endif
-
 # Run all tests
 test:
 	@go test $(TESTS)

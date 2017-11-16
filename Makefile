@@ -82,6 +82,13 @@ lint:
 		./...
 	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
 
+test-travis:
+ifeq ($(BUILD_TYPE), lint)
+	make lint
+else
+	make test-${BUILD_TYPE}
+endif
+
 # Run all tests
 test:
 	@go test $(TESTS)
@@ -97,28 +104,27 @@ test-elasticsearch:
 	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/elastic.config.yml
 	@go test ./tests/scheduler/ -funnel-config $(CONFIGDIR)/elastic.config.yml
 
-test-mongodb:
-	@docker pull mongo:3.5.13
+start-mongodb:
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
-	@sleep 10
+
+test-mongodb:
 	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/mongo.config.yml
 	@go test ./tests/scheduler/ -funnel-config $(CONFIGDIR)/mongo.config.yml	
-	@docker rm -f funnel-mongodb-test  > /dev/null 2>&1 || echo 
 
-test-dynamodb:
+start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-dynamodb-test -p 8000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
-	@sleep 10
-	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/dynamo.config.yml
-	@docker rm -f funnel-dynamodb-test  > /dev/null 2>&1 || echo 
 
-test-kafka:
+test-dynamodb:
+	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/dynamo.config.yml
+
+start-kafka:
 	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
-	@sleep 10
+
+test-kafka:
 	@go test ./tests/kafka/
-	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
 
 test-htcondor:
 	@docker pull ohsucompbio/htcondor
@@ -142,8 +148,7 @@ test-s3:
 
 # Tests meant to run in an OpenStack environment
 test-swift:
-	# @go test ./tests/storage -funnel-config $(CONFIGDIR)/swift.config.yml
-	@go test ./tests/storage -funnel-config ${FUNNEL_OPENSTACK_TEST_CONFIG}
+	@go test ./tests/storage -funnel-config $(CONFIGDIR)/swift.config.yml
 
 webdash-install:
 	@npm install --prefix ./webdash

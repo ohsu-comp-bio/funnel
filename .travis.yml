@@ -1,13 +1,13 @@
 os:
   - linux
 language: go
+go:
+  - 1.8
 sudo: required
 
 services:
   - docker
   - elasticsearch
-go:
-  - 1.8
 
 cache:
   directories:
@@ -15,7 +15,7 @@ cache:
     - vendor
 
 git:
-  submodules: false
+  submodules: true
 
 install:
   - make depends
@@ -41,20 +41,28 @@ jobs:
         - n=gridengine
     - script: make test-pbs-torque
       env:
-        - n=pbs
-    - script: make test-elasticsearch
-      before_script:
+        - n=pbs-torque
+    - script: 
         - sleep 10
+        - make test-elasticsearch      
       env:
-        - n=elastic
-    - script: make test-mongodb
+        - n=elasticsearch
+    - script: 
+        - make start-mongodb
+        - sleep 10
+        - make test-mongodb
       env:
-        - n=mongo
-    - script: make test-dynamodb
+        - n=mongodb
+    - script: 
+        - make start-dynamodb
+        - sleep 10
+        - make test-dynamodb
       env:
-        - n=dynamo
-
-    - script: make test-kafka
+        - n=dynamodb
+    - script: 
+        - make start-kafka
+        - sleep 10
+        - make test-kafka
       env:
         - n=kafka
 

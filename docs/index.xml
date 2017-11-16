@@ -28,7 +28,7 @@ Create Required AWS Batch Resources For Funnel to execute tasks on Batch, you mu
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/</guid>
       <description>AWS S3 Funnel supports using AWS S3 for file storage.
 The S3 storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-Worker: Storage: S3: Credentials: # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot;  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;s3://funnel-bucket/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.</description>
+Worker: Storage: S3: Disabled: false AWS: # The maximum number of times that a request will be retried for failures. MaxRetries: 10 # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot;  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;s3://funnel-bucket/hello.</description>
     </item>
     
     <item>
@@ -86,12 +86,12 @@ A node is a service which runs on each machine in a cluster. The node connects t
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/download/</guid>
-      <description>Download  linux [funnel-linux-amd64-0.4.0.tar.gz] mac [funnel-darwin-amd64-0.4.0.tar.gz] Windows is not supported (yet), sorry!  Funnel is a single binary.
+      <description>Download  linux [funnel-linux-amd64-0.4.1.tar.gz] mac [funnel-darwin-amd64-0.4.1.tar.gz] Windows is not supported (yet), sorry!  Funnel is a single binary.
 Funnel requires Docker.
 Funnel is beta quality. APIs might break, bugs exist, data might be lost.
 Install the lastest development version optional In order to build the latest code, run:
 $ go get github.com/ohsu-comp-bio/funnel  Funnel requires Go 1.8+. Check out the development docs for more detail.
-Release History 0.4.0 Date: Nov 15, 2017</description>
+Release History 0.4.1 Date: Nov 16, 2017</description>
     </item>
     
     <item>
@@ -100,9 +100,9 @@ Release History 0.4.0 Date: Nov 15, 2017</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/</guid>
-      <description>DynamoDB Funnel supports storing task data in DynamoDB. Storing scheduler data is not supported currently, so using the node scheduler with DynamoDB won&amp;rsquo;t work. Using AWS Batch for compute scheduling may be a better option.
+      <description>DynamoDB Funnel supports storing task data in DynamoDB. Storing scheduler data is not supported currently, so using the node scheduler with DynamoDB won&amp;rsquo;t work. Using AWS Batch for compute scheduling may be a better option. Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.
 Available Config:
-Server: Database: dynamodb Databases: DynamoDB: # Basename to use for dynamodb tables TableBasename: &amp;quot;funnel&amp;quot; # AWS region Region: &amp;quot;&amp;quot; Credentials: # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot;  Worker config Using DynamoDB with AWS Batch requires that the worker be configured to connect to the database:</description>
+Server: Database: dynamodb Databases: DynamoDB: # Basename to use for dynamodb tables TableBasename: &amp;quot;funnel&amp;quot; AWS: # AWS region Region: &amp;quot;us-west-2&amp;quot; # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot;  Worker config Using DynamoDB with AWS Batch requires that the worker be configured to connect to the database:</description>
     </item>
     
     <item>

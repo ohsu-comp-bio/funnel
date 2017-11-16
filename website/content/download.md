@@ -31,14 +31,14 @@ Funnel requires Go 1.8+. Check out the [development docs][dev] for more detail.
 
 #### 0.4.1
 
-Date: Nov 16, 2017
+Date: Nov 16, 2017  
 Tag: https://github.com/ohsu-comp-bio/funnel/releases/tag/0.4.1  
 Changes: https://github.com/ohsu-comp-bio/funnel/compare/0.4.0...0.4.1  
 Milestone: https://github.com/ohsu-comp-bio/funnel/milestone/4?closed=1  
 
 Notes:
 
-- Fix for regression in Elasticserach scheduler database backend.
+- Fix for regression in Elasticsearch scheduler database backend.
 
 #### 0.4.0
 

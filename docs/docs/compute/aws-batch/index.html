@@ -354,16 +354,19 @@ on and off without data loss.</p>
 <pre><code>funnel server run --config /path/to/config.yaml
 </code></pre>
 
-<p>Here is an example of the configuration you would need for the server had you
-run <code>funnel aws batch create-all-resources --region us-west-2</code>:</p>
+<p>Below is an example of the configuration you would need for the server had you
+run <code>funnel aws batch create-all-resources --region us-west-2</code>. Note that the <code>Key</code>
+and <code>Secret</code> fields are left blank in the configuration of the componenets. This is because
+Funnel will, by default, try to will try to automatically load credentials from the environment.
+Alternatively, you may explicitly set the credentials in the config.</p>
 
 <pre><code class="language-YAML">Server:
   Database: &quot;dynamodb&quot;
   Databases:
     Dynamodb:
       TableBasename: &quot;funnel&quot;
-      Region: &quot;us-west-2&quot;
-      Credentials:
+      AWS:
+        Region: &quot;us-west-2&quot;
         Key: &quot;&quot;
         Secret: &quot;&quot;
 
@@ -372,18 +375,18 @@ Backends:
   Batch:
     JobDefinition: &quot;funnel-job-def&quot;
     JobQueue: &quot;funnel-job-queue&quot; 
-    Region: &quot;us-west-2&quot;
-    Credentials:
-      Key: &quot;&quot;
-      Secret: &quot;&quot;
+      AWS:
+        Region: &quot;us-west-2&quot;
+        Key: &quot;&quot;
+        Secret: &quot;&quot;
             
 Worker:
   TaskReader: &quot;dynamodb&quot;
   TaskReaders:
     Dynamodb:
       TableBasename: &quot;funnel&quot;
-      Region: &quot;us-west-2&quot;
-      Credentials:
+      AWS:
+        Region: &quot;us-west-2&quot;
         Key: &quot;&quot;
         Secret: &quot;&quot;
   ActiveEventWriters:
@@ -392,15 +395,14 @@ Worker:
   EventWriters:
     Dynamodb:
       TableBasename: &quot;funnel&quot;
-      Region: &quot;us-west-2&quot;
-      Credentials:
+      AWS:
+        Region: &quot;us-west-2&quot;
         Key: &quot;&quot;
         Secret: &quot;&quot;
   Storage:
-    S3:
-      Credentials:
-        Key: &quot;&quot;
-        Secret: &quot;&quot;
+    AWS:
+      Key: &quot;&quot;
+      Secret: &quot;&quot;
 </code></pre>
 
 <h3 id="known-issues">Known issues</h3>

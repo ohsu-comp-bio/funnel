@@ -25,6 +25,14 @@ var keyMap = map[string][]string{
 		"/sys/kbd/<right>",
 		"sys/kbd/l",
 	},
+	"pgup": {
+		"/sys/kbd/<previous>",
+		"/sys/kbd/C-<up>",
+	},
+	"pgdown": {
+		"/sys/kbd/<next>",
+		"/sys/kbd/C-<down>",
+	},
 	"exit": {
 		"/sys/kbd/q",
 		"/sys/kbd/C-c",

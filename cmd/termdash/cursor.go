@@ -10,9 +10,10 @@ import (
 )
 
 type GridCursor struct {
-	selectedID string
-	filtered   TaskWidgets
-	tSource    TesTaskSource
+	selectedID  string
+	filtered    TaskWidgets
+	tSource     TesTaskSource
+	isScrolling bool // toggled when actively scrolling
 }
 
 func NewGridCursor(tesHTTPServerAddress string) *GridCursor {
@@ -130,6 +131,9 @@ func (gc *GridCursor) ScrollPage() {
 }
 
 func (gc *GridCursor) Up() {
+	gc.isScrolling = true
+	defer func() { gc.isScrolling = false }()
+
 	idx := gc.Idx()
 	if idx <= 0 { // already at top
 		return
@@ -146,6 +150,9 @@ func (gc *GridCursor) Up() {
 }
 
 func (gc *GridCursor) Down() {
+	gc.isScrolling = true
+	defer func() { gc.isScrolling = false }()
+
 	idx := gc.Idx()
 	if idx >= gc.Len()-1 { // already at bottom
 		return
@@ -167,10 +174,11 @@ func (gc *GridCursor) PgUp() {
 		return
 	}
 
-	var nextidx int
-	nextidx = int(math.Max(0.0, float64(idx-cGrid.MaxRows())))
-	cGrid.Offset = int(math.Max(float64(cGrid.Offset-cGrid.MaxRows()),
-		float64(0)))
+	nextidx := int(math.Max(0.0, float64(idx-cGrid.MaxRows())))
+	if gc.pgCount() > 0 {
+		cGrid.Offset = int(math.Max(float64(cGrid.Offset-cGrid.MaxRows()),
+			float64(0)))
+	}
 
 	active := gc.filtered[idx]
 	next := gc.filtered[nextidx]
@@ -189,11 +197,11 @@ func (gc *GridCursor) PgDown() {
 		return
 	}
 
-	var nextidx int
-	nextidx = int(math.Min(float64(gc.Len()-1),
-		float64(idx+cGrid.MaxRows())))
-	cGrid.Offset = int(math.Min(float64(cGrid.Offset+cGrid.MaxRows()),
-		float64(gc.Len()-cGrid.MaxRows())))
+	nextidx := int(math.Min(float64(gc.Len()-1), float64(idx+cGrid.MaxRows())))
+	if gc.pgCount() > 0 {
+		cGrid.Offset = int(math.Min(float64(cGrid.Offset+cGrid.MaxRows()),
+			float64(gc.Len()-cGrid.MaxRows())))
+	}
 
 	active := gc.filtered[idx]
 	next := gc.filtered[nextidx]
@@ -204,4 +212,13 @@ func (gc *GridCursor) PgDown() {
 
 	cGrid.Align()
 	ui.Render(cGrid)
+}
+
+// number of pages at current row count and term height
+func (gc *GridCursor) pgCount() int {
+	pages := gc.Len() / cGrid.MaxRows()
+	if gc.Len()%cGrid.MaxRows() > 0 {
+		pages++
+	}
+	return pages
 }

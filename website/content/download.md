@@ -18,6 +18,13 @@ Funnel is a single binary.
 Funnel requires [Docker][docker].  
 Funnel is beta quality. APIs might break, bugs exist, data might be lost.  
 
+### Homebrew
+
+```
+brew tap ohsu-comp-bio/formula
+brew install funnel
+```
+
 <h3>Install the lastest development version <i class="optional">optional</i></h3>
 
 In order to build the latest code, run:

@@ -28,6 +28,9 @@ func (cg *Grid) Align() {
 	if cg.Offset >= len(cg.Rows) {
 		cg.Offset = 0
 	}
+	if cg.Offset < 0 {
+		cg.Offset = 0
+	}
 	// update row ypos, width recursively
 	for _, r := range cg.pageRows() {
 		r.SetY(y)

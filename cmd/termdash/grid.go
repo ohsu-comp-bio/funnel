@@ -69,8 +69,11 @@ func ExpandView(t *TaskWidget) {
 }
 
 func RefreshDisplay() {
-	needsClear := cursor.RefreshTaskList(false, false)
-	RedrawRows(needsClear)
+	// skip display refresh during scroll
+	if !cursor.isScrolling {
+		needsClear := cursor.RefreshTaskList(false, false)
+		RedrawRows(needsClear)
+	}
 }
 
 func NextPage() {
@@ -98,6 +101,9 @@ func Display() bool {
 	HandleKeys("down", cursor.Down)
 	HandleKeys("left", PreviousPage)
 	HandleKeys("right", NextPage)
+	HandleKeys("pgup", cursor.PgUp)
+	HandleKeys("pgdown", cursor.PgDown)
+
 	HandleKeys("exit", ui.StopLoop)
 	HandleKeys("help", func() {
 		menu = HelpMenu

@@ -1,6 +1,5 @@
 Server:
-  # Hostname of the Funnel server. Mainly, this is used by auto-scalers
-  # to configure workers.
+  # Hostname of the Funnel server.
   HostName: localhost
 
   # Port used for HTTP communication and the web dashboard.
@@ -61,7 +60,7 @@ Server:
     # Write logs to this path. If empty, logs are written to stderr.
     OutputFile: ""
 
-# The scheduler is used for the GCE, Openstack, and Manual compute backends. 
+# The scheduler is used for the Manual compute backend. 
 Scheduler:
   # How often to run a scheduler iteration.
   # In nanoseconds.
@@ -112,7 +111,7 @@ Scheduler:
 
 
 # The name of the active compute backend
-# Available backends: local, htcondor, slurm, pbs, gridengine, manual, gce, openstack, aws-batch
+# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch
 Backend: local
 
 # Scheduler backend config
@@ -195,24 +194,6 @@ Backends:
       {{- end}}
 
       {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
-
-  GCE:
-    # Path to account credentials file.
-    # If possible, this will be automatically discovered.
-    AccountFile: ""
-    # Google Cloud project ID.
-    # If possible, this will be automatically discovered.
-    Project: ""
-    # Google Cloud zone.
-    # If possible, this will be automatically discovered.
-    Zone: ""
-    Weights:
-      # Prefer nodes that start up quickly.
-      # Nodes that are already online have instant startup time.
-      PreferQuickStartup: 1.0
-    # How long to cache GCE API results (machine list, templates, etc)
-    # before refreshing.
-    CacheTTL: 60000000000 # 1 minute
 
   # Batch describes the configuration for the AWS Batch compute backend.
   Batch:

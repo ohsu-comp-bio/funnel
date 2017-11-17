@@ -6,7 +6,6 @@ package expanded
 import (
 	ui "github.com/gizak/termui"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"strings"
 )
 
 var (
@@ -27,10 +26,8 @@ type Expanded struct {
 }
 
 func NewExpanded(t *tes.Task) *Expanded {
-	ts, _ := tes.MarshalToString(t)
-	ts = strings.Replace(ts, `\n`, "\n", -1)
 	return &Expanded{
-		TaskJSON: NewJSON(ts),
+		TaskJSON: NewJSON(t),
 		// TaskInfo:    NewTaskInfo(t),
 		// TaskInputs:  NewTaskParameters(t.Inputs, "INPUTS"),
 		// TaskOutputs: NewTaskParameters(t.Outputs, "OUTPUTS"),
@@ -42,15 +39,18 @@ func NewExpanded(t *tes.Task) *Expanded {
 }
 
 func (e *Expanded) Update(t *tes.Task) {
-	ts, _ := tes.MarshalToString(t)
-	ts = strings.Replace(ts, `\n`, "\n", -1)
-	e.TaskJSON.Set(ts)
+	e.TaskJSON.Set(t)
 	// e.TaskInfo.Set(t)
 	// e.TaskInputs.Set(t.Inputs)
 	// e.TaskOutputs.Set(t.Outputs)
 	// e.TaskExecutors.Set(t.Executors)
 	// e.TaskResources .Set(t.Resources)
 	// e.TaskLogs .Set(t.Logs)
+	e.Width = ui.TermWidth()
+}
+
+func (e *Expanded) DisplayError(err error) {
+	e.TaskJSON.SetErrorMessage(err)
 	e.Width = ui.TermWidth()
 }
 

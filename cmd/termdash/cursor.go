@@ -4,6 +4,7 @@
 package termdash
 
 import (
+	"fmt"
 	ui "github.com/gizak/termui"
 	"math"
 )
@@ -39,7 +40,7 @@ func (gc *GridCursor) Selected() *TaskWidget {
 }
 
 // Refresh a single task
-func (gc *GridCursor) RefreshTask(id string) *TaskWidget {
+func (gc *GridCursor) RefreshTask(id string) (*TaskWidget, error) {
 	return gc.tSource.Get(id)
 }
 
@@ -47,10 +48,18 @@ func (gc *GridCursor) RefreshTask(id string) *TaskWidget {
 func (gc *GridCursor) RefreshTaskList(previous, next bool) (lenChanged bool) {
 	oldLen := gc.Len()
 
+	tasks, err := gc.tSource.List(previous, next)
+	if err != nil {
+		// header.SetError(fmt.Sprintf("Previous: %s; Next: %s; Current: %s", ts.pPage, ts.nPage, ts.cPage))
+		header.SetError(fmt.Sprintf("%v", err))
+	} else {
+		header.SetError("")
+	}
+
 	// Tasks filtered by display bool
 	gc.filtered = TaskWidgets{}
 	var cursorVisible bool
-	for _, t := range gc.tSource.List(previous, next) {
+	for _, t := range tasks {
 		if t.display {
 			if t.Task.Id == gc.selectedID {
 				t.Widgets.ID.Highlight()
@@ -77,7 +86,8 @@ func (gc *GridCursor) RefreshTaskList(previous, next bool) (lenChanged bool) {
 
 // Set an initial cursor position, if possible
 func (gc *GridCursor) Reset() {
-	for _, t := range gc.tSource.List(false, false) {
+	tasks, _ := gc.tSource.List(false, false)
+	for _, t := range tasks {
 		t.Widgets.ID.UnHighlight()
 	}
 	if gc.Len() > 0 {

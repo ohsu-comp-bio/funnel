@@ -43,7 +43,6 @@ func ExpandView(t *TaskWidget) {
 	defer ui.DefaultEvtStream.ResetHandlers()
 
 	ex := expanded.NewExpanded(t.Task)
-
 	ex.Align()
 	ui.Render(ex)
 
@@ -51,8 +50,12 @@ func ExpandView(t *TaskWidget) {
 	HandleKeys("down", ex.Down)
 	HandleKeys("exit", ui.StopLoop)
 	ui.Handle("/timer/1s", func(e ui.Event) {
-		task := cursor.RefreshTask(t.Task.Id)
-		ex.Update(task.Task)
+		task, err := cursor.RefreshTask(t.Task.Id)
+		if err != nil {
+			ex.DisplayError(err)
+		} else {
+			ex.Update(task.Task)
+		}
 		ui.Clear()
 		ex.Align()
 		ui.Render(ex)
@@ -95,7 +98,6 @@ func Display() bool {
 	HandleKeys("down", cursor.Down)
 	HandleKeys("left", PreviousPage)
 	HandleKeys("right", NextPage)
-
 	HandleKeys("exit", ui.StopLoop)
 	HandleKeys("help", func() {
 		menu = HelpMenu
@@ -125,23 +127,22 @@ func Display() bool {
 		menu = SortMenu
 		ui.StopLoop()
 	})
-
 	ui.Handle("/timer/1s", func(e ui.Event) {
 		RefreshDisplay()
 	})
-
 	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
 		header.Align()
 		cursor.ScrollPage()
 		cGrid.SetWidth(ui.TermWidth())
 		RedrawRows(true)
 	})
-
 	ui.Loop()
+
 	if menu != nil {
 		menu()
 		return false
 	}
+
 	if expand {
 		task := cursor.Selected()
 		if task != nil {
@@ -149,5 +150,6 @@ func Display() bool {
 		}
 		return false
 	}
+
 	return true
 }

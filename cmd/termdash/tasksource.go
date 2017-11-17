@@ -1,7 +1,6 @@
 package termdash
 
 import (
-	"fmt"
 	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
@@ -10,8 +9,8 @@ import (
 )
 
 type TesTaskSource interface {
-	List(bool, bool) TaskWidgets
-	Get(string) *TaskWidget
+	List(bool, bool) (TaskWidgets, error)
+	Get(string) (*TaskWidget, error)
 	GetNextPage() string
 	GetPreviousPage() string
 }
@@ -34,11 +33,11 @@ func NewTaskSource(tesHTTPServerAddress string, pageSize uint32) *TaskSource {
 		pageSize: pageSize,
 		lock:     sync.RWMutex{},
 	}
-	ts.tasks = ts.listTasks(false, false)
+	ts.tasks, _ = ts.listTasks(false, false)
 	return ts
 }
 
-func (ts *TaskSource) listTasks(previous, next bool) TaskWidgets {
+func (ts *TaskSource) listTasks(previous, next bool) (TaskWidgets, error) {
 	var tasks TaskWidgets
 
 	if next && !previous {
@@ -63,27 +62,29 @@ func (ts *TaskSource) listTasks(previous, next bool) TaskWidgets {
 		PageToken: ts.cPage,
 	})
 	if err != nil {
-		header.SetError(fmt.Sprintf("%v", err))
-		return nil
-	} else {
-		// header.SetError(fmt.Sprintf("Previous: %s; Next: %s; Current: %s", ts.pPage, ts.nPage, ts.cPage))
-		header.SetError("")
+		return tasks, err
 	}
+
 	ts.nPage = resp.NextPageToken
 
 	for _, t := range resp.Tasks {
 		tasks = append(tasks, NewTaskWidget(t))
 	}
 
-	return tasks
+	return tasks, nil
 }
 
 // Return array of tasks, sorted by field
-func (ts *TaskSource) List(previous, next bool) TaskWidgets {
-	ts.tasks = ts.listTasks(previous, next)
+func (ts *TaskSource) List(previous, next bool) (TaskWidgets, error) {
+	var tasks TaskWidgets
+	var err error
+
+	ts.tasks, err = ts.listTasks(previous, next)
+	if err != nil {
+		return tasks, err
+	}
 
 	ts.lock.Lock()
-	var tasks TaskWidgets
 	for _, t := range ts.tasks {
 		tasks = append(tasks, t)
 	}
@@ -91,27 +92,19 @@ func (ts *TaskSource) List(previous, next bool) TaskWidgets {
 
 	sort.Sort(tasks)
 	tasks.Filter()
-	return tasks
+	return tasks, nil
 }
 
 // Get a single task, by ID
-func (ts *TaskSource) Get(id string) *TaskWidget {
-	defer func() {
-		if r := recover(); r != nil {
-			if header != nil {
-				header.SetError(fmt.Sprintf("%v", r))
-			}
-		}
-	}()
-
+func (ts *TaskSource) Get(id string) (*TaskWidget, error) {
 	task, err := ts.client.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
 		View: tes.TaskView_FULL,
 	})
 	if err != nil {
-		panic(err)
+		return NewTaskWidget(&tes.Task{}), err
 	}
-	return NewTaskWidget(task)
+	return NewTaskWidget(task), nil
 }
 
 func (ts *TaskSource) GetNextPage() string {

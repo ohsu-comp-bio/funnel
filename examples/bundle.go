@@ -89,7 +89,7 @@ func examplesGoogleStorageJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/google-storage.json", size: 493, mode: os.FileMode(420), modTime: time.Unix(1510364843, 0)}
+	info := bindataFileInfo{name: "examples/google-storage.json", size: 493, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -109,7 +109,7 @@ func examplesHelloWorldJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/hello-world.json", size: 218, mode: os.FileMode(420), modTime: time.Unix(1510364843, 0)}
+	info := bindataFileInfo{name: "examples/hello-world.json", size: 218, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -129,7 +129,7 @@ func examplesInputContentJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/input-content.json", size: 736, mode: os.FileMode(420), modTime: time.Unix(1510364855, 0)}
+	info := bindataFileInfo{name: "examples/input-content.json", size: 736, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -149,7 +149,7 @@ func examplesLogStreamingJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/log-streaming.json", size: 366, mode: os.FileMode(420), modTime: time.Unix(1510364843, 0)}
+	info := bindataFileInfo{name: "examples/log-streaming.json", size: 366, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -169,7 +169,7 @@ func examplesMd5sumJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/md5sum.json", size: 731, mode: os.FileMode(420), modTime: time.Unix(1510364843, 0)}
+	info := bindataFileInfo{name: "examples/md5sum.json", size: 731, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -189,7 +189,7 @@ func examplesResourceRequestJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/resource-request.json", size: 299, mode: os.FileMode(420), modTime: time.Unix(1510365022, 0)}
+	info := bindataFileInfo{name: "examples/resource-request.json", size: 299, mode: os.FileMode(420), modTime: time.Unix(1510862518, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -209,7 +209,7 @@ func examplesS3Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/s3.json", size: 476, mode: os.FileMode(420), modTime: time.Unix(1510349150, 0)}
+	info := bindataFileInfo{name: "examples/s3.json", size: 476, mode: os.FileMode(420), modTime: time.Unix(1510862518, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -266,13 +266,13 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"examples/google-storage.json":   examplesGoogleStorageJson,
-	"examples/hello-world.json":      examplesHelloWorldJson,
-	"examples/input-content.json":    examplesInputContentJson,
-	"examples/log-streaming.json":    examplesLogStreamingJson,
-	"examples/md5sum.json":           examplesMd5sumJson,
+	"examples/google-storage.json": examplesGoogleStorageJson,
+	"examples/hello-world.json": examplesHelloWorldJson,
+	"examples/input-content.json": examplesInputContentJson,
+	"examples/log-streaming.json": examplesLogStreamingJson,
+	"examples/md5sum.json": examplesMd5sumJson,
 	"examples/resource-request.json": examplesResourceRequestJson,
-	"examples/s3.json":               examplesS3Json,
+	"examples/s3.json": examplesS3Json,
 }
 
 // AssetDir returns the file names below a certain
@@ -314,16 +314,15 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
-
 var _bintree = &bintree{nil, map[string]*bintree{
-	"examples": {nil, map[string]*bintree{
-		"google-storage.json":   {examplesGoogleStorageJson, map[string]*bintree{}},
-		"hello-world.json":      {examplesHelloWorldJson, map[string]*bintree{}},
-		"input-content.json":    {examplesInputContentJson, map[string]*bintree{}},
-		"log-streaming.json":    {examplesLogStreamingJson, map[string]*bintree{}},
-		"md5sum.json":           {examplesMd5sumJson, map[string]*bintree{}},
-		"resource-request.json": {examplesResourceRequestJson, map[string]*bintree{}},
-		"s3.json":               {examplesS3Json, map[string]*bintree{}},
+	"examples": &bintree{nil, map[string]*bintree{
+		"google-storage.json": &bintree{examplesGoogleStorageJson, map[string]*bintree{}},
+		"hello-world.json": &bintree{examplesHelloWorldJson, map[string]*bintree{}},
+		"input-content.json": &bintree{examplesInputContentJson, map[string]*bintree{}},
+		"log-streaming.json": &bintree{examplesLogStreamingJson, map[string]*bintree{}},
+		"md5sum.json": &bintree{examplesMd5sumJson, map[string]*bintree{}},
+		"resource-request.json": &bintree{examplesResourceRequestJson, map[string]*bintree{}},
+		"s3.json": &bintree{examplesS3Json, map[string]*bintree{}},
 	}},
 }}
 
@@ -373,3 +372,4 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
+

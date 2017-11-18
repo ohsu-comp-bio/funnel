@@ -11,9 +11,10 @@ func TestStorageWithConfig(t *testing.T) {
 		Local: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GS:    config.GSStorage{},
-		S3:    config.S3Storage{Disabled: true},
-		Swift: config.SwiftStorage{Disabled: true},
+		GS:       config.GSStorage{Disabled: true},
+		AmazonS3: config.AmazonS3Storage{Disabled: true},
+		S3:       []config.S3Storage{},
+		Swift:    config.SwiftStorage{Disabled: true},
 	}
 	s := Storage{}
 	sc, err := s.WithConfig(c)
@@ -30,13 +31,21 @@ func TestStorageWithConfig(t *testing.T) {
 			AllowedDirs: []string{"/tmp"},
 		},
 		GS: config.GSStorage{
-			FromEnv: true,
+			Disabled: false,
 		},
-		S3: config.S3Storage{
+		AmazonS3: config.AmazonS3Storage{
 			Disabled: false,
 			AWS: config.AWSConfig{
 				Key:    "testkey",
 				Secret: "testsecret",
+			},
+		},
+		S3: []config.S3Storage{
+			{
+				Disabled: false,
+				Endpoint: "testendpoint:8080",
+				Key:      "testkey",
+				Secret:   "testsecret",
 			},
 		},
 		Swift: config.SwiftStorage{Disabled: true},
@@ -45,7 +54,7 @@ func TestStorageWithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sc.backends) != 3 {
+	if len(sc.backends) != 4 {
 		t.Fatal("unexpected number of Storage backends")
 	}
 }

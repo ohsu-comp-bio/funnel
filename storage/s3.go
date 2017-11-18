@@ -25,7 +25,7 @@ type S3Backend struct {
 }
 
 // NewS3Backend creates an S3Backend session instance
-func NewS3Backend(conf config.S3Storage) (*S3Backend, error) {
+func NewS3Backend(conf config.AmazonS3Storage) (*S3Backend, error) {
 	sess, err := util.NewAWSSession(conf.AWS)
 	if err != nil {
 		return nil, err

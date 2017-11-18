@@ -133,7 +133,7 @@ func DefaultConfig() Config {
 	c.Worker.EventWriters.MongoDB = mongo
 	c.Worker.EventWriters.Kafka.Topic = "funnel"
 
-	c.Worker.Storage.S3.AWS.MaxRetries = 10
+	c.Worker.Storage.AmazonS3.AWS.MaxRetries = 10
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -328,11 +328,11 @@ type DynamoDB struct {
 
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
-	Local LocalStorage
-	S3    S3Storage
-	GS3   GS3Storage
-	GS    GSStorage
-	Swift SwiftStorage
+	Local    LocalStorage
+	AmazonS3 AmazonS3Storage
+	S3       []S3Storage
+	GS       GSStorage
+	Swift    SwiftStorage
 }
 
 // LocalStorage describes the directories Funnel can read from and write to
@@ -347,37 +347,41 @@ func (l LocalStorage) Valid() bool {
 
 // GSStorage describes configuration for the Google Cloud storage backend.
 type GSStorage struct {
+	Disabled bool
+	// If Anonymous is false and no account file is provided then Funnel will
+	// try to use Google Application Default Credentials to authorize and authenticate the client.
+	Anonymous   bool
 	AccountFile string
-	FromEnv     bool
 }
 
 // Valid validates the GSStorage configuration.
 func (g GSStorage) Valid() bool {
-	return g.FromEnv || g.AccountFile != ""
+	creds := (g.Anonymous && g.AccountFile == "") || (!g.Anonymous && g.AccountFile != "")
+	return !g.Disabled && creds
 }
 
-// S3Storage describes the configuration for the Amazon S3 storage backend.
-type S3Storage struct {
+// AmazonS3Storage describes the configuration for the Amazon S3 storage backend.
+type AmazonS3Storage struct {
 	Disabled bool
 	AWS      AWSConfig
 }
 
-// Valid validates the S3Storage configuration
-func (s S3Storage) Valid() bool {
+// Valid validates the AmazonS3Storage configuration
+func (s AmazonS3Storage) Valid() bool {
 	creds := (s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")
 	return !s.Disabled && creds
 }
 
-// GS3Storage describes the configuration for the Generic S3 storage backend.
-type GS3Storage struct {
+// S3Storage describes the configuration for the Generic S3 storage backend.
+type S3Storage struct {
 	Disabled bool
 	Endpoint string
 	Key      string
 	Secret   string
 }
 
-// Valid validates the GS3Storage configuration
-func (s GS3Storage) Valid() bool {
+// Valid validates the S3Storage configuration
+func (s S3Storage) Valid() bool {
 	return !s.Disabled && s.Key != "" && s.Secret != "" && s.Endpoint != ""
 }
 

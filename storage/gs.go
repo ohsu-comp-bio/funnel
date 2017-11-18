@@ -46,14 +46,14 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 			return nil, tserr
 		}
 		client = config.Client(ctx)
-	} else if conf.FromEnv {
+	} else if conf.Anonymous {
+		// No auth config could be found, so default to anonymous.
+	} else {
 		// Pull the information (auth and other config) from the environment,
 		// which is useful when this code is running in a Google Compute instance.
 		defClient, err := google.DefaultClient(ctx, storage.CloudPlatformScope)
 		if err == nil {
-			client = defClient
-		} else {
-			// No auth config could be found, so default to anonymous.
+			client = defClient			
 		}
 	}
 

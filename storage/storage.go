@@ -136,10 +136,10 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		storage = storage.WithBackend(local)
 	}
 
-	if conf.S3.Valid() {
-		s3, err := NewS3Backend(conf.S3)
+	if conf.AmazonS3.Valid() {
+		s3, err := NewS3Backend(conf.AmazonS3)
 		if err != nil {
-			return storage, fmt.Errorf("failed to configure S3 storage backend: %s", err)
+			return storage, fmt.Errorf("failed to configure Amazon S3 storage backend: %s", err)
 		}
 		storage = storage.WithBackend(s3)
 	}
@@ -160,12 +160,14 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		storage = storage.WithBackend(s)
 	}
 
-	if conf.GS3.Valid() {
-		s, err := NewGS3Backend(conf.GS3)
-		if err != nil {
-			return storage, fmt.Errorf("failed to config GS3 storage backend: %s", err)
+	for _, c := range conf.S3 {
+		if c.Valid() {
+			s, err := NewGenericS3Backend(c)
+			if err != nil {
+				return storage, fmt.Errorf("failed to config generic S3 storage backend: %s", err)
+			}
+			storage = storage.WithBackend(s)
 		}
-		storage = storage.WithBackend(s)
 	}
 
 	return storage, nil

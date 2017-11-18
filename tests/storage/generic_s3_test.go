@@ -13,7 +13,7 @@ import (
 func TestGenericS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if !conf.Worker.Storage.GS3.Valid() {
+	if !conf.Worker.Storage.S3[0].Valid() {
 		t.Skipf("Skipping generic s3 e2e tests...")
 	}
 

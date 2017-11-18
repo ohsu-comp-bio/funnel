@@ -45,8 +45,7 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 		if conf.Scheduler.Node.ServerAddress == "" {
 			return conf, fmt.Errorf("Empty server address while starting node")
 		}
-		conf.Worker.Storage.GS = append(conf.Worker.Storage.GS,
-			config.GSStorage{FromEnv: true})
+		conf.Worker.Storage.GS = config.GSStorage{FromEnv: true}
 	}
 
 	// Auto detect the server's host name when it's not already set.

@@ -348,16 +348,14 @@ func (l LocalStorage) Valid() bool {
 // GSStorage describes configuration for the Google Cloud storage backend.
 type GSStorage struct {
 	Disabled bool
-	// If Anonymous is false and no account file is provided then Funnel will
-	// try to use Google Application Default Credentials to authorize and authenticate the client.
-	Anonymous   bool
+	// If no account file is provided then Funnel will try to use Google Application
+	// Default Credentials to authorize and authenticate the client.
 	AccountFile string
 }
 
 // Valid validates the GSStorage configuration.
 func (g GSStorage) Valid() bool {
-	creds := (g.Anonymous && g.AccountFile == "") || (!g.Anonymous && g.AccountFile != "")
-	return !g.Disabled && creds
+	return !g.Disabled
 }
 
 // AmazonS3Storage describes the configuration for the Amazon S3 storage backend.

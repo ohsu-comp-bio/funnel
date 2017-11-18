@@ -27,7 +27,7 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	sess, err := util.NewAWSSession(conf.Worker.Storage.S3.AWS)
+	sess, err := util.NewAWSSession(conf.Worker.Storage.AmazonS3.AWS)
 	if err != nil {
 		t.Fatal("error creating AWS session:", err)
 	}

@@ -30,7 +30,6 @@ type Backend interface {
 	PutFile(ctx context.Context, url string, path string) error
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
-	// TODO would it be useful if this included the request type (Get/Put)?
 	Supports(url string, path string, class tes.FileType) bool
 }
 
@@ -137,7 +136,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 	}
 
 	if conf.AmazonS3.Valid() {
-		s3, err := NewS3Backend(conf.AmazonS3)
+		s3, err := NewAmazonS3Backend(conf.AmazonS3)
 		if err != nil {
 			return storage, fmt.Errorf("failed to configure Amazon S3 storage backend: %s", err)
 		}

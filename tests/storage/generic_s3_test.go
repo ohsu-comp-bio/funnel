@@ -7,13 +7,18 @@ import (
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"io/ioutil"
+	"strings"
 	"testing"
 )
 
 func TestGenericS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if !conf.Worker.Storage.S3[0].Valid() {
+	if len(conf.Worker.Storage.S3) > 0 {
+		if !conf.Worker.Storage.S3[0].Valid() {
+			t.Skipf("Skipping generic s3 e2e tests...")
+		}
+	} else {
 		t.Skipf("Skipping generic s3 e2e tests...")
 	}
 
@@ -25,8 +30,9 @@ func TestGenericS3Storage(t *testing.T) {
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	sconf := conf.Worker.Storage
-	client, err := minio.NewV2(sconf.GS3.Endpoint, sconf.GS3.Key, sconf.GS3.Secret, false)
+	sconf := conf.Worker.Storage.S3[0]
+	ssl := strings.HasPrefix(sconf.Endpoint, "https")
+	client, err := minio.NewV2(sconf.Endpoint, sconf.Key, sconf.Secret, ssl)
 	if err != nil {
 		t.Fatal("error creating s3 client:", err)
 	}

@@ -11,34 +11,28 @@ import (
 	"strings"
 )
 
-// GenericS3Protocol defines the expected URL prefix for S3, "s3://"
-const GenericS3Protocol = "gs3://"
-
 // GenericS3Backend provides access to an S3 object store.
 type GenericS3Backend struct {
-	client *minio.Client
+	client   *minio.Client
+	endpoint string
 }
 
 // NewGenericS3Backend creates an S3Backend client instance, give an endpoint URL
 // and a set of authentication credentials.
 func NewGenericS3Backend(conf config.S3Storage) (*GenericS3Backend, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
-	// Initialize minio client object.
+
 	client, err := minio.NewV2(conf.Endpoint, conf.Key, conf.Secret, ssl)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating s3 client: %v", err)
 	}
 
-	return &GenericS3Backend{client}, nil
+	return &GenericS3Backend{client, conf.Endpoint}, nil
 }
 
 // Get copies an object from S3 to the host path.
 func (s3 *GenericS3Backend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-
-	path := strings.TrimPrefix(url, GenericS3Protocol)
-	split := strings.SplitN(path, "/", 2)
-	bucket := split[0]
-	key := split[1]
+	bucket, key := s3.processUrl(url)
 
 	switch class {
 	case File:
@@ -74,11 +68,7 @@ func (s3 *GenericS3Backend) Get(ctx context.Context, url string, hostPath string
 
 // Put copies an object (file) from the host path to S3.
 func (s3 *GenericS3Backend) PutFile(ctx context.Context, url string, hostPath string) error {
-
-	path := strings.TrimPrefix(url, GenericS3Protocol)
-	split := strings.SplitN(path, "/", 2)
-	bucket := split[0]
-	key := split[1]
+	bucket, key := s3.processUrl(url)
 
 	_, err := s3.client.FPutObjectWithContext(ctx, bucket, key, hostPath, minio.PutObjectOptions{})
 
@@ -88,5 +78,23 @@ func (s3 *GenericS3Backend) PutFile(ctx context.Context, url string, hostPath st
 // Supports indicates whether this backend supports the given storage request.
 // For S3, the url must start with "s3://".
 func (s3 *GenericS3Backend) Supports(url string, hostPath string, class tes.FileType) bool {
-	return strings.HasPrefix(url, GenericS3Protocol)
+	if !strings.HasPrefix(url, S3Protocol) {
+		return false
+	}
+
+	bucket, _ := s3.processUrl(url)
+	found, _ := s3.client.BucketExists(bucket)
+
+	return found
+}
+
+func (s3 *GenericS3Backend) processUrl(url string) (string, string) {
+	path := strings.TrimPrefix(url, S3Protocol)
+	path = strings.TrimPrefix(path, s3.endpoint+"/")
+
+	split := strings.SplitN(path, "/", 2)
+	bucket := split[0]
+	key := split[1]
+
+	return bucket, key
 }

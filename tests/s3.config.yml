@@ -1,6 +1,6 @@
 Worker:
   Storage:
-    S3:
+    AmazonS3:
       Disabled: false
       AWS:
         Region: "us-west-2"

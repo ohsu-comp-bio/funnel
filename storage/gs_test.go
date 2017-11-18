@@ -27,21 +27,6 @@ func authed(t *testing.T) *GSBackend {
 	return gs
 }
 
-func TestAnonymousGet(t *testing.T) {
-	ctx := context.Background()
-	conf := config.GSStorage{}
-	g, err := NewGSBackend(conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gs := Storage{}.WithBackend(g)
-
-	gerr := gs.Get(ctx, "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", tes.FileType_FILE)
-	if gerr != nil {
-		t.Error(gerr)
-	}
-}
-
 func TestGet(t *testing.T) {
 	ctx := context.Background()
 	g := authed(t)

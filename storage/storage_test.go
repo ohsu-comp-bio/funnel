@@ -31,7 +31,8 @@ func TestStorageWithConfig(t *testing.T) {
 			AllowedDirs: []string{"/tmp"},
 		},
 		GS: config.GSStorage{
-			Disabled: false,
+			Disabled:    false,
+			AccountFile: "",
 		},
 		AmazonS3: config.AmazonS3Storage{
 			Disabled: false,
@@ -56,5 +57,84 @@ func TestStorageWithConfig(t *testing.T) {
 	}
 	if len(sc.backends) != 4 {
 		t.Fatal("unexpected number of Storage backends")
+	}
+}
+
+func TestS3UrlProcessing(t *testing.T) {
+	b, err := NewGenericS3Backend(config.S3Storage{
+		Endpoint: "s3.amazonaws.com",
+		Key:      "",
+		Secret:   "",
+	})
+	if err != nil {
+		t.Fatal("Error creating generic S3 backend:", err)
+	}
+
+	expectedBucket := "1000genomes"
+	expectedKey := "README.analysis_history"
+
+	bucket, key := b.processUrl("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	if bucket != expectedBucket {
+		t.Log("expected:", expectedBucket)
+		t.Log("actual:", bucket)
+		t.Error("wrong bucket")
+	}
+	if key != expectedKey {
+		t.Log("expected:", expectedKey)
+		t.Log("actual:", key)
+		t.Error("wrong key")
+	}
+
+	bucket, key = b.processUrl("s3://1000genomes/README.analysis_history")
+	if bucket != expectedBucket {
+		t.Log("expected:", expectedBucket)
+		t.Log("actual:", bucket)
+		t.Error("wrong bucket")
+	}
+	if key != expectedKey {
+		t.Log("expected:", expectedKey)
+		t.Log("actual:", key)
+		t.Error("wrong key")
+	}
+
+	ab, err := NewAmazonS3Backend(config.AmazonS3Storage{})
+	if err != nil {
+		t.Fatal("Error creating generic S3 backend:", err)
+	}
+
+	bucket, key = ab.processUrl("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	if bucket != expectedBucket {
+		t.Log("expected:", expectedBucket)
+		t.Log("actual:", bucket)
+		t.Error("wrong bucket")
+	}
+	if key != expectedKey {
+		t.Log("expected:", expectedKey)
+		t.Log("actual:", key)
+		t.Error("wrong key")
+	}
+
+	bucket, key = ab.processUrl("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
+	if bucket != expectedBucket {
+		t.Log("expected:", expectedBucket)
+		t.Log("actual:", bucket)
+		t.Error("wrong bucket")
+	}
+	if key != expectedKey {
+		t.Log("expected:", expectedKey)
+		t.Log("actual:", key)
+		t.Error("wrong key")
+	}
+
+	bucket, key = ab.processUrl("s3://1000genomes/README.analysis_history")
+	if bucket != expectedBucket {
+		t.Log("expected:", expectedBucket)
+		t.Log("actual:", bucket)
+		t.Error("wrong bucket")
+	}
+	if key != expectedKey {
+		t.Log("expected:", expectedKey)
+		t.Log("actual:", key)
+		t.Error("wrong key")
 	}
 }

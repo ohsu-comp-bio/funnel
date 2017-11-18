@@ -330,7 +330,8 @@ type DynamoDB struct {
 type StorageConfig struct {
 	Local LocalStorage
 	S3    S3Storage
-	GS    []GSStorage
+	GS3   GS3Storage
+	GS    GSStorage
 	Swift SwiftStorage
 }
 
@@ -355,16 +356,29 @@ func (g GSStorage) Valid() bool {
 	return g.FromEnv || g.AccountFile != ""
 }
 
-// S3Storage describes the directories Funnel can read from and write to
+// S3Storage describes the configuration for the Amazon S3 storage backend.
 type S3Storage struct {
 	Disabled bool
 	AWS      AWSConfig
 }
 
-// Valid validates the LocalStorage configuration
+// Valid validates the S3Storage configuration
 func (s S3Storage) Valid() bool {
 	creds := (s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")
-	return creds && !s.Disabled
+	return !s.Disabled && creds
+}
+
+// GS3Storage describes the configuration for the Generic S3 storage backend.
+type GS3Storage struct {
+	Disabled bool
+	Endpoint string
+	Key      string
+	Secret   string
+}
+
+// Valid validates the GS3Storage configuration
+func (s GS3Storage) Valid() bool {
+	return !s.Disabled && s.Key != "" && s.Secret != "" && s.Endpoint != ""
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.

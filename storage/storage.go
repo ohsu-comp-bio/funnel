@@ -144,20 +144,26 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		storage = storage.WithBackend(s3)
 	}
 
-	for _, c := range conf.GS {
-		if c.Valid() {
-			gs, nerr := NewGSBackend(c)
-			if nerr != nil {
-				return storage, fmt.Errorf("failed to configure Google Storage backend: %s", nerr)
-			}
-			storage = storage.WithBackend(gs)
+	if conf.GS.Valid() {
+		gs, nerr := NewGSBackend(conf.GS)
+		if nerr != nil {
+			return storage, fmt.Errorf("failed to configure Google Storage backend: %s", nerr)
 		}
+		storage = storage.WithBackend(gs)
 	}
 
 	if conf.Swift.Valid() {
 		s, err := NewSwiftBackend(conf.Swift)
 		if err != nil {
 			return storage, fmt.Errorf("failed to config Swift storage backend: %s", err)
+		}
+		storage = storage.WithBackend(s)
+	}
+
+	if conf.GS3.Valid() {
+		s, err := NewGS3Backend(conf.GS3)
+		if err != nil {
+			return storage, fmt.Errorf("failed to config GS3 storage backend: %s", err)
 		}
 		storage = storage.WithBackend(s)
 	}

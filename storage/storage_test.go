@@ -11,7 +11,7 @@ func TestStorageWithConfig(t *testing.T) {
 		Local: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GS:    []config.GSStorage{},
+		GS:    config.GSStorage{},
 		S3:    config.S3Storage{Disabled: true},
 		Swift: config.SwiftStorage{Disabled: true},
 	}
@@ -29,10 +29,8 @@ func TestStorageWithConfig(t *testing.T) {
 		Local: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GS: []config.GSStorage{
-			{
-				FromEnv: true,
-			},
+		GS: config.GSStorage{
+			FromEnv: true,
 		},
 		S3: config.S3Storage{
 			Disabled: false,

@@ -2,21 +2,19 @@ package storage
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"io/ioutil"
 	"testing"
 )
 
-func TestAmazonS3Storage(t *testing.T) {
+func TestGenericS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if !conf.Worker.Storage.S3.Valid() {
-		t.Skipf("Skipping amazon s3 e2e tests...")
+	if !conf.Worker.Storage.GS3.Valid() {
+		t.Skipf("Skipping generic s3 e2e tests...")
 	}
 
 	store := storage.Storage{}
@@ -27,39 +25,38 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	sess, err := util.NewAWSSession(conf.Worker.Storage.S3.AWS)
+	sconf := conf.Worker.Storage
+	client, err := minio.NewV2(sconf.GS3.Endpoint, sconf.GS3.Key, sconf.GS3.Secret, false)
 	if err != nil {
-		t.Fatal("error creating AWS session:", err)
+		t.Fatal("error creating s3 client:", err)
 	}
-	client := s3.New(sess)
 
-	_, err = client.CreateBucket(&s3.CreateBucketInput{
-		Bucket: aws.String(testBucket),
-	})
+	err = client.MakeBucket(testBucket, "")
 	if err != nil {
 		t.Fatal("error creating test s3 bucket:", err)
 	}
+
 	defer func() {
-		emptyBucket(client, testBucket)
-		client.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(testBucket)})
+		minioEmptyBucket(client, testBucket)
+		client.RemoveBucket(testBucket)
 	}()
 
 	fPath := "testdata/test_in"
-	inFileURL := "s3://" + testBucket + "/" + fPath
+	inFileURL := "gs3://" + testBucket + "/" + fPath
 	_, err = store.Put(context.Background(), inFileURL, fPath, tes.FileType_FILE)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	dPath := "testdata/test_dir"
-	inDirURL := "s3://" + testBucket + "/" + dPath
+	inDirURL := "gs3://" + testBucket + "/" + dPath
 	_, err = store.Put(context.Background(), inDirURL, dPath, tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
 
-	outFileURL := "s3://" + testBucket + "/" + "test-output-file.txt"
-	outDirURL := "s3://" + testBucket + "/" + "test-output-directory"
+	outFileURL := "gs3://" + testBucket + "/" + "test-output-file.txt"
+	outDirURL := "gs3://" + testBucket + "/" + "test-output-directory"
 
 	task := &tes.Task{
 		Name: "s3 e2e",
@@ -146,50 +143,18 @@ func TestAmazonS3Storage(t *testing.T) {
 		t.Log("actual:  ", actual)
 		t.Fatal("unexpected content")
 	}
+
+	tests.SetLogOutput(log, t)
 }
 
-// emptyBucket empties the Amazon S3 bucket
-func emptyBucket(client *s3.S3, bucket string) error {
+// minioEmptyBucket empties the S3 bucket
+func minioEmptyBucket(client *minio.Client, bucket string) error {
 	log.Info("Removing objects from S3 bucket : ", bucket)
-	params := &s3.ListObjectsInput{
-		Bucket: aws.String(bucket),
-	}
-	for {
-		//Requesting for batch of objects from s3 bucket
-		objects, err := client.ListObjects(params)
-		if err != nil {
-			return err
-		}
-		//Checks if the bucket is already empty
-		if len((*objects).Contents) == 0 {
-			log.Info("Bucket is already empty")
-			return nil
-		}
-
-		//creating an array of pointers of ObjectIdentifier
-		objectsToDelete := make([]*s3.ObjectIdentifier, 0, 1000)
-		for _, object := range (*objects).Contents {
-			obj := s3.ObjectIdentifier{
-				Key: object.Key,
-			}
-			objectsToDelete = append(objectsToDelete, &obj)
-		}
-		//Creating JSON payload for bulk delete
-		deleteArray := s3.Delete{Objects: objectsToDelete}
-		deleteParams := &s3.DeleteObjectsInput{
-			Bucket: aws.String(bucket),
-			Delete: &deleteArray,
-		}
-		//Running the Bulk delete job (limit 1000)
-		_, err = client.DeleteObjects(deleteParams)
-		if err != nil {
-			return err
-		}
-		if *(*objects).IsTruncated { //if there are more objects in the bucket, IsTruncated = true
-			params.Marker = (*deleteParams).Delete.Objects[len((*deleteParams).Delete.Objects)-1].Key
-		} else { //if all objects in the bucket have been cleaned up.
-			break
-		}
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+	recursive := true
+	for obj := range client.ListObjectsV2(bucket, "", recursive, doneCh) {
+		client.RemoveObject(bucket, obj.Key)
 	}
 	log.Info("Emptied S3 bucket : ", bucket)
 	return nil

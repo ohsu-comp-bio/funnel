@@ -6,7 +6,7 @@ import (
 	"github.com/ncw/swift"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io"
 	"os"
 	"path"
@@ -108,7 +108,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 }
 
 func (sw *SwiftBackend) get(src io.Reader, hostPath string) error {
-	util.EnsurePath(hostPath)
+	fsutil.EnsurePath(hostPath)
 	dest, cerr := os.Create(hostPath)
 	if cerr != nil {
 		return cerr

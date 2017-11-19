@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/storage/v1"
 	"io"
@@ -99,7 +99,7 @@ func download(call *storage.ObjectsGetCall, hostPath string) error {
 		return derr
 	}
 
-	util.EnsurePath(hostPath)
+	fsutil.EnsurePath(hostPath)
 	dest, cerr := os.Create(hostPath)
 	if cerr != nil {
 		return cerr

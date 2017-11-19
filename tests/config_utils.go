@@ -7,7 +7,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -71,7 +71,7 @@ func TestifyConfig(conf config.Config) config.Config {
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 
-	util.EnsureDir(storageDir)
+	fsutil.EnsureDir(storageDir)
 
 	conf.Worker.Storage.Local = config.LocalStorage{
 		AllowedDirs: []string{storageDir, wd},

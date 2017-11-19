@@ -4,7 +4,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"golang.org/x/net/context"
 	"time"
 )
@@ -50,7 +50,7 @@ type BoltDB struct {
 // NewBoltDB returns a new instance of BoltDB, accessing the database at
 // the given path, and including the given ServerConfig.
 func NewBoltDB(conf config.Config) (*BoltDB, error) {
-	util.EnsurePath(conf.Server.Databases.BoltDB.Path)
+	fsutil.EnsurePath(conf.Server.Databases.BoltDB.Path)
 	db, err := bolt.Open(conf.Server.Databases.BoltDB.Path, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})

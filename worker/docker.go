@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
 	"io"
 	"os/exec"
 	"strings"
@@ -30,7 +30,7 @@ type DockerCommand struct {
 func (dcmd DockerCommand) Run() error {
 	// (Hopefully) temporary hack to sync docker API version info.
 	// Don't need the client here, just the logic inside NewDockerClient().
-	_, derr := util.NewDockerClient()
+	_, derr := dockerutil.NewDockerClient()
 	if derr != nil {
 		dcmd.Event.Error("Can't connect to Docker", derr)
 		return derr
@@ -86,7 +86,7 @@ func (dcmd DockerCommand) Run() error {
 // Stop stops the container.
 func (dcmd DockerCommand) Stop() error {
 	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
-	dclient, derr := util.NewDockerClient()
+	dclient, derr := dockerutil.NewDockerClient()
 	if derr != nil {
 		return derr
 	}

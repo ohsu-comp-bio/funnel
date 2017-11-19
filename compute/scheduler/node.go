@@ -6,6 +6,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -21,7 +22,7 @@ func NewNode(conf config.Config, log *logger.Logger, factory WorkerFactory) (*No
 		return nil, err
 	}
 
-	err = util.EnsureDir(conf.Scheduler.Node.WorkDir)
+	err = fsutil.EnsureDir(conf.Scheduler.Node.WorkDir)
 	if err != nil {
 		return nil, err
 	}

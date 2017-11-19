@@ -4,7 +4,7 @@ import (
 	"fmt"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io/ioutil"
 	"os"
 	"path"
@@ -162,7 +162,7 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 	if perr != nil {
 		return nil, perr
 	}
-	err := util.EnsurePath(p)
+	err := fsutil.EnsurePath(p)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (mapper *FileMapper) AddTmpVolume(mountPoint string) error {
 		return err
 	}
 
-	err = util.EnsureDir(hostPath)
+	err = fsutil.EnsureDir(hostPath)
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (mapper *FileMapper) AddInput(input *tes.Input) error {
 		return err
 	}
 
-	err = util.EnsurePath(hostPath)
+	err = fsutil.EnsurePath(hostPath)
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (mapper *FileMapper) AddOutput(output *tes.Output) error {
 		mountDir = path.Dir(output.Path)
 	}
 
-	err = util.EnsureDir(hostDir)
+	err = fsutil.EnsureDir(hostDir)
 	if err != nil {
 		return err
 	}

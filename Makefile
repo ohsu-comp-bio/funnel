@@ -239,6 +239,7 @@ gen-mocks:
 bundle-examples:
 	@go-bindata -pkg examples -o examples/bundle.go $(shell find examples/ -name '*.json')
 	@go-bindata -pkg config -o config/bundle.go $(shell find config/ -name '*.txt' -o -name '*.yaml')
+	@gofmt -w -s examples/bundle.go config/bundle.go
 
 # Make everything usually needed to prepare for a pull request
 full: proto install prune_deps add_deps tidy lint test website webdash

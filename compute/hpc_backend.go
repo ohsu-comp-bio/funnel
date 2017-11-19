@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"os"
 	"os/exec"
 	"path"
@@ -52,7 +52,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	// TODO document that these working dirs need manual cleanup
 	workdir := path.Join(b.conf.Worker.WorkDir, task.Id)
 	workdir, _ = filepath.Abs(workdir)
-	err = util.EnsureDir(workdir)
+	err = fsutil.EnsureDir(workdir)
 	if err != nil {
 		return "", err
 	}

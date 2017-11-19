@@ -8,7 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
-	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -96,7 +96,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		dir, run.syserr = filepath.Abs(r.Conf.WorkDir)
 	}
 	if run.ok() {
-		run.syserr = util.EnsureDir(dir)
+		run.syserr = fsutil.EnsureDir(dir)
 	}
 
 	// Prepare file mapper, which maps task file URLs to host filesystem paths

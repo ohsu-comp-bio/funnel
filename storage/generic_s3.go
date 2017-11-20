@@ -21,13 +21,14 @@ type GenericS3Backend struct {
 // and a set of authentication credentials.
 func NewGenericS3Backend(conf config.S3Storage) (*GenericS3Backend, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
+	endpoint := endpointRegExp.ReplaceAllString(conf.Endpoint, "$2/")
 
 	client, err := minio.NewV2(conf.Endpoint, conf.Key, conf.Secret, ssl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating s3 client: %v", err)
 	}
 
-	return &GenericS3Backend{client, conf.Endpoint}, nil
+	return &GenericS3Backend{client, endpoint}, nil
 }
 
 // Get copies an object from S3 to the host path.
@@ -90,7 +91,7 @@ func (s3 *GenericS3Backend) Supports(url string, hostPath string, class tes.File
 
 func (s3 *GenericS3Backend) processUrl(url string) (string, string) {
 	path := strings.TrimPrefix(url, S3Protocol)
-	path = strings.TrimPrefix(path, s3.endpoint+"/")
+	path = strings.TrimPrefix(path, s3.endpoint)
 
 	split := strings.SplitN(path, "/", 2)
 	bucket := split[0]

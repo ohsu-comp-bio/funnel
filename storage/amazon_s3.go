@@ -17,6 +17,8 @@ import (
 	"strings"
 )
 
+var endpointRegExp = regexp.MustCompile("^(http[s]?://)?(.[^/]+)(/+)?$")
+
 // S3Protocol defines the expected URL prefix for S3, "s3://"
 const S3Protocol = "s3://"
 
@@ -33,7 +35,9 @@ func NewAmazonS3Backend(conf config.AmazonS3Storage) (*AmazonS3Backend, error) {
 		return nil, err
 	}
 
-	return &AmazonS3Backend{sess, conf.AWS.Endpoint}, nil
+	endpoint := endpointRegExp.ReplaceAllString(conf.AWS.Endpoint, "$2/")
+
+	return &AmazonS3Backend{sess, endpoint}, nil
 }
 
 // Get copies an object from S3 to the host path.

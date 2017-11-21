@@ -205,3 +205,8 @@ func fileSize(path string) int64 {
 	}
 	return st.Size()
 }
+
+type urlparts struct {
+	bucket string
+	path   string
+}

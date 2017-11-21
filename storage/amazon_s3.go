@@ -19,8 +19,8 @@ import (
 
 var endpointRegExp = regexp.MustCompile("^(http[s]?://)?(.[^/]+)(/+)?$")
 
-// S3Protocol defines the expected URL prefix for S3, "s3://"
-const S3Protocol = "s3://"
+// s3Protocol defines the s3 URL protocol
+const s3Protocol = "s3://"
 
 // AmazonS3Backend provides access to an S3 object store.
 type AmazonS3Backend struct {
@@ -41,14 +41,14 @@ func NewAmazonS3Backend(conf config.AmazonS3Storage) (*AmazonS3Backend, error) {
 }
 
 // Get copies an object from S3 to the host path.
-func (s3b *AmazonS3Backend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
+func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
 
-	bucket, key := s3b.processUrl(url)
+	url := s3b.parse(rawurl)
 
-	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, bucket, "us-east-1")
+	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, url.bucket, "us-east-1")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
-			return fmt.Errorf("unable to find bucket %s's region not found: %v", bucket, aerr)
+			return fmt.Errorf("unable to find bucket %s's region not found: %v", url.bucket, aerr)
 		}
 		return err
 	}
@@ -67,8 +67,8 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, url string, hostPath string
 		}
 
 		_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
+			Bucket: aws.String(url.bucket),
+			Key:    aws.String(url.path),
 		})
 		if err != nil {
 			return err
@@ -82,12 +82,12 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, url string, hostPath string
 	case Directory:
 		err = client.ListObjectsV2PagesWithContext(
 			ctx,
-			&s3.ListObjectsV2Input{Bucket: &bucket, Prefix: &key},
+			&s3.ListObjectsV2Input{Bucket: aws.String(url.bucket), Prefix: aws.String(url.path)},
 			func(page *s3.ListObjectsV2Output, more bool) bool {
 				for _, obj := range page.Contents {
-					if *obj.Key != key+"/" {
+					if *obj.Key != url.path+"/" {
 						// Create the directories in the path
-						file := filepath.Join(hostPath, strings.TrimPrefix(*obj.Key, key+"/"))
+						file := filepath.Join(hostPath, strings.TrimPrefix(*obj.Key, url.path+"/"))
 						if err := os.MkdirAll(filepath.Dir(file), 0775); err != nil {
 							panic(err)
 						}
@@ -100,7 +100,7 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, url string, hostPath string
 
 						// Download the file using the AWS SDK
 						_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
-							Bucket: aws.String(bucket),
+							Bucket: aws.String(url.bucket),
 							Key:    obj.Key,
 						})
 						if err != nil {
@@ -128,14 +128,14 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, url string, hostPath string
 }
 
 // PutFile copies an object (file) from the host path to S3.
-func (s3b *AmazonS3Backend) PutFile(ctx context.Context, url string, hostPath string) error {
+func (s3b *AmazonS3Backend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
 
-	bucket, key := s3b.processUrl(url)
+	url := s3b.parse(rawurl)
 
-	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, bucket, "us-east-1")
+	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, url.bucket, "us-east-1")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
-			return fmt.Errorf("unable to find bucket %s's region not found", bucket)
+			return fmt.Errorf("unable to find bucket %s's region not found", url.bucket)
 		}
 		return err
 	}
@@ -149,8 +149,8 @@ func (s3b *AmazonS3Backend) PutFile(ctx context.Context, url string, hostPath st
 		return fmt.Errorf("failed to open file %q, %v", hostPath, err)
 	}
 	_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Bucket: aws.String(url.bucket),
+		Key:    aws.String(url.path),
 		Body:   fh,
 	})
 	if err != nil {
@@ -162,13 +162,13 @@ func (s3b *AmazonS3Backend) PutFile(ctx context.Context, url string, hostPath st
 
 // Supports indicates whether this backend supports the given storage request.
 // For S3, the url must start with "s3://".
-func (s3b *AmazonS3Backend) Supports(url string, hostPath string, class tes.FileType) bool {
-	if !strings.HasPrefix(url, S3Protocol) {
+func (s3b *AmazonS3Backend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
+	if !strings.HasPrefix(rawurl, s3Protocol) {
 		return false
 	}
 
-	bucket, _ := s3b.processUrl(url)
-	_, err := s3manager.GetBucketRegion(context.Background(), s3b.sess, bucket, "us-east-1")
+	url := s3b.parse(rawurl)
+	_, err := s3manager.GetBucketRegion(context.Background(), s3b.sess, url.bucket, "us-east-1")
 	if err != nil {
 		return false
 	}
@@ -176,8 +176,8 @@ func (s3b *AmazonS3Backend) Supports(url string, hostPath string, class tes.File
 	return true
 }
 
-func (s3b *AmazonS3Backend) processUrl(url string) (string, string) {
-	path := strings.TrimPrefix(url, S3Protocol)
+func (s3b *AmazonS3Backend) parse(url string) *urlparts {
+	path := strings.TrimPrefix(url, s3Protocol)
 	if s3b.endpoint != "" {
 		path = strings.TrimPrefix(path, s3b.endpoint)
 	} else {
@@ -189,5 +189,5 @@ func (s3b *AmazonS3Backend) processUrl(url string) (string, string) {
 	bucket := split[0]
 	key := split[1]
 
-	return bucket, key
+	return &urlparts{bucket, key}
 }

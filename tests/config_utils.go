@@ -32,6 +32,7 @@ func init() {
 func DefaultConfig() config.Config {
 	conf := config.DefaultConfig()
 	conf.Worker.Storage.AmazonS3.Disabled = true
+	conf.Worker.Storage.GS.Disabled = true
 	conf.Worker.Storage.Swift.Disabled = true
 
 	// Get config from test command line flag, if present.

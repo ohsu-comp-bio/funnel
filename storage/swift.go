@@ -8,13 +8,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
-	urllib "net/url"
 	"os"
 	"path"
 	"strings"
 )
 
-const swiftScheme = "swift"
+const swiftProtocol = "swift://"
 
 // SwiftBackend provides access to an sw object store.
 type SwiftBackend struct {
@@ -42,21 +41,19 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 		return nil, err
 	}
 
-	// Authenticate
-	err = c.Authenticate()
-	if err != nil {
-		return nil, err
-	}
 	return &SwiftBackend{&c}, nil
 }
 
 // Get copies an object from storage to the host path.
 func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-
-	url, perr := sw.parse(rawurl)
-	if perr != nil {
-		return perr
+	if !sw.conn.Authenticated() {
+		err := sw.conn.Authenticate()
+		if err != nil {
+			return fmt.Errorf("error connecting to Swift server: %v", err)
+		}
 	}
+
+	url := sw.parse(rawurl)
 
 	switch class {
 	case tes.FileType_FILE:
@@ -122,10 +119,14 @@ func (sw *SwiftBackend) get(src io.Reader, hostPath string) error {
 
 // PutFile copies an object (file) from the host path to storage.
 func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-	url, perr := sw.parse(rawurl)
-	if perr != nil {
-		return perr
+	if !sw.conn.Authenticated() {
+		err := sw.conn.Authenticate()
+		if err != nil {
+			return fmt.Errorf("error connecting to Swift server: %v", err)
+		}
 	}
+
+	url := sw.parse(rawurl)
 
 	reader, oerr := os.Open(hostPath)
 	if oerr != nil {
@@ -145,26 +146,16 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 	return writer.Close()
 }
 
-func (sw *SwiftBackend) parse(rawurl string) (*urlparts, error) {
-	url, err := urllib.Parse(rawurl)
-	if err != nil {
-		return nil, err
-	}
-	if url.Scheme != swiftScheme {
-		return nil, fmt.Errorf("Invalid URL scheme '%s' for Swift Storage backend in url: %s", url.Scheme, rawurl)
-	}
-
-	bucket := url.Host
-	path := strings.TrimLeft(url.EscapedPath(), "/")
-	return &urlparts{bucket, path}, nil
+// Supports indicates whether this backend supports the given storage request.
+// For swift, the url must start with "swift://".
+func (sw *SwiftBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
+	return strings.HasPrefix(rawurl, swiftProtocol)
 }
 
-// Supports indicates whether this backend supports the given storage request.
-// For sw, the url must start with "sw://".
-func (sw *SwiftBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
-	_, err := sw.parse(rawurl)
-	if err != nil {
-		return false
-	}
-	return true
+func (sw *SwiftBackend) parse(rawurl string) *urlparts {
+	path := strings.TrimPrefix(rawurl, swiftProtocol)
+	split := strings.SplitN(path, "/", 2)
+	bucket := split[0]
+	key := split[1]
+	return &urlparts{bucket, key}
 }

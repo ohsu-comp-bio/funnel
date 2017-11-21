@@ -79,7 +79,8 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		objects, _ := gs.svc.Objects.List(url.bucket).Prefix(url.path).Do()
 		for _, obj := range objects.Items {
 			call := gs.svc.Objects.Get(url.bucket, obj.Name)
-			err := download(call, path.Join(hostPath, obj.Name))
+			key := strings.TrimPrefix(obj.Name, url.path)
+			err := download(call, path.Join(hostPath, key))
 			if err != nil {
 				return err
 			}

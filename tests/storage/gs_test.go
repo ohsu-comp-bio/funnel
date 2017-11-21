@@ -1,45 +1,44 @@
 package storage
 
 import (
-	// gs "cloud.google.com/go/storage"
-	// "context"
+	"context"
 	"flag"
-	// "fmt"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	gs "google.golang.org/api/storage/v1"
 	"io/ioutil"
 	"testing"
 )
 
-var projectID string
-
-func init() {
-	flag.StringVar(&projectID, "projectID", projectID, "Google project ID")
-	flag.Parse()
-}
-
 func TestGoogleStorage(t *testing.T) {
+	args := flag.Args()
+	projectID := args[0]
+
 	tests.SetLogOutput(log, t)
 
 	if !conf.Worker.Storage.GS.Valid() {
 		t.Skipf("Skipping google storage e2e tests...")
 	}
 
+	if projectID == "" {
+		t.Fatal("Must provide projectID as an arg")
+	}
+
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	// cli, err := newGsTest()
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-	// err = cli.createBucket(projectID, testBucket)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-	// defer func() {
-	// 	cli.deleteBucket(testBucket)
-	// }()
+	cli, err := newGsTest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = cli.createBucket(projectID, testBucket)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		cli.deleteBucket(testBucket)
+	}()
 
 	protocol := "gs://"
 
@@ -152,22 +151,32 @@ func TestGoogleStorage(t *testing.T) {
 	}
 }
 
-// type gsTest struct {
-// 	client *gs.Client
-// }
+type gsTest struct {
+	client *gs.Service
+}
 
-// func newGsTest() (*gsTest, error) {
-// 	client, err := gs.NewClient(context.Background())
-// 	return &gsTest{client}, err
-// }
+func newGsTest() (*gsTest, error) {
+	defClient, err := google.DefaultClient(context.Background(), gs.CloudPlatformScope)
+	if err != nil {
+		return nil, err
+	}
+	client, err := gs.New(defClient)
+	if err != nil {
+		return nil, err
+	}
+	return &gsTest{client}, err
+}
 
-// func (g *gsTest) createBucket(projectID, bucket string) error {
-// 	cli := g.client.Bucket(bucket)
-// 	return cli.Create(context.Background(), projectID, nil)
-// }
+func (g *gsTest) createBucket(projectID, bucket string) error {
+	req := g.client.Buckets.Insert(projectID, &gs.Bucket{
+		Name: bucket,
+	})
+	_, err := req.Do()
+	return err
+}
 
-// func (g *gsTest) deleteBucket(bucket string) error {
-// 	// emptyBucket(g.bucket)
-// 	// g.Buckets.Delete(g.bucket)
-// 	return nil
-// }
+func (g *gsTest) deleteBucket(bucket string) error {
+	// emptyBucket(g.bucket)
+	// g.client.Buckets.Delete(g.bucket)
+	return nil
+}

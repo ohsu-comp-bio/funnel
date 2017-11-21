@@ -107,7 +107,7 @@ test-mongodb:
 
 start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-dynamodb-test -p 8000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
+	@docker run -d --name funnel-dynamodb-test -p 18000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
 
 test-dynamodb:
 	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/dynamo.config.yml
@@ -138,8 +138,15 @@ test-pbs-torque:
 test-s3:
 	@go test ./tests/storage -funnel-config $(CONFIGDIR)/s3.config.yml
 
+start-generic-s3:
+	@docker rm -f funnel-s3server > /dev/null 2>&1 || echo
+	@docker run -d --name funnel-s3server -p 18888:8000 scality/s3server:mem-6018536a
+	@docker rm -f funnel-minio > /dev/null 2>&1 || echo
+	@docker run -d --name funnel-minio -p 9000:9000 -e "MINIO_ACCESS_KEY=fakekey" -e "MINIO_SECRET_KEY=fakesecret" minio/minio:RELEASE.2017-10-27T18-59-02Z server /data
+
 test-generic-s3:
-	@go test ./tests/storage -funnel-config $(CONFIGDIR)/generic-s3.config.yml
+	@go test ./tests/storage -funnel-config $(CONFIGDIR)/gen-s3.config.yml
+	@go test ./tests/storage -funnel-config $(CONFIGDIR)/minio-s3.config.yml
 
 test-gs:
 	@go test ./tests/storage -funnel-config $(CONFIGDIR)/gs.config.yml ${GCE_PROJECT_ID}

@@ -3,7 +3,7 @@ Server:
   Databases:
     DynamoDB:
       AWS:
-        Endpoint: http://localhost:8000
+        Endpoint: http://localhost:18000
         Region: us-west-2
         Key: "test"
         Secret: "test"
@@ -13,7 +13,7 @@ Worker:
   TaskReaders:
     DynamoDB:
       AWS:
-        Endpoint: http://localhost:8000
+        Endpoint: http://localhost:18000
         Region: us-west-2
         Key: "test"
         Secret: "test"
@@ -22,7 +22,7 @@ Worker:
   EventWriters:
     DynamoDB:
       AWS:
-        Endpoint: http://localhost:8000
+        Endpoint: http://localhost:18000
         Region: us-west-2
         Key: "test"
         Secret: "test"

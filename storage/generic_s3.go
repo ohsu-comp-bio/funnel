@@ -67,7 +67,7 @@ func (s3 *GenericS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 	return nil
 }
 
-// Put copies an object (file) from the host path to S3.
+// PutFile copies an object (file) from the host path to S3.
 func (s3 *GenericS3Backend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
 	url := s3.parse(rawurl)
 	_, err := s3.client.FPutObjectWithContext(ctx, url.bucket, url.path, hostPath, minio.PutObjectOptions{})

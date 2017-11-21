@@ -13,14 +13,13 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	urllib "net/url"
 	"os"
 	"path"
 	"strings"
 )
 
 // The gs url protocol
-const gsscheme = "gs"
+const gsProtocol = "gs://"
 
 // GSBackend provides access to an GS object store.
 type GSBackend struct {
@@ -65,10 +64,7 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 
 // Get copies an object from GS to the host path.
 func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-	url, perr := parse(rawurl)
-	if perr != nil {
-		return perr
-	}
+	url := gs.parse(rawurl)
 
 	if class == tes.FileType_FILE {
 		call := gs.svc.Objects.Get(url.bucket, url.path)
@@ -114,10 +110,7 @@ func download(call *storage.ObjectsGetCall, hostPath string) error {
 
 // PutFile copies an object (file) from the host path to GS.
 func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-	url, perr := parse(rawurl)
-	if perr != nil {
-		return perr
-	}
+	url := gs.parse(rawurl)
 
 	reader, oerr := os.Open(hostPath)
 	if oerr != nil {
@@ -135,28 +128,13 @@ func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string
 // Supports returns true if this backend supports the given storage request.
 // The Google Storage backend supports URLs which have a "gs://" scheme.
 func (gs *GSBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
-	_, err := parse(rawurl)
-	if err != nil {
-		return false
-	}
-	return true
+	return strings.HasPrefix(rawurl, gsProtocol)
 }
 
-type urlparts struct {
-	bucket string
-	path   string
-}
-
-func parse(rawurl string) (*urlparts, error) {
-	url, err := urllib.Parse(rawurl)
-	if err != nil {
-		return nil, err
-	}
-	if url.Scheme != gsscheme {
-		return nil, fmt.Errorf("Invalid URL scheme '%s' for Google Storage backend in url: %s", url.Scheme, rawurl)
-	}
-
-	bucket := url.Host
-	path := strings.TrimLeft(url.EscapedPath(), "/")
-	return &urlparts{bucket, path}, nil
+func (gs *GSBackend) parse(rawurl string) *urlparts {
+	path := strings.TrimPrefix(rawurl, gsProtocol)
+	split := strings.SplitN(path, "/", 2)
+	bucket := split[0]
+	key := split[1]
+	return &urlparts{bucket, key}
 }

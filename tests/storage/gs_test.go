@@ -1,44 +1,47 @@
 package storage
 
 import (
-	"context"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	// gs "cloud.google.com/go/storage"
+	// "context"
+	"flag"
+	// "fmt"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	util "github.com/ohsu-comp-bio/funnel/util/aws"
+	"golang.org/x/net/context"
 	"io/ioutil"
 	"testing"
 )
 
-func TestAmazonS3Storage(t *testing.T) {
+var projectID string
+
+func init() {
+	flag.StringVar(&projectID, "projectID", projectID, "Google project ID")
+	flag.Parse()
+}
+
+func TestGoogleStorage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if !conf.Worker.Storage.AmazonS3.Valid() {
-		t.Skipf("Skipping amazon s3 e2e tests...")
+	if !conf.Worker.Storage.GS.Valid() {
+		t.Skipf("Skipping google storage e2e tests...")
 	}
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	sess, err := util.NewAWSSession(conf.Worker.Storage.AmazonS3.AWS)
-	if err != nil {
-		t.Fatal("error creating AWS session:", err)
-	}
-	client := s3.New(sess)
+	// cli, err := newGsTest()
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// err = cli.createBucket(projectID, testBucket)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// defer func() {
+	// 	cli.deleteBucket(testBucket)
+	// }()
 
-	_, err = client.CreateBucket(&s3.CreateBucketInput{
-		Bucket: aws.String(testBucket),
-	})
-	if err != nil {
-		t.Fatal("error creating test s3 bucket:", err)
-	}
-	defer func() {
-		amazonEmptyBucket(client, testBucket)
-		client.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(testBucket)})
-	}()
-
-	protocol := "s3://"
+	protocol := "gs://"
 
 	store, err := storage.Storage{}.WithConfig(conf.Worker.Storage)
 	if err != nil {
@@ -63,7 +66,7 @@ func TestAmazonS3Storage(t *testing.T) {
 	outDirURL := protocol + testBucket + "/" + "test-output-directory"
 
 	task := &tes.Task{
-		Name: "s3 e2e",
+		Name: "gs e2e",
 		Inputs: []*tes.Input{
 			{
 				Url:  inFileURL,
@@ -114,12 +117,12 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	err = store.Get(context.Background(), outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
+	err = store.Get(context.Background(), outFileURL, "./test_tmp/test-gs-file.txt", tes.FileType_FILE)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
 
-	b, err := ioutil.ReadFile("./test_tmp/test-s3-file.txt")
+	b, err := ioutil.ReadFile("./test_tmp/test-gs-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read downloaded file:", err)
 	}
@@ -131,12 +134,12 @@ func TestAmazonS3Storage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	err = store.Get(context.Background(), outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	err = store.Get(context.Background(), outDirURL, "./test_tmp/test-gs-directory", tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}
 
-	b, err = ioutil.ReadFile("./test_tmp/test-s3-directory/test-output-file.txt")
+	b, err = ioutil.ReadFile("./test_tmp/test-gs-directory/test-output-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read file in downloaded directory", err)
 	}
@@ -149,48 +152,22 @@ func TestAmazonS3Storage(t *testing.T) {
 	}
 }
 
-func amazonEmptyBucket(client *s3.S3, bucket string) error {
-	log.Info("Removing objects from S3 bucket : ", bucket)
-	params := &s3.ListObjectsInput{
-		Bucket: aws.String(bucket),
-	}
-	for {
-		//Requesting for batch of objects from s3 bucket
-		objects, err := client.ListObjects(params)
-		if err != nil {
-			return err
-		}
-		//Checks if the bucket is already empty
-		if len((*objects).Contents) == 0 {
-			log.Info("Bucket is already empty")
-			return nil
-		}
+// type gsTest struct {
+// 	client *gs.Client
+// }
 
-		//creating an array of pointers of ObjectIdentifier
-		objectsToDelete := make([]*s3.ObjectIdentifier, 0, 1000)
-		for _, object := range (*objects).Contents {
-			obj := s3.ObjectIdentifier{
-				Key: object.Key,
-			}
-			objectsToDelete = append(objectsToDelete, &obj)
-		}
-		//Creating JSON payload for bulk delete
-		deleteArray := s3.Delete{Objects: objectsToDelete}
-		deleteParams := &s3.DeleteObjectsInput{
-			Bucket: aws.String(bucket),
-			Delete: &deleteArray,
-		}
-		//Running the Bulk delete job (limit 1000)
-		_, err = client.DeleteObjects(deleteParams)
-		if err != nil {
-			return err
-		}
-		if *(*objects).IsTruncated { //if there are more objects in the bucket, IsTruncated = true
-			params.Marker = (*deleteParams).Delete.Objects[len((*deleteParams).Delete.Objects)-1].Key
-		} else { //if all objects in the bucket have been cleaned up.
-			break
-		}
-	}
-	log.Info("Emptied S3 bucket : ", bucket)
-	return nil
-}
+// func newGsTest() (*gsTest, error) {
+// 	client, err := gs.NewClient(context.Background())
+// 	return &gsTest{client}, err
+// }
+
+// func (g *gsTest) createBucket(projectID, bucket string) error {
+// 	cli := g.client.Bucket(bucket)
+// 	return cli.Create(context.Background(), projectID, nil)
+// }
+
+// func (g *gsTest) deleteBucket(bucket string) error {
+// 	// emptyBucket(g.bucket)
+// 	// g.Buckets.Delete(g.bucket)
+// 	return nil
+// }

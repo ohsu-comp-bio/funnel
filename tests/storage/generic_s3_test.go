@@ -22,12 +22,6 @@ func TestGenericS3Storage(t *testing.T) {
 		t.Skipf("Skipping generic s3 e2e tests...")
 	}
 
-	store := storage.Storage{}
-	store, err := store.WithConfig(conf.Worker.Storage)
-	if err != nil {
-		t.Fatal("error configuring storage:", err)
-	}
-
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
 	sconf := conf.Worker.Storage.S3[0]
@@ -36,33 +30,38 @@ func TestGenericS3Storage(t *testing.T) {
 	if err != nil {
 		t.Fatal("error creating s3 client:", err)
 	}
-
 	err = client.MakeBucket(testBucket, "")
 	if err != nil {
 		t.Fatal("error creating test s3 bucket:", err)
 	}
-
 	defer func() {
 		minioEmptyBucket(client, testBucket)
 		client.RemoveBucket(testBucket)
 	}()
 
+	protocol := "s3://"
+
+	store, err := storage.Storage{}.WithConfig(conf.Worker.Storage)
+	if err != nil {
+		t.Fatal("error configuring storage:", err)
+	}
+
 	fPath := "testdata/test_in"
-	inFileURL := "gs3://" + testBucket + "/" + fPath
+	inFileURL := protocol + testBucket + "/" + fPath
 	_, err = store.Put(context.Background(), inFileURL, fPath, tes.FileType_FILE)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	dPath := "testdata/test_dir"
-	inDirURL := "gs3://" + testBucket + "/" + dPath
+	inDirURL := protocol + testBucket + "/" + dPath
 	_, err = store.Put(context.Background(), inDirURL, dPath, tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
 
-	outFileURL := "gs3://" + testBucket + "/" + "test-output-file.txt"
-	outDirURL := "gs3://" + testBucket + "/" + "test-output-directory"
+	outFileURL := protocol + testBucket + "/" + "test-output-file.txt"
+	outDirURL := protocol + testBucket + "/" + "test-output-directory"
 
 	task := &tes.Task{
 		Name: "s3 e2e",
@@ -153,7 +152,6 @@ func TestGenericS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 }
 
-// minioEmptyBucket empties the S3 bucket
 func minioEmptyBucket(client *minio.Client, bucket string) error {
 	log.Info("Removing objects from S3 bucket : ", bucket)
 	doneCh := make(chan struct{})

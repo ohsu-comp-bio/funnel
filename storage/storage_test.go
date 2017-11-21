@@ -73,27 +73,27 @@ func TestS3UrlProcessing(t *testing.T) {
 	expectedBucket := "1000genomes"
 	expectedKey := "README.analysis_history"
 
-	bucket, key := b.processUrl("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
-	if bucket != expectedBucket {
+	url := b.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
-		t.Log("actual:", bucket)
+		t.Log("actual:", url.bucket)
 		t.Error("wrong bucket")
 	}
-	if key != expectedKey {
+	if url.path != expectedKey {
 		t.Log("expected:", expectedKey)
-		t.Log("actual:", key)
+		t.Log("actual:", url.path)
 		t.Error("wrong key")
 	}
 
-	bucket, key = b.processUrl("s3://1000genomes/README.analysis_history")
-	if bucket != expectedBucket {
+	url = b.parse("s3://1000genomes/README.analysis_history")
+	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
-		t.Log("actual:", bucket)
+		t.Log("actual:", url.bucket)
 		t.Error("wrong bucket")
 	}
-	if key != expectedKey {
+	if url.path != expectedKey {
 		t.Log("expected:", expectedKey)
-		t.Log("actual:", key)
+		t.Log("actual:", url.path)
 		t.Error("wrong key")
 	}
 
@@ -102,39 +102,39 @@ func TestS3UrlProcessing(t *testing.T) {
 		t.Fatal("Error creating generic S3 backend:", err)
 	}
 
-	bucket, key = ab.processUrl("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
-	if bucket != expectedBucket {
+	url = ab.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
-		t.Log("actual:", bucket)
+		t.Log("actual:", url.bucket)
 		t.Error("wrong bucket")
 	}
-	if key != expectedKey {
+	if url.path != expectedKey {
 		t.Log("expected:", expectedKey)
-		t.Log("actual:", key)
+		t.Log("actual:", url.path)
 		t.Error("wrong key")
 	}
 
-	bucket, key = ab.processUrl("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
-	if bucket != expectedBucket {
+	url = ab.parse("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
+	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
-		t.Log("actual:", bucket)
+		t.Log("actual:", url.bucket)
 		t.Error("wrong bucket")
 	}
-	if key != expectedKey {
+	if url.path != expectedKey {
 		t.Log("expected:", expectedKey)
-		t.Log("actual:", key)
+		t.Log("actual:", url.path)
 		t.Error("wrong key")
 	}
 
-	bucket, key = ab.processUrl("s3://1000genomes/README.analysis_history")
-	if bucket != expectedBucket {
+	url = ab.parse("s3://1000genomes/README.analysis_history")
+	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
-		t.Log("actual:", bucket)
+		t.Log("actual:", url.bucket)
 		t.Error("wrong bucket")
 	}
-	if key != expectedKey {
+	if url.path != expectedKey {
 		t.Log("expected:", expectedKey)
-		t.Log("actual:", key)
+		t.Log("actual:", url.path)
 		t.Error("wrong key")
 	}
 }

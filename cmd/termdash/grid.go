@@ -7,6 +7,7 @@ import (
 	ui "github.com/gizak/termui"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/expanded"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 func RedrawRows(clr bool) {
@@ -50,15 +51,17 @@ func ExpandView(t *TaskWidget) {
 	HandleKeys("down", ex.Down)
 	HandleKeys("exit", ui.StopLoop)
 	ui.Handle("/timer/1s", func(e ui.Event) {
-		task, err := cursor.RefreshTask(t.Task.Id)
-		if err != nil {
-			ex.DisplayError(err)
-		} else {
-			ex.Update(task.Task)
+		if !tes.TerminalState(t.Task.State) {
+			task, err := cursor.RefreshTask(t.Task.Id)
+			if err != nil {
+				ex.DisplayError(err)
+			} else {
+				ex.Update(task.Task)
+			}
+			ui.Clear()
+			ex.Align()
+			ui.Render(ex)
 		}
-		ui.Clear()
-		ex.Align()
-		ui.Render(ex)
 	})
 	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
 		ex.SetWidth(ui.TermWidth())

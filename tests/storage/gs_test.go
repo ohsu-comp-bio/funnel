@@ -176,7 +176,10 @@ func (g *gsTest) createBucket(projectID, bucket string) error {
 }
 
 func (g *gsTest) deleteBucket(bucket string) error {
-	// emptyBucket(g.bucket)
-	// g.client.Buckets.Delete(g.bucket)
+	objects, _ := g.client.Objects.List(bucket).Do()
+	for _, obj := range objects.Items {
+		g.client.Objects.Delete(bucket, obj.Name).Do()
+	}
+	g.client.Buckets.Delete(bucket).Do()
 	return nil
 }

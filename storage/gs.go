@@ -76,7 +76,10 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 
 	} else if class == tes.FileType_DIRECTORY {
 		// TODO not handling pagination
-		objects, _ := gs.svc.Objects.List(url.bucket).Prefix(url.path).Do()
+		objects, err := gs.svc.Objects.List(url.bucket).Prefix(url.path).Do()
+		if err != nil {
+			return err
+		}
 		for _, obj := range objects.Items {
 			call := gs.svc.Objects.Get(url.bucket, obj.Name)
 			key := strings.TrimPrefix(obj.Name, url.path)

@@ -135,11 +135,15 @@ test-pbs-torque:
 	@docker pull ohsucompbio/pbs-torque
 	@go test -timeout 120s ./tests/pbs -funnel-config $(CONFIGDIR)/pbs.config.yml
 
-# Run s3 tests
 test-s3:
 	@go test ./tests/storage -funnel-config $(CONFIGDIR)/s3.config.yml
 
-# Tests meant to run in an OpenStack environment
+test-generic-s3:
+	@go test ./tests/storage -funnel-config $(CONFIGDIR)/generic-s3.config.yml
+
+test-gs:
+	@go test ./tests/storage -funnel-config $(CONFIGDIR)/gs.config.yml ${GCE_PROJECT_ID}
+
 test-swift:
 	@go test ./tests/storage -funnel-config $(CONFIGDIR)/swift.config.yml
 

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/ncw/swift"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
@@ -9,84 +10,171 @@ import (
 	"testing"
 )
 
-func TestSwiftStorageTask(t *testing.T) {
+func TestSwiftStorage(t *testing.T) {
 	tests.SetLogOutput(log, t)
+
 	if !conf.Worker.Storage.Swift.Valid() {
 		t.Skipf("Skipping swift e2e tests...")
 	}
 
-	id := fun.Run(`
-    --sh 'md5sum $in > $out'
-    -i in=swift://buchanan-scratch/funnel
-    -o out=swift://buchanan-scratch/funnel-md5
-  `)
-	task := fun.Wait(id)
+	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	expect := "da385a552397a4ac86ee6444a8f9ae3e  /opt/funnel/inputs/buchanan-scratch/funnel\n"
+	client, err := newSwiftTest()
+	if err != nil {
+		t.Fatal("error creating swift client:", err)
+	}
+	err = client.createBucket(testBucket)
+	if err != nil {
+		t.Fatal("error creating test bucket:", err)
+	}
+	defer func() {
+		client.deleteBucket(testBucket)
+	}()
 
-	if task.State != tes.State_COMPLETE {
+	protocol := "swift://"
+
+	store, err := storage.Storage{}.WithConfig(conf.Worker.Storage)
+	if err != nil {
+		t.Fatal("error configuring storage:", err)
+	}
+
+	fPath := "testdata/test_in"
+	inFileURL := protocol + testBucket + "/" + fPath
+	_, err = store.Put(context.Background(), inFileURL, fPath, tes.FileType_FILE)
+	if err != nil {
+		t.Fatal("error uploading test file:", err)
+	}
+
+	dPath := "testdata/test_dir"
+	inDirURL := protocol + testBucket + "/" + dPath
+	_, err = store.Put(context.Background(), inDirURL, dPath, tes.FileType_DIRECTORY)
+	if err != nil {
+		t.Fatal("error uploading test directory:", err)
+	}
+
+	outFileURL := protocol + testBucket + "/" + "test-output-file.txt"
+	outDirURL := protocol + testBucket + "/" + "test-output-directory"
+
+	task := &tes.Task{
+		Name: "s3 e2e",
+		Inputs: []*tes.Input{
+			{
+				Url:  inFileURL,
+				Path: "/opt/inputs/test-file.txt",
+				Type: tes.FileType_FILE,
+			},
+			{
+				Url:  inDirURL,
+				Path: "/opt/inputs/test-directory",
+				Type: tes.FileType_DIRECTORY,
+			},
+		},
+		Outputs: []*tes.Output{
+			{
+				Path: "/opt/workdir/test-output-file.txt",
+				Url:  outFileURL,
+				Type: tes.FileType_FILE,
+			},
+			{
+				Path: "/opt/workdir/test-output-directory",
+				Url:  outDirURL,
+				Type: tes.FileType_DIRECTORY,
+			},
+		},
+		Executors: []*tes.Executor{
+			{
+				Image: "alpine:latest",
+				Command: []string{
+					"sh",
+					"-c",
+					"cat $(find /opt/inputs -type f) > test-output-file.txt; mkdir test-output-directory; cp *.txt test-output-directory/",
+				},
+				Workdir: "/opt/workdir",
+			},
+		},
+	}
+
+	resp, err := fun.RPC.CreateTask(context.Background(), task)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	taskFinal := fun.Wait(resp.Id)
+
+	if taskFinal.State != tes.State_COMPLETE {
 		t.Fatal("Unexpected task failure")
 	}
 
-	s := storage.Storage{}
-	s, serr := s.WithConfig(conf.Worker.Storage)
-	if serr != nil {
-		t.Fatal("Error configuring storage", serr)
-	}
+	expected := "file1 content\nfile2 content\nhello\n"
 
-	ctx := context.Background()
-	gerr := s.Get(ctx, "swift://buchanan-scratch/funnel-md5", "swift-md5-out", tes.FileType_FILE)
-	if gerr != nil {
-		t.Fatal("Failed get", gerr.Error())
-	}
-
-	b, err := ioutil.ReadFile("swift-md5-out")
+	err = store.Get(context.Background(), outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
 	if err != nil {
-		t.Fatal("Failed read", err)
+		t.Fatal("Failed to download file:", err)
 	}
 
-	if string(b) != expect {
-		t.Fatal("unexpected content", string(b))
+	b, err := ioutil.ReadFile("./test_tmp/test-s3-file.txt")
+	if err != nil {
+		t.Fatal("Failed to read downloaded file:", err)
 	}
+	actual := string(b)
+
+	if actual != expected {
+		t.Log("expected:", expected)
+		t.Log("actual:  ", actual)
+		t.Fatal("unexpected content")
+	}
+
+	err = store.Get(context.Background(), outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	if err != nil {
+		t.Fatal("Failed to download directory:", err)
+	}
+
+	b, err = ioutil.ReadFile("./test_tmp/test-s3-directory/test-output-file.txt")
+	if err != nil {
+		t.Fatal("Failed to read file in downloaded directory", err)
+	}
+	actual = string(b)
+
+	if actual != expected {
+		t.Log("expected:", expected)
+		t.Log("actual:  ", actual)
+		t.Fatal("unexpected content")
+	}
+
+	tests.SetLogOutput(log, t)
 }
 
-func TestSwiftDirStorageTask(t *testing.T) {
-	tests.SetLogOutput(log, t)
-	if !conf.Worker.Storage.Swift.Valid() {
-		t.Skipf("Skipping swift e2e tests...")
-	}
+type swiftTest struct {
+	client *swift.Connection
+}
 
-	id := fun.Run(`
-    --sh 'mkdir -p $out/dir; md5sum $in > $out/dir/md5.txt'
-    -i in=swift://buchanan-scratch/funnel
-    -O out=swift://buchanan-scratch/funnel-md5-dir
-  `)
-	task := fun.Wait(id)
-
-	expect := "da385a552397a4ac86ee6444a8f9ae3e  /opt/funnel/inputs/buchanan-scratch/funnel\n"
-
-	if task.State != tes.State_COMPLETE {
-		t.Fatal("Unexpected task failure")
-	}
-
-	s := storage.Storage{}
-	s, serr := s.WithConfig(conf.Worker.Storage)
-	if serr != nil {
-		t.Fatal("Error configuring storage", serr)
-	}
-
-	ctx := context.Background()
-	gerr := s.Get(ctx, "swift://buchanan-scratch/funnel-md5-dir", "swift-md5-out-dir", tes.FileType_DIRECTORY)
-	if gerr != nil {
-		t.Fatal("Failed get", gerr.Error())
-	}
-
-	b, err := ioutil.ReadFile("swift-md5-out-dir/dir/md5.txt")
+func newSwiftTest() (*swiftTest, error) {
+	conn := &swift.Connection{}
+	err := conn.ApplyEnvironment()
 	if err != nil {
-		t.Fatal("Failed read", err)
+		return nil, err
 	}
+	err = conn.Authenticate()
+	if err != nil {
+		return nil, err
+	}
+	return &swiftTest{conn}, nil
+}
 
-	if string(b) != expect {
-		t.Fatal("unexpected content", string(b))
+func (sw *swiftTest) createBucket(bucket string) error {
+	return sw.client.ContainerCreate(bucket, nil)
+}
+
+func (sw *swiftTest) deleteBucket(bucket string) error {
+	objs, err := sw.client.ObjectsAll(bucket, nil)
+	if err != nil {
+		return err
 	}
+	for _, obj := range objs {
+		err = sw.client.ObjectDelete(bucket, obj.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return sw.client.ContainerDelete(bucket)
 }

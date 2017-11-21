@@ -28,16 +28,16 @@ func TestGoogleStorage(t *testing.T) {
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	cli, err := newGsTest()
+	client, err := newGsTest()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = cli.createBucket(projectID, testBucket)
+	err = client.createBucket(projectID, testBucket)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
-		cli.deleteBucket(testBucket)
+		client.deleteBucket(testBucket)
 	}()
 
 	protocol := "gs://"
@@ -176,10 +176,15 @@ func (g *gsTest) createBucket(projectID, bucket string) error {
 }
 
 func (g *gsTest) deleteBucket(bucket string) error {
-	objects, _ := g.client.Objects.List(bucket).Do()
-	for _, obj := range objects.Items {
-		g.client.Objects.Delete(bucket, obj.Name).Do()
+	objects, err := g.client.Objects.List(bucket).Do()
+	if err != nil {
+		return err
 	}
-	g.client.Buckets.Delete(bucket).Do()
-	return nil
+	for _, obj := range objects.Items {
+		err = g.client.Objects.Delete(bucket, obj.Name).Do()
+		if err != nil {
+			return err
+		}
+	}
+	return g.client.Buckets.Delete(bucket).Do()
 }

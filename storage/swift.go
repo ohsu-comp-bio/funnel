@@ -25,7 +25,7 @@ type SwiftBackend struct {
 func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 
 	// Create a connection
-	c := swift.Connection{
+	c := &swift.Connection{
 		UserName: conf.UserName,
 		ApiKey:   conf.Password,
 		AuthUrl:  conf.AuthURL,
@@ -41,7 +41,7 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 		return nil, err
 	}
 
-	return &SwiftBackend{&c}, nil
+	return &SwiftBackend{c}, nil
 }
 
 // Get copies an object from storage to the host path.

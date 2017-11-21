@@ -13,13 +13,16 @@ import (
 )
 
 func TestGoogleStorage(t *testing.T) {
-	args := flag.Args()
-	projectID := args[0]
-
 	tests.SetLogOutput(log, t)
 
 	if !conf.Worker.Storage.GS.Valid() {
 		t.Skipf("Skipping google storage e2e tests...")
+	}
+
+	args := flag.Args()
+	var projectID string
+	if len(args) > 0 {
+		projectID = args[0]
 	}
 
 	if projectID == "" {

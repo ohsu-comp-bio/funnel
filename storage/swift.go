@@ -46,13 +46,6 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 
 // Get copies an object from storage to the host path.
 func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-	if !sw.conn.Authenticated() {
-		err := sw.conn.Authenticate()
-		if err != nil {
-			return fmt.Errorf("error connecting to Swift server: %v", err)
-		}
-	}
-
 	url := sw.parse(rawurl)
 
 	switch class {
@@ -119,13 +112,6 @@ func (sw *SwiftBackend) get(src io.Reader, hostPath string) error {
 
 // PutFile copies an object (file) from the host path to storage.
 func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-	if !sw.conn.Authenticated() {
-		err := sw.conn.Authenticate()
-		if err != nil {
-			return fmt.Errorf("error connecting to Swift server: %v", err)
-		}
-	}
-
 	url := sw.parse(rawurl)
 
 	reader, oerr := os.Open(hostPath)
@@ -146,10 +132,19 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 	return writer.Close()
 }
 
-// Supports indicates whether this backend supports the given storage request.
-// For swift, the url must start with "swift://".
-func (sw *SwiftBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
-	return strings.HasPrefix(rawurl, swiftProtocol)
+// Supports returns true if this backend supports the given storage request.
+// For the Swift backend, the url must start with "swift://"
+func (sw *SwiftBackend) Supports(rawurl string) error {
+	ok := strings.HasPrefix(rawurl, swiftProtocol)
+	if !ok {
+		return fmt.Errorf("unsupported protocol; expected %s", swiftProtocol)
+	}
+	url := sw.parse(rawurl)
+	_, _, err := sw.conn.Container(url.bucket)
+	if err != nil {
+		return fmt.Errorf("failed to find bucket: %s. error: %v", url.bucket, err)
+	}
+	return nil
 }
 
 func (sw *SwiftBackend) parse(rawurl string) *urlparts {

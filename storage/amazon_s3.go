@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -47,10 +46,7 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 
 	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, url.bucket, "us-east-1")
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
-			return fmt.Errorf("unable to find bucket %s's region not found: %v", url.bucket, aerr)
-		}
-		return err
+		return fmt.Errorf("failed to determine region for bucket: %s. error: %v", url.bucket, err)
 	}
 
 	// Create a downloader with the session and default options
@@ -134,10 +130,7 @@ func (s3b *AmazonS3Backend) PutFile(ctx context.Context, rawurl string, hostPath
 
 	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, url.bucket, "us-east-1")
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
-			return fmt.Errorf("unable to find bucket %s's region not found", url.bucket)
-		}
-		return err
+		return fmt.Errorf("failed to determine region for bucket: %s. error: %v", url.bucket, err)
 	}
 
 	// Create a uploader with the session and default options
@@ -161,19 +154,19 @@ func (s3b *AmazonS3Backend) PutFile(ctx context.Context, rawurl string, hostPath
 }
 
 // Supports indicates whether this backend supports the given storage request.
-// For S3, the url must start with "s3://".
-func (s3b *AmazonS3Backend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
+// For the AmazonS3Backend, the url must start with "s3://"
+func (s3b *AmazonS3Backend) Supports(rawurl string) error {
 	if !strings.HasPrefix(rawurl, s3Protocol) {
-		return false
+		return fmt.Errorf("unsupported protocol; expected %s", s3Protocol)
 	}
 
 	url := s3b.parse(rawurl)
 	_, err := s3manager.GetBucketRegion(context.Background(), s3b.sess, url.bucket, "us-east-1")
 	if err != nil {
-		return false
+		return fmt.Errorf("failed to find bucket: %s. error: %v", url.bucket, err)
 	}
 
-	return true
+	return nil
 }
 
 func (s3b *AmazonS3Backend) parse(url string) *urlparts {

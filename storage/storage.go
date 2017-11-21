@@ -30,7 +30,7 @@ type Backend interface {
 	PutFile(ctx context.Context, url string, path string) error
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
-	Supports(url string, path string, class tes.FileType) bool
+	Supports(url string) error
 }
 
 // Storage provides a client for accessing multiple storage systems,
@@ -46,7 +46,7 @@ type Storage struct {
 // The file is downloaded to the given local "path".
 // "class" is either "File" or "Directory".
 func (storage Storage) Get(ctx context.Context, url string, path string, class tes.FileType) error {
-	backend, err := storage.findBackend(url, path, class)
+	backend, err := storage.findBackend(url)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (storage Storage) Get(ctx context.Context, url string, path string, class t
 // The file is uploaded from the given local "path".
 // "class" is either "File" or "Directory".
 func (storage Storage) Put(ctx context.Context, url string, path string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	backend, err := storage.findBackend(url, path, class)
+	backend, err := storage.findBackend(url)
 	if err != nil {
 		return nil, err
 	}
@@ -102,20 +102,30 @@ func (storage Storage) Put(ctx context.Context, url string, path string, class t
 }
 
 // Supports indicates whether the storage supports the given request.
-func (storage Storage) Supports(url string, path string, class tes.FileType) bool {
-	b, _ := storage.findBackend(url, path, class)
-	return b != nil
+func (storage Storage) Supports(url string) error {
+	_, err := storage.findBackend(url)
+	return err
 }
 
-// findBackend tries to find a backend that matches the given url/path/class.
-// This is how a url gets matched to a backend, for example by the url prefix "s3://".
-func (storage Storage) findBackend(url string, path string, class tes.FileType) (Backend, error) {
+func (storage Storage) findBackend(url string) (Backend, error) {
+	var useBackend Backend
+	var found = 0
+
 	for _, backend := range storage.backends {
-		if backend.Supports(url, path, class) {
-			return backend, nil
+		err := backend.Supports(url)
+		if err == nil {
+			useBackend = backend
+			found++
 		}
 	}
-	return nil, fmt.Errorf("Could not find matching storage system for %s", url)
+
+	if found == 0 {
+		return nil, fmt.Errorf("Could not find matching storage system for: %s", url)
+	} else if found > 1 {
+		return nil, fmt.Errorf("Request supported by multiple backends for: %s", url)
+	}
+
+	return useBackend, nil
 }
 
 // WithBackend returns a new child Storage instance with the given backend added.

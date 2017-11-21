@@ -34,15 +34,7 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 
 // Get copies a file from storage into the given hostPath.
 func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-	path, ok := getPath(url)
-
-	if !ok {
-		return fmt.Errorf("local storage does not support put on %s", url)
-	}
-
-	if !isAllowed(path, local.allowedDirs) {
-		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", path)
-	}
+	path := getPath(url)
 
 	var err error
 	if class == File {
@@ -70,29 +62,27 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 
 // PutFile copies a file from the hostPath into storage.
 func (local *LocalBackend) PutFile(ctx context.Context, url string, hostPath string) error {
-	path, ok := getPath(url)
-
-	if !ok {
-		return fmt.Errorf("local storage does not support put on %s", url)
-	}
-
-	if !isAllowed(path, local.allowedDirs) {
-		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", url)
-	}
-
+	path := getPath(url)
 	return linkFile(hostPath, path)
 }
 
 // Supports indicates whether this backend supports the given storage request.
-// For the LocalBackend, the url must start with "file://"
-func (local *LocalBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
-	_, ok := getPath(rawurl)
-	return ok
+// For the LocalBackend, the url must start with "file://" be in an allowed directory
+func (local *LocalBackend) Supports(rawurl string) error {
+	path := getPath(rawurl)
+	ok := strings.HasPrefix(path, "/")
+	if !ok {
+		return fmt.Errorf("Must provided an absolute path")
+	}
+	if !isAllowed(path, local.allowedDirs) {
+		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", path)
+	}
+	return nil
 }
 
-func getPath(rawurl string) (string, bool) {
+func getPath(rawurl string) string {
 	p := strings.TrimPrefix(rawurl, "file://")
-	return p, strings.HasPrefix(p, "/")
+	return p
 }
 
 func isAllowed(path string, allowedDirs []string) bool {

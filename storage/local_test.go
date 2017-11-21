@@ -11,13 +11,16 @@ import (
 )
 
 func TestLocalSupports(t *testing.T) {
-	l := LocalBackend{}
-	if !l.Supports("file:///path/to/foo.txt", "/host/path", tes.FileType_FILE) {
-		t.Fatal("Expected file:// URL to be supported")
+	l := LocalBackend{allowedDirs: []string{"/path"}}
+
+	err := l.Supports("file:///path/to/foo.txt")
+	if err != nil {
+		t.Fatal("Expected file:// URL to be supported", err)
 	}
 
-	if !l.Supports("/path/to/foo.txt", "/host/path", tes.FileType_FILE) {
-		t.Fatal("Expected normal file path to be supported")
+	err = l.Supports("/path/to/foo.txt")
+	if err != nil {
+		t.Fatal("Expected normal file path to be supported", err)
 	}
 }
 
@@ -235,14 +238,14 @@ func TestSameFile(t *testing.T) {
 
 func TestGetPath(t *testing.T) {
 	x := "file:///foo/bar/file with spaces.txt"
-	e, ok := getPath(x)
-	if !ok || e != "/foo/bar/file with spaces.txt" {
+	e := getPath(x)
+	if e != "/foo/bar/file with spaces.txt" {
 		t.Fatal("Unexpected URL encoding")
 	}
 
 	x = "/foo/bar/escaped%20with%20.txt"
-	e, ok = getPath(x)
-	if !ok || e != "/foo/bar/escaped%20with%20.txt" {
+	e = getPath(x)
+	if e != "/foo/bar/escaped%20with%20.txt" {
 		t.Fatal("Unexpected URL encoding")
 	}
 }

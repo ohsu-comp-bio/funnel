@@ -148,18 +148,14 @@ func TestGenericS3Storage(t *testing.T) {
 		t.Log("actual:  ", actual)
 		t.Fatal("unexpected content")
 	}
-
-	tests.SetLogOutput(log, t)
 }
 
 func minioEmptyBucket(client *minio.Client, bucket string) error {
-	log.Info("Removing objects from S3 bucket : ", bucket)
 	doneCh := make(chan struct{})
 	defer close(doneCh)
 	recursive := true
 	for obj := range client.ListObjectsV2(bucket, "", recursive, doneCh) {
 		client.RemoveObject(bucket, obj.Key)
 	}
-	log.Info("Emptied S3 bucket : ", bucket)
 	return nil
 }

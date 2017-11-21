@@ -130,9 +130,18 @@ func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string
 }
 
 // Supports returns true if this backend supports the given storage request.
-// The Google Storage backend supports URLs which have a "gs://" scheme.
-func (gs *GSBackend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
-	return strings.HasPrefix(rawurl, gsProtocol)
+// For the Google Storage backend, the url must start with "gs://"
+func (gs *GSBackend) Supports(rawurl string) error {
+	ok := strings.HasPrefix(rawurl, gsProtocol)
+	if !ok {
+		return fmt.Errorf("unsupported protocol; expected %s", gsProtocol)
+	}
+	url := gs.parse(rawurl)
+	_, err := gs.svc.Buckets.Get(url.bucket).Do()
+	if err != nil {
+		return fmt.Errorf("failed to find bucket: %s. error: %v", url.bucket, err)
+	}
+	return nil
 }
 
 func (gs *GSBackend) parse(rawurl string) *urlparts {

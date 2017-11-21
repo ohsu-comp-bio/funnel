@@ -150,7 +150,6 @@ func TestAmazonS3Storage(t *testing.T) {
 }
 
 func amazonEmptyBucket(client *s3.S3, bucket string) error {
-	log.Info("Removing objects from S3 bucket : ", bucket)
 	params := &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 	}
@@ -191,6 +190,5 @@ func amazonEmptyBucket(client *s3.S3, bucket string) error {
 			break
 		}
 	}
-	log.Info("Emptied S3 bucket : ", bucket)
 	return nil
 }

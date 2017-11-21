@@ -76,16 +76,22 @@ func (s3 *GenericS3Backend) PutFile(ctx context.Context, rawurl string, hostPath
 }
 
 // Supports indicates whether this backend supports the given storage request.
-// For S3, the url must start with "s3://".
-func (s3 *GenericS3Backend) Supports(rawurl string, hostPath string, class tes.FileType) bool {
+// For the GenericS3Backend, the url must start with "s3://"
+func (s3 *GenericS3Backend) Supports(rawurl string) error {
 	if !strings.HasPrefix(rawurl, s3Protocol) {
-		return false
+		return fmt.Errorf("unsupported protocol; expected %s", s3Protocol)
 	}
 
 	url := s3.parse(rawurl)
-	found, _ := s3.client.BucketExists(url.bucket)
+	ok, err := s3.client.BucketExists(url.bucket)
+	if err != nil {
+		return fmt.Errorf("failed to find bucket: %s. error: %v", url.bucket, err)
+	}
+	if !ok {
+		return fmt.Errorf("bucket does not exist")
+	}
 
-	return found
+	return nil
 }
 
 func (s3 *GenericS3Backend) parse(url string) *urlparts {

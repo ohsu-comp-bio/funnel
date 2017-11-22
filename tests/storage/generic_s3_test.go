@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"github.com/minio/minio-go"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
@@ -24,19 +25,16 @@ func TestGenericS3Storage(t *testing.T) {
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	sconf := conf.Worker.Storage.S3[0]
-	ssl := strings.HasPrefix(sconf.Endpoint, "https")
-	client, err := minio.NewV2(sconf.Endpoint, sconf.Key, sconf.Secret, ssl)
+	client, err := newMinioTest(conf.Worker.Storage.S3[0])
 	if err != nil {
-		t.Fatal("error creating s3 client:", err)
+		t.Fatal("error creating minio client:", err)
 	}
-	err = client.MakeBucket(testBucket, "")
+	err = client.createBucket(testBucket)
 	if err != nil {
-		t.Fatal("error creating test s3 bucket:", err)
+		t.Fatal("error creating test bucket:", err)
 	}
 	defer func() {
-		minioEmptyBucket(client, testBucket)
-		client.RemoveBucket(testBucket)
+		client.deleteBucket(testBucket)
 	}()
 
 	protocol := "s3://"
@@ -150,12 +148,39 @@ func TestGenericS3Storage(t *testing.T) {
 	}
 }
 
-func minioEmptyBucket(client *minio.Client, bucket string) error {
+type minioTest struct {
+	client *minio.Client
+	fcli   *storage.GenericS3Backend
+}
+
+func newMinioTest(conf config.S3Storage) (*minioTest, error) {
+	ssl := strings.HasPrefix(conf.Endpoint, "https")
+	client, err := minio.NewV2(conf.Endpoint, conf.Key, conf.Secret, ssl)
+	if err != nil {
+		return nil, err
+	}
+
+	fcli, err := storage.NewGenericS3Backend(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return &minioTest{client, fcli}, nil
+}
+
+func (b *minioTest) createBucket(bucket string) error {
+	return b.client.MakeBucket(bucket, "")
+}
+
+func (b *minioTest) deleteBucket(bucket string) error {
 	doneCh := make(chan struct{})
 	defer close(doneCh)
 	recursive := true
-	for obj := range client.ListObjectsV2(bucket, "", recursive, doneCh) {
-		client.RemoveObject(bucket, obj.Key)
+	for obj := range b.client.ListObjects(bucket, "", recursive, doneCh) {
+		err := b.client.RemoveObject(bucket, obj.Key)
+		if err != nil {
+			return err
+		}
 	}
-	return nil
+	return b.client.RemoveBucket(bucket)
 }

@@ -5,6 +5,7 @@
 // examples/input-content.json
 // examples/log-streaming.json
 // examples/md5sum.json
+// examples/openstack-swift.json
 // examples/resource-request.json
 // examples/s3.json
 // DO NOT EDIT!
@@ -89,7 +90,7 @@ func examplesGoogleStorageJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/google-storage.json", size: 493, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
+	info := bindataFileInfo{name: "examples/google-storage.json", size: 493, mode: os.FileMode(420), modTime: time.Unix(1510592440, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -109,7 +110,7 @@ func examplesHelloWorldJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/hello-world.json", size: 218, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
+	info := bindataFileInfo{name: "examples/hello-world.json", size: 218, mode: os.FileMode(420), modTime: time.Unix(1510592440, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -129,7 +130,7 @@ func examplesInputContentJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/input-content.json", size: 736, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
+	info := bindataFileInfo{name: "examples/input-content.json", size: 736, mode: os.FileMode(420), modTime: time.Unix(1510592440, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -149,7 +150,7 @@ func examplesLogStreamingJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/log-streaming.json", size: 366, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
+	info := bindataFileInfo{name: "examples/log-streaming.json", size: 366, mode: os.FileMode(420), modTime: time.Unix(1510592440, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -169,7 +170,27 @@ func examplesMd5sumJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/md5sum.json", size: 731, mode: os.FileMode(420), modTime: time.Unix(1510422945, 0)}
+	info := bindataFileInfo{name: "examples/md5sum.json", size: 731, mode: os.FileMode(420), modTime: time.Unix(1510592440, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _examplesOpenstackSwiftJson = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x64\x90\xb1\x6e\xf3\x30\x0c\x84\x77\x3f\x05\xc1\x39\xf9\x3d\xfc\xe8\xe2\xb5\x6b\xa7\xa6\x9d\x8a\x0e\x8c\xc4\x24\x42\x2c\xc9\x10\x49\x34\x40\x90\x77\x2f\xc4\xb4\xce\xd0\x45\x90\x74\xc7\xbb\x0f\xbc\x0e\x00\x58\x28\x33\x4e\x80\xbb\xaf\x74\x50\xd8\x69\x6d\x74\x64\xe0\x0b\xe5\x65\x66\xdc\x74\x4b\x64\x09\x2d\x2d\x9a\x6a\xe9\xce\x37\x92\x33\xa4\xb2\x98\x0a\x50\x89\x50\x4d\xfd\x1e\xa8\xc0\x9e\xe1\x79\xae\x16\xd7\xa0\xf7\xd7\x17\xf9\x77\x8f\xe1\x0b\x07\xd3\xda\x04\x27\xf8\x18\x00\x00\xae\x7e\x02\x60\xca\x74\x74\x0a\xdb\x5b\x51\x73\xbf\x0b\xa1\xe6\x4c\x25\xf6\x09\xcc\xf1\x49\x2c\xe3\x06\x70\xd4\xbc\x8c\x87\x34\x33\x7e\xae\x4e\xd1\x58\x4d\x7b\x86\xab\x3f\x4f\x57\x6f\x03\x80\x1b\xf1\x4e\xfd\xb7\xff\x77\x09\xae\x3f\xda\xad\xcd\xfd\x57\xfe\x4f\xe3\x28\xda\x2c\x9c\x69\x2b\xa1\x91\x86\x93\x97\x28\x8b\x6e\x9d\x63\x1d\x59\x48\x4f\x2b\x84\x4b\x0f\x84\xe1\x36\x7c\x07\x00\x00\xff\xff\xc2\x44\xfa\x37\x73\x01\x00\x00")
+
+func examplesOpenstackSwiftJsonBytes() ([]byte, error) {
+	return bindataRead(
+		_examplesOpenstackSwiftJson,
+		"examples/openstack-swift.json",
+	)
+}
+
+func examplesOpenstackSwiftJson() (*asset, error) {
+	bytes, err := examplesOpenstackSwiftJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "examples/openstack-swift.json", size: 371, mode: os.FileMode(420), modTime: time.Unix(1511208449, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -189,7 +210,7 @@ func examplesResourceRequestJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/resource-request.json", size: 299, mode: os.FileMode(420), modTime: time.Unix(1510862518, 0)}
+	info := bindataFileInfo{name: "examples/resource-request.json", size: 299, mode: os.FileMode(420), modTime: time.Unix(1510790492, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -209,7 +230,7 @@ func examplesS3Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/s3.json", size: 476, mode: os.FileMode(420), modTime: time.Unix(1510862518, 0)}
+	info := bindataFileInfo{name: "examples/s3.json", size: 476, mode: os.FileMode(420), modTime: time.Unix(1510790492, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -271,6 +292,7 @@ var _bindata = map[string]func() (*asset, error){
 	"examples/input-content.json":    examplesInputContentJson,
 	"examples/log-streaming.json":    examplesLogStreamingJson,
 	"examples/md5sum.json":           examplesMd5sumJson,
+	"examples/openstack-swift.json":  examplesOpenstackSwiftJson,
 	"examples/resource-request.json": examplesResourceRequestJson,
 	"examples/s3.json":               examplesS3Json,
 }
@@ -322,6 +344,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"input-content.json":    {examplesInputContentJson, map[string]*bintree{}},
 		"log-streaming.json":    {examplesLogStreamingJson, map[string]*bintree{}},
 		"md5sum.json":           {examplesMd5sumJson, map[string]*bintree{}},
+		"openstack-swift.json":  {examplesOpenstackSwiftJson, map[string]*bintree{}},
 		"resource-request.json": {examplesResourceRequestJson, map[string]*bintree{}},
 		"s3.json":               {examplesS3Json, map[string]*bintree{}},
 	}},

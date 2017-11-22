@@ -9,18 +9,18 @@ menu:
 
 Funnel supports using [Google Storage][gs] (GS) for file storage.
 
-The GS client is NOT enabled by default, you must enabled it in the config:
+The Google storage client is enabled by default, and will try to automatically
+load credentials from the environment. Alternatively, you
+may explicitly set the credentials in the worker config:
+
 ```
 Worker:
   Storage:
-      GS:
-          # Automatically discover credentials from the environment.
-        - FromEnv: true
-          # Path to account credentials file.
-          AccountFile:
+    GS:
+      Disabled: false
+      # Path to account credentials file.
+      AccountFile: ""
 ```
-
-In the near future, Google Storage will be enabled by default. See [issue #332](https://github.com/ohsu-comp-bio/funnel/issues/332).
 
 ### Example task
 ```

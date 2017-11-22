@@ -223,30 +223,39 @@ Worker:
       AllowedDirs:
         - ./
 
+    AmazonS3:
+      Disabled: false
+      AWS:
+        # The maximum number of times that a request will be retried for failures.
+        MaxRetries: 10
+        # AWS Access key ID
+        Key: ""
+        # AWS Secret Access Key
+        Secret: ""
+
     # S3:
-    #   AWS:
-    #     # The maximum number of times that a request will be retried for failures.
-    #     MaxRetries: 10
-    #     # AWS Access key ID
+    #   - Disabled: true
+    #     Endpoint: ""
     #     Key: ""
-    #     # AWS Secret Access Key
     #     Secret: ""
 
-    # GS:
-    #     # Path to account credentials file.
-    #     # Optional. If possible, credentials will be automatically discovered
-    #     # from the environment.
-    #   - AccountFile:
-    #     # Automatically discover credentials from the environment.
-    #     FromEnv: true
+    GS:
+      Disabled: false
+      # Path to account credentials file.
+      # Optional. If possible, credentials will be automatically discovered
+      # from the environment.
+      AccountFile: ""
 
-    # Swift:
-    #   UserName:
-    #   Password:
-    #   AuthURL:
-    #   TenantName:
-    #   TenantID:
-    #   RegionName:
+    # If possible, credentials will be automatically discovered
+    # from the environment.
+    Swift:
+      Disabled: false
+      UserName: ""
+      Password: ""
+      AuthURL: ""
+      TenantName: ""
+      TenantID: ""
+      RegionName: ""
 
   # For low-level tuning.
   # How often to send task log updates to the Funnel server.

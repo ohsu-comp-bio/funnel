@@ -1,11 +1,13 @@
 ---
-title: AWS S3
+title: S3
 menu:
   main:
     parent: Storage
 ---
 
-# AWS S3
+# S3
+
+## Amazon S3
 
 Funnel supports using [AWS S3](https://aws.amazon.com/s3/) for file storage.
 
@@ -16,14 +18,33 @@ may explicitly set the credentials in the worker config:
 ```
 Worker:
   Storage:
-    S3:
+    AmazonS3:
       Disabled: false
       AWS:
         # The maximum number of times that a request will be retried for failures.
         MaxRetries: 10
-        # AWS Access key ID
         Key: ""
-        # AWS Secret Access Key
+        Secret: ""
+```
+
+## Other S3 API providers
+
+Funnel also supports using non-Amazon S3 API providers ([Ceph][ceph], 
+[Cleversafe][cleversafe], [Minio][minio], etc.) for file storage.
+
+These other  S3 storage clients are NOT enabled by default. 
+You must configure them. 
+
+This storage client currently only supports the
+[version 2 signing process](http://docs.aws.amazon.com/general/latest/gr/signature-version-2.html).
+
+```
+Worker:
+  Storage:
+    S3:
+      - Disabled: false
+        Endpoint: ""
+        Key: ""
         Secret: ""
 ```
 
@@ -47,6 +68,6 @@ Worker:
 }
 ```
 
-### Known issues
-
-The S3 client is currently AWS specific and doesn't work on non-AWS S3 systems. See [issue #338](https://github.com/ohsu-comp-bio/funnel/issues/338).
+[ceph]: http://ceph.com/
+[cleversafe]: https://www.ibm.com/cloud/object-storage
+[minio]: https://minio.io/

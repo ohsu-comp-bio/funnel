@@ -9,27 +9,22 @@ menu:
 
 Funnel supports using [OpenStack Swift][swift] for file storage.
 
-The Swift client is NOT enabled by default, you must explicitly give the credentials
-in the worker config:
+The Swift storage client is enabled by default, and will try to automatically
+load credentials from the environment. Alternatively, you
+may explicitly set the credentials in the worker config:
+
 ```
 Worker:
   Storage:
-      Swift:
-        UserName:
-        Password:
-        AuthURL:
-        TenantName:
-        TenantID:
-        RegionName:
+    Swift:
+      Disabled: false
+      UserName: ""
+      Password: ""
+      AuthURL: ""
+      TenantName: ""
+      TenantID: ""
+      RegionName: ""
 ```
-
-The config currently only supports OpenStack v2 auth. See [issue #336](https://github.com/ohsu-comp-bio/funnel/issues/336).
-
-As always, if you set the password in this file, make sure you protect it appropriately. Alternatively, the Swift client
-can pull credentials from these environment variables: https://godoc.org/github.com/ncw/swift#Connection.ApplyEnvironment  
-
-Swift currently fails while uploading large objects. See [issue #257](https://github.com/ohsu-comp-bio/funnel/issues/257).
-
 
 ### Example task
 ```
@@ -50,5 +45,9 @@ Swift currently fails while uploading large objects. See [issue #257](https://gi
   }]
 }
 ```
+
+### Known Issues:
+
+The config currently only supports OpenStack v2 auth. See [issue #336](https://github.com/ohsu-comp-bio/funnel/issues/336).
 
 [swift]: https://docs.openstack.org/swift/latest/

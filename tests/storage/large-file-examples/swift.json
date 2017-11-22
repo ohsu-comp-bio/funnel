@@ -3,23 +3,23 @@
   "executors": [
     {
       "image": "biocontainers/samtools:1.3.1",
-      "command": ["sh", "-c", "samtools view /tmp/inputs/NA21097.cram | head -n 100 | md5sum"],
+      "command": ["sh", "-c", "samtools view /tmp/inputs/NA21144.cram | head -n 100 | md5sum"],
       "stdout": "/tmp/outputs/stdout"
     }
   ],
   "inputs": [
     {
-      "url": "swift://funnel-test/inputs/NA21097.mapped.ILLUMINA.bwa.GIH.low_coverage.20120522.bam.cram",
-      "path": "/tmp/inputs/NA21097.cram"
+      "url": "swift://funnel-test/inputs/NA21144.mapped.ILLUMINA.bwa.GIH.low_coverage.20130415.bam.cram",
+      "path": "/tmp/inputs/NA21144.cram"
     }
   ],
   "outputs": [
     {
-      "url": "swift://funnel-test/outputs/NA21097.cram",
-      "path": "/tmp/inputs/NA21097.cram"
+      "url": "swift://funnel-test/outputs/NA21144.cram",
+      "path": "/tmp/inputs/NA21144.cram"
     },
     {
-      "url": "swift://funnel-test/outputs/NA21097_100.md5sum",
+      "url": "swift://funnel-test/outputs/NA21144_100.md5sum",
       "path": "/tmp/outputs/stdout"
     }
   ]

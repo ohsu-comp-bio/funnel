@@ -147,6 +147,7 @@ start-generic-s3:
 test-generic-s3:
 	@go test ./tests/storage -funnel-config $(CONFIGDIR)/gen-s3.config.yml
 	@go test ./tests/storage -funnel-config $(CONFIGDIR)/minio-s3.config.yml
+	@go test ./tests/storage -funnel-config $(CONFIGDIR)/multi-s3.config.yml
 
 test-gs:
 	@go test ./tests/storage -funnel-config $(CONFIGDIR)/gs.config.yml ${GCE_PROJECT_ID}

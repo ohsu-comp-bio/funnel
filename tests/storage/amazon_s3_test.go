@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
@@ -21,21 +22,16 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	sess, err := util.NewAWSSession(conf.Worker.Storage.AmazonS3.AWS)
+	client, err := newS3Test(conf.Worker.Storage.AmazonS3)
 	if err != nil {
-		t.Fatal("error creating AWS session:", err)
+		t.Fatal("error creating minio client:", err)
 	}
-	client := s3.New(sess)
-
-	_, err = client.CreateBucket(&s3.CreateBucketInput{
-		Bucket: aws.String(testBucket),
-	})
+	err = client.createBucket(testBucket)
 	if err != nil {
-		t.Fatal("error creating test s3 bucket:", err)
+		t.Fatal("error creating test bucket:", err)
 	}
 	defer func() {
-		amazonEmptyBucket(client, testBucket)
-		client.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(testBucket)})
+		client.deleteBucket(testBucket)
 	}()
 
 	protocol := "s3://"
@@ -149,13 +145,33 @@ func TestAmazonS3Storage(t *testing.T) {
 	}
 }
 
-func amazonEmptyBucket(client *s3.S3, bucket string) error {
+type s3Test struct {
+	client *s3.S3
+}
+
+func newS3Test(conf config.AmazonS3Storage) (*s3Test, error) {
+	sess, err := util.NewAWSSession(conf.AWS)
+	if err != nil {
+		return nil, err
+	}
+	client := s3.New(sess)
+	return &s3Test{client}, nil
+}
+
+func (b *s3Test) createBucket(bucket string) error {
+	_, err := b.client.CreateBucket(&s3.CreateBucketInput{
+		Bucket: aws.String(bucket),
+	})
+	return err
+}
+
+func (b *s3Test) deleteBucket(bucket string) error {
 	params := &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 	}
 	for {
 		//Requesting for batch of objects from s3 bucket
-		objects, err := client.ListObjects(params)
+		objects, err := b.client.ListObjects(params)
 		if err != nil {
 			return err
 		}
@@ -180,7 +196,7 @@ func amazonEmptyBucket(client *s3.S3, bucket string) error {
 			Delete: &deleteArray,
 		}
 		//Running the Bulk delete job (limit 1000)
-		_, err = client.DeleteObjects(deleteParams)
+		_, err = b.client.DeleteObjects(deleteParams)
 		if err != nil {
 			return err
 		}
@@ -190,5 +206,6 @@ func amazonEmptyBucket(client *s3.S3, bucket string) error {
 			break
 		}
 	}
-	return nil
+	_, err := b.client.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+	return err
 }

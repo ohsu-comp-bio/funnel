@@ -66,6 +66,12 @@ jobs:
         - make test-kafka
       env:
         - n=kafka
+    - script:
+        - make start-generic-s3
+        - sleep 10
+        - make test-generic-s3
+      env:
+        - n=generic-s3
 
 notifications:
   email: false

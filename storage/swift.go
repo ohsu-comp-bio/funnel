@@ -17,7 +17,8 @@ const swiftProtocol = "swift://"
 
 // SwiftBackend provides access to an sw object store.
 type SwiftBackend struct {
-	conn *swift.Connection
+	conn      *swift.Connection
+	chunkSize int64
 }
 
 // NewSwiftBackend creates an SwiftBackend client instance, give an endpoint URL
@@ -25,7 +26,7 @@ type SwiftBackend struct {
 func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 
 	// Create a connection
-	c := &swift.Connection{
+	conn := &swift.Connection{
 		UserName: conf.UserName,
 		ApiKey:   conf.Password,
 		AuthUrl:  conf.AuthURL,
@@ -36,12 +37,19 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 
 	// Read environment variables and apply them to the Connection structure.
 	// Won't overwrite any parameters which are already set in the Connection struct.
-	err := c.ApplyEnvironment()
+	err := conn.ApplyEnvironment()
 	if err != nil {
 		return nil, err
 	}
 
-	return &SwiftBackend{c}, nil
+	var chunkSize int64
+	if conf.ChunkSizeBytes < 10000000 {
+		chunkSize = 500000000 // 500 MB
+	} else {
+		chunkSize = conf.ChunkSizeBytes
+	}
+
+	return &SwiftBackend{conn, chunkSize}, nil
 }
 
 // Get copies an object from storage to the host path.
@@ -119,15 +127,37 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 		return oerr
 	}
 
-	writer, err := sw.conn.ObjectCreate(url.bucket, url.path, true, "", "", nil)
+	var writer io.WriteCloser
+	var err error
+
+	// TODO turn on checkHash
+	var checkHash bool
+	var hash string
+	var contentType string
+	var headers swift.Headers
+
+	fSize := fileSize(hostPath)
+	if fSize < 4900000000 { // 4.9 GB limit
+		writer, err = sw.conn.ObjectCreate(url.bucket, url.path, checkHash, hash, contentType, headers)
+	} else {
+		writer, err = sw.conn.StaticLargeObjectCreateFile(&swift.LargeObjectOpts{
+			Container:  url.bucket,
+			ObjectName: url.path,
+			CheckHash:  checkHash,
+			Hash:       hash,
+			Headers:    headers,
+			ChunkSize:  sw.chunkSize,
+		})
+	}
 	if err != nil {
 		return err
 	}
+
 	if _, cerr := io.Copy(writer, reader); cerr != nil {
 		return cerr
 	}
-	if err := reader.Close(); err != nil {
-		return err
+	if rerr := reader.Close(); rerr != nil {
+		return rerr
 	}
 	return writer.Close()
 }

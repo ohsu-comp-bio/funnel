@@ -392,6 +392,10 @@ type SwiftStorage struct {
 	TenantName string
 	TenantID   string
 	RegionName string
+	// Size of chunks to use for large object creation.
+	// Defaults to 500 MB if not set or set below 10 MB.
+	// The max number of chunks for a single object is 1000.
+	ChunkSizeBytes int64
 }
 
 // Valid validates the SwiftStorage configuration.

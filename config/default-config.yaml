@@ -225,15 +225,14 @@ Worker:
 
     AmazonS3:
       Disabled: false
-      AWS:
-        # The maximum number of times that a request will be retried for failures.
-        MaxRetries: 10
-        # AWS Access key ID
-        Key: ""
-        # AWS Secret Access Key
-        Secret: ""
+      # The maximum number of times that a request will be retried for failures.
+      MaxRetries: 10
+      # AWS Access key ID
+      Key: ""
+      # AWS Secret Access Key
+      Secret: ""
 
-    # S3:
+    # GenericS3:
     #   - Disabled: true
     #     Endpoint: ""
     #     Key: ""

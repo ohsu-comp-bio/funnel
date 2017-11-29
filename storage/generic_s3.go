@@ -19,7 +19,7 @@ type GenericS3Backend struct {
 
 // NewGenericS3Backend creates an S3Backend client instance, give an endpoint URL
 // and a set of authentication credentials.
-func NewGenericS3Backend(conf config.S3Storage) (*GenericS3Backend, error) {
+func NewGenericS3Backend(conf config.GenericS3Storage) (*GenericS3Backend, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
 	endpoint := endpointRegExp.ReplaceAllString(conf.Endpoint, "$2/")
 

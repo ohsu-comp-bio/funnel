@@ -11,10 +11,10 @@ func TestStorageWithConfig(t *testing.T) {
 		Local: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GS:       config.GSStorage{Disabled: true},
-		AmazonS3: config.AmazonS3Storage{Disabled: true},
-		S3:       []config.S3Storage{},
-		Swift:    config.SwiftStorage{Disabled: true},
+		GS:        config.GSStorage{Disabled: true},
+		AmazonS3:  config.AmazonS3Storage{Disabled: true},
+		GenericS3: []config.GenericS3Storage{},
+		Swift:     config.SwiftStorage{Disabled: true},
 	}
 	s := Storage{}
 	sc, err := s.WithConfig(c)
@@ -36,12 +36,12 @@ func TestStorageWithConfig(t *testing.T) {
 		},
 		AmazonS3: config.AmazonS3Storage{
 			Disabled: false,
-			AWS: config.AWSConfig{
+			AWSConfig: config.AWSConfig{
 				Key:    "testkey",
 				Secret: "testsecret",
 			},
 		},
-		S3: []config.S3Storage{
+		GenericS3: []config.GenericS3Storage{
 			{
 				Disabled: false,
 				Endpoint: "testendpoint:8080",
@@ -61,7 +61,7 @@ func TestStorageWithConfig(t *testing.T) {
 }
 
 func TestS3UrlProcessing(t *testing.T) {
-	b, err := NewGenericS3Backend(config.S3Storage{
+	b, err := NewGenericS3Backend(config.GenericS3Storage{
 		Endpoint: "s3.amazonaws.com",
 		Key:      "",
 		Secret:   "",

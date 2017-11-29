@@ -150,7 +150,7 @@ type s3Test struct {
 }
 
 func newS3Test(conf config.AmazonS3Storage) (*s3Test, error) {
-	sess, err := util.NewAWSSession(conf.AWS)
+	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, err
 	}

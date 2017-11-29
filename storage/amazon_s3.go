@@ -29,12 +29,12 @@ type AmazonS3Backend struct {
 
 // NewAmazonS3Backend creates an AmazonS3Backend session instance
 func NewAmazonS3Backend(conf config.AmazonS3Storage) (*AmazonS3Backend, error) {
-	sess, err := util.NewAWSSession(conf.AWS)
+	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoint := endpointRegExp.ReplaceAllString(conf.AWS.Endpoint, "$2/")
+	endpoint := endpointRegExp.ReplaceAllString(conf.Endpoint, "$2/")
 
 	return &AmazonS3Backend{sess, endpoint}, nil
 }

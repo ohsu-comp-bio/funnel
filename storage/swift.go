@@ -170,12 +170,12 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 func (sw *SwiftBackend) Supports(rawurl string) error {
 	ok := strings.HasPrefix(rawurl, swiftProtocol)
 	if !ok {
-		return fmt.Errorf("unsupported protocol; expected %s", swiftProtocol)
+		return fmt.Errorf("swift: unsupported protocol; expected %s", swiftProtocol)
 	}
 	url := sw.parse(rawurl)
 	_, _, err := sw.conn.Container(url.bucket)
 	if err != nil {
-		return fmt.Errorf("failed to find bucket: %s. error: %v", url.bucket, err)
+		return fmt.Errorf("swift: failed to find bucket: %s. error: %v", url.bucket, err)
 	}
 	return nil
 }

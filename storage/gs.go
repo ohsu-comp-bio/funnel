@@ -134,12 +134,12 @@ func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string
 func (gs *GSBackend) Supports(rawurl string) error {
 	ok := strings.HasPrefix(rawurl, gsProtocol)
 	if !ok {
-		return fmt.Errorf("unsupported protocol; expected %s", gsProtocol)
+		return fmt.Errorf("gs: unsupported protocol; expected %s", gsProtocol)
 	}
 	url := gs.parse(rawurl)
 	_, err := gs.svc.Buckets.Get(url.bucket).Do()
 	if err != nil {
-		return fmt.Errorf("failed to find bucket: %s. error: %v", url.bucket, err)
+		return fmt.Errorf("gs: failed to find bucket: %s. error: %v", url.bucket, err)
 	}
 	return nil
 }

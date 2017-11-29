@@ -157,13 +157,13 @@ func (s3b *AmazonS3Backend) PutFile(ctx context.Context, rawurl string, hostPath
 // For the AmazonS3Backend, the url must start with "s3://"
 func (s3b *AmazonS3Backend) Supports(rawurl string) error {
 	if !strings.HasPrefix(rawurl, s3Protocol) {
-		return fmt.Errorf("unsupported protocol; expected %s", s3Protocol)
+		return fmt.Errorf("s3: unsupported protocol; expected %s", s3Protocol)
 	}
 
 	url := s3b.parse(rawurl)
 	_, err := s3manager.GetBucketRegion(context.Background(), s3b.sess, url.bucket, "us-east-1")
 	if err != nil {
-		return fmt.Errorf("failed to find bucket: %s. error: %v", url.bucket, err)
+		return fmt.Errorf("s3: failed to find bucket: %s. error: %v", url.bucket, err)
 	}
 
 	return nil

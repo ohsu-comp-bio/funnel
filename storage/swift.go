@@ -56,10 +56,13 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
 	url := sw.parse(rawurl)
 
+	var checkHash = true
+	var headers swift.Headers
+
 	switch class {
 	case tes.FileType_FILE:
 
-		f, _, oerr := sw.conn.ObjectOpen(url.bucket, url.path, true, nil)
+		f, _, oerr := sw.conn.ObjectOpen(url.bucket, url.path, checkHash, headers)
 		if oerr != nil {
 			return oerr
 		}
@@ -83,7 +86,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 		}
 
 		for _, obj := range objs {
-			f, _, oerr := sw.conn.ObjectOpen(url.bucket, obj.Name, true, nil)
+			f, _, oerr := sw.conn.ObjectOpen(url.bucket, obj.Name, checkHash, headers)
 			if oerr != nil {
 				return oerr
 			}
@@ -130,14 +133,14 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 	var writer io.WriteCloser
 	var err error
 
-	// TODO turn on checkHash
-	var checkHash bool
+	var checkHash = true
 	var hash string
 	var contentType string
 	var headers swift.Headers
 
 	fSize := fileSize(hostPath)
-	if fSize < 4900000000 { // 4.9 GB limit
+	// upload as chunks if file size is > 4.95 GB (swift has a 5 GB limit for objects)
+	if fSize < 4950000000 {
 		writer, err = sw.conn.ObjectCreate(url.bucket, url.path, checkHash, hash, contentType, headers)
 	} else {
 		writer, err = sw.conn.StaticLargeObjectCreateFile(&swift.LargeObjectOpts{

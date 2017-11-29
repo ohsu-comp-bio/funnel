@@ -111,16 +111,20 @@ func (storage Storage) findBackend(url string) (Backend, error) {
 	var useBackend Backend
 	var found = 0
 
+	var errs []string
+
 	for _, backend := range storage.backends {
 		err := backend.Supports(url)
 		if err == nil {
 			useBackend = backend
 			found++
+		} else {
+			errs = append(errs, err.Error())
 		}
 	}
 
 	if found == 0 {
-		return nil, fmt.Errorf("Could not find matching storage system for: %s", url)
+		return nil, fmt.Errorf("Could not find matching storage system for: %s\n%s", url, strings.Join(errs, "\n"))
 	} else if found > 1 {
 		return nil, fmt.Errorf("Request supported by multiple backends for: %s", url)
 	}

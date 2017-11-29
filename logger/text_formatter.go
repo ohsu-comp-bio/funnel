@@ -11,6 +11,7 @@ import (
 	"io"
 	"runtime"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -104,7 +105,14 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		default:
 			v = pretty.Sprint(x)
 		}
-		fmt.Fprintf(b, "%s%-20s %v\n", f.Indent, aurora.Colorize(k, levelColor), v)
+
+		if vString, ok := v.(string); ok {
+			vParts := strings.Split(vString, "\n")
+			padding := 21
+			v = strings.Join(vParts, "\n"+strings.Repeat(" ", padding))
+		}
+
+		fmt.Fprintf(b, "%s%-20s %v\n", f.Indent, aurora.Colorize(keyname, levelColor), v)
 	}
 
 	b.WriteByte('\n')

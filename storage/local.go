@@ -72,10 +72,10 @@ func (local *LocalBackend) Supports(rawurl string) error {
 	path := getPath(rawurl)
 	ok := strings.HasPrefix(path, "/")
 	if !ok {
-		return fmt.Errorf("Must provide an absolute path: %s", rawurl)
+		return fmt.Errorf("local: must provide an absolute path: %s", rawurl)
 	}
 	if !isAllowed(path, local.allowedDirs) {
-		return fmt.Errorf("Can't access file, path is not in allowed directories:  %s", rawurl)
+		return fmt.Errorf("local: can't access file, path is not in allowed directories: %s", rawurl)
 	}
 	return nil
 }

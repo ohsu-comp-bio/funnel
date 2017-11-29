@@ -173,7 +173,7 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 		storage = storage.WithBackend(s)
 	}
 
-	for _, c := range conf.S3 {
+	for _, c := range conf.GenericS3 {
 		if c.Valid() {
 			s, err := NewGenericS3Backend(c)
 			if err != nil {

@@ -133,7 +133,7 @@ func DefaultConfig() Config {
 	c.Worker.EventWriters.MongoDB = mongo
 	c.Worker.EventWriters.Kafka.Topic = "funnel"
 
-	c.Worker.Storage.AmazonS3.AWS.MaxRetries = 10
+	c.Worker.Storage.AmazonS3.MaxRetries = 10
 
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
 	slurmTemplate, _ := Asset("config/slurm-template.txt")
@@ -328,11 +328,11 @@ type DynamoDB struct {
 
 // StorageConfig describes configuration for all storage types
 type StorageConfig struct {
-	Local    LocalStorage
-	AmazonS3 AmazonS3Storage
-	S3       []S3Storage
-	GS       GSStorage
-	Swift    SwiftStorage
+	Local     LocalStorage
+	AmazonS3  AmazonS3Storage
+	GenericS3 []GenericS3Storage
+	GS        GSStorage
+	Swift     SwiftStorage
 }
 
 // LocalStorage describes the directories Funnel can read from and write to
@@ -361,17 +361,17 @@ func (g GSStorage) Valid() bool {
 // AmazonS3Storage describes the configuration for the Amazon S3 storage backend.
 type AmazonS3Storage struct {
 	Disabled bool
-	AWS      AWSConfig
+	AWSConfig
 }
 
 // Valid validates the AmazonS3Storage configuration
 func (s AmazonS3Storage) Valid() bool {
-	creds := (s.AWS.Key != "" && s.AWS.Secret != "") || (s.AWS.Key == "" && s.AWS.Secret == "")
+	creds := (s.Key != "" && s.Secret != "") || (s.Key == "" && s.Secret == "")
 	return !s.Disabled && creds
 }
 
-// S3Storage describes the configuration for the Generic S3 storage backend.
-type S3Storage struct {
+// GenericS3Storage describes the configuration for the Generic S3 storage backend.
+type GenericS3Storage struct {
 	Disabled bool
 	Endpoint string
 	Key      string
@@ -379,7 +379,7 @@ type S3Storage struct {
 }
 
 // Valid validates the S3Storage configuration
-func (s S3Storage) Valid() bool {
+func (s GenericS3Storage) Valid() bool {
 	return !s.Disabled && s.Key != "" && s.Secret != "" && s.Endpoint != ""
 }
 

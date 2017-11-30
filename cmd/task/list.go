@@ -13,7 +13,10 @@ import (
 // client-side using the "taskState" and "taskName" args. Output is written
 // to the given writer.
 func List(server, taskView, pageToken string, pageSize uint32, all bool, writer io.Writer) error {
-	cli := client.NewClient(server)
+	cli, err := client.NewClient(server)
+	if err != nil {
+		return err
+	}
 
 	view, ok := tes.TaskView_value[taskView]
 	if !ok {

@@ -27,7 +27,10 @@ type TaskSource struct {
 
 func NewTaskSource(tesHTTPServerAddress string, pageSize uint32) *TaskSource {
 	// init funnel http client
-	cli := client.NewClient(tesHTTPServerAddress)
+	cli, err := client.NewClient(tesHTTPServerAddress)
+	if err != nil {
+		panic(err)
+	}
 	ts := &TaskSource{
 		client:   cli,
 		pageSize: pageSize,

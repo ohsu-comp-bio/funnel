@@ -12,7 +12,11 @@ import (
 // calls GetTask for each ID, requesting the given task view, and writes
 // output to the given writer.
 func Get(server string, ids []string, taskView string, w io.Writer) error {
-	cli := client.NewClient(server)
+	cli, err := client.NewClient(server)
+	if err != nil {
+		return err
+	}
+
 	res := []string{}
 
 	view, ok := tes.TaskView_value[taskView]

@@ -12,27 +12,37 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 )
 
 // NewClient returns a new HTTP client for accessing
 // Create/List/Get/Cancel Task endpoints. "address" is the address
 // of the TES server.
-func NewClient(address string) *Client {
+func NewClient(address string) (*Client, error) {
 	password := os.Getenv("FUNNEL_SERVER_PASSWORD")
 
-	// Strip trailing slash. A quick and dirty fix.
-	re := regexp.MustCompile("/+$")
-	address = re.ReplaceAllString(address, "")
+	re := regexp.MustCompile("^(.+://)?(.[^/]+)(.+)?$")
+	endpoint := re.ReplaceAllString(address, "$1$2")
+
+	reScheme := regexp.MustCompile("^.+://")
+	switch reScheme.MatchString(endpoint) {
+	case true:
+		if !strings.HasPrefix(endpoint, "http") {
+			return nil, fmt.Errorf("invalid protocol: '%s'; expected: 'http://' or 'https://'", reScheme.FindString(endpoint))
+		}
+	case false:
+		endpoint = "http://" + endpoint
+	}
 
 	return &Client{
-		address: address,
+		address: endpoint,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 		Marshaler: &tes.Marshaler,
 		Password:  password,
-	}
+	}, nil
 }
 
 // Client represents the HTTP Task client.

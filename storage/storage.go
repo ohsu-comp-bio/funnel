@@ -30,7 +30,8 @@ type Backend interface {
 	PutFile(ctx context.Context, url string, path string) error
 	// Determines whether this backends supports the given request (url/path/class).
 	// A backend normally uses this to match the url prefix (e.g. "s3://")
-	Supports(url string) error
+	SupportsGet(url string, class tes.FileType) error
+	SupportsPut(url string, class tes.FileType) error
 }
 
 // Storage provides a client for accessing multiple storage systems,
@@ -46,7 +47,7 @@ type Storage struct {
 // The file is downloaded to the given local "path".
 // "class" is either "File" or "Directory".
 func (storage Storage) Get(ctx context.Context, url string, path string, class tes.FileType) error {
-	backend, err := storage.findBackend(url)
+	backend, err := storage.findBackend(url, class, "get")
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,7 @@ func (storage Storage) Get(ctx context.Context, url string, path string, class t
 // The file is uploaded from the given local "path".
 // "class" is either "File" or "Directory".
 func (storage Storage) Put(ctx context.Context, url string, path string, class tes.FileType) ([]*tes.OutputFileLog, error) {
-	backend, err := storage.findBackend(url)
+	backend, err := storage.findBackend(url, class, "put")
 	if err != nil {
 		return nil, err
 	}
@@ -101,20 +102,33 @@ func (storage Storage) Put(ctx context.Context, url string, path string, class t
 	return out, nil
 }
 
-// Supports indicates whether the storage supports the given request.
-func (storage Storage) Supports(url string) error {
-	_, err := storage.findBackend(url)
+// SupportsGet indicates whether the storage supports the given request.
+func (storage Storage) SupportsGet(url string, class tes.FileType) error {
+	_, err := storage.findBackend(url, class, "get")
 	return err
 }
 
-func (storage Storage) findBackend(url string) (Backend, error) {
-	var useBackend Backend
-	var found = 0
+// SupportsPut indicates whether the storage supports the given request.
+func (storage Storage) SupportsPut(url string, class tes.FileType) error {
+	_, err := storage.findBackend(url, class, "put")
+	return err
+}
 
+func (storage Storage) findBackend(url string, class tes.FileType, op string) (Backend, error) {
+	var found = 0
+	var useBackend Backend
+	var err error
 	var errs []string
 
 	for _, backend := range storage.backends {
-		err := backend.Supports(url)
+		switch op {
+		case "get":
+			err = backend.SupportsGet(url, class)
+		case "put":
+			err = backend.SupportsPut(url, class)
+		default:
+			return nil, fmt.Errorf("unknown operation: %s; expected 'get' or 'put'", op)
+		}
 		if err == nil {
 			useBackend = backend
 			found++
@@ -181,6 +195,14 @@ func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
 			}
 			storage = storage.WithBackend(s)
 		}
+	}
+
+	if conf.HTTP.Valid() {
+		http, err := NewHTTPBackend(conf.HTTP)
+		if err != nil {
+			return storage, fmt.Errorf("failed to config http storage backend: %s", err)
+		}
+		storage = storage.WithBackend(http)
 	}
 
 	return storage, nil

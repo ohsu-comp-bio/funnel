@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"google.golang.org/api/storage/v1"
 	"net/http"
 	"testing"
@@ -14,7 +13,7 @@ import (
 
 func TestGenericS3AnonymousGet(t *testing.T) {
 	b, err := NewGenericS3Backend(config.GenericS3Storage{
-		Endpoint: "s3.amazonaws.com",
+		Endpoint: "https://s3.amazonaws.com/",
 		Key:      "",
 		Secret:   "",
 	})
@@ -23,7 +22,7 @@ func TestGenericS3AnonymousGet(t *testing.T) {
 	}
 	store := Storage{}.WithBackend(b)
 
-	err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history", tes.FileType_FILE)
+	err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history", File)
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}
@@ -41,7 +40,7 @@ func TestAmazonS3AnonymousGet(t *testing.T) {
 		endpoint: "",
 	})
 
-	err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history", tes.FileType_FILE)
+	err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history", File)
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}
@@ -55,7 +54,7 @@ func TestGoogleStorageAnonymousGet(t *testing.T) {
 
 	store := Storage{}.WithBackend(&GSBackend{svc})
 
-	err = store.Get(context.Background(), "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", tes.FileType_FILE)
+	err = store.Get(context.Background(), "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", File)
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}

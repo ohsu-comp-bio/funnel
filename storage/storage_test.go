@@ -15,6 +15,7 @@ func TestStorageWithConfig(t *testing.T) {
 		AmazonS3:  config.AmazonS3Storage{Disabled: true},
 		GenericS3: []config.GenericS3Storage{},
 		Swift:     config.SwiftStorage{Disabled: true},
+		HTTP:      config.HTTPStorage{Disabled: true},
 	}
 	s := Storage{}
 	sc, err := s.WithConfig(c)
@@ -44,18 +45,27 @@ func TestStorageWithConfig(t *testing.T) {
 		GenericS3: []config.GenericS3Storage{
 			{
 				Disabled: false,
-				Endpoint: "testendpoint:8080",
+				Endpoint: "http://testendpoint:8080",
 				Key:      "testkey",
 				Secret:   "testsecret",
 			},
 		},
-		Swift: config.SwiftStorage{Disabled: true},
+		Swift: config.SwiftStorage{
+			Disabled:   false,
+			UserName:   "fakeuser",
+			Password:   "fakepassword",
+			AuthURL:    "http://testendpoint:5000/v2.0",
+			TenantName: "faketenantname",
+			TenantID:   "faketenantid",
+			RegionName: "fakeregion",
+		},
+		HTTP: config.HTTPStorage{Disabled: false},
 	}
 	sc, err = s.WithConfig(c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sc.backends) != 4 {
+	if len(sc.backends) != 6 {
 		t.Fatal("unexpected number of Storage backends")
 	}
 }
@@ -99,7 +109,7 @@ func TestS3UrlProcessing(t *testing.T) {
 
 	ab, err := NewAmazonS3Backend(config.AmazonS3Storage{})
 	if err != nil {
-		t.Fatal("Error creating generic S3 backend:", err)
+		t.Fatal("Error creating amazon S3 backend:", err)
 	}
 
 	url = ab.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")

@@ -60,7 +60,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 	var headers swift.Headers
 
 	switch class {
-	case tes.FileType_FILE:
+	case File:
 
 		f, _, oerr := sw.conn.ObjectOpen(url.bucket, url.path, checkHash, headers)
 		if oerr != nil {
@@ -77,7 +77,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 
 		return nil
 
-	case tes.FileType_DIRECTORY:
+	case Directory:
 		objs, err := sw.conn.ObjectsAll(url.bucket, &swift.ObjectsOpts{
 			Prefix: url.path,
 		})
@@ -165,9 +165,9 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 	return writer.Close()
 }
 
-// Supports returns true if this backend supports the given storage request.
-// For the Swift backend, the url must start with "swift://"
-func (sw *SwiftBackend) Supports(rawurl string) error {
+// SupportsGet indicates whether this backend supports GET storage request.
+// For the Swift backend, the url must start with "swift://" and the bucket must exist
+func (sw *SwiftBackend) SupportsGet(rawurl string, class tes.FileType) error {
 	ok := strings.HasPrefix(rawurl, swiftProtocol)
 	if !ok {
 		return fmt.Errorf("swift: unsupported protocol; expected %s", swiftProtocol)
@@ -178,6 +178,12 @@ func (sw *SwiftBackend) Supports(rawurl string) error {
 		return fmt.Errorf("swift: failed to find bucket: %s. error: %v", url.bucket, err)
 	}
 	return nil
+}
+
+// SupportsPut indicates whether this backend supports PUT storage request.
+// For the Swift backend, the url must start with "swift://" and the bucket must exist
+func (sw *SwiftBackend) SupportsPut(rawurl string, class tes.FileType) error {
+	return sw.SupportsGet(rawurl, class)
 }
 
 func (sw *SwiftBackend) parse(rawurl string) *urlparts {

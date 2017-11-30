@@ -217,6 +217,11 @@ Worker:
       AllowedDirs:
         - ./
 
+    HTTP:
+      # Timeout for http(s) GET requests.
+      # In nanoseconds.
+      Timeout: 60000000000 # 60 seconds
+
     AmazonS3:
       Disabled: false
       # The maximum number of times that a request will be retried for failures.

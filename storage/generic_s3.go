@@ -17,18 +17,17 @@ type GenericS3Backend struct {
 	endpoint string
 }
 
-// NewGenericS3Backend creates an S3Backend client instance, give an endpoint URL
+// NewGenericS3Backend creates a new GenericS3Backend instance, given an endpoint URL
 // and a set of authentication credentials.
 func NewGenericS3Backend(conf config.GenericS3Storage) (*GenericS3Backend, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
-	endpoint := endpointRegExp.ReplaceAllString(conf.Endpoint, "$2/")
-
-	client, err := minio.NewV2(conf.Endpoint, conf.Key, conf.Secret, ssl)
+	endpoint := endpointRE.ReplaceAllString(conf.Endpoint, "$2")
+	client, err := minio.NewV2(endpoint, conf.Key, conf.Secret, ssl)
 	if err != nil {
-		return nil, fmt.Errorf("error creating s3 client: %v", err)
+		return nil, fmt.Errorf("error creating generic s3 backend: %v", err)
 	}
 
-	return &GenericS3Backend{client, endpoint}, nil
+	return &GenericS3Backend{client, endpoint + "/"}, nil
 }
 
 // Get copies an object from S3 to the host path.
@@ -75,9 +74,9 @@ func (s3 *GenericS3Backend) PutFile(ctx context.Context, rawurl string, hostPath
 	return err
 }
 
-// Supports indicates whether this backend supports the given storage request.
-// For the GenericS3Backend, the url must start with "s3://"
-func (s3 *GenericS3Backend) Supports(rawurl string) error {
+// SupportsGet indicates whether this backend supports GET storage request.
+// For the GenericS3Backend, the url must start with "s3://" and the bucket must exist
+func (s3 *GenericS3Backend) SupportsGet(rawurl string, class tes.FileType) error {
 	if !strings.HasPrefix(rawurl, s3Protocol) {
 		return fmt.Errorf("s3: unsupported protocol; expected %s", s3Protocol)
 	}
@@ -94,6 +93,12 @@ func (s3 *GenericS3Backend) Supports(rawurl string) error {
 	return nil
 }
 
+// SupportsPut indicates whether this backend supports PUT storage request.
+// For the GenericS3Backend, the url must start with "s3://" and the bucket must exist
+func (s3 *GenericS3Backend) SupportsPut(rawurl string, class tes.FileType) error {
+	return s3.SupportsGet(rawurl, class)
+}
+
 func (s3 *GenericS3Backend) parse(url string) *urlparts {
 	path := strings.TrimPrefix(url, s3Protocol)
 	path = strings.TrimPrefix(path, s3.endpoint)
@@ -101,5 +106,6 @@ func (s3 *GenericS3Backend) parse(url string) *urlparts {
 	split := strings.SplitN(path, "/", 2)
 	bucket := split[0]
 	key := split[1]
+
 	return &urlparts{bucket, key}
 }

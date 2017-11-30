@@ -268,7 +268,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 // Validate the input downloads
 func (r *DefaultWorker) validateInputs() error {
 	for _, input := range r.Mapper.Inputs {
-		err := r.Store.Supports(input.Url)
+		err := r.Store.SupportsGet(input.Url, input.Type)
 		if err != nil {
 			return fmt.Errorf("Input download not supported by storage: %v", err)
 		}
@@ -279,7 +279,7 @@ func (r *DefaultWorker) validateInputs() error {
 // Validate the output uploads
 func (r *DefaultWorker) validateOutputs() error {
 	for _, output := range r.Mapper.Outputs {
-		err := r.Store.Supports(output.Url)
+		err := r.Store.SupportsPut(output.Url, output.Type)
 		if err != nil {
 			return fmt.Errorf("Output upload not supported by storage: %v", err)
 		}

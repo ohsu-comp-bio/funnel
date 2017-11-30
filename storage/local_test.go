@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,12 +12,12 @@ import (
 func TestLocalSupports(t *testing.T) {
 	l := LocalBackend{allowedDirs: []string{"/path"}}
 
-	err := l.Supports("file:///path/to/foo.txt")
+	err := l.SupportsGet("file:///path/to/foo.txt", File)
 	if err != nil {
 		t.Fatal("Expected file:// URL to be supported", err)
 	}
 
-	err = l.Supports("/path/to/foo.txt")
+	err = l.SupportsGet("/path/to/foo.txt", File)
 	if err != nil {
 		t.Fatal("Expected normal file path to be supported", err)
 	}
@@ -39,7 +38,7 @@ func TestLocalGet(t *testing.T) {
 	cp := path.Join(tmp, "container.txt")
 	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
 
-	gerr := l.Get(ctx, "file://"+ip, cp, tes.FileType_FILE)
+	gerr := l.Get(ctx, "file://"+ip, cp, File)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -59,7 +58,7 @@ func TestLocalGet(t *testing.T) {
 	cd := path.Join(tmp, "localized_dir")
 	ioutil.WriteFile(idf, []byte("bar"), os.ModePerm)
 
-	gerr = l.Get(ctx, "file://"+id, cd, tes.FileType_DIRECTORY)
+	gerr = l.Get(ctx, "file://"+id, cd, Directory)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -87,7 +86,7 @@ func TestLocalGetPath(t *testing.T) {
 	cp := path.Join(tmp, "container.txt")
 	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
 
-	gerr := l.Get(ctx, ip, cp, tes.FileType_FILE)
+	gerr := l.Get(ctx, ip, cp, File)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -116,7 +115,7 @@ func TestLocalPut(t *testing.T) {
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 
-	_, gerr := l.Put(ctx, "file://"+op, cp, tes.FileType_FILE)
+	_, gerr := l.Put(ctx, "file://"+op, cp, File)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -135,7 +134,7 @@ func TestLocalPut(t *testing.T) {
 	cdf := path.Join(cd, "other.txt")
 	od := path.Join(tmp, "subout")
 	ioutil.WriteFile(cdf, []byte("bar"), os.ModePerm)
-	_, gerr = l.Put(ctx, "file://"+od, cd, tes.FileType_DIRECTORY)
+	_, gerr = l.Put(ctx, "file://"+od, cd, Directory)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -163,7 +162,7 @@ func TestLocalPutPath(t *testing.T) {
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 
-	_, gerr := l.Put(ctx, op, cp, tes.FileType_FILE)
+	_, gerr := l.Put(ctx, op, cp, File)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}

@@ -93,6 +93,9 @@ func DefaultConfig() Config {
 				Local: LocalStorage{
 					AllowedDirs: []string{cwd},
 				},
+				HTTP: HTTPStorage{
+					Timeout: 60 * time.Second,
+				},
 			},
 			UpdateRate: time.Second * 5,
 			BufferSize: 10000,
@@ -336,6 +339,7 @@ type StorageConfig struct {
 	GenericS3 []GenericS3Storage
 	GS        GSStorage
 	Swift     SwiftStorage
+	HTTP      HTTPStorage
 }
 
 // LocalStorage describes the directories Funnel can read from and write to
@@ -413,6 +417,18 @@ func (s SwiftStorage) Valid() bool {
 	valid := user && password && authURL && tenantName && tenantID && region
 
 	return !s.Disabled && valid
+}
+
+// HTTPStorage configures the http storage backend.
+type HTTPStorage struct {
+	Disabled bool
+	// Timeout duration for http GET calls
+	Timeout time.Duration
+}
+
+// Valid validates the HTTPStorage configuration.
+func (h HTTPStorage) Valid() bool {
+	return !h.Disabled
 }
 
 // ToYaml formats the configuration into YAML and returns the bytes.

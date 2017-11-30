@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-var endpointRegExp = regexp.MustCompile("^(http[s]?://)?(.[^/]+)(/+)?$")
+var endpointRE = regexp.MustCompile("^(http[s]?://)?(.[^/]+)(.+)?$")
 
 // s3Protocol defines the s3 URL protocol
 const s3Protocol = "s3://"
@@ -31,10 +31,13 @@ type AmazonS3Backend struct {
 func NewAmazonS3Backend(conf config.AmazonS3Storage) (*AmazonS3Backend, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating amazon s3 backend: %v", err)
 	}
 
-	endpoint := endpointRegExp.ReplaceAllString(conf.Endpoint, "$2/")
+	var endpoint string
+	if conf.Endpoint != "" {
+		endpoint = endpointRE.ReplaceAllString(conf.Endpoint, "$2/")
+	}
 
 	return &AmazonS3Backend{sess, endpoint}, nil
 }
@@ -153,9 +156,9 @@ func (s3b *AmazonS3Backend) PutFile(ctx context.Context, rawurl string, hostPath
 	return fh.Close()
 }
 
-// Supports indicates whether this backend supports the given storage request.
-// For the AmazonS3Backend, the url must start with "s3://"
-func (s3b *AmazonS3Backend) Supports(rawurl string) error {
+// SupportsGet indicates whether this backend supports GET storage request.
+// For the AmazonS3Backend, the url must start with "s3://" and the bucket must exist
+func (s3b *AmazonS3Backend) SupportsGet(rawurl string, class tes.FileType) error {
 	if !strings.HasPrefix(rawurl, s3Protocol) {
 		return fmt.Errorf("s3: unsupported protocol; expected %s", s3Protocol)
 	}
@@ -167,6 +170,12 @@ func (s3b *AmazonS3Backend) Supports(rawurl string) error {
 	}
 
 	return nil
+}
+
+// SupportsPut indicates whether this backend supports PUT storage request.
+// For the AmazonS3Backend, the url must start with "s3://" and the bucket must exist
+func (s3b *AmazonS3Backend) SupportsPut(rawurl string, class tes.FileType) error {
+	return s3b.SupportsGet(rawurl, class)
 }
 
 func (s3b *AmazonS3Backend) parse(url string) *urlparts {

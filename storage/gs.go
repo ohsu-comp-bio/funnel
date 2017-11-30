@@ -66,7 +66,8 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
 	url := gs.parse(rawurl)
 
-	if class == tes.FileType_FILE {
+	switch class {
+	case File:
 		call := gs.svc.Objects.Get(url.bucket, url.path)
 		err := download(call, hostPath)
 		if err != nil {
@@ -74,7 +75,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		}
 		return nil
 
-	} else if class == tes.FileType_DIRECTORY {
+	case Directory:
 		// TODO not handling pagination
 		objects, err := gs.svc.Objects.List(url.bucket).Prefix(url.path).Do()
 		if err != nil {
@@ -89,8 +90,10 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 			}
 		}
 		return nil
+
+	default:
+		return fmt.Errorf("Unknown file class: %s", class)
 	}
-	return fmt.Errorf("Unknown file class: %s", class)
 }
 
 func download(call *storage.ObjectsGetCall, hostPath string) error {
@@ -129,9 +132,9 @@ func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string
 	return err
 }
 
-// Supports returns true if this backend supports the given storage request.
-// For the Google Storage backend, the url must start with "gs://"
-func (gs *GSBackend) Supports(rawurl string) error {
+// SupportsGet indicates whether this backend supports GET storage request.
+// For the Google Storage backend, the url must start with "gs://" and the bucket must exist
+func (gs *GSBackend) SupportsGet(rawurl string, class tes.FileType) error {
 	ok := strings.HasPrefix(rawurl, gsProtocol)
 	if !ok {
 		return fmt.Errorf("gs: unsupported protocol; expected %s", gsProtocol)
@@ -142,6 +145,12 @@ func (gs *GSBackend) Supports(rawurl string) error {
 		return fmt.Errorf("gs: failed to find bucket: %s. error: %v", url.bucket, err)
 	}
 	return nil
+}
+
+// SupportsPut indicates whether this backend supports PUT storage request.
+// For the Google Storage backend, the url must start with "gs://" and the bucket must exist
+func (gs *GSBackend) SupportsPut(rawurl string, class tes.FileType) error {
+	return gs.SupportsGet(rawurl, class)
 }
 
 func (gs *GSBackend) parse(rawurl string) *urlparts {

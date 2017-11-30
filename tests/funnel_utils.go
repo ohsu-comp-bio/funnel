@@ -66,6 +66,11 @@ type Funnel struct {
 func NewFunnel(conf config.Config) *Funnel {
 	conf = config.EnsureServerProperties(conf)
 
+	cli, err := client.NewClient(conf.Server.HTTPAddress())
+	if err != nil {
+		return err
+	}
+
 	dcli, derr := dockerutil.NewDockerClient()
 	if derr != nil {
 		panic(derr)
@@ -77,7 +82,7 @@ func NewFunnel(conf config.Config) *Funnel {
 	}
 
 	return &Funnel{
-		HTTP:       client.NewClient(conf.Server.HTTPAddress()),
+		HTTP:       cli,
 		Docker:     dcli,
 		Conf:       conf,
 		StorageDir: conf.Worker.Storage.Local.AllowedDirs[0],

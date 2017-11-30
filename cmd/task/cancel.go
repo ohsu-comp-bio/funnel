@@ -11,7 +11,11 @@ import (
 // Cancel runs the "task cancel" CLI command, which connects to the server,
 // calls CancelTask() on each ID, and writes output to the given writer.
 func Cancel(server string, ids []string, writer io.Writer) error {
-	cli := client.NewClient(server)
+	cli, err := client.NewClient(server)
+	if err != nil {
+		return err
+	}
+
 	res := []string{}
 
 	for _, taskID := range ids {

@@ -73,10 +73,15 @@ func Run(args []string) error {
 		return err
 	}
 
+	cli, err := client.NewClient(vals.server)
+	if err != nil {
+		return err
+	}
+
 	// TES HTTP client
 	tg := taskGroup{
 		printTask: vals.printTask,
-		client:    client.NewClient(vals.server),
+		client:    cli,
 	}
 
 	// Scatter all vals into tasks

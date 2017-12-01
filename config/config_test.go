@@ -46,3 +46,26 @@ func TestEnsureServerProperties(t *testing.T) {
 		t.Fatal("unexpected server address in worker config")
 	}
 }
+
+func TestConfigParsing(t *testing.T) {
+	conf := &Config{}
+	err := ParseFile("./default-config.yaml", conf)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+
+	yaml := `
+BadKey: foo
+Scheduler:
+  Node:
+    Resources:
+      Cpus: 42
+      RamGb: 2.5
+      DiskGb: 50.0
+`
+	conf = &Config{}
+	err = Parse([]byte(yaml), conf)
+	if err == nil {
+		t.Error("expected error")
+	}
+}

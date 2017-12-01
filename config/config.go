@@ -561,7 +561,6 @@ func checkForUnknownKeys(jsonStr []byte, obj interface{}) error {
 				fmt.Sprintf("\t field %s not found in %s", field, strings.Join(path, ".")),
 			)
 		}
-		logger.Debug("", "unknown", unknown, "known", known)
 		return fmt.Errorf("%v", strings.Join(errs, "\n"))
 	}
 

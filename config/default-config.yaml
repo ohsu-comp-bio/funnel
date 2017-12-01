@@ -17,9 +17,6 @@ Server:
   # to prevent caching by intermediary services.
   DisableHTTPCache: true
 
-  # Limit the size of task executor logs (stdout/err), in bytes.
-  MaxExecutorLogSize: 10000 # 10 KB
-
   # The name of the active server database backend
   # Available backends: boltdb, dynamodb, elastic, mongodb
   Database: boltdb
@@ -31,13 +28,12 @@ Server:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   AWS:
-    #     # AWS region
-    #     Region: ""
-    #     # AWS Access key ID
-    #     Key: ""
-    #     # AWS Secret Access Key
-    #     Secret: ""
+    #   # AWS region
+    #   Region: ""
+    #   # AWS Access key ID
+    #   Key: ""
+    #   # AWS Secret Access Key
+    #   Secret: ""
 
     # Elastic:
     #   # Prefix to use for indexes (task, events, nodes)
@@ -95,19 +91,19 @@ Scheduler:
       # Disk space available, in GB.
       # DiskGb: 0.0
 
-      # For low-level tuning.
-      # How often to sync with the Funnel server.
-      # In nanoseconds.
-      UpdateRate: 5000000000 # 5 seconds
-      # RPC timeout for update/sync call.
-      # In nanoseconds.
-      UpdateTimeout: 1000000000 # 1 second
+    # For low-level tuning.
+    # How often to sync with the Funnel server.
+    # In nanoseconds.
+    UpdateRate: 5000000000 # 5 seconds
+    # RPC timeout for update/sync call.
+    # In nanoseconds.
+    UpdateTimeout: 1000000000 # 1 second
 
-      Logger:
-        # Logging levels: debug, info, error
-        Level: info
-        # Write logs to this path. If empty, logs are written to stderr.
-        OutputFile: ""
+    Logger:
+      # Logging levels: debug, info, error
+      Level: info
+      # Write logs to this path. If empty, logs are written to stderr.
+      OutputFile: ""
 
 
 # The name of the active compute backend
@@ -195,18 +191,16 @@ Backends:
 
       {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
 
-  # Batch describes the configuration for the AWS Batch compute backend.
-  Batch:
+  # AWSBatch describes the configuration for the AWS Batch compute backend.
+  AWSBatch:
     # JobDefinition can be either a name or the Amazon Resource Name (ARN).
     JobDefinition: "funnel-job-def"
     # JobQueue can be either a name or the Amazon Resource Name (ARN).
     JobQueue: "funnel-job-queue"
     # AWS region of the specified job queue and to create the job definition in
     Region: ""
-    Credentials:
-      Key: ""
-      Secret: ""
-
+    Key: ""
+    Secret: ""
 
 Worker:
   # Files created during processing will be written in this directory.
@@ -272,13 +266,12 @@ Worker:
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   AWS:
-    #     # AWS region
-    #     Region: ""
-    #     # AWS Access key ID
-    #     Key: ""
-    #     # AWS Secret Access Key
-    #     Secret: ""
+    #   # AWS region
+    #   Region: ""
+    #   # AWS Access key ID
+    #   Key: ""
+    #   # AWS Secret Access Key
+    #   Secret: ""
 
     # Elastic:
     #   # Prefix to use for indexes (task, events, nodes)
@@ -305,19 +298,18 @@ Worker:
     RPC:
       # RPC timeout for update/sync call.
       # In nanoseconds.
-      UpdateTimeout: 1000000000 # 1 second
+      Timeout: 1000000000 # 1 second
 
     # Translate events and store their content in DynamoDB.
     # DynamoDB:
     #   # Basename to use for dynamodb tables
     #   TableBasename: "funnel"
-    #   AWS:
-    #     # AWS region
-    #     Region: ""
-    #     # AWS Access key ID
-    #     Key: ""
-    #     # AWS Secret Access Key
-    #     Secret: ""
+    #   # AWS region
+    #   Region: ""
+    #   # AWS Access key ID
+    #   Key: ""
+    #   # AWS Secret Access Key
+    #   Secret: ""
 
     # Elastic:
     #   # Prefix to use for indexes (task, events, nodes)

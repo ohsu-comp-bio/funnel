@@ -94,42 +94,38 @@ Server:
   Databases:
     Dynamodb:
       TableBasename: "funnel"
-      AWS:
-        Region: "us-west-2"
-        Key: ""
-        Secret: ""
+      Region: "us-west-2"
+      Key: ""
+      Secret: ""
 
 Backend: "aws-batch"
 Backends:
   Batch:
     JobDefinition: "funnel-job-def"
     JobQueue: "funnel-job-queue" 
-      AWS:
-        Region: "us-west-2"
-        Key: ""
-        Secret: ""
+    Region: "us-west-2"
+    Key: ""
+    Secret: ""
             
 Worker:
   TaskReader: "dynamodb"
   TaskReaders:
     Dynamodb:
       TableBasename: "funnel"
-      AWS:
-        Region: "us-west-2"
-        Key: ""
-        Secret: ""
+      Region: "us-west-2"
+      Key: ""
+      Secret: ""
   ActiveEventWriters:
     - "log"
     - "dynamodb"
   EventWriters:
     Dynamodb:
       TableBasename: "funnel"
-      AWS:
-        Region: "us-west-2"
-        Key: ""
-        Secret: ""
+      Region: "us-west-2"
+      Key: ""
+      Secret: ""
   Storage:
-    AWS:
+    AmazonS3:
       Key: ""
       Secret: ""
 ```

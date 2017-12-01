@@ -8,7 +8,7 @@ import (
 // Config represents configuration of the AWS proxy, including
 // the compute environment, job queue, and base job definition.
 type Config struct {
-	AWS          config.AWSConfig
+	config.AWSConfig
 	ComputeEnv   ComputeEnvConfig
 	JobQueue     JobQueueConfig
 	JobDef       JobDefinitionConfig
@@ -90,7 +90,7 @@ type JobRoleConfig struct {
 // DefaultConfig returns default configuration of for AWS Batch resource creation.
 func DefaultConfig() Config {
 	c := Config{
-		AWS: config.AWSConfig{},
+		AWSConfig: config.AWSConfig{},
 		ComputeEnv: ComputeEnvConfig{
 			Name:          "funnel-compute-environment",
 			InstanceTypes: []string{"optimal"},
@@ -168,10 +168,10 @@ func DefaultConfig() Config {
 	c.FunnelWorker.BufferSize = 10000
 	c.FunnelWorker.TaskReader = "dynamodb"
 	c.FunnelWorker.TaskReaders.DynamoDB.TableBasename = "funnel"
-	c.FunnelWorker.TaskReaders.DynamoDB.AWS.Region = ""
+	c.FunnelWorker.TaskReaders.DynamoDB.Region = ""
 	c.FunnelWorker.ActiveEventWriters = []string{"dynamodb", "log"}
 	c.FunnelWorker.EventWriters.DynamoDB.TableBasename = "funnel"
-	c.FunnelWorker.EventWriters.DynamoDB.AWS.Region = ""
+	c.FunnelWorker.EventWriters.DynamoDB.Region = ""
 
 	return c
 }

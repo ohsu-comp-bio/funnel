@@ -2,27 +2,24 @@ Server:
   Database: dynamodb
   Databases:
     DynamoDB:
-      AWS:
-        Endpoint: http://localhost:18000
-        Region: us-west-2
-        Key: "test"
-        Secret: "test"
+      Endpoint: http://localhost:18000
+      Region: us-west-2
+      Key: "test"
+      Secret: "test"
 
 Worker:
   TaskReader: dynamodb
   TaskReaders:
     DynamoDB:
-      AWS:
-        Endpoint: http://localhost:18000
-        Region: us-west-2
-        Key: "test"
-        Secret: "test"
+      Endpoint: http://localhost:18000
+      Region: us-west-2
+      Key: "test"
+      Secret: "test"
     
   ActiveEventWriters: ["log", "dynamodb"]
   EventWriters:
     DynamoDB:
-      AWS:
-        Endpoint: http://localhost:18000
-        Region: us-west-2
-        Key: "test"
-        Secret: "test"
+      Endpoint: http://localhost:18000
+      Region: us-west-2
+      Key: "test"
+      Secret: "test"

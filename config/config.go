@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -8,6 +9,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 )
 
@@ -30,7 +33,7 @@ type Config struct {
 		GridEngine struct {
 			Template string
 		}
-		Batch AWSBatch
+		AWSBatch AWSBatch
 	}
 	Scheduler Scheduler
 	Worker    Worker
@@ -145,8 +148,8 @@ func DefaultConfig() Config {
 	c.Backends.PBS.Template = string(pbsTemplate)
 	c.Backends.GridEngine.Template = string(geTemplate)
 
-	c.Backends.Batch.JobDefinition = "funnel-job-def"
-	c.Backends.Batch.JobQueue = "funnel-job-queue"
+	c.Backends.AWSBatch.JobDefinition = "funnel-job-def"
+	c.Backends.AWSBatch.JobQueue = "funnel-job-queue"
 
 	return c
 }
@@ -316,14 +319,14 @@ type AWSBatch struct {
 	JobDefinition string
 	// JobQueue can be either a name or the Amazon Resource Name (ARN).
 	JobQueue string
-	AWS      AWSConfig
+	AWSConfig
 }
 
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes
 // such as the event writer and server.
 type DynamoDB struct {
-	AWS           AWSConfig
 	TableBasename string
+	AWSConfig
 }
 
 // StorageConfig describes configuration for all storage types
@@ -442,7 +445,15 @@ func (c Config) ToYamlTempFile(name string) (string, func()) {
 
 // Parse parses a YAML doc into the given Config instance.
 func Parse(raw []byte, conf *Config) error {
-	err := yaml.Unmarshal(raw, conf)
+	j, err := yaml.YAMLToJSON(raw)
+	if err != nil {
+		return err
+	}
+	err = checkForUnknownKeys(j, conf)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(raw, conf)
 	if err != nil {
 		return err
 	}
@@ -465,13 +476,94 @@ func ParseFile(relpath string, conf *Config) error {
 	// Read file
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("Failure reading config at path %s: %s", path, err)
+		return fmt.Errorf("failed to read config at path %s: \n%v", path, err)
 	}
 
 	// Parse file
-	perr := Parse(source, conf)
-	if perr != nil {
-		return fmt.Errorf("Failure reading config at path %s: %s", path, err)
+	err = Parse(source, conf)
+	if err != nil {
+		return fmt.Errorf("failed to parse config at path %s: \n%v", path, err)
 	}
+	return nil
+}
+
+func getKeys(obj interface{}) []string {
+	keys := []string{}
+
+	v := reflect.ValueOf(obj)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	switch v.Kind() {
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			embedded := v.Type().Field(i).Anonymous
+			name := v.Type().Field(i).Name
+			keys = append(keys, name)
+
+			valKeys := getKeys(field.Interface())
+			vk := []string{}
+			for _, v := range valKeys {
+				if embedded {
+					vk = append(vk, v)
+				}
+				vk = append(vk, name+"."+v)
+			}
+			keys = append(keys, vk...)
+		}
+	case reflect.Map:
+		for _, key := range v.MapKeys() {
+			name := key.String()
+			keys = append(keys, key.String())
+
+			valKeys := getKeys(v.MapIndex(key).Interface())
+			for i, v := range valKeys {
+				valKeys[i] = name + "." + v
+			}
+			keys = append(keys, valKeys...)
+		}
+	}
+
+	return keys
+}
+
+func checkForUnknownKeys(jsonStr []byte, obj interface{}) error {
+	knownMap := make(map[string]interface{})
+	known := getKeys(obj)
+	for _, k := range known {
+		knownMap[k] = nil
+	}
+
+	var anon interface{}
+	err := json.Unmarshal(jsonStr, &anon)
+	if err != nil {
+		return err
+	}
+
+	unknown := []string{}
+	all := getKeys(anon)
+	for _, k := range all {
+		if _, found := knownMap[k]; !found {
+			unknown = append(unknown, k)
+		}
+	}
+
+	errs := []string{}
+	if len(unknown) > 0 {
+		for _, k := range unknown {
+			parts := strings.Split(k, ".")
+			field := parts[len(parts)-1]
+			path := parts[:len(parts)-1]
+			errs = append(
+				errs,
+				fmt.Sprintf("\t field %s not found in %s", field, strings.Join(path, ".")),
+			)
+		}
+		logger.Debug("", "unknown", unknown, "known", known)
+		return fmt.Errorf("%v", strings.Join(errs, "\n"))
+	}
+
 	return nil
 }

@@ -26,12 +26,11 @@ func NewClient(address string) (*Client, error) {
 	endpoint := re.ReplaceAllString(address, "$1$2")
 
 	reScheme := regexp.MustCompile("^.+://")
-	switch reScheme.MatchString(endpoint) {
-	case true:
+	if reScheme.MatchString(endpoint) {
 		if !strings.HasPrefix(endpoint, "http") {
 			return nil, fmt.Errorf("invalid protocol: '%s'; expected: 'http://' or 'https://'", reScheme.FindString(endpoint))
 		}
-	case false:
+	} else {
 		endpoint = "http://" + endpoint
 	}
 

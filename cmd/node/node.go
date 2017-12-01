@@ -61,6 +61,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	run := &cobra.Command{
 		Use:   "run",
 		Short: "Run a Funnel node.",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return hooks.Run(conf)
 		},

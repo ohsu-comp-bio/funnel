@@ -68,7 +68,7 @@ func NewFunnel(conf config.Config) *Funnel {
 
 	cli, err := client.NewClient(conf.Server.HTTPAddress())
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	dcli, derr := dockerutil.NewDockerClient()

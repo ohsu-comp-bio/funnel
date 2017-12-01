@@ -16,10 +16,15 @@ type GridCursor struct {
 	isScrolling bool // toggled when actively scrolling
 }
 
-func NewGridCursor(tesHTTPServerAddress string) *GridCursor {
-	return &GridCursor{
-		tSource: NewTaskSource(tesHTTPServerAddress, 100),
+func NewGridCursor(tesHTTPServerAddress string) (*GridCursor, error) {
+	ts, err := NewTaskSource(tesHTTPServerAddress, 100)
+	if err != nil {
+		return nil, err
 	}
+
+	return &GridCursor{
+		tSource: ts,
+	}, nil
 }
 
 func (gc *GridCursor) Len() int { return len(gc.filtered) }

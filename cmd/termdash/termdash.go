@@ -7,35 +7,39 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/widgets"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var (
-	tesServer string
-	cursor    *GridCursor
-	cGrid     *compact.Grid
-	header    *widgets.TermDashHeader
+	defaultTesServer string = "http://localhost:8000"
+	tesServer        string = defaultTesServer
+	cursor           *GridCursor
+	cGrid            *compact.Grid
+	header           *widgets.TermDashHeader
 )
 
 // Cmd represents the worker command
 var Cmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start a Funnel dashboard in your terminal.",
-	Run: func(cmd *cobra.Command, args []string) {
-		termdash(tesServer)
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if tesServer == defaultTesServer {
+			if val := os.Getenv("FUNNEL_SERVER"); val != "" {
+				tesServer = val
+			}
+		}
+	},
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return termdash(tesServer)
 	},
 }
 
 func init() {
-	Cmd.Flags().StringVarP(&tesServer, "server", "S", "http://localhost:8000", "")
+	Cmd.Flags().StringVarP(&tesServer, "server", "S", tesServer, "")
 }
 
-func termdash(tesHTTPServerAddress string) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("An error occurred:\n", r)
-		}
-	}()
-
+func termdash(tesHTTPServerAddress string) error {
 	// init global config
 	config.Init()
 
@@ -43,19 +47,23 @@ func termdash(tesHTTPServerAddress string) {
 	ui.ColorMap = colorMap
 
 	if err := ui.Init(); err != nil {
-		panic(fmt.Errorf("Error initializing termdash UI: %v", err))
+		return fmt.Errorf("Error initializing termdash UI: %v", err)
 	}
 	defer Shutdown()
 
 	// init grid, cursor, header
 	header = widgets.NewTermDashHeader()
-	cursor = NewGridCursor(tesHTTPServerAddress)
 	cGrid = compact.NewGrid()
+	var err error
+	cursor, err = NewGridCursor(tesHTTPServerAddress)
+	if err != nil {
+		return fmt.Errorf("error initializing the grid cursor: %v", err)
+	}
 
 	for {
 		exit := Display()
 		if exit {
-			return
+			return nil
 		}
 	}
 }

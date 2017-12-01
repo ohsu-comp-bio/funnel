@@ -75,6 +75,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	run := &cobra.Command{
 		Use:   "run",
 		Short: "Run a task directly, bypassing the server.",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if taskID == "" {
 				return fmt.Errorf("no taskID was provided")

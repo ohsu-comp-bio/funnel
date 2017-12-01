@@ -23,7 +23,10 @@ func testServer(mux http.Handler) *httptest.Server {
 }
 
 func TestAddressTrailingSlash(t *testing.T) {
-	c := NewClient("http://funnel.com:8000/")
+	c, err := NewClient("http://funnel.com:8000/")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if c.address != "http://funnel.com:8000" {
 		t.Error("Expected trailing slash to be stripped")
 	}
@@ -43,7 +46,10 @@ func TestGetTask(t *testing.T) {
 	defer ts.Close()
 
 	// Make test client call
-	c := NewClient("http://localhost:20001")
+	c, err := NewClient("http://localhost:20001")
+	if err != nil {
+		t.Fatal(err)
+	}
 	body, err := c.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   "test-id",
 		View: tes.TaskView_MINIMAL,
@@ -71,7 +77,10 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	defer ts.Close()
 
 	// Make test client call
-	c := NewClient("http://localhost:20001")
+	c, err := NewClient("http://localhost:20001")
+	if err != nil {
+		t.Fatal(err)
+	}
 	body, err := c.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   "test-id",
 		View: tes.TaskView_MINIMAL,
@@ -96,10 +105,13 @@ func TestClientTimeout(t *testing.T) {
 	ts := testServer(mux)
 	defer ts.Close()
 
-	c := NewClient("http://localhost:20001")
+	c, err := NewClient("http://localhost:20001")
+	if err != nil {
+		t.Fatal(err)
+	}
 	c.client.Timeout = 1 * time.Second
 
-	_, err := c.GetTask(context.Background(), &tes.GetTaskRequest{
+	_, err = c.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   "test-id",
 		View: tes.TaskView_MINIMAL,
 	})

@@ -8,6 +8,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"strconv"
 )
 
@@ -37,128 +39,40 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		},
 	}
 
-	// create the log structure for the attempt if it doesnt already exist
-	attemptItem := &dynamodb.UpdateItemInput{
-		TableName: aws.String(db.taskTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			db.partitionKey: {
-				S: aws.String(db.partitionValue),
-			},
-			"id": {
-				S: aws.String(e.Id),
-			},
-		},
-		UpdateExpression: aws.String(fmt.Sprintf("SET logs[%v] = if_not_exists(logs[%v], :v)", e.Attempt, e.Attempt)),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v": {
-				M: map[string]*dynamodb.AttributeValue{},
-			},
-		},
-	}
-	_, err := db.client.UpdateItem(attemptItem)
-	if err != nil {
-		return err
-	}
-
-	// create the log structure for the executor if it doesnt already exist
-	indexItem := &dynamodb.UpdateItemInput{
-		TableName: aws.String(db.taskTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			db.partitionKey: {
-				S: aws.String(db.partitionValue),
-			},
-			"id": {
-				S: aws.String(e.Id),
-			},
-		},
-		UpdateExpression: aws.String(fmt.Sprintf("SET logs[%v].logs[%v] = if_not_exists(logs[%v].logs[%v], :v)", e.Attempt, e.Index, e.Attempt, e.Index)),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v": {
-				M: map[string]*dynamodb.AttributeValue{},
-			},
-		},
-	}
-	_, err = db.client.UpdateItem(indexItem)
-	if err != nil {
-		return err
-	}
-
 	switch e.Type {
 	case events.Type_TASK_STATE:
+		response, err := db.getMinimalView(ctx, e.Id)
+		if err != nil {
+			return err
+		}
+		if response.Item == nil {
+			return grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", errNotFound.Error(), e.Id))
+		}
+
+		var task tes.Task
+		if err := dynamodbattribute.UnmarshalMap(response.Item, &task); err != nil {
+			return fmt.Errorf("failed to DynamoDB unmarshal Task, %v", err)
+		}
+
+		from := task.State
+		to := e.GetState()
+		if err := tes.ValidateTransition(from, to); err != nil {
+			return err
+		}
 		item.ExpressionAttributeNames = map[string]*string{
 			"#state": aws.String("state"),
 		}
+		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
+			":to": {
+				N: aws.String(strconv.Itoa(int(to))),
+			},
+		}
 		item.UpdateExpression = aws.String("SET #state = :to")
 
-		// define valid transitions
-		switch e.GetState() {
-
-		case tes.State_INITIALIZING:
-			item.ConditionExpression = aws.String("#state = :from")
-			item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":to": {
-					N: aws.String(strconv.Itoa(int(tes.State_INITIALIZING))),
-				},
-				":from": {
-					N: aws.String(strconv.Itoa(int(tes.State_QUEUED))),
-				},
-			}
-
-		case tes.State_RUNNING:
-			item.ConditionExpression = aws.String("#state = :from")
-			item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":to": {
-					N: aws.String(strconv.Itoa(int(tes.State_RUNNING))),
-				},
-				":from": {
-					N: aws.String(strconv.Itoa(int(tes.State_INITIALIZING))),
-				},
-			}
-
-		case tes.State_COMPLETE:
-			item.ConditionExpression = aws.String("#state = :from")
-			item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":to": {
-					N: aws.String(strconv.Itoa(int(tes.State_COMPLETE))),
-				},
-				":from": {
-					N: aws.String(strconv.Itoa(int(tes.State_RUNNING))),
-				},
-			}
-
-		case tes.State_EXECUTOR_ERROR:
-			item.ConditionExpression = aws.String("#state IN (:i, :r)")
-			item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":to": {
-					N: aws.String(strconv.Itoa(int(tes.State_EXECUTOR_ERROR))),
-				},
-				":i": {
-					N: aws.String(strconv.Itoa(int(tes.State_INITIALIZING))),
-				},
-				":r": {
-					N: aws.String(strconv.Itoa(int(tes.State_RUNNING))),
-				},
-			}
-
-		case tes.State_SYSTEM_ERROR, tes.State_CANCELED:
-			item.ConditionExpression = aws.String("#state IN (:q, :i, :r)")
-			item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-				":to": {
-					N: aws.String(strconv.Itoa(int(e.GetState()))),
-				},
-				":q": {
-					N: aws.String(strconv.Itoa(int(tes.State_QUEUED))),
-				},
-				":i": {
-					N: aws.String(strconv.Itoa(int(tes.State_INITIALIZING))),
-				},
-				":r": {
-					N: aws.String(strconv.Itoa(int(tes.State_RUNNING))),
-				},
-			}
-		}
-
 	case events.Type_TASK_START_TIME:
+		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
+			return err
+		}
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].start_time = :c", e.Attempt))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
@@ -167,6 +81,9 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 
 	case events.Type_TASK_END_TIME:
+		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
+			return err
+		}
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].end_time = :c", e.Attempt))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
@@ -175,6 +92,9 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 
 	case events.Type_TASK_OUTPUTS:
+		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
+			return err
+		}
 		val, err := dynamodbattribute.MarshalList(e.GetOutputs().Value)
 		if err != nil {
 			return fmt.Errorf("failed to DynamoDB marshal TaskLog Outputs, %v", err)
@@ -187,6 +107,9 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 
 	case events.Type_TASK_METADATA:
+		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
+			return err
+		}
 		val, err := dynamodbattribute.MarshalMap(e.GetMetadata().Value)
 		if err != nil {
 			return fmt.Errorf("failed to DynamoDB marshal TaskLog Metadata, %v", err)
@@ -200,6 +123,9 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 
 	case events.Type_EXECUTOR_START_TIME:
+		if err := db.ensureExecLog(ctx, e.Id, e.Attempt, e.Index); err != nil {
+			return err
+		}
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].start_time = :c", e.Attempt, e.Index))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
@@ -208,6 +134,9 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 
 	case events.Type_EXECUTOR_END_TIME:
+		if err := db.ensureExecLog(ctx, e.Id, e.Attempt, e.Index); err != nil {
+			return err
+		}
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].end_time = :c", e.Attempt, e.Index))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
@@ -216,6 +145,9 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 
 	case events.Type_EXECUTOR_EXIT_CODE:
+		if err := db.ensureExecLog(ctx, e.Id, e.Attempt, e.Index); err != nil {
+			return err
+		}
 		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].exit_code = :c", e.Attempt, e.Index))
 		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
 			":c": {
@@ -281,7 +213,54 @@ func (db *DynamoDB) WriteContext(ctx context.Context, e *events.Event) error {
 		}
 	}
 
-	_, err = db.client.UpdateItemWithContext(ctx, item)
+	_, err := db.client.UpdateItemWithContext(ctx, item)
+	return err
+}
+
+func (db *DynamoDB) ensureTaskLog(ctx context.Context, id string, attempt uint32) error {
+
+	// create the log structure for the attempt if it doesnt already exist
+	attemptItem := &dynamodb.UpdateItemInput{
+		TableName: aws.String(db.taskTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			db.partitionKey: {
+				S: aws.String(db.partitionValue),
+			},
+			"id": {
+				S: aws.String(id),
+			},
+		},
+		UpdateExpression: aws.String(fmt.Sprintf("SET logs[%v] = if_not_exists(logs[%v], :v)", attempt, attempt)),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v": {
+				M: map[string]*dynamodb.AttributeValue{},
+			},
+		},
+	}
+	_, err := db.client.UpdateItemWithContext(ctx, attemptItem)
+	return err
+}
+
+func (db *DynamoDB) ensureExecLog(ctx context.Context, id string, attempt, index uint32) error {
+	// create the log structure for the executor if it doesnt already exist
+	indexItem := &dynamodb.UpdateItemInput{
+		TableName: aws.String(db.taskTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			db.partitionKey: {
+				S: aws.String(db.partitionValue),
+			},
+			"id": {
+				S: aws.String(id),
+			},
+		},
+		UpdateExpression: aws.String(fmt.Sprintf("SET logs[%v].logs[%v] = if_not_exists(logs[%v].logs[%v], :v)", attempt, index, attempt, index)),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v": {
+				M: map[string]*dynamodb.AttributeValue{},
+			},
+		},
+	}
+	_, err := db.client.UpdateItemWithContext(ctx, indexItem)
 	return err
 }
 

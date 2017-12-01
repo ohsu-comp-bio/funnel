@@ -10,7 +10,7 @@ import (
 func init() {
 	f := createCmd.Flags()
 	f.StringVar(&funnelConfigFile, "config", funnelConfigFile, "Funnel configuration file")
-	f.StringVar(&conf.AWS.Region, "region", conf.AWS.Region, "Region in which to create the Batch resources")
+	f.StringVar(&conf.Region, "region", conf.Region, "Region in which to create the Batch resources")
 	f.StringVar(&conf.ComputeEnv.Name, "ComputeEnv.Name", conf.ComputeEnv.Name, "The name of the compute environment.")
 	f.Int64Var(&conf.ComputeEnv.MinVCPUs, "ComputeEnv.MinVCPUs", conf.ComputeEnv.MinVCPUs, "The minimum number of EC2 vCPUs that an environment should maintain. (default 0)")
 	f.Int64Var(&conf.ComputeEnv.MaxVCPUs, "ComputeEnv.MaxVCPUs", conf.ComputeEnv.MaxVCPUs, "The maximum number of EC2 vCPUs that an environment can reach.")
@@ -32,12 +32,12 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log := logger.NewLogger("batch-create-all-resources", logger.DefaultConfig())
 
-		if conf.AWS.Region == "" {
+		if conf.Region == "" {
 			return fmt.Errorf("error must provide a region")
 		}
 
-		conf.FunnelWorker.TaskReaders.DynamoDB.AWS.Region = conf.AWS.Region
-		conf.FunnelWorker.EventWriters.DynamoDB.AWS.Region = conf.AWS.Region
+		conf.FunnelWorker.TaskReaders.DynamoDB.Region = conf.Region
+		conf.FunnelWorker.EventWriters.DynamoDB.Region = conf.Region
 
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}

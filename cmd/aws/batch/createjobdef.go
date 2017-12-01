@@ -12,7 +12,7 @@ var force = false
 func init() {
 	f := jobdefCmd.Flags()
 	f.StringVar(&funnelConfigFile, "config", funnelConfigFile, "Funnel configuration file")
-	f.StringVar(&conf.AWS.Region, "region", conf.AWS.Region, "Region in which to create the Batch resources")
+	f.StringVar(&conf.Region, "region", conf.Region, "Region in which to create the Batch resources")
 	f.BoolVar(&force, "force", force, "If the JobDefinition exists, this flag controls whether a new revision be created.")
 	f.StringVar(&conf.JobDef.Name, "JobDef.Name", conf.JobDef.Name, "The name of the job definition.")
 	f.StringVar(&conf.JobDef.Image, "JobDef.Image", conf.JobDef.Image, "The docker image used to start a container.")
@@ -27,12 +27,12 @@ var jobdefCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log := logger.NewLogger("batch-create-job-def", logger.DefaultConfig())
 
-		if conf.AWS.Region == "" {
+		if conf.Region == "" {
 			return fmt.Errorf("error must provide a region")
 		}
 
-		conf.FunnelWorker.TaskReaders.DynamoDB.AWS.Region = conf.AWS.Region
-		conf.FunnelWorker.EventWriters.DynamoDB.AWS.Region = conf.AWS.Region
+		conf.FunnelWorker.TaskReaders.DynamoDB.Region = conf.Region
+		conf.FunnelWorker.EventWriters.DynamoDB.Region = conf.Region
 
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}

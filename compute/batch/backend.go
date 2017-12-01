@@ -15,7 +15,7 @@ import (
 // NewBackend returns a new local Backend instance.
 func NewBackend(batchConf config.AWSBatch) (*Backend, error) {
 
-	sess, err := util.NewAWSSession(batchConf.AWS)
+	sess, err := util.NewAWSSession(batchConf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
 	}

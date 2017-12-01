@@ -90,7 +90,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		backend = sched
 
 	case "aws-batch":
-		backend, err = batch.NewBackend(conf.Backends.Batch)
+		backend, err = batch.NewBackend(conf.Backends.AWSBatch)
 		if err != nil {
 			return nil, err
 		}

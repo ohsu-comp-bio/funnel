@@ -18,13 +18,12 @@ Server:
     DynamoDB:
       # Basename to use for dynamodb tables
       TableBasename: "funnel"
-      AWS:
-        # AWS region
-        Region: "us-west-2"
-        # AWS Access key ID
-        Key: ""
-        # AWS Secret Access Key
-        Secret: ""
+      # AWS region
+      Region: "us-west-2"
+      # AWS Access key ID
+      Key: ""
+      # AWS Secret Access Key
+      Secret: ""
 ```
 
 ### Worker config
@@ -40,26 +39,24 @@ Worker:
     DynamoDB:
       # Basename to use for dynamodb tables
       TableBasename: "funnel"
-      AWS:
-        # AWS region
-        Region: "us-west-2"
-        # AWS Access key ID
-        Key: ""
-        # AWS Secret Access Key
-        Secret: ""
+      # AWS region
+      Region: "us-west-2"
+      # AWS Access key ID
+      Key: ""
+      # AWS Secret Access Key
+      Secret: ""
 
   TaskReader: dynamodb
   TaskReaders:
     DynamoDB:
       # Basename to use for dynamodb tables
       TableBasename: "funnel"
-      AWS:
-        # AWS region
-        Region: "us-west-2"
-        # AWS Access key ID
-        Key: ""
-        # AWS Secret Access Key
-        Secret: ""
+      # AWS region
+      Region: "us-west-2"
+      # AWS Access key ID
+      Key: ""
+      # AWS Secret Access Key
+      Secret: ""
 ```
 
 ### Known issues

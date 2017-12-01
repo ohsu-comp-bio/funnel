@@ -20,7 +20,7 @@ func (e errResourceExists) Error() string {
 }
 
 func newBatchSvc(conf Config) (*batchsvc, error) {
-	sess, err := util.NewAWSSession(conf.AWS)
+	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating aws session: %v", err)
 	}
@@ -379,7 +379,7 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 				aws.String("--TaskReader"),
 				aws.String(b.conf.FunnelWorker.TaskReader),
 				aws.String("--DynamoDB.Region"),
-				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.AWS.Region),
+				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.Region),
 				aws.String("--DynamoDB.TableBasename"),
 				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.TableBasename),
 				aws.String("--task-id"),

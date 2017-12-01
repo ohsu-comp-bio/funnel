@@ -25,11 +25,11 @@ type TaskSource struct {
 	lock     sync.RWMutex
 }
 
-func NewTaskSource(tesHTTPServerAddress string, pageSize uint32) *TaskSource {
+func NewTaskSource(tesHTTPServerAddress string, pageSize uint32) (*TaskSource, error) {
 	// init funnel http client
 	cli, err := client.NewClient(tesHTTPServerAddress)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	ts := &TaskSource{
 		client:   cli,
@@ -37,7 +37,7 @@ func NewTaskSource(tesHTTPServerAddress string, pageSize uint32) *TaskSource {
 		lock:     sync.RWMutex{},
 	}
 	ts.tasks, _ = ts.listTasks(false, false)
-	return ts
+	return ts, nil
 }
 
 func (ts *TaskSource) listTasks(previous, next bool) (TaskWidgets, error) {

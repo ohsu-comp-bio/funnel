@@ -116,23 +116,34 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
     return s;
   }
   
+  $scope.truncateContent = function(input) {
+    if (input.content == "" || input.content == undefined) {
+      return "";
+    }
+    if (input.content.length > 200) {
+      return input.content.substring(0,200)+" ...";
+    }
+    return input.content;
+  }
 
   $scope.cancelTask = function() {
     $http.post($scope.url + ":cancel");
   }
 
   function refresh() {
-    $http.get($scope.url + "?view=FULL")
-    .success(function(data, status, headers, config) {
-      $scope.task = data;
-      $scope.loaded = true;
-    })
-    .error(function(data, status, headers, config){
-      if (status == 404) {
-        $scope.notFound = true;
-        $interval.cancel(stop);
-      }
-    });
+    if (!$scope.isDone($scope.task)) {
+      $http.get($scope.url + "?view=FULL")
+        .success(function(data, status, headers, config) {
+          $scope.task = data;
+          $scope.loaded = true;
+        })
+        .error(function(data, status, headers, config){
+          if (status == 404) {
+            $scope.notFound = true;
+            $interval.cancel(stop);
+          }
+        });
+    }
   }
   refresh();
   stop = $interval(refresh, 2000);

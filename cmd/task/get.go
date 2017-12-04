@@ -19,9 +19,9 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 
 	res := []string{}
 
-	view, ok := tes.TaskView_value[taskView]
-	if !ok {
-		return fmt.Errorf("Unknown task view: %s", taskView)
+	view, err := getTaskView(taskView)
+	if err != nil {
+		return err
 	}
 
 	for _, taskID := range ids {

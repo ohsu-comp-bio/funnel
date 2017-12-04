@@ -18,9 +18,9 @@ func List(server, taskView, pageToken string, pageSize uint32, all bool, writer 
 		return err
 	}
 
-	view, ok := tes.TaskView_value[taskView]
-	if !ok {
-		return fmt.Errorf("Unknown task view: %s", taskView)
+	view, err := getTaskView(taskView)
+	if err != nil {
+		return err
 	}
 
 	output := &tes.ListTasksResponse{}

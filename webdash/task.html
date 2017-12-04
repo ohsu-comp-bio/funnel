@@ -70,6 +70,10 @@
         <td>Directory</td>
         <td>Yes</td>
       </tr>
+      <tr ng-show="truncateContent(input)">
+        <td>Content</td>
+        <td>{{ truncateContent(input) }}</td>
+      </tr>
     </table>
   </div>
 

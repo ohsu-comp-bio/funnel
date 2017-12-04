@@ -109,6 +109,7 @@ main {
   margin-top: 20px;
 
   td {
+    vertical-align: top;
     text-align: left;
     border: 0;
     padding: 5px;
@@ -127,16 +128,19 @@ main {
 .executor-table,
 .data-table,
 .task-desc-table {
+  table-layout: fixed;
+
   tr {
     width: 100%;
   }
-  td { 
+  td {
     &:nth-child(1) {
       width: 15%;
       font-weight: bold;
       color: #636363;
     }
     &:nth-child(2) {
+      white-space: pre-wrap;
       width: 85%;
     }
   }

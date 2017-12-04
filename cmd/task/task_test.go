@@ -28,8 +28,8 @@ func TestGetDefaultView(t *testing.T) {
 	cmd, h := newCommandHooks()
 
 	h.Get = func(server string, ids []string, view string, w io.Writer) error {
-		if view != "FULL" {
-			t.Errorf("expected default FULL view, got '%s'", view)
+		if view != "full" {
+			t.Errorf("expected default 'full' view, got '%s'", view)
 		}
 		return nil
 	}

@@ -2,9 +2,11 @@ package task
 
 import (
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
+	"strings"
 )
 
 // NewCommand returns the "task" subcommands.
@@ -54,37 +56,35 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		pageToken string
 		pageSize  uint32
 		listAll   bool
+		listView  string
 	)
-	listView := choiceVar{val: "BASIC"}
 
 	list := &cobra.Command{
 		Use:   "list",
 		Short: "List all tasks.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return h.List(tesServer, listView.val, pageToken, pageSize, listAll, cmd.OutOrStdout())
+			return h.List(tesServer, listView, pageToken, pageSize, listAll, cmd.OutOrStdout())
 		},
 	}
 
 	lf := list.Flags()
-	listView.AddChoices("BASIC", "MINIMAL", "FULL")
-	lf.VarP(&listView, "view", "v", "Task view")
+	lf.StringVarP(&listView, "view", "v", "basic", "Task view")
 	lf.StringVarP(&pageToken, "page-token", "p", pageToken, "Page token")
 	lf.Uint32VarP(&pageSize, "page-size", "s", pageSize, "Page size")
 	lf.BoolVar(&listAll, "all", listAll, "List all tasks")
 
-	getView := choiceVar{val: "FULL"}
+	var getView string
 	get := &cobra.Command{
 		Use:   "get [taskID ...]",
 		Short: "Get one or more tasks by ID.",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return h.Get(tesServer, args, getView.val, cmd.OutOrStdout())
+			return h.Get(tesServer, args, getView, cmd.OutOrStdout())
 		},
 	}
 
 	gf := get.Flags()
-	getView.AddChoices("BASIC", "MINIMAL", "FULL")
-	gf.VarP(&getView, "view", "v", "Task view")
+	gf.StringVarP(&getView, "view", "v", "full", "Task view")
 
 	cancel := &cobra.Command{
 		Use:   "cancel [taskID ...]",
@@ -116,36 +116,13 @@ type hooks struct {
 	Wait   func(server string, ids []string) error
 }
 
-type choiceVar struct {
-	choices map[string]bool
-	val     string
-}
-
-func (c *choiceVar) AddChoices(choices ...string) {
-	if c.choices == nil {
-		c.choices = map[string]bool{}
+func getTaskView(taskView string) (int32, error) {
+	taskView = strings.ToUpper(taskView)
+	var view int32
+	var ok bool
+	view, ok = tes.TaskView_value[taskView]
+	if !ok {
+		return view, fmt.Errorf("Unknown task view: %s. Valid task views: ['basic', 'minimal', 'full']", taskView)
 	}
-	for _, choice := range choices {
-		c.choices[choice] = true
-	}
-}
-
-func (c *choiceVar) String() string {
-	return c.val
-}
-
-func (c *choiceVar) Set(v string) error {
-	if _, ok := c.choices[v]; !ok {
-		return fmt.Errorf("invalid choice: %s", v)
-	}
-	c.val = v
-	return nil
-}
-
-func (c *choiceVar) Get() interface{} {
-	return c.val
-}
-
-func (c *choiceVar) Type() string {
-	return "string"
+	return view, nil
 }

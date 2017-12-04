@@ -130,7 +130,7 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		q = q.SearchAfter(req.PageToken)
 	}
 
-	q = q.Sort("id", true).Size(pageSize)
+	q = q.Sort("id", false).Size(pageSize)
 
 	switch req.View {
 	case tes.TaskView_BASIC:

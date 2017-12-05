@@ -16,6 +16,9 @@ var Marshaler = jsonpb.Marshaler{
 
 // MarshalToString marshals a task to an indented JSON string.
 func MarshalToString(t *Task) (string, error) {
+	if t == nil {
+		return "", fmt.Errorf("can't marshal nil task")
+	}
 	return Marshaler.MarshalToString(t)
 }
 

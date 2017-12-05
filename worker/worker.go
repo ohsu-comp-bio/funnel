@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -51,7 +52,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		r.Event.Info("Hostname", "name", name)
 	}
 
-	task, run.syserr = r.TaskReader.Task()
+	task, run.syserr = r.getTask(pctx)
 
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
@@ -303,4 +304,31 @@ func (r *DefaultWorker) pollForCancel(ctx context.Context, f func()) context.Con
 		}
 	}()
 	return taskctx
+}
+
+// getTask provides a standard method for retrying TaskReader.Task() call with a
+// timeout.
+func (r *DefaultWorker) getTask(pctx context.Context) (*tes.Task, error) {
+	ctx, cancel := context.WithTimeout(pctx, r.Conf.TaskReadTimeout)
+	defer cancel()
+
+	b := backoff.NewExponentialBackOff()
+	b.MaxElapsedTime = 0
+	ticker := backoff.NewTicker(b)
+	defer ticker.Stop()
+
+	var task *tes.Task
+	var err error
+
+	for {
+		select {
+		case <-ctx.Done():
+			return task, err
+		case <-ticker.C:
+			task, err = r.TaskReader.Task()
+			if err == nil {
+				return task, err
+			}
+		}
+	}
 }

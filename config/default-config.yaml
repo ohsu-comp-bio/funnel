@@ -85,17 +85,23 @@ Worker:
   # Files created during processing will be written in this directory.
   WorkDir: ./funnel-work-dir
 
+  # Normally the worker deletes its working directory after executing.
+  # This option disables that behavior.
+  LeaveWorkDir: false
+
+  # Maximum task log (stdout/err) size, in bytes to buffer between updates.
+  BufferSize: 10000 # 10 KB
+
   # For low-level tuning.
   # How often to send task log updates to the Funnel server.
   # In nanoseconds.
   UpdateRate: 5000000000 # 5 seconds
 
-  # Maximum task log (stdout/err) size, in bytes to buffer between updates.
-  BufferSize: 10000 # 10 KB
-
-  # Normally the worker deletes its working directory after executing.
-  # This option disables that behavior.
-  LeaveWorkDir: false
+  # For low-level tuning.
+  # How long the worker should try to read the task from the server or database
+  # before failing.
+  # In nanoseconds.
+  TaskReadTimeout: 300000000000 # 5 minutes
 
 #-------------------------------------------------------------------------------
 # Databases and/or Event Writers/Handlers

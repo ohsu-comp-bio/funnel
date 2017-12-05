@@ -167,3 +167,12 @@
 	url = https://github.com/golang/gddo
 	active = true
 	path = vendor/github.com/golang/gddo
+[submodule "vendor/github.com/minio/minio-go"]
+	path = vendor/github.com/minio/minio-go
+	url = https://github.com/minio/minio-go
+[submodule "vendor/github.com/go-ini/ini"]
+	path = vendor/github.com/go-ini/ini
+	url = https://github.com/go-ini/ini
+[submodule "vendor/github.com/mitchellh/go-homedir"]
+	path = vendor/github.com/mitchellh/go-homedir
+	url = https://github.com/mitchellh/go-homedir

@@ -26,12 +26,10 @@ func NewHTTPBackend(conf config.HTTPStorage) (*HTTPBackend, error) {
 }
 
 // Get copies a file from a given URL to the host path.
-func (b *HTTPBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-
+func (b *HTTPBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) (err error) {
 	switch class {
 	case File:
-		fsutil.EnsurePath(hostPath)
-		dest, err := os.Create(hostPath)
+		err := fsutil.EnsurePath(hostPath)
 		if err != nil {
 			return err
 		}
@@ -46,18 +44,21 @@ func (b *HTTPBackend) Get(ctx context.Context, rawurl string, hostPath string, c
 		if err != nil {
 			return err
 		}
+		defer src.Body.Close()
+
+		dest, err := os.Create(hostPath)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			cerr := dest.Close()
+			if cerr != nil {
+				err = fmt.Errorf("%v; %v", err, cerr)
+			}
+		}()
 
 		_, err = io.Copy(dest, src.Body)
-		if err != nil {
-			return err
-		}
-
-		err = src.Body.Close()
-		if err != nil {
-			return err
-		}
-
-		return dest.Close()
+		return err
 
 	case Directory:
 		return fmt.Errorf("Unsupported file class: %s", class)
@@ -79,6 +80,13 @@ func (b *HTTPBackend) SupportsGet(rawurl string, class tes.FileType) error {
 	}
 	if class == Directory {
 		return fmt.Errorf("http(s): directory file type is not supported")
+	}
+	resp, err := b.client.Head(rawurl)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("HEAD request to %s returned status: %s", rawurl, resp.Status)
 	}
 	return nil
 }

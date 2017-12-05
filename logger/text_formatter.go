@@ -9,6 +9,7 @@ import (
 	"github.com/kr/pretty"
 	"github.com/logrusorgru/aurora"
 	"io"
+	"reflect"
 	"runtime"
 	"sort"
 	"strings"
@@ -67,16 +68,8 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	fmt.Fprintf(b, "%s%-20s %s\n", f.Indent, aurora.Colorize(ns, nsColor), entry.Message)
 
-	for _, k := range f.entryDataKeys(entry) {
+	for _, k := range f.sortKeys(entry) {
 		v := entry.Data[k]
-
-		// Some keys can conflict with reserved names.
-		// If they do, resolve the conflict with a prefix.
-		keyname := k
-		switch k {
-		case "time", "msg", "level":
-			keyname = "fields." + keyname
-		}
 
 		switch x := v.(type) {
 		case string:
@@ -95,7 +88,9 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		case float64:
 		case bool:
 		case proto.Message:
-			if s, err := jsonmar.MarshalToString(x); err == nil {
+			if reflect.ValueOf(x).IsNil() {
+				// do nothing
+			} else if s, err := jsonmar.MarshalToString(x); err == nil {
 				v = s
 			} else {
 				v = pretty.Sprint(x)
@@ -112,14 +107,14 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			v = strings.Join(vParts, "\n"+strings.Repeat(" ", padding))
 		}
 
-		fmt.Fprintf(b, "%s%-20s %v\n", f.Indent, aurora.Colorize(keyname, levelColor), v)
+		fmt.Fprintf(b, "%s%-20s %v\n", f.Indent, aurora.Colorize(k, levelColor), v)
 	}
 
 	b.WriteByte('\n')
 	return b.Bytes(), nil
 }
 
-func (f *textFormatter) entryDataKeys(entry *logrus.Entry) []string {
+func (f *textFormatter) sortKeys(entry *logrus.Entry) []string {
 
 	// Gather keys so they can be sorted
 	keys := make([]string, 0, len(entry.Data))

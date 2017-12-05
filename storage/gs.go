@@ -68,16 +68,22 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 
 	switch class {
 	case File:
-		call := gs.svc.Objects.Get(url.bucket, url.path)
-		err := download(call, hostPath)
+		err := fsutil.EnsurePath(hostPath)
 		if err != nil {
 			return err
 		}
-		return nil
+
+		call := gs.svc.Objects.Get(url.bucket, url.path)
+		return download(call, hostPath)
 
 	case Directory:
+		err := fsutil.EnsureDir(hostPath)
+		if err != nil {
+			return err
+		}
+
 		objects := []*storage.Object{}
-		err := gs.svc.Objects.List(url.bucket).Prefix(url.path).Pages(ctx,
+		err = gs.svc.Objects.List(url.bucket).Prefix(url.path).Pages(ctx,
 			func(objs *storage.Objects) error {
 				objects = append(objects, objs.Items...)
 				return nil
@@ -92,7 +98,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		for _, obj := range objects {
 			call := gs.svc.Objects.Get(url.bucket, obj.Name)
 			key := strings.TrimPrefix(obj.Name, url.path)
-			err := download(call, path.Join(hostPath, key))
+			err = download(call, path.Join(hostPath, key))
 			if err != nil {
 				return err
 			}
@@ -104,39 +110,42 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 	}
 }
 
-func download(call *storage.ObjectsGetCall, hostPath string) error {
-	resp, derr := call.Download()
-	if derr != nil {
-		return derr
+func download(call *storage.ObjectsGetCall, hostPath string) (err error) {
+	resp, err := call.Download()
+	if err != nil {
+		return err
 	}
 
-	fsutil.EnsurePath(hostPath)
-	dest, cerr := os.Create(hostPath)
-	if cerr != nil {
-		return cerr
+	dest, err := os.Create(hostPath)
+	if err != nil {
+		return err
 	}
+	defer func() {
+		cerr := dest.Close()
+		if cerr != nil {
+			err = fmt.Errorf("%v; %v", err, cerr)
+		}
+	}()
 
-	_, werr := io.Copy(dest, resp.Body)
-	if werr != nil {
-		return werr
-	}
-	return nil
+	_, err = io.Copy(dest, resp.Body)
+	return err
 }
 
 // PutFile copies an object (file) from the host path to GS.
 func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
 	url := gs.parse(rawurl)
 
-	reader, oerr := os.Open(hostPath)
-	if oerr != nil {
-		return oerr
+	reader, err := os.Open(hostPath)
+	if err != nil {
+		return err
 	}
+	defer reader.Close()
 
 	obj := &storage.Object{
 		Name: url.path,
 	}
 
-	_, err := gs.svc.Objects.Insert(url.bucket, obj).Media(reader).Do()
+	_, err = gs.svc.Objects.Insert(url.bucket, obj).Media(reader).Do()
 	return err
 }
 

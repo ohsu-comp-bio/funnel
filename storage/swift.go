@@ -80,23 +80,25 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 
 	switch class {
 	case File:
-
-		f, _, oerr := sw.conn.ObjectOpen(url.bucket, url.path, checkHash, headers)
-		if oerr != nil {
-			return oerr
-		}
-
-		if err := sw.get(f, hostPath); err != nil {
+		err := fsutil.EnsurePath(hostPath)
+		if err != nil {
 			return err
 		}
 
-		if err := f.Close(); err != nil {
+		f, _, err := sw.conn.ObjectOpen(url.bucket, url.path, checkHash, headers)
+		if err != nil {
 			return err
 		}
+		defer f.Close()
 
-		return nil
+		return sw.get(f, hostPath)
 
 	case Directory:
+		err := fsutil.EnsureDir(hostPath)
+		if err != nil {
+			return err
+		}
+
 		objs, err := sw.conn.ObjectsAll(url.bucket, &swift.ObjectsOpts{
 			Prefix: url.path,
 		})
@@ -108,16 +110,19 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 		}
 
 		for _, obj := range objs {
-			f, _, oerr := sw.conn.ObjectOpen(url.bucket, obj.Name, checkHash, headers)
-			if oerr != nil {
-				return oerr
-			}
-
-			if err := sw.get(f, path.Join(hostPath, strings.TrimPrefix(obj.Name, url.path))); err != nil {
+			f, _, err := sw.conn.ObjectOpen(url.bucket, obj.Name, checkHash, headers)
+			if err != nil {
 				return err
 			}
 
-			if err := f.Close(); err != nil {
+			if err = sw.get(f, path.Join(hostPath, strings.TrimPrefix(obj.Name, url.path))); err != nil {
+				if cerr := f.Close(); cerr != nil {
+					return fmt.Errorf("%v; %v", err, cerr)
+				}
+				return err
+			}
+
+			if err = f.Close(); err != nil {
 				return err
 			}
 		}
@@ -129,32 +134,33 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 	}
 }
 
-func (sw *SwiftBackend) get(src io.Reader, hostPath string) error {
-	fsutil.EnsurePath(hostPath)
-	dest, cerr := os.Create(hostPath)
-	if cerr != nil {
-		return cerr
+func (sw *SwiftBackend) get(src io.Reader, hostPath string) (err error) {
+	dest, err := os.Create(hostPath)
+	if err != nil {
+		return err
 	}
+	defer func() {
+		cerr := dest.Close()
+		if cerr != nil {
+			err = fmt.Errorf("%v; %v", err, cerr)
+		}
+	}()
 
-	_, werr := io.Copy(dest, src)
-	if werr != nil {
-		return werr
-	}
-	return dest.Close()
+	_, err = io.Copy(dest, src)
+	return err
 }
 
 // PutFile copies an object (file) from the host path to storage.
 func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
 	url := sw.parse(rawurl)
 
-	reader, oerr := os.Open(hostPath)
-	if oerr != nil {
-		return oerr
+	reader, err := os.Open(hostPath)
+	if err != nil {
+		return err
 	}
+	defer reader.Close()
 
 	var writer io.WriteCloser
-	var err error
-
 	var checkHash = true
 	var hash string
 	var contentType string
@@ -176,14 +182,15 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 	if err != nil {
 		return err
 	}
+	defer func() {
+		cerr := writer.Close()
+		if cerr != nil {
+			err = fmt.Errorf("%v; %v", err, cerr)
+		}
+	}()
 
-	if _, cerr := io.Copy(writer, reader); cerr != nil {
-		return cerr
-	}
-	if rerr := reader.Close(); rerr != nil {
-		return rerr
-	}
-	return writer.Close()
+	_, err = io.Copy(writer, reader)
+	return err
 }
 
 // SupportsGet indicates whether this backend supports GET storage request.

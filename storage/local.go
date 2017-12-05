@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
 
 // LocalBackend provides access to a local-disk storage system.
@@ -40,6 +39,10 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 
 	switch class {
 	case File:
+		err = fsutil.EnsurePath(hostPath)
+		if err != nil {
+			return err
+		}
 		err = linkFile(path, hostPath)
 
 	case Directory:
@@ -66,6 +69,10 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 // PutFile copies a file from the hostPath into storage.
 func (local *LocalBackend) PutFile(ctx context.Context, url string, hostPath string) error {
 	path := getPath(url)
+	err := fsutil.EnsurePath(path)
+	if err != nil {
+		return err
+	}
 	return linkFile(hostPath, path)
 }
 
@@ -118,24 +125,22 @@ func copyFile(source string, dest string) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to open source file for copying: %s", err)
 	}
+	defer sf.Close()
+
+	// Create and open dest file for writing
 	df, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0775)
 	if err != nil {
 		return fmt.Errorf("failed to create dest file for copying: %s", err)
 	}
+	defer func() {
+		cerr := df.Close()
+		if cerr != nil {
+			err = fmt.Errorf("%v; %v", err, cerr)
+		}
+	}()
+
 	_, err = io.Copy(df, sf)
-	if err != nil {
-		return err
-	}
-	// close files
-	err = sf.Close()
-	if err != nil {
-		return err
-	}
-	err = df.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // Hard links file source to destination dest.
@@ -152,15 +157,6 @@ func linkFile(source string, dest string) error {
 	}
 	if same {
 		return nil
-	}
-	// make parent dirs if they dont exist
-	dstD := path.Dir(dest)
-	if _, err := os.Stat(dstD); err != nil {
-		syscall.Umask(0000)
-		err = os.MkdirAll(dstD, 0775)
-		if err != nil {
-			return fmt.Errorf("failed to make directory: %s", err)
-		}
 	}
 	err = os.Link(parent, dest)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -59,10 +60,15 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 
 	switch class {
 	case File:
+		err = fsutil.EnsurePath(hostPath)
+		if err != nil {
+			return err
+		}
+
 		// Create a file to write the S3 Object contents to.
 		hf, err := os.Create(hostPath)
 		if err != nil {
-			return fmt.Errorf("failed to create file %q, %v", hostPath, err)
+			return err
 		}
 		defer func() {
 			cerr := hf.Close()
@@ -80,7 +86,13 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 		}
 
 	case Directory:
+		err = fsutil.EnsureDir(hostPath)
+		if err != nil {
+			return err
+		}
+
 		objects := []*s3.Object{}
+
 		err = client.ListObjectsV2PagesWithContext(
 			ctx,
 			&s3.ListObjectsV2Input{Bucket: aws.String(url.bucket), Prefix: aws.String(url.path)},

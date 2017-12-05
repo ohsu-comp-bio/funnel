@@ -6,6 +6,7 @@ import (
 	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,12 +37,17 @@ func (s3 *GenericS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 
 	switch class {
 	case File:
-		err := s3.client.FGetObjectWithContext(ctx, url.bucket, url.path, hostPath, minio.GetObjectOptions{})
+		err := fsutil.EnsurePath(hostPath)
 		if err != nil {
 			return err
 		}
+		return s3.client.FGetObjectWithContext(ctx, url.bucket, url.path, hostPath, minio.GetObjectOptions{})
 
 	case Directory:
+		err := fsutil.EnsureDir(hostPath)
+		if err != nil {
+			return err
+		}
 		// Create a done channel.
 		doneCh := make(chan struct{})
 		defer close(doneCh)
@@ -62,7 +68,7 @@ func (s3 *GenericS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 			if err := os.MkdirAll(filepath.Dir(file), 0775); err != nil {
 				return err
 			}
-			err := s3.client.FGetObjectWithContext(ctx, url.bucket, obj.Key, file, minio.GetObjectOptions{})
+			err = s3.client.FGetObjectWithContext(ctx, url.bucket, obj.Key, file, minio.GetObjectOptions{})
 			if err != nil {
 				return err
 			}
@@ -79,7 +85,6 @@ func (s3 *GenericS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 func (s3 *GenericS3Backend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
 	url := s3.parse(rawurl)
 	_, err := s3.client.FPutObjectWithContext(ctx, url.bucket, url.path, hostPath, minio.PutObjectOptions{})
-
 	return err
 }
 

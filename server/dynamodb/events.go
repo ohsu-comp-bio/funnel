@@ -198,6 +198,32 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 				},
 			},
 		}
+
+	case events.Type_SYSTEM_LOG:
+		item = &dynamodb.UpdateItemInput{
+			TableName: aws.String(db.syslogsTable),
+			Key: map[string]*dynamodb.AttributeValue{
+				"id": {
+					S: aws.String(e.Id),
+				},
+				"attempt": {
+					N: aws.String(strconv.Itoa(int(e.Attempt))),
+				},
+			},
+			UpdateExpression: aws.String("SET system_logs = list_append(if_not_exists(system_logs, :e), :syslog)"),
+			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+				":e": {
+					L: []*dynamodb.AttributeValue{},
+				},
+				":syslog": {
+					L: []*dynamodb.AttributeValue{
+						{
+							S: aws.String(e.GetSystemLog().FlatString()),
+						},
+					},
+				},
+			},
+		}
 	}
 
 	_, err := db.client.UpdateItemWithContext(ctx, item)

@@ -77,12 +77,13 @@ func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	// Load system logs
 	var syslogs []string
 	slb := tx.Bucket(SysLogs).Get([]byte(id))
-	err := json.Unmarshal(slb, &syslogs)
-	if err != nil {
-		return err
+	if slb != nil {
+		err := json.Unmarshal(slb, &syslogs)
+		if err != nil {
+			return err
+		}
+		task.Logs[0].SystemLogs = syslogs
 	}
-
-	task.Logs[0].SystemLogs = syslogs
 
 	return loadMinimalTaskView(tx, id, task)
 }

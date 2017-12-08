@@ -153,6 +153,38 @@ func (db *DynamoDB) createTables() error {
 	if checkCreateErr(err) != nil {
 		return err
 	}
+
+	table = &dynamodb.CreateTableInput{
+		TableName: aws.String(db.syslogsTable),
+		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+			{
+				AttributeName: aws.String("id"),
+				AttributeType: aws.String("S"),
+			},
+			{
+				AttributeName: aws.String("attempt"),
+				AttributeType: aws.String("N"),
+			},
+		},
+		KeySchema: []*dynamodb.KeySchemaElement{
+			{
+				AttributeName: aws.String("id"),
+				KeyType:       aws.String("HASH"),
+			},
+			{
+				AttributeName: aws.String("attempt"),
+				KeyType:       aws.String("RANGE"),
+			},
+		},
+		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+			ReadCapacityUnits:  aws.Int64(1),
+			WriteCapacityUnits: aws.Int64(1),
+		},
+	}
+	_, err = db.client.CreateTable(table)
+	if checkCreateErr(err) != nil {
+		return err
+	}
 	return db.waitForTables()
 }
 
@@ -187,6 +219,9 @@ func (db *DynamoDB) waitForTables() error {
 		return err
 	}
 	if err := db.tableIsAlive(ctx, db.stderrTable); err != nil {
+		return err
+	}
+	if err := db.tableIsAlive(ctx, db.syslogsTable); err != nil {
 		return err
 	}
 
@@ -398,6 +433,11 @@ func (db *DynamoDB) getFullView(ctx context.Context, id string) (*dynamodb.GetIt
 		return resp, fmt.Errorf("failed to retrieve task executor log stderr: %v", err)
 	}
 
+	err = db.getSystemLogs(ctx, resp.Item)
+	if err != nil {
+		return resp, fmt.Errorf("failed to retrieve system logs: %v", err)
+	}
+
 	return resp, nil
 }
 
@@ -457,6 +497,38 @@ func (db *DynamoDB) getExecutorOutput(ctx context.Context, in map[string]*dynamo
 						S: aws.String(*out.S),
 					}
 				}
+			}
+			if page.LastEvaluatedKey == nil {
+				return false
+			}
+			return true
+		},
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *DynamoDB) getSystemLogs(ctx context.Context, in map[string]*dynamodb.AttributeValue) error {
+	query := &dynamodb.QueryInput{
+		TableName:              aws.String(db.syslogsTable),
+		Limit:                  aws.Int64(50),
+		ScanIndexForward:       aws.Bool(false),
+		ConsistentRead:         aws.Bool(true),
+		KeyConditionExpression: aws.String("id = :v1"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v1": in["id"],
+		},
+	}
+
+	err := db.client.QueryPagesWithContext(
+		ctx,
+		query,
+		func(page *dynamodb.QueryOutput, lastPage bool) bool {
+			for _, item := range page.Items {
+				i, _ := strconv.ParseInt(*item["attempt"].N, 10, 64)
+				in["logs"].L[i].M["system_logs"] = item["system_logs"]
 			}
 			if page.LastEvaluatedKey == nil {
 				return false

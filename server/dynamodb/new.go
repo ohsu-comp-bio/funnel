@@ -17,6 +17,7 @@ type DynamoDB struct {
 	contentTable   string
 	stdoutTable    string
 	stderrTable    string
+	syslogsTable   string
 }
 
 // NewDynamoDB returns a new instance of DynamoDB, accessing the database at
@@ -35,6 +36,7 @@ func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
 		contentTable:   conf.TableBasename + "-content",
 		stdoutTable:    conf.TableBasename + "-stdout",
 		stderrTable:    conf.TableBasename + "-stderr",
+		syslogsTable:   conf.TableBasename + "-syslogs",
 	}
 
 	if err := db.createTables(); err != nil {

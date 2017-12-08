@@ -9,7 +9,7 @@ import (
 
 var minimal = elastic.NewFetchSourceContext(true).Include("id", "state")
 var basic = elastic.NewFetchSourceContext(true).
-	Exclude("logs.logs.stderr", "logs.logs.stdout", "inputs.content")
+	Exclude("logs.logs.stderr", "logs.logs.stdout", "inputs.content", "logs.system_logs")
 
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {

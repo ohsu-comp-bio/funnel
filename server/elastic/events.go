@@ -21,7 +21,14 @@ for (; params.attempt > ctx._source.logs.length - 1; ) {
 }
 
 // Set the field.
-ctx._source.logs[params.attempt][params.field] = params.value;
+if (params.field == "system_logs") {
+  if (ctx._source.logs[params.attempt].system_logs == null) {
+    ctx._source.logs[params.attempt].system_logs = new ArrayList();
+  }
+  ctx._source.logs[params.attempt].system_logs.add(params.value)
+} else {
+  ctx._source.logs[params.attempt][params.field] = params.value;
+}
 `
 
 var updateExecutorLogs = `
@@ -65,12 +72,6 @@ func execLogUpdate(attempt, index uint32, field string, value interface{}) *elas
 
 // WriteEvent writes a task update event.
 func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
-	// Skipping system logs for now. Will add them to the task logs when this PR is resolved (soon):
-	// https://github.com/ga4gh/task-execution-schemas/pull/80
-	if ev.Type == events.Type_SYSTEM_LOG {
-		return nil
-	}
-
 	u := es.client.Update().
 		Index(es.taskIndex).
 		Type("task").
@@ -135,6 +136,9 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 
 	case events.Type_EXECUTOR_STDERR:
 		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "stderr", ev.GetStderr()))
+
+	case events.Type_SYSTEM_LOG:
+		u = u.Script(taskLogUpdate(ev.Attempt, "system_logs", ev.GetSystemLog().FlatString()))
 	}
 
 	_, err := u.Do(ctx)

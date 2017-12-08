@@ -1,6 +1,7 @@
 package boltdb
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -72,6 +73,16 @@ func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 			}
 		}
 	}
+
+	// Load system logs
+	var syslogs []string
+	slb := tx.Bucket(SysLogs).Get([]byte(id))
+	err := json.Unmarshal(slb, &syslogs)
+	if err != nil {
+		return err
+	}
+
+	task.Logs[0].SystemLogs = syslogs
 
 	return loadMinimalTaskView(tx, id, task)
 }

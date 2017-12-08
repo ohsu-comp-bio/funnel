@@ -2,6 +2,7 @@ package boltdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -24,12 +25,6 @@ const (
 
 // WriteEvent creates an event for the server to handle.
 func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error {
-	// Skipping system logs for now. Will add them to the task logs when this PR is resolved (soon):
-	// https://github.com/ga4gh/task-execution-schemas/pull/80
-	if req.Type == events.Type_SYSTEM_LOG {
-		return nil
-	}
-
 	var err error
 
 	if req.Type == events.Type_TASK_CREATED {
@@ -122,6 +117,33 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 	case events.Type_EXECUTOR_STDERR:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorStderr(tx, fmt.Sprint(req.Id, req.Index), req.GetStderr())
+		})
+
+	case events.Type_SYSTEM_LOG:
+		var syslogs []string
+		idBytes := []byte(req.Id)
+
+		err = taskBolt.db.View(func(tx *bolt.Tx) error {
+			existing := tx.Bucket(SysLogs).Get(idBytes)
+			if existing != nil {
+				return json.Unmarshal(existing, &syslogs)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		syslogs = append(syslogs, req.GetSystemLog().FlatString())
+
+		logbytes, err := json.Marshal(syslogs)
+		if err != nil {
+			return err
+		}
+
+		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+			tx.Bucket(SysLogs).Put(idBytes, logbytes)
+			return nil
 		})
 	}
 

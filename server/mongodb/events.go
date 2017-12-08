@@ -103,6 +103,13 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 			bson.M{"id": req.Id},
 			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.stderr", req.Attempt, req.Index): stderr}},
 		)
+
+	case events.Type_SYSTEM_LOG:
+		syslog := req.GetSystemLog().FlatString()
+		err = db.tasks.Update(
+			bson.M{"id": req.Id},
+			bson.M{"$push": bson.M{fmt.Sprintf("logs.%v.systemlogs", req.Attempt): syslog}},
+		)
 	}
 
 	return err

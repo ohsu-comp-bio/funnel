@@ -7,7 +7,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var basicView = bson.M{"logs.logs.stdout": 0, "logs.logs.stderr": 0, "inputs.content": 0}
+var basicView = bson.M{
+	"logs.systemlogs":  0,
+	"logs.logs.stdout": 0,
+	"logs.logs.stderr": 0,
+	"inputs.content":   0,
+}
 var minimalView = bson.M{"id": 1, "state": 1}
 
 // GetTask gets a task, which describes a running task

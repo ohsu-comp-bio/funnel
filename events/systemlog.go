@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"regexp"
+	"strings"
 )
 
 // SystemLogGenerator is a type that emulates the logger interface
@@ -68,4 +70,25 @@ func fields(args ...interface{}) map[string]string {
 		ss[k] = fmt.Sprintf("%+v", v)
 	}
 	return ss
+}
+
+// FlatString returns a flattened string representation of the SystemLog event
+func (s *SystemLog) FlatString() string {
+	parts := []string{
+		fmt.Sprintf("level='%s'", s.Level),
+		fmt.Sprintf("msg='%s'", escape(s.Msg)),
+	}
+	for k, v := range s.Fields {
+		parts = append(parts, fmt.Sprintf("%s='%s'", safeKey(k), escape(v)))
+	}
+	return strings.Join(parts, " ")
+}
+
+func escape(s string) string {
+	return strings.Replace(s, "'", "\\'", -1)
+}
+
+func safeKey(s string) string {
+	re := regexp.MustCompile("[\\s]+")
+	return re.ReplaceAllString(s, "_")
 }

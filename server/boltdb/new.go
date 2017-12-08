@@ -37,6 +37,10 @@ var ExecutorStderr = []byte("executor-stderr")
 // node ID -> pbs.Node struct
 var Nodes = []byte("nodes")
 
+// SysLogs defeines the name of a bucket with maps
+//  task ID -> tes.TaskLog.SystemLogs
+var SysLogs = []byte("system-logs")
+
 // BoltDB provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
 type BoltDB struct {
@@ -89,6 +93,9 @@ func (taskBolt *BoltDB) init() error {
 		}
 		if tx.Bucket(Nodes) == nil {
 			tx.CreateBucket(Nodes)
+		}
+		if tx.Bucket(SysLogs) == nil {
+			tx.CreateBucket(SysLogs)
 		}
 		return nil
 	})

@@ -134,7 +134,7 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 			return err
 		}
 
-		syslogs = append(syslogs, req.GetSystemLog().FlatString())
+		syslogs = append(syslogs, req.GetSystemLog().LogString())
 
 		logbytes, err := json.Marshal(syslogs)
 		if err != nil {

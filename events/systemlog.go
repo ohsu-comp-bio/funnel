@@ -72,8 +72,8 @@ func fields(args ...interface{}) map[string]string {
 	return ss
 }
 
-// FlatString returns a flattened string representation of the SystemLog event
-func (s *SystemLog) FlatString() string {
+// LogString returns a flattened string representation of the SystemLog event
+func (s *SystemLog) LogString() string {
 	parts := []string{
 		fmt.Sprintf("level='%s'", s.Level),
 		fmt.Sprintf("msg='%s'", escape(s.Msg)),

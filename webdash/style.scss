@@ -134,14 +134,13 @@ main {
     width: 100%;
   }
   td {
+    word-break: break-all;
+    white-space: normal; 
+
     &:nth-child(1) {
       width: 15%;
       font-weight: bold;
       color: #636363;
-    }
-    &:nth-child(2) {
-      white-space: pre-wrap;
-      width: 85%;
     }
   }
 }
@@ -184,10 +183,6 @@ main h6 {
   }
 }
 
-.btn-cancel-simple {
-  margin-left: 20px;
-}
-
 .btn-cancel, .mdl-button--icon, .mdl-button--raised {
   @extend .mdl-button;
   border-width: 1px;
@@ -212,4 +207,14 @@ main h6 {
     background-color: #FF3D00;
     border-color: #FF3D00;
   }
+}
+
+.btn-cancel-simple {
+  @extend .btn-cancel;
+  margin-left: 20px;
+  height: 20px;
+  font-size: 90%;
+  padding: 0;
+  vertical-align: top;
+  line-height: 0px;  
 }

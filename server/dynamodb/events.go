@@ -218,7 +218,7 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 				":syslog": {
 					L: []*dynamodb.AttributeValue{
 						{
-							S: aws.String(e.GetSystemLog().FlatString()),
+							S: aws.String(e.GetSystemLog().LogString()),
 						},
 					},
 				},

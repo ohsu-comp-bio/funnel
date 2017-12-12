@@ -23,7 +23,7 @@ func GenNodeID(prefix string) string {
 //
 // Upon error, detectResources will return the resources given by the config
 // with the error.
-func detectResources(conf config.Node) (pbs.Resources, error) {
+func detectResources(conf config.Node, workdir string) (pbs.Resources, error) {
 	res := pbs.Resources{
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,
@@ -38,7 +38,7 @@ func detectResources(conf config.Node) (pbs.Resources, error) {
 	if err != nil {
 		return res, fmt.Errorf("Error detecting memory: %s", err)
 	}
-	diskinfo, err := psdisk.Usage(conf.WorkDir)
+	diskinfo, err := psdisk.Usage(workdir)
 	if err != nil {
 		return res, fmt.Errorf("Error detecting available disk: %s", err)
 	}

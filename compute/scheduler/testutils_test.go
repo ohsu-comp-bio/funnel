@@ -22,24 +22,22 @@ type testNode struct {
 
 func newTestNode(conf config.Config, t *testing.T) testNode {
 	workDir, _ := ioutil.TempDir("", "funnel-test-storage-")
-	conf.Scheduler.Node.WorkDir = workDir
 	conf.Worker.WorkDir = workDir
 	log := logger.NewLogger("test-node", logger.DebugConfig())
 
 	// A mock scheduler client allows this code to fake/control the worker's
 	// communication with a scheduler service.
-	res, _ := detectResources(conf.Scheduler.Node)
+	res, _ := detectResources(conf.Node, conf.Worker.WorkDir)
 	s := new(schedmock.Client)
 	n := &Node{
-		conf:       conf.Scheduler.Node,
-		workerConf: conf.Worker,
-		client:     s,
-		log:        log,
-		resources:  res,
-		newWorker:  NoopWorker,
-		workers:    newRunSet(),
-		timeout:    util.NewIdleTimeout(conf.Scheduler.Node.Timeout),
-		state:      pbs.NodeState_ALIVE,
+		conf:      conf,
+		client:    s,
+		log:       log,
+		resources: res,
+		newWorker: NoopWorker,
+		workers:   newRunSet(),
+		timeout:   util.NewIdleTimeout(conf.Node.Timeout),
+		state:     pbs.NodeState_ALIVE,
 	}
 
 	s.On("PutNode", mock.Anything, mock.Anything).

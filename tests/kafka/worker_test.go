@@ -18,10 +18,10 @@ var conf config.Config
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
-	conf.Backend = "noop"
+	conf.Compute = "noop"
 
 	var active bool
-	for _, val := range conf.Worker.ActiveEventWriters {
+	for _, val := range conf.EventWriters {
 		if val == "kafka" {
 			active = true
 		}
@@ -46,7 +46,7 @@ func TestKafkaWorkerRun(t *testing.T) {
 	l := &events.Logger{Log: log}
 	m := &events.MultiWriter{b, l}
 
-	r, err := events.NewKafkaReader(conf.Worker.EventWriters.Kafka, m)
+	r, err := events.NewKafkaReader(conf.Kafka, m)
 	defer r.Close()
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestKafkaWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err = workerCmd.Run(context.Background(), conf.Worker, id, log)
+	err = workerCmd.Run(context.Background(), conf, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

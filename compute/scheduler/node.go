@@ -14,41 +14,37 @@ import (
 
 // NewNode returns a new Node instance
 func NewNode(conf config.Config, log *logger.Logger, factory Worker) (*Node, error) {
-	log = log.WithFields("nodeID", conf.Scheduler.Node.ID)
+	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
-	cli, err := NewClient(conf.Scheduler)
+	cli, err := NewClient(conf.Node)
 	if err != nil {
 		return nil, err
 	}
 
-	err = fsutil.EnsureDir(conf.Scheduler.Node.WorkDir)
+	err = fsutil.EnsureDir(conf.Worker.WorkDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// Detect available resources at startup
-	res, derr := detectResources(conf.Scheduler.Node)
+	res, derr := detectResources(conf.Node, conf.Worker.WorkDir)
 	if derr != nil {
 		log.Error("error detecting resources", "error", derr)
 	}
 
-	timeout := util.NewIdleTimeout(conf.Scheduler.Node.Timeout)
+	timeout := util.NewIdleTimeout(conf.Node.Timeout)
 	state := pbs.NodeState_UNINITIALIZED
 
-	workerConf := conf.Worker
-	workerConf.WorkDir = conf.Scheduler.Node.WorkDir
-
 	return &Node{
-		conf:       conf.Scheduler.Node,
-		workerConf: workerConf,
-		client:     cli,
-		log:        log,
-		resources:  res,
-		newWorker:  factory,
-		workers:    newRunSet(),
-		timeout:    timeout,
-		state:      state,
+		conf:      conf,
+		client:    cli,
+		log:       log,
+		resources: res,
+		newWorker: factory,
+		workers:   newRunSet(),
+		timeout:   timeout,
+		state:     state,
 	}, nil
 }
 
@@ -60,15 +56,14 @@ func NewNoopNode(conf config.Config, log *logger.Logger) (*Node, error) {
 
 // Node is a structure used for tracking available resources on a compute resource.
 type Node struct {
-	conf       config.Node
-	workerConf config.Worker
-	client     Client
-	log        *logger.Logger
-	resources  pbs.Resources
-	newWorker  Worker
-	workers    *runSet
-	timeout    util.IdleTimeout
-	state      pbs.NodeState
+	conf      config.Config
+	client    Client
+	log       *logger.Logger
+	resources pbs.Resources
+	newWorker Worker
+	workers   *runSet
+	timeout   util.IdleTimeout
+	state     pbs.NodeState
 }
 
 // Run runs a node with the given config. This is responsible for communication
@@ -82,7 +77,7 @@ func (n *Node) Run(ctx context.Context) {
 	n.checkConnection(ctx)
 	n.sync(ctx)
 
-	ticker := time.NewTicker(n.conf.UpdateRate)
+	ticker := time.NewTicker(n.conf.Node.UpdateRate)
 	defer ticker.Stop()
 
 	for {
@@ -110,7 +105,7 @@ func (n *Node) Run(ctx context.Context) {
 }
 
 func (n *Node) checkConnection(ctx context.Context) {
-	_, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
+	_, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.Node.ID})
 
 	// If its a 404 error create a new node
 	s, _ := status.FromError(err)
@@ -130,7 +125,7 @@ func (n *Node) sync(ctx context.Context) {
 	var r *pbs.Node
 	var err error
 
-	r, err = n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
+	r, err = n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.Node.ID})
 	if err != nil {
 		// If its a 404 error create a new node
 		s, _ := status.FromError(err)
@@ -139,7 +134,7 @@ func (n *Node) sync(ctx context.Context) {
 			return
 		}
 		n.log.Info("Starting initial node sync")
-		r = &pbs.Node{Id: n.conf.ID}
+		r = &pbs.Node{Id: n.conf.Node.ID}
 	}
 
 	// Start task workers. runSet will track task IDs
@@ -153,14 +148,14 @@ func (n *Node) sync(ctx context.Context) {
 
 	// Node data has been updated. Send back to server for database update.
 	var derr error
-	n.resources, derr = detectResources(n.conf)
+	n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
 	if derr != nil {
 		n.log.Error("error detecting resources", "error", derr)
 	}
 
 	// Merge metadata
 	meta := map[string]string{}
-	for k, v := range n.conf.Metadata {
+	for k, v := range n.conf.Node.Metadata {
 		meta[k] = v
 	}
 	for k, v := range r.GetMetadata() {
@@ -168,7 +163,7 @@ func (n *Node) sync(ctx context.Context) {
 	}
 
 	_, err = n.client.PutNode(context.Background(), &pbs.Node{
-		Id:        n.conf.ID,
+		Id:        n.conf.Node.ID,
 		Resources: &n.resources,
 		State:     n.state,
 		Version:   r.GetVersion(),
@@ -189,14 +184,14 @@ func (n *Node) runTask(ctx context.Context, id string) {
 		// task cannot fully complete until it has successfully removed the
 		// assigned ID from the node database. this helps prevent tasks from
 		// running multiple times.
-		ticker := time.NewTicker(n.conf.UpdateRate)
+		ticker := time.NewTicker(n.conf.Node.UpdateRate)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				r, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.ID})
+				r, err := n.client.GetNode(ctx, &pbs.GetNodeRequest{Id: n.conf.Node.ID})
 				if err != nil {
 					log.Error("couldn't get node state during task sync.", err)
 					// break out of "select", but not "for".
@@ -232,7 +227,7 @@ func (n *Node) runTask(ctx context.Context, id string) {
 		}
 	}()
 
-	err := n.newWorker(ctx, n.workerConf, id, log)
+	err := n.newWorker(ctx, n.conf, id, log)
 	if err != nil {
 		log.Error("error creating worker", err)
 		return

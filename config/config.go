@@ -1,180 +1,53 @@
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/ghodss/yaml"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"io/ioutil"
 	"os"
-	"path"
-	"path/filepath"
-	"reflect"
-	"strings"
 	"time"
 )
 
 // Config describes configuration for Funnel.
 type Config struct {
-	Server Server
-	// the active compute backend
-	Backend  string
-	Backends struct {
-		Local    struct{}
-		HTCondor struct {
-			Template string
-		}
-		SLURM struct {
-			Template string
-		}
-		PBS struct {
-			Template string
-		}
-		GridEngine struct {
-			Template string
-		}
-		AWSBatch AWSBatch
-	}
+	// component selectors
+	EventWriters []string
+	Database     string
+	Compute      string
+	// funnel components
+	Server    Server
 	Scheduler Scheduler
+	Node      Node
 	Worker    Worker
-}
-
-// EnsureServerProperties ensures that the server address and server password
-// is consistent between the worker, node, and server.
-func EnsureServerProperties(conf Config) Config {
-	conf.Worker.EventWriters.RPC.ServerAddress = conf.Server.RPCAddress()
-	conf.Worker.TaskReaders.RPC.ServerAddress = conf.Server.RPCAddress()
-	conf.Scheduler.Node.ServerAddress = conf.Server.RPCAddress()
-
-	conf.Worker.EventWriters.RPC.ServerPassword = conf.Server.Password
-	conf.Worker.TaskReaders.RPC.ServerPassword = conf.Server.Password
-	conf.Scheduler.Node.ServerPassword = conf.Server.Password
-	return conf
-}
-
-// DefaultConfig returns configuration with simple defaults.
-func DefaultConfig() Config {
-	cwd, _ := os.Getwd()
-	workDir := path.Join(cwd, "funnel-work-dir")
-
-	server := Server{
-		HostName:         "localhost",
-		HTTPPort:         "8000",
-		RPCPort:          "9090",
-		ServiceName:      "Funnel",
-		DisableHTTPCache: true,
-		Logger:           logger.DefaultConfig(),
-	}
-
-	c := Config{
-		Server:  server,
-		Backend: "local",
-		Scheduler: Scheduler{
-			ScheduleRate:    time.Second,
-			ScheduleChunk:   10,
-			NodePingTimeout: time.Minute,
-			NodeInitTimeout: time.Minute * 5,
-			NodeDeadTimeout: time.Minute * 5,
-			Node: Node{
-				ServerAddress:  server.RPCAddress(),
-				ServerPassword: server.Password,
-				WorkDir:        workDir,
-				Timeout:        -1,
-				UpdateRate:     time.Second * 5,
-				UpdateTimeout:  time.Second,
-				Metadata:       map[string]string{},
-				Logger:         logger.DefaultConfig(),
-			},
-			Logger: logger.DefaultConfig(),
-		},
-		Worker: Worker{
-			WorkDir: workDir,
-			Storage: StorageConfig{
-				Local: LocalStorage{
-					AllowedDirs: []string{cwd},
-				},
-				HTTP: HTTPStorage{
-					Timeout: 60 * time.Second,
-				},
-			},
-			UpdateRate: time.Second * 5,
-			BufferSize: 10000,
-			Logger:     logger.DefaultConfig(),
-		},
-	}
-
-	rpc := RPC{
-		ServerAddress:  server.RPCAddress(),
-		ServerPassword: server.Password,
-		Timeout:        time.Second,
-	}
-	dynamo := DynamoDB{
-		TableBasename: "funnel",
-	}
-	elastic := Elastic{
-		URL:         "http://localhost:9200",
-		IndexPrefix: "funnel",
-	}
-	mongo := MongoDB{
-		Addrs:    []string{"localhost"},
-		Database: "funnel",
-	}
-
-	c.Server.Database = "boltdb"
-	c.Server.Databases.BoltDB.Path = path.Join(workDir, "funnel.db")
-	c.Server.Databases.DynamoDB = dynamo
-	c.Server.Databases.Elastic = elastic
-	c.Server.Databases.MongoDB = mongo
-
-	c.Worker.TaskReader = "rpc"
-	c.Worker.TaskReaders.RPC = rpc
-	c.Worker.TaskReaders.DynamoDB = dynamo
-	c.Worker.TaskReaders.Elastic = elastic
-	c.Worker.TaskReaders.MongoDB = mongo
-
-	c.Worker.ActiveEventWriters = []string{"rpc", "log"}
-	c.Worker.EventWriters.RPC = rpc
-	c.Worker.EventWriters.DynamoDB = dynamo
-	c.Worker.EventWriters.Elastic = elastic
-	c.Worker.EventWriters.MongoDB = mongo
-	c.Worker.EventWriters.Kafka.Topic = "funnel"
-
-	c.Worker.Storage.AmazonS3.MaxRetries = 10
-
-	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
-	slurmTemplate, _ := Asset("config/slurm-template.txt")
-	pbsTemplate, _ := Asset("config/pbs-template.txt")
-	geTemplate, _ := Asset("config/gridengine-template.txt")
-
-	c.Backends.HTCondor.Template = string(htcondorTemplate)
-	c.Backends.SLURM.Template = string(slurmTemplate)
-	c.Backends.PBS.Template = string(pbsTemplate)
-	c.Backends.GridEngine.Template = string(geTemplate)
-
-	c.Backends.AWSBatch.JobDefinition = "funnel-job-def"
-	c.Backends.AWSBatch.JobQueue = "funnel-job-queue"
-
-	return c
+	Logger    logger.Config
+	// databases / event handlers
+	BoltDB   BoltDB
+	DynamoDB DynamoDB
+	Elastic  Elastic
+	MongoDB  MongoDB
+	Kafka    Kafka
+	RPC      RPC
+	// compute
+	HTCondor   HPCBackend
+	Slurm      HPCBackend
+	PBS        HPCBackend
+	GridEngine HPCBackend
+	AWSBatch   AWSBatch
+	// storage
+	LocalStorage  LocalStorage
+	AmazonS3      AmazonS3Storage
+	GenericS3     []GenericS3Storage
+	GoogleStorage GSStorage
+	Swift         SwiftStorage
+	HTTPStorage   HTTPStorage
 }
 
 // Server describes configuration for the server.
 type Server struct {
-	ServiceName string
-	HostName    string
-	HTTPPort    string
-	RPCPort     string
-	Password    string
-	Database    string
-	Databases   struct {
-		BoltDB struct {
-			Path string
-		}
-		DynamoDB DynamoDB
-		Elastic  Elastic
-		MongoDB  MongoDB
-	}
+	ServiceName      string
+	HostName         string
+	HTTPPort         string
+	RPCPort          string
+	Password         string
 	DisableHTTPCache bool
-	Logger           logger.Config
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort
@@ -205,17 +78,12 @@ type Scheduler struct {
 	NodeInitTimeout time.Duration
 	// How long to wait before deleting a dead node from the DB.
 	NodeDeadTimeout time.Duration
-	// Node configuration
-	Node Node
-	// Logger configuration
-	Logger logger.Config
 }
 
 // Node contains the configuration for a node. Nodes track available resources
 // for funnel's basic scheduler.
 type Node struct {
-	ID      string
-	WorkDir string
+	ID string
 	// A Node will automatically try to detect what resources are available to it.
 	// Defining Resources in the Node configuration overrides this behavior.
 	Resources struct {
@@ -235,7 +103,6 @@ type Node struct {
 	ServerAddress string
 	// Password for basic auth. with the server APIs.
 	ServerPassword string
-	Logger         logger.Config
 }
 
 // Worker contains worker configuration.
@@ -245,24 +112,15 @@ type Worker struct {
 	// How often the worker sends task log updates
 	UpdateRate time.Duration
 	// Max bytes to store in-memory between updates
-	BufferSize  int64
-	Storage     StorageConfig
-	Logger      logger.Config
-	TaskReader  string
-	TaskReaders struct {
-		RPC      RPC
-		DynamoDB DynamoDB
-		Elastic  Elastic
-		MongoDB  MongoDB
-	}
-	ActiveEventWriters []string
-	EventWriters       struct {
-		RPC      RPC
-		DynamoDB DynamoDB
-		Elastic  Elastic
-		MongoDB  MongoDB
-		Kafka    Kafka
-	}
+	BufferSize int64
+	// which component to read the task from
+	TaskReader string
+}
+
+// HPCBackend describes the configuration for a HPC scheduler backend such as
+// HTCondor or Slurm.
+type HPCBackend struct {
+	Template string
 }
 
 // RPC configures access to the Funnel RPC server.
@@ -273,6 +131,11 @@ type RPC struct {
 	ServerPassword string
 	// Timeout duration for gRPC calls
 	Timeout time.Duration
+}
+
+// BoltDB describes the configuration for the BoltDB embedded database.
+type BoltDB struct {
+	Path string
 }
 
 // MongoDB configures access to an MongoDB database.
@@ -330,16 +193,6 @@ type AWSBatch struct {
 type DynamoDB struct {
 	TableBasename string
 	AWSConfig
-}
-
-// StorageConfig describes configuration for all storage types
-type StorageConfig struct {
-	Local     LocalStorage
-	AmazonS3  AmazonS3Storage
-	GenericS3 []GenericS3Storage
-	GS        GSStorage
-	Swift     SwiftStorage
-	HTTP      HTTPStorage
 }
 
 // LocalStorage describes the directories Funnel can read from and write to
@@ -429,156 +282,4 @@ type HTTPStorage struct {
 // Valid validates the HTTPStorage configuration.
 func (h HTTPStorage) Valid() bool {
 	return !h.Disabled
-}
-
-// ToYaml formats the configuration into YAML and returns the bytes.
-func (c Config) ToYaml() []byte {
-	// TODO handle error
-	yamlstr, _ := yaml.Marshal(c)
-	return yamlstr
-}
-
-// ToYamlFile writes the configuration to a YAML file.
-func (c Config) ToYamlFile(p string) {
-	// TODO handle error
-	ioutil.WriteFile(p, c.ToYaml(), 0600)
-}
-
-// ToYamlTempFile writes the configuration to a YAML temp. file.
-func (c Config) ToYamlTempFile(name string) (string, func()) {
-	// I'm creating a temp. directory instead of a temp. file so that
-	// the file can have an expected name. This is helpful for the HTCondor scheduler.
-	tmpdir, _ := ioutil.TempDir("", "")
-
-	cleanup := func() {
-		os.RemoveAll(tmpdir)
-	}
-
-	p := filepath.Join(tmpdir, name)
-	c.ToYamlFile(p)
-	return p, cleanup
-}
-
-// Parse parses a YAML doc into the given Config instance.
-func Parse(raw []byte, conf *Config) error {
-	j, err := yaml.YAMLToJSON(raw)
-	if err != nil {
-		return err
-	}
-	err = checkForUnknownKeys(j, conf)
-	if err != nil {
-		return err
-	}
-	err = yaml.Unmarshal(raw, conf)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// ParseFile parses a Funnel config file, which is formatted in YAML,
-// and returns a Config struct.
-func ParseFile(relpath string, conf *Config) error {
-	if relpath == "" {
-		return nil
-	}
-
-	// Try to get absolute path. If it fails, fall back to relative path.
-	path, abserr := filepath.Abs(relpath)
-	if abserr != nil {
-		path = relpath
-	}
-
-	// Read file
-	source, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("failed to read config at path %s: \n%v", path, err)
-	}
-
-	// Parse file
-	err = Parse(source, conf)
-	if err != nil {
-		return fmt.Errorf("failed to parse config at path %s: \n%v", path, err)
-	}
-	return nil
-}
-
-func getKeys(obj interface{}) []string {
-	keys := []string{}
-
-	v := reflect.ValueOf(obj)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	switch v.Kind() {
-	case reflect.Struct:
-		for i := 0; i < v.NumField(); i++ {
-			field := v.Field(i)
-			embedded := v.Type().Field(i).Anonymous
-			name := v.Type().Field(i).Name
-			keys = append(keys, name)
-
-			valKeys := getKeys(field.Interface())
-			vk := []string{}
-			for _, v := range valKeys {
-				if embedded {
-					vk = append(vk, v)
-				}
-				vk = append(vk, name+"."+v)
-			}
-			keys = append(keys, vk...)
-		}
-	case reflect.Map:
-		for _, key := range v.MapKeys() {
-			name := key.String()
-			keys = append(keys, key.String())
-
-			valKeys := getKeys(v.MapIndex(key).Interface())
-			for i, v := range valKeys {
-				valKeys[i] = name + "." + v
-			}
-			keys = append(keys, valKeys...)
-		}
-	}
-
-	return keys
-}
-
-func checkForUnknownKeys(jsonStr []byte, obj interface{}) error {
-	knownMap := make(map[string]interface{})
-	known := getKeys(obj)
-	for _, k := range known {
-		knownMap[k] = nil
-	}
-
-	var anon interface{}
-	err := json.Unmarshal(jsonStr, &anon)
-	if err != nil {
-		return err
-	}
-
-	unknown := []string{}
-	all := getKeys(anon)
-	for _, k := range all {
-		if _, found := knownMap[k]; !found {
-			unknown = append(unknown, k)
-		}
-	}
-
-	errs := []string{}
-	if len(unknown) > 0 {
-		for _, k := range unknown {
-			parts := strings.Split(k, ".")
-			field := parts[len(parts)-1]
-			path := parts[:len(parts)-1]
-			errs = append(
-				errs,
-				fmt.Sprintf("\t field %s not found in %s", field, strings.Join(path, ".")),
-			)
-		}
-		return fmt.Errorf("%v", strings.Join(errs, "\n"))
-	}
-
-	return nil
 }

@@ -113,7 +113,7 @@ func TestNodeDeadTimeout(t *testing.T) {
 }
 
 func nodeTestConfig(conf config.Config) config.Config {
-	conf.Backend = "manual"
+	conf.Compute = "manual"
 	conf.Scheduler.NodePingTimeout = time.Millisecond * 300
 	conf.Scheduler.NodeInitTimeout = time.Millisecond * 300
 	conf.Scheduler.NodeDeadTimeout = time.Millisecond * 300

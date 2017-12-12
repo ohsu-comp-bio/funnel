@@ -37,7 +37,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		if conf.Scheduler.Node.ID != "" {
+		if conf.Node.ID != "" {
 			return node.Run(conf)
 		}
 

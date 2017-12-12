@@ -50,13 +50,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		},
 	}
 	f := cmd.PersistentFlags()
-	f.StringVarP(&configFile, "config", "c", "", "Config File")
-	f.StringVar(&flagConf.Scheduler.Node.ID, "id", flagConf.Scheduler.Node.ID, "Node ID")
-	f.StringVar(&serverAddress, "server-address", "", "Address of scheduler gRPC endpoint")
-	f.DurationVar(&flagConf.Scheduler.Node.Timeout, "timeout", flagConf.Scheduler.Node.Timeout, "Timeout in seconds")
-	f.StringVar(&flagConf.Scheduler.Node.WorkDir, "work-dir", flagConf.Scheduler.Node.WorkDir, "Working Directory")
-	f.StringVar(&flagConf.Scheduler.Node.Logger.Level, "log-level", flagConf.Scheduler.Node.Logger.Level, "Level of logging")
-	f.StringVar(&flagConf.Scheduler.Node.Logger.OutputFile, "log-path", flagConf.Scheduler.Node.Logger.OutputFile, "File path to write logs to")
+	f.AddFlagSet(util.NodeFlags(&flagConf, &configFile, &serverAddress))
 
 	run := &cobra.Command{
 		Use:   "run",

@@ -7,5 +7,5 @@ import (
 
 // NewBackend returns a new HtCondor HPCBackend instance.
 func NewBackend(conf config.Config) *compute.HPCBackend {
-	return compute.NewHPCBackend("htcondor", "condor_submit", conf, conf.Backends.HTCondor.Template)
+	return compute.NewHPCBackend("htcondor", "condor_submit", conf, conf.HTCondor.Template)
 }

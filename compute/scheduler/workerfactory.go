@@ -7,9 +7,9 @@ import (
 )
 
 // Worker is a function which creates a new worker instance.
-type Worker func(ctx context.Context, c config.Worker, taskID string, log *logger.Logger) error
+type Worker func(ctx context.Context, c config.Config, taskID string, log *logger.Logger) error
 
 // NoopWorker does nothing.
-func NoopWorker(ctx context.Context, c config.Worker, taskID string, log *logger.Logger) error {
+func NoopWorker(ctx context.Context, c config.Config, taskID string, log *logger.Logger) error {
 	return nil
 }

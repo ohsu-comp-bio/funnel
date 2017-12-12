@@ -43,6 +43,69 @@ type Storage struct {
 	backends []Backend
 }
 
+// NewStorage returns a new Storage instance with the given additional configuration.
+func NewStorage(conf config.Config) (Storage, error) {
+	storage := Storage{}
+
+	if conf.LocalStorage.Valid() {
+		local, err := NewLocalBackend(conf.LocalStorage)
+		if err != nil {
+			return storage, fmt.Errorf("failed to configure local storage backend: %s", err)
+		}
+		storage = storage.WithBackend(local)
+	}
+
+	if conf.AmazonS3.Valid() {
+		s3, err := NewAmazonS3Backend(conf.AmazonS3)
+		if err != nil {
+			return storage, fmt.Errorf("failed to configure Amazon S3 storage backend: %s", err)
+		}
+		storage = storage.WithBackend(s3)
+	}
+
+	if conf.GoogleStorage.Valid() {
+		gs, nerr := NewGSBackend(conf.GoogleStorage)
+		if nerr != nil {
+			return storage, fmt.Errorf("failed to configure Google Storage backend: %s", nerr)
+		}
+		storage = storage.WithBackend(gs)
+	}
+
+	if conf.Swift.Valid() {
+		s, err := NewSwiftBackend(conf.Swift)
+		if err != nil {
+			return storage, fmt.Errorf("failed to config Swift storage backend: %s", err)
+		}
+		storage = storage.WithBackend(s)
+	}
+
+	for _, c := range conf.GenericS3 {
+		if c.Valid() {
+			s, err := NewGenericS3Backend(c)
+			if err != nil {
+				return storage, fmt.Errorf("failed to config generic S3 storage backend: %s", err)
+			}
+			storage = storage.WithBackend(s)
+		}
+	}
+
+	if conf.HTTPStorage.Valid() {
+		http, err := NewHTTPBackend(conf.HTTPStorage)
+		if err != nil {
+			return storage, fmt.Errorf("failed to config http storage backend: %s", err)
+		}
+		storage = storage.WithBackend(http)
+	}
+
+	return storage, nil
+}
+
+// WithBackend returns a new child Storage instance with the given backend added.
+func (storage Storage) WithBackend(b Backend) Storage {
+	storage.backends = append(storage.backends, b)
+	return storage
+}
+
 // Get downloads a file from a storage system at the given "url".
 // The file is downloaded to the given local "path".
 // "class" is either "File" or "Directory".
@@ -144,68 +207,6 @@ func (storage Storage) findBackend(url string, class tes.FileType, op string) (B
 	}
 
 	return useBackend, nil
-}
-
-// WithBackend returns a new child Storage instance with the given backend added.
-func (storage Storage) WithBackend(b Backend) Storage {
-	storage.backends = append(storage.backends, b)
-	return storage
-}
-
-// WithConfig returns a new Storage instance with the given additional configuration.
-func (storage Storage) WithConfig(conf config.StorageConfig) (Storage, error) {
-
-	if conf.Local.Valid() {
-		local, err := NewLocalBackend(conf.Local)
-		if err != nil {
-			return storage, fmt.Errorf("failed to configure local storage backend: %s", err)
-		}
-		storage = storage.WithBackend(local)
-	}
-
-	if conf.AmazonS3.Valid() {
-		s3, err := NewAmazonS3Backend(conf.AmazonS3)
-		if err != nil {
-			return storage, fmt.Errorf("failed to configure Amazon S3 storage backend: %s", err)
-		}
-		storage = storage.WithBackend(s3)
-	}
-
-	if conf.GS.Valid() {
-		gs, nerr := NewGSBackend(conf.GS)
-		if nerr != nil {
-			return storage, fmt.Errorf("failed to configure Google Storage backend: %s", nerr)
-		}
-		storage = storage.WithBackend(gs)
-	}
-
-	if conf.Swift.Valid() {
-		s, err := NewSwiftBackend(conf.Swift)
-		if err != nil {
-			return storage, fmt.Errorf("failed to config Swift storage backend: %s", err)
-		}
-		storage = storage.WithBackend(s)
-	}
-
-	for _, c := range conf.GenericS3 {
-		if c.Valid() {
-			s, err := NewGenericS3Backend(c)
-			if err != nil {
-				return storage, fmt.Errorf("failed to config generic S3 storage backend: %s", err)
-			}
-			storage = storage.WithBackend(s)
-		}
-	}
-
-	if conf.HTTP.Valid() {
-		http, err := NewHTTPBackend(conf.HTTP)
-		if err != nil {
-			return storage, fmt.Errorf("failed to config http storage backend: %s", err)
-		}
-		storage = storage.WithBackend(http)
-	}
-
-	return storage, nil
 }
 
 type hostfile struct {

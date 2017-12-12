@@ -472,7 +472,7 @@ func TestOutputFileLog(t *testing.T) {
 func TestPagination(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	c := tests.DefaultConfig()
-	c.Backend = "noop"
+	c.Compute = "noop"
 	f := tests.NewFunnel(c)
 	f.StartServer()
 	ctx := context.Background()
@@ -547,7 +547,7 @@ func TestPagination(t *testing.T) {
 func TestSmallPagination(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	c := tests.DefaultConfig()
-	c.Backend = "noop"
+	c.Compute = "noop"
 	f := tests.NewFunnel(c)
 	f.StartServer()
 	ctx := context.Background()

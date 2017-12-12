@@ -31,13 +31,12 @@ var jobdefCmd = &cobra.Command{
 			return fmt.Errorf("error must provide a region")
 		}
 
-		conf.FunnelWorker.TaskReaders.DynamoDB.Region = conf.Region
-		conf.FunnelWorker.EventWriters.DynamoDB.Region = conf.Region
+		conf.Funnel.DynamoDB.Region = conf.Region
 
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}
 			config.ParseFile(funnelConfigFile, &funnelConf)
-			conf.FunnelWorker = funnelConf.Worker
+			conf.Funnel = funnelConf
 		}
 
 		cli, err := newBatchSvc(conf)

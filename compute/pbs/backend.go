@@ -7,5 +7,5 @@ import (
 
 // NewBackend returns a new Grid Engine HPCBackend instance.
 func NewBackend(conf config.Config) *compute.HPCBackend {
-	return compute.NewHPCBackend("pbs", "qsub", conf, conf.Backends.PBS.Template)
+	return compute.NewHPCBackend("pbs", "qsub", conf, conf.PBS.Template)
 }

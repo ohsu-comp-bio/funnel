@@ -1,5 +1,7 @@
-Server:
-  Database: "elastic"
+Database: elastic
+EventWriters: 
+  - log
+  - elastic
+
 Worker:
-  TaskReader: "elastic"
-  ActiveEventWriters: ["elastic", "log"]
+  TaskReader: elastic

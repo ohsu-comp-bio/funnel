@@ -31,9 +31,9 @@ func init() {
 // including temp storage dirs, random ports, S3 + minio config, etc.
 func DefaultConfig() config.Config {
 	conf := config.DefaultConfig()
-	conf.Worker.Storage.AmazonS3.Disabled = true
-	conf.Worker.Storage.GS.Disabled = true
-	conf.Worker.Storage.Swift.Disabled = true
+	conf.AmazonS3.Disabled = true
+	conf.GoogleStorage.Disabled = true
+	conf.Swift.Disabled = true
 
 	// Get config from test command line flag, if present.
 	if configFile != "" {
@@ -53,27 +53,20 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf = RandomPortConfig(conf)
 
 	conf.Scheduler.ScheduleRate = time.Millisecond * 500
-	conf.Scheduler.Node.UpdateRate = time.Millisecond * 1300
+	conf.Node.UpdateRate = time.Millisecond * 1300
 	conf.Worker.UpdateRate = time.Millisecond * 300
 
-	conf.Server.Databases.Elastic.IndexPrefix = "funnel-e2e-tests-" + RandomString(6)
-	conf.Worker.EventWriters.Elastic = conf.Server.Databases.Elastic
-	conf.Worker.TaskReaders.Elastic = conf.Server.Databases.Elastic
-
-	conf.Server.Databases.MongoDB.Database = "funnel-e2e-tests-" + RandomString(6)
-	conf.Worker.EventWriters.MongoDB = conf.Server.Databases.MongoDB
-	conf.Worker.TaskReaders.MongoDB = conf.Server.Databases.MongoDB
-
-	conf.Server.Databases.DynamoDB.TableBasename = "funnel-e2e-tests-" + RandomString(6)
-	conf.Worker.EventWriters.DynamoDB = conf.Server.Databases.DynamoDB
-	conf.Worker.TaskReaders.DynamoDB = conf.Server.Databases.DynamoDB
+	prefix := "funnel-e2e-tests-" + RandomString(6)
+	conf.Elastic.IndexPrefix = prefix
+	conf.MongoDB.Database = prefix
+	conf.DynamoDB.TableBasename = prefix
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 
 	fsutil.EnsureDir(storageDir)
 
-	conf.Worker.Storage.Local = config.LocalStorage{
+	conf.LocalStorage = config.LocalStorage{
 		AllowedDirs: []string{storageDir, wd},
 	}
 
@@ -100,9 +93,8 @@ func RandomPortConfig(conf config.Config) config.Config {
 func TempDirConfig(conf config.Config) config.Config {
 	os.Mkdir("./test_tmp", os.ModePerm)
 	f, _ := ioutil.TempDir("./test_tmp", "funnel-test-")
-	conf.Scheduler.Node.WorkDir = f
 	conf.Worker.WorkDir = f
-	conf.Server.Databases.BoltDB.Path = path.Join(f, "funnel.db")
+	conf.BoltDB.Path = path.Join(f, "funnel.db")
 	return conf
 }
 

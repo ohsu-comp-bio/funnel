@@ -354,7 +354,7 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 				},
 				{
 					SourceVolume:  aws.String("funnel-work-dir"),
-					ContainerPath: aws.String(b.conf.FunnelWorker.WorkDir),
+					ContainerPath: aws.String(b.conf.Funnel.Worker.WorkDir),
 				},
 			},
 			Volumes: []*batch.Volume{
@@ -367,21 +367,21 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 				{
 					Name: aws.String("funnel-work-dir"),
 					Host: &batch.Host{
-						SourcePath: aws.String(b.conf.FunnelWorker.WorkDir),
+						SourcePath: aws.String(b.conf.Funnel.Worker.WorkDir),
 					},
 				},
 			},
 			Command: []*string{
 				aws.String("worker"),
 				aws.String("run"),
-				aws.String("--WorkDir"),
-				aws.String(b.conf.FunnelWorker.WorkDir),
-				aws.String("--TaskReader"),
-				aws.String(b.conf.FunnelWorker.TaskReader),
+				aws.String("--Worker.WorkDir"),
+				aws.String(b.conf.Funnel.Worker.WorkDir),
+				aws.String("--Worker.TaskReader"),
+				aws.String(b.conf.Funnel.Worker.TaskReader),
 				aws.String("--DynamoDB.Region"),
-				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.Region),
+				aws.String(b.conf.Funnel.DynamoDB.Region),
 				aws.String("--DynamoDB.TableBasename"),
-				aws.String(b.conf.FunnelWorker.EventWriters.DynamoDB.TableBasename),
+				aws.String(b.conf.Funnel.DynamoDB.TableBasename),
 				aws.String("--task-id"),
 				// This is a template variable that will be replaced with the taskID.
 				aws.String("Ref::taskID"),
@@ -391,8 +391,8 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 		JobDefinitionName: aws.String(b.conf.JobDef.Name),
 		Type:              aws.String("container"),
 	}
-	for _, val := range b.conf.FunnelWorker.ActiveEventWriters {
-		jobDef.ContainerProperties.Command = append(jobDef.ContainerProperties.Command, aws.String("--ActiveEventWriters"), aws.String(val))
+	for _, val := range b.conf.Funnel.EventWriters {
+		jobDef.ContainerProperties.Command = append(jobDef.ContainerProperties.Command, aws.String("--EventWriter"), aws.String(val))
 	}
 
 	_, err = batchCli.RegisterJobDefinition(jobDef)

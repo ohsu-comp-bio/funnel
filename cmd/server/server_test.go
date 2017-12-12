@@ -13,7 +13,7 @@ func TestPersistentPreRun(t *testing.T) {
 	backend := "test-backend"
 
 	fileConf := config.DefaultConfig()
-	tmp, cleanup := fileConf.ToYamlTempFile("testconfig.yaml")
+	tmp, cleanup := config.ToYamlTempFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 
 	c, h := newCommandHooks()
@@ -24,21 +24,18 @@ func TestPersistentPreRun(t *testing.T) {
 		if conf.Server.HTTPPort != fileConf.Server.HTTPPort {
 			t.Fatal("unexpected http port in server config")
 		}
-		if conf.Scheduler.Node.ServerAddress != serverAddress {
+		if conf.Node.ServerAddress != serverAddress {
 			t.Fatal("unexpected ServerAddress in node config")
 		}
-		if conf.Worker.EventWriters.RPC.ServerAddress != serverAddress {
+		if conf.RPC.ServerAddress != serverAddress {
 			t.Fatal("unexpected ServerAddress in worker config")
 		}
-		if conf.Worker.TaskReaders.RPC.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in worker config")
-		}
-		if conf.Backend != backend {
+		if conf.Compute != backend {
 			t.Fatal("unexpected Backend in config")
 		}
 		return nil
 	}
 
-	c.SetArgs([]string{"run", "--config", tmp, "--hostname", hostname, "--rpc-port", rpc, "--backend", backend})
+	c.SetArgs([]string{"run", "--config", tmp, "--Server.Hostname", hostname, "--Server.RPCPort", rpc, "--Compute", backend})
 	c.Execute()
 }

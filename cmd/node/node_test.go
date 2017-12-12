@@ -14,31 +14,24 @@ func TestPersistentPreRun(t *testing.T) {
 	workDir := path.Join(cwd, "funnel-work-dir")
 
 	fileConf := config.DefaultConfig()
-	tmp, cleanup := fileConf.ToYamlTempFile("testconfig.yaml")
+	tmp, cleanup := config.ToYamlTempFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 
 	c, h := newCommandHooks()
 	h.Run = func(conf config.Config) error {
-		if conf.Scheduler.Node.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in node config")
+		if conf.Node.ServerAddress != serverAddress {
+			t.Fatal("unexpected ServerAddress in Node config", conf.Node.ServerAddress)
 		}
-		if conf.Scheduler.Node.WorkDir != workDir {
-			t.Fatal("unexpected WorkDir in node config")
-		}
-
 		if conf.Worker.WorkDir != workDir {
-			t.Fatal("unexpected WorkDir in node config")
+			t.Fatal("unexpected WorkDir in Worker config", conf.Worker.WorkDir)
 		}
-		if conf.Worker.EventWriters.RPC.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in worker config")
-		}
-		if conf.Worker.TaskReaders.RPC.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in worker config")
+		if conf.RPC.ServerAddress != serverAddress {
+			t.Fatal("unexpected ServerAddress in RPC config", conf.RPC.ServerAddress)
 		}
 
 		return nil
 	}
 
-	c.SetArgs([]string{"run", "--config", tmp, "--server-address", serverAddress})
+	c.SetArgs([]string{"run", "--config", tmp, "--server", serverAddress})
 	c.Execute()
 }

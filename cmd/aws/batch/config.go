@@ -9,11 +9,11 @@ import (
 // the compute environment, job queue, and base job definition.
 type Config struct {
 	config.AWSConfig
-	ComputeEnv   ComputeEnvConfig
-	JobQueue     JobQueueConfig
-	JobDef       JobDefinitionConfig
-	JobRole      JobRoleConfig
-	FunnelWorker config.Worker
+	ComputeEnv ComputeEnvConfig
+	JobQueue   JobQueueConfig
+	JobDef     JobDefinitionConfig
+	JobRole    JobRoleConfig
+	Funnel     config.Config
 }
 
 // ComputeEnvConfig represents configuration of the AWS Batch
@@ -163,15 +163,13 @@ func DefaultConfig() Config {
 		},
 	}
 
-	c.FunnelWorker.WorkDir = "/opt/funnel-work-dir"
-	c.FunnelWorker.UpdateRate = time.Second * 10
-	c.FunnelWorker.BufferSize = 10000
-	c.FunnelWorker.TaskReader = "dynamodb"
-	c.FunnelWorker.TaskReaders.DynamoDB.TableBasename = "funnel"
-	c.FunnelWorker.TaskReaders.DynamoDB.Region = ""
-	c.FunnelWorker.ActiveEventWriters = []string{"dynamodb", "log"}
-	c.FunnelWorker.EventWriters.DynamoDB.TableBasename = "funnel"
-	c.FunnelWorker.EventWriters.DynamoDB.Region = ""
+	c.Funnel.Worker.WorkDir = "/opt/funnel-work-dir"
+	c.Funnel.Worker.UpdateRate = time.Second * 10
+	c.Funnel.Worker.BufferSize = 10000
+	c.Funnel.Worker.TaskReader = "dynamodb"
+	c.Funnel.DynamoDB.TableBasename = "funnel"
+	c.Funnel.DynamoDB.Region = ""
+	c.Funnel.EventWriters = []string{"dynamodb", "log"}
 
 	return c
 }

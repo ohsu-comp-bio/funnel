@@ -94,7 +94,7 @@ func TestMultiS3Storage(t *testing.T) {
 				Command: []string{
 					"sh",
 					"-c",
-					"cat $(find /opt/inputs -type f) > test-output-file.txt",
+					"cat $(find /opt/inputs -type f | sort) > test-output-file.txt",
 				},
 				Workdir: "/opt/workdir",
 			},
@@ -161,7 +161,7 @@ func TestMultiS3Storage(t *testing.T) {
 				Command: []string{
 					"sh",
 					"-c",
-					"cat $(find /opt/inputs -type f) > test-output-file.txt",
+					"cat $(find /opt/inputs -type f | sort) > test-output-file.txt",
 				},
 				Workdir: "/opt/workdir",
 			},

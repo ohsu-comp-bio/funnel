@@ -87,7 +87,7 @@ func TestSwiftStorage(t *testing.T) {
 				Command: []string{
 					"sh",
 					"-c",
-					"cat $(find /opt/inputs -type f) > test-output-file.txt; mkdir test-output-directory; cp *.txt test-output-directory/",
+					"cat $(find /opt/inputs -type f | sort) > test-output-file.txt; mkdir test-output-directory; cp *.txt test-output-directory/",
 				},
 				Workdir: "/opt/workdir",
 			},

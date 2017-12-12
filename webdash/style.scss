@@ -145,6 +145,40 @@ main {
   }
 }
 
+.syslogs-section h6 {
+  margin-bottom: 0;
+}
+.syslogs-table {
+  background-color: #232323;
+  padding-top: 10px;
+  width: 100%;
+  font-size: 13px;
+}
+.syslogs-table .syslog-entry-value {
+  padding-right: 24px;
+}
+.syslogs-table td {
+  color: #f1f1f1;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 15px;
+}
+.syslogs-table .syslog-entry-key {
+  font-weight: bold;
+  vertical-align: top;
+  padding-left: 24px;
+  width: 15%;
+}
+.syslogs-table .info-level .syslog-entry-key {
+  color: #1aecec;
+}
+.syslogs-table .error-level .syslog-entry-key {
+  color: #f31b08;
+}
+.syslogs-table .debug-level .syslog-entry-key {
+  color: #c7c526;
+}
+
 .task-list-name {
   width: 100%;
 }

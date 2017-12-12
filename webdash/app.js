@@ -17,6 +17,7 @@ function isDone(task) {
   return task.state == 'COMPLETE' || task.state == 'EXECUTOR_ERROR' || task.state == 'CANCELED' || task.state == 'SYSTEM_ERROR';
 }
 
+
 app.controller('TaskListController', function($scope, $http, $interval, $routeParams, $location) {
   $scope.pageTitle = "Tasks";
   $scope.tasks = [];
@@ -130,11 +131,47 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
     $http.post($scope.url + ":cancel");
   }
 
+  $scope.syslogs = [];
+  function parseSystemLogs(task) {
+    if (!task || !task.logs || task.logs.length == 0 || !task.logs[0].system_logs) {
+      return
+    }
+    $scope.syslogs = [];
+
+    for (var i = 0; i < task.logs[0].system_logs.length; i++) {
+      var log = task.logs[0].system_logs[i]
+      var logre = /(\w+)='([^'\\]*(?:\\.[^'\\]*)*)'/g;
+
+      var m;
+      var parts = [];
+      var level = "info";
+      do {
+          m = logre.exec(log);
+          if (m) {
+              var p = {key: m[1], value: m[2]};
+              if (p.key == "level") {
+                level = p.value
+              }
+              parts.push(p);
+          }
+      } while (m);
+
+      if (parts.length > 0) {
+        $scope.syslogs.push({level: level, parts: parts});
+      }
+    }
+  }
+
+  $scope.entryClass = function(entry) {
+    return entry.level + "-level";
+  }
+
   function refresh() {
     if (!$scope.isDone($scope.task)) {
       $http.get($scope.url + "?view=FULL")
         .success(function(data, status, headers, config) {
           $scope.task = data;
+          parseSystemLogs(data);
           $scope.loaded = true;
         })
         .error(function(data, status, headers, config){

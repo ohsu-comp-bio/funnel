@@ -139,13 +139,21 @@
       </tr>
     </table>
     
-    <div ng-show="task.logs[0].system_logs">
+    <div ng-show="syslogs.length" class="syslogs-section">
       <h6>System Logs</h6>
-      <table class="data-table">
-        <tr ng-repeat="syslog in task.logs[0].system_logs track by $index">
-          <td></td>
-          <td>{{ syslog }}</td>
+      <table class="syslogs-table">
+
+      <tbody ng-repeat="entry in syslogs" ng-class="entryClass(entry)">
+        <tr ng-repeat="part in entry.parts">
+          <td class="syslog-entry-key">{{ part.key }}</td>
+          <td class="syslog-entry-value">{{ part.value }}</td>
         </tr>
+
+        <tr>
+          <td colspan="2">&nbsp;</td>
+        </tr>
+      </tbody>
+
       </table>
     </div>
 

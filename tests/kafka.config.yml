@@ -1,5 +1,4 @@
-Worker:    
-  ActiveEventWriters: ["kafka", "rpc", "log"]
-  EventWriters:
-    Kafka:
-      Servers: ["localhost:9092"]
+EventWriters: ["kafka", "rpc", "log"]
+
+Kafka:
+  Servers: ["localhost:9092"]

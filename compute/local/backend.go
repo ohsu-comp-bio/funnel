@@ -10,15 +10,15 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(conf config.Config, log *logger.Logger, fac scheduler.Worker) *Backend {
-	return &Backend{conf, log, fac}
+func NewBackend(conf config.Config, fac scheduler.Worker, log *logger.Logger) *Backend {
+	return &Backend{conf, fac, log}
 }
 
 // Backend represents the local backend.
 type Backend struct {
 	conf      config.Config
-	log       *logger.Logger
 	newWorker scheduler.Worker
+	log       *logger.Logger
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -37,7 +37,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		b.newWorker(ctx, b.conf.Worker, task.Id, b.log)
+		b.newWorker(ctx, b.conf, task.Id, b.log)
 	}()
 	return nil
 }

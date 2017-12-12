@@ -15,7 +15,7 @@ import (
 func TestGoogleStorage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if !conf.Worker.Storage.GS.Valid() {
+	if !conf.GoogleStorage.Valid() {
 		t.Skipf("Skipping google storage e2e tests...")
 	}
 
@@ -45,7 +45,7 @@ func TestGoogleStorage(t *testing.T) {
 
 	protocol := "gs://"
 
-	store, err := storage.Storage{}.WithConfig(conf.Worker.Storage)
+	store, err := storage.NewStorage(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}

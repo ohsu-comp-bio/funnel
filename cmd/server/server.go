@@ -45,14 +45,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	}
 
 	f := cmd.PersistentFlags()
-	f.StringVarP(&configFile, "config", "c", "", "Config File")
-	f.StringVar(&flagConf.Server.HostName, "hostname", flagConf.Server.HostName, "Host name or IP")
-	f.StringVar(&flagConf.Server.RPCPort, "rpc-port", flagConf.Server.RPCPort, "RPC Port")
-	f.StringVar(&flagConf.Server.HTTPPort, "http-port", flagConf.Server.HTTPPort, "HTTP Port")
-	f.StringVar(&flagConf.Server.Logger.Level, "log-level", flagConf.Server.Logger.Level, "Level of logging")
-	f.StringVar(&flagConf.Server.Logger.OutputFile, "log-path", flagConf.Server.Logger.OutputFile, "File path to write logs to")
-	f.StringVar(&flagConf.Server.Database, "database", flagConf.Server.Database, "Name of database backend to enable")
-	f.StringVar(&flagConf.Backend, "backend", flagConf.Backend, "Name of compute backend to enable")
+	f.AddFlagSet(util.ServerFlags(&flagConf, &configFile))
 
 	run := &cobra.Command{
 		Use:   "run",

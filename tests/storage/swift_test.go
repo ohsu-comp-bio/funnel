@@ -13,7 +13,7 @@ import (
 func TestSwiftStorage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if !conf.Worker.Storage.Swift.Valid() {
+	if !conf.Swift.Valid() {
 		t.Skipf("Skipping swift e2e tests...")
 	}
 
@@ -33,7 +33,7 @@ func TestSwiftStorage(t *testing.T) {
 
 	protocol := "swift://"
 
-	store, err := storage.Storage{}.WithConfig(conf.Worker.Storage)
+	store, err := storage.NewStorage(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}

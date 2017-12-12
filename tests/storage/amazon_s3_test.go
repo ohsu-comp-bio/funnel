@@ -16,13 +16,13 @@ import (
 func TestAmazonS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if !conf.Worker.Storage.AmazonS3.Valid() {
+	if !conf.AmazonS3.Valid() {
 		t.Skipf("Skipping amazon s3 e2e tests...")
 	}
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	client, err := newS3Test(conf.Worker.Storage.AmazonS3)
+	client, err := newS3Test(conf.AmazonS3)
 	if err != nil {
 		t.Fatal("error creating minio client:", err)
 	}
@@ -36,7 +36,7 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	protocol := "s3://"
 
-	store, err := storage.Storage{}.WithConfig(conf.Worker.Storage)
+	store, err := storage.NewStorage(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}

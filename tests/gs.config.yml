@@ -1,4 +1,2 @@
-Worker:
-  Storage:
-    GS:
-      Disabled: false
+GS:
+  Disabled: false

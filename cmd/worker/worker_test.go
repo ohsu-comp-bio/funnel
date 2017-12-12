@@ -16,23 +16,20 @@ func TestPersistentPreRun(t *testing.T) {
 	workDir := path.Join(cwd, "funnel-work-dir")
 
 	fileConf := config.DefaultConfig()
-	tmp, cleanup := fileConf.ToYamlTempFile("testconfig.yaml")
+	tmp, cleanup := config.ToYamlTempFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 
 	c, h := newCommandHooks()
-	h.Run = func(ctx context.Context, conf config.Worker, taskID string, l *logger.Logger) error {
-		if conf.WorkDir != workDir {
+	h.Run = func(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error {
+		if conf.Worker.WorkDir != workDir {
 			t.Fatal("unexpected WorkDir in worker config")
 		}
-		if conf.EventWriters.RPC.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in worker config")
-		}
-		if conf.TaskReaders.RPC.ServerAddress != serverAddress {
+		if conf.RPC.ServerAddress != serverAddress {
 			t.Fatal("unexpected ServerAddress in worker config")
 		}
 		return nil
 	}
 
-	c.SetArgs([]string{"run", "--config", tmp, "--server-address", serverAddress, "--task-id", "test1234"})
+	c.SetArgs([]string{"run", "--config", tmp, "--server", serverAddress, "--task-id", "test1234"})
 	c.Execute()
 }

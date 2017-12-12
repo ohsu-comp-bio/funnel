@@ -15,8 +15,8 @@ import (
 func TestGenericS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
-	if len(conf.Worker.Storage.GenericS3) > 0 {
-		if !conf.Worker.Storage.GenericS3[0].Valid() {
+	if len(conf.GenericS3) > 0 {
+		if !conf.GenericS3[0].Valid() {
 			t.Skipf("Skipping generic s3 e2e tests...")
 		}
 	} else {
@@ -25,7 +25,7 @@ func TestGenericS3Storage(t *testing.T) {
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 
-	client, err := newMinioTest(conf.Worker.Storage.GenericS3[0])
+	client, err := newMinioTest(conf.GenericS3[0])
 	if err != nil {
 		t.Fatal("error creating minio client:", err)
 	}
@@ -39,7 +39,7 @@ func TestGenericS3Storage(t *testing.T) {
 
 	protocol := "s3://"
 
-	store, err := storage.Storage{}.WithConfig(conf.Worker.Storage)
+	store, err := storage.NewStorage(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}

@@ -1,4 +1,2 @@
-Worker:
-  Storage:
-    Swift:
-      Disabled: false
+Swift:
+  Disabled: false

@@ -11,7 +11,7 @@ var fun *tests.Funnel
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
-	if conf.Backend != "pbs" {
+	if conf.Compute != "pbs" {
 		logger.Debug("Skipping PBS/Torque e2e tests...")
 		os.Exit(0)
 	}

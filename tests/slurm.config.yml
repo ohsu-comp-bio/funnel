@@ -1,1 +1,1 @@
-Backend: "slurm"
+Compute: "slurm"

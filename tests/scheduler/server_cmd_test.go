@@ -12,7 +12,7 @@ import (
 // was causing a panic.
 func TestServerRunManualPanic(t *testing.T) {
 	conf := tests.DefaultConfig()
-	conf.Backend = "manual"
+	conf.Compute = "manual"
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

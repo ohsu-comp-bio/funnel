@@ -44,22 +44,21 @@ var SysLogs = []byte("system-logs")
 // BoltDB provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
 type BoltDB struct {
-	db   *bolt.DB
-	conf config.Config
+	db *bolt.DB
 }
 
 // NewBoltDB returns a new instance of BoltDB, accessing the database at
 // the given path, and including the given ServerConfig.
-func NewBoltDB(conf config.Config) (*BoltDB, error) {
-	fsutil.EnsurePath(conf.Server.Databases.BoltDB.Path)
-	db, err := bolt.Open(conf.Server.Databases.BoltDB.Path, 0600, &bolt.Options{
+func NewBoltDB(conf config.BoltDB) (*BoltDB, error) {
+	fsutil.EnsurePath(conf.Path)
+	db, err := bolt.Open(conf.Path, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	b := &BoltDB{db: db, conf: conf}
+	b := &BoltDB{db: db}
 	if err := b.init(); err != nil {
 		return nil, err
 	}

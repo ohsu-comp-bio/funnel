@@ -17,7 +17,7 @@ import (
 // that it is gone, and the server will delete the node.
 func TestNodeGoneOnCanceledContext(t *testing.T) {
 	conf := tests.DefaultConfig()
-	conf.Backend = "manual"
+	conf.Compute = "manual"
 	conf.Scheduler.NodeInitTimeout = time.Second * 10
 	conf.Scheduler.NodePingTimeout = time.Second * 10
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10
@@ -28,7 +28,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	srv := tests.NewFunnel(conf)
 	srv.StartServer()
 
-	srv.Conf.Scheduler.Node.ID = "test-node-gone-on-cancel"
+	srv.Conf.Node.ID = "test-node-gone-on-cancel"
 	n, err := scheduler.NewNode(srv.Conf, log, workercmd.Run)
 	if err != nil {
 		t.Fatal("failed to start node")
@@ -38,7 +38,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	go n.Run(ctx)
 
 	srv.Scheduler.CheckNodes()
-	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
+	time.Sleep(conf.Node.UpdateRate * 2)
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &pbs.ListNodesRequest{})
 	if err != nil {
@@ -51,7 +51,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	}
 
 	cancel()
-	time.Sleep(conf.Scheduler.Node.UpdateRate * 2)
+	time.Sleep(conf.Node.UpdateRate * 2)
 	srv.Scheduler.CheckNodes()
 
 	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &pbs.ListNodesRequest{})
@@ -68,7 +68,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 // Run some tasks with the manual backend
 func TestManualBackend(t *testing.T) {
 	conf := tests.DefaultConfig()
-	conf.Backend = "manual"
+	conf.Compute = "manual"
 	conf.Scheduler.NodeInitTimeout = time.Second * 10
 	conf.Scheduler.NodePingTimeout = time.Second * 10
 	conf.Scheduler.NodeDeadTimeout = time.Second * 10
@@ -78,7 +78,7 @@ func TestManualBackend(t *testing.T) {
 	srv := tests.NewFunnel(conf)
 	srv.StartServer()
 
-	srv.Conf.Scheduler.Node.ID = "test-node-manual"
+	srv.Conf.Node.ID = "test-node-manual"
 	n, err := scheduler.NewNode(srv.Conf, log, workercmd.Run)
 	if err != nil {
 		t.Fatal("failed to create node")

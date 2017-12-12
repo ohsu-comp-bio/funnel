@@ -82,7 +82,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		HTTP:       cli,
 		Docker:     dcli,
 		Conf:       conf,
-		StorageDir: conf.Worker.Storage.Local.AllowedDirs[0],
+		StorageDir: conf.LocalStorage.AllowedDirs[0],
 		Server:     srv.Server,
 		Srv:        srv,
 		Scheduler:  srv.Scheduler,
@@ -337,7 +337,7 @@ func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
 
 	// write config file
 	configPath, _ := filepath.Abs(filepath.Join(f.Conf.Worker.WorkDir, "config.yml"))
-	f.Conf.ToYamlFile(configPath)
+	config.ToYamlFile(f.Conf, configPath)
 	os.Chmod(configPath, 0644)
 
 	httpPort, _ := strconv.ParseInt(f.Conf.Server.HTTPPort, 0, 32)

@@ -21,18 +21,15 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 	if result.Server.RPCAddress() != serverAddress {
 		t.Fatal("unexpected server address")
 	}
-	if result.Scheduler.Node.ServerAddress != serverAddress {
+	if result.Node.ServerAddress != serverAddress {
 		t.Fatal("unexpected node server address")
 	}
-	if result.Worker.EventWriters.RPC.ServerAddress != serverAddress {
-		t.Fatal("unexpected  server address in worker config")
-	}
-	if result.Worker.TaskReaders.RPC.ServerAddress != serverAddress {
-		t.Fatal("unexpected  server address in worker config")
+	if result.RPC.ServerAddress != serverAddress {
+		t.Fatal("unexpected server address in RPC config")
 	}
 
 	fileConf := config.DefaultConfig()
-	tmp, cleanup := fileConf.ToYamlTempFile("testconfig.yaml")
+	tmp, cleanup := config.ToYamlTempFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 	result, err = MergeConfigFileWithFlags(tmp, flagConf)
 	if err != nil {
@@ -42,17 +39,14 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 	if result.Server.RPCAddress() != serverAddress {
 		t.Fatal("unexpected server address")
 	}
-	if result.Scheduler.Node.ServerAddress != serverAddress {
+	if result.Node.ServerAddress != serverAddress {
 		t.Fatal("unexpected node server address")
 	}
-	if result.Worker.EventWriters.RPC.ServerAddress != serverAddress {
-		t.Fatal("unexpected  server address in worker config")
-	}
-	if result.Worker.TaskReaders.RPC.ServerAddress != serverAddress {
-		t.Fatal("unexpected  server address in worker config")
+	if result.RPC.ServerAddress != serverAddress {
+		t.Fatal("unexpected server address in worker config")
 	}
 
-	if result.Backend != "local" {
-		t.Fatal("expected Config.Backend to equal default value from config.DefaultValue()")
+	if result.Compute != "local" {
+		t.Fatal("expected Config.Compute to equal default value from config.DefaultValue()")
 	}
 }

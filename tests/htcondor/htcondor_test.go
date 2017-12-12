@@ -11,7 +11,7 @@ var fun *tests.Funnel
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
-	if conf.Backend != "htcondor" {
+	if conf.Compute != "htcondor" {
 		logger.Debug("Skipping htcondor e2e tests...")
 		os.Exit(0)
 	}

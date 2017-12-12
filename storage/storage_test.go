@@ -7,18 +7,18 @@ import (
 
 func TestStorageWithConfig(t *testing.T) {
 	// Single valid config
-	c := config.StorageConfig{
-		Local: config.LocalStorage{
+	c := config.Config{
+		LocalStorage: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GS:        config.GSStorage{Disabled: true},
-		AmazonS3:  config.AmazonS3Storage{Disabled: true},
-		GenericS3: []config.GenericS3Storage{},
-		Swift:     config.SwiftStorage{Disabled: true},
-		HTTP:      config.HTTPStorage{Disabled: true},
+		GoogleStorage: config.GSStorage{Disabled: true},
+		AmazonS3:      config.AmazonS3Storage{Disabled: true},
+		GenericS3:     []config.GenericS3Storage{},
+		Swift:         config.SwiftStorage{Disabled: true},
+		HTTPStorage:   config.HTTPStorage{Disabled: true},
 	}
-	s := Storage{}
-	sc, err := s.WithConfig(c)
+
+	sc, err := NewStorage(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,11 +27,11 @@ func TestStorageWithConfig(t *testing.T) {
 	}
 
 	// multiple valid configs
-	c = config.StorageConfig{
-		Local: config.LocalStorage{
+	c = config.Config{
+		LocalStorage: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GS: config.GSStorage{
+		GoogleStorage: config.GSStorage{
 			Disabled:    false,
 			AccountFile: "",
 		},
@@ -59,9 +59,9 @@ func TestStorageWithConfig(t *testing.T) {
 			TenantID:   "faketenantid",
 			RegionName: "fakeregion",
 		},
-		HTTP: config.HTTPStorage{Disabled: false},
+		HTTPStorage: config.HTTPStorage{Disabled: false},
 	}
-	sc, err = s.WithConfig(c)
+	sc, err = NewStorage(c)
 	if err != nil {
 		t.Fatal(err)
 	}

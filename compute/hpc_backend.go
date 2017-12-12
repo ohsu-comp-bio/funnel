@@ -70,7 +70,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	}
 
 	confPath := path.Join(workdir, "worker.conf.yml")
-	b.conf.ToYamlFile(confPath)
+	config.ToYamlFile(b.conf, confPath)
 
 	funnelPath, err := DetectFunnelBinaryPath()
 	if err != nil {

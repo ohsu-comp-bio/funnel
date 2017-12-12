@@ -16,7 +16,7 @@ import (
 func TestWorkerCmdRun(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	c := tests.DefaultConfig()
-	c.Backend = "noop"
+	c.Compute = "noop"
 	f := tests.NewFunnel(c)
 	f.StartServer()
 
@@ -26,7 +26,7 @@ func TestWorkerCmdRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err := workerCmd.Run(context.Background(), c.Worker, id, log)
+	err := workerCmd.Run(context.Background(), c, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -51,7 +51,7 @@ func TestWorkerCmdRun(t *testing.T) {
 func TestDefaultWorkerRun(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	c := tests.DefaultConfig()
-	c.Backend = "noop"
+	c.Compute = "noop"
 	f := tests.NewFunnel(c)
 	f.StartServer()
 
@@ -61,7 +61,7 @@ func TestDefaultWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err := workerCmd.Run(context.Background(), c.Worker, id, log)
+	err := workerCmd.Run(context.Background(), c, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -116,9 +116,9 @@ func TestLargeLogRate(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	// Generate 1MB 1000 times to stdout.
 	// At the end, echo "\n\nhello\n".
-	conf := tests.DefaultConfig().Worker
-	conf.UpdateRate = time.Millisecond * 500
-	conf.BufferSize = 100
+	conf := tests.DefaultConfig()
+	conf.Worker.UpdateRate = time.Millisecond * 500
+	conf.Worker.BufferSize = 100
 	task := tes.Task{
 		Id: "test-task-" + tes.GenerateID(),
 		Executors: []*tes.Executor{
@@ -129,7 +129,7 @@ func TestLargeLogRate(t *testing.T) {
 		},
 	}
 
-	baseDir := path.Join(conf.WorkDir, task.Id)
+	baseDir := path.Join(conf.Worker.WorkDir, task.Id)
 	reader := taskReader{&task}
 
 	counts := &eventCounter{}
@@ -137,7 +137,7 @@ func TestLargeLogRate(t *testing.T) {
 	m := &events.MultiWriter{logger, counts}
 
 	w := worker.DefaultWorker{
-		Conf:       conf,
+		Conf:       conf.Worker,
 		Mapper:     worker.NewFileMapper(baseDir),
 		Store:      storage.Storage{},
 		TaskReader: reader,

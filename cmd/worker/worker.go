@@ -16,7 +16,7 @@ func NewCommand() *cobra.Command {
 }
 
 type hooks struct {
-	Run func(ctx context.Context, conf config.Worker, taskID string, log *logger.Logger) error
+	Run func(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error
 }
 
 func newCommandHooks() (*cobra.Command, *hooks) {
@@ -25,13 +25,11 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	}
 
 	var (
-		configFile            string
-		conf                  config.Config
-		flagConf              config.Config
-		serverAddress         string
-		dynamodbRegion        string
-		dynamodbTableBasename string
-		taskID                string
+		configFile    string
+		conf          config.Config
+		flagConf      config.Config
+		serverAddress string
+		taskID        string
 	)
 
 	cmd := &cobra.Command{
@@ -50,28 +48,11 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 				return fmt.Errorf("error processing config: %v", err)
 			}
 
-			if dynamodbRegion != "" {
-				conf.Worker.EventWriters.DynamoDB.Region = dynamodbRegion
-				conf.Worker.TaskReaders.DynamoDB.Region = dynamodbRegion
-			}
-			if dynamodbTableBasename != "" {
-				conf.Worker.EventWriters.DynamoDB.TableBasename = dynamodbTableBasename
-				conf.Worker.TaskReaders.DynamoDB.TableBasename = dynamodbTableBasename
-			}
-
 			return nil
 		},
 	}
 	f := cmd.PersistentFlags()
-	f.StringVarP(&configFile, "config", "c", "", "Config File")
-	f.StringVar(&flagConf.Worker.WorkDir, "WorkDir", flagConf.Worker.WorkDir, "Working Directory")
-	f.StringVar(&flagConf.Worker.Logger.Level, "Logger.Level", flagConf.Worker.Logger.Level, "Level of logging")
-	f.StringVar(&flagConf.Worker.Logger.OutputFile, "Logger.OutputFile", flagConf.Worker.Logger.OutputFile, "File path to write logs to")
-	f.StringVar(&flagConf.Worker.TaskReader, "TaskReader", flagConf.Worker.TaskReader, "Name of the task reader backend to use")
-	f.StringSliceVar(&flagConf.Worker.ActiveEventWriters, "ActiveEventWriters", flagConf.Worker.ActiveEventWriters, "Name of an event writer backend to use. This flag can be used multiple times")
-	f.StringVar(&serverAddress, "RPC.ServerAddress", "", "RPC address of Funnel server - used by TaskReader and EventWriter")
-	f.StringVar(&dynamodbRegion, "DynamoDB.Region", "", "AWS region of DynamoDB tables - used by TaskReader and EventWriter")
-	f.StringVar(&dynamodbTableBasename, "DynamoDB.TableBasename", "", "Basename of DynamoDB tables - used by TaskReader and EventWriter")
+	f.AddFlagSet(util.WorkerFlags(&flagConf, &configFile, &serverAddress))
 
 	run := &cobra.Command{
 		Use:   "run",
@@ -81,8 +62,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			if taskID == "" {
 				return fmt.Errorf("no taskID was provided")
 			}
-			log := logger.NewLogger("worker", conf.Worker.Logger)
-			return hooks.Run(context.Background(), conf.Worker, taskID, log)
+			log := logger.NewLogger("worker", conf.Logger)
+			return hooks.Run(context.Background(), conf, taskID, log)
 		},
 	}
 	f = run.Flags()

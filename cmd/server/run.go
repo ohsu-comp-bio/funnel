@@ -27,7 +27,7 @@ import (
 
 // Run runs the "server run" command.
 func Run(ctx context.Context, conf config.Config) error {
-	log := logger.NewLogger("server", conf.Server.Logger)
+	log := logger.NewLogger("server", conf.Logger)
 	s, err := NewServer(conf, log)
 	if err != nil {
 		return err
@@ -43,6 +43,9 @@ type Server struct {
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
 func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
+	if log == nil {
+		log = logger.NewLogger("server", conf.Logger)
+	}
 	log.Debug("NewServer", "config", conf)
 
 	ctx := context.Background()
@@ -50,11 +53,12 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	var nodes schedProto.SchedulerServiceServer
 	var sched *scheduler.Scheduler
 	var queue scheduler.TaskQueue
+
 	writers := events.MultiWriter{}
 
-	switch strings.ToLower(conf.Server.Database) {
+	switch strings.ToLower(conf.Database) {
 	case "boltdb":
-		b, err := boltdb.NewBoltDB(conf)
+		b, err := boltdb.NewBoltDB(conf.BoltDB)
 		if err != nil {
 			return nil, dberr(err)
 		}
@@ -64,7 +68,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		writers.Append(b)
 
 	case "dynamodb":
-		d, err := dynamodb.NewDynamoDB(conf.Server.Databases.DynamoDB)
+		d, err := dynamodb.NewDynamoDB(conf.DynamoDB)
 		if err != nil {
 			return nil, dberr(err)
 		}
@@ -72,7 +76,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		writers.Append(d)
 
 	case "elastic":
-		e, err := elastic.NewElastic(ctx, conf.Server.Databases.Elastic)
+		e, err := elastic.NewElastic(ctx, conf.Elastic)
 		if err != nil {
 			return nil, dberr(err)
 		}
@@ -82,7 +86,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		writers.Append(e)
 
 	case "mongodb":
-		m, err := mongodb.NewMongoDB(conf.Server.Databases.MongoDB)
+		m, err := mongodb.NewMongoDB(conf.MongoDB)
 		if err != nil {
 			return nil, dberr(err)
 		}
@@ -90,19 +94,22 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		nodes = m
 		queue = m
 		writers.Append(m)
+
+	default:
+		return nil, fmt.Errorf("unknown database: '%s'", conf.Database)
 	}
 
-	switch strings.ToLower(conf.Backend) {
+	switch strings.ToLower(conf.Compute) {
 	case "manual":
 		if nodes == nil {
 			return nil, fmt.Errorf(
 				"cannot enable manual compute backend, database %s does not implement "+
-					"the scheduler service", conf.Server.Database)
+					"the scheduler service", conf.Database)
 		}
 		if queue == nil {
 			return nil, fmt.Errorf(
 				"cannot enable manual compute backend, database %s does not implement "+
-					"a task queue", conf.Server.Database)
+					"a task queue", conf.Database)
 		}
 
 		sched = &scheduler.Scheduler{
@@ -114,7 +121,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		}
 
 	case "aws-batch":
-		b, err := batch.NewBackend(conf.Backends.AWSBatch)
+		b, err := batch.NewBackend(conf.AWSBatch)
 		if err != nil {
 			return nil, err
 		}
@@ -125,15 +132,49 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	case "htcondor":
 		writers.Append(htcondor.NewBackend(conf))
 	case "local":
-		writers.Append(local.NewBackend(conf, log.Sub("local"), workerCmd.Run))
+		writers.Append(local.NewBackend(conf, workerCmd.Run, log.Sub("local")))
 	case "noop":
-		writers.Append(noop.NewBackend(conf))
+		writers.Append(noop.NewBackend())
 	case "pbs":
 		writers.Append(pbs.NewBackend(conf))
 	case "slurm":
 		writers.Append(slurm.NewBackend(conf))
 	default:
-		return nil, fmt.Errorf("unknown backend: '%s'", conf.Backend)
+		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
+	}
+
+	var writer events.Writer
+	var err error
+	for _, e := range conf.EventWriters {
+		switch strings.ToLower(e) {
+		case strings.ToLower(conf.Database):
+			// noop
+		case strings.ToLower(conf.Compute):
+			// noop
+		case "log":
+			writer = &events.Logger{Log: log}
+		case "boltdb":
+			writer, err = boltdb.NewBoltDB(conf.BoltDB)
+		case "dynamodb":
+			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+		case "elastic":
+			writer, err = elastic.NewElastic(ctx, conf.Elastic)
+		case "kafka":
+			k, kerr := events.NewKafkaWriter(conf.Kafka)
+			defer k.Close()
+			err = kerr
+			writer = k
+		case "mongodb":
+			writer, err = mongodb.NewMongoDB(conf.MongoDB)
+		case "rpc":
+			// noop
+		default:
+			return nil, fmt.Errorf("unknown event writer: '%s'", e)
+		}
+		writers.Append(writer)
+		if err != nil {
+			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
+		}
 	}
 
 	return &Server{

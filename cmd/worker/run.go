@@ -7,46 +7,53 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/server/boltdb"
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
 	"github.com/ohsu-comp-bio/funnel/storage"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"path"
+	"strings"
 )
 
-// Run configures and runs a Worker
-func Run(ctx context.Context, conf config.Worker, taskID string, log *logger.Logger) error {
-	log.Debug("Run Worker", "config", conf, "taskID", taskID)
+// Run runs the "worker run" command.
+func Run(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error {
+	w, err := NewWorker(conf, taskID, log)
+	if err != nil {
+		return err
+	}
+	w.Run(ctx)
+	return nil
+}
 
+// NewWorker returns a new Funnel worker based on the given config.
+func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.DefaultWorker, error) {
+	if log == nil {
+		log = logger.NewLogger("worker", conf.Logger)
+	}
+	log.Debug("NewWorker", "config", conf, "taskID", taskID)
+
+	ctx := context.Background()
 	var err error
 	var db tes.ReadOnlyServer
 	var reader worker.TaskReader
 	var writer events.Writer
 
-	// Map files into this baseDir
-	baseDir := path.Join(conf.WorkDir, taskID)
-
-	err = fsutil.EnsureDir(baseDir)
-	if err != nil {
-		return fmt.Errorf("failed to create worker baseDir: %v", err)
-	}
-
-	switch conf.TaskReader {
-	case "rpc":
-		reader, err = worker.NewRPCTaskReader(conf.TaskReaders.RPC, taskID)
+	switch strings.ToLower(conf.Worker.TaskReader) {
 	case "dynamodb":
-		db, err = dynamodb.NewDynamoDB(conf.TaskReaders.DynamoDB)
+		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 	case "elastic":
-		db, err = elastic.NewElastic(ctx, conf.EventWriters.Elastic)
+		db, err = elastic.NewElastic(ctx, conf.Elastic)
 	case "mongodb":
-		db, err = mongodb.NewMongoDB(conf.TaskReaders.MongoDB)
+		db, err = mongodb.NewMongoDB(conf.MongoDB)
+	case "rpc":
+		reader, err = worker.NewRPCTaskReader(conf.RPC, taskID)
 	default:
 		err = fmt.Errorf("unknown TaskReader")
 	}
 	if err != nil {
-		return fmt.Errorf("failed to instantiate TaskReader: %v", err)
+		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
 	}
 
 	if reader == nil {
@@ -54,28 +61,40 @@ func Run(ctx context.Context, conf config.Worker, taskID string, log *logger.Log
 	}
 
 	writers := []events.Writer{}
-	for _, w := range conf.ActiveEventWriters {
+	eventWriterSet := make(map[string]interface{})
+	if strings.ToLower(conf.Database) == "boltdb" {
+		eventWriterSet["rpc"] = nil
+	} else {
+		eventWriterSet[strings.ToLower(conf.Database)] = nil
+	}
+	for _, w := range conf.EventWriters {
+		eventWriterSet[strings.ToLower(w)] = nil
+	}
+
+	for w := range eventWriterSet {
 		switch w {
 		case "log":
 			writer = &events.Logger{Log: log}
-		case "rpc":
-			writer, err = events.NewRPCWriter(conf.EventWriters.RPC)
+		case "boltdb":
+			writer, err = boltdb.NewBoltDB(conf.BoltDB)
 		case "dynamodb":
-			writer, err = dynamodb.NewDynamoDB(conf.EventWriters.DynamoDB)
+			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 		case "elastic":
-			writer, err = elastic.NewElastic(ctx, conf.EventWriters.Elastic)
-		case "mongodb":
-			writer, err = mongodb.NewMongoDB(conf.EventWriters.MongoDB)
+			writer, err = elastic.NewElastic(ctx, conf.Elastic)
 		case "kafka":
-			k, kerr := events.NewKafkaWriter(conf.EventWriters.Kafka)
+			k, kerr := events.NewKafkaWriter(conf.Kafka)
 			defer k.Close()
 			err = kerr
 			writer = k
+		case "mongodb":
+			writer, err = mongodb.NewMongoDB(conf.MongoDB)
+		case "rpc":
+			writer, err = events.NewRPCWriter(conf.RPC)
 		default:
 			err = fmt.Errorf("unknown EventWriter")
 		}
 		if err != nil {
-			return fmt.Errorf("failed to instantiate EventWriter: %v", err)
+			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
 		}
 		writers = append(writers, writer)
 	}
@@ -83,13 +102,17 @@ func Run(ctx context.Context, conf config.Worker, taskID string, log *logger.Log
 	m := events.MultiWriter(writers)
 	ew := &events.ErrLogger{Writer: &m, Log: log}
 
+	s, err := storage.NewStorage(conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate Storage backend: %v", err)
+	}
+
 	w := &worker.DefaultWorker{
-		Conf:       conf,
-		Mapper:     worker.NewFileMapper(baseDir),
-		Store:      storage.Storage{},
+		Conf:       conf.Worker,
+		Mapper:     worker.NewFileMapper(path.Join(conf.Worker.WorkDir, taskID)),
+		Store:      s,
 		TaskReader: reader,
 		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, ew),
 	}
-	w.Run(ctx)
-	return nil
+	return w, nil
 }

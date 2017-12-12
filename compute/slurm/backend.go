@@ -7,5 +7,5 @@ import (
 
 // NewBackend returns a new Slurm HPCBackend instance.
 func NewBackend(conf config.Config) *compute.HPCBackend {
-	return compute.NewHPCBackend("slurm", "sbatch", conf, conf.Backends.SLURM.Template)
+	return compute.NewHPCBackend("slurm", "sbatch", conf, conf.Slurm.Template)
 }

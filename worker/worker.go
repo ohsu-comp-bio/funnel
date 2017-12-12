@@ -45,15 +45,14 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	var task *tes.Task
 
 	r.Event.Info("Version", version.LogFields()...)
+	r.Event.State(tes.State_INITIALIZING)
+	r.Event.StartTime(time.Now())
 
 	if name, err := os.Hostname(); err == nil {
 		r.Event.Info("Hostname", "name", name)
 	}
 
 	task, run.syserr = r.TaskReader.Task()
-
-	r.Event.State(tes.State_INITIALIZING)
-	r.Event.StartTime(time.Now())
 
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
@@ -92,7 +91,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	// Create working dir
 	var dir string
 	if run.ok() {
-		dir, run.syserr = filepath.Abs(r.Conf.WorkDir)
+		dir, run.syserr = filepath.Abs(filepath.Join(r.Conf.WorkDir, task.Id))
 	}
 	if run.ok() {
 		run.syserr = fsutil.EnsureDir(dir)
@@ -101,12 +100,6 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	// Prepare file mapper, which maps task file URLs to host filesystem paths
 	if run.ok() {
 		run.syserr = r.Mapper.MapTask(task)
-	}
-
-	// Configure a task-specific storage backend.
-	// This provides download/upload for inputs/outputs.
-	if run.ok() {
-		r.Store, run.syserr = r.Store.WithConfig(r.Conf.Storage)
 	}
 
 	if run.ok() {

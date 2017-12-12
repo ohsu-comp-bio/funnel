@@ -1,11 +1,9 @@
-Worker:
-  Storage:
-    GenericS3:
-      - Disabled: false
-        Endpoint: "localhost:18888"
-        Key: "accessKey1"
-        Secret: "verySecretKey1"
-      - Disabled: false
-        Endpoint: "localhost:9000"
-        Key: "fakekey"
-        Secret: "fakesecret"
+GenericS3:
+  - Disabled: false
+    Endpoint: "localhost:18888"
+    Key: "accessKey1"
+    Secret: "verySecretKey1"
+  - Disabled: false
+    Endpoint: "localhost:9000"
+    Key: "fakekey"
+    Secret: "fakesecret"

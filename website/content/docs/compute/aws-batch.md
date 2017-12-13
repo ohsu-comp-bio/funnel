@@ -65,6 +65,7 @@ Usage:
 
 Flags:
       --ComputeEnv.InstanceTypes strings     The instances types that may be launched. You can also choose optimal to pick instance types on the fly that match the demand of your job queues. (default [optimal])
+      --ComputeEnv.ImageId string            The Amazon Machine Image (AMI) ID used for instances launched in the compute environment. By default, uses the latest Amazon ECS-optimized AMI.
       --ComputeEnv.MaxVCPUs int              The maximum number of EC2 vCPUs that an environment can reach. (default 256)
       --ComputeEnv.MinVCPUs int              The minimum number of EC2 vCPUs that an environment should maintain. (default 0)
       --ComputeEnv.SecurityGroupIds strings  The EC2 security groups that are associated with instances launched in the compute environment. If none are specified all security groups will be used.
@@ -77,9 +78,9 @@ Flags:
       --JobDef.VCPUs int                     The number of vCPUs reserved for the container. (default 1)
       --JobQueue.Name string                 The name of the job queue. (default "funnel-job-queue")
       --JobQueue.Priority int                The priority of the job queue. Priority is determined in descending order. (default 1)
-      --config string                        Funnel configuration file
-  -h, --help                                 help for create-resources
-      --region string                        Region in which to create the Batch resources.
+  -r, --Region string                        Region in which to create the Batch resources
+  -c, --config string                        Funnel configuration file
+  -h, --help                                 help for create-all-resources
 ```
 
 

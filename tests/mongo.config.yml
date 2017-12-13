@@ -2,11 +2,7 @@ Database: mongodb
 
 EventWriters:
   - log
-  - mongodb
 
 MongoDB:
   Addrs: 
     - localhost:27000
-
-Worker:
-  TaskReader: mongodb

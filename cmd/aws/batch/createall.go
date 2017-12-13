@@ -2,16 +2,19 @@ package batch
 
 import (
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
 )
 
 func init() {
+	createCmd.SetGlobalNormalizationFunc(util.NormalizeFlags)
 	f := createCmd.Flags()
-	f.StringVar(&funnelConfigFile, "config", funnelConfigFile, "Funnel configuration file")
-	f.StringVar(&conf.Region, "region", conf.Region, "Region in which to create the Batch resources")
+	f.StringVarP(&funnelConfigFile, "config", "c", funnelConfigFile, "Funnel configuration file")
+	f.StringVarP(&conf.Region, "Region", "r", conf.Region, "Region in which to create the Batch resources")
 	f.StringVar(&conf.ComputeEnv.Name, "ComputeEnv.Name", conf.ComputeEnv.Name, "The name of the compute environment.")
+	f.StringVar(&conf.ComputeEnv.ImageID, "ComputeEnv.ImageID", conf.ComputeEnv.ImageID, "The Amazon Machine Image (AMI) ID used for instances launched in the compute environment. By default, uses the latest Amazon ECS-optimized AMI.")
 	f.Int64Var(&conf.ComputeEnv.MinVCPUs, "ComputeEnv.MinVCPUs", conf.ComputeEnv.MinVCPUs, "The minimum number of EC2 vCPUs that an environment should maintain. (default 0)")
 	f.Int64Var(&conf.ComputeEnv.MaxVCPUs, "ComputeEnv.MaxVCPUs", conf.ComputeEnv.MaxVCPUs, "The maximum number of EC2 vCPUs that an environment can reach.")
 	f.StringSliceVar(&conf.ComputeEnv.SecurityGroupIds, "ComputEnv.SecurityGroupIds", conf.ComputeEnv.SecurityGroupIds, "The EC2 security groups that are associated with instances launched in the compute environment. If none are specified all security groups will be used.")

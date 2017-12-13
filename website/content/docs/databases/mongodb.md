@@ -12,13 +12,6 @@ Funnel supports storing tasks and scheduler data in MongoDB.
 Config:
 ```
 Database: mongodb
-EventWriters:
-  # log all events
-  - log
-
-Worker:
-  # get the task directly from the database
-  TaskReader: mongodb
 
 MongoDB:
   # Addresses for the seed servers.

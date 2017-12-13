@@ -24,25 +24,6 @@ Node:
 	}
 }
 
-func TestEnsureServerProperties(t *testing.T) {
-	serverAddress := "test:9999"
-
-	conf := Config{}
-	conf.Server.HostName = "test"
-	conf.Server.RPCPort = "9999"
-	result := EnsureServerProperties(conf)
-
-	if result.Server.RPCAddress() != serverAddress {
-		t.Fatal("unexpected server address")
-	}
-	if result.Node.ServerAddress != serverAddress {
-		t.Fatal("unexpected node server address")
-	}
-	if result.RPC.ServerAddress != serverAddress {
-		t.Fatal("unexpected server address in worker config")
-	}
-}
-
 func TestConfigParsing(t *testing.T) {
 	conf := &Config{}
 	err := ParseFile("./default-config.yaml", conf)

@@ -1,7 +1,4 @@
 Database: elastic
+
 EventWriters: 
   - log
-  - elastic
-
-Worker:
-  TaskReader: elastic

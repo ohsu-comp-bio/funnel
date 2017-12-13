@@ -75,10 +75,6 @@ Node:
   # In nanoseconds.
   UpdateRate: 5000000000 # 5 seconds
 
-  # RPC timeout for update/sync call.
-  # In nanoseconds.
-  UpdateTimeout: 1000000000 # 1 second
-
 Logger:
   # Logging levels: debug, info, error
   Level: info

@@ -29,7 +29,7 @@ func TestGenericS3AnonymousGet(t *testing.T) {
 }
 
 func TestAmazonS3AnonymousGet(t *testing.T) {
-	c := aws.NewConfig().WithCredentials(credentials.AnonymousCredentials)
+	c := aws.NewConfig().WithCredentials(credentials.AnonymousCredentials).WithMaxRetries(10)
 	s, err := session.NewSession(c)
 	if err != nil {
 		t.Fatal("Error creating amazon S3 backend:", err)

@@ -6,47 +6,47 @@ import (
 )
 
 func TestMergeConfigFileWithFlags(t *testing.T) {
-	serverAddress := "test:9999"
-
-	flagConf := config.Config{}
-	flagConf, err := ParseServerAddressFlag(serverAddress, flagConf)
-	if err != nil {
-		t.Fatal("unexpected error", err)
+	defaultConf := config.DefaultConfig()
+	flagConf := config.Config{
+		Server: config.Server{
+			HostName: "test",
+			RPCPort:  "9999",
+		},
 	}
+	serverAddress := flagConf.Server.RPCAddress()
+
 	result, err := MergeConfigFileWithFlags("", flagConf)
 	if err != nil {
-		t.Fatal("unexpected error", err)
+		t.Error("unexpected error", err)
 	}
-
 	if result.Server.RPCAddress() != serverAddress {
-		t.Fatal("unexpected server address")
+		t.Error("unexpected server address")
 	}
-	if result.Node.ServerAddress != serverAddress {
-		t.Fatal("unexpected node server address")
+	if result.Server.HTTPPort != defaultConf.Server.HTTPPort {
+		t.Error("expected Config.Server.HTTPPort to equal the value from from config.DefaultValue()")
 	}
-	if result.RPC.ServerAddress != serverAddress {
-		t.Fatal("unexpected server address in RPC config")
+	if result.Compute != defaultConf.Compute {
+		t.Error("expected Config.Compute to equal default value from config.DefaultValue()")
 	}
 
-	fileConf := config.DefaultConfig()
+	fileConf := config.Config(defaultConf)
+	fileConf.Server.HTTPPort = "8888"
 	tmp, cleanup := config.ToYamlTempFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 	result, err = MergeConfigFileWithFlags(tmp, flagConf)
 	if err != nil {
-		t.Fatal("unexpected error", err)
+		t.Error("unexpected error", err)
 	}
-
 	if result.Server.RPCAddress() != serverAddress {
-		t.Fatal("unexpected server address")
+		t.Error("unexpected server address")
 	}
-	if result.Node.ServerAddress != serverAddress {
-		t.Fatal("unexpected node server address")
+	if defaultConf.Server.HTTPPort == fileConf.Server.HTTPPort {
+		t.Error("ERROR")
 	}
-	if result.RPC.ServerAddress != serverAddress {
-		t.Fatal("unexpected server address in worker config")
+	if result.Server.HTTPPort != fileConf.Server.HTTPPort {
+		t.Error("expected Config.Server.HTTPPort to equal the value from the config file")
 	}
-
-	if result.Compute != "local" {
-		t.Fatal("expected Config.Compute to equal default value from config.DefaultValue()")
+	if result.Compute != defaultConf.Compute {
+		t.Error("expected Config.Compute to equal default value from config.DefaultValue()")
 	}
 }

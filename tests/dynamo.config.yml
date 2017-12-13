@@ -1,13 +1,10 @@
 Database: dynamodb
+
 EventWriters: 
   - log
-  - dynamodb
 
 DynamoDB:
   Endpoint: http://localhost:18000
   Region: us-west-2
   Key: "test"
   Secret: "test"
-
-Worker:
-  TaskReader: dynamodb

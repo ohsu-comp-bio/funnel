@@ -3,6 +3,7 @@ package run
 import (
 	"fmt"
 	"github.com/kballard/go-shellquote"
+	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/spf13/pflag"
 	"io/ioutil"
 	"os"
@@ -120,6 +121,8 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	//f.StringVar(&cmdFile, "cmd-file", cmdFile, "Read cmd template from file")
 	f.BoolVar(&v.wait, "wait", v.wait, "")
 	f.StringSliceVar(&v.waitFor, "wait-for", v.waitFor, "")
+
+	f.SetNormalizeFunc(util.NormalizeFlags)
 	return f
 }
 

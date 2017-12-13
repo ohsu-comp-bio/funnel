@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/spf13/cobra"
 	"io"
@@ -40,6 +41,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			}
 		},
 	}
+	cmd.SetGlobalNormalizationFunc(util.NormalizeFlags)
 	f := cmd.PersistentFlags()
 	f.StringVarP(&tesServer, "server", "S", defaultTesServer, "")
 

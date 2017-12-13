@@ -13,13 +13,6 @@ Funnel will, by default, try to will try to automatically load credentials from 
 Available Config:
 ```
 Database: dynamodb
-EventWriters:
-  # log all events
-  - log
-
-Worker:
-  # get the task directly from the database
-  TaskReader: dynamodb
 
 DynamoDB:
   # Basename to use for dynamodb tables

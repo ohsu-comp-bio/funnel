@@ -39,13 +39,14 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			if err != nil {
 				return fmt.Errorf("error processing config: %v", err)
 			}
-
 			return nil
 		},
 	}
 
+	serverFlags := util.ServerFlags(&flagConf, &configFile)
+	cmd.SetGlobalNormalizationFunc(util.NormalizeFlags)
 	f := cmd.PersistentFlags()
-	f.AddFlagSet(util.ServerFlags(&flagConf, &configFile))
+	f.AddFlagSet(serverFlags)
 
 	run := &cobra.Command{
 		Use:   "run",

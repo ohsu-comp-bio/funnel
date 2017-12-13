@@ -12,4 +12,4 @@
 {{printf "#PBS -l file=%.0fgb" .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+{{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}

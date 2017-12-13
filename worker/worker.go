@@ -26,7 +26,7 @@ type DefaultWorker struct {
 
 // Run runs the Worker.
 // TODO document behavior of slow consumer of task log updates
-func (r *DefaultWorker) Run(pctx context.Context) {
+func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
@@ -42,6 +42,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	var run helper
 	var task *tes.Task
+	runerr = nil
 
 	r.Event.Info("Version", version.LogFields()...)
 	r.Event.State(tes.State_INITIALIZING)
@@ -63,15 +64,18 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 			// The task was canceled.
 			r.Event.Info("Canceled")
 			r.Event.State(tes.State_CANCELED)
+			runerr = fmt.Errorf("task canceled")
 		case run.execerr != nil:
 			// One of the executors failed
 			r.Event.Error("Exec error", "error", run.execerr)
 			r.Event.State(tes.State_EXECUTOR_ERROR)
+			runerr = run.execerr
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
 			r.Event.Error("System error", "error", run.syserr)
 			r.Event.State(tes.State_SYSTEM_ERROR)
+			runerr = run.syserr
 		default:
 			r.Event.State(tes.State_COMPLETE)
 		}
@@ -129,30 +133,32 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	}
 
 	// Run steps
-	for i, d := range task.Executors {
-		s := &stepWorker{
-			Conf:  r.Conf,
-			Event: r.Event.NewExecutorWriter(uint32(i)),
-			Command: &DockerCommand{
-				Image:         d.Image,
-				Command:       d.Command,
-				Env:           d.Env,
-				Volumes:       r.Mapper.Volumes,
-				Workdir:       d.Workdir,
-				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
-				// TODO make RemoveContainer configurable
-				RemoveContainer: true,
-				Event:           r.Event.NewExecutorWriter(uint32(i)),
-			},
-		}
+	if run.ok() {
+		for i, d := range task.GetExecutors() {
+			s := &stepWorker{
+				Conf:  r.Conf,
+				Event: r.Event.NewExecutorWriter(uint32(i)),
+				Command: &DockerCommand{
+					Image:         d.Image,
+					Command:       d.Command,
+					Env:           d.Env,
+					Volumes:       r.Mapper.Volumes,
+					Workdir:       d.Workdir,
+					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
+					// TODO make RemoveContainer configurable
+					RemoveContainer: true,
+					Event:           r.Event.NewExecutorWriter(uint32(i)),
+				},
+			}
 
-		// Opens stdin/out/err files and updates those fields on "cmd".
-		if run.ok() {
-			run.syserr = r.openStepLogs(s, d)
-		}
+			// Opens stdin/out/err files and updates those fields on "cmd".
+			if run.ok() {
+				run.syserr = r.openStepLogs(s, d)
+			}
 
-		if run.ok() {
-			run.execerr = s.Run(ctx)
+			if run.ok() {
+				run.execerr = s.Run(ctx)
+			}
 		}
 	}
 
@@ -184,6 +190,8 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	if run.ok() {
 		r.Event.Outputs(outputs)
 	}
+
+	return
 }
 
 // fixLinks walks the output paths, fixing cases where a symlink is

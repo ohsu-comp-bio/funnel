@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -82,7 +81,7 @@ func TestNoTasks(t *testing.T) {
 
 	// Count the number of times the worker factory was called
 	var count int
-	n.newWorker = func(context.Context, config.Config, string, *logger.Logger) error {
+	n.newWorker = func(context.Context, string) error {
 		count++
 		return nil
 	}
@@ -108,7 +107,7 @@ func TestNodeWorkerCreated(t *testing.T) {
 
 	// Count the number of times the worker factory was called
 	var count int
-	n.newWorker = func(context.Context, config.Config, string, *logger.Logger) error {
+	n.newWorker = func(context.Context, string) error {
 		count++
 		return nil
 	}

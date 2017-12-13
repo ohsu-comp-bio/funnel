@@ -60,7 +60,11 @@ func TestKafkaWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err = workerCmd.Run(ctx, conf, id, log)
+	ew, err := workerCmd.NewWorkerEventWriter(ctx, conf, log)
+	if err != nil {
+		t.Fatal("failed to instantiate event writer", err)
+	}
+	err = workerCmd.Run(ctx, conf, id, ew, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

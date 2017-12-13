@@ -18,23 +18,23 @@ import (
 )
 
 // Run runs the "worker run" command.
-func Run(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	w, err := NewWorker(ctx, conf, taskID, log)
+func Run(ctx context.Context, conf config.Config, taskID string, writer events.Writer, log *logger.Logger) error {
+  w, err := NewWorker(ctx, conf, taskID, writer, log)
 	if err != nil {
+		writer.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
+		writer.WriteEvent(
+			ctx,
+			events.NewSystemLog(taskID, 0, 0, "error", "error creating worker",
+				map[string]string{"error": err.Error()}),
+		)
 		return err
 	}
-	w.Run(ctx)
-	return nil
+
+	return w.Run(ctx)
 }
 
 // NewWorker returns a new Funnel worker based on the given config.
-func NewWorker(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) (*worker.DefaultWorker, error) {
-	if log == nil {
-		log = logger.NewLogger("worker", conf.Logger)
-	}
+func NewWorker(ctx context.Context, conf config.Config, taskID string, writer events.Writer, log *logger.Logger) (*worker.DefaultWorker, error) {
 	log.Debug("NewWorker", "config", conf, "taskID", taskID)
 
 	var err error
@@ -56,15 +56,34 @@ func NewWorker(ctx context.Context, conf config.Config, taskID string, log *logg
 		err = fmt.Errorf("unknown Database")
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
+		return nil, fmt.Errorf("failed to instantiate database client: %v", err)
 	}
-
 	if reader == nil {
 		reader = worker.NewGenericTaskReader(db.GetTask, taskID)
 	}
 
+	store, err := storage.NewStorage(conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate Storage backend: %v", err)
+	}
+
+	w := &worker.DefaultWorker{
+		Conf:       conf.Worker,
+		Mapper:     worker.NewFileMapper(path.Join(conf.Worker.WorkDir, taskID)),
+		Store:      store,
+		TaskReader: reader,
+		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, writer),
+	}
+
+	return w, nil
+}
+
+// NewWorkerEventWriter returns a new event multiwriter for use with the worker
+// based on the given config.
+func NewWorkerEventWriter(ctx context.Context, conf config.Config, log *logger.Logger) (events.Writer, error) {
+	var err error
 	var writer events.Writer
-	var writers []events.Writer
+	var writers events.MultiWriter
 
 	eventWriterSet := map[string]interface{}{
 		strings.ToLower(conf.Database): nil,
@@ -100,20 +119,5 @@ func NewWorker(ctx context.Context, conf config.Config, taskID string, log *logg
 		}
 	}
 
-	m := events.MultiWriter(writers)
-	ew := &events.ErrLogger{Writer: &m, Log: log}
-
-	s, err := storage.NewStorage(conf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate Storage backend: %v", err)
-	}
-
-	w := &worker.DefaultWorker{
-		Conf:       conf.Worker,
-		Mapper:     worker.NewFileMapper(path.Join(conf.Worker.WorkDir, taskID)),
-		Store:      s,
-		TaskReader: reader,
-		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, ew),
-	}
-	return w, nil
+	return &events.ErrLogger{Writer: &writers, Log: log}, nil
 }

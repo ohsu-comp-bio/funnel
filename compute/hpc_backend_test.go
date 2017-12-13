@@ -50,7 +50,12 @@ func TestSetupTemplatedHPCSubmit(t *testing.T) {
 {{.Executable}} worker run --config {{.Config}}
 `
 
-	b := HPCBackend{"test", "qsub", conf, tpl}
+	b := HPCBackend{
+		Name:      "test",
+		SubmitCmd: "qsub",
+		Template:  tpl,
+		Conf:      conf,
+	}
 
 	sf, err := b.setupTemplatedHPCSubmit(task)
 	if err != nil {

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/batch"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
@@ -44,9 +43,6 @@ type Server struct {
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
 func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
-	if log == nil {
-		log = logger.NewLogger("server", conf.Logger)
-	}
 	log.Debug("NewServer", "config", conf)
 
 	ctx := context.Background()
@@ -57,6 +53,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 
 	writers := events.MultiWriter{}
 
+	// Database
 	switch strings.ToLower(conf.Database) {
 	case "boltdb":
 		b, err := boltdb.NewBoltDB(conf.BoltDB)
@@ -66,7 +63,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		reader = b
 		nodes = b
 		queue = b
-		writers.Append(b)
+		writers = append(writers, b)
 
 	case "datastore":
 		d, err := datastore.NewDatastore(conf.Datastore)
@@ -82,7 +79,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			return nil, dberr(err)
 		}
 		reader = d
-		writers.Append(d)
+		writers = append(writers, d)
 
 	case "elastic":
 		e, err := elastic.NewElastic(ctx, conf.Elastic)
@@ -92,7 +89,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		reader = e
 		nodes = e
 		queue = e
-		writers.Append(e)
+		writers = append(writers, e)
 
 	case "mongodb":
 		m, err := mongodb.NewMongoDB(conf.MongoDB)
@@ -102,56 +99,13 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		reader = m
 		nodes = m
 		queue = m
-		writers.Append(m)
+		writers = append(writers, m)
 
 	default:
 		return nil, fmt.Errorf("unknown database: '%s'", conf.Database)
 	}
 
-	switch strings.ToLower(conf.Compute) {
-	case "manual":
-		if nodes == nil {
-			return nil, fmt.Errorf(
-				"cannot enable manual compute backend, database %s does not implement "+
-					"the scheduler service", conf.Database)
-		}
-		if queue == nil {
-			return nil, fmt.Errorf(
-				"cannot enable manual compute backend, database %s does not implement "+
-					"a task queue", conf.Database)
-		}
-
-		sched = &scheduler.Scheduler{
-			Conf:  conf.Scheduler,
-			Log:   log.Sub("scheduler"),
-			Nodes: nodes,
-			Queue: queue,
-			Event: &writers,
-		}
-
-	case "aws-batch":
-		b, err := batch.NewBackend(conf.AWSBatch)
-		if err != nil {
-			return nil, err
-		}
-		writers.Append(b)
-
-	case "gridengine":
-		writers.Append(gridengine.NewBackend(conf))
-	case "htcondor":
-		writers.Append(htcondor.NewBackend(conf))
-	case "local":
-		writers.Append(local.NewBackend(conf, workerCmd.Run, log.Sub("local")))
-	case "noop":
-		writers.Append(noop.NewBackend())
-	case "pbs":
-		writers.Append(pbs.NewBackend(conf))
-	case "slurm":
-		writers.Append(slurm.NewBackend(conf))
-	default:
-		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
-	}
-
+	// Event writers
 	var writer events.Writer
 	var err error
 
@@ -183,8 +137,53 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
 		}
 		if writer != nil {
-			writers.Append(writer)
+			writers = append(writers, writer)
 		}
+	}
+
+	// Compute
+	var compute events.Writer
+	switch strings.ToLower(conf.Compute) {
+	case "manual":
+		if nodes == nil {
+			return nil, fmt.Errorf(
+				"cannot enable manual compute backend, database %s does not implement "+
+					"the scheduler service", conf.Database)
+		}
+		if queue == nil {
+			return nil, fmt.Errorf(
+				"cannot enable manual compute backend, database %s does not implement "+
+					"a task queue", conf.Database)
+		}
+
+		sched = &scheduler.Scheduler{
+			Conf:  conf.Scheduler,
+			Log:   log.Sub("scheduler"),
+			Nodes: nodes,
+			Queue: queue,
+			Event: &writers,
+		}
+
+	case "aws-batch":
+		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, &writers)
+		if err != nil {
+			return nil, err
+		}
+
+	case "gridengine":
+		compute = gridengine.NewBackend(conf, reader, &writers)
+	case "htcondor":
+		compute = htcondor.NewBackend(ctx, conf, reader, &writers)
+	case "local":
+		compute = local.NewBackend(conf, log.Sub("local"))
+	case "noop":
+		compute = noop.NewBackend()
+	case "pbs":
+		compute = pbs.NewBackend(ctx, conf, reader, &writers)
+	case "slurm":
+		compute = slurm.NewBackend(ctx, conf, reader, &writers)
+	default:
+		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
 	}
 
 	return &Server{
@@ -195,9 +194,10 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			DisableHTTPCache: conf.Server.DisableHTTPCache,
 			Log:              log,
 			Tasks: &server.TaskService{
-				Name:  conf.Server.ServiceName,
-				Event: &writers,
-				Read:  reader,
+				Name:    conf.Server.ServiceName,
+				Event:   &writers,
+				Compute: compute,
+				Read:    reader,
 			},
 			Events: &events.Service{Writer: &writers},
 			Nodes:  nodes,

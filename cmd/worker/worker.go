@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +17,7 @@ func NewCommand() *cobra.Command {
 }
 
 type hooks struct {
-	Run func(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error
+	Run func(ctx context.Context, conf config.Config, taskID string, writer events.Writer, log *logger.Logger) error
 }
 
 func newCommandHooks() (*cobra.Command, *hooks) {
@@ -58,10 +59,20 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			if taskID == "" {
 				return fmt.Errorf("no taskID was provided")
 			}
+
 			log := logger.NewLogger("worker", conf.Logger)
-			return hooks.Run(context.Background(), conf, taskID, log)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			ew, err := NewWorkerEventWriter(ctx, conf, log)
+			if err != nil {
+				return err
+			}
+
+			return hooks.Run(ctx, conf, taskID, ew, log)
 		},
 	}
+
 	f = run.Flags()
 	f.StringVarP(&taskID, "taskID", "t", taskID, "Task ID")
 	cmd.AddCommand(run)

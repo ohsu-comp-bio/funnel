@@ -72,13 +72,19 @@ func fields(args ...interface{}) map[string]string {
 	return ss
 }
 
-// LogString returns a flattened string representation of the SystemLog event
-func (s *SystemLog) LogString() string {
-	parts := []string{
-		fmt.Sprintf("level='%s'", s.Level),
-		fmt.Sprintf("msg='%s'", escape(s.Msg)),
+// SysLogString returns a flattened string representation of the SystemLog event
+func (s *Event) SysLogString() string {
+	if s.Type != Type_SYSTEM_LOG {
+		return ""
 	}
-	for k, v := range s.Fields {
+	parts := []string{
+		fmt.Sprintf("level='%s'", s.GetSystemLog().Level),
+		fmt.Sprintf("msg='%s'", escape(s.GetSystemLog().Msg)),
+		fmt.Sprintf("timestamp='%s'", s.Timestamp),
+		fmt.Sprintf("task_attempt='%v'", s.Attempt),
+		fmt.Sprintf("executor_index='%v'", s.Index),
+	}
+	for k, v := range s.GetSystemLog().Fields {
 		parts = append(parts, fmt.Sprintf("%s='%s'", safeKey(k), escape(v)))
 	}
 	return strings.Join(parts, " ")

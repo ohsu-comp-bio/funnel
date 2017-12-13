@@ -7,7 +7,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/server/boltdb"
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
@@ -38,19 +37,18 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 	var err error
 	var db tes.ReadOnlyServer
 	var reader worker.TaskReader
-	var writer events.Writer
 
-	switch strings.ToLower(conf.Worker.TaskReader) {
+	switch strings.ToLower(conf.Database) {
 	case "dynamodb":
 		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 	case "elastic":
 		db, err = elastic.NewElastic(ctx, conf.Elastic)
 	case "mongodb":
 		db, err = mongodb.NewMongoDB(conf.MongoDB)
-	case "rpc":
-		reader, err = worker.NewRPCTaskReader(conf.RPC, taskID)
+	case "boltdb":
+		reader, err = worker.NewRPCTaskReader(conf.Server, taskID)
 	default:
-		err = fmt.Errorf("unknown TaskReader")
+		err = fmt.Errorf("unknown Database")
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
@@ -60,12 +58,11 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 		reader = worker.NewGenericTaskReader(db.GetTask, taskID)
 	}
 
-	writers := []events.Writer{}
-	eventWriterSet := make(map[string]interface{})
-	if strings.ToLower(conf.Database) == "boltdb" {
-		eventWriterSet["rpc"] = nil
-	} else {
-		eventWriterSet[strings.ToLower(conf.Database)] = nil
+	var writer events.Writer
+	var writers []events.Writer
+
+	eventWriterSet := map[string]interface{}{
+		strings.ToLower(conf.Database): nil,
 	}
 	for _, w := range conf.EventWriters {
 		eventWriterSet[strings.ToLower(w)] = nil
@@ -76,7 +73,7 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 		case "log":
 			writer = &events.Logger{Log: log}
 		case "boltdb":
-			writer, err = boltdb.NewBoltDB(conf.BoltDB)
+			writer, err = events.NewRPCWriter(conf.Server)
 		case "dynamodb":
 			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 		case "elastic":
@@ -88,15 +85,15 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 			writer = k
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
-		case "rpc":
-			writer, err = events.NewRPCWriter(conf.RPC)
 		default:
 			err = fmt.Errorf("unknown EventWriter")
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
 		}
-		writers = append(writers, writer)
+		if writer != nil {
+			writers = append(writers, writer)
+		}
 	}
 
 	m := events.MultiWriter(writers)

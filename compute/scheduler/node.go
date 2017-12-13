@@ -17,7 +17,7 @@ func NewNode(conf config.Config, log *logger.Logger, factory Worker) (*Node, err
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
-	cli, err := NewClient(conf.Node)
+	cli, err := NewClient(conf.Server)
 	if err != nil {
 		return nil, err
 	}

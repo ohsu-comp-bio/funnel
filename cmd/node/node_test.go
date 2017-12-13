@@ -8,7 +8,8 @@ import (
 )
 
 func TestPersistentPreRun(t *testing.T) {
-	serverAddress := "test:9999"
+	host := "test"
+	rpcport := "9999"
 
 	cwd, _ := os.Getwd()
 	workDir := path.Join(cwd, "funnel-work-dir")
@@ -19,19 +20,22 @@ func TestPersistentPreRun(t *testing.T) {
 
 	c, h := newCommandHooks()
 	h.Run = func(conf config.Config) error {
-		if conf.Node.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in Node config", conf.Node.ServerAddress)
+		if conf.Server.HostName != host {
+			t.Fatal("unexpected Server.HostName in config", conf.Server.HostName)
+		}
+		if conf.Server.RPCPort != rpcport {
+			t.Fatal("unexpected Server.RPCAddress in config", conf.Server.RPCPort)
 		}
 		if conf.Worker.WorkDir != workDir {
-			t.Fatal("unexpected WorkDir in Worker config", conf.Worker.WorkDir)
-		}
-		if conf.RPC.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in RPC config", conf.RPC.ServerAddress)
+			t.Fatal("unexpected Worker.WorkDir in config", conf.Worker.WorkDir)
 		}
 
 		return nil
 	}
 
-	c.SetArgs([]string{"run", "--config", tmp, "--server", serverAddress})
-	c.Execute()
+	c.SetArgs([]string{"run", "--config", tmp, "--Server.HostName", host, "--Server.RPCPort", rpcport})
+	err := c.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

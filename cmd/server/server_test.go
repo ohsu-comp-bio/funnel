@@ -7,9 +7,9 @@ import (
 )
 
 func TestPersistentPreRun(t *testing.T) {
-	hostname := "test"
-	rpc := "9999"
-	serverAddress := hostname + ":" + rpc
+	host := "test"
+	rpcport := "9999"
+	serverAddress := host + ":" + rpcport
 	backend := "test-backend"
 
 	fileConf := config.DefaultConfig()
@@ -24,18 +24,15 @@ func TestPersistentPreRun(t *testing.T) {
 		if conf.Server.HTTPPort != fileConf.Server.HTTPPort {
 			t.Fatal("unexpected http port in server config")
 		}
-		if conf.Node.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in node config")
-		}
-		if conf.RPC.ServerAddress != serverAddress {
-			t.Fatal("unexpected ServerAddress in worker config")
-		}
 		if conf.Compute != backend {
 			t.Fatal("unexpected Backend in config")
 		}
 		return nil
 	}
 
-	c.SetArgs([]string{"run", "--config", tmp, "--Server.Hostname", hostname, "--Server.RPCPort", rpc, "--Compute", backend})
-	c.Execute()
+	c.SetArgs([]string{"run", "--config", tmp, "--Server.HostName", host, "--Server.RPCPort", rpcport, "--Compute", backend})
+	err := c.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

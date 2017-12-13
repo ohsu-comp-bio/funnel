@@ -23,10 +23,9 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	}
 
 	var (
-		configFile    string
-		conf          config.Config
-		flagConf      config.Config
-		serverAddress string
+		configFile string
+		conf       config.Config
+		flagConf   config.Config
 	)
 
 	cmd := &cobra.Command{
@@ -36,11 +35,6 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
-			flagConf, err = util.ParseServerAddressFlag(serverAddress, flagConf)
-			if err != nil {
-				return fmt.Errorf("error parsing the server address: %v", err)
-			}
-
 			conf, err = util.MergeConfigFileWithFlags(configFile, flagConf)
 			if err != nil {
 				return fmt.Errorf("error processing config: %v", err)
@@ -49,8 +43,11 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			return nil
 		},
 	}
+
+	nodeFlags := util.ServerFlags(&flagConf, &configFile)
+	cmd.SetGlobalNormalizationFunc(util.NormalizeFlags)
 	f := cmd.PersistentFlags()
-	f.AddFlagSet(util.NodeFlags(&flagConf, &configFile, &serverAddress))
+	f.AddFlagSet(nodeFlags)
 
 	run := &cobra.Command{
 		Use:   "run",

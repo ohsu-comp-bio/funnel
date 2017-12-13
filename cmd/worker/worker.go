@@ -25,11 +25,10 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	}
 
 	var (
-		configFile    string
-		conf          config.Config
-		flagConf      config.Config
-		serverAddress string
-		taskID        string
+		configFile string
+		conf       config.Config
+		flagConf   config.Config
+		taskID     string
 	)
 
 	cmd := &cobra.Command{
@@ -37,11 +36,6 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Short: "Funnel worker commands.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-
-			flagConf, err = util.ParseServerAddressFlag(serverAddress, flagConf)
-			if err != nil {
-				return fmt.Errorf("error parsing the server address: %v", err)
-			}
 
 			conf, err = util.MergeConfigFileWithFlags(configFile, flagConf)
 			if err != nil {
@@ -51,8 +45,10 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			return nil
 		},
 	}
+	workerFlags := util.WorkerFlags(&flagConf, &configFile)
+	cmd.SetGlobalNormalizationFunc(util.NormalizeFlags)
 	f := cmd.PersistentFlags()
-	f.AddFlagSet(util.WorkerFlags(&flagConf, &configFile, &serverAddress))
+	f.AddFlagSet(workerFlags)
 
 	run := &cobra.Command{
 		Use:   "run",
@@ -67,8 +63,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		},
 	}
 	f = run.Flags()
-	f.StringVar(&taskID, "task-id", "", "Task ID")
-
+	f.StringVarP(&taskID, "taskID", "t", taskID, "Task ID")
 	cmd.AddCommand(run)
 
 	return cmd, hooks

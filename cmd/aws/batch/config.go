@@ -28,6 +28,7 @@ type ComputeEnvConfig struct {
 	ServiceRole      string
 	InstanceRole     string
 	InstanceTypes    []string
+	ImageID          string
 }
 
 // JobQueueConfig represents configuration of the AWS Batch
@@ -163,13 +164,13 @@ func DefaultConfig() Config {
 		},
 	}
 
+	c.Funnel.Database = "dynamodb"
+	c.Funnel.EventWriters = []string{"dynamodb", "log"}
+	c.Funnel.DynamoDB.TableBasename = "funnel"
+	c.Funnel.DynamoDB.Region = ""
 	c.Funnel.Worker.WorkDir = "/opt/funnel-work-dir"
 	c.Funnel.Worker.UpdateRate = time.Second * 10
 	c.Funnel.Worker.BufferSize = 10000
-	c.Funnel.Worker.TaskReader = "dynamodb"
-	c.Funnel.DynamoDB.TableBasename = "funnel"
-	c.Funnel.DynamoDB.Region = ""
-	c.Funnel.EventWriters = []string{"dynamodb", "log"}
 
 	return c
 }

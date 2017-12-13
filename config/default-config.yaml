@@ -7,9 +7,9 @@ Database: boltdb
 Compute: local
 
 # The name of the active event writer backend(s).
-# Available backends: rpc, log, dynamodb, elastic, mongodb, kafka
+# Available backends: log, boltdb, dynamodb, elastic, mongodb, kafka
 EventWriters: 
-  - rpc
+  - boltdb
   - log
 
 Logger:
@@ -36,6 +36,11 @@ Server:
   # Include a "Cache-Control: no-store" HTTP header in Get/List responses
   # to prevent caching by intermediary services.
   DisableHTTPCache: true
+
+  # RPC client connection timeout.
+  # In nanoseconds.
+  RPCClientTimeout: 60000000000 # 30 seconds
+
 
 # The scheduler is used for the Manual compute backend. 
 Scheduler:
@@ -75,9 +80,6 @@ Node:
   # How often to sync with the Funnel server.
   # In nanoseconds.
   UpdateRate: 5000000000 # 5 seconds
-  # RPC timeout for update/sync call.
-  # In nanoseconds.
-  UpdateTimeout: 30000000000 # 30 seconds
 
 Worker:
   # Files created during processing will be written in this directory.
@@ -90,10 +92,6 @@ Worker:
 
   # Maximum task log (stdout/err) size, in bytes to buffer between updates.
   BufferSize: 10000 # 10 KB
-
-  # The name of the active task reader backend.
-  # Available backends: rpc, dynamodb, elastic, mongodb
-  TaskReader: rpc
 
 #-------------------------------------------------------------------------------
 # Databases and/or Event Writers/Handlers
@@ -132,14 +130,6 @@ Kafka:
   Servers:
     - ""
   Topic: funnel
-
-RPC:
-  # RPC address of the Funnel server
-  ServerAddress: localhost:9090
-  # Password for basic auth. with the server APIs.
-  ServerPassword: ""
-  # Timeout (in nanoseconds) for gRPC calls
-  Timeout: 30000000000 # 30 seconds
 
 #-------------------------------------------------------------------------------
 # Compute Backends

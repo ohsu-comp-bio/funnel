@@ -15,15 +15,6 @@ external dependencies, but it doesn't scale well to larger clusters.
 Available config:
 ```
 Database: boltdb
-EventWriters:
-  # log all events
-  - log
-  # since boltdb is an embedded database we need to send events over gRPC
-  - rpc
-
-Worker:
-  # get the task from the server over gRPC
-  TaskReader: rpc
 
 BoltDB:
   # Path to database file

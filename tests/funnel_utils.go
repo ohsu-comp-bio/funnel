@@ -61,8 +61,6 @@ type Funnel struct {
 // NewFunnel creates a new funnel test server with some test
 // configuration automatically set: random ports, temp work dir, etc.
 func NewFunnel(conf config.Config) *Funnel {
-	conf = config.EnsureServerProperties(conf)
-
 	cli, err := client.NewClient(conf.Server.HTTPAddress())
 	if err != nil {
 		panic(err)

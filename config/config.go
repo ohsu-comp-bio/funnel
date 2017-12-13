@@ -24,7 +24,6 @@ type Config struct {
 	Elastic  Elastic
 	MongoDB  MongoDB
 	Kafka    Kafka
-	RPC      RPC
 	// compute
 	HTCondor   HPCBackend
 	Slurm      HPCBackend
@@ -48,22 +47,29 @@ type Server struct {
 	RPCPort          string
 	Password         string
 	DisableHTTPCache bool
+	// timeout to use for RPC client connections in nanoseconds
+	RPCClientTimeout time.Duration
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort
 func (c Server) HTTPAddress() string {
-	if c.HostName != "" && c.HTTPPort != "" {
-		return "http://" + c.HostName + ":" + c.HTTPPort
+	http := ""
+	if c.HostName != "" {
+		http = "http://" + c.HostName
 	}
-	return ""
+	if c.HTTPPort != "" {
+		http = http + ":" + c.HTTPPort
+	}
+	return http
 }
 
 // RPCAddress returns the RPC address based on HostName and RPCPort
 func (c *Server) RPCAddress() string {
-	if c.HostName != "" && c.RPCPort != "" {
-		return c.HostName + ":" + c.RPCPort
+	rpc := c.HostName
+	if c.RPCPort != "" {
+		rpc = rpc + ":" + c.RPCPort
 	}
-	return ""
+	return rpc
 }
 
 // Scheduler contains funnel's basic scheduler configuration.
@@ -96,13 +102,7 @@ type Node struct {
 	Timeout time.Duration
 	// How often the node sends update requests to the server.
 	UpdateRate time.Duration
-	// Timeout duration for PutNode() gRPC calls
-	UpdateTimeout time.Duration
-	Metadata      map[string]string
-	// RPC address of the Funnel server
-	ServerAddress string
-	// Password for basic auth. with the server APIs.
-	ServerPassword string
+	Metadata   map[string]string
 }
 
 // Worker contains worker configuration.
@@ -113,24 +113,12 @@ type Worker struct {
 	UpdateRate time.Duration
 	// Max bytes to store in-memory between updates
 	BufferSize int64
-	// which component to read the task from
-	TaskReader string
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as
 // HTCondor or Slurm.
 type HPCBackend struct {
 	Template string
-}
-
-// RPC configures access to the Funnel RPC server.
-type RPC struct {
-	// RPC address of the Funnel server
-	ServerAddress string
-	// Password for basic auth. with the server APIs.
-	ServerPassword string
-	// Timeout duration for gRPC calls
-	Timeout time.Duration
 }
 
 // BoltDB describes the configuration for the BoltDB embedded database.

@@ -145,14 +145,18 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 
 	var writer events.Writer
 	var err error
-	for _, e := range conf.EventWriters {
+
+	eventWriterSet := make(map[string]interface{})
+	for _, w := range conf.EventWriters {
+		eventWriterSet[strings.ToLower(w)] = nil
+	}
+
+	for e := range eventWriterSet {
 		switch strings.ToLower(e) {
 		case strings.ToLower(conf.Database):
 			// noop
-		case strings.ToLower(conf.Compute):
-			// noop
 		case "log":
-			writer = &events.Logger{Log: log}
+			// noop
 		case "boltdb":
 			writer, err = boltdb.NewBoltDB(conf.BoltDB)
 		case "dynamodb":
@@ -166,14 +170,14 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			writer = k
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
-		case "rpc":
-			// noop
 		default:
 			return nil, fmt.Errorf("unknown event writer: '%s'", e)
 		}
-		writers.Append(writer)
 		if err != nil {
 			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
+		}
+		if writer != nil {
+			writers.Append(writer)
 		}
 	}
 

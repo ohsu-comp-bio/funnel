@@ -70,7 +70,6 @@ func TestifyConfig(conf config.Config) config.Config {
 		AllowedDirs: []string{storageDir, wd},
 	}
 
-	conf = config.EnsureServerProperties(conf)
 	return conf
 }
 

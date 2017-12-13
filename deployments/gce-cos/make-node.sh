@@ -16,7 +16,7 @@ gcloud compute instances create $NAME                        \
   --machine-type 'n1-standard-4'                             \
   --boot-disk-type 'pd-standard'                             \
   --boot-disk-size '250GB'                                   \
-  --metadata "funnel-node-serveraddress=$FUNNEL_SERVER"    \
+  --metadata "funnel-node-serveraddress=$FUNNEL_SERVER"      \
   --metadata-from-file user-data=./cloud-init.yaml
 
 # Tail serial port logs.

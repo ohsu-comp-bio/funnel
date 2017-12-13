@@ -26,12 +26,13 @@ func DefaultConfig() Config {
 		RPCPort:          "9090",
 		ServiceName:      "Funnel",
 		DisableHTTPCache: true,
+		RPCClientTimeout: time.Second * 60,
 	}
 
 	c := Config{
 		Compute:      "local",
 		Database:     "boltdb",
-		EventWriters: []string{"log", "rpc"},
+		EventWriters: []string{"log"},
 		// funnel components
 		Server: server,
 		Scheduler: Scheduler{
@@ -42,18 +43,14 @@ func DefaultConfig() Config {
 			NodeDeadTimeout: time.Minute * 5,
 		},
 		Node: Node{
-			ServerAddress:  server.RPCAddress(),
-			ServerPassword: server.Password,
-			Timeout:        -1,
-			UpdateRate:     time.Second * 5,
-			UpdateTimeout:  time.Second * 30,
-			Metadata:       map[string]string{},
+			Timeout:    -1,
+			UpdateRate: time.Second * 5,
+			Metadata:   map[string]string{},
 		},
 		Worker: Worker{
 			WorkDir:    workDir,
 			UpdateRate: time.Second * 5,
 			BufferSize: 10000,
-			TaskReader: "rpc",
 		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers
@@ -74,17 +71,12 @@ func DefaultConfig() Config {
 		Kafka: Kafka{
 			Topic: "funnel",
 		},
-		RPC: RPC{
-			ServerAddress:  server.RPCAddress(),
-			ServerPassword: server.Password,
-			Timeout:        time.Second * 30,
-		},
 		// storage
 		LocalStorage: LocalStorage{
 			AllowedDirs: allowedDirs,
 		},
 		HTTPStorage: HTTPStorage{
-			Timeout: time.Second * 30,
+			Timeout: time.Second * 60,
 		},
 		AmazonS3: AmazonS3Storage{
 			AWSConfig: AWSConfig{

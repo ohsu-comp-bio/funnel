@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -25,18 +26,24 @@ type client struct {
 // NewClient returns a new Client instance connected to the
 // scheduler and task logger services at a given address
 // (e.g. "localhost:9090")
-func NewClient(conf config.Node) (Client, error) {
+func NewClient(conf config.Server) (Client, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), conf.RPCClientTimeout)
+	defer cancel()
+
 	// TODO if this can't connect initially, should it retry?
 	//      give up after max retries? Does grpc.Dial already do this?
 	// Create a connection for gRPC clients
-	conn, err := grpc.Dial(conf.ServerAddress,
+	conn, err := grpc.DialContext(
+		ctx,
+		conf.RPCAddress(),
 		grpc.WithInsecure(),
-		util.PerRPCPassword(conf.ServerPassword),
+		grpc.WithBlock(),
+		util.PerRPCPassword(conf.Password),
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't open RPC connection to the scheduler at %s: %s",
-			conf.ServerAddress, err)
+			conf.RPCAddress(), err)
 	}
 
 	e := events.NewEventServiceClient(conn)

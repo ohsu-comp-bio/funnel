@@ -11,17 +11,6 @@ import (
 	"strings"
 )
 
-// EnsureServerProperties ensures that the server address and server password
-// is consistent between the worker, node, and server.
-func EnsureServerProperties(conf Config) Config {
-	conf.RPC.ServerAddress = conf.Server.RPCAddress()
-	conf.RPC.ServerPassword = conf.Server.Password
-
-	conf.Node.ServerAddress = conf.Server.RPCAddress()
-	conf.Node.ServerPassword = conf.Server.Password
-	return conf
-}
-
 // ToYaml formats the configuration into YAML and returns the bytes.
 func ToYaml(c Config) []byte {
 	// TODO handle error

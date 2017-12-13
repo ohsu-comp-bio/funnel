@@ -7,6 +7,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // WithMetadataConfig loads config from a GCE VM environment, in particular
@@ -35,16 +36,16 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 		if conf.Node.ID == "" {
 			conf.Node.ID = meta.Instance.Name
 		}
-		conf.Node.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
-		conf.RPC.ServerAddress = meta.Instance.Attributes.FunnelNodeServerAddress
+		parts := strings.SplitN(meta.Instance.Attributes.FunnelNodeServerAddress, ":", 2)
+		conf.Server.HostName = parts[0]
+		if len(parts) == 2 {
+			conf.Server.RPCPort = parts[1]
+		}
 	}
 
 	// If the configuration contains a node ID, assume that a node
 	// process should be started (instead of a server).
 	if conf.Node.ID != "" {
-		if conf.Node.ServerAddress == "" {
-			return conf, fmt.Errorf("Empty server address while starting node")
-		}
 		conf.GoogleStorage = config.GSStorage{}
 	}
 

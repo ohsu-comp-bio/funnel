@@ -61,6 +61,21 @@ func (s *Scheduler) CheckNodes() error {
 		var err error
 
 		if node.State == pbs.NodeState_GONE {
+			for _, tid := range node.TaskIds {
+				serr := s.Event.WriteEvent(ctx, events.NewState(tid, tes.State_SYSTEM_ERROR))
+				slerr := s.Event.WriteEvent(ctx, events.NewSystemLog(tid, 0, 0, "error",
+					"Task assigned to dead/gone node", map[string]string{
+						"nodeID": node.Id,
+					}))
+				if serr != nil || slerr != nil {
+					return fmt.Errorf(
+						"Error cleaning up task assigned to dead/gone node. taskID: %s nodeID: %s error: %v",
+						tid,
+						node.Id,
+						serr.Error()+"; "+slerr.Error(),
+					)
+				}
+			}
 			_, err = s.Nodes.DeleteNode(ctx, node)
 		} else {
 			_, err = s.Nodes.PutNode(ctx, node)

@@ -13,7 +13,7 @@ import (
 )
 
 // NewNode returns a new Node instance
-func NewNode(ctx context.Context, conf config.Config, log *logger.Logger, factory Worker) (*Node, error) {
+func NewNode(ctx context.Context, conf config.Config, factory Worker, log *logger.Logger) (*Node, error) {
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
@@ -221,11 +221,12 @@ func (n *Node) runTask(ctx context.Context, id string) {
 		}
 	}()
 
-	err := n.newWorker(ctx, n.conf, id, log)
+	err := n.newWorker(ctx, id)
 	if err != nil {
 		log.Error("error creating worker", err)
 		return
 	}
+
 	log.Info("Task complete")
 }
 

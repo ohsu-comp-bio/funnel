@@ -14,18 +14,31 @@ import (
 func Run(conf config.Config) error {
 	log := logger.NewLogger("node", conf.Logger)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
 	if conf.Node.ID == "" {
 		conf.Node.ID = scheduler.GenNodeID("manual")
 	}
 
 	ctx := context.Background()
+	ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 
-	n, err := scheduler.NewNode(ctx, conf, log, workerCmd.Run)
+	ew, err := workerCmd.NewWorkerEventWriter(ctx, conf, log)
 	if err != nil {
 		return err
 	}
 
-	ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	workerFactory := func(ctx context.Context, taskID string) error {
+		return workerCmd.Run(ctx, conf, taskID, ew, log)
+	}
+
+	n, err := scheduler.NewNode(ctx, conf, workerFactory, log)
+	if err != nil {
+		return err
+	}
+
 	n.Run(ctx)
 
 	return nil

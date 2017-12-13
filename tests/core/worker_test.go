@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func TestWorkerCmdRun(t *testing.T) {
+func TestWorkerRun(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	c := tests.DefaultConfig()
 	c.Compute = "noop"
@@ -27,46 +27,16 @@ func TestWorkerCmdRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err := workerCmd.Run(context.Background(), c, id, log)
+	ctx := context.Background()
+	ew, err := workerCmd.NewWorkerEventWriter(ctx, c, log)
+	if err != nil {
+		t.Fatal("failed to instantiate event writer", err)
+	}
+
+	err = workerCmd.Run(ctx, c, id, ew, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
-
-	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
-		Id:   id,
-		View: tes.TaskView_FULL,
-	})
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-
-	if task.State != tes.State_COMPLETE {
-		t.Fatal("unexpected state")
-	}
-
-	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("missing stdout")
-	}
-}
-
-func TestDefaultWorkerRun(t *testing.T) {
-	tests.SetLogOutput(log, t)
-	c := tests.DefaultConfig()
-	c.Compute = "noop"
-	f := tests.NewFunnel(c)
-	f.StartServer()
-
-	// this only writes the task to the DB since the 'noop'
-	// compute backend is in use
-	id := f.Run(`
-    --sh 'echo hello world'
-  `)
-
-	err := workerCmd.Run(context.Background(), c, id, log)
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-	f.Wait(id)
 
 	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,

@@ -15,13 +15,11 @@ The HTTP storage client is enabled by default, but may be explicitly disabled in
 worker config:
 
 ```
-Worker:
-  Storage:
-    HTTP:
-      Disabled: false
-      # Timeout for http(s) GET requests.
-      # In nanoseconds.
-      Timeout: 60000000000 # 60 seconds
+HTTPStorage:
+  Disabled: false
+  # Timeout for http(s) GET requests.
+  # In nanoseconds.
+  Timeout: 60000000000 # 60 seconds
 ```
 
 ### Example task

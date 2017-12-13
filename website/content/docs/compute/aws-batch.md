@@ -25,11 +25,24 @@ Note, we recommend creating the Job Definition with Funnel by running: `funnel a
 Funnel expects the JobDefinition to start a `worker` with a specific configuration. Only 
 advanced users should consider making any substantial changes to this Job Definition. 
 
+AWS Batch tasks, by default, launch the ECS Optimized AMI which includes 
+an 8GB volume for the operating system and a 22GB volume for Docker image and metadata 
+storage. The default Docker configuration allocates up to 10GB of this storage to 
+each container instance. You can read more about this AMI at:
+
+http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
+
+The process for [creating a custom AMI for AWS Batch][7] is well-documented. Because 
+AWS Batch has the same requirements for your AMI as Amazon ECS, use the default 
+Amazon ECS-optimized Amazon Linux AMI as a base and change it to better suite 
+your tasks.
+
 ### Create Resources With AWS
 
 Amazon provides a quick start guide with more information [here][2]. 
 
 * Create a Compute Environment - [link][3]
+* Create a custom AMI - [link][7]
 * Create a Job Queue - [link][4]
 * Define an EC2ContainerTaskRole with policies for managing access to S3 and DynamoDB - [link][5]
 * Create a Job Definition - [link][6]
@@ -89,50 +102,36 @@ Funnel will, by default, try to will try to automatically load credentials from 
 Alternatively, you may explicitly set the credentials in the config.
 
 ```YAML
-Server:
-  Database: "dynamodb"
-  Databases:
-    Dynamodb:
-      TableBasename: "funnel"
-      Region: "us-west-2"
-      Key: ""
-      Secret: ""
+Database: "dynamodb"
+Compute: "aws-batch"
+EventWriters:
+  - "log"
+  - "dynamodb"
 
-Backend: "aws-batch"
-Backends:
-  Batch:
-    JobDefinition: "funnel-job-def"
-    JobQueue: "funnel-job-queue" 
-    Region: "us-west-2"
-    Key: ""
-    Secret: ""
-            
+Dynamodb:
+  TableBasename: "funnel"
+  Region: "us-west-2"
+  Key: ""
+  Secret: ""
+
+Batch:
+  JobDefinition: "funnel-job-def"
+  JobQueue: "funnel-job-queue" 
+  Region: "us-west-2"
+  Key: ""
+  Secret: ""
+          
 Worker:
   TaskReader: "dynamodb"
-  TaskReaders:
-    Dynamodb:
-      TableBasename: "funnel"
-      Region: "us-west-2"
-      Key: ""
-      Secret: ""
-  ActiveEventWriters:
-    - "log"
-    - "dynamodb"
-  EventWriters:
-    Dynamodb:
-      TableBasename: "funnel"
-      Region: "us-west-2"
-      Key: ""
-      Secret: ""
-  Storage:
-    AmazonS3:
-      Key: ""
-      Secret: ""
+
+AmazonS3:
+  Key: ""
+  Secret: ""
 ```
 
 ### Known issues
 
-Disk size and host volume management extra setup. The `Task.Resources.DiskGb` field does not have any effect. See [issue 317](https://github.com/ohsu-comp-bio/funnel/issues/317).
+The `Task.Resources.DiskGb` field does not have any effect. See [issue 317](https://github.com/ohsu-comp-bio/funnel/issues/317).
 
 [0]: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html
 [1]: http://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html
@@ -141,3 +140,4 @@ Disk size and host volume management extra setup. The `Task.Resources.DiskGb` fi
 [4]: https://us-west-2.console.aws.amazon.com/batch/home?region=us-west-2#/queues/new
 [5]: https://console.aws.amazon.com/iam/home?region=us-west-2#/roles$new?step=permissions&selectedService=EC2ContainerService&selectedUseCase=EC2ContainerTaskRole
 [6]: https://us-west-2.console.aws.amazon.com/batch/home?region=us-west-2#/job-definitions/new
+[7]: http://docs.aws.amazon.com/batch/latest/userguide/create-batch-ami.html

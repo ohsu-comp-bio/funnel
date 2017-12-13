@@ -138,7 +138,7 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "stderr", ev.GetStderr()))
 
 	case events.Type_SYSTEM_LOG:
-		u = u.Script(taskLogUpdate(ev.Attempt, "system_logs", ev.GetSystemLog().LogString()))
+		u = u.Script(taskLogUpdate(ev.Attempt, "system_logs", ev.SysLogString()))
 	}
 
 	_, err := u.Do(ctx)

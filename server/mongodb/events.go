@@ -105,7 +105,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		)
 
 	case events.Type_SYSTEM_LOG:
-		syslog := req.GetSystemLog().LogString()
+		syslog := req.SysLogString()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
 			bson.M{"$push": bson.M{fmt.Sprintf("logs.%v.systemlogs", req.Attempt): syslog}},

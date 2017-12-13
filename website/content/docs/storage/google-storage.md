@@ -14,12 +14,10 @@ load credentials from the environment. Alternatively, you
 may explicitly set the credentials in the worker config:
 
 ```
-Worker:
-  Storage:
-    GS:
-      Disabled: false
-      # Path to account credentials file.
-      AccountFile: ""
+GoogleStorage:
+  Disabled: false
+  # Path to account credentials file.
+  AccountFile: ""
 ```
 
 ### Example task

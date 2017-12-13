@@ -14,16 +14,14 @@ load credentials from the environment. Alternatively, you
 may explicitly set the credentials in the worker config:
 
 ```
-Worker:
-  Storage:
-    Swift:
-      Disabled: false
-      UserName: ""
-      Password: ""
-      AuthURL: ""
-      TenantName: ""
-      TenantID: ""
-      RegionName: ""
+Swift:
+  Disabled: false
+  UserName: ""
+  Password: ""
+  AuthURL: ""
+  TenantName: ""
+  TenantID: ""
+  RegionName: ""
 ```
 
 ### Example task

@@ -26,8 +26,7 @@ func Run(ctx context.Context, conf config.Config, taskID string, log *logger.Log
 	if err != nil {
 		return err
 	}
-	w.Run(ctx)
-	return nil
+	return w.Run(ctx)
 }
 
 // NewWorker returns a new Funnel worker based on the given config.

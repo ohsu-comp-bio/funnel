@@ -46,6 +46,10 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	r.Event.Info("Version", version.LogFields()...)
 
+	if name, err := os.Hostname(); err == nil {
+		r.Event.Info("Hostname", "name", name)
+	}
+
 	task, run.syserr = r.TaskReader.Task()
 
 	r.Event.State(tes.State_INITIALIZING)

@@ -92,6 +92,10 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 				"nodeID", offer.Node.Id,
 				"node", offer.Node,
 			)
+			s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "info",
+				"Assigning task to node", map[string]string{
+					"nodeID": offer.Node.Id,
+				}))
 
 			// TODO this is important! write a test for this line.
 			//      when a task is assigned, its state is immediately Initializing
@@ -104,6 +108,11 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 					"taskID", task.Id,
 					"nodeID", offer.Node.Id,
 				)
+				s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "error",
+					"Error in AssignTask", map[string]string{
+						"error":  err.Error(),
+						"nodeID": offer.Node.Id,
+					}))
 				continue
 			}
 

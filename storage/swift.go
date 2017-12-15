@@ -8,6 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -23,7 +24,7 @@ type SwiftBackend struct {
 
 // NewSwiftBackend creates an SwiftBackend client instance, give an endpoint URL
 // and a set of authentication credentials.
-func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
+func NewSwiftBackend(conf config.SwiftStorage) (Backend, error) {
 
 	// Create a connection
 	conn := &swift.Connection{
@@ -49,7 +50,21 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 		chunkSize = conf.ChunkSizeBytes
 	}
 
-	return &SwiftBackend{conn, chunkSize}, nil
+	b := &SwiftBackend{conn, chunkSize}
+	return &retrier{
+		backend: b,
+		shouldRetry: func(err error) bool {
+			// Retry on errors that swift names specifically.
+			if err == swift.ObjectCorrupted || err == swift.TimeoutError {
+				return true
+			}
+			// Retry on service unavailable.
+			if se, ok := err.(*swift.Error); ok {
+				return se.StatusCode == http.StatusServiceUnavailable
+			}
+			return false
+		},
+	}, nil
 }
 
 // Get copies an object from storage to the host path.

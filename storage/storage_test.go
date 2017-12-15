@@ -73,11 +73,9 @@ func TestStorageWithConfig(t *testing.T) {
 func TestS3UrlProcessing(t *testing.T) {
 	b, err := NewGenericS3Backend(config.GenericS3Storage{
 		Endpoint: "s3.amazonaws.com",
-		Key:      "",
-		Secret:   "",
 	})
 	if err != nil {
-		t.Fatal("Error creating generic S3 backend:", err)
+		t.Fatal(err)
 	}
 
 	expectedBucket := "1000genomes"

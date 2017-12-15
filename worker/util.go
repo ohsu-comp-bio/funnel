@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime/debug"
 	"syscall"
 )
 
@@ -27,7 +28,8 @@ func getExitCode(err error) int {
 func handlePanic(cb func(error)) {
 	if r := recover(); r != nil {
 		if e, ok := r.(error); ok {
-			cb(e)
+			b := debug.Stack()
+			cb(fmt.Errorf("panic: %s\n%s", e, string(b)))
 		} else {
 			cb(fmt.Errorf("Unknown worker panic: %+v", r))
 		}

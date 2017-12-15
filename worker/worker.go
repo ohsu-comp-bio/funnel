@@ -80,6 +80,7 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 
 	// Recover from panics
 	defer handlePanic(func(e error) {
+		fmt.Printf("%#v", e)
 		run.syserr = e
 	})
 

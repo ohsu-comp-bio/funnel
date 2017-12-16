@@ -9,7 +9,7 @@ import (
 
 func TestRetrier(t *testing.T) {
 	f := &fakeBackend{}
-	r := retrier{backend: f}
+	r := retrier{backend: f, maxTries: 100}
 	bg := context.Background()
 
 	// Test that get is retried
@@ -52,6 +52,21 @@ func TestRetrier(t *testing.T) {
 
 	// Reset should retry
 	r.shouldRetry = nil
+}
+
+func TestRetrierMaxTries(t *testing.T) {
+	f := &fakeBackend{}
+	r := retrier{backend: f, maxTries: 5}
+	bg := context.Background()
+
+	f.onGet = func() error {
+		return fmt.Errorf("always fail")
+	}
+
+	r.Get(bg, "url", "path", tes.FileType_FILE)
+	if f.getCalls != 5 {
+		t.Errorf("expected Get to be called 5 times, got %d", f.getCalls)
+	}
 }
 
 type fakeBackend struct {

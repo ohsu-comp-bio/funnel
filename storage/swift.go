@@ -55,7 +55,8 @@ func NewSwiftBackend(conf config.SwiftStorage) (Backend, error) {
 
 	b := &SwiftBackend{conn, chunkSize}
 	return &retrier{
-		backend: b,
+		backend:  b,
+		maxTries: conf.MaxRetries,
 		shouldRetry: func(err error) bool {
 			// Retry on errors that swift names specifically.
 			if err == swift.ObjectCorrupted || err == swift.TimeoutError {

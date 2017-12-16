@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"os"
 	"testing"
@@ -30,6 +31,10 @@ func TestHelloWorld(t *testing.T) {
   `)
 	task := fun.Wait(id)
 
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected task to complete")
+	}
+
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout")
 	}
@@ -40,6 +45,10 @@ func TestResourceRequest(t *testing.T) {
     --sh 'echo I need resources!' --cpu 1 --ram 2 --disk 5
   `)
 	task := fun.Wait(id)
+
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected task to complete")
+	}
 
 	if task.Logs[0].Logs[0].Stdout != "I need resources!\n" {
 		t.Fatal("Missing stdout")

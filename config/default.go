@@ -83,6 +83,9 @@ func DefaultConfig() Config {
 				MaxRetries: 10,
 			},
 		},
+		Swift: SwiftStorage{
+			MaxRetries: 3,
+		},
 	}
 
 	// compute

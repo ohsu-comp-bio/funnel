@@ -73,7 +73,7 @@
         </tr>
         <tr ng-show="truncateContent(input)">
           <td>Content</td>
-          <td style="white-space: pre-wrap">{{ truncateContent(input) }}</td>
+          <td><pre class="logs-pre">{{ truncateContent(input) }}</pre></td>
         </tr>
       </table>
     </div>
@@ -131,11 +131,11 @@
       </tr>
       <tr ng-show="logs.stdout">
         <td>Stdout</td>
-        <td style="white-space: pre-wrap"><pre><code>{{ logs.stdout }}</code></pre></td>
+        <td><pre class="logs-pre"><code>{{ logs.stdout }}</code></pre></td>
       </tr>
       <tr ng-show="logs.stderr">
         <td>Stderr</td>
-        <td style="white-space: pre-wrap"><pre><code>{{ logs.stderr }}</code></pre></td>
+        <td><pre class="logs-pre"><code>{{ logs.stderr }}</code></pre></td>
       </tr>
     </table>
     

@@ -144,6 +144,10 @@ main {
     }
   }
 }
+.logs-pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 .syslogs-section h6 {
   margin-bottom: 0;

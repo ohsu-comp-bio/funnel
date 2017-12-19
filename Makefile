@@ -117,7 +117,7 @@ start-kafka:
 	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
 
 test-kafka:
-	@go test ./tests/kafka/
+	@go test ./tests/kafka/ -funnel-config $(CONFIGDIR)/kafka.config.yml
 
 test-htcondor:
 	@docker pull ohsucompbio/htcondor

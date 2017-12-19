@@ -1,4 +1,4 @@
-EventWriters: ["kafka", "rpc", "log"]
+EventWriters: ["kafka", "log"]
 
 Kafka:
   Servers: ["localhost:9092"]

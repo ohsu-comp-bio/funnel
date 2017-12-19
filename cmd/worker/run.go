@@ -79,10 +79,7 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 		case "elastic":
 			writer, err = elastic.NewElastic(ctx, conf.Elastic)
 		case "kafka":
-			k, kerr := events.NewKafkaWriter(conf.Kafka)
-			defer k.Close()
-			err = kerr
-			writer = k
+			writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
 		default:

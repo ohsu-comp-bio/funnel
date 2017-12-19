@@ -13,20 +13,16 @@ type KafkaWriter struct {
 }
 
 // NewKafkaWriter creates a new event writer for writing events to a Kafka topic.
-func NewKafkaWriter(conf config.Kafka) (*KafkaWriter, error) {
+func NewKafkaWriter(ctx context.Context, conf config.Kafka) (*KafkaWriter, error) {
 	producer, err := sarama.NewSyncProducer(conf.Servers, nil)
 	if err != nil {
 		return nil, err
 	}
+	go func() {
+		<-ctx.Done()
+		producer.Close()
+	}()
 	return &KafkaWriter{conf, producer}, nil
-}
-
-// Close closes the Kafka producer, cleaning up resources.
-func (k *KafkaWriter) Close() error {
-	if k.producer != nil {
-		return k.producer.Close()
-	}
-	return nil
 }
 
 // WriteEvent writes the event. Events may be sent in batches in the background by the
@@ -61,7 +57,7 @@ type KafkaReader struct {
 }
 
 // NewKafkaReader creates a new event reader for reading events from a Kafka topic and writing them to the given Writer.
-func NewKafkaReader(conf config.Kafka, w Writer) (*KafkaReader, error) {
+func NewKafkaReader(ctx context.Context, conf config.Kafka, w Writer) (*KafkaReader, error) {
 	con, err := sarama.NewConsumer(conf.Servers, nil)
 	if err != nil {
 		return nil, err
@@ -84,23 +80,11 @@ func NewKafkaReader(conf config.Kafka, w Writer) (*KafkaReader, error) {
 			w.WriteEvent(context.Background(), ev)
 		}
 	}()
-	return &KafkaReader{conf, con, p}, nil
-}
 
-// Close closes the Kafka reader, cleaning up resources.
-func (k *KafkaReader) Close() error {
-	var err, perr error
-	if k.con != nil {
-		err = k.con.Close()
-	}
-	if k.pcon != nil {
-		perr = k.pcon.Close()
-	}
-	if err != nil {
-		return err
-	}
-	if perr != nil {
-		return perr
-	}
-	return nil
+	go func() {
+		<-ctx.Done()
+		con.Close()
+		p.Close()
+	}()
+	return &KafkaReader{conf, con, p}, nil
 }

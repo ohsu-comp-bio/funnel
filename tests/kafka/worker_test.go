@@ -17,7 +17,7 @@ var fun *tests.Funnel
 var conf config.Config
 
 func TestMain(m *testing.M) {
-	conf := tests.DefaultConfig()
+	conf = tests.DefaultConfig()
 	conf.Compute = "noop"
 
 	var active bool

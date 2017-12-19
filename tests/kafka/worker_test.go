@@ -41,13 +41,15 @@ func TestMain(m *testing.M) {
 func TestKafkaWorkerRun(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
+	ctx := context.Background()
+	// Task builder collects events into a task view.
 	task := &tes.Task{}
 	b := events.TaskBuilder{Task: task}
 	l := &events.Logger{Log: log}
 	m := &events.MultiWriter{b, l}
 
-	r, err := events.NewKafkaReader(conf.Kafka, m)
-	defer r.Close()
+	// Read events from kafka, write into task builder.
+	_, err := events.NewKafkaReader(ctx, conf.Kafka, m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,12 +60,13 @@ func TestKafkaWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err = workerCmd.Run(context.Background(), conf, id, log)
+	err = workerCmd.Run(ctx, conf, id, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
 	fun.Wait(id)
 
+	// Check the task (built from a stream of kafka events).
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("unexpected state")
 	}

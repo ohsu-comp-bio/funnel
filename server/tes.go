@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/version"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -67,5 +68,5 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 
 // GetServiceInfo returns service metadata.
 func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	return &tes.ServiceInfo{Name: ts.Name}, nil
+	return &tes.ServiceInfo{Name: ts.Name, Doc: version.String()}, nil
 }

@@ -231,6 +231,17 @@ app.controller('NodeInfoController', function($scope, $http, $routeParams, $loca
   });
 });
 
+app.controller('ServiceInfoController', function($scope, $http, $location) {
+  $http.get("/v1/tasks/service-info")
+  .success(function(data, status, headers, config) {
+    $scope.name = data.name;
+    $scope.doc = data.doc;
+  })
+  .error(function(data, status, headers, config){
+    $scope.error = data;
+  });
+});
+
 app.controller('Error404Controller', function() {});
 
 app.service('Page', function($rootScope){
@@ -269,9 +280,16 @@ app.config(
      var nodeInfo =  {
        templateUrl: '/static/node.html',
      }
+     var serviceInfo = {
+       templateUrl: "/static/service.html",
+       title: "Service",
+     }
 
      $routeProvider.
        when('/', taskList).
+       when('/v1/tasks/service-info', serviceInfo).
+       when('/tasks/service-info', serviceInfo).
+       when('/service-info', serviceInfo).
        when('/tasks', taskList).
        when('/v1/tasks', taskList).
        when('/tasks/:task_id', taskInfo).

@@ -3,12 +3,12 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/version"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
+	"github.com/ohsu-comp-bio/funnel/version"
 	"os"
 	"path/filepath"
 	"time"

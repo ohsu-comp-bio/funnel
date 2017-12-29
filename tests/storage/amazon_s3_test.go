@@ -10,6 +10,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tests"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"io/ioutil"
+	"strings"
 	"testing"
 )
 
@@ -21,6 +22,7 @@ func TestAmazonS3Storage(t *testing.T) {
 	}
 
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
+	ctx := context.Background()
 
 	client, err := newS3Test(conf.AmazonS3)
 	if err != nil {
@@ -43,14 +45,14 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	fPath := "testdata/test_in"
 	inFileURL := protocol + testBucket + "/" + fPath
-	_, err = store.Put(context.Background(), inFileURL, fPath, tes.FileType_FILE)
+	_, err = store.Put(ctx, inFileURL, fPath, tes.FileType_FILE)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	dPath := "testdata/test_dir"
 	inDirURL := protocol + testBucket + "/" + dPath
-	_, err = store.Put(context.Background(), inDirURL, dPath, tes.FileType_DIRECTORY)
+	_, err = store.Put(ctx, inDirURL, dPath, tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -59,7 +61,7 @@ func TestAmazonS3Storage(t *testing.T) {
 	outDirURL := protocol + testBucket + "/" + "test-output-directory"
 
 	task := &tes.Task{
-		Name: "s3 e2e",
+		Name: "storage e2e",
 		Inputs: []*tes.Input{
 			{
 				Url:  inFileURL,
@@ -97,7 +99,7 @@ func TestAmazonS3Storage(t *testing.T) {
 		},
 	}
 
-	resp, err := fun.RPC.CreateTask(context.Background(), task)
+	resp, err := fun.RPC.CreateTask(ctx, task)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +112,7 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	err = store.Get(context.Background(), outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
+	err = store.Get(ctx, outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -127,7 +129,7 @@ func TestAmazonS3Storage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	err = store.Get(context.Background(), outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	err = store.Get(ctx, outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}
@@ -142,6 +144,53 @@ func TestAmazonS3Storage(t *testing.T) {
 		t.Log("expected:", expected)
 		t.Log("actual:  ", actual)
 		t.Fatal("unexpected content")
+	}
+
+	// should succeed with warning when there is an input or output directory that
+	// does not exist
+	task = &tes.Task{
+		Name: "storage e2e",
+		Inputs: []*tes.Input{
+			{
+				Url:  protocol + testBucket + "/this/path/does/not/exist",
+				Path: "/opt/inputs/test-directory",
+				Type: tes.FileType_DIRECTORY,
+			},
+		},
+		Outputs: []*tes.Output{
+			{
+				Path: "/opt/workdir/this/path/does/not/exist/test-output-directory",
+				Url:  outDirURL,
+				Type: tes.FileType_DIRECTORY,
+			},
+		},
+		Executors: []*tes.Executor{
+			{
+				Image: "alpine:latest",
+				Command: []string{
+					"sleep", "1",
+				},
+			},
+		},
+	}
+
+	resp, err = fun.RPC.CreateTask(ctx, task)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	taskFinal = fun.Wait(resp.Id)
+	if taskFinal.State != tes.State_COMPLETE {
+		t.Fatal("Expected task failure")
+	}
+	found := false
+	for _, log := range taskFinal.Logs[0].SystemLogs {
+		if strings.Contains(log, "level='warning'") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("Expected warning in system logs")
 	}
 }
 

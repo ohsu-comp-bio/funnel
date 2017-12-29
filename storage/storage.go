@@ -8,6 +8,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -22,6 +23,11 @@ const (
 	// Directory represents the directory type
 	Directory = tes.FileType_DIRECTORY
 )
+
+// ErrEmptyDirectory is returned by Get/Put in these cases:
+//   1. Local file system - Directory exists, but is empty
+//   2. Object store - No objects match prefix
+var ErrEmptyDirectory = errors.New("no files found in directory")
 
 // Backend provides an interface for a storage backend.
 // New storage backends must support this interface.
@@ -140,9 +146,17 @@ func (storage Storage) Put(ctx context.Context, url string, path string, class t
 			Path:      path,
 			SizeBytes: fileSize(path),
 		})
+
 	case Directory:
 		var files []hostfile
 		files, err = walkFiles(path)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(files) == 0 {
+			return nil, ErrEmptyDirectory
+		}
 
 		for _, f := range files {
 			u := strings.TrimSuffix(url, "/") + "/" + f.rel
@@ -220,6 +234,10 @@ type hostfile struct {
 
 func walkFiles(root string) ([]hostfile, error) {
 	var files []hostfile
+
+	if dinfo, err := os.Stat(root); os.IsNotExist(err) || !dinfo.IsDir() {
+		return nil, fmt.Errorf("%s does not exist or is not a directory", root)
+	}
 
 	err := filepath.Walk(root, func(p string, f os.FileInfo, err error) error {
 		if !f.IsDir() {

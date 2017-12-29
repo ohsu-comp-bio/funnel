@@ -37,27 +37,30 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 	path := getPath(url)
 
 	var err error
-	if class == File {
+
+	switch class {
+	case File:
 		err = linkFile(path, hostPath)
-	} else if class == Directory {
-		err = filepath.Walk(path, func(p string, f os.FileInfo, err error) error {
-			if !f.IsDir() {
-				rel, err := filepath.Rel(path, p)
-				if err != nil {
-					return err
-				}
-				return local.Get(ctx, p, filepath.Join(hostPath, rel), File)
-			}
-			return nil
-		})
-	} else {
+
+	case Directory:
+		files, err := walkFiles(path)
+		if err != nil {
+			return err
+		}
+		if len(files) == 0 {
+			return ErrEmptyDirectory
+		}
+
+		for _, f := range files {
+			p := filepath.Join(hostPath, f.rel)
+			return local.Get(ctx, f.abs, p, File)
+		}
+
+	default:
 		err = fmt.Errorf("Unknown file class: %s", class)
 	}
 
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // PutFile copies a file from the hostPath into storage.

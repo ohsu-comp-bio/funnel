@@ -76,12 +76,20 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		return nil
 
 	case Directory:
-		// TODO not handling pagination
-		objects, err := gs.svc.Objects.List(url.bucket).Prefix(url.path).Do()
+		objects := []*storage.Object{}
+		err := gs.svc.Objects.List(url.bucket).Prefix(url.path).Pages(ctx,
+			func(objs *storage.Objects) error {
+				objects = append(objects, objs.Items...)
+				return nil
+			})
 		if err != nil {
 			return err
 		}
-		for _, obj := range objects.Items {
+		if len(objects) == 0 {
+			return ErrEmptyDirectory
+		}
+
+		for _, obj := range objects {
 			call := gs.svc.Objects.Get(url.bucket, obj.Name)
 			key := strings.TrimPrefix(obj.Name, url.path)
 			err := download(call, path.Join(hostPath, key))

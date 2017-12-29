@@ -49,6 +49,8 @@ func (l *Logger) SetLevel(lvl string) {
 		l.logrus.Level = logrus.DebugLevel
 	case "info":
 		l.logrus.Level = logrus.InfoLevel
+	case "warn":
+		l.logrus.Level = logrus.WarnLevel
 	case "error":
 		l.logrus.Level = logrus.ErrorLevel
 	default:
@@ -117,6 +119,19 @@ func (l *Logger) Error(msg string, args ...interface{}) {
 		f = util.ArgListToMap(args...)
 	}
 	l.base.WithFields(f).Error(msg)
+}
+
+// Warn logs an warning message
+//
+// After the first argument, arguments are key-value pairs which are written as structured logs.
+//     log.Info("Some message here", "key1", value1, "key2", value2)
+func (l *Logger) Warn(msg string, args ...interface{}) {
+	if l == nil {
+		return
+	}
+	defer recoverLogErr()
+	f := util.ArgListToMap(args...)
+	l.base.WithFields(f).Warn(msg)
 }
 
 // WithFields returns a new Logger instance with the given fields added to all log messages.

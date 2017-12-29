@@ -103,6 +103,9 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 		if err != nil {
 			return err
 		}
+		if len(objs) == 0 {
+			return ErrEmptyDirectory
+		}
 
 		for _, obj := range objs {
 			f, _, oerr := sw.conn.ObjectOpen(url.bucket, obj.Name, checkHash, headers)

@@ -47,7 +47,16 @@ func (s3 *GenericS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 		defer close(doneCh)
 		// Recursively list all objects in 'mytestbucket'
 		recursive := true
+		objects := []minio.ObjectInfo{}
 		for obj := range s3.client.ListObjects(url.bucket, url.path, recursive, doneCh) {
+			objects = append(objects, obj)
+		}
+
+		if len(objects) == 0 {
+			return ErrEmptyDirectory
+		}
+
+		for _, obj := range objects {
 			// Create the directories in the path
 			file := filepath.Join(hostPath, strings.TrimPrefix(obj.Key, url.path+"/"))
 			if err := os.MkdirAll(filepath.Dir(file), 0775); err != nil {

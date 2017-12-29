@@ -43,7 +43,7 @@ func NewAmazonS3Backend(conf config.AmazonS3Storage) (*AmazonS3Backend, error) {
 }
 
 // Get copies an object from S3 to the host path.
-func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
+func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) (err error) {
 
 	url := s3b.parse(rawurl)
 
@@ -64,6 +64,12 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 		if err != nil {
 			return fmt.Errorf("failed to create file %q, %v", hostPath, err)
 		}
+		defer func() {
+			cerr := hf.Close()
+			if cerr != nil {
+				err = fmt.Errorf("%v; %v", err, cerr)
+			}
+		}()
 
 		_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
 			Bucket: aws.String(url.bucket),
@@ -73,50 +79,55 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 			return err
 		}
 
-		err = hf.Close()
-		if err != nil {
-			return err
-		}
-
 	case Directory:
+		objects := []*s3.Object{}
 		err = client.ListObjectsV2PagesWithContext(
 			ctx,
 			&s3.ListObjectsV2Input{Bucket: aws.String(url.bucket), Prefix: aws.String(url.path)},
 			func(page *s3.ListObjectsV2Output, more bool) bool {
-				for _, obj := range page.Contents {
-					if *obj.Key != url.path+"/" {
-						// Create the directories in the path
-						file := filepath.Join(hostPath, strings.TrimPrefix(*obj.Key, url.path+"/"))
-						if err := os.MkdirAll(filepath.Dir(file), 0775); err != nil {
-							panic(err)
-						}
-
-						// Setup the local file
-						hf, err := os.Create(file)
-						if err != nil {
-							panic(err)
-						}
-
-						// Download the file using the AWS SDK
-						_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
-							Bucket: aws.String(url.bucket),
-							Key:    obj.Key,
-						})
-						if err != nil {
-							panic(err)
-						}
-
-						err = hf.Close()
-						if err != nil {
-							panic(err)
-						}
-					}
-				}
+				objects = append(objects, page.Contents...)
 				return true
 			},
 		)
 		if err != nil {
 			return err
+		}
+		if len(objects) == 0 {
+			return ErrEmptyDirectory
+		}
+
+		for _, obj := range objects {
+			if *obj.Key != url.path+"/" {
+				// Create the directories in the path
+				file := filepath.Join(hostPath, strings.TrimPrefix(*obj.Key, url.path+"/"))
+				if err := os.MkdirAll(filepath.Dir(file), 0775); err != nil {
+					return err
+				}
+
+				// Setup the local file
+				hf, err := os.Create(file)
+				if err != nil {
+					return err
+				}
+
+				// Download the file using the AWS SDK
+				_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
+					Bucket: aws.String(url.bucket),
+					Key:    obj.Key,
+				})
+				if err != nil {
+					cerr := hf.Close()
+					if cerr != nil {
+						return fmt.Errorf("%v; %v", err, cerr)
+					}
+					return err
+				}
+
+				err = hf.Close()
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 	default:
@@ -128,7 +139,6 @@ func (s3b *AmazonS3Backend) Get(ctx context.Context, rawurl string, hostPath str
 
 // PutFile copies an object (file) from the host path to S3.
 func (s3b *AmazonS3Backend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-
 	url := s3b.parse(rawurl)
 
 	region, err := s3manager.GetBucketRegion(ctx, s3b.sess, url.bucket, "us-east-1")
@@ -140,20 +150,19 @@ func (s3b *AmazonS3Backend) PutFile(ctx context.Context, rawurl string, hostPath
 	sess := s3b.sess.Copy(&aws.Config{Region: aws.String(region)})
 	manager := s3manager.NewUploader(sess)
 
-	fh, err := os.Open(hostPath)
+	hf, err := os.Open(hostPath)
 	if err != nil {
 		return fmt.Errorf("failed to open file %q, %v", hostPath, err)
 	}
+	defer hf.Close()
+
 	_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
 		Bucket: aws.String(url.bucket),
 		Key:    aws.String(url.path),
-		Body:   fh,
+		Body:   hf,
 	})
-	if err != nil {
-		return err
-	}
 
-	return fh.Close()
+	return err
 }
 
 // SupportsGet indicates whether this backend supports GET storage request.

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"io/ioutil"
 	"os"
 	"path"
@@ -30,7 +29,6 @@ func TestLocalGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	logger.Debug("TEMP DIR", tmp)
 	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	// File test
@@ -79,7 +77,6 @@ func TestLocalGetPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	logger.Debug("TEMP DIR", tmp)
 	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	ip := path.Join(tmp, "input.txt")
@@ -107,7 +104,6 @@ func TestLocalPut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	logger.Debug("TEMP DIR", tmp)
 	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	// File test
@@ -155,7 +151,6 @@ func TestLocalPutPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	logger.Debug("TEMP DIR", tmp)
 	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
 
 	cp := path.Join(tmp, "container.txt")
@@ -184,12 +179,10 @@ func TestSameFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	logger.Debug("TEMP DIR", tmp)
 	tmpOut, err := ioutil.TempDir("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}
-	logger.Debug("TEMP OUT DIR", tmpOut)
 
 	// Write the test files
 	cp := path.Join(tmp, "output.txt")

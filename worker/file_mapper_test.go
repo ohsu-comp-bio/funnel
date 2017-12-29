@@ -15,7 +15,7 @@ func TestMapTask(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := FileMapper{
-		dir: tmp,
+		WorkDir: tmp,
 	}
 
 	cwd, err := os.Getwd()

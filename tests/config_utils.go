@@ -63,7 +63,6 @@ func TestifyConfig(conf config.Config) config.Config {
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
-
 	fsutil.EnsureDir(storageDir)
 
 	conf.LocalStorage = config.LocalStorage{

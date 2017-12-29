@@ -93,6 +93,10 @@ Worker:
   # Maximum task log (stdout/err) size, in bytes to buffer between updates.
   BufferSize: 10000 # 10 KB
 
+  # Normally the worker deletes its working directory after executing.
+  # This option disables that behavior.
+  LeaveWorkDir: false
+
 #-------------------------------------------------------------------------------
 # Databases and/or Event Writers/Handlers
 #-------------------------------------------------------------------------------

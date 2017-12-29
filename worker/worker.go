@@ -7,7 +7,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"github.com/ohsu-comp-bio/funnel/version"
 	"os"
 	"path/filepath"
@@ -76,6 +75,11 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		default:
 			r.Event.State(tes.State_COMPLETE)
 		}
+
+		// cleanup workdir
+		if !r.Conf.LeaveWorkDir {
+			r.Mapper.Cleanup()
+		}
 	}()
 
 	// Recover from panics
@@ -88,15 +92,6 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 		run.taskCanceled = true
 	})
 	run.ctx = ctx
-
-	// Create working dir
-	var dir string
-	if run.ok() {
-		dir, run.syserr = filepath.Abs(filepath.Join(r.Conf.WorkDir, task.Id))
-	}
-	if run.ok() {
-		run.syserr = fsutil.EnsureDir(dir)
-	}
 
 	// Prepare file mapper, which maps task file URLs to host filesystem paths
 	if run.ok() {

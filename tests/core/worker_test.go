@@ -8,6 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"github.com/ohsu-comp-bio/funnel/worker"
+	"os"
 	"path"
 	"testing"
 	"time"
@@ -81,6 +82,74 @@ func TestDefaultWorkerRun(t *testing.T) {
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("missing stdout")
+	}
+}
+
+func TestWorkDirCleanup(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	c := tests.DefaultConfig()
+	c.Compute = "noop"
+	f := tests.NewFunnel(c)
+	f.StartServer()
+
+	// cleanup
+	id := f.Run(`
+    --sh 'echo hello world'
+  `)
+	workdir := path.Join(c.Worker.WorkDir, id)
+
+	err := workerCmd.Run(context.Background(), c, id, log)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	f.Wait(id)
+
+	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_FULL,
+	})
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("unexpected state")
+	}
+
+	if _, err := os.Stat(workdir); !os.IsNotExist(err) {
+		t.Error("expected worker to cleanup workdir")
+	}
+
+	// no cleanup
+	id = f.Run(`
+    --sh 'echo hello world'
+  `)
+
+	c.Worker.LeaveWorkDir = true
+	workdir = path.Join(c.Worker.WorkDir, id)
+
+	err = workerCmd.Run(context.Background(), c, id, log)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	f.Wait(id)
+
+	task, err = f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id,
+		View: tes.TaskView_FULL,
+	})
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("unexpected state")
+	}
+
+	if fi, err := os.Stat(workdir); err != nil {
+		if !fi.IsDir() {
+			t.Error("expected worker to leave workdir")
+		}
 	}
 }
 

@@ -14,6 +14,7 @@ var fun *tests.Funnel
 var conf = tests.DefaultConfig()
 
 func TestMain(m *testing.M) {
+	conf.Worker.LeaveWorkDir = true
 	fun = tests.NewFunnel(conf)
 	fun.StartServer()
 	os.Exit(m.Run())

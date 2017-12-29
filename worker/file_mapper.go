@@ -23,7 +23,7 @@ type FileMapper struct {
 	Volumes []Volume
 	Inputs  []*tes.Input
 	Outputs []*tes.Output
-	dir     string
+	WorkDir string
 }
 
 // Volume represents a volume mounted into a docker container.
@@ -41,18 +41,27 @@ type Volume struct {
 // NewFileMapper returns a new FileMapper, which maps files into the given
 // base directory.
 func NewFileMapper(dir string) *FileMapper {
-	// TODO error handling
 	dir, _ = filepath.Abs(dir)
 	return &FileMapper{
 		Volumes: []Volume{},
 		Inputs:  []*tes.Input{},
 		Outputs: []*tes.Output{},
-		dir:     dir,
+		WorkDir: dir,
 	}
 }
 
 // MapTask adds all the volumes, inputs, and outputs in the given Task to the FileMapper.
 func (mapper *FileMapper) MapTask(task *tes.Task) error {
+	// Validate working directory
+	if !filepath.IsAbs(mapper.WorkDir) {
+		return fmt.Errorf("Mapper.WorkDir is not an absolute path")
+	}
+
+	// Create the working directory
+	err := fsutil.EnsureDir(mapper.WorkDir)
+	if err != nil {
+		return err
+	}
 
 	// Add all the volumes to the mapper
 	for _, vol := range task.Volumes {
@@ -125,10 +134,10 @@ func (mapper *FileMapper) AddVolume(hostPath string, mountPoint string, readonly
 // The mapped path is required to be a subpath of the mapper's base directory.
 // e.g. mapper.HostPath("../../foo") should fail with an error.
 func (mapper *FileMapper) HostPath(src string) (string, error) {
-	p := path.Join(mapper.dir, src)
+	p := path.Join(mapper.WorkDir, src)
 	p = path.Clean(p)
-	if !mapper.IsSubpath(p, mapper.dir) {
-		return "", fmt.Errorf("Invalid path: %s is not a valid subpath of %s", p, mapper.dir)
+	if !mapper.IsSubpath(p, mapper.WorkDir) {
+		return "", fmt.Errorf("Invalid path: %s is not a valid subpath of %s", p, mapper.WorkDir)
 	}
 	return p, nil
 }
@@ -280,7 +289,12 @@ func (mapper *FileMapper) IsSubpath(p string, base string) bool {
 // e.g. If the mapper is configured with a base dir of "/tmp/mapped_files", then
 // mapper.ContainerPath("/tmp/mapped_files/home/ubuntu/myfile") will return "/home/ubuntu/myfile".
 func (mapper *FileMapper) ContainerPath(src string) string {
-	p := strings.TrimPrefix(src, mapper.dir)
+	p := strings.TrimPrefix(src, mapper.WorkDir)
 	p = path.Clean("/" + p)
 	return p
+}
+
+// Cleanup deletes the working directory.
+func (mapper *FileMapper) Cleanup() error {
+	return os.RemoveAll(mapper.WorkDir)
 }

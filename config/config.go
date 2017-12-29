@@ -113,6 +113,9 @@ type Worker struct {
 	UpdateRate time.Duration
 	// Max bytes to store in-memory between updates
 	BufferSize int64
+	// Normally the worker cleans up its working directory after executing.
+	// This option disables that behavior.
+	LeaveWorkDir bool
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

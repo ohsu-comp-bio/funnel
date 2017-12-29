@@ -16,15 +16,16 @@ import (
 // NewBackend returns a new HTCondor backend instance.
 func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer) *compute.HPCBackend {
 	b := &compute.HPCBackend{
-		Name:      "htcondor",
-		SubmitCmd: "condor_submit",
-		CancelCmd: "condor_rm",
-		Conf:      conf,
-		Template:  conf.HTCondor.Template,
-		Event:     writer,
-		Database:  reader,
-		ExtractID: extractID,
-		MapStates: mapStates,
+		Name:          "htcondor",
+		SubmitCmd:     "condor_submit",
+		CancelCmd:     "condor_rm",
+		Conf:          conf,
+		Template:      conf.HTCondor.Template,
+		Event:         writer,
+		Database:      reader,
+		ExtractID:     extractID,
+		MapStates:     mapStates,
+		ReconcileRate: conf.HTCondor.ReconcileRate,
 	}
 	go b.Reconcile(ctx)
 	return b

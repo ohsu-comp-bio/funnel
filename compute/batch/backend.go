@@ -146,7 +146,7 @@ func (b *Backend) Cancel(taskID string) error {
 // In this context a "FAILED" state is being used as a generic term that captures
 // one or more terminal states for the backend.
 func (b *Backend) reconcile(ctx context.Context) {
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(b.conf.ReconcileRate)
 
 	for {
 		select {

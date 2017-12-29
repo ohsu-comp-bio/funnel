@@ -16,15 +16,16 @@ import (
 // NewBackend returns a new Slurm HPCBackend instance.
 func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer) *compute.HPCBackend {
 	b := &compute.HPCBackend{
-		Name:      "slurm",
-		SubmitCmd: "sbatch",
-		CancelCmd: "scancel",
-		Conf:      conf,
-		Template:  conf.Slurm.Template,
-		Event:     writer,
-		Database:  reader,
-		ExtractID: extractID,
-		MapStates: mapStates,
+		Name:          "slurm",
+		SubmitCmd:     "sbatch",
+		CancelCmd:     "scancel",
+		Conf:          conf,
+		Template:      conf.Slurm.Template,
+		Event:         writer,
+		Database:      reader,
+		ExtractID:     extractID,
+		MapStates:     mapStates,
+		ReconcileRate: conf.Slurm.ReconcileRate,
 	}
 	go b.Reconcile(ctx)
 	return b

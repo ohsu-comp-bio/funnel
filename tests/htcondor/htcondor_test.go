@@ -6,12 +6,15 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"os"
 	"testing"
+	"time"
 )
 
 var fun *tests.Funnel
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
+	conf.HTCondor.ReconcileRate = time.Second
+
 	if conf.Compute != "htcondor" {
 		logger.Debug("Skipping htcondor e2e tests...")
 		os.Exit(0)

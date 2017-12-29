@@ -13,15 +13,16 @@ import (
 // NewBackend returns a new PBS (Portable Batch System) HPCBackend instance.
 func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer) *compute.HPCBackend {
 	b := &compute.HPCBackend{
-		Name:      "pbs",
-		SubmitCmd: "qsub",
-		CancelCmd: "qdel",
-		Conf:      conf,
-		Template:  conf.PBS.Template,
-		Event:     writer,
-		Database:  reader,
-		ExtractID: extractID,
-		MapStates: mapStates,
+		Name:          "pbs",
+		SubmitCmd:     "qsub",
+		CancelCmd:     "qdel",
+		Conf:          conf,
+		Template:      conf.PBS.Template,
+		Event:         writer,
+		Database:      reader,
+		ExtractID:     extractID,
+		MapStates:     mapStates,
+		ReconcileRate: conf.GridEngine.ReconcileRate,
 	}
 	go b.Reconcile(ctx)
 	return b

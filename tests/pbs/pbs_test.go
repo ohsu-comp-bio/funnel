@@ -6,12 +6,15 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"os"
 	"testing"
+	"time"
 )
 
 var fun *tests.Funnel
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
+	conf.PBS.ReconcileRate = time.Second
+
 	if conf.Compute != "pbs" {
 		logger.Debug("Skipping PBS/Torque e2e tests...")
 		os.Exit(0)

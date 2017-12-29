@@ -18,15 +18,16 @@ import (
 
 // HPCBackend represents an HPCBackend such as HtCondor, Slurm, Grid Engine, etc.
 type HPCBackend struct {
-	Name      string
-	SubmitCmd string
-	CancelCmd string
-	Template  string
-	Conf      config.Config
-	Event     events.Writer
-	Database  tes.ReadOnlyServer
-	ExtractID func(string) string
-	MapStates func([]string) ([]*HPCTaskState, error)
+	Name          string
+	SubmitCmd     string
+	CancelCmd     string
+	Template      string
+	Conf          config.Config
+	Event         events.Writer
+	Database      tes.ReadOnlyServer
+	ExtractID     func(string) string
+	MapStates     func([]string) ([]*HPCTaskState, error)
+	ReconcileRate time.Duration
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -128,7 +129,7 @@ func (b *HPCBackend) Cancel(taskID string) error {
 // In this context a "FAILED" state is being used as a generic term that captures
 // one or more terminal states for the backend.
 func (b *HPCBackend) Reconcile(ctx context.Context) {
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(b.ReconcileRate)
 
 	for {
 		select {

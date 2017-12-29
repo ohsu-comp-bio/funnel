@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/alecthomas/units"
 	"github.com/ncw/swift"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -43,8 +44,10 @@ func NewSwiftBackend(conf config.SwiftStorage) (*SwiftBackend, error) {
 	}
 
 	var chunkSize int64
-	if conf.ChunkSizeBytes < 10000000 {
-		chunkSize = 500000000 // 500 MB
+	if conf.ChunkSizeBytes < int64(100*units.MB) {
+		chunkSize = int64(100 * units.MB)
+	} else if conf.ChunkSizeBytes > int64(5*units.GB) {
+		chunkSize = int64(5 * units.GB)
 	} else {
 		chunkSize = conf.ChunkSizeBytes
 	}
@@ -139,8 +142,7 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 	var headers swift.Headers
 
 	fSize := fileSize(hostPath)
-	// upload as chunks if file size is > 4.95 GB (swift has a 5 GB limit for objects)
-	if fSize < 4950000000 {
+	if fSize < int64(5*units.GB) {
 		writer, err = sw.conn.ObjectCreate(url.bucket, url.path, checkHash, hash, contentType, headers)
 	} else {
 		writer, err = sw.conn.StaticLargeObjectCreateFile(&swift.LargeObjectOpts{

@@ -22,12 +22,6 @@
 [submodule "vendor/gopkg.in/yaml.v2"]
 	path = vendor/gopkg.in/yaml.v2
 	url = https://gopkg.in/yaml.v2
-[submodule "vendor/github.com/rackspace/gophercloud"]
-	path = vendor/github.com/rackspace/gophercloud
-	url = https://github.com/rackspace/gophercloud
-[submodule "vendor/github.com/mitchellh/mapstructure"]
-	path = vendor/github.com/mitchellh/mapstructure
-	url = https://github.com/mitchellh/mapstructure
 [submodule "vendor/github.com/docker/docker"]
 	path = vendor/github.com/docker/docker
 	url = https://github.com/docker/docker
@@ -176,3 +170,6 @@
 [submodule "vendor/github.com/mitchellh/go-homedir"]
 	path = vendor/github.com/mitchellh/go-homedir
 	url = https://github.com/mitchellh/go-homedir
+[submodule "vendor/github.com/alecthomas/units"]
+	path = vendor/github.com/alecthomas/units
+	url = https://github.com/alecthomas/units

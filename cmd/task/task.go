@@ -26,24 +26,28 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Wait:   Wait,
 	}
 
-	defaultTesServer := "http://localhost:8000"
-	tesServer := defaultTesServer
+	var (
+		defaultTesServer = "http://localhost:8000"
+		tesServer        string
+	)
 
 	cmd := &cobra.Command{
 		Use:     "task",
 		Aliases: []string{"tasks"},
 		Short:   "Make API calls to a TES server.",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			if tesServer == defaultTesServer {
+			if tesServer == "" {
 				if val := os.Getenv("FUNNEL_SERVER"); val != "" {
 					tesServer = val
+				} else {
+					tesServer = defaultTesServer
 				}
 			}
 		},
 	}
 	cmd.SetGlobalNormalizationFunc(util.NormalizeFlags)
 	f := cmd.PersistentFlags()
-	f.StringVarP(&tesServer, "server", "S", defaultTesServer, "")
+	f.StringVarP(&tesServer, "server", "S", tesServer, fmt.Sprintf("(default \"%s\")", defaultTesServer))
 
 	create := &cobra.Command{
 		Use:   "create [task.json ...]",

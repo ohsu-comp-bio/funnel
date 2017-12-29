@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	defaultTesServer string = "http://localhost:8000"
-	tesServer        string = defaultTesServer
+	defaultTesServer = "http://localhost:8000"
+	tesServer        string
 	cursor           *GridCursor
 	cGrid            *compact.Grid
 	header           *widgets.TermDashHeader
@@ -23,9 +23,11 @@ var Cmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Start a Funnel dashboard in your terminal.",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if tesServer == defaultTesServer {
+		if tesServer == "" {
 			if val := os.Getenv("FUNNEL_SERVER"); val != "" {
 				tesServer = val
+			} else {
+				tesServer = defaultTesServer
 			}
 		}
 	},
@@ -36,7 +38,7 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.Flags().StringVarP(&tesServer, "server", "S", tesServer, "")
+	Cmd.Flags().StringVarP(&tesServer, "server", "S", tesServer, fmt.Sprintf("(default \"%s\")", defaultTesServer))
 }
 
 func termdash(tesHTTPServerAddress string) error {

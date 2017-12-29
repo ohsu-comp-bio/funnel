@@ -156,3 +156,57 @@ func TestServerEnv(t *testing.T) {
 	cmd.SetArgs([]string{"wait", "1"})
 	cmd.Execute()
 }
+
+// Test that the server flag overrides the FUNNEL_SERVER env var
+func TestServerFlagOverride(t *testing.T) {
+	os.Setenv("FUNNEL_SERVER", "foobar")
+	srv := "flagval"
+
+	cmd, h := newCommandHooks()
+
+	h.Create = func(server string, messages []string, w io.Writer) error {
+		if server != "flagval" {
+			t.Error("expected flagval")
+		}
+		return nil
+	}
+	h.List = func(server, view, state string, size uint32, all bool, w io.Writer) error {
+		if server != "flagval" {
+			t.Error("expected flagval")
+		}
+		return nil
+	}
+	h.Get = func(server string, ids []string, view string, w io.Writer) error {
+		if server != "flagval" {
+			t.Error("expected flagval")
+		}
+		return nil
+	}
+	h.Cancel = func(server string, ids []string, w io.Writer) error {
+		if server != "flagval" {
+			t.Error("expected flagval")
+		}
+		return nil
+	}
+	h.Wait = func(server string, ids []string) error {
+		if server != "flagval" {
+			t.Error("expected flagval")
+		}
+		return nil
+	}
+
+	cmd.SetArgs([]string{"create", "-S", srv, "foo.json"})
+	cmd.Execute()
+
+	cmd.SetArgs([]string{"list", "-S", srv})
+	cmd.Execute()
+
+	cmd.SetArgs([]string{"get", "-S", srv, "1"})
+	cmd.Execute()
+
+	cmd.SetArgs([]string{"cancel", "-S", srv, "1"})
+	cmd.Execute()
+
+	cmd.SetArgs([]string{"wait", "-S", srv, "1"})
+	cmd.Execute()
+}

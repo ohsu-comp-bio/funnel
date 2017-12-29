@@ -109,11 +109,15 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	// Download inputs
 	for _, input := range r.Mapper.Inputs {
 		if run.ok() {
-			r.Event.Info("Starting download", "url", input.Url)
+			r.Event.Info("Download started", "url", input.Url)
 			err := r.Store.Get(ctx, input.Url, input.Path, input.Type)
 			if err != nil {
-				run.syserr = err
-				r.Event.Error("Download failed", "url", input.Url, "error", err)
+				if err == storage.ErrEmptyDirectory {
+					r.Event.Warn("Download finished with warning", "url", input.Url, "warning", err)
+				} else {
+					run.syserr = err
+					r.Event.Error("Download failed", "url", input.Url, "error", err)
+				}
 			} else {
 				r.Event.Info("Download finished", "url", input.Url)
 			}
@@ -156,12 +160,16 @@ func (r *DefaultWorker) Run(pctx context.Context) {
 	var outputs []*tes.OutputFileLog
 	for _, output := range r.Mapper.Outputs {
 		if run.ok() {
-			r.Event.Info("Starting upload", "url", output.Url)
+			r.Event.Info("Upload started", "url", output.Url)
 			r.fixLinks(output.Path)
 			out, err := r.Store.Put(ctx, output.Url, output.Path, output.Type)
 			if err != nil {
-				run.syserr = err
-				r.Event.Error("Upload failed", "url", output.Url, "error", err)
+				if err == storage.ErrEmptyDirectory {
+					r.Event.Warn("Upload finished with warning", "url", output.Url, "warning", err)
+				} else {
+					run.syserr = err
+					r.Event.Error("Upload failed", "url", output.Url, "error", err)
+				}
 			} else {
 				r.Event.Info("Upload finished", "url", output.Url)
 			}

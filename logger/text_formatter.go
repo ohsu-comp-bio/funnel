@@ -58,6 +58,8 @@ func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	switch entry.Level {
 	case logrus.DebugLevel:
+		levelColor = aurora.MagentaFg
+	case logrus.WarnLevel:
 		levelColor = aurora.BrownFg
 	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
 		levelColor = aurora.RedFg

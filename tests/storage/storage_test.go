@@ -5,6 +5,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"os"
+	"path"
+	"strings"
 	"syscall"
 	"testing"
 )
@@ -147,5 +149,30 @@ func TestOverwriteOutput(t *testing.T) {
 
 	if task.State != tes.State_COMPLETE {
 		t.Fatal("expected success")
+	}
+}
+
+func TestEmptyDir(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	os.Mkdir(path.Join(fun.StorageDir, "test_in"), 0777)
+	id := fun.Run(`
+    --sh "sh -c 'echo hello'"
+    -I in={{ .storage }}/test_in
+    -O out={{ .storage }}/test_out
+  `)
+	task := fun.Wait(id)
+
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected success")
+	}
+
+	found := false
+	for _, log := range task.Logs[0].SystemLogs {
+		if strings.Contains(log, "level='warning'") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("Expected warning in system logs")
 	}
 }

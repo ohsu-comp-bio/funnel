@@ -47,6 +47,8 @@ func (el *Logger) WriteEvent(ctx context.Context, ev *Event) error {
 			args = append(args, k, v)
 		}
 		switch ev.GetSystemLog().Level {
+		case "warning":
+			log.Warn(ev.GetSystemLog().Msg, args...)
 		case "error":
 			log.Error(ev.GetSystemLog().Msg, args...)
 		case "info":

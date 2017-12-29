@@ -31,6 +31,11 @@ func (sle *SystemLogGenerator) Error(msg string, args ...interface{}) *Event {
 	return NewSystemLog(sle.taskID, sle.attempt, sle.index, "error", msg, fields(args...))
 }
 
+// Warn creates an Event for an 'warning' level log message
+func (sle *SystemLogGenerator) Warn(msg string, args ...interface{}) *Event {
+	return NewSystemLog(sle.taskID, sle.attempt, sle.index, "warning", msg, fields(args...))
+}
+
 // SystemLogWriter is a type that emulates the logger interface
 // and outputs Events.
 type SystemLogWriter struct {
@@ -58,6 +63,14 @@ func (sle *SystemLogWriter) Debug(msg string, args ...interface{}) error {
 // Error writes an Event for an 'error' level log message
 func (sle *SystemLogWriter) Error(msg string, args ...interface{}) error {
 	return sle.out.WriteEvent(context.Background(), sle.gen.Error(msg, args...))
+}
+
+// Warn writes an Event for an 'warning' level log message
+func (sle *SystemLogWriter) Warn(msg string, args ...interface{}) error {
+	if sle.lvl != "error" {
+		return sle.out.WriteEvent(context.Background(), sle.gen.Warn(msg, args...))
+	}
+	return nil
 }
 
 // converts an argument list to a map, e.g.

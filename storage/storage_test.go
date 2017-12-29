@@ -2,6 +2,9 @@ package storage
 
 import (
 	"github.com/ohsu-comp-bio/funnel/config"
+	"io/ioutil"
+	"os"
+	"path"
 	"testing"
 )
 
@@ -144,5 +147,31 @@ func TestS3UrlProcessing(t *testing.T) {
 		t.Log("expected:", expectedKey)
 		t.Log("actual:", url.path)
 		t.Error("wrong key")
+	}
+}
+
+func TestWalkFiles(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(path.Join(tmp, "test_file"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+
+	files, err := walkFiles(tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 {
+		t.Fatal("unexpected number of files returned by walkFiles")
+	}
+
+	nonexistent := path.Join(tmp, "this/path/doesnt/exist")
+	_, err = walkFiles(nonexistent)
+	if err == nil {
+		t.Fatal("expected error")
 	}
 }

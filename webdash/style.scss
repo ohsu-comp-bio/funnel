@@ -179,8 +179,11 @@ main {
 .syslogs-table .error-level .syslog-entry-key {
   color: #f31b08;
 }
-.syslogs-table .debug-level .syslog-entry-key {
+.syslogs-table .warning-level .syslog-entry-key {
   color: #c7c526;
+}
+.syslogs-table .debug-level .syslog-entry-key {
+  color: #b118b2;
 }
 
 .task-list-name {

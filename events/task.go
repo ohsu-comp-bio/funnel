@@ -59,6 +59,11 @@ func (eg *TaskGenerator) Error(msg string, args ...interface{}) *Event {
 	return eg.sys.Error(msg, args...)
 }
 
+// Warn creates a warning level system log message.
+func (eg *TaskGenerator) Warn(msg string, args ...interface{}) *Event {
+	return eg.sys.Warn(msg, args...)
+}
+
 // TaskWriter is a type that generates and writes task events.
 type TaskWriter struct {
 	gen *TaskGenerator
@@ -114,6 +119,11 @@ func (ew *TaskWriter) Debug(msg string, args ...interface{}) error {
 // Error creates an error level system log message.
 func (ew *TaskWriter) Error(msg string, args ...interface{}) error {
 	return ew.sys.Error(msg, args...)
+}
+
+// Warn creates a warning level system log message.
+func (ew *TaskWriter) Warn(msg string, args ...interface{}) error {
+	return ew.sys.Warn(msg, args...)
 }
 
 // NewExecutorWriter returns a new ExecutorEventWriter instance that inherits

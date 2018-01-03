@@ -17,8 +17,10 @@ such as stdout/err logs).
 
 Config:
 ```
-Database: datastore
-
 Datastore:
-  Project: <google project ID>
+  Project: ""
+  # Path to account credentials file.
+  # Optional. If possible, credentials will be automatically discovered
+  # from the environment.
+  CredentialsFile: ""
 ```

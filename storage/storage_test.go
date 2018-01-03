@@ -32,8 +32,8 @@ func TestStorageWithConfig(t *testing.T) {
 			AllowedDirs: []string{"/tmp"},
 		},
 		GoogleStorage: config.GSStorage{
-			Disabled:    false,
-			AccountFile: "",
+			Disabled:        false,
+			CredentialsFile: "",
 		},
 		AmazonS3: config.AmazonS3Storage{
 			Disabled: false,

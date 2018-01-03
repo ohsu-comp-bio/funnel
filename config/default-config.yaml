@@ -124,6 +124,10 @@ Elastic:
 # Google Cloud Datastore task database.
 Datastore:
   Project: ""
+  # Path to account credentials file.
+  # Optional. If possible, credentials will be automatically discovered
+  # from the environment.
+  CredentialsFile: ""
   
 MongoDB:
   # Addrs holds the addresses for the seed servers.
@@ -273,7 +277,7 @@ GoogleStorage:
   # Path to account credentials file.
   # Optional. If possible, credentials will be automatically discovered
   # from the environment.
-  AccountFile: ""
+  CredentialsFile: ""
 
 Swift:
   Disabled: false

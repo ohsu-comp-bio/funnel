@@ -13,7 +13,7 @@ Entity group and key structure:
 "Task" holds the basic task view.
 
 "TaskPart" holds the various parts of the full view:
-stdout, stderr, system logs, and input content.
+stdout, stderr, and input content.
 It has an parent link to the "Task".
 */
 
@@ -21,23 +21,33 @@ func taskKey(id string) *datastore.Key {
 	return datastore.NameKey("Task", id, nil)
 }
 
-func contentKey(task *datastore.Key) *datastore.Key {
-	return datastore.NameKey("TaskPart", "input-content", task)
+func contentKey(id string, index int) *datastore.Key {
+	k := fmt.Sprintf("input-content-%d", index)
+	return datastore.NameKey("TaskPart", k, taskKey(id))
 }
 
-func syslogKey(task *datastore.Key, attempt uint32) *datastore.Key {
-	k := fmt.Sprintf("syslog-%d", attempt)
-	return datastore.NameKey("TaskPart", k, task)
-}
-
-func stdoutKey(task *datastore.Key, attempt, index uint32) *datastore.Key {
+func stdoutKey(id string, attempt, index uint32) *datastore.Key {
 	k := fmt.Sprintf("stdout-%d-%d", attempt, index)
-	return datastore.NameKey("TaskPart", k, task)
+	return datastore.NameKey("TaskPart", k, taskKey(id))
 }
 
-func stderrKey(task *datastore.Key, attempt, index uint32) *datastore.Key {
+func stderrKey(id string, attempt, index uint32) *datastore.Key {
 	k := fmt.Sprintf("stderr-%d-%d", attempt, index)
-	return datastore.NameKey("TaskPart", k, task)
+	return datastore.NameKey("TaskPart", k, taskKey(id))
+}
+
+func viewPartKeys(t *tes.Task) []*datastore.Key {
+	var parts []*datastore.Key
+	for i := range t.Inputs {
+		parts = append(parts, contentKey(t.Id, i))
+	}
+	for attempt, a := range t.Logs {
+		for index := range a.Logs {
+			parts = append(parts, stdoutKey(t.Id, uint32(attempt), uint32(index)))
+			parts = append(parts, stderrKey(t.Id, uint32(attempt), uint32(index)))
+		}
+	}
+	return parts
 }
 
 /*
@@ -55,16 +65,15 @@ const (
 	contentPart partType = iota
 	stdoutPart
 	stderrPart
-	syslogPart
 )
 
 type part struct {
 	Type partType `datastore:",noindex"`
 	// Index is used for both input content and executor stdout/err
-	Attempt, Index int      `datastore:",noindex,omitempty"`
-	Stdout, Stderr string   `datastore:",noindex,omitempty"`
-	Content        string   `datastore:",noindex,omitempty"`
-	SystemLogs     []string `datastore:",noindex,omitempty"`
+	Attempt, Index int    `datastore:",noindex,omitempty"`
+	Stdout, Stderr string `datastore:",noindex,omitempty"`
+	Content        string `datastore:",noindex,omitempty"`
+	// TODO? SystemLogs     []string `datastore:",noindex,omitempty"`
 }
 
 type task struct {
@@ -103,7 +112,7 @@ type param struct {
 	Type                                  int32  `datastore:",noindex,omitempty"`
 }
 
-func marshalTask(t *tes.Task) *task {
+func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 	z := &task{
 		Id:           t.Id,
 		State:        int32(t.State),
@@ -157,7 +166,24 @@ func marshalTask(t *tes.Task) *task {
 			Metadata: marshalMap(i.Metadata),
 		})
 	}
-	return z
+
+	keys := []*datastore.Key{
+		taskKey(t.Id),
+	}
+	data := []interface{}{
+		z,
+	}
+	for i, input := range t.Inputs {
+		if input.Content != "" {
+			keys = append(keys, contentKey(t.Id, i))
+			data = append(data, &part{
+				Index:   i,
+				Content: input.Content,
+			})
+		}
+	}
+
+	return keys, data
 }
 
 func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {

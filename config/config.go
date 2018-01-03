@@ -19,11 +19,12 @@ type Config struct {
 	Worker    Worker
 	Logger    logger.Config
 	// databases / event handlers
-	BoltDB   BoltDB
-	DynamoDB DynamoDB
-	Elastic  Elastic
-	MongoDB  MongoDB
-	Kafka    Kafka
+	BoltDB    BoltDB
+	DynamoDB  DynamoDB
+	Elastic   Elastic
+	MongoDB   MongoDB
+	Kafka     Kafka
+	Datastore Datastore
 	// compute
 	HTCondor   HPCBackend
 	Slurm      HPCBackend

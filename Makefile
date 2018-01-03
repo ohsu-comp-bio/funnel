@@ -268,6 +268,10 @@ stop-datastore:
 	@curl -XPOST localhost:8081/shutdown
 
 test-datastore: start-datastore
+	DATASTORE_EMULATOR_HOST=localhost:8081 \
+	  go test -v ./tests/core/ -funnel-config $(CONFIGDIR)/datastore.config.yml
+	stop-datastore
+	
 	
 # Remove build/development files.
 clean:

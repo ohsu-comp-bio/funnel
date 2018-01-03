@@ -7,6 +7,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/server/datastore"
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
@@ -39,6 +40,8 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 	var reader worker.TaskReader
 
 	switch strings.ToLower(conf.Database) {
+	case "datastore":
+		db, err = datastore.NewDatastore(conf.Datastore)
 	case "dynamodb":
 		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 	case "elastic":
@@ -76,6 +79,8 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 			writer, err = events.NewRPCWriter(conf.Server)
 		case "dynamodb":
 			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+		case "datastore":
+			writer, err = datastore.NewDatastore(conf.Datastore)
 		case "elastic":
 			writer, err = elastic.NewElastic(ctx, conf.Elastic)
 		case "kafka":

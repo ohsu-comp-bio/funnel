@@ -69,7 +69,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		writers.Append(b)
 
 	case "datastore":
-		d, err := datastore.NewDatastore(conf.Server.Databases.Datastore)
+		d, err := datastore.NewDatastore(conf.Datastore)
 		if err != nil {
 			return nil, dberr(err)
 		}
@@ -108,6 +108,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		return nil, fmt.Errorf("unknown database: '%s'", conf.Database)
 	}
 
+	fmt.Println(conf.Compute)
 	switch strings.ToLower(conf.Compute) {
 	case "manual":
 		if nodes == nil {

@@ -77,7 +77,7 @@ type part struct {
 }
 
 type task struct {
-	Id, CreationTime  string `datastore:",omitempty"`
+	Id, CreationTime  string `datastore:",omitempty"` // nolint
 	State             int32
 	Name, Description string     `datastore:",noindex,omitempty"`
 	Executors         []executor `datastore:",noindex,omitempty"`
@@ -95,8 +95,8 @@ type tasklog struct {
 }
 
 type resources struct {
-	CpuCores      int64    `datastore:",noindex,omitempty"`
-	RamGb, DiskGb float64  `datastore:",noindex,omitempty"`
+	CpuCores      int64    `datastore:",noindex,omitempty"` // nolint
+	RamGb, DiskGb float64  `datastore:",noindex,omitempty"` // nolint
 	Preemptible   bool     `datastore:",noindex,omitempty"`
 	Zones         []string `datastore:",noindex,omitempty"`
 }
@@ -108,7 +108,7 @@ type executor struct {
 }
 
 type param struct {
-	Name, Description, Url, Path, Content string `datastore:",noindex,omitempty"`
+	Name, Description, Url, Path, Content string `datastore:",noindex,omitempty"` // nolint
 	Type                                  int32  `datastore:",noindex,omitempty"`
 }
 

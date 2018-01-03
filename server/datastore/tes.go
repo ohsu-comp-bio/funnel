@@ -7,11 +7,12 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// GetTask implements the TES GetTask interface.
 func (d *Datastore) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	key := taskKey(req.Id)
 
 	var props datastore.PropertyList
-	err := d.client.Get(ctx, key, props)
+	err := d.client.Get(ctx, key, &props)
 	if err == datastore.ErrNoSuchEntity {
 		return nil, tes.ErrNotFound
 	}
@@ -68,7 +69,7 @@ func (d *Datastore) getFullView(ctx context.Context, keys []*datastore.Key, task
 	return nil
 }
 
-// ListTasks returns a list of taskIDs
+// ListTasks implements the TES ListTasks interface.
 func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
 	page := req.PageToken

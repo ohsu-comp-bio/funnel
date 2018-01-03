@@ -60,6 +60,7 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.Elastic.IndexPrefix = prefix
 	conf.MongoDB.Database = prefix
 	conf.DynamoDB.TableBasename = prefix
+	conf.Datastore.Project = prefix
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()

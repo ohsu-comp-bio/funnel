@@ -112,6 +112,17 @@ start-dynamodb:
 test-dynamodb:
 	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/dynamo.config.yml
 
+start-datastore:
+	@gcloud beta emulators datastore start &
+
+stop-datastore:
+	@curl -XPOST localhost:8081/shutdown
+
+test-datastore: start-datastore
+	DATASTORE_EMULATOR_HOST=localhost:8081 \
+	  go test -v ./tests/core/ -funnel-config $(CONFIGDIR)/datastore.config.yml
+	stop-datastore
+
 start-kafka:
 	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
@@ -260,17 +271,6 @@ docker: cross-compile
 	cp build/bin/funnel-linux-amd64 build/docker/funnel
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t funnel .
-
-start-datastore:
-	@gcloud beta emulators datastore start &
-
-stop-datastore:
-	@curl -XPOST localhost:8081/shutdown
-
-test-datastore: start-datastore
-	DATASTORE_EMULATOR_HOST=localhost:8081 \
-	  go test -v ./tests/core/ -funnel-config $(CONFIGDIR)/datastore.config.yml
-	stop-datastore
 	
 	
 # Remove build/development files.

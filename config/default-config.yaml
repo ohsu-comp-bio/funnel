@@ -121,6 +121,10 @@ Elastic:
   # URL of the elasticsearch server.
   URL: http://localhost:9200
 
+# Google Cloud Datastore task database.
+Datastore:
+  Project: ""
+  
 MongoDB:
   # Addrs holds the addresses for the seed servers.
   Addrs:

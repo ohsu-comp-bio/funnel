@@ -121,7 +121,6 @@ stop-datastore:
 test-datastore: start-datastore
 	DATASTORE_EMULATOR_HOST=localhost:8081 \
 	  go test -v ./tests/core/ -funnel-config $(CONFIGDIR)/datastore.config.yml
-	stop-datastore
 
 start-kafka:
 	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
@@ -272,6 +271,12 @@ docker: cross-compile
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t funnel .
 	
+test-datastore-travis:
+	@wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-183.0.0-linux-x86_64.tar.gz
+	@tar xzvf google-cloud-sdk-183.0.0-linux-x86_64.tar.gz 2> /dev/null
+	@./google-cloud-sdk/bin/gcloud --quiet beta emulators datastore start &
+	@sleep 60
+	make test-datastore
 	
 # Remove build/development files.
 clean:

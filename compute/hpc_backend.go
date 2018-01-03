@@ -18,14 +18,21 @@ import (
 
 // HPCBackend represents an HPCBackend such as HtCondor, Slurm, Grid Engine, etc.
 type HPCBackend struct {
-	Name          string
-	SubmitCmd     string
-	CancelCmd     string
-	Template      string
-	Conf          config.Config
-	Event         events.Writer
-	Database      tes.ReadOnlyServer
-	ExtractID     func(string) string
+	Name      string
+	SubmitCmd string
+	CancelCmd string
+	Template  string
+	Conf      config.Config
+	Event     events.Writer
+	Database  tes.ReadOnlyServer
+	// ExtractID is responsible for extracting the task id from the response
+	// returned by the SubmitCmd.
+	ExtractID func(string) string
+	// MapStates takes a list of backend specific ids and calls out to the backend
+	// via (squeue, qstat, condor_q, etc) to get that tasks current state. These states
+	// are mapped to TES states along with an optional reason for this mapping.
+	// The Reconcile function can then use the response to update the task states
+	// and system logs to report errors reported by the backend.
 	MapStates     func([]string) ([]*HPCTaskState, error)
 	ReconcileRate time.Duration
 }
@@ -159,10 +166,14 @@ func (b *HPCBackend) Reconcile(ctx context.Context) {
 
 				bmap, _ := b.MapStates(ids)
 				for _, t := range bmap {
+					// lookup task by backend specific ID
 					task := tmap[t.ID]
 
 					switch t.TESState {
 					case tes.SystemError:
+						if t.Remove {
+							exec.Command(b.CancelCmd, t.ID).Run()
+						}
 						b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
 						b.Event.WriteEvent(
 							ctx,
@@ -267,4 +278,5 @@ type HPCTaskState struct {
 	TESState tes.State
 	State    string
 	Reason   string
+	Remove   bool
 }

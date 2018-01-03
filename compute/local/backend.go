@@ -37,7 +37,10 @@ func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		b.newWorker(ctx, b.conf, task.Id, b.log)
+		err := b.newWorker(ctx, b.conf, task.Id, b.log)
+		if err != nil {
+			b.log.Error("failed to run task", err)
+		}
 	}()
 	return nil
 }

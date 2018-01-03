@@ -8,30 +8,43 @@ import (
 )
 
 func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
-	taskKey := datastore.NameKey("Task", e.Id, nil)
-	// TODO
-	//contentKey := datastore.NameKey("TaskChunk", "0-content", taskKey)
 
 	switch e.Type {
 
 	case events.Type_TASK_CREATED:
-		_, err := d.client.Put(ctx, taskKey, marshalTask(e.GetTask()))
+		putKeys, putData := marshalTask(e.GetTask())
+		_, err := d.client.PutMulti(ctx, putKeys, putData)
 		if err != nil {
 			return err
 		}
 
 	case events.Type_EXECUTOR_STDOUT:
-		_, err := d.client.Put(ctx, stdoutKey(taskKey, e.Attempt, e.Index), marshalEvent(e))
+		_, err := d.client.Put(ctx, stdoutKey(e.Id, e.Attempt, e.Index), marshalEvent(e))
 		return err
 
 	case events.Type_EXECUTOR_STDERR:
-		_, err := d.client.Put(ctx, stderrKey(taskKey, e.Attempt, e.Index), marshalEvent(e))
+		_, err := d.client.Put(ctx, stderrKey(e.Id, e.Attempt, e.Index), marshalEvent(e))
 		return err
+
+	case events.Type_TASK_STATE:
+		res, err := d.GetTask(ctx, &tes.GetTaskRequest{
+			Id: e.Id,
+		})
+		if err != nil {
+			return err
+		}
+
+		from := res.State
+		to := e.GetState()
+		if err := tes.ValidateTransition(from, to); err != nil {
+			return err
+		}
+		fallthrough
 
 	default:
 		_, err := d.client.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
 			props := datastore.PropertyList{}
-			err := tx.Get(taskKey, &props)
+			err := tx.Get(taskKey(e.Id), &props)
 			if err != nil {
 				return err
 			}
@@ -44,7 +57,8 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 				return err
 			}
 
-			_, err = tx.Put(taskKey, marshalTask(task))
+			putKeys, putData := marshalTask(task)
+			_, err = tx.PutMulti(putKeys, putData)
 			return err
 		})
 		return err

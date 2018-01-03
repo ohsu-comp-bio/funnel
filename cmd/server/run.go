@@ -26,9 +26,8 @@ import (
 )
 
 // Run runs the "server run" command.
-func Run(ctx context.Context, conf config.Config) error {
-	log := logger.NewLogger("server", conf.Logger)
-	s, err := NewServer(conf, log)
+func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
+	s, err := NewServer(ctx, conf, log)
 	if err != nil {
 		return err
 	}
@@ -42,10 +41,9 @@ type Server struct {
 }
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
-func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
+func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Server, error) {
 	log.Debug("NewServer", "config", conf)
 
-	ctx := context.Background()
 	var reader tes.ReadOnlyServer
 	var nodes schedProto.SchedulerServiceServer
 	var sched *scheduler.Scheduler
@@ -71,7 +69,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			return nil, dberr(err)
 		}
 		reader = d
-		writers.Append(d)
+		writers = append(writers, d)
 
 	case "dynamodb":
 		d, err := dynamodb.NewDynamoDB(conf.DynamoDB)
@@ -115,7 +113,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 	}
 
 	for e := range eventWriterSet {
-		switch strings.ToLower(e) {
+		switch e {
 		case strings.ToLower(conf.Database):
 			// noop
 		case "log":
@@ -170,12 +168,16 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			return nil, err
 		}
 
+	case "local":
+		compute, err = local.NewBackend(ctx, conf, log.Sub("local"))
+		if err != nil {
+			return nil, err
+		}
+
 	case "gridengine":
 		compute = gridengine.NewBackend(conf, reader, &writers)
 	case "htcondor":
 		compute = htcondor.NewBackend(ctx, conf, reader, &writers)
-	case "local":
-		compute = local.NewBackend(conf, log.Sub("local"))
 	case "noop":
 		compute = noop.NewBackend()
 	case "pbs":

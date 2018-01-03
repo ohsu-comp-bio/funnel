@@ -137,12 +137,12 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 		time.Sleep(time.Minute * 10)
 		return nil
 	}
-	n, err := scheduler.NewNode(srv.Conf, blockingNoopWorker, log)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	n, err := scheduler.NewNode(ctx, srv.Conf, blockingNoopWorker, log)
 	if err != nil {
 		t.Fatal("failed to create node")
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
 	go n.Run(ctx)
 
 	id := srv.Run(`

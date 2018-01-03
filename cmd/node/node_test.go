@@ -1,7 +1,9 @@
 package node
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
 	"path"
 	"testing"
@@ -19,7 +21,7 @@ func TestPersistentPreRun(t *testing.T) {
 	defer cleanup()
 
 	c, h := newCommandHooks()
-	h.Run = func(conf config.Config) error {
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger) error {
 		if conf.Server.HostName != host {
 			t.Fatal("unexpected Server.HostName in config", conf.Server.HostName)
 		}

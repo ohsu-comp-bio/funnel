@@ -19,7 +19,7 @@ import (
 
 // Run runs the "worker run" command.
 func Run(ctx context.Context, conf config.Config, taskID string, writer events.Writer, log *logger.Logger) error {
-  w, err := NewWorker(ctx, conf, taskID, writer, log)
+	w, err := NewWorker(ctx, conf, taskID, writer, log)
 	if err != nil {
 		writer.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
 		writer.WriteEvent(
@@ -53,7 +53,7 @@ func NewWorker(ctx context.Context, conf config.Config, taskID string, writer ev
 	case "boltdb":
 		reader, err = worker.NewRPCTaskReader(ctx, conf.Server, taskID)
 	default:
-		err = fmt.Errorf("unknown Database")
+		err = fmt.Errorf("unknown database: '%s'", conf.Database)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate database client: %v", err)
@@ -92,8 +92,8 @@ func NewWorkerEventWriter(ctx context.Context, conf config.Config, log *logger.L
 		eventWriterSet[strings.ToLower(w)] = nil
 	}
 
-	for w := range eventWriterSet {
-		switch w {
+	for e := range eventWriterSet {
+		switch e {
 		case "log":
 			writer = &events.Logger{Log: log}
 		case "boltdb":
@@ -109,10 +109,10 @@ func NewWorkerEventWriter(ctx context.Context, conf config.Config, log *logger.L
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
 		default:
-			err = fmt.Errorf("unknown EventWriter")
+			err = fmt.Errorf("unknown event writer: %s", e)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
+			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
 		}
 		if writer != nil {
 			writers = append(writers, writer)

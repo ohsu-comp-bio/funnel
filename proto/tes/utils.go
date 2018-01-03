@@ -25,6 +25,7 @@ func MarshalToString(t *Task) (string, error) {
 // ErrNotFound is returned when a task is not found.
 var ErrNotFound = errors.New("task not found")
 
+// Shorthand for task views
 const (
 	Minimal = TaskView_MINIMAL
 	Basic   = TaskView_BASIC

@@ -49,6 +49,12 @@ jobs:
       env:
         - n=elasticsearch
     - script: 
+        - make start-datastore
+        - sleep 10
+        - make test-datastore
+      env:
+        - n=elasticsearch
+    - script: 
         - make start-mongodb
         - sleep 10
         - make test-mongodb

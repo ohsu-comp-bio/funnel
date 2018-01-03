@@ -7,6 +7,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
+// WriteEvent writes a task event to the database.
 func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 
 	switch e.Type {
@@ -51,7 +52,7 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 
 			task := &tes.Task{}
 			unmarshalTask(task, props)
-			tb := events.TaskBuilder{task}
+			tb := events.TaskBuilder{Task: task}
 			err = tb.WriteEvent(context.Background(), e)
 			if err != nil {
 				return err

@@ -180,6 +180,7 @@ type AWSBatch struct {
 	AWSConfig
 }
 
+// Datastore configures access to a Google Cloud Datastore database backend.
 type Datastore struct {
 	Project string
 }

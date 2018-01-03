@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"testing"
 )
 
@@ -17,7 +18,7 @@ func TestPersistentPreRun(t *testing.T) {
 	defer cleanup()
 
 	c, h := newCommandHooks()
-	h.Run = func(ctx context.Context, conf config.Config) error {
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger) error {
 		if conf.Server.RPCAddress() != serverAddress {
 			t.Fatal("unexpected hostname or rpc port in server config")
 		}

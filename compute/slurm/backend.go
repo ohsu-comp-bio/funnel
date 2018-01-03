@@ -31,6 +31,9 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 	return b
 }
 
+// extractID extracts the task id from the response returned by the `sbatch` command.
+// Example response:
+// Submitted batch job 2
 func extractID(in string) string {
 	re := regexp.MustCompile("(Submitted batch job )([0-9]+)\n$")
 	return re.ReplaceAllString(in, "$2")
@@ -54,8 +57,9 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 		id, state, reason := parts[0], parts[1], parts[2]
 		if state == "PENDING" {
 			if reason == "PartitionConfig" {
-				exec.Command("scancel", id).Run()
-				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.SystemError, State: state, Reason: "No suitable partition available"})
+				output = append(output, &compute.HPCTaskState{
+					ID: id, TESState: tes.SystemError, State: state, Reason: "No suitable partition available", Remove: true,
+				})
 			} else {
 				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.Queued, State: state})
 			}
@@ -91,13 +95,13 @@ var sacctStateMap = map[string]tes.State{
 	"RUNNING":     tes.Running,
 	"RESIZING":    tes.Running,
 	"COMPLETING":  tes.Running,
-	"COMPLETED":   tes.Complete,
+	"SUSPENDED":   tes.Running,
 	"CANCELLED":   tes.Canceled,
+	"COMPLETED":   tes.Complete,
 	"DEADLINE":    tes.SystemError,
 	"FAILED":      tes.SystemError,
 	"NODE_FAIL":   tes.SystemError,
 	"PREEMPTED":   tes.SystemError,
-	"SUSPENDED":   tes.SystemError,
 	"TIMEOUT":     tes.SystemError,
 }
 
@@ -108,10 +112,10 @@ var squeueStateMap = map[string]tes.State{
 	"CONFIGURING":  tes.Queued,
 	"RUNNING":      tes.Running,
 	"COMPLETING":   tes.Running,
-	"COMPLETED":    tes.Complete,
+	"SUSPENDED":    tes.Running,
 	"CANCELLED":    tes.Canceled,
+	"COMPLETED":    tes.Complete,
 	"STOPPED":      tes.SystemError,
-	"SUSPENDED":    tes.SystemError,
 	"FAILED":       tes.SystemError,
 	"TIMEOUT":      tes.SystemError,
 	"PREEMPTED":    tes.SystemError,

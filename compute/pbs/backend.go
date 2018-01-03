@@ -28,6 +28,8 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 	return b
 }
 
+// extractID extracts the task id from the response returned by the `qsub` command.
+// For PBS / Torque systems, `qsub` returns the task id
 func extractID(in string) string {
 	return in
 }
@@ -69,24 +71,17 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 		}
 		state := stateMap[j.JobState]
 		switch state {
-		case "Queued":
-			output = append(output, &compute.HPCTaskState{ID: j.JobID, TESState: tes.Queued, State: state})
-		case "Running":
-			output = append(output, &compute.HPCTaskState{ID: j.JobID, TESState: tes.Running, State: state})
-		case "Moving":
-			output = append(output, &compute.HPCTaskState{ID: j.JobID, TESState: tes.Running, State: state})
-		case "Waiting":
-			// noop
-		case "Suspended":
-			// noop
-		case "Exiting":
-			// noop:
 		case "Complete":
 			if j.ExitStatus == 0 {
 				output = append(output, &compute.HPCTaskState{ID: j.JobID, TESState: tes.Complete, State: state})
 			} else {
-				output = append(output, &compute.HPCTaskState{ID: j.JobID, TESState: tes.SystemError, State: state, Reason: "exited with non-zero status"})
+				output = append(output, &compute.HPCTaskState{
+					ID: j.JobID, TESState: tes.SystemError, State: state, Reason: "Funnel worker exited with non-zero status",
+				})
 			}
+
+		default:
+			output = append(output, &compute.HPCTaskState{ID: j.JobID, TESState: pbsToTES[state], State: state})
 		}
 	}
 	return output, nil
@@ -101,4 +96,15 @@ var stateMap = map[string]string{
 	"S": "Suspended",
 	"T": "Moving",
 	"W": "Waiting",
+}
+
+var pbsToTES = map[string]tes.State{
+	"Queued":    tes.Queued,
+	"Running":   tes.Running,
+	"Exiting":   tes.Running,
+	"Held":      tes.Running,
+	"Suspended": tes.Running,
+	"Moving":    tes.Running,
+	"Waiting":   tes.Running, // maybe should refer to Queued?
+	"Complete":  tes.Complete,
 }

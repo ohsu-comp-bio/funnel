@@ -10,14 +10,19 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(conf config.Config, log *logger.Logger) *Backend {
-	return &Backend{conf, log}
+func NewBackend(ctx context.Context, conf config.Config, log *logger.Logger) (*Backend, error) {
+	ew, err := workerCmd.NewWorkerEventWriter(ctx, conf, log)
+	if err != nil {
+		return nil, err
+	}
+	return &Backend{conf, ew, log}, nil
 }
 
 // Backend represents the local backend.
 type Backend struct {
-	conf config.Config
-	log  *logger.Logger
+	conf  config.Config
+	event events.Writer
+	log   *logger.Logger
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -36,13 +41,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		ew, err := workerCmd.NewWorkerEventWriter(ctx, b.conf, b.log)
-		if err != nil {
-			b.log.Error("Error creating local worker", "error", err, "taskID", task.Id)
-			return
-		}
-		workerCmd.Run(ctx, b.conf, task.Id, ew, b.log)
-		return
+		workerCmd.Run(ctx, b.conf, task.Id, b.event, b.log)
 	}()
 	return nil
 }

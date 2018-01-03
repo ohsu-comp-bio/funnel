@@ -31,6 +31,10 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 	return b
 }
 
+// extractID extracts the task id from the response returned by the `condor_submit` command.
+// Example response:
+// Submitting job(s).
+// 1 job(s) submitted to cluster 1.
 func extractID(in string) string {
 	re := regexp.MustCompile("(.*\\.\n.*)([0-9]+)\\.\n")
 	return re.ReplaceAllString(in, "$2")
@@ -80,8 +84,9 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 		case "Idle":
 			err = checkIdleStatus(id)
 			if err != nil {
-				exec.Command("condor_rm", id).Run()
-				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.SystemError, State: state, Reason: err.Error()})
+				output = append(output, &compute.HPCTaskState{
+					ID: id, TESState: tes.SystemError, State: state, Reason: err.Error(), Remove: true,
+				})
 			} else {
 				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.Queued, State: state})
 			}
@@ -89,11 +94,11 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 		case "Running":
 			output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.Running, State: state})
 
+		case "Held":
+			output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.Running, State: state})
+
 		case "Removed":
 			output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.Canceled, State: state, Reason: "task was canceled"})
-
-		case "Held":
-			// noop
 
 		case "Submission_err":
 			output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.SystemError, State: state, Reason: "task encountered submission error"})
@@ -102,7 +107,7 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 			if exitcode == 0 {
 				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.Complete, State: state})
 			} else {
-				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.SystemError, State: state, Reason: "exited with non-zero status"})
+				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.SystemError, State: state, Reason: "Funnel worker exited with non-zero status"})
 			}
 		}
 	}

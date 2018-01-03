@@ -38,7 +38,7 @@ func TestWorkerRun(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
 		View: tes.TaskView_FULL,
 	})
@@ -68,13 +68,20 @@ func TestWorkDirCleanup(t *testing.T) {
   `)
 	workdir := path.Join(c.Worker.WorkDir, id)
 
-	err := workerCmd.Run(context.Background(), c, id, log)
+	ctx := context.Background()
+	ew, err := workerCmd.NewWorkerEventWriter(ctx, c, log)
+	if err != nil {
+		t.Fatal("failed to instantiate event writer", err)
+	}
+
+	err = workerCmd.Run(ctx, c, id, ew, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
+
 	f.Wait(id)
 
-	task, err := f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
 		View: tes.TaskView_FULL,
 	})
@@ -98,13 +105,14 @@ func TestWorkDirCleanup(t *testing.T) {
 	c.Worker.LeaveWorkDir = true
 	workdir = path.Join(c.Worker.WorkDir, id)
 
-	err = workerCmd.Run(context.Background(), c, id, log)
+	err = workerCmd.Run(ctx, c, id, ew, log)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
+
 	f.Wait(id)
 
-	task, err = f.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+	task, err = f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
 		View: tes.TaskView_FULL,
 	})

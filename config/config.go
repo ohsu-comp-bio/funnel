@@ -183,6 +183,9 @@ type AWSBatch struct {
 // Datastore configures access to a Google Cloud Datastore database backend.
 type Datastore struct {
 	Project string
+	// If no account file is provided then Funnel will try to use Google Application
+	// Default Credentials to authorize and authenticate the client.
+	CredentialsFile string
 }
 
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes
@@ -207,7 +210,7 @@ type GSStorage struct {
 	Disabled bool
 	// If no account file is provided then Funnel will try to use Google Application
 	// Default Credentials to authorize and authenticate the client.
-	AccountFile string
+	CredentialsFile string
 }
 
 // Valid validates the GSStorage configuration.

@@ -108,7 +108,6 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		return nil, fmt.Errorf("unknown database: '%s'", conf.Database)
 	}
 
-	fmt.Println(conf.Compute)
 	switch strings.ToLower(conf.Compute) {
 	case "manual":
 		if nodes == nil {
@@ -149,8 +148,6 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		writers.Append(pbs.NewBackend(conf))
 	case "slurm":
 		writers.Append(slurm.NewBackend(conf))
-	case "", "none":
-		// Do nothing.
 	default:
 		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
 	}

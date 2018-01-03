@@ -32,10 +32,10 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 	ctx := context.Background()
 	client := &http.Client{}
 
-	if conf.AccountFile != "" {
+	if conf.CredentialsFile != "" {
 		// Pull the client configuration (e.g. auth) from a given account file.
 		// This is likely downloaded from Google Cloud manually via IAM & Admin > Service accounts.
-		bytes, rerr := ioutil.ReadFile(conf.AccountFile)
+		bytes, rerr := ioutil.ReadFile(conf.CredentialsFile)
 		if rerr != nil {
 			return nil, rerr
 		}

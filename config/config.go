@@ -48,8 +48,14 @@ type Server struct {
 	RPCPort          string
 	Password         string
 	DisableHTTPCache bool
-	// timeout to use for RPC client connections in nanoseconds
+	// The timeout to use for making RPC client connections in nanoseconds
+	// This timeout is Only enforced when used in conjunction with the
+	// grpc.WithBlock dial option.
 	RPCClientTimeout time.Duration
+	// The maximum number of times that a request will be retried for failures.
+	// Time between retries follows an exponential backoff starting at 5 seconds
+	// up to 1 minute
+	RPCClientMaxRetries uint
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort

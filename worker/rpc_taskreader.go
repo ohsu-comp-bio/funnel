@@ -4,34 +4,25 @@ import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
+	util "github.com/ohsu-comp-bio/funnel/util/rpc"
 	"google.golang.org/grpc"
 )
 
 // RPCTaskReader provides read access to tasks from the funnel server over gRPC.
 type RPCTaskReader struct {
 	client tes.TaskServiceClient
+	conn   *grpc.ClientConn
 	taskID string
 }
 
 // NewRPCTaskReader returns a new RPC-based task reader.
 func NewRPCTaskReader(conf config.Server, taskID string) (*RPCTaskReader, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), conf.RPCClientTimeout)
-	defer cancel()
-
-	conn, err := grpc.DialContext(
-		ctx,
-		conf.RPCAddress(),
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		util.PerRPCPassword(conf.Password),
-	)
+	conn, err := util.Dial(conf, grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}
 	cli := tes.NewTaskServiceClient(conn)
-
-	return &RPCTaskReader{cli, taskID}, nil
+	return &RPCTaskReader{cli, conn, taskID}, nil
 }
 
 // Task returns the task descriptor.
@@ -49,4 +40,9 @@ func (r *RPCTaskReader) State() (tes.State, error) {
 		View: tes.TaskView_MINIMAL,
 	})
 	return t.GetState(), err
+}
+
+// Close closes the connection.
+func (r *RPCTaskReader) Close() {
+	r.conn.Close()
 }

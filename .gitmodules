@@ -173,3 +173,6 @@
 [submodule "vendor/github.com/alecthomas/units"]
 	path = vendor/github.com/alecthomas/units
 	url = https://github.com/alecthomas/units
+[submodule "vendor/github.com/cenkalti/backoff"]
+	path = vendor/github.com/cenkalti/backoff
+	url = https://github.com/cenkalti/backoff

@@ -66,6 +66,7 @@ func DefaultConfig() Config {
 		},
 		MongoDB: MongoDB{
 			Addrs:    []string{"localhost"},
+			Timeout:  time.Minute * 5,
 			Database: "funnel",
 		},
 		Kafka: Kafka{

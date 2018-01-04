@@ -22,6 +22,7 @@ func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 		Username: conf.Username,
 		Password: conf.Password,
 		Database: conf.Database,
+		Timeout:  conf.Timeout,
 		// DialServer: func(addr *mgo.ServerAddr) (net.Conn, error) {
 		// 	return tls.Dial("tcp", addr.String(), &tls.Config{})
 		// },

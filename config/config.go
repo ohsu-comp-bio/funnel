@@ -136,6 +136,13 @@ type MongoDB struct {
 	Addrs []string
 	// Database is the database name used within MongoDB to store funnel data.
 	Database string
+	// Timeout is the amount of time to wait for a server to respond when
+	// first connecting and on follow up operations in the session. If
+	// timeout is zero, the call may block forever waiting for a connection
+	// to be established.
+	Timeout time.Duration
+	// Username and Password inform the credentials for the initial authentication
+	// done on the database defined by the Database field.
 	Username string
 	Password string
 }

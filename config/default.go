@@ -21,12 +21,13 @@ func DefaultConfig() Config {
 	}
 
 	server := Server{
-		HostName:         "localhost",
-		HTTPPort:         "8000",
-		RPCPort:          "9090",
-		ServiceName:      "Funnel",
-		DisableHTTPCache: true,
-		RPCClientTimeout: time.Second * 60,
+		HostName:            "localhost",
+		HTTPPort:            "8000",
+		RPCPort:             "9090",
+		ServiceName:         "Funnel",
+		DisableHTTPCache:    true,
+		RPCClientTimeout:    time.Second * 60,
+		RPCClientMaxRetries: 10,
 	}
 
 	c := Config{

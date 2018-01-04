@@ -41,6 +41,11 @@ Server:
   # In nanoseconds.
   RPCClientTimeout: 60000000000 # 30 seconds
 
+  # The maximum number of times that a request will be retried for failures.
+  # Time between retries follows an exponential backoff starting at 5 seconds
+  # up to 1 minute
+  RPCClientMaxRetries: 10
+
 
 # The scheduler is used for the Manual compute backend. 
 Scheduler:

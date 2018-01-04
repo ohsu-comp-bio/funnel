@@ -3,32 +3,25 @@ package events
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/util"
+	util "github.com/ohsu-comp-bio/funnel/util/rpc"
 	"google.golang.org/grpc"
 )
 
 // RPCWriter is a type which writes Events to RPC.
 type RPCWriter struct {
 	client EventServiceClient
+	conn   *grpc.ClientConn
 }
 
 // NewRPCWriter returns a new RPCWriter instance.
 func NewRPCWriter(conf config.Server) (*RPCWriter, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), conf.RPCClientTimeout)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx,
-		conf.RPCAddress(),
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		util.PerRPCPassword(conf.Password),
-	)
+	conn, err := util.Dial(conf)
 	if err != nil {
 		return nil, err
 	}
 	cli := NewEventServiceClient(conn)
 
-	return &RPCWriter{cli}, nil
+	return &RPCWriter{cli, conn}, nil
 }
 
 // WriteEvent writes the event to the server via gRPC.
@@ -36,4 +29,9 @@ func NewRPCWriter(conf config.Server) (*RPCWriter, error) {
 func (r *RPCWriter) WriteEvent(ctx context.Context, e *Event) error {
 	_, err := r.client.WriteEvent(ctx, e)
 	return err
+}
+
+// Close closes the connection.
+func (r *RPCWriter) Close() {
+	r.conn.Close()
 }

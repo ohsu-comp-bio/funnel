@@ -48,9 +48,10 @@ func DefaultConfig() Config {
 			Metadata:   map[string]string{},
 		},
 		Worker: Worker{
-			WorkDir:    workDir,
-			UpdateRate: time.Second * 5,
-			BufferSize: 10000,
+			WorkDir:         workDir,
+			UpdateRate:      time.Second * 5,
+			BufferSize:      10000,
+			TaskReadTimeout: time.Minute * 5,
 		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers

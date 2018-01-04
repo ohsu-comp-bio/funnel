@@ -117,6 +117,9 @@ type Worker struct {
 	// Normally the worker cleans up its working directory after executing.
 	// This option disables that behavior.
 	LeaveWorkDir bool
+	// How long the worker should try to read the task from the server or database
+	// before failing
+	TaskReadTimeout time.Duration
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

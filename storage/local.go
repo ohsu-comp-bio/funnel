@@ -113,11 +113,11 @@ func copyFile(source string, dest string) (err error) {
 	// Open source file for copying
 	sf, err := os.Open(source)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open source file for copying: %s", err)
 	}
-	df, err := os.Create(dest)
+	df, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0775)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create dest file for copying: %s", err)
 	}
 	_, err = io.Copy(df, sf)
 	if err != nil {
@@ -141,11 +141,11 @@ func linkFile(source string, dest string) error {
 	// without this resulting link could be a symlink
 	parent, err := filepath.EvalSymlinks(source)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to eval symlinks: %s", err)
 	}
 	same, err := sameFile(parent, dest)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check if file is the same file: %s", err)
 	}
 	if same {
 		return nil
@@ -153,32 +153,33 @@ func linkFile(source string, dest string) error {
 	// make parent dirs if they dont exist
 	dstD := path.Dir(dest)
 	if _, err := os.Stat(dstD); err != nil {
-		_ = syscall.Umask(0000)
+		syscall.Umask(0000)
 		err = os.MkdirAll(dstD, 0775)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to make directory: %s", err)
 		}
 	}
 	err = os.Link(parent, dest)
 	if err != nil {
 		err = copyFile(source, dest)
+		if err != nil {
+			return fmt.Errorf("failed to copy file: %s", err)
+		}
 	}
 	return err
 }
 
 func sameFile(source string, dest string) (bool, error) {
-	var same bool
 	var err error
 	sfi, err := os.Stat(source)
 	if err != nil {
-		return same, err
+		return false, fmt.Errorf("failed to stat src file: %s", err)
 	}
 	dfi, err := os.Stat(dest)
 	if os.IsNotExist(err) {
-		return same, nil
+		return false, nil
 	} else if err != nil {
-		return same, err
+		return false, fmt.Errorf("failed to stat dest file: %s", err)
 	}
-	same = os.SameFile(sfi, dfi)
-	return same, nil
+	return os.SameFile(sfi, dfi), nil
 }

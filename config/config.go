@@ -210,12 +210,13 @@ type DynamoDB struct {
 
 // LocalStorage describes the directories Funnel can read from and write to
 type LocalStorage struct {
+	Disabled    bool
 	AllowedDirs []string
 }
 
 // Valid validates the LocalStorage configuration
 func (l LocalStorage) Valid() bool {
-	return len(l.AllowedDirs) > 0
+	return !l.Disabled && len(l.AllowedDirs) > 0
 }
 
 // GSStorage describes configuration for the Google Cloud storage backend.

@@ -17,6 +17,8 @@ func ServerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))
 	f.AddFlagSet(dbFlags(flagConf))
+	f.AddFlagSet(storageFlags(flagConf))
+	f.AddFlagSet(computeFlags(flagConf))
 	f.AddFlagSet(loggerFlags(flagConf))
 
 	return f
@@ -33,6 +35,7 @@ func WorkerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))
 	f.AddFlagSet(dbFlags(flagConf))
+	f.AddFlagSet(storageFlags(flagConf))
 	f.AddFlagSet(loggerFlags(flagConf))
 
 	return f
@@ -49,6 +52,7 @@ func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))
 	f.AddFlagSet(dbFlags(flagConf))
+	f.AddFlagSet(storageFlags(flagConf))
 	f.AddFlagSet(loggerFlags(flagConf))
 
 	return f
@@ -57,8 +61,8 @@ func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 func selectorFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
-	f.StringVar(&flagConf.Compute, "Compute", flagConf.Compute, "Name of compute backed to use.")
-	f.StringVar(&flagConf.Database, "Database", flagConf.Database, "Name of database backed to use.")
+	f.StringVar(&flagConf.Compute, "Compute", flagConf.Compute, "Name of compute backed to use")
+	f.StringVar(&flagConf.Database, "Database", flagConf.Database, "Name of database backed to use")
 	f.StringSliceVar(&flagConf.EventWriters, "EventWriters", flagConf.EventWriters, "Name of an event writer backend to use. This flag can be used multiple times")
 
 	return f
@@ -72,6 +76,7 @@ func serverFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.Server.RPCPort, "Server.RPCPort", flagConf.Server.RPCPort, "RPC Port")
 	f.StringVar(&flagConf.Server.ServiceName, "Server.ServiceName", flagConf.Server.ServiceName, "Host name or IP")
 	f.DurationVar(&flagConf.Server.RPCClientTimeout, "Server.RPCClientTimeout", flagConf.Server.RPCClientTimeout, "Request timeout for RPC client connections")
+	f.UintVar(&flagConf.Server.RPCClientMaxRetries, "Server.RPCClientMaxRetries", flagConf.Server.RPCClientMaxRetries, "Maximum number of times that a request will be retried for failures")
 
 	return f
 }
@@ -81,7 +86,8 @@ func workerFlags(flagConf *config.Config) *pflag.FlagSet {
 
 	f.Int64Var(&flagConf.Worker.BufferSize, "Worker.BufferSize", flagConf.Worker.BufferSize, "Max bytes to store for stderr/stdout")
 	f.DurationVar(&flagConf.Worker.UpdateRate, "Worker.UpdateRate", flagConf.Worker.UpdateRate, "Task log update rate")
-	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working Directory")
+	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working directory")
+	f.BoolVar(&flagConf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", flagConf.Worker.LeaveWorkDir, "Leave working directory after execution")
 
 	return f
 }
@@ -95,6 +101,7 @@ func nodeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Float64Var(&flagConf.Node.Resources.DiskGb, "Node.Resources.DiskGb", flagConf.Node.Resources.DiskGb, "Free disk (GB) available to Node")
 	f.DurationVar(&flagConf.Node.Timeout, "Node.Timeout", flagConf.Node.Timeout, "Node timeout in seconds")
 	f.DurationVar(&flagConf.Node.UpdateRate, "Node.UpdateRate", flagConf.Node.UpdateRate, "Node update rate")
+	// TODO Metadata
 
 	return f
 }
@@ -118,6 +125,10 @@ func dbFlags(flagConf *config.Config) *pflag.FlagSet {
 	// dynamodb
 	f.StringVar(&flagConf.DynamoDB.Region, "DynamoDB.Region", flagConf.DynamoDB.Region, "AWS region of DynamoDB tables")
 	f.StringVar(&flagConf.DynamoDB.TableBasename, "DynamoDB.TableBasename", flagConf.DynamoDB.TableBasename, "Basename of DynamoDB tables")
+	f.IntVar(&flagConf.DynamoDB.MaxRetries, "DynamoDB.MaxRetries", flagConf.DynamoDB.MaxRetries, "Maximum number of times that a request will be retried for failures")
+
+	// datastore
+	f.StringVar(&flagConf.Datastore.Project, "Datastore.Project", flagConf.Datastore.Project, "Google project for Datastore")
 
 	// elastic
 	f.StringVar(&flagConf.Elastic.IndexPrefix, "Elastic.IndexPrefix", flagConf.Elastic.IndexPrefix, "Prefix to use for Elasticsearch indices")
@@ -130,6 +141,64 @@ func dbFlags(flagConf *config.Config) *pflag.FlagSet {
 	// mongodb
 	f.StringSliceVar(&flagConf.MongoDB.Addrs, "MongoDB.Addrs", flagConf.MongoDB.Addrs, "Address of a MongoDB seed server. This flag can be used multiple times")
 	f.StringVar(&flagConf.MongoDB.Database, "MongoDB.Database", flagConf.MongoDB.Database, "Database name in MongoDB")
+	f.DurationVar(&flagConf.MongoDB.Timeout, "MongoDB.Timeout", flagConf.MongoDB.Timeout, "Timeout in seconds for initial connection and follow up operations")
+
+	return f
+}
+
+func storageFlags(flagConf *config.Config) *pflag.FlagSet {
+	f := pflag.NewFlagSet("", pflag.ContinueOnError)
+
+	// local storage
+	f.BoolVar(&flagConf.LocalStorage.Disabled, "LocalStorage.Disabled", flagConf.LocalStorage.Disabled, "Disable storage backend")
+	f.StringSliceVar(&flagConf.LocalStorage.AllowedDirs, "LocalStorage.AllowedDirs", flagConf.LocalStorage.AllowedDirs, "Directories Funnel is allowed to access. This flag can be used multiple times")
+
+	// amazon s3
+	f.BoolVar(&flagConf.AmazonS3.Disabled, "AmazonS3.Disabled", flagConf.AmazonS3.Disabled, "Disable storage backend")
+	f.IntVar(&flagConf.AmazonS3.MaxRetries, "AmazonS3.MaxRetries", flagConf.AmazonS3.MaxRetries, "Maximum number of times that a request will be retried for failures")
+
+	// google storage
+	f.BoolVar(&flagConf.GoogleStorage.Disabled, "GoogleStorage.Disabled", flagConf.GoogleStorage.Disabled, "Disable storage backend")
+
+	// swift
+	f.BoolVar(&flagConf.Swift.Disabled, "Swift.Disabled", flagConf.Swift.Disabled, "Disable storage backend")
+	f.Int64Var(&flagConf.Swift.ChunkSizeBytes, "Swift.ChunkSizeBytes", flagConf.Swift.ChunkSizeBytes, "Size of chunks to use for large object creation")
+	f.IntVar(&flagConf.Swift.MaxRetries, "Swift.MaxRetries", flagConf.Swift.MaxRetries, "Maximum number of times that a request will be retried for failures")
+
+	// HTTP storage
+	f.BoolVar(&flagConf.HTTPStorage.Disabled, "HTTPStorage.Disabled", flagConf.HTTPStorage.Disabled, "Disable storage backend")
+	f.DurationVar(&flagConf.HTTPStorage.Timeout, "HTTPStorage.Timeout", flagConf.HTTPStorage.Timeout, "Timeout in seconds for request")
+
+	return f
+}
+
+func computeFlags(flagConf *config.Config) *pflag.FlagSet {
+	f := pflag.NewFlagSet("", pflag.ContinueOnError)
+
+	// AWS Batch
+	f.StringVar(&flagConf.AWSBatch.Region, "AWSBatch.Region", flagConf.AWSBatch.Region, "AWS region of Batch resources")
+	f.StringVar(&flagConf.AWSBatch.JobDefinition, "AWSBatch.JobDefinition", flagConf.AWSBatch.JobDefinition, "AWS Batch job definition name or ARN")
+	f.StringVar(&flagConf.AWSBatch.JobQueue, "AWSBatch.JobQueue", flagConf.AWSBatch.JobQueue, "AWS Batch job queue name or ARN")
+	f.IntVar(&flagConf.AWSBatch.MaxRetries, "AWSBatch.MaxRetries", flagConf.AWSBatch.MaxRetries, "Maximum number of times that a request will be retried for failures")
+
+	// GridEngine
+	f.StringVar(&flagConf.GridEngine.Template, "GridEngine.Template", flagConf.GridEngine.Template, "Path to submit template file")
+
+	// HTCondor
+	f.StringVar(&flagConf.HTCondor.Template, "HTCondor.Template", flagConf.HTCondor.Template, "Path to submit template file")
+
+	// PBS/Torque
+	f.StringVar(&flagConf.PBS.Template, "PBS.Template", flagConf.PBS.Template, "Path to submit template file")
+
+	// Scheduler
+	f.DurationVar(&flagConf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", flagConf.Scheduler.ScheduleRate, "How often to run a scheduler iteration")
+	f.IntVar(&flagConf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", flagConf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration")
+	f.DurationVar(&flagConf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", flagConf.Scheduler.NodePingTimeout, "How long to wait for a node ping before marking it as dead")
+	f.DurationVar(&flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", flagConf.Scheduler.NodeInitTimeout, "How long to wait for node initialization before marking it dead")
+	f.DurationVar(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", flagConf.Scheduler.NodeDeadTimeout, "How long to wait before deleting a dead node from the DB")
+
+	// Slurm
+	f.StringVar(&flagConf.Slurm.Template, "Slurm.Template", flagConf.Slurm.Template, "Path to submit template file")
 
 	return f
 }

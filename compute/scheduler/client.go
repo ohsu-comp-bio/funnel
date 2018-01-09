@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
@@ -24,8 +25,8 @@ type client struct {
 // NewClient returns a new Client instance connected to the
 // scheduler and task logger services at a given address
 // (e.g. "localhost:9090")
-func NewClient(conf config.Server) (Client, error) {
-	conn, err := util.Dial(conf, grpc.WithBlock())
+func NewClient(ctx context.Context, conf config.Server) (Client, error) {
+	conn, err := util.Dial(ctx, conf, grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}

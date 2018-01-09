@@ -36,8 +36,8 @@ func (c *loginCreds) RequireTransportSecurity() bool {
 }
 
 // Dial returns a new gRPC ClientConn with some default dial and call options set
-func Dial(conf config.Server, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), conf.RPCClientTimeout)
+func Dial(pctx context.Context, conf config.Server, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	ctx, cancel := context.WithTimeout(pctx, conf.RPCClientTimeout)
 	defer cancel()
 
 	defaultOpts := []grpc.DialOption{
@@ -49,7 +49,7 @@ func Dial(conf config.Server, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 		opts,
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(
 			grpc_retry.WithMax(conf.RPCClientMaxRetries),
-			grpc_retry.WithBackoff(exponentialBackoff),
+			grpc_retry.WithBackoff(newExponentialBackoff().BackoffWithJitter),
 		)),
 	)
 
@@ -59,29 +59,45 @@ func Dial(conf config.Server, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 	)
 }
 
-func exponentialBackoff(attempt uint) time.Duration {
-	var initialBackoff = 5 * time.Second
-	var maxBackoff = 1 * time.Minute
-	var multiplier = 2.0
-	var randomizationFactor = 0.5
-
-	nextBackoff := jitter(float64(initialBackoff)*math.Pow(multiplier, float64(attempt)), randomizationFactor)
-
-	if nextBackoff > float64(maxBackoff) {
-		return time.Duration(jitter(float64(maxBackoff), randomizationFactor))
-	}
-
-	return time.Duration(nextBackoff)
+type exponentialBackoff struct {
+	Initial             time.Duration
+	Max                 time.Duration
+	Multiplier          float64
+	RandomizationFactor float64
 }
 
-func jitter(val float64, randomizationFactor float64) float64 {
-	delta := randomizationFactor * val
-	minInterval := val - delta
-	maxInterval := val + delta
+func newExponentialBackoff() *exponentialBackoff {
+	return &exponentialBackoff{
+		Initial:             5 * time.Second,
+		Max:                 1 * time.Minute,
+		Multiplier:          2.0,
+		RandomizationFactor: 0.1,
+	}
+}
+
+func (b *exponentialBackoff) Backoff(attempt uint) time.Duration {
+	return time.Duration(float64(b.Initial) * math.Pow(b.Multiplier, float64(attempt)))
+}
+
+func (b *exponentialBackoff) Jitter(val time.Duration) time.Duration {
+	v := float64(val)
+	delta := b.RandomizationFactor * v
+	minInterval := v - delta
+	maxInterval := v + delta
 
 	// Get a random value from the range [minInterval, maxInterval].
 	// The formula used below has a +1 because if the minInterval is 1 and the maxInterval is 3 then
 	// we want a 33% chance for selecting either 1, 2 or 3.
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return minInterval + (r.Float64() * (maxInterval - minInterval + 1))
+	return time.Duration(minInterval + (r.Float64() * (maxInterval - minInterval + 1)))
+}
+
+func (b *exponentialBackoff) BackoffWithJitter(attempt uint) time.Duration {
+	nextBackoff := b.Jitter(b.Backoff(attempt))
+
+	if nextBackoff > b.Max {
+		return b.Jitter(b.Max)
+	}
+
+	return nextBackoff
 }

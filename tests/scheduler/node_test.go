@@ -29,7 +29,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	srv.StartServer()
 
 	srv.Conf.Node.ID = "test-node-gone-on-cancel"
-	n, err := scheduler.NewNode(srv.Conf, log, workercmd.Run)
+	n, err := scheduler.NewNode(bg, srv.Conf, log, workercmd.Run)
 	if err != nil {
 		t.Fatal("failed to start node")
 	}
@@ -78,14 +78,15 @@ func TestManualBackend(t *testing.T) {
 	srv := tests.NewFunnel(conf)
 	srv.StartServer()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	srv.Conf.Node.ID = "test-node-manual"
-	n, err := scheduler.NewNode(srv.Conf, log, workercmd.Run)
+	n, err := scheduler.NewNode(ctx, srv.Conf, log, workercmd.Run)
 	if err != nil {
 		t.Fatal("failed to create node")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	go n.Run(ctx)
 
 	tasks := []string{}

@@ -13,11 +13,11 @@ import (
 )
 
 // NewNode returns a new Node instance
-func NewNode(conf config.Config, log *logger.Logger, factory Worker) (*Node, error) {
+func NewNode(ctx context.Context, conf config.Config, log *logger.Logger, factory Worker) (*Node, error) {
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
-	cli, err := NewClient(conf.Server)
+	cli, err := NewClient(ctx, conf.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -46,12 +46,6 @@ func NewNode(conf config.Config, log *logger.Logger, factory Worker) (*Node, err
 		timeout:   timeout,
 		state:     state,
 	}, nil
-}
-
-// NewNoopNode returns a new node that doesn't have any side effects
-// (e.g. storage access, docker calls, etc.) which is useful for testing.
-func NewNoopNode(conf config.Config, log *logger.Logger) (*Node, error) {
-	return NewNode(conf, log, NoopWorker)
 }
 
 // Node is a structure used for tracking available resources on a compute resource.

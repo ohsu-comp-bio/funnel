@@ -18,12 +18,13 @@ func Run(conf config.Config) error {
 		conf.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	n, err := scheduler.NewNode(conf, log, workerCmd.Run)
+	ctx := context.Background()
+
+	n, err := scheduler.NewNode(ctx, conf, log, workerCmd.Run)
 	if err != nil {
 		return err
 	}
 
-	ctx := context.Background()
 	ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	n.Run(ctx)
 

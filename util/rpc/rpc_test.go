@@ -1,41 +1,40 @@
 package rpc
 
 import (
-	"math"
 	"testing"
 	"time"
 )
 
 func TestExponentialBackoff(t *testing.T) {
-	var initialBackoff = 5 * time.Second
-	var maxBackoff = 1 * time.Minute
-	var multiplier = 2.0
-	var randomizationFactor = 0.5
 
-	getMinMax := func(val float64) (min float64, max float64) {
-		delta := randomizationFactor * val
-		min = val - delta
-		max = val + delta
+	eb := newExponentialBackoff()
+
+	getMinMax := func(val time.Duration, randomizationFactor float64) (min time.Duration, max time.Duration) {
+		v := float64(val)
+		delta := randomizationFactor * v
+		min = time.Duration(v - delta)
+		max = time.Duration(v + delta)
 		return
 	}
 
-	maxBackoffMin, maxBackoffMax := getMinMax(float64(maxBackoff))
+	maxBackoffMin, maxBackoffMax := getMinMax(eb.Max, eb.RandomizationFactor)
 	t.Logf("maxBackoff jittered interval [%v, %v]", maxBackoffMin, maxBackoffMax)
 
 	for i := 0; i < 10; i++ {
 		attempt := uint(i)
 		t.Log("attempt", attempt)
 
-		min, max := getMinMax(float64(initialBackoff) * math.Pow(multiplier, float64(attempt)))
-		b := exponentialBackoff(attempt)
+		nb := eb.Backoff(attempt)
+		nbj := eb.BackoffWithJitter(attempt)
+		min, max := getMinMax(nb, eb.RandomizationFactor)
 
-		if min > float64(maxBackoff) {
-			if float64(b) < maxBackoffMin || float64(b) > maxBackoffMax {
-				t.Errorf("expected backoff to be limited by maxBackoff parameter. Got %v", float64(b))
+		if nb > eb.Max {
+			if nbj < maxBackoffMin || nbj > maxBackoffMax {
+				t.Errorf("expected backoff to be limited by maxBackoff parameter. Got %v", nbj)
 			}
 		} else {
-			if float64(b) < min || float64(b) > max {
-				t.Errorf("expected backoff to be in interval [%v, %v]. Got %v", min, max, float64(b))
+			if nbj < min || nbj > max {
+				t.Errorf("expected backoff to be in interval [%v, %v]. Got %v", min, max, nbj)
 			}
 		}
 	}

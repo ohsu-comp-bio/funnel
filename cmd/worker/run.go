@@ -49,7 +49,7 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 	case "mongodb":
 		db, err = mongodb.NewMongoDB(conf.MongoDB)
 	case "boltdb":
-		reader, err = worker.NewRPCTaskReader(conf.Server, taskID)
+		reader, err = worker.NewRPCTaskReader(ctx, conf.Server, taskID)
 	default:
 		err = fmt.Errorf("unknown Database")
 	}
@@ -76,7 +76,7 @@ func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.D
 		case "log":
 			writer = &events.Logger{Log: log}
 		case "boltdb":
-			writer, err = events.NewRPCWriter(conf.Server)
+			writer, err = events.NewRPCWriter(ctx, conf.Server)
 		case "dynamodb":
 			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 		case "datastore":

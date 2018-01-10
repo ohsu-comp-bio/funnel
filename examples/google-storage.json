@@ -4,8 +4,7 @@
   "executors": [
     {
       "image": "ubuntu",
-      "command": ["md5sum", "/tmp/file.zip"],
-      "stdout": "/tmp/stdout"
+      "command": ["md5sum", "/tmp/file.zip"]
     }
   ],
   "inputs": [

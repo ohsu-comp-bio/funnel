@@ -1,5 +1,5 @@
 {
-  "name": "Input and output file",
+  "name": "md5sum example",
   "description": "Demonstrates input and output files using a simple md5sum command.",
   "inputs": [
     {
@@ -13,7 +13,7 @@
   "outputs": [
     {
       "name": "md5sum stdout",
-      "description": "Stdout of md5sum is captures to /tmp/test_out on the host system.",
+      "description": "Stdout of md5sum is captured and copied to /tmp/md5_output on the host system.",
       "url": "file:///tmp/md5sum_output",
       "type": "FILE",
       "path": "/tmp/out"

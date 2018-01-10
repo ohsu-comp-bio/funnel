@@ -15,7 +15,7 @@ func TestExamplesAreValid(t *testing.T) {
 		var task tes.Task
 		err = jsonpb.UnmarshalString(string(tb), &task)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal("unmarshal failed", en, err)
 		}
 		if err := tes.Validate(&task); err != nil {
 			t.Fatal("Invalid task message:", en, "\n", "error:", err)

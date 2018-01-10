@@ -4,14 +4,13 @@
   "executors": [
     {
       "image": "ubuntu",
-      "command": ["md5sum", "/tmp/file.xml"],
-      "stdout": "/tmp/stdout"
+      "command": ["md5sum", "/tmp/file.xml"]
     }
   ],
   "inputs": [
     {
       "name": "input",
-      "description": "Download a public file from AWS S3 Storage (IRS form 990 data)",
+      "description": "Download a public file from S3 Storage (IRS form 990 data)",
       "url": "s3://irs-form-990/200931393493000150_public.xml",
       "path": "/tmp/file.xml"
     }

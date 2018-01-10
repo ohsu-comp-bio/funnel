@@ -1,0 +1,37 @@
+{
+  "name": "Stdout and Stderr capture",
+  "description": "Demonstrates capturing stdout and stderr and uploading them as output files.",
+  "inputs": [
+    {
+      "name": "input",
+      "description": "Input to command. /tmp/input must exist on the host system.",
+      "url": "file:///tmp/input",
+      "type": "FILE",
+      "path": "/tmp/in"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "stdout",
+      "description": "Stdout of command is captured and copied to /tmp/stdout on the host system.",
+      "url": "file:///tmp/stdout",
+      "type": "FILE",
+      "path": "/tmp/out"
+    },
+    {
+      "name": "stderr",
+      "description": "Stderr of command is captured and copied to /tmp/stderr on the host system.",
+      "url": "file:///tmp/stderr",
+      "type": "FILE",
+      "path": "/tmp/err"
+    }
+  ],
+  "executors": [
+    {
+      "image": "alpine",
+      "command": ["sh", "-c", "md5sum /tmp/in | tee /dev/stderr"],
+      "stdout": "/tmp/out",
+      "stdout": "/tmp/err"
+    }
+  ]
+}

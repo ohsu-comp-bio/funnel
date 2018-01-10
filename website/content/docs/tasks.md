@@ -30,15 +30,17 @@ The example task below downloads a file named `hello.txt` from S3 and calls `cat
   }],
   "outputs": [{
     # URL to upload file to.
-    "url": "s3://funnel-bucket/hello.txt",
+    "url": "s3://funnel-bucket/output.txt",
     # Local path to upload file from.
-    "path": "/inputs/hello.txt"
+    "path": "/outputs/stdout"
   }],
   "executors": [{
       # Container image name.
       "image": "alpine",
       # Command to run (argv).
-      "command": ["cat", "/inputs/hello.txt"]
+      "command": ["cat", "/inputs/hello.txt"],
+      # Capture the stdout of the command to /outputs/stdout
+      "stdout": "/outputs/stdout"
   }]
 }
 ```
@@ -54,8 +56,14 @@ Tasks also have state and logs:
   "name": "Hello world",
   "inputs": [
     {
-      "url": "gs://funnel-bucket/hello.txt",
+      "url": "s3://funnel-bucket/hello.txt",
       "path": "/inputs/hello.txt"
+    }
+  ],
+  "outputs": [
+    {
+      "url": "s3://funnel-bucket/output.txt",
+      "path": "/outputs/stdout"
     }
   ],
   "executors": [
@@ -64,7 +72,8 @@ Tasks also have state and logs:
       "command": [
         "cat",
         "/inputs/hello.txt"
-      ]
+      ],
+      "stdout": "/outputs/stdout"
     }
   ],
   "logs": [
@@ -100,9 +109,14 @@ POST /v1/tasks
     "url": "s3://funnel-bucket/hello.txt",
     "path": "/inputs/hello.txt"
   }],
+  "outputs": [{
+    "url": "s3://funnel-bucket/output.txt",
+    "path": "/outputs/stdout"
+  }],
   "executors": [{
       "image": "alpine",
-      "command": ["cat", "/inputs/hello.txt"]
+      "command": ["cat", "/inputs/hello.txt"],
+      "stdout": "/outputs/stdout"
   }]
 }
 
@@ -132,13 +146,20 @@ GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
       "path": "/inputs/hello.txt"
     }
   ],
+  "outputs": [
+    {
+      "url": "s3://funnel-bucket/output.txt",
+      "path": "/outputs/stdout"
+    }
+  ],
   "executors": [
     {
       "image": "alpine",
       "command": [
         "cat",
         "/inputs/hello.txt"
-      ]
+      ],
+      "stdout": "/outputs/stdout",
     }
   ],
   "logs": [
@@ -160,7 +181,7 @@ GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
 The "BASIC" doesn't include some fields such as stdout/err logs, because these fields may be potentially large.
 In order to get everything, use the "FULL" view:
 ```
-GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
+GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=FULL
 {
   "id": "b85khc2rl6qkqbhg8vig",
   "state": "COMPLETE",
@@ -177,7 +198,8 @@ GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
       "command": [
         "cat",
         "/inputs/hello.txt"
-      ]
+      ],
+      "stdout": "/outputs/stdout",
     }
   ],
   "logs": [
@@ -378,7 +400,7 @@ For a full, in-depth spec, read the TES standard's [task_execution.proto](https:
       # Second executor runs after the first completes, on the same machine.
       {
         "image": "ubuntu",
-        "command": ["md5sum", "/container/input"],
+        "command": ["cat", "/container/input"],
         "stdout": "/container/output",
         "stderr": "/container/stderr",
         "workdir": "/tmp"

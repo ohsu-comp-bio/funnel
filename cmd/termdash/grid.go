@@ -44,6 +44,12 @@ func ExpandView(t *TaskWidget) {
 	defer ui.DefaultEvtStream.ResetHandlers()
 
 	ex := expanded.NewExpanded(t.Task)
+	task, err := cursor.RefreshTask(t.Task.Id)
+	if err != nil {
+		ex.DisplayError(err)
+	} else {
+		ex.Update(task.Task)
+	}
 	ex.Align()
 	ui.Render(ex)
 

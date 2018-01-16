@@ -7,12 +7,12 @@ menu:
 
 ### Download
 
-- [linux <small>[funnel-linux-amd64-0.4.1.tar.gz]</small>][linux-64-bin]
-- [mac <small>[funnel-darwin-amd64-0.4.1.tar.gz]</small>][mac-64-bin]
+- [linux <small>[funnel-linux-amd64-0.5.0.tar.gz]</small>][linux-64-bin]
+- [mac <small>[funnel-darwin-amd64-0.5.0.tar.gz]</small>][mac-64-bin]
 - <small>Windows is not supported (yet), sorry!</small>
 
-[linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.4.1/funnel-linux-amd64-0.4.1.tar.gz
-[mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.4.1/funnel-darwin-amd64-0.4.1.tar.gz
+[linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.5.0/funnel-linux-amd64-0.5.0.tar.gz
+[mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.5.0/funnel-darwin-amd64-0.5.0.tar.gz
 
 Funnel is a single binary.  
 Funnel requires [Docker][docker].  
@@ -35,6 +35,41 @@ $ go get github.com/ohsu-comp-bio/funnel
 Funnel requires Go 1.8+. Check out the [development docs][dev] for more detail.
 
 ### Release History
+
+#### 0.5.0
+
+Date: Jan 9, 2018
+Tag: https://github.com/ohsu-comp-bio/funnel/releases/tag/0.5.0  
+Changes: https://github.com/ohsu-comp-bio/funnel/compare/0.4.1...0.5.0  
+Milestone: https://github.com/ohsu-comp-bio/funnel/milestone/3?closed=1  
+
+- **Breaking changes**
+  - Configuration
+      - The configuration file structure has been refactored to simplify, remove large duplicated blocks and deep nesting. Most structures live at the root level now.
+      - Added some basic config validation to catch misspelled or unknown fields, a common source of issues.
+      - Added most config values to the available CLI flags.
+- Failure tolerance
+  - Added retries with exponential backoff and jitter to database and RPC clients.
+- Databases
+  - Added Google Cloud Datastore database backend.
+- Events
+  - Added “task created” event type.
+  - Added full support for writing events to Kafka.
+  - Added storage of system log events.
+- Web dashboard
+  - Display per-task system logs.
+  - Tweaked display of large text fields such as stdout/err and input content.
+- Storage
+  - Ensure all file handles are closed consistently.
+  - Added retries to Swift storage.
+  - Produce warning on empty directory download.
+  - Better defaults for chunk size in Swift backend.
+  - Added generic S3 (i.e. not Amazon S3) storage backend/client, based on the Minio client library.
+  - Also added the ability to configure/enable multiple, separate S3 backends simultaneously.
+  - Added HTTP storage backend, which currently supports read-only operations (write/put is not supported).
+- Removed the autoscaler code. This code was getting old and outdated, and nobody seemed to be using it. A fresh version will be rewritten in the future.
+- Lots of other bugfixes.
+
 
 #### 0.4.1
 

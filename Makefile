@@ -201,8 +201,8 @@ build-release: clean-release cross-compile docker
 	#
 	# NOTE! Making a release requires manual steps.
 	# See: website/content/docs/development.md
-	@if [ $$(git rev-parse --abbrev-ref HEAD) != $(VERSION) ]; then \
-		echo 'This command should only be run from a branch named after the version'; \
+	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
+		echo 'This command should only be run from master'; \
 		exit 1; \
 	fi
 	@if [ -z "$$GITHUB_TOKEN" ]; then \
@@ -214,6 +214,7 @@ build-release: clean-release cross-compile docker
 		cp build/bin/$$f build/release/$$f-$(VERSION)/funnel; \
 		tar -C build/release/$$f-$(VERSION) -czf build/release/$$f-$(VERSION).tar.gz .; \
 	done
+	docker tag ohsucompbio/funnel ohsucompbio/funnel:$(VERSION)
 
 # Build the GCE image installer
 gce-installer: cross-compile
@@ -255,7 +256,7 @@ docker: cross-compile
 	mkdir -p build/docker
 	cp build/bin/funnel-linux-amd64 build/docker/funnel
 	cp docker/* build/docker/
-	cd build/docker/ && docker build -t funnel .
+	cd build/docker/ && docker build -t ohsucompbio/funnel .
 	
 test-datastore-travis:
 	@wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-183.0.0-linux-x86_64.tar.gz

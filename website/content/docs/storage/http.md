@@ -1,11 +1,11 @@
 ---
-title: HTTP(s)
+title: HTTP(S)
 menu:
   main:
     parent: Storage
 ---
 
-# HTTP
+# HTTP(S)
 
 Funnel supports downloading files from public URLs via GET reqests. No authentication
 mechanism is allowed. This backend can be used to fetch objects from cloud storage 

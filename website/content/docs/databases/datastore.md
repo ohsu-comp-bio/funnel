@@ -15,8 +15,12 @@ special requirements on the context of requests and requires a separate library.
 Two entity types are used, "Task" and "TaskPart" (for larger pieces of task content,
 such as stdout/err logs).
 
+Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.
+
 Config:
 ```
+Database: datastore
+
 Datastore:
   Project: ""
   # Path to account credentials file.

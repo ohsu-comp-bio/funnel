@@ -2,7 +2,7 @@
 title: Databases
 menu:
   main:
-    weight: 6
+    weight: 5
 ---
 
 # Databases

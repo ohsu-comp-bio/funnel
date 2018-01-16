@@ -14,7 +14,6 @@ writer to the config:
 EventWriters:
   - kafka
   - log
-  - rpc
 
 Kafka:
   Servers:

@@ -2,6 +2,6 @@
 title: Events
 menu:
   main:
-    identifier: Events
+    weight: 5
 ---
 # Events

@@ -92,15 +92,6 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
-                   class="sidebar-nav-item "
-                >AWS S3</a></li>
-            </ul>
-          </li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
                    class="sidebar-nav-item "
                 >Google Storage</a></li>
@@ -110,9 +101,27 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/http/"
+                   class="sidebar-nav-item "
+                >HTTP(S)</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
                    class="sidebar-nav-item "
                 >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/"
+                   class="sidebar-nav-item "
+                >S3</a></li>
             </ul>
           </li>
           
@@ -194,6 +203,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/"
+                   class="sidebar-nav-item "
+                >Datastore</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
                    class="sidebar-nav-item "
                 >DynamoDB</a></li>
@@ -215,6 +233,21 @@
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
                    class="sidebar-nav-item "
                 >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
             </ul>
           </li>
           
@@ -259,21 +292,6 @@
           
           
         
-        <li>
-          
-          <span class="intermediate">Events</span></li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
-                   class="sidebar-nav-item "
-                >Kafka</a></li>
-            </ul>
-          </li>
-          
-          
-        
       
     </ul>
   </div>
@@ -285,18 +303,17 @@
 
 <p>Funnel supports using the local filesystem for file storage.</p>
 
-<p>Funnel limits which directories may be accessed, by default only allowing directories under the current working directory of the Funnel worker.</p>
+<p>Funnel limits which directories may be accessed, by default only allowing directories
+under the current working directory of the Funnel worker.</p>
 
 <p>Config:</p>
 
-<pre><code>Worker:
-  Storage:
-    Local:
-      # Whitelist of local directory paths which Funnel is allowed to access.
-      AllowedDirs:
-        - ./
-        - /path/to/allowed/dir
-        - ...etc
+<pre><code>LocalStorage:
+  # Whitelist of local directory paths which Funnel is allowed to access.
+  AllowedDirs:
+    - ./
+    - /path/to/allowed/dir
+    - ...etc
 </code></pre>
 
 <h3 id="example-task">Example task</h3>
@@ -323,11 +340,19 @@
 
 <h3 id="file-hard-linking-behavior">File hard linking behavior</h3>
 
-<p>For efficiency, Funnel will attempt not to copy the input files, instead trying create a hard link to the source file. In some cases this isn&rsquo;t possible. For example, if the source file is on a network file system mount (e.g. NFS) but the Funnel worker&rsquo;s working directory is on the local scratch disk, a hard link would cross a file system boundary, which is not possible. In this case, Funnel will copy the file.</p>
+<p>For efficiency, Funnel will attempt not to copy the input files, instead trying
+create a hard link to the source file. In some cases this isn&rsquo;t possible. For example,
+if the source file is on a network file system mount (e.g. NFS) but the Funnel worker&rsquo;s
+working directory is on the local scratch disk, a hard link would cross a file system
+boundary, which is not possible. In this case, Funnel will copy the file.</p>
 
 <h3 id="file-ownership-behavior">File ownership behavior</h3>
 
-<p>One difficult area of files and Docker containers is file owner/group management. If a Docker container runs as root, it&rsquo;s likely that the file will end up being owned by root on the host system. In this case, some step (Funnel or another task) will likely fail to access it. This is a tricky problem with no good solution yet. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/66">issue 66</a>.</p>
+<p>One difficult area of files and Docker containers is file owner/group management.
+If a Docker container runs as root, it&rsquo;s likely that the file will end up being owned
+by root on the host system. In this case, some step (Funnel or another task) will
+likely fail to access it. This is a tricky problem with no good solution yet.
+See <a href="https://github.com/ohsu-comp-bio/funnel/issues/66">issue 66</a>.</p>
 
   </div>
 

@@ -11,10 +11,6 @@
   </url>
   
   <url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/</loc>
-  </url>
-  
-  <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/security/basic/</loc>
   </url>
   
@@ -29,6 +25,10 @@
   
   <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/</loc>
   </url>
   
   <url>
@@ -81,6 +81,10 @@
   </url>
   
   <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</loc>
+  </url>
+  
+  <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/</loc>
   </url>
   
@@ -102,6 +106,10 @@
   
   <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/</loc>
   </url>
   
   <url>

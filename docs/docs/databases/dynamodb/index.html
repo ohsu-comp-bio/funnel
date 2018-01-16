@@ -92,15 +92,6 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
-                   class="sidebar-nav-item "
-                >AWS S3</a></li>
-            </ul>
-          </li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
                    class="sidebar-nav-item "
                 >Google Storage</a></li>
@@ -110,9 +101,27 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/http/"
+                   class="sidebar-nav-item "
+                >HTTP(S)</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
                    class="sidebar-nav-item "
                 >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/"
+                   class="sidebar-nav-item "
+                >S3</a></li>
             </ul>
           </li>
           
@@ -194,6 +203,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/"
+                   class="sidebar-nav-item "
+                >Datastore</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
                    class="sidebar-nav-item  active"
                 >DynamoDB</a></li>
@@ -215,6 +233,21 @@
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
                    class="sidebar-nav-item "
                 >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
             </ul>
           </li>
           
@@ -259,21 +292,6 @@
           
           
         
-        <li>
-          
-          <span class="intermediate">Events</span></li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
-                   class="sidebar-nav-item "
-                >Kafka</a></li>
-            </ul>
-          </li>
-          
-          
-        
       
     </ul>
   </div>
@@ -288,58 +306,20 @@ Funnel will, by default, try to will try to automatically load credentials from 
 
 <p>Available Config:</p>
 
-<pre><code>Server:
-  Database: dynamodb
-  Databases:
-    DynamoDB:
-      # Basename to use for dynamodb tables
-      TableBasename: &quot;funnel&quot;
-      AWS:
-        # AWS region
-        Region: &quot;us-west-2&quot;
-        # AWS Access key ID
-        Key: &quot;&quot;
-        # AWS Secret Access Key
-        Secret: &quot;&quot;
-</code></pre>
+<pre><code>Database: dynamodb
 
-<h3 id="worker-config">Worker config</h3>
-
-<p>Using DynamoDB with AWS Batch requires that the worker be configured to connect to the database:</p>
-
-<pre><code>Worker:
-  ActiveEventWriters:
-    - log
-    - dynamodb
-  EventWriters:
-    DynamoDB:
-      # Basename to use for dynamodb tables
-      TableBasename: &quot;funnel&quot;
-      AWS:
-        # AWS region
-        Region: &quot;us-west-2&quot;
-        # AWS Access key ID
-        Key: &quot;&quot;
-        # AWS Secret Access Key
-        Secret: &quot;&quot;
-
-  TaskReader: dynamodb
-  TaskReaders:
-    DynamoDB:
-      # Basename to use for dynamodb tables
-      TableBasename: &quot;funnel&quot;
-      AWS:
-        # AWS region
-        Region: &quot;us-west-2&quot;
-        # AWS Access key ID
-        Key: &quot;&quot;
-        # AWS Secret Access Key
-        Secret: &quot;&quot;
+DynamoDB:
+  # Basename to use for dynamodb tables
+  TableBasename: &quot;funnel&quot;
+  # AWS region
+  Region: &quot;us-west-2&quot;
+  # AWS Access key ID
+  Key: &quot;&quot;
+  # AWS Secret Access Key
+  Secret: &quot;&quot;
 </code></pre>
 
 <h3 id="known-issues">Known issues</h3>
-
-<p>We have an unpleasant duplication of config between the Worker and Server blocks. Track this in <a href="https://github.com/ohsu-comp-bio/funnel/issues/339">issue 339</a>.</p>
 
 <p>Dynamo does not store scheduler data. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/340">issue 340</a>.</p>
 

@@ -92,15 +92,6 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
-                   class="sidebar-nav-item "
-                >AWS S3</a></li>
-            </ul>
-          </li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
                    class="sidebar-nav-item "
                 >Google Storage</a></li>
@@ -110,9 +101,27 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/http/"
+                   class="sidebar-nav-item "
+                >HTTP(S)</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
                    class="sidebar-nav-item "
                 >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/"
+                   class="sidebar-nav-item "
+                >S3</a></li>
             </ul>
           </li>
           
@@ -194,6 +203,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/"
+                   class="sidebar-nav-item "
+                >Datastore</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
                    class="sidebar-nav-item "
                 >DynamoDB</a></li>
@@ -215,6 +233,21 @@
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
                    class="sidebar-nav-item  active"
                 >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
             </ul>
           </li>
           
@@ -259,21 +292,6 @@
           
           
         
-        <li>
-          
-          <span class="intermediate">Events</span></li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
-                   class="sidebar-nav-item "
-                >Kafka</a></li>
-            </ul>
-          </li>
-          
-          
-        
       
     </ul>
   </div>
@@ -287,39 +305,17 @@
 
 <p>Config:</p>
 
-<pre><code>Server:
-  Database: mongodb
-  Databases:
-    MongoDB:
-      # Addresses for the seed servers.
-      Addrs:
-        - &quot;localhost&quot;
-      # Database name used within MongoDB to store funnel data.
-      Database: &quot;funnel&quot;
-      Username: &quot;&quot;
-      Password: &quot;&quot;
+<pre><code>Database: mongodb
+
+MongoDB:
+  # Addresses for the seed servers.
+  Addrs:
+    - &quot;localhost&quot;
+  # Database name used within MongoDB to store funnel data.
+  Database: &quot;funnel&quot;
+  Username: &quot;&quot;
+  Password: &quot;&quot;
 </code></pre>
-
-<h3 id="writing-events-from-the-worker">Writing events from the worker</h3>
-
-<p>The worker can be configured to write events directly to Mongo, which avoids unnecessary RPC traffic to the Funnel server.</p>
-
-<pre><code>Worker:
-  ActiveEventWriters:
-    - log
-    - mongodb
-  EventWriters:
-    MongoDB:
-      Addrs:
-        - &quot;localhost&quot;
-      Database: &quot;funnel&quot;
-      Username: &quot;&quot;
-      Password: &quot;&quot;
-</code></pre>
-
-<h3 id="known-issues">Known issues</h3>
-
-<p>We have an unpleasant duplication of config between the Worker and Server blocks. Track this in <a href="https://github.com/ohsu-comp-bio/funnel/issues/339">issue 339</a>.</p>
 
   </div>
 

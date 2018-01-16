@@ -16,19 +16,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/</guid>
-      <description>Amazon Batch This guide covers deploying a Funnel server that leverages DynamoDB for storage and Batch for task execution. You&amp;rsquo;ll need to set up several resources using either the Funnel CLI or through the provided Amazon web console.
-Create Required AWS Batch Resources For Funnel to execute tasks on Batch, you must define a Compute Environment, Job Queue and Job Definition. Additionally, you must define an IAM role for your Batch Job Definition.</description>
-    </item>
-    
-    <item>
-      <title>AWS S3</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/</guid>
-      <description>AWS S3 Funnel supports using AWS S3 for file storage.
-The S3 storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-Worker: Storage: S3: Disabled: false AWS: # The maximum number of times that a request will be retried for failures. MaxRetries: 10 # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot;  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;s3://funnel-bucket/hello.</description>
+      <description>AWS Batch This guide covers deploying a Funnel server that leverages DynamoDB for storage and AWS Batch for task execution.
+Setup Get started by creating a compute environment, job queue and job definition using either the Funnel CLI or the AWS Batch web console. To manage the permissions of instanced AWS Batch jobs create a new IAM role. For the Funnel configuration outlined in this document, this role will need to provide read and write access to both S3 and DynamoDB.</description>
     </item>
     
     <item>
@@ -62,6 +51,18 @@ $ export FUNNEL_SERVER_PASSWORD=abc123 $ funnel task list  Known issues The basi
     </item>
     
     <item>
+      <title>Datastore</title>
+      <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/</guid>
+      <description>Google Cloud Datastore Funnel supports storing tasks (but not scheduler data) in Google Cloud Datastore.
+This implementation currently doesn&amp;rsquo;t work with Appengine, since Appengine places special requirements on the context of requests and requires a separate library.
+Two entity types are used, &amp;ldquo;Task&amp;rdquo; and &amp;ldquo;TaskPart&amp;rdquo; (for larger pieces of task content, such as stdout/err logs).
+Funnel will, by default, try to will try to automatically load credentials from the environment.</description>
+    </item>
+    
+    <item>
       <title>Deploying a cluster</title>
       <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -88,7 +89,7 @@ A node is a service which runs on each machine in a cluster. The node connects t
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/</guid>
       <description>DynamoDB Funnel supports storing task data in DynamoDB. Storing scheduler data is not supported currently, so using the node scheduler with DynamoDB won&amp;rsquo;t work. Using AWS Batch for compute scheduling may be a better option. Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.
 Available Config:
-Server: Database: dynamodb Databases: DynamoDB: # Basename to use for dynamodb tables TableBasename: &amp;quot;funnel&amp;quot; AWS: # AWS region Region: &amp;quot;us-west-2&amp;quot; # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot;  Worker config Using DynamoDB with AWS Batch requires that the worker be configured to connect to the database:</description>
+Database: dynamodb DynamoDB: # Basename to use for dynamodb tables TableBasename: &amp;quot;funnel&amp;quot; # AWS region Region: &amp;quot;us-west-2&amp;quot; # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot;  Known issues Dynamo does not store scheduler data.</description>
     </item>
     
     <item>
@@ -97,10 +98,9 @@ Server: Database: dynamodb Databases: DynamoDB: # Basename to use for dynamodb t
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/</guid>
-      <description>Elasticsearch Funnel supports storing tasks and scheduler data in Elasticsearch.
+      <description> Elasticsearch Funnel supports storing tasks and scheduler data in Elasticsearch.
 Config:
-Server: Database: elastic Databases: Elastic: # Prefix to use for indexes IndexPrefix: &amp;quot;funnel&amp;quot; URL: http://localhost:9200  Writing events from the worker The worker can be configured to write events directly to Elasticsearch, which avoids unnecessary RPC traffic to the Funnel server.
-Worker: ActiveEventWriters: - log - elastic EventWriters: Elastic: # Prefix to use for indexes IndexPrefix: &amp;quot;funnel&amp;quot; URL: http://localhost:9200  Known issues We have an unpleasant duplication of config between the Worker and Server blocks.</description>
+Database: elastic Elastic: # Prefix to use for indexes IndexPrefix: &amp;quot;funnel&amp;quot; URL: http://localhost:9200  </description>
     </item>
     
     <item>
@@ -111,7 +111,7 @@ Worker: ActiveEventWriters: - log - elastic EventWriters: Elastic: # Prefix to u
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/</guid>
       <description> Embedded By default, Funnel uses an embedded database named BoltDB to store task and scheduler data. This is great for development and a simple server without external dependencies, but it doesn&amp;rsquo;t scale well to larger clusters.
 Available config:
-Server: Database: boltdb Databases: BoltDB: # Path to database file Path: ./funnel-work-dir/funnel.db  </description>
+Database: boltdb BoltDB: # Path to database file Path: ./funnel-work-dir/funnel.db  </description>
     </item>
     
     <item>
@@ -141,9 +141,8 @@ Server: Database: boltdb Databases: BoltDB: # Path to database file Path: ./funn
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/</guid>
       <description>Google Storage Funnel supports using Google Storage (GS) for file storage.
-The GS client is NOT enabled by default, you must enabled it in the config:
-Worker: Storage: GS: # Automatically discover credentials from the environment. - FromEnv: true # Path to account credentials file. AccountFile:  In the near future, Google Storage will be enabled by default. See issue #332.
-Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;gs://funnel-bucket/hello.</description>
+The Google storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
+GoogleStorage: Disabled: false # Path to account credentials file. AccountFile: &amp;quot;&amp;quot;  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;gs://funnel-bucket/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.txt&amp;quot; }], &amp;quot;outputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;gs://funnel-bucket/output.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/outputs/hello-out.</description>
     </item>
     
     <item>
@@ -154,7 +153,7 @@ Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;q
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/</guid>
       <description>Grid Engine Funnel can be configured to submit workers to Grid Engine by making calls to qsub.
 The Funnel server process needs to run on the same machine as the Grid Engine master. Configure Funnel to use Grid Engine by including the following config:
-Backend: gridengine Backends: GridEngine: |#!/bin/bash #$ -N {{.TaskId}} #$ -o {{.WorkDir}}/funnel-stdout #$ -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#$ -pe mpi %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
+Compute: gridengine GridEngine: |#!/bin/bash #$ -N {{.TaskId}} #$ -o {{.WorkDir}}/funnel-stdout #$ -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#$ -pe mpi %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
     </item>
     
     <item>
@@ -165,7 +164,18 @@ Backend: gridengine Backends: GridEngine: |#!/bin/bash #$ -N {{.TaskId}} #$ -o {
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/</guid>
       <description>HTCondor Funnel can be configured to submit workers to HTCondor by making calls to condor_submit.
 The Funnel server process needs to run on the same machine as the HTCondor master. Configure Funnel to use HTCondor by including the following config:
-Backend: htcondor Backends: HTCondor: |universe = vanilla getenv = True executable = {{.Executable}} arguments = worker run --config {{.Config}} --task-id {{.TaskId}} log = {{.WorkDir}}/condor-event-log error = {{.WorkDir}}/funnel-stderr output = {{.</description>
+Compute: htcondor HTCondor: |universe = vanilla getenv = True executable = {{.Executable}} arguments = worker run --config {{.Config}} --task-id {{.TaskId}} log = {{.WorkDir}}/condor-event-log error = {{.WorkDir}}/funnel-stderr output = {{.WorkDir}}/funnel-stdout should_transfer_files = YES when_to_transfer_output = ON_EXIT_OR_EVICT {{if ne .</description>
+    </item>
+    
+    <item>
+      <title>HTTP(S)</title>
+      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</guid>
+      <description>HTTP(S) Funnel supports downloading files from public URLs via GET reqests. No authentication mechanism is allowed. This backend can be used to fetch objects from cloud storage providers exposed using presigned URLs.
+The HTTP storage client is enabled by default, but may be explicitly disabled in the worker config:
+HTTPStorage: Disabled: false # Timeout for http(s) GET requests. # In nanoseconds. Timeout: 60000000000 # 60 seconds  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;http://fakedomain.</description>
     </item>
     
     <item>
@@ -174,8 +184,8 @@ Backend: htcondor Backends: HTCondor: |universe = vanilla getenv = True executab
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/</guid>
-      <description> Kafka Funnel supports writing task events to a Kafka topic. To use this, add an event writer to the worker config:
-Worker: ActiveEventWriters: - kafka - log - rpc EventWriters: Kafka: Servers: - localhost:9092 Topic: funnel-events  </description>
+      <description> Kafka Funnel supports writing task events to a Kafka topic. To use this, add an event writer to the config:
+EventWriters: - kafka - log Kafka: Servers: - localhost:9092 Topic: funnel-events  </description>
     </item>
     
     <item>
@@ -187,7 +197,7 @@ Worker: ActiveEventWriters: - kafka - log - rpc EventWriters: Kafka: Servers: - 
       <description>Local Funnel supports using the local filesystem for file storage.
 Funnel limits which directories may be accessed, by default only allowing directories under the current working directory of the Funnel worker.
 Config:
-Worker: Storage: Local: # Whitelist of local directory paths which Funnel is allowed to access. AllowedDirs: - ./ - /path/to/allowed/dir - ...etc  Example task Files must be absolute paths in file:///path/to/file.txt URL form.
+LocalStorage: # Whitelist of local directory paths which Funnel is allowed to access. AllowedDirs: - ./ - /path/to/allowed/dir - ...etc  Example task Files must be absolute paths in file:///path/to/file.txt URL form.
 { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;file:///path/to/funnel-data/hello.</description>
     </item>
     
@@ -197,10 +207,9 @@ Worker: Storage: Local: # Whitelist of local directory paths which Funnel is all
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</guid>
-      <description>MongoDB Funnel supports storing tasks and scheduler data in MongoDB.
+      <description> MongoDB Funnel supports storing tasks and scheduler data in MongoDB.
 Config:
-Server: Database: mongodb Databases: MongoDB: # Addresses for the seed servers. Addrs: - &amp;quot;localhost&amp;quot; # Database name used within MongoDB to store funnel data. Database: &amp;quot;funnel&amp;quot; Username: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot;  Writing events from the worker The worker can be configured to write events directly to Mongo, which avoids unnecessary RPC traffic to the Funnel server.
-Worker: ActiveEventWriters: - log - mongodb EventWriters: MongoDB: Addrs: - &amp;quot;localhost&amp;quot; Database: &amp;quot;funnel&amp;quot; Username: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot;  Known issues We have an unpleasant duplication of config between the Worker and Server blocks.</description>
+Database: mongodb MongoDB: # Addresses for the seed servers. Addrs: - &amp;quot;localhost&amp;quot; # Database name used within MongoDB to store funnel data. Database: &amp;quot;funnel&amp;quot; Username: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot;  </description>
     </item>
     
     <item>
@@ -210,9 +219,8 @@ Worker: ActiveEventWriters: - log - mongodb EventWriters: MongoDB: Addrs: - &amp
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</guid>
       <description>OpenStack Swift Funnel supports using OpenStack Swift for file storage.
-The Swift client is NOT enabled by default, you must explicitly give the credentials in the worker config:
-Worker: Storage: Swift: UserName: Password: AuthURL: TenantName: TenantID: RegionName:  The config currently only supports OpenStack v2 auth. See issue #336.
-As always, if you set the password in this file, make sure you protect it appropriately. Alternatively, the Swift client can pull credentials from these environment variables: https://godoc.</description>
+The Swift storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
+Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot; AuthURL: &amp;quot;&amp;quot; TenantName: &amp;quot;&amp;quot; TenantID: &amp;quot;&amp;quot; RegionName: &amp;quot;&amp;quot;  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.txt&amp;quot; }], &amp;quot;outputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/output.</description>
     </item>
     
     <item>
@@ -223,7 +231,18 @@ As always, if you set the password in this file, make sure you protect it approp
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</guid>
       <description>PBS/Torque Funnel can be configured to submit workers to PBS/Torque by making calls to qsub.
 The Funnel server process needs to run on the same machine as the PBS master. Configure Funnel to use PBS by including the following config:
-Backend: pbs Backends: PBS: |#!/bin/bash #PBS -N {{.TaskId}} #PBS -o {{.WorkDir}}/funnel-stdout #PBS -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#PBS -l nodes=1:ppn=%d&amp;#34; .Cpus}} {{- end}} {{if ne .RamGb 0.</description>
+Compute: pbs PBS: |#!/bin/bash #PBS -N {{.TaskId}} #PBS -o {{.WorkDir}}/funnel-stdout #PBS -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#PBS -l nodes=1:ppn=%d&amp;#34; .Cpus}} {{- end}} {{if ne .RamGb 0.0 -}} {{printf &amp;#34;#PBS -l mem=%.</description>
+    </item>
+    
+    <item>
+      <title>S3</title>
+      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/</guid>
+      <description>S3 Amazon S3 Funnel supports using AWS S3 for file storage.
+The S3 storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
+AmazonS3: Disabled: false # The maximum number of times that a request will be retried for failures. MaxRetries: 10 Key: &amp;quot;&amp;quot; Secret: &amp;quot;&amp;quot;  Other S3 API Providers Funnel also supports using non-Amazon S3 API providers (Ceph, Cleversafe, Minio, etc.</description>
     </item>
     
     <item>
@@ -244,7 +263,7 @@ Backend: pbs Backends: PBS: |#!/bin/bash #PBS -N {{.TaskId}} #PBS -o {{.WorkDir}
       <description>Slurm Funnel can be configured to submit workers to Slurm by making calls to sbatch.
 The Funnel server process needs to run on the same machine as the Slurm master.
 Configure Funnel to use Slurm by including the following config:
-Backend: slurm Backends: SLURM: |#!/bin/bash #SBATCH --job-name {{.TaskId}} #SBATCH --ntasks 1 #SBATCH --error {{.WorkDir}}/funnel-stderr #SBATCH --output {{.WorkDir}}/funnel-stdout {{if ne .Cpus 0 -}} {{printf &amp;#34;#SBATCH --cpus-per-task %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
+Compute: slurm Slurm: |#!/bin/bash #SBATCH --job-name {{.TaskId}} #SBATCH --ntasks 1 #SBATCH --error {{.WorkDir}}/funnel-stderr #SBATCH --output {{.WorkDir}}/funnel-stdout {{if ne .Cpus 0 -}} {{printf &amp;#34;#SBATCH --cpus-per-task %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
     </item>
     
     <item>

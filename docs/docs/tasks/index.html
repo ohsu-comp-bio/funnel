@@ -92,15 +92,6 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
-                   class="sidebar-nav-item "
-                >AWS S3</a></li>
-            </ul>
-          </li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
                    class="sidebar-nav-item "
                 >Google Storage</a></li>
@@ -110,9 +101,27 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/http/"
+                   class="sidebar-nav-item "
+                >HTTP(S)</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
                    class="sidebar-nav-item "
                 >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/"
+                   class="sidebar-nav-item "
+                >S3</a></li>
             </ul>
           </li>
           
@@ -194,6 +203,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/"
+                   class="sidebar-nav-item "
+                >Datastore</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
                    class="sidebar-nav-item "
                 >DynamoDB</a></li>
@@ -215,6 +233,21 @@
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
                    class="sidebar-nav-item "
                 >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
             </ul>
           </li>
           
@@ -259,21 +292,6 @@
           
           
         
-        <li>
-          
-          <span class="intermediate">Events</span></li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
-                   class="sidebar-nav-item "
-                >Kafka</a></li>
-            </ul>
-          </li>
-          
-          
-        
       
     </ul>
   </div>
@@ -306,15 +324,17 @@
   }],
   &quot;outputs&quot;: [{
     # URL to upload file to.
-    &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
+    &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
     # Local path to upload file from.
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+    &quot;path&quot;: &quot;/outputs/stdout&quot;
   }],
   &quot;executors&quot;: [{
       # Container image name.
       &quot;image&quot;: &quot;alpine&quot;,
       # Command to run (argv).
-      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;]
+      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
+      # Capture the stdout of the command to /outputs/stdout
+      &quot;stdout&quot;: &quot;/outputs/stdout&quot;
   }]
 }
 </code></pre>
@@ -330,8 +350,14 @@ Funnel runs executors via Docker.</p>
   &quot;name&quot;: &quot;Hello world&quot;,
   &quot;inputs&quot;: [
     {
-      &quot;url&quot;: &quot;gs://funnel-bucket/hello.txt&quot;,
+      &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
       &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+    }
+  ],
+  &quot;outputs&quot;: [
+    {
+      &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
+      &quot;path&quot;: &quot;/outputs/stdout&quot;
     }
   ],
   &quot;executors&quot;: [
@@ -340,7 +366,8 @@ Funnel runs executors via Docker.</p>
       &quot;command&quot;: [
         &quot;cat&quot;,
         &quot;/inputs/hello.txt&quot;
-      ]
+      ],
+      &quot;stdout&quot;: &quot;/outputs/stdout&quot;
     }
   ],
   &quot;logs&quot;: [
@@ -376,9 +403,14 @@ conveniently captured by <code>logs[0].logs[0].stdout</code>.</p>
     &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
     &quot;path&quot;: &quot;/inputs/hello.txt&quot;
   }],
+  &quot;outputs&quot;: [{
+    &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
+    &quot;path&quot;: &quot;/outputs/stdout&quot;
+  }],
   &quot;executors&quot;: [{
       &quot;image&quot;: &quot;alpine&quot;,
-      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;]
+      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
+      &quot;stdout&quot;: &quot;/outputs/stdout&quot;
   }]
 }
 
@@ -408,13 +440,20 @@ In order to get the original task with some basic logs, use the &ldquo;BASIC&rdq
       &quot;path&quot;: &quot;/inputs/hello.txt&quot;
     }
   ],
+  &quot;outputs&quot;: [
+    {
+      &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
+      &quot;path&quot;: &quot;/outputs/stdout&quot;
+    }
+  ],
   &quot;executors&quot;: [
     {
       &quot;image&quot;: &quot;alpine&quot;,
       &quot;command&quot;: [
         &quot;cat&quot;,
         &quot;/inputs/hello.txt&quot;
-      ]
+      ],
+      &quot;stdout&quot;: &quot;/outputs/stdout&quot;,
     }
   ],
   &quot;logs&quot;: [
@@ -436,7 +475,7 @@ In order to get the original task with some basic logs, use the &ldquo;BASIC&rdq
 <p>The &ldquo;BASIC&rdquo; doesn&rsquo;t include some fields such as stdout/err logs, because these fields may be potentially large.
 In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
 
-<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
+<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=FULL
 {
   &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
   &quot;state&quot;: &quot;COMPLETE&quot;,
@@ -453,7 +492,8 @@ In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
       &quot;command&quot;: [
         &quot;cat&quot;,
         &quot;/inputs/hello.txt&quot;
-      ]
+      ],
+      &quot;stdout&quot;: &quot;/outputs/stdout&quot;,
     }
   ],
   &quot;logs&quot;: [
@@ -652,7 +692,7 @@ For a full, in-depth spec, read the TES standard&rsquo;s <a href="https://github
       # Second executor runs after the first completes, on the same machine.
       {
         &quot;image&quot;: &quot;ubuntu&quot;,
-        &quot;command&quot;: [&quot;md5sum&quot;, &quot;/container/input&quot;],
+        &quot;command&quot;: [&quot;cat&quot;, &quot;/container/input&quot;],
         &quot;stdout&quot;: &quot;/container/output&quot;,
         &quot;stderr&quot;: &quot;/container/stderr&quot;,
         &quot;workdir&quot;: &quot;/tmp&quot;

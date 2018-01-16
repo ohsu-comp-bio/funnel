@@ -92,15 +92,6 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/aws-s3/"
-                   class="sidebar-nav-item "
-                >AWS S3</a></li>
-            </ul>
-          </li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/"
                    class="sidebar-nav-item "
                 >Google Storage</a></li>
@@ -110,9 +101,27 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/http/"
+                   class="sidebar-nav-item "
+                >HTTP(S)</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/"
                    class="sidebar-nav-item  active"
                 >OpenStack Swift</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/"
+                   class="sidebar-nav-item "
+                >S3</a></li>
             </ul>
           </li>
           
@@ -194,6 +203,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/"
+                   class="sidebar-nav-item "
+                >Datastore</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/"
                    class="sidebar-nav-item "
                 >DynamoDB</a></li>
@@ -215,6 +233,21 @@
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/"
                    class="sidebar-nav-item "
                 >MongoDB</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
+          <span class="intermediate">Events</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
+                   class="sidebar-nav-item "
+                >Kafka</a></li>
             </ul>
           </li>
           
@@ -259,21 +292,6 @@
           
           
         
-        <li>
-          
-          <span class="intermediate">Events</span></li>
-          
-          <li>
-            <ul class="sidebar-nav sidebar-nav-nested">
-              <li>
-                <a href="https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/"
-                   class="sidebar-nav-item "
-                >Kafka</a></li>
-            </ul>
-          </li>
-          
-          
-        
       
     </ul>
   </div>
@@ -285,26 +303,19 @@
 
 <p>Funnel supports using <a href="https://docs.openstack.org/swift/latest/">OpenStack Swift</a> for file storage.</p>
 
-<p>The Swift client is NOT enabled by default, you must explicitly give the credentials
-in the worker config:</p>
+<p>The Swift storage client is enabled by default, and will try to automatically
+load credentials from the environment. Alternatively, you
+may explicitly set the credentials in the worker config:</p>
 
-<pre><code>Worker:
-  Storage:
-      Swift:
-        UserName:
-        Password:
-        AuthURL:
-        TenantName:
-        TenantID:
-        RegionName:
+<pre><code>Swift:
+  Disabled: false
+  UserName: &quot;&quot;
+  Password: &quot;&quot;
+  AuthURL: &quot;&quot;
+  TenantName: &quot;&quot;
+  TenantID: &quot;&quot;
+  RegionName: &quot;&quot;
 </code></pre>
-
-<p>The config currently only supports OpenStack v2 auth. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/336">issue #336</a>.</p>
-
-<p>As always, if you set the password in this file, make sure you protect it appropriately. Alternatively, the Swift client
-can pull credentials from these environment variables: <a href="https://godoc.org/github.com/ncw/swift#Connection.ApplyEnvironment">https://godoc.org/github.com/ncw/swift#Connection.ApplyEnvironment</a></p>
-
-<p>Swift currently fails while uploading large objects. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/257">issue #257</a>.</p>
 
 <h3 id="example-task">Example task</h3>
 
@@ -325,6 +336,10 @@ can pull credentials from these environment variables: <a href="https://godoc.or
   }]
 }
 </code></pre>
+
+<h3 id="known-issues">Known Issues:</h3>
+
+<p>The config currently only supports OpenStack v2 auth. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/336">issue #336</a>.</p>
 
   </div>
 

@@ -197,36 +197,22 @@ cross-compile: depends
 clean-release:
 	rm -rf ./build/release
 
-# Upload a release to GitHub
-upload-release: clean-release cross-compile
+build-release: clean-release cross-compile docker
 	#
 	# NOTE! Making a release requires manual steps.
 	# See: website/content/docs/development.md
-	@go get github.com/aktau/github-release
-	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
-		echo 'This command should only be run from the master branch'; \
+	@if [ $$(git rev-parse --abbrev-ref HEAD) != $(VERSION) ]; then \
+		echo 'This command should only be run from a branch named after the version'; \
 		exit 1; \
 	fi
 	@if [ -z "$$GITHUB_TOKEN" ]; then \
 		echo 'GITHUB_TOKEN is required but not set. Generate one in your GitHub settings at https://github.com/settings/tokens and set it to an environment variable with `export GITHUB_TOKEN=123456...`'; \
 		exit 1; \
 	fi
-	-github-release release \
-		-u ohsu-comp-bio \
-		-r funnel \
-		--tag $(VERSION) \
-		--name $(VERSION)
 	for f in $$(ls -1 build/bin); do \
 		mkdir -p build/release/$$f-$(VERSION); \
 		cp build/bin/$$f build/release/$$f-$(VERSION)/funnel; \
 		tar -C build/release/$$f-$(VERSION) -czf build/release/$$f-$(VERSION).tar.gz .; \
-		github-release upload \
-		-u ohsu-comp-bio \
-		-r funnel \
-		--name $$f-$(VERSION).tar.gz \
-		--tag $(VERSION) \
-		--replace \
-		--file ./build/release/$$f-$(VERSION).tar.gz; \
 	done
 
 # Build the GCE image installer

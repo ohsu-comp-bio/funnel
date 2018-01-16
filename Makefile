@@ -2,7 +2,7 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
-VERSION = 0.4.1
+VERSION = 0.5.0
 TESTS=$(shell go list ./... | grep -v /vendor/)
 CONFIGDIR=$(shell pwd)/tests
 

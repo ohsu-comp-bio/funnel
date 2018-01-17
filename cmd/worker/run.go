@@ -19,7 +19,10 @@ import (
 
 // Run runs the "worker run" command.
 func Run(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error {
-	w, err := NewWorker(conf, taskID, log)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	w, err := NewWorker(ctx, conf, taskID, log)
 	if err != nil {
 		return err
 	}
@@ -28,13 +31,12 @@ func Run(ctx context.Context, conf config.Config, taskID string, log *logger.Log
 }
 
 // NewWorker returns a new Funnel worker based on the given config.
-func NewWorker(conf config.Config, taskID string, log *logger.Logger) (*worker.DefaultWorker, error) {
+func NewWorker(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) (*worker.DefaultWorker, error) {
 	if log == nil {
 		log = logger.NewLogger("worker", conf.Logger)
 	}
 	log.Debug("NewWorker", "config", conf, "taskID", taskID)
 
-	ctx := context.Background()
 	var err error
 	var db tes.ReadOnlyServer
 	var reader worker.TaskReader

@@ -53,10 +53,19 @@ func Dial(pctx context.Context, conf config.Server, opts ...grpc.DialOption) (*g
 		)),
 	)
 
-	return grpc.DialContext(ctx,
+	conn, err := grpc.DialContext(ctx,
 		conf.RPCAddress(),
 		opts...,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		<-pctx.Done()
+		conn.Close()
+	}()
+	return conn, nil
 }
 
 type exponentialBackoff struct {

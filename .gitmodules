@@ -176,3 +176,12 @@
 [submodule "vendor/github.com/cenkalti/backoff"]
 	path = vendor/github.com/cenkalti/backoff
 	url = https://github.com/cenkalti/backoff
+[submodule "vendor/golang.org/x/sys"]
+	path = vendor/golang.org/x/sys
+	url = https://go.googlesource.com/sys
+[submodule "vendor/github.com/googleapis/gax-go"]
+	path = vendor/github.com/googleapis/gax-go
+	url = https://github.com/googleapis/gax-go
+[submodule "vendor/github.com/mailru/easyjson"]
+	path = vendor/github.com/mailru/easyjson
+	url = https://github.com/mailru/easyjson

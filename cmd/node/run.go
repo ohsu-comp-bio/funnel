@@ -14,16 +14,12 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 		conf.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	ew, err := workerCmd.NewWorkerEventWriter(ctx, conf, log)
+	w, err := workerCmd.NewWorker(ctx, conf, log)
 	if err != nil {
 		return err
 	}
 
-	workerFactory := func(ctx context.Context, taskID string) error {
-		return workerCmd.Run(ctx, conf, taskID, ew, log)
-	}
-
-	n, err := scheduler.NewNode(ctx, conf, workerFactory, log)
+	n, err := scheduler.NewNode(ctx, conf, w.Run, log)
 	if err != nil {
 		return err
 	}

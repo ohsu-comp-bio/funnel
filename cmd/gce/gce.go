@@ -25,8 +25,9 @@ func init() {
 var runCmd = &cobra.Command{
 	Use: "run",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
 		ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+		defer cancel()
 
 		conf := config.DefaultConfig()
 

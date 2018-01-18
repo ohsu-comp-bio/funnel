@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
 	"path"
@@ -23,7 +22,7 @@ func TestPersistentPreRun(t *testing.T) {
 	defer cleanup()
 
 	c, h := newCommandHooks()
-	h.Run = func(ctx context.Context, conf config.Config, taskID string, writer events.Writer, log *logger.Logger) error {
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, taskID string) error {
 		if conf.Server.HostName != host {
 			t.Fatal("unexpected Server.HostName in config", conf.Server.HostName)
 		}

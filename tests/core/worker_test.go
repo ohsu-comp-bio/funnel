@@ -8,6 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"github.com/ohsu-comp-bio/funnel/worker"
+	gcontext "golang.org/x/net/context"
 	"os"
 	"path"
 	"testing"
@@ -28,12 +29,7 @@ func TestWorkerRun(t *testing.T) {
   `)
 
 	ctx := context.Background()
-	ew, err := workerCmd.NewWorkerEventWriter(ctx, c, log)
-	if err != nil {
-		t.Fatal("failed to instantiate event writer", err)
-	}
-
-	err = workerCmd.Run(ctx, c, id, ew, log)
+	err := workerCmd.Run(ctx, c, log, id)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -69,17 +65,10 @@ func TestWorkDirCleanup(t *testing.T) {
 	workdir := path.Join(c.Worker.WorkDir, id)
 
 	ctx := context.Background()
-	ew, err := workerCmd.NewWorkerEventWriter(ctx, c, log)
-	if err != nil {
-		t.Fatal("failed to instantiate event writer", err)
-	}
-
-	err = workerCmd.Run(ctx, c, id, ew, log)
+	err := workerCmd.Run(ctx, c, log, id)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
-
-	f.Wait(id)
 
 	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
@@ -105,12 +94,10 @@ func TestWorkDirCleanup(t *testing.T) {
 	c.Worker.LeaveWorkDir = true
 	workdir = path.Join(c.Worker.WorkDir, id)
 
-	err = workerCmd.Run(ctx, c, id, ew, log)
+	err = workerCmd.Run(ctx, c, log, id)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
-
-	f.Wait(id)
 
 	task, err = f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
@@ -149,10 +136,11 @@ type taskReader struct {
 	task *tes.Task
 }
 
-func (r taskReader) Task() (*tes.Task, error) {
+func (r taskReader) Task(ctx gcontext.Context, taskID string) (*tes.Task, error) {
 	return r.task, nil
 }
-func (r taskReader) State() (tes.State, error) {
+
+func (r taskReader) State(ctx gcontext.Context, taskID string) (tes.State, error) {
 	return r.task.State, nil
 }
 
@@ -176,24 +164,20 @@ func TestLargeLogRate(t *testing.T) {
 		},
 	}
 
-	baseDir := path.Join(conf.Worker.WorkDir, task.Id)
-	reader := taskReader{&task}
-
 	counts := &eventCounter{}
 	logger := &events.Logger{Log: log}
 	m := &events.MultiWriter{logger, counts}
 
 	w := worker.DefaultWorker{
-		Conf:       conf.Worker,
-		Mapper:     worker.NewFileMapper(baseDir),
-		Store:      storage.Storage{},
-		TaskReader: reader,
-		Event:      events.NewTaskWriter(task.Id, 0, conf.Logger.Level, m),
+		Conf:        conf.Worker,
+		Store:       storage.Storage{},
+		TaskReader:  taskReader{&task},
+		EventWriter: m,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	w.Run(ctx)
+	w.Run(ctx, task.Id)
 
 	// Given the difficulty of timing how long it task a task + docker container to start,
 	// we just check that a small amount of events were generated.

@@ -68,8 +68,8 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 			writers = append(writers, writer)
 		}
 	}
-
-	writer = &events.ErrLogger{Writer: &writers, Log: log}
+	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
+	writer = &events.ErrLogger{Writer: writer, Log: log}
 
 	switch strings.ToLower(conf.Database) {
 	case "datastore":

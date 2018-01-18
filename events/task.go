@@ -72,12 +72,12 @@ type TaskWriter struct {
 }
 
 // NewTaskWriter returns a TaskWriter instance.
-func NewTaskWriter(taskID string, attempt uint32, logLevel string, w Writer) *TaskWriter {
+func NewTaskWriter(taskID string, attempt uint32, w Writer) *TaskWriter {
 	g := NewTaskGenerator(taskID, attempt)
 	return &TaskWriter{
 		gen: g,
 		out: w,
-		sys: &SystemLogWriter{logLevel, g.sys, w},
+		sys: &SystemLogWriter{g.sys, w},
 	}
 }
 
@@ -133,6 +133,6 @@ func (ew *TaskWriter) NewExecutorWriter(index uint32) *ExecutorWriter {
 	return &ExecutorWriter{
 		gen: g,
 		out: ew.out,
-		sys: &SystemLogWriter{ew.sys.lvl, g.sys, ew.out},
+		sys: &SystemLogWriter{g.sys, ew.out},
 	}
 }

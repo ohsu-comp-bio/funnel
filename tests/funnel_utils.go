@@ -71,7 +71,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(derr)
 	}
 
-	srv, err := servercmd.NewServer(conf, log)
+	srv, err := servercmd.NewServer(context.Background(), conf, log)
 	if err != nil {
 		panic(err)
 	}

@@ -17,16 +17,15 @@ import (
 // sequential process of task initialization, execution, finalization,
 // and logging.
 type DefaultWorker struct {
-	Conf       config.Worker
-	Mapper     *FileMapper
-	Store      storage.Storage
-	TaskReader TaskReader
-	Event      *events.TaskWriter
+	Conf        config.Worker
+	Store       storage.Storage
+	TaskReader  TaskReader
+	EventWriter events.Writer
 }
 
 // Run runs the Worker.
 // TODO document behavior of slow consumer of task log updates
-func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
+func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) {
 
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
@@ -39,50 +38,55 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// - download inputs
 	// - run the steps (docker)
 	// - upload the outputs
-
+	var event *events.TaskWriter
+	var mapper *FileMapper
 	var run helper
 	var task *tes.Task
 	runerr = nil
 
-	r.Event.Info("Version", version.LogFields()...)
-	r.Event.State(tes.State_INITIALIZING)
-	r.Event.StartTime(time.Now())
+	// set up task specific utilities
+	event = events.NewTaskWriter(taskID, 0, "info", r.EventWriter)
+	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, taskID))
+
+	event.Info("Version", version.LogFields()...)
+	event.State(tes.State_INITIALIZING)
+	event.StartTime(time.Now())
 
 	if name, err := os.Hostname(); err == nil {
-		r.Event.Info("Hostname", "name", name)
+		event.Info("Hostname", "name", name)
 	}
 
-	task, run.syserr = r.TaskReader.Task()
+	task, run.syserr = r.TaskReader.Task(pctx, taskID)
 
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
-		r.Event.EndTime(time.Now())
+		event.EndTime(time.Now())
 
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
-			r.Event.Info("Canceled")
-			r.Event.State(tes.State_CANCELED)
+			event.Info("Canceled")
+			event.State(tes.State_CANCELED)
 			runerr = fmt.Errorf("task canceled")
 		case run.execerr != nil:
 			// One of the executors failed
-			r.Event.Error("Exec error", "error", run.execerr)
-			r.Event.State(tes.State_EXECUTOR_ERROR)
+			event.Error("Exec error", "error", run.execerr)
+			event.State(tes.State_EXECUTOR_ERROR)
 			runerr = run.execerr
 		case run.syserr != nil:
 			// Something else failed
 			// TODO should we do something special for run.err == context.Canceled?
-			r.Event.Error("System error", "error", run.syserr)
-			r.Event.State(tes.State_SYSTEM_ERROR)
+			event.Error("System error", "error", run.syserr)
+			event.State(tes.State_SYSTEM_ERROR)
 			runerr = run.syserr
 		default:
-			r.Event.State(tes.State_COMPLETE)
+			event.State(tes.State_COMPLETE)
 		}
 
 		// cleanup workdir
 		if !r.Conf.LeaveWorkDir {
-			r.Mapper.Cleanup()
+			mapper.Cleanup()
 		}
 	}()
 
@@ -92,44 +96,44 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		run.syserr = e
 	})
 
-	ctx := r.pollForCancel(pctx, func() {
+	ctx := r.pollForCancel(pctx, taskID, func() {
 		run.taskCanceled = true
 	})
 	run.ctx = ctx
 
 	// Prepare file mapper, which maps task file URLs to host filesystem paths
 	if run.ok() {
-		run.syserr = r.Mapper.MapTask(task)
+		run.syserr = mapper.MapTask(task)
 	}
 
 	if run.ok() {
-		run.syserr = r.validateInputs()
+		run.syserr = r.validateInputs(mapper)
 	}
 
 	if run.ok() {
-		run.syserr = r.validateOutputs()
+		run.syserr = r.validateOutputs(mapper)
 	}
 
 	// Download inputs
-	for _, input := range r.Mapper.Inputs {
+	for _, input := range mapper.Inputs {
 		if run.ok() {
-			r.Event.Info("Download started", "url", input.Url)
+			event.Info("Download started", "url", input.Url)
 			err := r.Store.Get(ctx, input.Url, input.Path, input.Type)
 			if err != nil {
 				if err == storage.ErrEmptyDirectory {
-					r.Event.Warn("Download finished with warning", "url", input.Url, "warning", err)
+					event.Warn("Download finished with warning", "url", input.Url, "warning", err)
 				} else {
 					run.syserr = err
-					r.Event.Error("Download failed", "url", input.Url, "error", err)
+					event.Error("Download failed", "url", input.Url, "error", err)
 				}
 			} else {
-				r.Event.Info("Download finished", "url", input.Url)
+				event.Info("Download finished", "url", input.Url)
 			}
 		}
 	}
 
 	if run.ok() {
-		r.Event.State(tes.State_RUNNING)
+		event.State(tes.State_RUNNING)
 	}
 
 	// Run steps
@@ -137,23 +141,23 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		for i, d := range task.GetExecutors() {
 			s := &stepWorker{
 				Conf:  r.Conf,
-				Event: r.Event.NewExecutorWriter(uint32(i)),
+				Event: event.NewExecutorWriter(uint32(i)),
 				Command: &DockerCommand{
 					Image:         d.Image,
 					Command:       d.Command,
 					Env:           d.Env,
-					Volumes:       r.Mapper.Volumes,
+					Volumes:       mapper.Volumes,
 					Workdir:       d.Workdir,
 					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
 					// TODO make RemoveContainer configurable
 					RemoveContainer: true,
-					Event:           r.Event.NewExecutorWriter(uint32(i)),
+					Event:           event.NewExecutorWriter(uint32(i)),
 				},
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
 			if run.ok() {
-				run.syserr = r.openStepLogs(s, d)
+				run.syserr = r.openStepLogs(mapper, s, d)
 			}
 
 			if run.ok() {
@@ -164,31 +168,31 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Upload outputs
 	var outputs []*tes.OutputFileLog
-	for _, output := range r.Mapper.Outputs {
+	for _, output := range mapper.Outputs {
 		if run.ok() {
-			r.Event.Info("Upload started", "url", output.Url)
-			r.fixLinks(output.Path)
+			event.Info("Upload started", "url", output.Url)
+			r.fixLinks(mapper, output.Path)
 			out, err := r.Store.Put(ctx, output.Url, output.Path, output.Type)
 			if err != nil {
 				if err == storage.ErrEmptyDirectory {
-					r.Event.Warn("Upload finished with warning", "url", output.Url, "warning", err)
+					event.Warn("Upload finished with warning", "url", output.Url, "warning", err)
 				} else {
 					run.syserr = err
-					r.Event.Error("Upload failed", "url", output.Url, "error", err)
+					event.Error("Upload failed", "url", output.Url, "error", err)
 				}
 			} else {
-				r.Event.Info("Upload finished", "url", output.Url)
+				event.Info("Upload finished", "url", output.Url)
 			}
 			outputs = append(outputs, out...)
 		}
 	}
 	// unmap paths for OutputFileLog
 	for _, o := range outputs {
-		o.Path = r.Mapper.ContainerPath(o.Path)
+		o.Path = mapper.ContainerPath(o.Path)
 	}
 
 	if run.ok() {
-		r.Event.Outputs(outputs)
+		event.Outputs(outputs)
 	}
 
 	return
@@ -196,7 +200,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 // fixLinks walks the output paths, fixing cases where a symlink is
 // broken because it's pointing to a path inside a container volume.
-func (r *DefaultWorker) fixLinks(basepath string) {
+func (r *DefaultWorker) fixLinks(mapper *FileMapper, basepath string) {
 	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
 		if err != nil {
 			// There's an error, so be safe and give up on this file
@@ -217,7 +221,7 @@ func (r *DefaultWorker) fixLinks(basepath string) {
 					return nil
 				}
 				// Map symlink source (possible container path) to host path
-				mapped, err := r.Mapper.HostPath(src)
+				mapped, err := mapper.HostPath(src)
 				if err != nil {
 					return nil
 				}
@@ -241,12 +245,12 @@ func (r *DefaultWorker) fixLinks(basepath string) {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
+func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
 
 	// Find the path for task stdin
 	var err error
 	if d.Stdin != "" {
-		s.Command.Stdin, err = r.Mapper.OpenHostFile(d.Stdin)
+		s.Command.Stdin, err = mapper.OpenHostFile(d.Stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -255,7 +259,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Command.Stdout, err = r.Mapper.CreateHostFile(d.Stdout)
+		s.Command.Stdout, err = mapper.CreateHostFile(d.Stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -264,7 +268,7 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Command.Stderr, err = r.Mapper.CreateHostFile(d.Stderr)
+		s.Command.Stderr, err = mapper.CreateHostFile(d.Stderr)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -275,8 +279,8 @@ func (r *DefaultWorker) openStepLogs(s *stepWorker, d *tes.Executor) error {
 }
 
 // Validate the input downloads
-func (r *DefaultWorker) validateInputs() error {
-	for _, input := range r.Mapper.Inputs {
+func (r *DefaultWorker) validateInputs(mapper *FileMapper) error {
+	for _, input := range mapper.Inputs {
 		err := r.Store.SupportsGet(input.Url, input.Type)
 		if err != nil {
 			return fmt.Errorf("Input download not supported by storage: %v", err)
@@ -286,8 +290,8 @@ func (r *DefaultWorker) validateInputs() error {
 }
 
 // Validate the output uploads
-func (r *DefaultWorker) validateOutputs() error {
-	for _, output := range r.Mapper.Outputs {
+func (r *DefaultWorker) validateOutputs(mapper *FileMapper) error {
+	for _, output := range mapper.Outputs {
 		err := r.Store.SupportsPut(output.Url, output.Type)
 		if err != nil {
 			return fmt.Errorf("Output upload not supported by storage: %v", err)
@@ -296,7 +300,7 @@ func (r *DefaultWorker) validateOutputs() error {
 	return nil
 }
 
-func (r *DefaultWorker) pollForCancel(ctx context.Context, f func()) context.Context {
+func (r *DefaultWorker) pollForCancel(ctx context.Context, taskID string, f func()) context.Context {
 	taskctx, cancel := context.WithCancel(ctx)
 
 	// Start a goroutine that polls the server to watch for a canceled state.
@@ -310,7 +314,7 @@ func (r *DefaultWorker) pollForCancel(ctx context.Context, f func()) context.Con
 			case <-taskctx.Done():
 				return
 			case <-ticker.C:
-				state, _ := r.TaskReader.State()
+				state, _ := r.TaskReader.State(taskctx, taskID)
 				if tes.TerminalState(state) {
 					cancel()
 					f()

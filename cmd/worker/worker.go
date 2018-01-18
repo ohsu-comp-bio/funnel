@@ -5,7 +5,6 @@ import (
 	"fmt"
 	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
@@ -19,7 +18,7 @@ func NewCommand() *cobra.Command {
 }
 
 type hooks struct {
-	Run func(ctx context.Context, conf config.Config, taskID string, writer events.Writer, log *logger.Logger) error
+	Run func(ctx context.Context, conf config.Config, log *logger.Logger, taskID string) error
 }
 
 func newCommandHooks() (*cobra.Command, *hooks) {
@@ -68,12 +67,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 
-			ew, err := NewWorkerEventWriter(ctx, conf, log)
-			if err != nil {
-				return err
-			}
-
-			return hooks.Run(ctx, conf, taskID, ew, log)
+			return hooks.Run(ctx, conf, log, taskID)
 		},
 	}
 

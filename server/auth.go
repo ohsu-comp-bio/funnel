@@ -31,7 +31,7 @@ func authorize(ctx context.Context, password string) error {
 		return nil
 	}
 
-	if md, ok := metadata.FromContext(ctx); ok {
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if len(md["authorization"]) > 0 {
 			raw := md["authorization"][0]
 			_, reqpass, ok := parseBasicAuth(raw)

@@ -197,7 +197,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			Log:              log,
 			Tasks: &server.TaskService{
 				Name:    conf.Server.ServiceName,
-				Event:   &writers,
+				Event:   &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level},
 				Compute: compute,
 				Read:    reader,
 			},

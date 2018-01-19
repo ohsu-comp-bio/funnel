@@ -1,6 +1,10 @@
 # Modified from: https://github.com/giovtorres/docker-centos7-slurm/blob/master/17.02.3/Dockerfile
 FROM centos:7
 
+ENV SLURM_VERSION 17.02.3
+ENV SLURM_DOWNLOAD_MD5 63f0d7d14c9ff1fbdecb46ee96712d83
+ENV SLURM_DOWNLOAD_URL https://www.schedmd.com/downloads/archive/slurm-"$SLURM_VERSION".tar.bz2
+
 RUN yum makecache fast \
     && yum -y install epel-release \
     && yum -y install \
@@ -25,10 +29,6 @@ RUN yum makecache fast \
 
 RUN pip install Cython nose nose2
 RUN groupadd -r slurm && useradd -r -g slurm slurm
-
-ENV SLURM_VERSION 17.02.9
-ENV SLURM_DOWNLOAD_MD5 6bd0b38e6bf08f3426a7dd1e663a2e3c
-ENV SLURM_DOWNLOAD_URL https://download.schedmd.com/slurm/slurm-"$SLURM_VERSION".tar.bz2
 
 RUN set -x \
     && wget -O slurm.tar.bz2 "$SLURM_DOWNLOAD_URL" \

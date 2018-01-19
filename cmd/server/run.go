@@ -31,6 +31,7 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 	if err != nil {
 		return err
 	}
+
 	return s.Run(ctx)
 }
 
@@ -163,7 +164,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 
 	case "aws-batch":
-		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, &writers)
+		compute, err = batch.NewBackend(conf.AWSBatch)
 		if err != nil {
 			return nil, err
 		}
@@ -175,15 +176,15 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 
 	case "gridengine":
-		compute = gridengine.NewBackend(conf, reader, &writers)
+		compute = gridengine.NewBackend(conf)
 	case "htcondor":
-		compute = htcondor.NewBackend(ctx, conf, reader, &writers)
+		compute = htcondor.NewBackend(conf)
 	case "noop":
 		compute = noop.NewBackend()
 	case "pbs":
-		compute = pbs.NewBackend(ctx, conf, reader, &writers)
+		compute = pbs.NewBackend(conf)
 	case "slurm":
-		compute = slurm.NewBackend(ctx, conf, reader, &writers)
+		compute = slurm.NewBackend(conf)
 	default:
 		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
 	}

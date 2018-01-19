@@ -67,8 +67,9 @@ fi
 
 echo set server managers += $USER | qmgr
 
+
 qmgr -c 'set server scheduling = true'
-qmgr -c 'set server keep_completed = 86400'
+qmgr -c 'set server keep_completed = 300'
 qmgr -c 'set server mom_job_sync = true'
 
 # create default queue

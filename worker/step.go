@@ -43,7 +43,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			// Likely the task was canceled.
-			s.Command.Stop()
+			go s.Command.Stop()
 			s.Event.EndTime(time.Now())
 			return ctx.Err()
 

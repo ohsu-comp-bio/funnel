@@ -11,6 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
 	"syscall"
+	"time"
 )
 
 // Cmd represents the 'funnel gce" CLI command set.
@@ -26,7 +27,7 @@ var runCmd = &cobra.Command{
 	Use: "run",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := context.WithCancel(context.Background())
-		ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+		ctx = util.SignalContext(ctx, time.Second*5, syscall.SIGINT, syscall.SIGTERM)
 		defer cancel()
 
 		conf := config.DefaultConfig()

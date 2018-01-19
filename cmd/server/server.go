@@ -9,6 +9,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
 	"syscall"
+	"time"
 )
 
 // NewCommand returns the node command
@@ -57,11 +58,9 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log := logger.NewLogger("server", conf.Logger)
-
 			ctx, cancel := context.WithCancel(context.Background())
-			ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+			ctx = util.SignalContext(ctx, time.Second, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
-
 			return hooks.Run(ctx, conf, log)
 		},
 	}

@@ -42,7 +42,6 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	var mapper *FileMapper
 	var run helper
 	var task *tes.Task
-	runerr = nil
 
 	// set up task specific utilities
 	event = events.NewTaskWriter(taskID, 0, r.EventWriter)
@@ -53,7 +52,7 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	event.StartTime(time.Now())
 
 	if name, err := os.Hostname(); err == nil {
-		event.Info("Hostname", "name", name)
+		event.Metadata(map[string]string{"hostname": name})
 	}
 
 	task, run.syserr = r.TaskReader.Task(pctx, taskID)
@@ -69,17 +68,16 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 			event.Info("Canceled")
 			event.State(tes.State_CANCELED)
 			runerr = fmt.Errorf("task canceled")
+		case run.syserr != nil:
+			// Something else failed
+			event.Error("System error", "error", run.syserr)
+			event.State(tes.State_SYSTEM_ERROR)
+			runerr = run.syserr
 		case run.execerr != nil:
 			// One of the executors failed
 			event.Error("Exec error", "error", run.execerr)
 			event.State(tes.State_EXECUTOR_ERROR)
 			runerr = run.execerr
-		case run.syserr != nil:
-			// Something else failed
-			// TODO should we do something special for run.err == context.Canceled?
-			event.Error("System error", "error", run.syserr)
-			event.State(tes.State_SYSTEM_ERROR)
-			runerr = run.syserr
 		default:
 			event.State(tes.State_COMPLETE)
 		}
@@ -96,9 +94,7 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 		run.syserr = e
 	})
 
-	ctx := r.pollForCancel(pctx, taskID, func() {
-		run.taskCanceled = true
-	})
+	ctx := r.pollForCancel(pctx, taskID, func() { run.taskCanceled = true })
 	run.ctx = ctx
 
 	// Prepare file mapper, which maps task file URLs to host filesystem paths
@@ -300,8 +296,8 @@ func (r *DefaultWorker) validateOutputs(mapper *FileMapper) error {
 	return nil
 }
 
-func (r *DefaultWorker) pollForCancel(ctx context.Context, taskID string, f func()) context.Context {
-	taskctx, cancel := context.WithCancel(ctx)
+func (r *DefaultWorker) pollForCancel(pctx context.Context, taskID string, cancelCallback func()) context.Context {
+	taskctx, cancel := context.WithCancel(pctx)
 
 	// Start a goroutine that polls the server to watch for a canceled state.
 	// If a cancel state is found, "taskctx" is canceled.
@@ -317,7 +313,7 @@ func (r *DefaultWorker) pollForCancel(ctx context.Context, taskID string, f func
 				state, _ := r.TaskReader.State(taskctx, taskID)
 				if tes.TerminalState(state) {
 					cancel()
-					f()
+					cancelCallback()
 				}
 			}
 		}

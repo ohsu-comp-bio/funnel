@@ -7,7 +7,10 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
+	"syscall"
+	"time"
 )
 
 // NewBackend returns a new local Backend instance.
@@ -41,6 +44,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
+		ctx = util.SignalContext(ctx, time.Nanosecond, syscall.SIGINT, syscall.SIGTERM)
 		defer cancel()
 		b.worker.Run(ctx, task.Id)
 	}()

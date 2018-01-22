@@ -66,7 +66,7 @@ func (db *MongoDB) init() error {
 		}
 
 		err = db.tasks.EnsureIndex(mgo.Index{
-			Key:        []string{"id"},
+			Key:        []string{"-id", "-creationtime"},
 			Unique:     true,
 			DropDups:   true,
 			Background: true,

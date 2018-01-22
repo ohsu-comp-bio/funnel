@@ -543,8 +543,9 @@ func TestPagination(t *testing.T) {
 	}
 }
 
-// Smaller test for debugging getting the full set of pages
-func TestSmallPagination(t *testing.T) {
+// Smaller test for debugging getting the full set of pages and for
+// testing sort order
+func TestSmallPaginationAndSortOrder(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	c := tests.DefaultConfig()
 	c.Compute = "noop"
@@ -563,7 +564,6 @@ func TestSmallPagination(t *testing.T) {
 
 	for i := 0; i < 150; i++ {
 		f.Run(`--sh 'echo 1'`)
-		//time.Sleep(time.Millisecond)
 	}
 	time.Sleep(time.Second * 5)
 
@@ -597,6 +597,20 @@ func TestSmallPagination(t *testing.T) {
 
 	if len(tasks) != 150 {
 		t.Error("unexpected task count", len(tasks))
+	}
+
+	min := func(a, b int) int {
+		if a < b {
+			return a
+		}
+		return b
+	}
+
+	for i := range tasks {
+		j := min(i+1, len(tasks)-1)
+		if tasks[i].CreationTime < tasks[j].CreationTime {
+			t.Error("unexpected task sort order")
+		}
 	}
 }
 

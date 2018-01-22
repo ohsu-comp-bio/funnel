@@ -14,23 +14,29 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(batchConf config.AWSBatch) (*Backend, error) {
+func NewBackend(batchConf config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer) (*Backend, error) {
 
 	sess, err := util.NewAWSSession(batchConf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
 	}
 
-	return &Backend{
-		client: batch.New(sess),
-		conf:   batchConf,
-	}, nil
+	b := &Backend{
+		client:   batch.New(sess),
+		conf:     batchConf,
+		event:    writer,
+		database: reader,
+	}
+
+	return b, nil
 }
 
 // Backend represents the local backend.
 type Backend struct {
-	client *batch.Batch
-	conf   config.AWSBatch
+	client   *batch.Batch
+	conf     config.AWSBatch
+	event    events.Writer
+	database tes.ReadOnlyServer
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -38,13 +44,18 @@ type Backend struct {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ev.GetTask())
+		return b.Submit(ctx, ev.GetTask())
+
+	case events.Type_TASK_STATE:
+		if ev.GetState() == tes.State_CANCELED {
+			return b.Cancel(ctx, ev.Id)
+		}
 	}
 	return nil
 }
 
 // Submit submits a task to the AWS batch service.
-func (b *Backend) Submit(task *tes.Task) error {
+func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 	req := &batch.SubmitJobInput{
 		// JobDefinition: aws.String(b.jobDef),
 		JobDefinition: aws.String(b.conf.JobDefinition),
@@ -68,10 +79,51 @@ func (b *Backend) Submit(task *tes.Task) error {
 		req.ContainerOverrides.Vcpus = aws.Int64(vcpus)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	reqctx, cancel := context.WithTimeout(ctx, time.Second*60)
 	defer cancel()
 
-	_, err := b.client.SubmitJobWithContext(ctx, req)
+	resp, err := b.client.SubmitJobWithContext(reqctx, req)
+	if err != nil {
+		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+		b.event.WriteEvent(
+			ctx,
+			events.NewSystemLog(
+				task.Id, 0, 0, "error",
+				"error submitting task to AWSBatch",
+				map[string]string{"error": err.Error()},
+			),
+		)
+		return err
+	}
+
+	return b.event.WriteEvent(
+		ctx, events.NewMetadata(task.Id, 0, map[string]string{"awsbatch_id": *resp.JobId}),
+	)
+}
+
+// Cancel removes tasks from the AWS batch job queue.
+func (b *Backend) Cancel(ctx context.Context, taskID string) error {
+	task, err := b.database.GetTask(
+		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_BASIC},
+	)
+	if err != nil {
+		return err
+	}
+
+	// only cancel tasks in a QUEUED state
+	if task.State != tes.State_QUEUED {
+		return nil
+	}
+
+	backendID := getAWSTaskID(task)
+	if backendID == "" {
+		return fmt.Errorf("no AWS Batch ID found in metadata for task %s", taskID)
+	}
+
+	_, err = b.client.CancelJob(&batch.CancelJobInput{
+		JobId:  aws.String(backendID),
+		Reason: aws.String("User requested cancel"),
+	})
 	return err
 }
 
@@ -80,4 +132,15 @@ func (b *Backend) Submit(task *tes.Task) error {
 func safeJobName(s string) string {
 	re := regexp.MustCompile(`[^a-zA-Z0-9\-_]`)
 	return re.ReplaceAllString(s, "_")
+}
+
+func getAWSTaskID(task *tes.Task) string {
+	logs := task.GetLogs()
+	if len(logs) > 0 {
+		metadata := logs[0].GetMetadata()
+		if metadata != nil {
+			return metadata["awsbatch_id"]
+		}
+	}
+	return ""
 }

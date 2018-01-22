@@ -44,7 +44,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
-		ctx = util.SignalContext(ctx, time.Nanosecond, syscall.SIGINT, syscall.SIGTERM)
+		ctx = util.SignalContext(ctx, time.Millisecond, syscall.SIGINT, syscall.SIGTERM)
 		defer cancel()
 		b.worker.Run(ctx, task.Id)
 	}()

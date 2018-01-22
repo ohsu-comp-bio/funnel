@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/version"
 	"golang.org/x/net/context"
@@ -24,6 +25,7 @@ type TaskService struct {
 	Event   events.Writer
 	Compute events.Writer
 	Read    tes.ReadOnlyServer
+	Log     *logger.Logger
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -38,9 +40,8 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		return nil, fmt.Errorf("error creating task: %s", err)
 	}
 
-	if ts.Compute != nil {
-		ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
-	}
+	// dispatch to compute backend
+	ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }
@@ -62,13 +63,16 @@ func (ts *TaskService) ListTasks(ctx context.Context, req *tes.ListTasksRequest)
 
 // CancelTask cancels a task
 func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
-	// dispatch to compute backend
-	_ = ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
-
 	// updated database and other event streams
 	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
 	if err == tes.ErrNotFound {
 		err = grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
+	}
+
+	// dispatch to compute backend
+	cerr := ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	if cerr != nil {
+		ts.Log.Error("compute backend failed to cancel task %s: %v", req.Id, cerr)
 	}
 
 	return &tes.CancelTaskResponse{}, err

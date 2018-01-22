@@ -1,6 +1,7 @@
 package compute
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -14,17 +15,18 @@ import (
 	"text/template"
 )
 
-// NewHPCBackend returns a HPCBackend instance.
-func NewHPCBackend(name string, submit string, conf config.Config, template string) *HPCBackend {
-	return &HPCBackend{name, submit, conf, template}
-}
-
 // HPCBackend represents an HPCBackend such as HtCondor, Slurm, Grid Engine, etc.
 type HPCBackend struct {
-	name     string
-	submit   string
-	conf     config.Config
-	template string
+	Name      string
+	SubmitCmd string
+	CancelCmd string
+	Template  string
+	Conf      config.Config
+	Event     events.Writer
+	Database  tes.ReadOnlyServer
+	// ExtractID is responsible for extracting the task id from the response
+	// returned by the SubmitCmd.
+	ExtractID func(string) string
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -32,27 +34,72 @@ type HPCBackend struct {
 func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ev.GetTask())
+		return b.Submit(ctx, ev.GetTask())
+
+	case events.Type_TASK_STATE:
+		if ev.GetState() == tes.State_CANCELED {
+			return b.Cancel(ctx, ev.Id)
+		}
 	}
 	return nil
 }
 
-// Submit submits a task via "qsub"
-func (b *HPCBackend) Submit(task *tes.Task) error {
+// Submit submits a task via "qsub", "condor_submit", "sbatch", etc.
+func (b *HPCBackend) Submit(ctx context.Context, task *tes.Task) error {
 	submitPath, err := b.setupTemplatedHPCSubmit(task)
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command(b.submit, submitPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd := exec.Command(b.SubmitCmd, submitPath)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
 	err = cmd.Run()
+	if err != nil {
+		b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+		b.Event.WriteEvent(
+			ctx,
+			events.NewSystemLog(
+				task.Id, 0, 0, "error",
+				"error submitting task to "+b.Name,
+				map[string]string{"error": err.Error(), "stderr": stderr.String(), "stdout": stdout.String()},
+			),
+		)
+		return err
+	}
+
+	backendID := b.ExtractID(stdout.String())
+
+	return b.Event.WriteEvent(
+		ctx,
+		events.NewMetadata(task.Id, 0, map[string]string{fmt.Sprintf("%s_id", b.Name): backendID}),
+	)
+}
+
+// Cancel cancels a task via "qdel", "condor_rm", "scancel", etc.
+func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
+	task, err := b.Database.GetTask(
+		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_BASIC},
+	)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// only cancel tasks in a QUEUED state
+	if task.State != tes.State_QUEUED {
+		return nil
+	}
+
+	backendID := getBackendTaskID(task, b.Name)
+	if backendID == "" {
+		return fmt.Errorf("no %s_id found in metadata for task %s", b.Name, taskID)
+	}
+
+	cmd := exec.Command(b.CancelCmd, backendID)
+	return cmd.Run()
 }
 
 // setupTemplatedHPCSubmit sets up a task submission in a HPC environment with
@@ -62,7 +109,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	var err error
 
 	// TODO document that these working dirs need manual cleanup
-	workdir := path.Join(b.conf.Worker.WorkDir, task.Id)
+	workdir := path.Join(b.Conf.Worker.WorkDir, task.Id)
 	workdir, _ = filepath.Abs(workdir)
 	err = fsutil.EnsureDir(workdir)
 	if err != nil {
@@ -70,14 +117,14 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	}
 
 	confPath := path.Join(workdir, "worker.conf.yml")
-	config.ToYamlFile(b.conf, confPath)
+	config.ToYamlFile(b.Conf, confPath)
 
 	funnelPath, err := DetectFunnelBinaryPath()
 	if err != nil {
 		return "", err
 	}
 
-	submitName := fmt.Sprintf("%s.submit", b.name)
+	submitName := fmt.Sprintf("%s.submit", b.Name)
 
 	submitPath := path.Join(workdir, submitName)
 	f, err := os.Create(submitPath)
@@ -85,7 +132,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		return "", err
 	}
 
-	submitTpl, err := template.New(submitName).Parse(b.template)
+	submitTpl, err := template.New(submitName).Parse(b.Template)
 	if err != nil {
 		return "", err
 	}
@@ -112,4 +159,13 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	f.Close()
 
 	return submitPath, nil
+}
+
+func getBackendTaskID(task *tes.Task, backend string) string {
+	logs := task.GetLogs()
+	if len(logs) > 0 {
+		metadata := logs[0].GetMetadata()
+		return metadata[backend+"_id"]
+	}
+	return ""
 }

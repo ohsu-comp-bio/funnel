@@ -98,13 +98,20 @@ func DefaultConfig() Config {
 	pbsTemplate, _ := Asset("config/pbs-template.txt")
 	geTemplate, _ := Asset("config/gridengine-template.txt")
 
+	reconcile := time.Minute * 30
+
 	c.HTCondor.Template = string(htcondorTemplate)
+	c.HTCondor.ReconcileRate = reconcile
 	c.Slurm.Template = string(slurmTemplate)
+	c.Slurm.ReconcileRate = reconcile
 	c.PBS.Template = string(pbsTemplate)
+	c.PBS.ReconcileRate = reconcile
 	c.GridEngine.Template = string(geTemplate)
+	c.GridEngine.ReconcileRate = reconcile
 
 	c.AWSBatch.JobDefinition = "funnel-job-def"
 	c.AWSBatch.JobQueue = "funnel-job-queue"
+	c.AWSBatch.ReconcileRate = reconcile
 
 	return c
 }

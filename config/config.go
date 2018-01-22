@@ -135,7 +135,14 @@ type Worker struct {
 // HPCBackend describes the configuration for a HPC scheduler backend such as
 // HTCondor or Slurm.
 type HPCBackend struct {
-	Template string
+	// Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+	// scheduler to find tasks that are stuck in a queued state or errored and
+	// updates the task state accordingly.
+	DisableReconciler bool
+	// ReconcileRate is how often the compute backend compares states in Funnel's backend
+	// to those reported by the backend
+	ReconcileRate time.Duration
+	Template      string
 }
 
 // BoltDB describes the configuration for the BoltDB embedded database.
@@ -206,6 +213,12 @@ type AWSBatch struct {
 	JobDefinition string
 	// JobQueue can be either a name or the Amazon Resource Name (ARN).
 	JobQueue string
+	// Turn off task state reconciler. When enabled, Funnel communicates with AWS Batch
+	// to find tasks that never started and updates task state accordingly.
+	DisableReconciler bool
+	// ReconcileRate is how often the compute backend compares states in Funnel's backend
+	// to those reported by AWS Batch
+	ReconcileRate time.Duration
 	AWSConfig
 }
 

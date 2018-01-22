@@ -14,18 +14,21 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(batchConf config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer) (*Backend, error) {
-
-	sess, err := util.NewAWSSession(batchConf.AWSConfig)
+func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer) (*Backend, error) {
+	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
 	}
 
 	b := &Backend{
 		client:   batch.New(sess),
-		conf:     batchConf,
+		conf:     conf,
 		event:    writer,
 		database: reader,
+	}
+
+	if !conf.DisableReconciler {
+		go b.reconcile(ctx)
 	}
 
 	return b, nil
@@ -125,6 +128,81 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 		Reason: aws.String("User requested cancel"),
 	})
 	return err
+}
+
+// Reconcile loops through tasks and checks the status from Funnel's database
+// against the status reported by AWS Batch. This allows the backend to report
+// system error's that prevented the worker process from running.
+//
+// Currently this handles a narrow set of cases:
+//
+// |---------------------|-----------------|--------------------|
+// |    Funnel State     |  Backend State  |  Reconciled State  |
+// |---------------------|-----------------|--------------------|
+// |        QUEUED       |     FAILED      |    SYSTEM_ERROR    |
+// |  INITIALIZING       |     FAILED      |    SYSTEM_ERROR    |
+// |       RUNNING       |     FAILED      |    SYSTEM_ERROR    |
+//
+// In this context a "FAILED" state is being used as a generic term that captures
+// one or more terminal states for the backend.
+func (b *Backend) reconcile(ctx context.Context) {
+	ticker := time.NewTicker(b.conf.ReconcileRate)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case <-ticker.C:
+			pageToken := ""
+			for {
+				lresp, _ := b.database.ListTasks(ctx, &tes.ListTasksRequest{
+					View:      tes.TaskView_BASIC,
+					PageSize:  100,
+					PageToken: pageToken,
+				})
+				pageToken = lresp.NextPageToken
+
+				tmap := make(map[string]*tes.Task)
+				var jobs []*string
+				for _, t := range lresp.Tasks {
+					switch t.State {
+					case tes.Queued, tes.Initializing, tes.Running:
+						jobid := getAWSTaskID(t)
+						tmap[jobid] = t
+						jobs = append(jobs, aws.String(jobid))
+					}
+				}
+
+				resp, _ := b.client.DescribeJobs(&batch.DescribeJobsInput{
+					Jobs: jobs,
+				})
+
+				for _, j := range resp.Jobs {
+					task := tmap[*j.JobId]
+					jstate := *j.Status
+
+					if jstate == "FAILED" {
+						b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+						b.event.WriteEvent(
+							ctx,
+							events.NewSystemLog(
+								task.Id, 0, 0, "error",
+								"AWSBatch job in FAILED state",
+								map[string]string{"error": *j.StatusReason, "awsbatch_id": *j.JobId},
+							),
+						)
+					}
+				}
+
+				// continue to next page from ListTasks or break
+				if pageToken == "" {
+					break
+				}
+				time.Sleep(time.Millisecond * 100)
+			}
+		}
+	}
 }
 
 // AWS limits the characters allowed in job names,

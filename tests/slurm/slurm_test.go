@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -17,6 +18,7 @@ var serverName string
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
+	conf.Slurm.ReconcileRate = time.Second * 5
 
 	if conf.Compute != "slurm" {
 		logger.Debug("Skipping slurm e2e tests...")
@@ -95,5 +97,16 @@ func TestCancel(t *testing.T) {
 	t.Log("error:", err)
 	if strings.Contains(string(out), bid) {
 		t.Error("unexpected squeue output")
+	}
+}
+
+func TestReconcile(t *testing.T) {
+	id := fun.Run(`
+    --sh 'echo hello world' --cpu 1000
+  `)
+	task := fun.Wait(id)
+
+	if task.State != tes.State_SYSTEM_ERROR {
+		t.Fatal("expected system error")
 	}
 }

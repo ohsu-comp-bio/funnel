@@ -7,7 +7,9 @@ import (
 )
 
 func init() {
-	ConfigureGRPC(2, NewLogger("grpc", DefaultConfig()))
+	conf := DefaultConfig()
+	conf.Level = "warn"
+	ConfigureGRPC(2, NewLogger("grpc", conf))
 }
 
 // ConfigureGRPC configures the GRPC logger verboisty level.
@@ -36,13 +38,13 @@ func (g *grpclogger) Infof(format string, args ...interface{}) {
 	g.log.Info(fmt.Sprintf(format, args))
 }
 func (g *grpclogger) Warning(args ...interface{}) {
-	g.log.Error(fmt.Sprint(args))
+	g.log.Warn(fmt.Sprint(args))
 }
 func (g *grpclogger) Warningln(args ...interface{}) {
-	g.log.Error(fmt.Sprint(args))
+	g.log.Warn(fmt.Sprint(args))
 }
 func (g *grpclogger) Warningf(format string, args ...interface{}) {
-	g.log.Error(fmt.Sprintf(format, args))
+	g.log.Warn(fmt.Sprintf(format, args))
 }
 func (g *grpclogger) Error(args ...interface{}) {
 	g.log.Error(fmt.Sprint(args))

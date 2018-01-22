@@ -46,11 +46,11 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	var q *mgo.Query
 	var err error
 	if req.PageToken != "" {
-		q = db.tasks.Find(bson.M{"id": bson.M{"$gt": req.PageToken}})
+		q = db.tasks.Find(bson.M{"id": bson.M{"$lt": req.PageToken}})
 	} else {
 		q = db.tasks.Find(nil)
 	}
-	q = q.Limit(pageSize)
+	q = q.Sort("-creationtime").Limit(pageSize)
 
 	switch req.View {
 	case tes.TaskView_BASIC:

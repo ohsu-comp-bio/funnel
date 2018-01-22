@@ -15,7 +15,7 @@ import (
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (db *MongoDB) ReadQueue(n int) []*tes.Task {
 	var tasks []*tes.Task
-	err := db.tasks.Find(bson.M{"state": tes.State_QUEUED}).Select(basicView).Limit(n).All(&tasks)
+	err := db.tasks.Find(bson.M{"state": tes.State_QUEUED}).Sort("creationtime").Select(basicView).Limit(n).All(&tasks)
 	if err != nil {
 		fmt.Println(err)
 		return nil

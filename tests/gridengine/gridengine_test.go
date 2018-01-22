@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -16,6 +17,7 @@ var serverName string
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
+	conf.GridEngine.ReconcileRate = time.Second
 
 	if conf.Compute != "gridengine" {
 		logger.Debug("Skipping grid engine e2e tests...")

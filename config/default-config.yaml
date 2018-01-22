@@ -167,6 +167,13 @@ Kafka:
 #-------------------------------------------------------------------------------
 
 HTCondor:
+  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+  # scheduler to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: false
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 1800000000000 #  30 minutes
   Template: |
     universe = vanilla
     getenv = True
@@ -190,6 +197,13 @@ HTCondor:
     queue
 
 PBS:
+  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+  # scheduler to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: false
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 1800000000000 #  30 minutes
   Template: |
     #!bin/bash
     #PBS -N {{.NodeId}}
@@ -208,6 +222,13 @@ PBS:
     {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
 
 GridEngine:
+  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+  # scheduler to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: false
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 1800000000000 #  30 minutes
   Template: |
     #!bin/bash
     #$ -N {{.NodeId}}
@@ -227,6 +248,13 @@ GridEngine:
     {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
 
 Slurm:
+  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+  # scheduler to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: false
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 1800000000000 #  30 minutes
   Template: |
     #!/bin/bash
     #SBATCH --job-name {{.NodeId}}
@@ -247,6 +275,12 @@ Slurm:
 
 # AWSBatch describes the configuration for the AWS Batch compute backend.
 AWSBatch:
+  # Turn off task state reconciler. When enabled, Funnel communicates with AWS Batch
+  # to find tasks that never started and updates task state accordingly.
+  DisableReconciler: false
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by AWS Batch
+  ReconcileRate: 1800000000000 #  30 minutes
   # JobDefinition can be either a name or the Amazon Resource Name (ARN).
   JobDefinition: "funnel-job-def"
   # JobQueue can be either a name or the Amazon Resource Name (ARN).

@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"text/template"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -28,6 +29,13 @@ type HPCBackend struct {
 	// ExtractID is responsible for extracting the task id from the response
 	// returned by the SubmitCmd.
 	ExtractID func(string) string
+	// MapStates takes a list of backend specific ids and calls out to the backend
+	// via (squeue, qstat, condor_q, etc) to get that tasks current state. These states
+	// are mapped to TES states along with an optional reason for this mapping.
+	// The Reconcile function can then use the response to update the task states
+	// and system logs to report errors reported by the backend.
+	MapStates     func([]string) ([]*HPCTaskState, error)
+	ReconcileRate time.Duration
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -105,6 +113,89 @@ func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
 	return cmd.Run()
 }
 
+// Reconcile loops through tasks and checks the status from Funnel's database
+// against the status reported by the backend (slurm, htcondor, grid engine, etc).
+// This allows the backend to report system error's that prevented the worker
+// process from running.
+//
+// Currently this handles a narrow set of cases:
+//
+// |---------------------|-----------------|--------------------|
+// |    Funnel State     |  Backend State  |  Reconciled State  |
+// |---------------------|-----------------|--------------------|
+// |        QUEUED       |     FAILED      |    SYSTEM_ERROR    |
+// |  INITIALIZING       |     FAILED      |    SYSTEM_ERROR    |
+// |       RUNNING       |     FAILED      |    SYSTEM_ERROR    |
+// |        QUEUED       |   CANCELED      |        CANCELED    |
+// |  INITIALIZING       |   CANCELED      |        CANCELED    |
+// |       RUNNING       |   CANCELED      |        CANCELED    |
+//
+// In this context a "FAILED" state is being used as a generic term that captures
+// one or more terminal states for the backend.
+func (b *HPCBackend) Reconcile(ctx context.Context) {
+	ticker := time.NewTicker(b.ReconcileRate)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case <-ticker.C:
+			pageToken := ""
+			for {
+				lresp, _ := b.Database.ListTasks(ctx, &tes.ListTasksRequest{
+					View:      tes.TaskView_BASIC,
+					PageSize:  100,
+					PageToken: pageToken,
+				})
+				pageToken = lresp.NextPageToken
+
+				tmap := make(map[string]*tes.Task)
+				ids := []string{}
+				for _, t := range lresp.Tasks {
+					switch t.State {
+					case tes.Queued, tes.Initializing, tes.Running:
+						bid := getBackendTaskID(t, b.Name)
+						tmap[bid] = t
+						ids = append(ids, bid)
+					}
+				}
+
+				bmap, _ := b.MapStates(ids)
+				for _, t := range bmap {
+					// lookup task by backend specific ID
+					task := tmap[t.ID]
+
+					if t.TESState == tes.SystemError {
+						if t.Remove {
+							exec.Command(b.CancelCmd, t.ID).Run()
+						}
+						b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+						b.Event.WriteEvent(
+							ctx,
+							events.NewSystemLog(
+								task.Id, 0, 0, "error",
+								b.Name+" reports system error for task",
+								map[string]string{
+									"error":           t.Reason,
+									b.Name + "_id":    t.ID,
+									b.Name + "_state": t.State,
+								},
+							),
+						)
+					}
+				}
+
+				// continue to next page from ListTasks or break
+				if pageToken == "" {
+					break
+				}
+				time.Sleep(time.Millisecond * 100)
+			}
+		}
+	}
+}
+
 // setupTemplatedHPCSubmit sets up a task submission in a HPC environment with
 // a shared file system. It generates a submission file based on a template for
 // schedulers such as SLURM, HTCondor, SGE, PBS/Torque, etc.
@@ -171,4 +262,14 @@ func getBackendTaskID(task *tes.Task, backend string) string {
 		return metadata[backend+"_id"]
 	}
 	return ""
+}
+
+// HPCTaskState is a structure used by Reconcile to represent the state of a task in Funnel
+// and the HPC backend.
+type HPCTaskState struct {
+	ID       string
+	TESState tes.State
+	State    string
+	Reason   string
+	Remove   bool
 }

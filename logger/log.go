@@ -16,6 +16,7 @@ const (
 	DebugLevel = "debug"
 	InfoLevel  = "info"
 	ErrorLevel = "error"
+	WarnLevel  = "warn"
 )
 
 // Formatter defines a log output formatter.
@@ -49,7 +50,7 @@ func (l *Logger) SetLevel(lvl string) {
 		l.logrus.Level = logrus.DebugLevel
 	case "info":
 		l.logrus.Level = logrus.InfoLevel
-	case "warn":
+	case "warn", "warning":
 		l.logrus.Level = logrus.WarnLevel
 	case "error":
 		l.logrus.Level = logrus.ErrorLevel

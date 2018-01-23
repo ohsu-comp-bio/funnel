@@ -7,7 +7,10 @@ import (
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/config/gce"
+	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
+	"syscall"
 )
 
 // Cmd represents the 'funnel gce" CLI command set.
@@ -22,6 +25,10 @@ func init() {
 var runCmd = &cobra.Command{
 	Use: "run",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx, cancel := context.WithCancel(context.Background())
+		ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+		defer cancel()
+
 		conf := config.DefaultConfig()
 
 		// Check that this is a GCE VM environment.
@@ -38,9 +45,9 @@ var runCmd = &cobra.Command{
 		}
 
 		if conf.Node.ID != "" {
-			return node.Run(conf)
+			return node.Run(ctx, conf, logger.NewLogger("node", conf.Logger))
 		}
 
-		return server.Run(context.Background(), conf)
+		return server.Run(ctx, conf, logger.NewLogger("server", conf.Logger))
 	},
 }

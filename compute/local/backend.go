@@ -2,23 +2,28 @@ package local
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(conf config.Config, fac scheduler.Worker, log *logger.Logger) *Backend {
-	return &Backend{conf, fac, log}
+func NewBackend(ctx context.Context, conf config.Config, log *logger.Logger) (*Backend, error) {
+	w, err := workerCmd.NewWorker(ctx, conf, log)
+	if err != nil {
+		return nil, err
+	}
+	return &Backend{conf, w, log}, nil
 }
 
 // Backend represents the local backend.
 type Backend struct {
-	conf      config.Config
-	newWorker scheduler.Worker
-	log       *logger.Logger
+	conf   config.Config
+	worker *worker.DefaultWorker
+	log    *logger.Logger
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -37,10 +42,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		err := b.newWorker(ctx, b.conf, task.Id, b.log)
-		if err != nil {
-			b.log.Error("failed to run task", err)
-		}
+		b.worker.Run(ctx, task.Id)
 	}()
 	return nil
 }

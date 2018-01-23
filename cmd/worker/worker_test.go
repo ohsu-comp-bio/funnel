@@ -6,6 +6,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
 	"path"
+	"strings"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestPersistentPreRun(t *testing.T) {
 	defer cleanup()
 
 	c, h := newCommandHooks()
-	h.Run = func(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error {
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, taskID string) error {
 		if conf.Server.HostName != host {
 			t.Fatal("unexpected Server.HostName in config", conf.Server.HostName)
 		}
@@ -31,13 +32,20 @@ func TestPersistentPreRun(t *testing.T) {
 		if conf.Worker.WorkDir != workDir {
 			t.Fatal("unexpected Worker.WorkDir in config", conf.Worker.WorkDir)
 		}
-
 		return nil
 	}
 
-	c.SetArgs([]string{"run", "--config", tmp, "--Server.HostName", "test", "--Server.RPCPort", "9999", "--taskID", "test1234"})
+	c.SetArgs([]string{
+		"run", "--config", tmp, "--Server.HostName", "test",
+		"--Server.RPCPort", "9999", "--Server.RPCClientTimeout", "10ms",
+		"--taskID", "test1234",
+	})
 	err := c.Execute()
 	if err != nil {
-		t.Fatal(err)
+		// since there is no server the rpc event writer will fail to connect
+		// within its context deadline. We can ignore this error
+		if !strings.Contains(err.Error(), "failed to instantiate EventWriter: context deadline exceeded") {
+			t.Fatal(err)
+		}
 	}
 }

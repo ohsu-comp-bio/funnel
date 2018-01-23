@@ -1,10 +1,10 @@
 package worker
 
 import (
-	"context"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	util "github.com/ohsu-comp-bio/funnel/util/rpc"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -12,31 +12,30 @@ import (
 type RPCTaskReader struct {
 	client tes.TaskServiceClient
 	conn   *grpc.ClientConn
-	taskID string
 }
 
 // NewRPCTaskReader returns a new RPC-based task reader.
-func NewRPCTaskReader(ctx context.Context, conf config.Server, taskID string) (*RPCTaskReader, error) {
-	conn, err := util.Dial(ctx, conf, grpc.WithBlock())
+func NewRPCTaskReader(ctx context.Context, conf config.Server) (*RPCTaskReader, error) {
+	conn, err := util.Dial(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
 	cli := tes.NewTaskServiceClient(conn)
-	return &RPCTaskReader{cli, conn, taskID}, nil
+	return &RPCTaskReader{cli, conn}, nil
 }
 
 // Task returns the task descriptor.
-func (r *RPCTaskReader) Task() (*tes.Task, error) {
-	return r.client.GetTask(context.Background(), &tes.GetTaskRequest{
-		Id:   r.taskID,
+func (r *RPCTaskReader) Task(ctx context.Context, taskID string) (*tes.Task, error) {
+	return r.client.GetTask(ctx, &tes.GetTaskRequest{
+		Id:   taskID,
 		View: tes.TaskView_FULL,
 	})
 }
 
 // State returns the current state of the task.
-func (r *RPCTaskReader) State() (tes.State, error) {
-	t, err := r.client.GetTask(context.Background(), &tes.GetTaskRequest{
-		Id:   r.taskID,
+func (r *RPCTaskReader) State(ctx context.Context, taskID string) (tes.State, error) {
+	t, err := r.client.GetTask(ctx, &tes.GetTaskRequest{
+		Id:   taskID,
 		View: tes.TaskView_MINIMAL,
 	})
 	return t.GetState(), err

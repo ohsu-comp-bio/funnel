@@ -6,26 +6,24 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/util"
-	"syscall"
 )
 
 // Run runs a node with the given config, blocking until the node exits.
-func Run(conf config.Config) error {
-	log := logger.NewLogger("node", conf.Logger)
-
+func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 	if conf.Node.ID == "" {
 		conf.Node.ID = scheduler.GenNodeID("manual")
 	}
 
-	ctx := context.Background()
-
-	n, err := scheduler.NewNode(ctx, conf, log, workerCmd.Run)
+	w, err := workerCmd.NewWorker(ctx, conf, log)
 	if err != nil {
 		return err
 	}
 
-	ctx = util.SignalContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	n, err := scheduler.NewNode(ctx, conf, w.Run, log)
+	if err != nil {
+		return err
+	}
+
 	n.Run(ctx)
 
 	return nil

@@ -71,7 +71,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(derr)
 	}
 
-	srv, err := servercmd.NewServer(conf, log)
+	srv, err := servercmd.NewServer(context.Background(), conf, log)
 	if err != nil {
 		panic(err)
 	}
@@ -264,6 +264,18 @@ func (f *Funnel) Wait(id string) *tes.Task {
 		}
 	}
 	return nil
+}
+
+// WaitForInitializing waits for a task to be in the Initializing state
+func (f *Funnel) WaitForInitializing(ids ...string) {
+	for _, id := range ids {
+		for range time.NewTicker(f.rate).C {
+			t := f.Get(id)
+			if t.State == tes.State_INITIALIZING {
+				break
+			}
+		}
+	}
 }
 
 // WaitForRunning waits for a task to be in the RUNNING state

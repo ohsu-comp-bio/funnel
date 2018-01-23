@@ -70,12 +70,12 @@ type ExecutorWriter struct {
 }
 
 // NewExecutorWriter returns a ExecutorWriter instance.
-func NewExecutorWriter(taskID string, attempt uint32, index uint32, logLevel string, w Writer) *ExecutorWriter {
+func NewExecutorWriter(taskID string, attempt uint32, index uint32, w Writer) *ExecutorWriter {
 	g := NewExecutorGenerator(taskID, attempt, index)
 	return &ExecutorWriter{
 		gen: g,
 		out: w,
-		sys: &SystemLogWriter{logLevel, g.sys, w},
+		sys: &SystemLogWriter{g.sys, w},
 	}
 }
 

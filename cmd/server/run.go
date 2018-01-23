@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/batch"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
@@ -27,9 +26,8 @@ import (
 )
 
 // Run runs the "server run" command.
-func Run(ctx context.Context, conf config.Config) error {
-	log := logger.NewLogger("server", conf.Logger)
-	s, err := NewServer(conf, log)
+func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
+	s, err := NewServer(ctx, conf, log)
 	if err != nil {
 		return err
 	}
@@ -43,13 +41,9 @@ type Server struct {
 }
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
-func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
-	if log == nil {
-		log = logger.NewLogger("server", conf.Logger)
-	}
+func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Server, error) {
 	log.Debug("NewServer", "config", conf)
 
-	ctx := context.Background()
 	var reader tes.ReadOnlyServer
 	var nodes schedProto.SchedulerServiceServer
 	var sched *scheduler.Scheduler
@@ -57,6 +51,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 
 	writers := events.MultiWriter{}
 
+	// Database
 	switch strings.ToLower(conf.Database) {
 	case "boltdb":
 		b, err := boltdb.NewBoltDB(conf.BoltDB)
@@ -66,7 +61,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		reader = b
 		nodes = b
 		queue = b
-		writers.Append(b)
+		writers = append(writers, b)
 
 	case "datastore":
 		d, err := datastore.NewDatastore(conf.Datastore)
@@ -74,7 +69,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			return nil, dberr(err)
 		}
 		reader = d
-		writers.Append(d)
+		writers = append(writers, d)
 
 	case "dynamodb":
 		d, err := dynamodb.NewDynamoDB(conf.DynamoDB)
@@ -82,7 +77,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			return nil, dberr(err)
 		}
 		reader = d
-		writers.Append(d)
+		writers = append(writers, d)
 
 	case "elastic":
 		e, err := elastic.NewElastic(ctx, conf.Elastic)
@@ -92,7 +87,7 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		reader = e
 		nodes = e
 		queue = e
-		writers.Append(e)
+		writers = append(writers, e)
 
 	case "mongodb":
 		m, err := mongodb.NewMongoDB(conf.MongoDB)
@@ -102,12 +97,50 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		reader = m
 		nodes = m
 		queue = m
-		writers.Append(m)
+		writers = append(writers, m)
 
 	default:
 		return nil, fmt.Errorf("unknown database: '%s'", conf.Database)
 	}
 
+	// Event writers
+	var writer events.Writer
+	var err error
+
+	eventWriterSet := make(map[string]interface{})
+	for _, w := range conf.EventWriters {
+		eventWriterSet[strings.ToLower(w)] = nil
+	}
+
+	for e := range eventWriterSet {
+		switch e {
+		case strings.ToLower(conf.Database):
+			// noop
+		case "log":
+			// noop
+		case "boltdb":
+			writer, err = boltdb.NewBoltDB(conf.BoltDB)
+		case "dynamodb":
+			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+		case "elastic":
+			writer, err = elastic.NewElastic(ctx, conf.Elastic)
+		case "kafka":
+			writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
+		case "mongodb":
+			writer, err = mongodb.NewMongoDB(conf.MongoDB)
+		default:
+			return nil, fmt.Errorf("unknown event writer: '%s'", e)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
+		}
+		if writer != nil {
+			writers = append(writers, writer)
+		}
+	}
+
+	// Compute
+	var compute events.Writer
 	switch strings.ToLower(conf.Compute) {
 	case "manual":
 		if nodes == nil {
@@ -130,61 +163,29 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 		}
 
 	case "aws-batch":
-		b, err := batch.NewBackend(conf.AWSBatch)
+		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, &writers)
 		if err != nil {
 			return nil, err
 		}
-		writers.Append(b)
+
+	case "local":
+		compute, err = local.NewBackend(ctx, conf, log.Sub("local"))
+		if err != nil {
+			return nil, err
+		}
 
 	case "gridengine":
-		writers.Append(gridengine.NewBackend(conf))
+		compute = gridengine.NewBackend(conf, reader, &writers)
 	case "htcondor":
-		writers.Append(htcondor.NewBackend(conf))
-	case "local":
-		writers.Append(local.NewBackend(conf, workerCmd.Run, log.Sub("local")))
+		compute = htcondor.NewBackend(ctx, conf, reader, &writers)
 	case "noop":
-		writers.Append(noop.NewBackend())
+		compute = noop.NewBackend()
 	case "pbs":
-		writers.Append(pbs.NewBackend(conf))
+		compute = pbs.NewBackend(ctx, conf, reader, &writers)
 	case "slurm":
-		writers.Append(slurm.NewBackend(conf))
+		compute = slurm.NewBackend(ctx, conf, reader, &writers)
 	default:
 		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
-	}
-
-	var writer events.Writer
-	var err error
-
-	eventWriterSet := make(map[string]interface{})
-	for _, w := range conf.EventWriters {
-		eventWriterSet[strings.ToLower(w)] = nil
-	}
-
-	for e := range eventWriterSet {
-		switch strings.ToLower(e) {
-		case strings.ToLower(conf.Database):
-			// noop
-		case "log":
-			// noop
-		case "boltdb":
-			writer, err = boltdb.NewBoltDB(conf.BoltDB)
-		case "dynamodb":
-			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
-		case "elastic":
-			writer, err = elastic.NewElastic(ctx, conf.Elastic)
-		case "kafka":
-			writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
-		case "mongodb":
-			writer, err = mongodb.NewMongoDB(conf.MongoDB)
-		default:
-			return nil, fmt.Errorf("unknown event writer: '%s'", e)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
-		}
-		if writer != nil {
-			writers.Append(writer)
-		}
 	}
 
 	return &Server{
@@ -195,9 +196,10 @@ func NewServer(conf config.Config, log *logger.Logger) (*Server, error) {
 			DisableHTTPCache: conf.Server.DisableHTTPCache,
 			Log:              log,
 			Tasks: &server.TaskService{
-				Name:  conf.Server.ServiceName,
-				Event: &writers,
-				Read:  reader,
+				Name:    conf.Server.ServiceName,
+				Event:   &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level},
+				Compute: compute,
+				Read:    reader,
 			},
 			Events: &events.Service{Writer: &writers},
 			Nodes:  nodes,

@@ -13,58 +13,27 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/worker"
-	"path"
 	"strings"
 )
 
 // Run runs the "worker run" command.
-func Run(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	w, err := NewWorker(ctx, conf, taskID, log)
+func Run(ctx context.Context, conf config.Config, log *logger.Logger, taskID string) error {
+	w, err := NewWorker(ctx, conf, log)
 	if err != nil {
 		return err
 	}
-	w.Run(ctx)
-	return nil
+	return w.Run(ctx, taskID)
 }
 
 // NewWorker returns a new Funnel worker based on the given config.
-func NewWorker(ctx context.Context, conf config.Config, taskID string, log *logger.Logger) (*worker.DefaultWorker, error) {
-	if log == nil {
-		log = logger.NewLogger("worker", conf.Logger)
-	}
-	log.Debug("NewWorker", "config", conf, "taskID", taskID)
+func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*worker.DefaultWorker, error) {
+	log.Debug("NewWorker", "config", conf)
 
 	var err error
 	var db tes.ReadOnlyServer
 	var reader worker.TaskReader
-
-	switch strings.ToLower(conf.Database) {
-	case "datastore":
-		db, err = datastore.NewDatastore(conf.Datastore)
-	case "dynamodb":
-		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
-	case "elastic":
-		db, err = elastic.NewElastic(ctx, conf.Elastic)
-	case "mongodb":
-		db, err = mongodb.NewMongoDB(conf.MongoDB)
-	case "boltdb":
-		reader, err = worker.NewRPCTaskReader(ctx, conf.Server, taskID)
-	default:
-		err = fmt.Errorf("unknown Database")
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate TaskReader: %v", err)
-	}
-
-	if reader == nil {
-		reader = worker.NewGenericTaskReader(db.GetTask, taskID)
-	}
-
 	var writer events.Writer
-	var writers []events.Writer
+	var writers events.MultiWriter
 
 	eventWriterSet := map[string]interface{}{
 		strings.ToLower(conf.Database): nil,
@@ -73,8 +42,8 @@ func NewWorker(ctx context.Context, conf config.Config, taskID string, log *logg
 		eventWriterSet[strings.ToLower(w)] = nil
 	}
 
-	for w := range eventWriterSet {
-		switch w {
+	for e := range eventWriterSet {
+		switch e {
 		case "log":
 			writer = &events.Logger{Log: log}
 		case "boltdb":
@@ -90,30 +59,50 @@ func NewWorker(ctx context.Context, conf config.Config, taskID string, log *logg
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
 		default:
-			err = fmt.Errorf("unknown EventWriter")
+			err = fmt.Errorf("unknown event writer: %s", e)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to instantiate EventWriter: %v", err)
+			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
 		}
 		if writer != nil {
 			writers = append(writers, writer)
 		}
 	}
+	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
+	writer = &events.ErrLogger{Writer: writer, Log: log}
 
-	m := events.MultiWriter(writers)
-	ew := &events.ErrLogger{Writer: &m, Log: log}
+	switch strings.ToLower(conf.Database) {
+	case "datastore":
+		db, err = datastore.NewDatastore(conf.Datastore)
+	case "dynamodb":
+		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+	case "elastic":
+		db, err = elastic.NewElastic(ctx, conf.Elastic)
+	case "mongodb":
+		db, err = mongodb.NewMongoDB(conf.MongoDB)
+	case "boltdb":
+		reader, err = worker.NewRPCTaskReader(ctx, conf.Server)
+	default:
+		err = fmt.Errorf("unknown database: '%s'", conf.Database)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate database client: %v", err)
+	}
+	if reader == nil {
+		reader = worker.NewGenericTaskReader(db.GetTask)
+	}
 
-	s, err := storage.NewStorage(conf)
+	store, err := storage.NewStorage(conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate Storage backend: %v", err)
 	}
 
 	w := &worker.DefaultWorker{
-		Conf:       conf.Worker,
-		Mapper:     worker.NewFileMapper(path.Join(conf.Worker.WorkDir, taskID)),
-		Store:      s,
-		TaskReader: reader,
-		Event:      events.NewTaskWriter(taskID, 0, conf.Logger.Level, ew),
+		Conf:        conf.Worker,
+		Store:       store,
+		TaskReader:  reader,
+		EventWriter: writer,
 	}
+
 	return w, nil
 }

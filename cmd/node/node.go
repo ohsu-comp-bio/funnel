@@ -61,7 +61,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log := logger.NewLogger("node", conf.Logger)
 			ctx, cancel := context.WithCancel(context.Background())
-			ctx = util.SignalContext(ctx, time.Second, syscall.SIGINT, syscall.SIGTERM)
+			ctx = util.SignalContext(ctx, time.Second*5, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 			return hooks.Run(ctx, conf, log)
 		},

@@ -128,10 +128,7 @@ type Worker struct {
 // HPCBackend describes the configuration for a HPC scheduler backend such as
 // HTCondor or Slurm.
 type HPCBackend struct {
-	// ReconcileRate is how often the compute backend compares states in Funnel's backend
-	// to those reported by the backend
-	ReconcileRate time.Duration
-	Template      string
+	Template string
 }
 
 // BoltDB describes the configuration for the BoltDB embedded database.
@@ -193,9 +190,6 @@ type AWSBatch struct {
 	JobDefinition string
 	// JobQueue can be either a name or the Amazon Resource Name (ARN).
 	JobQueue string
-	// ReconcileRate is how often the compute backend compares states in Funnel's backend
-	// to those reported by AWS Batch
-	ReconcileRate time.Duration
 	AWSConfig
 }
 

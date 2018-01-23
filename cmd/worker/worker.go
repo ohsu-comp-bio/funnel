@@ -64,7 +64,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 
 			log := logger.NewLogger("worker", conf.Logger)
 			ctx, cancel := context.WithCancel(context.Background())
-			ctx = util.SignalContext(ctx, time.Second, syscall.SIGINT, syscall.SIGTERM)
+			ctx = util.SignalContext(ctx, time.Second*5, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 			return hooks.Run(ctx, conf, log, taskID)
 		},

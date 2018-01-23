@@ -64,7 +64,7 @@ func (s *Scheduler) CheckNodes() error {
 			for _, tid := range node.TaskIds {
 				serr := s.Event.WriteEvent(ctx, events.NewState(tid, tes.State_SYSTEM_ERROR))
 				slerr := s.Event.WriteEvent(ctx, events.NewSystemLog(tid, 0, 0, "error",
-					"Task assigned to dead/gone node", map[string]string{
+					"Cleaning up Task assigned to dead/gone node", map[string]string{
 						"nodeID": node.Id,
 					}))
 				if serr != nil || slerr != nil {

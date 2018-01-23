@@ -56,7 +56,10 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 
 		for _, f := range files {
 			p := filepath.Join(hostPath, f.rel)
-			return local.Get(ctx, f.abs, p, File)
+			err := local.Get(ctx, f.abs, p, File)
+			if err != nil {
+				return err
+			}
 		}
 
 	default:

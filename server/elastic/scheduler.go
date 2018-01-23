@@ -22,7 +22,7 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 		Index(es.taskIndex).
 		Type("task").
 		Size(n).
-		Sort("id", false).
+		Sort("id", true).
 		Query(q).
 		Do(ctx)
 	if err != nil {

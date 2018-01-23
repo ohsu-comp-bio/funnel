@@ -55,6 +55,8 @@ func TestLocalGet(t *testing.T) {
 	idf := path.Join(id, "other.txt")
 	cd := path.Join(tmp, "localized_dir")
 	ioutil.WriteFile(idf, []byte("bar"), os.ModePerm)
+	sdf := path.Join(id, "second.txt")
+	ioutil.WriteFile(sdf, []byte("bar"), os.ModePerm)
 
 	gerr = l.Get(ctx, "file://"+id, cd, Directory)
 	if gerr != nil {
@@ -62,6 +64,14 @@ func TestLocalGet(t *testing.T) {
 	}
 
 	b, rerr = ioutil.ReadFile(path.Join(cd, "other.txt"))
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if string(b) != "bar" {
+		t.Fatal("Unexpected content")
+	}
+
+	b, rerr = ioutil.ReadFile(path.Join(cd, "second.txt"))
 	if rerr != nil {
 		t.Fatal(rerr)
 	}

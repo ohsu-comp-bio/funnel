@@ -205,10 +205,6 @@ build-release: clean-release cross-compile docker
 		echo 'This command should only be run from master'; \
 		exit 1; \
 	fi
-	@if [ -z "$$GITHUB_TOKEN" ]; then \
-		echo 'GITHUB_TOKEN is required but not set. Generate one in your GitHub settings at https://github.com/settings/tokens and set it to an environment variable with `export GITHUB_TOKEN=123456...`'; \
-		exit 1; \
-	fi
 	for f in $$(ls -1 build/bin); do \
 		mkdir -p build/release/$$f-$(VERSION); \
 		cp build/bin/$$f build/release/$$f-$(VERSION)/funnel; \

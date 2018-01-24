@@ -52,6 +52,10 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		q = q.SearchAfter(req.PageToken)
 	}
 
+	if req.StateFilter != tes.Unknown {
+		q = q.Query(elastic.NewTermQuery("state", req.StateFilter.String()))
+	}
+
 	q = q.Sort("id", false).Size(pageSize)
 
 	switch req.View {

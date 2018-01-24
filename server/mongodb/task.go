@@ -43,14 +43,18 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 	pageSize := tes.GetPageSize(req.GetPageSize())
 
+	var query = bson.M{}
 	var q *mgo.Query
 	var err error
 	if req.PageToken != "" {
-		q = db.tasks.Find(bson.M{"id": bson.M{"$lt": req.PageToken}})
-	} else {
-		q = db.tasks.Find(nil)
+		query["id"] = bson.M{"$lt": req.PageToken}
 	}
-	q = q.Sort("-creationtime").Limit(pageSize)
+
+	if req.StateFilter != tes.Unknown {
+		query["state"] = bson.M{"$eq": req.StateFilter}
+	}
+
+	q = db.tasks.Find(query).Sort("-creationtime").Limit(pageSize)
 
 	switch req.View {
 	case tes.TaskView_BASIC:

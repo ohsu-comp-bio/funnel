@@ -81,6 +81,10 @@ func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes
 	addString(v, "page_token", req.GetPageToken())
 	addString(v, "view", req.GetView().String())
 
+	if req.GetStateFilter() != tes.Unknown {
+		addString(v, "stateFilter", req.StateFilter.String())
+	}
+
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
 	hreq, _ := http.NewRequest("GET", u, nil)

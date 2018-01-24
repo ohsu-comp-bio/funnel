@@ -640,3 +640,57 @@ func TestLargeLogTail(t *testing.T) {
 		t.Error("unexpected stdout tail")
 	}
 }
+
+func TestListTaskStateFilter(t *testing.T) {
+	tests.SetLogOutput(log, t)
+
+	c := tests.DefaultConfig()
+	f := tests.NewFunnel(c)
+	f.StartServer()
+	ctx := context.Background()
+
+	// will be COMPLETE
+	id1 := f.Run(`'echo hello'`)
+	// will be COMPLETE
+	id2 := f.Run(`'echo hello'`)
+	// will be CANCELED
+	id3 := f.Run(`'sleep 100'`)
+
+	f.Cancel(id3)
+	f.Wait(id1)
+	f.Wait(id2)
+
+	r, _ := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View: tes.TaskView_MINIMAL,
+	})
+	if len(r.Tasks) != 3 {
+		t.Log("tasks", r.Tasks)
+		t.Error("expected 3 tasks")
+	}
+
+	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View:        tes.TaskView_MINIMAL,
+		StateFilter: tes.Complete,
+	})
+	if len(r.Tasks) != 2 {
+		t.Log("tasks", r.Tasks)
+		t.Error("expected 2 tasks")
+	}
+	if r.Tasks[0].Id != id2 || r.Tasks[1].Id != id1 {
+		t.Log("tasks", r.Tasks)
+		t.Error("unexpected task IDs")
+	}
+
+	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View:        tes.TaskView_MINIMAL,
+		StateFilter: tes.Canceled,
+	})
+	if len(r.Tasks) != 1 {
+		t.Log("tasks", r.Tasks)
+		t.Error("expected 1 tasks")
+	}
+	if r.Tasks[0].Id != id3 {
+		t.Log("tasks", r.Tasks)
+		t.Error("unexpected task IDs")
+	}
+}

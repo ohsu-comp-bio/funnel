@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
+	"strconv"
 )
 
 // GetTask gets a task, which describes a running task
@@ -58,6 +59,16 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 				S: aws.String(db.partitionValue),
 			},
 		},
+	}
+
+	if req.StateFilter != tes.Unknown {
+		query.ExpressionAttributeNames = map[string]*string{
+			"#state": aws.String("state"),
+		}
+		query.ExpressionAttributeValues[":stateFilter"] = &dynamodb.AttributeValue{
+			N: aws.String(strconv.Itoa(int(req.StateFilter))),
+		}
+		query.FilterExpression = aws.String("#state = :stateFilter")
 	}
 
 	if req.View == tes.TaskView_MINIMAL {

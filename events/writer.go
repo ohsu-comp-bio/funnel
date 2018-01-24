@@ -23,3 +23,11 @@ func (mw *MultiWriter) WriteEvent(ctx context.Context, ev *Event) error {
 	}
 	return nil
 }
+
+// Noop provides an event writer that does nothing.
+type Noop struct{}
+
+// WriteEvent does nothing and returns nil.
+func (n Noop) WriteEvent(ctx context.Context, ev *Event) error {
+	return nil
+}

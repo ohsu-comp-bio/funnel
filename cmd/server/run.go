@@ -162,6 +162,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			Queue: queue,
 			Event: &writers,
 		}
+		compute = events.Noop{}
 
 	case "aws-batch":
 		compute, err = batch.NewBackend(conf.AWSBatch)

@@ -47,7 +47,31 @@
         <td>End Time</td>
         <td>{{ task.logs[0].end_time | date:"medium" }}</td>
       </tr>
+      <tr ng-show="task.volumes">
+        <td>Volumes</td>
+        <td>{{ task.volumes.join(', ') }}</td>
+      </tr>
     </table>
+
+  <div ng-show="task.tags">
+    <h6>Tags</h6>
+    <table class="task-desc-table">
+      <tr ng-repeat="(k, v) in task.tags">
+        <td>{{ k }}</td>
+        <td>{{ v }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div ng-show="task.logs[0].metadata">
+    <h6>Metadata</h6>
+    <table class="task-desc-table">
+      <tr ng-repeat="(k, v) in task.logs[0].metadata">
+        <td>{{ k }}</td>
+        <td>{{ v }}</td>
+      </tr>
+    </table>
+  </div>
 
     <div ng-show="task.inputs">
       <h6>Inputs</h6>
@@ -116,6 +140,16 @@
         <td>Image</td>
         <td>{{ cmd.image }}</td>
       </tr>
+      <tr ng-show="cmd.workdir">
+        <td>Workdir</td>
+        <td>{{ cmd.workdir }}</td>
+      </tr>
+      <tbody ng-show="cmd.env">
+        <tr ng-repeat="(k, v) in cmd.env">
+          <td>{{ k }}</td>
+          <td>{{ v }}</td>
+        </tr>
+      </tbody>
 
       <tr ng-show="logs.exit_code != undefined">
         <td>Exit Code</td>
@@ -138,6 +172,24 @@
         <td><pre class="logs-pre"><code>{{ logs.stderr }}</code></pre></td>
       </tr>
     </table>
+
+    <div ng-show="task.logs[0].outputs">
+      <h6>Output File Log</h6>
+      <table class="data-table" ng-repeat="output in task.logs[0].outputs track by $index">
+        <tr>
+          <td>URL</td>
+          <td>{{ output.url }}</td>
+        </tr>
+        <tr>
+          <td>Path</td>
+          <td>{{ output.path }}</td>
+        </tr>
+        <tr>
+          <td>Size (bytes)</td>
+          <td>{{ output.size_bytes }}</td>
+        </tr>
+      </table>
+    </div>
     
     <div ng-show="syslogs.length" class="syslogs-section">
       <h6>System Logs</h6>

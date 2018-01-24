@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"testing"
 	"time"
@@ -36,5 +37,19 @@ func TestReadQueue(t *testing.T) {
 		if tasks[i].CreationTime > tasks[j].CreationTime {
 			t.Error("unexpected task sort order")
 		}
+	}
+}
+
+func TestCancel(t *testing.T) {
+	c := tests.DefaultConfig()
+	c.Compute = "manual"
+	f := tests.NewFunnel(c)
+	f.StartServer()
+
+	id := f.Run(`'sleep 1000'`)
+	f.Cancel(id)
+	task := f.Get(id)
+	if task.State != tes.Canceled {
+		t.Error("expected canceled state")
 	}
 }

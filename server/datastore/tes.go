@@ -84,6 +84,10 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		q = q.Start(c)
 	}
 
+	if req.StateFilter != tes.Unknown {
+		q = q.Filter("State =", int32(req.StateFilter))
+	}
+
 	var tasks []*tes.Task
 	var keys []*datastore.Key
 	var parts []*datastore.Key

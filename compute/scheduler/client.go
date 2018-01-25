@@ -26,7 +26,7 @@ type client struct {
 // scheduler and task logger services at a given address
 // (e.g. "localhost:9090")
 func NewClient(ctx context.Context, conf config.Server) (Client, error) {
-	conn, err := util.Dial(ctx, conf, grpc.WithBlock())
+	conn, err := util.Dial(ctx, conf)
 	if err != nil {
 		return nil, err
 	}

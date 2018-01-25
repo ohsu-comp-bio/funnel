@@ -81,7 +81,7 @@ func TestNoTasks(t *testing.T) {
 
 	// Count the number of times the worker factory was called
 	var count int
-	n.newWorker = func(context.Context, string) error {
+	n.workerRun = func(context.Context, string) error {
 		count++
 		return nil
 	}
@@ -107,7 +107,7 @@ func TestNodeWorkerCreated(t *testing.T) {
 
 	// Count the number of times the worker factory was called
 	var count int
-	n.newWorker = func(context.Context, string) error {
+	n.workerRun = func(context.Context, string) error {
 		count++
 		return nil
 	}

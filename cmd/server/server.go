@@ -60,7 +60,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			log := logger.NewLogger("server", conf.Logger)
 			logger.SetGRPCLogger(log)
 			ctx, cancel := context.WithCancel(context.Background())
-			ctx = util.SignalContext(ctx, time.Second*5, syscall.SIGINT, syscall.SIGTERM)
+			ctx = util.SignalContext(ctx, time.Millisecond*500, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 			return hooks.Run(ctx, conf, log)
 		},

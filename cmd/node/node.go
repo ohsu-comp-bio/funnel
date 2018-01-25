@@ -6,10 +6,7 @@ import (
 	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
-	"syscall"
-	"time"
 )
 
 // NewCommand returns the node command
@@ -62,7 +59,6 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			log := logger.NewLogger("node", conf.Logger)
 			logger.SetGRPCLogger(log)
 			ctx, cancel := context.WithCancel(context.Background())
-			ctx = util.SignalContext(ctx, time.Second*5, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
 			return hooks.Run(ctx, conf, log)
 		},

@@ -82,7 +82,7 @@ func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes
 	addString(v, "view", req.GetView().String())
 
 	if req.GetState() != tes.Unknown {
-		addString(v, "stateFilter", req.State.String())
+		addString(v, "state", req.State.String())
 	}
 
 	// Send request

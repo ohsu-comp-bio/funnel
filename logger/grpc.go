@@ -8,43 +8,37 @@ import (
 
 func init() {
 	conf := DefaultConfig()
-	conf.Level = "warn"
-	ConfigureGRPC(2, NewLogger("grpc", conf))
+	conf.Level = ErrorLevel
+	SetGRPCLogger(NewLogger("grpc", conf))
 }
 
-// ConfigureGRPC configures the GRPC logger verboisty level.
-//   All logs in transport package only go to verbose level 2.
-//   All logs in other packages in grpc are logged in spite of the verbosity level.
-func ConfigureGRPC(verbosity int, log *Logger) {
-	grpclog.SetLoggerV2(&grpclogger{
-		verbosity: verbosity,
-		log:       log,
-	})
+// SetGRPCLogger sets the global GRPC logger.
+func SetGRPCLogger(l *Logger) {
+	grpclog.SetLoggerV2(&grpclogger{log: l})
 }
 
 // Configure the GRPC logger to use the global logrus configuration
 type grpclogger struct {
-	verbosity int
-	log       *Logger
+	log *Logger
 }
 
 func (g *grpclogger) Info(args ...interface{}) {
-	g.log.Info(fmt.Sprint(args))
+	g.log.Debug(fmt.Sprint(args))
 }
 func (g *grpclogger) Infoln(args ...interface{}) {
-	g.log.Info(fmt.Sprint(args))
+	g.log.Debug(fmt.Sprint(args))
 }
 func (g *grpclogger) Infof(format string, args ...interface{}) {
-	g.log.Info(fmt.Sprintf(format, args))
+	g.log.Debug(fmt.Sprintf(format, args))
 }
 func (g *grpclogger) Warning(args ...interface{}) {
-	g.log.Warn(fmt.Sprint(args))
+	g.log.Debug(fmt.Sprint(args))
 }
 func (g *grpclogger) Warningln(args ...interface{}) {
-	g.log.Warn(fmt.Sprint(args))
+	g.log.Debug(fmt.Sprint(args))
 }
 func (g *grpclogger) Warningf(format string, args ...interface{}) {
-	g.log.Warn(fmt.Sprintf(format, args))
+	g.log.Debug(fmt.Sprintf(format, args))
 }
 func (g *grpclogger) Error(args ...interface{}) {
 	g.log.Error(fmt.Sprint(args))
@@ -68,5 +62,5 @@ func (g *grpclogger) Fatalf(format string, args ...interface{}) {
 	os.Exit(1)
 }
 func (g *grpclogger) V(l int) bool {
-	return g.verbosity >= l
+	return true
 }

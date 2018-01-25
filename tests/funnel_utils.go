@@ -33,7 +33,7 @@ import (
 var log = logger.NewLogger("e2e", LogConfig())
 
 func init() {
-	logger.ConfigureGRPC(1, logger.NewLogger("grpc", LogConfig()))
+	logger.SetGRPCLogger(log)
 }
 
 // Funnel provides a test server and RPC/HTTP clients

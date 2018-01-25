@@ -440,7 +440,11 @@ message ListTasksRequest {
   // See TaskView below.
   TaskView view = 5;
 
-  State state_filter = 6;
+  // OPTIONAL
+  //
+  // Filter tasks by state.
+  // Filtering by the UNKNOWN state is not allowed.
+  State state = 6;
 }
 
 // TaskView affects the fields returned by the ListTasks endpoint.

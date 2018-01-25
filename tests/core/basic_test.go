@@ -641,7 +641,7 @@ func TestLargeLogTail(t *testing.T) {
 	}
 }
 
-func TestListTaskStateFilter(t *testing.T) {
+func TestListTaskState(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
 	c := tests.DefaultConfig()
@@ -669,8 +669,8 @@ func TestListTaskStateFilter(t *testing.T) {
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:        tes.TaskView_MINIMAL,
-		StateFilter: tes.Complete,
+		View:  tes.TaskView_MINIMAL,
+		State: tes.Complete,
 	})
 	if len(r.Tasks) != 2 {
 		t.Log("tasks", r.Tasks)
@@ -682,8 +682,8 @@ func TestListTaskStateFilter(t *testing.T) {
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:        tes.TaskView_MINIMAL,
-		StateFilter: tes.Canceled,
+		View:  tes.TaskView_MINIMAL,
+		State: tes.Canceled,
 	})
 	if len(r.Tasks) != 1 {
 		t.Log("tasks", r.Tasks)

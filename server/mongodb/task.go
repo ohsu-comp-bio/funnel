@@ -50,8 +50,8 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		query["id"] = bson.M{"$lt": req.PageToken}
 	}
 
-	if req.StateFilter != tes.Unknown {
-		query["state"] = bson.M{"$eq": req.StateFilter}
+	if req.State != tes.Unknown {
+		query["state"] = bson.M{"$eq": req.State}
 	}
 
 	q = db.tasks.Find(query).Sort("-creationtime").Limit(pageSize)

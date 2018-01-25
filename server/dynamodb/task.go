@@ -61,12 +61,12 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		},
 	}
 
-	if req.StateFilter != tes.Unknown {
+	if req.State != tes.Unknown {
 		query.ExpressionAttributeNames = map[string]*string{
 			"#state": aws.String("state"),
 		}
 		query.ExpressionAttributeValues[":stateFilter"] = &dynamodb.AttributeValue{
-			N: aws.String(strconv.Itoa(int(req.StateFilter))),
+			N: aws.String(strconv.Itoa(int(req.State))),
 		}
 		query.FilterExpression = aws.String("#state = :stateFilter")
 	}

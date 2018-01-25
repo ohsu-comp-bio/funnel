@@ -81,8 +81,8 @@ func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes
 	addString(v, "page_token", req.GetPageToken())
 	addString(v, "view", req.GetView().String())
 
-	if req.GetStateFilter() != tes.Unknown {
-		addString(v, "stateFilter", req.StateFilter.String())
+	if req.GetState() != tes.Unknown {
+		addString(v, "stateFilter", req.State.String())
 	}
 
 	// Send request

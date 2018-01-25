@@ -641,7 +641,7 @@ func TestLargeLogTail(t *testing.T) {
 	}
 }
 
-func TestListTaskState(t *testing.T) {
+func TestListTaskFilterState(t *testing.T) {
 	tests.SetLogOutput(log, t)
 
 	c := tests.DefaultConfig()

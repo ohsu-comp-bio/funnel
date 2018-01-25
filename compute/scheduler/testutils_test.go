@@ -34,7 +34,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 		client:    s,
 		log:       log,
 		resources: res,
-		newWorker: NoopWorker,
+		workerRun: NoopWorker,
 		workers:   newRunSet(),
 		timeout:   util.NewIdleTimeout(conf.Node.Timeout),
 		state:     pbs.NodeState_ALIVE,

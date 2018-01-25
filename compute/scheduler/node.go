@@ -41,7 +41,7 @@ func NewNode(ctx context.Context, conf config.Config, factory Worker, log *logge
 		client:    cli,
 		log:       log,
 		resources: res,
-		newWorker: factory,
+		workerRun: factory,
 		workers:   newRunSet(),
 		timeout:   timeout,
 		state:     state,
@@ -54,7 +54,7 @@ type Node struct {
 	client    Client
 	log       *logger.Logger
 	resources pbs.Resources
-	newWorker Worker
+	workerRun Worker
 	workers   *runSet
 	timeout   util.IdleTimeout
 	state     pbs.NodeState
@@ -78,19 +78,23 @@ func (n *Node) Run(ctx context.Context) {
 		select {
 		case <-n.timeout.Done():
 			cancel()
+
 		case <-ctx.Done():
 			n.timeout.Stop()
 
 			// The node gets 10 seconds to do a final sync with the scheduler.
 			stopCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer cancel()
+
 			n.state = pbs.NodeState_GONE
 			n.sync(stopCtx)
+			// close grpc client connection
 			n.client.Close()
 
 			// The workers get 10 seconds to finish up.
 			n.workers.Wait(time.Second * 10)
 			return
+
 		case <-ticker.C:
 			n.sync(ctx)
 			n.checkIdleTimer()
@@ -221,9 +225,9 @@ func (n *Node) runTask(ctx context.Context, id string) {
 		}
 	}()
 
-	err := n.newWorker(ctx, id)
+	err := n.workerRun(ctx, id)
 	if err != nil {
-		log.Error("error creating worker", err)
+		log.Error("error running task", err)
 		return
 	}
 

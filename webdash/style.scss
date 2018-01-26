@@ -185,6 +185,9 @@ main {
 .syslogs-table .debug-level .syslog-entry-key {
   color: #b118b2;
 }
+.syslog-entry-value {
+  white-space: pre-wrap;
+}
 
 .task-list-name {
   width: 100%;

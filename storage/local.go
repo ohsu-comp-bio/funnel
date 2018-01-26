@@ -83,13 +83,13 @@ func (local *LocalBackend) PutFile(ctx context.Context, url string, hostPath str
 // SupportsGet indicates whether this backend supports GET storage request.
 // For the LocalBackend, the url must start with "file://" be in an allowed directory
 func (local *LocalBackend) SupportsGet(rawurl string, class tes.FileType) error {
-	path := getPath(rawurl)
-	ok := strings.HasPrefix(path, "/")
-	if !ok {
-		return fmt.Errorf("local: must provide an absolute path: %s", rawurl)
+	if !strings.HasPrefix(rawurl, "/") && !strings.HasPrefix(rawurl, "file://") {
+		return &ErrUnsupportedProtocol{"localStorage"}
 	}
+
+	path := getPath(rawurl)
 	if !isAllowed(path, local.allowedDirs) {
-		return fmt.Errorf("local: can't access file, path is not in allowed directories: %s", rawurl)
+		return fmt.Errorf("localStorage: can't access file, path is not in allowed directories: %s", rawurl)
 	}
 	return nil
 }

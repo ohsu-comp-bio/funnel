@@ -1,6 +1,9 @@
 package aws
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,6 +15,13 @@ func NewAWSSession(conf config.AWSConfig) (*session.Session, error) {
 	awsConf := aws.NewConfig()
 
 	if conf.Endpoint != "" {
+		re := regexp.MustCompile("^s3.*\\.amazonaws\\.com/")
+		if !re.MatchString(conf.Endpoint) && !strings.HasPrefix(conf.Endpoint, "https://") {
+			awsConf.WithDisableSSL(true)
+		}
+		if !re.MatchString(conf.Endpoint) {
+			awsConf.WithS3ForcePathStyle(true)
+		}
 		awsConf.WithEndpoint(conf.Endpoint)
 	}
 

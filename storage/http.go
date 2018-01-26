@@ -77,22 +77,28 @@ func (b *HTTPBackend) PutFile(ctx context.Context, rawurl string, hostPath strin
 // SupportsGet indicates whether this backend supports GET storage requests.
 func (b *HTTPBackend) SupportsGet(rawurl string, class tes.FileType) error {
 	if !strings.HasPrefix(rawurl, "http://") && !strings.HasPrefix(rawurl, "https://") {
-		return fmt.Errorf("http(s): unsupported protocol; expected http:// or https://")
+		return &ErrUnsupportedProtocol{"httpStorage"}
 	}
+
 	if class == Directory {
-		return fmt.Errorf("http(s): directory file type is not supported")
+		return fmt.Errorf("httpStorage: directory file type is not supported")
 	}
+
 	resp, err := b.client.Head(rawurl)
 	if err != nil {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("HEAD request to %s returned status: %s", rawurl, resp.Status)
+		return fmt.Errorf("httpStorage: HEAD request to %s returned status: %s", rawurl, resp.Status)
 	}
 	return nil
 }
 
 // SupportsPut indicates whether this backend supports PUT storage requests.
 func (b *HTTPBackend) SupportsPut(rawurl string, class tes.FileType) error {
-	return fmt.Errorf("http(s): Put is not supported")
+	if !strings.HasPrefix(rawurl, "http://") && !strings.HasPrefix(rawurl, "https://") {
+		return &ErrUnsupportedProtocol{"httpStorage"}
+	}
+
+	return fmt.Errorf("httpStorage: Put is not supported")
 }

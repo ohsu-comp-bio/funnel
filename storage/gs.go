@@ -65,7 +65,10 @@ func NewGSBackend(conf config.GSStorage) (*GSBackend, error) {
 
 // Get copies an object from GS to the host path.
 func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-	url := gs.parse(rawurl)
+	url, err := gs.parse(rawurl)
+	if err != nil {
+		return err
+	}
 
 	switch class {
 	case File:
@@ -97,6 +100,9 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		}
 
 		for _, obj := range objects {
+			if strings.HasSuffix(obj.Name, "/") {
+				continue
+			}
 			call := gs.svc.Objects.Get(url.bucket, obj.Name)
 			key := strings.TrimPrefix(obj.Name, url.path)
 			err = download(call, path.Join(hostPath, key))
@@ -117,6 +123,10 @@ func download(call *storage.ObjectsGetCall, hostPath string) (err error) {
 		return err
 	}
 
+	err = fsutil.EnsurePath(hostPath)
+	if err != nil {
+		return err
+	}
 	dest, err := os.Create(hostPath)
 	if err != nil {
 		return err
@@ -134,7 +144,10 @@ func download(call *storage.ObjectsGetCall, hostPath string) (err error) {
 
 // PutFile copies an object (file) from the host path to GS.
 func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-	url := gs.parse(rawurl)
+	url, err := gs.parse(rawurl)
+	if err != nil {
+		return err
+	}
 
 	reader, err := os.Open(hostPath)
 	if err != nil {
@@ -153,14 +166,13 @@ func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string
 // SupportsGet indicates whether this backend supports GET storage request.
 // For the Google Storage backend, the url must start with "gs://" and the bucket must exist
 func (gs *GSBackend) SupportsGet(rawurl string, class tes.FileType) error {
-	ok := strings.HasPrefix(rawurl, gsProtocol)
-	if !ok {
-		return fmt.Errorf("gs: unsupported protocol; expected %s", gsProtocol)
-	}
-	url := gs.parse(rawurl)
-	_, err := gs.svc.Buckets.Get(url.bucket).Do()
+	url, err := gs.parse(rawurl)
 	if err != nil {
-		return fmt.Errorf("gs: failed to find bucket: %s. error: %v", url.bucket, err)
+		return err
+	}
+	_, err = gs.svc.Buckets.Get(url.bucket).Do()
+	if err != nil {
+		return fmt.Errorf("googleStorage: failed to find bucket: %s. error: %v", url.bucket, err)
 	}
 	return nil
 }
@@ -171,10 +183,23 @@ func (gs *GSBackend) SupportsPut(rawurl string, class tes.FileType) error {
 	return gs.SupportsGet(rawurl, class)
 }
 
-func (gs *GSBackend) parse(rawurl string) *urlparts {
+func (gs *GSBackend) parse(rawurl string) (*urlparts, error) {
+	if !strings.HasPrefix(rawurl, gsProtocol) {
+		return nil, &ErrUnsupportedProtocol{"googleStorage"}
+	}
+
 	path := strings.TrimPrefix(rawurl, gsProtocol)
+	if path == "" {
+		return nil, &ErrInvalidURL{"googleStorage"}
+	}
+
 	split := strings.SplitN(path, "/", 2)
-	bucket := split[0]
-	key := split[1]
-	return &urlparts{bucket, key}
+	url := &urlparts{}
+	if len(split) > 0 {
+		url.bucket = split[0]
+	}
+	if len(split) == 2 {
+		url.path = split[1]
+	}
+	return url, nil
 }

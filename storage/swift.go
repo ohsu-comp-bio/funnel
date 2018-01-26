@@ -74,18 +74,16 @@ func NewSwiftBackend(conf config.SwiftStorage) (Backend, error) {
 
 // Get copies an object from storage to the host path.
 func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-	url := sw.parse(rawurl)
+	url, err := sw.parse(rawurl)
+	if err != nil {
+		return err
+	}
 
 	var checkHash = true
 	var headers swift.Headers
 
 	switch class {
 	case File:
-		err := fsutil.EnsurePath(hostPath)
-		if err != nil {
-			return err
-		}
-
 		f, _, err := sw.conn.ObjectOpen(url.bucket, url.path, checkHash, headers)
 		if err != nil {
 			return err
@@ -111,6 +109,9 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 		}
 
 		for _, obj := range objs {
+			if strings.HasSuffix(obj.Name, "/") {
+				continue
+			}
 			f, _, err := sw.conn.ObjectOpen(url.bucket, obj.Name, checkHash, headers)
 			if err != nil {
 				return err
@@ -136,6 +137,10 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 }
 
 func (sw *SwiftBackend) get(src io.Reader, hostPath string) (err error) {
+	err = fsutil.EnsurePath(hostPath)
+	if err != nil {
+		return err
+	}
 	dest, err := os.Create(hostPath)
 	if err != nil {
 		return err
@@ -153,7 +158,10 @@ func (sw *SwiftBackend) get(src io.Reader, hostPath string) (err error) {
 
 // PutFile copies an object (file) from the host path to storage.
 func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-	url := sw.parse(rawurl)
+	url, err := sw.parse(rawurl)
+	if err != nil {
+		return err
+	}
 
 	reader, err := os.Open(hostPath)
 	if err != nil {
@@ -197,12 +205,11 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 // SupportsGet indicates whether this backend supports GET storage request.
 // For the Swift backend, the url must start with "swift://" and the bucket must exist
 func (sw *SwiftBackend) SupportsGet(rawurl string, class tes.FileType) error {
-	ok := strings.HasPrefix(rawurl, swiftProtocol)
-	if !ok {
-		return fmt.Errorf("swift: unsupported protocol; expected %s", swiftProtocol)
+	url, err := sw.parse(rawurl)
+	if err != nil {
+		return err
 	}
-	url := sw.parse(rawurl)
-	_, _, err := sw.conn.Container(url.bucket)
+	_, _, err = sw.conn.Container(url.bucket)
 	if err != nil {
 		return fmt.Errorf("swift: failed to find bucket: %s. error: %v", url.bucket, err)
 	}
@@ -215,10 +222,24 @@ func (sw *SwiftBackend) SupportsPut(rawurl string, class tes.FileType) error {
 	return sw.SupportsGet(rawurl, class)
 }
 
-func (sw *SwiftBackend) parse(rawurl string) *urlparts {
+func (sw *SwiftBackend) parse(rawurl string) (*urlparts, error) {
+	ok := strings.HasPrefix(rawurl, swiftProtocol)
+	if !ok {
+		return nil, &ErrUnsupportedProtocol{"swift"}
+	}
+
 	path := strings.TrimPrefix(rawurl, swiftProtocol)
+	if path == "" {
+		return nil, &ErrInvalidURL{"swift"}
+	}
+
 	split := strings.SplitN(path, "/", 2)
-	bucket := split[0]
-	key := split[1]
-	return &urlparts{bucket, key}
+	url := &urlparts{}
+	if len(split) > 0 {
+		url.bucket = split[0]
+	}
+	if len(split) == 2 {
+		url.path = split[1]
+	}
+	return url, nil
 }

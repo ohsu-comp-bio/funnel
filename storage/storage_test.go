@@ -74,18 +74,22 @@ func TestStorageWithConfig(t *testing.T) {
 	}
 }
 
-func TestS3UrlProcessing(t *testing.T) {
+func TestUrlParsing(t *testing.T) {
+	expectedBucket := "1000genomes"
+	expectedKey := "README.analysis_history"
+
+	// Generic S3
 	b, err := NewGenericS3Backend(config.GenericS3Storage{
 		Endpoint: "s3.amazonaws.com",
 	})
 	if err != nil {
-		t.Fatal(err)
+		t.Error("Error creating generic S3 backend:", err)
 	}
 
-	expectedBucket := "1000genomes"
-	expectedKey := "README.analysis_history"
-
-	url := b.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	url, err := b.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
 		t.Log("actual:", url.bucket)
@@ -97,7 +101,10 @@ func TestS3UrlProcessing(t *testing.T) {
 		t.Error("wrong key")
 	}
 
-	url = b.parse("s3://1000genomes/README.analysis_history")
+	url, err = b.parse("s3://1000genomes/README.analysis_history")
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
 		t.Log("actual:", url.bucket)
@@ -109,12 +116,26 @@ func TestS3UrlProcessing(t *testing.T) {
 		t.Error("wrong key")
 	}
 
+	url, err = b.parse("gs://1000genomes/README.analysis_history")
+	if _, ok := err.(*ErrUnsupportedProtocol); !ok {
+		t.Error("expected ErrUnsupportedProtocol")
+	}
+
+	url, err = b.parse("s3://")
+	if _, ok := err.(*ErrInvalidURL); !ok {
+		t.Error("expected ErrInvalidURL")
+	}
+
+	// Amazon S3
 	ab, err := NewAmazonS3Backend(config.AmazonS3Storage{})
 	if err != nil {
-		t.Fatal("Error creating amazon S3 backend:", err)
+		t.Error("Error creating amazon S3 backend:", err)
 	}
 
-	url = ab.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	url, err = ab.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
 		t.Log("actual:", url.bucket)
@@ -126,7 +147,10 @@ func TestS3UrlProcessing(t *testing.T) {
 		t.Error("wrong key")
 	}
 
-	url = ab.parse("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
+	url, err = ab.parse("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
 		t.Log("actual:", url.bucket)
@@ -138,7 +162,10 @@ func TestS3UrlProcessing(t *testing.T) {
 		t.Error("wrong key")
 	}
 
-	url = ab.parse("s3://1000genomes/README.analysis_history")
+	url, err = ab.parse("s3://1000genomes/README.analysis_history")
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
 		t.Log("actual:", url.bucket)
@@ -148,6 +175,75 @@ func TestS3UrlProcessing(t *testing.T) {
 		t.Log("expected:", expectedKey)
 		t.Log("actual:", url.path)
 		t.Error("wrong key")
+	}
+
+	url, err = ab.parse("gs://1000genomes/README.analysis_history")
+	if _, ok := err.(*ErrUnsupportedProtocol); !ok {
+		t.Error("expected ErrUnsupportedProtocol")
+	}
+
+	url, err = ab.parse("s3://")
+	if _, ok := err.(*ErrInvalidURL); !ok {
+		t.Error("expected ErrInvalidURL")
+	}
+
+	// Google Storage
+	gb, err := NewGSBackend(config.GSStorage{})
+	if err != nil {
+		t.Error("Error creating google storage backend:", err)
+	}
+
+	url, err = gb.parse("gs://1000genomes/README.analysis_history")
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+	if url.bucket != expectedBucket {
+		t.Log("expected:", expectedBucket)
+		t.Log("actual:", url.bucket)
+		t.Error("wrong bucket")
+	}
+	if url.path != expectedKey {
+		t.Log("expected:", expectedKey)
+		t.Log("actual:", url.path)
+		t.Error("wrong key")
+	}
+
+	url, err = gb.parse("s3://1000genomes/README.analysis_history")
+	if _, ok := err.(*ErrUnsupportedProtocol); !ok {
+		t.Error("expected ErrUnsupportedProtocol")
+	}
+
+	url, err = gb.parse("gs://")
+	if _, ok := err.(*ErrInvalidURL); !ok {
+		t.Error("expected ErrInvalidURL")
+	}
+
+	// Swift
+	sb := &SwiftBackend{}
+
+	url, err = sb.parse("swift://1000genomes/README.analysis_history")
+	if err != nil {
+		t.Error("unexpected error", err)
+	}
+	if url.bucket != expectedBucket {
+		t.Log("expected:", expectedBucket)
+		t.Log("actual:", url.bucket)
+		t.Error("wrong bucket")
+	}
+	if url.path != expectedKey {
+		t.Log("expected:", expectedKey)
+		t.Log("actual:", url.path)
+		t.Error("wrong key")
+	}
+
+	url, err = sb.parse("s3://1000genomes/README.analysis_history")
+	if _, ok := err.(*ErrUnsupportedProtocol); !ok {
+		t.Error("expected ErrUnsupportedProtocol")
+	}
+
+	url, err = sb.parse("swift://")
+	if _, ok := err.(*ErrInvalidURL); !ok {
+		t.Error("expected ErrInvalidURL")
 	}
 }
 

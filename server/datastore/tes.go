@@ -74,7 +74,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 
 	page := req.PageToken
 	size := tes.GetPageSize(req.GetPageSize())
-	q := datastore.NewQuery("Task").KeysOnly().Limit(size)
+	q := datastore.NewQuery("Task").KeysOnly().Limit(size).Order("-CreationTime")
 
 	if page != "" {
 		c, err := datastore.DecodeCursor(page)

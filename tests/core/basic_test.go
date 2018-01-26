@@ -660,12 +660,13 @@ func TestListTaskFilterState(t *testing.T) {
 	f.Wait(id1)
 	f.Wait(id2)
 
+	time.Sleep(time.Second * 5)
+
 	r, _ := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_MINIMAL,
 	})
 	if len(r.Tasks) != 3 {
-		t.Log("tasks", r.Tasks)
-		t.Error("expected 3 tasks")
+		t.Error("unexpected all tasks", r.Tasks)
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
@@ -673,12 +674,10 @@ func TestListTaskFilterState(t *testing.T) {
 		State: tes.Complete,
 	})
 	if len(r.Tasks) != 2 {
-		t.Log("tasks", r.Tasks)
-		t.Error("expected 2 tasks")
+		t.Error("expected 2 tasks", r.Tasks)
 	}
 	if r.Tasks[0].Id != id2 || r.Tasks[1].Id != id1 {
-		t.Log("tasks", r.Tasks)
-		t.Error("unexpected task IDs")
+		t.Error("unexpected complete task IDs", r.Tasks, id2, id1)
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
@@ -686,11 +685,9 @@ func TestListTaskFilterState(t *testing.T) {
 		State: tes.Canceled,
 	})
 	if len(r.Tasks) != 1 {
-		t.Log("tasks", r.Tasks)
-		t.Error("expected 1 tasks")
+		t.Error("expected 1 tasks", r.Tasks)
 	}
 	if r.Tasks[0].Id != id3 {
-		t.Log("tasks", r.Tasks)
-		t.Error("unexpected task IDs")
+		t.Error("unexpected canceled task IDs", r.Tasks)
 	}
 }

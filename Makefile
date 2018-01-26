@@ -4,7 +4,6 @@ endif
 
 VERSION = 0.5.0
 TESTS=$(shell go list ./... | grep -v /vendor/)
-CONFIGDIR=$(shell pwd)/tests
 
 export SHELL=/bin/bash
 PATH := ${PATH}:${GOPATH}/bin
@@ -95,59 +94,59 @@ start-elasticsearch:
 	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:5.6.3 > /dev/null
 
 test-elasticsearch:
-	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/elastic.config.yml
-	@go test ./tests/scheduler/ -funnel-config $(CONFIGDIR)/elastic.config.yml
+	@go test ./tests/core/ -funnel-config `pwd`/tests/elastic.config.yml
+	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/elastic.config.yml
 
 start-mongodb:
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
 
 test-mongodb:
-	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/mongo.config.yml
-	@go test ./tests/scheduler/ -funnel-config $(CONFIGDIR)/mongo.config.yml
+	@go test ./tests/core/ -funnel-config `pwd`/tests/mongo.config.yml
+	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml	
 
 start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-dynamodb-test -p 18000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
 
 test-dynamodb:
-	@go test ./tests/core/ -funnel-config $(CONFIGDIR)/dynamo.config.yml
+	@go test ./tests/core/ -funnel-config `pwd`/tests/dynamo.config.yml
 
 start-datastore:
-	@gcloud beta emulators datastore start &
+	@docker run -d --name funnel-datastore-test -p 12432:12432 google/cloud-sdk:latest gcloud beta emulators datastore start --no-store-on-disk --host-port 0.0.0.0:12432 --project funnel-test
 
 stop-datastore:
-	@curl -XPOST localhost:8081/shutdown
+	@docker rm -f funnel-datastore-test
 
-test-datastore: start-datastore
-	DATASTORE_EMULATOR_HOST=localhost:8081 \
-	go test -v ./tests/core/ -funnel-config $(CONFIGDIR)/datastore.config.yml
+test-datastore:
+	DATASTORE_EMULATOR_HOST=localhost:12432 \
+	  go test ./tests/core/ -funnel-config `pwd`/tests/datastore.config.yml
 
 start-kafka:
 	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-kafka -p 2181:2181 -p 9092:9092 --env ADVERTISED_HOST="localhost" --env ADVERTISED_PORT=9092 spotify/kafka
 
 test-kafka:
-	@go test ./tests/kafka/ -funnel-config $(CONFIGDIR)/kafka.config.yml
+	@go test ./tests/kafka/ -funnel-config `pwd`/tests/kafka.config.yml
 
 test-htcondor:
 	@docker pull ohsucompbio/htcondor
-	@go test -timeout 120s ./tests/htcondor -funnel-config $(CONFIGDIR)/htcondor.config.yml
+	@go test -timeout 120s ./tests/htcondor -funnel-config `pwd`/tests/htcondor.config.yml
 
 test-slurm:
 	@docker pull ohsucompbio/slurm
-	@go test -timeout 120s ./tests/slurm -funnel-config $(CONFIGDIR)/slurm.config.yml
+	@go test -timeout 120s ./tests/slurm -funnel-config `pwd`/tests/slurm.config.yml
 
 test-gridengine:
 	@docker pull ohsucompbio/gridengine
-	@go test -timeout 120s ./tests/gridengine -funnel-config $(CONFIGDIR)/gridengine.config.yml
+	@go test -timeout 120s ./tests/gridengine -funnel-config `pwd`/tests/gridengine.config.yml
 
 test-pbs-torque:
 	@docker pull ohsucompbio/pbs-torque
-	@go test -timeout 120s ./tests/pbs -funnel-config $(CONFIGDIR)/pbs.config.yml
+	@go test -timeout 120s ./tests/pbs -funnel-config `pwd`/tests/pbs.config.yml
 
 test-amazon-s3:
-	@go test ./tests/storage -funnel-config $(CONFIGDIR)/s3.config.yml -run TestAmazonS3
+	@go test ./tests/storage -funnel-config `pwd`/s3.config.yml -run TestAmazonS3
 
 start-generic-s3:
 	@docker rm -f funnel-s3server > /dev/null 2>&1 || echo
@@ -156,16 +155,16 @@ start-generic-s3:
 	@docker run -d --name funnel-minio -p 9000:9000 -e "MINIO_ACCESS_KEY=fakekey" -e "MINIO_SECRET_KEY=fakesecret" -e "MINIO_REGION=us-east-1" minio/minio:RELEASE.2017-10-27T18-59-02Z server /data
 
 test-generic-s3:
-	@go test ./tests/storage -funnel-config $(CONFIGDIR)/amazoncli-minio-s3.config.yml -run TestAmazonS3Storage
-	@go test ./tests/storage -funnel-config $(CONFIGDIR)/scality-s3.config.yml -run TestGenericS3Storage
-	@go test ./tests/storage -funnel-config $(CONFIGDIR)/minio-s3.config.yml -run TestGenericS3Storage
-	@go test ./tests/storage -funnel-config $(CONFIGDIR)/multi-s3.config.yml -run TestGenericS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/amazoncli-minio-s3.config.yml -run TestAmazonS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/scality-s3.config.yml -run TestGenericS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/minio-s3.config.yml -run TestGenericS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/multi-s3.config.yml -run TestGenericS3Storage
 
 test-gs:
-	@go test ./tests/storage -run TestGoogleStorage -funnel-config $(CONFIGDIR)/gs.config.yml ${GCE_PROJECT_ID}
+	@go test ./tests/storage -run TestGoogleStorage -funnel-config `pwd`/gs.config.yml ${GCE_PROJECT_ID}
 
 test-swift:
-	@go test ./tests/storage -funnel-config $(CONFIGDIR)/swift.config.yml -run TestSwiftStorage
+	@go test ./tests/storage -funnel-config `pwd`/swift.config.yml -run TestSwiftStorage
 
 webdash-install:
 	@npm install --prefix ./webdash
@@ -251,13 +250,6 @@ docker: cross-compile
 	cp build/bin/funnel-linux-amd64 build/docker/funnel
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t ohsucompbio/funnel .
-
-test-datastore-travis:
-	@wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-183.0.0-linux-x86_64.tar.gz
-	@tar xzvf google-cloud-sdk-183.0.0-linux-x86_64.tar.gz 2> /dev/null
-	@./google-cloud-sdk/bin/gcloud --quiet beta emulators datastore start &
-	@sleep 60
-	make test-datastore
 
 # Remove build/development files.
 clean:

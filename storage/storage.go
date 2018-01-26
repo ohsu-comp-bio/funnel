@@ -30,6 +30,26 @@ const (
 //   2. Object store - No objects match prefix
 var ErrEmptyDirectory = errors.New("no files found in directory")
 
+// ErrUnsupportedProtocol is returned by SupportsGet / SupportsPut when a url's
+// protocol is unsupported by that backend
+type ErrUnsupportedProtocol struct {
+	backend string
+}
+
+func (e *ErrUnsupportedProtocol) Error() string {
+	return fmt.Sprintf("%s: unsupported protocol", e.backend)
+}
+
+// ErrInvalidURL is returned by SupportsGet / SupportsPut when a url's
+// format is invalid.
+type ErrInvalidURL struct {
+	backend string
+}
+
+func (e *ErrInvalidURL) Error() string {
+	return fmt.Sprintf("%s: invalid url", e.backend)
+}
+
 // Backend provides an interface for a storage backend.
 // New storage backends must support this interface.
 type Backend interface {
@@ -211,7 +231,14 @@ func (storage Storage) findBackend(url string, class tes.FileType, op string) (B
 			useBackend = backend
 			found++
 		} else {
-			errs = append(errs, err.Error())
+			switch err.(type) {
+			case *ErrUnsupportedProtocol:
+				// noop
+			case *ErrInvalidURL:
+				errs = append(errs, err.Error())
+			default:
+				errs = append(errs, err.Error())
+			}
 		}
 	}
 

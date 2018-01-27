@@ -25,6 +25,7 @@ type Config struct {
 	Elastic   Elastic
 	MongoDB   MongoDB
 	Kafka     Kafka
+	PubSub    PubSub
 	Datastore Datastore
 	// compute
 	HTCondor   HPCBackend
@@ -164,6 +165,12 @@ type Elastic struct {
 type Kafka struct {
 	Servers []string
 	Topic   string
+}
+
+// PubSub configures access to Google Cloud Pub/Sub for task event reading/writing.
+type PubSub struct {
+	Topic   string
+	Project string
 }
 
 // AWSConfig describes the configuration for creating AWS Session instances

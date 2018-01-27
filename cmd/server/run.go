@@ -128,6 +128,8 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			writer, err = elastic.NewElastic(ctx, conf.Elastic)
 		case "kafka":
 			writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
+		case "pubsub":
+			writer, err = events.NewPubSubWriter(ctx, conf.PubSub)
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
 		default:

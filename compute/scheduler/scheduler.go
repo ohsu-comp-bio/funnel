@@ -62,7 +62,7 @@ func (s *Scheduler) CheckNodes() error {
 
 		if node.State == pbs.NodeState_GONE {
 			for _, tid := range node.TaskIds {
-				serr := s.Event.WriteEvent(ctx, events.NewState(tid, tes.State_SYSTEM_ERROR))
+				serr := s.Event.WriteEvent(ctx, events.NewState(tid, tes.Error))
 				if serr != nil {
 					return fmt.Errorf(
 						"Error cleaning up task assigned to dead/gone node. taskID: %s nodeID: %s error: %v",
@@ -71,7 +71,7 @@ func (s *Scheduler) CheckNodes() error {
 						serr.Error(),
 					)
 				}
-				s.Event.WriteEvent(ctx, events.NewSystemLog(tid, 0, 0, "error",
+				s.Event.WriteEvent(ctx, events.NewSystemLog(tid, "error",
 					"Cleaning up Task assigned to dead/gone node", map[string]string{
 						"nodeID": node.Id,
 					}))
@@ -107,7 +107,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 				"nodeID", offer.Node.Id,
 				"node", offer.Node,
 			)
-			s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "info",
+			s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, "info",
 				"Assigning task to node", map[string]string{
 					"nodeID": offer.Node.Id,
 				}))
@@ -123,7 +123,7 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 					"taskID", task.Id,
 					"nodeID", offer.Node.Id,
 				)
-				s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "error",
+				s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, "error",
 					"Error in AssignTask", map[string]string{
 						"error":  err.Error(),
 						"nodeID": offer.Node.Id,

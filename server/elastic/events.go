@@ -9,63 +9,22 @@ import (
 )
 
 var updateTaskLogs = `
-if (ctx._source.logs == null) {
-  ctx._source.logs = new ArrayList();
-}
-
-// Ensure the task logs array is long enough.
-for (; params.attempt > ctx._source.logs.length - 1; ) {
-  Map m = new HashMap();
-  m.logs = new ArrayList();
-  ctx._source.logs.add(m);
-}
 
 // Set the field.
 if (params.field == "system_logs") {
-  if (ctx._source.logs[params.attempt].system_logs == null) {
-    ctx._source.logs[params.attempt].system_logs = new ArrayList();
+  if (ctx._source.system_logs == null) {
+    ctx._source.system_logs = new ArrayList();
   }
-  ctx._source.logs[params.attempt].system_logs.add(params.value)
+  ctx._source.system_logs.add(params.value)
 } else {
-  ctx._source.logs[params.attempt][params.field] = params.value;
+  ctx._source[params.field] = params.value;
 }
-`
-
-var updateExecutorLogs = `
-if (ctx._source.logs == null) {
-  ctx._source.logs = new ArrayList();
-}
-
-// Ensure the task logs array is long enough.
-for (; params.attempt > ctx._source.logs.length - 1; ) {
-  Map m = new HashMap();
-  m.logs = new ArrayList();
-  ctx._source.logs.add(m);
-}
-
-// Ensure the executor logs array is long enough.
-for (; params.index > ctx._source.logs[params.attempt].logs.length - 1; ) {
-  Map m = new HashMap();
-  ctx._source.logs[params.attempt].logs.add(m);
-}
-
-// Set the field.
-ctx._source.logs[params.attempt].logs[params.index][params.field] = params.value;
 `
 
 func taskLogUpdate(attempt uint32, field string, value interface{}) *elastic.Script {
 	return elastic.NewScript(updateTaskLogs).
 		Lang("painless").
 		Param("attempt", attempt).
-		Param("field", field).
-		Param("value", value)
-}
-
-func execLogUpdate(attempt, index uint32, field string, value interface{}) *elastic.Script {
-	return elastic.NewScript(updateExecutorLogs).
-		Lang("painless").
-		Param("attempt", attempt).
-		Param("index", index).
 		Param("field", field).
 		Param("value", value)
 }
@@ -79,7 +38,7 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 		Id(ev.Id)
 
 	switch ev.Type {
-	case events.Type_TASK_CREATED:
+	case events.Type_CREATED:
 		task := ev.GetTask()
 		mar := jsonpb.Marshaler{}
 		s, err := mar.MarshalToString(task)
@@ -95,7 +54,7 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 			Do(ctx)
 		return err
 
-	case events.Type_TASK_STATE:
+	case events.Type_STATE:
 		res, err := es.GetTask(ctx, &tes.GetTaskRequest{
 			Id: ev.Id,
 		})
@@ -110,35 +69,29 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 		}
 		u = u.Doc(map[string]string{"state": to.String()})
 
-	case events.Type_TASK_START_TIME:
-		u = u.Script(taskLogUpdate(ev.Attempt, "start_time", ev.GetStartTime()))
+	case events.Type_START_TIME:
+		u = u.Script(taskLogUpdate("start_time", ev.GetStartTime()))
 
-	case events.Type_TASK_END_TIME:
-		u = u.Script(taskLogUpdate(ev.Attempt, "end_time", ev.GetEndTime()))
+	case events.Type_END_TIME:
+		u = u.Script(taskLogUpdate("end_time", ev.GetEndTime()))
 
-	case events.Type_TASK_OUTPUTS:
-		u = u.Script(taskLogUpdate(ev.Attempt, "outputs", ev.GetOutputs().Value))
+	case events.Type_OUTPUTS:
+		u = u.Script(taskLogUpdate("outputs", ev.GetOutputs().Value))
 
-	case events.Type_TASK_METADATA:
-		u = u.Script(taskLogUpdate(ev.Attempt, "metadata", ev.GetMetadata().Value))
+	case events.Type_METADATA:
+		u = u.Script(taskLogUpdate("metadata", ev.GetMetadata().Value))
 
-	case events.Type_EXECUTOR_START_TIME:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "start_time", ev.GetStartTime()))
+	case events.Type_EXIT_CODE:
+		u = u.Script(execLogUpdate("exit_code", ev.GetExitCode()))
 
-	case events.Type_EXECUTOR_END_TIME:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "end_time", ev.GetEndTime()))
+	case events.Type_STDOUT:
+		u = u.Script(execLogUpdate("stdout", ev.GetStdout()))
 
-	case events.Type_EXECUTOR_EXIT_CODE:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "exit_code", ev.GetExitCode()))
-
-	case events.Type_EXECUTOR_STDOUT:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "stdout", ev.GetStdout()))
-
-	case events.Type_EXECUTOR_STDERR:
-		u = u.Script(execLogUpdate(ev.Attempt, ev.Index, "stderr", ev.GetStderr()))
+	case events.Type_STDERR:
+		u = u.Script(execLogUpdate("stderr", ev.GetStderr()))
 
 	case events.Type_SYSTEM_LOG:
-		u = u.Script(taskLogUpdate(ev.Attempt, "system_logs", ev.SysLogString()))
+		u = u.Script(taskLogUpdate("system_logs", ev.SysLogString()))
 	}
 
 	_, err := u.Do(ctx)

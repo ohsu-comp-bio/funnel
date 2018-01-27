@@ -21,18 +21,16 @@ message SystemLog {
 
 enum Type {
   UNKNOWN = 0;
-  TASK_STATE = 1;
-  TASK_START_TIME = 2; 
-  TASK_END_TIME = 3;
-  TASK_OUTPUTS = 4;
-  TASK_METADATA = 5;
-  EXECUTOR_START_TIME = 6;
-  EXECUTOR_END_TIME = 7;
-  EXECUTOR_EXIT_CODE = 8;
-  EXECUTOR_STDOUT = 11;
-  EXECUTOR_STDERR = 12;
+  STATE = 1;
+  START_TIME = 2; 
+  END_TIME = 3;
+  OUTPUTS = 4;
+  METADATA = 5;
+  EXIT_CODE = 8;
+  STDOUT = 11;
+  STDERR = 12;
   SYSTEM_LOG = 13;
-  TASK_CREATED = 14;
+  CREATED = 14;
 }
 
 message Event {
@@ -50,8 +48,6 @@ message Event {
     SystemLog system_log = 15;
     tes.Task task = 19;
   }
-  uint32 attempt = 16;
-  uint32 index = 17;
   Type type = 18;
 }
 

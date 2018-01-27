@@ -83,17 +83,13 @@ func TestSwiftStorage(t *testing.T) {
 				Type: tes.FileType_DIRECTORY,
 			},
 		},
-		Executors: []*tes.Executor{
-			{
-				Image: "alpine:latest",
-				Command: []string{
-					"sh",
-					"-c",
-					"cat $(find /opt/inputs -type f | sort) > test-output-file.txt; mkdir test-output-directory; cp *.txt test-output-directory/",
-				},
-				Workdir: "/opt/workdir",
-			},
-		},
+    Image: "alpine:latest",
+    Command: []string{
+      "sh",
+      "-c",
+      "cat $(find /opt/inputs -type f | sort) > test-output-file.txt; mkdir test-output-directory; cp *.txt test-output-directory/",
+    },
+    Workdir: "/opt/workdir",
 	}
 
 	resp, err := fun.RPC.CreateTask(ctx, task)
@@ -161,14 +157,10 @@ func TestSwiftStorage(t *testing.T) {
 				Type: tes.FileType_DIRECTORY,
 			},
 		},
-		Executors: []*tes.Executor{
-			{
-				Image: "alpine:latest",
-				Command: []string{
-					"sleep", "1",
-				},
-			},
-		},
+    Image: "alpine:latest",
+    Command: []string{
+      "sleep", "1",
+    },
 	}
 
 	resp, err = fun.RPC.CreateTask(ctx, task)

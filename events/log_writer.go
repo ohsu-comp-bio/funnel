@@ -15,31 +15,25 @@ func (el *Logger) WriteEvent(ctx context.Context, ev *Event) error {
 	ts := ev.Type.String()
 	log := el.Log.WithFields(
 		"taskID", ev.Id,
-		"attempt", ev.Attempt,
-		"index", ev.Index,
 		"timestamp", ev.Timestamp,
 	)
 
 	switch ev.Type {
-	case Type_TASK_STATE:
+	case Type_STATE:
 		log.Info(ts, "state", ev.GetState().String())
-	case Type_TASK_START_TIME:
+	case Type_START_TIME:
 		log.Info(ts, "start_time", ev.GetStartTime())
-	case Type_TASK_END_TIME:
+	case Type_END_TIME:
 		log.Info(ts, "end_time", ev.GetEndTime())
-	case Type_TASK_OUTPUTS:
+	case Type_OUTPUTS:
 		log.Info(ts, "outputs", ev.GetOutputs().Value)
-	case Type_TASK_METADATA:
+	case Type_METADATA:
 		log.Info(ts, "metadata", ev.GetMetadata().Value)
-	case Type_EXECUTOR_START_TIME:
-		log.Info(ts, "start_time", ev.GetStartTime())
-	case Type_EXECUTOR_END_TIME:
-		log.Info(ts, "end_time", ev.GetEndTime())
-	case Type_EXECUTOR_EXIT_CODE:
+	case Type_EXIT_CODE:
 		log.Info(ts, "exit_code", ev.GetExitCode())
-	case Type_EXECUTOR_STDOUT:
+	case Type_STDOUT:
 		log.Info(ts, "stdout", ev.GetStdout())
-	case Type_EXECUTOR_STDERR:
+	case Type_STDERR:
 		log.Info(ts, "stderr", ev.GetStderr())
 	case Type_SYSTEM_LOG:
 		var args []interface{}

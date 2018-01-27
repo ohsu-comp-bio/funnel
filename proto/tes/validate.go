@@ -24,35 +24,21 @@ func (v ValidationError) Error() string {
 func Validate(t *Task) ValidationError {
 	var errs ValidationError
 
-	if len(t.Executors) == 0 {
-		errs.add("Task.Executors: at least one executor is required")
-	}
+  if t.Image == "" {
+    errs.add("Task.Image: required, but empty")
+  }
 
-	for i, exec := range t.Executors {
-		if exec.Image == "" {
-			errs.add("Task.Executors[%d].Image: required, but empty", i)
-		}
+  if len(t.Command) == 0 {
+    errs.add("Task.Command: required, but empty")
+  }
 
-		if len(exec.Command) == 0 {
-			errs.add("Task.Executors[%d].Command: required, but empty", i)
-		}
+  if t.Workdir != "" && !strings.HasPrefix(t.Workdir, "/") {
+    errs.add("Task.Workdir: must be an absolute path")
+  }
 
-		if exec.Workdir != "" && !strings.HasPrefix(exec.Workdir, "/") {
-			errs.add("Task.Executors[%d].Workdir: must be an absolute path", i)
-		}
-
-		if exec.Stdin != "" && !strings.HasPrefix(exec.Stdin, "/") {
-			errs.add("Task.Executors[%d].Stdin: must be an absolute path", i)
-		}
-
-		if exec.Stdout != "" && !strings.HasPrefix(exec.Stdout, "/") {
-			errs.add("Task.Executors[%d].Stdout: must be an absolute path", i)
-		}
-
-		if exec.Stderr != "" && !strings.HasPrefix(exec.Stderr, "/") {
-			errs.add("Task.Executors[%d].Stderr: must be an absolute path", i)
-		}
-	}
+  if t.Stdin != "" && !strings.HasPrefix(t.Stdin, "/") {
+    errs.add("Task.Stdin: must be an absolute path")
+  }
 
 	for i, input := range t.Inputs {
 		if input.Content != "" && input.Url != "" {
@@ -81,12 +67,6 @@ func Validate(t *Task) ValidationError {
 
 		if output.Path != "" && !strings.HasPrefix(output.Path, "/") {
 			errs.add("task.Outputs[%d].Path: must be an absolute path", i)
-		}
-	}
-
-	for i, vol := range t.Volumes {
-		if !strings.HasPrefix(vol, "/") {
-			errs.add("Task.Volumes[%d]: must be an absolute path", i)
 		}
 	}
 

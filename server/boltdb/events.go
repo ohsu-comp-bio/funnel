@@ -10,24 +10,11 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
-// State variables for convenience
-const (
-	Unknown       = tes.State_UNKNOWN
-	Queued        = tes.State_QUEUED
-	Running       = tes.State_RUNNING
-	Paused        = tes.State_PAUSED
-	Complete      = tes.State_COMPLETE
-	ExecutorError = tes.State_EXECUTOR_ERROR
-	SystemError   = tes.State_SYSTEM_ERROR
-	Canceled      = tes.State_CANCELED
-	Initializing  = tes.State_INITIALIZING
-)
-
 // WriteEvent creates an event for the server to handle.
 func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error {
 	var err error
 
-	if req.Type == events.Type_TASK_CREATED {
+	if req.Type == events.Type_CREATED {
 		task := req.GetTask()
 		idBytes := []byte(task.Id)
 		taskString, err := proto.Marshal(task)
@@ -36,7 +23,7 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 		}
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			tx.Bucket(TaskBucket).Put(idBytes, taskString)
-			tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
+			tx.Bucket(TaskState).Put(idBytes, []byte(tes.Queued.String()))
 			return nil
 		})
 		if err != nil {
@@ -51,70 +38,67 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 
 	// Check that the task exists
 	err = taskBolt.db.View(func(tx *bolt.Tx) error {
-		_, err := getTaskView(tx, req.Id, tes.TaskView_MINIMAL)
+		_, err := getTaskView(tx, req.Id, tes.Minimal)
 		return err
 	})
 	if err != nil {
 		return err
 	}
 
-	tl := &tes.TaskLog{}
-	el := &tes.ExecutorLog{}
-
 	switch req.Type {
-	case events.Type_TASK_STATE:
+	case events.Type_STATE:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return transitionTaskState(tx, req.Id, req.GetState())
 		})
 
-	case events.Type_TASK_START_TIME:
+	case events.Type_START_TIME:
 		tl.StartTime = req.GetStartTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateTaskLogs(tx, req.Id, tl)
 		})
 
-	case events.Type_TASK_END_TIME:
+	case events.Type_END_TIME:
 		tl.EndTime = req.GetEndTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateTaskLogs(tx, req.Id, tl)
 		})
 
-	case events.Type_TASK_OUTPUTS:
+	case events.Type_OUTPUTS:
 		tl.Outputs = req.GetOutputs().Value
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateTaskLogs(tx, req.Id, tl)
 		})
 
-	case events.Type_TASK_METADATA:
+	case events.Type_METADATA:
 		tl.Metadata = req.GetMetadata().Value
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateTaskLogs(tx, req.Id, tl)
 		})
 
-	case events.Type_EXECUTOR_START_TIME:
+	case events.Type_START_TIME:
 		el.StartTime = req.GetStartTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
-	case events.Type_EXECUTOR_END_TIME:
+	case events.Type_END_TIME:
 		el.EndTime = req.GetEndTime()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
-	case events.Type_EXECUTOR_EXIT_CODE:
+	case events.Type_EXIT_CODE:
 		el.ExitCode = req.GetExitCode()
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorLogs(tx, fmt.Sprint(req.Id, req.Index), el)
 		})
 
-	case events.Type_EXECUTOR_STDOUT:
+	case events.Type_STDOUT:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorStdout(tx, fmt.Sprint(req.Id, req.Index), req.GetStdout())
 		})
 
-	case events.Type_EXECUTOR_STDERR:
+	case events.Type_STDERR:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			return updateExecutorStderr(tx, fmt.Sprint(req.Id, req.Index), req.GetStderr())
 		})
@@ -168,19 +152,19 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 		// Error when trying to switch out of a terminal state to a non-terminal one.
 		return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())
 
-	case target == Queued:
+	case target == tes.Queued:
 		return fmt.Errorf("Can't transition to Queued state")
 	}
 
 	switch target {
-	case Unknown, Paused:
+	case tes.Unknown, tes.Paused:
 		return fmt.Errorf("Unimplemented task state %s", target.String())
 
-	case Canceled, Complete, ExecutorError, SystemError:
+	case tes.Canceled, tes.Complete, tes.Error:
 		// Remove from queue
 		tx.Bucket(TasksQueued).Delete(idBytes)
 
-	case Running, Initializing:
+	case tes.Running, tes.Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
 			return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())
 		}
@@ -195,7 +179,6 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 }
 
 func updateTaskLogs(tx *bolt.Tx, id string, tl *tes.TaskLog) error {
-	tasklog := &tes.TaskLog{}
 
 	// Try to load existing task log
 	b := tx.Bucket(TasksLog).Get([]byte(id))

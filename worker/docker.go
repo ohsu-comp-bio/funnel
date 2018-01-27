@@ -23,7 +23,7 @@ type DockerCommand struct {
 	Stdin           io.Reader
 	Stdout          io.Writer
 	Stderr          io.Writer
-	Event           *events.ExecutorWriter
+	Event           *events.TaskWriter
 }
 
 // Run runs the Docker command and blocks until done.

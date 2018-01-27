@@ -13,20 +13,14 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 	var err error
 
 	switch req.Type {
-	case events.Type_TASK_CREATED:
+	case events.Type_CREATED:
 		task := req.GetTask()
-		task.Logs = []*tes.TaskLog{
-			{
-				Logs: []*tes.ExecutorLog{},
-			},
-		}
-
 		err := db.tasks.Insert(task)
 		if err != nil {
 			return fmt.Errorf("failed to write task to db: %v", err)
 		}
 
-	case events.Type_TASK_STATE:
+	case events.Type_STATE:
 		res, err := db.GetTask(ctx, &tes.GetTaskRequest{
 			Id:   req.Id,
 			View: tes.TaskView_MINIMAL,
@@ -41,74 +35,60 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		}
 		err = db.tasks.Update(bson.M{"id": req.Id}, bson.M{"$set": bson.M{"state": to}})
 
-	case events.Type_TASK_START_TIME:
+	case events.Type_START_TIME:
 		startTime := req.GetStartTime()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.starttime", req.Attempt): startTime}},
+			bson.M{"$set": bson.M{"starttime": startTime}},
 		)
 
-	case events.Type_TASK_END_TIME:
+	case events.Type_END_TIME:
 		endTime := req.GetEndTime()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.endtime", req.Attempt): endTime}},
+			bson.M{"$set": bson.M{"endtime": endTime}},
 		)
 
-	case events.Type_TASK_OUTPUTS:
+	case events.Type_OUTPUTS:
 		outputs := req.GetOutputs().Value
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.outputs", req.Attempt): outputs}},
+			bson.M{"$set": bson.M{"outputs": outputs}},
 		)
 
-	case events.Type_TASK_METADATA:
+	case events.Type_METADATA:
 		metadata := req.GetMetadata().Value
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.metadata", req.Attempt): metadata}},
+			bson.M{"$set": bson.M{"metadata": metadata}},
 		)
 
-	case events.Type_EXECUTOR_START_TIME:
-		startTime := req.GetStartTime()
-		err = db.tasks.Update(
-			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.starttime", req.Attempt, req.Index): startTime}},
-		)
-
-	case events.Type_EXECUTOR_END_TIME:
-		endTime := req.GetEndTime()
-		err = db.tasks.Update(
-			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.endtime", req.Attempt, req.Index): endTime}},
-		)
-
-	case events.Type_EXECUTOR_EXIT_CODE:
+	case events.Type_EXIT_CODE:
 		exitCode := req.GetExitCode()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.exitcode", req.Attempt, req.Index): exitCode}},
+			bson.M{"$set": bson.M{"exitcode": exitCode}},
 		)
 
-	case events.Type_EXECUTOR_STDOUT:
+	case events.Type_STDOUT:
 		stdout := req.GetStdout()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.stdout", req.Attempt, req.Index): stdout}},
+			bson.M{"$set": bson.M{"stdout": stdout}},
 		)
 
-	case events.Type_EXECUTOR_STDERR:
+	case events.Type_STDERR:
 		stderr := req.GetStderr()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$set": bson.M{fmt.Sprintf("logs.%v.logs.%v.stderr", req.Attempt, req.Index): stderr}},
+			bson.M{"$set": bson.M{"stderr": stderr}},
 		)
 
 	case events.Type_SYSTEM_LOG:
 		syslog := req.SysLogString()
 		err = db.tasks.Update(
 			bson.M{"id": req.Id},
-			bson.M{"$push": bson.M{fmt.Sprintf("logs.%v.systemlogs", req.Attempt): syslog}},
+			bson.M{"$push": bson.M{"systemlogs": syslog}},
 		)
 	}
 

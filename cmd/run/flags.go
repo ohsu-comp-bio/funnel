@@ -15,13 +15,6 @@ import (
 // If you're updating flags, you probably need to update that file.
 // *********************************************************************
 
-type executor struct {
-	cmd    string
-	stdin  string
-	stdout string
-	stderr string
-}
-
 // flagVals captures values from CLI flag parsing
 type flagVals struct {
 	// Top-level flag values. These are not allowed to be redefined
@@ -35,14 +28,13 @@ type flagVals struct {
 	exec         []string
 	sh           []string
 
-	// Internal tracking of executors. Not set by flags.
-	execs []executor
-
 	// Per-task flag values. These may be overridden by scattered tasks.
 	name string
 	// TODO all executors share the same container and workdir
 	//      but could possibly be separate.
 	workdir     string
+	cmd    string
+	stdin  string
 	container   string
 	description string
 	stdin       []string
@@ -58,7 +50,6 @@ type flagVals struct {
 	content     []string
 	environ     []string
 	tags        []string
-	volumes     []string
 	zones       []string
 	cpu         int
 	ram         float64
@@ -113,7 +104,6 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	// Other
 	f.StringVarP(&v.name, "name", "n", v.name, "")
 	f.StringVar(&v.description, "description", v.description, "")
-	f.StringSliceVar(&v.volumes, "vol", v.volumes, "")
 	f.StringSliceVar(&v.tags, "tag", v.tags, "")
 	f.StringSliceVarP(&v.environ, "env", "e", v.environ, "")
 
@@ -185,39 +175,6 @@ func parseTopLevelArgs(vals *flagVals, args []string) error {
 func parseTaskArgs(vals *flagVals, args []string) {
 	fl := newFlags(vals)
 	fl.Parse(args)
-	buildExecs(fl, vals, args)
-}
-
-// Visit flags to determine commands + stdin/out/err
-// and build that information into vals.execs
-func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
-	vals.execs = nil
-	var exec *executor
-	flags.ParseAll(args, func(f *pflag.Flag, value string) error {
-		switch f.Name {
-		case "sh", "exec":
-			if exec != nil {
-				// Append the current executor and start a new one.
-				vals.execs = append(vals.execs, *exec)
-			}
-			if f.Name == "sh" {
-				value = fmt.Sprintf("sh -c \"%s\"", value)
-			}
-			exec = &executor{
-				cmd: value,
-			}
-		case "stdout":
-			exec.stdout = value
-		case "stderr":
-			exec.stderr = value
-		case "stdin":
-			exec.stdin = value
-		}
-		return nil
-	})
-	if exec != nil {
-		vals.execs = append(vals.execs, *exec)
-	}
 }
 
 // Load extra arguments from "--extra", "--extra-file", and stdin

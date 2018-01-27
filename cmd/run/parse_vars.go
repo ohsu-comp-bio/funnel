@@ -47,60 +47,27 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 			Preemptible: vals.preemptible,
 		},
 		Tags: map[string]string{},
+    Image:   vals.container,
+    Command: cmd,
+    Workdir: vals.workdir,
+    Env:     environ,
+    Stdin:   stdin,
 	}
 
-	for _, vol := range vals.volumes {
-		if !strings.HasPrefix(vol, "/") {
-			panic(fmt.Errorf("volumes must be absolute paths: %s", vol))
-		}
-		task.Volumes = append(task.Volumes, vol)
-	}
+  // Split command string based on shell syntax.
+  cmd, _ := shellquote.Split(exec.cmd)
+  stdinPath := fmt.Sprintf("/opt/funnel/inputs/stdin-%d", i)
 
-	// Create executors
-	for i, exec := range vals.execs {
-		// Split command string based on shell syntax.
-		cmd, _ := shellquote.Split(exec.cmd)
-		stdinPath := fmt.Sprintf("/opt/funnel/inputs/stdin-%d", i)
-		stdoutPath := fmt.Sprintf("/opt/funnel/outputs/stdout-%d", i)
-		stderrPath := fmt.Sprintf("/opt/funnel/outputs/stderr-%d", i)
-
-		// Only set the stdin path if the --stdin flag was used.
-		var stdin string
-		if exec.stdin != "" {
-			stdin = stdinPath
-			task.Inputs = append(task.Inputs, &tes.Input{
-				Name: fmt.Sprintf("stdin-%d", i),
-				Url:  resolvePath(exec.stdin),
-				Path: stdinPath,
-			})
-		}
-
-		if exec.stdout != "" {
-			task.Outputs = append(task.Outputs, &tes.Output{
-				Name: fmt.Sprintf("stdout-%d", i),
-				Url:  resolvePath(exec.stdout),
-				Path: stdoutPath,
-			})
-		}
-
-		if exec.stderr != "" {
-			task.Outputs = append(task.Outputs, &tes.Output{
-				Name: fmt.Sprintf("stderr-%d", i),
-				Url:  resolvePath(exec.stderr),
-				Path: stderrPath,
-			})
-		}
-
-		task.Executors = append(task.Executors, &tes.Executor{
-			Image:   vals.container,
-			Command: cmd,
-			Workdir: vals.workdir,
-			Env:     environ,
-			Stdin:   stdin,
-			Stdout:  stdoutPath,
-			Stderr:  stderrPath,
-		})
-	}
+  // Only set the stdin path if the --stdin flag was used.
+  var stdin string
+  if exec.stdin != "" {
+    stdin = stdinPath
+    task.Inputs = append(task.Inputs, &tes.Input{
+      Name: fmt.Sprintf("stdin-%d", i),
+      Url:  resolvePath(exec.stdin),
+      Path: stdinPath,
+    })
+  }
 
 	// Helper to make sure variable keys are unique.
 	setenv := func(key, val string) {

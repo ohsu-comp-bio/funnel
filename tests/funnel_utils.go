@@ -468,3 +468,16 @@ func NewRPCConn(conf config.Config, opts ...grpc.DialOption) (*grpc.ClientConn, 
 
 	return conn, nil
 }
+
+// HelloWorld is a simple, valid task that is easy to reuse in tests.
+func HelloWorld() *tes.Task {
+	return &tes.Task{
+		Id: tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"echo", "hello world"},
+			},
+		},
+	}
+}

@@ -181,15 +181,15 @@ func (c *Client) WaitForTask(ctx context.Context, taskIDs ...string) error {
 		for _, id := range taskIDs {
 			r, err := c.GetTask(ctx, &tes.GetTaskRequest{
 				Id:   id,
-				View: tes.TaskView_MINIMAL,
+				View: tes.Minimal,
 			})
 			if err != nil {
 				return err
 			}
 			switch r.State {
-			case tes.State_COMPLETE:
+      case tes.Complete:
 				done = true
-			case tes.State_EXECUTOR_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
+      case tes.Error, tes.Canceled:
 				errMsg := fmt.Sprintf("Task %s exited with state %s", id, r.State.String())
 				return errors.New(errMsg)
 			default:

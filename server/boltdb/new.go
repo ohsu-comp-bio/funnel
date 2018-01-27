@@ -20,18 +20,8 @@ var TasksQueued = []byte("tasks-queued")
 // TaskState maps: task ID -> state string
 var TaskState = []byte("tasks-state")
 
-// TasksLog defines the name of a bucket which maps
-// task ID -> tes.TaskLog struct
-var TasksLog = []byte("tasks-log")
-
-// ExecutorLogs maps (task ID + executor index) -> tes.ExecutorLog struct
-var ExecutorLogs = []byte("executor-logs")
-
-// ExecutorStdout maps (task ID + executor index) -> tes.ExecutorLog.Stdout string
-var ExecutorStdout = []byte("executor-stdout")
-
-// ExecutorStderr maps (task ID + executor index) -> tes.ExecutorLog.Stderr string
-var ExecutorStderr = []byte("executor-stderr")
+var Stdout = []byte("stdout")
+var Stderr = []byte("stderr")
 
 // Nodes maps:
 // node ID -> pbs.Node struct
@@ -81,14 +71,11 @@ func (taskBolt *BoltDB) init() error {
 		if tx.Bucket(TasksLog) == nil {
 			tx.CreateBucket(TasksLog)
 		}
-		if tx.Bucket(ExecutorLogs) == nil {
-			tx.CreateBucket(ExecutorLogs)
+		if tx.Bucket(Stdout) == nil {
+			tx.CreateBucket(Stdout)
 		}
-		if tx.Bucket(ExecutorStdout) == nil {
-			tx.CreateBucket(ExecutorStdout)
-		}
-		if tx.Bucket(ExecutorStderr) == nil {
-			tx.CreateBucket(ExecutorStderr)
+		if tx.Bucket(Stderr) == nil {
+			tx.CreateBucket(Stderr)
 		}
 		if tx.Bucket(Nodes) == nil {
 			tx.CreateBucket(Nodes)

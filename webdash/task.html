@@ -31,6 +31,27 @@
           <span ng-class="task.state + '-state'">{{ task.state }}</span><button class="btn-cancel-simple" ng-click="cancelTask(task.id)" ng-hide="isDone(task)">Cancel</button>
         </td>
       </tr>
+      <tr>
+        <td>Command</td>
+        <td><code>{{ cmdStr(task.command) }}</code></td>
+      </tr>
+      <tr>
+        <td>Image</td>
+        <td>{{ task.image }}</td>
+      </tr>
+
+      <tr ng-show="task.exit_code">
+        <td>Exit Code</td>
+        <td>{{ task.exit_code }}</td>
+      </tr>
+      <tr ng-show="task.stdout">
+        <td>Stdout</td>
+        <td><pre class="logs-pre"><code>{{ task.stdout }}</code></pre></td>
+      </tr>
+      <tr ng-show="task.stderr">
+        <td>Stderr</td>
+        <td><pre class="logs-pre"><code>{{ task.stderr }}</code></pre></td>
+      </tr>
       <tr ng-show="resources(task)">
         <td>Resources</td>
         <td>{{ resources(task) }}</td>
@@ -39,13 +60,13 @@
         <td>Creation Time</td>
         <td>{{ task.creation_time | date:"medium" }}</td>
       </tr>
-      <tr ng-show="task.logs[0].start_time">
+      <tr ng-show="task.start_time">
         <td>Start Time</td>
-        <td>{{ task.logs[0].start_time | date:"medium" }}</td>
+        <td>{{ task.start_time | date:"medium" }}</td>
       </tr>
-      <tr ng-show="task.logs[0].end_time">
+      <tr ng-show="task.end_time">
         <td>End Time</td>
-        <td>{{ task.logs[0].end_time | date:"medium" }}</td>
+        <td>{{ task.end_time | date:"medium" }}</td>
       </tr>
     </table>
 
@@ -103,41 +124,7 @@
       </table>
     </div>
 
-    <h6>Executors</h6>
-    <table class="data-table executor-table"
-           ng-repeat="cmd in task.executors track by $index"
-           ng-init="logs = task.logs[0].logs[$index]">
 
-      <tr>
-        <td>Command</td>
-        <td><code>{{ cmdStr(cmd.command) }}</code></td>
-      </tr>
-      <tr>
-        <td>Image</td>
-        <td>{{ cmd.image }}</td>
-      </tr>
-
-      <tr ng-show="logs.exit_code != undefined">
-        <td>Exit Code</td>
-        <td>{{ logs.exit_code }}</td>
-      </tr>
-      <tr ng-show="logs.start_time">
-        <td>Start Time</td>
-        <td>{{ logs.start_time | date:"medium" }}</td>
-      </tr>
-      <tr ng-show="logs.end_time">
-        <td>End Time</td>
-        <td>{{ logs.end_time | date:"medium" }}</td>
-      </tr>
-      <tr ng-show="logs.stdout">
-        <td>Stdout</td>
-        <td><pre class="logs-pre"><code>{{ logs.stdout }}</code></pre></td>
-      </tr>
-      <tr ng-show="logs.stderr">
-        <td>Stderr</td>
-        <td><pre class="logs-pre"><code>{{ logs.stderr }}</code></pre></td>
-      </tr>
-    </table>
     
     <div ng-show="syslogs.length" class="syslogs-section">
       <h6>System Logs</h6>

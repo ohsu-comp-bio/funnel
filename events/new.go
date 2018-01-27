@@ -10,7 +10,7 @@ func NewTaskCreated(task *tes.Task) *Event {
 	return &Event{
 		Id:        task.Id,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_TASK_CREATED,
+		Type:      Type_CREATED,
 		Data: &Event_Task{
 			Task: task,
 		},
@@ -22,7 +22,7 @@ func NewState(taskID string, s tes.State) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_TASK_STATE,
+		Type:      Type_STATE,
 		Data: &Event_State{
 			State: s,
 		},
@@ -30,12 +30,11 @@ func NewState(taskID string, s tes.State) *Event {
 }
 
 // NewStartTime creates a task start time event.
-func NewStartTime(taskID string, attempt uint32, t time.Time) *Event {
+func NewStartTime(taskID string, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_TASK_START_TIME,
-		Attempt:   attempt,
+		Type:      Type_START_TIME,
 		Data: &Event_StartTime{
 			StartTime: t.Format(time.RFC3339Nano),
 		},
@@ -43,12 +42,11 @@ func NewStartTime(taskID string, attempt uint32, t time.Time) *Event {
 }
 
 // NewEndTime creates a task end time event.
-func NewEndTime(taskID string, attempt uint32, t time.Time) *Event {
+func NewEndTime(taskID string, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_TASK_END_TIME,
-		Attempt:   attempt,
+		Type:      Type_END_TIME,
 		Data: &Event_EndTime{
 			EndTime: t.Format(time.RFC3339Nano),
 		},
@@ -56,12 +54,11 @@ func NewEndTime(taskID string, attempt uint32, t time.Time) *Event {
 }
 
 // NewOutputs creates a task output file log event.
-func NewOutputs(taskID string, attempt uint32, f []*tes.OutputFileLog) *Event {
+func NewOutputs(taskID string, f []*tes.OutputFileLog) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_TASK_OUTPUTS,
-		Attempt:   attempt,
+		Type:      Type_OUTPUTS,
 		Data: &Event_Outputs{
 			Outputs: &Outputs{
 				Value: f,
@@ -71,12 +68,11 @@ func NewOutputs(taskID string, attempt uint32, f []*tes.OutputFileLog) *Event {
 }
 
 // NewMetadata creates a task metadata log event.
-func NewMetadata(taskID string, attempt uint32, m map[string]string) *Event {
+func NewMetadata(taskID string, m map[string]string) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_TASK_METADATA,
-		Attempt:   attempt,
+		Type:      Type_METADATA,
 		Data: &Event_Metadata{
 			Metadata: &Metadata{
 				Value: m,
@@ -87,13 +83,11 @@ func NewMetadata(taskID string, attempt uint32, m map[string]string) *Event {
 
 // NewExecutorStartTime creates an executor start time event
 // for the executor at the given index.
-func NewExecutorStartTime(taskID string, attempt uint32, index uint32, t time.Time) *Event {
+func NewExecutorStartTime(taskID string, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_EXECUTOR_START_TIME,
-		Attempt:   attempt,
-		Index:     index,
+		Type:      Type_START_TIME,
 		Data: &Event_StartTime{
 			StartTime: t.Format(time.RFC3339Nano),
 		},
@@ -102,13 +96,11 @@ func NewExecutorStartTime(taskID string, attempt uint32, index uint32, t time.Ti
 
 // NewExecutorEndTime creates an executor end time event.
 // for the executor at the given index.
-func NewExecutorEndTime(taskID string, attempt uint32, index uint32, t time.Time) *Event {
+func NewExecutorEndTime(taskID string, t time.Time) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_EXECUTOR_END_TIME,
-		Attempt:   attempt,
-		Index:     index,
+		Type:      Type_END_TIME,
 		Data: &Event_EndTime{
 			EndTime: t.Format(time.RFC3339Nano),
 		},
@@ -117,13 +109,11 @@ func NewExecutorEndTime(taskID string, attempt uint32, index uint32, t time.Time
 
 // NewExitCode creates an executor exit code event
 // for the executor at the given index.
-func NewExitCode(taskID string, attempt uint32, index uint32, x int32) *Event {
+func NewExitCode(taskID string, x int32) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_EXECUTOR_EXIT_CODE,
-		Attempt:   attempt,
-		Index:     index,
+		Type:      Type_EXIT_CODE,
 		Data: &Event_ExitCode{
 			ExitCode: x,
 		},
@@ -132,13 +122,11 @@ func NewExitCode(taskID string, attempt uint32, index uint32, x int32) *Event {
 
 // NewStdout creates an executor stdout chunk event
 // for the executor at the given index.
-func NewStdout(taskID string, attempt uint32, index uint32, s string) *Event {
+func NewStdout(taskID string, s string) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_EXECUTOR_STDOUT,
-		Attempt:   attempt,
-		Index:     index,
+		Type:      Type_STDOUT,
 		Data: &Event_Stdout{
 			Stdout: s,
 		},
@@ -147,13 +135,11 @@ func NewStdout(taskID string, attempt uint32, index uint32, s string) *Event {
 
 // NewStderr creates an executor stderr chunk event
 // for the executor at the given index.
-func NewStderr(taskID string, attempt uint32, index uint32, s string) *Event {
+func NewStderr(taskID string, s string) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
-		Type:      Type_EXECUTOR_STDERR,
-		Attempt:   attempt,
-		Index:     index,
+		Type:      Type_STDERR,
 		Data: &Event_Stderr{
 			Stderr: s,
 		},
@@ -161,13 +147,11 @@ func NewStderr(taskID string, attempt uint32, index uint32, s string) *Event {
 }
 
 // NewSystemLog creates an system log event.
-func NewSystemLog(taskID string, attempt uint32, index uint32, lvl string, msg string, fields map[string]string) *Event {
+func NewSystemLog(taskID string, lvl string, msg string, fields map[string]string) *Event {
 	return &Event{
 		Id:        taskID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Type:      Type_SYSTEM_LOG,
-		Attempt:   attempt,
-		Index:     index,
 		Data: &Event_SystemLog{
 			SystemLog: &SystemLog{
 				Msg:    msg,

@@ -63,14 +63,6 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 		return err
 	}
 
-	// Add all the volumes to the mapper
-	for _, vol := range task.Volumes {
-		err := mapper.AddTmpVolume(vol)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Add all the inputs to the mapper
 	for _, input := range task.Inputs {
 		err := mapper.AddInput(input)
@@ -180,28 +172,6 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 		return nil, oerr
 	}
 	return f, nil
-}
-
-// AddTmpVolume creates a directory on the host based on the declared path in
-// the container and adds it to mapper.Volumes.
-//
-// If the path can't be mapped, an error is returned.
-func (mapper *FileMapper) AddTmpVolume(mountPoint string) error {
-	hostPath, err := mapper.HostPath(mountPoint)
-	if err != nil {
-		return err
-	}
-
-	err = fsutil.EnsureDir(hostPath)
-	if err != nil {
-		return err
-	}
-
-	err = mapper.AddVolume(hostPath, mountPoint, false)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // AddInput adds an input to the mapped files for the given tes.Input.

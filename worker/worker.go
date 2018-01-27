@@ -44,7 +44,7 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	var task *tes.Task
 
 	// set up task specific utilities
-	event = events.NewTaskWriter(taskID, 0, r.EventWriter)
+	event = events.NewTaskWriter(taskID, r.EventWriter)
 	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, taskID))
 
 	event.Info("Version", version.LogFields()...)
@@ -66,20 +66,20 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 		case run.taskCanceled:
 			// The task was canceled.
 			event.Info("Canceled")
-			event.State(tes.State_CANCELED)
+			event.State(tes.Canceled)
 			runerr = fmt.Errorf("task canceled")
 		case run.syserr != nil:
 			// Something else failed
 			event.Error("System error", "error", run.syserr)
-			event.State(tes.State_SYSTEM_ERROR)
+			event.State(tes.Error)
 			runerr = run.syserr
 		case run.execerr != nil:
 			// One of the executors failed
 			event.Error("Exec error", "error", run.execerr)
-			event.State(tes.State_EXECUTOR_ERROR)
+			event.State(tes.Error)
 			runerr = run.execerr
 		default:
-			event.State(tes.State_COMPLETE)
+			event.State(tes.Complete)
 		}
 
 		// cleanup workdir
@@ -134,32 +134,30 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 
 	// Run steps
 	if run.ok() {
-		for i, d := range task.GetExecutors() {
-			s := &stepWorker{
-				Conf:  r.Conf,
-				Event: event.NewExecutorWriter(uint32(i)),
-				Command: &DockerCommand{
-					Image:         d.Image,
-					Command:       d.Command,
-					Env:           d.Env,
-					Volumes:       mapper.Volumes,
-					Workdir:       d.Workdir,
-					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
-					// TODO make RemoveContainer configurable
-					RemoveContainer: true,
-					Event:           event.NewExecutorWriter(uint32(i)),
-				},
-			}
+    cmd := &DockerCommand{
+      Image:         task.Image,
+      Command:       task.Command,
+      Env:           task.Env,
+      Volumes:       mapper.Volumes,
+      Workdir:       task.Workdir,
+      ContainerName: fmt.Sprintf("funnel-task-%s", task.Id),
+      // TODO make RemoveContainer configurable
+      RemoveContainer: true,
+      Event:           event,
+    }
+    go func() {
+      <-ctx.Done()
+      go cmd.Stop()
+    }()
 
-			// Opens stdin/out/err files and updates those fields on "cmd".
-			if run.ok() {
-				run.syserr = r.openStepLogs(mapper, s, d)
-			}
+    // Opens stdin/out/err files and updates those fields on "cmd".
+    run.syserr = r.openStepLogs(ctx, event, mapper, cmd, task)
 
-			if run.ok() {
-				run.execerr = s.Run(ctx)
-			}
-		}
+    if run.ok() {
+      res := cmd.Run()
+      event.ExitCode(getExitCode(res))
+      run.execerr = res
+    }
 	}
 
 	// Upload outputs
@@ -241,36 +239,19 @@ func (r *DefaultWorker) fixLinks(mapper *FileMapper, basepath string) {
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
-func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
+func (r *DefaultWorker) openStepLogs(ctx context.Context, event *events.TaskWriter, mapper *FileMapper, cmd *DockerCommand, t *tes.Task) error {
 
 	// Find the path for task stdin
 	var err error
-	if d.Stdin != "" {
-		s.Command.Stdin, err = mapper.OpenHostFile(d.Stdin)
+	if t.Stdin != "" {
+    cmd.Stdin, err = mapper.OpenHostFile(t.Stdin)
 		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
+			event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
 
-	// Create file for task stdout
-	if d.Stdout != "" {
-		s.Command.Stdout, err = mapper.CreateHostFile(d.Stdout)
-		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
-			return err
-		}
-	}
-
-	// Create file for task stderr
-	if d.Stderr != "" {
-		s.Command.Stderr, err = mapper.CreateHostFile(d.Stderr)
-		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
-			return err
-		}
-	}
-
+  cmd.Stdout, cmd.Stderr = event.TailLogs(ctx, r.Conf.BufferSize, r.Conf.UpdateRate)
 	return nil
 }
 

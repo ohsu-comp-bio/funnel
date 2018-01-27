@@ -30,7 +30,7 @@ func NewKafkaWriter(ctx context.Context, conf config.Kafka) (*KafkaWriter, error
 func (k *KafkaWriter) WriteEvent(ctx context.Context, ev *Event) error {
 
 	switch ev.Type {
-	case Type_EXECUTOR_STDOUT, Type_EXECUTOR_STDERR, Type_SYSTEM_LOG:
+	case Type_STDOUT, Type_STDERR, Type_SYSTEM_LOG:
 		return nil
 	}
 

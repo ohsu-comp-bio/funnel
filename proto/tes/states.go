@@ -9,8 +9,7 @@ const (
 	Running       = State_RUNNING
 	Paused        = State_PAUSED
 	Complete      = State_COMPLETE
-	ExecutorError = State_EXECUTOR_ERROR
-	SystemError   = State_SYSTEM_ERROR
+	Error         = State_ERROR
 	Canceled      = State_CANCELED
 	Initializing  = State_INITIALIZING
 )
@@ -48,7 +47,7 @@ func ValidateTransition(from, to State) error {
 		switch to {
 		case Unknown, Queued:
 			return transitionError(from, to)
-		case Running, ExecutorError, SystemError, Canceled:
+		case Running, Error, Canceled:
 			return nil
 		}
 
@@ -57,11 +56,11 @@ func ValidateTransition(from, to State) error {
 		switch to {
 		case Unknown, Queued:
 			return transitionError(from, to)
-		case Complete, ExecutorError, SystemError, Canceled:
+		case Complete, Error, Canceled:
 			return nil
 		}
 
-	case ExecutorError, SystemError, Canceled, Complete:
+	case Error, Canceled, Complete:
 		// May not transition out of terminal state.
 		return transitionError(from, to)
 

@@ -86,11 +86,9 @@ type task struct {
 	Volumes           []string   `datastore:",noindex,omitempty"`
 	Tags              []kv
 	Resources         *resources `datastore:",noindex,omitempty"`
-	TaskLogs          []tasklog  `datastore:",noindex,omitempty"`
-}
-
-type tasklog struct {
-	*tes.TaskLog
+	Image, Workdir, Stdin, Stdout, Stderr string   `datastore:",noindex,omitempty"`
+	Command                               []string `datastore:",noindex,omitempty"`
+	Env                                   []kv     `datastore:",noindex,omitempty"`
 	Metadata []kv `datastore:",noindex,omitempty"`
 }
 
@@ -99,12 +97,6 @@ type resources struct {
 	RamGb, DiskGb float64  `datastore:",noindex,omitempty"` // nolint
 	Preemptible   bool     `datastore:",noindex,omitempty"`
 	Zones         []string `datastore:",noindex,omitempty"`
-}
-
-type executor struct {
-	Image, Workdir, Stdin, Stdout, Stderr string   `datastore:",noindex,omitempty"`
-	Command                               []string `datastore:",noindex,omitempty"`
-	Env                                   []kv     `datastore:",noindex,omitempty"`
 }
 
 type param struct {
@@ -121,6 +113,11 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 		Description:  t.Description,
 		Volumes:      t.Volumes,
 		Tags:         marshalMap(t.Tags),
+    Image:   e.Image,
+    Workdir: e.Workdir,
+    Stdin:   e.Stdin,
+    Command: e.Command,
+    Env:     marshalMap(e.Env),
 	}
 	if t.Resources != nil {
 		z.Resources = &resources{
@@ -130,17 +127,6 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 			Preemptible: t.Resources.Preemptible,
 			Zones:       t.Resources.Zones,
 		}
-	}
-	for _, e := range t.Executors {
-		z.Executors = append(z.Executors, executor{
-			Image:   e.Image,
-			Workdir: e.Workdir,
-			Stdin:   e.Stdin,
-			Stdout:  e.Stdout,
-			Stderr:  e.Stderr,
-			Command: e.Command,
-			Env:     marshalMap(e.Env),
-		})
 	}
 	for _, i := range t.Inputs {
 		z.Inputs = append(z.Inputs, param{
@@ -200,6 +186,12 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
 	z.Description = c.Description
 	z.Volumes = c.Volumes
 	z.Tags = unmarshalMap(c.Tags)
+  z.Image =   e.Image
+  z.Workdir = e.Workdir
+  z.Stdin =   e.Stdin
+  z.Command = e.Command
+  z.Env =     unmarshalMap(c.Env)
+
 	if c.Resources != nil {
 		z.Resources = &tes.Resources{
 			CpuCores:    uint32(c.Resources.CpuCores),
@@ -211,13 +203,6 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
 	}
 	for _, e := range c.Executors {
 		z.Executors = append(z.Executors, &tes.Executor{
-			Image:   e.Image,
-			Workdir: e.Workdir,
-			Stdin:   e.Stdin,
-			Stdout:  e.Stdout,
-			Stderr:  e.Stderr,
-			Command: e.Command,
-			Env:     unmarshalMap(e.Env),
 		})
 	}
 	for _, i := range c.Inputs {

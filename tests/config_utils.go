@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io"
 	"io/ioutil"
@@ -138,14 +137,4 @@ func LogConfig() logger.Config {
 	conf.TextFormat.ForceColors = true
 	conf.TextFormat.Indent = "        "
 	return conf
-}
-
-// HelloWorld is a simple, valid task that is easy to reuse in tests.
-var HelloWorld = &tes.Task{
-	Executors: []*tes.Executor{
-		{
-			Image:   "alpine",
-			Command: []string{"echo", "hello world"},
-		},
-	},
 }

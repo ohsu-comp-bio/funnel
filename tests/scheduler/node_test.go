@@ -4,6 +4,7 @@ import (
 	"context"
 	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -156,5 +157,94 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 	task := srv.Wait(id)
 	if task.State != tes.State_SYSTEM_ERROR {
 		t.Fatal("unexpected task state")
+	}
+}
+
+// Tests a bug where tasks and nodes were not being correctly cleaned up
+// when the node crashed and was restarted.
+func TestNodeCleanup(t *testing.T) {
+	log := logger.NewLogger("node", tests.LogConfig())
+	ctx := context.Background()
+
+	conf := tests.DefaultConfig()
+	conf.Compute = "manual"
+	srv := tests.NewFunnel(conf)
+
+	e := srv.Server.Events
+
+	t1 := tests.HelloWorld()
+	srv.Server.Tasks.CreateTask(ctx, t1)
+	e.WriteEvent(ctx, events.NewState(t1.Id, tes.Complete))
+
+	t2 := tests.HelloWorld()
+	srv.Server.Tasks.CreateTask(ctx, t2)
+	e.WriteEvent(ctx, events.NewState(t2.Id, tes.Running))
+
+	t3 := tests.HelloWorld()
+	srv.Server.Tasks.CreateTask(ctx, t3)
+	e.WriteEvent(ctx, events.NewState(t3.Id, tes.SystemError))
+
+	t4 := tests.HelloWorld()
+	srv.Server.Tasks.CreateTask(ctx, t4)
+	e.WriteEvent(ctx, events.NewState(t4.Id, tes.Running))
+
+	t5 := tests.HelloWorld()
+	srv.Server.Tasks.CreateTask(ctx, t5)
+	e.WriteEvent(ctx, events.NewState(t5.Id, tes.Running))
+
+	srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+		Id:      "test-gone-node-cleanup-restart-1",
+		State:   pbs.NodeState_GONE,
+		TaskIds: []string{t1.Id, t2.Id, t3.Id},
+	})
+
+	srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+		Id:      "test-gone-node-cleanup-restart-2",
+		State:   pbs.NodeState_GONE,
+		TaskIds: []string{t4.Id},
+	})
+
+	srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+		Id:      "test-gone-node-cleanup-restart-3",
+		State:   pbs.NodeState_ALIVE,
+		TaskIds: []string{t5.Id},
+	})
+
+	ns, _ := srv.Scheduler.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	log.Info("nodes before", ns)
+
+	err := srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	ns, _ = srv.Scheduler.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	if len(ns.Nodes) != 1 {
+		t.Error("expected 1 node")
+	}
+
+	if ns.Nodes[0].Id != "test-gone-node-cleanup-restart-3" {
+		t.Error("unexpected node")
+	}
+
+	ts, _ := srv.Server.Tasks.ListTasks(ctx, &tes.ListTasksRequest{})
+	if len(ts.Tasks) != 5 {
+		log.Info("tasks", ts)
+		t.Error("expected 5 tasks")
+	}
+
+	expected := []tes.State{
+		tes.Running,
+		tes.SystemError,
+		tes.SystemError,
+		tes.SystemError,
+		tes.Complete,
+	}
+
+	for i, task := range ts.Tasks {
+		e := expected[i]
+		if task.State != e {
+			t.Error("expected state for task", i, task.State, e)
+		}
 	}
 }

@@ -176,9 +176,6 @@ webdash-prep:
 	@cp webdash/*.html build/webdash/
 	@cp webdash/favicon.ico build/webdash/
 
-webdash-debug: webdash-prep
-	@go-bindata -debug -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
-
 # Build the web dashboard
 webdash: webdash-prep
 	@go-bindata -pkg webdash -prefix "build/" -o webdash/web.go build/webdash

@@ -5,10 +5,12 @@
 /pkg
 test_tmp
 funnel-work-dir
-*.sw[op]
+*.sw[opn]
 node_modules
 bower_components
 .sass-cache/
 /build
 /website/public
 storage/_test_download
+/webdash/bundle.js
+/webdash/style.css

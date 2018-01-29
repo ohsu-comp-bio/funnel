@@ -68,19 +68,20 @@ prune_deps:
 # Automatially update code formatting
 tidy:
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
+	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs goimports -w
 
 # Run code style and other checks
 lint:
 	@go get github.com/alecthomas/gometalinter
 	@gometalinter --install > /dev/null
 	@# TODO enable golint on funnel/cmd/termdash
-	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=misspell \
+	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
 		--vendor \
 		-e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
 		-s "cmd/termdash" \
 		-e 'webdash/web.go' -s 'funnel-work-dir' \
 		./...
-	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=misspell --vendor ./cmd/termdash/...
+	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell --vendor ./cmd/termdash/...
 
 # Run all tests
 test:
@@ -250,14 +251,14 @@ docker: cross-compile
 	cp build/bin/funnel-linux-amd64 build/docker/funnel
 	cp docker/* build/docker/
 	cd build/docker/ && docker build -t ohsucompbio/funnel .
-	
+
 test-datastore-travis:
 	@wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-183.0.0-linux-x86_64.tar.gz
 	@tar xzvf google-cloud-sdk-183.0.0-linux-x86_64.tar.gz 2> /dev/null
 	@./google-cloud-sdk/bin/gcloud --quiet beta emulators datastore start &
 	@sleep 60
 	make test-datastore
-	
+
 # Remove build/development files.
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools

@@ -3,8 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 func TestRetrier(t *testing.T) {

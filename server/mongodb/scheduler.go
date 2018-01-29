@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"fmt"
+
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"

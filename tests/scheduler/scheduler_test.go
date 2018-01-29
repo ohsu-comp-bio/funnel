@@ -1,10 +1,11 @@
 package scheduler
 
 import (
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/tests"
 	"testing"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
 func TestReadQueue(t *testing.T) {

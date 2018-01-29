@@ -2,11 +2,12 @@ package run
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/spf13/pflag"
-	"io/ioutil"
-	"os"
 )
 
 // *********************************************************************

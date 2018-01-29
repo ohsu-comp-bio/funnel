@@ -2,6 +2,7 @@ package events
 
 import (
 	"bytes"
+
 	"github.com/golang/protobuf/jsonpb"
 )
 

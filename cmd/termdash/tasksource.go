@@ -1,11 +1,12 @@
 package termdash
 
 import (
+	"sort"
+	"sync"
+
 	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
-	"sort"
-	"sync"
 )
 
 type TesTaskSource interface {

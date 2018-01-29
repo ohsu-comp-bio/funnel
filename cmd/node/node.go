@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+
 	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"

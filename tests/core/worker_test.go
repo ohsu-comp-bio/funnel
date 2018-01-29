@@ -2,6 +2,11 @@ package core
 
 import (
 	"context"
+	"os"
+	"path"
+	"testing"
+	"time"
+
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -9,10 +14,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	gcontext "golang.org/x/net/context"
-	"os"
-	"path"
-	"testing"
-	"time"
 )
 
 func TestWorkerRun(t *testing.T) {

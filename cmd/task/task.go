@@ -2,12 +2,13 @@ package task
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/util"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/ohsu-comp-bio/funnel/cmd/util"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/spf13/cobra"
 )
 
 // NewCommand returns the "task" subcommands.

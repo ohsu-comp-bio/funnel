@@ -2,11 +2,12 @@ package htcondor
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"os"
-	"testing"
 )
 
 var fun *tests.Funnel

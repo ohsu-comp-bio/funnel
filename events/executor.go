@@ -2,10 +2,11 @@ package events
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/util/ring"
-	"golang.org/x/time/rate"
 	"io"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/util/ring"
+	"golang.org/x/time/rate"
 )
 
 // ExecutorGenerator is a type that generates Events for an Executor

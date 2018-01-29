@@ -3,17 +3,18 @@ package logger
 import (
 	"bytes"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	"github.com/kr/pretty"
-	"github.com/logrusorgru/aurora"
 	"io"
 	"reflect"
 	"runtime"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/kr/pretty"
+	"github.com/logrusorgru/aurora"
 )
 
 var baseTimestamp = time.Now()

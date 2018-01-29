@@ -2,11 +2,12 @@ package node
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
 func TestPersistentPreRun(t *testing.T) {

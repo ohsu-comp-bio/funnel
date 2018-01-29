@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"

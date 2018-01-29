@@ -2,8 +2,9 @@ package logger
 
 import (
 	"fmt"
-	"google.golang.org/grpc/grpclog"
 	"os"
+
+	"google.golang.org/grpc/grpclog"
 )
 
 func init() {

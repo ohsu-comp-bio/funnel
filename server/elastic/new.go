@@ -2,9 +2,10 @@ package elastic
 
 import (
 	"context"
+	"time"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	elastic "gopkg.in/olivere/elastic.v5"
-	"time"
 )
 
 var minimal = elastic.NewFetchSourceContext(true).Include("id", "state")

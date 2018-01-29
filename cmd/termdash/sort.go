@@ -5,8 +5,9 @@ package termdash
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
 	"regexp"
+
+	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
 )
 
 type sortMethod func(c1, c2 *TaskWidget) bool

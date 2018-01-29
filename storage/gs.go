@@ -5,17 +5,18 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/storage/v1"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/storage/v1"
 )
 
 // The gs url protocol

@@ -2,13 +2,14 @@ package storage
 
 import (
 	"context"
+	"net/http"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"google.golang.org/api/storage/v1"
-	"net/http"
-	"testing"
 )
 
 func TestGenericS3AnonymousGet(t *testing.T) {

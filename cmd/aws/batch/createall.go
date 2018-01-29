@@ -2,6 +2,7 @@ package batch
 
 import (
 	"fmt"
+
 	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"

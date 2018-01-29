@@ -2,12 +2,13 @@ package perf
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/tests"
-	"google.golang.org/grpc"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/tests"
+	"google.golang.org/grpc"
 )
 
 func BenchmarkRunSerialNoNodes(b *testing.B) {

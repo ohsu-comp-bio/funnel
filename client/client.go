@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
-	"golang.org/x/net/context"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
+	"golang.org/x/net/context"
 )
 
 // NewClient returns a new HTTP client for accessing

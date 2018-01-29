@@ -3,9 +3,10 @@ package events
 import (
 	"context"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"regexp"
 	"strings"
+
+	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 // SystemLogGenerator is a type that emulates the logger interface

@@ -2,14 +2,15 @@ package worker
 
 import (
 	"fmt"
-	proto "github.com/golang/protobuf/proto"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	proto "github.com/golang/protobuf/proto"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
 // FileMapper is responsible for mapping paths into a working directory on the

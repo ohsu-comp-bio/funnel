@@ -1,9 +1,10 @@
 package server
 
 import (
-	"github.com/ohsu-comp-bio/funnel/tests"
 	"net/http"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
 func TestListNoCacheHeader(t *testing.T) {

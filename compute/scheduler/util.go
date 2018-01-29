@@ -2,13 +2,14 @@ package scheduler
 
 import (
 	"fmt"
+	"math"
+
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
-	"math"
 )
 
 // GenNodeID returns a UUID string.

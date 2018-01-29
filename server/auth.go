@@ -2,11 +2,12 @@ package server
 
 import (
 	"encoding/base64"
+	"strings"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"strings"
 )
 
 // Return a new interceptor function that authorizes RPCs

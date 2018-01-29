@@ -2,6 +2,7 @@ package noop
 
 import (
 	"context"
+
 	"github.com/ohsu-comp-bio/funnel/events"
 )
 

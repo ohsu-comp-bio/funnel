@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"fmt"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	mgo "gopkg.in/mgo.v2"
 )

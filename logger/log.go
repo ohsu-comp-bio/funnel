@@ -2,13 +2,14 @@ package logger
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/logrusorgru/aurora"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/logrusorgru/aurora"
+	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 // Log levels

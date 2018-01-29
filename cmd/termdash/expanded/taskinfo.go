@@ -2,9 +2,10 @@ package expanded
 
 import (
 	"fmt"
+	"strings"
+
 	ui "github.com/gizak/termui"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"strings"
 )
 
 var displayInfo = []string{"id", "state", "name", "description", "tags"}

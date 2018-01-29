@@ -1,12 +1,13 @@
 package core
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/andreyvit/diff"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"google.golang.org/grpc"
-	"strings"
-	"testing"
 )
 
 func TestTaskNoExecutorsValidationError(t *testing.T) {

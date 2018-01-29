@@ -1,9 +1,10 @@
 package logger
 
 import (
+	"testing"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"testing"
 )
 
 func TestFormatNilProtoField(t *testing.T) {

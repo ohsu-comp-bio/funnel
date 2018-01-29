@@ -2,10 +2,11 @@ package worker
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/events"
 	"io"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 )
 
 type stepWorker struct {

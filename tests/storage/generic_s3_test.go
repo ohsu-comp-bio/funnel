@@ -2,14 +2,15 @@ package storage
 
 import (
 	"context"
+	"io/ioutil"
+	"strings"
+	"testing"
+
 	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"io/ioutil"
-	"strings"
-	"testing"
 )
 
 func TestGenericS3Storage(t *testing.T) {

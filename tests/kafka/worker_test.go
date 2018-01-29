@@ -2,14 +2,15 @@ package kafka
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"os"
-	"testing"
 )
 
 var log = logger.NewLogger("kafka-worker-test", logger.DefaultConfig())

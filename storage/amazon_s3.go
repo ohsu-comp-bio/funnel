@@ -3,6 +3,11 @@ package storage
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -11,10 +16,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
 )
 
 var endpointRE = regexp.MustCompile("^(http[s]?://)?(.[^/]+)(.+)?$")

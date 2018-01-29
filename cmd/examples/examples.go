@@ -2,11 +2,12 @@ package examples
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	ex "github.com/ohsu-comp-bio/funnel/examples"
 	"github.com/spf13/cobra"
-	"path/filepath"
-	"strings"
 )
 
 // Cmd represents the examples command

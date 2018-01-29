@@ -2,9 +2,10 @@ package storage
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/config"
 	"testing"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/config"
 )
 
 func TestHTTPBackend(t *testing.T) {

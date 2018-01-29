@@ -3,13 +3,14 @@ package storage
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // GenericS3Backend provides access to an S3 object store.

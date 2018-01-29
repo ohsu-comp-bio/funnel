@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/ohsu-comp-bio/funnel/cmd"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"os"
 )
 
 func main() {

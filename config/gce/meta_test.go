@@ -1,12 +1,13 @@
 package gce
 
 import (
-	"github.com/ohsu-comp-bio/funnel/config"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/config"
 )
 
 func loadTestData(name string) []byte {

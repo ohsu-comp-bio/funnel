@@ -3,13 +3,14 @@ package worker
 import (
 	"context"
 	"fmt"
+	"syscall"
+	"time"
+
 	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
-	"syscall"
-	"time"
 )
 
 // NewCommand returns the worker command

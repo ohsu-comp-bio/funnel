@@ -2,6 +2,7 @@ package boltdb
 
 import (
 	"fmt"
+
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"

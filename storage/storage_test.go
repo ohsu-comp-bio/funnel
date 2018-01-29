@@ -1,11 +1,12 @@
 package storage
 
 import (
-	"github.com/ohsu-comp-bio/funnel/config"
 	"io/ioutil"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/config"
 )
 
 func TestStorageWithConfig(t *testing.T) {

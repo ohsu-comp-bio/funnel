@@ -163,9 +163,6 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 
 		for ; k != nil && i < pageSize; k, _ = c.Prev() {
 			task, _ := getTaskView(tx, string(k), req.View)
-			if req.State != tes.Unknown && req.State != task.State {
-				continue
-			}
 			tasks = append(tasks, task)
 			i++
 		}

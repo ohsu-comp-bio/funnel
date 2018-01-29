@@ -440,11 +440,49 @@ message ListTasksRequest {
   // See TaskView below.
   TaskView view = 5;
 
+  // Filters
+  // =======
+  // Filters are combined together using logical AND.
+  // Logical OR and NOT are not supported.
+
   // OPTIONAL
   //
   // Filter tasks by state.
   // Filtering by the UNKNOWN state is not allowed.
   State state = 6;
+
+  // OPTIONAL
+  // 
+  // Filter tasks based on the Task.tags field.
+  // A tag filter matches a Task tag if both the key and value are exact matches.
+  // A "*" character allows matching any string. This does NOT allow partial string matching.
+  //
+  //   Filter                            Tags                          Match?
+  //   ----------------------------------------------------------------------
+  //   {"foo": "bar"}                    {"foo": "bar"}                Yes
+
+  //   {"foo": ""}                       {"foo": ""}                   Yes
+  //   {"foo": ""}                       {"foo": "bar"}                No
+
+  //   {"foo": "bar", "baz": "bat"}      {"foo": "bar", "baz": "bat"}  Yes
+  //   {"foo": "bar"}                    {"foo": "bar", "baz": "bat"}  Yes
+
+  //   {"foo": "*"}                      {"foo": "bar"}                Yes
+  //   {"*": "bar"}                      {"foo": "bar"}                Yes
+
+  //   {"*": "*"}                        {"foo": "bar"}                Match everything?
+  //   {"*": ""}                         {"foo": "bar"}                ?
+  //   {"": "*"}                         {"foo": "bar"}                Invalid?
+  //   {"": ""}                          {"foo": "bar"}                Invalid?
+  //   {"": "bar"}                       {"foo": "bar"}                Invalid?
+
+  //   {"foo": "*ar"}                    {"foo": "bar"}                No (not a partial match)
+  //   {"fo*": "bar"}                    {"foo": "bar"}                No (not a partial match)
+  //   {"foo": "ba"}                     {"foo": "bar"}                No
+  //   {"foo": "bar", "baz": "bat"}      {"foo": "bar"}                No
+  //   {"foo": "bar", "baz": ""}         {"foo": "bar"}                No
+  //   {"foo": "bar", "baz": "*"}        {"foo": "bar"}                No
+  map<string,string> tags = 7;
 }
 
 // TaskView affects the fields returned by the ListTasks endpoint.
@@ -550,6 +588,9 @@ service TaskService {
 
   // List tasks.
   // TaskView is requested as such: "v1/tasks?view=BASIC"
+  // Filter examples:
+  // "v1/tasks?view=MINIMAL&tags[workflowID]=e59fb57a-eb87-4c02-b7e2-562b586b5db3"
+  // "v1/tasks?state=RUNNING"
   rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
     option (google.api.http) = {
       get: "/v1/tasks"

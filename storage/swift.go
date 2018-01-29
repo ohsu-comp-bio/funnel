@@ -3,16 +3,17 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/alecthomas/units"
-	"github.com/ncw/swift"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/alecthomas/units"
+	"github.com/ncw/swift"
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
 const swiftProtocol = "swift://"

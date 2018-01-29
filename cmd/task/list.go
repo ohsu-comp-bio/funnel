@@ -2,10 +2,11 @@ package task
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
-	"io"
 )
 
 // List runs the "task list" CLI command, which connects to the server,

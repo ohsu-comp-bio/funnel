@@ -3,14 +3,15 @@ package batch
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
-	"regexp"
-	"time"
 )
 
 // NewBackend returns a new local Backend instance.

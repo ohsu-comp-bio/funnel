@@ -3,12 +3,13 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
 	"io"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
 )
 
 // DockerCommand is responsible for configuring and running a docker container.

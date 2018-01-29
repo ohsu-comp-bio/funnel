@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/ohsu-comp-bio/funnel/compute/batch"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
@@ -22,7 +24,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
-	"strings"
 )
 
 // Run runs the "server run" command.

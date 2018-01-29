@@ -1,8 +1,9 @@
 package util
 
 import (
-	"github.com/ohsu-comp-bio/funnel/config"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/config"
 )
 
 func TestMergeConfigFileWithFlags(t *testing.T) {

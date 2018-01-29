@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
+	"testing"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"testing"
 )
 
 func TestPersistentPreRun(t *testing.T) {

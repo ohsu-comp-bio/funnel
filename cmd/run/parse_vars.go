@@ -3,12 +3,13 @@ package run
 import (
 	"errors"
 	"fmt"
-	"github.com/kballard/go-shellquote"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/kballard/go-shellquote"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 // ErrKeyFmt describes an error in input/output/env/tag flag formatting

@@ -1,10 +1,11 @@
 package run
 
 import (
-	"github.com/go-test/deep"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"os"
 	"testing"
+
+	"github.com/go-test/deep"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 func TestParse(t *testing.T) {

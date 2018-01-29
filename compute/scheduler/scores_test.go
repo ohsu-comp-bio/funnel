@@ -1,10 +1,11 @@
 package scheduler
 
 import (
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"runtime/debug"
 	"testing"
+
+	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 func TestDefaultScoresEmptyTask(t *testing.T) {

@@ -3,6 +3,7 @@ package elastic
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"

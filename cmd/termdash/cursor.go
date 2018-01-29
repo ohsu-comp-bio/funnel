@@ -5,8 +5,9 @@ package termdash
 
 import (
 	"fmt"
-	ui "github.com/gizak/termui"
 	"math"
+
+	ui "github.com/gizak/termui"
 )
 
 type GridCursor struct {

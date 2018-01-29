@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -14,6 +11,10 @@ import (
 	"path"
 	"testing"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
 var configFile string

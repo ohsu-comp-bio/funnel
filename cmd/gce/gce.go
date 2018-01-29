@@ -3,6 +3,9 @@ package gce
 import (
 	"context"
 	"fmt"
+	"syscall"
+	"time"
+
 	"github.com/ohsu-comp-bio/funnel/cmd/node"
 	"github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -10,8 +13,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/spf13/cobra"
-	"syscall"
-	"time"
 )
 
 // Cmd represents the 'funnel gce" CLI command set.

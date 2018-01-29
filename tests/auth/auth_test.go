@@ -2,12 +2,13 @@ package auth
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/tests"
-	util "github.com/ohsu-comp-bio/funnel/util/rpc"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tests"
+	util "github.com/ohsu-comp-bio/funnel/util/rpc"
 )
 
 var extask = &tes.Task{

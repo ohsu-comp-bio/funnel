@@ -2,6 +2,10 @@ package storage
 
 import (
 	"context"
+	"io/ioutil"
+	"strings"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -9,9 +13,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
-	"io/ioutil"
-	"strings"
-	"testing"
 )
 
 func TestAmazonS3Storage(t *testing.T) {

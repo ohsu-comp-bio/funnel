@@ -2,13 +2,14 @@ package scheduler
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
-	"time"
 )
 
 // TaskQueue describes the interface the scheduler uses to find tasks that need scheduling.

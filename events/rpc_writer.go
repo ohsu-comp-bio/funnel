@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	util "github.com/ohsu-comp-bio/funnel/util/rpc"
 	"google.golang.org/grpc"

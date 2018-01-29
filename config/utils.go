@@ -3,12 +3,13 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/ghodss/yaml"
 )
 
 // ToYaml formats the configuration into YAML and returns the bytes.

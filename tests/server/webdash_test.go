@@ -1,11 +1,12 @@
 package server
 
 import (
-	"github.com/ohsu-comp-bio/funnel/tests"
 	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
 func TestWebdash(t *testing.T) {

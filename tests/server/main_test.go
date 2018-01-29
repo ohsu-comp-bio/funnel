@@ -1,10 +1,11 @@
 package server
 
 import (
-	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/tests"
 	"os"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
 var fun *tests.Funnel

@@ -1,13 +1,14 @@
 package manual
 
 import (
+	"testing"
+
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	schedmock "github.com/ohsu-comp-bio/funnel/compute/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	. "github.com/stretchr/testify/mock"
-	"testing"
 )
 
 func simpleNode() *pbs.Node {

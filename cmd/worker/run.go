@@ -3,6 +3,8 @@ package worker
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -13,7 +15,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/worker"
-	"strings"
 )
 
 // Run runs the "worker run" command.

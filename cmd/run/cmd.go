@@ -2,11 +2,12 @@ package run
 
 import (
 	"bufio"
+	"os"
+
 	"github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // *********************************************************************

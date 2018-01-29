@@ -2,6 +2,9 @@ package scheduler
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -9,8 +12,6 @@ import (
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"testing"
-	"time"
 )
 
 // When the node's context is canceled (e.g. because the process

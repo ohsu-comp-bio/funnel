@@ -2,13 +2,14 @@ package node
 
 import (
 	"context"
+	"syscall"
+	"time"
+
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"syscall"
-	"time"
 )
 
 // Run runs a node with the given config, blocking until the node exits.

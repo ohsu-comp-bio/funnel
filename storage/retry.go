@@ -2,9 +2,10 @@ package storage
 
 import (
 	"context"
+	"time"
+
 	"github.com/cenkalti/backoff"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"time"
 )
 
 type retrier struct {

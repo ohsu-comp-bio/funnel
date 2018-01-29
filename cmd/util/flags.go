@@ -1,9 +1,10 @@
 package util
 
 import (
+	"strings"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/spf13/pflag"
-	"strings"
 )
 
 // ServerFlags returns a new flag set for configuring a Funnel server

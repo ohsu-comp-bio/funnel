@@ -2,6 +2,9 @@ package local
 
 import (
 	"context"
+	"syscall"
+	"time"
+
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -9,8 +12,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
-	"syscall"
-	"time"
 )
 
 // NewBackend returns a new local Backend instance.

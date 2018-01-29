@@ -2,12 +2,13 @@ package task
 
 import (
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
-	"io"
-	"os"
 )
 
 // Create runs the "task create" CLI command, connecting to the server,

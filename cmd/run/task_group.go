@@ -2,10 +2,11 @@ package run
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/ohsu-comp-bio/funnel/client"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
-	"sync"
 )
 
 type taskGroup struct {

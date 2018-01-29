@@ -3,10 +3,11 @@ package dockerutil
 import (
 	"context"
 	"errors"
-	"github.com/docker/docker/client"
 	"os"
 	"regexp"
 	"time"
+
+	"github.com/docker/docker/client"
 )
 
 // NewDockerClient returns a new docker client. This util handles

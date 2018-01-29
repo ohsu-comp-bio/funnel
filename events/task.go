@@ -2,8 +2,9 @@ package events
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 // TaskGenerator is a type that generates Events for a given Task execution

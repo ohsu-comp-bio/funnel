@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
 // Config describes configuration for Funnel.

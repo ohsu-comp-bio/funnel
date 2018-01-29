@@ -1,10 +1,11 @@
 package config
 
 import (
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"os"
 	"path"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
 // DefaultConfig returns configuration with simple defaults.

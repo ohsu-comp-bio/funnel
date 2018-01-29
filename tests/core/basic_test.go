@@ -2,13 +2,14 @@ package core
 
 import (
 	"context"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestHelloWorld(t *testing.T) {

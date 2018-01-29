@@ -1,9 +1,10 @@
 package examples
 
 import (
+	"testing"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"testing"
 )
 
 func TestExamplesAreValid(t *testing.T) {

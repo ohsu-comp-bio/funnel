@@ -3,13 +3,14 @@ package dynamodb
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"strconv"
-	"time"
 )
 
 func checkCreateErr(err error) error {

@@ -3,10 +3,11 @@ package tes
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/getlantern/deepcopy"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/rs/xid"
-	"time"
 )
 
 // Marshaler marshals tasks to indented JSON.

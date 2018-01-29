@@ -1,6 +1,9 @@
 package server
 
 import (
+	"net"
+	"net/http"
+
 	"github.com/golang/gddo/httputil"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -11,8 +14,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/webdash"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"net"
-	"net/http"
 )
 
 // Server represents a Funnel server. The server handles

@@ -1,10 +1,11 @@
 package boltdb
 
 import (
+	"time"
+
 	"github.com/boltdb/bolt"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
-	"time"
 )
 
 // TODO these should probably be unexported names

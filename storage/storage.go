@@ -10,11 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 const (

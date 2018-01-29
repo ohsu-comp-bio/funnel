@@ -2,11 +2,12 @@ package scheduler
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"testing"
-	"time"
 )
 
 // Test the simple case of a node that is alive,

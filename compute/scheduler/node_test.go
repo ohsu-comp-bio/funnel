@@ -3,11 +3,12 @@ package scheduler
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 // Test calling stopping a node by canceling its context

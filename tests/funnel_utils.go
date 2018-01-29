@@ -3,6 +3,18 @@ package tests
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"syscall"
+	"text/template"
+	"time"
+
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
@@ -17,17 +29,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"strings"
-	"syscall"
-	"text/template"
-	"time"
 )
 
 var log = logger.NewLogger("e2e", LogConfig())

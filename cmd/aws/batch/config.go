@@ -1,8 +1,9 @@
 package batch
 
 import (
-	"github.com/ohsu-comp-bio/funnel/config"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/config"
 )
 
 // Config represents configuration of the AWS proxy, including

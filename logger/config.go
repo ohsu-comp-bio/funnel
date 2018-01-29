@@ -1,8 +1,9 @@
 package logger
 
 import (
-	"github.com/Sirupsen/logrus"
 	"os"
+
+	"github.com/Sirupsen/logrus"
 )
 
 // JSONFormatConfig provides configuration for the JSON logger format.

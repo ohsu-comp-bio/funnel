@@ -1,11 +1,12 @@
 package htcondor
 
 import (
+	"regexp"
+
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"regexp"
 )
 
 // NewBackend returns a new HTCondor backend instance.

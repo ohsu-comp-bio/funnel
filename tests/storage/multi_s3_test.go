@@ -2,11 +2,12 @@ package storage
 
 import (
 	"context"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"github.com/ohsu-comp-bio/funnel/tests"
 	"io/ioutil"
 	"strings"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
 func TestMultiS3Storage(t *testing.T) {

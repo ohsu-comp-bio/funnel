@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"context"
+	"time"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
@@ -9,7 +11,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
 // NewNode returns a new Node instance

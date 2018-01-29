@@ -3,14 +3,15 @@ package batch
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/iam"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
-	"sort"
-	"strings"
 )
 
 type errResourceExists struct{}

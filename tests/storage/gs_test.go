@@ -3,14 +3,15 @@ package storage
 import (
 	"context"
 	"flag"
+	"io/ioutil"
+	"strings"
+	"testing"
+
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"golang.org/x/oauth2/google"
 	gs "google.golang.org/api/storage/v1"
-	"io/ioutil"
-	"strings"
-	"testing"
 )
 
 func TestGoogleStorage(t *testing.T) {

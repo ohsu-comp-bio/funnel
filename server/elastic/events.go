@@ -2,6 +2,7 @@ package elastic
 
 import (
 	"context"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"

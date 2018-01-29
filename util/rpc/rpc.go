@@ -2,13 +2,14 @@ package rpc
 
 import (
 	"encoding/base64"
+	"math"
+	"math/rand"
+	"time"
+
 	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"math"
-	"math/rand"
-	"time"
 )
 
 // PerRPCPassword returns a new gRPC DialOption which includes a basic auth.

@@ -1,8 +1,9 @@
 package datastore
 
 import (
-	"cloud.google.com/go/datastore"
 	"fmt"
+
+	"cloud.google.com/go/datastore"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )

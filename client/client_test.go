@@ -1,13 +1,14 @@
 package client
 
 import (
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"golang.org/x/net/context"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"golang.org/x/net/context"
 )
 
 func testServer(mux http.Handler) *httptest.Server {

@@ -2,15 +2,16 @@ package scheduler
 
 import (
 	"context"
+	"io/ioutil"
+	"testing"
+	"time"
+
 	schedmock "github.com/ohsu-comp-bio/funnel/compute/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/stretchr/testify/mock"
-	"io/ioutil"
-	"testing"
-	"time"
 )
 
 // testNode wraps Node with some testing helpers.

@@ -2,10 +2,11 @@ package compute
 
 import (
 	"fmt"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io/ioutil"
 	"testing"
+
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 func TestSetupTemplatedHPCSubmit(t *testing.T) {

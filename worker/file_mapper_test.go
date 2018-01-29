@@ -2,11 +2,12 @@ package worker
 
 import (
 	"fmt"
-	"github.com/go-test/deep"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/go-test/deep"
+	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
 func TestMapTask(t *testing.T) {

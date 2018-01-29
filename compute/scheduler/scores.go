@@ -1,9 +1,10 @@
 package scheduler
 
 import (
+	"sort"
+
 	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
-	"sort"
 )
 
 // Scores describe how well a task fits a node.

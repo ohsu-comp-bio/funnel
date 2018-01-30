@@ -13,14 +13,14 @@ import (
 )
 
 // ErrKeyFmt describes an error in input/output/env/tag flag formatting
-var ErrKeyFmt = errors.New("Arguments passed to --in, --out and --env must be of the form: KEY=VALUE")
+var ErrKeyFmt = errors.New("Arguments passed to --in, --out, --tag and --env must be of the form: KEY=VALUE")
 
 // ErrStorageScheme describes an error in supported storage URL schemes.
 var ErrStorageScheme = errors.New("File paths must be prefixed with one of:\n file://\n gs://\n s3://")
 
 // DuplicateKeyErr returns a new error describing conflicting keys for env. vars., inputs, and outputs.
 func DuplicateKeyErr(key string) error {
-	return errors.New("Can't use the same KEY for multiple --in, --out, --env arguments: " + key)
+	return errors.New("Can't use the same KEY for multiple --in, --out, --tag, --env arguments: " + key)
 }
 
 // Parse CLI variable definitions (e.g "varname=value") into usable task values.

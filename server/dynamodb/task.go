@@ -3,6 +3,7 @@ package dynamodb
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -69,6 +70,18 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 			N: aws.String(strconv.Itoa(int(req.State))),
 		}
 		query.FilterExpression = aws.String("#state = :stateFilter")
+	}
+
+	if req.Tags != nil {
+		tmpl := "tags.%s = :%sFilter"
+		filterParts := []string{}
+		for k, v := range req.Tags {
+			filterParts = append(filterParts, fmt.Sprintf(tmpl, k, k))
+			query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
+				S: aws.String(v),
+			}
+		}
+		query.FilterExpression = aws.String(strings.Join(filterParts, " AND "))
 	}
 
 	if req.View == tes.TaskView_MINIMAL {

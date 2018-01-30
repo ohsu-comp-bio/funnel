@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"fmt"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
 	mgo "gopkg.in/mgo.v2"
@@ -52,6 +53,12 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 
 	if req.State != tes.Unknown {
 		query["state"] = bson.M{"$eq": req.State}
+	}
+
+	if req.Tags != nil {
+		for k, v := range req.Tags {
+			query[fmt.Sprintf("tags.%s", k)] = bson.M{"$eq": v}
+		}
 	}
 
 	q = db.tasks.Find(query).Sort("-creationtime").Limit(pageSize)

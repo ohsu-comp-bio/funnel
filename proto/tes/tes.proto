@@ -455,33 +455,15 @@ message ListTasksRequest {
   // 
   // Filter tasks based on the Task.tags field.
   // A tag filter matches a Task tag if both the key and value are exact matches.
-  // A "*" character allows matching any string. This does NOT allow partial string matching.
   //
   //   Filter                            Tags                          Match?
   //   ----------------------------------------------------------------------
   //   {"foo": "bar"}                    {"foo": "bar"}                Yes
-
   //   {"foo": ""}                       {"foo": ""}                   Yes
-  //   {"foo": ""}                       {"foo": "bar"}                No
-
   //   {"foo": "bar", "baz": "bat"}      {"foo": "bar", "baz": "bat"}  Yes
   //   {"foo": "bar"}                    {"foo": "bar", "baz": "bat"}  Yes
-
-  //   {"foo": "*"}                      {"foo": "bar"}                Yes
-  //   {"*": "bar"}                      {"foo": "bar"}                Yes
-
-  //   {"*": "*"}                        {"foo": "bar"}                Match everything?
-  //   {"*": ""}                         {"foo": "bar"}                ?
-  //   {"": "*"}                         {"foo": "bar"}                Invalid?
-  //   {"": ""}                          {"foo": "bar"}                Invalid?
-  //   {"": "bar"}                       {"foo": "bar"}                Invalid?
-
-  //   {"foo": "*ar"}                    {"foo": "bar"}                No (not a partial match)
-  //   {"fo*": "bar"}                    {"foo": "bar"}                No (not a partial match)
-  //   {"foo": "ba"}                     {"foo": "bar"}                No
   //   {"foo": "bar", "baz": "bat"}      {"foo": "bar"}                No
-  //   {"foo": "bar", "baz": ""}         {"foo": "bar"}                No
-  //   {"foo": "bar", "baz": "*"}        {"foo": "bar"}                No
+  //   {"foo": ""}                       {"foo": "bar"}                No
   map<string,string> tags = 7;
 }
 

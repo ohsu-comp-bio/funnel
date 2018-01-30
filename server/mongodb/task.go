@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"fmt"
+
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
 	mgo "gopkg.in/mgo.v2"

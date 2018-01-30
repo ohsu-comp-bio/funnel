@@ -34,6 +34,24 @@
         @extend .mdl-navigation__link;
       }
     }
+
+    .task-list-filters {
+      @extend .mdl-navigation, .mdl-color--blue-grey-800;
+      margin-top: 20px;
+      padding-top: 0px;
+      padding-left: 40px;
+      font-weight: normal;
+
+      h4 {
+        margin: 0;
+        margin-bottom: 10px;
+        font-size: 1em;
+      }
+      .filter-name {
+        color: #757575;
+        padding-right: 20px;
+      }
+    }
   }
 }
 

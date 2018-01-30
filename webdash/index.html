@@ -26,6 +26,23 @@
           <a href="/v1/nodes">Nodes</a>
           <a href="/v1/tasks/service-info">Service Info</a>
         </nav>
+
+        <div ng-show="pageId == 'task-list'" class="task-list-filters" ng-controller="TaskFilterController">
+          <h4>Filter</h4>
+          <div>
+            <span class="filter-name">State</span>
+            <select ng-model="filters.state">
+              <option value="any">Any</option>
+              <option value="QUEUED">Queued</option>
+              <option value="INITIALIZING">Initializing</option>
+              <option value="RUNNING">Running</option>
+              <option value="COMPLETE">Complete</option>
+              <option value="CANCELED">Canceled</option>
+              <option value="EXECUTOR_ERROR">Executor Error</option>
+              <option value="SYSTEM_ERROR">System error</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <main ng-view></main>

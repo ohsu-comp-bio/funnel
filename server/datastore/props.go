@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"fmt"
+	"net/url"
 
 	"cloud.google.com/go/datastore"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -85,7 +86,8 @@ type task struct {
 	Inputs            []param    `datastore:",noindex,omitempty"`
 	Outputs           []param    `datastore:",noindex,omitempty"`
 	Volumes           []string   `datastore:",noindex,omitempty"`
-	Tags              []kv
+	Tags              []kv       `datastore:",noindex,omitempty"`
+	TagStrings        []string
 	Resources         *resources `datastore:",noindex,omitempty"`
 	TaskLogs          []tasklog  `datastore:",noindex,omitempty"`
 }
@@ -122,6 +124,7 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 		Description:  t.Description,
 		Volumes:      t.Volumes,
 		Tags:         marshalMap(t.Tags),
+		TagStrings:   stringifyMap(t.Tags),
 	}
 	if t.Resources != nil {
 		z.Resources = &resources{
@@ -298,4 +301,16 @@ func unmarshalMap(kvs []kv) map[string]string {
 		out[kv.Key] = kv.Value
 	}
 	return out
+}
+
+func stringifyMap(m map[string]string) []string {
+	var out []string
+	for k, v := range m {
+		out = append(out, encodeKV(k, v))
+	}
+	return out
+}
+
+func encodeKV(k, v string) string {
+	return url.QueryEscape(k) + ":" + url.QueryEscape(v)
 }

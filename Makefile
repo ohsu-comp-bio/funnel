@@ -113,10 +113,8 @@ test-dynamodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/dynamo.config.yml
 
 start-datastore:
+	@docker rm -f funnel-datastore-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-datastore-test -p 12432:12432 google/cloud-sdk:latest gcloud beta emulators datastore start --no-store-on-disk --host-port 0.0.0.0:12432 --project funnel-test
-
-stop-datastore:
-	@docker rm -f funnel-datastore-test
 
 test-datastore:
 	DATASTORE_EMULATOR_HOST=localhost:12432 \

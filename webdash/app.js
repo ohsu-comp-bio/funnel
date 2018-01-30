@@ -17,8 +17,17 @@ function isDone(task) {
   return task.state == 'COMPLETE' || task.state == 'EXECUTOR_ERROR' || task.state == 'CANCELED' || task.state == 'SYSTEM_ERROR';
 }
 
+app.service("TaskFilters", function($rootScope) {
+  var s = $rootScope.$new()
+  s.state = "any"
+  return s
+})
 
-app.controller('TaskListController', function($scope, $http, $interval, $routeParams, $location) {
+app.controller('TaskFilterController', function($scope, TaskFilters) {
+  $scope.filters = TaskFilters;
+})
+
+app.controller('TaskListController', function($scope, $http, $interval, $routeParams, $location, TaskFilters) {
   $scope.pageTitle = "Tasks";
   $scope.tasks = [];
   $scope.isDone = isDone;
@@ -30,10 +39,17 @@ app.controller('TaskListController', function($scope, $http, $interval, $routePa
     $http.post(url);
   }
 
+  TaskFilters.$watch("state", function() {
+    refresh()
+  })
+
   function refresh() {
     var url = "/v1/tasks?view=BASIC";
     if (page) {
       url += "&page_token=" + page;
+    }
+    if (TaskFilters.state != "any") {
+      url += "&state=" + TaskFilters.state;
     }
 
     $http.get(url).then(function(response) {
@@ -259,6 +275,7 @@ app.run(['$rootScope', 'Page', function($rootScope, Page) {
   $rootScope.$on("$routeChangeSuccess", function(event, current, previous){
     if (current.$$route) {
       Page.setTitle(current.$$route.title);
+      $rootScope.pageId = current.$$route.pageId;
     }
   });
 }]);
@@ -269,20 +286,25 @@ app.config(
      var taskList = {
        templateUrl: '/static/list.html',
        title: "Tasks",
+       pageId: "task-list",
      }
      var taskInfo = {
        templateUrl: '/static/task.html',
+       pageId: "task-info",
      }
      var nodeList = {
        templateUrl: '/static/node-list.html',
        title: "Nodes",
+       pageId: "node-list",
      }
      var nodeInfo =  {
        templateUrl: '/static/node.html',
+       pageId: "node-info",
      }
      var serviceInfo = {
        templateUrl: "/static/service.html",
        title: "Service",
+       pageId: "service-info",
      }
 
      $routeProvider.

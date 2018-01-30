@@ -87,7 +87,7 @@ func configDefaultConfigYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/default-config.yaml", size: 8524, mode: os.FileMode(420), modTime: time.Unix(1515441439, 0)}
+	info := bindataFileInfo{name: "config/default-config.yaml", size: 8524, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -107,7 +107,7 @@ func configGridengineTemplateTxt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/gridengine-template.txt", size: 376, mode: os.FileMode(420), modTime: time.Unix(1514578149, 0)}
+	info := bindataFileInfo{name: "config/gridengine-template.txt", size: 376, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -127,7 +127,7 @@ func configHtcondorTemplateTxt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/htcondor-template.txt", size: 535, mode: os.FileMode(420), modTime: time.Unix(1514578149, 0)}
+	info := bindataFileInfo{name: "config/htcondor-template.txt", size: 535, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -147,7 +147,7 @@ func configPbsTemplateTxt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/pbs-template.txt", size: 391, mode: os.FileMode(420), modTime: time.Unix(1514578149, 0)}
+	info := bindataFileInfo{name: "config/pbs-template.txt", size: 391, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -167,7 +167,7 @@ func configSlurmTemplateTxt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/slurm-template.txt", size: 445, mode: os.FileMode(420), modTime: time.Unix(1514578149, 0)}
+	info := bindataFileInfo{name: "config/slurm-template.txt", size: 445, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

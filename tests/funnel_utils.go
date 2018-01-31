@@ -27,6 +27,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
+	"github.com/ohsu-comp-bio/funnel/util/rpc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -90,15 +91,14 @@ func NewFunnel(conf config.Config) *Funnel {
 	}
 }
 
-// AddRPCClient configures and connects the RPC client to the server.
-func (f *Funnel) AddRPCClient(opts ...grpc.DialOption) error {
-	conn, err := NewRPCConn(f.Conf, opts...)
+// addRPCClient configures and connects the RPC client to the server.
+func (f *Funnel) addRPCClient() {
+	conn, err := rpc.Dial(context.Background(), f.Conf.Server)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	f.conn = conn
 	f.RPC = tes.NewTaskServiceClient(conn)
-	return nil
+	f.conn = conn
 }
 
 // Cleanup cleans up test resources
@@ -120,12 +120,7 @@ func (f *Funnel) StartServer() {
 		panic(err)
 	}
 
-	err = f.AddRPCClient()
-	if err != nil {
-		log.Error("failed to add RPC client", err)
-		panic(err)
-	}
-
+	f.addRPCClient()
 	log.Info("Funnel server started")
 }
 
@@ -394,12 +389,7 @@ func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
 			panic(err)
 		}
 
-		err = f.AddRPCClient()
-		if err != nil {
-			log.Error("failed to add RPC client", err)
-			panic(err)
-		}
-
+		f.addRPCClient()
 		close(ready)
 	}()
 
@@ -446,28 +436,6 @@ func (f *Funnel) CleanupTestServerContainer() {
 	s := f.findTestServerContainers()
 	f.killTestServerContainers(s)
 	return
-}
-
-// NewRPCConn returns a new grpc.ClientConn, to make creating TES clients easier.
-func NewRPCConn(conf config.Config, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-
-	opts = append(opts,
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	)
-
-	conn, err := grpc.DialContext(
-		ctx,
-		conf.Server.RPCAddress(),
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
 }
 
 // HelloWorld is a simple, valid task that is easy to reuse in tests.

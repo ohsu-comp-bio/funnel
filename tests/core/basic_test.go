@@ -654,25 +654,40 @@ func TestListTaskFilterState(t *testing.T) {
 	// will be COMPLETE
 	id2 := f.Run(`'echo hello'`)
 	// will be CANCELED
-	id3 := f.Run(`'sleep 100'`)
+	id3 := f.Run(`'sleep 10'`)
 
-	f.Cancel(id3)
 	f.Wait(id1)
 	f.Wait(id2)
+	f.WaitForRunning(id3)
 
-	time.Sleep(time.Second * 5)
+	err := f.Cancel(id3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Wait(id3)
 
-	r, _ := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View: tes.Full,
+	})
+	log.Info("all tasks", "tasks", r.Tasks, "err", err)
+
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_MINIMAL,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 3 {
 		t.Error("unexpected all tasks", r.Tasks)
 	}
 
-	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View:  tes.TaskView_MINIMAL,
 		State: tes.Complete,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 2 {
 		t.Error("expected 2 tasks", r.Tasks)
 	}
@@ -680,10 +695,13 @@ func TestListTaskFilterState(t *testing.T) {
 		t.Error("unexpected complete task IDs", r.Tasks, id2, id1)
 	}
 
-	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View:  tes.TaskView_MINIMAL,
 		State: tes.Canceled,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 1 {
 		t.Error("expected 1 tasks", r.Tasks)
 	}

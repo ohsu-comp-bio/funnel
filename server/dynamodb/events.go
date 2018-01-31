@@ -9,7 +9,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
@@ -31,15 +33,27 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 		},
 	}
 
+	var updateExpr expression.UpdateBuilder
+	exprBuilder := expression.NewBuilder()
+
 	switch e.Type {
 
 	case events.Type_TASK_STATE:
-		task, err := db.GetTask(ctx, &tes.GetTaskRequest{
-			Id:   e.Id,
-			View: tes.TaskView_MINIMAL,
-		})
+		response, err := db.getMinimalView(ctx, e.Id)
 		if err != nil {
 			return err
+		}
+
+		type altMinView struct {
+			Id      string
+			State   tes.State
+			Version int32
+		}
+
+		task := altMinView{}
+		err = dynamodbattribute.UnmarshalMap(response.Item, &task)
+		if err != nil {
+			return fmt.Errorf("failed to DynamoDB unmarshal Task, %v", err)
 		}
 
 		from := task.State
@@ -47,104 +61,78 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 		if err := tes.ValidateTransition(from, to); err != nil {
 			return err
 		}
-		item.ExpressionAttributeNames = map[string]*string{
-			"#state": aws.String("state"),
-		}
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":to": {
-				N: aws.String(strconv.Itoa(int(to))),
-			},
-		}
-		item.UpdateExpression = aws.String("SET #state = :to")
+
+		exprBuilder = exprBuilder.WithCondition(expression.Name("version").Equal(expression.Value(task.Version)))
+		updateExpr = expression.Set(expression.Name("state"), expression.Value(to))
 
 	case events.Type_TASK_START_TIME:
 		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
 			return err
 		}
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].start_time = :c", e.Attempt))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				S: aws.String(e.GetStartTime()),
-			},
-		}
+
+		updateExpr = expression.Set(
+			expression.Name(fmt.Sprintf("logs[%v].start_time", e.Attempt)),
+			expression.Value(e.GetStartTime()),
+		)
 
 	case events.Type_TASK_END_TIME:
 		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
 			return err
 		}
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].end_time = :c", e.Attempt))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				S: aws.String(e.GetEndTime()),
-			},
-		}
+
+		updateExpr = expression.Set(
+			expression.Name(fmt.Sprintf("logs[%v].end_time", e.Attempt)),
+			expression.Value(e.GetEndTime()),
+		)
 
 	case events.Type_TASK_OUTPUTS:
 		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
 			return err
 		}
-		val, err := dynamodbattribute.MarshalList(e.GetOutputs().Value)
-		if err != nil {
-			return fmt.Errorf("failed to DynamoDB marshal TaskLog Outputs, %v", err)
-		}
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].outputs = :c", e.Attempt))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				L: val,
-			},
-		}
+
+		updateExpr = expression.Set(
+			expression.Name(fmt.Sprintf("logs[%v].outputs", e.Attempt)),
+			expression.Value(e.GetOutputs().Value),
+		)
 
 	case events.Type_TASK_METADATA:
 		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
 			return err
 		}
-		val, err := dynamodbattribute.MarshalMap(e.GetMetadata().Value)
-		if err != nil {
-			return fmt.Errorf("failed to DynamoDB marshal TaskLog Metadata, %v", err)
-		}
 
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].metadata = :c", e.Attempt))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				M: val,
-			},
-		}
+		updateExpr = expression.Set(
+			expression.Name(fmt.Sprintf("logs[%v].metadata", e.Attempt)),
+			expression.Value(e.GetMetadata().Value),
+		)
 
 	case events.Type_EXECUTOR_START_TIME:
 		if err := db.ensureExecLog(ctx, e.Id, e.Attempt, e.Index); err != nil {
 			return err
 		}
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].start_time = :c", e.Attempt, e.Index))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				S: aws.String(e.GetStartTime()),
-			},
-		}
+		updateExpr = expression.Set(
+			expression.Name(fmt.Sprintf("logs[%v].logs[%v].start_time", e.Attempt, e.Index)),
+			expression.Value(e.GetStartTime()),
+		)
 
 	case events.Type_EXECUTOR_END_TIME:
 		if err := db.ensureExecLog(ctx, e.Id, e.Attempt, e.Index); err != nil {
 			return err
 		}
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].end_time = :c", e.Attempt, e.Index))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				S: aws.String(e.GetEndTime()),
-			},
-		}
+		updateExpr = expression.Set(
+			expression.Name(fmt.Sprintf("logs[%v].logs[%v].end_time", e.Attempt, e.Index)),
+			expression.Value(e.GetEndTime()),
+		)
 
 	case events.Type_EXECUTOR_EXIT_CODE:
 		if err := db.ensureExecLog(ctx, e.Id, e.Attempt, e.Index); err != nil {
 			return err
 		}
-		item.UpdateExpression = aws.String(fmt.Sprintf("SET logs[%v].logs[%v].exit_code = :c", e.Attempt, e.Index))
-		item.ExpressionAttributeValues = map[string]*dynamodb.AttributeValue{
-			":c": {
-				N: aws.String(strconv.Itoa(int(e.GetExitCode()))),
-			},
-		}
+		updateExpr = expression.Set(
+			expression.Name(fmt.Sprintf("logs[%v].logs[%v].exit_code", e.Attempt, e.Index)),
+			expression.Value(e.GetExitCode()),
+		)
 
 	case events.Type_EXECUTOR_STDOUT:
-		stdout := e.GetStdout()
 		item = &dynamodb.UpdateItemInput{
 			TableName: aws.String(db.stdoutTable),
 			Key: map[string]*dynamodb.AttributeValue{
@@ -155,22 +143,18 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 					S: aws.String(fmt.Sprintf("%v-%v", e.Attempt, e.Index)),
 				},
 			},
-			ExpressionAttributeNames: map[string]*string{
-				"#index": aws.String("index"),
-			},
-			UpdateExpression: aws.String("SET stdout = :stdout, attempt = :attempt, #index = :index"),
-			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-				":stdout": {
-					S: aws.String(stdout),
-				},
-				":attempt": {
-					N: aws.String(strconv.Itoa(int(e.Attempt))),
-				},
-				":index": {
-					N: aws.String(strconv.Itoa(int(e.Index))),
-				},
-			},
 		}
+
+		updateExpr = expression.Set(
+			expression.Name("stdout"),
+			expression.Value(e.GetStdout()),
+		).Set(
+			expression.Name("attempt"),
+			expression.Value(e.Attempt),
+		).Set(
+			expression.Name("index"),
+			expression.Value(e.Index),
+		)
 
 	case events.Type_EXECUTOR_STDERR:
 		item = &dynamodb.UpdateItemInput{
@@ -183,24 +167,24 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 					S: aws.String(fmt.Sprintf("%v-%v", e.Attempt, e.Index)),
 				},
 			},
-			ExpressionAttributeNames: map[string]*string{
-				"#index": aws.String("index"),
-			},
-			UpdateExpression: aws.String("SET stderr = :stderr, attempt = :attempt, #index = :index"),
-			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-				":stderr": {
-					S: aws.String(e.GetStderr()),
-				},
-				":attempt": {
-					N: aws.String(strconv.Itoa(int(e.Attempt))),
-				},
-				":index": {
-					N: aws.String(strconv.Itoa(int(e.Index))),
-				},
-			},
 		}
 
+		updateExpr = expression.Set(
+			expression.Name("stderr"),
+			expression.Value(e.GetStderr()),
+		).Set(
+			expression.Name("attempt"),
+			expression.Value(e.Attempt),
+		).Set(
+			expression.Name("index"),
+			expression.Value(e.Index),
+		)
+
 	case events.Type_SYSTEM_LOG:
+		if err := db.ensureSysLog(ctx, e.Id, e.Attempt); err != nil {
+			return err
+		}
+
 		item = &dynamodb.UpdateItemInput{
 			TableName: aws.String(db.syslogsTable),
 			Key: map[string]*dynamodb.AttributeValue{
@@ -211,28 +195,34 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 					N: aws.String(strconv.Itoa(int(e.Attempt))),
 				},
 			},
-			UpdateExpression: aws.String("SET system_logs = list_append(if_not_exists(system_logs, :e), :syslog)"),
-			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-				":e": {
-					L: []*dynamodb.AttributeValue{},
-				},
-				":syslog": {
-					L: []*dynamodb.AttributeValue{
-						{
-							S: aws.String(e.SysLogString()),
-						},
-					},
-				},
-			},
 		}
+
+		updateExpr = expression.Set(
+			expression.Name("system_logs"),
+			expression.ListAppend(expression.Name("system_logs"), expression.Value([]string{e.SysLogString()})),
+		)
 	}
 
-	_, err := db.client.UpdateItemWithContext(ctx, item)
+	updateExpr = updateExpr.Add(expression.Name("version"), expression.Value(1))
+	expr, err := exprBuilder.WithUpdate(updateExpr).Build()
+	if err != nil {
+		return err
+	}
+
+	item.ExpressionAttributeNames = expr.Names()
+	item.ExpressionAttributeValues = expr.Values()
+	item.UpdateExpression = expr.Update()
+	if *expr.Condition() != "" {
+		item.ConditionExpression = expr.Condition()
+	}
+
+	logger.Debug("DEBUG", item)
+
+	_, err = db.client.UpdateItemWithContext(ctx, item)
 	return checkErrNotFound(err)
 }
 
 func (db *DynamoDB) ensureTaskLog(ctx context.Context, id string, attempt uint32) error {
-
 	// create the log structure for the attempt if it doesnt already exist
 	attemptItem := &dynamodb.UpdateItemInput{
 		TableName: aws.String(db.taskTable),
@@ -251,6 +241,7 @@ func (db *DynamoDB) ensureTaskLog(ctx context.Context, id string, attempt uint32
 			},
 		},
 	}
+
 	_, err := db.client.UpdateItemWithContext(ctx, attemptItem)
 	return checkErrNotFound(err)
 }
@@ -275,6 +266,29 @@ func (db *DynamoDB) ensureExecLog(ctx context.Context, id string, attempt, index
 		},
 	}
 	_, err := db.client.UpdateItemWithContext(ctx, indexItem)
+	return checkErrNotFound(err)
+}
+
+func (db *DynamoDB) ensureSysLog(ctx context.Context, id string, attempt uint32) error {
+	item := &dynamodb.UpdateItemInput{
+		TableName: aws.String(db.syslogsTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			"id": {
+				S: aws.String(id),
+			},
+			"attempt": {
+				N: aws.String(strconv.Itoa(int(attempt))),
+			},
+		},
+		UpdateExpression: aws.String("SET system_logs = if_not_exists(system_logs, :v)"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v": {
+				L: []*dynamodb.AttributeValue{},
+			},
+		},
+	}
+
+	_, err := db.client.UpdateItemWithContext(ctx, item)
 	return checkErrNotFound(err)
 }
 

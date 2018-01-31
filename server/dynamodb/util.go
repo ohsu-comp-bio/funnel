@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	// "github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
@@ -238,6 +239,10 @@ func (db *DynamoDB) createTask(ctx context.Context, task *tes.Task) error {
 
 	av[db.partitionKey] = &dynamodb.AttributeValue{
 		S: aws.String(db.partitionValue),
+	}
+
+	av["version"] = &dynamodb.AttributeValue{
+		N: aws.String("0"),
 	}
 
 	// Add nil fields to make updates easier

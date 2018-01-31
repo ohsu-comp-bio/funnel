@@ -8,7 +8,7 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	util "github.com/ohsu-comp-bio/funnel/util/rpc"
+	"github.com/ohsu-comp-bio/funnel/util/rpc"
 )
 
 var extask = &tes.Task{
@@ -21,13 +21,22 @@ var extask = &tes.Task{
 }
 
 func TestBasicAuthFail(t *testing.T) {
+	ctx := context.Background()
 	conf := tests.DefaultConfig()
 	conf.Server.Password = "abc123"
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
 
-	var err error
-	_, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
+	unauthConf := conf.Server
+	unauthConf.Password = ""
+	conn, err := rpc.Dial(ctx, unauthConf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cli := tes.NewTaskServiceClient(conn)
+	defer conn.Close()
+
+	_, err = fun.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   "1",
 		View: tes.TaskView_MINIMAL,
 	})
@@ -35,26 +44,26 @@ func TestBasicAuthFail(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	_, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
+	_, err = fun.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_MINIMAL,
 	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
 		t.Fatal("expected error")
 	}
 
-	_, err = fun.HTTP.CreateTask(context.Background(), extask)
+	_, err = fun.HTTP.CreateTask(ctx, extask)
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
 		t.Fatal("expected error")
 	}
 
-	_, err = fun.HTTP.CancelTask(context.Background(), &tes.CancelTaskRequest{
+	_, err = fun.HTTP.CancelTask(ctx, &tes.CancelTaskRequest{
 		Id: "1",
 	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
 		t.Fatal("expected error")
 	}
 
-	_, err = fun.RunE(`--sh 'echo hello'`)
+	_, err = cli.CreateTask(ctx, tests.HelloWorld())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -68,7 +77,6 @@ func TestBasicAuthed(t *testing.T) {
 	conf.Server.Password = "abc123"
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
-	fun.AddRPCClient(util.PerRPCPassword("abc123"))
 
 	var err error
 

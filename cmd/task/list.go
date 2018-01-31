@@ -25,12 +25,20 @@ func List(server, taskView, pageToken, stateFilter string, pageSize uint32, all 
 
 	output := &tes.ListTasksResponse{}
 
+	state, err := getTaskState(stateFilter)
+	if err != nil {
+		return err
+	}
+
 	for {
-		resp, err := cli.ListTasks(context.Background(), &tes.ListTasksRequest{
+		req := &tes.ListTasksRequest{
 			View:      tes.TaskView(view),
 			PageToken: pageToken,
 			PageSize:  pageSize,
-		})
+			State:     state,
+		}
+
+		resp, err := cli.ListTasks(context.Background(), req)
 		if err != nil {
 			return err
 		}

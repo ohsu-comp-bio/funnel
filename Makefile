@@ -39,8 +39,8 @@ proto:
 	@cd events && protoc \
 		$(PROTO_INC) \
 		-I ../proto/tes \
-		-I $(shell pwd)/vendor/github.com/golang/protobuf/ptypes/struct/ \
-		-I $(shell pwd)/vendor/github.com/golang/protobuf/ptypes/timestamp/ \
+		-I `pwd`/vendor/github.com/golang/protobuf/ptypes/struct/ \
+		-I `pwd`/vendor/github.com/golang/protobuf/ptypes/timestamp/ \
 		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		events.proto
@@ -66,8 +66,8 @@ prune_deps:
 
 # Automatially update code formatting
 tidy:
-	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs goimports -w
+	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
 # Run code style and other checks
 lint:
@@ -146,7 +146,7 @@ test-pbs-torque:
 	@go test -timeout 120s ./tests/pbs -funnel-config `pwd`/tests/pbs.config.yml
 
 test-amazon-s3:
-	@go test ./tests/storage -funnel-config `pwd`/s3.config.yml -run TestAmazonS3
+	@go test ./tests/storage -funnel-config `pwd`/tests/s3.config.yml -run TestAmazonS3
 
 start-generic-s3:
 	@docker rm -f funnel-s3server > /dev/null 2>&1 || echo
@@ -155,16 +155,16 @@ start-generic-s3:
 	@docker run -d --name funnel-minio -p 9000:9000 -e "MINIO_ACCESS_KEY=fakekey" -e "MINIO_SECRET_KEY=fakesecret" -e "MINIO_REGION=us-east-1" minio/minio:RELEASE.2017-10-27T18-59-02Z server /data
 
 test-generic-s3:
-	@go test ./tests/storage -funnel-config `pwd`/amazoncli-minio-s3.config.yml -run TestAmazonS3Storage
-	@go test ./tests/storage -funnel-config `pwd`/scality-s3.config.yml -run TestGenericS3Storage
-	@go test ./tests/storage -funnel-config `pwd`/minio-s3.config.yml -run TestGenericS3Storage
-	@go test ./tests/storage -funnel-config `pwd`/multi-s3.config.yml -run TestGenericS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/tests/amazoncli-minio-s3.config.yml -run TestAmazonS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/tests/scality-s3.config.yml -run TestGenericS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/tests/minio-s3.config.yml -run TestGenericS3Storage
+	@go test ./tests/storage -funnel-config `pwd`/tests/multi-s3.config.yml -run TestGenericS3Storage
 
 test-gs:
-	@go test ./tests/storage -run TestGoogleStorage -funnel-config `pwd`/gs.config.yml ${GCE_PROJECT_ID}
+	@go test ./tests/storage -run TestGoogleStorage -funnel-config `pwd`/tests/gs.config.yml ${GCE_PROJECT_ID}
 
 test-swift:
-	@go test ./tests/storage -funnel-config `pwd`/swift.config.yml -run TestSwiftStorage
+	@go test ./tests/storage -funnel-config `pwd`/tests/swift.config.yml -run TestSwiftStorage
 
 webdash-install:
 	@npm install --prefix ./webdash

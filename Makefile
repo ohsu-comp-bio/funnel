@@ -107,7 +107,7 @@ test-mongodb:
 
 start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-dynamodb-test -p 18000:8000 docker.io/dwmkerr/dynamodb:38 > /dev/null
+	@docker run -d --name funnel-dynamodb-test -p 18000:8000 docker.io/dwmkerr/dynamodb:38 -sharedDb > /dev/null
 
 test-dynamodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/dynamo.config.yml

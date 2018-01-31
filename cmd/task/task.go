@@ -126,6 +126,9 @@ type hooks struct {
 }
 
 func getTaskState(str string) (tes.State, error) {
+	if str == "" {
+		return tes.Unknown, nil
+	}
 	i, ok := tes.State_value[strings.ToUpper(str)]
 	if !ok {
 		return tes.Unknown, fmt.Errorf("Unknown task state: %s. Valid states: ['queued', 'initializing', 'running', 'canceled', 'complete', 'system_error', 'executor_error']", str)

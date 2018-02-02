@@ -164,6 +164,14 @@ test-gs:
 test-swift:
 	@go test ./tests/storage -funnel-config `pwd`/tests/swift.config.yml -run TestSwiftStorage
 
+start-pubsub:
+	@docker rm -f funnel-pubsub-test > /dev/null 2>&1 || echo
+	@docker run -d --name funnel-pubsub-test -p 8085:8085 google/cloud-sdk:latest gcloud beta emulators pubsub start --project funnel-test --host-port 0.0.0.0:8085
+
+test-pubsub:
+	@PUBSUB_EMULATOR_HOST=localhost:8085 \
+	  go test ./tests/pubsub/ -funnel-config `pwd`/tests/pubsub.config.yml
+
 webdash-install:
 	@npm install --prefix ./webdash
 	@go get -u github.com/jteeuwen/go-bindata/...

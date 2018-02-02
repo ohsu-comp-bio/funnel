@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
@@ -1116,44 +1117,43 @@ func TestListTaskMultipleFilters(t *testing.T) {
 }
 
 func TestConcurrentStateUpdate(t *testing.T) {
+	ctx := context.Background()
+
 	c := tests.DefaultConfig()
 	c.Compute = "noop"
 	f := tests.NewFunnel(c)
 	f.StartServer()
-	ctx := context.Background()
-	e := f.Server.Events
 
+	w, err := workerCmd.NewWorker(ctx, c, log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := w.EventWriter
+
+	ids := []string{}
 	for i := 0; i < 10; i++ {
 		id := f.Run(`--sh 'echo hello'`)
-		time.Sleep(time.Millisecond * 500)
+		ids = append(ids, id)
 		go func() {
-			_, err := e.WriteEvent(ctx, events.NewState(id, tes.Initializing))
+			err := e.WriteEvent(ctx, events.NewState(id, tes.Initializing))
 			if err != nil {
 				log.Error("error writing event", err)
 			}
 		}()
 		go func() {
-			_, err := e.WriteEvent(ctx, events.NewState(id, tes.Canceled))
+			err := e.WriteEvent(ctx, events.NewState(id, tes.Canceled))
 			if err != nil {
 				log.Error("error writing event", "error", err, "taskID", id)
 			}
 		}()
 	}
 
-	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:  tes.TaskView_MINIMAL,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(r.Tasks) != 10 {
-		t.Error("unexpected all tasks", r.Tasks)
-	}
-
-	for _, task := range r.Tasks {
+	for _, i := range ids {
+		task := f.Wait(i)
 		if task.State != tes.Canceled {
 			t.Error("expected canceled state", task)
 		}
 	}
+
 	tests.SetLogOutput(log, t)
 }

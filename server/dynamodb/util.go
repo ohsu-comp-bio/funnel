@@ -242,7 +242,7 @@ func (db *DynamoDB) createTask(ctx context.Context, task *tes.Task) error {
 	}
 
 	av["version"] = &dynamodb.AttributeValue{
-		N: aws.String("0"),
+		N: aws.String("1"),
 	}
 
 	// Add nil fields to make updates easier

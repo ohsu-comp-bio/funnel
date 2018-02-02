@@ -73,12 +73,18 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	}
 
 	if req.Tags != nil {
-		tmpl := "tags.%s = :%sFilter"
 		filterParts := []string{}
 		for k, v := range req.Tags {
+			tmpl := "tags.%s = :%sFilter"
 			filterParts = append(filterParts, fmt.Sprintf(tmpl, k, k))
-			query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
-				S: aws.String(v),
+			if v == "" {
+				query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
+					NULL: aws.Bool(true),
+				}
+			} else {
+				query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
+					S: aws.String(v),
+				}
 			}
 		}
 		query.FilterExpression = aws.String(strings.Join(filterParts, " AND "))

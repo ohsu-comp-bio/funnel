@@ -718,32 +718,38 @@ func TestListTaskFilterTags(t *testing.T) {
 	f.StartServer()
 	ctx := context.Background()
 
-	// will be COMPLETE
 	id1 := f.Run(`'echo hello' --tag foo=bar`)
-	// will be COMPLETE
 	id2 := f.Run(`'echo hello' --tag foo=bar --tag hello=world`)
-	// will be CANCELED
-	id3 := f.Run(`'sleep 100' --tag fizz=buzz`)
+	id3 := f.Run(`'echo hello'`)
 
-	f.Cancel(id3)
 	f.Wait(id1)
 	f.Wait(id2)
+	f.Wait(id3)
 
-	time.Sleep(time.Second * 5)
+	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View: tes.Full,
+	})
+	log.Info("all tasks", "tasks", r.Tasks, "err", err)
 
-	r, _ := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_BASIC,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 3 {
 		t.Error("unexpected all tasks", r.Tasks)
 	}
 
-	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_BASIC,
 		Tags: map[string]string{
 			"foo": "bar",
 		},
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 2 {
 		t.Error("expected 2 tasks", r.Tasks)
 	}
@@ -751,12 +757,103 @@ func TestListTaskFilterTags(t *testing.T) {
 		t.Error("unexpected task IDs", r.Tasks, id2, id1)
 	}
 
-	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_BASIC,
 		Tags: map[string]string{
 			"hello": "world",
 		},
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Tasks) != 1 {
+		t.Error("expected 1 tasks", r.Tasks)
+	}
+	if r.Tasks[0].Id != id2 {
+		t.Error("unexpected task IDs", r.Tasks)
+	}
+
+	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View: tes.TaskView_BASIC,
+		Tags: map[string]string{
+			"ASFasfa": "",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Tasks) != 0 {
+		t.Error("expected 0 tasks", r.Tasks)
+	}
+}
+
+func TestListTaskMultipleFilters(t *testing.T) {
+	tests.SetLogOutput(log, t)
+
+	c := tests.DefaultConfig()
+	f := tests.NewFunnel(c)
+	f.StartServer()
+	ctx := context.Background()
+
+	// will be COMPLETE
+	id1 := f.Run(`'echo hello' --tag foo=bar`)
+	// will be COMPLETE
+	id2 := f.Run(`'echo hello' --tag foo=bar --tag hello=world`)
+	// will be CANCELED
+	id3 := f.Run(`'sleep 10' --tag fizz=buzz`)
+
+	f.Wait(id1)
+	f.Wait(id2)
+	f.WaitForRunning(id3)
+
+	err := f.Cancel(id3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Wait(id3)
+
+	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View: tes.Full,
+	})
+	log.Info("all tasks", "tasks", r.Tasks, "err", err)
+
+	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View: tes.TaskView_BASIC,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Tasks) != 3 {
+		t.Error("unexpected all tasks", r.Tasks)
+	}
+
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View:  tes.TaskView_BASIC,
+		State: tes.Complete,
+		Tags: map[string]string{
+			"foo": "bar",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Tasks) != 2 {
+		t.Error("expected 2 tasks", r.Tasks)
+	}
+	if r.Tasks[0].Id != id2 || r.Tasks[1].Id != id1 {
+		t.Error("unexpected task IDs", r.Tasks, id2, id1)
+	}
+
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View:  tes.TaskView_BASIC,
+		State: tes.Complete,
+		Tags: map[string]string{
+			"hello": "world",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 1 {
 		t.Error("expected 1 tasks", r.Tasks)
 	}
@@ -771,6 +868,9 @@ func TestListTaskFilterTags(t *testing.T) {
 			"hello": "world",
 		},
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 0 {
 		t.Error("expected 0 tasks", r.Tasks)
 	}
@@ -782,6 +882,9 @@ func TestListTaskFilterTags(t *testing.T) {
 			"fizz": "buzz",
 		},
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(r.Tasks) != 1 {
 		t.Error("expected 1 tasks", r.Tasks)
 	}

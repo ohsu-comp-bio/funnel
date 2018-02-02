@@ -129,10 +129,6 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 
 // Set default flagVals
 func defaultVals(vals *flagVals) {
-	if vals.workdir == "" {
-		vals.workdir = "/opt/funnel"
-	}
-
 	if vals.container == "" {
 		vals.container = "alpine"
 	}

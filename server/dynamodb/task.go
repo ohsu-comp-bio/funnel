@@ -62,6 +62,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		},
 	}
 
+	filterParts := []string{}
 	if req.State != tes.Unknown {
 		query.ExpressionAttributeNames = map[string]*string{
 			"#state": aws.String("state"),
@@ -69,24 +70,24 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		query.ExpressionAttributeValues[":stateFilter"] = &dynamodb.AttributeValue{
 			N: aws.String(strconv.Itoa(int(req.State))),
 		}
-		query.FilterExpression = aws.String("#state = :stateFilter")
+		filterParts = append(filterParts, "#state = :stateFilter")
 	}
 
-	if req.Tags != nil {
-		filterParts := []string{}
-		for k, v := range req.Tags {
-			tmpl := "tags.%s = :%sFilter"
-			filterParts = append(filterParts, fmt.Sprintf(tmpl, k, k))
-			if v == "" {
-				query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
-					NULL: aws.Bool(true),
-				}
-			} else {
-				query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
-					S: aws.String(v),
-				}
+	for k, v := range req.Tags {
+		tmpl := "tags.%s = :%sFilter"
+		filterParts = append(filterParts, fmt.Sprintf(tmpl, k, k))
+		if v == "" {
+			query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
+				NULL: aws.Bool(true),
+			}
+		} else {
+			query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
+				S: aws.String(v),
 			}
 		}
+	}
+
+	if len(filterParts) > 0 {
 		query.FilterExpression = aws.String(strings.Join(filterParts, " AND "))
 	}
 

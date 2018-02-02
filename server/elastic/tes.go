@@ -53,15 +53,16 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		q = q.SearchAfter(req.PageToken)
 	}
 
+	filterParts := []elastic.Query{}
 	if req.State != tes.Unknown {
-		q = q.Query(elastic.NewTermQuery("state", req.State.String()))
+		filterParts = append(filterParts, elastic.NewTermQuery("state", req.State.String()))
 	}
 
-	if req.Tags != nil {
-		filterParts := []elastic.Query{}
-		for k, v := range req.Tags {
-			filterParts = append(filterParts, elastic.NewMatchQuery(fmt.Sprintf("tags.%s", k), v))
-		}
+	for k, v := range req.Tags {
+		filterParts = append(filterParts, elastic.NewMatchQuery(fmt.Sprintf("tags.%s", k), v))
+	}
+
+	if len(filterParts) > 0 {
 		q = q.Query(elastic.NewBoolQuery().Filter(filterParts...))
 	}
 

@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 )
 
@@ -39,7 +38,7 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 	switch e.Type {
 
 	case events.Type_TASK_STATE:
-		response, err := db.getMinimalView(ctx, e.Id)
+		response, err := db.getBasicView(ctx, e.Id)
 		if err != nil {
 			return err
 		}
@@ -61,6 +60,7 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 		if err := tes.ValidateTransition(from, to); err != nil {
 			return err
 		}
+
 		exprBuilder = exprBuilder.WithCondition(expression.Name("version").Equal(expression.Value(task.Version)))
 		updateExpr = expression.Set(expression.Name("state"), expression.Value(to))
 		updateExpr = updateExpr.Add(expression.Name("version"), expression.Value(1))
@@ -203,6 +203,9 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 		)
 	}
 
+	// ensure item exists
+	// exprBuilder = exprBuilder.WithCondition(expression.Name("id").Equal(expression.Value(e.Id)))
+
 	expr, err := exprBuilder.WithUpdate(updateExpr).Build()
 	if err != nil {
 		return err
@@ -214,8 +217,6 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 	if *expr.Condition() != "" {
 		item.ConditionExpression = expr.Condition()
 	}
-
-	logger.Debug("DEBUG", item)
 
 	_, err = db.client.UpdateItemWithContext(ctx, item)
 	return checkErrNotFound(err)

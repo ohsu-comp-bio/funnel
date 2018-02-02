@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"google.golang.org/grpc/codes"
@@ -1112,4 +1113,47 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	if r.Tasks[0].Id != id3 {
 		t.Error("unexpected task IDs", r.Tasks)
 	}
+}
+
+func TestConcurrentStateUpdate(t *testing.T) {
+	c := tests.DefaultConfig()
+	c.Compute = "noop"
+	f := tests.NewFunnel(c)
+	f.StartServer()
+	ctx := context.Background()
+	e := f.Server.Events
+
+	for i := 0; i < 10; i++ {
+		id := f.Run(`--sh 'echo hello'`)
+		time.Sleep(time.Millisecond * 500)
+		go func() {
+			_, err := e.WriteEvent(ctx, events.NewState(id, tes.Initializing))
+			if err != nil {
+				log.Error("error writing event", err)
+			}
+		}()
+		go func() {
+			_, err := e.WriteEvent(ctx, events.NewState(id, tes.Canceled))
+			if err != nil {
+				log.Error("error writing event", "error", err, "taskID", id)
+			}
+		}()
+	}
+
+	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+		View:  tes.TaskView_MINIMAL,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Tasks) != 10 {
+		t.Error("unexpected all tasks", r.Tasks)
+	}
+
+	for _, task := range r.Tasks {
+		if task.State != tes.Canceled {
+			t.Error("expected canceled state", task)
+		}
+	}
+	tests.SetLogOutput(log, t)
 }

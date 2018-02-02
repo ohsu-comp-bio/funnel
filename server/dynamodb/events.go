@@ -61,9 +61,9 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 		if err := tes.ValidateTransition(from, to); err != nil {
 			return err
 		}
-
 		exprBuilder = exprBuilder.WithCondition(expression.Name("version").Equal(expression.Value(task.Version)))
 		updateExpr = expression.Set(expression.Name("state"), expression.Value(to))
+		updateExpr = updateExpr.Add(expression.Name("version"), expression.Value(1))
 
 	case events.Type_TASK_START_TIME:
 		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
@@ -203,7 +203,6 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 		)
 	}
 
-	updateExpr = updateExpr.Add(expression.Name("version"), expression.Value(1))
 	expr, err := exprBuilder.WithUpdate(updateExpr).Build()
 	if err != nil {
 		return err

@@ -13,6 +13,7 @@ import (
 	"github.com/ncw/swift"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
@@ -56,18 +57,20 @@ func NewSwiftBackend(conf config.SwiftStorage) (Backend, error) {
 
 	b := &SwiftBackend{conn, chunkSize}
 	return &retrier{
-		backend:  b,
-		maxTries: conf.MaxRetries,
-		shouldRetry: func(err error) bool {
-			// Retry on errors that swift names specifically.
-			if err == swift.ObjectCorrupted || err == swift.TimeoutError {
-				return true
-			}
-			// Retry on service unavailable.
-			if se, ok := err.(*swift.Error); ok {
-				return se.StatusCode == http.StatusServiceUnavailable
-			}
-			return false
+		backend: b,
+		MaxRetrier: &util.MaxRetrier{
+			MaxTries: conf.MaxRetries,
+			ShouldRetry: func(err error) bool {
+				// Retry on errors that swift names specifically.
+				if err == swift.ObjectCorrupted || err == swift.TimeoutError {
+					return true
+				}
+				// Retry on service unavailable.
+				if se, ok := err.(*swift.Error); ok {
+					return se.StatusCode == http.StatusServiceUnavailable
+				}
+				return false
+			},
 		},
 	}, nil
 }

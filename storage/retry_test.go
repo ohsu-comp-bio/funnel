@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 func TestRetrier(t *testing.T) {
 	f := &fakeBackend{}
-	r := retrier{backend: f, maxTries: 100}
+	r := retrier{backend: f, MaxRetrier: &util.MaxRetrier{MaxTries: 100}}
 	bg := context.Background()
 
 	// Test that get is retried
@@ -37,7 +38,7 @@ func TestRetrier(t *testing.T) {
 	f.onSupportsGet = func() error {
 		return errSupportsGet
 	}
-	r.shouldRetry = func(err error) bool {
+	r.ShouldRetry = func(err error) bool {
 		if err != errSupportsGet {
 			t.Error("expected error value to be passed to shouldRetry")
 		}
@@ -52,12 +53,12 @@ func TestRetrier(t *testing.T) {
 	}
 
 	// Reset should retry
-	r.shouldRetry = nil
+	r.ShouldRetry = nil
 }
 
 func TestRetrierMaxTries(t *testing.T) {
 	f := &fakeBackend{}
-	r := retrier{backend: f, maxTries: 5}
+	r := retrier{backend: f, MaxRetrier: &util.MaxRetrier{MaxTries: 5}}
 	bg := context.Background()
 
 	f.onGet = func() error {

@@ -731,7 +731,7 @@ func TestListTaskFilterTags(t *testing.T) {
 	})
 	log.Info("all tasks", "tasks", r.Tasks, "err", err)
 
-	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_BASIC,
 	})
 	if err != nil {
@@ -773,7 +773,7 @@ func TestListTaskFilterTags(t *testing.T) {
 		t.Error("unexpected task IDs", r.Tasks)
 	}
 
-	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_BASIC,
 		Tags: map[string]string{
 			"ASFasfa": "",
@@ -817,7 +817,7 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	})
 	log.Info("all tasks", "tasks", r.Tasks, "err", err)
 
-	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
+	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.TaskView_BASIC,
 	})
 	if err != nil {

@@ -139,7 +139,6 @@ func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
 
 // ListTasks returns a list of taskIDs
 func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-
 	var tasks []*tes.Task
 	pageSize := tes.GetPageSize(req.GetPageSize())
 
@@ -168,13 +167,13 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 				continue taskLoop
 			}
 
-			if req.Tags != nil {
-				for k, v := range req.Tags {
-					if task.Tags[k] != v {
-						continue taskLoop
-					}
+			for k, v := range req.Tags {
+				tval, ok := task.Tags[k]
+				if !ok || tval != v {
+					continue taskLoop
 				}
 			}
+
 			tasks = append(tasks, task)
 			i++
 		}

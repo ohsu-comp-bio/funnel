@@ -88,10 +88,8 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		q = q.Filter("State =", int32(req.State))
 	}
 
-	if req.Tags != nil {
-		for k, v := range req.Tags {
-			q = q.Filter("TagStrings =", encodeKV(k, v))
-		}
+	for k, v := range req.Tags {
+		q = q.Filter("TagStrings =", encodeKV(k, v))
 	}
 
 	var tasks []*tes.Task

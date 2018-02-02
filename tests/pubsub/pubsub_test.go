@@ -2,15 +2,16 @@ package pubsub
 
 import (
 	"context"
+	"os"
+	"testing"
+	"time"
+
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"os"
-	"testing"
-	"time"
 )
 
 var log = logger.NewLogger("pubsub-worker-test", logger.DefaultConfig())

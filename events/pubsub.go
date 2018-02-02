@@ -1,8 +1,9 @@
 package events
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
+
+	"cloud.google.com/go/pubsub"
 	"github.com/ohsu-comp-bio/funnel/config"
 	oldctx "golang.org/x/net/context"
 )

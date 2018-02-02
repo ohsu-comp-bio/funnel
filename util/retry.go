@@ -15,10 +15,7 @@ type MaxRetrier struct {
 
 func (r *MaxRetrier) Retry(ctx context.Context, f func() error) error {
 	b := backoff.WithContext(r.backoff(), ctx)
-	return backoff.Retry(func() error {
-		err := f()
-		return r.checkErr(err)
-	}, b)
+	return backoff.Retry(func() error { return r.checkErr(f()) }, b)
 }
 
 func (r *MaxRetrier) checkErr(err error) error {
@@ -38,7 +35,7 @@ func (r *MaxRetrier) backoff() backoff.BackOff {
 		// Default backoff parameters are here:
 		// https://github.com/cenkalti/backoff/blob/master/exponential.go#L74
 		eb := backoff.NewExponentialBackOff()
-		eb.InitialInterval = time.Millisecond * 100
+		eb.InitialInterval = time.Millisecond * 500
 		eb.MaxInterval = time.Second * 60
 		eb.Multiplier = 1.5
 		// Disable max retry time, since it is incompatible with upload time for large objects.
@@ -49,7 +46,6 @@ func (r *MaxRetrier) backoff() backoff.BackOff {
 	if r.MaxTries == 0 {
 		r.MaxTries = 10
 	}
-
 	// Cap the number of retry attempts.
 	return backoff.WithMaxRetries(r.Backoff, uint64(r.MaxTries-1))
 }

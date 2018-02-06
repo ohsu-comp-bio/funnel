@@ -90,5 +90,11 @@ func Validate(t *Task) ValidationError {
 		}
 	}
 
+	for k, v := range t.Tags {
+		if k == "" {
+			errs.add(`Task.Tags[""]=%s: empty key`, v)
+		}
+	}
+
 	return errs
 }

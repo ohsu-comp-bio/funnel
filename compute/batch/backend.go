@@ -155,51 +155,52 @@ func (b *Backend) reconcile(ctx context.Context) {
 
 		case <-ticker.C:
 			pageToken := ""
-			for {
-				lresp, _ := b.database.ListTasks(ctx, &tes.ListTasksRequest{
-					View:      tes.TaskView_BASIC,
-					PageSize:  100,
-					PageToken: pageToken,
-				})
-				pageToken = lresp.NextPageToken
+			states := []tes.State{tes.Queued, tes.Initializing, tes.Running}
+			for _, s := range states {
+				for {
+					lresp, _ := b.database.ListTasks(ctx, &tes.ListTasksRequest{
+						View:      tes.TaskView_BASIC,
+						State:     s,
+						PageSize:  100,
+						PageToken: pageToken,
+					})
+					pageToken = lresp.NextPageToken
 
-				tmap := make(map[string]*tes.Task)
-				var jobs []*string
-				for _, t := range lresp.Tasks {
-					switch t.State {
-					case tes.Queued, tes.Initializing, tes.Running:
+					tmap := make(map[string]*tes.Task)
+					var jobs []*string
+					for _, t := range lresp.Tasks {
 						jobid := getAWSTaskID(t)
 						tmap[jobid] = t
 						jobs = append(jobs, aws.String(jobid))
 					}
-				}
 
-				resp, _ := b.client.DescribeJobs(&batch.DescribeJobsInput{
-					Jobs: jobs,
-				})
+					resp, _ := b.client.DescribeJobs(&batch.DescribeJobsInput{
+						Jobs: jobs,
+					})
 
-				for _, j := range resp.Jobs {
-					task := tmap[*j.JobId]
-					jstate := *j.Status
+					for _, j := range resp.Jobs {
+						task := tmap[*j.JobId]
+						jstate := *j.Status
 
-					if jstate == "FAILED" {
-						b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-						b.event.WriteEvent(
-							ctx,
-							events.NewSystemLog(
-								task.Id, 0, 0, "error",
-								"AWSBatch job in FAILED state",
-								map[string]string{"error": *j.StatusReason, "awsbatch_id": *j.JobId},
-							),
-						)
+						if jstate == "FAILED" {
+							b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+							b.event.WriteEvent(
+								ctx,
+								events.NewSystemLog(
+									task.Id, 0, 0, "error",
+									"AWSBatch job in FAILED state",
+									map[string]string{"error": *j.StatusReason, "awsbatch_id": *j.JobId},
+								),
+							)
+						}
 					}
-				}
 
-				// continue to next page from ListTasks or break
-				if pageToken == "" {
-					break
+					// continue to next page from ListTasks or break
+					if pageToken == "" {
+						break
+					}
+					time.Sleep(time.Millisecond * 100)
 				}
-				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}

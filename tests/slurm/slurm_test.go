@@ -84,7 +84,6 @@ func TestCancel(t *testing.T) {
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
-
 	task := fun.Wait(id)
 	if task.State != tes.State_CANCELED {
 		t.Error("expected task to get canceled")

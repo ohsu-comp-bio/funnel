@@ -124,14 +124,15 @@ func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
 // |    Funnel State     |  Backend State  |  Reconciled State  |
 // |---------------------|-----------------|--------------------|
 // |        QUEUED       |     FAILED      |    SYSTEM_ERROR    |
+// |        QUEUED       | QUEUED/PENDING* |    SYSTEM_ERROR    |
 // |  INITIALIZING       |     FAILED      |    SYSTEM_ERROR    |
 // |       RUNNING       |     FAILED      |    SYSTEM_ERROR    |
-// |        QUEUED       |   CANCELED      |        CANCELED    |
-// |  INITIALIZING       |   CANCELED      |        CANCELED    |
-// |       RUNNING       |   CANCELED      |        CANCELED    |
 //
 // In this context a "FAILED" state is being used as a generic term that captures
 // one or more terminal states for the backend.
+//
+// *QUEUED/PENDING: this captures the case where the scheduler has a task that is
+// stuck in the queued state because the resource request that can never be fulfilled.
 func (b *HPCBackend) Reconcile(ctx context.Context) {
 	ticker := time.NewTicker(b.ReconcileRate)
 
@@ -142,55 +143,59 @@ func (b *HPCBackend) Reconcile(ctx context.Context) {
 
 		case <-ticker.C:
 			pageToken := ""
-			for {
-				lresp, _ := b.Database.ListTasks(ctx, &tes.ListTasksRequest{
-					View:      tes.TaskView_BASIC,
-					PageSize:  100,
-					PageToken: pageToken,
-				})
-				pageToken = lresp.NextPageToken
+			states := []tes.State{tes.Queued, tes.Initializing, tes.Running}
+			for _, s := range states {
+				for {
+					lresp, _ := b.Database.ListTasks(ctx, &tes.ListTasksRequest{
+						View:      tes.TaskView_BASIC,
+						State:     s,
+						PageSize:  100,
+						PageToken: pageToken,
+					})
+					pageToken = lresp.NextPageToken
 
-				tmap := make(map[string]*tes.Task)
-				ids := []string{}
-				for _, t := range lresp.Tasks {
-					switch t.State {
-					case tes.Queued, tes.Initializing, tes.Running:
+					tmap := make(map[string]*tes.Task)
+					ids := []string{}
+					for _, t := range lresp.Tasks {
 						bid := getBackendTaskID(t, b.Name)
 						tmap[bid] = t
 						ids = append(ids, bid)
 					}
-				}
 
-				bmap, _ := b.MapStates(ids)
-				for _, t := range bmap {
-					// lookup task by backend specific ID
-					task := tmap[t.ID]
-
-					if t.TESState == tes.SystemError {
-						if t.Remove {
-							exec.Command(b.CancelCmd, t.ID).Run()
+					bmap, _ := b.MapStates(ids)
+					for _, t := range bmap {
+						// lookup task by backend specific ID
+						task := tmap[t.ID]
+						if task == nil {
+							continue
 						}
-						b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-						b.Event.WriteEvent(
-							ctx,
-							events.NewSystemLog(
-								task.Id, 0, 0, "error",
-								b.Name+" reports system error for task",
-								map[string]string{
-									"error":           t.Reason,
-									b.Name + "_id":    t.ID,
-									b.Name + "_state": t.State,
-								},
-							),
-						)
-					}
-				}
 
-				// continue to next page from ListTasks or break
-				if pageToken == "" {
-					break
+						if t.TESState == tes.SystemError {
+							b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+							b.Event.WriteEvent(
+								ctx,
+								events.NewSystemLog(
+									task.Id, 0, 0, "error",
+									b.Name+" reports system error for task",
+									map[string]string{
+										"error":           t.Reason,
+										b.Name + "_id":    t.ID,
+										b.Name + "_state": t.State,
+									},
+								),
+							)
+							if t.Remove {
+								exec.Command(b.CancelCmd, t.ID).Run()
+							}
+						}
+					}
+
+					// continue to next page from ListTasks or break
+					if pageToken == "" {
+						break
+					}
+					time.Sleep(time.Millisecond * 100)
 				}
-				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}

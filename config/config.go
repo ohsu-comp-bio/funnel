@@ -171,6 +171,9 @@ type Kafka struct {
 type PubSub struct {
 	Topic   string
 	Project string
+	// If no account file is provided then Funnel will try to use Google Application
+	// Default Credentials to authorize and authenticate the client.
+	CredentialsFile string
 }
 
 // AWSConfig describes the configuration for creating AWS Session instances

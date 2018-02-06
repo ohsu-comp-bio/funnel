@@ -6,12 +6,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util"
 )
 
-type Retrier struct {
+type retrier struct {
 	*util.Retrier
 	Writer Writer
 }
 
-func (r *Retrier) WriteEvent(ctx context.Context, e *Event) error {
+func (r *retrier) WriteEvent(ctx context.Context, e *Event) error {
 	return r.Retry(ctx, func() error {
 		return r.Writer.WriteEvent(ctx, e)
 	})

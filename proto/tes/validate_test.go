@@ -8,3 +8,20 @@ func TestValidation(t *testing.T) {
 		t.Fatal("expected validation errors")
 	}
 }
+
+func TestEmptyTagKeyValidation(t *testing.T) {
+	v := Validate(&Task{
+		Tags: map[string]string{
+			"": "bar",
+		},
+		Executors: []*Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"echo"},
+			},
+		},
+	})
+	if len(v) != 1 {
+		t.Fatal("expected 1 validation error")
+	}
+}

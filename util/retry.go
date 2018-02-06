@@ -7,18 +7,36 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-type MaxRetrier struct {
-	Backoff     backoff.BackOff
-	ShouldRetry func(err error) bool
-	MaxTries    int
+type Retrier struct {
+	InitialInterval     time.Duration
+	MaxInterval         time.Duration
+	Multiplier          float64
+	RandomizationFactor float64
+	MaxElapsedTime      time.Duration
+	MaxTries            int
+	ShouldRetry         func(err error) bool
+	backoff             backoff.BackOff
 }
 
-func (r *MaxRetrier) Retry(ctx context.Context, f func() error) error {
-	b := backoff.WithContext(r.backoff(), ctx)
+func NewRetrier() *Retrier {
+	// based on https://github.com/cenkalti/backoff/blob/master/exponential.go#L74
+	return &Retrier{
+		InitialInterval:     time.Millisecond * 500,
+		MaxInterval:         time.Second * 60,
+		Multiplier:          1.5,
+		RandomizationFactor: 0.5,
+		MaxElapsedTime:      time.Minute * 15,
+		MaxTries:            10,
+		ShouldRetry:         nil,
+	}
+}
+
+func (r *Retrier) Retry(ctx context.Context, f func() error) error {
+	b := backoff.WithContext(r.withTries(), ctx)
 	return backoff.Retry(func() error { return r.checkErr(f()) }, b)
 }
 
-func (r *MaxRetrier) checkErr(err error) error {
+func (r *Retrier) checkErr(err error) error {
 	switch {
 	case err != nil && r.ShouldRetry != nil && !r.ShouldRetry(err):
 		return &backoff.PermanentError{Err: err}
@@ -29,23 +47,21 @@ func (r *MaxRetrier) checkErr(err error) error {
 	}
 }
 
-func (r *MaxRetrier) backoff() backoff.BackOff {
-	// default for Backoff if unset
-	if r.Backoff == nil {
-		// Default backoff parameters are here:
-		// https://github.com/cenkalti/backoff/blob/master/exponential.go#L74
-		eb := backoff.NewExponentialBackOff()
-		eb.InitialInterval = time.Millisecond * 500
-		eb.MaxInterval = time.Second * 60
-		eb.Multiplier = 1.5
-		// Disable max retry time, since it is incompatible with upload time for large objects.
-		eb.MaxElapsedTime = 0
-		r.Backoff = eb
+func (r *Retrier) withTries() backoff.BackOff {
+	r.backoff = &backoff.ExponentialBackOff{
+		InitialInterval:     r.InitialInterval,
+		MaxInterval:         r.MaxInterval,
+		Multiplier:          r.Multiplier,
+		RandomizationFactor: r.RandomizationFactor,
+		MaxElapsedTime:      r.MaxElapsedTime,
+		Clock:               backoff.SystemClock,
 	}
-	// default for MaxTries if unset
-	if r.MaxTries == 0 {
-		r.MaxTries = 10
+
+	max := r.MaxTries - 1
+	if max < 0 {
+		max = 0
 	}
+
 	// Cap the number of retry attempts.
-	return backoff.WithMaxRetries(r.Backoff, uint64(r.MaxTries-1))
+	return backoff.WithMaxRetries(r.backoff, uint64(max))
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/units"
 	"github.com/ncw/swift"
@@ -58,8 +59,13 @@ func NewSwiftBackend(conf config.SwiftStorage) (Backend, error) {
 	b := &SwiftBackend{conn, chunkSize}
 	return &retrier{
 		backend: b,
-		MaxRetrier: &util.MaxRetrier{
-			MaxTries: conf.MaxRetries,
+		Retrier: &util.Retrier{
+			MaxTries:            conf.MaxRetries,
+			InitialInterval:     time.Second * 5,
+			MaxInterval:         time.Minute * 5,
+			Multiplier:          2.0,
+			RandomizationFactor: 0.5,
+			MaxElapsedTime:      0,
 			ShouldRetry: func(err error) bool {
 				// Retry on errors that swift names specifically.
 				if err == swift.ObjectCorrupted || err == swift.TimeoutError {

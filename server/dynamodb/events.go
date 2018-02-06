@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -12,14 +13,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 // WriteEvent creates an event for the server to handle.
 func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
-	if e.Type == events.Type_TASK_CREATED {
-		return db.createTask(ctx, e.GetTask())
-	}
-
 	item := &dynamodb.UpdateItemInput{
 		TableName: aws.String(db.taskTable),
 		Key: map[string]*dynamodb.AttributeValue{
@@ -33,37 +31,68 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 	}
 
 	var updateExpr expression.UpdateBuilder
-	exprBuilder := expression.NewBuilder()
 
 	switch e.Type {
+	case events.Type_TASK_CREATED:
+		return db.createTask(ctx, e.GetTask())
 
 	case events.Type_TASK_STATE:
-		response, err := db.getBasicView(ctx, e.Id)
-		if err != nil {
+		retrier := util.NewRetrier()
+		retrier.ShouldRetry = func(err error) bool {
+			if aerr, ok := err.(awserr.Error); ok {
+				if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException ||
+					aerr.Code() == dynamodb.ErrCodeProvisionedThroughputExceededException {
+					return true
+				}
+			}
+			return false
+		}
+
+		return retrier.Retry(ctx, func() error {
+			// get current state & version
+			current := make(map[string]interface{})
+			response, err := db.getBasicView(ctx, e.Id)
+			if err != nil {
+				return err
+			}
+			if response.Item == nil {
+				return tes.ErrNotFound
+			}
+
+			err = dynamodbattribute.UnmarshalMap(response.Item, &current)
+			if err != nil {
+				return fmt.Errorf("failed to DynamoDB unmarshal Task, %v", err)
+			}
+
+			// validate state transition
+			from := tes.State(current["state"].(float64))
+			to := e.GetState()
+			if err := tes.ValidateTransition(from, to); err != nil {
+				return err
+			}
+
+			// apply version restriction and set update
+			condExpr := expression.Name("version").Equal(expression.Value(fmt.Sprintf("%v", current["version"])))
+			updateExpr = expression.Set(expression.Name("state"), expression.Value(to))
+			updateExpr = updateExpr.Set(expression.Name("version"), expression.Value(strconv.FormatInt(time.Now().UnixNano(), 10)))
+
+			// build update item
+			expr, err := expression.NewBuilder().WithUpdate(updateExpr).WithCondition(condExpr).Build()
+			if err != nil {
+				return err
+			}
+
+			item.ExpressionAttributeNames = expr.Names()
+			item.ExpressionAttributeValues = expr.Values()
+			item.UpdateExpression = expr.Update()
+			if *expr.Condition() != "" {
+				item.ConditionExpression = expr.Condition()
+			}
+
+			// apply update with retries upon version collisions
+			_, err = db.client.UpdateItemWithContext(ctx, item)
 			return err
-		}
-
-		type altMinView struct {
-			Id      string
-			State   tes.State
-			Version int32
-		}
-
-		task := altMinView{}
-		err = dynamodbattribute.UnmarshalMap(response.Item, &task)
-		if err != nil {
-			return fmt.Errorf("failed to DynamoDB unmarshal Task, %v", err)
-		}
-
-		from := task.State
-		to := e.GetState()
-		if err := tes.ValidateTransition(from, to); err != nil {
-			return err
-		}
-
-		exprBuilder = exprBuilder.WithCondition(expression.Name("version").Equal(expression.Value(task.Version)))
-		updateExpr = expression.Set(expression.Name("state"), expression.Value(to))
-		updateExpr = updateExpr.Add(expression.Name("version"), expression.Value(1))
+		})
 
 	case events.Type_TASK_START_TIME:
 		if err := db.ensureTaskLog(ctx, e.Id, e.Attempt); err != nil {
@@ -203,10 +232,7 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 		)
 	}
 
-	// ensure item exists
-	// exprBuilder = exprBuilder.WithCondition(expression.Name("id").Equal(expression.Value(e.Id)))
-
-	expr, err := exprBuilder.WithUpdate(updateExpr).Build()
+	expr, err := expression.NewBuilder().WithUpdate(updateExpr).Build()
 	if err != nil {
 		return err
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
 	"github.com/ohsu-comp-bio/funnel/storage"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
@@ -52,7 +51,6 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 			writer, err = events.NewRPCWriter(ctx, conf.Server)
 		case "dynamodb":
 			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
-			writer = &events.Retrier{MaxRetrier: &util.MaxRetrier{MaxTries: 10}, Writer: writer}
 		case "datastore":
 			writer, err = datastore.NewDatastore(conf.Datastore)
 		case "elastic":

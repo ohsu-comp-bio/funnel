@@ -24,7 +24,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
-	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 // Run runs the "server run" command.
@@ -91,7 +90,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 		database = d
 		reader = d
-		writers = append(writers, &events.Retrier{MaxRetrier: &util.MaxRetrier{MaxTries: 10}, Writer: d})
+		writers = append(writers, d)
 
 	case "elastic":
 		e, err := elastic.NewElastic(conf.Elastic)

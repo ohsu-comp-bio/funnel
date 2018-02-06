@@ -8,7 +8,7 @@ import (
 )
 
 type retrier struct {
-	*util.MaxRetrier
+	*util.Retrier
 	backend Backend
 }
 

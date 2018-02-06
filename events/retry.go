@@ -7,7 +7,7 @@ import (
 )
 
 type Retrier struct {
-	*util.MaxRetrier
+	*util.Retrier
 	Writer Writer
 }
 

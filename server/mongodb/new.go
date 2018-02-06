@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ohsu-comp-bio/funnel/config"
-	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2"
 )
 
 // MongoDB provides an MongoDB database server backend.

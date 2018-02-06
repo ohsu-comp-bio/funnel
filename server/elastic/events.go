@@ -1,11 +1,13 @@
 package elastic
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/util"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
@@ -76,7 +78,7 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 	u := es.client.Update().
 		Index(es.taskIndex).
 		Type("task").
-		RetryOnConflict(3).
+		RetryOnConflict(10).
 		Id(ev.Id)
 
 	switch ev.Type {
@@ -97,19 +99,44 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 		return err
 
 	case events.Type_TASK_STATE:
-		res, err := es.GetTask(ctx, &tes.GetTaskRequest{
-			Id: ev.Id,
-		})
-		if err != nil {
-			return err
+		retrier := util.NewRetrier()
+		retrier.ShouldRetry = func(err error) bool {
+			if elastic.IsConflict(err) || elastic.IsConnErr(err) {
+				return true
+			}
+			return false
 		}
 
-		from := res.State
-		to := ev.GetState()
-		if err := tes.ValidateTransition(from, to); err != nil {
+		return retrier.Retry(ctx, func() error {
+			// get current state & version
+			res, err := es.getTask(ctx, &tes.GetTaskRequest{Id: ev.Id})
+			if err != nil {
+				return err
+			}
+
+			task := &tes.Task{}
+			err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), task)
+			if err != nil {
+				return err
+			}
+
+			// validate state transition
+			from := task.State
+			to := ev.GetState()
+			if err := tes.ValidateTransition(from, to); err != nil {
+				return err
+			}
+
+			// apply version restriction and set update
+			_, err = es.client.Update().
+				Index(es.taskIndex).
+				Type("task").
+				Id(ev.Id).
+				Version(*res.Version).
+				Doc(map[string]string{"state": to.String()}).
+				Do(ctx)
 			return err
-		}
-		u = u.Doc(map[string]string{"state": to.String()})
+		})
 
 	case events.Type_TASK_START_TIME:
 		u = u.Script(taskLogUpdate(ev.Attempt, "start_time", ev.GetStartTime()))

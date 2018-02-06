@@ -10,8 +10,7 @@ import (
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
-// GetTask gets a task by ID.
-func (es *Elastic) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+func (es *Elastic) getTask(ctx context.Context, req *tes.GetTaskRequest) (*elastic.GetResult, error) {
 	g := es.client.Get().
 		Index(es.taskIndex).
 		Type("task").
@@ -25,20 +24,21 @@ func (es *Elastic) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 	}
 
 	res, err := g.Do(ctx)
-
 	if elastic.IsNotFound(err) {
 		return nil, tes.ErrNotFound
 	}
+	return res, err
+}
+
+// GetTask gets a task by ID.
+func (es *Elastic) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+	res, err := es.getTask(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-
 	task := &tes.Task{}
 	err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), task)
-	if err != nil {
-		return nil, err
-	}
-	return task, nil
+	return task, err
 }
 
 // ListTasks lists tasks, duh.

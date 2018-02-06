@@ -63,6 +63,13 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.DynamoDB.TableBasename = prefix
 	conf.Datastore.Project = prefix
 
+	reconcile := time.Second * 5
+	conf.HTCondor.ReconcileRate = reconcile
+	conf.Slurm.ReconcileRate = reconcile
+	conf.PBS.ReconcileRate = reconcile
+	conf.GridEngine.ReconcileRate = reconcile
+	conf.AWSBatch.ReconcileRate = reconcile
+
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
 	fsutil.EnsureDir(storageDir)

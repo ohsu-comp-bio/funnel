@@ -6,6 +6,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"github.com/ohsu-comp-bio/funnel/config"
 	oldctx "golang.org/x/net/context"
+	"google.golang.org/api/option"
 )
 
 // PubSubWriter writes events to Google Cloud Pub/Sub.
@@ -20,7 +21,12 @@ type PubSubWriter struct {
 //
 // Stdout, stderr, and system log events are not sent.
 func NewPubSubWriter(ctx context.Context, conf config.PubSub) (*PubSubWriter, error) {
-	client, err := pubsub.NewClient(ctx, conf.Project)
+	opts := []option.ClientOption{}
+	if conf.CredentialsFile != "" {
+		opts = append(opts, option.WithCredentialsFile(conf.CredentialsFile))
+	}
+
+	client, err := pubsub.NewClient(ctx, conf.Project, opts...)
 	if err != nil {
 		return nil, err
 	}

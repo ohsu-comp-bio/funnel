@@ -28,7 +28,8 @@ install: depends
 proto:
 	@cd proto/tes && protoc \
 		$(PROTO_INC) \
-		--go_out=plugins=grpc:. \
+		-I ../../vendor/github.com/golang/protobuf/ptypes/any/ \
+		--go_out=Mgoogle/protobuf/any.proto=github.com/golang/protobuf/ptypes/any,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		tes.proto
 	@cd proto/scheduler && protoc \
@@ -39,8 +40,8 @@ proto:
 	@cd events && protoc \
 		$(PROTO_INC) \
 		-I ../proto/tes \
-		-I `pwd`/vendor/github.com/golang/protobuf/ptypes/struct/ \
-		-I `pwd`/vendor/github.com/golang/protobuf/ptypes/timestamp/ \
+		-I ../vendor/github.com/golang/protobuf/ptypes/struct/ \
+		-I ../vendor/github.com/golang/protobuf/ptypes/timestamp/ \
 		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		events.proto

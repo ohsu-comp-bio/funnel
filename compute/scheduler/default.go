@@ -9,7 +9,6 @@ import (
 // the whether a task fits a node.
 var DefaultPredicates = []Predicate{
 	ResourcesFit,
-	ZonesFit,
 	NotDead,
 	Alive,
 }

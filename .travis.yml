@@ -78,6 +78,12 @@ jobs:
         - make test-generic-s3
       env:
         - n=generic-s3
+    - script:
+        - make start-pubsub
+        - sleep 10
+        - make test-pubsub
+      env:
+        - n=pubsub
 
 notifications:
   email: false

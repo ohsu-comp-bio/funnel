@@ -1,0 +1,4 @@
+EventWriters: ["pubsub", "log"]
+PubSub:
+  Topic: funnel-events
+  Project: funnel-test

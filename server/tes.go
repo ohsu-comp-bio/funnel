@@ -67,7 +67,7 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 	// dispatch to compute backend
 	err := ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
 	if err != nil {
-		ts.Log.Error("compute backend failed to cancel task %s: %v", req.Id, err)
+		ts.Log.Error("compute backend failed to cancel task", "taskID", req.Id, "error", err)
 	}
 
 	// updated database and other event streams

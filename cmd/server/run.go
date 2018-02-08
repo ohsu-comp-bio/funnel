@@ -74,7 +74,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		writers = append(writers, d)
 
 	case "dynamodb":
-		d, err := dynamodb.NewDynamoDB(conf.DynamoDB)
+		d, err := dynamodb.NewDynamoDB(conf.DynamoDB, true)
 		if err != nil {
 			return nil, dberr(err)
 		}
@@ -123,7 +123,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		case "boltdb":
 			writer, err = boltdb.NewBoltDB(conf.BoltDB)
 		case "dynamodb":
-			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB, false)
 		case "elastic":
 			writer, err = elastic.NewElastic(ctx, conf.Elastic)
 		case "kafka":

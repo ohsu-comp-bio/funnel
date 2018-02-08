@@ -50,7 +50,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 		case "boltdb":
 			writer, err = events.NewRPCWriter(ctx, conf.Server)
 		case "dynamodb":
-			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB, false)
 		case "datastore":
 			writer, err = datastore.NewDatastore(conf.Datastore)
 		case "elastic":
@@ -78,7 +78,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 	case "datastore":
 		db, err = datastore.NewDatastore(conf.Datastore)
 	case "dynamodb":
-		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+		db, err = dynamodb.NewDynamoDB(conf.DynamoDB, false)
 	case "elastic":
 		db, err = elastic.NewElastic(ctx, conf.Elastic)
 	case "mongodb":

@@ -23,7 +23,7 @@ type DynamoDB struct {
 
 // NewDynamoDB returns a new instance of DynamoDB, accessing the database at
 // the given url, and including the given ServerConfig.
-func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
+func NewDynamoDB(conf config.DynamoDB, create bool) (*DynamoDB, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating dynamodb client: %v", err)
@@ -40,8 +40,11 @@ func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
 		syslogsTable:   conf.TableBasename + "-syslogs",
 	}
 
-	if err := db.createTables(); err != nil {
-		return nil, err
+	if create {
+		if err := db.createTables(); err != nil {
+			return nil, err
+		}
 	}
+
 	return db, nil
 }

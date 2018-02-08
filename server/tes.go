@@ -64,18 +64,17 @@ func (ts *TaskService) ListTasks(ctx context.Context, req *tes.ListTasksRequest)
 
 // CancelTask cancels a task
 func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+	// dispatch to compute backend
+	err := ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	if err != nil {
+		ts.Log.Error("compute backend failed to cancel task", "taskID", req.Id, "error", err)
+	}
+
 	// updated database and other event streams
-	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	err = ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
 	if err == tes.ErrNotFound {
 		err = grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
 	}
-
-	// dispatch to compute backend
-	cerr := ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
-	if cerr != nil {
-		ts.Log.Error("compute backend failed to cancel task %s: %v", req.Id, cerr)
-	}
-
 	return &tes.CancelTaskResponse{}, err
 }
 

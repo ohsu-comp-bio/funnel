@@ -222,13 +222,6 @@ PBS:
     {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
 
 GridEngine:
-  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
-  # scheduler to find tasks that are stuck in a queued state or errored and
-  # updates the task state accordingly.
-  DisableReconciler: false
-  # ReconcileRate is how often the compute backend compares states in Funnel's backend
-  # to those reported by the backend
-  ReconcileRate: 1800000000000 #  30 minutes
   Template: |
     #!bin/bash
     #$ -N {{.NodeId}}

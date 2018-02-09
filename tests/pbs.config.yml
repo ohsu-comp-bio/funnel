@@ -1,1 +1,3 @@
 Compute: "pbs"
+PBS:
+  DisableReconciler: false

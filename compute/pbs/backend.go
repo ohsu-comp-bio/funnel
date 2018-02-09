@@ -3,6 +3,7 @@ package pbs
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"os/exec"
 
 	"github.com/ohsu-comp-bio/funnel/compute"
@@ -61,13 +62,13 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 	cmd := exec.Command("qstat", "-x")
 	stdout, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("qstat command failed: %v", err)
 	}
 
 	res := xmlRecord{}
 	err = xml.Unmarshal(stdout, &res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal qstat output: %v", err)
 	}
 
 	for _, j := range res.Job {

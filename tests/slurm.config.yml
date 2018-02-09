@@ -1,1 +1,4 @@
 Compute: "slurm"
+Slurm:
+  DisableReconciler: false
+

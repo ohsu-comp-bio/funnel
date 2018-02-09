@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -18,7 +17,6 @@ var serverName string
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
-	conf.Slurm.ReconcileRate = time.Second * 5
 
 	if conf.Compute != "slurm" {
 		logger.Debug("Skipping slurm e2e tests...")

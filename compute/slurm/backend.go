@@ -2,6 +2,7 @@ package slurm
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -50,10 +51,10 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 	cmd := exec.Command("squeue", "--noheader", "--Format", "jobid,state,reason", "--job", strings.Join(ids, ","))
 	stdout, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("squeue command failed: %v", err)
 	}
 
-	scanner := bufio.NewScanner(strings.NewReader(string(stdout)))
+	scanner := bufio.NewScanner(bytes.NewReader(stdout))
 	for scanner.Scan() {
 		parts := strings.Fields(scanner.Text())
 		if len(parts) != 3 {
@@ -76,10 +77,10 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 	cmd = exec.Command("sacct", "--noheader", "--format", "jobid,state", "--job", strings.Join(ids, ","))
 	stdout, err = cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sacct command failed: %v", err)
 	}
 
-	scanner = bufio.NewScanner(strings.NewReader(string(stdout)))
+	scanner = bufio.NewScanner(bytes.NewReader(stdout))
 	for scanner.Scan() {
 		parts := strings.Fields(scanner.Text())
 		if len(parts) != 2 {

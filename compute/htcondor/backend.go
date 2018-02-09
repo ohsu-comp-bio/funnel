@@ -57,25 +57,25 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 	qcmd := exec.Command("condor_q", "-json", "-attributes", "ClusterId,JobStatus,ExitCode", strings.Join(ids, ","))
 	qout, err := qcmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("condor_q command failed: %v", err)
 	}
 
 	qparsed := []record{}
 	err = json.Unmarshal(qout, &qparsed)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal condor_q output: %v", err)
 	}
 
 	hcmd := exec.Command("condor_history", "-json", "-attributes", "ClusterId,JobStatus,ExitCode", strings.Join(ids, ","))
 	hout, err := hcmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("condor_history command failed: %v", err)
 	}
 
 	hparsed := []record{}
 	err = json.Unmarshal(hout, &hparsed)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal condor_history output: %v", err)
 	}
 
 	parsed := append(qparsed, hparsed...)
@@ -87,10 +87,10 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 
 		switch state {
 		case "Idle":
-			err = checkIdleStatus(id)
-			if err != nil {
+			stuck, _ := checkIdleStatus(id)
+			if stuck {
 				output = append(output, &compute.HPCTaskState{
-					ID: id, TESState: tes.SystemError, State: state, Reason: err.Error(), Remove: true,
+					ID: id, TESState: tes.SystemError, State: state, Reason: "no machines matched the jobs's constraints", Remove: true,
 				})
 			} else {
 				output = append(output, &compute.HPCTaskState{ID: id, TESState: tes.Queued, State: state})
@@ -119,14 +119,17 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 	return output, nil
 }
 
-func checkIdleStatus(id string) error {
+func checkIdleStatus(id string) (bool, error) {
 	cmd := exec.Command("condor_q", "-analyze", id)
-	stdout, _ := cmd.Output()
+	stdout, err := cmd.Output()
+	if err != nil {
+		err = fmt.Errorf("'condor_q -analyze %s' command failed: %v", id, err)
+	}
 	msg := "No machines matched the jobs's constraints"
 	if stdout != nil && strings.Contains(string(stdout), msg) {
-		return fmt.Errorf(msg)
+		return true, err
 	}
-	return nil
+	return false, err
 }
 
 var stateMap = map[int]string{

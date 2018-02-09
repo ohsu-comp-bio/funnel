@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
 )
@@ -170,8 +172,17 @@ func (b *Backend) reconcile(ctx context.Context) {
 					var jobs []*string
 					for _, t := range lresp.Tasks {
 						jobid := getAWSTaskID(t)
-						tmap[jobid] = t
-						jobs = append(jobs, aws.String(jobid))
+						if jobid != "" {
+							tmap[jobid] = t
+							jobs = append(jobs, aws.String(jobid))
+						}
+					}
+
+					if len(jobs) == 0 {
+						if pageToken == "" {
+							break
+						}
+						continue
 					}
 
 					resp, _ := b.client.DescribeJobs(&batch.DescribeJobsInput{
@@ -197,6 +208,7 @@ func (b *Backend) reconcile(ctx context.Context) {
 
 					// continue to next page from ListTasks or break
 					if pageToken == "" {
+						logger.Debug("End reconcile")
 						break
 					}
 					time.Sleep(time.Millisecond * 100)

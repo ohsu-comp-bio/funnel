@@ -22,7 +22,7 @@ func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Wri
 		ExtractID: extractID,
 		// grid engine backend doesnt support state reconciliation
 		MapStates:     nil,
-		ReconcileRate: conf.GridEngine.ReconcileRate,
+		ReconcileRate: 0,
 	}
 }
 

@@ -67,7 +67,6 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.HTCondor.ReconcileRate = reconcile
 	conf.Slurm.ReconcileRate = reconcile
 	conf.PBS.ReconcileRate = reconcile
-	conf.GridEngine.ReconcileRate = reconcile
 	conf.AWSBatch.ReconcileRate = reconcile
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")

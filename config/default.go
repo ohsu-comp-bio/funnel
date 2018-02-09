@@ -93,25 +93,30 @@ func DefaultConfig() Config {
 	}
 
 	// compute
+	reconcile := time.Minute * 10
+
 	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
-	slurmTemplate, _ := Asset("config/slurm-template.txt")
-	pbsTemplate, _ := Asset("config/pbs-template.txt")
-	geTemplate, _ := Asset("config/gridengine-template.txt")
-
-	reconcile := time.Minute * 30
-
 	c.HTCondor.Template = string(htcondorTemplate)
 	c.HTCondor.ReconcileRate = reconcile
+	c.HTCondor.DisableReconciler = true
+
+	slurmTemplate, _ := Asset("config/slurm-template.txt")
 	c.Slurm.Template = string(slurmTemplate)
 	c.Slurm.ReconcileRate = reconcile
+	c.Slurm.DisableReconciler = true
+
+	pbsTemplate, _ := Asset("config/pbs-template.txt")
 	c.PBS.Template = string(pbsTemplate)
 	c.PBS.ReconcileRate = reconcile
+	c.PBS.DisableReconciler = true
+
+	geTemplate, _ := Asset("config/gridengine-template.txt")
 	c.GridEngine.Template = string(geTemplate)
-	c.GridEngine.ReconcileRate = reconcile
 
 	c.AWSBatch.JobDefinition = "funnel-job-def"
 	c.AWSBatch.JobQueue = "funnel-job-queue"
 	c.AWSBatch.ReconcileRate = reconcile
+	c.AWSBatch.DisableReconciler = true
 
 	return c
 }

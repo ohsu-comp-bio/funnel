@@ -3,7 +3,6 @@ package pbs
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -15,7 +14,6 @@ var serverName string
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
-	conf.PBS.ReconcileRate = time.Second
 
 	if conf.Compute != "pbs" {
 		logger.Debug("Skipping PBS/Torque e2e tests...")

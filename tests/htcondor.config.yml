@@ -1,1 +1,3 @@
 Compute: "htcondor"
+HTCondor:
+  DisableReconciler: false

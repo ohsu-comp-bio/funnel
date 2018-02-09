@@ -158,8 +158,17 @@ func (b *HPCBackend) Reconcile(ctx context.Context) {
 					ids := []string{}
 					for _, t := range lresp.Tasks {
 						bid := getBackendTaskID(t, b.Name)
-						tmap[bid] = t
-						ids = append(ids, bid)
+						if bid != "" {
+							tmap[bid] = t
+							ids = append(ids, bid)
+						}
+					}
+
+					if len(ids) == 0 {
+						if pageToken == "" {
+							break
+						}
+						continue
 					}
 
 					bmap, _ := b.MapStates(ids)

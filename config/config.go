@@ -31,8 +31,10 @@ type Config struct {
 	HTCondor   HPCBackend
 	Slurm      HPCBackend
 	PBS        HPCBackend
-	GridEngine HPCBackend
-	AWSBatch   AWSBatch
+	GridEngine struct {
+		Template string
+	}
+	AWSBatch AWSBatch
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage

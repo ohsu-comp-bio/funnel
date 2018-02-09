@@ -10,6 +10,7 @@ import (
 )
 
 var fun *tests.Funnel
+var serverName string
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
@@ -20,8 +21,9 @@ func TestMain(m *testing.M) {
 	}
 
 	fun = tests.NewFunnel(conf)
-	fun.StartServerInDocker("ohsucompbio/pbs-torque:latest", []string{"--hostname", "docker", "--privileged"})
-	defer fun.CleanupTestServerContainer()
+	serverName = "funnel-test-server-" + tests.RandomString(6)
+	fun.StartServerInDocker(serverName, "ohsucompbio/pbs-torque:latest", []string{"--hostname", "docker", "--privileged"})
+	defer fun.CleanupTestServerContainer(serverName)
 
 	m.Run()
 	return

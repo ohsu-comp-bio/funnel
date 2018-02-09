@@ -3,6 +3,8 @@ package htcondor
 import (
 	"context"
 	"os"
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -11,6 +13,7 @@ import (
 )
 
 var fun *tests.Funnel
+var serverName string
 
 func TestMain(m *testing.M) {
 	conf := tests.DefaultConfig()
@@ -21,8 +24,9 @@ func TestMain(m *testing.M) {
 	}
 
 	fun = tests.NewFunnel(conf)
-	fun.StartServerInDocker("ohsucompbio/htcondor:latest", []string{})
-	defer fun.CleanupTestServerContainer()
+	serverName = "funnel-test-server-" + tests.RandomString(6)
+	fun.StartServerInDocker(serverName, "ohsucompbio/htcondor:latest", []string{})
+	defer fun.CleanupTestServerContainer(serverName)
 
 	m.Run()
 	return
@@ -69,8 +73,16 @@ func TestCancel(t *testing.T) {
 	}
 
 	task := fun.Wait(id)
-
 	if task.State != tes.State_CANCELED {
-		t.Fatal("expected task to get canceled")
+		t.Error("expected task to get canceled")
+	}
+
+	bid := task.Logs[0].Metadata["htcondor_id"]
+	cmd := exec.Command("docker", "exec", serverName, "condor_q", bid)
+	out, err := cmd.Output()
+	t.Log("cmd output:", string(out))
+	t.Log("error:", err)
+	if !strings.Contains(string(out), "0 jobs;") {
+		t.Error("unexpected condor_q output")
 	}
 }

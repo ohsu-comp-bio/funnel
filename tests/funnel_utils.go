@@ -322,7 +322,7 @@ func (f *Funnel) ReadFile(name string) string {
 }
 
 // StartServerInDocker starts a funnel server in a docker image
-func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
+func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs []string) {
 	var funnelBinary string
 	var err error
 	gopath := os.Getenv("GOPATH")
@@ -360,7 +360,7 @@ func (f *Funnel) StartServerInDocker(imageName string, extraArgs []string) {
 	args := []string{
 		"run", "-i", "--rm",
 		"--group-add", fmt.Sprintf("%d", gid),
-		"--name", "funnel-test-server-" + RandomString(6),
+		"--name", containerName,
 		"-p", fmt.Sprintf("%d:%d", httpPort, httpPort),
 		"-p", fmt.Sprintf("%d:%d", rpcPort, rpcPort),
 		"-v", "/var/run/docker.sock:/var/run/docker.sock",
@@ -431,10 +431,9 @@ func (f *Funnel) killTestServerContainers(ids []string) {
 }
 
 // CleanupTestServerContainer stops the docker container running the test funnel server
-func (f *Funnel) CleanupTestServerContainer() {
+func (f *Funnel) CleanupTestServerContainer(containerName string) {
 	f.Cleanup()
-	s := f.findTestServerContainers()
-	f.killTestServerContainers(s)
+	f.killTestServerContainers([]string{containerName})
 	return
 }
 

@@ -40,8 +40,10 @@ func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
 		syslogsTable:   conf.TableBasename + "-syslogs",
 	}
 
-	if err := db.createTables(); err != nil {
-		return nil, err
-	}
 	return db, nil
+}
+
+// Init creates tables in DynamoDB.
+func (db *DynamoDB) Init() error {
+	return db.createTables()
 }

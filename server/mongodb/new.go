@@ -37,14 +37,11 @@ func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 		tasks: sess.DB(conf.Database).C("tasks"),
 		nodes: sess.DB(conf.Database).C("nodes"),
 	}
-	if err := db.init(); err != nil {
-		return nil, err
-	}
 	return db, nil
 }
 
-// init creates tables in MongoDB.
-func (db *MongoDB) init() error {
+// Init creates tables in MongoDB.
+func (db *MongoDB) Init() error {
 	names, err := db.sess.DB(db.conf.Database).CollectionNames()
 	if err != nil {
 		return fmt.Errorf("error listing collection names in database %s: %v", db.conf.Database, err)

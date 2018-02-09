@@ -21,7 +21,7 @@ type Elastic struct {
 }
 
 // NewElastic returns a new Elastic instance.
-func NewElastic(ctx context.Context, conf config.Elastic) (*Elastic, error) {
+func NewElastic(conf config.Elastic) (*Elastic, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(conf.URL),
 		elastic.SetSniff(false),
@@ -39,9 +39,6 @@ func NewElastic(ctx context.Context, conf config.Elastic) (*Elastic, error) {
 		conf,
 		conf.IndexPrefix + "-tasks",
 		conf.IndexPrefix + "-nodes",
-	}
-	if err := es.init(ctx); err != nil {
-		return nil, err
 	}
 	return es, nil
 }
@@ -67,8 +64,9 @@ func (es *Elastic) initIndex(ctx context.Context, name, body string) error {
 	return nil
 }
 
-// init initializing the Elasticsearch indices.
-func (es *Elastic) init(ctx context.Context) error {
+// Init creates the Elasticsearch indices.
+func (es *Elastic) Init() error {
+	ctx := context.Background()
 	taskMappings := `{
     "mappings": {
       "task":{

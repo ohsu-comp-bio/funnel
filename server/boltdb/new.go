@@ -58,16 +58,11 @@ func NewBoltDB(conf config.BoltDB) (*BoltDB, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	b := &BoltDB{db: db}
-	if err := b.init(); err != nil {
-		return nil, err
-	}
-	return b, nil
+	return &BoltDB{db: db}, nil
 }
 
-// init creates the required BoltDB buckets
-func (taskBolt *BoltDB) init() error {
+// Init creates the required BoltDB buckets
+func (taskBolt *BoltDB) Init() error {
 	// Check to make sure all the required buckets have been created
 	return taskBolt.db.Update(func(tx *bolt.Tx) error {
 		if tx.Bucket(TaskBucket) == nil {

@@ -42,10 +42,18 @@ type Server struct {
 	*scheduler.Scheduler
 }
 
+// Database represents the base funnel database interface
+type Database interface {
+	tes.ReadOnlyServer
+	events.Writer
+	Init() error
+}
+
 // NewServer returns a new Funnel server + scheduler based on the given config.
 func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Server, error) {
 	log.Debug("NewServer", "config", conf)
 
+	var database Database
 	var reader tes.ReadOnlyServer
 	var nodes schedProto.SchedulerServiceServer
 	var sched *scheduler.Scheduler
@@ -60,6 +68,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		if err != nil {
 			return nil, dberr(err)
 		}
+		database = b
 		reader = b
 		nodes = b
 		queue = b
@@ -70,6 +79,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		if err != nil {
 			return nil, dberr(err)
 		}
+		database = d
 		reader = d
 		writers = append(writers, d)
 
@@ -78,14 +88,16 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		if err != nil {
 			return nil, dberr(err)
 		}
+		database = d
 		reader = d
 		writers = append(writers, d)
 
 	case "elastic":
-		e, err := elastic.NewElastic(ctx, conf.Elastic)
+		e, err := elastic.NewElastic(conf.Elastic)
 		if err != nil {
 			return nil, dberr(err)
 		}
+		database = e
 		reader = e
 		nodes = e
 		queue = e
@@ -96,6 +108,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		if err != nil {
 			return nil, dberr(err)
 		}
+		database = m
 		reader = m
 		nodes = m
 		queue = m
@@ -103,6 +116,11 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 
 	default:
 		return nil, fmt.Errorf("unknown database: '%s'", conf.Database)
+	}
+
+	// Initialize the Database
+	if err := database.Init(); err != nil {
+		return nil, fmt.Errorf("error creating database resources: %v", err)
 	}
 
 	// Event writers
@@ -125,7 +143,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		case "dynamodb":
 			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 		case "elastic":
-			writer, err = elastic.NewElastic(ctx, conf.Elastic)
+			writer, err = elastic.NewElastic(conf.Elastic)
 		case "kafka":
 			writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
 		case "pubsub":
@@ -142,6 +160,9 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			writers = append(writers, writer)
 		}
 	}
+
+	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
+	writer = &events.ErrLogger{Writer: writer, Log: log}
 
 	// Compute
 	var compute events.Writer
@@ -168,7 +189,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		compute = events.Noop{}
 
 	case "aws-batch":
-		compute, err = batch.NewBackend(conf.AWSBatch, reader, &writers)
+		compute, err = batch.NewBackend(conf.AWSBatch, reader, writer)
 		if err != nil {
 			return nil, err
 		}
@@ -180,15 +201,15 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 
 	case "gridengine":
-		compute = gridengine.NewBackend(conf, reader, &writers)
+		compute = gridengine.NewBackend(conf, reader, writer)
 	case "htcondor":
-		compute = htcondor.NewBackend(conf, reader, &writers)
+		compute = htcondor.NewBackend(conf, reader, writer)
 	case "noop":
 		compute = noop.NewBackend()
 	case "pbs":
-		compute = pbs.NewBackend(conf, reader, &writers)
+		compute = pbs.NewBackend(conf, reader, writer)
 	case "slurm":
-		compute = slurm.NewBackend(conf, reader, &writers)
+		compute = slurm.NewBackend(conf, reader, writer)
 	default:
 		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
 	}
@@ -202,12 +223,12 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			Log:              log,
 			Tasks: &server.TaskService{
 				Name:    conf.Server.ServiceName,
-				Event:   &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level},
+				Event:   writer,
 				Compute: compute,
 				Read:    reader,
 				Log:     log,
 			},
-			Events: &events.Service{Writer: &writers},
+			Events: &events.Service{Writer: writer},
 			Nodes:  nodes,
 		},
 		Scheduler: sched,

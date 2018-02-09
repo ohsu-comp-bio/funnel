@@ -54,7 +54,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 		case "datastore":
 			writer, err = datastore.NewDatastore(conf.Datastore)
 		case "elastic":
-			writer, err = elastic.NewElastic(ctx, conf.Elastic)
+			writer, err = elastic.NewElastic(conf.Elastic)
 		case "kafka":
 			writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
 		case "pubsub":
@@ -71,6 +71,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 			writers = append(writers, writer)
 		}
 	}
+
 	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
 	writer = &events.ErrLogger{Writer: writer, Log: log}
 
@@ -80,7 +81,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 	case "dynamodb":
 		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 	case "elastic":
-		db, err = elastic.NewElastic(ctx, conf.Elastic)
+		db, err = elastic.NewElastic(conf.Elastic)
 	case "mongodb":
 		db, err = mongodb.NewMongoDB(conf.MongoDB)
 	case "boltdb":

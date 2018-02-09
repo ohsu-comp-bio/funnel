@@ -28,3 +28,8 @@ func NewDatastore(conf config.Datastore) (*Datastore, error) {
 	}
 	return &Datastore{client}, nil
 }
+
+// Init is a noop action for Datastore.
+func (db *Datastore) Init() error {
+	return nil
+}

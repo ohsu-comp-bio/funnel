@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -45,7 +44,7 @@ type Backend struct {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ctx, ev.GetTask())
+		return b.Submit(ev.GetTask())
 
 	case events.Type_TASK_STATE:
 		if ev.GetState() == tes.State_CANCELED {
@@ -56,7 +55,9 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 }
 
 // Submit submits a task to the AWS batch service.
-func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
+func (b *Backend) Submit(task *tes.Task) error {
+	ctx := context.Background()
+
 	req := &batch.SubmitJobInput{
 		// JobDefinition: aws.String(b.jobDef),
 		JobDefinition: aws.String(b.conf.JobDefinition),
@@ -66,8 +67,8 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 			// Include the taskID in the job parameters. This gets used by
 			// the funnel 'worker run' cmd.
 			"taskID": aws.String(task.Id),
-			ContainerOverrides: &batch.ContainerOverrides{},
 		},
+		ContainerOverrides: &batch.ContainerOverrides{},
 	}
 
 	// convert ram from GB to MiB
@@ -81,10 +82,7 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 		req.ContainerOverrides.Vcpus = aws.Int64(vcpus)
 	}
 
-	reqctx, cancel := context.WithTimeout(ctx, time.Second*60)
-	defer cancel()
-
-	resp, err := b.client.SubmitJobWithContext(reqctx, req)
+	resp, err := b.client.SubmitJob(req)
 	if err != nil {
 		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
 		b.event.WriteEvent(

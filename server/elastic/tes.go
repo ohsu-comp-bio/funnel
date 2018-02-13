@@ -59,7 +59,7 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	}
 
 	for k, v := range req.Tags {
-		filterParts = append(filterParts, elastic.NewMatchQuery(fmt.Sprintf("tags.%s", k), v))
+		filterParts = append(filterParts, elastic.NewMatchQuery(fmt.Sprintf("tags.%s.keyword", k), v))
 	}
 
 	if len(filterParts) > 0 {

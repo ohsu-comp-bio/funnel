@@ -721,10 +721,12 @@ func TestListTaskFilterTags(t *testing.T) {
 	id1 := f.Run(`'echo hello' --tag foo=bar`)
 	id2 := f.Run(`'echo hello' --tag foo=bar --tag hello=world`)
 	id3 := f.Run(`'echo hello'`)
+	id4 := f.Run(`'echo hello' --tag foo=bar-bar`)
 
 	f.Wait(id1)
 	f.Wait(id2)
 	f.Wait(id3)
+	f.Wait(id4)
 
 	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.Full,
@@ -737,7 +739,7 @@ func TestListTaskFilterTags(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(r.Tasks) != 3 {
+	if len(r.Tasks) != 4 {
 		t.Error("unexpected all tasks", r.Tasks)
 	}
 

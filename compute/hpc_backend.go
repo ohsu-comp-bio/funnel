@@ -35,7 +35,7 @@ type HPCBackend struct {
 func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ctx, ev.GetTask())
+		return b.Submit(ev.GetTask())
 
 	case events.Type_TASK_STATE:
 		if ev.GetState() == tes.State_CANCELED {
@@ -46,7 +46,9 @@ func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
 }
 
 // Submit submits a task via "qsub", "condor_submit", "sbatch", etc.
-func (b *HPCBackend) Submit(ctx context.Context, task *tes.Task) error {
+func (b *HPCBackend) Submit(task *tes.Task) error {
+	ctx := context.Background()
+
 	submitPath, err := b.setupTemplatedHPCSubmit(task)
 	if err != nil {
 		return err

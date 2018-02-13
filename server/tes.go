@@ -42,7 +42,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	}
 
 	// dispatch to compute backend
-	ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
+	go ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }

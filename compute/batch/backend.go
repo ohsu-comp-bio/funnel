@@ -66,6 +66,7 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 			// Include the taskID in the job parameters. This gets used by
 			// the funnel 'worker run' cmd.
 			"taskID": aws.String(task.Id),
+			ContainerOverrides: &batch.ContainerOverrides{},
 		},
 	}
 

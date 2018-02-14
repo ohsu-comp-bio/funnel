@@ -85,8 +85,9 @@ func serverFlags(flagConf *config.Config) *pflag.FlagSet {
 func workerFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
-	f.Int64Var(&flagConf.Worker.BufferSize, "Worker.BufferSize", flagConf.Worker.BufferSize, "Max bytes to store for stderr/stdout")
-	f.DurationVar(&flagConf.Worker.UpdateRate, "Worker.UpdateRate", flagConf.Worker.UpdateRate, "Task log update rate")
+	f.Int64Var(&flagConf.Worker.LogTailSize, "Worker.LogTailSize", flagConf.Worker.LogTailSize, "Max bytes to store for stdout/stderr")
+	f.DurationVar(&flagConf.Worker.LogUpdateRate, "Worker.LogUpdateRate", flagConf.Worker.LogUpdateRate, "How often to send stdout/stderr log updates")
+	f.DurationVar(&flagConf.Worker.PollingRate, "Worker.PollingRate", flagConf.Worker.PollingRate, "How often to poll for cancel signals")
 	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working directory")
 	f.BoolVar(&flagConf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", flagConf.Worker.LeaveWorkDir, "Leave working directory after execution")
 

@@ -91,12 +91,19 @@ Worker:
   WorkDir: ./funnel-work-dir
 
   # For low-level tuning.
-  # How often to send task log updates to the Funnel server.
+  # How often to poll for cancel signals
   # In nanoseconds.
-  UpdateRate: 5000000000 # 5 seconds
+  PollingRate: 5000000000 # 5 seconds
 
-  # Maximum task log (stdout/err) size, in bytes to buffer between updates.
-  BufferSize: 10000 # 10 KB
+  # For low-level tuning.
+  # How often to send stdout/err task log updates to the Funnel server.
+  # Setting this to 0 will result in these fields being updated a single time
+  # after the executor exits.
+  # In nanoseconds.
+  LogUpdateRate: 5000000000 # 5 seconds
+
+  # Max bytes to store for stdout/err in the task log.
+  LogTailSize: 10000 # 10 KB
 
   # Normally the worker deletes its working directory after executing.
   # This option disables that behavior.

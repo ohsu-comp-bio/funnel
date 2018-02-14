@@ -150,17 +150,15 @@ func (r taskReader) State(ctx gcontext.Context, taskID string) (tes.State, error
 // 10 seconds and checks how many stdout events were generated.
 func TestLargeLogRate(t *testing.T) {
 	tests.SetLogOutput(log, t)
-	// Generate 1MB 1000 times to stdout.
-	// At the end, echo "\n\nhello\n".
 	conf := tests.DefaultConfig()
-	conf.Worker.UpdateRate = time.Millisecond * 500
-	conf.Worker.BufferSize = 100
+	conf.Worker.LogUpdateRate = time.Millisecond * 500
+	conf.Worker.LogTailSize = 1000
 	task := tes.Task{
 		Id: "test-task-" + tes.GenerateID(),
 		Executors: []*tes.Executor{
 			{
 				Image:   "alpine",
-				Command: []string{"dd", "if=/dev/urandom", "bs=10000", "count=1"},
+				Command: []string{"dd", "if=/dev/urandom", "bs=5000000", "count=100"},
 			},
 		},
 	}
@@ -184,6 +182,84 @@ func TestLargeLogRate(t *testing.T) {
 	// we just check that a small amount of events were generated.
 	// 20 events is not too bad for dumping many megabytes of data.
 	if counts.stdout > 20 {
+		t.Error("unexpected stdout event count", counts.stdout)
+	}
+}
+
+// Test that a log update rate of zero results in a single stdout event.
+// The task dumps megabytes of random data to stdout. The test waits
+// 10 seconds and checks how many stdout events were generated.
+func TestZeroLogRate(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	conf := tests.DefaultConfig()
+	conf.Worker.LogUpdateRate = 0
+	conf.Worker.LogTailSize = 1000
+	task := tes.Task{
+		Id: "test-task-" + tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"dd", "if=/dev/urandom", "bs=5000000", "count=100"},
+			},
+		},
+	}
+
+	counts := &eventCounter{}
+	logger := &events.Logger{Log: log}
+	m := &events.MultiWriter{logger, counts}
+
+	w := worker.DefaultWorker{
+		Conf:        conf.Worker,
+		Store:       storage.Storage{},
+		TaskReader:  taskReader{&task},
+		EventWriter: m,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	w.Run(ctx, task.Id)
+
+	// we expect a single event to be generated
+	if counts.stdout != 1 {
+		t.Error("unexpected stdout event count", counts.stdout)
+	}
+}
+
+// Test that we can turn off stdout/err logging.
+// The task dumps megabytes of random data to stdout. The test waits
+// 10 seconds and checks how many stdout events were generated.
+func TestZeroLogTailSize(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	conf := tests.DefaultConfig()
+	conf.Worker.LogUpdateRate = time.Millisecond * 500
+	conf.Worker.LogTailSize = 0
+	task := tes.Task{
+		Id: "test-task-" + tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"dd", "if=/dev/urandom", "bs=5000000", "count=100"},
+			},
+		},
+	}
+
+	counts := &eventCounter{}
+	logger := &events.Logger{Log: log}
+	m := &events.MultiWriter{logger, counts}
+
+	w := worker.DefaultWorker{
+		Conf:        conf.Worker,
+		Store:       storage.Storage{},
+		TaskReader:  taskReader{&task},
+		EventWriter: m,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	w.Run(ctx, task.Id)
+
+	// we expect zero events to be generated
+	if counts.stdout != 0 {
 		t.Error("unexpected stdout event count", counts.stdout)
 	}
 }

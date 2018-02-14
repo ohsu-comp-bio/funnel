@@ -54,7 +54,8 @@ func TestifyConfig(conf config.Config) config.Config {
 
 	conf.Scheduler.ScheduleRate = time.Millisecond * 500
 	conf.Node.UpdateRate = time.Millisecond * 1300
-	conf.Worker.UpdateRate = time.Millisecond * 300
+	conf.Worker.LogUpdateRate = time.Millisecond * 500
+	conf.Worker.PollingRate = time.Millisecond * 100
 
 	prefix := "funnel-e2e-tests-" + RandomString(6)
 	conf.Elastic.IndexPrefix = prefix

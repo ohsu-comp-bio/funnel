@@ -120,19 +120,59 @@ func (ew *ExecutorWriter) Error(msg string, args ...interface{}) error {
 	return ew.sys.Error(msg, args...)
 }
 
-// TailLogs returns stdout/err io.Writers which will track the
-// tail of the content (up to "size") and emit events. Events
-// are rate limited by "interval", e.g. a max of one event every
-// 5 seconds.
-func (ew *ExecutorWriter) TailLogs(ctx context.Context, size int64, interval time.Duration) (stdout, stderr io.Writer) {
-	return TailLogs(ctx, ew.gen.taskID, ew.gen.attempt, ew.gen.index, size, interval, ew.out)
+// LogTail returns stdout/err io.Writers which will track the
+// tail of the content (up to "size") and emit events.
+func (ew *ExecutorWriter) LogTail(ctx context.Context, size int64) (stdout, stderr io.Writer) {
+	return LogTail(ctx, ew.gen.taskID, ew.gen.attempt, ew.gen.index, size, ew.out)
 }
 
-// TailLogs returns stdout/err io.Writers which will track the
+// StreamLogTail returns stdout/err io.Writers which will track the
 // tail of the content (up to "size") and emit events. Events
 // are rate limited by "interval", e.g. a max of one event every
 // 5 seconds.
-func TailLogs(ctx context.Context, taskID string, attempt, index uint32, size int64, interval time.Duration, out Writer) (stdout, stderr io.Writer) {
+func (ew *ExecutorWriter) StreamLogTail(ctx context.Context, size int64, interval time.Duration) (stdout, stderr io.Writer) {
+	return StreamLogTail(ctx, ew.gen.taskID, ew.gen.attempt, ew.gen.index, size, interval, ew.out)
+}
+
+// LogTail returns stdout/err io.Writers which will track the
+// tail of the content (up to "size") and emit events once the ctx.Done
+// is closed.
+func LogTail(ctx context.Context, taskID string, attempt, index uint32, size int64, out Writer) (stdout, stderr io.Writer) {
+	stdoutbuf := ring.NewBuffer(size)
+	stderrbuf := ring.NewBuffer(size)
+
+	flush := func(buf *ring.Buffer, t Type) error {
+		// Only flush if new bytes have been written to the buffer.
+		if buf.TotalWritten() == 0 {
+			return nil
+		}
+
+		// Create the event
+		var e *Event
+		s := buf.String()
+		switch t {
+		case Type_EXECUTOR_STDOUT:
+			e = NewStdout(taskID, attempt, index, s)
+		case Type_EXECUTOR_STDERR:
+			e = NewStderr(taskID, attempt, index, s)
+		}
+		return out.WriteEvent(ctx, e)
+	}
+
+	go func() {
+		<-ctx.Done()
+		flush(stdoutbuf, Type_EXECUTOR_STDOUT)
+		flush(stdoutbuf, Type_EXECUTOR_STDERR)
+	}()
+
+	return stdoutbuf, stderrbuf
+}
+
+// StreamLogTail returns stdout/err io.Writers which will track the
+// tail of the content (up to "size") and emit events. Events
+// are rate limited by "interval", e.g. a max of one event every
+// 5 seconds.
+func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, size int64, interval time.Duration, out Writer) (stdout, stderr io.Writer) {
 
 	// The rate limiter allows the input writers to trigger events
 	// immediately, without waiting for the ticker, as long as
@@ -213,7 +253,7 @@ func TailLogs(ctx context.Context, taskID string, attempt, index uint32, size in
 				return
 			case <-ticker.C:
 				w := stdoutbuf.TotalWritten() + stderrbuf.TotalWritten()
-				// Don't use a limiter token if not content has been written.
+				// Don't use a limiter token if no content has been written.
 				if w > 0 && limiter.Allow() {
 					flushboth(immediate)
 				}

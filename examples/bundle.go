@@ -91,7 +91,7 @@ func examplesCaptureStdoutStderrJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/capture-stdout-stderr.json", size: 995, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/capture-stdout-stderr.json", size: 995, mode: os.FileMode(420), modTime: time.Unix(1516131226, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -111,7 +111,7 @@ func examplesFullHelloJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/full-hello.json", size: 577, mode: os.FileMode(420), modTime: time.Unix(1516928590, 0)}
+	info := bindataFileInfo{name: "examples/full-hello.json", size: 577, mode: os.FileMode(420), modTime: time.Unix(1517884703, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -131,7 +131,7 @@ func examplesGoogleStorageJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/google-storage.json", size: 462, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/google-storage.json", size: 462, mode: os.FileMode(420), modTime: time.Unix(1516131226, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -151,7 +151,7 @@ func examplesHelloWorldJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/hello-world.json", size: 187, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/hello-world.json", size: 187, mode: os.FileMode(420), modTime: time.Unix(1516131226, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -171,7 +171,7 @@ func examplesInputContentJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/input-content.json", size: 736, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/input-content.json", size: 736, mode: os.FileMode(420), modTime: time.Unix(1514578149, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -191,7 +191,7 @@ func examplesLogStreamingJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/log-streaming.json", size: 304, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/log-streaming.json", size: 304, mode: os.FileMode(420), modTime: time.Unix(1516131226, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -211,7 +211,7 @@ func examplesMd5sumJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/md5sum.json", size: 737, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/md5sum.json", size: 737, mode: os.FileMode(420), modTime: time.Unix(1516131226, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -231,7 +231,7 @@ func examplesResourceRequestJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/resource-request.json", size: 299, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/resource-request.json", size: 299, mode: os.FileMode(420), modTime: time.Unix(1514578149, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -251,7 +251,7 @@ func examplesS3Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/s3.json", size: 441, mode: os.FileMode(420), modTime: time.Unix(1517176290, 0)}
+	info := bindataFileInfo{name: "examples/s3.json", size: 441, mode: os.FileMode(420), modTime: time.Unix(1516131226, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

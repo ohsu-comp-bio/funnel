@@ -118,10 +118,15 @@ type Node struct {
 type Worker struct {
 	// Directory to write task files to
 	WorkDir string
-	// How often the worker sends task log updates
-	UpdateRate time.Duration
-	// Max bytes to store in-memory between updates
-	BufferSize int64
+	// How often the worker should poll for cancel signals
+	PollingRate time.Duration
+	// How often to update stdout/stderr log fields.
+	// Setting this to 0 will result in these fields being updated a single time
+	// after the executor exits.
+	LogUpdateRate time.Duration
+	// Max bytes of stdout/stderr to store in the database.
+	// Setting this to 0 turns off stdout/stderr logging.
+	LogTailSize int64
 	// Normally the worker cleans up its working directory after executing.
 	// This option disables that behavior.
 	LeaveWorkDir bool

@@ -199,7 +199,7 @@ func TestZeroLogRate(t *testing.T) {
 		Executors: []*tes.Executor{
 			{
 				Image:   "alpine",
-				Command: []string{"dd", "if=/dev/urandom", "bs=5000000", "count=100"},
+				Command: []string{"dd", "if=/dev/urandom", "bs=5000000", "count=5"},
 			},
 		},
 	}
@@ -215,9 +215,7 @@ func TestZeroLogRate(t *testing.T) {
 		EventWriter: m,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	w.Run(ctx, task.Id)
+	w.Run(context.Background(), task.Id)
 
 	// we expect a single event to be generated
 	if counts.stdout != 1 {

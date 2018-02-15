@@ -121,6 +121,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 			_ = db.getContent(ctx, item)
 			_ = db.getExecutorOutput(ctx, item, "stdout", db.stdoutTable)
 			_ = db.getExecutorOutput(ctx, item, "stderr", db.stderrTable)
+			_ = db.getSystemLogs(ctx, item)
 		}
 	}
 

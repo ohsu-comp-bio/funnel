@@ -58,7 +58,7 @@ func TestGetTaskView(t *testing.T) {
 	fun.WriteFile("test_content.txt", "hello world")
 
 	id := fun.Run(`
-    --sh 'echo hello world'
+    --sh 'echo hello world | tee /dev/stderr'
     --name 'foo'
     --content in={{ .storage }}/test_content.txt
   `)
@@ -104,11 +104,19 @@ func TestGetTaskView(t *testing.T) {
 	task = fun.GetView(id, tes.TaskView_FULL)
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("missing ExecutorLog stdout in full view")
+		t.Fatal("Missing stdout in full view")
+	}
+
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
 	}
 
 	if task.Inputs[0].Content != "hello world" {
 		t.Fatal("missing Input content in full view")
+	}
+
+	if len(task.Logs[0].SystemLogs) == 0 {
+		t.Fatal("Missing syslogs in full view")
 	}
 
 	// test http proxy
@@ -167,12 +175,21 @@ func TestGetTaskView(t *testing.T) {
 	}
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("missing ExecutorLog stdout in full view")
+		t.Fatal("Missing stdout in full view")
+	}
+
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
 	}
 
 	if task.Inputs[0].Content != "hello world" {
 		t.Fatal("missing Input content in full view")
 	}
+
+	if len(task.Logs[0].SystemLogs) == 0 {
+		t.Fatal("Missing syslogs in full view")
+	}
+
 }
 
 // TODO this is a bit hacky for now because we're reusing the same
@@ -185,9 +202,12 @@ func TestListTaskView(t *testing.T) {
 	var task *tes.Task
 	var err error
 
+	fun.WriteFile("test_content.txt", "hello world")
+
 	id := fun.Run(`
-    --sh 'echo hello world'
+    --sh 'echo hello world  | tee /dev/stderr'
     --name 'foo'
+    --content in={{ .storage }}/test_content.txt
   `)
 	fun.Wait(id)
 
@@ -231,6 +251,18 @@ func TestListTaskView(t *testing.T) {
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout in full view")
+	}
+
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
+	}
+
+	if task.Inputs[0].Content != "hello world" {
+		t.Fatal("missing Input content in full view")
+	}
+
+	if len(task.Logs[0].SystemLogs) == 0 {
+		t.Fatal("Missing syslogs in full view")
 	}
 
 	// test http proxy
@@ -291,6 +323,19 @@ func TestListTaskView(t *testing.T) {
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
 		t.Fatal("Missing stdout in full view")
 	}
+
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
+	}
+
+	if task.Inputs[0].Content != "hello world" {
+		t.Fatal("missing Input content in full view")
+	}
+
+	if len(task.Logs[0].SystemLogs) == 0 {
+		t.Fatal("Missing syslogs in full view")
+	}
+
 }
 
 // Test that the streaming logs pick up a single character.

@@ -69,11 +69,20 @@ func TestGetTaskView(t *testing.T) {
 	if task.Id != id {
 		t.Fatal("expected task ID in minimal view")
 	}
-	if task.State != tes.State_COMPLETE {
-		t.Fatal("expected complete state")
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in minimal view")
 	}
 	if task.Name != "" {
 		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Inputs != nil {
+		t.Fatal("unexpected task inputs included in minimal view")
+	}
+	if task.Outputs != nil {
+		t.Fatal("unexpected task inputs included in minimal view")
+	}
+	if task.Executors != nil {
+		t.Fatal("unexpected task executors included in minimal view")
 	}
 	if task.Logs != nil {
 		t.Fatal("unexpected task logs included in minimal view")
@@ -81,42 +90,74 @@ func TestGetTaskView(t *testing.T) {
 
 	task = fun.GetView(id, tes.TaskView_BASIC)
 
+	if task.Id != id {
+		t.Fatal("expected task ID in basic view")
+	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in basic view")
+	}
 	if task.Name != "foo" {
 		t.Fatal("expected task name to be included basic view")
 	}
-
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in basic view")
+	}
+	if task.Inputs[0].Content != "" {
+		t.Fatal("unexpected Input content in basic view")
+	}
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in basic view")
+	}
 	if len(task.Logs) != 1 {
 		t.Fatal("expected TaskLog to be included in basic view")
 	}
-
+	if len(task.Logs[0].SystemLogs) != 0 {
+		t.Fatal("unexpected SystemLogs included in basic view")
+	}
 	if len(task.Logs[0].Logs) != 1 {
 		t.Fatal("expected ExecutorLog to be included in basic view")
 	}
-
 	if task.Logs[0].Logs[0].Stdout != "" {
 		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
-
-	if task.Inputs[0].Content != "" {
-		t.Fatal("unexpected Input content included in basic view")
+	if task.Logs[0].Logs[0].Stderr != "" {
+		t.Fatal("unexpected ExecutorLog stderr included in basic view")
 	}
 
 	task = fun.GetView(id, tes.TaskView_FULL)
 
-	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("Missing stdout in full view")
+	if task.Id != id {
+		t.Fatal("expected task ID in full view")
 	}
-
-	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
-		t.Fatal("Missing stderr in full view")
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in full view")
 	}
-
+	if task.Name != "foo" {
+		t.Fatal("expected task name to be included full view")
+	}
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in full view")
+	}
 	if task.Inputs[0].Content != "hello world" {
 		t.Fatal("missing Input content in full view")
 	}
-
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in full view")
+	}
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in full view")
+	}
 	if len(task.Logs[0].SystemLogs) == 0 {
 		t.Fatal("Missing syslogs in full view")
+	}
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in full view")
+	}
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
 	}
 
 	// test http proxy
@@ -131,8 +172,20 @@ func TestGetTaskView(t *testing.T) {
 	if task.Id != id {
 		t.Fatal("expected task ID in minimal view")
 	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in minimal view")
+	}
 	if task.Name != "" {
 		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Inputs != nil {
+		t.Fatal("unexpected task inputs included in minimal view")
+	}
+	if task.Outputs != nil {
+		t.Fatal("unexpected task inputs included in minimal view")
+	}
+	if task.Executors != nil {
+		t.Fatal("unexpected task executors included in minimal view")
 	}
 	if task.Logs != nil {
 		t.Fatal("unexpected task logs included in minimal view")
@@ -146,24 +199,38 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if task.Id != id {
+		t.Fatal("expected task ID in basic view")
+	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in basic view")
+	}
 	if task.Name != "foo" {
 		t.Fatal("expected task name to be included basic view")
 	}
-
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in basic view")
+	}
+	if task.Inputs[0].Content != "" {
+		t.Fatal("unexpected Input content in basic view")
+	}
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in basic view")
+	}
 	if len(task.Logs) != 1 {
 		t.Fatal("expected TaskLog to be included in basic view")
 	}
-
+	if len(task.Logs[0].SystemLogs) != 0 {
+		t.Fatal("unexpected SystemLogs included in basic view")
+	}
 	if len(task.Logs[0].Logs) != 1 {
 		t.Fatal("expected ExecutorLog to be included in basic view")
 	}
-
 	if task.Logs[0].Logs[0].Stdout != "" {
 		t.Fatal("unexpected ExecutorLog stdout included in basic view")
 	}
-
-	if task.Inputs[0].Content != "" {
-		t.Fatal("unexpected Input content included in basic view")
+	if task.Logs[0].Logs[0].Stderr != "" {
+		t.Fatal("unexpected ExecutorLog stderr included in basic view")
 	}
 
 	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
@@ -174,20 +241,38 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("Missing stdout in full view")
+	if task.Id != id {
+		t.Fatal("expected task ID in full view")
 	}
-
-	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
-		t.Fatal("Missing stderr in full view")
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in full view")
 	}
-
+	if task.Name != "foo" {
+		t.Fatal("expected task name to be included full view")
+	}
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in full view")
+	}
 	if task.Inputs[0].Content != "hello world" {
 		t.Fatal("missing Input content in full view")
 	}
-
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in full view")
+	}
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in full view")
+	}
 	if len(task.Logs[0].SystemLogs) == 0 {
 		t.Fatal("Missing syslogs in full view")
+	}
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in full view")
+	}
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
 	}
 
 }
@@ -218,10 +303,19 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("expected task ID in minimal view")
 	}
 	if task.State == tes.State_UNKNOWN {
-		t.Fatal("expected complete state")
+		t.Fatal("expected state in minimal view")
 	}
 	if task.Name != "" {
 		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Inputs != nil {
+		t.Fatal("unexpected task inputs included in minimal view")
+	}
+	if task.Outputs != nil {
+		t.Fatal("unexpected task inputs included in minimal view")
+	}
+	if task.Executors != nil {
+		t.Fatal("unexpected task executors included in minimal view")
 	}
 	if task.Logs != nil {
 		t.Fatal("unexpected task logs included in minimal view")
@@ -230,39 +324,75 @@ func TestListTaskView(t *testing.T) {
 	tasks = fun.ListView(tes.TaskView_BASIC)
 	task = tasks[0]
 
+	if task.Id == "" {
+		t.Fatal("expected task ID in basic view")
+	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in basic view")
+	}
 	if task.Name == "" {
 		t.Fatal("expected task name to be included basic view")
 	}
-
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in basic view")
+	}
+	if task.Inputs[0].Content != "" {
+		t.Fatal("unexpected Input content in basic view")
+	}
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in basic view")
+	}
 	if len(task.Logs) != 1 {
 		t.Fatal("expected TaskLog to be included in basic view")
 	}
-
+	if len(task.Logs[0].SystemLogs) != 0 {
+		t.Fatal("unexpected SystemLogs included in basic view")
+	}
 	if len(task.Logs[0].Logs) != 1 {
 		t.Fatal("expected ExecutorLog to be included in basic view")
 	}
-
 	if task.Logs[0].Logs[0].Stdout != "" {
 		t.Fatal("unexpected ExecutorLog stdout included in basic view")
+	}
+	if task.Logs[0].Logs[0].Stderr != "" {
+		t.Fatal("unexpected ExecutorLog stderr included in basic view")
 	}
 
 	tasks = fun.ListView(tes.TaskView_FULL)
 	task = tasks[0]
 
-	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("Missing stdout in full view")
+	if task.Id == "" {
+		t.Fatal("expected task ID in full view")
 	}
-
-	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
-		t.Fatal("Missing stderr in full view")
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in full view")
 	}
-
+	if task.Name == "" {
+		t.Fatal("expected task name to be included full view")
+	}
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in full view")
+	}
 	if task.Inputs[0].Content != "hello world" {
 		t.Fatal("missing Input content in full view")
 	}
-
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in full view")
+	}
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in full view")
+	}
 	if len(task.Logs[0].SystemLogs) == 0 {
 		t.Fatal("Missing syslogs in full view")
+	}
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in full view")
+	}
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
 	}
 
 	// test http proxy
@@ -279,10 +409,16 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("expected task ID in minimal view")
 	}
 	if task.State == tes.State_UNKNOWN {
-		t.Fatal("expected complete state")
+		t.Fatal("expected state in minimal view")
 	}
 	if task.Name != "" {
 		t.Fatal("unexpected task name included in minimal view")
+	}
+	if task.Inputs != nil {
+		t.Fatal("unexpected task inputs included in minimal view")
+	}
+	if task.Executors != nil {
+		t.Fatal("unexpected task executors included in minimal view")
 	}
 	if task.Logs != nil {
 		t.Fatal("unexpected task logs included in minimal view")
@@ -296,20 +432,41 @@ func TestListTaskView(t *testing.T) {
 	}
 	task = r.Tasks[0]
 
+	if task.Id == "" {
+		t.Fatal("expected task ID in basic view")
+	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in basic view")
+	}
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected complete state")
+	}
 	if task.Name == "" {
 		t.Fatal("expected task name to be included basic view")
 	}
-
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in basic view")
+	}
+	if task.Inputs[0].Content != "" {
+		t.Fatal("unexpected Input content in basic view")
+	}
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in basic view")
+	}
 	if len(task.Logs) != 1 {
 		t.Fatal("expected TaskLog to be included in basic view")
 	}
-
+	if len(task.Logs[0].SystemLogs) != 0 {
+		t.Fatal("unexpected SystemLogs included in basic view")
+	}
 	if len(task.Logs[0].Logs) != 1 {
 		t.Fatal("expected ExecutorLog to be included in basic view")
 	}
-
 	if task.Logs[0].Logs[0].Stdout != "" {
 		t.Fatal("unexpected ExecutorLog stdout included in basic view")
+	}
+	if task.Logs[0].Logs[0].Stderr != "" {
+		t.Fatal("unexpected ExecutorLog stderr included in basic view")
 	}
 
 	r, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
@@ -320,22 +477,39 @@ func TestListTaskView(t *testing.T) {
 	}
 	task = r.Tasks[0]
 
-	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("Missing stdout in full view")
+	if task.Id == "" {
+		t.Fatal("expected task ID in full view")
 	}
-
-	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
-		t.Fatal("Missing stderr in full view")
+	if task.State == tes.State_UNKNOWN {
+		t.Fatal("expected state in full view")
 	}
-
+	if task.Name == "" {
+		t.Fatal("expected task name to be included full view")
+	}
+	if len(task.Inputs) != 1 {
+		t.Fatal("expected Inputs to be included in full view")
+	}
 	if task.Inputs[0].Content != "hello world" {
 		t.Fatal("missing Input content in full view")
 	}
-
+	if len(task.Executors) != 1 {
+		t.Fatal("expected Executors to be included in full view")
+	}
+	if len(task.Logs) != 1 {
+		t.Fatal("expected TaskLog to be included in full view")
+	}
 	if len(task.Logs[0].SystemLogs) == 0 {
 		t.Fatal("Missing syslogs in full view")
 	}
-
+	if len(task.Logs[0].Logs) != 1 {
+		t.Fatal("expected ExecutorLog to be included in full view")
+	}
+	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
+		t.Fatal("Missing stdout in full view")
+	}
+	if task.Logs[0].Logs[0].Stderr != "hello world\n" {
+		t.Fatal("Missing stderr in full view")
+	}
 }
 
 // Test that the streaming logs pick up a single character.

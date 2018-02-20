@@ -26,6 +26,9 @@ func (tb TaskBuilder) WriteEvent(ctx context.Context, ev *Event) error {
 		}
 		t.State = to
 
+	case Type_SYSTEM_LOG:
+		t.GetTaskLog(attempt).SystemLogs = append(t.GetTaskLog(attempt).SystemLogs, ev.SysLogString())
+
 	case Type_TASK_START_TIME:
 		t.GetTaskLog(attempt).StartTime = ev.GetStartTime()
 

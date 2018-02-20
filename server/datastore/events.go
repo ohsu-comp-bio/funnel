@@ -16,9 +16,7 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 	case events.Type_TASK_CREATED:
 		putKeys, putData := marshalTask(e.GetTask())
 		_, err := d.client.PutMulti(ctx, putKeys, putData)
-		if err != nil {
-			return err
-		}
+		return err
 
 	case events.Type_EXECUTOR_STDOUT:
 		_, err := d.client.Put(ctx, stdoutKey(e.Id, e.Attempt, e.Index), marshalEvent(e))
@@ -28,31 +26,54 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 		_, err := d.client.Put(ctx, stderrKey(e.Id, e.Attempt, e.Index), marshalEvent(e))
 		return err
 
-	case events.Type_TASK_STATE:
-		res, err := d.GetTask(ctx, &tes.GetTaskRequest{
-			Id: e.Id,
-		})
-		if err != nil {
-			return err
-		}
+	case events.Type_SYSTEM_LOG:
+		_, err := d.client.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
+			props := datastore.PropertyList{}
+			err := tx.Get(sysLogsKey(e.Id, e.Attempt), &props)
+			if err != nil && err != datastore.ErrNoSuchEntity {
+				return err
+			}
 
-		from := res.State
-		to := e.GetState()
-		if err := tes.ValidateTransition(from, to); err != nil {
+			p := &part{}
+			err = datastore.LoadStruct(p, props)
+			if err != nil {
+				return err
+			}
+
+			_, err = tx.Put(sysLogsKey(e.Id, e.Attempt), &part{
+				Type:       sysLogsPart,
+				Attempt:    int(e.Attempt),
+				Index:      int(e.Index),
+				SystemLogs: append(p.SystemLogs, e.SysLogString()),
+			})
 			return err
-		}
-		fallthrough
+		})
+		return err
 
 	default:
 		_, err := d.client.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
 			props := datastore.PropertyList{}
 			err := tx.Get(taskKey(e.Id), &props)
+			if err == datastore.ErrNoSuchEntity {
+				return tes.ErrNotFound
+			}
 			if err != nil {
 				return err
 			}
 
 			task := &tes.Task{}
-			unmarshalTask(task, props)
+			if err := unmarshalTask(task, props); err != nil {
+				return err
+			}
+
+			if e.Type == events.Type_TASK_STATE {
+				from := task.State
+				to := e.GetState()
+				if err := tes.ValidateTransition(from, to); err != nil {
+					return err
+				}
+			}
+
 			tb := events.TaskBuilder{Task: task}
 			err = tb.WriteEvent(context.Background(), e)
 			if err != nil {
@@ -65,5 +86,4 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 		})
 		return err
 	}
-	return nil
 }

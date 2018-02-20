@@ -217,6 +217,8 @@ func TestZeroLogRate(t *testing.T) {
 
 	w.Run(context.Background(), task.Id)
 
+	time.Sleep(time.Second)
+
 	// we expect a single event to be generated
 	if counts.stdout != 1 {
 		t.Error("unexpected stdout event count", counts.stdout)

@@ -23,6 +23,11 @@ func taskKey(id string) *datastore.Key {
 	return datastore.NameKey("Task", id, nil)
 }
 
+func sysLogsKey(id string, attempt uint32) *datastore.Key {
+	k := fmt.Sprintf("syslogs-%d", attempt)
+	return datastore.NameKey("TaskPart", k, taskKey(id))
+}
+
 func contentKey(id string, index int) *datastore.Key {
 	k := fmt.Sprintf("input-content-%d", index)
 	return datastore.NameKey("TaskPart", k, taskKey(id))
@@ -44,6 +49,7 @@ func viewPartKeys(t *tes.Task) []*datastore.Key {
 		parts = append(parts, contentKey(t.Id, i))
 	}
 	for attempt, a := range t.Logs {
+		parts = append(parts, sysLogsKey(t.Id, uint32(attempt)))
 		for index := range a.Logs {
 			parts = append(parts, stdoutKey(t.Id, uint32(attempt), uint32(index)))
 			parts = append(parts, stderrKey(t.Id, uint32(attempt), uint32(index)))
@@ -67,15 +73,16 @@ const (
 	contentPart partType = iota
 	stdoutPart
 	stderrPart
+	sysLogsPart
 )
 
 type part struct {
 	Type partType `datastore:",noindex"`
 	// Index is used for both input content and executor stdout/err
-	Attempt, Index int    `datastore:",noindex,omitempty"`
-	Stdout, Stderr string `datastore:",noindex,omitempty"`
-	Content        string `datastore:",noindex,omitempty"`
-	// TODO? SystemLogs     []string `datastore:",noindex,omitempty"`
+	Attempt, Index int      `datastore:",noindex,omitempty"`
+	Stdout, Stderr string   `datastore:",noindex,omitempty"`
+	Content        string   `datastore:",noindex,omitempty"`
+	SystemLogs     []string `datastore:",noindex,omitempty"`
 }
 
 type task struct {
@@ -259,6 +266,8 @@ func unmarshalPart(t *tes.Task, props datastore.PropertyList) error {
 	switch e.Type {
 	case contentPart:
 		t.Inputs[e.Index].Content = e.Content
+	case sysLogsPart:
+		t.GetTaskLog(e.Attempt).SystemLogs = e.SystemLogs
 	case stdoutPart:
 		t.GetExecLog(e.Attempt, e.Index).Stdout = e.Stdout
 	case stderrPart:

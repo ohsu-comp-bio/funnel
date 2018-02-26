@@ -135,9 +135,9 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	for e := range eventWriterSet {
 		switch e {
 		case strings.ToLower(conf.Database):
-			// noop
+			continue
 		case "log":
-			// noop
+			continue
 		case "boltdb":
 			writer, err = boltdb.NewBoltDB(conf.BoltDB)
 		case "dynamodb":
@@ -162,7 +162,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	}
 
 	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
-	writer = &events.ErrLogger{Writer: writer, Log: log}
 
 	// Compute
 	var compute events.Writer
@@ -184,7 +183,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			Log:   log.Sub("scheduler"),
 			Nodes: nodes,
 			Queue: queue,
-			Event: &writers,
+			Event: &events.ErrLogger{Writer: writer, Log: log.Sub("scheduler")},
 		}
 		compute = events.Noop{}
 
@@ -213,6 +212,8 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	default:
 		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
 	}
+
+	writer = &events.ErrLogger{Writer: writer, Log: log}
 
 	return &Server{
 		Server: &server.Server{

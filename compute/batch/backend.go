@@ -77,14 +77,16 @@ func (b *Backend) Submit(task *tes.Task) error {
 	}
 
 	// convert ram from GB to MiB
-	ram := int64(task.Resources.RamGb * 953.674)
-	vcpus := int64(task.Resources.CpuCores)
-	if ram > 0 {
-		req.ContainerOverrides.Memory = aws.Int64(ram)
-	}
+	if task.Resources != nil {
+		ram := int64(task.Resources.RamGb * 953.674)
+		if ram > 0 {
+			req.ContainerOverrides.Memory = aws.Int64(ram)
+		}
 
-	if vcpus > 0 {
-		req.ContainerOverrides.Vcpus = aws.Int64(vcpus)
+		vcpus := int64(task.Resources.CpuCores)
+		if vcpus > 0 {
+			req.ContainerOverrides.Vcpus = aws.Int64(vcpus)
+		}
 	}
 
 	resp, err := b.client.SubmitJob(req)

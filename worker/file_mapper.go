@@ -66,15 +66,20 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 
 	// Add all the volumes to the mapper
 	for _, vol := range task.Volumes {
-		err := mapper.AddTmpVolume(vol)
+		err = mapper.AddTmpVolume(vol)
 		if err != nil {
 			return err
 		}
 	}
 
+	err = mapper.AddTmpVolume("/tmp")
+	if err != nil {
+		return err
+	}
+
 	// Add all the inputs to the mapper
 	for _, input := range task.Inputs {
-		err := mapper.AddInput(input)
+		err = mapper.AddInput(input)
 		if err != nil {
 			return err
 		}
@@ -82,7 +87,7 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 
 	// Add all the outputs to the mapper
 	for _, output := range task.Outputs {
-		err := mapper.AddOutput(output)
+		err = mapper.AddOutput(output)
 		if err != nil {
 			return err
 		}

@@ -40,7 +40,7 @@ func (dcmd DockerCommand) Run() error {
 	pullcmd := exec.Command("docker", "pull", dcmd.Image)
 	pullcmd.Run()
 
-	args := []string{"run", "-i"}
+	args := []string{"run", "-i", "--read-only"}
 
 	if dcmd.RemoveContainer {
 		args = append(args, "--rm")
@@ -68,7 +68,7 @@ func (dcmd DockerCommand) Run() error {
 	args = append(args, dcmd.Image)
 	args = append(args, dcmd.Command...)
 
-	// Roughly: `docker run --rm -i -w [workdir] -v [bindings] [imageName] [cmd]`
+	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
 	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)
 

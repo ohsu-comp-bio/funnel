@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/storage"
+	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/version"
 )
 
@@ -112,21 +114,35 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	}
 
 	// Download inputs
-	for _, input := range mapper.Inputs {
-		if run.ok() {
-			event.Info("Download started", "url", input.Url)
-			err := r.Store.Get(ctx, input.Url, input.Path, input.Type)
-			if err != nil {
-				if err == storage.ErrEmptyDirectory {
-					event.Warn("Download finished with warning", "url", input.Url, "warning", err)
+	downloadErrs := make(util.MultiError, len(mapper.Inputs))
+	downloadCtx, cancelDownloadCtx := context.WithCancel(ctx)
+	defer cancelDownloadCtx()
+	wg := &sync.WaitGroup{}
+	wg.Add(len(mapper.Inputs))
+	if run.ok() {
+		for i, input := range mapper.Inputs {
+			go func(input *tes.Input, i int) {
+				defer wg.Done()
+				event.Info("Download started", "url", input.Url)
+				err := r.Store.Get(downloadCtx, input.Url, input.Path, input.Type)
+				if err != nil {
+					if err == storage.ErrEmptyDirectory {
+						event.Warn("Download finished with warning", "url", input.Url, "warning", err)
+					} else {
+						downloadErrs[i] = err
+						event.Error("Download failed", "url", input.Url, "error", err)
+						cancelDownloadCtx()
+					}
 				} else {
-					run.syserr = err
-					event.Error("Download failed", "url", input.Url, "error", err)
+					event.Info("Download finished", "url", input.Url)
 				}
-			} else {
-				event.Info("Download finished", "url", input.Url)
-			}
+				return
+			}(input, i)
 		}
+	}
+	wg.Wait()
+	if !downloadErrs.IsNil() {
+		run.syserr = fmt.Errorf("%s", downloadErrs.Error())
 	}
 
 	if run.ok() {
@@ -164,32 +180,48 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	}
 
 	// Upload outputs
-	var outputs []*tes.OutputFileLog
-	for _, output := range mapper.Outputs {
-		if run.ok() {
-			event.Info("Upload started", "url", output.Url)
-			r.fixLinks(mapper, output.Path)
-			out, err := r.Store.Put(ctx, output.Url, output.Path, output.Type)
-			if err != nil {
-				if err == storage.ErrEmptyDirectory {
-					event.Warn("Upload finished with warning", "url", output.Url, "warning", err)
+	uploadErrs := make(util.MultiError, len(mapper.Outputs))
+	outputs := make([][]*tes.OutputFileLog, len(mapper.Outputs))
+	wg = &sync.WaitGroup{}
+	wg.Add(len(mapper.Outputs))
+	if run.ok() {
+		for i, output := range mapper.Outputs {
+			go func(output *tes.Output, i int) {
+				defer wg.Done()
+				event.Info("Upload started", "url", output.Url)
+				r.fixLinks(mapper, output.Path)
+				out, err := r.Store.Put(ctx, output.Url, output.Path, output.Type)
+				if err != nil {
+					if err == storage.ErrEmptyDirectory {
+						event.Warn("Upload finished with warning", "url", output.Url, "warning", err)
+					} else {
+						uploadErrs[i] = err
+						event.Error("Upload failed", "url", output.Url, "error", err)
+					}
 				} else {
-					run.syserr = err
-					event.Error("Upload failed", "url", output.Url, "error", err)
+					event.Info("Upload finished", "url", output.Url)
 				}
-			} else {
-				event.Info("Upload finished", "url", output.Url)
-			}
-			outputs = append(outputs, out...)
+				outputs[i] = out
+				return
+			}(output, i)
 		}
 	}
+	wg.Wait()
+	outputLog := []*tes.OutputFileLog{}
+	for _, out := range outputs {
+		outputLog = append(outputLog, out...)
+	}
+	if !uploadErrs.IsNil() {
+		run.syserr = fmt.Errorf("%s", uploadErrs.Error())
+	}
+
 	// unmap paths for OutputFileLog
-	for _, o := range outputs {
+	for _, o := range outputLog {
 		o.Path = mapper.ContainerPath(o.Path)
 	}
 
-	if run.ok() {
-		event.Outputs(outputs)
+	if len(outputLog) > 0 {
+		event.Outputs(outputLog)
 	}
 
 	return

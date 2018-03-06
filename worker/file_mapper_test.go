@@ -104,6 +104,11 @@ func TestMapTask(t *testing.T) {
 			Readonly:      false,
 		},
 		{
+			HostPath:      tmp + "/tmp",
+			ContainerPath: "/tmp",
+			Readonly:      false,
+		},
+		{
 			HostPath:      tmp + "/opt/funnel/inputs/testdata/f1.txt",
 			ContainerPath: "/opt/funnel/inputs/testdata/f1.txt",
 			Readonly:      true,

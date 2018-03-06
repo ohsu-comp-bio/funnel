@@ -118,9 +118,9 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	downloadCtx, cancelDownloadCtx := context.WithCancel(ctx)
 	defer cancelDownloadCtx()
 	wg := &sync.WaitGroup{}
-	wg.Add(len(mapper.Inputs))
 	if run.ok() {
 		for i, input := range mapper.Inputs {
+			wg.Add(1)
 			go func(input *tes.Input, i int) {
 				defer wg.Done()
 				event.Info("Download started", "url", input.Url)
@@ -142,7 +142,7 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	}
 	wg.Wait()
 	if !downloadErrs.IsNil() {
-		run.syserr = fmt.Errorf("%s", downloadErrs.Error())
+		run.syserr = downloadErrs.ToError()
 	}
 
 	if run.ok() {
@@ -183,9 +183,9 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	uploadErrs := make(util.MultiError, len(mapper.Outputs))
 	outputs := make([][]*tes.OutputFileLog, len(mapper.Outputs))
 	wg = &sync.WaitGroup{}
-	wg.Add(len(mapper.Outputs))
 	if run.ok() {
 		for i, output := range mapper.Outputs {
+			wg.Add(1)
 			go func(output *tes.Output, i int) {
 				defer wg.Done()
 				event.Info("Upload started", "url", output.Url)
@@ -212,7 +212,7 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 		outputLog = append(outputLog, out...)
 	}
 	if !uploadErrs.IsNil() {
-		run.syserr = fmt.Errorf("%s", uploadErrs.Error())
+		run.syserr = uploadErrs.ToError()
 	}
 
 	// unmap paths for OutputFileLog

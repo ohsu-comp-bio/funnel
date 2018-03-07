@@ -1117,8 +1117,9 @@ func TestListTaskMultipleFilters(t *testing.T) {
 }
 
 func TestConcurrentStateUpdate(t *testing.T) {
-	ctx := context.Background()
+	tests.SetLogOutput(log, t)
 
+	ctx := context.Background()
 	c := tests.DefaultConfig()
 	c.Compute = "noop"
 	f := tests.NewFunnel(c)
@@ -1154,6 +1155,61 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			t.Error("expected canceled state", task)
 		}
 	}
+}
 
+func TestMetadataEvent(t *testing.T) {
 	tests.SetLogOutput(log, t)
+
+	ctx := context.Background()
+	c := tests.DefaultConfig()
+	c.Compute = "noop"
+	f := tests.NewFunnel(c)
+	f.StartServer()
+
+	w, err := workerCmd.NewWorker(ctx, c, log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := w.EventWriter
+	id := f.Run(`--sh 'echo hello'`)
+
+	err = e.WriteEvent(ctx, events.NewMetadata(id, 0, map[string]string{"one": "two"}))
+	if err != nil {
+		t.Error("error writing event", err)
+	}
+	err = e.WriteEvent(ctx, events.NewMetadata(id, 0, map[string]string{"three": "four"}))
+	if err != nil {
+		t.Error("error writing event", "error", err, "taskID", id)
+	}
+
+	err = w.Run(ctx, id)
+	if err != nil {
+		t.Error("error running task", "error", err, "taskID", id)
+	}
+
+	task := f.Wait(id)
+	if task.State != tes.Complete {
+		t.Error("expected complete state", task)
+	}
+
+	if len(task.Logs[0].Metadata) != 3 {
+		t.Error("unexpected number of items in task metadata", task)
+	}
+
+	for k, v := range task.Logs[0].Metadata {
+		switch k {
+		case "one":
+			if v != "two" {
+				t.Error("unexpected task metadata", task)
+			}
+		case "three":
+			if v != "four" {
+				t.Error("unexpected task metadata", task)
+			}
+		case "hostname":
+			// will vary
+		default:
+			t.Error("unexpected task metadata", task)
+		}
+	}
 }

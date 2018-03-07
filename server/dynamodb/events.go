@@ -127,10 +127,16 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 			return err
 		}
 
-		updateExpr = expression.Set(
-			expression.Name(fmt.Sprintf("logs[%v].metadata", e.Attempt)),
-			expression.Value(e.GetMetadata().Value),
-		)
+		if err := db.ensureTaskLogMetadata(ctx, e.Id, e.Attempt); err != nil {
+			return err
+		}
+
+		for k, v := range e.GetMetadata().Value {
+			updateExpr = updateExpr.Set(
+				expression.Name(fmt.Sprintf("logs[%v].metadata.%s", e.Attempt, k)),
+				expression.Value(v),
+			)
+		}
 
 	case events.Type_EXECUTOR_START_TIME:
 		if err := db.ensureExecLog(ctx, e.Id, e.Attempt, e.Index); err != nil {
@@ -259,6 +265,30 @@ func (db *DynamoDB) ensureTaskLog(ctx context.Context, id string, attempt uint32
 			},
 		},
 		UpdateExpression: aws.String(fmt.Sprintf("SET logs[%v] = if_not_exists(logs[%v], :v)", attempt, attempt)),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v": {
+				M: map[string]*dynamodb.AttributeValue{},
+			},
+		},
+	}
+
+	_, err := db.client.UpdateItemWithContext(ctx, attemptItem)
+	return checkErrNotFound(err)
+}
+
+func (db *DynamoDB) ensureTaskLogMetadata(ctx context.Context, id string, attempt uint32) error {
+	// create the log structure for the attempt if it doesnt already exist
+	attemptItem := &dynamodb.UpdateItemInput{
+		TableName: aws.String(db.taskTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			db.partitionKey: {
+				S: aws.String(db.partitionValue),
+			},
+			"id": {
+				S: aws.String(id),
+			},
+		},
+		UpdateExpression: aws.String(fmt.Sprintf("SET logs[%v].metadata = if_not_exists(logs[%v].metadata, :v)", attempt, attempt)),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":v": {
 				M: map[string]*dynamodb.AttributeValue{},

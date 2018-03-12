@@ -39,7 +39,12 @@ func (tb TaskBuilder) WriteEvent(ctx context.Context, ev *Event) error {
 		t.GetTaskLog(attempt).Outputs = ev.GetOutputs().Value
 
 	case Type_TASK_METADATA:
-		t.GetTaskLog(attempt).Metadata = ev.GetMetadata().Value
+		if t.GetTaskLog(attempt).Metadata == nil {
+			t.GetTaskLog(attempt).Metadata = map[string]string{}
+		}
+		for k, v := range ev.GetMetadata().Value {
+			t.GetTaskLog(attempt).Metadata[k] = v
+		}
 
 	case Type_EXECUTOR_START_TIME:
 		t.GetExecLog(attempt, index).StartTime = ev.GetStartTime()

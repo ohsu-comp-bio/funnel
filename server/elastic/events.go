@@ -29,6 +29,13 @@ if (params.field == "system_logs") {
     ctx._source.logs[params.attempt].system_logs = new ArrayList();
   }
   ctx._source.logs[params.attempt].system_logs.add(params.value)
+} else if (params.field == "metadata") {
+  if (ctx._source.logs[params.attempt].metadata == null) {
+    ctx._source.logs[params.attempt].metadata = new HashMap();
+  }
+  for (entry in params.value.entrySet()) {
+    ctx._source.logs[params.attempt].metadata.put(entry.getKey(), entry.getValue())
+  }
 } else {
   ctx._source.logs[params.attempt][params.field] = params.value;
 }

@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/proto/tes"
@@ -245,10 +246,16 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		return "", err
 	}
 
-	var zone string
-	zones := task.Resources.GetZones()
-	if zones != nil {
-		zone = zones[0]
+  r := &tes.CustomResource{}
+  r2 := &tes.AWSResources{}
+	switch {
+	case ptypes.Is(task.Resources.Extra, r):
+		ptypes.UnmarshalAny(task.Resources.Extra, r)
+    // ... use "r"
+
+	case ptypes.Is(task.Resources.Extra, r2):
+		ptypes.UnmarshalAny(task.Resources.Extra, r2)
+    // ... use "r2"
 	}
 
 	err = submitTpl.Execute(f, map[string]interface{}{
@@ -259,7 +266,6 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		"Cpus":       int(task.Resources.CpuCores),
 		"RamGb":      task.Resources.RamGb,
 		"DiskGb":     task.Resources.DiskGb,
-		"Zone":       zone,
 	})
 	if err != nil {
 		return "", err

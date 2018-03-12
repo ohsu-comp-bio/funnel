@@ -127,8 +127,8 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
     if (r.disk_gb) {
       s += ", " + r.disk_gb + " GB disk space";
     }
-    if (r.preemptible) {
-      s += ", preemptible";
+    if (r.extra) {
+      s += ", " + JSON.stringify(r.extra);
     }
     return s;
   }

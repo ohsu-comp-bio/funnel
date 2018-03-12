@@ -41,11 +41,9 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		Name:        vals.name,
 		Description: vals.description,
 		Resources: &tes.Resources{
-			CpuCores:    uint32(vals.cpu),
-			RamGb:       vals.ram,
-			DiskGb:      vals.disk,
-			Zones:       vals.zones,
-			Preemptible: vals.preemptible,
+			CpuCores: uint32(vals.cpu),
+			RamGb:    vals.ram,
+			DiskGb:   vals.disk,
 		},
 		Tags: map[string]string{},
 	}

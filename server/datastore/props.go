@@ -105,10 +105,8 @@ type tasklog struct {
 }
 
 type resources struct {
-	CpuCores      int64    `datastore:",noindex,omitempty"` // nolint
-	RamGb, DiskGb float64  `datastore:",noindex,omitempty"` // nolint
-	Preemptible   bool     `datastore:",noindex,omitempty"`
-	Zones         []string `datastore:",noindex,omitempty"`
+	CpuCores      int64   `datastore:",noindex,omitempty"` // nolint
+	RamGb, DiskGb float64 `datastore:",noindex,omitempty"` // nolint
 }
 
 type executor struct {
@@ -135,11 +133,9 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 	}
 	if t.Resources != nil {
 		z.Resources = &resources{
-			CpuCores:    int64(t.Resources.CpuCores),
-			RamGb:       t.Resources.RamGb,
-			DiskGb:      t.Resources.DiskGb,
-			Preemptible: t.Resources.Preemptible,
-			Zones:       t.Resources.Zones,
+			CpuCores: int64(t.Resources.CpuCores),
+			RamGb:    t.Resources.RamGb,
+			DiskGb:   t.Resources.DiskGb,
 		}
 	}
 	for _, e := range t.Executors {
@@ -213,11 +209,9 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
 	z.Tags = unmarshalMap(c.Tags)
 	if c.Resources != nil {
 		z.Resources = &tes.Resources{
-			CpuCores:    uint32(c.Resources.CpuCores),
-			RamGb:       c.Resources.RamGb,
-			DiskGb:      c.Resources.DiskGb,
-			Preemptible: c.Resources.Preemptible,
-			Zones:       c.Resources.Zones,
+			CpuCores: uint32(c.Resources.CpuCores),
+			RamGb:    c.Resources.RamGb,
+			DiskGb:   c.Resources.DiskGb,
 		}
 	}
 	for _, e := range c.Executors {

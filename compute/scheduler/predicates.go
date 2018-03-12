@@ -15,8 +15,6 @@ func ResourcesFit(t *tes.Task, n *pbs.Node) error {
 	req := t.GetResources()
 
 	switch {
-	case n.GetPreemptible() && !req.GetPreemptible():
-		return fmt.Errorf("Fail preemptible")
 	case n.GetAvailable().GetCpus() <= 0:
 		return fmt.Errorf("Fail zero cpus available")
 	case n.GetAvailable().GetRamGb() <= 0.0:
@@ -43,26 +41,6 @@ func ResourcesFit(t *tes.Task, n *pbs.Node) error {
 		)
 	}
 	return nil
-}
-
-// ZonesFit determines whether a task's zones fit a node.
-func ZonesFit(t *tes.Task, n *pbs.Node) error {
-	if n.Zone == "" {
-		// Node doesn't have a set zone, so don't bother checking.
-		return nil
-	}
-
-	if len(t.GetResources().GetZones()) == 0 {
-		// Request doesn't specify any zones, so don't bother checking.
-		return nil
-	}
-
-	for _, z := range t.GetResources().GetZones() {
-		if z == n.Zone {
-			return nil
-		}
-	}
-	return fmt.Errorf("Failed zones")
 }
 
 // NotDead returns true if the node state is not Dead or Gone.

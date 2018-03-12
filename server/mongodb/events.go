@@ -83,11 +83,11 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		}
 
 	case events.Type_TASK_METADATA:
-		update = bson.M{
-			"$set": bson.M{
-				fmt.Sprintf("logs.%v.metadata", req.Attempt): req.GetMetadata().Value,
-			},
+		metadataUpdate := bson.M{}
+		for k, v := range req.GetMetadata().Value {
+			metadataUpdate[fmt.Sprintf("logs.%v.metadata.%s", req.Attempt, k)] = v
 		}
+		update = bson.M{"$set": metadataUpdate}
 
 	case events.Type_EXECUTOR_START_TIME:
 		update = bson.M{

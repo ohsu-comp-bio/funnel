@@ -21,6 +21,7 @@ import (
 // Create/List/Get/Cancel Task endpoints. "address" is the address
 // of the TES server.
 func NewClient(address string) (*Client, error) {
+	user := os.Getenv("FUNNEL_SERVER_USER")
 	password := os.Getenv("FUNNEL_SERVER_PASSWORD")
 
 	re := regexp.MustCompile("^(.+://)?(.[^/]+)(.+)?$")
@@ -41,6 +42,7 @@ func NewClient(address string) (*Client, error) {
 			Timeout: 60 * time.Second,
 		},
 		Marshaler: &tes.Marshaler,
+		User:      user,
 		Password:  password,
 	}, nil
 }
@@ -50,6 +52,7 @@ type Client struct {
 	address   string
 	client    *http.Client
 	Marshaler *jsonpb.Marshaler
+	User      string
 	Password  string
 }
 
@@ -59,7 +62,7 @@ func (c *Client) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Tas
 	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View.String()
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
-	hreq.SetBasicAuth("funnel", c.Password)
+	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
@@ -93,7 +96,7 @@ func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes
 	u := c.address + "/v1/tasks?" + v.Encode()
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
-	hreq.SetBasicAuth("funnel", c.Password)
+	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
@@ -125,7 +128,7 @@ func (c *Client) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTas
 	hreq, _ := http.NewRequest("POST", u, &b)
 	hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
-	hreq.SetBasicAuth("funnel", c.Password)
+	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
@@ -146,7 +149,7 @@ func (c *Client) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*t
 	hreq, _ := http.NewRequest("POST", u, nil)
 	hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
-	hreq.SetBasicAuth("funnel", c.Password)
+	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
@@ -166,7 +169,7 @@ func (c *Client) GetServiceInfo(ctx context.Context, req *tes.ServiceInfoRequest
 	u := c.address + "/v1/tasks/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
-	hreq.SetBasicAuth("funnel", c.Password)
+	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err

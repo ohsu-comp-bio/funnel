@@ -50,6 +50,7 @@ type Server struct {
 	HostName         string
 	HTTPPort         string
 	RPCPort          string
+	User             string
 	Password         string
 	DisableHTTPCache bool
 	// The timeout to use for making RPC client connections in nanoseconds

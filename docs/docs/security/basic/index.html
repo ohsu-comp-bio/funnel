@@ -306,6 +306,7 @@ can be configured to require basic password authentication. To enable this,
 include a password in your config file:</p>
 
 <pre><code class="language-yaml">Server:
+  User: funnel
   Password: abc123
 </code></pre>
 
@@ -315,15 +316,12 @@ by everyone:</p>
 <pre><code class="language-bash">$ chmod 600 funnel.config.yml
 </code></pre>
 
-<p>To use the password, set the <code>FUNNEL_SERVER_PASSWORD</code> environment variable:</p>
+<p>To use the password, set the <code>FUNNEL_SERVER_USER</code> and <code>FUNNEL_SERVER_PASSWORD</code> environment variables:</p>
 
-<pre><code class="language-bash">$ export FUNNEL_SERVER_PASSWORD=abc123
+<pre><code class="language-bash">$ export FUNNEL_SERVER_USER=funnel
+$ export FUNNEL_SERVER_PASSWORD=abc123
 $ funnel task list
 </code></pre>
-
-<h3 id="known-issues">Known issues</h3>
-
-<p>The basic auth user is hard-coded to <code>funnel</code>. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/341">issue #341</a>.</p>
 
   </div>
 

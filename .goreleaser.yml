@@ -20,6 +20,11 @@ git:
 release:
   draft: true
 
-dockers:
-  - image: ohsucompbio/funnel
-    dockerfile: ./docker/Dockerfile
+env_files:
+  github_token: .github_token
+
+archive:
+  name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
+#dockers:
+  #- image: ohsucompbio/funnel
+    #dockerfile: ./docker/Dockerfile

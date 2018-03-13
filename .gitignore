@@ -1,3 +1,4 @@
+.github_token
 *.pyc
 .idea
 /src

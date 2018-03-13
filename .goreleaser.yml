@@ -1,0 +1,48 @@
+builds:
+  - binary: funnel
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    ldflags: >
+      -X github.com/ohsu-comp-bio/funnel/version.BuildDate={{.Date}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitCommit={{.Commit}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitBranch={{.Env.GIT_BRANCH}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitUpstream={{.Env.GIT_UPSTREAM}}
+      -X github.com/ohsu-comp-bio/funnel/version.Version={{.Version}}
+
+dist: build/release
+
+git:
+  short_hash: true
+
+release:
+  draft: true
+
+env_files:
+  github_token: .github_token
+
+archive:
+  name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
+
+dockers:
+  - image: ohsucompbio/funnel
+    dockerfile: ./docker/Dockerfile
+    tag_templates:
+      - "{{ .Tag }}-prerelease"
+
+brew:
+  github:
+    owner: ohsu-comp-bio
+    name: homebrew-formula
+  folder: Formula
+  skip_upload: true
+  description: "distributed task execution toolkit"
+  homepage: "https://ohsu-comp-bio.github.io/funnel/"
+  install: |
+    bin.install "funnel"
+  test: |
+    system "#{bin}/funnel", "version"

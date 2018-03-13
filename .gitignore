@@ -1,4 +1,6 @@
+.github_token
 *.pyc
+.env
 .idea
 /src
 /bin

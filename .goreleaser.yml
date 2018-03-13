@@ -1,0 +1,25 @@
+builds:
+  - binary: funnel
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    ldflags: >
+      -X github.com/ohsu-comp-bio/funnel/version.BuildData={{.Date}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitCommit={{.Commit}}
+      -X github.com/ohsu-comp-bio/funnel/version.Version={{.Version}}
+
+dist: build/release
+
+git:
+  short_hash: true
+
+release:
+  draft: true
+
+dockers:
+  - image: ohsucompbio/funnel
+    dockerfile: ./docker/Dockerfile

@@ -2,7 +2,6 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
-VERSION = 0.5.0
 TESTS=$(shell go list ./... | grep -v /vendor/)
 
 export SHELL=/bin/bash
@@ -11,18 +10,18 @@ export PATH
 
 PROTO_INC=-I ./ -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 
-V=github.com/ohsu-comp-bio/funnel/version
-VERSION_LDFLAGS=\
- -X "$(V).BuildDate=$(shell date)" \
- -X "$(V).GitCommit=$(shell git rev-parse --short HEAD)" \
- -X "$(V).GitBranch=$(shell git symbolic-ref -q --short HEAD)" \
- -X "$(V).GitUpstream=$(shell git remote get-url $(shell git config branch.$(shell git symbolic-ref -q --short HEAD).remote) 2> /dev/null)" \
- -X "$(V).Version=$(VERSION)"
+git_branch := $(shell git symbolic-ref -q --short HEAD)
+git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git symbolic-ref -q --short HEAD).remote) 2> /dev/null)
+export GIT_BRANCH = $(git_branch)
+export GIT_UPSTREAM = $(git_upstream)
+
+echoenv:
+	env
 
 # Build the code
 install: depends
 	@touch version/version.go
-	@go install -ldflags '$(VERSION_LDFLAGS)' github.com/ohsu-comp-bio/funnel
+	@go install github.com/ohsu-comp-bio/funnel
 
 # Generate the protobuf/gRPC code
 proto:
@@ -188,43 +187,16 @@ webdash: webdash-prep
 	@go-bindata -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
 
 # Build binaries for all OS/Architectures
-cross-compile: depends
-	@echo '=== Cross compiling... ==='
-	@for GOOS in darwin linux; do \
-		for GOARCH in amd64; do \
-			GOOS=$$GOOS GOARCH=$$GOARCH go build -a \
-				-ldflags '$(VERSION_LDFLAGS)' \
-				-o build/bin/funnel-$$GOOS-$$GOARCH .; \
-		done; \
-	done
+snapshot: depends
+	@goreleaser \
+		--rm-dist \
+		--snapshot
 
-clean-release:
-	rm -rf ./build/release
-
-build-release: clean-release cross-compile docker
-	# NOTE! Making a release requires manual steps.
-	# See: website/content/docs/development.md
-	@if [ $$(git rev-parse --abbrev-ref HEAD) != 'master' ]; then \
-		echo 'This command should only be run from master'; \
-		exit 1; \
-	fi
-	for f in $$(ls -1 build/bin); do \
-		mkdir -p build/release/$$f-$(VERSION); \
-		cp build/bin/$$f build/release/$$f-$(VERSION)/funnel; \
-		tar -C build/release/$$f-$(VERSION) -czf build/release/$$f-$(VERSION).tar.gz .; \
-	done
-	docker tag ohsucompbio/funnel ohsucompbio/funnel:$(VERSION)
-
-# Build the GCE image installer
-gce-installer: cross-compile
-	@mkdir -p build/gce-installer
-	@cp deployments/gce/bundle/* build/gce-installer/
-	@cp build/bin/funnel-linux-amd64 build/gce-installer/funnel
-	@cd build && \
-		../deployments/gce/make-installer.sh -c gce-installer && \
-		mv bundle.run funnel-gce-image-installer && \
-		cd ..
-
+release: depends
+	@goreleaser \
+		--rm-dist \
+		--release-notes <(go run ./util/github-release-notes/main.go)
+	
 # Generate mocks for testing.
 gen-mocks:
 	@go get github.com/vektra/mockery/...
@@ -249,13 +221,6 @@ website:
 website-dev:
 	@go get github.com/spf13/hugo
 	hugo --source ./website -w server
-
-# Build docker image.
-docker: cross-compile
-	mkdir -p build/docker
-	cp build/bin/funnel-linux-amd64 build/docker/funnel
-	cp docker/* build/docker/
-	cd build/docker/ && docker build -t ohsucompbio/funnel .
 
 # Remove build/development files.
 clean:

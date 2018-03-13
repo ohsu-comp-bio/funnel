@@ -8,8 +8,10 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags: >
-      -X github.com/ohsu-comp-bio/funnel/version.BuildData={{.Date}}
+      -X github.com/ohsu-comp-bio/funnel/version.BuildDate={{.Date}}
       -X github.com/ohsu-comp-bio/funnel/version.GitCommit={{.Commit}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitBranch={{.Env.GIT_BRANCH}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitUpstream={{.Env.GIT_UPSTREAM}}
       -X github.com/ohsu-comp-bio/funnel/version.Version={{.Version}}
 
 dist: build/release
@@ -25,6 +27,7 @@ env_files:
 
 archive:
   name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
-#dockers:
-  #- image: ohsucompbio/funnel
-    #dockerfile: ./docker/Dockerfile
+
+dockers:
+  - image: ohsucompbio/funnel
+    dockerfile: ./docker/Dockerfile

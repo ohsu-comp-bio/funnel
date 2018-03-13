@@ -12,13 +12,13 @@ import (
 
 // Return a new interceptor function that authorizes RPCs
 // using a password stored in the config.
-func newAuthInterceptor(password string) grpc.UnaryServerInterceptor {
+func newAuthInterceptor(user, password string) grpc.UnaryServerInterceptor {
 
 	// Return a function that is the interceptor.
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (interface{}, error) {
 
-		if err := authorize(ctx, password); err != nil {
+		if err := authorize(ctx, user, password); err != nil {
 			return nil, err
 		}
 		return handler(ctx, req)
@@ -26,7 +26,7 @@ func newAuthInterceptor(password string) grpc.UnaryServerInterceptor {
 }
 
 // Check the context's metadata for the configured server/API password.
-func authorize(ctx context.Context, password string) error {
+func authorize(ctx context.Context, user, password string) error {
 	// Allow an empty password to mean that no auth. is checked.
 	if password == "" {
 		return nil
@@ -35,9 +35,9 @@ func authorize(ctx context.Context, password string) error {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if len(md["authorization"]) > 0 {
 			raw := md["authorization"][0]
-			_, reqpass, ok := parseBasicAuth(raw)
+			requser, reqpass, ok := parseBasicAuth(raw)
 			if ok {
-				if reqpass == password {
+				if requser == user && reqpass == password {
 					return nil
 				}
 				return grpc.Errorf(codes.PermissionDenied, "")

@@ -22,6 +22,7 @@ import (
 type Server struct {
 	RPCAddress       string
 	HTTPPort         string
+	User             string
 	Password         string
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
@@ -65,7 +66,7 @@ func (s *Server) Serve(pctx context.Context) error {
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
 				// API auth check.
-				newAuthInterceptor(s.Password),
+				newAuthInterceptor(s.User, s.Password),
 				newDebugInterceptor(s.Log),
 			),
 		),

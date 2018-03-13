@@ -23,6 +23,7 @@ var extask = &tes.Task{
 func TestBasicAuthFail(t *testing.T) {
 	ctx := context.Background()
 	conf := tests.DefaultConfig()
+	conf.Server.User = "funnel"
 	conf.Server.Password = "abc123"
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
@@ -70,10 +71,13 @@ func TestBasicAuthFail(t *testing.T) {
 }
 
 func TestBasicAuthed(t *testing.T) {
+	os.Setenv("FUNNEL_SERVER_USER", "funnel")
 	os.Setenv("FUNNEL_SERVER_PASSWORD", "abc123")
+	defer os.Unsetenv("FUNNEL_SERVER_USER")
 	defer os.Unsetenv("FUNNEL_SERVER_PASSWORD")
 
 	conf := tests.DefaultConfig()
+	conf.Server.User = "funnel"
 	conf.Server.Password = "abc123"
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()

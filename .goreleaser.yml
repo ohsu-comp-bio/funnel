@@ -31,3 +31,18 @@ archive:
 dockers:
   - image: ohsucompbio/funnel
     dockerfile: ./docker/Dockerfile
+    tag_templates:
+      - "{{ .Tag }}-prerelease"
+
+brew:
+  github:
+    owner: ohsu-comp-bio
+    name: homebrew-formula
+  folder: Formula
+  skip_upload: true
+  description: "distributed task execution toolkit"
+  homepage: "https://ohsu-comp-bio.github.io/funnel/"
+  install: |
+    bin.install "funnel"
+  test: |
+    system "#{bin}/funnel", "version"

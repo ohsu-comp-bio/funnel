@@ -185,6 +185,7 @@ func TestLocalPutPath(t *testing.T) {
 // Since the LocalBackend hard-links files when possible we need to protect
 // against the case where the same path is 'Put' twice
 func TestSameFile(t *testing.T) {
+	ctx := context.Background()
 	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
@@ -201,14 +202,14 @@ func TestSameFile(t *testing.T) {
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 	ioutil.WriteFile(cp2, []byte("bar"), os.ModePerm)
 
-	err = linkFile(cp, op)
+	err = linkFile(ctx, cp, op)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// since the file in this dir were already 'Put' in the previous step
 	// nothing should happen
-	err = copyFile(cp, op)
+	err = copyFile(ctx, cp, op)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +224,7 @@ func TestSameFile(t *testing.T) {
 	}
 
 	// same file output url; new src contents
-	err = copyFile(cp2, op)
+	err = copyFile(ctx, cp2, op)
 	if err != nil {
 		t.Fatal(err)
 	}

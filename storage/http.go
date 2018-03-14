@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -58,7 +57,7 @@ func (b *HTTPBackend) Get(ctx context.Context, rawurl string, hostPath string, c
 			}
 		}()
 
-		_, err = io.Copy(dest, src.Body)
+		_, err = fsutil.Copy(ctx, dest, src.Body)
 		return err
 
 	case Directory:

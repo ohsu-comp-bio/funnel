@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,7 +43,7 @@ func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string,
 		if err != nil {
 			return err
 		}
-		err = linkFile(path, hostPath)
+		err = linkFile(ctx, path, hostPath)
 
 	case Directory:
 		files, err := walkFiles(path)
@@ -77,7 +76,7 @@ func (local *LocalBackend) PutFile(ctx context.Context, url string, hostPath str
 	if err != nil {
 		return err
 	}
-	return linkFile(hostPath, path)
+	return linkFile(ctx, hostPath, path)
 }
 
 // SupportsGet indicates whether this backend supports GET storage request.
@@ -115,7 +114,7 @@ func isAllowed(path string, allowedDirs []string) bool {
 }
 
 // Copies file source to destination dest.
-func copyFile(source string, dest string) (err error) {
+func copyFile(ctx context.Context, source string, dest string) (err error) {
 	// check if dest exists; if it does check if it is the same as the source
 	same, err := sameFile(source, dest)
 	if err != nil {
@@ -143,12 +142,12 @@ func copyFile(source string, dest string) (err error) {
 		}
 	}()
 
-	_, err = io.Copy(df, sf)
+	_, err = fsutil.Copy(ctx, df, sf)
 	return err
 }
 
 // Hard links file source to destination dest.
-func linkFile(source string, dest string) error {
+func linkFile(ctx context.Context, source string, dest string) error {
 	var err error
 	// without this resulting link could be a symlink
 	parent, err := filepath.EvalSymlinks(source)
@@ -164,7 +163,7 @@ func linkFile(source string, dest string) error {
 	}
 	err = os.Link(parent, dest)
 	if err != nil {
-		err = copyFile(source, dest)
+		err = copyFile(ctx, source, dest)
 		if err != nil {
 			return fmt.Errorf("failed to copy file: %s", err)
 		}

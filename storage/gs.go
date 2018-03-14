@@ -5,7 +5,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -78,7 +77,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 		}
 
 		call := gs.svc.Objects.Get(url.bucket, url.path)
-		return download(call, hostPath)
+		return download(ctx, call, hostPath)
 
 	case Directory:
 		err := fsutil.EnsureDir(hostPath)
@@ -105,7 +104,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 			}
 			call := gs.svc.Objects.Get(url.bucket, obj.Name)
 			key := strings.TrimPrefix(obj.Name, url.path)
-			err = download(call, path.Join(hostPath, key))
+			err = download(ctx, call, path.Join(hostPath, key))
 			if err != nil {
 				return err
 			}
@@ -117,7 +116,7 @@ func (gs *GSBackend) Get(ctx context.Context, rawurl string, hostPath string, cl
 	}
 }
 
-func download(call *storage.ObjectsGetCall, hostPath string) (err error) {
+func download(ctx context.Context, call *storage.ObjectsGetCall, hostPath string) (err error) {
 	resp, err := call.Download()
 	if err != nil {
 		return err
@@ -138,7 +137,7 @@ func download(call *storage.ObjectsGetCall, hostPath string) (err error) {
 		}
 	}()
 
-	_, err = io.Copy(dest, resp.Body)
+	_, err = fsutil.Copy(ctx, dest, resp.Body)
 	return err
 }
 

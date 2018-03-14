@@ -13,6 +13,7 @@ include a password in your config file:
 
 ```yaml
 Server:
+  User: funnel
   Password: abc123
 ```
 
@@ -23,12 +24,9 @@ by everyone:
 $ chmod 600 funnel.config.yml
 ```
 
-To use the password, set the `FUNNEL_SERVER_PASSWORD` environment variable:
+To use the password, set the `FUNNEL_SERVER_USER` and `FUNNEL_SERVER_PASSWORD` environment variables:
 ```bash
+$ export FUNNEL_SERVER_USER=funnel
 $ export FUNNEL_SERVER_PASSWORD=abc123
 $ funnel task list
 ```
-
-### Known issues
-
-The basic auth user is hard-coded to `funnel`. See [issue #341](https://github.com/ohsu-comp-bio/funnel/issues/341).

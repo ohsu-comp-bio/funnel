@@ -31,6 +31,7 @@ Server:
   # Require basic authentication for the server APIs using a password.
   # If used, make sure to properly restrict access to the config file
   # (e.g. chmod 600 funnel.config.yml)
+  # User: funnel
   # Password: abc123
 
   # Include a "Cache-Control: no-store" HTTP header in Get/List responses

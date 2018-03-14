@@ -99,7 +99,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 		}
 		defer f.Close()
 
-		return sw.get(f, hostPath)
+		return sw.get(ctx, f, hostPath)
 
 	case Directory:
 		err := fsutil.EnsureDir(hostPath)
@@ -126,7 +126,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 				return err
 			}
 
-			if err = sw.get(f, path.Join(hostPath, strings.TrimPrefix(obj.Name, url.path))); err != nil {
+			if err = sw.get(ctx, f, path.Join(hostPath, strings.TrimPrefix(obj.Name, url.path))); err != nil {
 				if cerr := f.Close(); cerr != nil {
 					return fmt.Errorf("%v; %v", err, cerr)
 				}
@@ -145,7 +145,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 	}
 }
 
-func (sw *SwiftBackend) get(src io.Reader, hostPath string) (err error) {
+func (sw *SwiftBackend) get(ctx context.Context, src io.Reader, hostPath string) (err error) {
 	err = fsutil.EnsurePath(hostPath)
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func (sw *SwiftBackend) get(src io.Reader, hostPath string) (err error) {
 		}
 	}()
 
-	_, err = io.Copy(dest, src)
+	_, err = fsutil.Copy(ctx, dest, src)
 	return err
 }
 
@@ -207,7 +207,7 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 		}
 	}()
 
-	_, err = io.Copy(writer, reader)
+	_, err = fsutil.Copy(ctx, writer, reader)
 	return err
 }
 

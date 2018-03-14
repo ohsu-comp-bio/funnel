@@ -9,7 +9,7 @@
   ],
   "inputs": [
     {
-      "url": "gs://genomics-public-data/ftp-trace.ncbi.nih.gov/s3://1000genomes/phase3/data/NA21144/alignment/NA21144.mapped.ILLUMINA.bwa.GIH.low_coverage.20130415.bam.cram",
+      "url": "gs://genomics-public-data/ftp-trace.ncbi.nih.gov/1000genomes/ftp/phase3/data/NA21144/alignment/NA21144.mapped.ILLUMINA.bwa.GIH.low_coverage.20130415.bam.cram",
       "path": "/tmp/inputs/NA21097.cram"
     }
   ],

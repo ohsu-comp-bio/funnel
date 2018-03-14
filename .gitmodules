@@ -185,3 +185,6 @@
 [submodule "vendor/github.com/mailru/easyjson"]
 	path = vendor/github.com/mailru/easyjson
 	url = https://github.com/mailru/easyjson
+[submodule "vendor/github.com/google"]
+	path = vendor/github.com/google
+	url = https://github.com/google/go-github.git

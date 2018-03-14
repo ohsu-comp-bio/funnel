@@ -186,5 +186,20 @@
 	path = vendor/github.com/mailru/easyjson
 	url = https://github.com/mailru/easyjson
 [submodule "vendor/github.com/google"]
-	path = vendor/github.com/google
+	path = vendor/github.com/google/go-github
 	url = https://github.com/google/go-github.git
+[submodule "util/github-release-notes/vendor/github.com/google/go-github"]
+	path = util/github-release-notes/vendor/github.com/google/go-github
+	url = https://github.com/google/go-github
+[submodule "util/github-release-notes/vendor/github.com/google/go-querystring"]
+	path = util/github-release-notes/vendor/github.com/google/go-querystring
+	url = https://github.com/google/go-querystring
+[submodule "util/github-release-notes/vendor/golang.org/x/oauth2"]
+	path = util/github-release-notes/vendor/golang.org/x/oauth2
+	url = https://go.googlesource.com/oauth2
+[submodule "util/github-release-notes/vendor/golang.org/x/net"]
+	path = util/github-release-notes/vendor/golang.org/x/net
+	url = https://go.googlesource.com/net
+[submodule "vendor/github.com/google/go-querystring"]
+	path = vendor/github.com/google/go-querystring
+	url = https://github.com/google/go-querystring.git

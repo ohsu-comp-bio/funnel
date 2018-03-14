@@ -161,7 +161,7 @@ func (sw *SwiftBackend) get(ctx context.Context, src io.Reader, hostPath string)
 		}
 	}()
 
-	_, err = fsutil.Copy(ctx, dest, src)
+	_, err = io.Copy(dest, fsutil.Reader(ctx, src))
 	return err
 }
 
@@ -207,7 +207,7 @@ func (sw *SwiftBackend) PutFile(ctx context.Context, rawurl string, hostPath str
 		}
 	}()
 
-	_, err = fsutil.Copy(ctx, writer, reader)
+	_, err = io.Copy(writer, fsutil.Reader(ctx, reader))
 	return err
 }
 

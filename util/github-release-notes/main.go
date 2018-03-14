@@ -3,7 +3,6 @@ package main
 import (
   "context"
   "strings"
-  _ "github.com/kr/pretty"
 	"fmt"
   "golang.org/x/oauth2"
   "github.com/google/go-github/github"

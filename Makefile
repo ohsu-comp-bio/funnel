@@ -193,6 +193,7 @@ snapshot: depends
 		--snapshot
 
 release: depends
+	@go get github.com/google/go-github/github
 	@goreleaser \
 		--rm-dist \
 		--release-notes <(go run ./util/github-release-notes/main.go)

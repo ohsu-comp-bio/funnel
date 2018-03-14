@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -142,7 +143,7 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 		}
 	}()
 
-	_, err = fsutil.Copy(ctx, df, sf)
+	_, err = io.Copy(df, fsutil.Reader(ctx, sf))
 	return err
 }
 

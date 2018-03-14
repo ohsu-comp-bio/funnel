@@ -5,6 +5,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -137,7 +138,7 @@ func download(ctx context.Context, call *storage.ObjectsGetCall, hostPath string
 		}
 	}()
 
-	_, err = fsutil.Copy(ctx, dest, resp.Body)
+	_, err = io.Copy(dest, fsutil.Reader(ctx, resp.Body))
 	return err
 }
 
@@ -158,7 +159,7 @@ func (gs *GSBackend) PutFile(ctx context.Context, rawurl string, hostPath string
 		Name: url.path,
 	}
 
-	_, err = gs.svc.Objects.Insert(url.bucket, obj).Media(reader).Do()
+	_, err = gs.svc.Objects.Insert(url.bucket, obj).Media(fsutil.Reader(ctx, reader)).Do()
 	return err
 }
 

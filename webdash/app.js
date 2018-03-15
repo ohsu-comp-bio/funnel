@@ -27,7 +27,7 @@ app.controller('TaskFilterController', function($scope, TaskFilters) {
   $scope.filters = TaskFilters;
 })
 
-app.controller('TaskListController', function($scope, $http, $interval, $routeParams, $location, TaskFilters) {
+app.controller('TaskListController', function($scope, $http, $timeout, $routeParams, $location, TaskFilters) {
   $scope.pageTitle = "Tasks";
   $scope.tasks = [];
   $scope.isDone = isDone;
@@ -39,9 +39,9 @@ app.controller('TaskListController', function($scope, $http, $interval, $routePa
     $http.post(url);
   }
 
-  TaskFilters.$watch("state", function() {
-    refresh()
-  })
+  // TaskFilters.$watch("state", function() {
+  //   refresh()
+  // })
 
   function refresh() {
     var url = "/v1/tasks?view=BASIC";
@@ -61,18 +61,19 @@ app.controller('TaskListController', function($scope, $http, $interval, $routePa
         } else {
           $scope.nextPage = "";
         }
+        stop = $timeout(refresh, 2000)
       });
     });
   }
+
   refresh();
-  stop = $interval(refresh, 2000);
 
   $scope.$on('$destroy', function() {
-    $interval.cancel(stop);
+    $timeout.cancel(stop);
   });
 });
 
-app.controller('NodeListController', function($scope, $http, $interval) {
+app.controller('NodeListController', function($scope, $http, $timeout) {
 
 	$scope.url = "/v1/nodes";
   $scope.nodes = [];
@@ -82,14 +83,15 @@ app.controller('NodeListController', function($scope, $http, $interval) {
       $scope.$applyAsync(function() {
         $scope.nodes = response.data.nodes;
         $scope.nodes.sort(idDesc);
+        stop = $timeout(refresh, 2000)        
       });
     });
   }
+
   refresh();
-  stop = $interval(refresh, 2000);
 
   $scope.$on('$destroy', function() {
-    $interval.cancel(stop);
+    $timeout.cancel(stop);
   });
 });
 
@@ -105,7 +107,7 @@ function getServerURL($location) {
   return proto + "://" + $location.host() + ":" + port;
 }
 
-app.controller('TaskInfoController', function($scope, $http, $routeParams, $location, $interval, Page) {
+app.controller('TaskInfoController', function($scope, $http, $routeParams, $location, $timeout, Page) {
   
   $scope.url = "/v1/tasks/" + $routeParams.task_id;
   Page.setTitle("Task " + $routeParams.task_id);
@@ -189,24 +191,25 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
           $scope.task = data;
           parseSystemLogs(data);
           $scope.loaded = true;
+          stop = $timeout(refresh, 2000);
         })
         .error(function(data, status, headers, config){
           if (status == 404) {
             $scope.notFound = true;
-            $interval.cancel(stop);
+            $timeout.cancel(stop);
           }
         });
     }
   }
+
   refresh();
-  stop = $interval(refresh, 2000);
 
   $scope.$on('$destroy', function() {
-    $interval.cancel(stop);
+    $timeout.cancel(stop);
   });
 });
 
-app.controller('NodeInfoController', function($scope, $http, $routeParams, $location, $interval, Page, $filter) {
+app.controller('NodeInfoController', function($scope, $http, $routeParams, $location, $timeout, Page, $filter) {
   
   $scope.url = "/v1/nodes/" + $routeParams.node_id;
   Page.setTitle("Node " + $routeParams.node_id);
@@ -231,19 +234,20 @@ app.controller('NodeInfoController', function($scope, $http, $routeParams, $loca
     .success(function(data, status, headers, config) {
       $scope.node = data;
       $scope.loaded = true;
+      stop = $timeout(refresh, 2000);
     })
     .error(function(data, status, headers, config){
       if (status == 404) {
         $scope.notFound = true;
-        $interval.cancel(stop);
+        $timeout.cancel(stop);
       }
     });
   }
+
   refresh();
-  stop = $interval(refresh, 2000);
 
   $scope.$on('$destroy', function() {
-    $interval.cancel(stop);
+    $timeout.cancel(stop);
   });
 });
 

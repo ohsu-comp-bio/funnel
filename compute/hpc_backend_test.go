@@ -68,7 +68,7 @@ func TestSetupTemplatedHPCSubmit(t *testing.T) {
 		t.Fatal(rerr)
 	}
 
-	binaryPath, err := DetectFunnelBinaryPath()
+	binaryPath, err := detectFunnelBinaryPath()
 	if err != nil {
 		t.Fatal(err)
 	}

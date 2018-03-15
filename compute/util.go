@@ -5,8 +5,8 @@ import (
 	"os"
 )
 
-// DetectFunnelBinaryPath detects the path to the "funnel" binary
-func DetectFunnelBinaryPath() (string, error) {
+// detectFunnelBinaryPath detects the path to the "funnel" binary
+func detectFunnelBinaryPath() (string, error) {
 	path, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("Failed to detect path of funnel binary")

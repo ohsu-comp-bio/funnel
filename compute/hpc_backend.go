@@ -227,7 +227,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	confPath := path.Join(workdir, "worker.conf.yml")
 	config.ToYamlFile(b.Conf, confPath)
 
-	funnelPath, err := DetectFunnelBinaryPath()
+	funnelPath, err := detectFunnelBinaryPath()
 	if err != nil {
 		return "", err
 	}

@@ -3,8 +3,10 @@ package config
 import (
 	"os"
 	"path"
+	"strings"
 	"time"
 
+	intern "github.com/ohsu-comp-bio/funnel/config/internal"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
@@ -95,22 +97,22 @@ func DefaultConfig() Config {
 	// compute
 	reconcile := time.Minute * 10
 
-	htcondorTemplate, _ := Asset("config/htcondor-template.txt")
+	htcondorTemplate, _ := intern.Asset("config/htcondor-template.txt")
 	c.HTCondor.Template = string(htcondorTemplate)
 	c.HTCondor.ReconcileRate = reconcile
 	c.HTCondor.DisableReconciler = true
 
-	slurmTemplate, _ := Asset("config/slurm-template.txt")
+	slurmTemplate, _ := intern.Asset("config/slurm-template.txt")
 	c.Slurm.Template = string(slurmTemplate)
 	c.Slurm.ReconcileRate = reconcile
 	c.Slurm.DisableReconciler = true
 
-	pbsTemplate, _ := Asset("config/pbs-template.txt")
+	pbsTemplate, _ := intern.Asset("config/pbs-template.txt")
 	c.PBS.Template = string(pbsTemplate)
 	c.PBS.ReconcileRate = reconcile
 	c.PBS.DisableReconciler = true
 
-	geTemplate, _ := Asset("config/gridengine-template.txt")
+	geTemplate, _ := intern.Asset("config/gridengine-template.txt")
 	c.GridEngine.Template = string(geTemplate)
 
 	c.AWSBatch.JobDefinition = "funnel-job-def"
@@ -119,4 +121,22 @@ func DefaultConfig() Config {
 	c.AWSBatch.DisableReconciler = true
 
 	return c
+}
+
+var examples = buildExamples()
+
+func buildExamples() map[string]string {
+	examples := map[string]string{}
+	for _, n := range intern.AssetNames() {
+		sn := path.Base(n)
+		sn = strings.TrimSuffix(sn, path.Ext(sn))
+		b := intern.MustAsset(n)
+		examples[sn] = string(b)
+	}
+	return examples
+}
+
+// Examples returns a set of example configurations strings.
+func Examples() map[string]string {
+	return examples
 }

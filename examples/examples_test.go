@@ -8,13 +8,9 @@ import (
 )
 
 func TestExamplesAreValid(t *testing.T) {
-	for _, en := range AssetNames() {
-		tb, err := Asset(en)
-		if err != nil {
-			t.Fatal(err)
-		}
+	for en, tb := range Examples() {
 		var task tes.Task
-		err = jsonpb.UnmarshalString(string(tb), &task)
+		err := jsonpb.UnmarshalString(tb, &task)
 		if err != nil {
 			t.Fatal("unmarshal failed", en, err)
 		}

@@ -1,3 +1,4 @@
+// Package cmd contains the Funnel CLI commands.
 package cmd
 
 import (

@@ -1,3 +1,4 @@
+// Package config contains Funnel configuration structures and defaults.
 package config
 
 import (

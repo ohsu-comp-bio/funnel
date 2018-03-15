@@ -1,3 +1,4 @@
+// Package batch contains code for accessing compute resources via AWS Batch.
 package batch
 
 import (

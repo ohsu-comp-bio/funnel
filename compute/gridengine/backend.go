@@ -1,3 +1,4 @@
+// Package gridengine contains code for accessing compute resources via Open Grid Engine.
 package gridengine
 
 import (

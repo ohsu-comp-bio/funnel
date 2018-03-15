@@ -1,3 +1,4 @@
+// Package noop contains a compute backend that does nothing, for testing purposes.
 package noop
 
 import (

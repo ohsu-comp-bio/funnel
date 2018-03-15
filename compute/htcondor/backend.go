@@ -1,3 +1,4 @@
+// Package htcondor contains code for accessing compute resources via HTCondor.
 package htcondor
 
 import (

@@ -1,6 +1,25 @@
+# The name of the active server database backend
+# Available backends: boltdb, dynamodb, elastic, mongodb
+Database: boltdb
+
+# The name of the active compute backend
+# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch
+Compute: local
+
+# The name of the active event writer backend(s).
+# Available backends: log, boltdb, dynamodb, elastic, mongodb, kafka
+EventWriters: 
+  - boltdb
+  - log
+
+Logger:
+  # Logging levels: debug, info, error
+  Level: info
+  # Write logs to this path. If empty, logs are written to stderr.
+  OutputFile: ""
+
 Server:
-  # Hostname of the Funnel server. Mainly, this is used by auto-scalers
-  # to configure workers.
+  # Hostname of the Funnel server.
   HostName: localhost
 
   # Port used for HTTP communication and the web dashboard.
@@ -19,50 +38,17 @@ Server:
   # to prevent caching by intermediary services.
   DisableHTTPCache: true
 
-  # Limit the size of task executor logs (stdout/err), in bytes.
-  MaxExecutorLogSize: 10000 # 10 KB
+  # RPC client connection timeout.
+  # In nanoseconds.
+  RPCClientTimeout: 60000000000 # 30 seconds
 
-  # The name of the active server database backend
-  # Available backends: boltdb, dynamodb, elastic, mongodb
-  Database: boltdb
-  Databases:
-    BoltDB:
-      # Path to the database file
-      Path: ./funnel-work-dir/funnel.db
+  # The maximum number of times that a request will be retried for failures.
+  # Time between retries follows an exponential backoff starting at 5 seconds
+  # up to 1 minute
+  RPCClientMaxRetries: 10
 
-    # DynamoDB:
-    #   # Basename to use for dynamodb tables
-    #   TableBasename: "funnel"
-    #   # AWS region
-    #   Region: ""
-    #   Credentials:
-    #     # AWS Access key ID
-    #     Key: ""
-    #     # AWS Secret Access Key
-    #     Secret: ""
 
-    # Elastic:
-    #   # Prefix to use for indexes (task, events, nodes)
-    #   IndexPrefix: "funnel"
-    #   # URL of the elasticsearch server.
-    #   URL: http://localhost:9200
-
-    # MongoDB:
-    #   # Addrs holds the addresses for the seed servers.
-    #   Addrs:
-    #     - "localhost"
-    #   # Database is the database name used within MongoDB to store funnel data.
-    #   Database: "funnel"
-    #   Username: ""
-    #   Password: ""
-
-  Logger:
-    # Logging levels: debug, info, error
-    Level: info
-    # Write logs to this path. If empty, logs are written to stderr.
-    OutputFile: ""
-
-# The scheduler is used for the GCE, Openstack, and Manual compute backends. 
+# The scheduler is used for the Manual compute backend. 
 Scheduler:
   # How often to run a scheduler iteration.
   # In nanoseconds.
@@ -75,277 +61,249 @@ Scheduler:
   # How long to wait for a node to start, before marking the node dead.
   # In nanoseconds.
   NodeInitTimeout: 300000000000 # 5 minutes
-  Node:
-    # If empty, a node ID will be automatically generated.
-    ID: ""
 
-    # Files created during processing will be written in this directory.
-    WorkDir: ./funnel-work-dir
-    # If the node has been idle for longer than the timeout, it will shut down.
-    # -1 means there is no timeout. 0 means timeout immediately after the first task.
-    Timeout: -1
+Node:
+  # If empty, a node ID will be automatically generated.
+  ID: ""
 
-    # A Node will automatically try to detect what resources are available to it. 
-    # Defining Resources in the Node configuration overrides this behavior.
-    Resources:
-      # CPUs available.
-      # Cpus: 0
+  # If the node has been idle for longer than the timeout, it will shut down.
+  # -1 means there is no timeout. 0 means timeout immediately after the first task.
+  Timeout: -1
 
-      # RAM available, in GB.
-      # RamGb: 0.0
+  # A Node will automatically try to detect what resources are available to it. 
+  # Defining Resources in the Node configuration overrides this behavior.
+  Resources:
+    # CPUs available.
+    # Cpus: 0
 
-      # Disk space available, in GB.
-      # DiskGb: 0.0
+    # RAM available, in GB.
+    # RamGb: 0.0
 
-      # For low-level tuning.
-      # How often to sync with the Funnel server.
-      # In nanoseconds.
-      UpdateRate: 5000000000 # 5 seconds
-      # RPC timeout for update/sync call.
-      # In nanoseconds.
-      UpdateTimeout: 1000000000 # 1 second
+    # Disk space available, in GB.
+    # DiskGb: 0.0
 
-      Logger:
-        # Logging levels: debug, info, error
-        Level: info
-        # Write logs to this path. If empty, logs are written to stderr.
-        OutputFile: ""
-
-
-# The name of the active compute backend
-# Available backends: local, htcondor, slurm, pbs, gridengine, manual, gce, openstack, aws-batch
-Backend: local
-
-# Scheduler backend config
-Backends:
-  HTCondor:
-    Template: |
-      universe = vanilla
-      getenv = True
-      executable = {{.Executable}}
-      arguments = worker run --config {{.Config}} --task-id {{.TaskId}}
-      log = {{.WorkDir}}/condor-event-log
-      error = {{.WorkDir}}/funnel-stderr
-      output = {{.WorkDir}}/funnel-stdout
-      should_transfer_files = YES
-      when_to_transfer_output = ON_EXIT_OR_EVICT
-      {{if ne .Cpus 0 -}}
-      {{printf "request_cpus = %d" .Cpus}}
-      {{- end}}
-      {{if ne .RamGb 0.0 -}}
-      {{printf "request_memory = %.0f GB" .RamGb}}
-      {{- end}}
-      {{if ne .DiskGb 0.0 -}}
-      {{printf "request_disk = %.0f GB" .DiskGb}}
-      {{- end}}
-
-      queue
-
-  PBS:
-    Template: |
-      #!bin/bash
-      #PBS -N {{.NodeId}}
-      #PBS -o {{.WorkDir}}/funnel-stdout
-      #PBS -e {{.WorkDir}}/funnel-stderr
-      {{if ne .Cpus 0 -}}
-      {{printf "#PBS -l nodes=1:ppn=%d" .Cpus}}
-      {{- end}}
-      {{if ne .RamGb 0.0 -}}
-      {{printf "#PBS -l mem=%.0fgb" .RamGb}}
-      {{- end}}
-      {{if ne .DiskGb 0.0 -}}
-      {{printf "#PBS -l file=%.0fgb" .DiskGb}}
-      {{- end}}
-
-      {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
-
-  GridEngine:
-    Template: |
-      #!bin/bash
-      #$ -N {{.NodeId}}
-      #$ -o {{.WorkDir}}/funnel-stdout
-      #$ -e {{.WorkDir}}/funnel-stderr
-      #$ -l nodes=1
-      {{if ne .Cpus 0 -}}
-      {{printf "#$ -pe mpi %d" .Cpus}}
-      {{- end}}
-      {{if ne .RamGb 0.0 -}}
-      {{printf "#$ -l h_vmem=%.0fG" .RamGb}}
-      {{- end}}
-      {{if ne .DiskGb 0.0 -}}
-      {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
-      {{- end}}
-
-      {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
-  
-  SLURM:
-    Template: |
-      #!/bin/bash
-      #SBATCH --job-name {{.NodeId}}
-      #SBATCH --ntasks 1
-      #SBATCH --error {{.WorkDir}}/funnel-stderr
-      #SBATCH --output {{.WorkDir}}/funnel-stdout
-      {{if ne .Cpus 0 -}}
-      {{printf "#SBATCH --cpus-per-task %d" .Cpus}}
-      {{- end}}
-      {{if ne .RamGb 0.0 -}}
-      {{printf "#SBATCH --mem %.0fGB" .RamGb}}
-      {{- end}}
-      {{if ne .DiskGb 0.0 -}}
-      {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
-      {{- end}}
-
-      {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
-
-  GCE:
-    # Path to account credentials file.
-    # If possible, this will be automatically discovered.
-    AccountFile: ""
-    # Google Cloud project ID.
-    # If possible, this will be automatically discovered.
-    Project: ""
-    # Google Cloud zone.
-    # If possible, this will be automatically discovered.
-    Zone: ""
-    Weights:
-      # Prefer nodes that start up quickly.
-      # Nodes that are already online have instant startup time.
-      PreferQuickStartup: 1.0
-    # How long to cache GCE API results (machine list, templates, etc)
-    # before refreshing.
-    CacheTTL: 60000000000 # 1 minute
-
-  # Batch describes the configuration for the AWS Batch compute backend.
-  Batch:
-    # JobDefinition can be either a name or the Amazon Resource Name (ARN).
-    JobDefinition: "funnel-job-def"
-    # JobQueue can be either a name or the Amazon Resource Name (ARN).
-    JobQueue: "funnel-job-queue"
-    # AWS region of the specified job queue and to create the job definition in
-    Region: ""
-    Credentials:
-      Key: ""
-      Secret: ""
-
+  # For low-level tuning.
+  # How often to sync with the Funnel server.
+  # In nanoseconds.
+  UpdateRate: 5000000000 # 5 seconds
 
 Worker:
   # Files created during processing will be written in this directory.
   WorkDir: ./funnel-work-dir
 
-  # File storage systems.
-  #
-  # This is usually set automatically by the scheduler, but you might need this
-  # if you're starting a worker manually.
-  Storage:
-    # Local file system.
-    Local:
-      # Whitelist of local directory paths which Funnel is allowed to access.
-      AllowedDirs:
-        - ./
-
-    # S3:
-    #   Credentials:
-    #       # AWS Access key ID
-    #       Key: ""
-    #       # AWS Secret Access Key
-    #       Secret: ""
-
-    # GS:
-    #     # Path to account credentials file.
-    #     # Optional. If possible, credentials will be automatically discovered
-    #     # from the environment.
-    #   - AccountFile:
-    #     # Automatically discover credentials from the environment.
-    #     FromEnv: true
-
-    # Swift:
-    #   UserName:
-    #   Password:
-    #   AuthURL:
-    #   TenantName:
-    #   TenantID:
-    #   RegionName:
+  # For low-level tuning.
+  # How often to poll for cancel signals
+  # In nanoseconds.
+  PollingRate: 5000000000 # 5 seconds
 
   # For low-level tuning.
-  # How often to send task log updates to the Funnel server.
+  # How often to send stdout/err task log updates to the Funnel server.
+  # Setting this to 0 will result in these fields being updated a single time
+  # after the executor exits.
   # In nanoseconds.
-  UpdateRate: 5000000000 # 5 seconds
+  LogUpdateRate: 5000000000 # 5 seconds
 
-  # Maximum task log (stdout/err) size, in bytes to buffer between updates.
-  BufferSize: 10000 # 10 KB
+  # Max bytes to store for stdout/err in the task log.
+  LogTailSize: 10000 # 10 KB
 
-  # The name of the active task reader backend.
-  # Available backends: rpc, dynamodb, elastic, mongodb
-  TaskReader: rpc
-  TaskReaders:
+  # Normally the worker deletes its working directory after executing.
+  # This option disables that behavior.
+  LeaveWorkDir: false
 
-    # DynamoDB:
-    #   # Basename to use for dynamodb tables
-    #   TableBasename: "funnel"
-    #   # AWS region
-    #   Region: ""
-    #   Credentials:
-    #     # AWS Access key ID
-    #     Key: ""
-    #     # AWS Secret Access Key
-    #     Secret: ""
+#-------------------------------------------------------------------------------
+# Databases and/or Event Writers/Handlers
+#-------------------------------------------------------------------------------
 
-    # Elastic:
-    #   # Prefix to use for indexes (task, events, nodes)
-    #   IndexPrefix: "funnel"
-    #   # URL of the elasticsearch server.
-    #   URL: http://localhost:9200
+BoltDB:
+  # Path to the database file
+  Path: ./funnel-work-dir/funnel.db
 
-    # MongoDB:
-    #   # Addrs holds the addresses for the seed servers.
-    #   Addrs:
-    #     - "localhost"
-    #   # Database is the database name used within MongoDB to store funnel data.
-    #   Database: "funnel"
-    #   Username: ""
-    #   Password: ""
+DynamoDB:
+  # Basename to use for dynamodb tables
+  TableBasename: funnel
+  # AWS region
+  Region: ""
+  # AWS Access key ID
+  Key: ""
+  # AWS Secret Access Key
+  Secret: ""
 
-  # The name of the active event writer backend.
-  # Available backends: rpc, log, dynamodb, elastic, mongodb
-  ActiveEventWriters: 
-    - rpc
-    - log
-  EventWriters:
-    # Write events over gRPC
-    RPC:
-      # RPC timeout for update/sync call.
-      # In nanoseconds.
-      UpdateTimeout: 1000000000 # 1 second
+Elastic:
+  # Prefix to use for indexes (task, events, nodes)
+  IndexPrefix: funnel
+  # URL of the elasticsearch server.
+  URL: http://localhost:9200
 
-    # Translate events and store their content in DynamoDB.
-    # DynamoDB:
-    #   # Basename to use for dynamodb tables
-    #   TableBasename: "funnel"
-    #   # AWS region
-    #   Region: ""
-    #   Credentials:
-    #     # AWS Access key ID
-    #     Key: ""
-    #     # AWS Secret Access Key
-    #     Secret: ""
+# Google Cloud Datastore task database.
+Datastore:
+  Project: ""
+  # Path to account credentials file.
+  # Optional. If possible, credentials will be automatically discovered
+  # from the environment.
+  CredentialsFile: ""
+  
+MongoDB:
+  # Addrs holds the addresses for the seed servers.
+  Addrs:
+    - localhost
+  # Database is the database name used within MongoDB to store funnel data.
+  Database: funnel
+  # Timeout is the amount of time to wait for a server to respond when
+  # first connecting and on follow up operations in the session. If
+  # timeout is zero, the call may block forever waiting for a connection
+  # to be established.
+  Timeout: 300000000000 # 5 minutes
+  # Username and Password inform the credentials for the initial authentication
+  # done on the database defined by the Database field.
+  Username: ""
+  Password: ""
 
-    # Elastic:
-    #   # Prefix to use for indexes (task, events, nodes)
-    #   IndexPrefix: "funnel"
-    #   # URL of the elasticsearch server.
-    #   URL: http://localhost:9200
+Kafka:
+  Servers:
+    - ""
+  Topic: funnel
 
-    # MongoDB:
-    #   # Addrs holds the addresses for the seed servers.
-    #   Addrs:
-    #     - "localhost"
-    #   # Database is the database name used within MongoDB to store funnel data.
-    #   Database: "funnel"
-    #   Username: ""
-    #   Password: ""
-      
-  Logger:
-    # Logging levels: debug, info, error
-    Level: info
-    # Write logs to this path. If empty, logs are written to stderr.
-    OutputFile: ""
+#-------------------------------------------------------------------------------
+# Compute Backends
+#-------------------------------------------------------------------------------
+
+HTCondor:
+  Template: |
+    universe = vanilla
+    getenv = True
+    executable = {{.Executable}}
+    arguments = worker run --config {{.Config}} --task-id {{.TaskId}}
+    log = {{.WorkDir}}/condor-event-log
+    error = {{.WorkDir}}/funnel-stderr
+    output = {{.WorkDir}}/funnel-stdout
+    should_transfer_files = YES
+    when_to_transfer_output = ON_EXIT_OR_EVICT
+    {{if ne .Cpus 0 -}}
+    {{printf "request_cpus = %d" .Cpus}}
+    {{- end}}
+    {{if ne .RamGb 0.0 -}}
+    {{printf "request_memory = %.0f GB" .RamGb}}
+    {{- end}}
+    {{if ne .DiskGb 0.0 -}}
+    {{printf "request_disk = %.0f GB" .DiskGb}}
+    {{- end}}
+
+    queue
+
+PBS:
+  Template: |
+    #!bin/bash
+    #PBS -N {{.NodeId}}
+    #PBS -o {{.WorkDir}}/funnel-stdout
+    #PBS -e {{.WorkDir}}/funnel-stderr
+    {{if ne .Cpus 0 -}}
+    {{printf "#PBS -l nodes=1:ppn=%d" .Cpus}}
+    {{- end}}
+    {{if ne .RamGb 0.0 -}}
+    {{printf "#PBS -l mem=%.0fgb" .RamGb}}
+    {{- end}}
+    {{if ne .DiskGb 0.0 -}}
+    {{printf "#PBS -l file=%.0fgb" .DiskGb}}
+    {{- end}}
+
+    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+
+GridEngine:
+  Template: |
+    #!bin/bash
+    #$ -N {{.NodeId}}
+    #$ -o {{.WorkDir}}/funnel-stdout
+    #$ -e {{.WorkDir}}/funnel-stderr
+    #$ -l nodes=1
+    {{if ne .Cpus 0 -}}
+    {{printf "#$ -pe mpi %d" .Cpus}}
+    {{- end}}
+    {{if ne .RamGb 0.0 -}}
+    {{printf "#$ -l h_vmem=%.0fG" .RamGb}}
+    {{- end}}
+    {{if ne .DiskGb 0.0 -}}
+    {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
+    {{- end}}
+
+    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+
+Slurm:
+  Template: |
+    #!/bin/bash
+    #SBATCH --job-name {{.NodeId}}
+    #SBATCH --ntasks 1
+    #SBATCH --error {{.WorkDir}}/funnel-stderr
+    #SBATCH --output {{.WorkDir}}/funnel-stdout
+    {{if ne .Cpus 0 -}}
+    {{printf "#SBATCH --cpus-per-task %d" .Cpus}}
+    {{- end}}
+    {{if ne .RamGb 0.0 -}}
+    {{printf "#SBATCH --mem %.0fGB" .RamGb}}
+    {{- end}}
+    {{if ne .DiskGb 0.0 -}}
+    {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
+    {{- end}}
+
+    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+
+# AWSBatch describes the configuration for the AWS Batch compute backend.
+AWSBatch:
+  # JobDefinition can be either a name or the Amazon Resource Name (ARN).
+  JobDefinition: "funnel-job-def"
+  # JobQueue can be either a name or the Amazon Resource Name (ARN).
+  JobQueue: "funnel-job-queue"
+  # AWS region of the specified job queue and to create the job definition in
+  Region: ""
+  Key: ""
+  Secret: ""
+
+#-------------------------------------------------------------------------------
+# Storage
+#-------------------------------------------------------------------------------
+
+# If possible, credentials will be automatically discovered
+# from the environment.
+
+# Local file system.
+LocalStorage:
+  # Whitelist of local directory paths which Funnel is allowed to access.
+  AllowedDirs:
+    - ./
+
+# HTTPStorage is used to download public files on the web via a GET request.
+HTTPStorage:
+  # Timeout for http(s) GET requests.
+  # In nanoseconds.
+  Timeout: 30000000000 # 30 seconds
+
+AmazonS3:
+  Disabled: false
+  # The maximum number of times that a request will be retried for failures.
+  MaxRetries: 10
+  # AWS Access key ID
+  Key: ""
+  # AWS Secret Access Key
+  Secret: ""
+
+# Configure storage backends for S3 providers such as Minio and/or Ceph
+# GenericS3:
+#   - Disabled: true
+#     Endpoint: ""
+#     Key: ""
+#     Secret: ""
+
+GoogleStorage:
+  Disabled: false
+  # Path to account credentials file.
+  # Optional. If possible, credentials will be automatically discovered
+  # from the environment.
+  CredentialsFile: ""
+
+Swift:
+  Disabled: false
+  UserName: ""
+  Password: ""
+  AuthURL: ""
+  TenantName: ""
+  TenantID: ""
+  RegionName: ""

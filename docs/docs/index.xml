@@ -27,9 +27,8 @@ Setup Get started by creating a compute environment, job queue and job definitio
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/security/basic/</guid>
       <description>Basic Auth By default, a Funnel server allows open access to its API endpoints, but it can be configured to require basic password authentication. To enable this, include a password in your config file:
-Server: Password: abc123  Make sure to properly protect the configuration file so that it&amp;rsquo;s not readable by everyone:
-$ chmod 600 funnel.config.yml  To use the password, set the FUNNEL_SERVER_PASSWORD environment variable:
-$ export FUNNEL_SERVER_PASSWORD=abc123 $ funnel task list  Known issues The basic auth user is hard-coded to funnel.</description>
+Server: User: funnel Password: abc123  Make sure to properly protect the configuration file so that it&amp;rsquo;s not readable by everyone:
+$ chmod 600 funnel.config.yml  To use the password, set the FUNNEL_SERVER_USER and FUNNEL_SERVER_PASSWORD environment variables:</description>
     </item>
     
     <item>

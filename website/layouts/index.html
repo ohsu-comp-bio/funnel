@@ -249,6 +249,18 @@ rpcAddress           :9090
 
       <div class="section group">
         <div class="col span_4_of_12">
+          <h1>Connect to a remote server</h1>
+          <p>Usually you'll want to use a remote Funnel server. For that, there are CLI flags and envionrment variables.</p>
+        </div>
+
+        <div class="col span_8_of_12">
+          <pre><code class="language-shell">$ funnel -S http://funnel.example.com task list</code></pre>
+          <pre><code class="language-shell">$ FUNNEL_SERVER="http://funnel.example.com" funnel task list</code></pre>
+        </div>
+      </div>
+
+      <div class="section group">
+        <div class="col span_4_of_12">
           <h1>Next Steps</h1>
           <p>There's a lot more to learn about tasks and Funnel. More information can be
              found in the <a href="{{ .Site.BaseURL }}docs/">docs</a> and the CLI help.</p>

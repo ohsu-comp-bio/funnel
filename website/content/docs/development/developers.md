@@ -96,19 +96,6 @@ Don't manually add new submodules, use `make add_deps`.
 Funnel has git submodules. The Makefile usually handles this for you, but if needed,
 `git submodule update --init --recursive` will get all the submodules.
 
-## Release Process
-
-This list is a work in progress:
-
-- edit Makefile to update version
-- set up GitHub API auth using a token (see Makefile)
-- run `make upload-release`
-- edit website/content/install.md to replace download links
-- edit website/layouts/index.html to replace the download button text
-- release the website
-
-Does that seem too manual and error-prone to you? You're right! See: https://github.com/ohsu-comp-bio/funnel/issues/186
-
 [go]: https://golang.org
 [angular]: https://angularjs.org/
 [protobuf]: https://github.com/google/protobuf

@@ -17,7 +17,7 @@ A task defines a unit of work:
 - state
 - logs
 
-The example task below downloads a file named `hello.txt` from S3 and calls `cat hello.txt` using the [alpine][alpine] container.
+The example task below downloads a file named `hello.txt` from S3 and calls `cat hello.txt` using the [alpine][alpine] container. This task also writes the executor's stdout to a file, and uploads the stdout to s3.
 
 ```
 {

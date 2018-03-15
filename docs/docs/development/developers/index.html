@@ -533,21 +533,6 @@ Don&rsquo;t manually add new submodules, use <code>make add_deps</code>.</p>
 <p>Funnel has git submodules. The Makefile usually handles this for you, but if needed,
 <code>git submodule update --init --recursive</code> will get all the submodules.</p>
 
-<h2 id="release-process">Release Process</h2>
-
-<p>This list is a work in progress:</p>
-
-<ul>
-<li>edit Makefile to update version</li>
-<li>set up GitHub API auth using a token (see Makefile)</li>
-<li>run <code>make upload-release</code></li>
-<li>edit website/content/install.md to replace download links</li>
-<li>edit website/layouts/index.html to replace the download button text</li>
-<li>release the website</li>
-</ul>
-
-<p>Does that seem too manual and error-prone to you? You&rsquo;re right! See: <a href="https://github.com/ohsu-comp-bio/funnel/issues/186">https://github.com/ohsu-comp-bio/funnel/issues/186</a></p>
-
   </div>
 
 </div>

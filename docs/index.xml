@@ -305,8 +305,8 @@ Compute: slurm Slurm: |#!/bin/bash #SBATCH --job-name {{.TaskId}} #SBATCH --ntas
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/tasks/</guid>
       <description>Tasks A task defines a unit of work:
- metadata input files to download a sequence of Docker containers + commands to run, output files to upload state logs  The example task below downloads a file named hello.txt from S3 and calls cat hello.txt using the alpine container.
-{ &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ # URL to download file from. &amp;quot;url&amp;quot;: &amp;quot;s3://funnel-bucket/hello.txt&amp;quot;, # Path to download file to. &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.</description>
+ metadata input files to download a sequence of Docker containers + commands to run, output files to upload state logs  The example task below downloads a file named hello.txt from S3 and calls cat hello.txt using the alpine container. This task also writes the executor&amp;rsquo;s stdout to a file, and uploads the stdout to s3.
+{ &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ # URL to download file from.</description>
     </item>
     
   </channel>

@@ -41,7 +41,7 @@ Most development tasks are run through `make` commands, including build, release
 
 ### Go Tests
 
-Run all tests: `make go-test`   
+Run all tests: `make test`   
 Run the worker tests: `go test ./worker/...`  
 Run the worker tests with "Cancel" in the name: `go test ./worker -run Cancel`  
 

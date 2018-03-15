@@ -2,7 +2,7 @@ ifndef GOPATH
 $(error GOPATH is not set)
 endif
 
-TESTS=$(shell go list ./... | grep -v /vendor/)
+TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v github-release-notes)
 
 export SHELL=/bin/bash
 PATH := ${PATH}:${GOPATH}/bin

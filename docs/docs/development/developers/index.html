@@ -299,218 +299,43 @@
   <div class="main col span_8_of_12">
     
 
-<h1 id="developer-tools">Developer Tools</h1>
+<h1 id="developers">Developers</h1>
 
-<p>Funnel uses:</p>
+<p>This page contains a rough collection of notes for people wanting to build Funnel from source and/or edit the code.</p>
+
+<h3 id="building-the-funnel-source">Building the Funnel source</h3>
+
+<ol>
+<li>Install <a href="https://golang.org">Go 1.8+</a>. Check the version with <code>go version</code>.</li>
+<li>Ensure GOPATH is set. See <a href="https://golang.org/doc/code.html#GOPATH">the docs</a> for help. Also, you probably want to add <code>$GOPATH/bin</code> to your <code>PATH</code>.</li>
+<li>Run <code>go get github.com/ohsu-comp-bio/funnel</code></li>
+<li>Funnel is now downloaded and installed. Try <code>funnel version</code>.</li>
+<li><code>cd $GOPATH/src/github.com/ohsu-comp-bio/funnel</code></li>
+<li>Now you&rsquo;re in the Funnel repo. You can edit the code an rerun the <code>go get</code> command above, or check out the Makefile for a list of useful build commands, such as <code>make install</code>.</li>
+</ol>
+
+<h3 id="developer-tools">Developer Tools</h3>
+
+<p>A Funnel development environment includes:</p>
 
 <ul>
-<li><a href="https://golang.org">Go</a> for the majority of the code.</li>
+<li><a href="https://golang.org">Go 1.8+</a> for the majority of the code.</li>
 <li><a href="https://github.com/ga4gh/task-execution-schemas">Task Execution Schemas</a> for task APIs.</li>
 <li><a href="https://github.com/google/protobuf">Protobuf</a> + <a href="http://www.grpc.io/">gRPC</a> for RPC communication.</li>
 <li><a href="https://github.com/grpc-ecosystem/grpc-gateway">gRPC Gateway</a> for HTTP communication.</li>
 <li><a href="https://angularjs.org/">Angular</a> and <a href="http://sass-lang.com/">SASS</a> for the web dashboard.</li>
 <li><a href="https://www.gnu.org/software/make/">GNU Make</a> for development tasks.</li>
-<li><a href="https://docker.io">Docker</a> for executing task containers.</li>
+<li><a href="https://docker.io">Docker</a> for executing task containers (tested with v1.12, v1.13).</li>
 <li><a href="https://github.com/dpw/vendetta">vendetta</a> for Go dependency vendoring.</li>
-<li>and more.</li>
-</ul>
-
-<h2 id="prerequisites">Prerequisites</h2>
-
-<p>These are the tools you&rsquo;ll need to install:</p>
-
-<ul>
-<li><a href="https://golang.org">Go 1.8</a></li>
-<li><a href="https://www.gnu.org/software/make/">Make</a></li>
-<li><a href="https://docker.io">Docker</a> (tested with v1.12, v1.13)</li>
-<li><a href="https://github.com/google/protobuf">Protocol Buffers</a> if making changes to the schema.</li>
+<li><a href="https://www.gnu.org/software/make/">Make</a> for development/build commands.</li>
 <li><a href="https://nodejs.org">NodeJS</a> and <a href="https://www.npmjs.com/">NPM</a> for web dashboard development.</li>
 </ul>
 
-<h2 id="build">Build</h2>
+<h3 id="makefile">Makefile</h3>
 
-<p>Most development tasks are run through <code>make</code>.</p>
+<p>Most development tasks are run through <code>make</code> commands, including build, release, testing, website docs, lint, tidy, webdash dev, and more.  See the <a href="https://github.com/ohsu-comp-bio/funnel/blob/master/Makefile">Makefile</a> for an up-to-date list of commands.</p>
 
-<table>
-<thead>
-<tr>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code>make</code></td>
-<td>Build the code.</td>
-</tr>
-
-<tr>
-<td><code>make test</code></td>
-<td>Run both unit and end-to-end tests.</td>
-</tr>
-
-<tr>
-<td><code>make test-verbose</code></td>
-<td>Run tests in verbose mode.</td>
-</tr>
-
-<tr>
-<td><code>make test-backends</code></td>
-<td>Run end-to-end tests against dockerized HPC scheduler backends.</td>
-</tr>
-
-<tr>
-<td><code>make proto</code></td>
-<td>Regenerate code from protobuf schemas (requires protoc)</td>
-</tr>
-
-<tr>
-<td><code>make tidy</code></td>
-<td>Reformat code</td>
-</tr>
-
-<tr>
-<td><code>make lint</code></td>
-<td>Run code style and other checks.</td>
-</tr>
-
-<tr>
-<td><code>make full</code></td>
-<td>Run all steps needed to check the code before making a pull request.</td>
-</tr>
-
-<tr>
-<td><code>make clean</code></td>
-<td>Remove build/development files.</td>
-</tr>
-
-<tr>
-<td><code>make add_deps</code></td>
-<td>Add new vendored dependencies.</td>
-</tr>
-
-<tr>
-<td><code>make prune_deps</code></td>
-<td>Prune unused vendored dependencies.</td>
-</tr>
-
-<tr>
-<td><code>make serve-doc</code></td>
-<td>Serve API reference (godoc) docs on <code>localhost:6060</code></td>
-</tr>
-
-<tr>
-<td><code>make web</code></td>
-<td>Build the web dashboard Javascript/CSS bundle.</td>
-</tr>
-
-<tr>
-<td><code>make cross-compile</code></td>
-<td>Build binaries for all OS/Architectures.</td>
-</tr>
-
-<tr>
-<td><code>make gce-installer</code></td>
-<td>Build the GCE image installer.</td>
-</tr>
-
-<tr>
-<td><code>make gen-mocks</code></td>
-<td>Generate mocks for testing.</td>
-</tr>
-
-<tr>
-<td><code>make website-dev</code></td>
-<td>Serve the Funnel website on localhost:1313</td>
-</tr>
-
-<tr>
-<td><code>make upload-release</code></td>
-<td>Upload release binaries to GitHub.</td>
-</tr>
-
-<tr>
-<td><code>make bundle-examples</code></td>
-<td>Bundle example task messages into Go code.</td>
-</tr>
-</tbody>
-</table>
-
-<h2 id="source">Source</h2>
-
-<table>
-<thead>
-<tr>
-<th>Directory</th>
-<th>Description</th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code>cmd</code></td>
-<td>Funnel command line interface.</td>
-</tr>
-
-<tr>
-<td><code>config</code></td>
-<td>Configuration parsing, loading, etc.</td>
-</tr>
-
-<tr>
-<td><code>events</code></td>
-<td>Internal, Funnel-specific protobuf/gRPC/Go files for task state and log updates.</td>
-</tr>
-
-<tr>
-<td><code>proto/tes</code></td>
-<td>Generated GA4GH protobuf/gRPC files from <a href="https://github.com/ga4gh/task-execution-schemas">task-execution-schemas</a>.</td>
-</tr>
-
-<tr>
-<td><code>proto/scheduler</code></td>
-<td>Internal, Funnel-specific scheduler protobuf/gRPC files.</td>
-</tr>
-
-<tr>
-<td><code>logger</code></td>
-<td>Logging.</td>
-</tr>
-
-<tr>
-<td><code>compute</code></td>
-<td>Compute backends.</td>
-</tr>
-
-<tr>
-<td><code>compute/scheduler</code></td>
-<td>Basic scheduling/scaling for compute backends.</td>
-</tr>
-
-<tr>
-<td><code>server</code></td>
-<td>Databases and server implementing the <a href="https://github.com/ga4gh/task-execution-schemas">TES API</a> and Scheduler RPC.</td>
-</tr>
-
-<tr>
-<td><code>storage</code></td>
-<td>Filesystem support, e.g. local, Google Cloud Storage, S3, etc.</td>
-</tr>
-
-<tr>
-<td><code>worker</code></td>
-<td>Worker process: task runner, docker, file mapper, etc.</td>
-</tr>
-
-<tr>
-<td><code>webdash</code></td>
-<td>Javascript, CSS, HTML for web dashboard.</td>
-</tr>
-</tbody>
-</table>
-
-<h2 id="go-tests">Go Tests</h2>
+<h3 id="go-tests">Go Tests</h3>
 
 <p>Run all tests: <code>make go-test</code><br />
 Run the worker tests: <code>go test ./worker/...</code><br />
@@ -518,17 +343,16 @@ Run the worker tests with &ldquo;Cancel&rdquo; in the name: <code>go test ./work
 
 <p>You get the idea. See the <code>go test</code> docs for more.</p>
 
-<h2 id="mocking">Mocking</h2>
+<h3 id="mocking">Mocking</h3>
 
 <p>The <a href="https://github.com/stretchr/testify">testify</a> and <a href="https://github.com/vektra/mockery">mockery</a> tools are used to generate and use
 mock interfaces in test code, for example, to mock the Google Cloud APIs.</p>
 
-<h2 id="vendoring">Vendoring</h2>
+<h3 id="vendoring">Vendoring</h3>
 
-<p>Go dependencies are vendored under /vendor.<br />
-Don&rsquo;t manually add new submodules, use <code>make add_deps</code>.</p>
+<p>Go dependencies are vendored under /vendor. <code>make add_deps</code> and <code>make prune_deps</code> help manage new dependencies.</p>
 
-<h2 id="submodules">Submodules</h2>
+<h3 id="submodules">Submodules</h3>
 
 <p>Funnel has git submodules. The Makefile usually handles this for you, but if needed,
 <code>git submodule update --init --recursive</code> will get all the submodules.</p>

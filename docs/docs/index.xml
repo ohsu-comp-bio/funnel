@@ -128,9 +128,8 @@ Database: boltdb BoltDB: # Path to database file Path: ./funnel-work-dir/funnel.
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/development/developers/</guid>
-      <description>Developer Tools Funnel uses:
- Go for the majority of the code. Task Execution Schemas for task APIs. Protobuf + gRPC for RPC communication. gRPC Gateway for HTTP communication. Angular and SASS for the web dashboard. GNU Make for development tasks. Docker for executing task containers. vendetta for Go dependency vendoring. and more.  Prerequisites These are the tools you&amp;rsquo;ll need to install:
- Go 1.8 Make Docker (tested with v1.</description>
+      <description>Developers This page contains a rough collection of notes for people wanting to build Funnel from source and/or edit the code.
+Building the Funnel source  Install Go 1.8+. Check the version with go version. Ensure GOPATH is set. See the docs for help. Also, you probably want to add $GOPATH/bin to your PATH. Run go get github.com/ohsu-comp-bio/funnel Funnel is now downloaded and installed. Try funnel version. cd $GOPATH/src/github.com/ohsu-comp-bio/funnel Now you&amp;rsquo;re in the Funnel repo.</description>
     </item>
     
     <item>

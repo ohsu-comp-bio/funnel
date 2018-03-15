@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
@@ -28,7 +29,7 @@ type DockerCommand struct {
 }
 
 // Run runs the Docker command and blocks until done.
-func (dcmd DockerCommand) Run() error {
+func (dcmd DockerCommand) Run(ctx context.Context) error {
 	// (Hopefully) temporary hack to sync docker API version info.
 	// Don't need the client here, just the logic inside NewDockerClient().
 	_, derr := dockerutil.NewDockerClient()
@@ -81,6 +82,7 @@ func (dcmd DockerCommand) Run() error {
 	if dcmd.Stderr != nil {
 		cmd.Stderr = dcmd.Stderr
 	}
+	go dcmd.inspectContainer(ctx)
 	return cmd.Run()
 }
 
@@ -108,4 +110,41 @@ func formatVolumeArg(v Volume) string {
 		mode = "ro"
 	}
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
+}
+
+type metadata struct {
+	ID    string
+	Name  string
+	Image string
+}
+
+// inspectContainer inspects the docker container for metadata.
+func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
+	// Give the container time to start.
+	time.Sleep(2 * time.Second)
+
+	// Inspect the container for metadata
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for i := 0; i < 5; i++ {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			cmd := exec.CommandContext(ctx, "docker", "inspect", dcmd.ContainerName)
+			out, err := cmd.Output()
+			if err == nil {
+				meta := []metadata{}
+				err := json.Unmarshal(out, &meta)
+				if err == nil && len(meta) == 1 {
+					dcmd.Event.Info("container metadata",
+						"containerID", meta[0].ID,
+						"containerName", meta[0].Name,
+						"containerImageHash", meta[0].Image)
+					return
+				}
+			}
+		}
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -305,5 +306,66 @@ func TestLogTailContent(t *testing.T) {
 	}
 	if builder.Task.Logs[0].Logs[0].Stderr != "abc\n10abc\n" {
 		t.Error("unexpected stderr", builder.Task.Logs[0].Logs[0].Stderr)
+	}
+}
+
+// Test that docker container metadata is logged.
+func TestDockerContainerMetadata(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	conf := tests.DefaultConfig()
+	conf.Worker.LogUpdateRate = time.Millisecond * 10
+	conf.Worker.LogTailSize = 10
+	task := tes.Task{
+		Id: "test-task-" + tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"sleep", "5"},
+			},
+		},
+	}
+
+	builder := &events.TaskBuilder{Task: &task}
+	logger := &events.Logger{Log: log}
+	m := &events.MultiWriter{logger, builder}
+
+	w := worker.DefaultWorker{
+		Conf:        conf.Worker,
+		Store:       storage.Storage{},
+		TaskReader:  taskReader{&task},
+		EventWriter: m,
+	}
+
+	err := w.Run(context.Background(), task.Id)
+	if err != nil {
+		t.Error("unexpected worker.Run error", err)
+	}
+
+	meta := ""
+	for _, log := range builder.Task.Logs[0].SystemLogs {
+		if strings.Contains(log, `msg='container metadata'`) {
+			meta = log
+		}
+	}
+	if meta == "" {
+		t.Error("didn't find container metadata system log")
+	}
+
+	containerID := ""
+	containerHash := ""
+	for _, f := range strings.Fields(meta) {
+		if strings.HasPrefix(f, "containerID") {
+			containerID = f
+		}
+		if strings.HasPrefix(f, "containerImageHash") {
+			containerHash = f
+		}
+	}
+
+	if containerID == "" {
+		t.Error("didn't find container ID metadata")
+	}
+	if containerHash == "" {
+		t.Error("didn't find container image hash metadata")
 	}
 }

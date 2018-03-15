@@ -263,3 +263,47 @@ func TestZeroLogTailSize(t *testing.T) {
 		t.Error("unexpected stdout event count", counts.stdout)
 	}
 }
+
+// Test that the tail is stored
+func TestLogTailContent(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	conf := tests.DefaultConfig()
+	conf.Worker.LogUpdateRate = time.Millisecond * 10
+	conf.Worker.LogTailSize = 10
+	task := tes.Task{
+		Id: "test-task-" + tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"sh", "-c", "for i in $(seq 0 10); do echo ${i}abc && sleep 0.1; done | tee /dev/stderr"},
+			},
+		},
+	}
+
+	builder := &events.TaskBuilder{Task: &task}
+	logger := &events.Logger{Log: log}
+	m := &events.MultiWriter{logger, builder}
+
+	w := worker.DefaultWorker{
+		Conf:        conf.Worker,
+		Store:       storage.Storage{},
+		TaskReader:  taskReader{&task},
+		EventWriter: m,
+	}
+
+	err := w.Run(context.Background(), task.Id)
+	if err != nil {
+		t.Error("unexpected worker.Run error", err)
+	}
+
+	if task.State != tes.Complete {
+		t.Error("unexpected task state", task.State)
+	}
+
+	if builder.Task.Logs[0].Logs[0].Stdout != "abc\n10abc\n" {
+		t.Error("unexpected stdout", builder.Task.Logs[0].Logs[0].Stdout)
+	}
+	if builder.Task.Logs[0].Logs[0].Stderr != "abc\n10abc\n" {
+		t.Error("unexpected stderr", builder.Task.Logs[0].Logs[0].Stderr)
+	}
+}

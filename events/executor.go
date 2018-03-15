@@ -190,7 +190,7 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 
 	flush := func(buf *ring.Buffer, t Type, timeout <-chan time.Time) {
 		// Only flush if new bytes have been written to the buffer.
-		if buf.TotalWritten() == 0 {
+		if buf.NewBytes() == 0 {
 			return
 		}
 
@@ -210,7 +210,7 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 		select {
 		case eventch <- e:
 			// The writer routine accepted the event, so reset the buffer byte count.
-			buf.ResetTotalWritten()
+			buf.ResetNewBytes()
 		case <-timeout:
 			// The writer was busy, do nothing.
 		}
@@ -252,7 +252,7 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 				close(eventch)
 				return
 			case <-ticker.C:
-				w := stdoutbuf.TotalWritten() + stderrbuf.TotalWritten()
+				w := stdoutbuf.NewBytes() + stderrbuf.NewBytes()
 				// Don't use a limiter token if no content has been written.
 				if w > 0 && limiter.Allow() {
 					flushboth(immediate)

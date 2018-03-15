@@ -56,10 +56,10 @@ func (tb TaskBuilder) WriteEvent(ctx context.Context, ev *Event) error {
 		t.GetExecLog(attempt, index).ExitCode = ev.GetExitCode()
 
 	case Type_EXECUTOR_STDOUT:
-		t.GetExecLog(attempt, index).Stdout += ev.GetStdout()
+		t.GetExecLog(attempt, index).Stdout = ev.GetStdout()
 
 	case Type_EXECUTOR_STDERR:
-		t.GetExecLog(attempt, index).Stderr += ev.GetStderr()
+		t.GetExecLog(attempt, index).Stderr = ev.GetStderr()
 	}
 
 	return nil

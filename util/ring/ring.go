@@ -37,6 +37,7 @@ type Buffer struct {
 	size        int64
 	writeCursor int64
 	written     int64
+	newBytes    int64
 }
 
 // NewBuffer creates a new buffer of a given size.
@@ -59,6 +60,7 @@ func (b *Buffer) Write(buf []byte) (int, error) {
 	// Account for total bytes written
 	n := len(buf)
 	b.written += int64(n)
+	b.newBytes += int64(n)
 
 	// If the buffer is larger than ours, then we only care
 	// about the last size bytes anyways
@@ -88,6 +90,11 @@ func (b *Buffer) TotalWritten() int64 {
 	return b.written
 }
 
+// NewBytes provides the total number of bytes written since the last reset.
+func (b *Buffer) NewBytes() int64 {
+	return b.newBytes
+}
+
 // Bytes provides a slice of the bytes written. This
 // slice should not be written to.
 func (b *Buffer) Bytes() []byte {
@@ -108,11 +115,12 @@ func (b *Buffer) Bytes() []byte {
 func (b *Buffer) Reset() {
 	b.writeCursor = 0
 	b.written = 0
+	b.newBytes = 0
 }
 
-// ResetTotalWritten resets the TotalWritten count.
-func (b *Buffer) ResetTotalWritten() {
-	b.written = 0
+// ResetNewBytes resets the newBytes counter.
+func (b *Buffer) ResetNewBytes() {
+	b.newBytes = 0
 }
 
 // String returns the contents of the buffer as a string

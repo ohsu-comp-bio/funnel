@@ -15,9 +15,6 @@ git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git
 export GIT_BRANCH = $(git_branch)
 export GIT_UPSTREAM = $(git_upstream)
 
-echoenv:
-	env
-
 # Build the code
 install: depends
 	@touch version/version.go

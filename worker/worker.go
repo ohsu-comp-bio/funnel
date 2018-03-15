@@ -1,3 +1,4 @@
+// Package worker contains code which executes a task.
 package worker
 
 import (

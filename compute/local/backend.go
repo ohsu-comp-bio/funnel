@@ -1,3 +1,4 @@
+// Package local contains code for accessing compute resources via the local computer, for Funnel development and debugging.
 package local
 
 import (

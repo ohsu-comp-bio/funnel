@@ -1,3 +1,4 @@
+// Package version reports the Funnel version.
 package version
 
 import "fmt"

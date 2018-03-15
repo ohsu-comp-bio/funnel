@@ -1,3 +1,4 @@
+// Package client contains an HTTP client for the Funnel task API.
 package client
 
 import (

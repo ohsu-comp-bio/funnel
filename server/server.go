@@ -1,3 +1,4 @@
+// Package server contains code for serving the Funnel API, and accessing database backends.
 package server
 
 import (

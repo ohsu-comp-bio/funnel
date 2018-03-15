@@ -1,3 +1,4 @@
+// Package storage contains code for accessing file storage systems, such as S3 and local filesystems.
 package storage
 
 // NOTE!

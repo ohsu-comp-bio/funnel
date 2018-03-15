@@ -1,3 +1,4 @@
+// Package pbs contains code for accessing compute resources via PBS/Torque.
 package pbs
 
 import (

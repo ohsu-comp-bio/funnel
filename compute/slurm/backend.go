@@ -1,3 +1,4 @@
+// Package slurm contains code for accessing compute resources via Slurm.
 package slurm
 
 import (

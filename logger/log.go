@@ -1,3 +1,4 @@
+// Package logger contains Funnel's logging code.
 package logger
 
 import (

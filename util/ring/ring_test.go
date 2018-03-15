@@ -194,3 +194,35 @@ func TestBuffer_Reset(t *testing.T) {
 		t.Fatalf("bad: %v", string(buf.Bytes()))
 	}
 }
+
+func TestBuffer_ResetNewBytes(t *testing.T) {
+
+	buf := NewBuffer(4)
+	buf.Write([]byte("12345"))
+
+	if buf.NewBytes() != 5 {
+		t.Fatalf("expected new bytes written to be 5, got %d", buf.TotalWritten())
+	}
+
+	if buf.String() != "2345" {
+		t.Fatalf("expected content to be 2345, got %s", buf.String())
+	}
+	buf.ResetNewBytes()
+
+	if buf.NewBytes() != 0 {
+		t.Fatalf("expected new bytes written to be 0, got %d", buf.TotalWritten())
+	}
+
+	if buf.String() != "2345" {
+		t.Fatalf("expected content to be 2345, got %s", buf.String())
+	}
+
+	buf.Write([]byte("6789"))
+	if buf.NewBytes() != 4 {
+		t.Fatalf("expected new bytes written to be 4, got %d", buf.TotalWritten())
+	}
+
+	if buf.String() != "6789" {
+		t.Fatalf("expected content to be 6789, got %s", buf.String())
+	}
+}

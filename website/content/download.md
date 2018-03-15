@@ -39,5 +39,5 @@ Funnel requires Go 1.8+. Check out the [development docs][dev] for more detail.
 See the [Releases](https://github.com/ohsu-comp-bio/funnel/releases)  page for release history.
 
 
-[dev]: /docs/development/
+[dev]: /docs/development/developers/
 [docker]: https://docker.io

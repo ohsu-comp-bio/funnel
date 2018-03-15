@@ -312,7 +312,7 @@
 <li>logs</li>
 </ul>
 
-<p>The example task below downloads a file named <code>hello.txt</code> from S3 and calls <code>cat hello.txt</code> using the <a href="https://hub.docker.com/_/alpine/">alpine</a> container.</p>
+<p>The example task below downloads a file named <code>hello.txt</code> from S3 and calls <code>cat hello.txt</code> using the <a href="https://hub.docker.com/_/alpine/">alpine</a> container. This task also writes the executor&rsquo;s stdout to a file, and uploads the stdout to s3.</p>
 
 <pre><code>{
   &quot;name&quot;: &quot;Hello world&quot;,

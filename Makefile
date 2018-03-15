@@ -193,10 +193,10 @@ snapshot: depends
 		--snapshot
 
 release: depends
-	@go get github.com/google/go-github/github
+	@go get ./util/github-release-notes/
 	@goreleaser \
 		--rm-dist \
-		--release-notes <(go run ./util/github-release-notes/main.go)
+		--release-notes <(go run github-release-notes)
 	
 # Generate mocks for testing.
 gen-mocks:

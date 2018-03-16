@@ -27,8 +27,8 @@ app.controller('TaskFilterController', function($scope, TaskFilters) {
   $scope.filters = TaskFilters;
 })
 
-app.controller('TaskListController', function($scope, $http, $timeout, $routeParams, $location, TaskFilters) {
-  $scope.pageTitle = "Tasks";
+app.controller('TaskListController', function($rootScope, $scope, $http, $timeout, $routeParams, $location, TaskFilters) {
+  $rootScope.pageTitle = "Tasks";
   $scope.tasks = [];
   $scope.isDone = isDone;
   $scope.serverURL = getServerURL($location)
@@ -39,11 +39,11 @@ app.controller('TaskListController', function($scope, $http, $timeout, $routePar
     $http.post(url);
   }
 
-  // TaskFilters.$watch("state", function() {
-  //   refresh()
-  // })
+  TaskFilters.$watch("state", function() {
+    refresh();
+  })
 
-  function refresh() {
+  function listTasks() {
     var url = "/v1/tasks?view=BASIC";
     if (page) {
       url += "&page_token=" + page;
@@ -51,30 +51,45 @@ app.controller('TaskListController', function($scope, $http, $timeout, $routePar
     if (TaskFilters.state != "any") {
       url += "&state=" + TaskFilters.state;
     }
+    return $http.get(url);
+  }
 
-    $http.get(url).then(function(response) {
+  function refresh() {
+    listTasks().then(function(response) {
       $scope.$applyAsync(function() {
         $scope.tasks = response.data.tasks;
-        $scope.tasks.sort(idDesc);
         if (response.data.next_page_token) {
           $scope.nextPage = $scope.serverURL + "/v1/tasks?page_token=" + response.data.next_page_token;
         } else {
           $scope.nextPage = "";
         }
-        stop = $timeout(refresh, 2000)
       });
     });
   }
 
-  refresh();
+  function autoRefresh() {
+    listTasks().then(function(response) {
+      $scope.$applyAsync(function() {
+        $scope.tasks = response.data.tasks;
+        if (response.data.next_page_token) {
+          $scope.nextPage = $scope.serverURL + "/v1/tasks?page_token=" + response.data.next_page_token;
+        } else {
+          $scope.nextPage = "";
+        }
+        stop = $timeout(autoRefresh, 2000);
+      });
+    });
+  }
+
+  autoRefresh();
 
   $scope.$on('$destroy', function() {
     $timeout.cancel(stop);
   });
 });
 
-app.controller('NodeListController', function($scope, $http, $timeout) {
-
+app.controller('NodeListController', function($rootScope, $scope, $http, $timeout) {
+  $rootScope.pageTitle = "Nodes";
 	$scope.url = "/v1/nodes";
   $scope.nodes = [];
 
@@ -83,7 +98,7 @@ app.controller('NodeListController', function($scope, $http, $timeout) {
       $scope.$applyAsync(function() {
         $scope.nodes = response.data.nodes;
         $scope.nodes.sort(idDesc);
-        stop = $timeout(refresh, 2000)        
+        stop = $timeout(refresh, 2000);
       });
     });
   }
@@ -107,10 +122,10 @@ function getServerURL($location) {
   return proto + "://" + $location.host() + ":" + port;
 }
 
-app.controller('TaskInfoController', function($scope, $http, $routeParams, $location, $timeout, Page) {
-  
-  $scope.url = "/v1/tasks/" + $routeParams.task_id;
+app.controller('TaskInfoController', function($rootScope, $scope, $http, $routeParams, $location, $timeout, Page) {
+  $rootScope.pageTitle = "Task " + $routeParams.task_id;
   Page.setTitle("Task " + $routeParams.task_id);
+  $scope.url = "/v1/tasks/" + $routeParams.task_id;
   $scope.task = {};
   $scope.cmdStr = function(cmd) {
     return cmd.join(' ');
@@ -209,10 +224,10 @@ app.controller('TaskInfoController', function($scope, $http, $routeParams, $loca
   });
 });
 
-app.controller('NodeInfoController', function($scope, $http, $routeParams, $location, $timeout, Page, $filter) {
-  
-  $scope.url = "/v1/nodes/" + $routeParams.node_id;
+app.controller('NodeInfoController', function($rootScope, $scope, $http, $routeParams, $location, $timeout, $filter, Page) {
+  $rootScope.pageTitle = "Node " + $routeParams.node_id;
   Page.setTitle("Node " + $routeParams.node_id);
+  $scope.url = "/v1/nodes/" + $routeParams.node_id;
   $scope.node = {};
   $scope.serverURL = getServerURL($location)
   $scope.resources = function(r) {

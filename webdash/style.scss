@@ -25,6 +25,7 @@
   .drawer {
     @extend .mdl-layout__drawer, .mdl-color--blue-grey-900, .mdl-color-text--blue-grey-50;
     border: 0;
+    min-width: 250px;
 
     nav {
       @extend .mdl-navigation, .mdl-color--blue-grey-800;
@@ -234,24 +235,11 @@ main h6 {
 
 .btn {
   @extend .mdl-button;
-  background: transparent;
-  border-style: solid;  
-  border-width: 1px;
-  border-color: #ddd;
-  border-radius: 0;
-
-  &:not(:last-child) {
-    border-right: none;
-  }
-}
-
-.btn-cancel, .mdl-button--icon, .mdl-button--raised {
-  @extend .mdl-button;
   border-width: 1px;
   border-style: solid;
   border-color: #ddd;
   background-color: #FFFFFF;
-
+  
   &:active {
     background-color: #FFFFFF;
   }
@@ -259,6 +247,27 @@ main h6 {
   &:focus:not(:active) {
     background-color: #FFFFFF;
   }
+
+  &:focus:hover:enabled {
+    background-color: #D0D0D0;
+  }
+
+  &:hover:enabled {
+    background-color: #D0D0D0;
+  }
+}
+
+.btn-simple {
+  @extend .btn;
+  height: 20px;
+  font-size: 90%;
+  padding: 0;
+  vertical-align: top;
+  line-height: 0px;  
+}
+
+.btn-cancel {
+  @extend .btn;
 
   &:focus:hover:enabled {
     background-color: #FF3D00;
@@ -271,12 +280,35 @@ main h6 {
   }
 }
 
-.btn-cancel-simple {
-  @extend .btn-cancel;
-  margin-left: 20px;
-  height: 20px;
-  font-size: 90%;
-  padding: 0;
-  vertical-align: top;
-  line-height: 0px;  
+.tags-filter-table {
+  @extend .mdl-data-table;
+  table-layout: fixed;
+  background-color: transparent;
+  border: 0;
+  width: 95%;
+
+  tr:hover, td {
+    background-color: transparent !important;
+  }
+
+  th, td {
+    text-align: left;
+    color: #757575;
+    padding: 5px 0px;
+
+    &:nth-child(2) {
+      width: 15%;
+    }
+  }
+
+  div {
+    padding: 0px;
+    margin: 0px
+  }
+
+  input {
+    border: 0;
+    font-size: 12px;
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  }
 }

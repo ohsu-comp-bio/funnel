@@ -19,12 +19,28 @@ function isDone(task) {
 
 app.service("TaskFilters", function($rootScope) {
   var s = $rootScope.$new()
-  s.state = "any"
-  return s
+  s.state = "any";
+  s.tags = [{
+    'key': "",
+    'value': "",
+  }];
+  return s;
 })
 
 app.controller('TaskFilterController', function($scope, TaskFilters) {
   $scope.filters = TaskFilters;
+
+  $scope.addNewTag = function(tag) {
+    $scope.filters.tags.push({
+      'key': "",
+      'value': "",
+    });
+  };
+
+  $scope.removeTag = function(tag) {
+    index = $scope.filters.tags.indexOf(tag);
+    $scope.filters.tags.splice(index, 1);
+  };
 })
 
 app.controller('TaskListController', function($rootScope, $scope, $http, $timeout, $routeParams, $location, TaskFilters) {
@@ -43,6 +59,10 @@ app.controller('TaskListController', function($rootScope, $scope, $http, $timeou
     refresh();
   })
 
+  TaskFilters.$watch("tags", function() {
+    refresh();
+  })
+
   function listTasks() {
     var url = "/v1/tasks?view=BASIC";
     if (page) {
@@ -50,6 +70,13 @@ app.controller('TaskListController', function($rootScope, $scope, $http, $timeou
     }
     if (TaskFilters.state != "any") {
       url += "&state=" + TaskFilters.state;
+    }
+    if (TaskFilters.tags.length) {
+      for (tag in TaskFilters.tags) {
+        if (tag.key != "") {
+          url += "&tags%5B"+tag.key+"%5D="+tag.value
+        }
+      }
     }
     return $http.get(url);
   }

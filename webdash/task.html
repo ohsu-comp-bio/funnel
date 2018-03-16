@@ -21,7 +21,7 @@
       <tr>
         <td>State</td>
         <td>
-          <span ng-class="task.state + '-state'">{{ task.state }}</span><button class="btn-cancel-simple" ng-click="cancelTask(task.id)" ng-hide="isDone(task)">Cancel</button>
+          <span ng-class="task.state + '-state'">{{ task.state }}</span><button class="btn-simple btn-cancel" ng-click="cancelTask(task.id)" ng-hide="isDone(task)" style="margin-left: 20px">Cancel</button>
         </td>
       </tr>
       <tr ng-show="resources(task)">

@@ -12,6 +12,46 @@ function idDesc(a, b) {
   }
   return -1;
 }
+function formatElapsedTime(miliseconds) {
+  var days, hours, minutes, seconds, total_hours, total_minutes, total_seconds;  
+
+  total_seconds = parseInt(Math.floor(miliseconds / 1000));
+  total_minutes = parseInt(Math.floor(total_seconds / 60));
+  total_hours = parseInt(Math.floor(total_minutes / 60));
+
+  seconds = parseInt(total_seconds % 60);
+  minutes = parseInt(total_minutes % 60);
+  hours = parseInt(total_hours % 24);
+  days = parseInt(Math.floor(total_hours / 24));
+  
+  time = "";
+  if (days > 0) {
+    time += days + " Days "
+  }
+  if (hours > 0 || days > 0) {
+    time += hours + " Hours "
+  }
+  if (minutes > 0 || hours > 0) {
+    time += minutes + " Minutes "
+  }
+  if (seconds > 0 || minutes > 0) {
+    time += seconds + " Seconds"
+  }
+	return time;
+}
+
+function elapsedTime(task) {
+  if (task.logs[0].start_time) {
+    now = new Date();
+    if (task.logs[0].end_time) {
+      now = Date.parse(task.logs[0].end_time);
+    }
+    started = Date.parse(task.logs[0].start_time);
+    elapsed = now - started;
+    return formatElapsedTime(elapsed);
+  }
+  return "--";
+}
 
 function isDone(task) {
   return task.state == 'COMPLETE' || task.state == 'EXECUTOR_ERROR' || task.state == 'CANCELED' || task.state == 'SYSTEM_ERROR';
@@ -44,6 +84,7 @@ app.controller('TaskListController', function($rootScope, $scope, $http, $timeou
   $rootScope.pageTitle = "Tasks";
   $scope.tasks = [];
   $scope.isDone = isDone;
+  $scope.elapsedTime = elapsedTime;
   $scope.serverURL = getServerURL($location)
   var page = $routeParams.page_token;
 
@@ -160,6 +201,7 @@ app.controller('TaskInfoController', function($rootScope, $scope, $http, $routeP
   };
   $scope.serverURL = getServerURL($location)
   $scope.isDone = isDone;
+  $scope.elapsedTime = elapsedTime;
   $scope.resources = function(task) {
     r = task.resources;
     if (angular.equals(r, {}) || r == undefined) {
@@ -294,7 +336,9 @@ app.controller('NodeInfoController', function($rootScope, $scope, $http, $routeP
   });
 });
 
-app.controller('ServiceInfoController', function($scope, $http, $location) {
+app.controller('ServiceInfoController', function($rootScope, $scope, $http, $location) {
+  $rootScope.pageTitle = "Service Info";
+
   $http.get("/v1/tasks/service-info")
   .success(function(data, status, headers, config) {
     $scope.name = data.name;
@@ -307,7 +351,7 @@ app.controller('ServiceInfoController', function($scope, $http, $location) {
 
 app.controller('Error404Controller', function() {});
 
-app.service('Page', function($rootScope){
+app.service('Page', function($rootScope) {
   $rootScope.page = {
     title: "Funnel",
   }

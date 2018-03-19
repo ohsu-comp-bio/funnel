@@ -40,6 +40,10 @@
         <td>End Time</td>
         <td>{{ task.logs[0].end_time | date:"medium" }}</td>
       </tr>
+      <tr>
+        <td>Elapsed Time</td>
+        <td>{{ elapsedTime(task) }}</td>
+      </tr>
       <tr ng-show="task.volumes">
         <td>Volumes</td>
         <td>{{ task.volumes.join(', ') }}</td>

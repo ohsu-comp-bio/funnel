@@ -280,6 +280,12 @@ main h6 {
   }
 }
 
+.mini-fab {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+}
+
 .tags-filter-table {
   @extend .mdl-data-table;
   table-layout: fixed;
@@ -312,3 +318,4 @@ main h6 {
     font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   }
 }
+

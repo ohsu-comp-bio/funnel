@@ -20,10 +20,7 @@ function isDone(task) {
 app.service("TaskFilters", function($rootScope) {
   var s = $rootScope.$new()
   s.state = "any";
-  s.tags = [{
-    'key': "",
-    'value': "",
-  }];
+  s.tags = [];
   return s;
 })
 
@@ -72,9 +69,13 @@ app.controller('TaskListController', function($rootScope, $scope, $http, $timeou
       url += "&state=" + TaskFilters.state;
     }
     if (TaskFilters.tags.length) {
-      for (tag in TaskFilters.tags) {
-        if (tag.key != "") {
-          url += "&tags%5B"+tag.key+"%5D="+tag.value
+      for (i in TaskFilters.tags) {
+        tag = TaskFilters.tags[i];
+        if (tag.key) {
+          url += "&tags%5B"+tag.key+"%5D"
+          if (tag.value) {
+            url += "="+tag.value
+          }
         }
       }
     }

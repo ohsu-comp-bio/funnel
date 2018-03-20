@@ -193,7 +193,7 @@ release: depends
 	@go get ./util/github-release-notes/
 	@goreleaser \
 		--rm-dist \
-		--release-notes <(go run github-release-notes)
+		--release-notes <(github-release-notes)
 	
 # Generate mocks for testing.
 gen-mocks:

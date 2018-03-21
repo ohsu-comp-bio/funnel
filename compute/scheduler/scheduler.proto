@@ -26,7 +26,6 @@ message Node {
   Resources available = 6;
   NodeState state = 8;
   bool preemptible = 9;
-  repeated int32 active_ports = 10;
   string zone = 11;
   string hostname  = 13;
   // Timestamp version of the record in the database. Used to prevent write conflicts and as the last ping time.
@@ -36,18 +35,17 @@ message Node {
   int64 last_ping = 17;
 }
 
-message ListNodesRequest {}
+message GetNodeRequest {
+  string id = 1;
+}
 
+message ListNodesRequest {}
 message ListNodesResponse {
   repeated Node nodes = 1;
 }
 
 message PutNodeResponse {}
 message DeleteNodeResponse {}
-
-message GetNodeRequest {
-  string id = 1;
-}
 
 /**
  * Scheduler Service

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
-	schedmock "github.com/ohsu-comp-bio/funnel/compute/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	. "github.com/stretchr/testify/mock"
@@ -25,14 +24,14 @@ func simpleNode() *scheduler.Node {
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		State: scheduler.NodeState_ALIVE,
 		Zone:  "ok-zone",
+		State: scheduler.NodeState_ALIVE,
 	}
 }
 
-func setup(nodes []*scheduler.Node) (*schedmock.SchedulerServiceServer, *scheduler.Scheduler) {
+func setup(nodes []*scheduler.Node) (*scheduler.MockSchedulerServiceServer, *scheduler.Scheduler) {
 	conf := config.Config{}
-	mc := new(schedmock.SchedulerServiceServer)
+	mc := new(scheduler.MockSchedulerServiceServer)
 
 	// Mock in test nodes
 	mc.On("ListNodes", Anything, Anything, Anything).Return(&scheduler.ListNodesResponse{

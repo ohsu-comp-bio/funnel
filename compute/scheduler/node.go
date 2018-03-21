@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// NewNodeInstance returns a new Node instance
-func NewNodeInstance(ctx context.Context, conf config.Config, factory Worker, log *logger.Logger) (*NodeInstance, error) {
+// NewNodeProcess returns a new Node instance
+func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
@@ -36,7 +36,7 @@ func NewNodeInstance(ctx context.Context, conf config.Config, factory Worker, lo
 	timeout := util.NewIdleTimeout(conf.Node.Timeout)
 	state := NodeState_UNINITIALIZED
 
-	return &NodeInstance{
+	return &NodeProcess{
 		conf:      conf,
 		client:    cli,
 		log:       log,
@@ -48,8 +48,8 @@ func NewNodeInstance(ctx context.Context, conf config.Config, factory Worker, lo
 	}, nil
 }
 
-// NodeInstance is a structure used for tracking available resources on a compute resource.
-type NodeInstance struct {
+// NodeProcess is a structure used for tracking available resources on a compute resource.
+type NodeProcess struct {
 	conf      config.Config
 	client    Client
 	log       *logger.Logger
@@ -62,7 +62,7 @@ type NodeInstance struct {
 
 // Run runs a node with the given config. This is responsible for communication
 // with the server and starting task workers
-func (n *NodeInstance) Run(ctx context.Context) {
+func (n *NodeProcess) Run(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -102,7 +102,7 @@ func (n *NodeInstance) Run(ctx context.Context) {
 	}
 }
 
-func (n *NodeInstance) checkConnection(ctx context.Context) {
+func (n *NodeProcess) checkConnection(ctx context.Context) {
 	_, err := n.client.GetNode(ctx, &GetNodeRequest{Id: n.conf.Node.ID})
 
 	// If its a 404 error create a new node
@@ -119,7 +119,7 @@ func (n *NodeInstance) checkConnection(ctx context.Context) {
 //
 // TODO Sync should probably use a channel to sync data access.
 //      Probably only a problem for test code, where Sync is called directly.
-func (n *NodeInstance) sync(ctx context.Context) {
+func (n *NodeProcess) sync(ctx context.Context) {
 	var r *Node
 	var err error
 
@@ -173,7 +173,7 @@ func (n *NodeInstance) sync(ctx context.Context) {
 	}
 }
 
-func (n *NodeInstance) runTask(ctx context.Context, id string) {
+func (n *NodeProcess) runTask(ctx context.Context, id string) {
 	log := n.log.WithFields("ns", "worker", "taskID", id)
 	log.Info("Running task")
 
@@ -235,7 +235,7 @@ func (n *NodeInstance) runTask(ctx context.Context, id string) {
 }
 
 // Check if the node is idle. If so, start the timeout timer.
-func (n *NodeInstance) checkIdleTimer() {
+func (n *NodeProcess) checkIdleTimer() {
 	// The pool is idle if there are no task workers.
 	// The pool should not time out if it's not alive (e.g. if it's initializing)
 	idle := n.workers.Count() == 0 && n.state == NodeState_ALIVE

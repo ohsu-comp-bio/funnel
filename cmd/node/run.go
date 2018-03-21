@@ -23,7 +23,7 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 		return err
 	}
 
-	n, err := scheduler.NewNodeInstance(ctx, conf, w.Run, log)
+	n, err := scheduler.NewNodeProcess(ctx, conf, w.Run, log)
 	if err != nil {
 		return err
 	}

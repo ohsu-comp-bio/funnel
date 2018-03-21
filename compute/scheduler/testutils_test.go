@@ -14,8 +14,8 @@ import (
 
 // testNode wraps Node with some testing helpers.
 type testNode struct {
-	*NodeInstance
-	Client *schedmock.Client
+	*NodeProcess
+	Client *MockClient
 	done   chan struct{}
 }
 
@@ -28,7 +28,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 	// communication with a scheduler service.
 	res, _ := detectResources(conf.Node, conf.Worker.WorkDir)
 	s := new(MockClient)
-	n := &NodeInstance{
+	n := &NodeProcess{
 		conf:      conf,
 		client:    s,
 		log:       log,
@@ -46,9 +46,9 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 	s.On("Close").Return(nil)
 
 	return testNode{
-		Node:   n,
-		Client: s,
-		done:   make(chan struct{}),
+		NodeProcess: n,
+		Client:      s,
+		done:        make(chan struct{}),
 	}
 }
 
@@ -57,7 +57,7 @@ func (t *testNode) Start() context.CancelFunc {
 	t.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
 		Return(&Node{}, nil)
 	go func() {
-		t.Node.Run(ctx)
+		t.NodeProcess.Run(ctx)
 		close(t.done)
 	}()
 	return cancel

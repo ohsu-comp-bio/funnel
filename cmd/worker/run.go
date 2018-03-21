@@ -8,12 +8,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server/datastore"
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
 	"github.com/ohsu-comp-bio/funnel/storage"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/worker"
 )
 

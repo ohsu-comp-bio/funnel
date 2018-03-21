@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ohsu-comp-bio/funnel/client"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
@@ -13,7 +12,7 @@ type taskGroup struct {
 	wg        sync.WaitGroup
 	err       chan error
 	printTask bool
-	client    *client.Client
+	client    *tes.Client
 }
 
 func (tg *taskGroup) runTask(t *tes.Task, wait bool, waitFor []string) {

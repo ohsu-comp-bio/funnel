@@ -6,8 +6,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -47,7 +46,7 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 }
 
 // GetNode gets a node
-func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
+func (es *Elastic) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (*scheduler.Node, error) {
 	res, err := es.client.Get().
 		Index(es.nodeIndex).
 		Type("node").
@@ -61,7 +60,7 @@ func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 		return nil, err
 	}
 
-	node := &pbs.Node{}
+	node := &scheduler.Node{}
 	err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), node)
 	if err != nil {
 		return nil, err
@@ -75,7 +74,7 @@ func (es *Elastic) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.N
 //
 // For optimisic locking, if the node already exists and node.Version
 // doesn't match the version in the database, an error is returned.
-func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
+func (es *Elastic) PutNode(ctx context.Context, node *scheduler.Node) (*scheduler.PutNodeResponse, error) {
 	g := es.client.Get().
 		Index(es.nodeIndex).
 		Type("node").
@@ -93,7 +92,7 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 		return nil, err
 	}
 
-	existing := &pbs.Node{}
+	existing := &scheduler.Node{}
 	if err == nil {
 		jsonpb.Unmarshal(bytes.NewReader(*res.Source), existing)
 	}
@@ -121,11 +120,11 @@ func (es *Elastic) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeRes
 	}
 	_, err = i.Do(ctx)
 
-	return &pbs.PutNodeResponse{}, err
+	return &scheduler.PutNodeResponse{}, err
 }
 
 // DeleteNode deletes a node by ID.
-func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) (*pbs.DeleteNodeResponse, error) {
+func (es *Elastic) DeleteNode(ctx context.Context, node *scheduler.Node) (*scheduler.DeleteNodeResponse, error) {
 	_, err := es.client.Delete().
 		Index(es.nodeIndex).
 		Type("node").
@@ -133,11 +132,11 @@ func (es *Elastic) DeleteNode(ctx context.Context, node *pbs.Node) (*pbs.DeleteN
 		Version(node.Version).
 		Refresh("true").
 		Do(ctx)
-	return &pbs.DeleteNodeResponse{}, err
+	return &scheduler.DeleteNodeResponse{}, err
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.
-func (es *Elastic) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
+func (es *Elastic) ListNodes(ctx context.Context, req *scheduler.ListNodesRequest) (*scheduler.ListNodesResponse, error) {
 	res, err := es.client.Search().
 		Index(es.nodeIndex).
 		Type("node").
@@ -149,9 +148,9 @@ func (es *Elastic) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*p
 		return nil, err
 	}
 
-	resp := &pbs.ListNodesResponse{}
+	resp := &scheduler.ListNodesResponse{}
 	for _, hit := range res.Hits.Hits {
-		node := &pbs.Node{}
+		node := &scheduler.Node{}
 		err = jsonpb.Unmarshal(bytes.NewReader(*hit.Source), node)
 		if err != nil {
 			return nil, err

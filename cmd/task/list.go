@@ -5,8 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/ohsu-comp-bio/funnel/client"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
@@ -14,7 +13,7 @@ import (
 // calls ListTasks() and requests the given task view.
 // Output is written to the given writer.
 func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, pageSize uint32, all bool, writer io.Writer) error {
-	cli, err := client.NewClient(server)
+	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
 	}

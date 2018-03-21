@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -18,7 +17,7 @@ func TestStopNode(t *testing.T) {
 	n := newTestNode(conf, t)
 
 	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(&pbs.Node{}, nil)
+		Return(&Node{}, nil)
 
 	stop := n.Start()
 
@@ -78,7 +77,7 @@ func TestNoTasks(t *testing.T) {
 
 	// Tell the scheduler mock to return nothing
 	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(&pbs.Node{}, nil)
+		Return(&Node{}, nil)
 
 	// Count the number of times the worker factory was called
 	var count int

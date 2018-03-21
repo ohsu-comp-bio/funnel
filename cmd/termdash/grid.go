@@ -7,7 +7,7 @@ import (
 	ui "github.com/gizak/termui"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/config"
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/expanded"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 func RedrawRows(clr bool) {

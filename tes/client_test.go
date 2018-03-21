@@ -1,4 +1,4 @@
-package client
+package tes
 
 import (
 	"net"
@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"golang.org/x/net/context"
 )
 
@@ -39,8 +38,8 @@ func TestGetTask(t *testing.T) {
 	// Set up test server response
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
-		ta := tes.Task{Id: "test-id"}
-		tes.Marshaler.Marshal(w, &ta)
+		ta := Task{Id: "test-id"}
+		Marshaler.Marshal(w, &ta)
 	})
 
 	ts := testServer(mux)
@@ -51,9 +50,9 @@ func TestGetTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	body, err := c.GetTask(context.Background(), &tes.GetTaskRequest{
+	body, err := c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: tes.TaskView_MINIMAL,
+		View: TaskView_MINIMAL,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -70,8 +69,8 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	// Set up test server response
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
-		ta := tes.Task{Id: "test-id"}
-		tes.Marshaler.Marshal(w, &ta)
+		ta := Task{Id: "test-id"}
+		Marshaler.Marshal(w, &ta)
 	})
 
 	ts := testServer(mux)
@@ -82,9 +81,9 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	body, err := c.GetTask(context.Background(), &tes.GetTaskRequest{
+	body, err := c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: tes.TaskView_MINIMAL,
+		View: TaskView_MINIMAL,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -112,9 +111,9 @@ func TestClientTimeout(t *testing.T) {
 	}
 	c.client.Timeout = 1 * time.Second
 
-	_, err = c.GetTask(context.Background(), &tes.GetTaskRequest{
+	_, err = c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: tes.TaskView_MINIMAL,
+		View: TaskView_MINIMAL,
 	})
 	close(ch)
 	if err == nil {

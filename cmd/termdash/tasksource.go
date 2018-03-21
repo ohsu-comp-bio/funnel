@@ -4,8 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/ohsu-comp-bio/funnel/client"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
@@ -17,7 +16,7 @@ type TesTaskSource interface {
 }
 
 type TaskSource struct {
-	client   *client.Client
+	client   *tes.Client
 	pageSize uint32
 	pPage    []string
 	cPage    string
@@ -28,7 +27,7 @@ type TaskSource struct {
 
 func NewTaskSource(tesHTTPServerAddress string, pageSize uint32) (*TaskSource, error) {
 	// init funnel http client
-	cli, err := client.NewClient(tesHTTPServerAddress)
+	cli, err := tes.NewClient(tesHTTPServerAddress)
 	if err != nil {
 		return nil, err
 	}

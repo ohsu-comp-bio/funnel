@@ -1,8 +1,7 @@
 package scheduler
 
 import (
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // Offer describes a node offered by a scheduler for a task.
@@ -10,12 +9,12 @@ import (
 // which could be used by other a scheduler to pick the best offer.
 type Offer struct {
 	TaskID string
-	Node   *pbs.Node
+	Node   *Node
 	Scores Scores
 }
 
 // NewOffer returns a new Offer instance.
-func NewOffer(n *pbs.Node, t *tes.Task, s Scores) *Offer {
+func NewOffer(n *Node, t *tes.Task, s Scores) *Offer {
 	return &Offer{
 		TaskID: t.Id,
 		Node:   n,

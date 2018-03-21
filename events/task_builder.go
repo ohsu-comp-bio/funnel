@@ -3,7 +3,7 @@ package events
 import (
 	"context"
 
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // TaskBuilder aggregates events into an in-memory Task object.

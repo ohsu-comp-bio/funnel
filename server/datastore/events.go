@@ -5,7 +5,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // WriteEvent writes a task event to the database.

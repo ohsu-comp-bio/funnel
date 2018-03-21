@@ -19,7 +19,7 @@ package events
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import tes "github.com/ohsu-comp-bio/funnel/proto/tes"
+import tes "github.com/ohsu-comp-bio/funnel/tes"
 import _ "google.golang.org/genproto/googleapis/api/annotations"
 
 import (

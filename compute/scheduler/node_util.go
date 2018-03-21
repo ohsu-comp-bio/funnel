@@ -4,13 +4,12 @@ import (
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
 // UpdateNode helps scheduler database backend update a node when PutNode() is called.
-func UpdateNode(ctx context.Context, cli tes.ReadOnlyServer, node, existing *pbs.Node) error {
+func UpdateNode(ctx context.Context, cli tes.ReadOnlyServer, node, existing *Node) error {
 	var tasks []*tes.Task
 
 	// Clean up terminal tasks.
@@ -47,8 +46,8 @@ func UpdateNode(ctx context.Context, cli tes.ReadOnlyServer, node, existing *pbs
 
 // SubtractResources subtracts the resources requested by "task" from
 // the node resources "in".
-func SubtractResources(t *tes.Task, in *pbs.Resources) *pbs.Resources {
-	out := &pbs.Resources{
+func SubtractResources(t *tes.Task, in *Resources) *Resources {
+	out := &Resources{
 		Cpus:   in.GetCpus(),
 		RamGb:  in.GetRamGb(),
 		DiskGb: in.GetDiskGb(),
@@ -82,8 +81,8 @@ func SubtractResources(t *tes.Task, in *pbs.Resources) *pbs.Resources {
 
 // AvailableResources calculates available resources given a list of tasks
 // and base resources.
-func AvailableResources(tasks []*tes.Task, res *pbs.Resources) *pbs.Resources {
-	a := &pbs.Resources{
+func AvailableResources(tasks []*tes.Task, res *Resources) *Resources {
+	a := &Resources{
 		Cpus:   res.GetCpus(),
 		RamGb:  res.GetRamGb(),
 		DiskGb: res.GetDiskGb(),
@@ -96,12 +95,12 @@ func AvailableResources(tasks []*tes.Task, res *pbs.Resources) *pbs.Resources {
 
 // UpdateNodeState checks whether a node is dead/gone based on the last
 // time it pinged.
-func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
-	var updated []*pbs.Node
+func UpdateNodeState(nodes []*Node, conf config.Scheduler) []*Node {
+	var updated []*Node
 	for _, node := range nodes {
 		prevState := node.State
 
-		if node.State == pbs.NodeState_GONE {
+		if node.State == NodeState_GONE {
 			updated = append(updated, node)
 			continue
 		}
@@ -116,21 +115,21 @@ func UpdateNodeState(nodes []*pbs.Node, conf config.Scheduler) []*pbs.Node {
 		lastPing := time.Unix(0, node.LastPing)
 		d := time.Since(lastPing)
 
-		if node.State == pbs.NodeState_UNINITIALIZED || node.State == pbs.NodeState_INITIALIZING {
+		if node.State == NodeState_UNINITIALIZED || node.State == NodeState_INITIALIZING {
 
 			// The node is initializing, which has a more liberal timeout.
 			if d > conf.NodeInitTimeout {
 				// Looks like the node failed to initialize. Mark it dead
-				node.State = pbs.NodeState_DEAD
+				node.State = NodeState_DEAD
 			}
 
-		} else if node.State == pbs.NodeState_DEAD && d > conf.NodeDeadTimeout {
+		} else if node.State == NodeState_DEAD && d > conf.NodeDeadTimeout {
 			// The node has been dead for long enough.
-			node.State = pbs.NodeState_GONE
+			node.State = NodeState_GONE
 
 		} else if d > conf.NodePingTimeout {
 			// The node hasn't pinged in awhile, mark it dead.
-			node.State = pbs.NodeState_DEAD
+			node.State = NodeState_DEAD
 		}
 
 		if prevState != node.State {

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 func TestExamplesAreValid(t *testing.T) {

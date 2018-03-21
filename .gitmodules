@@ -56,7 +56,7 @@
 	path = vendor/github.com/imdario/mergo
 	url = https://github.com/imdario/mergo
 [submodule "task-execution-schemas"]
-	path = proto/tes/task-execution-schemas
+	path = tes/task-execution-schemas
 	url = https://github.com/ga4gh/task-execution-schemas
 [submodule "vendor/github.com/spf13/cobra"]
 	path = vendor/github.com/spf13/cobra

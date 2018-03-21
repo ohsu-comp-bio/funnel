@@ -16,14 +16,13 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	schedProto "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/server/boltdb"
 	"github.com/ohsu-comp-bio/funnel/server/datastore"
 	"github.com/ohsu-comp-bio/funnel/server/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/server/elastic"
 	"github.com/ohsu-comp-bio/funnel/server/mongodb"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // Run runs the "server run" command.
@@ -55,7 +54,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 
 	var database Database
 	var reader tes.ReadOnlyServer
-	var nodes schedProto.SchedulerServiceServer
+	var nodes scheduler.SchedulerServiceServer
 	var sched *scheduler.Scheduler
 	var queue scheduler.TaskQueue
 

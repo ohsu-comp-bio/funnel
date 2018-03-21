@@ -1,5 +1,4 @@
-// Package client contains an HTTP client for the Funnel task API.
-package client
+package tes
 
 import (
 	"bytes"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
 )
@@ -42,7 +40,7 @@ func NewClient(address string) (*Client, error) {
 		client: &http.Client{
 			Timeout: 60 * time.Second,
 		},
-		Marshaler: &tes.Marshaler,
+		Marshaler: &Marshaler,
 		User:      user,
 		Password:  password,
 	}, nil
@@ -58,7 +56,7 @@ type Client struct {
 }
 
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
-func (c *Client) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+func (c *Client) GetTask(ctx context.Context, req *GetTaskRequest) (*Task, error) {
 	// Send request
 	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View.String()
 	hreq, _ := http.NewRequest("GET", u, nil)
@@ -69,7 +67,7 @@ func (c *Client) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Tas
 		return nil, err
 	}
 	// Parse response
-	resp := &tes.Task{}
+	resp := &Task{}
 	err = jsonpb.UnmarshalString(string(body), resp)
 	if err != nil {
 		return nil, err
@@ -78,14 +76,14 @@ func (c *Client) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Tas
 }
 
 // ListTasks returns the result of GET /v1/tasks
-func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTasksResponse, error) {
 	// Build url query parameters
 	v := url.Values{}
 	addUInt32(v, "page_size", req.GetPageSize())
 	addString(v, "page_token", req.GetPageToken())
 	addString(v, "view", req.GetView().String())
 
-	if req.GetState() != tes.Unknown {
+	if req.GetState() != Unknown {
 		addString(v, "state", req.State.String())
 	}
 
@@ -103,7 +101,7 @@ func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes
 		return nil, err
 	}
 	// Parse response
-	resp := &tes.ListTasksResponse{}
+	resp := &ListTasksResponse{}
 	err = jsonpb.UnmarshalString(string(body), resp)
 	if err != nil {
 		return nil, err
@@ -112,14 +110,14 @@ func (c *Client) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes
 }
 
 // CreateTask POSTs a Task message to /v1/tasks
-func (c *Client) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	verr := tes.Validate(task)
+func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskResponse, error) {
+	verr := Validate(task)
 	if verr != nil {
 		return nil, fmt.Errorf("invalid task message: %v", verr)
 	}
 
 	var b bytes.Buffer
-	err := tes.Marshaler.Marshal(&b, task)
+	err := Marshaler.Marshal(&b, task)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling task message: %v", err)
 	}
@@ -136,7 +134,7 @@ func (c *Client) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTas
 	}
 
 	// Parse response
-	resp := &tes.CreateTaskResponse{}
+	resp := &CreateTaskResponse{}
 	err = jsonpb.UnmarshalString(string(body), resp)
 	if err != nil {
 		return nil, err
@@ -145,7 +143,7 @@ func (c *Client) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTas
 }
 
 // CancelTask POSTs to /v1/tasks/{id}:cancel
-func (c *Client) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResponse, error) {
 	u := c.address + "/v1/tasks/" + req.Id + ":cancel"
 	hreq, _ := http.NewRequest("POST", u, nil)
 	hreq.WithContext(ctx)
@@ -157,7 +155,7 @@ func (c *Client) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*t
 	}
 
 	// Parse response
-	resp := &tes.CancelTaskResponse{}
+	resp := &CancelTaskResponse{}
 	err = jsonpb.UnmarshalString(string(body), resp)
 	if err != nil {
 		return nil, err
@@ -166,7 +164,7 @@ func (c *Client) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*t
 }
 
 // GetServiceInfo returns result of GET /v1/tasks/service-info
-func (c *Client) GetServiceInfo(ctx context.Context, req *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
+func (c *Client) GetServiceInfo(ctx context.Context, req *ServiceInfoRequest) (*ServiceInfo, error) {
 	u := c.address + "/v1/tasks/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
@@ -177,7 +175,7 @@ func (c *Client) GetServiceInfo(ctx context.Context, req *tes.ServiceInfoRequest
 	}
 
 	// Parse response
-	resp := &tes.ServiceInfo{}
+	resp := &ServiceInfo{}
 	err = jsonpb.UnmarshalString(string(body), resp)
 	if err != nil {
 		return nil, err
@@ -191,17 +189,17 @@ func (c *Client) WaitForTask(ctx context.Context, taskIDs ...string) error {
 	for range time.NewTicker(time.Second * 2).C {
 		done := false
 		for _, id := range taskIDs {
-			r, err := c.GetTask(ctx, &tes.GetTaskRequest{
+			r, err := c.GetTask(ctx, &GetTaskRequest{
 				Id:   id,
-				View: tes.TaskView_MINIMAL,
+				View: TaskView_MINIMAL,
 			})
 			if err != nil {
 				return err
 			}
 			switch r.State {
-			case tes.State_COMPLETE:
+			case State_COMPLETE:
 				done = true
-			case tes.State_EXECUTOR_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
+			case State_EXECUTOR_ERROR, State_SYSTEM_ERROR, State_CANCELED:
 				errMsg := fmt.Sprintf("Task %s exited with state %s", id, r.State.String())
 				return errors.New(errMsg)
 			default:

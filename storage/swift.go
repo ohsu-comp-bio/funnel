@@ -13,7 +13,7 @@ import (
 	"github.com/alecthomas/units"
 	"github.com/ncw/swift"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )

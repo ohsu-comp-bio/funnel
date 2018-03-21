@@ -6,8 +6,7 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -49,10 +48,10 @@ func (taskBolt *BoltDB) ReadQueue(n int) []*tes.Task {
 //
 // For optimisic locking, if the node already exists and node.Version
 // doesn't match the version in the database, an error is returned.
-func (taskBolt *BoltDB) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNodeResponse, error) {
+func (taskBolt *BoltDB) PutNode(ctx context.Context, node *scheduler.Node) (*scheduler.PutNodeResponse, error) {
 	err := taskBolt.db.Update(func(tx *bolt.Tx) error {
 
-		existing := &pbs.Node{}
+		existing := &scheduler.Node{}
 		data := tx.Bucket(Nodes).Get([]byte(node.Id))
 		if data != nil {
 			proto.Unmarshal(data, existing)
@@ -73,12 +72,12 @@ func (taskBolt *BoltDB) PutNode(ctx context.Context, node *pbs.Node) (*pbs.PutNo
 		}
 		return tx.Bucket(Nodes).Put([]byte(node.Id), data)
 	})
-	return &pbs.PutNodeResponse{}, err
+	return &scheduler.PutNodeResponse{}, err
 }
 
 // GetNode gets a node
-func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*pbs.Node, error) {
-	var node *pbs.Node
+func (taskBolt *BoltDB) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (*scheduler.Node, error) {
+	var node *scheduler.Node
 
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		data := tx.Bucket(Nodes).Get([]byte(req.Id))
@@ -86,7 +85,7 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*
 			return errNotFound
 		}
 
-		node = &pbs.Node{}
+		node = &scheduler.Node{}
 		return proto.Unmarshal(data, node)
 	})
 
@@ -102,16 +101,16 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *pbs.GetNodeRequest) (*
 
 // DeleteNode deletes the given node.
 // Currently, the node's version field is not checked.
-func (taskBolt *BoltDB) DeleteNode(ctx context.Context, node *pbs.Node) (*pbs.DeleteNodeResponse, error) {
+func (taskBolt *BoltDB) DeleteNode(ctx context.Context, node *scheduler.Node) (*scheduler.DeleteNodeResponse, error) {
 	// TODO we don't check version on delete. should we?
-	return &pbs.DeleteNodeResponse{}, taskBolt.db.Update(func(tx *bolt.Tx) error {
+	return &scheduler.DeleteNodeResponse{}, taskBolt.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(Nodes).Delete([]byte(node.Id))
 	})
 }
 
 // ListNodes is an API endpoint that returns a list of nodes.
-func (taskBolt *BoltDB) ListNodes(ctx context.Context, req *pbs.ListNodesRequest) (*pbs.ListNodesResponse, error) {
-	resp := &pbs.ListNodesResponse{}
+func (taskBolt *BoltDB) ListNodes(ctx context.Context, req *scheduler.ListNodesRequest) (*scheduler.ListNodesResponse, error) {
+	resp := &scheduler.ListNodesResponse{}
 
 	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 
@@ -119,7 +118,7 @@ func (taskBolt *BoltDB) ListNodes(ctx context.Context, req *pbs.ListNodesRequest
 		c := bucket.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			node := &pbs.Node{}
+			node := &scheduler.Node{}
 			err := proto.Unmarshal(v, node)
 			if err != nil {
 				return err

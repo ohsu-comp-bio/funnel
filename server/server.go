@@ -8,10 +8,10 @@ import (
 	"github.com/golang/gddo/httputil"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/webdash"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -27,7 +27,7 @@ type Server struct {
 	Password         string
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
-	Nodes            pbs.SchedulerServiceServer
+	Nodes            scheduler.SchedulerServiceServer
 	DisableHTTPCache bool
 	Log              *logger.Logger
 }
@@ -124,8 +124,8 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Register Scheduler RPC service
 	if s.Nodes != nil {
-		pbs.RegisterSchedulerServiceServer(grpcServer, s.Nodes)
-		err := pbs.RegisterSchedulerServiceHandlerFromEndpoint(
+		scheduler.RegisterSchedulerServiceServer(grpcServer, s.Nodes)
+		err := scheduler.RegisterSchedulerServiceHandlerFromEndpoint(
 			ctx, grpcMux, s.RPCAddress, dialOpts,
 		)
 		if err != nil {

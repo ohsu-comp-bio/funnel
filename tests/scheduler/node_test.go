@@ -9,8 +9,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
@@ -31,7 +30,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	srv.StartServer()
 
 	srv.Conf.Node.ID = "test-node-gone-on-cancel"
-	n, err := scheduler.NewNode(bg, srv.Conf, scheduler.NoopWorker, log)
+	n, err := scheduler.NewNodeInstance(bg, srv.Conf, scheduler.NoopWorker, log)
 	if err != nil {
 		t.Fatal("failed to start node", err)
 	}
@@ -42,7 +41,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	srv.Scheduler.CheckNodes()
 	time.Sleep(conf.Node.UpdateRate * 2)
 
-	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &pbs.ListNodesRequest{})
+	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +55,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	time.Sleep(conf.Node.UpdateRate * 2)
 	srv.Scheduler.CheckNodes()
 
-	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &pbs.ListNodesRequest{})
+	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +89,7 @@ func TestManualBackend(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create worker factory", err)
 	}
-	n, err := scheduler.NewNode(ctx, srv.Conf, w.Run, log)
+	n, err := scheduler.NewNodeInstance(ctx, srv.Conf, w.Run, log)
 	if err != nil {
 		t.Fatal("failed to create node", err)
 	}
@@ -138,7 +137,7 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	n, err := scheduler.NewNode(ctx, srv.Conf, blockingNoopWorker, log)
+	n, err := scheduler.NewNodeInstance(ctx, srv.Conf, blockingNoopWorker, log)
 	if err != nil {
 		t.Fatal("failed to create node")
 	}
@@ -193,25 +192,25 @@ func TestNodeCleanup(t *testing.T) {
 	srv.Server.Tasks.CreateTask(ctx, t5)
 	e.WriteEvent(ctx, events.NewState(t5.Id, tes.Running))
 
-	srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+	srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:      "test-gone-node-cleanup-restart-1",
-		State:   pbs.NodeState_GONE,
+		State:   scheduler.NodeState_GONE,
 		TaskIds: []string{t1.Id, t2.Id, t3.Id},
 	})
 
-	srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+	srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:      "test-gone-node-cleanup-restart-2",
-		State:   pbs.NodeState_GONE,
+		State:   scheduler.NodeState_GONE,
 		TaskIds: []string{t4.Id},
 	})
 
-	srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+	srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:      "test-gone-node-cleanup-restart-3",
-		State:   pbs.NodeState_ALIVE,
+		State:   scheduler.NodeState_ALIVE,
 		TaskIds: []string{t5.Id},
 	})
 
-	ns, _ := srv.Scheduler.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	ns, _ := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	log.Info("nodes before", ns)
 
 	err := srv.Scheduler.CheckNodes()
@@ -219,7 +218,7 @@ func TestNodeCleanup(t *testing.T) {
 		t.Error(err)
 	}
 
-	ns, _ = srv.Scheduler.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	ns, _ = srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if len(ns.Nodes) != 1 {
 		t.Error("expected 1 node")
 	}

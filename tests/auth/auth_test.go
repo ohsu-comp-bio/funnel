@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"github.com/ohsu-comp-bio/funnel/util/rpc"
 )

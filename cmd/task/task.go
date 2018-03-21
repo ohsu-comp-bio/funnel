@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/cmd/util"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/spf13/cobra"
 )
 

@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )

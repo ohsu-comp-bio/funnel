@@ -22,22 +22,20 @@ install: depends
 
 # Generate the protobuf/gRPC code
 proto:
-	@cd proto/tes && protoc \
+	@cd tes && protoc \
 		$(PROTO_INC) \
 		--go_out=plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		tes.proto
-	@cd proto/scheduler && protoc \
+	@cd compute/scheduler && protoc \
 		$(PROTO_INC) \
 		--go_out=plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		scheduler.proto
 	@cd events && protoc \
 		$(PROTO_INC) \
-		-I ../proto/tes \
-		-I `pwd`/vendor/github.com/golang/protobuf/ptypes/struct/ \
-		-I `pwd`/vendor/github.com/golang/protobuf/ptypes/timestamp/ \
-		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/proto/tes,plugins=grpc:. \
+		-I ../tes \
+		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/tes,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		events.proto
 
@@ -194,12 +192,12 @@ release: depends
 	@goreleaser \
 		--rm-dist \
 		--release-notes <(github-release-notes)
-	
+
 # Generate mocks for testing.
 gen-mocks:
 	@go get github.com/vektra/mockery/...
-	@mockery -dir compute/scheduler -name Client -print > compute/scheduler/mocks/Client_mock.go
-	@mockery -dir proto/scheduler -name SchedulerServiceServer -print > compute/scheduler/mocks/Nodes_mock.go
+	@mockery -dir compute/scheduler -name Client -inpkg -output compute/scheduler
+	@mockery -dir compute/scheduler -name SchedulerServiceServer -inpkg -output compute/scheduler
 
 # Bundle example task messages into Go code.
 bundle-examples:

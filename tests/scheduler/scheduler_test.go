@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 )
 

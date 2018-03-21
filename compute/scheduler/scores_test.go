@@ -4,8 +4,7 @@ import (
 	"runtime/debug"
 	"testing"
 
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 func TestDefaultScoresEmptyTask(t *testing.T) {
@@ -16,6 +15,6 @@ func TestDefaultScoresEmptyTask(t *testing.T) {
 	}()
 
 	j := &tes.Task{}
-	w := &pbs.Node{}
+	w := &Node{}
 	DefaultScores(w, j)
 }

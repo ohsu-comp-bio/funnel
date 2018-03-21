@@ -6,8 +6,7 @@ import (
 	"os"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/ohsu-comp-bio/funnel/client"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
@@ -15,7 +14,7 @@ import (
 // calling CreateTask, and writing output to the given writer.
 // Tasks are loaded from the "files" arg. "files" are file paths to JSON objects.
 func Create(server string, files []string, writer io.Writer) error {
-	cli, err := client.NewClient(server)
+	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
 	}

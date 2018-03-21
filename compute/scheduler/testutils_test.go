@@ -6,17 +6,15 @@ import (
 	"testing"
 	"time"
 
-	schedmock "github.com/ohsu-comp-bio/funnel/compute/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/stretchr/testify/mock"
 )
 
 // testNode wraps Node with some testing helpers.
 type testNode struct {
-	*Node
+	*NodeInstance
 	Client *schedmock.Client
 	done   chan struct{}
 }
@@ -29,8 +27,8 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 	// A mock scheduler client allows this code to fake/control the worker's
 	// communication with a scheduler service.
 	res, _ := detectResources(conf.Node, conf.Worker.WorkDir)
-	s := new(schedmock.Client)
-	n := &Node{
+	s := new(MockClient)
+	n := &NodeInstance{
 		conf:      conf,
 		client:    s,
 		log:       log,
@@ -38,7 +36,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 		workerRun: NoopWorker,
 		workers:   newRunSet(),
 		timeout:   util.NewIdleTimeout(conf.Node.Timeout),
-		state:     pbs.NodeState_ALIVE,
+		state:     NodeState_ALIVE,
 	}
 
 	s.On("PutNode", mock.Anything, mock.Anything).
@@ -57,7 +55,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 func (t *testNode) Start() context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(&pbs.Node{}, nil)
+		Return(&Node{}, nil)
 	go func() {
 		t.Node.Run(ctx)
 		close(t.done)
@@ -72,13 +70,13 @@ func (t *testNode) Wait() {
 func (t *testNode) AddTasks(ids ...string) {
 	// Set up the scheduler mock to assign a task to the worker.
 	t.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(&pbs.Node{
+		Return(&Node{
 			TaskIds: ids,
 		}, nil).
 		Once()
 
 	t.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(&pbs.Node{}, nil)
+		Return(&Node{}, nil)
 }
 
 func timeLimit(t *testing.T, d time.Duration) func() {

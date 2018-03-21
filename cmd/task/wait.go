@@ -1,7 +1,7 @@
 package task
 
 import (
-	"github.com/ohsu-comp-bio/funnel/client"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
@@ -9,7 +9,7 @@ import (
 // calling GetTask() for each ID, and blocking until the tasks have
 // reached a terminal state.
 func Wait(server string, ids []string) error {
-	cli, err := client.NewClient(server)
+	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
 	}

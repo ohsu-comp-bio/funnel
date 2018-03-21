@@ -18,14 +18,13 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
-	"github.com/ohsu-comp-bio/funnel/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
 	"github.com/ohsu-comp-bio/funnel/server"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
 	"github.com/ohsu-comp-bio/funnel/util/rpc"
 	"golang.org/x/net/context"
@@ -42,7 +41,7 @@ func init() {
 type Funnel struct {
 	// Clients
 	RPC    tes.TaskServiceClient
-	HTTP   *client.Client
+	HTTP   *tes.Client
 	Docker *docker.Client
 
 	// Config
@@ -63,7 +62,7 @@ type Funnel struct {
 // NewFunnel creates a new funnel test server with some test
 // configuration automatically set: random ports, temp work dir, etc.
 func NewFunnel(conf config.Config) *Funnel {
-	cli, err := client.NewClient(conf.Server.HTTPAddress())
+	cli, err := tes.NewClient(conf.Server.HTTPAddress())
 	if err != nil {
 		panic(err)
 	}

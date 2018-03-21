@@ -6,7 +6,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 

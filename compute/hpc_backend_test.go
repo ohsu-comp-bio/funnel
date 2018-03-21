@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 func TestSetupTemplatedHPCSubmit(t *testing.T) {

@@ -6,7 +6,6 @@ import (
 
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
@@ -24,8 +23,8 @@ func GenNodeID(prefix string) string {
 //
 // Upon error, detectResources will return the resources given by the config
 // with the error.
-func detectResources(conf config.Node, workdir string) (pbs.Resources, error) {
-	res := pbs.Resources{
+func detectResources(conf config.Node, workdir string) (Resources, error) {
+	res := Resources{
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,
 		DiskGb: conf.Resources.DiskGb,

@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ohsu-comp-bio/funnel/client"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
 // Cancel runs the "task cancel" CLI command, which connects to the server,
 // calls CancelTask() on each ID, and writes output to the given writer.
 func Cancel(server string, ids []string, writer io.Writer) error {
-	cli, err := client.NewClient(server)
+	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"

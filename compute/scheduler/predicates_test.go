@@ -4,8 +4,7 @@ import (
 	"runtime/debug"
 	"testing"
 
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 func TestZonesFitEmptyTask(t *testing.T) {
@@ -23,14 +22,14 @@ func TestCpuResourcesFit(t *testing.T) {
 		},
 	}
 
-	w := &pbs.Node{
+	w := &Node{
 		Id: "test-node",
-		Resources: &pbs.Resources{
+		Resources: &Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		Available: &pbs.Resources{
+		Available: &Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
@@ -65,6 +64,6 @@ func testEmptyTask(t *testing.T, p Predicate, name string) {
 	}()
 
 	j := &tes.Task{}
-	w := &pbs.Node{}
+	w := &Node{}
 	p(j, w)
 }

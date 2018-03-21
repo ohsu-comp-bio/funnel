@@ -8,8 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
@@ -22,7 +21,7 @@ type TaskQueue interface {
 type Scheduler struct {
 	Conf  config.Scheduler
 	Log   *logger.Logger
-	Nodes pbs.SchedulerServiceServer
+	Nodes SchedulerServiceServer
 	Queue TaskQueue
 	Event events.Writer
 }
@@ -51,7 +50,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 // This is not an RPC endpoint
 func (s *Scheduler) CheckNodes() error {
 	ctx := context.Background()
-	resp, err := s.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	resp, err := s.Nodes.ListNodes(ctx, &ListNodesRequest{})
 
 	if err != nil {
 		return err
@@ -62,7 +61,7 @@ func (s *Scheduler) CheckNodes() error {
 	for _, node := range updated {
 		var err error
 
-		if node.State == pbs.NodeState_GONE {
+		if node.State == NodeState_GONE {
 			for _, tid := range node.TaskIds {
 				s.Event.WriteEvent(ctx, events.NewState(tid, tes.State_SYSTEM_ERROR))
 				s.Event.WriteEvent(ctx, events.NewSystemLog(tid, 0, 0, "info",
@@ -143,8 +142,8 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 // GetOffer returns an offer based on available funnel nodes.
 func (s *Scheduler) GetOffer(j *tes.Task) *Offer {
 	// Get the nodes from the funnel server
-	nodes := []*pbs.Node{}
-	resp, err := s.Nodes.ListNodes(context.Background(), &pbs.ListNodesRequest{})
+	nodes := []*Node{}
+	resp, err := s.Nodes.ListNodes(context.Background(), &ListNodesRequest{})
 	if err == nil {
 		nodes = resp.Nodes
 	}

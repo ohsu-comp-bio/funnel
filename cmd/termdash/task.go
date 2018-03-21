@@ -2,7 +2,7 @@ package termdash
 
 import (
 	"github.com/ohsu-comp-bio/funnel/cmd/termdash/compact"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 type TaskWidget struct {

@@ -5,8 +5,7 @@ import (
 	"os"
 
 	"github.com/kballard/go-shellquote"
-	"github.com/ohsu-comp-bio/funnel/client"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/spf13/cobra"
 )
 
@@ -74,7 +73,7 @@ func Run(args []string) error {
 		return err
 	}
 
-	cli, err := client.NewClient(vals.server)
+	cli, err := tes.NewClient(vals.server)
 	if err != nil {
 		return err
 	}

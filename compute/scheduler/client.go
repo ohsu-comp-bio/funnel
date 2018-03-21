@@ -5,7 +5,6 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	util "github.com/ohsu-comp-bio/funnel/util/rpc"
 	"google.golang.org/grpc"
 )
@@ -13,13 +12,13 @@ import (
 // Client is a client for the scheduler and event gRPC services.
 type Client interface {
 	events.EventServiceClient
-	pbs.SchedulerServiceClient
+	SchedulerServiceClient
 	Close()
 }
 
 type client struct {
 	events.EventServiceClient
-	pbs.SchedulerServiceClient
+	SchedulerServiceClient
 	conn *grpc.ClientConn
 }
 
@@ -32,7 +31,7 @@ func NewClient(ctx context.Context, conf config.Server) (Client, error) {
 		return nil, err
 	}
 	e := events.NewEventServiceClient(conn)
-	s := pbs.NewSchedulerServiceClient(conn)
+	s := NewSchedulerServiceClient(conn)
 	return &client{e, s, conn}, nil
 }
 

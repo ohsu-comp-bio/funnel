@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
@@ -17,9 +17,9 @@ func TestNodeDead(t *testing.T) {
 	conf := nodeTestConfig(tests.DefaultConfig())
 	srv := tests.NewFunnel(conf)
 
-	_, err := srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:    "test-node",
-		State: pbs.NodeState_ALIVE,
+		State: scheduler.NodeState_ALIVE,
 	})
 	if err != nil {
 		t.Error(err)
@@ -32,7 +32,7 @@ func TestNodeDead(t *testing.T) {
 	// Should mark node as dead.
 	srv.Scheduler.CheckNodes()
 
-	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestNodeDead(t *testing.T) {
 	if len(nodes) < 1 {
 		t.Error("expected node was not returned by ListNodes")
 	}
-	if nodes[0].State != pbs.NodeState_DEAD {
+	if nodes[0].State != scheduler.NodeState_DEAD {
 		t.Log("Node:", nodes[0])
 		t.Error("Expected node to be dead")
 	}
@@ -55,9 +55,9 @@ func TestNodeInitFail(t *testing.T) {
 	srv := tests.NewFunnel(conf)
 	srv.StartServer()
 
-	_, err := srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:    "test-node",
-		State: pbs.NodeState_INITIALIZING,
+		State: scheduler.NodeState_INITIALIZING,
 	})
 	if err != nil {
 		t.Error(err)
@@ -66,7 +66,7 @@ func TestNodeInitFail(t *testing.T) {
 	time.Sleep(conf.Scheduler.NodeInitTimeout)
 	srv.Scheduler.CheckNodes()
 
-	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestNodeInitFail(t *testing.T) {
 	if len(nodes) < 1 {
 		t.Error("expected node was not returned by ListNodes")
 	}
-	if nodes[0].State != pbs.NodeState_DEAD {
+	if nodes[0].State != scheduler.NodeState_DEAD {
 		t.Log("Node:", nodes[0])
 		t.Error("Expected node to be dead")
 	}
@@ -88,9 +88,9 @@ func TestNodeDeadTimeout(t *testing.T) {
 	conf := nodeTestConfig(tests.DefaultConfig())
 	srv := tests.NewFunnel(conf)
 
-	_, err := srv.Scheduler.Nodes.PutNode(ctx, &pbs.Node{
+	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:    "test-node",
-		State: pbs.NodeState_DEAD,
+		State: scheduler.NodeState_DEAD,
 	})
 	if err != nil {
 		t.Error(err)
@@ -101,7 +101,7 @@ func TestNodeDeadTimeout(t *testing.T) {
 	time.Sleep(conf.Scheduler.NodeDeadTimeout)
 	srv.Scheduler.CheckNodes()
 
-	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &pbs.ListNodesRequest{})
+	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}

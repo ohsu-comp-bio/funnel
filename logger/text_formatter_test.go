@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 func TestFormatNilProtoField(t *testing.T) {

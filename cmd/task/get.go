@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ohsu-comp-bio/funnel/client"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
 
@@ -13,7 +12,7 @@ import (
 // calls GetTask for each ID, requesting the given task view, and writes
 // output to the given writer.
 func Get(server string, ids []string, taskView string, w io.Writer) error {
-	cli, err := client.NewClient(server)
+	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
 	}

@@ -6,37 +6,36 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	schedmock "github.com/ohsu-comp-bio/funnel/compute/scheduler/mocks"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pbs "github.com/ohsu-comp-bio/funnel/proto/scheduler"
-	"github.com/ohsu-comp-bio/funnel/proto/tes"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	. "github.com/stretchr/testify/mock"
 )
 
-func simpleNode() *pbs.Node {
-	return &pbs.Node{
+func simpleNode() *scheduler.Node {
+	return &scheduler.Node{
 		// This ID MUST match the ID set in setup()
 		// because the local scheduler is built to have only a single node
 		Id: "test-node-id",
-		Resources: &pbs.Resources{
+		Resources: &scheduler.Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		Available: &pbs.Resources{
+		Available: &scheduler.Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		State: pbs.NodeState_ALIVE,
+		State: scheduler.NodeState_ALIVE,
 		Zone:  "ok-zone",
 	}
 }
 
-func setup(nodes []*pbs.Node) (*schedmock.SchedulerServiceServer, *scheduler.Scheduler) {
+func setup(nodes []*scheduler.Node) (*schedmock.SchedulerServiceServer, *scheduler.Scheduler) {
 	conf := config.Config{}
 	mc := new(schedmock.SchedulerServiceServer)
 
 	// Mock in test nodes
-	mc.On("ListNodes", Anything, Anything, Anything).Return(&pbs.ListNodesResponse{
+	mc.On("ListNodes", Anything, Anything, Anything).Return(&scheduler.ListNodesResponse{
 		Nodes: nodes,
 	}, nil)
 
@@ -48,7 +47,7 @@ func setup(nodes []*pbs.Node) (*schedmock.SchedulerServiceServer, *scheduler.Sch
 }
 
 func TestNoNodes(t *testing.T) {
-	_, s := setup([]*pbs.Node{})
+	_, s := setup([]*scheduler.Node{})
 	j := &tes.Task{}
 	o := s.GetOffer(j)
 	if o != nil {
@@ -57,7 +56,7 @@ func TestNoNodes(t *testing.T) {
 }
 
 func TestSingleNode(t *testing.T) {
-	_, s := setup([]*pbs.Node{
+	_, s := setup([]*scheduler.Node{
 		simpleNode(),
 	})
 
@@ -76,10 +75,10 @@ func TestSingleNode(t *testing.T) {
 func TestIgnoreNonAliveNodes(t *testing.T) {
 	j := &tes.Task{}
 
-	for name, val := range pbs.NodeState_value {
+	for name, val := range scheduler.NodeState_value {
 		w := simpleNode()
-		w.State = pbs.NodeState(val)
-		_, s := setup([]*pbs.Node{w})
+		w.State = scheduler.NodeState(val)
+		_, s := setup([]*scheduler.Node{w})
 		o := s.GetOffer(j)
 
 		if name == "ALIVE" {
@@ -100,7 +99,7 @@ func TestIgnoreNonAliveNodes(t *testing.T) {
 // Test whether the scheduler correctly filters nodes based on
 // cpu, ram, disk, etc.
 func TestMatch(t *testing.T) {
-	_, s := setup([]*pbs.Node{
+	_, s := setup([]*scheduler.Node{
 		simpleNode(),
 	})
 

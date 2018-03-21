@@ -30,7 +30,7 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	srv.StartServer()
 
 	srv.Conf.Node.ID = "test-node-gone-on-cancel"
-	n, err := scheduler.NewNodeInstance(bg, srv.Conf, scheduler.NoopWorker, log)
+	n, err := scheduler.NewNodeProcess(bg, srv.Conf, scheduler.NoopWorker, log)
 	if err != nil {
 		t.Fatal("failed to start node", err)
 	}
@@ -89,7 +89,7 @@ func TestManualBackend(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create worker factory", err)
 	}
-	n, err := scheduler.NewNodeInstance(ctx, srv.Conf, w.Run, log)
+	n, err := scheduler.NewNodeProcess(ctx, srv.Conf, w.Run, log)
 	if err != nil {
 		t.Fatal("failed to create node", err)
 	}
@@ -137,7 +137,7 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	n, err := scheduler.NewNodeInstance(ctx, srv.Conf, blockingNoopWorker, log)
+	n, err := scheduler.NewNodeProcess(ctx, srv.Conf, blockingNoopWorker, log)
 	if err != nil {
 		t.Fatal("failed to create node")
 	}

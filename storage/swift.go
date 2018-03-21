@@ -111,7 +111,7 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 			Prefix: url.path,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("listing objects by prefix: %s", err)
 		}
 		if len(objs) == 0 {
 			return ErrEmptyDirectory
@@ -123,18 +123,18 @@ func (sw *SwiftBackend) Get(ctx context.Context, rawurl string, hostPath string,
 			}
 			f, _, err := sw.conn.ObjectOpen(url.bucket, obj.Name, checkHash, headers)
 			if err != nil {
-				return err
+				return fmt.Errorf("opening object %s: %s", obj.Name, err)
 			}
 
 			if err = sw.get(ctx, f, path.Join(hostPath, strings.TrimPrefix(obj.Name, url.path))); err != nil {
 				if cerr := f.Close(); cerr != nil {
-					return fmt.Errorf("%v; %v", err, cerr)
+					return fmt.Errorf("closing object after get %v; %v", err, cerr)
 				}
 				return err
 			}
 
 			if err = f.Close(); err != nil {
-				return err
+				return fmt.Errorf("closing file: %s", err)
 			}
 		}
 

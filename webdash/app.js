@@ -41,14 +41,16 @@ function formatElapsedTime(miliseconds) {
 }
 
 function elapsedTime(task) {
-  if (task.logs[0].start_time) {
-    now = new Date();
-    if (task.logs[0].end_time) {
-      now = Date.parse(task.logs[0].end_time);
+  if (task.logs && task.logs.length) {
+    if (task.logs[0].start_time) {
+      now = new Date();
+      if (task.logs[0].end_time) {
+        now = Date.parse(task.logs[0].end_time);
+      }
+      started = Date.parse(task.logs[0].start_time);
+      elapsed = now - started;
+      return formatElapsedTime(elapsed);
     }
-    started = Date.parse(task.logs[0].start_time);
-    elapsed = now - started;
-    return formatElapsedTime(elapsed);
   }
   return "--";
 }

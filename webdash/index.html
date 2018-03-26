@@ -20,7 +20,7 @@
         <div class="header-row">
           <span class="header-title">{{pageTitle}}</span>
           <div class="header-spacer"></div>
-          <div class="pager" ng-show="nextPage"><a href="{{ nextPage }}">Next page</a></div>
+          <div class="pager" ng-show="nextPage && pageId == 'task-list'"><a href="{{ nextPage }}" target="_self">Next page</a></div>
         </div>
       </header>
 
@@ -28,7 +28,7 @@
         <span class="layout-title">Funnel</span>
 
         <nav>
-          <a href="/v1/tasks">Tasks</a>
+          <a href="/v1/tasks" target="_self">Tasks</a>
           <a href="/v1/nodes">Nodes</a>
           <a href="/v1/tasks/service-info">Service Info</a>
         </nav>

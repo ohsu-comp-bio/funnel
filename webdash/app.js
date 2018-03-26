@@ -101,7 +101,7 @@ app.controller('TaskListController', function($rootScope, $scope, $http, $timeou
 
   TaskFilters.$watch("tags", function() {
     refresh();
-  })
+  }, true)
 
   function listTasks() {
     var url = "/v1/tasks?view=BASIC";
@@ -125,30 +125,25 @@ app.controller('TaskListController', function($rootScope, $scope, $http, $timeou
     return $http.get(url);
   }
 
-  function refresh() {
+  function refresh(callback) {
     listTasks().then(function(response) {
       $scope.$applyAsync(function() {
         $scope.tasks = response.data.tasks;
         if (response.data.next_page_token) {
-          $scope.nextPage = $scope.serverURL + "/v1/tasks?page_token=" + response.data.next_page_token;
+          $rootScope.nextPage = $scope.serverURL + "/v1/tasks?page_token=" + response.data.next_page_token;
         } else {
-          $scope.nextPage = "";
+          $rootScope.nextPage = "";
+        }
+        if (callback) {
+          callback();
         }
       });
     });
   }
 
   function autoRefresh() {
-    listTasks().then(function(response) {
-      $scope.$applyAsync(function() {
-        $scope.tasks = response.data.tasks;
-        if (response.data.next_page_token) {
-          $scope.nextPage = $scope.serverURL + "/v1/tasks?page_token=" + response.data.next_page_token;
-        } else {
-          $scope.nextPage = "";
-        }
-        stop = $timeout(autoRefresh, 2000);
-      });
+    refresh(function() {
+      stop = $timeout(autoRefresh, 2000);
     });
   }
 

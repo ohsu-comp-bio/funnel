@@ -58,10 +58,10 @@
                 <tr ng-repeat="tag in filters.tags">
                   <td>
                     <div>
-                      <input type="text" class="form-control" ng-model="tag.key" placeholder="Key"/>
+                      <input type="text" class="form-control" ng-model="tag.key" ng-model-options="{debounce: 1000}" placeholder="Key"/>
                     </div>
                     <div>
-                      <input type="text" class="form-control" ng-model="tag.value" placeholder="Value"/>
+                      <input type="text" class="form-control" ng-model="tag.value" ng-model-options="{debounce: 1000}" placeholder="Value"/>
                     </div>
                   </td>
                   <td>

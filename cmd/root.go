@@ -26,7 +26,7 @@ func init() {
 	RootCmd.AddCommand(aws.Cmd)
 	RootCmd.AddCommand(examples.Cmd)
 	RootCmd.AddCommand(gce.Cmd)
-	RootCmd.AddCommand(genBashCompletionCmd)
+	RootCmd.AddCommand(completionCmd)
 	RootCmd.AddCommand(genMarkdownCmd)
 	RootCmd.AddCommand(node.NewCommand())
 	RootCmd.AddCommand(run.Cmd)

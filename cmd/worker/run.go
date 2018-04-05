@@ -106,6 +106,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 		Store:       store,
 		TaskReader:  reader,
 		EventWriter: writer,
+		DockerConf:  conf.Docker,
 	}
 
 	return w, nil

@@ -43,6 +43,12 @@ type Config struct {
 	GoogleStorage GSStorage
 	Swift         SwiftStorage
 	HTTPStorage   HTTPStorage
+	Docker        Docker
+}
+
+type Docker struct {
+	BaseArgs       []string
+	LeaveContainer bool
 }
 
 // Server describes configuration for the server.

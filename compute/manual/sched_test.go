@@ -18,13 +18,13 @@ func simpleNode() *scheduler.Node {
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
+			Zone:   "ok-zone",
 		},
 		Available: &scheduler.Resources{
 			Cpus:   1.0,
 			RamGb:  1.0,
 			DiskGb: 1.0,
 		},
-		Zone:  "ok-zone",
 		State: scheduler.NodeState_ALIVE,
 	}
 }

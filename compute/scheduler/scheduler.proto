@@ -10,6 +10,8 @@ message Resources {
   double ram_gb = 2;
   // In GB
   double disk_gb = 3;
+  bool preemptible = 4;
+  string zone = 5;
 }
 
 enum NodeState {
@@ -25,8 +27,6 @@ message Node {
   Resources resources = 5;
   Resources available = 6;
   NodeState state = 8;
-  bool preemptible = 9;
-  string zone = 11;
   string hostname  = 13;
   // Timestamp version of the record in the database. Used to prevent write conflicts and as the last ping time.
   int64 version = 14;

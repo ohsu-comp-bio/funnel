@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"context"
+	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -246,6 +248,104 @@ func TestNodeCleanup(t *testing.T) {
 		e := expected[i]
 		if task.State != e {
 			t.Error("expected state for task", i, task.State, e)
+		}
+	}
+}
+
+// Test that nodes may have a configured zone, and that tasks may request a zone,
+// and that tasks are scheduled properly based on their requested zone.
+func TestNodeZoneScheduling(t *testing.T) {
+
+	//////////////////////// Setup
+
+	conf := tests.DefaultConfig()
+	conf.Compute = "manual"
+	conf.Scheduler.ScheduleChunk = 50
+	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
+	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
+	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
+
+	bg := context.Background()
+	ctx, cancel := context.WithCancel(bg)
+	defer cancel()
+
+	log := logger.NewLogger("node", tests.LogConfig())
+	tests.SetLogOutput(log, t)
+
+	srv := tests.NewFunnel(conf)
+	srv.StartServer()
+
+	// Set up a node in "zone-1"
+
+	n1conf := tests.DefaultConfig()
+	n1conf.Server = srv.Conf.Server
+	n1conf.Node.ID = "test-node-1"
+	n1conf.Node.Resources.Zone = "zone-1"
+	n1conf.Node.Resources.Cpus = 20
+
+	n1, err := scheduler.NewNodeProcess(ctx, n1conf, scheduler.NoopWorker, log)
+	if err != nil {
+		t.Fatal("failed to start node", err)
+	}
+	go n1.Run(ctx)
+
+	// Set up a node in "zone-2"
+
+	n2conf := tests.DefaultConfig()
+	n2conf.Server = srv.Conf.Server
+	n2conf.Node.ID = "test-node-2"
+	n2conf.Node.Resources.Zone = "zone-2"
+	n2conf.Node.Resources.Cpus = 20
+
+	n2, err := scheduler.NewNodeProcess(ctx, n2conf, scheduler.NoopWorker, log)
+	if err != nil {
+		t.Fatal("failed to start node", err)
+	}
+	go n2.Run(ctx)
+
+	///////////////////// Tests
+
+	// Create 10 tasks for "zone-1" and 10 tasks for "zone-2"
+	// Create 10 tasks for "zone-3" which doesn't exist
+	var zone1ids, zone2ids []string
+	for i := 0; i < 10; i++ {
+		id1 := srv.Run(`--sh "echo" --cpu 1 --zone zone-1`)
+		zone1ids = append(zone1ids, id1)
+		id2 := srv.Run(`--sh "echo" --cpu 1 --zone zone-2`)
+		zone2ids = append(zone2ids, id2)
+		srv.Run(`--sh "echo" --cpu 1 --zone zone-3`)
+	}
+
+	// The scheduler databases sometimes fail on version conflicts.
+	// In normal operation, the tasks scheduling is retried on the next iteration.
+	// Fake that here.
+	for i := 0; i < 5; i++ {
+		srv.Scheduler.Schedule(ctx)
+	}
+
+	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(resp.Nodes) != 2 {
+		t.Fatal("expected two nodes")
+	}
+
+	for _, node := range resp.Nodes {
+		var expectedIDs []string
+		switch node.Id {
+		case "test-node-1":
+			expectedIDs = zone1ids
+		case "test-node-2":
+			expectedIDs = zone2ids
+		default:
+			t.Fatal("unexpected node ID", node.Id)
+		}
+
+		sort.Strings(node.TaskIds)
+		if !reflect.DeepEqual(node.TaskIds, expectedIDs) {
+			t.Error("unexpected node task IDs", node.TaskIds, expectedIDs)
 		}
 	}
 }

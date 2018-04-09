@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"gopkg.in/mgo.v2"
@@ -23,7 +24,7 @@ func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 		Username: conf.Username,
 		Password: conf.Password,
 		Database: conf.Database,
-		Timeout:  conf.Timeout,
+		Timeout:  time.Duration(conf.Timeout),
 		// DialServer: func(addr *mgo.ServerAddr) (net.Conn, error) {
 		// 	return tls.Dial("tcp", addr.String(), &tls.Config{})
 		// },

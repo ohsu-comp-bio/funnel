@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -25,7 +26,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		Database:      reader,
 		ExtractID:     extractID,
 		MapStates:     mapStates,
-		ReconcileRate: conf.PBS.ReconcileRate,
+		ReconcileRate: time.Duration(conf.PBS.ReconcileRate),
 	}
 
 	if !conf.PBS.DisableReconciler {

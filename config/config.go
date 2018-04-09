@@ -3,7 +3,6 @@ package config
 
 import (
 	"os"
-	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
@@ -57,7 +56,7 @@ type Server struct {
 	// The timeout to use for making RPC client connections in nanoseconds
 	// This timeout is Only enforced when used in conjunction with the
 	// grpc.WithBlock dial option.
-	RPCClientTimeout time.Duration
+	RPCClientTimeout Duration
 	// The maximum number of times that a request will be retried for failures.
 	// Time between retries follows an exponential backoff starting at 5 seconds
 	// up to 1 minute
@@ -88,15 +87,15 @@ func (c *Server) RPCAddress() string {
 // Scheduler contains funnel's basic scheduler configuration.
 type Scheduler struct {
 	// How often to run a scheduler iteration.
-	ScheduleRate time.Duration
+	ScheduleRate Duration
 	// How many tasks to schedule in one iteration.
 	ScheduleChunk int
 	// How long to wait for a node ping before marking it as dead
-	NodePingTimeout time.Duration
+	NodePingTimeout Duration
 	// How long to wait for node initialization before marking it dead
-	NodeInitTimeout time.Duration
+	NodeInitTimeout Duration
 	// How long to wait before deleting a dead node from the DB.
-	NodeDeadTimeout time.Duration
+	NodeDeadTimeout Duration
 }
 
 // Node contains the configuration for a node. Nodes track available resources
@@ -112,9 +111,9 @@ type Node struct {
 	}
 	// If the node has been idle for longer than the timeout, it will shut down.
 	// -1 means there is no timeout. 0 means timeout immediately after the first task.
-	Timeout time.Duration
+	Timeout Duration
 	// How often the node sends update requests to the server.
-	UpdateRate time.Duration
+	UpdateRate Duration
 	Metadata   map[string]string
 }
 
@@ -123,11 +122,11 @@ type Worker struct {
 	// Directory to write task files to
 	WorkDir string
 	// How often the worker should poll for cancel signals
-	PollingRate time.Duration
+	PollingRate Duration
 	// How often to update stdout/stderr log fields.
 	// Setting this to 0 will result in these fields being updated a single time
 	// after the executor exits.
-	LogUpdateRate time.Duration
+	LogUpdateRate Duration
 	// Max bytes of stdout/stderr to store in the database.
 	// Setting this to 0 turns off stdout/stderr logging.
 	LogTailSize int64
@@ -145,7 +144,7 @@ type HPCBackend struct {
 	DisableReconciler bool
 	// ReconcileRate is how often the compute backend compares states in Funnel's backend
 	// to those reported by the backend
-	ReconcileRate time.Duration
+	ReconcileRate Duration
 	Template      string
 }
 
@@ -164,7 +163,7 @@ type MongoDB struct {
 	// first connecting and on follow up operations in the session. If
 	// timeout is zero, the call may block forever waiting for a connection
 	// to be established.
-	Timeout time.Duration
+	Timeout Duration
 	// Username and Password inform the credentials for the initial authentication
 	// done on the database defined by the Database field.
 	Username string
@@ -222,7 +221,7 @@ type AWSBatch struct {
 	DisableReconciler bool
 	// ReconcileRate is how often the compute backend compares states in Funnel's backend
 	// to those reported by AWS Batch
-	ReconcileRate time.Duration
+	ReconcileRate Duration
 	AWSConfig
 }
 
@@ -326,7 +325,7 @@ func (s SwiftStorage) Valid() bool {
 type HTTPStorage struct {
 	Disabled bool
 	// Timeout duration for http GET calls
-	Timeout time.Duration
+	Timeout Duration
 }
 
 // Valid validates the HTTPStorage configuration.

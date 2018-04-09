@@ -33,7 +33,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 		log.Error("error detecting resources", "error", derr)
 	}
 
-	timeout := util.NewIdleTimeout(conf.Node.Timeout)
+	timeout := util.NewIdleTimeout(time.Duration(conf.Node.Timeout))
 	state := NodeState_UNINITIALIZED
 
 	return &NodeProcess{
@@ -71,7 +71,7 @@ func (n *NodeProcess) Run(ctx context.Context) {
 	n.checkConnection(ctx)
 	n.sync(ctx)
 
-	ticker := time.NewTicker(n.conf.Node.UpdateRate)
+	ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
 	defer ticker.Stop()
 
 	for {
@@ -182,7 +182,7 @@ func (n *NodeProcess) runTask(ctx context.Context, id string) {
 		// task cannot fully complete until it has successfully removed the
 		// assigned ID from the node database. this helps prevent tasks from
 		// running multiple times.
-		ticker := time.NewTicker(n.conf.Node.UpdateRate)
+		ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
 		defer ticker.Stop()
 		for {
 			select {

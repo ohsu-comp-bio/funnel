@@ -52,10 +52,10 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf = TempDirConfig(conf)
 	conf = RandomPortConfig(conf)
 
-	conf.Scheduler.ScheduleRate = time.Millisecond * 500
-	conf.Node.UpdateRate = time.Millisecond * 1300
-	conf.Worker.LogUpdateRate = time.Millisecond * 500
-	conf.Worker.PollingRate = time.Millisecond * 100
+	conf.Scheduler.ScheduleRate = config.Duration(time.Millisecond * 500)
+	conf.Node.UpdateRate = config.Duration(time.Millisecond * 1300)
+	conf.Worker.LogUpdateRate = config.Duration(time.Millisecond * 500)
+	conf.Worker.PollingRate = config.Duration(time.Millisecond * 100)
 
 	prefix := "funnel-e2e-tests-" + RandomString(6)
 	conf.Elastic.IndexPrefix = prefix
@@ -63,7 +63,7 @@ func TestifyConfig(conf config.Config) config.Config {
 	conf.DynamoDB.TableBasename = prefix
 	conf.Datastore.Project = prefix
 
-	reconcile := time.Second * 5
+	reconcile := config.Duration(time.Second * 5)
 	conf.HTCondor.ReconcileRate = reconcile
 	conf.Slurm.ReconcileRate = reconcile
 	conf.PBS.ReconcileRate = reconcile

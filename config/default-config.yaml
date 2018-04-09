@@ -39,8 +39,7 @@ Server:
   DisableHTTPCache: true
 
   # RPC client connection timeout.
-  # In nanoseconds.
-  RPCClientTimeout: 60000000000 # 30 seconds
+  RPCClientTimeout: 60s
 
   # The maximum number of times that a request will be retried for failures.
   # Time between retries follows an exponential backoff starting at 5 seconds
@@ -51,16 +50,13 @@ Server:
 # The scheduler is used for the Manual compute backend. 
 Scheduler:
   # How often to run a scheduler iteration.
-  # In nanoseconds.
-  ScheduleRate: 1000000000 # 1 second
+  ScheduleRate: 1s
   # How many tasks to schedule in one iteration.
   ScheduleChunk: 10
   # How long to wait between updates before marking a node dead.
-  # In nanoseconds.
-  NodePingTimeout: 60000000000 # 1 minute
+  NodePingTimeout: 1m
   # How long to wait for a node to start, before marking the node dead.
-  # In nanoseconds.
-  NodeInitTimeout: 300000000000 # 5 minutes
+  NodeInitTimeout: 5m
 
 Node:
   # If empty, a node ID will be automatically generated.
@@ -68,7 +64,7 @@ Node:
 
   # If the node has been idle for longer than the timeout, it will shut down.
   # -1 means there is no timeout. 0 means timeout immediately after the first task.
-  Timeout: -1
+  Timeout: -1s
 
   # A Node will automatically try to detect what resources are available to it. 
   # Defining Resources in the Node configuration overrides this behavior.
@@ -84,8 +80,7 @@ Node:
 
   # For low-level tuning.
   # How often to sync with the Funnel server.
-  # In nanoseconds.
-  UpdateRate: 5000000000 # 5 seconds
+  UpdateRate: 5s
 
 Worker:
   # Files created during processing will be written in this directory.
@@ -93,15 +88,13 @@ Worker:
 
   # For low-level tuning.
   # How often to poll for cancel signals
-  # In nanoseconds.
-  PollingRate: 5000000000 # 5 seconds
+  PollingRate: 5s
 
   # For low-level tuning.
   # How often to send stdout/err task log updates to the Funnel server.
   # Setting this to 0 will result in these fields being updated a single time
   # after the executor exits.
-  # In nanoseconds.
-  LogUpdateRate: 5000000000 # 5 seconds
+  LogUpdateRate: 5s
 
   # Max bytes to store for stdout/err in the task log.
   LogTailSize: 10000 # 10 KB
@@ -152,7 +145,7 @@ MongoDB:
   # first connecting and on follow up operations in the session. If
   # timeout is zero, the call may block forever waiting for a connection
   # to be established.
-  Timeout: 300000000000 # 5 minutes
+  Timeout: 5m
   # Username and Password inform the credentials for the initial authentication
   # done on the database defined by the Database field.
   Username: ""
@@ -174,7 +167,7 @@ HTCondor:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 1800000000000 #  30 minutes
+  ReconcileRate: 30m
   Template: |
     universe = vanilla
     getenv = True
@@ -204,7 +197,7 @@ PBS:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 1800000000000 #  30 minutes
+  ReconcileRate: 30m
   Template: |
     #!bin/bash
     #PBS -N {{.NodeId}}
@@ -248,7 +241,7 @@ Slurm:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 1800000000000 #  30 minutes
+  ReconcileRate: 30m
   Template: |
     #!/bin/bash
     #SBATCH --job-name {{.NodeId}}
@@ -274,7 +267,7 @@ AWSBatch:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by AWS Batch
-  ReconcileRate: 1800000000000 #  30 minutes
+  ReconcileRate: 30m
   # JobDefinition can be either a name or the Amazon Resource Name (ARN).
   JobDefinition: "funnel-job-def"
   # JobQueue can be either a name or the Amazon Resource Name (ARN).
@@ -300,8 +293,7 @@ LocalStorage:
 # HTTPStorage is used to download public files on the web via a GET request.
 HTTPStorage:
   # Timeout for http(s) GET requests.
-  # In nanoseconds.
-  Timeout: 30000000000 # 30 seconds
+  Timeout: 30s
 
 AmazonS3:
   Disabled: false

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -152,7 +153,7 @@ func (r taskReader) State(ctx gcontext.Context, taskID string) (tes.State, error
 func TestLargeLogRate(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	conf := tests.DefaultConfig()
-	conf.Worker.LogUpdateRate = time.Millisecond * 500
+	conf.Worker.LogUpdateRate = config.Duration(time.Millisecond * 500)
 	conf.Worker.LogTailSize = 1000
 	task := tes.Task{
 		Id: "test-task-" + tes.GenerateID(),
@@ -232,7 +233,7 @@ func TestZeroLogRate(t *testing.T) {
 func TestZeroLogTailSize(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	conf := tests.DefaultConfig()
-	conf.Worker.LogUpdateRate = time.Millisecond * 500
+	conf.Worker.LogUpdateRate = config.Duration(time.Millisecond * 500)
 	conf.Worker.LogTailSize = 0
 	task := tes.Task{
 		Id: "test-task-" + tes.GenerateID(),
@@ -269,7 +270,7 @@ func TestZeroLogTailSize(t *testing.T) {
 func TestLogTailContent(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	conf := tests.DefaultConfig()
-	conf.Worker.LogUpdateRate = time.Millisecond * 10
+	conf.Worker.LogUpdateRate = config.Duration(time.Millisecond * 10)
 	conf.Worker.LogTailSize = 10
 	task := tes.Task{
 		Id: "test-task-" + tes.GenerateID(),
@@ -313,7 +314,7 @@ func TestLogTailContent(t *testing.T) {
 func TestDockerContainerMetadata(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	conf := tests.DefaultConfig()
-	conf.Worker.LogUpdateRate = time.Millisecond * 10
+	conf.Worker.LogUpdateRate = config.Duration(time.Millisecond * 10)
 	conf.Worker.LogTailSize = 10
 	task := tes.Task{
 		Id: "test-task-" + tes.GenerateID(),

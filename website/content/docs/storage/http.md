@@ -18,8 +18,7 @@ worker config:
 HTTPStorage:
   Disabled: false
   # Timeout for http(s) GET requests.
-  # In nanoseconds.
-  Timeout: 60000000000 # 60 seconds
+  Timeout: 30s
 ```
 
 ### Example task

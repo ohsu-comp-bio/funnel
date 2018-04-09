@@ -29,7 +29,7 @@ func DefaultConfig() Config {
 		RPCPort:             "9090",
 		ServiceName:         "Funnel",
 		DisableHTTPCache:    true,
-		RPCClientTimeout:    time.Second * 60,
+		RPCClientTimeout:    Duration(time.Second * 60),
 		RPCClientMaxRetries: 10,
 	}
 
@@ -40,21 +40,21 @@ func DefaultConfig() Config {
 		// funnel components
 		Server: server,
 		Scheduler: Scheduler{
-			ScheduleRate:    time.Second,
+			ScheduleRate:    Duration(time.Second),
 			ScheduleChunk:   10,
-			NodePingTimeout: time.Minute,
-			NodeInitTimeout: time.Minute * 5,
-			NodeDeadTimeout: time.Minute * 5,
+			NodePingTimeout: Duration(time.Minute),
+			NodeInitTimeout: Duration(time.Minute * 5),
+			NodeDeadTimeout: Duration(time.Minute * 5),
 		},
 		Node: Node{
 			Timeout:    -1,
-			UpdateRate: time.Second * 5,
+			UpdateRate: Duration(time.Second * 5),
 			Metadata:   map[string]string{},
 		},
 		Worker: Worker{
 			WorkDir:       workDir,
-			PollingRate:   time.Second * 5,
-			LogUpdateRate: time.Second * 5,
+			PollingRate:   Duration(time.Second * 5),
+			LogUpdateRate: Duration(time.Second * 5),
 			LogTailSize:   10000,
 		},
 		Logger: logger.DefaultConfig(),
@@ -71,7 +71,7 @@ func DefaultConfig() Config {
 		},
 		MongoDB: MongoDB{
 			Addrs:    []string{"localhost"},
-			Timeout:  time.Minute * 5,
+			Timeout:  Duration(time.Minute * 5),
 			Database: "funnel",
 		},
 		Kafka: Kafka{
@@ -82,7 +82,7 @@ func DefaultConfig() Config {
 			AllowedDirs: allowedDirs,
 		},
 		HTTPStorage: HTTPStorage{
-			Timeout: time.Second * 60,
+			Timeout: Duration(time.Second * 60),
 		},
 		AmazonS3: AmazonS3Storage{
 			AWSConfig: AWSConfig{
@@ -95,7 +95,7 @@ func DefaultConfig() Config {
 	}
 
 	// compute
-	reconcile := time.Minute * 10
+	reconcile := Duration(time.Minute * 10)
 
 	htcondorTemplate, _ := intern.Asset("config/htcondor-template.txt")
 	c.HTCondor.Template = string(htcondorTemplate)

@@ -32,7 +32,7 @@ type Scheduler struct {
 // request the the configured backend schedule them, and
 // act on offers made by the backend.
 func (s *Scheduler) Run(ctx context.Context) error {
-	ticker := time.NewTicker(s.Conf.ScheduleRate)
+	ticker := time.NewTicker(time.Duration(s.Conf.ScheduleRate))
 	for {
 		select {
 		case <-ctx.Done():

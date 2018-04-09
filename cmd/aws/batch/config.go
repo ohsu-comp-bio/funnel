@@ -170,7 +170,7 @@ func DefaultConfig() Config {
 	c.Funnel.DynamoDB.TableBasename = "funnel"
 	c.Funnel.DynamoDB.Region = ""
 	c.Funnel.Worker.WorkDir = "/opt/funnel-work-dir"
-	c.Funnel.Worker.LogUpdateRate = time.Minute * 5
+	c.Funnel.Worker.LogUpdateRate = config.Duration(time.Minute * 5)
 	c.Funnel.Worker.LogTailSize = 10000
 
 	return c

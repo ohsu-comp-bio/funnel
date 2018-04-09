@@ -336,7 +336,7 @@ func (r *DefaultWorker) pollForCancel(pctx context.Context, taskID string, cance
 	// Start a goroutine that polls the server to watch for a canceled state.
 	// If a cancel state is found, "taskctx" is canceled.
 	go func() {
-		ticker := time.NewTicker(r.Conf.PollingRate)
+		ticker := time.NewTicker(time.Duration(r.Conf.PollingRate))
 		defer ticker.Stop()
 
 		for {

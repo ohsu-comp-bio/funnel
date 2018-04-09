@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -21,7 +22,7 @@ type HTTPBackend struct {
 // NewHTTPBackend creates a new HTTPBackend instance.
 func NewHTTPBackend(conf config.HTTPStorage) (*HTTPBackend, error) {
 	client := &http.Client{
-		Timeout: conf.Timeout,
+		Timeout: time.Duration(conf.Timeout),
 	}
 	return &HTTPBackend{client}, nil
 }

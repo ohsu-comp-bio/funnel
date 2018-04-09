@@ -35,7 +35,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 		resources: res,
 		workerRun: NoopWorker,
 		workers:   newRunSet(),
-		timeout:   util.NewIdleTimeout(conf.Node.Timeout),
+		timeout:   util.NewIdleTimeout(time.Duration(conf.Node.Timeout)),
 		state:     NodeState_ALIVE,
 	}
 

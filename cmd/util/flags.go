@@ -76,7 +76,7 @@ func serverFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.Server.HTTPPort, "Server.HTTPPort", flagConf.Server.HTTPPort, "HTTP Port")
 	f.StringVar(&flagConf.Server.RPCPort, "Server.RPCPort", flagConf.Server.RPCPort, "RPC Port")
 	f.StringVar(&flagConf.Server.ServiceName, "Server.ServiceName", flagConf.Server.ServiceName, "Host name or IP")
-	f.Var(flagConf.Server.RPCClientTimeout, "Server.RPCClientTimeout", "Request timeout for RPC client connections")
+	f.Var(&flagConf.Server.RPCClientTimeout, "Server.RPCClientTimeout", "Request timeout for RPC client connections")
 	f.UintVar(&flagConf.Server.RPCClientMaxRetries, "Server.RPCClientMaxRetries", flagConf.Server.RPCClientMaxRetries, "Maximum number of times that a request will be retried for failures")
 
 	return f
@@ -86,8 +86,8 @@ func workerFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
 	f.Int64Var(&flagConf.Worker.LogTailSize, "Worker.LogTailSize", flagConf.Worker.LogTailSize, "Max bytes to store for stdout/stderr")
-	f.Var(flagConf.Worker.LogUpdateRate, "Worker.LogUpdateRate", "How often to send stdout/stderr log updates")
-	f.Var(flagConf.Worker.PollingRate, "Worker.PollingRate", "How often to poll for cancel signals")
+	f.Var(&flagConf.Worker.LogUpdateRate, "Worker.LogUpdateRate", "How often to send stdout/stderr log updates")
+	f.Var(&flagConf.Worker.PollingRate, "Worker.PollingRate", "How often to poll for cancel signals")
 	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working directory")
 	f.BoolVar(&flagConf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", flagConf.Worker.LeaveWorkDir, "Leave working directory after execution")
 
@@ -101,8 +101,8 @@ func nodeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Uint32Var(&flagConf.Node.Resources.Cpus, "Node.Resources.Cpus", flagConf.Node.Resources.Cpus, "Cpus available to Node")
 	f.Float64Var(&flagConf.Node.Resources.RamGb, "Node.Resources.RamGb", flagConf.Node.Resources.RamGb, "Ram (GB) available to Node")
 	f.Float64Var(&flagConf.Node.Resources.DiskGb, "Node.Resources.DiskGb", flagConf.Node.Resources.DiskGb, "Free disk (GB) available to Node")
-	f.Var(flagConf.Node.Timeout, "Node.Timeout", "Node timeout in seconds")
-	f.Var(flagConf.Node.UpdateRate, "Node.UpdateRate", "Node update rate")
+	f.Var(&flagConf.Node.Timeout, "Node.Timeout", "Node timeout in seconds")
+	f.Var(&flagConf.Node.UpdateRate, "Node.UpdateRate", "Node update rate")
 	// TODO Metadata
 
 	return f
@@ -143,7 +143,7 @@ func dbFlags(flagConf *config.Config) *pflag.FlagSet {
 	// mongodb
 	f.StringSliceVar(&flagConf.MongoDB.Addrs, "MongoDB.Addrs", flagConf.MongoDB.Addrs, "Address of a MongoDB seed server. This flag can be used multiple times")
 	f.StringVar(&flagConf.MongoDB.Database, "MongoDB.Database", flagConf.MongoDB.Database, "Database name in MongoDB")
-	f.Var(flagConf.MongoDB.Timeout, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
+	f.Var(&flagConf.MongoDB.Timeout, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
 
 	return f
 }
@@ -169,7 +169,7 @@ func storageFlags(flagConf *config.Config) *pflag.FlagSet {
 
 	// HTTP storage
 	f.BoolVar(&flagConf.HTTPStorage.Disabled, "HTTPStorage.Disabled", flagConf.HTTPStorage.Disabled, "Disable storage backend")
-	f.Var(flagConf.HTTPStorage.Timeout, "HTTPStorage.Timeout", "Timeout in seconds for request")
+	f.Var(&flagConf.HTTPStorage.Timeout, "HTTPStorage.Timeout", "Timeout in seconds for request")
 
 	return f
 }
@@ -193,11 +193,11 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.PBS.Template, "PBS.Template", flagConf.PBS.Template, "Path to submit template file")
 
 	// Scheduler
-	f.Var(flagConf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
+	f.Var(&flagConf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
 	f.IntVar(&flagConf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", flagConf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration")
-	f.Var(flagConf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
-	f.Var(flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
-	f.Var(flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
+	f.Var(&flagConf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
+	f.Var(&flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
+	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
 	// Slurm
 	f.StringVar(&flagConf.Slurm.Template, "Slurm.Template", flagConf.Slurm.Template, "Path to submit template file")

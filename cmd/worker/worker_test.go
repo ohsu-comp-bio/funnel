@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
@@ -19,7 +20,7 @@ func TestPersistentPreRun(t *testing.T) {
 	workDir := path.Join(cwd, "funnel-work-dir")
 
 	fileConf := config.DefaultConfig()
-	tmp, cleanup := config.ToYamlTempFile(fileConf, "testconfig.yaml")
+	tmp, cleanup := util.TempConfigFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 
 	c, h := newCommandHooks()

@@ -1,6 +1,10 @@
 package util
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
 )
@@ -24,4 +28,26 @@ func MergeConfigFileWithFlags(file string, flagConf config.Config) (config.Confi
 	}
 
 	return conf, nil
+}
+
+// TempConfigFile writes the configuration to a temporary file.
+// Returns:
+// - "path" is the path of the file.
+// - "cleanup" can be called to remove the temporary file.
+func TempConfigFile(c config.Config, name string) (path string, cleanup func()) {
+	tmpdir, err := ioutil.TempDir("", "")
+	if err != nil {
+		panic(err)
+	}
+
+	cleanup = func() {
+		os.RemoveAll(tmpdir)
+	}
+
+	p := filepath.Join(tmpdir, name)
+	err = config.ToYamlFile(c, p)
+	if err != nil {
+		panic(err)
+	}
+	return p, cleanup
 }

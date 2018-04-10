@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -13,29 +12,17 @@ import (
 )
 
 // ToYaml formats the configuration into YAML and returns the bytes.
-func ToYaml(c Config) []byte {
-	// TODO handle error
-	yamlstr, _ := yaml.Marshal(c)
-	return yamlstr
+func ToYaml(c Config) ([]byte, error) {
+	return yaml.Marshal(c)
 }
 
 // ToYamlFile writes the configuration to a YAML file.
-func ToYamlFile(c Config, path string) {
-	// TODO handle error
-	ioutil.WriteFile(path, ToYaml(c), 0600)
-}
-
-// ToYamlTempFile writes the configuration to a YAML temp. file.
-func ToYamlTempFile(c Config, name string) (string, func()) {
-	tmpdir, _ := ioutil.TempDir("", "")
-
-	cleanup := func() {
-		os.RemoveAll(tmpdir)
+func ToYamlFile(c Config, path string) error {
+	b, err := ToYaml(c)
+	if err != nil {
+		return err
 	}
-
-	p := filepath.Join(tmpdir, name)
-	ToYamlFile(c, p)
-	return p, cleanup
+	return ioutil.WriteFile(path, b, 0600)
 }
 
 // Parse parses a YAML doc into the given Config instance.

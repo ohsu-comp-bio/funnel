@@ -32,7 +32,7 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 
 	fileConf := config.Config(defaultConf)
 	fileConf.Server.HTTPPort = "8888"
-	tmp, cleanup := config.ToYamlTempFile(fileConf, "testconfig.yaml")
+	tmp, cleanup := TempConfigFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 	result, err = MergeConfigFileWithFlags(tmp, flagConf)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/units"
 	intern "github.com/ohsu-comp-bio/funnel/config/internal"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
@@ -90,7 +91,8 @@ func DefaultConfig() Config {
 			},
 		},
 		Swift: SwiftStorage{
-			MaxRetries: 3,
+			MaxRetries:     3,
+			ChunkSizeBytes: int64(500 * units.MB),
 		},
 	}
 

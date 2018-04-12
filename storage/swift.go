@@ -49,7 +49,7 @@ func NewSwiftBackend(conf config.SwiftStorage) (Backend, error) {
 
 	var chunkSize int64
 	if conf.ChunkSizeBytes < int64(100*units.MB) {
-		chunkSize = int64(100 * units.MB)
+		chunkSize = int64(500 * units.MB)
 	} else if conf.ChunkSizeBytes > int64(5*units.GB) {
 		chunkSize = int64(5 * units.GB)
 	} else {

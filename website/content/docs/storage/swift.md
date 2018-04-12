@@ -22,6 +22,8 @@ Swift:
   TenantName: ""
   TenantID: ""
   RegionName: ""
+  # 500 MB
+  ChunkSizeBytes: 500000000
 ```
 
 ### Example task

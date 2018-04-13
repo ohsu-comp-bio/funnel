@@ -20,43 +20,34 @@ func Create(server string, files []string, writer io.Writer) error {
 		return err
 	}
 
-	res := []string{}
+	var reader io.Reader
+	reader = os.Stdin
 
 	for _, taskFile := range files {
-		var reader io.Reader
-
-		if taskFile == "-" {
-			reader = os.Stdin
-		} else {
-			f, err := os.Open(taskFile)
-			defer f.Close()
-			if err != nil {
-				return err
-			}
-			reader = f
+		f, err := os.Open(taskFile)
+		defer f.Close()
+		if err != nil {
+			return err
 		}
-
-		dec := json.NewDecoder(reader)
-		for {
-			var task tes.Task
-			err := jsonpb.UnmarshalNext(dec, &task)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return fmt.Errorf("can't load task: %s", err)
-			}
-
-			r, err := cli.CreateTask(context.Background(), &task)
-			if err != nil {
-				return err
-			}
-			res = append(res, r.Id)
-		}
+		reader = io.MultiReader(reader, f)
 	}
 
-	for _, x := range res {
-		fmt.Fprintln(writer, x)
+	dec := json.NewDecoder(reader)
+	for {
+		var task tes.Task
+		err := jsonpb.UnmarshalNext(dec, &task)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("can't load task: %s", err)
+		}
+
+		r, err := cli.CreateTask(context.Background(), &task)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(writer, r.Id)
 	}
 
 	return nil

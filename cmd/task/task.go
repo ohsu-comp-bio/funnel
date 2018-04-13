@@ -53,7 +53,6 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	create := &cobra.Command{
 		Use:   "create [task.json ...]",
 		Short: "Create one or more tasks to run on the server.",
-		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return h.Create(tesServer, args, cmd.OutOrStdout())
 		},

@@ -48,6 +48,14 @@ func InitTask(task *Task) error {
 	task.Id = GenerateID()
 	task.State = Queued
 	task.CreationTime = time.Now().Format(time.RFC3339Nano)
+	if task.Resources == nil {
+		task.Resources = &Resources{
+			CpuCores: 1,
+		}
+	}
+	if task.Resources.CpuCores < 1 {
+		task.Resources.CpuCores = 1
+	}
 	if err := Validate(task); err != nil {
 		return fmt.Errorf("invalid task message:\n%s", err)
 	}

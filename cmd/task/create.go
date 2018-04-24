@@ -14,14 +14,11 @@ import (
 // Create runs the "task create" CLI command, connecting to the server,
 // calling CreateTask, and writing output to the given writer.
 // Tasks are loaded from the "files" arg. "files" are file paths to JSON objects.
-func Create(server string, files []string, writer io.Writer) error {
+func Create(server string, files []string, reader io.Reader, writer io.Writer) error {
 	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
 	}
-
-	var reader io.Reader
-	reader = os.Stdin
 
 	for _, taskFile := range files {
 		f, err := os.Open(taskFile)

@@ -53,8 +53,9 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	create := &cobra.Command{
 		Use:   "create [task.json ...]",
 		Short: "Create one or more tasks to run on the server.",
+		Long:  `Tasks may be piped to stdin, e.g. "python generate_tasks.py | funnel task create"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return h.Create(tesServer, args, cmd.OutOrStdout())
+			return h.Create(tesServer, args, os.Stdin, cmd.OutOrStdout())
 		},
 	}
 
@@ -119,7 +120,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 }
 
 type hooks struct {
-	Create func(server string, messages []string, w io.Writer) error
+	Create func(server string, messages []string, r io.Reader, w io.Writer) error
 	Get    func(server string, ids []string, view string, w io.Writer) error
 	List   func(server, view, pageToken, stateFilter string, tagsFilter []string, pageSize uint32, all bool, w io.Writer) error
 	Cancel func(server string, ids []string, w io.Writer) error

@@ -56,7 +56,7 @@ func TestList(t *testing.T) {
 func TestServerDefault(t *testing.T) {
 	cmd, h := newCommandHooks()
 
-	h.Create = func(server string, messages []string, w io.Writer) error {
+	h.Create = func(server string, messages []string, r io.Reader, w io.Writer) error {
 		if server != "http://localhost:8000" {
 			t.Errorf("expected localhost default, got '%s'", server)
 		}
@@ -110,7 +110,7 @@ func TestServerEnv(t *testing.T) {
 
 	cmd, h := newCommandHooks()
 
-	h.Create = func(server string, messages []string, w io.Writer) error {
+	h.Create = func(server string, messages []string, r io.Reader, w io.Writer) error {
 		if server != "foobar" {
 			t.Error("expected foobar")
 		}
@@ -164,7 +164,7 @@ func TestServerFlagOverride(t *testing.T) {
 
 	cmd, h := newCommandHooks()
 
-	h.Create = func(server string, messages []string, w io.Writer) error {
+	h.Create = func(server string, messages []string, r io.Reader, w io.Writer) error {
 		if server != "flagval" {
 			t.Error("expected flagval")
 		}

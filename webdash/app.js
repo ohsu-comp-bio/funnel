@@ -220,7 +220,7 @@ function getServerURL($location) {
   var proto = $location.protocol();
   var port = $location.port();
 
-  // If the port is a standard HTTP(S) port, don"t include it in the URL.
+  // If the port is a standard HTTP(S) port, don't include it in the URL.
   if ((proto == "https" && port == 443) || (proto == "http" && port == 80)) {
     return proto + "://" + $location.host();
   }
@@ -280,7 +280,7 @@ app.controller("TaskInfoController", function($rootScope, $scope, $http, $routeP
 
     for (var i = 0; i < task.logs[0].system_logs.length; i++) {
       var log = task.logs[0].system_logs[i]
-      var logre = /(\w+)="([^"\\]*(?:\\.[^"\\]*)*)"/g;
+      var logre = /(\w+)='([^'\\]*(?:\\.[^'\\]*)*)'/g;
 
       var m;
       var parts = [];

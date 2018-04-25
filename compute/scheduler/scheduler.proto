@@ -31,6 +31,7 @@ message Node {
   string zone = 11;
   string hostname  = 13;
   map<string,string> metadata = 15;
+  repeated string task_ids = 16;
   int64 last_ping = 17;
 }
 

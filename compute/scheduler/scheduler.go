@@ -126,24 +126,23 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	return nil
 }
 
-// checkNodes is used by the scheduler to check for dead/gone nodes.
-// This is not an RPC endpoint
+// checkNodes checks for dead/gone nodes.
 func (s *Scheduler) checkNodes(ctx context.Context) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
 	for id, h := range s.handles {
 		s.updateNodeState(h.node)
+
+    // Clean up tasks assigned to a failed node.
 		if h.node.State == NodeState_GONE {
-			/* TODO get tasks assigned to node
-			for _, tid := range node.TaskIds {
+			for _, tid := range h.node.TaskIds {
 				s.Event.WriteEvent(ctx, events.NewState(tid, tes.State_SYSTEM_ERROR))
 				s.Event.WriteEvent(ctx, events.NewSystemLog(tid, 0, 0, "info",
 					"Cleaning up Task assigned to dead/gone node", map[string]string{
-						"nodeID": node.Id,
+						"nodeID": h.node.Id,
 					}))
 			}
-			*/
 			delete(s.handles, id)
 		}
 	}

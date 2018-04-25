@@ -109,10 +109,14 @@ func (n *NodeProcess) ping(ctx context.Context, stream SchedulerService_NodeChat
 	n.detail.LastPing = time.Now().UnixNano()
 
 	var tasks []*tes.Task
-	n.tasks.Range(func(_, task interface{}) bool {
-		tasks = append(tasks, task.(*tes.Task))
+  var ids []string
+	n.tasks.Range(func(_, rec interface{}) bool {
+    task := rec.(*tes.Task)
+		tasks = append(tasks, task)
+    ids = append(ids, task.Id)
 		return true
 	})
+  n.detail.TaskIds = ids
 	n.detail.Available = availableResources(tasks, &res)
 
 	err = stream.Send(n.detail)

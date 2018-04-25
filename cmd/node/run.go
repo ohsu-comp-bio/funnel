@@ -14,9 +14,7 @@ import (
 
 // Run runs a node with the given config, blocking until the node exits.
 func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
-	if conf.Node.ID == "" {
-		conf.Node.ID = scheduler.GenNodeID("manual")
-	}
+  conf.Node.ID = scheduler.GenNodeID("node")
 
 	w, err := workerCmd.NewWorker(ctx, conf, log)
 	if err != nil {

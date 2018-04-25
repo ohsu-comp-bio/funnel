@@ -22,6 +22,7 @@ import (
 // and logging.
 type DefaultWorker struct {
 	Conf        config.Worker
+	DockerConf  config.Docker
 	Store       storage.Storage
 	TaskReader  TaskReader
 	EventWriter events.Writer
@@ -157,15 +158,15 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 				Conf:  r.Conf,
 				Event: event.NewExecutorWriter(uint32(i)),
 				Command: &DockerCommand{
-					Image:         d.Image,
-					Command:       d.Command,
-					Env:           d.Env,
-					Volumes:       mapper.Volumes,
-					Workdir:       d.Workdir,
-					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
-					// TODO make RemoveContainer configurable
-					RemoveContainer: true,
-					Event:           event.NewExecutorWriter(uint32(i)),
+					Image:          d.Image,
+					Command:        d.Command,
+					Env:            d.Env,
+					Volumes:        mapper.Volumes,
+					Workdir:        d.Workdir,
+					ContainerName:  fmt.Sprintf("%s-%d", task.Id, i),
+					Event:          event.NewExecutorWriter(uint32(i)),
+					LeaveContainer: r.DockerConf.LeaveContainer,
+					BaseArgs:       r.DockerConf.BaseArgs,
 				},
 			}
 

@@ -15,17 +15,36 @@ import (
 
 // DockerCommand is responsible for configuring and running a docker container.
 type DockerCommand struct {
-	Image           string
-	Command         []string
-	Volumes         []Volume
-	Workdir         string
-	ContainerName   string
-	RemoveContainer bool
-	Env             map[string]string
-	Stdin           io.Reader
-	Stdout          io.Writer
-	Stderr          io.Writer
-	Event           *events.ExecutorWriter
+	Image          string
+	Command        []string
+	Volumes        []Volume
+	Workdir        string
+	ContainerName  string
+	LeaveContainer bool
+	Env            map[string]string
+	Stdin          io.Reader
+	Stdout         io.Writer
+	Stderr         io.Writer
+	Event          *events.ExecutorWriter
+	BaseArgs       []string
+}
+
+func (dcmd DockerCommand) cmd(ctx context.Context, args ...string) *exec.Cmd {
+
+	// Allow base args to be overridden by config. Default to "docker".
+	baseArgs := dcmd.BaseArgs
+	if len(baseArgs) == 0 {
+		baseArgs = []string{"docker"}
+	}
+
+	cmd := baseArgs[0]
+	var argv []string
+	if len(baseArgs) > 1 {
+		argv = append(argv, baseArgs[1:]...)
+	}
+	argv = append(argv, args...)
+
+	return exec.CommandContext(ctx, cmd, argv...)
 }
 
 // Run runs the Docker command and blocks until done.
@@ -38,12 +57,12 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 		return derr
 	}
 
-	pullcmd := exec.Command("docker", "pull", dcmd.Image)
+	pullcmd := dcmd.cmd(ctx, "pull", dcmd.Image)
 	pullcmd.Run()
 
 	args := []string{"run", "-i", "--read-only"}
 
-	if dcmd.RemoveContainer {
+	if !dcmd.LeaveContainer {
 		args = append(args, "--rm")
 	}
 
@@ -70,8 +89,8 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	args = append(args, dcmd.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
-	cmd := exec.Command("docker", args...)
+	cmd := dcmd.cmd(ctx, args...)
+	dcmd.Event.Info("Running command", "cmd", formatCmd(cmd))
 
 	if dcmd.Stdin != nil {
 		cmd.Stdin = dcmd.Stdin
@@ -132,7 +151,7 @@ func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			cmd := exec.CommandContext(ctx, "docker", "inspect", dcmd.ContainerName)
+			cmd := dcmd.cmd(ctx, "inspect", dcmd.ContainerName)
 			out, err := cmd.Output()
 			if err == nil {
 				meta := []metadata{}
@@ -147,4 +166,8 @@ func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func formatCmd(cmd *exec.Cmd) string {
+	return cmd.Path + " " + strings.Join(cmd.Args, " ")
 }

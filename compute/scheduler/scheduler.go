@@ -166,13 +166,16 @@ func (s *Scheduler) schedule(task *tes.Task) error {
 		return fmt.Errorf("no offer for task %s", task.Id)
 	}
 	h := s.handles[offer.Node.Id]
-	return h.send(task)
 
-	/* TODO move to node
-	s.Event.WriteEvent(ctx, events.NewMetadata(task.Id, 0, map[string]string{
-	  "nodeID", offer.Node.Id,
+  err := h.send(task)
+  if err != nil {
+    return fmt.Errorf("sending task to node: %s", err)
+  }
+
+	s.Event.WriteEvent(context.Background(), events.NewMetadata(task.Id, 0, map[string]string{
+	  "nodeID": offer.Node.Id,
 	}))
-	*/
+  return nil
 }
 
 // updateNodeState checks whether a node is dead/gone based on the last

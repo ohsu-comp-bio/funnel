@@ -45,7 +45,7 @@ func NewScheduler(conf config.Scheduler, log *logger.Logger, event events.Writer
 
 type nodeHandle struct {
 	node *Node
-	send func(*tes.Task) error
+	send func(*Control) error
 }
 
 func (s *Scheduler) NodeChat(stream SchedulerService_NodeChatServer) error {
@@ -91,6 +91,15 @@ func (s *Scheduler) GetNode(ctx context.Context, req *GetNodeRequest) (*Node, er
 		return nil, status.Errorf(codes.NotFound, "node not found: %s", req.Id)
 	}
 	return h.node, nil
+}
+
+func (s *Scheduler) DrainNode(ctx context.Context, req *DrainNodeRequest) (*DrainNodeResponse, error) {
+	h, ok := s.handles[req.Id]
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "node not found: %s", req.Id)
+	}
+  err := h.send(&Control{Type: ControlType_DRAIN_NODE})
+	return &DrainNodeResponse{}, err
 }
 
 func (s *Scheduler) CreateTask(ctx context.Context, task *tes.Task) error {
@@ -166,7 +175,7 @@ func (s *Scheduler) schedule(task *tes.Task) error {
 	}
 	h := s.handles[offer.Node.Id]
 
-  err := h.send(task)
+  err := h.send(&Control{Type: ControlType_CREATE_TASK, Task: task})
   if err != nil {
     return fmt.Errorf("sending task to node: %s", err)
   }

@@ -52,6 +52,7 @@ type NodeProcess struct {
 	tasks     sync.Map
 	waitGroup sync.WaitGroup
 	workerRun Worker
+  stream SchedulerService_NodeChatClient
 }
 
 // Run runs a node with the given config. This is responsible for communication
@@ -65,16 +66,16 @@ func (n *NodeProcess) Run(ctx context.Context) error {
 	defer conn.Close()
 
 	client := NewSchedulerServiceClient(conn)
-	stream, err := client.NodeChat(ctx)
+	n.stream, err = client.NodeChat(ctx)
 	if err != nil {
 		return fmt.Errorf("connecting to server: %s", err)
 	}
-	defer stream.CloseSend()
+	defer n.stream.CloseSend()
 
-	go n.listen(ctx, stream)
+	go n.listen(ctx)
 
 	for range util.Ticker(ctx, time.Duration(n.conf.Node.UpdateRate)) {
-		err := n.ping(ctx, stream)
+		err := n.ping()
 		if err != nil {
 			n.log.Error("error detecting resources", "error", err)
 		}
@@ -95,7 +96,7 @@ func (n *NodeProcess) Run(ctx context.Context) error {
 	return nil
 }
 
-func (n *NodeProcess) ping(ctx context.Context, stream SchedulerService_NodeChatClient) error {
+func (n *NodeProcess) ping() error {
 
 	if n.detail.Hostname == "" {
 		n.detail.Hostname = hostname()
@@ -119,24 +120,34 @@ func (n *NodeProcess) ping(ctx context.Context, stream SchedulerService_NodeChat
   n.detail.TaskIds = ids
 	n.detail.Available = availableResources(tasks, &res)
 
-	err = stream.Send(n.detail)
+	err = n.stream.Send(n.detail)
 	if err != nil {
 		return fmt.Errorf("sending update: %s", err)
 	}
 	return nil
 }
 
-func (n *NodeProcess) listen(ctx context.Context, stream SchedulerService_NodeChatClient) {
+func (n *NodeProcess) Drain() {
+  n.detail.State = NodeState_DRAIN
+  n.ping()
+}
+
+func (n *NodeProcess) listen(ctx context.Context) {
 	for {
-		task, err := stream.Recv()
+		control, err := n.stream.Recv()
 		if err == io.EOF {
 			return
 		}
 		if err != nil {
-			n.log.Error("error receiving task", "error", err)
+			n.log.Error("error receiving control", "error", err)
 			return
 		}
-		go n.runTask(ctx, task)
+    switch control.Type {
+    case ControlType_CREATE_TASK:
+		  go n.runTask(ctx, control.Task)
+    case ControlType_DRAIN_NODE:
+      n.Drain()
+    }
 	}
 }
 

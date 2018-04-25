@@ -44,11 +44,27 @@ message ListNodesResponse {
   repeated Node nodes = 1;
 }
 
+enum ControlType {
+  UNKNOWN = 0;
+  CREATE_TASK = 1;
+  DRAIN_NODE = 2;
+}
+
+message Control {
+  ControlType type = 1;
+  tes.Task task = 2;
+}
+
+message DrainNodeRequest {
+  string id = 1;
+}
+message DrainNodeResponse {}
+
 /**
  * Scheduler Service
  */
 service SchedulerService {
-  rpc NodeChat(stream Node) returns (stream tes.Task) {}
+  rpc NodeChat(stream Node) returns (stream Control) {}
 
   rpc ListNodes(ListNodesRequest) returns (ListNodesResponse) {
     option (google.api.http) = {
@@ -59,6 +75,12 @@ service SchedulerService {
   rpc GetNode(GetNodeRequest) returns (Node) {
     option (google.api.http) = {
       get: "/v1/nodes/{id}"
+    };
+  };
+
+  rpc DrainNode(DrainNodeRequest) returns (DrainNodeResponse) {
+    option (google.api.http) = {
+      post: "/v1/nodes/{id}:drain"
     };
   };
 }

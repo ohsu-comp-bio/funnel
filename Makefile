@@ -29,7 +29,8 @@ proto:
 		tes.proto
 	@cd compute/scheduler && protoc \
 		$(PROTO_INC) \
-		--go_out=plugins=grpc:. \
+		-I ../../ \
+		--go_out=Mtes/tes.proto=github.com/ohsu-comp-bio/funnel/tes,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		scheduler.proto
 	@cd events && protoc \

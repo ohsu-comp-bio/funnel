@@ -12,6 +12,16 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+type ComputeBackend interface {
+	CreateTask(context.Context, *tes.Task) error
+	CancelTask(context.Context, string) error
+}
+
+type NoopCompute struct{}
+
+func (NoopCompute) CreateTask(context.Context, *tes.Task) error { return nil }
+func (NoopCompute) CancelTask(context.Context, string) error    { return nil }
+
 // TaskService is a wrapper which handles common TES Task Service operations,
 // such as initializing a task when CreateTask is called. The TaskService is backed by
 // two parts: a read API which provides the GetTask and ListTasks endpoints, and a write
@@ -24,7 +34,7 @@ import (
 type TaskService struct {
 	Name    string
 	Event   events.Writer
-	Compute events.Writer
+	Compute ComputeBackend
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
 }
@@ -42,7 +52,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	}
 
 	// dispatch to compute backend
-	go ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
+	go ts.Compute.CreateTask(ctx, task)
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }
@@ -65,13 +75,10 @@ func (ts *TaskService) ListTasks(ctx context.Context, req *tes.ListTasksRequest)
 // CancelTask cancels a task
 func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	// dispatch to compute backend
-	err := ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
-	if err != nil {
-		ts.Log.Error("compute backend failed to cancel task", "taskID", req.Id, "error", err)
-	}
+	ts.Compute.CancelTask(ctx, req.Id)
 
 	// updated database and other event streams
-	err = ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
 	if err == tes.ErrNotFound {
 		err = grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
 	}

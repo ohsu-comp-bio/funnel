@@ -9,7 +9,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
 	"github.com/ohsu-comp-bio/funnel/compute/local"
-	"github.com/ohsu-comp-bio/funnel/compute/noop"
 	"github.com/ohsu-comp-bio/funnel/compute/pbs"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
@@ -54,7 +53,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 
 	var database Database
 	var reader tes.ReadOnlyServer
-	var nodes scheduler.SchedulerServiceServer
 	var sched *scheduler.Scheduler
 	var queue scheduler.TaskQueue
 
@@ -69,7 +67,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 		database = b
 		reader = b
-		nodes = b
 		queue = b
 		writers = append(writers, b)
 
@@ -98,7 +95,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 		database = e
 		reader = e
-		nodes = e
 		queue = e
 		writers = append(writers, e)
 
@@ -109,7 +105,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 		database = m
 		reader = m
-		nodes = m
 		queue = m
 		writers = append(writers, m)
 
@@ -163,28 +158,18 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
 
 	// Compute
-	var compute events.Writer
+	var compute server.ComputeBackend
 	switch strings.ToLower(conf.Compute) {
 	case "manual":
-		if nodes == nil {
-			return nil, fmt.Errorf(
-				"cannot enable manual compute backend, database %s does not implement "+
-					"the scheduler service", conf.Database)
-		}
 		if queue == nil {
 			return nil, fmt.Errorf(
 				"cannot enable manual compute backend, database %s does not implement "+
 					"a task queue", conf.Database)
 		}
 
-		sched = &scheduler.Scheduler{
-			Conf:  conf.Scheduler,
-			Log:   log.Sub("scheduler"),
-			Nodes: nodes,
-			Queue: queue,
-			Event: &events.ErrLogger{Writer: writer, Log: log.Sub("scheduler")},
-		}
-		compute = events.Noop{}
+		ev := &events.ErrLogger{Writer: writer, Log: log.Sub("scheduler")}
+		sched = scheduler.NewScheduler(conf.Scheduler, log.Sub("scheduler"), ev)
+		compute = sched
 
 	case "aws-batch":
 		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, writer)
@@ -203,7 +188,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	case "htcondor":
 		compute = htcondor.NewBackend(ctx, conf, reader, writer)
 	case "noop":
-		compute = noop.NewBackend()
+		compute = server.NoopCompute{}
 	case "pbs":
 		compute = pbs.NewBackend(ctx, conf, reader, writer)
 	case "slurm":
@@ -230,7 +215,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 				Log:     log,
 			},
 			Events: &events.Service{Writer: writer},
-			Nodes:  nodes,
+			Nodes:  sched,
 		},
 		Scheduler: sched,
 	}, nil

@@ -45,25 +45,8 @@ type Backend struct {
 	database tes.ReadOnlyServer
 }
 
-// WriteEvent writes an event to the compute backend.
-// Currently, only TASK_CREATED is handled, which calls Submit.
-func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
-	switch ev.Type {
-	case events.Type_TASK_CREATED:
-		return b.Submit(ev.GetTask())
-
-	case events.Type_TASK_STATE:
-		if ev.GetState() == tes.State_CANCELED {
-			return b.Cancel(ctx, ev.Id)
-		}
-	}
-	return nil
-}
-
 // Submit submits a task to the AWS batch service.
-func (b *Backend) Submit(task *tes.Task) error {
-	ctx := context.Background()
-
+func (b *Backend) CreateTask(ctx context.Context, task *tes.Task) error {
 	req := &batch.SubmitJobInput{
 		// JobDefinition: aws.String(b.jobDef),
 		JobDefinition: aws.String(b.conf.JobDefinition),
@@ -110,7 +93,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 }
 
 // Cancel removes tasks from the AWS batch job queue.
-func (b *Backend) Cancel(ctx context.Context, taskID string) error {
+func (b *Backend) CancelTask(ctx context.Context, taskID string) error {
 	task, err := b.database.GetTask(
 		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_BASIC},
 	)

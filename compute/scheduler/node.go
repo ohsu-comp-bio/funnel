@@ -1,223 +1,153 @@
 package scheduler
 
+/*
+TODO goals
+
+- easy redeployment of upgraded node version
+- no more node state concurrency issues
+- faster node response time/scheduling
+- correct processing of task queue
+*/
+
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/ohsu-comp-bio/funnel/util/rpc"
 )
 
-// NewNodeProcess returns a new Node instance
-func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
+// NewNodeProcess returns a new NodeProcess instance.
+func NewNodeProcess(conf config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
-	cli, err := NewClient(ctx, conf.Server)
-	if err != nil {
-		return nil, err
-	}
-
-	err = fsutil.EnsureDir(conf.Worker.WorkDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Detect available resources at startup
-	res, derr := detectResources(conf.Node, conf.Worker.WorkDir)
-	if derr != nil {
-		log.Error("error detecting resources", "error", derr)
-	}
-
-	timeout := util.NewIdleTimeout(time.Duration(conf.Node.Timeout))
-	state := NodeState_UNINITIALIZED
-
 	return &NodeProcess{
-		conf:      conf,
-		client:    cli,
-		log:       log,
-		resources: res,
+		conf: conf,
+		log:  log,
+		detail: &Node{
+			Id:          conf.Node.ID,
+			State:       NodeState_ALIVE,
+			Preemptible: conf.Node.Preemptible,
+			Zone:        conf.Node.Zone,
+			Hostname:    hostname(),
+			Metadata:    conf.Node.Metadata,
+		},
 		workerRun: factory,
-		workers:   newRunSet(),
-		timeout:   timeout,
-		state:     state,
 	}, nil
 }
 
 // NodeProcess is a structure used for tracking available resources on a compute resource.
 type NodeProcess struct {
 	conf      config.Config
-	client    Client
 	log       *logger.Logger
-	resources Resources
+	detail    *Node
+	tasks     sync.Map
+	waitGroup sync.WaitGroup
 	workerRun Worker
-	workers   *runSet
-	timeout   util.IdleTimeout
-	state     NodeState
 }
 
 // Run runs a node with the given config. This is responsible for communication
 // with the server and starting task workers
-func (n *NodeProcess) Run(ctx context.Context) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+func (n *NodeProcess) Run(ctx context.Context) error {
 
-	n.log.Info("Starting node")
-	n.state = NodeState_ALIVE
-	n.checkConnection(ctx)
-	n.sync(ctx)
-
-	ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-n.timeout.Done():
-			cancel()
-
-		case <-ctx.Done():
-			n.timeout.Stop()
-
-			// The node gets 10 seconds to do a final sync with the scheduler.
-			stopCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-			defer cancel()
-
-			n.state = NodeState_GONE
-			n.sync(stopCtx)
-			// close grpc client connection
-			n.client.Close()
-
-			// The workers get 10 seconds to finish up.
-			n.workers.Wait(time.Second * 10)
-			return
-
-		case <-ticker.C:
-			n.sync(ctx)
-			n.checkIdleTimer()
-		}
-	}
-}
-
-func (n *NodeProcess) checkConnection(ctx context.Context) {
-	_, err := n.client.GetNode(ctx, &GetNodeRequest{Id: n.conf.Node.ID})
-
-	// If its a 404 error create a new node
-	s, _ := status.FromError(err)
-	if s.Code() != codes.NotFound {
-		n.log.Error("Couldn't contact server.", err)
-	} else {
-		n.log.Info("Successfully connected to server.")
-	}
-}
-
-// sync syncs the node's state with the server. It reports task state changes,
-// handles signals from the server (new task, cancel task, etc), reports resources, etc.
-//
-// TODO Sync should probably use a channel to sync data access.
-//      Probably only a problem for test code, where Sync is called directly.
-func (n *NodeProcess) sync(ctx context.Context) {
-	var r *Node
-	var err error
-
-	r, err = n.client.GetNode(ctx, &GetNodeRequest{Id: n.conf.Node.ID})
+	conn, err := rpc.Dial(ctx, n.conf.Server)
 	if err != nil {
-		// If its a 404 error create a new node
-		s, _ := status.FromError(err)
-		if s.Code() != codes.NotFound {
-			n.log.Error("Couldn't get node state during sync.", err)
-			return
+		return fmt.Errorf("connecting to server: %s", err)
+	}
+	defer conn.Close()
+
+	client := NewSchedulerServiceClient(conn)
+	stream, err := client.NodeChat(ctx)
+	if err != nil {
+		return fmt.Errorf("connecting to server: %s", err)
+	}
+	defer stream.CloseSend()
+
+	go n.listen(ctx, stream)
+
+	for range util.Ticker(ctx, time.Duration(n.conf.Node.UpdateRate)) {
+		err := n.ping(ctx, stream)
+		if err != nil {
+			n.log.Error("error detecting resources", "error", err)
 		}
-		n.log.Info("Starting initial node sync")
-		r = &Node{Id: n.conf.Node.ID}
 	}
 
-	// Start task workers. runSet will track task IDs
-	// to ensure there's only one worker per ID, so it's ok
-	// to call this multiple times with the same task ID.
-	for _, id := range r.TaskIds {
-		if n.workers.Add(id) {
-			go n.runTask(ctx, id)
-		}
+	// The workers get 10 seconds to finish up.
+	timeout := time.After(10 * time.Second)
+	done := make(chan struct{})
+	go func() {
+		n.waitGroup.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-timeout:
+	}
+	return nil
+}
+
+func (n *NodeProcess) ping(ctx context.Context, stream SchedulerService_NodeChatClient) error {
+
+	if n.detail.Hostname == "" {
+		n.detail.Hostname = hostname()
 	}
 
-	// Node data has been updated. Send back to server for database update.
-	var derr error
-	n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
-	if derr != nil {
-		n.log.Error("error detecting resources", "error", derr)
+	res, err := detectResources(n.conf.Node, n.conf.Worker.WorkDir)
+	if err != nil {
+		return fmt.Errorf("detecting resources: %s", err)
 	}
+	n.detail.Resources = &res
+	n.detail.LastPing = time.Now().UnixNano()
 
-	// Merge metadata
-	meta := map[string]string{}
-	for k, v := range n.conf.Node.Metadata {
-		meta[k] = v
-	}
-	for k, v := range r.GetMetadata() {
-		meta[k] = v
-	}
-
-	_, err = n.client.PutNode(context.Background(), &Node{
-		Id:        n.conf.Node.ID,
-		Resources: &n.resources,
-		State:     n.state,
-		Version:   r.GetVersion(),
-		Metadata:  meta,
-		TaskIds:   r.TaskIds,
+	var tasks []*tes.Task
+	n.tasks.Range(func(_, task interface{}) bool {
+		tasks = append(tasks, task.(*tes.Task))
+		return true
 	})
+	n.detail.Available = availableResources(tasks, &res)
+
+	err = stream.Send(n.detail)
 	if err != nil {
-		n.log.Error("Couldn't save node update. Recovering.", err)
+		return fmt.Errorf("sending update: %s", err)
+	}
+	return nil
+}
+
+func (n *NodeProcess) listen(ctx context.Context, stream SchedulerService_NodeChatClient) {
+	for {
+		task, err := stream.Recv()
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			n.log.Error("error receiving task", "error", err)
+			return
+		}
+		go n.runTask(ctx, task)
 	}
 }
 
-func (n *NodeProcess) runTask(ctx context.Context, id string) {
-	log := n.log.WithFields("ns", "worker", "taskID", id)
+func (n *NodeProcess) runTask(ctx context.Context, task *tes.Task) {
+
+	_, exists := n.tasks.LoadOrStore(task.Id, task)
+	if exists {
+		return
+	}
+
+	log := n.log.WithFields("ns", "worker", "taskID", task.Id)
 	log.Info("Running task")
 
-	defer n.workers.Remove(id)
-	defer func() {
-		// task cannot fully complete until it has successfully removed the
-		// assigned ID from the node database. this helps prevent tasks from
-		// running multiple times.
-		ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				r, err := n.client.GetNode(ctx, &GetNodeRequest{Id: n.conf.Node.ID})
-				if err != nil {
-					log.Error("couldn't get node state during task sync.", err)
-					// break out of "select", but not "for".
-					// i.e. try again later
-					break
-				}
-
-				// Find the finished task ID in the node's assigned IDs and remove it.
-				var ids []string
-				for _, tid := range r.TaskIds {
-					if tid != id {
-						ids = append(ids, tid)
-					}
-				}
-				r.TaskIds = ids
-
-				_, err = n.client.PutNode(ctx, r)
-				if err != nil {
-					log.Error("couldn't save node update during task sync.", err)
-					// break out of "select", but not "for".
-					// i.e. try again later
-					break
-				}
-				// Update was successful, return.
-				return
-			}
-		}
-	}()
+	n.waitGroup.Add(1)
+	defer n.waitGroup.Done()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -225,7 +155,7 @@ func (n *NodeProcess) runTask(ctx context.Context, id string) {
 		}
 	}()
 
-	err := n.workerRun(ctx, id)
+	err := n.workerRun(ctx, task.Id)
 	if err != nil {
 		log.Error("error running task", err)
 		return
@@ -234,14 +164,58 @@ func (n *NodeProcess) runTask(ctx context.Context, id string) {
 	log.Info("Task complete")
 }
 
-// Check if the node is idle. If so, start the timeout timer.
-func (n *NodeProcess) checkIdleTimer() {
-	// The pool is idle if there are no task workers.
-	// The pool should not time out if it's not alive (e.g. if it's initializing)
-	idle := n.workers.Count() == 0 && n.state == NodeState_ALIVE
-	if idle {
-		n.timeout.Start()
-	} else {
-		n.timeout.Stop()
+// availableResources calculates available resources given a list of tasks
+// and base resources.
+func availableResources(tasks []*tes.Task, res *Resources) *Resources {
+	a := &Resources{
+		Cpus:   res.GetCpus(),
+		RamGb:  res.GetRamGb(),
+		DiskGb: res.GetDiskGb(),
 	}
+	for _, t := range tasks {
+		a = subtractResources(t, a)
+	}
+	return a
+}
+
+// subtractResources subtracts the resources requested by "task" from
+// the node resources "in".
+func subtractResources(t *tes.Task, in *Resources) *Resources {
+	out := &Resources{
+		Cpus:   in.GetCpus(),
+		RamGb:  in.GetRamGb(),
+		DiskGb: in.GetDiskGb(),
+	}
+	tres := t.GetResources()
+
+	// Cpus are represented by an unsigned int, and if we blindly
+	// subtract it will rollover to a very large number. So check first.
+	rcpus := tres.GetCpuCores()
+	if rcpus >= out.Cpus {
+		out.Cpus = 0
+	} else {
+		out.Cpus -= rcpus
+	}
+
+	out.RamGb -= tres.GetRamGb()
+	out.DiskGb -= tres.GetDiskGb()
+
+	// Check minimum values.
+	if out.Cpus < 0 {
+		out.Cpus = 0
+	}
+	if out.RamGb < 0.0 {
+		out.RamGb = 0.0
+	}
+	if out.DiskGb < 0.0 {
+		out.DiskGb = 0.0
+	}
+	return out
+}
+
+func hostname() string {
+	if name, err := os.Hostname(); err == nil {
+		return name
+	}
+	return ""
 }

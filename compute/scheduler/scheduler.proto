@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package scheduler;
 
+import "tes/tes.proto";
 import "google/api/annotations.proto";
 
 message Resources {
@@ -18,6 +19,7 @@ enum NodeState {
   DEAD = 2;
   GONE = 3;
   INITIALIZING = 4;
+  DRAIN = 5;
 }
 
 message Node {
@@ -28,10 +30,7 @@ message Node {
   bool preemptible = 9;
   string zone = 11;
   string hostname  = 13;
-  // Timestamp version of the record in the database. Used to prevent write conflicts and as the last ping time.
-  int64 version = 14;
   map<string,string> metadata = 15;
-  repeated string task_ids = 16;
   int64 last_ping = 17;
 }
 
@@ -44,15 +43,11 @@ message ListNodesResponse {
   repeated Node nodes = 1;
 }
 
-message PutNodeResponse {}
-message DeleteNodeResponse {}
-
 /**
  * Scheduler Service
  */
 service SchedulerService {
-  rpc PutNode(Node) returns (PutNodeResponse) {};
-  rpc DeleteNode(Node) returns (DeleteNodeResponse) {};
+  rpc NodeChat(stream Node) returns (stream tes.Task) {}
 
   rpc ListNodes(ListNodesRequest) returns (ListNodesResponse) {
     option (google.api.http) = {

@@ -113,8 +113,10 @@ type Node struct {
 	// -1 means there is no timeout. 0 means timeout immediately after the first task.
 	Timeout Duration
 	// How often the node sends update requests to the server.
-	UpdateRate Duration
-	Metadata   map[string]string
+	UpdateRate  Duration
+	Metadata    map[string]string
+	Preemptible bool
+	Zone        string
 }
 
 // Worker contains worker configuration.

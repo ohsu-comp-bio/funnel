@@ -1,14 +1,5 @@
 package scheduler
 
-/*
-TODO goals
-
-- easy redeployment of upgraded node version
-- no more node state concurrency issues
-- faster node response time/scheduling
-- correct processing of task queue
-*/
-
 import (
 	"context"
 	"fmt"
@@ -52,7 +43,7 @@ type NodeProcess struct {
 	tasks     sync.Map
 	waitGroup sync.WaitGroup
 	workerRun Worker
-  stream SchedulerService_NodeChatClient
+	stream    SchedulerService_NodeChatClient
 }
 
 // Run runs a node with the given config. This is responsible for communication
@@ -110,14 +101,14 @@ func (n *NodeProcess) ping() error {
 	n.detail.LastPing = time.Now().UnixNano()
 
 	var tasks []*tes.Task
-  var ids []string
+	var ids []string
 	n.tasks.Range(func(_, rec interface{}) bool {
-    task := rec.(*tes.Task)
+		task := rec.(*tes.Task)
 		tasks = append(tasks, task)
-    ids = append(ids, task.Id)
+		ids = append(ids, task.Id)
 		return true
 	})
-  n.detail.TaskIds = ids
+	n.detail.TaskIds = ids
 	n.detail.Available = availableResources(tasks, &res)
 
 	err = n.stream.Send(n.detail)
@@ -128,8 +119,8 @@ func (n *NodeProcess) ping() error {
 }
 
 func (n *NodeProcess) Drain() {
-  n.detail.State = NodeState_DRAIN
-  n.ping()
+	n.detail.State = NodeState_DRAIN
+	n.ping()
 }
 
 func (n *NodeProcess) listen(ctx context.Context) {
@@ -142,12 +133,12 @@ func (n *NodeProcess) listen(ctx context.Context) {
 			n.log.Error("error receiving control", "error", err)
 			return
 		}
-    switch control.Type {
-    case ControlType_CREATE_TASK:
-		  go n.runTask(ctx, control.Task)
-    case ControlType_DRAIN_NODE:
-      n.Drain()
-    }
+		switch control.Type {
+		case ControlType_CREATE_TASK:
+			go n.runTask(ctx, control.Task)
+		case ControlType_DRAIN_NODE:
+			n.Drain()
+		}
 	}
 }
 
@@ -157,6 +148,7 @@ func (n *NodeProcess) runTask(ctx context.Context, task *tes.Task) {
 	if exists {
 		return
 	}
+	defer n.tasks.Delete(task.Id)
 
 	log := n.log.WithFields("ns", "worker", "taskID", task.Id)
 	log.Info("Running task")

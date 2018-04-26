@@ -192,8 +192,6 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.PBS.Template, "PBS.Template", flagConf.PBS.Template, "Path to submit template file")
 
 	// Scheduler
-	f.Var(&flagConf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
-	f.IntVar(&flagConf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", flagConf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration")
 	f.Var(&flagConf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
 	f.Var(&flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
 	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")

@@ -54,7 +54,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	var database Database
 	var reader tes.ReadOnlyServer
 	var sched *scheduler.Scheduler
-	var queue scheduler.TaskQueue
 
 	writers := events.MultiWriter{}
 
@@ -67,7 +66,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 		database = b
 		reader = b
-		queue = b
 		writers = append(writers, b)
 
 	case "datastore":
@@ -95,7 +93,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 		database = e
 		reader = e
-		queue = e
 		writers = append(writers, e)
 
 	case "mongodb":
@@ -105,7 +102,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 		database = m
 		reader = m
-		queue = m
 		writers = append(writers, m)
 
 	default:
@@ -161,14 +157,11 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	var compute server.ComputeBackend
 	switch strings.ToLower(conf.Compute) {
 	case "manual":
-		if queue == nil {
-			return nil, fmt.Errorf(
-				"cannot enable manual compute backend, database %s does not implement "+
-					"a task queue", conf.Database)
-		}
-
 		ev := &events.ErrLogger{Writer: writer, Log: log.Sub("scheduler")}
-		sched = scheduler.NewScheduler(conf.Scheduler, log.Sub("scheduler"), ev)
+		sched, err = scheduler.NewScheduler(conf.Scheduler, log.Sub("scheduler"), ev)
+		if err != nil {
+			return nil, err
+		}
 		compute = sched
 
 	case "aws-batch":
@@ -234,9 +227,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// Start Scheduler
 	if s.Scheduler != nil {
-		go func() {
-			errch <- s.Scheduler.Run(ctx)
-		}()
+		go s.Scheduler.Run(ctx)
 	}
 
 	// Block until done.

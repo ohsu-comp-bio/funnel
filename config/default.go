@@ -41,8 +41,6 @@ func DefaultConfig() Config {
 		// funnel components
 		Server: server,
 		Scheduler: Scheduler{
-			ScheduleRate:    Duration(time.Second),
-			ScheduleChunk:   10,
 			NodePingTimeout: Duration(time.Minute),
 			NodeInitTimeout: Duration(time.Minute * 5),
 			NodeDeadTimeout: Duration(time.Minute * 5),

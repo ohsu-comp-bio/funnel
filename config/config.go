@@ -86,10 +86,6 @@ func (c *Server) RPCAddress() string {
 
 // Scheduler contains funnel's basic scheduler configuration.
 type Scheduler struct {
-	// How often to run a scheduler iteration.
-	ScheduleRate Duration
-	// How many tasks to schedule in one iteration.
-	ScheduleChunk int
 	// How long to wait for a node ping before marking it as dead
 	NodePingTimeout Duration
 	// How long to wait for node initialization before marking it dead

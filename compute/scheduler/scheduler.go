@@ -18,6 +18,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
 // Scheduler handles scheduling tasks to nodes and support many backends.
@@ -38,9 +39,14 @@ type nodeHandle struct {
 }
 
 func NewScheduler(conf config.Scheduler, log *logger.Logger, event events.Writer) (*Scheduler, error) {
+  err := fsutil.EnsureDir(conf.DBPath)
+  if err != nil {
+    return nil, fmt.Errorf("creating database directory: %s", err)
+  }
+
 	opts := badger.DefaultOptions
-	opts.Dir = "badger"
-	opts.ValueDir = "badger"
+	opts.Dir = conf.DBPath
+	opts.ValueDir = conf.DBPath
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %s", err)

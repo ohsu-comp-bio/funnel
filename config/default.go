@@ -41,6 +41,7 @@ func DefaultConfig() Config {
 		// funnel components
 		Server: server,
 		Scheduler: Scheduler{
+      DBPath: path.Join(workDir, "scheduler.db"),
 			NodePingTimeout: Duration(time.Minute),
 			NodeInitTimeout: Duration(time.Minute * 5),
 			NodeDeadTimeout: Duration(time.Minute * 5),

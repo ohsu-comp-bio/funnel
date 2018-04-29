@@ -46,7 +46,7 @@ type Backend struct {
 }
 
 // Submit submits a task to the AWS batch service.
-func (b *Backend) CreateTask(ctx context.Context, task *tes.Task) error {
+func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 	req := &batch.SubmitJobInput{
 		// JobDefinition: aws.String(b.jobDef),
 		JobDefinition: aws.String(b.conf.JobDefinition),
@@ -93,7 +93,7 @@ func (b *Backend) CreateTask(ctx context.Context, task *tes.Task) error {
 }
 
 // Cancel removes tasks from the AWS batch job queue.
-func (b *Backend) CancelTask(ctx context.Context, taskID string) error {
+func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 	task, err := b.database.GetTask(
 		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_BASIC},
 	)

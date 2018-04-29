@@ -12,15 +12,21 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// ComputeBackend is an interface implemented by backends which
+// handle scheduling and executing tasks.
 type ComputeBackend interface {
-	CreateTask(context.Context, *tes.Task) error
-	CancelTask(context.Context, string) error
+	Submit(context.Context, *tes.Task) error
+	Cancel(context.Context, string) error
 }
 
+// NoopCompute is a ComputeBackend which does nothing.
 type NoopCompute struct{}
 
-func (NoopCompute) CreateTask(context.Context, *tes.Task) error { return nil }
-func (NoopCompute) CancelTask(context.Context, string) error    { return nil }
+// Submit is a noop.
+func (NoopCompute) Submit(context.Context, *tes.Task) error { return nil }
+
+// Cancel is a noop.
+func (NoopCompute) Cancel(context.Context, string) error { return nil }
 
 // TaskService is a wrapper which handles common TES Task Service operations,
 // such as initializing a task when CreateTask is called. The TaskService is backed by

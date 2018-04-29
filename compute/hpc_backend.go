@@ -39,7 +39,7 @@ type HPCBackend struct {
 }
 
 // Submit submits a task via "qsub", "condor_submit", "sbatch", etc.
-func (b *HPCBackend) CreateTask(ctx context.Context, task *tes.Task) error {
+func (b *HPCBackend) Submit(ctx context.Context, task *tes.Task) error {
 
 	submitPath, err := b.setupTemplatedHPCSubmit(task)
 	if err != nil {
@@ -75,7 +75,7 @@ func (b *HPCBackend) CreateTask(ctx context.Context, task *tes.Task) error {
 }
 
 // Cancel cancels a task via "qdel", "condor_rm", "scancel", etc.
-func (b *HPCBackend) CancelTask(ctx context.Context, taskID string) error {
+func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
 	task, err := b.Database.GetTask(
 		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_BASIC},
 	)

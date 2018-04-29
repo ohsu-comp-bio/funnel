@@ -86,8 +86,8 @@ func (c *Server) RPCAddress() string {
 
 // Scheduler contains funnel's basic scheduler configuration.
 type Scheduler struct {
-  // Path to scheduler database directory.
-  DBPath string
+	// Path to scheduler database directory.
+	DBPath string
 	// How long to wait for a node ping before marking it as dead
 	NodePingTimeout Duration
 	// How long to wait for node initialization before marking it dead

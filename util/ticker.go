@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// Ticker is a wrapper around time.Ticker which
+// 1) fires immediately
+// 2) can be canceled by the given context.
 func Ticker(ctx context.Context, d time.Duration) <-chan time.Time {
 	out := make(chan time.Time)
 	go func() {

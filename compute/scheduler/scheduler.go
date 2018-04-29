@@ -38,11 +38,12 @@ type nodeHandle struct {
 	send func(*Control) error
 }
 
+// NewScheduler creates a new scheduler instance, which creates the database.
 func NewScheduler(conf config.Scheduler, log *logger.Logger, event events.Writer) (*Scheduler, error) {
-  err := fsutil.EnsureDir(conf.DBPath)
-  if err != nil {
-    return nil, fmt.Errorf("creating database directory: %s", err)
-  }
+	err := fsutil.EnsureDir(conf.DBPath)
+	if err != nil {
+		return nil, fmt.Errorf("creating database directory: %s", err)
+	}
 
 	opts := badger.DefaultOptions
 	opts.Dir = conf.DBPath
@@ -62,6 +63,8 @@ func NewScheduler(conf config.Scheduler, log *logger.Logger, event events.Writer
 	}, nil
 }
 
+// NodeChat handles online, bidirectional, streaming communication
+// between a node and the scheduler.
 func (s *Scheduler) NodeChat(stream SchedulerService_NodeChatServer) error {
 	if s == nil {
 		return fmt.Errorf("scheduler is nil")
@@ -98,10 +101,12 @@ func (s *Scheduler) NodeChat(stream SchedulerService_NodeChatServer) error {
 	return nil
 }
 
+// ListNodes is an API endpoint which returns a list of nodes.
 func (s *Scheduler) ListNodes(ctx context.Context, req *ListNodesRequest) (*ListNodesResponse, error) {
 	return &ListNodesResponse{Nodes: s.nodes()}, nil
 }
 
+// GetNode is an API endpoint which returns a single node.
 func (s *Scheduler) GetNode(ctx context.Context, req *GetNodeRequest) (*Node, error) {
 	h, ok := s.handles[req.Id]
 	if !ok {
@@ -110,6 +115,8 @@ func (s *Scheduler) GetNode(ctx context.Context, req *GetNodeRequest) (*Node, er
 	return h.node, nil
 }
 
+// DrainNode is an API endpoint which sets a node's state to DRAIN,
+// which causes the node to stop accepting jobs.
 func (s *Scheduler) DrainNode(ctx context.Context, req *DrainNodeRequest) (*DrainNodeResponse, error) {
 	h, ok := s.handles[req.Id]
 	if !ok {
@@ -119,7 +126,8 @@ func (s *Scheduler) DrainNode(ctx context.Context, req *DrainNodeRequest) (*Drai
 	return &DrainNodeResponse{}, err
 }
 
-func (s *Scheduler) CreateTask(ctx context.Context, task *tes.Task) error {
+// Submit accepts a new task for scheduling.
+func (s *Scheduler) Submit(ctx context.Context, task *tes.Task) error {
 	// Save task to queue
 	err := s.db.Update(func(txn *badger.Txn) error {
 		b, err := proto.Marshal(task)
@@ -137,9 +145,9 @@ func (s *Scheduler) CreateTask(ctx context.Context, task *tes.Task) error {
 	return nil
 }
 
-func (s *Scheduler) CancelTask(ctx context.Context, taskID string) error {
-	// CancelTask is a noop in the manual scheduler.
-	// Nodes/Workers will pick up the canceled state via polling.
+// Cancel is a noop in the manual scheduler.
+// Nodes/Workers will pick up the canceled state via polling.
+func (s *Scheduler) Cancel(ctx context.Context, taskID string) error {
 	return nil
 }
 

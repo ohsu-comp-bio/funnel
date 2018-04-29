@@ -32,7 +32,7 @@ type Backend struct {
 
 // Submit submits a task. For the Local backend this results in the task
 // running immediately.
-func (b *Backend) CreateTask(ctx context.Context, task *tes.Task) error {
+func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 	go func() {
 		ctx, cancel := context.WithCancel(ctx)
 		ctx = util.SignalContext(ctx, time.Millisecond, syscall.SIGINT, syscall.SIGTERM)
@@ -42,6 +42,8 @@ func (b *Backend) CreateTask(ctx context.Context, task *tes.Task) error {
 	return nil
 }
 
-func (b *Backend) CancelTask(ctx context.Context, id string) error {
+// Cancel is a noop for the local backend; tasks will be canceled
+// via worker polling.
+func (b *Backend) Cancel(ctx context.Context, id string) error {
 	return nil
 }

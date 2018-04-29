@@ -118,6 +118,8 @@ func (n *NodeProcess) ping() error {
 	return nil
 }
 
+// Drain sets the node's state to DRAIN, which causes the node
+// to stop accepting tasks.
 func (n *NodeProcess) Drain() {
 	n.detail.State = NodeState_DRAIN
 	n.ping()

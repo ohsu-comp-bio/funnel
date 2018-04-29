@@ -2,7 +2,7 @@ os:
   - linux
 language: go
 go:
-  - 1.10
+  - "1.10"
 sudo: required
 
 services:

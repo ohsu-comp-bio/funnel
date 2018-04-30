@@ -58,9 +58,17 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	}
 
 	// dispatch to compute backend
-	// TODO probably want to return this error. it's an odd case where the task is created
-	//      and won't ever be scheduled, but probably better to let the user know immediately.
-	go ts.Compute.Submit(ctx, task)
+	go func() {
+		err := ts.Compute.Submit(ctx, task)
+		if err != nil {
+			// We log the error here because it's much more complicated to try
+			// to do anything special with it; would you mark the task as failed?
+			// Perhaps the best behavior is for compute backends to occasionally
+			// reconcile queue tasks with the task database, so that failures
+			// are caught eventually.
+			ts.Log.Error("error submitting task to compute backend: %s", err)
+		}
+	}()
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }

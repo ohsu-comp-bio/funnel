@@ -60,7 +60,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	// dispatch to compute backend
 	// TODO probably want to return this error. it's an odd case where the task is created
 	//      and won't ever be scheduled, but probably better to let the user know immediately.
-	go ts.Compute.CreateTask(ctx, task)
+	go ts.Compute.Submit(ctx, task)
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }
@@ -83,7 +83,7 @@ func (ts *TaskService) ListTasks(ctx context.Context, req *tes.ListTasksRequest)
 // CancelTask cancels a task
 func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	// dispatch to compute backend
-	ts.Compute.CancelTask(ctx, req.Id)
+	ts.Compute.Cancel(ctx, req.Id)
 
 	// updated database and other event streams
 	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))

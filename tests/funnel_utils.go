@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -38,6 +39,9 @@ var log = logger.NewLogger("e2e", testconfig.LogConfig())
 
 func init() {
 	logger.SetGRPCLogger(log)
+	// nanoseconds are important because the tests run faster than a millisecond
+	// which can cause port conflicts
+	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 // Funnel provides a test server and RPC/HTTP clients
@@ -471,4 +475,14 @@ func TestingWriter(t *testing.T) io.Writer {
 		}
 	}()
 	return writer
+}
+
+// RandomString generates a random string of length n
+func RandomString(n int) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

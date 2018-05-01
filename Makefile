@@ -18,6 +18,7 @@ export GIT_UPSTREAM = $(git_upstream)
 # Build the code
 install: depends
 	@touch version/version.go
+	@go get github.com/google/go-github/github
 	@go install github.com/ohsu-comp-bio/funnel
 
 # Generate the protobuf/gRPC code

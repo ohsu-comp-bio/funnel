@@ -73,6 +73,41 @@ func TestNodeDisconnected(t *testing.T) {
 	}
 }
 
+// Test what happens when the server goes away. The node should reconnect.
+func TestNodeReconnect(t *testing.T) {
+	conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+
+	// Fail if this test doesn't complete in the given time.
+	cleanup := timeLimit(t, 200*time.Millisecond)
+	defer cleanup()
+
+	n.Start()
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+	_, ok := s.handles[n.detail.Id]
+	if !ok {
+		t.Fatal("didn't find node record")
+	}
+
+	// Kill the server/scheduler.
+	s.srv.Stop()
+
+	// Start a new scheduler.
+	conf2 := testConfig()
+	conf2.Server.RPCPort = conf.Server.RPCPort
+	s2 := newTestSched(conf2)
+	// Give the scheduler server time to start.
+	time.Sleep(100 * time.Millisecond)
+
+	_, ok = s2.handles[n.detail.Id]
+	if !ok {
+		t.Fatal("didn't find node record")
+	}
+}
+
 // Test the simple case of a node that is alive,
 // then doesn't ping in time, and it marked dead.
 //
@@ -88,7 +123,6 @@ func TestNodeDead(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 
 	// Connect and send a single ping to register the node.
-	n.connect(ctx)
 	err := n.ping()
 	if err != nil {
 		t.Fatal(err)

@@ -35,7 +35,7 @@ func NewNodeProcess(conf config.Node, cli SchedulerServiceClient, factory Worker
 		},
 		tasks:     map[string]*tes.Task{},
 		workerRun: factory,
-		client:    cli,
+		stream:    &stream{client: cli},
 	}, nil
 }
 
@@ -48,15 +48,13 @@ type NodeProcess struct {
 	mtx       sync.Mutex
 	waitGroup sync.WaitGroup
 	workerRun Worker
-	client    SchedulerServiceClient
-	stream    SchedulerService_NodeChatClient
+	stream    *stream
 }
 
 // Run runs a node with the given config. This is responsible for communication
 // with the server and starting task workers
 func (n *NodeProcess) Run(ctx context.Context) error {
 
-	n.connect(ctx)
 	defer n.finalize()
 
 	go n.listen(ctx)
@@ -110,32 +108,15 @@ func (n *NodeProcess) finalize() {
 	case <-timeout:
 	}
 
-	if n.stream != nil {
-		n.stream.CloseSend()
-	}
+	n.stream.Close()
 }
 
-// connect tries hard to connect to the scheduler. It will retry until
-// it connects or the context is canceled.
-// TODO reconnect
-func (n *NodeProcess) connect(ctx context.Context) {
-	for range util.Ticker(ctx, time.Duration(n.conf.UpdateRate)) {
-		// Closing the stream is managed by finalize(),
-		// and since finalize() needs the stream after the context
-		// has been canceled, we don't pass the parent context
-		// to NodeChat() here.
-		conn, err := n.client.NodeChat(context.Background())
-		// Avoid noisy "context canceled" logs.
-		if status.Code(err) == codes.Canceled {
-			continue
-		}
-		if err != nil {
-			n.log.Error("error connecting to server, will retry", "error", err)
-			continue
-		}
-		n.stream = conn
-		return
-	}
+// Drain sets the node's state to DRAIN, which causes the node
+// to stop accepting tasks.
+func (n *NodeProcess) Drain() {
+	n.mtx.Lock()
+	defer n.mtx.Unlock()
+	n.detail.State = NodeState_DRAIN
 }
 
 func (n *NodeProcess) ping() error {
@@ -163,47 +144,28 @@ func (n *NodeProcess) ping() error {
 	n.detail.TaskIds = ids
 	n.detail.Available = availableResources(tasks, &res)
 
-	if n.stream == nil {
-		return fmt.Errorf("pinging server: no connection")
-	}
-
 	err = n.stream.Send(n.detail)
-	// Avoid noisy "context canceled" logs.
-	if status.Code(err) == codes.Canceled {
-		return nil
-	}
 	if err != nil {
 		return fmt.Errorf("sending update: %s", err)
 	}
 	return nil
 }
 
-// Drain sets the node's state to DRAIN, which causes the node
-// to stop accepting tasks.
-func (n *NodeProcess) Drain() {
-	n.mtx.Lock()
-	defer n.mtx.Unlock()
-	n.detail.State = NodeState_DRAIN
-}
-
 func (n *NodeProcess) listen(ctx context.Context) {
-	// TODO figure out connect/reconnect
-	if n.stream == nil {
-		return
-	}
 	for {
 		control, err := n.stream.Recv()
 		if err == io.EOF {
-			return
-		}
-		// Avoid noisy "context canceled" logs.
-		if status.Code(err) == codes.Canceled {
 			return
 		}
 		if err != nil {
 			n.log.Error("error receiving control", "error", err)
 			return
 		}
+		// Avoid noisy "context canceled" logs.
+		if status.Code(err) == codes.Canceled {
+			continue
+		}
+
 		switch control.Type {
 		case ControlType_CREATE_TASK:
 			go n.runTask(ctx, control.Task)

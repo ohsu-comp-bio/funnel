@@ -75,7 +75,12 @@ func newTestNode(conf config.Config) *testNode {
 	return &testNode{NodeProcess: node, conn: conn}
 }
 
-func newTestSched(conf config.Config) *Scheduler {
+type testSched struct {
+	*Scheduler
+	srv *grpc.Server
+}
+
+func newTestSched(conf config.Config) *testSched {
 	log := logger.NewLogger("test-sched", logger.DebugConfig())
 
 	// Open TCP connection for RPC
@@ -103,7 +108,7 @@ func newTestSched(conf config.Config) *Scheduler {
 		}
 	}()
 
-	return sched
+	return &testSched{Scheduler: sched, srv: grpcServer}
 }
 
 func timeLimit(t *testing.T, d time.Duration) func() {

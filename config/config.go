@@ -90,8 +90,6 @@ type Scheduler struct {
 	DBPath string
 	// How long to wait for a node ping before marking it as dead
 	NodePingTimeout Duration
-	// How long to wait for node initialization before marking it dead
-	NodeInitTimeout Duration
 	// How long to wait before deleting a dead node from the DB.
 	NodeDeadTimeout Duration
 }

@@ -1,6 +1,7 @@
 package builtin
 
 import (
+  "context"
 	"testing"
 	"time"
 )
@@ -67,6 +68,128 @@ func TestNodeDisconnected(t *testing.T) {
 	}
 }
 
+// Test the simple case of a node that is alive,
+// then doesn't ping in time, and it marked dead.
+//
+// This is a legacy test and makes less sense with streaming code;
+// since the scheduler should detect disconnects immediately.
+// But, it's easy to test and maybe could happen.
+func TestNodeDead(t *testing.T) {
+	ctx := context.Background()
+	conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+
+	time.Sleep(20 * time.Millisecond)
+
+  // Connect and send a single ping to register the node.
+  n.connect(ctx)
+  err := n.ping()
+  if err != nil {
+    t.Fatal(err)
+  }
+
+	time.Sleep(20 * time.Millisecond)
+
+	h, ok := s.handles[n.detail.Id]
+	if !ok {
+		t.Fatal("didn't find node record")
+	}
+	if h.node.State != NodeState_ALIVE {
+		t.Errorf("expected state to be ALIVE, but got %s", h.node.State)
+	}
+
+	// Wait for node to ping timeout.
+	time.Sleep(time.Duration(conf.Scheduler.NodePingTimeout))
+
+  // Check the nodes.
+  s.checkNodes(ctx)
+
+	h, ok = s.handles[n.detail.Id]
+	if !ok {
+		t.Fatal("didn't find node record")
+	}
+	if h.node.State != NodeState_DEAD {
+		t.Errorf("expected state to be DEAD, but got %s", h.node.State)
+	}
+}
+
+// Test that a node that doesn't ping is marked dead after some time limit.
+func TestNodePingTimeout(t *testing.T) {
+	conf := testConfig()
+	s := newTestSched(conf)
+
+  // This node should be dead, its LastPing is greater than the timeout.
+  t1 := time.Duration(conf.Scheduler.NodePingTimeout)
+  h1 := &nodeHandle{
+    node: &Node{
+      State: NodeState_ALIVE,
+      LastPing: time.Now().Add(-t1).UnixNano(),
+    },
+  }
+
+  // This node should be alive, its LastPing timeout is recent enough.
+  t2 := time.Duration(conf.Scheduler.NodePingTimeout) - (20 * time.Millisecond)
+  h2 := &nodeHandle{
+    node: &Node{
+      State: NodeState_ALIVE,
+      LastPing: time.Now().Add(-t2).UnixNano(),
+    },
+  }
+
+  s.handles["node-1"] = h1
+  s.handles["node-2"] = h2
+	ctx := context.Background()
+  s.checkNodes(ctx)
+
+  if h1.node.State != NodeState_DEAD {
+    t.Errorf("expected node-1 to be DEAD, but got %s", h1.node.State)
+  }
+
+  if h2.node.State != NodeState_ALIVE {
+    t.Errorf("expected node-2 to be ALIVE, but got %s", h2.node.State)
+  }
+}
+
+// Test that dead nodes are cleanup up after some time.
+func TestDeadNodeCleanedUp(t *testing.T) {
+	conf := testConfig()
+	s := newTestSched(conf)
+
+  // This node should be removed.
+  t1 := time.Duration(conf.Scheduler.NodeDeadTimeout)
+  h1 := &nodeHandle{
+    node: &Node{
+      State: NodeState_DEAD,
+      LastPing: time.Now().Add(-t1).UnixNano(),
+    },
+  }
+
+  // This node should remain.
+  t2 := time.Duration(conf.Scheduler.NodeDeadTimeout) - (20 * time.Millisecond)
+  h2 := &nodeHandle{
+    node: &Node{
+      State: NodeState_DEAD,
+      LastPing: time.Now().Add(-t2).UnixNano(),
+    },
+  }
+
+  s.handles["node-1"] = h1
+  s.handles["node-2"] = h2
+	ctx := context.Background()
+  s.checkNodes(ctx)
+
+  _, ok := s.handles["node-1"]
+  if ok {
+    t.Error("expected node-1 to be removed")
+  }
+
+  _, ok = s.handles["node-2"]
+  if !ok {
+    t.Error("node-2 was removed unexpectedly")
+  }
+}
+
 // TODO test panicing worker
 
 /*
@@ -81,30 +204,6 @@ func TestGetNodeFail(t *testing.T) {
 		Return(nil, errors.New("TEST"))
 	n.sync(context.Background())
 	time.Sleep(time.Second)
-}
-
-// Test the flow of a node completing a task then timing out
-func TestNodeTimeout(t *testing.T) {
-  conf := testConfig()
-
-	n := newTestNode(conf, t)
-
-	// Set up a test worker which this code can easily control.
-	//w := testWorker{}
-	// Hook the test worker up to the node's worker factory.
-	//n.newWorker = Worker(w.Factory)
-
-	// Set up scheduler mock to return a task
-	n.AddTasks("task-1")
-
-	n.Start()
-
-	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, time.Duration(conf.Node.Timeout*500))
-	defer cleanup()
-
-	// Wait for the node to exit
-	n.Wait()
 }
 
 // Test that a node does nothing where there are no assigned tasks.
@@ -208,58 +307,6 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 
 	if n.workers.Count() != 0 {
 		t.Fatalf("Unexpected worker count: %d", n.workers.Count())
-	}
-}
-
-// When the node's context is canceled (e.g. because the process
-// is being killed) the node should signal the database/server
-// that it is gone, and the server will delete the node.
-func TestNodeGoneOnCanceledContext(t *testing.T) {
-  conf := testConfig()
-	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
-	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
-	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
-
-	bg := context.Background()
-	log := logger.NewLogger("node", tests.LogConfig())
-	tests.SetLogOutput(log, t)
-	srv := tests.NewFunnel(conf)
-	srv.StartServer()
-
-	srv.Conf.Node.ID = "test-node-gone-on-cancel"
-	n, err := scheduler.NewNodeProcess(bg, srv.Conf, scheduler.NoopWorker, log)
-	if err != nil {
-		t.Fatal("failed to start node", err)
-	}
-	ctx, cancel := context.WithCancel(bg)
-	defer cancel()
-	go n.Run(ctx)
-
-	srv.Scheduler.CheckNodes()
-	time.Sleep(time.Duration(conf.Node.UpdateRate * 2))
-
-	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	nodes := resp.Nodes
-
-	if len(nodes) != 1 {
-		t.Fatal("failed to register node", nodes)
-	}
-
-	cancel()
-	time.Sleep(time.Duration(conf.Node.UpdateRate * 2))
-	srv.Scheduler.CheckNodes()
-
-	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	nodes = resp.Nodes
-
-	if len(nodes) != 0 {
-		t.Error("expected node to be deleted")
 	}
 }
 
@@ -442,109 +489,6 @@ func TestNodeCleanup(t *testing.T) {
 		if task.State != e {
 			t.Error("expected state for task", i, task.State, e)
 		}
-	}
-}
-
-// Test the simple case of a node that is alive,
-// then doesn't ping in time, and it marked dead
-func TestNodeDead(t *testing.T) {
-	ctx := context.Background()
-  conf := testConfig()
-	//srv := tests.NewFunnel(conf)
-
-	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
-		Id:    "test-node",
-		State: scheduler.NodeState_ALIVE,
-	})
-	if err != nil {
-		t.Error(err)
-	}
-
-	// Some databases need time to sync the PutNode.
-	time.Sleep(time.Millisecond * 100)
-	// Wait for node to ping timeout.
-	time.Sleep(time.Duration(conf.Scheduler.NodePingTimeout))
-	// Should mark node as dead.
-	srv.Scheduler.CheckNodes()
-
-	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	nodes := resp.Nodes
-
-	if len(nodes) < 1 {
-		t.Error("expected node was not returned by ListNodes")
-	}
-	if nodes[0].State != scheduler.NodeState_DEAD {
-		t.Log("Node:", nodes[0])
-		t.Error("Expected node to be dead")
-	}
-}
-
-// Test what happens when a node never starts.
-// It should be marked as dead.
-func TestNodeInitFail(t *testing.T) {
-	ctx := context.Background()
-  conf := testConfig()
-	srv := tests.NewFunnel(conf)
-	srv.StartServer()
-
-	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
-		Id:    "test-node",
-		State: scheduler.NodeState_INITIALIZING,
-	})
-	if err != nil {
-		t.Error(err)
-	}
-
-	time.Sleep(time.Duration(conf.Scheduler.NodeInitTimeout))
-	srv.Scheduler.CheckNodes()
-
-	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	nodes := resp.Nodes
-
-	if len(nodes) < 1 {
-		t.Error("expected node was not returned by ListNodes")
-	}
-	if nodes[0].State != scheduler.NodeState_DEAD {
-		t.Log("Node:", nodes[0])
-		t.Error("Expected node to be dead")
-	}
-}
-
-// Test that a dead node is deleted after
-// a configurable duration.
-func TestNodeDeadTimeout(t *testing.T) {
-	ctx := context.Background()
-  conf := testConfig()
-	// TODO srv := tests.NewFunnel(conf)
-
-	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
-		Id:    "test-node",
-		State: scheduler.NodeState_DEAD,
-	})
-	if err != nil {
-		t.Error(err)
-	}
-
-	srv.Scheduler.CheckNodes()
-
-	time.Sleep(time.Duration(conf.Scheduler.NodeDeadTimeout))
-	srv.Scheduler.CheckNodes()
-
-	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	nodes := resp.Nodes
-
-	if len(nodes) > 0 {
-		t.Log("nodes:", nodes)
-		t.Error("expected node to be deleted")
 	}
 }
 */

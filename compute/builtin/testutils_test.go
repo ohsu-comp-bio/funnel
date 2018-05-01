@@ -22,7 +22,6 @@ func testConfig() config.Config {
 	conf.Compute = "builtin"
 	conf.Node.UpdateRate = config.Duration(50 * time.Millisecond)
 	conf.Scheduler.NodePingTimeout = config.Duration(time.Millisecond * 300)
-	conf.Scheduler.NodeInitTimeout = config.Duration(time.Millisecond * 300)
 	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Millisecond * 300)
 
 	workDir, err := ioutil.TempDir("", "funnel-test-node-")

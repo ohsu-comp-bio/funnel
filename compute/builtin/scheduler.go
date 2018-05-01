@@ -276,15 +276,7 @@ func (s *Scheduler) updateNodeState(node *Node) {
 	lastPing := time.Unix(0, node.LastPing)
 	d := time.Since(lastPing)
 
-	if node.State == NodeState_UNINITIALIZED || node.State == NodeState_INITIALIZING {
-
-		// The node is initializing, which has a more liberal timeout.
-		if d > time.Duration(s.conf.NodeInitTimeout) {
-			// Looks like the node failed to initialize. Mark it dead
-			node.State = NodeState_DEAD
-		}
-
-	} else if node.State == NodeState_DEAD && d > time.Duration(s.conf.NodeDeadTimeout) {
+  if node.State == NodeState_DEAD && d > time.Duration(s.conf.NodeDeadTimeout) {
 		// The node has been dead for long enough.
 		node.State = NodeState_GONE
 

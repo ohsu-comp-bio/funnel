@@ -15,11 +15,9 @@ message Resources {
 }
 
 enum NodeState {
-  UNINITIALIZED = 0;
   ALIVE = 1;
   DEAD = 2;
   GONE = 3;
-  INITIALIZING = 4;
   DRAIN = 5;
 }
 

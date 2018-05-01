@@ -27,7 +27,7 @@ func TestIgnoreNonAliveNodes(t *testing.T) {
 	n.Start()
 
 	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	err := s.scheduleOne(&tes.Task{Id: "task-1"})
 	if !isNoOfferError(err) {
 		t.Fatal("expected noOfferError")
@@ -49,7 +49,7 @@ func TestMatch(t *testing.T) {
 	n.Start()
 
 	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	// test CPUs too big
 	err := s.scheduleOne(&tes.Task{Id: "task-1", Resources: &tes.Resources{CpuCores: 2}})
@@ -92,7 +92,7 @@ func TestMatch(t *testing.T) {
 		t.Error("Didn't schedule task when resources fit")
 	}
 
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 }
 
 // Test that a task requesting nothing has a minimum CPU of 1.
@@ -104,14 +104,12 @@ func TestMinimumCpuRequest(t *testing.T) {
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 	n.workerRun = func(context.Context, string) error {
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(10 * time.Second)
 		return nil
 	}
 
 	n.Start()
-
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 
 	// test CPUs too big
 	err := s.scheduleOne(&tes.Task{Id: "task-1"})
@@ -120,12 +118,14 @@ func TestMinimumCpuRequest(t *testing.T) {
 	}
 
 	n.ping()
+	time.Sleep(2 * time.Second)
+
 	if n.detail.Available.Cpus != 1 {
 		t.Errorf("expected node to have 1 CPU available, but got %d", n.detail.Available.Cpus)
 	}
 
 	// The async scheduler/node ping communication needs some time to complete.
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 
 	r := s.handles[n.detail.Id].node.Available
 	if r.Cpus != 1 {

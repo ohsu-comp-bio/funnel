@@ -44,10 +44,6 @@ func (s *stream) Send(d *Node) error {
 	}
 
 	err = stream.Send(d)
-	// Avoid noisy "context canceled" logs.
-	if status.Code(err) == codes.Canceled {
-		return nil
-	}
 	// If the connection died, delete the dead stream.
 	if status.Code(err) == codes.Unavailable {
 		s.mtx.Lock()
@@ -57,7 +53,7 @@ func (s *stream) Send(d *Node) error {
 	return err
 }
 
-func (s stream) Recv() (*Control, error) {
+func (s *stream) Recv() (*Control, error) {
 	stream, err := s.get()
 	if err != nil {
 		return nil, err

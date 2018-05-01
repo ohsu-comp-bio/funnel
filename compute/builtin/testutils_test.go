@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"testing"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -20,9 +19,9 @@ func testConfig() config.Config {
 	conf := config.DefaultConfig()
 	conf = testconfig.TestifyConfig(conf)
 	conf.Compute = "builtin"
-	conf.Node.UpdateRate = config.Duration(50 * time.Millisecond)
-	conf.Scheduler.NodePingTimeout = config.Duration(time.Millisecond * 300)
-	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Millisecond * 300)
+	conf.Node.UpdateRate = config.Duration(10 * time.Millisecond)
+	conf.Scheduler.NodePingTimeout = config.Duration(2 * time.Second)
+	conf.Scheduler.NodeDeadTimeout = config.Duration(2 * time.Second)
 
 	workDir, err := ioutil.TempDir("", "funnel-test-node-")
 	if err != nil {
@@ -50,6 +49,7 @@ func (t *testNode) Start() context.CancelFunc {
 		}
 		close(t.done)
 	}()
+	time.Sleep(500 * time.Millisecond)
 	return cancel
 }
 
@@ -108,16 +108,19 @@ func newTestSched(conf config.Config) *testSched {
 		}
 	}()
 
+	// Give the scheduler server time to start.
+	time.Sleep(150 * time.Millisecond)
+
 	return &testSched{Scheduler: sched, srv: grpcServer}
 }
 
-func timeLimit(t *testing.T, d time.Duration) func() {
+func timeLimit(name string, d time.Duration) func() {
 	stop := make(chan struct{})
 
 	go func() {
 		select {
 		case <-time.After(d):
-			panic("time limit expired")
+			panic(fmt.Sprintf("time limit expired for %s", name))
 		case <-stop:
 		}
 	}()

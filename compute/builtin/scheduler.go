@@ -77,6 +77,11 @@ func (s *Scheduler) NodeChat(stream SchedulerService_NodeChatServer) error {
 		if node != nil && node.State != NodeState_GONE {
 			node.State = NodeState_DEAD
 		}
+		if node != nil {
+			s.mtx.Lock()
+			s.handles[node.Id].send = nil
+			s.mtx.Unlock()
+		}
 	}()
 
 	// Constantly receive updates from the node.

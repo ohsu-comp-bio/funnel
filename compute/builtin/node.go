@@ -81,6 +81,8 @@ func (n *NodeProcess) shouldShutdown() bool {
 // finalize prepares the node for shutdown, disconnecting
 // from the scheduler and stopping any running tasks.
 func (n *NodeProcess) finalize() {
+	n.log.Debug("finalize")
+
 	// The node gets up to 10 seconds to finalize.
 	timeout := time.After(10 * time.Second)
 
@@ -145,6 +147,12 @@ func (n *NodeProcess) ping() error {
 	n.detail.Available = availableResources(tasks, &res)
 
 	err = n.stream.Send(n.detail)
+	// These errors are too noisy
+	if status.Code(err) == codes.FailedPrecondition ||
+		status.Code(err) == codes.Canceled ||
+		status.Code(err) == codes.Unavailable {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("sending update: %s", err)
 	}
@@ -157,12 +165,14 @@ func (n *NodeProcess) listen(ctx context.Context) {
 		if err == io.EOF {
 			return
 		}
+		// These errors are too noisy
+		if status.Code(err) == codes.FailedPrecondition ||
+			status.Code(err) == codes.Canceled ||
+			status.Code(err) == codes.Unavailable {
+			continue
+		}
 		if err != nil {
 			n.log.Error("error receiving control", "error", err)
-			return
-		}
-		// Avoid noisy "context canceled" logs.
-		if status.Code(err) == codes.Canceled {
 			continue
 		}
 
@@ -194,7 +204,6 @@ func (n *NodeProcess) removeTask(task *tes.Task) {
 }
 
 func (n *NodeProcess) runTask(ctx context.Context, task *tes.Task) {
-
 	if !n.addTask(task) {
 		return
 	}

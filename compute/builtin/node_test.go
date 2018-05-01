@@ -18,12 +18,10 @@ func TestStopNode(t *testing.T) {
 	n := newTestNode(conf)
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, 200*time.Millisecond)
+	cleanup := timeLimit("Stop Node", 2*time.Second)
 	defer cleanup()
 
 	cancel := n.Start()
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
 
 	// Cancel the node's context.
 	cancel()
@@ -32,7 +30,7 @@ func TestStopNode(t *testing.T) {
 	n.Wait()
 
 	// Give the scheduler time to disconnect.
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	h, ok := s.handles[n.detail.Id]
 	if !ok {
@@ -51,18 +49,16 @@ func TestNodeDisconnected(t *testing.T) {
 	n := newTestNode(conf)
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, 200*time.Millisecond)
+	cleanup := timeLimit("NodeDisconnect", 2*time.Second)
 	defer cleanup()
 
 	n.Start()
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
 
 	// Force close the grpc connection without properly shutting down the node.
 	n.conn.Close()
 
 	// Give the scheduler time to disconnect.
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	h, ok := s.handles[n.detail.Id]
 	if !ok {
@@ -80,12 +76,10 @@ func TestNodeReconnect(t *testing.T) {
 	n := newTestNode(conf)
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, 200*time.Millisecond)
+	cleanup := timeLimit("Node Reconnect", 2*time.Second)
 	defer cleanup()
 
 	n.Start()
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
 
 	_, ok := s.handles[n.detail.Id]
 	if !ok {
@@ -100,7 +94,7 @@ func TestNodeReconnect(t *testing.T) {
 	conf2.Server.RPCPort = conf.Server.RPCPort
 	s2 := newTestSched(conf2)
 	// Give the scheduler server time to start.
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	_, ok = s2.handles[n.detail.Id]
 	if !ok {
@@ -120,7 +114,7 @@ func TestNodeDead(t *testing.T) {
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	// Connect and send a single ping to register the node.
 	err := n.ping()
@@ -128,7 +122,7 @@ func TestNodeDead(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	h, ok := s.handles[n.detail.Id]
 	if !ok {
@@ -237,9 +231,6 @@ func TestNodeWorkerCreated(t *testing.T) {
 
 	n.Start()
 
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
-
 	// Count the number of times the worker factory was called
 	var count int
 	n.workerRun = func(context.Context, string) error {
@@ -250,7 +241,7 @@ func TestNodeWorkerCreated(t *testing.T) {
 	s.scheduleOne(&tes.Task{Id: "task-1"})
 	s.scheduleOne(&tes.Task{Id: "task-2"})
 
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	if count != 2 {
 		t.Fatalf("Unexpected node worker count: %d", count)
@@ -265,7 +256,7 @@ func TestGetNode(t *testing.T) {
 	n.Start()
 
 	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	ctx := context.Background()
 	_, err := s.GetNode(ctx, &GetNodeRequest{
@@ -281,7 +272,7 @@ func TestGetNodeMissing(t *testing.T) {
 	s := newTestSched(conf)
 
 	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	ctx := context.Background()
 	_, err := s.GetNode(ctx, &GetNodeRequest{
@@ -300,9 +291,6 @@ func TestListNodes(t *testing.T) {
 
 	n.Start()
 	n2.Start()
-
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
 
 	ctx := context.Background()
 	resp, err := s.ListNodes(ctx, &ListNodesRequest{})
@@ -334,12 +322,11 @@ func TestDrainNode(t *testing.T) {
 	ctx := context.Background()
 	conf := testConfig()
 	s := newTestSched(conf)
+
 	n := newTestNode(conf)
-
-	n.Start()
-
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
+	n.ping()
+	go n.listen(ctx)
+	time.Sleep(2 * time.Second)
 
 	_, err := s.DrainNode(ctx, &DrainNodeRequest{
 		Id: n.detail.Id,
@@ -348,7 +335,8 @@ func TestDrainNode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(50 * time.Millisecond)
+	n.ping()
+	time.Sleep(2 * time.Second)
 
 	resp, err := s.GetNode(ctx, &GetNodeRequest{
 		Id: n.detail.Id,
@@ -370,9 +358,6 @@ func TestNodeWorkerPanic(t *testing.T) {
 
 	n.Start()
 
-	// Give the scheduler server time to start.
-	time.Sleep(20 * time.Millisecond)
-
 	// Count the number of times the worker factory was called
 	n.workerRun = func(context.Context, string) error {
 		panic("test panic")
@@ -380,7 +365,7 @@ func TestNodeWorkerPanic(t *testing.T) {
 
 	s.scheduleOne(&tes.Task{Id: "task-1"})
 
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	h, ok := s.handles[n.detail.Id]
 	if !ok {
@@ -406,7 +391,7 @@ func TestNodeDetectResources(t *testing.T) {
 	}
 
 	// Give the scheduler server time to start.
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	d := n.detail.Resources
 	if d.Cpus != 1234 {
@@ -435,7 +420,7 @@ func TestNodeDetectResources(t *testing.T) {
 	// Note that tasks have a minimum cpu resource request of 1 CPU.
 
 	s.assignTask(&tes.Task{Id: "task-1"}, n.detail.Id)
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	d = n.detail.Available
 	if d.Cpus != 1233 {
@@ -472,7 +457,7 @@ func TestNodeWorkerNoTasks(t *testing.T) {
 	n2.Start()
 
 	// Give the scheduler server time to start.
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
 	// Count the number of times the worker factory was called
 	wg := sync.WaitGroup{}
@@ -518,7 +503,7 @@ func TestNodeAvailableResources(t *testing.T) {
 	}
 
 	// Give the scheduler server time to start.
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	s.assignTask(&tes.Task{
 		Id: "task-1",
@@ -529,7 +514,7 @@ func TestNodeAvailableResources(t *testing.T) {
 		},
 	}, n.detail.Id)
 
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	// Check that available resources were adjusted for the task assigned.
 	d := s.handles[n.detail.Id].node.Available
@@ -545,7 +530,7 @@ func TestNodeAvailableResources(t *testing.T) {
 
 	// Complete the task
 	close(done)
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	// Check that available resources are recovered after the task finishes.
 	d = s.handles[n.detail.Id].node.Available

@@ -13,23 +13,26 @@ func Ticker(ctx context.Context, d time.Duration) <-chan time.Time {
 
 	// Output channel.
 	out := make(chan time.Time)
+	done := make(chan struct{})
 
 	ticker := time.NewTicker(d)
 	go func() {
 		<-ctx.Done()
 		ticker.Stop()
-		close(out)
+		close(done)
 	}()
 
 	go func() {
+		defer close(out)
 		// Fire tick immediately
 		out <- time.Now()
 
-		for t := range ticker.C {
-			// select + default here prevents sending on a closed channel.
+		for {
 			select {
-			case out <- t:
-			default:
+			case t := <-ticker.C:
+				out <- t
+			case <-done:
+				return
 			}
 		}
 	}()

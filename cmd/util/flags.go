@@ -193,7 +193,6 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 
 	// Scheduler
 	f.Var(&flagConf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
-	f.Var(&flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
 	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
 	// Slurm

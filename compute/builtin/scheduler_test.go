@@ -7,12 +7,12 @@ import (
 )
 
 func TestScheduleZeroNodes(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
-  err := s.scheduleOne(&tes.Task{Id: "task-1"})
-  if err == nil {
-    t.Fatal("expected no offer error")
-  }
+	err := s.scheduleOne(&tes.Task{Id: "task-1"})
+	if err == nil {
+		t.Fatal("expected no offer error")
+	}
 }
 
 /*

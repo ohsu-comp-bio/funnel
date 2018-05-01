@@ -213,28 +213,28 @@ func (s *Scheduler) scheduleOne(task *tes.Task) error {
 
 	offer := DefaultScheduleAlgorithm(task, s.nodes(), nil)
 	if offer == nil {
-    return &noOfferError{task.Id}
+		return &noOfferError{task.Id}
 	}
 
-  err := s.assignTask(task, offer.Node.Id)
-  if err != nil {
-    return fmt.Errorf("assigning task to node: %s", err)
-  }
+	err := s.assignTask(task, offer.Node.Id)
+	if err != nil {
+		return fmt.Errorf("assigning task to node: %s", err)
+	}
 	return nil
 }
 
 func (s *Scheduler) assignTask(task *tes.Task, nodeID string) error {
 	h, ok := s.handles[nodeID]
-  if !ok {
-    return fmt.Errorf("no such node: %s", nodeID)
-  }
+	if !ok {
+		return fmt.Errorf("no such node: %s", nodeID)
+	}
 
-  // TODO this doesn't immediately adjust the available resources,
-  //      so scheduling happens fast, assignments will be wrong.
+	// TODO this doesn't immediately adjust the available resources,
+	//      so scheduling happens fast, assignments will be wrong.
 	err := h.send(&Control{
-    Type: ControlType_CREATE_TASK,
-    Task: task,
-  })
+		Type: ControlType_CREATE_TASK,
+		Task: task,
+	})
 	if err != nil {
 		return fmt.Errorf("sending task to node: %s", err)
 	}
@@ -242,7 +242,7 @@ func (s *Scheduler) assignTask(task *tes.Task, nodeID string) error {
 	s.event.WriteEvent(context.Background(), events.NewMetadata(task.Id, 0, map[string]string{
 		"nodeID": nodeID,
 	}))
-  return nil
+	return nil
 }
 
 // checkNodes checks for dead/gone nodes.
@@ -293,7 +293,7 @@ func (s *Scheduler) updateNodeState(node *Node) {
 	lastPing := time.Unix(0, node.LastPing)
 	d := time.Since(lastPing)
 
-  if node.State == NodeState_DEAD && d > time.Duration(s.conf.NodeDeadTimeout) {
+	if node.State == NodeState_DEAD && d > time.Duration(s.conf.NodeDeadTimeout) {
 		// The node has been dead for long enough.
 		node.State = NodeState_GONE
 
@@ -323,8 +323,9 @@ func (t trigger) trigger() {
 }
 
 type noOfferError struct {
-  taskID string
+	taskID string
 }
+
 func (e *noOfferError) Error() string {
-  return fmt.Sprintf("no offer for task %s", e.taskID)
+	return fmt.Sprintf("no offer for task %s", e.taskID)
 }

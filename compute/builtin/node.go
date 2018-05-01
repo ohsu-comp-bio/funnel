@@ -18,7 +18,7 @@ import (
 // NewNodeProcess returns a new NodeProcess instance.
 func NewNodeProcess(conf config.Node, cli SchedulerServiceClient, factory Worker, log *logger.Logger) (*NodeProcess, error) {
 
-  id := genID()
+	id := genID()
 	log = log.WithFields("nodeID", id)
 	log.Debug("NewNode", "config", conf)
 
@@ -255,10 +255,10 @@ func subtractResources(t *tes.Task, in *Resources) *Resources {
 	// Cpus are represented by an unsigned int, and if we blindly
 	// subtract it will rollover to a very large number. So check first.
 	rcpus := tres.GetCpuCores()
-  // Enforce a minimum request of 1 cpu core
-  if rcpus < 1 {
-    rcpus = 1
-  }
+	// Enforce a minimum request of 1 cpu core
+	if rcpus < 1 {
+		rcpus = 1
+	}
 	if rcpus >= out.Cpus {
 		out.Cpus = 0
 	} else {

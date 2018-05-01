@@ -12,12 +12,12 @@ type Predicate func(*tes.Task, *Node) error
 // ResourcesFit determines whether a task fits a node's resources.
 func ResourcesFit(t *tes.Task, n *Node) error {
 	req := t.GetResources()
-  cores := req.GetCpuCores()
+	cores := req.GetCpuCores()
 
-  // Enfore a minimum of 1 cpu core
-  if cores < 1 {
-    cores = 1
-  }
+	// Enfore a minimum of 1 cpu core
+	if cores < 1 {
+		cores = 1
+	}
 
 	switch {
 	case n.GetPreemptible() && !req.GetPreemptible():

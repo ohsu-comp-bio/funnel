@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/rs/xid"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/rs/xid"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
@@ -83,10 +83,10 @@ func (wc *waitChan) Wait() chan struct{} {
 }
 
 func genID() string {
-  // chunk the ID, putting a separator near the end
-  // to make it more readable.
-  a := xid.New().String()
-  b := a[:len(a)-3]
-  c := a[len(a)-3:]
-  return "node-" + b + "-" + c
+	// chunk the ID, putting a separator near the end
+	// to make it more readable.
+	a := xid.New().String()
+	b := a[:len(a)-3]
+	c := a[len(a)-3:]
+	return "node-" + b + "-" + c
 }

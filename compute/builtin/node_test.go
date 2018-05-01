@@ -1,10 +1,10 @@
 package builtin
 
 import (
-  "context"
+	"context"
+	"sync"
 	"testing"
 	"time"
-  "sync"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"google.golang.org/grpc/codes"
@@ -87,12 +87,12 @@ func TestNodeDead(t *testing.T) {
 
 	time.Sleep(20 * time.Millisecond)
 
-  // Connect and send a single ping to register the node.
-  n.connect(ctx)
-  err := n.ping()
-  if err != nil {
-    t.Fatal(err)
-  }
+	// Connect and send a single ping to register the node.
+	n.connect(ctx)
+	err := n.ping()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	time.Sleep(20 * time.Millisecond)
 
@@ -107,8 +107,8 @@ func TestNodeDead(t *testing.T) {
 	// Wait for node to ping timeout.
 	time.Sleep(time.Duration(conf.Scheduler.NodePingTimeout))
 
-  // Check the nodes.
-  s.checkNodes(ctx)
+	// Check the nodes.
+	s.checkNodes(ctx)
 
 	h, ok = s.handles[n.detail.Id]
 	if !ok {
@@ -124,36 +124,36 @@ func TestNodePingTimeout(t *testing.T) {
 	conf := testConfig()
 	s := newTestSched(conf)
 
-  // This node should be dead, its LastPing is greater than the timeout.
-  t1 := time.Duration(conf.Scheduler.NodePingTimeout)
-  h1 := &nodeHandle{
-    node: &Node{
-      State: NodeState_ALIVE,
-      LastPing: time.Now().Add(-t1).UnixNano(),
-    },
-  }
+	// This node should be dead, its LastPing is greater than the timeout.
+	t1 := time.Duration(conf.Scheduler.NodePingTimeout)
+	h1 := &nodeHandle{
+		node: &Node{
+			State:    NodeState_ALIVE,
+			LastPing: time.Now().Add(-t1).UnixNano(),
+		},
+	}
 
-  // This node should be alive, its LastPing timeout is recent enough.
-  t2 := time.Duration(conf.Scheduler.NodePingTimeout) - (20 * time.Millisecond)
-  h2 := &nodeHandle{
-    node: &Node{
-      State: NodeState_ALIVE,
-      LastPing: time.Now().Add(-t2).UnixNano(),
-    },
-  }
+	// This node should be alive, its LastPing timeout is recent enough.
+	t2 := time.Duration(conf.Scheduler.NodePingTimeout) - (20 * time.Millisecond)
+	h2 := &nodeHandle{
+		node: &Node{
+			State:    NodeState_ALIVE,
+			LastPing: time.Now().Add(-t2).UnixNano(),
+		},
+	}
 
-  s.handles["node-1"] = h1
-  s.handles["node-2"] = h2
+	s.handles["node-1"] = h1
+	s.handles["node-2"] = h2
 	ctx := context.Background()
-  s.checkNodes(ctx)
+	s.checkNodes(ctx)
 
-  if h1.node.State != NodeState_DEAD {
-    t.Errorf("expected node-1 to be DEAD, but got %s", h1.node.State)
-  }
+	if h1.node.State != NodeState_DEAD {
+		t.Errorf("expected node-1 to be DEAD, but got %s", h1.node.State)
+	}
 
-  if h2.node.State != NodeState_ALIVE {
-    t.Errorf("expected node-2 to be ALIVE, but got %s", h2.node.State)
-  }
+	if h2.node.State != NodeState_ALIVE {
+		t.Errorf("expected node-2 to be ALIVE, but got %s", h2.node.State)
+	}
 }
 
 // Test that dead nodes are cleanup up after some time.
@@ -161,47 +161,47 @@ func TestDeadNodeCleanedUp(t *testing.T) {
 	conf := testConfig()
 	s := newTestSched(conf)
 
-  // This node should be removed.
-  t1 := time.Duration(conf.Scheduler.NodeDeadTimeout)
-  h1 := &nodeHandle{
-    node: &Node{
-      State: NodeState_DEAD,
-      LastPing: time.Now().Add(-t1).UnixNano(),
-    },
-  }
+	// This node should be removed.
+	t1 := time.Duration(conf.Scheduler.NodeDeadTimeout)
+	h1 := &nodeHandle{
+		node: &Node{
+			State:    NodeState_DEAD,
+			LastPing: time.Now().Add(-t1).UnixNano(),
+		},
+	}
 
-  // This node should remain.
-  t2 := time.Duration(conf.Scheduler.NodeDeadTimeout) - (20 * time.Millisecond)
-  h2 := &nodeHandle{
-    node: &Node{
-      State: NodeState_DEAD,
-      LastPing: time.Now().Add(-t2).UnixNano(),
-    },
-  }
+	// This node should remain.
+	t2 := time.Duration(conf.Scheduler.NodeDeadTimeout) - (20 * time.Millisecond)
+	h2 := &nodeHandle{
+		node: &Node{
+			State:    NodeState_DEAD,
+			LastPing: time.Now().Add(-t2).UnixNano(),
+		},
+	}
 
-  s.handles["node-1"] = h1
-  s.handles["node-2"] = h2
+	s.handles["node-1"] = h1
+	s.handles["node-2"] = h2
 	ctx := context.Background()
-  s.checkNodes(ctx)
+	s.checkNodes(ctx)
 
-  _, ok := s.handles["node-1"]
-  if ok {
-    t.Error("expected node-1 to be removed")
-  }
+	_, ok := s.handles["node-1"]
+	if ok {
+		t.Error("expected node-1 to be removed")
+	}
 
-  _, ok = s.handles["node-2"]
-  if !ok {
-    t.Error("node-2 was removed unexpectedly")
-  }
+	_, ok = s.handles["node-2"]
+	if !ok {
+		t.Error("node-2 was removed unexpectedly")
+	}
 }
 
 // Test that a worker gets created for each task.
 func TestNodeWorkerCreated(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 
-  n.Start()
+	n.Start()
 
 	// Give the scheduler server time to start.
 	time.Sleep(20 * time.Millisecond)
@@ -213,8 +213,8 @@ func TestNodeWorkerCreated(t *testing.T) {
 		return nil
 	}
 
-  s.scheduleOne(&tes.Task{Id: "task-1"})
-  s.scheduleOne(&tes.Task{Id: "task-2"})
+	s.scheduleOne(&tes.Task{Id: "task-1"})
+	s.scheduleOne(&tes.Task{Id: "task-2"})
 
 	time.Sleep(20 * time.Millisecond)
 
@@ -224,128 +224,127 @@ func TestNodeWorkerCreated(t *testing.T) {
 }
 
 func TestGetNode(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 
-  n.Start()
+	n.Start()
 
 	// Give the scheduler server time to start.
 	time.Sleep(20 * time.Millisecond)
 
-  ctx := context.Background()
-  _, err := s.GetNode(ctx, &GetNodeRequest{
-    Id: n.detail.Id,
-  })
-  if err != nil {
-    t.Fatal(err)
-  }
+	ctx := context.Background()
+	_, err := s.GetNode(ctx, &GetNodeRequest{
+		Id: n.detail.Id,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestGetNodeMissing(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
 
 	// Give the scheduler server time to start.
 	time.Sleep(20 * time.Millisecond)
 
-  ctx := context.Background()
-  _, err := s.GetNode(ctx, &GetNodeRequest{
-    Id: "unknown",
-  })
+	ctx := context.Background()
+	_, err := s.GetNode(ctx, &GetNodeRequest{
+		Id: "unknown",
+	})
 	if status.Code(err) != codes.NotFound {
-    t.Errorf("expected not found error, but got %s", err)
-  }
+		t.Errorf("expected not found error, but got %s", err)
+	}
 }
 
 func TestListNodes(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 	n2 := newTestNode(conf)
 
-  n.Start()
-  n2.Start()
+	n.Start()
+	n2.Start()
 
 	// Give the scheduler server time to start.
 	time.Sleep(20 * time.Millisecond)
 
-  ctx := context.Background()
-  resp, err := s.ListNodes(ctx, &ListNodesRequest{})
-  if err != nil {
-    t.Fatal(err)
-  }
+	ctx := context.Background()
+	resp, err := s.ListNodes(ctx, &ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-  if len(resp.Nodes) != 2 {
-    t.Error("expected 2 nodes")
-  }
+	if len(resp.Nodes) != 2 {
+		t.Error("expected 2 nodes")
+	}
 }
 
 func TestListNodesEmpty(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
 
-  ctx := context.Background()
-  resp, err := s.ListNodes(ctx, &ListNodesRequest{})
-  if err != nil {
-    t.Fatal(err)
-  }
+	ctx := context.Background()
+	resp, err := s.ListNodes(ctx, &ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-  if len(resp.Nodes) != 0 {
-    t.Error("expected 0 nodes")
-  }
+	if len(resp.Nodes) != 0 {
+		t.Error("expected 0 nodes")
+	}
 }
 
 func TestDrainNode(t *testing.T) {
-  ctx := context.Background()
-  conf := testConfig()
+	ctx := context.Background()
+	conf := testConfig()
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 
-  n.Start()
+	n.Start()
 
 	// Give the scheduler server time to start.
 	time.Sleep(20 * time.Millisecond)
 
-  _, err := s.DrainNode(ctx, &DrainNodeRequest{
-    Id: n.detail.Id,
-  })
-  if err != nil {
-    t.Fatal(err)
-  }
+	_, err := s.DrainNode(ctx, &DrainNodeRequest{
+		Id: n.detail.Id,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	time.Sleep(50 * time.Millisecond)
 
-  resp, err := s.GetNode(ctx, &GetNodeRequest{
-    Id: n.detail.Id,
-  })
-  if err != nil {
-    t.Fatal(err)
-  }
+	resp, err := s.GetNode(ctx, &GetNodeRequest{
+		Id: n.detail.Id,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-  if resp.State != NodeState_DRAIN {
+	if resp.State != NodeState_DRAIN {
 		t.Errorf("expected state to be DRAIN, but got %s", resp.State)
-  }
+	}
 }
-
 
 // Test that a panic from the worker doesn't crash the node.
 func TestNodeWorkerPanic(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 
-  n.Start()
+	n.Start()
 
 	// Give the scheduler server time to start.
 	time.Sleep(20 * time.Millisecond)
 
 	// Count the number of times the worker factory was called
 	n.workerRun = func(context.Context, string) error {
-    panic("test panic")
+		panic("test panic")
 	}
 
-  s.scheduleOne(&tes.Task{Id: "task-1"})
+	s.scheduleOne(&tes.Task{Id: "task-1"})
 
 	time.Sleep(20 * time.Millisecond)
 
@@ -359,107 +358,107 @@ func TestNodeWorkerPanic(t *testing.T) {
 }
 
 func TestNodeDetectResources(t *testing.T) {
-  conf := testConfig()
-  conf.Node.Resources.Cpus = 1234
-  conf.Node.Resources.RamGb = 1235.0
-  conf.Node.Resources.DiskGb = 1236.0
+	conf := testConfig()
+	conf.Node.Resources.Cpus = 1234
+	conf.Node.Resources.RamGb = 1235.0
+	conf.Node.Resources.DiskGb = 1236.0
 	s := newTestSched(conf)
 	n := newTestNode(conf)
-  n.Start()
+	n.Start()
 
 	n.workerRun = func(context.Context, string) error {
-    time.Sleep(10 *time.Second)
+		time.Sleep(10 * time.Second)
 		return nil
 	}
 
 	// Give the scheduler server time to start.
 	time.Sleep(50 * time.Millisecond)
 
-  d := n.detail.Resources
-  if d.Cpus != 1234 {
-    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
-  }
-  if d.RamGb != 1235.0 {
-    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
-  }
-  if d.DiskGb != 1236.0 {
-    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
-  }
+	d := n.detail.Resources
+	if d.Cpus != 1234 {
+		t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+	}
+	if d.RamGb != 1235.0 {
+		t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+	}
+	if d.DiskGb != 1236.0 {
+		t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+	}
 
-  // Check that the scheduler has the same resources
-  d = s.handles[n.detail.Id].node.Resources
-  if d.Cpus != 1234 {
-    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
-  }
-  if d.RamGb != 1235.0 {
-    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
-  }
-  if d.DiskGb != 1236.0 {
-    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
-  }
+	// Check that the scheduler has the same resources
+	d = s.handles[n.detail.Id].node.Resources
+	if d.Cpus != 1234 {
+		t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+	}
+	if d.RamGb != 1235.0 {
+		t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+	}
+	if d.DiskGb != 1236.0 {
+		t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+	}
 
-  // !!!!!!!!!!!!
-  // Note that tasks have a minimum cpu resource request of 1 CPU.
+	// !!!!!!!!!!!!
+	// Note that tasks have a minimum cpu resource request of 1 CPU.
 
-  s.assignTask(&tes.Task{Id: "task-1"}, n.detail.Id)
+	s.assignTask(&tes.Task{Id: "task-1"}, n.detail.Id)
 	time.Sleep(50 * time.Millisecond)
 
-  d = n.detail.Available
-  if d.Cpus != 1233 {
-    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
-  }
-  if d.RamGb != 1235.0 {
-    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
-  }
-  if d.DiskGb != 1236.0 {
-    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
-  }
+	d = n.detail.Available
+	if d.Cpus != 1233 {
+		t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+	}
+	if d.RamGb != 1235.0 {
+		t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+	}
+	if d.DiskGb != 1236.0 {
+		t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+	}
 
-  // Check that the scheduler has the same resources
-  d = s.handles[n.detail.Id].node.Available
-  if d.Cpus != 1233 {
-    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
-  }
-  if d.RamGb != 1235.0 {
-    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
-  }
-  if d.DiskGb != 1236.0 {
-    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
-  }
+	// Check that the scheduler has the same resources
+	d = s.handles[n.detail.Id].node.Available
+	if d.Cpus != 1233 {
+		t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+	}
+	if d.RamGb != 1235.0 {
+		t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+	}
+	if d.DiskGb != 1236.0 {
+		t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+	}
 }
 
 // Test that a node does nothing where there are no assigned tasks.
 func TestNodeWorkerNoTasks(t *testing.T) {
-  conf := testConfig()
+	conf := testConfig()
 	s := newTestSched(conf)
 	n := newTestNode(conf)
 	n2 := newTestNode(conf)
 
-  n.Start()
-  n2.Start()
+	n.Start()
+	n2.Start()
 
 	// Give the scheduler server time to start.
 	time.Sleep(50 * time.Millisecond)
 
 	// Count the number of times the worker factory was called
-  wg := sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	var count, count2 int
 	n.workerRun = func(context.Context, string) error {
 		count++
-    wg.Done()
+		wg.Done()
 		return nil
 	}
 	n2.workerRun = func(context.Context, string) error {
 		count2++
-    wg.Done()
+		wg.Done()
 		return nil
 	}
 
-  wg.Add(2)
-  s.assignTask(&tes.Task{Id: "task-1"}, n.detail.Id)
-  s.assignTask(&tes.Task{Id: "task-2"}, n.detail.Id)
+	wg.Add(2)
+	s.assignTask(&tes.Task{Id: "task-1"}, n.detail.Id)
+	s.assignTask(&tes.Task{Id: "task-2"}, n.detail.Id)
 
-  wg.Wait()
+	wg.Wait()
 
 	if count != 2 {
 		t.Fatalf("Expected worker count 2, got %d", count)
@@ -470,61 +469,61 @@ func TestNodeWorkerNoTasks(t *testing.T) {
 }
 
 func TestNodeAvailableResources(t *testing.T) {
-  conf := testConfig()
-  conf.Node.Resources.Cpus = 1234
-  conf.Node.Resources.RamGb = 1235.0
-  conf.Node.Resources.DiskGb = 1236.0
+	conf := testConfig()
+	conf.Node.Resources.Cpus = 1234
+	conf.Node.Resources.RamGb = 1235.0
+	conf.Node.Resources.DiskGb = 1236.0
 	s := newTestSched(conf)
 	n := newTestNode(conf)
-  n.Start()
+	n.Start()
 
-  done := make(chan struct{})
+	done := make(chan struct{})
 	n.workerRun = func(context.Context, string) error {
-    <-done
+		<-done
 		return nil
 	}
 
 	// Give the scheduler server time to start.
 	time.Sleep(50 * time.Millisecond)
 
-  s.assignTask(&tes.Task{
-    Id: "task-1",
-    Resources: &tes.Resources{
-      CpuCores: 2,
-      RamGb: 3.0,
-      DiskGb: 4.0,
-    },
-  }, n.detail.Id)
+	s.assignTask(&tes.Task{
+		Id: "task-1",
+		Resources: &tes.Resources{
+			CpuCores: 2,
+			RamGb:    3.0,
+			DiskGb:   4.0,
+		},
+	}, n.detail.Id)
 
 	time.Sleep(50 * time.Millisecond)
 
-  // Check that available resources were adjusted for the task assigned.
-  d := s.handles[n.detail.Id].node.Available
-  if d.Cpus != 1232 {
-    t.Errorf("expected 1232 Cpus, got %d", d.Cpus)
-  }
-  if d.RamGb != 1232.0 {
-    t.Errorf("expected 1232 RamGb, got %f", d.RamGb)
-  }
-  if d.DiskGb != 1232.0 {
-    t.Errorf("expected 1232 Cpus, got %f", d.DiskGb)
-  }
+	// Check that available resources were adjusted for the task assigned.
+	d := s.handles[n.detail.Id].node.Available
+	if d.Cpus != 1232 {
+		t.Errorf("expected 1232 Cpus, got %d", d.Cpus)
+	}
+	if d.RamGb != 1232.0 {
+		t.Errorf("expected 1232 RamGb, got %f", d.RamGb)
+	}
+	if d.DiskGb != 1232.0 {
+		t.Errorf("expected 1232 Cpus, got %f", d.DiskGb)
+	}
 
-  // Complete the task
-  close(done)
+	// Complete the task
+	close(done)
 	time.Sleep(50 * time.Millisecond)
 
-  // Check that available resources are recovered after the task finishes.
-  d = s.handles[n.detail.Id].node.Available
-  if d.Cpus != 1234 {
-    t.Errorf("expected 1232 Cpus, got %d", d.Cpus)
-  }
-  if d.RamGb != 1235.0 {
-    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
-  }
-  if d.DiskGb != 1236.0 {
-    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
-  }
+	// Check that available resources are recovered after the task finishes.
+	d = s.handles[n.detail.Id].node.Available
+	if d.Cpus != 1234 {
+		t.Errorf("expected 1232 Cpus, got %d", d.Cpus)
+	}
+	if d.RamGb != 1235.0 {
+		t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+	}
+	if d.DiskGb != 1236.0 {
+		t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+	}
 }
 
 // TODO test:

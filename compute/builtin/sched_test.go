@@ -1,4 +1,4 @@
-package manual
+package builtin
 
 import (
 	"testing"

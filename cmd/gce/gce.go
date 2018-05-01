@@ -21,11 +21,12 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.AddCommand(runCmd)
+	Cmd.AddCommand(runNodeCmd)
+	Cmd.AddCommand(runServerCmd)
 }
 
-var runCmd = &cobra.Command{
-	Use: "run",
+var runNodeCmd = &cobra.Command{
+	Use: "run-node",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = util.SignalContext(ctx, time.Second*5, syscall.SIGINT, syscall.SIGTERM)
@@ -46,8 +47,30 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		if conf.Node.ID != "" {
-			return node.Run(ctx, conf, logger.NewLogger("node", conf.Logger))
+	  return node.Run(ctx, conf, logger.NewLogger("node", conf.Logger))
+	},
+}
+
+var runServerCmd = &cobra.Command{
+	Use: "run-server",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx, cancel := context.WithCancel(context.Background())
+		ctx = util.SignalContext(ctx, time.Second*5, syscall.SIGINT, syscall.SIGTERM)
+		defer cancel()
+
+		conf := config.DefaultConfig()
+
+		// Check that this is a GCE VM environment.
+		// If not, fail.
+		meta, merr := gce.LoadMetadata()
+		if merr != nil {
+			return fmt.Errorf("can't find GCE metadata. This command requires a GCE environment")
+		}
+
+		var err error
+		conf, err = gce.WithMetadataConfig(conf, meta)
+		if err != nil {
+			return err
 		}
 
 		return server.Run(ctx, conf, logger.NewLogger("server", conf.Logger))

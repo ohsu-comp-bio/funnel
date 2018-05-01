@@ -1,21 +1,14 @@
-package scheduler
+package builtin
 
 import (
 	"fmt"
 	"math"
 
-	uuid "github.com/nu7hatch/gouuid"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
 )
-
-// GenNodeID returns a UUID string.
-func GenNodeID(prefix string) string {
-	u, _ := uuid.NewV4()
-	return fmt.Sprintf("%s-node-%s", prefix, u.String())
-}
 
 // detectResources helps determine the amount of resources to report.
 // Resources are determined by inspecting the host, but they

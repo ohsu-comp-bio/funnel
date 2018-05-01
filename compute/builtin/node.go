@@ -1,4 +1,4 @@
-package scheduler
+package builtin
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+  "github.com/rs/xid"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -17,14 +18,15 @@ import (
 
 // NewNodeProcess returns a new NodeProcess instance.
 func NewNodeProcess(conf config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
-	log = log.WithFields("nodeID", conf.Node.ID)
+  id := xid.New().String()
+	log = log.WithFields("nodeID", id)
 	log.Debug("NewNode", "config", conf)
 
 	return &NodeProcess{
 		conf: conf,
 		log:  log,
 		detail: &Node{
-			Id:          conf.Node.ID,
+			Id:          id,
 			State:       NodeState_ALIVE,
 			Preemptible: conf.Node.Preemptible,
 			Zone:        conf.Node.Zone,

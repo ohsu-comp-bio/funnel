@@ -8,7 +8,7 @@ import (
 	"github.com/golang/gddo/httputil"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/compute/builtin"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -27,7 +27,7 @@ type Server struct {
 	Password         string
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
-	Nodes            scheduler.SchedulerServiceServer
+	Nodes            builtin.SchedulerServiceServer
 	DisableHTTPCache bool
 	Log              *logger.Logger
 }
@@ -51,9 +51,9 @@ func newDebugInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
-// Serve starts the server and does not block. This will open TCP ports
-// for both RPC and HTTP.
-func (s *Server) Serve(pctx context.Context) error {
+// Run runs the server, listening on two TCP ports for HTTP and RPC traffic.
+// Run blocks until the context is canceled, or an error occurs.
+func (s *Server) Run(pctx context.Context) error {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
 
@@ -124,8 +124,8 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Register Scheduler RPC service
 	if s.Nodes != nil {
-		scheduler.RegisterSchedulerServiceServer(grpcServer, s.Nodes)
-		err := scheduler.RegisterSchedulerServiceHandlerFromEndpoint(
+    builtin.RegisterSchedulerServiceServer(grpcServer, s.Nodes)
+		err := builtin.RegisterSchedulerServiceHandlerFromEndpoint(
 			ctx, grpcMux, s.RPCAddress, dialOpts,
 		)
 		if err != nil {

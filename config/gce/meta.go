@@ -34,20 +34,11 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 
 	// Is this a worker node? If so, inherit the node ID from the GCE instance name.
 	if meta.Instance.Attributes.FunnelNodeServerAddress != "" {
-		if conf.Node.ID == "" {
-			conf.Node.ID = meta.Instance.Name
-		}
 		parts := strings.SplitN(meta.Instance.Attributes.FunnelNodeServerAddress, ":", 2)
 		conf.Server.HostName = parts[0]
 		if len(parts) == 2 {
 			conf.Server.RPCPort = parts[1]
 		}
-	}
-
-	// If the configuration contains a node ID, assume that a node
-	// process should be started (instead of a server).
-	if conf.Node.ID != "" {
-		conf.GoogleStorage = config.GSStorage{}
 	}
 
 	// Auto detect the server's host name when it's not already set.

@@ -49,19 +49,13 @@ Server:
 
 # The scheduler is used for the Manual compute backend. 
 Scheduler:
-  # How often to run a scheduler iteration.
-  ScheduleRate: 1s
-  # How many tasks to schedule in one iteration.
-  ScheduleChunk: 10
   # How long to wait between updates before marking a node dead.
   NodePingTimeout: 1m
   # How long to wait for a node to start, before marking the node dead.
   NodeInitTimeout: 5m
+  # TODO missing NodeDeadTimeout
 
 Node:
-  # If empty, a node ID will be automatically generated.
-  ID: ""
-
   # If the node has been idle for longer than the timeout, it will shut down.
   # -1 means there is no timeout. 0 means timeout immediately after the first task.
   Timeout: -1s

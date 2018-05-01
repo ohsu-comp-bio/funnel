@@ -99,7 +99,6 @@ type Scheduler struct {
 // Node contains the configuration for a node. Nodes track available resources
 // for funnel's basic scheduler.
 type Node struct {
-	ID string
 	// A Node will automatically try to detect what resources are available to it.
 	// Defining Resources in the Node configuration overrides this behavior.
 	Resources struct {

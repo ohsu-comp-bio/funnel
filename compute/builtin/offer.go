@@ -1,4 +1,4 @@
-package scheduler
+package builtin
 
 import (
 	"github.com/ohsu-comp-bio/funnel/tes"

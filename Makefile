@@ -27,7 +27,7 @@ proto:
 		--go_out=plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		tes.proto
-	@cd compute/scheduler && protoc \
+	@cd compute/builtin && protoc \
 		$(PROTO_INC) \
 		-I ../../ \
 		--go_out=Mtes/tes.proto=github.com/ohsu-comp-bio/funnel/tes,plugins=grpc:. \
@@ -90,7 +90,6 @@ start-elasticsearch:
 
 test-elasticsearch:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/elastic.config.yml
-	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/elastic.config.yml
 
 start-mongodb:
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
@@ -98,7 +97,6 @@ start-mongodb:
 
 test-mongodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/mongo.config.yml
-	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml	
 
 start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
@@ -193,12 +191,6 @@ release: depends
 	@goreleaser \
 		--rm-dist \
 		--release-notes <(github-release-notes)
-
-# Generate mocks for testing.
-gen-mocks:
-	@go get github.com/vektra/mockery/...
-	@mockery -dir compute/scheduler -name Client -inpkg -output compute/scheduler
-	@mockery -dir compute/scheduler -name SchedulerServiceServer -inpkg -output compute/scheduler
 
 # Bundle example task messages into Go code.
 bundle-examples:

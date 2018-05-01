@@ -55,7 +55,7 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 	fun := tests.NewFunnel(tests.DefaultConfig())
 	defer fun.Cleanup()
 	// Nodes are simulated by goroutines writing to the scheduler API
-	fun.Conf.Compute = "manual"
+	fun.Conf.Compute = "builtin"
 	fun.Conf.Logger.Level = "error"
 	fun.StartServer()
 

@@ -1,5 +1,5 @@
 // Package scheduler contains Funnel's builtin compute scheduler and node.
-package scheduler
+package builtin
 
 import (
 	"context"

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package scheduler;
+option go_package = "builtin";
 
 import "tes/tes.proto";
 import "google/api/annotations.proto";

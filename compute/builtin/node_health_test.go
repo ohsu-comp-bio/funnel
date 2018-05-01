@@ -1,11 +1,10 @@
-package scheduler
+package builtin
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/tests"
 )

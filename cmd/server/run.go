@@ -10,7 +10,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
 	"github.com/ohsu-comp-bio/funnel/compute/local"
 	"github.com/ohsu-comp-bio/funnel/compute/pbs"
-	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/compute/builtin"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/database/boltdb"
@@ -34,12 +34,6 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 	return s.Run(ctx)
 }
 
-// Server is a Funnel server + scheduler.
-type Server struct {
-	*server.Server
-	*scheduler.Scheduler
-}
-
 // Database represents the base funnel database interface
 type Database interface {
 	tes.ReadOnlyServer
@@ -48,12 +42,12 @@ type Database interface {
 }
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
-func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Server, error) {
+func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*server.Server, error) {
 	log.Debug("NewServer", "config", conf)
 
 	var database Database
 	var reader tes.ReadOnlyServer
-	var sched *scheduler.Scheduler
+  var schedService builtin.SchedulerServiceServer
 
 	writers := events.MultiWriter{}
 
@@ -156,13 +150,15 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	// Compute
 	var compute server.ComputeBackend
 	switch strings.ToLower(conf.Compute) {
-	case "manual":
+	case "builtin":
 		ev := &events.ErrLogger{Writer: writer, Log: log.Sub("scheduler")}
-		sched, err = scheduler.NewScheduler(conf.Scheduler, log.Sub("scheduler"), ev)
+    var sched *builtin.Scheduler
+		sched, err = builtin.NewScheduler(conf.Scheduler, log.Sub("scheduler"), ev)
 		if err != nil {
 			return nil, err
 		}
 		compute = sched
+    schedService = sched
 
 	case "aws-batch":
 		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, writer)
@@ -192,47 +188,23 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 
 	writer = &events.ErrLogger{Writer: writer, Log: log}
 
-	return &Server{
-		Server: &server.Server{
-			RPCAddress:       ":" + conf.Server.RPCPort,
-			HTTPPort:         conf.Server.HTTPPort,
-			User:             conf.Server.User,
-			Password:         conf.Server.Password,
-			DisableHTTPCache: conf.Server.DisableHTTPCache,
-			Log:              log,
-			Tasks: &server.TaskService{
-				Name:    conf.Server.ServiceName,
-				Event:   writer,
-				Compute: compute,
-				Read:    reader,
-				Log:     log,
-			},
-			Events: &events.Service{Writer: writer},
-			Nodes:  sched,
-		},
-		Scheduler: sched,
+	return &server.Server{
+    RPCAddress:       ":" + conf.Server.RPCPort,
+    HTTPPort:         conf.Server.HTTPPort,
+    User:             conf.Server.User,
+    Password:         conf.Server.Password,
+    DisableHTTPCache: conf.Server.DisableHTTPCache,
+    Log:              log,
+    Tasks: &server.TaskService{
+      Name:    conf.Server.ServiceName,
+      Event:   writer,
+      Compute: compute,
+      Read:    reader,
+      Log:     log,
+    },
+    Events: &events.Service{Writer: writer},
+    Nodes:  schedService,
 	}, nil
-}
-
-// Run runs a default Funnel server.
-// This opens a database, and starts an API server, scheduler and task logger.
-// This blocks indefinitely.
-func (s *Server) Run(ctx context.Context) error {
-
-	// Start server
-	errch := make(chan error)
-	go func() {
-		errch <- s.Server.Serve(ctx)
-	}()
-
-	// Start Scheduler
-	if s.Scheduler != nil {
-		go s.Scheduler.Run(ctx)
-	}
-
-	// Block until done.
-	// Server and scheduler must be stopped via the context.
-	return <-errch
 }
 
 func dberr(err error) error {

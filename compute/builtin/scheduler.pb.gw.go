@@ -2,11 +2,11 @@
 // source: scheduler.proto
 
 /*
-Package scheduler is a reverse proxy.
+Package builtin is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package scheduler
+package builtin
 
 import (
 	"io"
@@ -179,7 +179,7 @@ func RegisterSchedulerServiceHandler(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
-	mux.Handle("GET", pattern_SchedulerService_DrainNode_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_SchedulerService_DrainNode_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {

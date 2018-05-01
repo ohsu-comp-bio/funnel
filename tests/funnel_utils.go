@@ -20,7 +20,6 @@ import (
 	docker "github.com/docker/docker/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
-	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/server"
@@ -50,8 +49,6 @@ type Funnel struct {
 
 	// Components
 	Server    *server.Server
-	Scheduler *scheduler.Scheduler
-	Srv       *servercmd.Server
 
 	// Internal
 	startTime string
@@ -83,8 +80,6 @@ func NewFunnel(conf config.Config) *Funnel {
 		Conf:       conf,
 		StorageDir: conf.LocalStorage.AllowedDirs[0],
 		Server:     srv.Server,
-		Srv:        srv,
-		Scheduler:  srv.Scheduler,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
 		rate:       time.Millisecond * 500,
 	}
@@ -110,7 +105,7 @@ func (f *Funnel) Cleanup() {
 // StartServer starts the server
 func (f *Funnel) StartServer() {
 	go func() {
-		f.Srv.Run(context.Background())
+		f.Server.Run(context.Background())
 	}()
 
 	err := f.PollForServerStart()

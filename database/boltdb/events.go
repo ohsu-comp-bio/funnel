@@ -43,10 +43,6 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 		if err != nil {
 			return fmt.Errorf("error storing task in database: %s", err)
 		}
-		err = taskBolt.queueTask(task)
-		if err != nil {
-			return fmt.Errorf("error queueing task in database: %s", err)
-		}
 		return nil
 	}
 

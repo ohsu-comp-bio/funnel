@@ -85,7 +85,7 @@ func newTestSched(conf config.Config) *Scheduler {
 	}
 
 	grpcServer := grpc.NewServer()
-	ev := &events.Logger{log}
+	ev := &events.Logger{Logger: log}
 	sched, err := NewScheduler(conf.Scheduler, log, ev)
 	if err != nil {
 		panic(err)

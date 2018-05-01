@@ -1,4 +1,4 @@
-// Package scheduler contains Funnel's builtin compute scheduler and node.
+// Package builtin contains Funnel's builtin compute scheduler and node.
 package builtin
 
 import (
@@ -98,8 +98,6 @@ func (s *Scheduler) NodeChat(stream SchedulerService_NodeChatServer) error {
 		}
 		s.mtx.Unlock()
 	}
-
-	return nil
 }
 
 // ListNodes is an API endpoint which returns a list of nodes.

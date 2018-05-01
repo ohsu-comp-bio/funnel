@@ -155,8 +155,10 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*se
 		var sched *builtin.Scheduler
 		sched, err = builtin.NewScheduler(conf.Scheduler, log.Sub("scheduler"), ev)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("creating scheduler: %s", err)
 		}
+		go sched.Run(ctx)
+
 		compute = sched
 		schedService = sched
 

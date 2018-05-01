@@ -24,6 +24,7 @@ import (
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/config/testconfig"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -33,7 +34,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var log = logger.NewLogger("e2e", LogConfig())
+var log = logger.NewLogger("e2e", testconfig.LogConfig())
 
 func init() {
 	logger.SetGRPCLogger(log)
@@ -82,7 +83,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		Docker:     dcli,
 		Conf:       conf,
 		StorageDir: conf.LocalStorage.AllowedDirs[0],
-		Server:     srv.Server,
+		Server:     srv,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
 		rate:       time.Millisecond * 500,
 	}

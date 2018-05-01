@@ -100,7 +100,6 @@ func nodeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Uint32Var(&flagConf.Node.Resources.Cpus, "Node.Resources.Cpus", flagConf.Node.Resources.Cpus, "Cpus available to Node")
 	f.Float64Var(&flagConf.Node.Resources.RamGb, "Node.Resources.RamGb", flagConf.Node.Resources.RamGb, "Ram (GB) available to Node")
 	f.Float64Var(&flagConf.Node.Resources.DiskGb, "Node.Resources.DiskGb", flagConf.Node.Resources.DiskGb, "Free disk (GB) available to Node")
-	f.Var(&flagConf.Node.Timeout, "Node.Timeout", "Node timeout in seconds")
 	f.Var(&flagConf.Node.UpdateRate, "Node.UpdateRate", "Node update rate")
 	// TODO Metadata
 

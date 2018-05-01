@@ -213,8 +213,9 @@ func (s *Scheduler) scheduleOne(task *tes.Task) error {
 
 	offer := DefaultScheduleAlgorithm(task, s.nodes(), nil)
 	if offer == nil {
-		return fmt.Errorf("no offer for task %s", task.Id)
+    return &noOfferError{task.Id}
 	}
+
   err := s.assignTask(task, offer.Node.Id)
   if err != nil {
     return fmt.Errorf("assigning task to node: %s", err)
@@ -228,6 +229,8 @@ func (s *Scheduler) assignTask(task *tes.Task, nodeID string) error {
     return fmt.Errorf("no such node: %s", nodeID)
   }
 
+  // TODO this doesn't immediately adjust the available resources,
+  //      so scheduling happens fast, assignments will be wrong.
 	err := h.send(&Control{
     Type: ControlType_CREATE_TASK,
     Task: task,
@@ -317,4 +320,11 @@ func (t trigger) trigger() {
 		// If the channel can't be written to, do nothing.
 		// This means there's already one iteration running and one pending.
 	}
+}
+
+type noOfferError struct {
+  taskID string
+}
+func (e *noOfferError) Error() string {
+  return fmt.Sprintf("no offer for task %s", e.taskID)
 }

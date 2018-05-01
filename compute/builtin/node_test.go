@@ -469,40 +469,69 @@ func TestNodeWorkerNoTasks(t *testing.T) {
 	}
 }
 
-// TODO test:
-// - that detect resources config overrides autodetection properly
-// - that available resources are calculated correctly
-// - that resources have a minimum request, e.g. cpu
-
-/*
-
-func TestNoTasks(t *testing.T) {
+func TestNodeAvailableResources(t *testing.T) {
   conf := testConfig()
-	n := newTestNode(conf, t)
+  conf.Node.Resources.Cpus = 1234
+  conf.Node.Resources.RamGb = 1235.0
+  conf.Node.Resources.DiskGb = 1236.0
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+  n.Start()
 
-	// Tell the scheduler mock to return nothing
-	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(&Node{}, nil)
-
-	// Count the number of times the worker factory was called
-	var count int
+  done := make(chan struct{})
 	n.workerRun = func(context.Context, string) error {
-		count++
+    <-done
 		return nil
 	}
 
-	n.sync(context.Background())
-	n.sync(context.Background())
-	n.sync(context.Background())
-	time.Sleep(time.Second)
+	// Give the scheduler server time to start.
+	time.Sleep(50 * time.Millisecond)
 
-	if count != 0 {
-		t.Fatal("Unexpected worker factory call count")
-	}
-	if n.workers.Count() != 0 {
-		t.Fatal("Unexpected node worker count")
-	}
+  s.assignTask(&tes.Task{
+    Id: "task-1",
+    Resources: &tes.Resources{
+      CpuCores: 2,
+      RamGb: 3.0,
+      DiskGb: 4.0,
+    },
+  }, n.detail.Id)
+
+	time.Sleep(50 * time.Millisecond)
+
+  // Check that available resources were adjusted for the task assigned.
+  d := s.handles[n.detail.Id].node.Available
+  if d.Cpus != 1232 {
+    t.Errorf("expected 1232 Cpus, got %d", d.Cpus)
+  }
+  if d.RamGb != 1232.0 {
+    t.Errorf("expected 1232 RamGb, got %f", d.RamGb)
+  }
+  if d.DiskGb != 1232.0 {
+    t.Errorf("expected 1232 Cpus, got %f", d.DiskGb)
+  }
+
+  // Complete the task
+  close(done)
+	time.Sleep(50 * time.Millisecond)
+
+  // Check that available resources are recovered after the task finishes.
+  d = s.handles[n.detail.Id].node.Available
+  if d.Cpus != 1234 {
+    t.Errorf("expected 1232 Cpus, got %d", d.Cpus)
+  }
+  if d.RamGb != 1235.0 {
+    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+  }
+  if d.DiskGb != 1236.0 {
+    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+  }
 }
+
+// TODO test:
+// - that many tasks can be assign rapidly to a node before it receives them,
+//   and available resources will still be correctly managed.
+
+/*
 
 // Test that a finished task is not immediately re-run.
 // Tests a bugfix.

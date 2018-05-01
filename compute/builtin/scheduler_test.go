@@ -1,14 +1,21 @@
 package builtin
 
-/*
 import (
 	"testing"
-	"time"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"github.com/ohsu-comp-bio/funnel/tests"
-	"github.com/ohsu-comp-bio/funnel/config"
 )
+
+func TestScheduleZeroNodes(t *testing.T) {
+  conf := testConfig()
+	s := newTestSched(conf)
+  err := s.scheduleOne(&tes.Task{Id: "task-1"})
+  if err == nil {
+    t.Fatal("expected no offer error")
+  }
+}
+
+/*
 
 func TestReadQueue(t *testing.T) {
 	c := tests.DefaultConfig()
@@ -40,45 +47,6 @@ func TestReadQueue(t *testing.T) {
 		if tasks[i].CreationTime > tasks[j].CreationTime {
 			t.Error("unexpected task sort order")
 		}
-	}
-}
-
-func TestCancel(t *testing.T) {
-	c := tests.DefaultConfig()
-	c.Compute = "builtin"
-	f := tests.NewFunnel(c)
-	f.StartServer()
-
-	id := f.Run(`'sleep 1000'`)
-	f.Cancel(id)
-	task := f.Get(id)
-	if task.State != tes.Canceled {
-		t.Error("expected canceled state")
-	}
-}
-
-func TestNoNodes(t *testing.T) {
-	_, s := setup([]*scheduler.Node{})
-	j := &tes.Task{}
-	o := s.GetOffer(j)
-	if o != nil {
-		t.Error("Task scheduled on empty nodes")
-	}
-}
-
-func TestSingleNode(t *testing.T) {
-	_, s := setup([]*scheduler.Node{
-		simpleNode(),
-	})
-
-	j := &tes.Task{}
-	o := s.GetOffer(j)
-	if o == nil {
-		t.Error("Failed to schedule task on single node")
-		return
-	}
-	if o.Node.Id != "test-node-id" {
-		t.Error("Scheduled task on unexpected node")
 	}
 }
 

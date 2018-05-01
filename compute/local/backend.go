@@ -3,14 +3,11 @@ package local
 
 import (
 	"context"
-	"syscall"
-	"time"
 
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
@@ -33,12 +30,7 @@ type Backend struct {
 // Submit submits a task. For the Local backend this results in the task
 // running immediately.
 func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
-	go func() {
-		ctx, cancel := context.WithCancel(ctx)
-		ctx = util.SignalContext(ctx, time.Millisecond, syscall.SIGINT, syscall.SIGTERM)
-		defer cancel()
-		b.worker.Run(ctx, task.Id)
-	}()
+	go b.worker.Run(context.Background(), task.Id)
 	return nil
 }
 

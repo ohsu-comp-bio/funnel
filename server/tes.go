@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -59,6 +60,9 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 
 	// dispatch to compute backend
 	go func() {
+		// Submit needs its own context because it might take longer than the CreateTask request.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 		err := ts.Compute.Submit(ctx, task)
 		if err != nil {
 			// We log the error here because it's much more complicated to try

@@ -46,7 +46,6 @@ func DefaultConfig() Config {
 			NodeDeadTimeout: Duration(time.Minute * 5),
 		},
 		Node: Node{
-			Timeout:    -1,
 			UpdateRate: Duration(time.Second * 5),
 			Metadata:   map[string]string{},
 		},

@@ -104,9 +104,6 @@ type Node struct {
 		RamGb  float64 // nolint
 		DiskGb float64
 	}
-	// If the node has been idle for longer than the timeout, it will shut down.
-	// -1 means there is no timeout. 0 means timeout immediately after the first task.
-	Timeout Duration
 	// How often the node sends update requests to the server.
 	UpdateRate  Duration
 	Metadata    map[string]string

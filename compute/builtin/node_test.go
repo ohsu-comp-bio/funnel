@@ -4,6 +4,11 @@ import (
   "context"
 	"testing"
 	"time"
+  "sync"
+
+	"github.com/ohsu-comp-bio/funnel/tes"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Test calling stopping a node by canceling its context
@@ -190,23 +195,287 @@ func TestDeadNodeCleanedUp(t *testing.T) {
   }
 }
 
-// TODO test panicing worker
-
-/*
-// Mainly exercising a panic bug caused by an unhandled
-// error from client.GetNode().
-func TestGetNodeFail(t *testing.T) {
+// Test that a worker gets created for each task.
+func TestNodeWorkerCreated(t *testing.T) {
   conf := testConfig()
-	n := newTestNode(conf, t)
+	s := newTestSched(conf)
+	n := newTestNode(conf)
 
-	// Set GetNode to return an error
-	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errors.New("TEST"))
-	n.sync(context.Background())
-	time.Sleep(time.Second)
+  n.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+	// Count the number of times the worker factory was called
+	var count int
+	n.workerRun = func(context.Context, string) error {
+		count++
+		return nil
+	}
+
+  s.scheduleOne(&tes.Task{Id: "task-1"})
+  s.scheduleOne(&tes.Task{Id: "task-2"})
+
+	time.Sleep(20 * time.Millisecond)
+
+	if count != 2 {
+		t.Fatalf("Unexpected node worker count: %d", count)
+	}
+}
+
+func TestGetNode(t *testing.T) {
+  conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+
+  n.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+  ctx := context.Background()
+  _, err := s.GetNode(ctx, &GetNodeRequest{
+    Id: n.detail.Id,
+  })
+  if err != nil {
+    t.Fatal(err)
+  }
+}
+
+func TestGetNodeMissing(t *testing.T) {
+  conf := testConfig()
+	s := newTestSched(conf)
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+  ctx := context.Background()
+  _, err := s.GetNode(ctx, &GetNodeRequest{
+    Id: "unknown",
+  })
+	if status.Code(err) != codes.NotFound {
+    t.Errorf("expected not found error, but got %s", err)
+  }
+}
+
+func TestListNodes(t *testing.T) {
+  conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+	n2 := newTestNode(conf)
+
+  n.Start()
+  n2.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+  ctx := context.Background()
+  resp, err := s.ListNodes(ctx, &ListNodesRequest{})
+  if err != nil {
+    t.Fatal(err)
+  }
+
+  if len(resp.Nodes) != 2 {
+    t.Error("expected 2 nodes")
+  }
+}
+
+func TestListNodesEmpty(t *testing.T) {
+  conf := testConfig()
+	s := newTestSched(conf)
+
+  ctx := context.Background()
+  resp, err := s.ListNodes(ctx, &ListNodesRequest{})
+  if err != nil {
+    t.Fatal(err)
+  }
+
+  if len(resp.Nodes) != 0 {
+    t.Error("expected 0 nodes")
+  }
+}
+
+func TestDrainNode(t *testing.T) {
+  ctx := context.Background()
+  conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+
+  n.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+  _, err := s.DrainNode(ctx, &DrainNodeRequest{
+    Id: n.detail.Id,
+  })
+  if err != nil {
+    t.Fatal(err)
+  }
+
+	time.Sleep(50 * time.Millisecond)
+
+  resp, err := s.GetNode(ctx, &GetNodeRequest{
+    Id: n.detail.Id,
+  })
+  if err != nil {
+    t.Fatal(err)
+  }
+
+  if resp.State != NodeState_DRAIN {
+		t.Errorf("expected state to be DRAIN, but got %s", resp.State)
+  }
+}
+
+
+// Test that a panic from the worker doesn't crash the node.
+func TestNodeWorkerPanic(t *testing.T) {
+  conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+
+  n.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+	// Count the number of times the worker factory was called
+	n.workerRun = func(context.Context, string) error {
+    panic("test panic")
+	}
+
+  s.scheduleOne(&tes.Task{Id: "task-1"})
+
+	time.Sleep(20 * time.Millisecond)
+
+	h, ok := s.handles[n.detail.Id]
+	if !ok {
+		t.Fatal("didn't find node record")
+	}
+	if h.node.State != NodeState_ALIVE {
+		t.Errorf("expected state to be ALIVE, but got %s", h.node.State)
+	}
+}
+
+func TestNodeDetectResources(t *testing.T) {
+  conf := testConfig()
+  conf.Node.Resources.Cpus = 1234
+  conf.Node.Resources.RamGb = 1235.0
+  conf.Node.Resources.DiskGb = 1236.0
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+  n.Start()
+
+	n.workerRun = func(context.Context, string) error {
+    time.Sleep(10 *time.Second)
+		return nil
+	}
+
+	// Give the scheduler server time to start.
+	time.Sleep(50 * time.Millisecond)
+
+  d := n.detail.Resources
+  if d.Cpus != 1234 {
+    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+  }
+  if d.RamGb != 1235.0 {
+    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+  }
+  if d.DiskGb != 1236.0 {
+    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+  }
+
+  // Check that the scheduler has the same resources
+  d = s.handles[n.detail.Id].node.Resources
+  if d.Cpus != 1234 {
+    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+  }
+  if d.RamGb != 1235.0 {
+    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+  }
+  if d.DiskGb != 1236.0 {
+    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+  }
+
+  // !!!!!!!!!!!!
+  // Note that tasks have a minimum cpu resource request of 1 CPU.
+
+  s.assignTask(&tes.Task{Id: "task-1"}, n.detail.Id)
+	time.Sleep(50 * time.Millisecond)
+
+  d = n.detail.Available
+  if d.Cpus != 1233 {
+    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+  }
+  if d.RamGb != 1235.0 {
+    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+  }
+  if d.DiskGb != 1236.0 {
+    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+  }
+
+  // Check that the scheduler has the same resources
+  d = s.handles[n.detail.Id].node.Available
+  if d.Cpus != 1233 {
+    t.Errorf("expected 1234 Cpus, got %d", d.Cpus)
+  }
+  if d.RamGb != 1235.0 {
+    t.Errorf("expected 1235 RamGb, got %f", d.RamGb)
+  }
+  if d.DiskGb != 1236.0 {
+    t.Errorf("expected 1236 Cpus, got %f", d.DiskGb)
+  }
 }
 
 // Test that a node does nothing where there are no assigned tasks.
+func TestNodeWorkerNoTasks(t *testing.T) {
+  conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+	n2 := newTestNode(conf)
+
+  n.Start()
+  n2.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(50 * time.Millisecond)
+
+	// Count the number of times the worker factory was called
+  wg := sync.WaitGroup{}
+	var count, count2 int
+	n.workerRun = func(context.Context, string) error {
+		count++
+    wg.Done()
+		return nil
+	}
+	n2.workerRun = func(context.Context, string) error {
+		count2++
+    wg.Done()
+		return nil
+	}
+
+  wg.Add(2)
+  s.assignTask(&tes.Task{Id: "task-1"}, n.detail.Id)
+  s.assignTask(&tes.Task{Id: "task-2"}, n.detail.Id)
+
+  wg.Wait()
+
+	if count != 2 {
+		t.Fatalf("Expected worker count 2, got %d", count)
+	}
+	if count2 != 0 {
+		t.Fatalf("Expected worker count 0, got %d", count2)
+	}
+}
+
+// TODO test:
+// - that detect resources config overrides autodetection properly
+// - that available resources are calculated correctly
+// - that resources have a minimum request, e.g. cpu
+
+/*
+
 func TestNoTasks(t *testing.T) {
   conf := testConfig()
 	n := newTestNode(conf, t)
@@ -232,28 +501,6 @@ func TestNoTasks(t *testing.T) {
 	}
 	if n.workers.Count() != 0 {
 		t.Fatal("Unexpected node worker count")
-	}
-}
-
-// Test that a worker gets created for each task.
-func TestNodeWorkerCreated(t *testing.T) {
-  conf := testConfig()
-
-	n := newTestNode(conf, t)
-
-	// Count the number of times the worker factory was called
-	var count int
-	n.workerRun = func(context.Context, string) error {
-		count++
-		return nil
-	}
-
-	n.AddTasks("task-1", "task-2")
-	n.sync(context.Background())
-	time.Sleep(time.Second)
-
-	if count != 2 {
-		t.Fatalf("Unexpected node worker count: %d", count)
 	}
 }
 
@@ -314,10 +561,6 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 func TestBuiltinBackend(t *testing.T) {
   conf := testConfig()
 
-	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
-	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
-	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
-
 	log := logger.NewLogger("node", tests.LogConfig())
 	tests.SetLogOutput(log, t)
 	srv := tests.NewFunnel(conf)
@@ -364,10 +607,6 @@ func TestBuiltinBackend(t *testing.T) {
 
 func TestDeadNodeTaskCleanup(t *testing.T) {
   conf := testConfig()
-
-	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
-	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
-	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
 
 	log := logger.NewLogger("node", tests.LogConfig())
 	tests.SetLogOutput(log, t)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"github.com/rs/xid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,7 +18,7 @@ import (
 // NewNodeProcess returns a new NodeProcess instance.
 func NewNodeProcess(conf config.Node, cli SchedulerServiceClient, factory Worker, log *logger.Logger) (*NodeProcess, error) {
 
-	id := xid.New().String()
+  id := genID()
 	log = log.WithFields("nodeID", id)
 	log.Debug("NewNode", "config", conf)
 
@@ -130,9 +128,6 @@ func (n *NodeProcess) connect(ctx context.Context) {
 }
 
 func (n *NodeProcess) ping() error {
-	if n.stream == nil {
-		return fmt.Errorf("pinging server: no connection")
-	}
 
 	if n.detail.Hostname == "" {
 		n.detail.Hostname = hostname()
@@ -155,6 +150,10 @@ func (n *NodeProcess) ping() error {
 	})
 	n.detail.TaskIds = ids
 	n.detail.Available = availableResources(tasks, &res)
+
+	if n.stream == nil {
+		return fmt.Errorf("pinging server: no connection")
+	}
 
 	err = n.stream.Send(n.detail)
 	// Avoid noisy "context canceled" logs.
@@ -256,6 +255,10 @@ func subtractResources(t *tes.Task, in *Resources) *Resources {
 	// Cpus are represented by an unsigned int, and if we blindly
 	// subtract it will rollover to a very large number. So check first.
 	rcpus := tres.GetCpuCores()
+  // Enforce a minimum request of 1 cpu core
+  if rcpus < 1 {
+    rcpus = 1
+  }
 	if rcpus >= out.Cpus {
 		out.Cpus = 0
 	} else {
@@ -275,27 +278,5 @@ func subtractResources(t *tes.Task, in *Resources) *Resources {
 	if out.DiskGb < 0.0 {
 		out.DiskGb = 0.0
 	}
-	return out
-}
-
-func hostname() string {
-	if name, err := os.Hostname(); err == nil {
-		return name
-	}
-	return ""
-}
-
-// waitChan wraps sync.WaitGroup with a channel-based Wait()
-// so it can be used in a select statement.
-type waitChan struct {
-	sync.WaitGroup
-}
-
-func (wc *waitChan) Wait() chan struct{} {
-	out := make(chan struct{})
-	go func() {
-		wc.WaitGroup.Wait()
-		close(out)
-	}()
 	return out
 }

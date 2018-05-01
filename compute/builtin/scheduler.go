@@ -215,17 +215,31 @@ func (s *Scheduler) scheduleOne(task *tes.Task) error {
 	if offer == nil {
 		return fmt.Errorf("no offer for task %s", task.Id)
 	}
-	h := s.handles[offer.Node.Id]
+  err := s.assignTask(task, offer.Node.Id)
+  if err != nil {
+    return fmt.Errorf("assigning task to node: %s", err)
+  }
+	return nil
+}
 
-	err := h.send(&Control{Type: ControlType_CREATE_TASK, Task: task})
+func (s *Scheduler) assignTask(task *tes.Task, nodeID string) error {
+	h, ok := s.handles[nodeID]
+  if !ok {
+    return fmt.Errorf("no such node: %s", nodeID)
+  }
+
+	err := h.send(&Control{
+    Type: ControlType_CREATE_TASK,
+    Task: task,
+  })
 	if err != nil {
 		return fmt.Errorf("sending task to node: %s", err)
 	}
 
 	s.event.WriteEvent(context.Background(), events.NewMetadata(task.Id, 0, map[string]string{
-		"nodeID": offer.Node.Id,
+		"nodeID": nodeID,
 	}))
-	return nil
+  return nil
 }
 
 // checkNodes checks for dead/gone nodes.

@@ -3,7 +3,10 @@ package builtin
 import (
 	"fmt"
 	"math"
+	"os"
+	"sync"
 
+	"github.com/rs/xid"
 	"github.com/ohsu-comp-bio/funnel/config"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
@@ -55,4 +58,35 @@ func detectResources(conf config.Node) (Resources, error) {
 	}
 
 	return res, nil
+}
+
+func hostname() string {
+	if name, err := os.Hostname(); err == nil {
+		return name
+	}
+	return ""
+}
+
+// waitChan wraps sync.WaitGroup with a channel-based Wait()
+// so it can be used in a select statement.
+type waitChan struct {
+	sync.WaitGroup
+}
+
+func (wc *waitChan) Wait() chan struct{} {
+	out := make(chan struct{})
+	go func() {
+		wc.WaitGroup.Wait()
+		close(out)
+	}()
+	return out
+}
+
+func genID() string {
+  // chunk the ID, putting a separator near the end
+  // to make it more readable.
+  a := xid.New().String()
+  b := a[:len(a)-3]
+  c := a[len(a)-3:]
+  return "node-" + b + "-" + c
 }

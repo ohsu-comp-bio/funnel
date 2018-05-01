@@ -3,6 +3,7 @@ package builtin
 import (
 	"fmt"
 
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -109,6 +110,7 @@ func NodeHasTag(tag string) Predicate {
 func Match(node *Node, task *tes.Task, predicates []Predicate) bool {
 	for _, pred := range predicates {
 		if err := pred(task, node); err != nil {
+			logger.Debug("Scheduler predicate fail", "error", err, "taskID", task.Id, "nodeID", node.Id)
 			return false
 		}
 	}

@@ -121,23 +121,3 @@ func timeLimit(t *testing.T, d time.Duration) func() {
 		close(stop)
 	}
 }
-
-func simpleNode() *Node {
-	return &Node{
-		// This ID MUST match the ID set in setup()
-		// because the local scheduler is built to have only a single node
-		Id: "test-node-id",
-		Resources: &Resources{
-			Cpus:   1.0,
-			RamGb:  1.0,
-			DiskGb: 1.0,
-		},
-		Available: &Resources{
-			Cpus:   1.0,
-			RamGb:  1.0,
-			DiskGb: 1.0,
-		},
-		Zone:  "ok-zone",
-		State: NodeState_ALIVE,
-	}
-}

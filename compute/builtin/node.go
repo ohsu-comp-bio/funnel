@@ -33,6 +33,7 @@ func NewNodeProcess(conf config.Node, cli SchedulerServiceClient, factory Worker
 			Hostname:    hostname(),
 			Metadata:    conf.Metadata,
 		},
+		tasks:     map[string]*tes.Task{},
 		workerRun: factory,
 		client:    cli,
 	}, nil
@@ -43,7 +44,8 @@ type NodeProcess struct {
 	conf      config.Node
 	log       *logger.Logger
 	detail    *Node
-	tasks     sync.Map
+	tasks     map[string]*tes.Task
+	mtx       sync.Mutex
 	waitGroup sync.WaitGroup
 	workerRun Worker
 	client    SchedulerServiceClient
@@ -64,9 +66,18 @@ func (n *NodeProcess) Run(ctx context.Context) error {
 		if err != nil {
 			n.log.Error("error pinging scheduler", "error", err)
 		}
+		if n.shouldShutdown() {
+			break
+		}
 	}
 
 	return nil
+}
+
+func (n *NodeProcess) shouldShutdown() bool {
+	n.mtx.Lock()
+	defer n.mtx.Unlock()
+	return len(n.tasks) == 0 && n.detail.State == NodeState_DRAIN
 }
 
 // finalize prepares the node for shutdown, disconnecting
@@ -142,12 +153,13 @@ func (n *NodeProcess) ping() error {
 
 	var tasks []*tes.Task
 	var ids []string
-	n.tasks.Range(func(_, rec interface{}) bool {
-		task := rec.(*tes.Task)
+	n.mtx.Lock()
+	for id, task := range n.tasks {
 		tasks = append(tasks, task)
-		ids = append(ids, task.Id)
-		return true
-	})
+		ids = append(ids, id)
+	}
+	n.mtx.Unlock()
+
 	n.detail.TaskIds = ids
 	n.detail.Available = availableResources(tasks, &res)
 
@@ -169,6 +181,8 @@ func (n *NodeProcess) ping() error {
 // Drain sets the node's state to DRAIN, which causes the node
 // to stop accepting tasks.
 func (n *NodeProcess) Drain() {
+	n.mtx.Lock()
+	defer n.mtx.Unlock()
 	n.detail.State = NodeState_DRAIN
 }
 
@@ -199,13 +213,30 @@ func (n *NodeProcess) listen(ctx context.Context) {
 	}
 }
 
+func (n *NodeProcess) addTask(task *tes.Task) (added bool) {
+	n.mtx.Lock()
+	defer n.mtx.Unlock()
+
+	_, exists := n.tasks[task.Id]
+	if exists {
+		return false
+	}
+	n.tasks[task.Id] = task
+	return true
+}
+
+func (n *NodeProcess) removeTask(task *tes.Task) {
+	n.mtx.Lock()
+	defer n.mtx.Unlock()
+	delete(n.tasks, task.Id)
+}
+
 func (n *NodeProcess) runTask(ctx context.Context, task *tes.Task) {
 
-	_, exists := n.tasks.LoadOrStore(task.Id, task)
-	if exists {
+	if !n.addTask(task) {
 		return
 	}
-	defer n.tasks.Delete(task.Id)
+	defer n.removeTask(task)
 
 	log := n.log.WithFields("ns", "worker", "taskID", task.Id)
 	log.Info("Running task")

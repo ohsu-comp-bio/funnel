@@ -1,7 +1,9 @@
 package builtin
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
@@ -12,6 +14,122 @@ func TestScheduleZeroNodes(t *testing.T) {
 	err := s.scheduleOne(&tes.Task{Id: "task-1"})
 	if err == nil {
 		t.Fatal("expected no offer error")
+	}
+}
+
+// Test that scheduler ignores nodes without the "ALIVE" state
+func TestIgnoreNonAliveNodes(t *testing.T) {
+	conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+	n.detail.State = NodeState_DEAD
+
+	n.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+	err := s.scheduleOne(&tes.Task{Id: "task-1"})
+	if !isNoOfferError(err) {
+		t.Fatal("expected noOfferError")
+	}
+}
+
+// Test whether the scheduler correctly filters nodes based on
+// cpu, ram, disk, etc.
+func TestMatch(t *testing.T) {
+	conf := testConfig()
+	conf.Node.Resources.Cpus = 1
+	conf.Node.Resources.RamGb = 1.0
+	conf.Node.Resources.DiskGb = 1.0
+	conf.Node.Zone = "ok-zone"
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+	n.workerRun = func(context.Context, string) error { return nil }
+
+	n.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+	// test CPUs too big
+	err := s.scheduleOne(&tes.Task{Id: "task-1", Resources: &tes.Resources{CpuCores: 2}})
+	if !isNoOfferError(err) {
+		t.Error("Scheduled task to node without enough CPU resources")
+	}
+
+	// test RAM too big
+	err = s.scheduleOne(&tes.Task{Id: "task-2", Resources: &tes.Resources{RamGb: 2.0}})
+	if !isNoOfferError(err) {
+		t.Error("Scheduled task to node without enough RAM resources")
+	}
+
+	// test disk too big
+	err = s.scheduleOne(&tes.Task{Id: "task-3", Resources: &tes.Resources{DiskGb: 2.0}})
+	if !isNoOfferError(err) {
+		t.Error("Scheduled task to node without enough DiskGb resources")
+	}
+
+	// test zones don't match
+	err = s.scheduleOne(&tes.Task{
+		Id:        "task-4",
+		Resources: &tes.Resources{Zones: []string{"test-zone"}},
+	})
+	if !isNoOfferError(err) {
+		t.Error("Scheduled task to node out of zone")
+	}
+
+	// Now test a task that fits
+	err = s.scheduleOne(&tes.Task{
+		Id: "task-5",
+		Resources: &tes.Resources{
+			CpuCores: 1,
+			RamGb:    1.0,
+			DiskGb:   1.0,
+			Zones:    []string{"ok-zone", "not-ok-zone"},
+		},
+	})
+	if isNoOfferError(err) {
+		t.Error("Didn't schedule task when resources fit")
+	}
+
+	time.Sleep(50 * time.Millisecond)
+}
+
+// Test that a task requesting nothing has a minimum CPU of 1.
+func TestMinimumCpuRequest(t *testing.T) {
+	conf := testConfig()
+	conf.Node.Resources.Cpus = 2
+	conf.Node.Resources.RamGb = 1.0
+	conf.Node.Resources.DiskGb = 1.0
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+	n.workerRun = func(context.Context, string) error {
+		time.Sleep(500 * time.Millisecond)
+		return nil
+	}
+
+	n.Start()
+
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+	// test CPUs too big
+	err := s.scheduleOne(&tes.Task{Id: "task-1"})
+	if isNoOfferError(err) {
+		t.Fatal("expected task to be scheduled")
+	}
+
+	n.ping()
+	if n.detail.Available.Cpus != 1 {
+		t.Errorf("expected node to have 1 CPU available, but got %d", n.detail.Available.Cpus)
+	}
+
+	// The async scheduler/node ping communication needs some time to complete.
+	time.Sleep(20 * time.Millisecond)
+
+	r := s.handles[n.detail.Id].node.Available
+	if r.Cpus != 1 {
+		t.Errorf("expected node handle to have 1 CPU available, but got %d", r.Cpus)
 	}
 }
 
@@ -50,87 +168,4 @@ func TestReadQueue(t *testing.T) {
 	}
 }
 
-// Test that scheduler ignores nodes without the "ALIVE" state
-func TestIgnoreNonAliveNodes(t *testing.T) {
-	j := &tes.Task{}
-
-	for name, val := range scheduler.NodeState_value {
-		w := simpleNode()
-		w.State = scheduler.NodeState(val)
-		_, s := setup([]*scheduler.Node{w})
-		o := s.GetOffer(j)
-
-		if name == "ALIVE" {
-			// Testing ALIVE just so I know this test is node as expected
-			if o == nil {
-				t.Error("Didn't schedule task to alive node")
-			}
-		} else {
-			if o != nil {
-				t.Errorf("Scheduled task to non-alive node: %s", name)
-				return
-			}
-		}
-
-	}
-}
-
-// Test whether the scheduler correctly filters nodes based on
-// cpu, ram, disk, etc.
-func TestMatch(t *testing.T) {
-	_, s := setup([]*scheduler.Node{
-		simpleNode(),
-	})
-
-	var o *scheduler.Offer
-	var j *tes.Task
-
-	// Helper which sets up Task.Resources struct to non-nil
-	blankTask := func() *tes.Task {
-		return &tes.Task{Resources: &tes.Resources{}}
-	}
-
-	// test CPUs too big
-	j = blankTask()
-	j.Resources.CpuCores = 2
-	o = s.GetOffer(j)
-	if o != nil {
-		t.Error("Scheduled task to node without enough CPU resources")
-	}
-
-	// test RAM too big
-	j = blankTask()
-	j.Resources.RamGb = 2.0
-	o = s.GetOffer(j)
-	if o != nil {
-		t.Error("Scheduled task to node without enough RAM resources")
-	}
-
-	// test disk too big
-	j = blankTask()
-	j.Resources.DiskGb = 2.0
-	o = s.GetOffer(j)
-	if o != nil {
-		t.Error("Scheduled task to node without enough DiskGb resources")
-	}
-
-	// test zones don't match
-	j = blankTask()
-	j.Resources.Zones = []string{"test-zone"}
-	o = s.GetOffer(j)
-	if o != nil {
-		t.Error("Scheduled task to node out of zone")
-	}
-
-	// Now test a task that fits
-	j = blankTask()
-	j.Resources.CpuCores = 1
-	j.Resources.RamGb = 1.0
-	j.Resources.DiskGb = 1.0
-	j.Resources.Zones = []string{"ok-zone", "not-ok-zone"}
-	o = s.GetOffer(j)
-	if o == nil {
-		t.Error("Didn't schedule task when resources fit")
-	}
-}
 */

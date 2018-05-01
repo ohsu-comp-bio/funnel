@@ -327,3 +327,8 @@ type noOfferError struct {
 func (e *noOfferError) Error() string {
 	return fmt.Sprintf("no offer for task %s", e.taskID)
 }
+
+func isNoOfferError(err error) bool {
+	_, ok := err.(*noOfferError)
+	return ok
+}

@@ -9,17 +9,27 @@ import (
 // 1) fires immediately
 // 2) can be canceled by the given context.
 func Ticker(ctx context.Context, d time.Duration) <-chan time.Time {
+	// This code is likely trickier than you expect.
+
+	// Output channel.
 	out := make(chan time.Time)
+
+	ticker := time.NewTicker(d)
 	go func() {
+		<-ctx.Done()
+		ticker.Stop()
+		close(out)
+	}()
+
+	go func() {
+		// Fire tick immediately
 		out <- time.Now()
-		ticker := time.NewTicker(d)
-		defer ticker.Stop()
-		for {
+
+		for t := range ticker.C {
+			// select + default here prevents sending on a closed channel.
 			select {
-			case <-ctx.Done():
-				return
-			case t := <-ticker.C:
-				out <- t
+			case out <- t:
+			default:
 			}
 		}
 	}()

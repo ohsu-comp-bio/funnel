@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/compute/batch"
+	"github.com/ohsu-comp-bio/funnel/compute/builtin"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
 	"github.com/ohsu-comp-bio/funnel/compute/local"
 	"github.com/ohsu-comp-bio/funnel/compute/pbs"
-	"github.com/ohsu-comp-bio/funnel/compute/builtin"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/database/boltdb"
@@ -47,7 +47,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*se
 
 	var database Database
 	var reader tes.ReadOnlyServer
-  var schedService builtin.SchedulerServiceServer
+	var schedService builtin.SchedulerServiceServer
 
 	writers := events.MultiWriter{}
 
@@ -152,13 +152,13 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*se
 	switch strings.ToLower(conf.Compute) {
 	case "builtin":
 		ev := &events.ErrLogger{Writer: writer, Log: log.Sub("scheduler")}
-    var sched *builtin.Scheduler
+		var sched *builtin.Scheduler
 		sched, err = builtin.NewScheduler(conf.Scheduler, log.Sub("scheduler"), ev)
 		if err != nil {
 			return nil, err
 		}
 		compute = sched
-    schedService = sched
+		schedService = sched
 
 	case "aws-batch":
 		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, writer)
@@ -189,21 +189,21 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*se
 	writer = &events.ErrLogger{Writer: writer, Log: log}
 
 	return &server.Server{
-    RPCAddress:       ":" + conf.Server.RPCPort,
-    HTTPPort:         conf.Server.HTTPPort,
-    User:             conf.Server.User,
-    Password:         conf.Server.Password,
-    DisableHTTPCache: conf.Server.DisableHTTPCache,
-    Log:              log,
-    Tasks: &server.TaskService{
-      Name:    conf.Server.ServiceName,
-      Event:   writer,
-      Compute: compute,
-      Read:    reader,
-      Log:     log,
-    },
-    Events: &events.Service{Writer: writer},
-    Nodes:  schedService,
+		RPCAddress:       ":" + conf.Server.RPCPort,
+		HTTPPort:         conf.Server.HTTPPort,
+		User:             conf.Server.User,
+		Password:         conf.Server.Password,
+		DisableHTTPCache: conf.Server.DisableHTTPCache,
+		Log:              log,
+		Tasks: &server.TaskService{
+			Name:    conf.Server.ServiceName,
+			Event:   writer,
+			Compute: compute,
+			Read:    reader,
+			Log:     log,
+		},
+		Events: &events.Service{Writer: writer},
+		Nodes:  schedService,
 	}, nil
 }
 

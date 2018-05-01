@@ -47,7 +47,7 @@ var runNodeCmd = &cobra.Command{
 			return err
 		}
 
-	  return node.Run(ctx, conf, logger.NewLogger("node", conf.Logger))
+		return node.Run(ctx, conf, logger.NewLogger("node", conf.Logger))
 	},
 }
 

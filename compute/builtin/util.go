@@ -16,7 +16,7 @@ import (
 //
 // Upon error, detectResources will return the resources given by the config
 // with the error.
-func detectResources(conf config.Node, workdir string) (Resources, error) {
+func detectResources(conf config.Node) (Resources, error) {
 	res := Resources{
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,
@@ -31,7 +31,7 @@ func detectResources(conf config.Node, workdir string) (Resources, error) {
 	if err != nil {
 		return res, fmt.Errorf("Error detecting memory: %s", err)
 	}
-	diskinfo, err := psdisk.Usage(workdir)
+	diskinfo, err := psdisk.Usage(conf.WorkDir)
 	if err != nil {
 		return res, fmt.Errorf("Error detecting available disk: %s", err)
 	}

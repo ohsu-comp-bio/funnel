@@ -69,25 +69,26 @@ func (s *Scheduler) NodeChat(stream SchedulerService_NodeChatServer) error {
 	if s == nil {
 		return fmt.Errorf("scheduler is nil")
 	}
+	// gRPC starts a separate NodeChat process for each node connection.
 
 	// Ensure the node is marked as dead immediately when the connection is dropped.
 	var node *Node
 	defer func() {
-		if node != nil {
+		if node != nil && node.State != NodeState_GONE {
 			node.State = NodeState_DEAD
 		}
 	}()
 
 	// Constantly receive updates from the node.
 	for {
-		var err error
-		node, err = stream.Recv()
+		n, err := stream.Recv()
 		if err == io.EOF {
 			return nil
 		}
 		if err != nil {
 			return err
 		}
+		node = n
 
 		// Update the node record
 		s.mtx.Lock()
@@ -145,7 +146,7 @@ func (s *Scheduler) Submit(ctx context.Context, task *tes.Task) error {
 	return nil
 }
 
-// Cancel is a noop in the manual scheduler.
+// Cancel is a noop in the builtin scheduler.
 // Nodes/Workers will pick up the canceled state via polling.
 func (s *Scheduler) Cancel(ctx context.Context, taskID string) error {
 	return nil
@@ -157,8 +158,6 @@ func (s *Scheduler) Cancel(ctx context.Context, taskID string) error {
 // request the the configured backend schedule them, and
 // act on offers made by the backend.
 func (s *Scheduler) Run(ctx context.Context) {
-	s.log.Debug("Running scheduler")
-
 	go func() {
 		for range s.trigger.ch {
 			// TODO will contention for the mutex cause scheduling to be delayed?

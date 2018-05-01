@@ -8,17 +8,19 @@ import (
 	"sync"
 	"time"
 
-  "github.com/rs/xid"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"github.com/ohsu-comp-bio/funnel/util/rpc"
+	"github.com/rs/xid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // NewNodeProcess returns a new NodeProcess instance.
-func NewNodeProcess(conf config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
-  id := xid.New().String()
+func NewNodeProcess(conf config.Node, cli SchedulerServiceClient, factory Worker, log *logger.Logger) (*NodeProcess, error) {
+
+	id := xid.New().String()
 	log = log.WithFields("nodeID", id)
 	log.Debug("NewNode", "config", conf)
 
@@ -28,23 +30,25 @@ func NewNodeProcess(conf config.Config, factory Worker, log *logger.Logger) (*No
 		detail: &Node{
 			Id:          id,
 			State:       NodeState_ALIVE,
-			Preemptible: conf.Node.Preemptible,
-			Zone:        conf.Node.Zone,
+			Preemptible: conf.Preemptible,
+			Zone:        conf.Zone,
 			Hostname:    hostname(),
-			Metadata:    conf.Node.Metadata,
+			Metadata:    conf.Metadata,
 		},
 		workerRun: factory,
+		client:    cli,
 	}, nil
 }
 
 // NodeProcess is a structure used for tracking available resources on a compute resource.
 type NodeProcess struct {
-	conf      config.Config
+	conf      config.Node
 	log       *logger.Logger
 	detail    *Node
 	tasks     sync.Map
 	waitGroup sync.WaitGroup
 	workerRun Worker
+	client    SchedulerServiceClient
 	stream    SchedulerService_NodeChatClient
 }
 
@@ -52,50 +56,89 @@ type NodeProcess struct {
 // with the server and starting task workers
 func (n *NodeProcess) Run(ctx context.Context) error {
 
-	conn, err := rpc.Dial(ctx, n.conf.Server)
-	if err != nil {
-		return fmt.Errorf("connecting to server: %s", err)
-	}
-	defer conn.Close()
-
-	client := NewSchedulerServiceClient(conn)
-	n.stream, err = client.NodeChat(ctx)
-	if err != nil {
-		return fmt.Errorf("connecting to server: %s", err)
-	}
-	defer n.stream.CloseSend()
+	n.connect(ctx)
+	defer n.finalize()
 
 	go n.listen(ctx)
 
-	for range util.Ticker(ctx, time.Duration(n.conf.Node.UpdateRate)) {
+	for range util.Ticker(ctx, time.Duration(n.conf.UpdateRate)) {
 		err := n.ping()
 		if err != nil {
-			n.log.Error("error detecting resources", "error", err)
+			n.log.Error("error pinging scheduler", "error", err)
 		}
 	}
 
-	// The workers get 10 seconds to finish up.
-	timeout := time.After(10 * time.Second)
-	done := make(chan struct{})
-	go func() {
-		n.waitGroup.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-	case <-timeout:
-	}
 	return nil
 }
 
+// finalize prepares the node for shutdown, disconnecting
+// from the scheduler and stopping any running tasks.
+func (n *NodeProcess) finalize() {
+	// The node gets up to 10 seconds to finalize.
+	timeout := time.After(10 * time.Second)
+
+	wc := waitChan{}
+	wc.Add(2)
+
+	// Ping the scheduler with final state/details.
+	n.detail.State = NodeState_GONE
+	go func() {
+		err := n.ping()
+		if err != nil {
+			n.log.Error("error sending final ping", "error", err)
+		}
+		wc.Done()
+	}()
+
+	// Stop any workers.
+	go func() {
+		n.waitGroup.Wait()
+		wc.Done()
+	}()
+
+	select {
+	case <-wc.Wait():
+	case <-timeout:
+	}
+
+	if n.stream != nil {
+		n.stream.CloseSend()
+	}
+}
+
+// connect tries hard to connect to the scheduler. It will retry until
+// it connects or the context is canceled.
+// TODO reconnect
+func (n *NodeProcess) connect(ctx context.Context) {
+	for range util.Ticker(ctx, time.Duration(n.conf.UpdateRate)) {
+		// Closing the stream is managed by finalize(),
+		// and since finalize() needs the stream after the context
+		// has been canceled, we don't pass the parent context
+		// to NodeChat() here.
+		conn, err := n.client.NodeChat(context.Background())
+		// Avoid noisy "context canceled" logs.
+		if status.Code(err) == codes.Canceled {
+			continue
+		}
+		if err != nil {
+			n.log.Error("error connecting to server, will retry", "error", err)
+			continue
+		}
+		n.stream = conn
+		return
+	}
+}
+
 func (n *NodeProcess) ping() error {
+	if n.stream == nil {
+		return fmt.Errorf("pinging server: no connection")
+	}
 
 	if n.detail.Hostname == "" {
 		n.detail.Hostname = hostname()
 	}
 
-	res, err := detectResources(n.conf.Node, n.conf.Worker.WorkDir)
+	res, err := detectResources(n.conf)
 	if err != nil {
 		return fmt.Errorf("detecting resources: %s", err)
 	}
@@ -114,6 +157,10 @@ func (n *NodeProcess) ping() error {
 	n.detail.Available = availableResources(tasks, &res)
 
 	err = n.stream.Send(n.detail)
+	// Avoid noisy "context canceled" logs.
+	if status.Code(err) == codes.Canceled {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("sending update: %s", err)
 	}
@@ -124,13 +171,20 @@ func (n *NodeProcess) ping() error {
 // to stop accepting tasks.
 func (n *NodeProcess) Drain() {
 	n.detail.State = NodeState_DRAIN
-	n.ping()
 }
 
 func (n *NodeProcess) listen(ctx context.Context) {
+	// TODO figure out connect/reconnect
+	if n.stream == nil {
+		return
+	}
 	for {
 		control, err := n.stream.Recv()
 		if err == io.EOF {
+			return
+		}
+		// Avoid noisy "context canceled" logs.
+		if status.Code(err) == codes.Canceled {
 			return
 		}
 		if err != nil {
@@ -229,4 +283,19 @@ func hostname() string {
 		return name
 	}
 	return ""
+}
+
+// waitChan wraps sync.WaitGroup with a channel-based Wait()
+// so it can be used in a select statement.
+type waitChan struct {
+	sync.WaitGroup
+}
+
+func (wc *waitChan) Wait() chan struct{} {
+	out := make(chan struct{})
+	go func() {
+		wc.WaitGroup.Wait()
+		close(out)
+	}()
+	return out
 }

@@ -124,7 +124,7 @@ func (s *Server) Run(pctx context.Context) error {
 
 	// Register Scheduler RPC service
 	if s.Nodes != nil {
-    builtin.RegisterSchedulerServiceServer(grpcServer, s.Nodes)
+		builtin.RegisterSchedulerServiceServer(grpcServer, s.Nodes)
 		err := builtin.RegisterSchedulerServiceHandlerFromEndpoint(
 			ctx, grpcMux, s.RPCAddress, dialOpts,
 		)

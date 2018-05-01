@@ -3,7 +3,7 @@
 Database: boltdb
 
 # The name of the active compute backend
-# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch
+# Available backends: local, htcondor, slurm, pbs, gridengine, builtin, aws-batch
 Compute: local
 
 # The name of the active event writer backend(s).
@@ -47,7 +47,7 @@ Server:
   RPCClientMaxRetries: 10
 
 
-# The scheduler is used for the Manual compute backend. 
+# The scheduler is used for the builtin compute backend. 
 Scheduler:
   # How long to wait between updates before marking a node dead.
   NodePingTimeout: 1m

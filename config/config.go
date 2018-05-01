@@ -114,6 +114,10 @@ type Node struct {
 	Metadata    map[string]string
 	Preemptible bool
 	Zone        string
+
+	// WorkDir is used to automatically discover how much disk space is available
+	// on the drive the node is expected to be working in.
+	WorkDir string
 }
 
 // Worker contains worker configuration.

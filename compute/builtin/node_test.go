@@ -1,39 +1,79 @@
 package builtin
 
 import (
-	"context"
-	"errors"
 	"testing"
 	"time"
-
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/stretchr/testify/mock"
 )
 
 // Test calling stopping a node by canceling its context
 func TestStopNode(t *testing.T) {
-	conf := config.DefaultConfig()
-	conf.Node.UpdateRate = config.Duration(time.Millisecond * 2)
-	n := newTestNode(conf, t)
-
-	n.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
-		Return(&Node{}, nil)
-
-	stop := n.Start()
+	conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, time.Millisecond*100)
+	cleanup := timeLimit(t, 200*time.Millisecond)
 	defer cleanup()
-	stop()
+
+	cancel := n.Start()
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+	// Cancel the node's context.
+	cancel()
+
+	// Wait for node to finish.
 	n.Wait()
-	n.Client.AssertCalled(t, "Close")
+
+	// Give the scheduler time to disconnect.
+	time.Sleep(30 * time.Millisecond)
+
+	h, ok := s.handles[n.detail.Id]
+	if !ok {
+		t.Fatal("didn't find node record")
+	}
+	if h.node.State != NodeState_GONE {
+		t.Errorf("expected state to be GONE, but got %s", h.node.State)
+	}
 }
 
+// Test that a disconnected (connection dropped, not node stopped)
+// node is marked as dead.
+func TestNodeDisconnected(t *testing.T) {
+	conf := testConfig()
+	s := newTestSched(conf)
+	n := newTestNode(conf)
+
+	// Fail if this test doesn't complete in the given time.
+	cleanup := timeLimit(t, 200*time.Millisecond)
+	defer cleanup()
+
+	n.Start()
+	// Give the scheduler server time to start.
+	time.Sleep(20 * time.Millisecond)
+
+	// Force close the grpc connection without properly shutting down the node.
+	n.conn.Close()
+
+	// Give the scheduler time to disconnect.
+	time.Sleep(30 * time.Millisecond)
+
+	h, ok := s.handles[n.detail.Id]
+	if !ok {
+		t.Fatal("didn't find node record")
+	}
+	if h.node.State != NodeState_DEAD {
+		t.Errorf("expected state to be DEAD, but got %s", h.node.State)
+	}
+}
+
+// TODO test panicing worker
+
+/*
 // Mainly exercising a panic bug caused by an unhandled
 // error from client.GetNode().
 func TestGetNodeFail(t *testing.T) {
-	conf := config.DefaultConfig()
-	conf.Node.UpdateRate = config.Duration(time.Millisecond * 2)
+  conf := testConfig()
 	n := newTestNode(conf, t)
 
 	// Set GetNode to return an error
@@ -45,9 +85,7 @@ func TestGetNodeFail(t *testing.T) {
 
 // Test the flow of a node completing a task then timing out
 func TestNodeTimeout(t *testing.T) {
-	conf := config.DefaultConfig()
-	conf.Node.Timeout = config.Duration(time.Millisecond)
-	conf.Node.UpdateRate = config.Duration(time.Millisecond * 2)
+  conf := testConfig()
 
 	n := newTestNode(conf, t)
 
@@ -71,8 +109,7 @@ func TestNodeTimeout(t *testing.T) {
 
 // Test that a node does nothing where there are no assigned tasks.
 func TestNoTasks(t *testing.T) {
-	conf := config.DefaultConfig()
-	conf.Node.UpdateRate = config.Duration(time.Millisecond * 2)
+  conf := testConfig()
 	n := newTestNode(conf, t)
 
 	// Tell the scheduler mock to return nothing
@@ -101,8 +138,8 @@ func TestNoTasks(t *testing.T) {
 
 // Test that a worker gets created for each task.
 func TestNodeWorkerCreated(t *testing.T) {
-	conf := config.DefaultConfig()
-	conf.Node.UpdateRate = config.Duration(time.Millisecond * 2)
+  conf := testConfig()
+
 	n := newTestNode(conf, t)
 
 	// Count the number of times the worker factory was called
@@ -124,8 +161,7 @@ func TestNodeWorkerCreated(t *testing.T) {
 // Test that a finished task is not immediately re-run.
 // Tests a bugfix.
 func TestFinishedTaskNotRerun(t *testing.T) {
-	conf := config.DefaultConfig()
-	conf.Node.UpdateRate = config.Duration(time.Millisecond * 2)
+  conf := testConfig()
 	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
@@ -156,8 +192,7 @@ func TestFinishedTaskNotRerun(t *testing.T) {
 
 // Test that tasks are removed from the node's runset when they finish.
 func TestFinishedTaskRunsetCount(t *testing.T) {
-	conf := config.DefaultConfig()
-	conf.Node.UpdateRate = config.Duration(time.Millisecond * 2)
+  conf := testConfig()
 	n := newTestNode(conf, t)
 
 	// Set up a test worker which this code can easily control.
@@ -175,28 +210,12 @@ func TestFinishedTaskRunsetCount(t *testing.T) {
 		t.Fatalf("Unexpected worker count: %d", n.workers.Count())
 	}
 }
-package scheduler
-
-import (
-	"context"
-	"testing"
-	"time"
-
-	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
-	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/tes"
-	"github.com/ohsu-comp-bio/funnel/tests"
-)
 
 // When the node's context is canceled (e.g. because the process
 // is being killed) the node should signal the database/server
 // that it is gone, and the server will delete the node.
 func TestNodeGoneOnCanceledContext(t *testing.T) {
-	conf := tests.DefaultConfig()
-	conf.Compute = "manual"
+  conf := testConfig()
 	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
 	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
 	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
@@ -244,10 +263,10 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	}
 }
 
-// Run some tasks with the manual backend
-func TestManualBackend(t *testing.T) {
-	conf := tests.DefaultConfig()
-	conf.Compute = "manual"
+// Run some tasks with the builtin backend
+func TestBuiltinBackend(t *testing.T) {
+  conf := testConfig()
+
 	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
 	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
 	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
@@ -260,9 +279,9 @@ func TestManualBackend(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	srv.Conf.Node.ID = "test-node-manual"
+	srv.Conf.Node.ID = "test-node-builtin"
 	// create a node
-	srv.Conf.Node.ID = "test-node-manual"
+	srv.Conf.Node.ID = "test-node-builtin"
 	w, err := workercmd.NewWorker(ctx, conf, log)
 	if err != nil {
 		t.Fatal("failed to create worker factory", err)
@@ -297,8 +316,8 @@ func TestManualBackend(t *testing.T) {
 }
 
 func TestDeadNodeTaskCleanup(t *testing.T) {
-	conf := tests.DefaultConfig()
-	conf.Compute = "manual"
+  conf := testConfig()
+
 	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
 	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
 	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
@@ -308,7 +327,7 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 	srv := tests.NewFunnel(conf)
 	srv.StartServer()
 
-	srv.Conf.Node.ID = "test-node-manual"
+	srv.Conf.Node.ID = "test-node-builtin"
 	blockingNoopWorker := func(ctx context.Context, taskID string) error {
 		time.Sleep(time.Minute * 10)
 		return nil
@@ -343,9 +362,8 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 func TestNodeCleanup(t *testing.T) {
 	log := logger.NewLogger("node", tests.LogConfig())
 	ctx := context.Background()
+  conf := testConfig()
 
-	conf := tests.DefaultConfig()
-	conf.Compute = "manual"
 	srv := tests.NewFunnel(conf)
 
 	e := srv.Server.Events
@@ -426,3 +444,107 @@ func TestNodeCleanup(t *testing.T) {
 		}
 	}
 }
+
+// Test the simple case of a node that is alive,
+// then doesn't ping in time, and it marked dead
+func TestNodeDead(t *testing.T) {
+	ctx := context.Background()
+  conf := testConfig()
+	//srv := tests.NewFunnel(conf)
+
+	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
+		Id:    "test-node",
+		State: scheduler.NodeState_ALIVE,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Some databases need time to sync the PutNode.
+	time.Sleep(time.Millisecond * 100)
+	// Wait for node to ping timeout.
+	time.Sleep(time.Duration(conf.Scheduler.NodePingTimeout))
+	// Should mark node as dead.
+	srv.Scheduler.CheckNodes()
+
+	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes := resp.Nodes
+
+	if len(nodes) < 1 {
+		t.Error("expected node was not returned by ListNodes")
+	}
+	if nodes[0].State != scheduler.NodeState_DEAD {
+		t.Log("Node:", nodes[0])
+		t.Error("Expected node to be dead")
+	}
+}
+
+// Test what happens when a node never starts.
+// It should be marked as dead.
+func TestNodeInitFail(t *testing.T) {
+	ctx := context.Background()
+  conf := testConfig()
+	srv := tests.NewFunnel(conf)
+	srv.StartServer()
+
+	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
+		Id:    "test-node",
+		State: scheduler.NodeState_INITIALIZING,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(time.Duration(conf.Scheduler.NodeInitTimeout))
+	srv.Scheduler.CheckNodes()
+
+	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes := resp.Nodes
+
+	if len(nodes) < 1 {
+		t.Error("expected node was not returned by ListNodes")
+	}
+	if nodes[0].State != scheduler.NodeState_DEAD {
+		t.Log("Node:", nodes[0])
+		t.Error("Expected node to be dead")
+	}
+}
+
+// Test that a dead node is deleted after
+// a configurable duration.
+func TestNodeDeadTimeout(t *testing.T) {
+	ctx := context.Background()
+  conf := testConfig()
+	// TODO srv := tests.NewFunnel(conf)
+
+	_, err := srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
+		Id:    "test-node",
+		State: scheduler.NodeState_DEAD,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	srv.Scheduler.CheckNodes()
+
+	time.Sleep(time.Duration(conf.Scheduler.NodeDeadTimeout))
+	srv.Scheduler.CheckNodes()
+
+	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes := resp.Nodes
+
+	if len(nodes) > 0 {
+		t.Log("nodes:", nodes)
+		t.Error("expected node to be deleted")
+	}
+}
+*/

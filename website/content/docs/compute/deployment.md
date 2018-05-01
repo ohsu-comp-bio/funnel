@@ -28,12 +28,12 @@ Nodes are available via the `funnel node` command. To start a node, run
 funnel node run --config node.config.yml
 ```
 
-To activate the Funnel scheduler, use the `manual` backend in the config.
+To activate the Funnel scheduler, use the `builtin` backend in the config.
 
 The available scheduler and node config:
 ```
 # Activate the Funnel scheduler.
-Compute: manual
+Compute: builtin
 
 Scheduler:
   # How often to run a scheduler iteration.

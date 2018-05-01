@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"testing"
 	"text/template"
 	"time"
 
@@ -48,7 +51,7 @@ type Funnel struct {
 	StorageDir string
 
 	// Components
-	Server    *server.Server
+	Server *server.Server
 
 	// Internal
 	startTime string
@@ -442,4 +445,29 @@ func HelloWorld() *tes.Task {
 			},
 		},
 	}
+}
+
+// SetLogOutput provides a method for connecting funnel logso the the test logger
+func SetLogOutput(l *logger.Logger, t *testing.T) {
+	l.SetOutput(TestingWriter(t))
+}
+
+// TestingWriter returns an io.Writer that writes each line via t.Log
+func TestingWriter(t *testing.T) io.Writer {
+	reader, writer := io.Pipe()
+	scanner := bufio.NewScanner(reader)
+	go func() {
+		for scanner.Scan() {
+			// Carriage return removes testing's file:line number and indent.
+			// In this case, the file and line will always be "utils.go:62".
+			// Go 1.9 introduced t.Helper() to fix this, but something about
+			// this function being in a goroutine seems to break that.
+			// Carriage return is the hack for now.
+			t.Log("\r" + scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			t.Error("testing writer scanner error", err)
+		}
+	}()
+	return writer
 }

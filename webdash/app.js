@@ -254,6 +254,9 @@ app.controller("TaskInfoController", function($rootScope, $scope, $http, $routeP
     if (r.preemptible) {
       s += ", preemptible";
     }
+    if (r.funnel) {
+      s += ", " + JSON.stringify(r.funnel);
+    }
     return s;
   }
   

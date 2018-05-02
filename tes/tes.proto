@@ -4,6 +4,7 @@ package tes;
 
 // Import HTTP RESTful annotations.
 import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
 
 // Task describes an instance of a task.
 message Task {
@@ -230,6 +231,9 @@ message Resources {
   //
   // Request that the task be run in these compute zones.
   repeated string zones = 5;
+
+  // Funnel-specific resource requests.
+  repeated google.protobuf.Any funnel = 6;
 }
 
 // OUTPUT ONLY

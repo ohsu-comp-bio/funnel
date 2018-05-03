@@ -13,7 +13,7 @@ import (
 )
 
 func TestGenericS3AnonymousGet(t *testing.T) {
-	b, err := NewGenericS3Backend(config.GenericS3Storage{
+	store, err := NewGenericS3(config.GenericS3Storage{
 		Endpoint: "https://s3.amazonaws.com/",
 		Key:      "",
 		Secret:   "",
@@ -21,9 +21,8 @@ func TestGenericS3AnonymousGet(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error creating generic S3 backend:", err)
 	}
-	store := Storage{}.WithBackend(b)
 
-	err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history", File)
+	_, err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history")
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}
@@ -36,12 +35,12 @@ func TestAmazonS3AnonymousGet(t *testing.T) {
 		t.Fatal("Error creating amazon S3 backend:", err)
 	}
 
-	store := Storage{}.WithBackend(&AmazonS3Backend{
+	store := &AmazonS3{
 		sess:     s,
 		endpoint: "",
-	})
+	}
 
-	err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history", File)
+	_, err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history")
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}
@@ -53,9 +52,9 @@ func TestGoogleStorageAnonymousGet(t *testing.T) {
 		t.Fatal("Error creating GS backend:", err)
 	}
 
-	store := Storage{}.WithBackend(&GSBackend{svc})
+	store := &GoogleCloud{svc}
 
-	err = store.Get(context.Background(), "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip", File)
+	_, err = store.Get(context.Background(), "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip")
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}

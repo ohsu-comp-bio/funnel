@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
 	"github.com/ohsu-comp-bio/funnel/version"
 )
 
@@ -28,7 +26,6 @@ type DefaultWorker struct {
 }
 
 // Run runs the Worker.
-// TODO document behavior of slow consumer of task log updates
 func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) {
 
 	// The code here is verbose, but simple; mainly loops and simple error checking.
@@ -107,43 +104,12 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	}
 
 	if run.ok() {
-		run.syserr = r.validateInputs(mapper)
-	}
-
-	if run.ok() {
-		run.syserr = r.validateOutputs(mapper)
+		run.syserr = r.validate(mapper)
 	}
 
 	// Download inputs
-	downloadErrs := make(util.MultiError, len(mapper.Inputs))
-	downloadCtx, cancelDownloadCtx := context.WithCancel(ctx)
-	defer cancelDownloadCtx()
-	wg := &sync.WaitGroup{}
 	if run.ok() {
-		for i, input := range mapper.Inputs {
-			wg.Add(1)
-			go func(input *tes.Input, i int) {
-				defer wg.Done()
-				event.Info("Download started", "url", input.Url)
-				err := r.Store.Get(downloadCtx, input.Url, input.Path, input.Type)
-				if err != nil {
-					if err == storage.ErrEmptyDirectory {
-						event.Warn("Download finished with warning", "url", input.Url, "warning", err)
-					} else {
-						downloadErrs[i] = err
-						event.Error("Download failed", "url", input.Url, "error", err)
-						cancelDownloadCtx()
-					}
-				} else {
-					event.Info("Download finished", "url", input.Url)
-				}
-				return
-			}(input, i)
-		}
-	}
-	wg.Wait()
-	if !downloadErrs.IsNil() {
-		run.syserr = downloadErrs.ToError()
+		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event)
 	}
 
 	if run.ok() {
@@ -180,40 +146,17 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 		}
 	}
 
-	// Upload outputs
-	uploadErrs := make(util.MultiError, len(mapper.Outputs))
-	outputs := make([][]*tes.OutputFileLog, len(mapper.Outputs))
-	wg = &sync.WaitGroup{}
+	// Try to fix symlinks broken by docker filesystems.
 	if run.ok() {
-		for i, output := range mapper.Outputs {
-			wg.Add(1)
-			go func(output *tes.Output, i int) {
-				defer wg.Done()
-				event.Info("Upload started", "url", output.Url)
-				r.fixLinks(mapper, output.Path)
-				out, err := r.Store.Put(ctx, output.Url, output.Path, output.Type)
-				if err != nil {
-					if err == storage.ErrEmptyDirectory {
-						event.Warn("Upload finished with warning", "url", output.Url, "warning", err)
-					} else {
-						uploadErrs[i] = err
-						event.Error("Upload failed", "url", output.Url, "error", err)
-					}
-				} else {
-					event.Info("Upload finished", "url", output.Url)
-				}
-				outputs[i] = out
-				return
-			}(output, i)
+		for _, output := range mapper.Outputs {
+			fixLinks(mapper, output.Path)
 		}
 	}
-	wg.Wait()
-	outputLog := []*tes.OutputFileLog{}
-	for _, out := range outputs {
-		outputLog = append(outputLog, out...)
-	}
-	if !uploadErrs.IsNil() {
-		run.syserr = uploadErrs.ToError()
+
+	// Upload outputs
+	var outputLog []*tes.OutputFileLog
+	if run.ok() {
+		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event)
 	}
 
 	// unmap paths for OutputFileLog
@@ -226,52 +169,6 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	}
 
 	return
-}
-
-// fixLinks walks the output paths, fixing cases where a symlink is
-// broken because it's pointing to a path inside a container volume.
-func (r *DefaultWorker) fixLinks(mapper *FileMapper, basepath string) {
-	filepath.Walk(basepath, func(p string, f os.FileInfo, err error) error {
-		if err != nil {
-			// There's an error, so be safe and give up on this file
-			return nil
-		}
-
-		// Only bother to check symlinks
-		if f.Mode()&os.ModeSymlink != 0 {
-			// Test if the file can be opened because it doesn't exist
-			fh, rerr := os.Open(p)
-			fh.Close()
-
-			if rerr != nil && os.IsNotExist(rerr) {
-
-				// Get symlink source path
-				src, err := os.Readlink(p)
-				if err != nil {
-					return nil
-				}
-				// Map symlink source (possible container path) to host path
-				mapped, err := mapper.HostPath(src)
-				if err != nil {
-					return nil
-				}
-
-				// Check whether the mapped path exists
-				fh, err := os.Open(mapped)
-				fh.Close()
-
-				// If the mapped path exists, fix the symlink
-				if err == nil {
-					err := os.Remove(p)
-					if err != nil {
-						return nil
-					}
-					os.Symlink(mapped, p)
-				}
-			}
-		}
-		return nil
-	})
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.
@@ -308,23 +205,19 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	return nil
 }
 
-// Validate the input downloads
-func (r *DefaultWorker) validateInputs(mapper *FileMapper) error {
+// Validate the downloads/uploads.
+func (r *DefaultWorker) validate(mapper *FileMapper) error {
+	// TODO need to switch on directory type and check list as well.
 	for _, input := range mapper.Inputs {
-		err := r.Store.SupportsGet(input.Url, input.Type)
-		if err != nil {
-			return fmt.Errorf("Input download not supported by storage: %v", err)
+		unsupported := r.Store.UnsupportedOperations(input.Url)
+		if unsupported.Get != nil {
+			return fmt.Errorf("Input download not supported by storage: %v", unsupported.Get)
 		}
 	}
-	return nil
-}
-
-// Validate the output uploads
-func (r *DefaultWorker) validateOutputs(mapper *FileMapper) error {
 	for _, output := range mapper.Outputs {
-		err := r.Store.SupportsPut(output.Url, output.Type)
-		if err != nil {
-			return fmt.Errorf("Output upload not supported by storage: %v", err)
+		unsupported := r.Store.UnsupportedOperations(output.Url)
+		if unsupported.Put != nil {
+			return fmt.Errorf("Output upload not supported by storage: %v", unsupported.Put)
 		}
 	}
 	return nil

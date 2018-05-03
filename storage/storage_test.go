@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
 func TestStorageWithConfig(t *testing.T) {
@@ -15,18 +16,18 @@ func TestStorageWithConfig(t *testing.T) {
 		LocalStorage: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GoogleStorage: config.GSStorage{Disabled: true},
+		GoogleStorage: config.GoogleCloudStorage{Disabled: true},
 		AmazonS3:      config.AmazonS3Storage{Disabled: true},
 		GenericS3:     []config.GenericS3Storage{},
 		Swift:         config.SwiftStorage{Disabled: true},
 		HTTPStorage:   config.HTTPStorage{Disabled: true},
 	}
 
-	sc, err := NewStorage(c)
+	sc, err := NewMux(c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sc.backends) != 1 {
+	if len(sc.Backends) != 1 {
 		t.Fatal("unexpected number of Storage backends")
 	}
 
@@ -35,7 +36,7 @@ func TestStorageWithConfig(t *testing.T) {
 		LocalStorage: config.LocalStorage{
 			AllowedDirs: []string{"/tmp"},
 		},
-		GoogleStorage: config.GSStorage{
+		GoogleStorage: config.GoogleCloudStorage{
 			Disabled:        false,
 			CredentialsFile: "",
 		},
@@ -65,11 +66,11 @@ func TestStorageWithConfig(t *testing.T) {
 		},
 		HTTPStorage: config.HTTPStorage{Disabled: false},
 	}
-	sc, err = NewStorage(c)
+	sc, err = NewMux(c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sc.backends) != 6 {
+	if len(sc.Backends) != 6 {
 		t.Fatal("unexpected number of Storage backends")
 	}
 }
@@ -79,7 +80,7 @@ func TestUrlParsing(t *testing.T) {
 	expectedKey := "README.analysis_history"
 
 	// Generic S3
-	b, err := NewGenericS3Backend(config.GenericS3Storage{
+	b, err := NewGenericS3(config.GenericS3Storage{
 		Endpoint: "s3.amazonaws.com",
 	})
 	if err != nil {
@@ -127,12 +128,12 @@ func TestUrlParsing(t *testing.T) {
 	}
 
 	// Amazon S3
-	ab, err := NewAmazonS3Backend(config.AmazonS3Storage{})
+	ab, err := NewAmazonS3(config.AmazonS3Storage{})
 	if err != nil {
 		t.Error("Error creating amazon S3 backend:", err)
 	}
 
-	url, err = ab.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
+	url, _, err = ab.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
@@ -147,7 +148,7 @@ func TestUrlParsing(t *testing.T) {
 		t.Error("wrong key")
 	}
 
-	url, err = ab.parse("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
+	url, _, err = ab.parse("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
@@ -162,7 +163,7 @@ func TestUrlParsing(t *testing.T) {
 		t.Error("wrong key")
 	}
 
-	url, err = ab.parse("s3://1000genomes/README.analysis_history")
+	url, _, err = ab.parse("s3://1000genomes/README.analysis_history")
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
@@ -177,18 +178,18 @@ func TestUrlParsing(t *testing.T) {
 		t.Error("wrong key")
 	}
 
-	url, err = ab.parse("gs://1000genomes/README.analysis_history")
+	url, _, err = ab.parse("gs://1000genomes/README.analysis_history")
 	if _, ok := err.(*ErrUnsupportedProtocol); !ok {
 		t.Error("expected ErrUnsupportedProtocol")
 	}
 
-	url, err = ab.parse("s3://")
+	url, _, err = ab.parse("s3://")
 	if _, ok := err.(*ErrInvalidURL); !ok {
 		t.Error("expected ErrInvalidURL")
 	}
 
 	// Google Storage
-	gb, err := NewGSBackend(config.GSStorage{})
+	gb, err := NewGoogleCloud(config.GoogleCloudStorage{})
 	if err != nil {
 		t.Error("Error creating google storage backend:", err)
 	}
@@ -219,7 +220,7 @@ func TestUrlParsing(t *testing.T) {
 	}
 
 	// Swift
-	sb := &SwiftBackend{}
+	sb := &Swift{}
 
 	url, err = sb.parse("swift://1000genomes/README.analysis_history")
 	if err != nil {
@@ -258,7 +259,7 @@ func TestWalkFiles(t *testing.T) {
 	}
 	f.Close()
 
-	files, err := walkFiles(tmp)
+	files, err := fsutil.WalkFiles(tmp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +268,7 @@ func TestWalkFiles(t *testing.T) {
 	}
 
 	nonexistent := path.Join(tmp, "this/path/doesnt/exist")
-	_, err = walkFiles(nonexistent)
+	_, err = fsutil.WalkFiles(nonexistent)
 	if err == nil {
 		t.Fatal("expected error")
 	}

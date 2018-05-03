@@ -5,101 +5,140 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	urllib "net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
-// HTTPBackend provides read access to public URLs.
-type HTTPBackend struct {
+// HTTP provides read access to public URLs.
+type HTTP struct {
 	client *http.Client
 }
 
-// NewHTTPBackend creates a new HTTPBackend instance.
-func NewHTTPBackend(conf config.HTTPStorage) (*HTTPBackend, error) {
+// NewHTTP creates a new HTTP instance.
+func NewHTTP(conf config.HTTPStorage) (*HTTP, error) {
 	client := &http.Client{
 		Timeout: time.Duration(conf.Timeout),
 	}
-	return &HTTPBackend{client}, nil
+	return &HTTP{client}, nil
+}
+
+// Stat returns information about the object at the given storage URL.
+func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
+	u, err := urllib.Parse(url)
+	if err != nil {
+		return nil, fmt.Errorf("parsing URL: %s", err)
+	}
+
+	req, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("httpStorage: creating HEAD request: %s", err)
+	}
+	req.WithContext(ctx)
+
+	resp, err := b.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("httpStorage: executing GET request: %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("requesting info: got non-200 status code %d", resp.StatusCode)
+	}
+
+	modtime, _ := http.ParseTime(resp.Header.Get("Last-Modified"))
+
+	return &Object{
+		URL:          url,
+		Name:         u.RequestURI(),
+		Size:         resp.ContentLength,
+		LastModified: modtime,
+		ETag:         resp.Header.Get("ETag"),
+	}, nil
 }
 
 // Get copies a file from a given URL to the host path.
-func (b *HTTPBackend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) (err error) {
-	switch class {
-	case File:
-		err := fsutil.EnsurePath(hostPath)
-		if err != nil {
-			return err
-		}
-
-		req, err := http.NewRequest("GET", rawurl, nil)
-		if err != nil {
-			return err
-		}
-		req.WithContext(ctx)
-
-		src, err := b.client.Do(req)
-		if err != nil {
-			return err
-		}
-		defer src.Body.Close()
-
-		dest, err := os.Create(hostPath)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			cerr := dest.Close()
-			if cerr != nil {
-				err = fmt.Errorf("%v; %v", err, cerr)
-			}
-		}()
-
-		_, err = io.Copy(dest, fsutil.Reader(ctx, src.Body))
-		return err
-
-	case Directory:
-		return fmt.Errorf("Unsupported file class: %s", class)
-
-	default:
-		return fmt.Errorf("Unknown file class: %s", class)
-	}
-}
-
-// PutFile is not supported for the HTTPBackend
-func (b *HTTPBackend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-	return fmt.Errorf("PutFile - Not Supported")
-}
-
-// SupportsGet indicates whether this backend supports GET storage requests.
-func (b *HTTPBackend) SupportsGet(rawurl string, class tes.FileType) error {
-	if !strings.HasPrefix(rawurl, "http://") && !strings.HasPrefix(rawurl, "https://") {
-		return &ErrUnsupportedProtocol{"httpStorage"}
-	}
-
-	if class == Directory {
-		return fmt.Errorf("httpStorage: directory file type is not supported")
-	}
-
-	resp, err := b.client.Head(rawurl)
+func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
+	obj, err := b.Stat(ctx, url)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("httpStorage: HEAD request to %s returned status: %s", rawurl, resp.Status)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("httpStorage: creating GET request: %s", err)
+	}
+	req.WithContext(ctx)
+
+	src, err := b.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("httpStorage: executing GET request: %s", err)
+	}
+	defer src.Body.Close()
+
+	dest, err := os.Create(path)
+	if err != nil {
+		return nil, fmt.Errorf("httpStorage: creating host file: %s", err)
+	}
+
+	_, copyErr := io.Copy(dest, fsutil.Reader(ctx, src.Body))
+	closeErr := dest.Close()
+
+	if copyErr != nil {
+		return nil, fmt.Errorf("copying file: %s", copyErr)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("closing file: %s", closeErr)
+	}
+
+	return obj, err
+}
+
+// Put is not supported by HTTP storage.
+func (b *HTTP) Put(ctx context.Context, url string, hostPath string) (*Object, error) {
+	return nil, fmt.Errorf("httpStorage: Put operation is not supported")
+}
+
+// Join joins the given URL with the given subpath.
+func (b *HTTP) Join(url, path string) (string, error) {
+	return strings.TrimSuffix(url, "/") + "/" + path, nil
+}
+
+// List is not supported by HTTP storage.
+func (b *HTTP) List(ctx context.Context, url string) ([]*Object, error) {
+	return nil, fmt.Errorf("httpStorage: List operation is not supported")
+}
+
+// UnsupportedOperations describes which operations (Get, Put, etc) are not
+// supported for the given URL.
+func (b *HTTP) UnsupportedOperations(url string) UnsupportedOperations {
+	if err := b.supportsPrefix(url); err != nil {
+		return AllUnsupported(err)
+	}
+
+	ops := UnsupportedOperations{
+		List: fmt.Errorf("httpStorage: List operation is not supported"),
+		Put:  fmt.Errorf("httpStorage: Put operation is not supported"),
+	}
+
+	resp, err := b.client.Head(url)
+	if err != nil {
+		err = fmt.Errorf("httpStorage: HEAD request failed: %s", err)
+	} else if resp.StatusCode != 200 {
+		err = fmt.Errorf("httpStorage: HEAD request to %s returned status: %s", url, resp.Status)
+	}
+
+	ops.Get = err
+	ops.Stat = err
+	return ops
+}
+
+func (b *HTTP) supportsPrefix(url string) error {
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		return &ErrUnsupportedProtocol{"httpStorage"}
 	}
 	return nil
-}
-
-// SupportsPut indicates whether this backend supports PUT storage requests.
-func (b *HTTPBackend) SupportsPut(rawurl string, class tes.FileType) error {
-	if !strings.HasPrefix(rawurl, "http://") && !strings.HasPrefix(rawurl, "https://") {
-		return &ErrUnsupportedProtocol{"httpStorage"}
-	}
-
-	return fmt.Errorf("httpStorage: Put is not supported")
 }

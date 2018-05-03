@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 
 func TestSwiftStorage(t *testing.T) {
 	tests.SetLogOutput(log, t)
+	defer os.RemoveAll("./test_tmp")
 
 	if !conf.Swift.Valid() {
 		t.Skipf("Skipping swift e2e tests...")

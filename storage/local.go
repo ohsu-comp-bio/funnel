@@ -9,18 +9,17 @@ import (
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
-// LocalBackend provides access to a local-disk storage system.
-type LocalBackend struct {
+// Local provides access to a local-disk storage system.
+type Local struct {
 	allowedDirs []string
 }
 
-// NewLocalBackend returns a LocalBackend instance, configured to limit
+// NewLocal returns a Local instance, configured to limit
 // file system access to the given allowed directories.
-func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
+func NewLocal(conf config.LocalStorage) (*Local, error) {
 	allowed := []string{}
 	for _, d := range conf.AllowedDirs {
 		a, err := filepath.Abs(d)
@@ -29,80 +28,84 @@ func NewLocalBackend(conf config.LocalStorage) (*LocalBackend, error) {
 		}
 		allowed = append(allowed, a)
 	}
-	return &LocalBackend{allowed}, nil
+	return &Local{allowed}, nil
+}
+
+// Stat returns information about the object at the given storage URL.
+func (local *Local) Stat(ctx context.Context, url string) (*Object, error) {
+	path := getPath(url)
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	return &Object{
+		URL:          url,
+		Name:         path,
+		LastModified: info.ModTime(),
+		Size:         info.Size(),
+	}, nil
+}
+
+// List lists the objects at the given url.
+func (local *Local) List(ctx context.Context, url string) ([]*Object, error) {
+	files, err := fsutil.WalkFiles(getPath(url))
+	if err != nil {
+		return nil, err
+	}
+
+	var objects []*Object
+	for _, f := range files {
+		objects = append(objects, &Object{
+			URL:          filepath.Join(url, f.Rel),
+			Name:         f.Rel,
+			LastModified: f.LastModified,
+			Size:         f.Size,
+		})
+	}
+	return objects, nil
 }
 
 // Get copies a file from storage into the given hostPath.
-func (local *LocalBackend) Get(ctx context.Context, url string, hostPath string, class tes.FileType) error {
-	path := getPath(url)
-
-	var err error
-
-	switch class {
-	case File:
-		err = fsutil.EnsurePath(hostPath)
-		if err != nil {
-			return err
-		}
-		err = linkFile(ctx, path, hostPath)
-
-	case Directory:
-		files, err := walkFiles(path)
-		if err != nil {
-			return err
-		}
-		if len(files) == 0 {
-			return ErrEmptyDirectory
-		}
-
-		for _, f := range files {
-			p := filepath.Join(hostPath, f.rel)
-			err := local.Get(ctx, f.abs, p, File)
-			if err != nil {
-				return err
-			}
-		}
-
-	default:
-		err = fmt.Errorf("Unknown file class: %s", class)
-	}
-
-	return err
-}
-
-// PutFile copies a file from the hostPath into storage.
-func (local *LocalBackend) PutFile(ctx context.Context, url string, hostPath string) error {
-	path := getPath(url)
-	err := fsutil.EnsurePath(path)
+func (local *Local) Get(ctx context.Context, url, path string) (*Object, error) {
+	err := linkFile(ctx, getPath(url), path)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return linkFile(ctx, hostPath, path)
+	return local.Stat(ctx, url)
 }
 
-// SupportsGet indicates whether this backend supports GET storage request.
-// For the LocalBackend, the url must start with "file://" be in an allowed directory
-func (local *LocalBackend) SupportsGet(rawurl string, class tes.FileType) error {
-	if !strings.HasPrefix(rawurl, "/") && !strings.HasPrefix(rawurl, "file://") {
-		return &ErrUnsupportedProtocol{"localStorage"}
+// Put copies a file from the hostPath into storage.
+func (local *Local) Put(ctx context.Context, url, path string) (*Object, error) {
+	err := linkFile(ctx, path, getPath(url))
+	if err != nil {
+		return nil, err
+	}
+	return local.Stat(ctx, url)
+}
+
+// Join joins the given URL with the given subpath.
+func (local *Local) Join(url, path string) (string, error) {
+	return filepath.Join(url, path), nil
+}
+
+// UnsupportedOperations describes which operations (Get, Put, etc) are not
+// supported for the given URL.
+func (local *Local) UnsupportedOperations(url string) UnsupportedOperations {
+	if !strings.HasPrefix(url, "/") && !strings.HasPrefix(url, "file://") {
+		return AllUnsupported(&ErrUnsupportedProtocol{"localStorage"})
 	}
 
-	path := getPath(rawurl)
+	path := getPath(url)
 	if !isAllowed(path, local.allowedDirs) {
-		return fmt.Errorf("localStorage: can't access file, path is not in allowed directories: %s", rawurl)
+		err := fmt.Errorf(
+			"localStorage: can't access file, path is not in allowed directories: %s", url)
+		return AllUnsupported(err)
 	}
-	return nil
-}
-
-// SupportsPut indicates whether this backend supports PUT storage request.
-// For the LocalBackend, the url must start with "file://" be in an allowed directory
-func (local *LocalBackend) SupportsPut(rawurl string, class tes.FileType) error {
-	return local.SupportsGet(rawurl, class)
+	return AllSupported()
 }
 
 func getPath(rawurl string) string {
-	p := strings.TrimPrefix(rawurl, "file://")
-	return p
+	return strings.TrimPrefix(rawurl, "file://")
 }
 
 func isAllowed(path string, allowedDirs []string) bool {

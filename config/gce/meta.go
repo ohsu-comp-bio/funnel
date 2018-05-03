@@ -47,7 +47,7 @@ func WithMetadataConfig(conf config.Config, meta *Metadata) (config.Config, erro
 	// If the configuration contains a node ID, assume that a node
 	// process should be started (instead of a server).
 	if conf.Node.ID != "" {
-		conf.GoogleStorage = config.GSStorage{}
+		conf.GoogleStorage = config.GoogleCloudStorage{}
 	}
 
 	// Auto detect the server's host name when it's not already set.

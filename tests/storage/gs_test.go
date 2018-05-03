@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -16,6 +17,7 @@ import (
 
 func TestGoogleStorage(t *testing.T) {
 	tests.SetLogOutput(log, t)
+	defer os.RemoveAll("./test_tmp")
 
 	if !conf.GoogleStorage.Valid() {
 		t.Skipf("Skipping google storage e2e tests...")
@@ -48,14 +50,14 @@ func TestGoogleStorage(t *testing.T) {
 
 	protocol := "gs://"
 
-	store, err := storage.NewStorage(conf)
+	store, err := storage.NewMux(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}
 
 	fPath := "testdata/test_in"
 	inFileURL := protocol + testBucket + "/" + fPath
-	_, err = store.Put(ctx, inFileURL, fPath, tes.FileType_FILE)
+	_, err = store.Put(ctx, inFileURL, fPath)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -122,7 +124,7 @@ func TestGoogleStorage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	err = store.Get(ctx, outFileURL, "./test_tmp/test-gs-file.txt", tes.FileType_FILE)
+	_, err = store.Get(ctx, outFileURL, "./test_tmp/test-gs-file.txt")
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -139,7 +141,7 @@ func TestGoogleStorage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	err = store.Get(ctx, outDirURL, "./test_tmp/test-gs-directory", tes.FileType_DIRECTORY)
+	_, err = store.Get(ctx, outDirURL, "./test_tmp/test-gs-directory", tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

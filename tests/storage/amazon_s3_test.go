@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -17,6 +18,7 @@ import (
 
 func TestAmazonS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
+	defer os.RemoveAll("./test_tmp")
 
 	if !conf.AmazonS3.Valid() {
 		t.Skipf("Skipping amazon s3 e2e tests...")
@@ -39,14 +41,14 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	protocol := "s3://"
 
-	store, err := storage.NewStorage(conf)
+	store, err := storage.NewMux(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}
 
 	fPath := "testdata/test_in"
 	inFileURL := protocol + testBucket + "/" + fPath
-	_, err = store.Put(ctx, inFileURL, fPath, tes.FileType_FILE)
+	_, err = store.Put(ctx, inFileURL, fPath)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -113,7 +115,7 @@ func TestAmazonS3Storage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	err = store.Get(ctx, outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
+	_, err = store.Get(ctx, outFileURL, "./test_tmp/test-s3-file.txt")
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -130,7 +132,7 @@ func TestAmazonS3Storage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	err = store.Get(ctx, outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	_, err = store.Get(ctx, outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

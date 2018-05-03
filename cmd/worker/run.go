@@ -96,7 +96,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 		reader = worker.NewGenericTaskReader(db.GetTask)
 	}
 
-	store, err := storage.NewStorage(conf)
+	store, err := storage.NewMux(conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate Storage backend: %v", err)
 	}

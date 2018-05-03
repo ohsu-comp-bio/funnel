@@ -9,14 +9,14 @@ import (
 )
 
 func TestLocalSupports(t *testing.T) {
-	l := LocalBackend{allowedDirs: []string{"/path"}}
+	l := Local{allowedDirs: []string{"/path"}}
 
-	err := l.SupportsGet("file:///path/to/foo.txt", File)
+	err := l.UnsupportedOperations("file:///path/to/foo.txt").Get
 	if err != nil {
 		t.Fatal("Expected file:// URL to be supported", err)
 	}
 
-	err = l.SupportsGet("/path/to/foo.txt", File)
+	err = l.UnsupportedOperations("/path/to/foo.txt").Get
 	if err != nil {
 		t.Fatal("Expected normal file path to be supported", err)
 	}
@@ -29,14 +29,14 @@ func TestLocalGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
+	l := &Local{allowedDirs: []string{tmp}}
 
 	// File test
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
 	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
 
-	gerr := l.Get(ctx, "file://"+ip, cp, File)
+	_, gerr := l.Get(ctx, "file://"+ip, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -48,36 +48,6 @@ func TestLocalGet(t *testing.T) {
 	if string(b) != "foo" {
 		t.Fatal("Unexpected content")
 	}
-
-	// Directory test
-	id := path.Join(tmp, "subdir")
-	os.MkdirAll(id, os.ModePerm)
-	idf := path.Join(id, "other.txt")
-	cd := path.Join(tmp, "localized_dir")
-	ioutil.WriteFile(idf, []byte("bar"), os.ModePerm)
-	sdf := path.Join(id, "second.txt")
-	ioutil.WriteFile(sdf, []byte("bar"), os.ModePerm)
-
-	gerr = l.Get(ctx, "file://"+id, cd, Directory)
-	if gerr != nil {
-		t.Fatal(gerr)
-	}
-
-	b, rerr = ioutil.ReadFile(path.Join(cd, "other.txt"))
-	if rerr != nil {
-		t.Fatal(rerr)
-	}
-	if string(b) != "bar" {
-		t.Fatal("Unexpected content")
-	}
-
-	b, rerr = ioutil.ReadFile(path.Join(cd, "second.txt"))
-	if rerr != nil {
-		t.Fatal(rerr)
-	}
-	if string(b) != "bar" {
-		t.Fatal("Unexpected content")
-	}
 }
 
 // Tests Get on a URL that is a path, e.g. "/path/to/foo.txt"
@@ -87,13 +57,13 @@ func TestLocalGetPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
+	l := &Local{allowedDirs: []string{tmp}}
 
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
 	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
 
-	gerr := l.Get(ctx, ip, cp, File)
+	_, gerr := l.Get(ctx, ip, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -114,14 +84,14 @@ func TestLocalPut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
+	l := &Local{allowedDirs: []string{tmp}}
 
 	// File test
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 
-	_, gerr := l.Put(ctx, "file://"+op, cp, File)
+	_, gerr := l.Put(ctx, "file://"+op, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -133,25 +103,6 @@ func TestLocalPut(t *testing.T) {
 	if string(b) != "foo" {
 		t.Fatal("Unexpected content")
 	}
-
-	// Directory test
-	cd := path.Join(tmp, "subdir")
-	os.MkdirAll(cd, os.ModePerm)
-	cdf := path.Join(cd, "other.txt")
-	od := path.Join(tmp, "subout")
-	ioutil.WriteFile(cdf, []byte("bar"), os.ModePerm)
-	_, gerr = l.Put(ctx, "file://"+od, cd, Directory)
-	if gerr != nil {
-		t.Fatal(gerr)
-	}
-
-	b, rerr = ioutil.ReadFile(path.Join(od, "other.txt"))
-	if rerr != nil {
-		t.Fatal(rerr)
-	}
-	if string(b) != "bar" {
-		t.Fatal("Unexpected content")
-	}
 }
 
 // Tests Put on a URL that is a path, e.g. "/path/to/foo.txt"
@@ -161,13 +112,13 @@ func TestLocalPutPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	l := Storage{}.WithBackend(&LocalBackend{allowedDirs: []string{tmp}})
+	l := &Local{allowedDirs: []string{tmp}}
 
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
 	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
 
-	_, gerr := l.Put(ctx, op, cp, File)
+	_, gerr := l.Put(ctx, op, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
@@ -182,7 +133,7 @@ func TestLocalPutPath(t *testing.T) {
 }
 
 // Tests Put when source and dest reference the same file (inode)
-// Since the LocalBackend hard-links files when possible we need to protect
+// Since Local storage hard-links files when possible we need to protect
 // against the case where the same path is 'Put' twice
 func TestSameFile(t *testing.T) {
 	ctx := context.Background()

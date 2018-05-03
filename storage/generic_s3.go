@@ -3,24 +3,21 @@ package storage
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/tes"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
 
-// GenericS3Backend provides access to an S3 object store.
-type GenericS3Backend struct {
+// GenericS3 provides access to an S3 object store.
+type GenericS3 struct {
 	client   *minio.Client
 	endpoint string
 }
 
-// NewGenericS3Backend creates a new GenericS3Backend instance, given an endpoint URL
+// NewGenericS3 creates a new GenericS3 instance, given an endpoint URL
 // and a set of authentication credentials.
-func NewGenericS3Backend(conf config.GenericS3Storage) (*GenericS3Backend, error) {
+func NewGenericS3(conf config.GenericS3Storage) (*GenericS3, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
 	endpoint := endpointRE.ReplaceAllString(conf.Endpoint, "$2")
 	client, err := minio.NewV2(endpoint, conf.Key, conf.Secret, ssl)
@@ -28,103 +25,123 @@ func NewGenericS3Backend(conf config.GenericS3Storage) (*GenericS3Backend, error
 		return nil, fmt.Errorf("error creating generic s3 backend: %v", err)
 	}
 
-	return &GenericS3Backend{client, endpoint + "/"}, nil
+	return &GenericS3{client, endpoint + "/"}, nil
+}
+
+// Stat returns information about the object at the given storage URL.
+func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
+	u, err := s3.parse(url)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := minio.GetObjectOptions{}
+	obj, err := s3.client.GetObjectWithContext(ctx, u.bucket, u.path, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := obj.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Object{
+		URL:          url,
+		Name:         info.Key,
+		ETag:         info.ETag,
+		LastModified: info.LastModified,
+		Size:         info.Size,
+	}, nil
+}
+
+// List lists the objects at the given url.
+func (s3 *GenericS3) List(ctx context.Context, url string) ([]*Object, error) {
+	u, err := s3.parse(url)
+	if err != nil {
+		return nil, err
+	}
+
+	// Recursively list all objects.
+	var objects []*Object
+	recursive := true
+	for info := range s3.client.ListObjects(u.bucket, u.path, recursive, ctx.Done()) {
+		// check if key represents a directory
+		if strings.HasSuffix(info.Key, "/") {
+			continue
+		}
+		objects = append(objects, &Object{
+			URL:          url,
+			Name:         info.Key,
+			ETag:         info.ETag,
+			LastModified: info.LastModified,
+			Size:         info.Size,
+		})
+	}
+
+	return objects, nil
 }
 
 // Get copies an object from S3 to the host path.
-func (s3 *GenericS3Backend) Get(ctx context.Context, rawurl string, hostPath string, class tes.FileType) error {
-	url, err := s3.parse(rawurl)
+func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error) {
+	obj, err := s3.Stat(ctx, url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	switch class {
-	case File:
-		err := fsutil.EnsurePath(hostPath)
-		if err != nil {
-			return err
-		}
-		return s3.client.FGetObjectWithContext(ctx, url.bucket, url.path, hostPath, minio.GetObjectOptions{})
-
-	case Directory:
-		err := fsutil.EnsureDir(hostPath)
-		if err != nil {
-			return err
-		}
-		// Create a done channel.
-		doneCh := make(chan struct{})
-		defer close(doneCh)
-		// Recursively list all objects in 'mytestbucket'
-		recursive := true
-		objects := []minio.ObjectInfo{}
-		for obj := range s3.client.ListObjects(url.bucket, url.path, recursive, doneCh) {
-			objects = append(objects, obj)
-		}
-
-		if len(objects) == 0 {
-			return ErrEmptyDirectory
-		}
-
-		for _, obj := range objects {
-			// Create the directories in the path
-			file := filepath.Join(hostPath, strings.TrimPrefix(obj.Key, url.path+"/"))
-			// check if key represents a directory
-			if strings.HasSuffix(obj.Key, "/") {
-				continue
-			}
-			err = fsutil.EnsurePath(file)
-			if err != nil {
-				return err
-			}
-
-			err = s3.client.FGetObjectWithContext(ctx, url.bucket, obj.Key, file, minio.GetObjectOptions{})
-			if err != nil {
-				return err
-			}
-		}
-
-	default:
-		return fmt.Errorf("Unknown file class: %s", class)
+	u, err := s3.parse(url)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	opts := minio.GetObjectOptions{}
+	err = s3.client.FGetObjectWithContext(ctx, u.bucket, u.path, path, opts)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
-// PutFile copies an object (file) from the host path to S3.
-func (s3 *GenericS3Backend) PutFile(ctx context.Context, rawurl string, hostPath string) error {
-	url, err := s3.parse(rawurl)
+// Put copies an object (file) from the host path to S3.
+func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error) {
+	u, err := s3.parse(url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = s3.client.FPutObjectWithContext(ctx, url.bucket, url.path, hostPath, minio.PutObjectOptions{})
-	return err
+	opts := minio.PutObjectOptions{}
+	_, err = s3.client.FPutObjectWithContext(ctx, u.bucket, u.path, path, opts)
+	if err != nil {
+		return nil, err
+	}
+	return s3.Stat(ctx, url)
 }
 
-// SupportsGet indicates whether this backend supports GET storage request.
-// For the GenericS3Backend, the url must start with "s3://" and the bucket must exist
-func (s3 *GenericS3Backend) SupportsGet(rawurl string, class tes.FileType) error {
-	url, err := s3.parse(rawurl)
+// Join joins the given URL with the given subpath.
+func (s3 *GenericS3) Join(url, path string) (string, error) {
+	return strings.TrimSuffix(url, "/") + "/" + path, nil
+}
+
+// UnsupportedOperations describes which operations (Get, Put, etc) are not
+// supported for the given URL.
+func (s3 *GenericS3) UnsupportedOperations(url string) UnsupportedOperations {
+	u, err := s3.parse(url)
 	if err != nil {
-		return err
+		return AllUnsupported(err)
 	}
-	ok, err := s3.client.BucketExists(url.bucket)
+	ok, err := s3.client.BucketExists(u.bucket)
 	if err != nil {
-		return fmt.Errorf("genericS3: failed to find bucket: %s. error: %v", url.bucket, err)
+		err = fmt.Errorf("genericS3: failed to find bucket %q: %v", u.bucket, err)
+		return AllUnsupported(err)
 	}
 	if !ok {
-		return fmt.Errorf("genericS3: bucket does not exist: %s", url.bucket)
+		err := fmt.Errorf("genericS3: bucket does not exist: %q", u.bucket)
+		return AllUnsupported(err)
 	}
-	return nil
+	return AllSupported()
 }
 
-// SupportsPut indicates whether this backend supports PUT storage request.
-// For the GenericS3Backend, the url must start with "s3://" and the bucket must exist
-func (s3 *GenericS3Backend) SupportsPut(rawurl string, class tes.FileType) error {
-	return s3.SupportsGet(rawurl, class)
-}
-
-func (s3 *GenericS3Backend) parse(rawurl string) (*urlparts, error) {
+func (s3 *GenericS3) parse(rawurl string) (*urlparts, error) {
 	if !strings.HasPrefix(rawurl, s3Protocol) {
 		return nil, &ErrUnsupportedProtocol{"genericS3"}
 	}

@@ -39,7 +39,7 @@ type Config struct {
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage
 	GenericS3     []GenericS3Storage
-	GoogleStorage GSStorage
+	GoogleStorage GoogleCloudStorage
 	Swift         SwiftStorage
 	HTTPStorage   HTTPStorage
 }
@@ -251,16 +251,16 @@ func (l LocalStorage) Valid() bool {
 	return !l.Disabled && len(l.AllowedDirs) > 0
 }
 
-// GSStorage describes configuration for the Google Cloud storage backend.
-type GSStorage struct {
+// GoogleCloudStorage describes configuration for the Google Cloud storage backend.
+type GoogleCloudStorage struct {
 	Disabled bool
 	// If no account file is provided then Funnel will try to use Google Application
 	// Default Credentials to authorize and authenticate the client.
 	CredentialsFile string
 }
 
-// Valid validates the GSStorage configuration.
-func (g GSStorage) Valid() bool {
+// Valid validates the Storage configuration.
+func (g GoogleCloudStorage) Valid() bool {
 	return !g.Disabled
 }
 

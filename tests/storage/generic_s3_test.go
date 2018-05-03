@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -15,6 +16,7 @@ import (
 
 func TestGenericS3Storage(t *testing.T) {
 	tests.SetLogOutput(log, t)
+	defer os.RemoveAll("./test_tmp")
 
 	if len(conf.GenericS3) > 0 {
 		if !conf.GenericS3[0].Valid() {
@@ -41,21 +43,21 @@ func TestGenericS3Storage(t *testing.T) {
 
 	protocol := "s3://"
 
-	store, err := storage.NewStorage(conf)
+	store, err := storage.NewMux(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}
 
 	fPath := "testdata/test_in"
 	inFileURL := protocol + testBucket + "/" + fPath
-	_, err = store.Put(ctx, inFileURL, fPath, tes.FileType_FILE)
+	_, err = store.Put(ctx, inFileURL, fPath)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	dPath := "testdata/test_dir"
 	inDirURL := protocol + testBucket + "/" + dPath
-	_, err = store.Put(ctx, inDirURL, dPath, tes.FileType_DIRECTORY)
+	_, err = store.Put(ctx, inDirURL, dPath)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -115,7 +117,7 @@ func TestGenericS3Storage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	err = store.Get(ctx, outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
+	err = store.Get(ctx, outFileURL, "./test_tmp/test-s3-file.txt")
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -132,7 +134,7 @@ func TestGenericS3Storage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	err = store.Get(ctx, outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	_, err = store.Get(ctx, outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}
@@ -199,7 +201,7 @@ func TestGenericS3Storage(t *testing.T) {
 
 type minioTest struct {
 	client *minio.Client
-	fcli   *storage.GenericS3Backend
+	fcli   *storage.GenericS3
 }
 
 func newMinioTest(conf config.GenericS3Storage) (*minioTest, error) {
@@ -209,7 +211,7 @@ func newMinioTest(conf config.GenericS3Storage) (*minioTest, error) {
 		return nil, err
 	}
 
-	fcli, err := storage.NewGenericS3Backend(conf)
+	fcli, err := storage.NewGenericS3(conf)
 	if err != nil {
 		return nil, err
 	}

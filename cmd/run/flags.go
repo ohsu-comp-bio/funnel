@@ -2,10 +2,8 @@ package run
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
-	"github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/spf13/pflag"
 )
@@ -26,12 +24,10 @@ type executor struct {
 // flagVals captures values from CLI flag parsing
 type flagVals struct {
 	// Top-level flag values. These are not allowed to be redefined
-	// by scattered tasks or extra args, to avoid complexity in avoiding
+	// by scattered tasks, to avoid complexity in avoiding
 	// circular imports or nested scattering
 	printTask    bool
 	server       string
-	extra        []string
-	extraFiles   []string
 	scatterFiles []string
 	exec         []string
 	sh           []string
@@ -74,14 +70,12 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	// These flags are separate because they are not allowed
 	// in scattered tasks.
 	//
-	// Scattering and loading extra args is currently only allowed
+	// Scattering is currently only allowed
 	// at the top level in order to avoid any issues with circular
 	// includes. If we want this to be per-task, it's possible,
 	// but more work.
 	f.StringVarP(&v.server, "server", "S", v.server, "")
 	f.BoolVarP(&v.printTask, "print", "p", v.printTask, "")
-	f.StringSliceVarP(&v.extra, "extra", "x", v.extra, "")
-	f.StringSliceVarP(&v.extraFiles, "extra-file", "X", v.extraFiles, "")
 	f.StringSliceVar(&v.scatterFiles, "scatter", v.scatterFiles, "")
 	f.StringSliceVar(&v.sh, "sh", v.sh, "")
 	f.StringSliceVar(&v.exec, "exec", v.exec, "")
@@ -118,8 +112,6 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	f.StringSliceVar(&v.tags, "tag", v.tags, "")
 	f.StringSliceVarP(&v.environ, "env", "e", v.environ, "")
 
-	// TODO
-	//f.StringVar(&cmdFile, "cmd-file", cmdFile, "Read cmd template from file")
 	f.BoolVar(&v.wait, "wait", v.wait, "")
 	f.StringSliceVar(&v.waitFor, "wait-for", v.waitFor, "")
 
@@ -149,7 +141,6 @@ func defaultVals(vals *flagVals) {
 }
 
 func parseTopLevelArgs(vals *flagVals, args []string) error {
-	args = loadExtras(args)
 	flags := newFlags(vals)
 	err := flags.Parse(args)
 
@@ -215,34 +206,4 @@ func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
 	if exec != nil {
 		vals.execs = append(vals.execs, *exec)
 	}
-}
-
-// Load extra arguments from "--extra", "--extra-file", and stdin
-func loadExtras(args []string) []string {
-	vals := &flagVals{}
-	flags := newFlags(vals)
-	flags.Parse(args)
-
-	// Load CLI arguments from files, which allows reusing common CLI args.
-	for _, xf := range vals.extraFiles {
-		b, _ := ioutil.ReadFile(xf)
-		vals.extra = append(vals.extra, string(b))
-	}
-
-	// Load CLI arguments from stdin, which allows bash heredoc for easily
-	// spreading args over multiple lines.
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		b, _ := ioutil.ReadAll(os.Stdin)
-		if len(b) > 0 {
-			vals.extra = append(vals.extra, string(b))
-		}
-	}
-
-	// Load and parse all "extra" CLI arguments.
-	for _, ex := range vals.extra {
-		sp, _ := shellquote.Split(ex)
-		args = append(args, sp...)
-	}
-	return args
 }

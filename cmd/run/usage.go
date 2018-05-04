@@ -13,8 +13,6 @@ General flags:
       --scatter     Scatter multiple tasks, one per row of the given file.
       --wait        Wait for the task to finish before exiting.
       --wait-for    Wait for the given task IDs before running the task.
-  -x, --extra       Parse funnel run arguments from the given string.
-  -X, --extra-file  Parse funnel run arguments from the given file.
 
 Input/output file flags:
   -i, --in          Input file e.g. varname=/path/to/input.txt

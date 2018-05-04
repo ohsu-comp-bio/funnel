@@ -16,7 +16,7 @@ func TestParse(t *testing.T) {
 
 	expected := []*tes.Task{
 		{
-			Name:        "foo",
+			Name:        "myname",
 			Description: "mydesc",
 			Inputs: []*tes.Input{
 				{
@@ -134,7 +134,6 @@ func TestParse(t *testing.T) {
     -e e1=e1v
     --env e2=e2v
     --stdout ./testdata/stdout-first
-    -x '--name foo'
     --exec 'echo two'
     --stdout ./testdata/stdout-second
     --vol /volone

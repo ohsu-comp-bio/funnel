@@ -55,11 +55,6 @@ Examples:
   # Sleep for 5 seconds, and wait for the sleep to finish.
   funnel run 'sleep 5' --wait
 
-  # Reuse a set of arguments across multiple runs.
-  args='--wait --cpu 10 --ram 60 --disk 2000'
-  funnel run 'echo hello world" -x $args
-  funnel run 'echo hello world again" -x $args
-
   # Set environment variables
   funnel run 'echo $MSG' -e MSG=Hello
 

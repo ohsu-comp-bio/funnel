@@ -178,6 +178,10 @@ func parseTaskArgs(vals *flagVals, args []string) {
 
 // Visit flags to determine commands + stdin/out/err
 // and build that information into vals.execs
+//
+// This is done so that multiple TES.Executors can be described by one
+// "funnel run" command line.
+// TODO possibly just remove this.
 func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
 	vals.execs = nil
 	var exec *executor

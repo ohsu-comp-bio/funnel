@@ -210,6 +210,9 @@ main {
 
 .task-list-name {
   width: 100%;
+  max-width: 300px;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .executor-table {

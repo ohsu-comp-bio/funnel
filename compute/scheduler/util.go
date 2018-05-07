@@ -28,6 +28,7 @@ func detectResources(conf config.Node, workdir string) (Resources, error) {
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,
 		DiskGb: conf.Resources.DiskGb,
+		Zone:   conf.Resources.Zone,
 	}
 
 	cpuinfo, err := pscpu.Info()

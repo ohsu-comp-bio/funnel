@@ -59,7 +59,7 @@ func TestCpuResourcesFit(t *testing.T) {
 func testEmptyTask(t *testing.T, p Predicate, name string) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Errorf("Predicate panic: %s\n%s", name, debug.Stack())
+			t.Errorf("Predicate panic: %s %#v\n%s", name, r, debug.Stack())
 		}
 	}()
 

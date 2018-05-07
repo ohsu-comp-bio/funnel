@@ -14,7 +14,7 @@ func ResourcesFit(t *tes.Task, n *Node) error {
 	req := t.GetResources()
 
 	switch {
-	case n.GetPreemptible() && !req.GetPreemptible():
+	case n.GetResources().GetPreemptible() && !req.GetPreemptible():
 		return fmt.Errorf("Fail preemptible")
 	case n.GetAvailable().GetCpus() <= 0:
 		return fmt.Errorf("Fail zero cpus available")
@@ -46,7 +46,7 @@ func ResourcesFit(t *tes.Task, n *Node) error {
 
 // ZonesFit determines whether a task's zones fit a node.
 func ZonesFit(t *tes.Task, n *Node) error {
-	if n.Zone == "" {
+	if n.GetResources().GetZone() == "" {
 		// Node doesn't have a set zone, so don't bother checking.
 		return nil
 	}
@@ -57,7 +57,7 @@ func ZonesFit(t *tes.Task, n *Node) error {
 	}
 
 	for _, z := range t.GetResources().GetZones() {
-		if z == n.Zone {
+		if z == n.GetResources().Zone {
 			return nil
 		}
 	}

@@ -108,6 +108,7 @@ type Node struct {
 		Cpus   uint32
 		RamGb  float64 // nolint
 		DiskGb float64
+		Zone   string
 	}
 	// If the node has been idle for longer than the timeout, it will shut down.
 	// -1 means there is no timeout. 0 means timeout immediately after the first task.

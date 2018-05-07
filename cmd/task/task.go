@@ -55,7 +55,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Short: "Create one or more tasks to run on the server.",
 		Long:  `Tasks may be piped to stdin, e.g. "python generate_tasks.py | funnel task create"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return h.Create(tesServer, args, os.Stdin, cmd.OutOrStdout())
+			return h.Create(tesServer, args, util.StdinPipe(), cmd.OutOrStdout())
 		},
 	}
 

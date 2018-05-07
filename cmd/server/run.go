@@ -14,6 +14,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/database/badger"
 	"github.com/ohsu-comp-bio/funnel/database/boltdb"
 	"github.com/ohsu-comp-bio/funnel/database/datastore"
 	"github.com/ohsu-comp-bio/funnel/database/dynamodb"
@@ -71,6 +72,15 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		reader = b
 		nodes = b
 		queue = b
+		writers = append(writers, b)
+
+	case "badger":
+		b, err := badger.NewBadger(conf.Badger)
+		if err != nil {
+			return nil, dberr(err)
+		}
+		database = b
+		reader = b
 		writers = append(writers, b)
 
 	case "datastore":
@@ -139,6 +149,8 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			continue
 		case "boltdb":
 			writer, err = boltdb.NewBoltDB(conf.BoltDB)
+		case "badger":
+			writer, err = badger.NewBadger(conf.Badger)
 		case "dynamodb":
 			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
 		case "elastic":

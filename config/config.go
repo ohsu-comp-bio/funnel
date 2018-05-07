@@ -21,6 +21,7 @@ type Config struct {
 	Logger    logger.Config
 	// databases / event handlers
 	BoltDB    BoltDB
+	Badger    Badger
 	DynamoDB  DynamoDB
 	Elastic   Elastic
 	MongoDB   MongoDB
@@ -150,6 +151,12 @@ type HPCBackend struct {
 
 // BoltDB describes the configuration for the BoltDB embedded database.
 type BoltDB struct {
+	Path string
+}
+
+// Badger describes configuration for the Badger embedded database.
+type Badger struct {
+	// Path to database directory.
 	Path string
 }
 

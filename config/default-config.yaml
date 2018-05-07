@@ -1,5 +1,5 @@
 # The name of the active server database backend
-# Available backends: boltdb, dynamodb, elastic, mongodb
+# Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb
 Database: boltdb
 
 # The name of the active compute backend
@@ -7,7 +7,7 @@ Database: boltdb
 Compute: local
 
 # The name of the active event writer backend(s).
-# Available backends: log, boltdb, dynamodb, elastic, mongodb, kafka
+# Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
 EventWriters: 
   - boltdb
   - log

@@ -41,6 +41,7 @@ proto:
 
 # Update submodules and build code
 depends:
+	@go get github.com/google/go-github/github
 	@git submodule update --init --recursive
 	@go get -d github.com/ohsu-comp-bio/funnel
 

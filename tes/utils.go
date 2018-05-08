@@ -79,6 +79,7 @@ func (task *Task) GetBasicView() *Task {
 
 	// remove stdout and stderr from Task.Logs.Logs
 	for _, tl := range view.Logs {
+		tl.SystemLogs = nil
 		for _, el := range tl.Logs {
 			el.Stdout = ""
 			el.Stderr = ""

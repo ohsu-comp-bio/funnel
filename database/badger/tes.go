@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	proto "github.com/golang/protobuf/proto"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -27,6 +28,7 @@ func (db *Badger) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Ta
 	case tes.Minimal:
 		task = task.GetMinimalView()
 	case tes.Basic:
+		logger.Debug("Basic view", task.GetBasicView())
 		task = task.GetBasicView()
 	}
 	return task, nil

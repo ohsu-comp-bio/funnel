@@ -3,27 +3,41 @@ package badger
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/dgraph-io/badger"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 // WriteEvent creates an event for the server to handle.
 func (db *Badger) WriteEvent(ctx context.Context, req *events.Event) error {
-	retrier := util.NewRetrier()
-	retrier.ShouldRetry = func(err error) bool {
-		return true
+	r := util.Retrier{
+		InitialInterval: time.Millisecond,
+		MaxInterval:     10 * time.Millisecond,
+		MaxElapsedTime:  time.Second,
+		MaxTries:        50,
+		ShouldRetry: func(err error) bool {
+			// Don't retry on state transition errors.
+			if _, ok := err.(*tes.TransitionError); ok {
+				return false
+			}
+			return true
+		},
 	}
 
-	return retrier.Retry(ctx, func() error {
+	return r.Retry(ctx, func() error {
 		return db.writeEvent(ctx, req)
 	})
 }
 
 func (db *Badger) writeEvent(ctx context.Context, req *events.Event) error {
-	err := db.db.Update(func(txn *badger.Txn) error {
+
+	// It's important this error be returned directly without being wrapped,
+	// because the retrier's ShouldRetry needs to check the error type (above).
+	return db.db.Update(func(txn *badger.Txn) error {
 
 		// If this event creates a new task, we don't need to update logic below,
 		// just marshal and save the task.
@@ -45,7 +59,12 @@ func (db *Badger) writeEvent(ctx context.Context, req *events.Event) error {
 
 		switch req.Type {
 		case events.Type_TASK_STATE:
-			task.State = req.GetState()
+			from := task.State
+			to := req.GetState()
+			if err = tes.ValidateTransition(from, to); err != nil {
+				return err
+			}
+			task.State = to
 
 		case events.Type_TASK_START_TIME:
 			task.GetTaskLog(0).StartTime = req.GetStartTime()
@@ -57,7 +76,14 @@ func (db *Badger) writeEvent(ctx context.Context, req *events.Event) error {
 			task.GetTaskLog(0).Outputs = req.GetOutputs().Value
 
 		case events.Type_TASK_METADATA:
-			task.GetTaskLog(0).Metadata = req.GetMetadata().Value
+			meta := req.GetMetadata().Value
+			tl := task.GetTaskLog(0)
+			if tl.Metadata == nil {
+				tl.Metadata = map[string]string{}
+			}
+			for k, v := range meta {
+				tl.Metadata[k] = v
+			}
 
 		case events.Type_EXECUTOR_START_TIME:
 			task.GetExecLog(0, int(req.Index)).StartTime = req.GetStartTime()
@@ -86,9 +112,4 @@ func (db *Badger) writeEvent(ctx context.Context, req *events.Event) error {
 
 		return txn.Set(taskKey(task.Id), val)
 	})
-
-	if err != nil {
-		return fmt.Errorf("storing task in database: %s", err)
-	}
-	return nil
 }

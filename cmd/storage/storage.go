@@ -4,10 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 
+	"github.com/golang/protobuf/jsonpb"
 	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/storage"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/spf13/cobra"
 )
 
@@ -61,6 +65,64 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
+	statTaskCmd := &cobra.Command{
+		Use:   "stat-task [task file]",
+		Short: "Returns information about inputs/outputs of the task.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return cmd.Usage()
+			}
+
+			store, err := storage.NewMux(conf)
+			if err != nil {
+				return fmt.Errorf("creating storage clients: %s", err)
+			}
+
+			f, err := os.Open(args[0])
+			if err != nil {
+				return fmt.Errorf("opening task file: %s", err)
+			}
+			defer f.Close()
+
+			dec := json.NewDecoder(f)
+			for {
+				task := &tes.Task{}
+				err := jsonpb.UnmarshalNext(dec, task)
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error: %s\n", err)
+					continue
+				}
+
+				for _, in := range task.Inputs {
+					obj, err := store.Stat(context.Background(), in.Url)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "error: %s\n", err)
+						continue
+					}
+
+					b, _ := json.Marshal(obj)
+					fmt.Println(string(b))
+				}
+
+				for _, out := range task.Outputs {
+					obj, err := store.Stat(context.Background(), out.Url)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "error: %s\n", err)
+						continue
+					}
+
+					b, _ := json.Marshal(obj)
+					fmt.Println(string(b))
+				}
+			}
+
+			return nil
+		},
+	}
+
 	listCmd := &cobra.Command{
 		Use:   "list [url]",
 		Short: "List objects at the given URL.",
@@ -90,5 +152,6 @@ func NewCommand() *cobra.Command {
 
 	cmd.AddCommand(listCmd)
 	cmd.AddCommand(statCmd)
+	cmd.AddCommand(statTaskCmd)
 	return cmd
 }

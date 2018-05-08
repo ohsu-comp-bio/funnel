@@ -90,6 +90,9 @@ test-mongodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/mongo.config.yml
 	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml	
 
+test-badger:
+	@go test ./tests/core/ -funnel-config `pwd`/tests/badger.config.yml
+
 start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-dynamodb-test -p 18000:8000 docker.io/dwmkerr/dynamodb:38 -sharedDb > /dev/null

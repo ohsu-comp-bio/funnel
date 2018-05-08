@@ -1135,21 +1135,24 @@ func TestConcurrentStateUpdate(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		id := f.Run(`--sh 'echo hello'`)
 		ids = append(ids, id)
-		go func() {
+		go func(id string) {
+			log.Info("writing state initializing event", "taskID", id)
 			err := e.WriteEvent(ctx, events.NewState(id, tes.Initializing))
 			if err != nil {
 				log.Error("error writing event", err)
 			}
-		}()
-		go func() {
+		}(id)
+		go func(id string) {
+			log.Info("writing state canceled event", "taskID", id)
 			err := e.WriteEvent(ctx, events.NewState(id, tes.Canceled))
 			if err != nil {
 				log.Error("error writing event", "error", err, "taskID", id)
 			}
-		}()
+		}(id)
 	}
 
 	for _, i := range ids {
+		log.Info("waiting for task", "taskID", i)
 		task := f.Wait(i)
 		if task.State != tes.Canceled {
 			t.Error("expected canceled state", task)

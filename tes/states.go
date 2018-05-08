@@ -15,12 +15,18 @@ const (
 	Initializing  = State_INITIALIZING
 )
 
-func transitionError(from, to State) error {
-	return fmt.Errorf("invalid state transition from %s to %s",
-		from.String(), to.String())
+// TransitionError describes an invalid state transition.
+type TransitionError struct {
+	From, To State
+}
+
+func (te *TransitionError) Error() string {
+	return fmt.Sprintf("invalid state transition from %s to %s",
+		te.From.String(), te.To.String())
 }
 
 // ValidateTransition validates a task state transition.
+// Returns a TransitionError if the transition is not valid.
 func ValidateTransition(from, to State) error {
 
 	if from == to {
@@ -39,7 +45,7 @@ func ValidateTransition(from, to State) error {
 	case Queued:
 		// May transition from Queued to anything except Unknown
 		if to == Unknown {
-			return transitionError(from, to)
+			return &TransitionError{from, to}
 		}
 		return nil
 
@@ -47,7 +53,7 @@ func ValidateTransition(from, to State) error {
 
 		switch to {
 		case Unknown, Queued:
-			return transitionError(from, to)
+			return &TransitionError{from, to}
 		case Running, ExecutorError, SystemError, Canceled:
 			return nil
 		}
@@ -56,18 +62,18 @@ func ValidateTransition(from, to State) error {
 
 		switch to {
 		case Unknown, Queued:
-			return transitionError(from, to)
+			return &TransitionError{from, to}
 		case Complete, ExecutorError, SystemError, Canceled:
 			return nil
 		}
 
 	case ExecutorError, SystemError, Canceled, Complete:
 		// May not transition out of terminal state.
-		return transitionError(from, to)
+		return &TransitionError{from, to}
 
 	default:
-		return fmt.Errorf("unknown state: %s", from)
+		return &TransitionError{from, to}
 	}
 	// Shouldn't be reaching this point, but just in case.
-	return transitionError(from, to)
+	return &TransitionError{from, to}
 }

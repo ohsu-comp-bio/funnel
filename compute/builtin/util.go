@@ -1,21 +1,17 @@
-package scheduler
+package builtin
 
 import (
 	"fmt"
 	"math"
+	"os"
+	"sync"
 
-	uuid "github.com/nu7hatch/gouuid"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/rs/xid"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psdisk "github.com/shirou/gopsutil/disk"
 	psmem "github.com/shirou/gopsutil/mem"
 )
-
-// GenNodeID returns a UUID string.
-func GenNodeID(prefix string) string {
-	u, _ := uuid.NewV4()
-	return fmt.Sprintf("%s-node-%s", prefix, u.String())
-}
 
 // detectResources helps determine the amount of resources to report.
 // Resources are determined by inspecting the host, but they
@@ -23,7 +19,7 @@ func GenNodeID(prefix string) string {
 //
 // Upon error, detectResources will return the resources given by the config
 // with the error.
-func detectResources(conf config.Node, workdir string) (Resources, error) {
+func detectResources(conf config.Node) (Resources, error) {
 	res := Resources{
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,
@@ -38,7 +34,7 @@ func detectResources(conf config.Node, workdir string) (Resources, error) {
 	if err != nil {
 		return res, fmt.Errorf("Error detecting memory: %s", err)
 	}
-	diskinfo, err := psdisk.Usage(workdir)
+	diskinfo, err := psdisk.Usage(conf.WorkDir)
 	if err != nil {
 		return res, fmt.Errorf("Error detecting available disk: %s", err)
 	}
@@ -62,4 +58,35 @@ func detectResources(conf config.Node, workdir string) (Resources, error) {
 	}
 
 	return res, nil
+}
+
+func hostname() string {
+	if name, err := os.Hostname(); err == nil {
+		return name
+	}
+	return ""
+}
+
+// waitChan wraps sync.WaitGroup with a channel-based Wait()
+// so it can be used in a select statement.
+type waitChan struct {
+	sync.WaitGroup
+}
+
+func (wc *waitChan) Wait() chan struct{} {
+	out := make(chan struct{})
+	go func() {
+		wc.WaitGroup.Wait()
+		close(out)
+	}()
+	return out
+}
+
+func genID() string {
+	// chunk the ID, putting a separator near the end
+	// to make it more readable.
+	a := xid.New().String()
+	b := a[:len(a)-3]
+	c := a[len(a)-3:]
+	return "node-" + b + "-" + c
 }

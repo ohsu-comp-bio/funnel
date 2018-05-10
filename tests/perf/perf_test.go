@@ -15,7 +15,7 @@ func BenchmarkRunSerialNoNodes(b *testing.B) {
 	fun := tests.NewFunnel(tests.DefaultConfig())
 	defer fun.Cleanup()
 	// No nodes connected in this test
-	fun.Conf.Compute = "manual"
+	fun.Conf.Compute = "builtin"
 	fun.Conf.Logger.Level = "error"
 
 	fun.StartServer()
@@ -32,7 +32,7 @@ func BenchmarkRunConcurrentNoNodes(b *testing.B) {
 	fun := tests.NewFunnel(tests.DefaultConfig())
 	defer fun.Cleanup()
 	// No nodes connected in this test
-	fun.Conf.Compute = "manual"
+	fun.Conf.Compute = "builtin"
 	fun.Conf.Logger.Level = "error"
 	fun.StartServer()
 	b.ResetTimer()
@@ -55,7 +55,7 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 	fun := tests.NewFunnel(tests.DefaultConfig())
 	defer fun.Cleanup()
 	// Nodes are simulated by goroutines writing to the scheduler API
-	fun.Conf.Compute = "manual"
+	fun.Conf.Compute = "builtin"
 	fun.Conf.Logger.Level = "error"
 	fun.StartServer()
 

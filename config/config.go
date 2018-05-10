@@ -86,14 +86,10 @@ func (c *Server) RPCAddress() string {
 
 // Scheduler contains funnel's basic scheduler configuration.
 type Scheduler struct {
-	// How often to run a scheduler iteration.
-	ScheduleRate Duration
-	// How many tasks to schedule in one iteration.
-	ScheduleChunk int
+	// Path to scheduler database directory.
+	DBPath string
 	// How long to wait for a node ping before marking it as dead
 	NodePingTimeout Duration
-	// How long to wait for node initialization before marking it dead
-	NodeInitTimeout Duration
 	// How long to wait before deleting a dead node from the DB.
 	NodeDeadTimeout Duration
 }
@@ -101,7 +97,6 @@ type Scheduler struct {
 // Node contains the configuration for a node. Nodes track available resources
 // for funnel's basic scheduler.
 type Node struct {
-	ID string
 	// A Node will automatically try to detect what resources are available to it.
 	// Defining Resources in the Node configuration overrides this behavior.
 	Resources struct {
@@ -109,12 +104,15 @@ type Node struct {
 		RamGb  float64 // nolint
 		DiskGb float64
 	}
-	// If the node has been idle for longer than the timeout, it will shut down.
-	// -1 means there is no timeout. 0 means timeout immediately after the first task.
-	Timeout Duration
 	// How often the node sends update requests to the server.
-	UpdateRate Duration
-	Metadata   map[string]string
+	UpdateRate  Duration
+	Metadata    map[string]string
+	Preemptible bool
+	Zone        string
+
+	// WorkDir is used to automatically discover how much disk space is available
+	// on the drive the node is expected to be working in.
+	WorkDir string
 }
 
 // Worker contains worker configuration.

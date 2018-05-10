@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -11,6 +12,22 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
+
+// ComputeBackend is an interface implemented by backends which
+// handle scheduling and executing tasks.
+type ComputeBackend interface {
+	Submit(context.Context, *tes.Task) error
+	Cancel(context.Context, string) error
+}
+
+// NoopCompute is a ComputeBackend which does nothing.
+type NoopCompute struct{}
+
+// Submit is a noop.
+func (NoopCompute) Submit(context.Context, *tes.Task) error { return nil }
+
+// Cancel is a noop.
+func (NoopCompute) Cancel(context.Context, string) error { return nil }
 
 // TaskService is a wrapper which handles common TES Task Service operations,
 // such as initializing a task when CreateTask is called. The TaskService is backed by
@@ -24,7 +41,7 @@ import (
 type TaskService struct {
 	Name    string
 	Event   events.Writer
-	Compute events.Writer
+	Compute ComputeBackend
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
 }
@@ -42,7 +59,20 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	}
 
 	// dispatch to compute backend
-	go ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
+	go func() {
+		// Submit needs its own context because it might take longer than the CreateTask request.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		err := ts.Compute.Submit(ctx, task)
+		if err != nil {
+			// We log the error here because it's much more complicated to try
+			// to do anything special with it; would you mark the task as failed?
+			// Perhaps the best behavior is for compute backends to occasionally
+			// reconcile queue tasks with the task database, so that failures
+			// are caught eventually.
+			ts.Log.Error("error submitting task to compute backend: %s", err)
+		}
+	}()
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }
@@ -65,13 +95,10 @@ func (ts *TaskService) ListTasks(ctx context.Context, req *tes.ListTasksRequest)
 // CancelTask cancels a task
 func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	// dispatch to compute backend
-	err := ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
-	if err != nil {
-		ts.Log.Error("compute backend failed to cancel task", "taskID", req.Id, "error", err)
-	}
+	ts.Compute.Cancel(ctx, req.Id)
 
 	// updated database and other event streams
-	err = ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
 	if err == tes.ErrNotFound {
 		err = grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: taskID: %s", err.Error(), req.Id))
 	}

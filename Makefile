@@ -18,6 +18,7 @@ export GIT_UPSTREAM = $(git_upstream)
 # Build the code
 install: depends
 	@touch version/version.go
+	@go get github.com/google/go-github/github
 	@go install github.com/ohsu-comp-bio/funnel
 
 # Generate the protobuf/gRPC code
@@ -27,9 +28,10 @@ proto:
 		--go_out=plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		tes.proto
-	@cd compute/scheduler && protoc \
+	@cd compute/builtin && protoc \
 		$(PROTO_INC) \
-		--go_out=plugins=grpc:. \
+		-I ../../ \
+		--go_out=Mtes/tes.proto=github.com/ohsu-comp-bio/funnel/tes,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		scheduler.proto
 	@cd events && protoc \
@@ -89,7 +91,6 @@ start-elasticsearch:
 
 test-elasticsearch:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/elastic.config.yml
-	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/elastic.config.yml
 
 start-mongodb:
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
@@ -97,7 +98,6 @@ start-mongodb:
 
 test-mongodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/mongo.config.yml
-	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml	
 
 start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
@@ -192,12 +192,6 @@ release: depends
 	@goreleaser \
 		--rm-dist \
 		--release-notes <(github-release-notes)
-
-# Generate mocks for testing.
-gen-mocks:
-	@go get github.com/vektra/mockery/...
-	@mockery -dir compute/scheduler -name Client -inpkg -output compute/scheduler
-	@mockery -dir compute/scheduler -name SchedulerServiceServer -inpkg -output compute/scheduler
 
 # Bundle example task messages into Go code.
 bundle-examples:

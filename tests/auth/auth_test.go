@@ -88,7 +88,7 @@ func TestBasicAuthed(t *testing.T) {
 	id2 := fun.Run(`--sh 'echo hello'`)
 	t2 := fun.Wait(id2)
 	if t2.State != tes.State_COMPLETE {
-		t.Fatal("expected task to complete")
+		t.Fatalf("expected task to complete, but got %s", t2.State)
 	}
 
 	_, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{

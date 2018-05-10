@@ -51,10 +51,4 @@ func TestGetMetadata(t *testing.T) {
 	if cerr != nil {
 		t.Fatal(cerr)
 	}
-
-	// When meta.instance.attributes.funnelNode != ""
-	// conf.Scheduler.Node.ID == meta.instance.name
-	if conf.Node.ID != "funnel-node-1492486244" {
-		t.Fatal("Unexpected node ID")
-	}
 }

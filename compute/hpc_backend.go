@@ -38,24 +38,8 @@ type HPCBackend struct {
 	ReconcileRate time.Duration
 }
 
-// WriteEvent writes an event to the compute backend.
-// Currently, only TASK_CREATED is handled, which calls Submit.
-func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
-	switch ev.Type {
-	case events.Type_TASK_CREATED:
-		return b.Submit(ev.GetTask())
-
-	case events.Type_TASK_STATE:
-		if ev.GetState() == tes.State_CANCELED {
-			return b.Cancel(ctx, ev.Id)
-		}
-	}
-	return nil
-}
-
 // Submit submits a task via "qsub", "condor_submit", "sbatch", etc.
-func (b *HPCBackend) Submit(task *tes.Task) error {
-	ctx := context.Background()
+func (b *HPCBackend) Submit(ctx context.Context, task *tes.Task) error {
 
 	submitPath, err := b.setupTemplatedHPCSubmit(task)
 	if err != nil {

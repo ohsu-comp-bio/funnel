@@ -1,7 +1,9 @@
 syntax = "proto3";
 
 package scheduler;
+option go_package = "builtin";
 
+import "tes/tes.proto";
 import "google/api/annotations.proto";
 
 message Resources {
@@ -13,11 +15,10 @@ message Resources {
 }
 
 enum NodeState {
-  UNINITIALIZED = 0;
   ALIVE = 1;
   DEAD = 2;
   GONE = 3;
-  INITIALIZING = 4;
+  DRAIN = 5;
 }
 
 message Node {
@@ -28,8 +29,6 @@ message Node {
   bool preemptible = 9;
   string zone = 11;
   string hostname  = 13;
-  // Timestamp version of the record in the database. Used to prevent write conflicts and as the last ping time.
-  int64 version = 14;
   map<string,string> metadata = 15;
   repeated string task_ids = 16;
   int64 last_ping = 17;
@@ -44,15 +43,27 @@ message ListNodesResponse {
   repeated Node nodes = 1;
 }
 
-message PutNodeResponse {}
-message DeleteNodeResponse {}
+enum ControlType {
+  UNKNOWN = 0;
+  CREATE_TASK = 1;
+  DRAIN_NODE = 2;
+}
+
+message Control {
+  ControlType type = 1;
+  tes.Task task = 2;
+}
+
+message DrainNodeRequest {
+  string id = 1;
+}
+message DrainNodeResponse {}
 
 /**
  * Scheduler Service
  */
 service SchedulerService {
-  rpc PutNode(Node) returns (PutNodeResponse) {};
-  rpc DeleteNode(Node) returns (DeleteNodeResponse) {};
+  rpc NodeChat(stream Node) returns (stream Control) {}
 
   rpc ListNodes(ListNodesRequest) returns (ListNodesResponse) {
     option (google.api.http) = {
@@ -63,6 +74,12 @@ service SchedulerService {
   rpc GetNode(GetNodeRequest) returns (Node) {
     option (google.api.http) = {
       get: "/v1/nodes/{id}"
+    };
+  };
+
+  rpc DrainNode(DrainNodeRequest) returns (DrainNodeResponse) {
+    option (google.api.http) = {
+      post: "/v1/nodes/{id}:drain"
     };
   };
 }

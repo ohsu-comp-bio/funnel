@@ -7,12 +7,13 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/ohsu-comp-bio/funnel/config/testconfig"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
-var log = logger.NewLogger("funnel-e2e-storage", tests.LogConfig())
+var log = logger.NewLogger("funnel-e2e-storage", testconfig.LogConfig())
 var fun *tests.Funnel
 var conf = tests.DefaultConfig()
 

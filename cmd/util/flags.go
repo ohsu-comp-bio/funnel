@@ -97,11 +97,9 @@ func workerFlags(flagConf *config.Config) *pflag.FlagSet {
 func nodeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
-	f.StringVar(&flagConf.Node.ID, "Node.ID", flagConf.Node.ID, "Node ID")
 	f.Uint32Var(&flagConf.Node.Resources.Cpus, "Node.Resources.Cpus", flagConf.Node.Resources.Cpus, "Cpus available to Node")
 	f.Float64Var(&flagConf.Node.Resources.RamGb, "Node.Resources.RamGb", flagConf.Node.Resources.RamGb, "Ram (GB) available to Node")
 	f.Float64Var(&flagConf.Node.Resources.DiskGb, "Node.Resources.DiskGb", flagConf.Node.Resources.DiskGb, "Free disk (GB) available to Node")
-	f.Var(&flagConf.Node.Timeout, "Node.Timeout", "Node timeout in seconds")
 	f.Var(&flagConf.Node.UpdateRate, "Node.UpdateRate", "Node update rate")
 	// TODO Metadata
 
@@ -193,10 +191,7 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.PBS.Template, "PBS.Template", flagConf.PBS.Template, "Path to submit template file")
 
 	// Scheduler
-	f.Var(&flagConf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
-	f.IntVar(&flagConf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", flagConf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration")
 	f.Var(&flagConf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
-	f.Var(&flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
 	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
 	// Slurm

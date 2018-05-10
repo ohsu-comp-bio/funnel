@@ -1,9 +1,12 @@
 package tests
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -12,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"testing"
 	"text/template"
 	"time"
 
@@ -20,8 +24,8 @@ import (
 	docker "github.com/docker/docker/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
 	servercmd "github.com/ohsu-comp-bio/funnel/cmd/server"
-	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/config/testconfig"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -31,10 +35,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-var log = logger.NewLogger("e2e", LogConfig())
+var log = logger.NewLogger("e2e", testconfig.LogConfig())
 
 func init() {
 	logger.SetGRPCLogger(log)
+	// nanoseconds are important because the tests run faster than a millisecond
+	// which can cause port conflicts
+	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 // Funnel provides a test server and RPC/HTTP clients
@@ -49,9 +56,7 @@ type Funnel struct {
 	StorageDir string
 
 	// Components
-	Server    *server.Server
-	Scheduler *scheduler.Scheduler
-	Srv       *servercmd.Server
+	Server *server.Server
 
 	// Internal
 	startTime string
@@ -82,9 +87,7 @@ func NewFunnel(conf config.Config) *Funnel {
 		Docker:     dcli,
 		Conf:       conf,
 		StorageDir: conf.LocalStorage.AllowedDirs[0],
-		Server:     srv.Server,
-		Srv:        srv,
-		Scheduler:  srv.Scheduler,
+		Server:     srv,
 		startTime:  fmt.Sprintf("%d", time.Now().Unix()),
 		rate:       time.Millisecond * 500,
 	}
@@ -110,7 +113,7 @@ func (f *Funnel) Cleanup() {
 // StartServer starts the server
 func (f *Funnel) StartServer() {
 	go func() {
-		f.Srv.Run(context.Background())
+		f.Server.Run(context.Background())
 	}()
 
 	err := f.PollForServerStart()
@@ -447,4 +450,39 @@ func HelloWorld() *tes.Task {
 			},
 		},
 	}
+}
+
+// SetLogOutput provides a method for connecting funnel logso the the test logger
+func SetLogOutput(l *logger.Logger, t *testing.T) {
+	l.SetOutput(TestingWriter(t))
+}
+
+// TestingWriter returns an io.Writer that writes each line via t.Log
+func TestingWriter(t *testing.T) io.Writer {
+	reader, writer := io.Pipe()
+	scanner := bufio.NewScanner(reader)
+	go func() {
+		for scanner.Scan() {
+			// Carriage return removes testing's file:line number and indent.
+			// In this case, the file and line will always be "utils.go:62".
+			// Go 1.9 introduced t.Helper() to fix this, but something about
+			// this function being in a goroutine seems to break that.
+			// Carriage return is the hack for now.
+			t.Log("\r" + scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			t.Error("testing writer scanner error", err)
+		}
+	}()
+	return writer
+}
+
+// RandomString generates a random string of length n
+func RandomString(n int) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

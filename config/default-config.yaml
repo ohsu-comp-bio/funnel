@@ -3,7 +3,7 @@
 Database: boltdb
 
 # The name of the active compute backend
-# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch
+# Available backends: local, htcondor, slurm, pbs, gridengine, builtin, aws-batch
 Compute: local
 
 # The name of the active event writer backend(s).
@@ -47,25 +47,14 @@ Server:
   RPCClientMaxRetries: 10
 
 
-# The scheduler is used for the Manual compute backend. 
+# The scheduler is used for the builtin compute backend. 
 Scheduler:
-  # How often to run a scheduler iteration.
-  ScheduleRate: 1s
-  # How many tasks to schedule in one iteration.
-  ScheduleChunk: 10
   # How long to wait between updates before marking a node dead.
   NodePingTimeout: 1m
-  # How long to wait for a node to start, before marking the node dead.
-  NodeInitTimeout: 5m
+  # How long to wait before removing a dead node.
+  NodeDeadTimeout: 1m
 
 Node:
-  # If empty, a node ID will be automatically generated.
-  ID: ""
-
-  # If the node has been idle for longer than the timeout, it will shut down.
-  # -1 means there is no timeout. 0 means timeout immediately after the first task.
-  Timeout: -1s
-
   # A Node will automatically try to detect what resources are available to it. 
   # Defining Resources in the Node configuration overrides this behavior.
   Resources:

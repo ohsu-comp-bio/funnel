@@ -86,11 +86,11 @@ A node is a service which runs on each machine in a cluster. The node connects t
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/download/</guid>
-      <description>Download  linux [funnel-linux-amd64-0.6.0.tar.gz] mac [funnel-darwin-amd64-0.6.0.tar.gz] Windows is not supported (yet), sorry!  Funnel is a single binary.
+      <description>Download  linux [funnel-linux-amd64-0.7.0.tar.gz] mac [funnel-darwin-amd64-0.7.0.tar.gz] Windows is not supported (yet), sorry!  Funnel is a single binary.
 Funnel requires Docker.
 Funnel is beta quality. APIs might break, bugs exist, data might be lost.
 Homebrew brew tap ohsu-comp-bio/formula brew install funnel  Build the lastest development version optional In order to build the latest code, run:
-$ go get github.com/ohsu-comp-bio/funnel  Funnel requires Go 1.8+. Check out the development docs for more detail.</description>
+$ go get github.com/ohsu-comp-bio/funnel  Funnel requires Go 1.10+. Check out the development docs for more detail.</description>
     </item>
     
     <item>
@@ -186,7 +186,7 @@ Compute: htcondor HTCondor: |universe = vanilla getenv = True executable = {{.Ex
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</guid>
       <description>HTTP(S) Funnel supports downloading files from public URLs via GET reqests. No authentication mechanism is allowed. This backend can be used to fetch objects from cloud storage providers exposed using presigned URLs.
 The HTTP storage client is enabled by default, but may be explicitly disabled in the worker config:
-HTTPStorage: Disabled: false # Timeout for http(s) GET requests. # In nanoseconds. Timeout: 60000000000 # 60 seconds  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;http://fakedomain.</description>
+HTTPStorage: Disabled: false # Timeout for http(s) GET requests. Timeout: 30s  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;http://fakedomain.</description>
     </item>
     
     <item>
@@ -231,7 +231,7 @@ Database: mongodb MongoDB: # Addresses for the seed servers. Addrs: - &amp;quot;
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</guid>
       <description>OpenStack Swift Funnel supports using OpenStack Swift for file storage.
 The Swift storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot; AuthURL: &amp;quot;&amp;quot; TenantName: &amp;quot;&amp;quot; TenantID: &amp;quot;&amp;quot; RegionName: &amp;quot;&amp;quot;  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.txt&amp;quot; }], &amp;quot;outputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/output.</description>
+Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot; AuthURL: &amp;quot;&amp;quot; TenantName: &amp;quot;&amp;quot; TenantID: &amp;quot;&amp;quot; RegionName: &amp;quot;&amp;quot; # 500 MB ChunkSizeBytes: 500000000  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/hello.</description>
     </item>
     
     <item>

@@ -173,7 +173,7 @@ Compute: htcondor HTCondor: |universe = vanilla getenv = True executable = {{.Ex
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</guid>
       <description>HTTP(S) Funnel supports downloading files from public URLs via GET reqests. No authentication mechanism is allowed. This backend can be used to fetch objects from cloud storage providers exposed using presigned URLs.
 The HTTP storage client is enabled by default, but may be explicitly disabled in the worker config:
-HTTPStorage: Disabled: false # Timeout for http(s) GET requests. # In nanoseconds. Timeout: 60000000000 # 60 seconds  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;http://fakedomain.</description>
+HTTPStorage: Disabled: false # Timeout for http(s) GET requests. Timeout: 30s  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;http://fakedomain.</description>
     </item>
     
     <item>
@@ -218,7 +218,7 @@ Database: mongodb MongoDB: # Addresses for the seed servers. Addrs: - &amp;quot;
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</guid>
       <description>OpenStack Swift Funnel supports using OpenStack Swift for file storage.
 The Swift storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot; AuthURL: &amp;quot;&amp;quot; TenantName: &amp;quot;&amp;quot; TenantID: &amp;quot;&amp;quot; RegionName: &amp;quot;&amp;quot;  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.txt&amp;quot; }], &amp;quot;outputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/output.</description>
+Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot; AuthURL: &amp;quot;&amp;quot; TenantName: &amp;quot;&amp;quot; TenantID: &amp;quot;&amp;quot; RegionName: &amp;quot;&amp;quot; # 500 MB ChunkSizeBytes: 500000000  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/hello.</description>
     </item>
     
     <item>

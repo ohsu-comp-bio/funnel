@@ -7,8 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
+	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
 func TestMultiS3Storage(t *testing.T) {
@@ -23,7 +25,9 @@ func TestMultiS3Storage(t *testing.T) {
 		t.Skipf("Skipping generic s3 e2e tests...")
 	}
 
+	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
+	ctx := context.Background()
 
 	// Generic S3 backend setup
 	gconf1 := conf.GenericS3[0]
@@ -57,13 +61,17 @@ func TestMultiS3Storage(t *testing.T) {
 	fPath := "testdata/test_in"
 
 	g1FileURL := protocol + gconf1.Endpoint + "/" + testBucket + "/" + fPath + tests.RandomString(6)
-	err = gclient1.fcli.PutFile(context.Background(), g1FileURL, fPath)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: g1FileURL, Path: fPath},
+	}, gclient1.fcli, ev)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	g2FileURL := protocol + gconf2.Endpoint + "/" + testBucket + "/" + fPath + tests.RandomString(6)
-	err = gclient2.fcli.PutFile(context.Background(), g2FileURL, fPath)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: g2FileURL, Path: fPath, Type: tes.Directory},
+	}, gclient2.fcli, ev)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -117,7 +125,9 @@ func TestMultiS3Storage(t *testing.T) {
 
 	expected := "hello\nhello\n"
 
-	err = gclient1.fcli.Get(context.Background(), outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
+	err = worker.DownloadInputs(ctx, []*tes.Input{
+		{Url: outFileURL, Path: "./test_tmp/test-s3-file.txt"},
+	}, gclient1.fcli, ev)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}

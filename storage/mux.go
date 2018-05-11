@@ -185,8 +185,7 @@ func (mux *Mux) findBackend(url string, op operation) (Storage, error) {
 		case statOp:
 			err = unsupported.Stat
 		case joinOp:
-			// all storage backends must support join.
-			err = nil
+			err = unsupported.Join
 		}
 
 		if err == nil {

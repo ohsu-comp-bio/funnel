@@ -9,9 +9,11 @@ import (
 
 	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
+	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
 func TestGenericS3Storage(t *testing.T) {
@@ -26,6 +28,7 @@ func TestGenericS3Storage(t *testing.T) {
 		t.Skipf("Skipping generic s3 e2e tests...")
 	}
 
+	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 	ctx := context.Background()
 
@@ -50,14 +53,18 @@ func TestGenericS3Storage(t *testing.T) {
 
 	fPath := "testdata/test_in"
 	inFileURL := protocol + testBucket + "/" + fPath
-	_, err = store.Put(ctx, inFileURL, fPath)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: inFileURL, Path: fPath},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	dPath := "testdata/test_dir"
 	inDirURL := protocol + testBucket + "/" + dPath
-	_, err = store.Put(ctx, inDirURL, dPath)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: inDirURL, Path: dPath, Type: tes.Directory},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -117,7 +124,9 @@ func TestGenericS3Storage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	err = store.Get(ctx, outFileURL, "./test_tmp/test-s3-file.txt")
+	err = worker.DownloadInputs(ctx, []*tes.Input{
+		{Url: outFileURL, Path: "./test_tmp/test-s3-file.txt"},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -134,7 +143,9 @@ func TestGenericS3Storage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	_, err = store.Get(ctx, outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	err = worker.DownloadInputs(ctx, []*tes.Input{
+		{Url: outDirURL, Path: "./test_tmp/test-s3-directory", Type: tes.Directory},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

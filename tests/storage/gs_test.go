@@ -8,9 +8,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
+	"github.com/ohsu-comp-bio/funnel/worker"
 	"golang.org/x/oauth2/google"
 	gs "google.golang.org/api/storage/v1"
 )
@@ -33,6 +35,7 @@ func TestGoogleStorage(t *testing.T) {
 		t.Fatal("Must provide projectID as an arg")
 	}
 
+	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 	ctx := context.Background()
 
@@ -57,14 +60,18 @@ func TestGoogleStorage(t *testing.T) {
 
 	fPath := "testdata/test_in"
 	inFileURL := protocol + testBucket + "/" + fPath
-	_, err = store.Put(ctx, inFileURL, fPath)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: inFileURL, Path: fPath},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	dPath := "testdata/test_dir"
 	inDirURL := protocol + testBucket + "/" + dPath
-	_, err = store.Put(ctx, inDirURL, dPath, tes.FileType_DIRECTORY)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: inDirURL, Path: dPath, Type: tes.Directory},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -124,7 +131,9 @@ func TestGoogleStorage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	_, err = store.Get(ctx, outFileURL, "./test_tmp/test-gs-file.txt")
+	err = worker.DownloadInputs(ctx, []*tes.Input{
+		{Url: outFileURL, Path: "./test_tmp/test-gs-file.txt"},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -141,7 +150,9 @@ func TestGoogleStorage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	_, err = store.Get(ctx, outDirURL, "./test_tmp/test-gs-directory", tes.FileType_DIRECTORY)
+	err = worker.DownloadInputs(ctx, []*tes.Input{
+		{Url: outDirURL, Path: "./test_tmp/test-gs-directory", Type: tes.Directory},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

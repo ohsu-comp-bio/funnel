@@ -50,6 +50,15 @@ func TestLocalGet(t *testing.T) {
 	}
 }
 
+func TestLocalJoin(t *testing.T) {
+	l := &Local{}
+	j1, _ := l.Join("file:///foo/bar", "baz")
+	e1 := "file:///foo/bar/baz"
+	if j1 != e1 {
+		t.Errorf("failed local join: %s != %s", j1, e1)
+	}
+}
+
 // Tests Get on a URL that is a path, e.g. "/path/to/foo.txt"
 func TestLocalGetPath(t *testing.T) {
 	ctx := context.Background()

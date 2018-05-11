@@ -669,11 +669,11 @@ func TestOutputFileLog(t *testing.T) {
 	out := task.Logs[0].Outputs
 
 	if out[0].Url != dir+"/outdir/bafile" {
-		t.Fatal("unexpected output url")
+		t.Fatal("unexpected output url", out[0].Url, dir+"/outdir/bafile")
 	}
 
 	if out[1].Url != dir+"/outdir/fooofile" {
-		t.Fatal("unexpected output url")
+		t.Fatal("unexpected output url", out[1].Url, dir+"/outdir/fooofile")
 	}
 
 	if out[2].Url != dir+"/barfile" {

@@ -76,7 +76,13 @@ func (local *Local) Get(ctx context.Context, url, path string) (*Object, error) 
 
 // Put copies a file from the hostPath into storage.
 func (local *Local) Put(ctx context.Context, url, path string) (*Object, error) {
-	err := linkFile(ctx, path, getPath(url))
+	target := getPath(url)
+	err := fsutil.EnsurePath(target)
+	if err != nil {
+		return nil, err
+	}
+
+	err = linkFile(ctx, path, target)
 	if err != nil {
 		return nil, err
 	}

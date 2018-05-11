@@ -35,7 +35,7 @@ type Storage interface {
 	UnsupportedOperations(url string) UnsupportedOperations
 }
 
-// Object represents metadata about an object (file/directory) in storage.
+// Object represents metadata about an object in storage.
 type Object struct {
 	// The storage-specific full URL of the object.
 	// e.g. for S3 this might be "s3://my-bucket/dir1/obj.txt"
@@ -60,7 +60,7 @@ type Object struct {
 // UnsupportedOperations describes any operations that are not supported
 // by a storage backend.
 type UnsupportedOperations struct {
-	Get, Put, List, Stat error
+	Get, Put, List, Stat, Join error
 }
 
 // AllSupported returns an UnsupportedOperations indicating that
@@ -77,19 +77,9 @@ func AllUnsupported(err error) UnsupportedOperations {
 		Put:  err,
 		List: err,
 		Stat: err,
+		Join: err,
 	}
 }
-
-// TODO not needed?
-// ObjectType describes the type of an object: file or directory.
-//type ObjectType int
-
-/*
-const (
-	File ObjectType = iota
-	Directory
-)
-*/
 
 type urlparts struct {
 	bucket, path string

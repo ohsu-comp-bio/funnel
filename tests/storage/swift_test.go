@@ -8,9 +8,11 @@ import (
 	"testing"
 
 	"github.com/ncw/swift"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
+	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
 func TestSwiftStorage(t *testing.T) {
@@ -21,6 +23,7 @@ func TestSwiftStorage(t *testing.T) {
 		t.Skipf("Skipping swift e2e tests...")
 	}
 
+	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 	ctx := context.Background()
 
@@ -38,21 +41,25 @@ func TestSwiftStorage(t *testing.T) {
 
 	protocol := "swift://"
 
-	store, err := storage.NewStorage(conf)
+	store, err := storage.NewMux(conf)
 	if err != nil {
 		t.Fatal("error configuring storage:", err)
 	}
 
 	fPath := "testdata/test_in"
 	inFileURL := protocol + testBucket + "/" + fPath
-	_, err = store.Put(ctx, inFileURL, fPath, tes.FileType_FILE)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: inFileURL, Path: fPath},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
 
 	dPath := "testdata/test_dir"
 	inDirURL := protocol + testBucket + "/" + dPath
-	_, err = store.Put(ctx, inDirURL, dPath, tes.FileType_DIRECTORY)
+	_, err = worker.UploadOutputs(ctx, []*tes.Output{
+		{Url: inDirURL, Path: dPath, Type: tes.Directory},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -112,7 +119,9 @@ func TestSwiftStorage(t *testing.T) {
 
 	expected := "file1 content\nfile2 content\nhello\n"
 
-	err = store.Get(ctx, outFileURL, "./test_tmp/test-s3-file.txt", tes.FileType_FILE)
+	err = worker.DownloadInputs(ctx, []*tes.Input{
+		{Url: outFileURL, Path: "./test_tmp/test-s3-file.txt"},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -129,7 +138,9 @@ func TestSwiftStorage(t *testing.T) {
 		t.Fatal("unexpected content")
 	}
 
-	err = store.Get(ctx, outDirURL, "./test_tmp/test-s3-directory", tes.FileType_DIRECTORY)
+	err = worker.DownloadInputs(ctx, []*tes.Input{
+		{Url: outDirURL, Path: "./test_tmp/test-s3-directory", Type: tes.Directory},
+	}, store, ev)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

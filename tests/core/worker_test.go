@@ -171,7 +171,7 @@ func TestLargeLogRate(t *testing.T) {
 
 	w := worker.DefaultWorker{
 		Conf:        conf.Worker,
-		Store:       storage.Storage{},
+		Store:       &storage.Mux{},
 		TaskReader:  taskReader{&task},
 		EventWriter: m,
 	}
@@ -212,7 +212,7 @@ func TestZeroLogRate(t *testing.T) {
 
 	w := worker.DefaultWorker{
 		Conf:        conf.Worker,
-		Store:       storage.Storage{},
+		Store:       &storage.Mux{},
 		TaskReader:  taskReader{&task},
 		EventWriter: m,
 	}
@@ -251,7 +251,7 @@ func TestZeroLogTailSize(t *testing.T) {
 
 	w := worker.DefaultWorker{
 		Conf:        conf.Worker,
-		Store:       storage.Storage{},
+		Store:       &storage.Mux{},
 		TaskReader:  taskReader{&task},
 		EventWriter: m,
 	}
@@ -288,7 +288,7 @@ func TestLogTailContent(t *testing.T) {
 
 	w := worker.DefaultWorker{
 		Conf:        conf.Worker,
-		Store:       storage.Storage{},
+		Store:       &storage.Mux{},
 		TaskReader:  taskReader{&task},
 		EventWriter: m,
 	}
@@ -332,7 +332,7 @@ func TestDockerContainerMetadata(t *testing.T) {
 
 	w := worker.DefaultWorker{
 		Conf:        conf.Worker,
-		Store:       storage.Storage{},
+		Store:       &storage.Mux{},
 		TaskReader:  taskReader{&task},
 		EventWriter: m,
 	}

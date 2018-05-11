@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	pathlib "path"
 	"path/filepath"
 	"strings"
 
@@ -91,6 +92,9 @@ func (local *Local) Put(ctx context.Context, url, path string) (*Object, error) 
 
 // Join joins the given URL with the given subpath.
 func (local *Local) Join(url, path string) (string, error) {
+	if strings.HasPrefix(url, "file://") {
+		return "file://" + pathlib.Join(strings.TrimPrefix(url, "file://"), path), nil
+	}
 	return filepath.Join(url, path), nil
 }
 

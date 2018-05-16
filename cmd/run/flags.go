@@ -127,7 +127,7 @@ func defaultVals(vals *flagVals) {
 
 	// Default name
 	if vals.name == "" {
-		vals.name = "Funnel run: " + vals.execs[0].cmd
+		vals.name = vals.execs[0].cmd
 	}
 
 	if vals.server == "" {
@@ -193,7 +193,7 @@ func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
 				vals.execs = append(vals.execs, *exec)
 			}
 			if f.Name == "sh" {
-				value = fmt.Sprintf("sh -c \"%s\"", value)
+				value = fmt.Sprintf("sh -c '%s'", value)
 			}
 			exec = &executor{
 				cmd: value,

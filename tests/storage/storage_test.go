@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 func TestFileMount(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	id := fun.Run(`
-    --sh "sh -c 'cat $in > $out'"
+    --sh 'cat $in > $out'
     -i in=./testdata/test_in
     -o out={{ .storage }}/test_out
   `)

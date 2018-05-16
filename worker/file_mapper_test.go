@@ -29,17 +29,17 @@ func TestMapTask(t *testing.T) {
 			{
 				Name: "f1",
 				Url:  "file://" + cwd + "/testdata/f1.txt",
-				Path: "/opt/funnel/inputs/testdata/f1.txt",
+				Path: "/inputs/testdata/f1.txt",
 			},
 			{
 				Name: "f4",
 				Url:  "file://" + cwd + "/testdata/f4",
-				Path: "/opt/funnel/inputs/testdata/f4",
+				Path: "/inputs/testdata/f4",
 				Type: tes.FileType_DIRECTORY,
 			},
 			{
 				Name:    "c1",
-				Path:    "/opt/funnel/inputs/testdata/contents.txt",
+				Path:    "/inputs/testdata/contents.txt",
 				Content: "test content\n",
 			},
 		},
@@ -47,12 +47,12 @@ func TestMapTask(t *testing.T) {
 			{
 				Name: "stdout-0",
 				Url:  "file://" + cwd + "/testdata/stdout-first",
-				Path: "/opt/funnel/outputs/stdout-0",
+				Path: "/outputs/stdout-0",
 			},
 			{
 				Name: "o9",
 				Url:  "file://" + cwd + "/testdata/o9",
-				Path: "/opt/funnel/outputs/sub/o9",
+				Path: "/outputs/sub/o9",
 				Type: tes.FileType_DIRECTORY,
 			},
 		},
@@ -68,12 +68,12 @@ func TestMapTask(t *testing.T) {
 		{
 			Name: "f1",
 			Url:  "file://" + cwd + "/testdata/f1.txt",
-			Path: tmp + "/opt/funnel/inputs/testdata/f1.txt",
+			Path: tmp + "/inputs/testdata/f1.txt",
 		},
 		{
 			Name: "f4",
 			Url:  "file://" + cwd + "/testdata/f4",
-			Path: tmp + "/opt/funnel/inputs/testdata/f4",
+			Path: tmp + "/inputs/testdata/f4",
 			Type: tes.FileType_DIRECTORY,
 		},
 	}
@@ -82,12 +82,12 @@ func TestMapTask(t *testing.T) {
 		{
 			Name: "stdout-0",
 			Url:  "file://" + cwd + "/testdata/stdout-first",
-			Path: tmp + "/opt/funnel/outputs/stdout-0",
+			Path: tmp + "/outputs/stdout-0",
 		},
 		{
 			Name: "o9",
 			Url:  "file://" + cwd + "/testdata/o9",
-			Path: tmp + "/opt/funnel/outputs/sub/o9",
+			Path: tmp + "/outputs/sub/o9",
 			Type: tes.FileType_DIRECTORY,
 		},
 	}
@@ -109,23 +109,23 @@ func TestMapTask(t *testing.T) {
 			Readonly:      false,
 		},
 		{
-			HostPath:      tmp + "/opt/funnel/inputs/testdata/f1.txt",
-			ContainerPath: "/opt/funnel/inputs/testdata/f1.txt",
+			HostPath:      tmp + "/inputs/testdata/f1.txt",
+			ContainerPath: "/inputs/testdata/f1.txt",
 			Readonly:      true,
 		},
 		{
-			HostPath:      tmp + "/opt/funnel/inputs/testdata/f4",
-			ContainerPath: "/opt/funnel/inputs/testdata/f4",
+			HostPath:      tmp + "/inputs/testdata/f4",
+			ContainerPath: "/inputs/testdata/f4",
 			Readonly:      true,
 		},
 		{
-			HostPath:      tmp + "/opt/funnel/inputs/testdata/contents.txt",
-			ContainerPath: "/opt/funnel/inputs/testdata/contents.txt",
+			HostPath:      tmp + "/inputs/testdata/contents.txt",
+			ContainerPath: "/inputs/testdata/contents.txt",
 			Readonly:      true,
 		},
 		{
-			HostPath:      tmp + "/opt/funnel/outputs",
-			ContainerPath: "/opt/funnel/outputs",
+			HostPath:      tmp + "/outputs",
+			ContainerPath: "/outputs",
 			Readonly:      false,
 		},
 	}
@@ -139,7 +139,7 @@ func TestMapTask(t *testing.T) {
 		t.Fatal("unexpected mapper inputs")
 	}
 
-	c, err := ioutil.ReadFile(tmp + "/opt/funnel/inputs/testdata/contents.txt")
+	c, err := ioutil.ReadFile(tmp + "/inputs/testdata/contents.txt")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -40,14 +40,16 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	task = &tes.Task{
 		Name:        vals.name,
 		Description: vals.description,
-		Resources: &tes.Resources{
+	}
+
+	if vals.cpu > 0 || vals.disk > 0 || len(vals.zones) > 0 || vals.preemptible {
+		task.Resources = &tes.Resources{
 			CpuCores:    uint32(vals.cpu),
 			RamGb:       vals.ram,
 			DiskGb:      vals.disk,
 			Zones:       vals.zones,
 			Preemptible: vals.preemptible,
-		},
-		Tags: map[string]string{},
+		}
 	}
 
 	for _, vol := range vals.volumes {
@@ -61,34 +63,34 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	for i, exec := range vals.execs {
 		// Split command string based on shell syntax.
 		cmd, _ := shellquote.Split(exec.cmd)
-		stdinPath := fmt.Sprintf("/opt/funnel/inputs/stdin-%d", i)
-		stdoutPath := fmt.Sprintf("/opt/funnel/outputs/stdout-%d", i)
-		stderrPath := fmt.Sprintf("/opt/funnel/outputs/stderr-%d", i)
 
-		// Only set the stdin path if the --stdin flag was used.
-		var stdin string
+		// Only set the stdio paths if their respective flags were used.
+		var stdin, stdout, stderr string
+
 		if exec.stdin != "" {
-			stdin = stdinPath
+			stdin = fmt.Sprintf("/inputs/stdin-%d", i)
 			task.Inputs = append(task.Inputs, &tes.Input{
 				Name: fmt.Sprintf("stdin-%d", i),
 				Url:  resolvePath(exec.stdin),
-				Path: stdinPath,
+				Path: stdin,
 			})
 		}
 
 		if exec.stdout != "" {
+			stdout = fmt.Sprintf("/outputs/stdout-%d", i)
 			task.Outputs = append(task.Outputs, &tes.Output{
 				Name: fmt.Sprintf("stdout-%d", i),
 				Url:  resolvePath(exec.stdout),
-				Path: stdoutPath,
+				Path: stdout,
 			})
 		}
 
 		if exec.stderr != "" {
+			stderr = fmt.Sprintf("/outputs/stderr-%d", i)
 			task.Outputs = append(task.Outputs, &tes.Output{
 				Name: fmt.Sprintf("stderr-%d", i),
 				Url:  resolvePath(exec.stderr),
-				Path: stderrPath,
+				Path: stderr,
 			})
 		}
 
@@ -96,10 +98,9 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 			Image:   vals.container,
 			Command: cmd,
 			Workdir: vals.workdir,
-			Env:     environ,
 			Stdin:   stdin,
-			Stdout:  stdoutPath,
-			Stderr:  stderrPath,
+			Stdout:  stdout,
+			Stderr:  stderr,
 		})
 	}
 
@@ -115,7 +116,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	for _, raw := range vals.inputs {
 		k, v := parseCliVar(raw)
 		url := resolvePath(v)
-		path := "/opt/funnel/inputs/" + stripStoragePrefix(url)
+		path := "/inputs/" + stripStoragePrefix(url)
 		setenv(k, path)
 		task.Inputs = append(task.Inputs, &tes.Input{
 			Name: k,
@@ -127,7 +128,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	for _, raw := range vals.inputDirs {
 		k, v := parseCliVar(raw)
 		url := resolvePath(v)
-		path := "/opt/funnel/inputs/" + stripStoragePrefix(url)
+		path := "/inputs/" + stripStoragePrefix(url)
 		setenv(k, path)
 		task.Inputs = append(task.Inputs, &tes.Input{
 			Name: k,
@@ -139,7 +140,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 
 	for _, raw := range vals.content {
 		k, v := parseCliVar(raw)
-		path := "/opt/funnel/inputs/" + stripStoragePrefix(resolvePath(v))
+		path := "/inputs/" + stripStoragePrefix(resolvePath(v))
 		setenv(k, path)
 		task.Inputs = append(task.Inputs, &tes.Input{
 			Name:    k,
@@ -151,7 +152,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	for _, raw := range vals.outputs {
 		k, v := parseCliVar(raw)
 		url := resolvePath(v)
-		path := "/opt/funnel/outputs/" + stripStoragePrefix(url)
+		path := "/outputs/" + stripStoragePrefix(url)
 		setenv(k, path)
 		task.Outputs = append(task.Outputs, &tes.Output{
 			Name: k,
@@ -163,7 +164,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	for _, raw := range vals.outputDirs {
 		k, v := parseCliVar(raw)
 		url := resolvePath(v)
-		path := "/opt/funnel/outputs/" + stripStoragePrefix(url)
+		path := "/outputs/" + stripStoragePrefix(url)
 		setenv(k, path)
 		task.Outputs = append(task.Outputs, &tes.Output{
 			Name: k,
@@ -176,6 +177,16 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 	for _, raw := range vals.environ {
 		k, v := parseCliVar(raw)
 		setenv(k, v)
+	}
+
+	if len(environ) > 0 {
+		for _, e := range task.Executors {
+			e.Env = environ
+		}
+	}
+
+	if len(vals.tags) > 0 {
+		task.Tags = map[string]string{}
 	}
 
 	for _, raw := range vals.tags {

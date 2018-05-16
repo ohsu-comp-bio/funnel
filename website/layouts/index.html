@@ -194,17 +194,14 @@ rpcAddress           :9090
         <div class="col span_8_of_12">
           <pre><code class="language-shell">$ funnel run 'md5sum $src' --in src=~/src.txt --print</code></pre>
           <pre><code class="language-json">{
-  "name": "Funnel run: sh -c \"md5sum $src\"",
+  "name": "sh -c 'md5sum $src'",
   "inputs": [
     {
       "name": "src",
       "url": "file:///Users/buchanae/src.txt",
-      "path": "/opt/funnel/inputs/Users/buchanae/src.txt"
+      "path": "/inputs/Users/buchanae/src.txt"
     }
   ],
-  "resources": {
-
-  },
   "executors": [
     {
       "image": "alpine",
@@ -213,11 +210,8 @@ rpcAddress           :9090
         "-c",
         "md5sum $src"
       ],
-      "workdir": "/opt/funnel",
-      "stdout": "/opt/funnel/outputs/stdout-0",
-      "stderr": "/opt/funnel/outputs/stderr-0",
       "env": {
-        "src": "/opt/funnel/inputs/Users/buchanae/src.txt"
+        "src": "/inputs/Users/buchanae/src.txt"
       }
     }
   ],

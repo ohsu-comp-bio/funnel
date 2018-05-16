@@ -839,7 +839,7 @@ func TestSmallPaginationAndSortOrder(t *testing.T) {
 func TestTaskError(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	id := fun.Run(`
-    --sh "sh -c 'exit 1'"
+    --sh 'exit 1'
   `)
 	task := fun.Wait(id)
 

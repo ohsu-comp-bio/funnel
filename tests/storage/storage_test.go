@@ -69,7 +69,7 @@ func TestLocalFilesystemHardLinkInput(t *testing.T) {
 func TestSymlinkInput(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	id := fun.Run(`
-    --sh "sh -c 'cat $in > $out'"
+    --sh 'cat $in > $out'
     -i in=./testdata/test_in_symlink
     -o out={{ .storage }}/test_out
   `)
@@ -83,7 +83,7 @@ func TestSymlinkInput(t *testing.T) {
 func TestBrokenSymlinkInput(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	id := fun.Run(`
-    --sh "sh -c 'cat $in > $out'"
+    --sh 'cat $in > $out'
     -i in=./testdata/test_broken_symlink
     -o out={{ .storage }}/test_out
   `)
@@ -105,7 +105,7 @@ func TestBrokenSymlinkInput(t *testing.T) {
 func TestSymlinkOutput(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	id := fun.Run(`
-    --sh "sh -c 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'"
+    --sh 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'
     -o sym={{ .storage }}/out-sym
     -O dir={{ .storage }}/out-dir
   `)
@@ -131,7 +131,7 @@ func TestSymlinkOutput(t *testing.T) {
 func TestOverwriteOutput(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	id := fun.Run(`
-    --sh "sh -c 'echo foo > $out; chmod go+w $out'"
+    --sh 'echo foo > $out; chmod go+w $out'
     -o out={{ .storage }}/test_out
   `)
 	task := fun.Wait(id)
@@ -143,7 +143,7 @@ func TestOverwriteOutput(t *testing.T) {
 	// this time around since the output file exists copyFile will be called
 	// in storage.Put
 	id = fun.Run(`
-    --sh "sh -c 'echo foo > $out; chmod go+w $out'"
+    --sh 'echo foo > $out; chmod go+w $out'
     -o out={{ .storage }}/test_out
   `)
 	task = fun.Wait(id)
@@ -157,7 +157,7 @@ func TestEmptyDir(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	os.Mkdir(path.Join(fun.StorageDir, "test_in"), 0777)
 	id := fun.Run(`
-    --sh "sh -c 'echo hello'"
+    --sh 'echo hello'
     -I in={{ .storage }}/test_in
     -O out={{ .storage }}/test_out
   `)

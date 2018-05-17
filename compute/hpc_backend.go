@@ -248,8 +248,10 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		return "", err
 	}
 
+	res := task.GetResources()
+
 	var zone string
-	zones := task.Resources.GetZones()
+	zones := res.GetZones()
 	if zones != nil {
 		zone = zones[0]
 	}
@@ -259,9 +261,9 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		"Executable": funnelPath,
 		"Config":     confPath,
 		"WorkDir":    workdir,
-		"Cpus":       int(task.Resources.CpuCores),
-		"RamGb":      task.Resources.RamGb,
-		"DiskGb":     task.Resources.DiskGb,
+		"Cpus":       int(res.GetCpuCores()),
+		"RamGb":      res.GetRamGb(),
+		"DiskGb":     res.GetDiskGb(),
 		"Zone":       zone,
 	})
 	if err != nil {

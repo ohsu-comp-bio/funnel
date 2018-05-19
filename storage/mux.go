@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
 // operation codes help multiplex storage operations across multiple backends.
@@ -165,6 +167,18 @@ func (mux *Mux) UnsupportedOperations(url string) UnsupportedOperations {
 	}
 
 	return unsupported
+}
+
+// AttachLogger will log information (such as retry warnings)
+// to the given logger.
+func (mux *Mux) AttachLogger(log *logger.Logger) {
+	for _, b := range mux.Backends {
+		if r, ok := b.(*Retrier); ok {
+			r.Retrier.Notify = func(err error, sleep time.Duration) {
+				log.Warn("Retrying", "error", err, "sleep", sleep)
+			}
+		}
+	}
 }
 
 func (mux *Mux) findBackend(url string, op operation) (Storage, error) {

@@ -10,10 +10,22 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/spf13/cobra"
 )
+
+var log = logger.NewLogger("storage", logger.DefaultConfig())
+
+func newStorage(conf config.Config) (storage.Storage, error) {
+	store, err := storage.NewMux(conf)
+	if err != nil {
+		return nil, err
+	}
+	store.AttachLogger(log)
+	return store, nil
+}
 
 // NewCommand returns the "storage" subcommands.
 func NewCommand() *cobra.Command {
@@ -46,7 +58,7 @@ func NewCommand() *cobra.Command {
 				return cmd.Usage()
 			}
 
-			store, err := storage.NewMux(conf)
+			store, err := newStorage(conf)
 			if err != nil {
 				return fmt.Errorf("creating storage clients: %s", err)
 			}
@@ -73,7 +85,7 @@ func NewCommand() *cobra.Command {
 				return cmd.Usage()
 			}
 
-			store, err := storage.NewMux(conf)
+			store, err := newStorage(conf)
 			if err != nil {
 				return fmt.Errorf("creating storage clients: %s", err)
 			}
@@ -131,7 +143,7 @@ func NewCommand() *cobra.Command {
 				return cmd.Usage()
 			}
 
-			store, err := storage.NewMux(conf)
+			store, err := newStorage(conf)
 			if err != nil {
 				return fmt.Errorf("creating storage clients: %s", err)
 			}

@@ -150,6 +150,62 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
+	getCmd := &cobra.Command{
+		Use:   "get [url] [path]",
+		Short: "Get the object at the given URL.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 2 {
+				return cmd.Usage()
+			}
+
+			store, err := storage.NewMux(conf)
+			if err != nil {
+				return fmt.Errorf("creating storage clients: %s", err)
+			}
+
+			obj, err := store.Get(context.Background(), args[0], args[1])
+			if err != nil {
+				return err
+			}
+
+			b, err := json.Marshal(obj)
+			if err != nil {
+				return fmt.Errorf("marshaling output: %s", err)
+			}
+			fmt.Println(string(b))
+			return nil
+		},
+	}
+
+	putCmd := &cobra.Command{
+		Use:   "put [path] [url]",
+		Short: "Put the local file to the given URL.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 2 {
+				return cmd.Usage()
+			}
+
+			store, err := storage.NewMux(conf)
+			if err != nil {
+				return fmt.Errorf("creating storage clients: %s", err)
+			}
+
+			obj, err := store.Put(context.Background(), args[1], args[0])
+			if err != nil {
+				return err
+			}
+
+			b, err := json.Marshal(obj)
+			if err != nil {
+				return fmt.Errorf("marshaling output: %s", err)
+			}
+			fmt.Println(string(b))
+			return nil
+		},
+	}
+
+	cmd.AddCommand(getCmd)
+	cmd.AddCommand(putCmd)
 	cmd.AddCommand(listCmd)
 	cmd.AddCommand(statCmd)
 	cmd.AddCommand(statTaskCmd)

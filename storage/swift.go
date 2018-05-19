@@ -67,24 +67,32 @@ func NewSwiftRetrier(conf config.SwiftStorage) (*Retrier, error) {
 		Backend: b,
 		Retrier: &util.Retrier{
 			MaxTries:            conf.MaxRetries,
-			InitialInterval:     time.Second * 5,
-			MaxInterval:         time.Minute * 5,
+			InitialInterval:     500 * time.Millisecond,
+			MaxInterval:         5 * time.Minute,
 			Multiplier:          2.0,
 			RandomizationFactor: 0.5,
 			MaxElapsedTime:      0,
-			ShouldRetry: func(err error) bool {
-				// Retry on errors that swift names specifically.
-				if err == swift.ObjectCorrupted || err == swift.TimeoutError {
-					return true
-				}
-				// Retry on service unavailable.
-				if se, ok := err.(*swift.Error); ok {
-					return se.StatusCode == http.StatusServiceUnavailable
-				}
-				return false
-			},
+			ShouldRetry:         shouldRetry,
 		},
 	}, nil
+}
+
+func shouldRetry(err error) bool {
+	serr, ok := err.(*swiftError)
+	if !ok {
+		return false
+	}
+	err = serr.err
+
+	// Retry on errors that swift names specifically.
+	if err == swift.ObjectCorrupted || err == swift.TimeoutError {
+		return true
+	}
+	// Retry on service unavailable.
+	if se, ok := err.(*swift.Error); ok {
+		return se.StatusCode == http.StatusServiceUnavailable
+	}
+	return false
 }
 
 // Stat returns metadata about the given url, such as checksum.
@@ -96,7 +104,7 @@ func (sw *Swift) Stat(ctx context.Context, url string) (*Object, error) {
 
 	info, _, err := sw.conn.Object(u.bucket, u.path)
 	if err != nil {
-		return nil, fmt.Errorf("getting object info: %s", err)
+		return nil, &swiftError{"getting object info", url, err}
 	}
 	return &Object{
 		URL:          url,
@@ -118,7 +126,7 @@ func (sw *Swift) List(ctx context.Context, url string) ([]*Object, error) {
 		Prefix: u.path,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("listing objects by prefix: %s", err)
+		return nil, &swiftError{"listing objects by prefix", url, err}
 	}
 
 	var objects []*Object
@@ -135,7 +143,7 @@ func (sw *Swift) List(ctx context.Context, url string) ([]*Object, error) {
 }
 
 // Get copies an object from storage to the host path.
-func (sw *Swift) Get(ctx context.Context, url, path string) (obj *Object, err error) {
+func (sw *Swift) Get(ctx context.Context, url, path string) (*Object, error) {
 	u, err := sw.parse(url)
 	if err != nil {
 		return nil, err
@@ -144,41 +152,33 @@ func (sw *Swift) Get(ctx context.Context, url, path string) (obj *Object, err er
 	var checkHash = true
 	var headers swift.Headers
 
-	obj, err = sw.Stat(ctx, url)
+	obj, err := sw.Stat(ctx, url)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	f, _, err := sw.conn.ObjectOpen(u.bucket, u.path, checkHash, headers)
 	if err != nil {
-		err = fmt.Errorf("initiating download: %s", err)
-		return
+		return nil, &swiftError{"initiating download", url, err}
 	}
-	defer func() {
-		cerr := f.Close()
-		if cerr != nil {
-			err = fmt.Errorf("closing file %v; %v", err, cerr)
-		}
-	}()
+	defer f.Close()
 
 	dest, err := os.Create(path)
 	if err != nil {
-		err = fmt.Errorf("creating file: %s", err)
-	}
-	defer func() {
-		cerr := dest.Close()
-		if cerr != nil {
-			err = fmt.Errorf("%v; %v", err, cerr)
-		}
-	}()
-
-	_, err = io.Copy(dest, fsutil.Reader(ctx, f))
-	if err != nil {
-		err = fmt.Errorf("copying file: %s", err)
-		return
+		return nil, &swiftError{"creating file", url, err}
 	}
 
-	return
+	_, copyErr := io.Copy(dest, fsutil.Reader(ctx, f))
+	closeErr := dest.Close()
+
+	if copyErr != nil {
+		return nil, &swiftError{"copying file", url, closeErr}
+	}
+	if closeErr != nil {
+		return nil, &swiftError{"closing file", url, closeErr}
+	}
+
+	return obj, nil
 }
 
 // Put copies an object (file) from the host path to storage.
@@ -191,7 +191,7 @@ func (sw *Swift) Put(ctx context.Context, url, path string) (*Object, error) {
 
 	reader, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("opening host file %q: %s", path, err)
+		return nil, &swiftError{"opening host file", url, err}
 	}
 	defer reader.Close()
 
@@ -216,7 +216,7 @@ func (sw *Swift) Put(ctx context.Context, url, path string) (*Object, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("creating object: %s", err)
+		return nil, &swiftError{"creating object", url, err}
 	}
 
 	_, copyErr := io.Copy(writer, fsutil.Reader(ctx, reader))
@@ -225,10 +225,10 @@ func (sw *Swift) Put(ctx context.Context, url, path string) (*Object, error) {
 	closeErr := writer.Close()
 
 	if copyErr != nil {
-		return nil, fmt.Errorf("copying file: %s", copyErr)
+		return nil, &swiftError{"copying file", url, closeErr}
 	}
 	if closeErr != nil {
-		return nil, fmt.Errorf("closing file: %s", closeErr)
+		return nil, &swiftError{"closing file", url, closeErr}
 	}
 
 	return sw.Stat(ctx, url)
@@ -248,7 +248,7 @@ func (sw *Swift) UnsupportedOperations(url string) UnsupportedOperations {
 	}
 	_, _, err = sw.conn.Container(u.bucket)
 	if err != nil {
-		return AllUnsupported(fmt.Errorf("swift: failed to find bucket: %s. error: %v", u.bucket, err))
+		return AllUnsupported(&swiftError{"looking for bucket", url, err})
 	}
 	return AllSupported()
 }
@@ -273,4 +273,13 @@ func (sw *Swift) parse(rawurl string) (*urlparts, error) {
 		url.path = split[1]
 	}
 	return url, nil
+}
+
+type swiftError struct {
+	msg, url string
+	err      error
+}
+
+func (s *swiftError) Error() string {
+	return fmt.Sprintf("swift: %s for URL %q: %s", s.msg, s.url, s.err)
 }

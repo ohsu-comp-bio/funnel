@@ -16,6 +16,7 @@ type Retrier struct {
 	MaxElapsedTime      time.Duration
 	MaxTries            int
 	ShouldRetry         func(err error) bool
+	Notify              func(err error, d time.Duration)
 	backoff             backoff.BackOff
 }
 
@@ -36,7 +37,13 @@ func NewRetrier() *Retrier {
 // Retry the function f until it does not return error or BackOff stops.
 func (r *Retrier) Retry(ctx context.Context, f func() error) error {
 	b := backoff.WithContext(r.withTries(), ctx)
-	return backoff.Retry(func() error { return r.checkErr(f()) }, b)
+	return backoff.RetryNotify(func() error { return r.checkErr(f()) }, b, r.notify)
+}
+
+func (r *Retrier) notify(err error, d time.Duration) {
+	if r.Notify != nil {
+		r.Notify(err, d)
+	}
 }
 
 func (r *Retrier) checkErr(err error) error {

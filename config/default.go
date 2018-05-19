@@ -91,7 +91,7 @@ func DefaultConfig() Config {
 			},
 		},
 		Swift: SwiftStorage{
-			MaxRetries:     3,
+			MaxRetries:     20,
 			ChunkSizeBytes: int64(500 * units.MB),
 		},
 	}

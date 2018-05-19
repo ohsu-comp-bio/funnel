@@ -100,6 +100,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate Storage backend: %v", err)
 	}
+	store.AttachLogger(log)
 
 	w := &worker.DefaultWorker{
 		Conf:        conf.Worker,

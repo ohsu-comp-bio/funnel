@@ -2,6 +2,8 @@ package node
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"syscall"
 	"time"
 
@@ -31,6 +33,20 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 	runctx, cancel := context.WithCancel(context.Background())
 	runctx = util.SignalContext(ctx, time.Nanosecond, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
+
+	hupsig := make(chan os.Signal, 1)
+	go func() {
+		for {
+			select {
+			case <-runctx.Done():
+				return
+			case <-hupsig:
+				n.Drain()
+			}
+		}
+	}()
+	signal.Notify(hupsig, syscall.SIGHUP)
+
 	n.Run(runctx)
 
 	return nil

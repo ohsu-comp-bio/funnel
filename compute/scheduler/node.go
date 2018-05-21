@@ -45,6 +45,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 		workers:   newRunSet(),
 		timeout:   timeout,
 		state:     state,
+		drained:   make(chan struct{}),
 	}, nil
 }
 
@@ -58,6 +59,7 @@ type NodeProcess struct {
 	workers   *runSet
 	timeout   util.IdleTimeout
 	state     NodeState
+	drained   chan struct{}
 }
 
 // Run runs a node with the given config. This is responsible for communication
@@ -79,6 +81,9 @@ func (n *NodeProcess) Run(ctx context.Context) {
 		case <-n.timeout.Done():
 			cancel()
 
+		case <-n.drained:
+			cancel()
+
 		case <-ctx.Done():
 			n.timeout.Stop()
 
@@ -98,6 +103,7 @@ func (n *NodeProcess) Run(ctx context.Context) {
 		case <-ticker.C:
 			n.sync(ctx)
 			n.checkIdleTimer()
+			n.checkDrain()
 		}
 	}
 }
@@ -244,4 +250,15 @@ func (n *NodeProcess) checkIdleTimer() {
 	} else {
 		n.timeout.Stop()
 	}
+}
+
+func (n *NodeProcess) checkDrain() {
+	if n.workers.Count() == 0 && n.state == NodeState_DRAIN {
+		close(n.drained)
+	}
+}
+
+// Drain sets the node state to DRAIN.
+func (n *NodeProcess) Drain() {
+	n.state = NodeState_DRAIN
 }

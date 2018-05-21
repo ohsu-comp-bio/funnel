@@ -249,3 +249,106 @@ func TestNodeCleanup(t *testing.T) {
 		}
 	}
 }
+
+func TestNodeDrain(t *testing.T) {
+	conf := tests.DefaultConfig()
+	conf.Compute = "manual"
+	conf.Scheduler.NodeInitTimeout = config.Duration(time.Second * 10)
+	conf.Scheduler.NodePingTimeout = config.Duration(time.Second * 10)
+	conf.Scheduler.NodeDeadTimeout = config.Duration(time.Second * 10)
+
+	bg := context.Background()
+	log := logger.NewLogger("node", tests.LogConfig())
+	tests.SetLogOutput(log, t)
+	srv := tests.NewFunnel(conf)
+	srv.StartServer()
+
+	// test worker that blocks until the test unblocks it below.
+	block := make(chan struct{})
+	worker := func(ctx context.Context, taskID string) error {
+		<-block
+		return nil
+	}
+
+	srv.Conf.Node.ID = "test-node-drain"
+	n, err := scheduler.NewNodeProcess(bg, srv.Conf, worker, log)
+	if err != nil {
+		t.Fatal("failed to start node", err)
+	}
+	ctx, cancel := context.WithCancel(bg)
+	defer cancel()
+	go n.Run(ctx)
+
+	srv.Scheduler.CheckNodes()
+	time.Sleep(time.Duration(conf.Node.UpdateRate * 10))
+
+	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes := resp.Nodes
+
+	// Ensure the node started.
+	if len(nodes) != 1 {
+		t.Fatal("failed to register node", nodes)
+	}
+
+	// Start a task, which is expected to be scheduled to the node.
+	first := srv.Run("echo")
+
+	time.Sleep(time.Duration(conf.Node.UpdateRate * 10))
+	srv.Scheduler.CheckNodes()
+	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes = resp.Nodes
+
+	// Ensure the task was scheduled.
+	if len(nodes) != 1 || len(nodes[0].TaskIds) != 1 {
+		t.Fatal("expected task to be scheduled to node")
+	}
+
+	// Drain the node.
+	n.Drain()
+	time.Sleep(time.Duration(conf.Node.UpdateRate * 10))
+
+	// Start a second task, which is expected NOT to be scheduled,
+	// since the node is now draining.
+	second := srv.Run("echo")
+
+	time.Sleep(time.Duration(conf.Node.UpdateRate * 10))
+
+	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes = resp.Nodes
+
+	// Ensure the task was scheduled.
+	if len(nodes) != 1 || len(nodes[0].TaskIds) != 1 {
+		t.Fatal("expected only 1 task to be scheduled to node")
+	}
+
+	log.Info("NODE", nodes[0])
+
+	close(block)
+	time.Sleep(time.Duration(conf.Node.UpdateRate * 10))
+
+	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes = resp.Nodes
+
+	if len(nodes) != 0 {
+		t.Fatal("expected node to have exited")
+	}
+
+	// One last check to ensure the second task wasn't scheduled.
+	srv.GetView(first, tes.Minimal)
+
+	if srv.GetView(second, tes.Minimal).State != tes.Queued {
+		t.Fatal("expected second task to be queued")
+	}
+}

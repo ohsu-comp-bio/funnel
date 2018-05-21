@@ -18,6 +18,7 @@ enum NodeState {
   DEAD = 2;
   GONE = 3;
   INITIALIZING = 4;
+  DRAIN = 5;
 }
 
 message Node {

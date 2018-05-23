@@ -3,7 +3,7 @@
 <head>
   <link href="http://gmpg.org/xfn/11" rel="profile">
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
-  <meta name="generator" content="Hugo 0.21-DEV" />
+  <meta name="generator" content="Hugo 0.31-DEV" />
 
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
@@ -309,7 +309,8 @@ Configure Funnel to use PBS by including the following config:</p>
 
 <pre><code class="language-YAML">Compute: pbs
 
-PBS: |<p style="margin-left: 3em">#!/bin/bash
+PBS:
+    Template: |<p style="margin-left: 3em">#!/bin/bash
 #PBS -N {{.TaskId}}
 #PBS -o {{.WorkDir}}/funnel-stdout
 #PBS -e {{.WorkDir}}/funnel-stderr

@@ -151,7 +151,7 @@ GoogleStorage: Disabled: false # Path to account credentials file. AccountFile: 
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/</guid>
       <description>Grid Engine Funnel can be configured to submit workers to Grid Engine by making calls to qsub.
 The Funnel server process needs to run on the same machine as the Grid Engine master. Configure Funnel to use Grid Engine by including the following config:
-Compute: gridengine GridEngine: |#!/bin/bash #$ -N {{.TaskId}} #$ -o {{.WorkDir}}/funnel-stdout #$ -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#$ -pe mpi %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
+Compute: gridengine GridEngine: Template: |#!/bin/bash #$ -N {{.TaskId}} #$ -o {{.WorkDir}}/funnel-stdout #$ -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#$ -pe mpi %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
     </item>
     
     <item>
@@ -162,7 +162,7 @@ Compute: gridengine GridEngine: |#!/bin/bash #$ -N {{.TaskId}} #$ -o {{.WorkDir}
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/</guid>
       <description>HTCondor Funnel can be configured to submit workers to HTCondor by making calls to condor_submit.
 The Funnel server process needs to run on the same machine as the HTCondor master. Configure Funnel to use HTCondor by including the following config:
-Compute: htcondor HTCondor: |universe = vanilla getenv = True executable = {{.Executable}} arguments = worker run --config {{.Config}} --task-id {{.TaskId}} log = {{.WorkDir}}/condor-event-log error = {{.WorkDir}}/funnel-stderr output = {{.WorkDir}}/funnel-stdout should_transfer_files = YES when_to_transfer_output = ON_EXIT_OR_EVICT {{if ne .</description>
+Compute: htcondor HTCondor: Template: |universe = vanilla getenv = True executable = {{.Executable}} arguments = worker run --config {{.Config}} --task-id {{.TaskId}} log = {{.WorkDir}}/condor-event-log error = {{.WorkDir}}/funnel-stderr output = {{.</description>
     </item>
     
     <item>
@@ -229,7 +229,7 @@ Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;q
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</guid>
       <description>PBS/Torque Funnel can be configured to submit workers to PBS/Torque by making calls to qsub.
 The Funnel server process needs to run on the same machine as the PBS master. Configure Funnel to use PBS by including the following config:
-Compute: pbs PBS: |#!/bin/bash #PBS -N {{.TaskId}} #PBS -o {{.WorkDir}}/funnel-stdout #PBS -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#PBS -l nodes=1:ppn=%d&amp;#34; .Cpus}} {{- end}} {{if ne .RamGb 0.0 -}} {{printf &amp;#34;#PBS -l mem=%.</description>
+Compute: pbs PBS: Template: |#!/bin/bash #PBS -N {{.TaskId}} #PBS -o {{.WorkDir}}/funnel-stdout #PBS -e {{.WorkDir}}/funnel-stderr {{if ne .Cpus 0 -}} {{printf &amp;#34;#PBS -l nodes=1:ppn=%d&amp;#34; .Cpus}} {{- end}} {{if ne .RamGb 0.</description>
     </item>
     
     <item>
@@ -261,7 +261,7 @@ AmazonS3: Disabled: false # The maximum number of times that a request will be r
       <description>Slurm Funnel can be configured to submit workers to Slurm by making calls to sbatch.
 The Funnel server process needs to run on the same machine as the Slurm master.
 Configure Funnel to use Slurm by including the following config:
-Compute: slurm Slurm: |#!/bin/bash #SBATCH --job-name {{.TaskId}} #SBATCH --ntasks 1 #SBATCH --error {{.WorkDir}}/funnel-stderr #SBATCH --output {{.WorkDir}}/funnel-stdout {{if ne .Cpus 0 -}} {{printf &amp;#34;#SBATCH --cpus-per-task %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
+Compute: slurm Slurm: Template: |#!/bin/bash #SBATCH --job-name {{.TaskId}} #SBATCH --ntasks 1 #SBATCH --error {{.WorkDir}}/funnel-stderr #SBATCH --output {{.WorkDir}}/funnel-stdout {{if ne .Cpus 0 -}} {{printf &amp;#34;#SBATCH --cpus-per-task %d&amp;#34; .Cpus}} {{- end}} {{if ne .</description>
     </item>
     
     <item>

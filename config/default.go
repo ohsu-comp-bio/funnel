@@ -63,6 +63,9 @@ func DefaultConfig() Config {
 		BoltDB: BoltDB{
 			Path: path.Join(workDir, "funnel.db"),
 		},
+		Badger: Badger{
+			Path: path.Join(workDir, "funnel.badger.db"),
+		},
 		DynamoDB: DynamoDB{
 			TableBasename: "funnel",
 		},

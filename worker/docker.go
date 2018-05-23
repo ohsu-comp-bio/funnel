@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
 )
 
 // DockerCommand is responsible for configuring and running a docker container.
@@ -30,12 +30,11 @@ type DockerCommand struct {
 
 // Run runs the Docker command and blocks until done.
 func (dcmd DockerCommand) Run(ctx context.Context) error {
-	// (Hopefully) temporary hack to sync docker API version info.
-	// Don't need the client here, just the logic inside NewDockerClient().
-	_, derr := dockerutil.NewDockerClient()
-	if derr != nil {
-		dcmd.Event.Error("Can't connect to Docker", derr)
-		return derr
+	// Sync docker API version info.
+	err := SyncDockerAPIVersion()
+	if err != nil {
+		dcmd.Event.Error("Can't connect to Docker", err)
+		return err
 	}
 
 	pullcmd := exec.Command("docker", "pull", dcmd.Image)
@@ -89,18 +88,8 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 // Stop stops the container.
 func (dcmd DockerCommand) Stop() error {
 	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
-	dclient, derr := dockerutil.NewDockerClient()
-	if derr != nil {
-		return derr
-	}
-	// close the docker client connection
-	defer dclient.Close()
-	// Set timeout
-	timeout := time.Second * 10
-	// Issue stop call
-	// TODO is context.Background right?
-	err := dclient.ContainerStop(context.Background(), dcmd.ContainerName, &timeout)
-	return err
+	cmd := exec.Command("docker", "stop", dcmd.ContainerName)
+	return cmd.Run()
 }
 
 func formatVolumeArg(v Volume) string {
@@ -147,4 +136,30 @@ func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
 			}
 		}
 	}
+}
+
+type dockerVersion struct {
+	Client string
+	Server string
+}
+
+// SyncDockerAPIVersion ensures that the client uses the same API version as
+// the server.
+func SyncDockerAPIVersion() error {
+	if os.Getenv("DOCKER_API_VERSION") == "" {
+		cmd := exec.Command("docker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		out, err := cmd.Output()
+		if err != nil {
+			return fmt.Errorf("docker version command failed: %v", err)
+		}
+		version := &dockerVersion{}
+		err = json.Unmarshal(out, version)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal docker version: %v", err)
+		}
+		if version.Client != version.Server {
+			os.Setenv("DOCKER_API_VERSION", version.Server)
+		}
+	}
+	return nil
 }

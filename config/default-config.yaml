@@ -200,7 +200,7 @@ PBS:
   ReconcileRate: 30m
   Template: |
     #!bin/bash
-    #PBS -N {{.NodeId}}
+    #PBS -N {{.TaskId}}
     #PBS -o {{.WorkDir}}/funnel-stdout
     #PBS -e {{.WorkDir}}/funnel-stderr
     {{if ne .Cpus 0 -}}
@@ -213,12 +213,12 @@ PBS:
     {{printf "#PBS -l file=%.0fgb" .DiskGb}}
     {{- end}}
 
-    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
 
 GridEngine:
   Template: |
     #!bin/bash
-    #$ -N {{.NodeId}}
+    #$ -N {{.TaskId}}
     #$ -o {{.WorkDir}}/funnel-stdout
     #$ -e {{.WorkDir}}/funnel-stderr
     #$ -l nodes=1
@@ -232,7 +232,7 @@ GridEngine:
     {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
     {{- end}}
 
-    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
 
 Slurm:
   # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
@@ -244,7 +244,7 @@ Slurm:
   ReconcileRate: 30m
   Template: |
     #!/bin/bash
-    #SBATCH --job-name {{.NodeId}}
+    #SBATCH --job-name {{.TaskId}}
     #SBATCH --ntasks 1
     #SBATCH --error {{.WorkDir}}/funnel-stderr
     #SBATCH --output {{.WorkDir}}/funnel-stdout
@@ -258,7 +258,7 @@ Slurm:
     {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
     {{- end}}
 
-    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
 
 # AWSBatch describes the configuration for the AWS Batch compute backend.
 AWSBatch:

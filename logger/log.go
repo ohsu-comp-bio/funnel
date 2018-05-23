@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/logrusorgru/aurora"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"github.com/sirupsen/logrus"
 )
 
 // Log levels

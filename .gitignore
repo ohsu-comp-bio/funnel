@@ -16,3 +16,4 @@ bower_components
 storage/_test_download
 /webdash/bundle.js
 /webdash/style.css
+/vendor

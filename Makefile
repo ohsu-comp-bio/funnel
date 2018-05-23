@@ -42,21 +42,12 @@ proto:
 # Update submodules and build code
 depends:
 	@git submodule update --init --recursive
-	@go get -d github.com/ohsu-comp-bio/funnel
+	@go get github.com/golang/dep/cmd/dep
+	@dep ensure
 
 # Start API reference doc server
 serve-doc:
 	godoc --http=:6060
-
-# Add new vendored dependencies
-add_deps:
-	@go get github.com/dpw/vendetta
-	@vendetta ./
-
-# Prune unused vendored dependencies
-prune_deps:
-	@go get github.com/dpw/vendetta
-	@vendetta -p ./
 
 # Automatially update code formatting
 tidy:

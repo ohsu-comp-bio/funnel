@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"runtime"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/kr/pretty"
 	"github.com/logrusorgru/aurora"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var baseTimestamp = time.Now()
@@ -27,8 +29,17 @@ type textFormatter struct {
 	json jsonFormatter
 }
 
+func checkIfTerminal(w io.Writer) bool {
+	switch v := w.(type) {
+	case *os.File:
+		return terminal.IsTerminal(int(v.Fd()))
+	default:
+		return false
+	}
+}
+
 func isColorTerminal(w io.Writer) bool {
-	return logrus.IsTerminal(w) && (runtime.GOOS != "windows")
+	return checkIfTerminal(w) && (runtime.GOOS != "windows")
 }
 
 func (f *textFormatter) Format(entry *logrus.Entry) ([]byte, error) {

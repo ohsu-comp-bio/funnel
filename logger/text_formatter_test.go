@@ -3,8 +3,8 @@ package logger
 import (
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/ohsu-comp-bio/funnel/tes"
+	"github.com/sirupsen/logrus"
 )
 
 func TestFormatNilProtoField(t *testing.T) {

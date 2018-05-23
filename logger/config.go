@@ -2,9 +2,10 @@ package logger
 
 import (
 	"os"
-
-	"github.com/Sirupsen/logrus"
+	"time"
 )
+
+const defaultTimestampFormat = time.RFC3339
 
 // JSONFormatConfig provides configuration for the JSON logger format.
 type JSONFormatConfig struct {
@@ -55,7 +56,7 @@ func DefaultConfig() Config {
 		Formatter: "text",
 		TextFormat: TextFormatConfig{
 			FullTimestamp:   true,
-			TimestampFormat: logrus.DefaultTimestampFormat,
+			TimestampFormat: defaultTimestampFormat,
 		},
 	}
 }

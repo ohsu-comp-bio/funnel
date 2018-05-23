@@ -21,6 +21,12 @@
   version = "v0.23.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/AndreasBriese/bbloom"
+  packages = ["."]
+  revision = "28f7e881ca57bc00e028f9ede9f0d9104cfeef5e"
+
+[[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
@@ -125,6 +131,25 @@
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/dgraph-io/badger"
+  packages = [
+    ".",
+    "options",
+    "protos",
+    "skl",
+    "table",
+    "y"
+  ]
+  revision = "3ff1bfbb11c02c78c11269096669396c2d2cbbd3"
+  version = "v1.5.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/dgryski/go-farm"
+  packages = ["."]
+  revision = "2de33835d10275975374b37b2dcfd22c9020a1f5"
 
 [[projects]]
   name = "github.com/docker/distribution"
@@ -737,6 +762,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "339d9de401b97ec4cb8e527cbd4d54645a9d61fc22ce27add0b0a4a40273fcff"
+  inputs-digest = "9424b6c5871f27a4e88cfd719b8092c5e0d17a1622337ab3c7b46cda7af5375a"
   solver-name = "gps-cdcl"
   solver-version = 1

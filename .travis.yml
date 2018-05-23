@@ -43,6 +43,10 @@ jobs:
     - script: make test-pbs-torque
       env:
         - n=pbs-torque
+    - script:
+        - make test-badger
+      env:
+        - n=badger
     - script: 
         - sleep 10
         - make test-elasticsearch      

@@ -47,10 +47,12 @@ depends:
 
 # Start API reference doc server
 serve-doc:
+	@go get golang.org/x/tools/cmd/godoc
 	godoc --http=:6060
 
 # Automatially update code formatting
 tidy:
+	@go get golang.org/x/tools/cmd/goimports
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs goimports -w
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 

@@ -17,7 +17,7 @@ type ErrLogger struct {
 func (e *ErrLogger) WriteEvent(ctx context.Context, ev *Event) error {
 	err := e.Writer.WriteEvent(ctx, ev)
 	if err != nil {
-		e.Log.Error("error writing event", err)
+		e.Log.Error("error writing event", "error", err, "event_type", ev.Type.String(), "event_data", ev.Data)
 	}
 	return err
 }

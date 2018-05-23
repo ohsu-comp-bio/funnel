@@ -15,10 +15,12 @@ import (
 // WriteEvent creates an event for the server to handle.
 func (db *Badger) WriteEvent(ctx context.Context, req *events.Event) error {
 	r := util.Retrier{
-		InitialInterval: time.Millisecond,
-		MaxInterval:     10 * time.Millisecond,
-		MaxElapsedTime:  time.Second,
-		MaxTries:        50,
+		InitialInterval:     1 * time.Millisecond,
+		MaxInterval:         10 * time.Second,
+		MaxElapsedTime:      5 * time.Minute,
+		Multiplier:          1.5,
+		RandomizationFactor: 0.5,
+		MaxTries:            50,
 		ShouldRetry: func(err error) bool {
 			// Don't retry on state transition errors.
 			if _, ok := err.(*tes.TransitionError); ok {

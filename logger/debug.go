@@ -1,9 +1,5 @@
 package logger
 
-import (
-	"github.com/Sirupsen/logrus"
-)
-
 var debug = NewLogger("debug", DebugConfig())
 
 // Debug logs debug messages to a global logger.
@@ -19,7 +15,7 @@ func DebugConfig() Config {
 		TextFormat: TextFormatConfig{
 			ForceColors:     true,
 			FullTimestamp:   true,
-			TimestampFormat: logrus.DefaultTimestampFormat,
+			TimestampFormat: defaultTimestampFormat,
 		},
 	}
 }

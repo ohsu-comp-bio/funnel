@@ -304,8 +304,12 @@
 <p>Funnel can be configured to submit workers to <a href="https://slurm.schedmd.com/">Slurm</a> by making calls
 to <code>sbatch</code>.</p>
 
-<p>The Funnel server process needs to run on the same machine as the Slurm master.<br />
+<p>The Funnel server needs to run on a submission node.
 Configure Funnel to use Slurm by including the following config:</p>
+
+<p>It is recommended to update the submit file template so that the
+<code>funnel worker run</code> command takes a config file as an argument
+(e.g. <code>funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}</code>)</p>
 
 <pre><code class="language-YAML">Compute: slurm
 
@@ -325,7 +329,7 @@ Slurm:
 {{printf &#34;#SBATCH --tmp %.0fGB&#34; .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+funnel worker run --taskID {{.TaskId}}
 </p>
 
 </code></pre>
@@ -344,16 +348,6 @@ Slurm:
 <tr>
 <td align="left">TaskId</td>
 <td align="left">funnel task id</td>
-</tr>
-
-<tr>
-<td align="left">Executable</td>
-<td align="left">path to funnel binary</td>
-</tr>
-
-<tr>
-<td align="left">Config</td>
-<td align="left">path to the funnel worker config file</td>
 </tr>
 
 <tr>
@@ -379,11 +373,6 @@ Slurm:
 <tr>
 <td align="left">Zone</td>
 <td align="left">requested zone (could be used for queue name)</td>
-</tr>
-
-<tr>
-<td align="left">Project</td>
-<td align="left">project (could be used for account to charge)</td>
 </tr>
 </tbody>
 </table>

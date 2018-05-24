@@ -238,6 +238,9 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	}
 
 	res := task.GetResources()
+	if res == nil {
+		res = &tes.Resources{}
+	}
 
 	var zone string
 	zones := res.GetZones()

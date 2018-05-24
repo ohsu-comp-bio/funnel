@@ -48,7 +48,7 @@ func TestSetupTemplatedHPCSubmit(t *testing.T) {
 {{printf "#TEST --disk %.1fGB" .DiskGb}}
 {{- end}}
 
-{{.Executable}} worker run --config {{.Config}}
+funnel worker run --taskID {{.TaskId}}
 `
 
 	b := HPCBackend{
@@ -68,11 +68,6 @@ func TestSetupTemplatedHPCSubmit(t *testing.T) {
 		t.Fatal(rerr)
 	}
 
-	binaryPath, err := detectFunnelBinaryPath()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	expected := `
 #!/bin/bash
 #TEST --name test-taskid
@@ -83,10 +78,10 @@ func TestSetupTemplatedHPCSubmit(t *testing.T) {
 #TEST --mem 1GB
 #TEST --disk 10.0GB
 
-%s worker run --config %s/test-taskid/worker.conf.yml
+funnel worker run --taskID test-taskid
 `
 
-	expected = fmt.Sprintf(expected, tmp, tmp, binaryPath, tmp)
+	expected = fmt.Sprintf(expected, tmp, tmp)
 
 	if string(actual) != expected {
 		t.Log("Expected", "", expected)

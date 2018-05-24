@@ -5,6 +5,7 @@
       <th>ID</th>
       <th>State</th>
       <th>Name</th>
+      <th>Created At</th>
       <th>Elapsed Time</th>
       <th></th>
     </thead>
@@ -13,6 +14,7 @@
         <td class="task-list-id"><a href="/v1/tasks/{{task.id}}">{{ task.id }}</a></td>
         <td>{{ task.state }}</td>
         <td class="task-list-name">{{ task.name }}</td>
+        <td>{{ creationTime(task) }}</td>
         <td>{{ elapsedTime(task) }}</td>
         <td class="task-list-cancel"><button
           class="btn-cancel mdl-button--fab mini-fab"

@@ -27,18 +27,21 @@ function formatElapsedTime(miliseconds) {
   
   time = "";
   if (days > 0) {
-    time += days + " Days "
+    time += days + "d "
   }
   if (hours > 0 || days > 0) {
-    time += hours + " Hours "
+    time += hours + "h "
   }
   if (minutes > 0 || hours > 0) {
-    time += minutes + " Minutes "
+    time += minutes + "m "
   }
   if (seconds > 0 || minutes > 0) {
-    time += seconds + " Seconds"
+    time += seconds + "s"
   }
-	return time;
+  if (time === "") {
+    time = "< 1s";
+  }
+  return time;
 }
 
 function elapsedTime(task) {
@@ -52,6 +55,18 @@ function elapsedTime(task) {
       elapsed = now - started;
       return formatElapsedTime(elapsed);
     }
+  }
+  return "--";
+}
+
+function creationTime(task) {
+  if (task.creation_time) {
+    created = new Date(task.creation_time);
+    var options = {
+      weekday: 'short',  month: 'short', day: 'numeric',
+      hour: 'numeric', minute: 'numeric'
+    };
+    return created.toLocaleDateString("en-US", options);
   }
   return "--";
 }
@@ -88,6 +103,7 @@ app.controller("TaskListController", function($rootScope, $scope, $http, $timeou
   $scope.tasks = [];
   $scope.isDone = isDone;
   $scope.elapsedTime = elapsedTime;
+  $scope.creationTime = creationTime;
   $scope.serverURL = getServerURL($location);
   $scope.page = null;
 
@@ -196,7 +212,7 @@ app.controller("TaskListController", function($rootScope, $scope, $http, $timeou
 
 app.controller("NodeListController", function($rootScope, $scope, $http, $timeout) {
   $rootScope.pageTitle = "Nodes";
-	$scope.url = "/v1/nodes";
+  $scope.url = "/v1/nodes";
   $scope.nodes = [];
 
   function refresh() {

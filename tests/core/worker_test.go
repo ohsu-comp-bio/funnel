@@ -37,6 +37,8 @@ func TestWorkerRun(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
+	time.Sleep(5 * time.Second)
+
 	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
 		View: tes.TaskView_FULL,

@@ -3,8 +3,8 @@ HTCondor:
   DisableReconciler: false
   Template: |
     universe = vanilla
-    getenv = True
-    executable = funnel
+    getenv = true
+    executable = /bin/funnel
     arguments = worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}
     log = {{.WorkDir}}/condor-event-log
     error = {{.WorkDir}}/funnel-stderr

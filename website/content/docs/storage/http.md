@@ -7,7 +7,7 @@ menu:
 
 # HTTP(S)
 
-Funnel supports downloading files from public URLs via GET reqests. No authentication
+Funnel supports downloading files from public URLs via GET requests. No authentication
 mechanism is allowed. This backend can be used to fetch objects from cloud storage 
 providers exposed using presigned URLs.
 

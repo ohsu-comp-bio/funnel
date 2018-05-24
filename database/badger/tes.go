@@ -18,7 +18,6 @@ func (db *Badger) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Ta
 		task = t
 		return err
 	})
-
 	if err != nil {
 		return nil, err
 	}

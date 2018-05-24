@@ -28,7 +28,7 @@ storage. The default Docker configuration allocates up to 10GB of this storage t
 each container instance. [Read more about the default AMI][8]. Due to these limitations, we
 recommend [creating a custom AMI][7]. Because AWS Batch has the same requirements for your 
 AMI as Amazon ECS, use the default Amazon ECS-optimized Amazon Linux AMI as a base and change it 
-to better suite your tasks.
+to better suit your tasks.
 
 ### Steps
 * [Create a Compute Environment][3]

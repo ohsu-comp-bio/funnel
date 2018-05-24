@@ -64,13 +64,14 @@ func TestResourceRequest(t *testing.T) {
 	}
 }
 
-func TestSubmitFail(t *testing.T) {
-	id := fun.Run(`
-    --sh 'echo hello world' --ram 1000
-  `)
-	task := fun.Wait(id)
+// PBS/Torque seems to run the job regardless of memory or disk space requested
+// func TestSubmitFail(t *testing.T) {
+// 	id := fun.Run(`
+//     --sh 'echo hello world' --ram 1000
+//   `)
+// 	task := fun.Wait(id)
 
-	if task.State != tes.State_SYSTEM_ERROR {
-		t.Fatal("expected task to have system error state; got:", task.State.String())
-	}
-}
+// 	if task.State != tes.State_SYSTEM_ERROR {
+// 		t.Fatal("expected task to have system error state; got:", task.State.String())
+// 	}
+// }

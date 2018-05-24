@@ -33,7 +33,7 @@ This page contains a rough collection of notes for people wanting to build Funne
 
 A Funnel development environment includes:
 
-- [Go 1.8+][go] for the majority of the code.
+- [Go 1.10+][go] for the majority of the code.
 - [Task Execution Schemas][tes] for task APIs.
 - [Protobuf][protobuf] + [gRPC][grpc] for RPC communication.
 - [gRPC Gateway][gateway] for HTTP communication.

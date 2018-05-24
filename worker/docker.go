@@ -33,12 +33,14 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	// Sync docker API version info.
 	err := SyncDockerAPIVersion()
 	if err != nil {
-		dcmd.Event.Error("Can't connect to Docker", err)
-		return err
+		dcmd.Event.Error("failed to sync docker client API version", err)
 	}
 
 	pullcmd := exec.Command("docker", "pull", dcmd.Image)
-	pullcmd.Run()
+	err = pullcmd.Run()
+	if err != nil {
+		dcmd.Event.Error("failed to pull docker image", err)
+	}
 
 	args := []string{"run", "-i", "--read-only"}
 

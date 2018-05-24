@@ -13,6 +13,10 @@ to `sbatch`.
 The Funnel server needs to run on a submission node.
 Configure Funnel to use Slurm by including the following config:
 
+It is recommended to update the submit file template so that the
+`funnel worker run` command takes a config file as an argument 
+(e.g. `funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}`)
+
 ```YAML
 {{< slurm-template >}}
 ```

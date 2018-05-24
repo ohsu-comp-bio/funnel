@@ -13,12 +13,21 @@ This page contains a rough collection of notes for people wanting to build Funne
 
 ### Building the Funnel source
 
-1. Install [Go 1.8+][go]. Check the version with `go version`.
+1. Install [Go 1.10+][go]. Check the version with `go version`.
 1. Ensure GOPATH is set. See [the docs][gopath] for help. Also, you probably want to add `$GOPATH/bin` to your `PATH`.
-1. Run `go get github.com/ohsu-comp-bio/funnel`
+1. Clone funnel into your GOPATH. 
+
+	```shell
+	$ mkdir -p $GOPATH/src/github.com/ohsu-comp-bio/
+	$ cd $GOPATH/src/github.com/ohsu-comp-bio/
+	$ git clone https://github.com/ohsu-comp-bio/funnel.git
+	$ cd funnel
+	$ make
+	```
+	
 1. Funnel is now downloaded and installed. Try `funnel version`.
 1. `cd $GOPATH/src/github.com/ohsu-comp-bio/funnel`
-1. Now you're in the Funnel repo. You can edit the code an rerun the `go get` command above, or check out the Makefile for a list of useful build commands, such as `make install`.
+1. Now you're in the Funnel repo. You can edit the code and run `make install` to recompile.
 
 ### Developer Tools
 
@@ -31,7 +40,7 @@ A Funnel development environment includes:
 - [Angular][angular] and [SASS][sass] for the web dashboard.
 - [GNU Make][make] for development tasks.
 - [Docker][docker] for executing task containers (tested with v1.12, v1.13).
-- [vendetta][vendetta] for Go dependency vendoring.
+- [dep][dep] for Go dependency vendoring.
 - [Make][make] for development/build commands.
 - [NodeJS][node] and [NPM][npm] for web dashboard development.
 
@@ -54,7 +63,7 @@ mock interfaces in test code, for example, to mock the Google Cloud APIs.
 
 ### Vendoring
 
-Go dependencies are vendored under /vendor. `make add_deps` and `make prune_deps` help manage new dependencies.
+Go dependencies are vendored using [dep][dep]. Run `dep ensure` to add/prune dependencies.
 
 ### Submodules
 
@@ -69,7 +78,7 @@ Funnel has git submodules. The Makefile usually handles this for you, but if nee
 [make]: https://www.gnu.org/software/make/
 [docker]: https://docker.io
 [python]: https://www.python.org/
-[vendetta]: https://github.com/dpw/vendetta
+[dep]: https://golang.github.io/dep/
 [node]: https://nodejs.org
 [npm]: https://www.npmjs.com/
 [gateway]: https://github.com/grpc-ecosystem/grpc-gateway

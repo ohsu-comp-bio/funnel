@@ -306,12 +306,23 @@
 <h3 id="building-the-funnel-source">Building the Funnel source</h3>
 
 <ol>
-<li>Install <a href="https://golang.org">Go 1.8+</a>. Check the version with <code>go version</code>.</li>
+<li>Install <a href="https://golang.org">Go 1.10+</a>. Check the version with <code>go version</code>.</li>
 <li>Ensure GOPATH is set. See <a href="https://golang.org/doc/code.html#GOPATH">the docs</a> for help. Also, you probably want to add <code>$GOPATH/bin</code> to your <code>PATH</code>.</li>
-<li>Run <code>go get github.com/ohsu-comp-bio/funnel</code></li>
-<li>Funnel is now downloaded and installed. Try <code>funnel version</code>.</li>
-<li><code>cd $GOPATH/src/github.com/ohsu-comp-bio/funnel</code></li>
-<li>Now you&rsquo;re in the Funnel repo. You can edit the code an rerun the <code>go get</code> command above, or check out the Makefile for a list of useful build commands, such as <code>make install</code>.</li>
+
+<li><p>Clone funnel into your GOPATH.</p>
+
+<pre><code class="language-shell">$ mkdir -p $GOPATH/src/github.com/ohsu-comp-bio/
+$ cd $GOPATH/src/github.com/ohsu-comp-bio/
+$ git clone https://github.com/ohsu-comp-bio/funnel.git
+$ cd funnel
+$ make
+</code></pre></li>
+
+<li><p>Funnel is now downloaded and installed. Try <code>funnel version</code>.</p></li>
+
+<li><p><code>cd $GOPATH/src/github.com/ohsu-comp-bio/funnel</code></p></li>
+
+<li><p>Now you&rsquo;re in the Funnel repo. You can edit the code and run <code>make install</code> to recompile.</p></li>
 </ol>
 
 <h3 id="developer-tools">Developer Tools</h3>
@@ -326,7 +337,7 @@
 <li><a href="https://angularjs.org/">Angular</a> and <a href="http://sass-lang.com/">SASS</a> for the web dashboard.</li>
 <li><a href="https://www.gnu.org/software/make/">GNU Make</a> for development tasks.</li>
 <li><a href="https://docker.io">Docker</a> for executing task containers (tested with v1.12, v1.13).</li>
-<li><a href="https://github.com/dpw/vendetta">vendetta</a> for Go dependency vendoring.</li>
+<li><a href="https://golang.github.io/dep/">dep</a> for Go dependency vendoring.</li>
 <li><a href="https://www.gnu.org/software/make/">Make</a> for development/build commands.</li>
 <li><a href="https://nodejs.org">NodeJS</a> and <a href="https://www.npmjs.com/">NPM</a> for web dashboard development.</li>
 </ul>
@@ -350,7 +361,7 @@ mock interfaces in test code, for example, to mock the Google Cloud APIs.</p>
 
 <h3 id="vendoring">Vendoring</h3>
 
-<p>Go dependencies are vendored under /vendor. <code>make add_deps</code> and <code>make prune_deps</code> help manage new dependencies.</p>
+<p>Go dependencies are vendored using <a href="https://golang.github.io/dep/">dep</a>. Run <code>dep ensure</code> to add/prune dependencies.</p>
 
 <h3 id="submodules">Submodules</h3>
 

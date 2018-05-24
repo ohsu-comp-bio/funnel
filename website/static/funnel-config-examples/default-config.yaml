@@ -1,5 +1,5 @@
 # The name of the active server database backend
-# Available backends: boltdb, dynamodb, elastic, mongodb
+# Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb
 Database: boltdb
 
 # The name of the active compute backend
@@ -7,7 +7,7 @@ Database: boltdb
 Compute: local
 
 # The name of the active event writer backend(s).
-# Available backends: log, boltdb, dynamodb, elastic, mongodb, kafka
+# Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
 EventWriters: 
   - boltdb
   - log
@@ -39,8 +39,7 @@ Server:
   DisableHTTPCache: true
 
   # RPC client connection timeout.
-  # In nanoseconds.
-  RPCClientTimeout: 60000000000 # 30 seconds
+  RPCClientTimeout: 60s
 
   # The maximum number of times that a request will be retried for failures.
   # Time between retries follows an exponential backoff starting at 5 seconds
@@ -51,16 +50,13 @@ Server:
 # The scheduler is used for the Manual compute backend. 
 Scheduler:
   # How often to run a scheduler iteration.
-  # In nanoseconds.
-  ScheduleRate: 1000000000 # 1 second
+  ScheduleRate: 1s
   # How many tasks to schedule in one iteration.
   ScheduleChunk: 10
   # How long to wait between updates before marking a node dead.
-  # In nanoseconds.
-  NodePingTimeout: 60000000000 # 1 minute
+  NodePingTimeout: 1m
   # How long to wait for a node to start, before marking the node dead.
-  # In nanoseconds.
-  NodeInitTimeout: 300000000000 # 5 minutes
+  NodeInitTimeout: 5m
 
 Node:
   # If empty, a node ID will be automatically generated.
@@ -68,7 +64,7 @@ Node:
 
   # If the node has been idle for longer than the timeout, it will shut down.
   # -1 means there is no timeout. 0 means timeout immediately after the first task.
-  Timeout: -1
+  Timeout: -1s
 
   # A Node will automatically try to detect what resources are available to it. 
   # Defining Resources in the Node configuration overrides this behavior.
@@ -84,8 +80,7 @@ Node:
 
   # For low-level tuning.
   # How often to sync with the Funnel server.
-  # In nanoseconds.
-  UpdateRate: 5000000000 # 5 seconds
+  UpdateRate: 5s
 
 Worker:
   # Files created during processing will be written in this directory.
@@ -93,15 +88,13 @@ Worker:
 
   # For low-level tuning.
   # How often to poll for cancel signals
-  # In nanoseconds.
-  PollingRate: 5000000000 # 5 seconds
+  PollingRate: 5s
 
   # For low-level tuning.
   # How often to send stdout/err task log updates to the Funnel server.
   # Setting this to 0 will result in these fields being updated a single time
   # after the executor exits.
-  # In nanoseconds.
-  LogUpdateRate: 5000000000 # 5 seconds
+  LogUpdateRate: 5s
 
   # Max bytes to store for stdout/err in the task log.
   LogTailSize: 10000 # 10 KB
@@ -152,7 +145,7 @@ MongoDB:
   # first connecting and on follow up operations in the session. If
   # timeout is zero, the call may block forever waiting for a connection
   # to be established.
-  Timeout: 300000000000 # 5 minutes
+  Timeout: 5m
   # Username and Password inform the credentials for the initial authentication
   # done on the database defined by the Database field.
   Username: ""
@@ -168,6 +161,13 @@ Kafka:
 #-------------------------------------------------------------------------------
 
 HTCondor:
+  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+  # scheduler to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: true
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 30m
   Template: |
     universe = vanilla
     getenv = True
@@ -191,9 +191,16 @@ HTCondor:
     queue
 
 PBS:
+  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+  # scheduler to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: true
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 30m
   Template: |
     #!bin/bash
-    #PBS -N {{.NodeId}}
+    #PBS -N {{.TaskId}}
     #PBS -o {{.WorkDir}}/funnel-stdout
     #PBS -e {{.WorkDir}}/funnel-stderr
     {{if ne .Cpus 0 -}}
@@ -206,12 +213,12 @@ PBS:
     {{printf "#PBS -l file=%.0fgb" .DiskGb}}
     {{- end}}
 
-    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
 
 GridEngine:
   Template: |
     #!bin/bash
-    #$ -N {{.NodeId}}
+    #$ -N {{.TaskId}}
     #$ -o {{.WorkDir}}/funnel-stdout
     #$ -e {{.WorkDir}}/funnel-stderr
     #$ -l nodes=1
@@ -225,12 +232,19 @@ GridEngine:
     {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
     {{- end}}
 
-    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
 
 Slurm:
+  # Turn off task state reconciler. When enabled, Funnel communicates with the HPC
+  # scheduler to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: true
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 30m
   Template: |
     #!/bin/bash
-    #SBATCH --job-name {{.NodeId}}
+    #SBATCH --job-name {{.TaskId}}
     #SBATCH --ntasks 1
     #SBATCH --error {{.WorkDir}}/funnel-stderr
     #SBATCH --output {{.WorkDir}}/funnel-stdout
@@ -244,10 +258,16 @@ Slurm:
     {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
     {{- end}}
 
-    {{.Executable}} worker run --config {{.Config}} --task-id {{.TaskId}}
+    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
 
 # AWSBatch describes the configuration for the AWS Batch compute backend.
 AWSBatch:
+  # Turn off task state reconciler. When enabled, Funnel communicates with AWS Batch
+  # to find tasks that never started and updates task state accordingly.
+  DisableReconciler: true
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by AWS Batch
+  ReconcileRate: 30m
   # JobDefinition can be either a name or the Amazon Resource Name (ARN).
   JobDefinition: "funnel-job-def"
   # JobQueue can be either a name or the Amazon Resource Name (ARN).
@@ -273,8 +293,7 @@ LocalStorage:
 # HTTPStorage is used to download public files on the web via a GET request.
 HTTPStorage:
   # Timeout for http(s) GET requests.
-  # In nanoseconds.
-  Timeout: 30000000000 # 30 seconds
+  Timeout: 30s
 
 AmazonS3:
   Disabled: false
@@ -307,3 +326,5 @@ Swift:
   TenantName: ""
   TenantID: ""
   RegionName: ""
+  # 500 MB
+  ChunkSizeBytes: 500000000

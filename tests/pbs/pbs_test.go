@@ -41,7 +41,7 @@ func TestHelloWorld(t *testing.T) {
 	task := fun.Wait(id)
 
 	if task.State != tes.State_COMPLETE {
-		t.Fatal("expected task to complete")
+		t.Fatal("expected task to have complete state; got:", task.State.String())
 	}
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
@@ -56,7 +56,7 @@ func TestResourceRequest(t *testing.T) {
 	task := fun.Wait(id)
 
 	if task.State != tes.State_COMPLETE {
-		t.Fatal("expected task to complete")
+		t.Fatal("expected task to have complete state; got:", task.State.String())
 	}
 
 	if task.Logs[0].Logs[0].Stdout != "I need resources!\n" {
@@ -71,6 +71,6 @@ func TestSubmitFail(t *testing.T) {
 	task := fun.Wait(id)
 
 	if task.State != tes.State_SYSTEM_ERROR {
-		t.Fatal("expected system error")
+		t.Fatal("expected task to have system error state; got:", task.State.String())
 	}
 }

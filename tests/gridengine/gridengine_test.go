@@ -44,7 +44,7 @@ func TestHelloWorld(t *testing.T) {
 	task := fun.Wait(id)
 
 	if task.State != tes.State_COMPLETE {
-		t.Fatal("expected task to complete")
+		t.Fatal("expected task to be in complete state; got:", task.State.String())
 	}
 
 	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
@@ -59,7 +59,7 @@ func TestResourceRequest(t *testing.T) {
 	task := fun.Wait(id)
 
 	if task.State != tes.State_COMPLETE {
-		t.Fatal("expected task to complete")
+		t.Fatal("expected task to have complete state; got:", task.State.String())
 	}
 
 	if task.Logs[0].Logs[0].Stdout != "I need resources!\n" {
@@ -76,12 +76,12 @@ func TestCancel(t *testing.T) {
 
 	_, err := fun.HTTP.CancelTask(context.Background(), &tes.CancelTaskRequest{Id: id})
 	if err != nil {
-		t.Fatal("unexpected error")
+		t.Fatal("unexpected error:", err)
 	}
 
 	task := fun.Wait(id)
 	if task.State != tes.State_CANCELED {
-		t.Error("expected task to get canceled")
+		t.Error("expected task to have canceled state; got:", task.State.String())
 	}
 
 	bid := task.Logs[0].Metadata["gridengine_id"]

@@ -23,9 +23,14 @@ func TestMain(m *testing.M) {
 	fun = tests.NewFunnel(conf)
 	serverName = "funnel-test-server-" + tests.RandomString(6)
 	fun.StartServerInDocker(serverName, "ohsucompbio/pbs-torque:latest", []string{"--hostname", "docker", "--privileged"})
-	defer fun.CleanupTestServerContainer(serverName)
 
-	m.Run()
+	exit := 0
+	defer func() {
+		fun.CleanupTestServerContainer(serverName)
+		os.Exit(exit)
+	}()
+
+	exit = m.Run()
 	return
 }
 

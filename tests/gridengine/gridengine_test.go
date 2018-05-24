@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -25,9 +26,14 @@ func TestMain(m *testing.M) {
 	fun = tests.NewFunnel(conf)
 	serverName = "funnel-test-server-" + tests.RandomString(6)
 	fun.StartServerInDocker(serverName, "ohsucompbio/gridengine:latest", []string{})
-	defer fun.CleanupTestServerContainer(serverName)
 
-	m.Run()
+	exit := 0
+	defer func() {
+		fun.CleanupTestServerContainer(serverName)
+		os.Exit(exit)
+	}()
+
+	exit = m.Run()
 	return
 }
 
@@ -65,6 +71,8 @@ func TestCancel(t *testing.T) {
 	id := fun.Run(`
     --sh 'echo I wont ever run!' --cpu 1000
   `)
+
+	time.Sleep(time.Second)
 
 	_, err := fun.HTTP.CancelTask(context.Background(), &tes.CancelTaskRequest{Id: id})
 	if err != nil {

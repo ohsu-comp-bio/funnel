@@ -1,1 +1,18 @@
 Compute: "gridengine"
+GridEngine:
+  Template: |
+    #!/bin/bash
+    #$ -N {{.TaskId}}
+    #$ -o {{.WorkDir}}/funnel-stdout
+    #$ -e {{.WorkDir}}/funnel-stderr
+    {{if ne .Cpus 0 -}}
+    {{printf "#$ -pe mpi %d" .Cpus}}
+    {{- end}}
+    {{if ne .RamGb 0.0 -}}
+    {{printf "#$ -l h_vmem=%.0fG" .RamGb}}
+    {{- end}}
+    {{if ne .DiskGb 0.0 -}}
+    {{printf "#$ -l h_fsize=%.0fG" .DiskGb}}
+    {{- end}}
+
+    funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}

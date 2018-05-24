@@ -31,7 +31,7 @@ In order to build the latest code, run:
 ```shell
 $ mkdir -p $GOPATH/src/github.com/ohsu-comp-bio/
 $ cd $GOPATH/src/github.com/ohsu-comp-bio/
-$ git clone github.com/ohsu-comp-bio/funnel
+$ git clone https://github.com/ohsu-comp-bio/funnel.git
 $ cd funnel
 $ make
 ```

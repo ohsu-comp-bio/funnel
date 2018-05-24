@@ -224,17 +224,6 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		return "", err
 	}
 
-	confPath := path.Join(workdir, "worker.conf.yml")
-	err = config.ToYamlFile(b.Conf, confPath)
-	if err != nil {
-		return "", err
-	}
-
-	funnelPath, err := detectFunnelBinaryPath()
-	if err != nil {
-		return "", err
-	}
-
 	submitName := fmt.Sprintf("%s.submit", b.Name)
 
 	submitPath := path.Join(workdir, submitName)
@@ -257,14 +246,12 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	}
 
 	err = submitTpl.Execute(f, map[string]interface{}{
-		"TaskId":     task.Id,
-		"Executable": funnelPath,
-		"Config":     confPath,
-		"WorkDir":    workdir,
-		"Cpus":       int(res.GetCpuCores()),
-		"RamGb":      res.GetRamGb(),
-		"DiskGb":     res.GetDiskGb(),
-		"Zone":       zone,
+		"TaskId":  task.Id,
+		"WorkDir": workdir,
+		"Cpus":    res.GetCpuCores(),
+		"RamGb":   res.GetRamGb(),
+		"DiskGb":  res.GetDiskGb(),
+		"Zone":    zone,
 	})
 	if err != nil {
 		return "", err

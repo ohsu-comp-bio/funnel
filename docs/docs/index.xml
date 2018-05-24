@@ -172,7 +172,7 @@ Compute: htcondor HTCondor: Template: |universe = vanilla getenv = True executab
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</guid>
-      <description>HTTP(S) Funnel supports downloading files from public URLs via GET reqests. No authentication mechanism is allowed. This backend can be used to fetch objects from cloud storage providers exposed using presigned URLs.
+      <description>HTTP(S) Funnel supports downloading files from public URLs via GET requests. No authentication mechanism is allowed. This backend can be used to fetch objects from cloud storage providers exposed using presigned URLs.
 The HTTP storage client is enabled by default, but may be explicitly disabled in the worker config:
 HTTPStorage: Disabled: false # Timeout for http(s) GET requests. Timeout: 30s  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;http://fakedomain.</description>
     </item>

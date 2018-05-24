@@ -332,7 +332,7 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 		))
 	} else {
 		funnelBinary, err = filepath.Abs(filepath.Join(
-			gopath, "src/github.com/ohsu-comp-bio/funnel/build/bin/", "funnel-linux-amd64",
+			gopath, "src/github.com/ohsu-comp-bio/funnel/build/release/linux_amd64/funnel",
 		))
 	}
 	if err != nil {

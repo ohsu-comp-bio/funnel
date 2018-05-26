@@ -22,6 +22,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/database/mongodb"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/metrics"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
@@ -225,6 +226,10 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	}
 
 	writer = &events.ErrLogger{Writer: writer, Log: log}
+
+	if c, ok := reader.(metrics.TaskStateCounter); ok {
+		metrics.Register(ctx, c)
+	}
 
 	return &Server{
 		Server: &server.Server{

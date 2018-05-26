@@ -14,6 +14,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/webdash"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -87,6 +88,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	dashmux.Handle("/", webdash.RootHandler())
 	dashfs := webdash.FileServer()
 	mux.Handle("/favicon.ico", dashfs)
+	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/static/", http.StripPrefix("/static/", dashfs))
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {

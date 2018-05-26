@@ -1,6 +1,6 @@
 TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v github-release-notes)
 
-PROTO_INC=-I ./ -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+PROTO_INC=-I ./ -I $(shell pwd)/util/proto/
 
 git_commit := $(shell git rev-parse --short HEAD)
 git_branch := $(shell git symbolic-ref -q --short HEAD)

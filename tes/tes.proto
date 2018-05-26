@@ -545,6 +545,8 @@ message ServiceInfo {
   // s3://ohsu-compbio-funnel/storage
   // etc.
   repeated string storage = 3;
+
+  map<string, int32> task_state_counts = 4;
 }
 
 // TaskService describes the HTTP/gRPC service API provided by TES

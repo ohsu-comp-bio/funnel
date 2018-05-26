@@ -29,6 +29,13 @@ type TaskService struct {
 	Log     *logger.Logger
 }
 
+// TaskStateCounter is implemented by database backends which provide
+// queries for counting tasks in each state.
+type TaskStateCounter interface {
+	// TaskStateCounts returns the number of tasks in each state.
+	TaskStateCounts(context.Context) (map[string]int32, error)
+}
+
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
@@ -80,5 +87,20 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 
 // GetServiceInfo returns service metadata.
 func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-	return &tes.ServiceInfo{Name: ts.Name, Doc: version.String()}, nil
+
+	var err error
+	counts := map[string]int32{}
+
+	if c, ok := ts.Read.(TaskStateCounter); ok {
+		counts, err = c.TaskStateCounts(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("counting task states: %s", err)
+		}
+	}
+
+	return &tes.ServiceInfo{
+		Name:            ts.Name,
+		Doc:             version.String(),
+		TaskStateCounts: counts,
+	}, nil
 }

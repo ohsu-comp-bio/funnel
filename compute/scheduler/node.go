@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -172,6 +173,7 @@ func (n *NodeProcess) sync(ctx context.Context) {
 		State:     n.state,
 		Version:   r.GetVersion(),
 		Metadata:  meta,
+		Hostname:  hostname(),
 		TaskIds:   r.TaskIds,
 	})
 	if err != nil {
@@ -261,4 +263,11 @@ func (n *NodeProcess) checkDrain() {
 // Drain sets the node state to DRAIN.
 func (n *NodeProcess) Drain() {
 	n.state = NodeState_DRAIN
+}
+
+func hostname() string {
+	if name, err := os.Hostname(); err == nil {
+		return name
+	}
+	return ""
 }

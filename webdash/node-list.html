@@ -8,7 +8,7 @@
     </thead>
     <tbody>
     <tr ng-repeat="node in nodes track by node.id" ng-class="node.state + '-state'"> 
-      <td><a href="/v1/nodes/{{node.id}}">{{ node.id }}</a></td>
+      <td><a href="/v1/nodes/{{node.id}}">{{ node.hostname || node.id }}</a></td>
       <td>{{ node.task_ids.length }}</td>
       <td>{{ node.state }}</td>
     </tr>

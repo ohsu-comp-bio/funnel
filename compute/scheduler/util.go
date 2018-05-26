@@ -12,9 +12,9 @@ import (
 )
 
 // GenNodeID returns a UUID string.
-func GenNodeID(prefix string) string {
+func GenNodeID() string {
 	u, _ := uuid.NewV4()
-	return fmt.Sprintf("%s-node-%s", prefix, u.String())
+	return u.String()
 }
 
 // detectResources helps determine the amount of resources to report.

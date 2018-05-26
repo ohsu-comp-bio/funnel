@@ -5,6 +5,7 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/metrics"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/version"
 	"golang.org/x/net/context"
@@ -27,13 +28,6 @@ type TaskService struct {
 	Compute events.Writer
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
-}
-
-// TaskStateCounter is implemented by database backends which provide
-// queries for counting tasks in each state.
-type TaskStateCounter interface {
-	// TaskStateCounts returns the number of tasks in each state.
-	TaskStateCounts(context.Context) (map[string]int32, error)
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -98,7 +92,7 @@ func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.ServiceInfo
 		resp.TaskStateCounts[key] = 0
 	}
 
-	if c, ok := ts.Read.(TaskStateCounter); ok {
+	if c, ok := ts.Read.(metrics.TaskStateCounter); ok {
 		cs, err := c.TaskStateCounts(ctx)
 		if err != nil {
 			ts.Log.Error("counting task states", "error", err)

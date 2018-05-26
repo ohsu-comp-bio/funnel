@@ -228,7 +228,11 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	writer = &events.ErrLogger{Writer: writer, Log: log}
 
 	if c, ok := reader.(metrics.TaskStateCounter); ok {
-		metrics.Register(ctx, c)
+		go metrics.WatchTaskStates(ctx, c)
+	}
+
+	if nodes != nil {
+		go metrics.WatchNodes(ctx, nodes)
 	}
 
 	return &Server{

@@ -1,7 +1,9 @@
 <div ng-controller="ServiceInfoController">
 
   <div>
-    <div>{{ error }}</div>
+    <div ng-show="error">
+      <h5 style="text-align: center">Error: {{ error }}</h5>
+    </div>
     <table class="data-table">
       <tr>
         <td>Name</td>

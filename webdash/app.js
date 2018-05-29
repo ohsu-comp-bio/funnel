@@ -375,7 +375,6 @@ app.controller("NodeInfoController", function($rootScope, $scope, $http, $routeP
 
 app.controller("ServiceInfoController", function($rootScope, $scope, $http, $location) {
   $rootScope.pageTitle = "Service Info";
-
   $http.get("/v1/tasks/service-info")
   .success(function(data, status, headers, config) {
     $scope.name = data.name;

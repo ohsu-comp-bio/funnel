@@ -90,7 +90,10 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.Handle("/static/", http.StripPrefix("/static/", dashfs))
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-
+		// TODO this doesnt handle all routes
+		if s.User != "" && s.Password != "" {
+			resp.Header().Set("WWW-Authenticate", "Basic")
+		}
 		switch negotiate(req) {
 		case "html":
 			// HTML was requested (by the browser)
@@ -102,6 +105,7 @@ func (s *Server) Serve(pctx context.Context) error {
 			if s.DisableHTTPCache {
 				resp.Header().Set("Cache-Control", "no-store")
 			}
+
 			grpcMux.ServeHTTP(resp, req)
 		}
 	})

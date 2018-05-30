@@ -1,15 +1,8 @@
-ifndef GOPATH
-$(error GOPATH is not set)
-endif
-
 TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v github-release-notes)
-
-export SHELL=/bin/bash
-PATH := ${PATH}:${GOPATH}/bin
-export PATH
 
 PROTO_INC=-I ./ -I $(shell pwd)/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 
+git_commit := $(shell git rev-parse --short HEAD)
 git_branch := $(shell git symbolic-ref -q --short HEAD)
 git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git symbolic-ref -q --short HEAD).remote) 2> /dev/null)
 export GIT_BRANCH = $(git_branch)
@@ -21,10 +14,16 @@ export FUNNEL_VERSION=0.7.0
 # based on pull requests (PR) up until the last release.
 export LAST_PR_NUMBER = 521
 
+VERSION_LDFLAGS=\
+ -X "github.com/ohsu-comp-bio/funnel/version.BuildDate=$(shell date)" \
+ -X "github.com/ohsu-comp-bio/funnel/version.GitCommit= $(git_commit)" \
+ -X "github.com/ohsu-comp-bio/funnel/version.GitBranch=$(git_branch)" \
+ -X "github.com/ohsu-comp-bio/funnel/version.GitUpstream=$(git_upstream)"
+
 # Build the code
 install: depends
 	@touch version/version.go
-	@go install github.com/ohsu-comp-bio/funnel
+	@go install -ldflags '$(VERSION_LDFLAGS)' github.com/ohsu-comp-bio/funnel
 
 # Generate the protobuf/gRPC code
 proto:

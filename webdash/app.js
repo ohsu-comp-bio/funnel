@@ -1,7 +1,108 @@
 var angular = require("angular")
 var angular_route = require("angular-route")
+var angular_cache = require("angular-cache")
 var mdl = require("material-design-lite")
-var app = angular.module("TESApp", ["ngRoute"]);
+var app = angular.module("TESApp", ["ngRoute", "angular-cache"]);
+
+app.config(function(CacheFactoryProvider) {
+  // Max cache item age of 60 minutes.
+  angular.extend(CacheFactoryProvider.defaults, { maxAge: 60 * 60 * 1000 });
+})
+
+app.service("TaskService", function(CacheFactory, $http, $q, $location) {
+
+  // Initialize the task cache, if needed.
+  if (!CacheFactory.get('taskCache')) {
+    CacheFactory.createCache('taskCache', {
+      // Only store up to 1000 tasks.
+      // When the limit is reached, the least recently used (LRU) tasks will be evicted.
+      capacity: 1000,
+      // Store tasks in the browser's local storage, which persists across reloads and tabs.
+      storageMode: "localStorage",
+    })
+  }
+  var cache = CacheFactory.get('taskCache')
+  var listCache = CacheFactory.get('listCache')
+
+  return {
+    // List returns a ListTasksResponse object.
+    List: function(view) {
+      if (!view) {
+        view = "MINIMAL"
+      }
+      url = angular.copy($location)
+      url.search("view", view)
+      return $http.get(url.url()).then(function(response) {
+        return response.data;
+      })
+    },
+
+    // Get returns a task with the given view.
+    Get: function (id, view) {
+      if (!view) {
+        view = "MINIMAL"
+      }
+
+      var deferred = $q.defer()
+      var url = '/v1/tasks/' + id + "?view=" + view
+
+      // If the task was cached, return it immediately.
+      // Otherwise, send an HTTP request.
+      var cached = cache.get(url)
+      if (cached) {
+        deferred.resolve(cached)
+      } else {
+        $http.get(url).then(function(response) {
+          var task = response.data
+          // Only cache tasks which are done.
+          if (isDone(task)) {
+            cache.put(url, task)
+          }
+          deferred.resolve(task)
+        })
+      }
+
+      return deferred.promise
+    },
+
+    // BatchGet calls GetTask on a list of task IDs and waits for all requests to finish.
+    BatchGet: function(ids, view) {
+      var requests = []
+      for (var i = 0; i < ids.length; i++) {
+        var id = ids[i]
+        var req = this.Get(id, view)
+        requests.push(req)
+      }
+      return $q.all(requests)
+    },
+
+    // OptimalList does some magic to lower the overhead of getting a list of tasks.
+    OptimalList: function() {
+      var taskSvc = this
+
+      // First get a list with the minimal view.
+      // This request has a very low overhead, and gets us a list of task IDs.
+      return this.List().then(function(listResponse) {
+
+        // Now, for each task in the minimal view, get the basic view.
+        // Separating the requests allows tasks to each be cached individually.
+        var ids = []
+        for (var i = 0; i < listResponse.tasks.length; i++) {
+          var id = listResponse.tasks[i].id
+          ids.push(id)
+        }
+        return taskSvc.BatchGet(ids, "BASIC").then(function(tasks) {
+          // Reformat the response to look like a ListTasksResponse.
+          return {
+            next_page_token: listResponse.next_page_token,
+            tasks: tasks,
+          }
+        })
+      })
+
+    },
+  }
+})
 
 function idDesc(a, b) {
   if (a.id == b.id) {
@@ -98,7 +199,7 @@ app.controller("TaskFilterController", function($scope, TaskFilters) {
   };
 })
 
-app.controller("TaskListController", function($rootScope, $scope, $http, $timeout, $routeParams, $location, TaskFilters) {
+app.controller("TaskListController", function($rootScope, $scope, $http, $timeout, $routeParams, $location, TaskFilters, TaskService) {
   $rootScope.pageTitle = "Tasks";
   $scope.tasks = [];
   $scope.isDone = isDone;
@@ -177,24 +278,20 @@ app.controller("TaskListController", function($rootScope, $scope, $http, $timeou
     }
   }, true)
 
-  function listTasks() {
-    url = angular.copy($location);
-    url.search("view", "BASIC");
-    return $http.get(url.url());
-  }
-
   function refresh(callback) {
     setUrlParams();
-    listTasks().then(function(response) {
+    TaskService.OptimalList().then(function(response) {
       $scope.$applyAsync(function() {
-        $scope.tasks = response.data.tasks;
-        if (response.data.next_page_token) {
+        $scope.tasks = response.tasks;
+
+        if (response.next_page_token) {
           url = angular.copy($location);
-          url.search("page_token", response.data.next_page_token);
+          url.search("page_token", response.next_page_token);
           $rootScope.nextPage = $scope.serverURL + url.url();
         } else {
           $rootScope.nextPage = "";
         }
+
         if (callback) {
           callback();
         }
@@ -204,7 +301,7 @@ app.controller("TaskListController", function($rootScope, $scope, $http, $timeou
 
   function autoRefresh() {
     refresh(function() {
-      stop = $timeout(autoRefresh, 2000);
+      stop = $timeout(autoRefresh, 1000);
     });
   }
 

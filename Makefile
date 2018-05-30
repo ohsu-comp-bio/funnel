@@ -207,7 +207,7 @@ bundle-examples:
 	@gofmt -w -s examples/internal/bundle.go config/internal/bundle.go
 
 # Make everything usually needed to prepare for a pull request
-full: proto install prune_deps add_deps tidy lint test website webdash
+full: proto install tidy lint test website webdash
 
 # Build the website
 website:

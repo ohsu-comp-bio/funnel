@@ -5,14 +5,7 @@ menu:
     weight: -2000
 ---
 
-### Download
-
-- [linux <small>[funnel-linux-amd64-0.7.0.tar.gz]</small>][linux-64-bin]
-- [mac <small>[funnel-darwin-amd64-0.7.0.tar.gz]</small>][mac-64-bin]
-- <small>Windows is not supported (yet), sorry!</small>
-
-[linux-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.7.0/funnel-linux-amd64-0.7.0.tar.gz
-[mac-64-bin]: https://github.com/ohsu-comp-bio/funnel/releases/download/0.7.0/funnel-darwin-amd64-0.7.0.tar.gz
+{{< download-links >}}
 
 Funnel is a single binary.  
 Funnel requires [Docker][docker].  

@@ -15,6 +15,8 @@ git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git
 export GIT_BRANCH = $(git_branch)
 export GIT_UPSTREAM = $(git_upstream)
 
+export FUNNEL_VERSION=0.7.0
+
 # Build the code
 install: depends
 	@touch version/version.go
@@ -206,14 +208,12 @@ full: proto install prune_deps add_deps tidy lint test website webdash
 
 # Build the website
 website:
-	@go get github.com/spf13/hugo
 	@cp ./config/*.txt ./website/static/funnel-config-examples/
 	@cp ./config/default-config.yaml ./website/static/funnel-config-examples/
 	hugo --source ./website
 
 # Serve the Funnel website on localhost:1313
 website-dev:
-	@go get github.com/spf13/hugo
 	@cp ./config/*.txt ./website/static/funnel-config-examples/
 	@cp ./config/default-config.yaml ./website/static/funnel-config-examples/
 	hugo --source ./website -w server

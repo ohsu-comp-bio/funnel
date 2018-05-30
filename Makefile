@@ -17,6 +17,10 @@ export GIT_UPSTREAM = $(git_upstream)
 
 export FUNNEL_VERSION=0.7.0
 
+# LAST_PR_NUMBER is used by the release notes builder to generate notes
+# based on pull requests (PR) up until the last release.
+export LAST_PR_NUMBER = 521
+
 # Build the code
 install: depends
 	@touch version/version.go
@@ -189,7 +193,7 @@ release: depends
 	@go get github.com/buchanae/github-release-notes
 	@goreleaser \
 		--rm-dist \
-		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at 521)
+		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at ${LAST_PR_NUMBER})
 
 # Generate mocks for testing.
 gen-mocks:

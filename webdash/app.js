@@ -279,6 +279,14 @@ app.controller("TaskListController", function($rootScope, $scope, $http, $timeou
   }, true)
 
   function refresh(callback) {
+    // If tab/window is in the background, don't refresh.
+    if (document.hidden) {
+      if (callback) {
+        callback()
+      }
+      return
+    }
+
     setUrlParams();
     TaskService.OptimalList().then(function(response) {
       $scope.$applyAsync(function() {

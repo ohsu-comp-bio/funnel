@@ -15,7 +15,7 @@
         <td>{{ task.state }}</td>
         <td class="task-list-name">{{ task.name }}</td>
         <td>{{ creationTime(task) }}</td>
-        <td>{{ elapsedTime(task) }}</td>
+        <td style="text-align: right">{{ elapsedTime(task) }}</td>
         <td class="task-list-cancel"><button
           class="btn-cancel mdl-button--fab mini-fab"
           ng-hide="isDone(task)"

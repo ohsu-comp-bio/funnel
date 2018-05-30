@@ -186,10 +186,10 @@ snapshot: depends
 		--snapshot
 
 release: depends
-	@go get ./util/github-release-notes/
+	@go get github.com/buchanae/github-release-notes
 	@goreleaser \
 		--rm-dist \
-		--release-notes <(github-release-notes)
+		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at 521)
 
 # Generate mocks for testing.
 gen-mocks:

@@ -86,7 +86,7 @@ A node is a service which runs on each machine in a cluster. The node connects t
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/download/</guid>
-      <description>Download  linux [funnel-linux-amd64-0.7.0.tar.gz] mac [funnel-darwin-amd64-0.7.0.tar.gz] Windows is not supported (yet), sorry!  Funnel is a single binary.
+      <description>Download 0.7.0  linux mac Windows is not supported (yet), sorry!  Funnel is a single binary.
 Funnel requires Docker.
 Funnel is beta quality. APIs might break, bugs exist, data might be lost.
 Homebrew brew tap ohsu-comp-bio/formula brew install funnel  Build the lastest development version optional In order to build the latest code, run:

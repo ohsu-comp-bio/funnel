@@ -5,6 +5,7 @@
   "main": "app.js",
   "dependencies": {
     "angular": "1.4.9",
+    "angular-cache": "^4.6.0",
     "angular-route": "1.4.9",
     "material-design-lite": "^1.3.0",
     "node-sass": "^4.9.0",

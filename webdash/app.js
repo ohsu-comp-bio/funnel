@@ -163,12 +163,18 @@ app.controller("TaskListController", function($rootScope, $scope, $http, $timeou
     $http.post(url);
   }
 
-  TaskFilters.$watch("state", function() {
-    refresh();
+  TaskFilters.$watch("state", function(oldval, newval) {
+    // https://stackoverflow.com/questions/16622264/angularjs-multiple-watch-cause-multiple-requests-on-controller-initialization
+    if (oldval !== newval) {
+      refresh();
+    }
   })
 
-  TaskFilters.$watch("tags", function() {
-    refresh();
+  TaskFilters.$watch("tags", function(oldval, newval) {
+    // https://stackoverflow.com/questions/16622264/angularjs-multiple-watch-cause-multiple-requests-on-controller-initialization
+    if (oldval !== newval) {
+      refresh();
+    }
   }, true)
 
   function listTasks() {

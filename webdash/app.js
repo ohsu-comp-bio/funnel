@@ -327,6 +327,11 @@ app.controller("NodeListController", function($rootScope, $scope, $http, $timeou
   $scope.nodes = [];
 
   function refresh() {
+    if (document.hidden) {
+      stop = $timeout(refresh, 2000);
+      return
+    }
+
     $http.get($scope.url).then(function(response) {
       $scope.$applyAsync(function() {
         $scope.nodes = response.data.nodes;
@@ -434,6 +439,11 @@ app.controller("TaskInfoController", function($rootScope, $scope, $http, $routeP
   }
 
   function refresh() {
+    if (document.hidden) {
+      stop = $timeout(refresh, 2000);
+      return
+    }
+
     if (!$scope.isDone($scope.task)) {
       $http.get($scope.url + "?view=FULL")
         .success(function(data, status, headers, config) {
@@ -479,6 +489,11 @@ app.controller("NodeInfoController", function($rootScope, $scope, $http, $routeP
   }
 
   function refresh() {
+    if (document.hidden) {
+      stop = $timeout(refresh, 2000);
+      return
+    }
+
     $http.get($scope.url)
     .success(function(data, status, headers, config) {
       $scope.node = data;

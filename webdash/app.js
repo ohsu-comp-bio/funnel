@@ -521,6 +521,7 @@ app.controller("ServiceInfoController", function($rootScope, $scope, $http, $loc
   .success(function(data, status, headers, config) {
     $scope.name = data.name;
     $scope.doc = data.doc;
+    $scope.task_state_counts = data.task_state_counts;
   })
   .error(function(data, status, headers, config){
     $scope.error = data;

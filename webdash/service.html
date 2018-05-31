@@ -13,7 +13,28 @@
         <td>Doc</td>
         <td><pre>{{ doc }}</pre></td>
       </tr>
+      <tr>
+        <td>Task State Counts</td>
+        <td>
+          <dl class="task-state-counts" ng-show="task_state_counts">
+            <dt>Queued</dt>
+            <dd>{{ task_state_counts.QUEUED }}</dd>
+            <dt>Initializing</dt>
+            <dd>{{ task_state_counts.INITIALIZING }}</dd>
+            <dt>Running</dt>
+            <dd>{{ task_state_counts.RUNNING }}</dd>
+            <dt>Complete</dt>
+            <dd>{{ task_state_counts.COMPLETE }}</dd>
+            <dt>System Error</dt>
+            <dd>{{ task_state_counts.SYSTEM_ERROR }}</dd>
+            <dt>Executor Error</dt>
+            <dd>{{ task_state_counts.EXECUTOR_ERROR }}</dd>
+            <dt>Canceled</dt>
+            <dd>{{ task_state_counts.CANCELED }}</dd>
+          </dl>
+        </td>
     </table>
+
   </div>
 
 </div>

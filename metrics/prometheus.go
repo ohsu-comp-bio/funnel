@@ -25,7 +25,7 @@ var taskStates = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Namespace: "funnel",
 		Subsystem: "tasks",
-		Name:      "state_count_total",
+		Name:      "state_count",
 		Help:      "Number of tasks in each state.",
 	},
 	[]string{"state"},
@@ -71,7 +71,7 @@ var nodeStates = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Namespace: "funnel",
 		Subsystem: "nodes",
-		Name:      "state_count_total",
+		Name:      "state_count",
 		Help:      "Number of nodes in each state.",
 	},
 	[]string{"state"},

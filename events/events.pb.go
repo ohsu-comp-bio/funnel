@@ -181,9 +181,7 @@ func (m *Event) String() string            { return proto.CompactTextString(m) }
 func (*Event) ProtoMessage()               {}
 func (*Event) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
-type isEvent_Data interface {
-	isEvent_Data()
-}
+type isEvent_Data interface{ isEvent_Data() }
 
 type Event_State struct {
 	State tes.State `protobuf:"varint,3,opt,name=state,enum=tes.State,oneof"`

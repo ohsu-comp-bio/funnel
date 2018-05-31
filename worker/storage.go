@@ -193,6 +193,7 @@ func (u *upload) Finished(obj *storage.Object) {
 		Url:       obj.URL,
 		Path:      u.out.Path,
 		SizeBytes: obj.Size,
+		ETag:      obj.ETag,
 	}
 	u.ev.Info("upload finished", "url", obj.URL, "etag", obj.ETag, "size", obj.Size)
 }

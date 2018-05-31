@@ -347,6 +347,14 @@ message OutputFileLog {
   //
   // Size of the file in bytes.
   int64 size_bytes = 3;
+
+  // OPTIONAL
+  //
+  // ETag is an identifier for a specific version of the object.
+  // This is an opaque string. Each system has a different representation:
+  // md5, sha1, crc32, etc. This field may be empty, if the system can't provide
+  // a unique ID (for example the local filesystem).
+  string e_tag = 4;
 }
 
 // OUTPUT ONLY

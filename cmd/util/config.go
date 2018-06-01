@@ -27,6 +27,13 @@ func MergeConfigFileWithFlags(file string, flagConf config.Config) (config.Confi
 		return conf, err
 	}
 
+	defaults := config.DefaultConfig()
+	if conf.Server.RPCAddress() != defaults.Server.RPCAddress() {
+		if conf.Server.RPCAddress() != conf.RPCClient.ServerAddress {
+			conf.RPCClient.ServerAddress = conf.Server.RPCAddress()
+		}
+	}
+
 	return conf, nil
 }
 

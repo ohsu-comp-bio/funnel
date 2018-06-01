@@ -199,10 +199,16 @@ func (db *DynamoDB) tableIsAlive(ctx context.Context, name string) error {
 			r, err := db.client.DescribeTable(&dynamodb.DescribeTableInput{
 				TableName: aws.String(name),
 			})
-			if err == nil {
-				if *r.Table.TableStatus == "ACTIVE" {
-					return nil
+			if err != nil {
+				if aerr, ok := err.(awserr.Error); ok {
+					if aerr.Code() == dynamodb.ErrCodeResourceNotFoundException {
+						continue
+					}
 				}
+				return err
+			}
+			if *r.Table.TableStatus == "ACTIVE" {
+				return nil
 			}
 		}
 	}

@@ -92,7 +92,7 @@ func NewFunnel(conf config.Config) *Funnel {
 
 // addRPCClient configures and connects the RPC client to the server.
 func (f *Funnel) addRPCClient() {
-	conn, err := rpc.Dial(context.Background(), f.Conf.Server)
+	conn, err := rpc.Dial(context.Background(), f.Conf.RPCClient)
 	if err != nil {
 		panic(err)
 	}

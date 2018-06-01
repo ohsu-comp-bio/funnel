@@ -14,18 +14,20 @@ import (
 
 // PerRPCPassword returns a new gRPC DialOption which includes a basic auth.
 // password header in each RPC request.
-func PerRPCPassword(password string) grpc.DialOption {
+func PerRPCPassword(user, password string) grpc.DialOption {
 	return grpc.WithPerRPCCredentials(&loginCreds{
+		User:     user,
 		Password: password,
 	})
 }
 
 type loginCreds struct {
+	User     string
 	Password string
 }
 
 func (c *loginCreds) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	v := base64.StdEncoding.EncodeToString([]byte("funnel:" + c.Password))
+	v := base64.StdEncoding.EncodeToString([]byte(c.User + ":" + c.Password))
 
 	return map[string]string{
 		"Authorization": "Basic " + v,
@@ -37,25 +39,25 @@ func (c *loginCreds) RequireTransportSecurity() bool {
 }
 
 // Dial returns a new gRPC ClientConn with some default dial and call options set
-func Dial(pctx context.Context, conf config.Server, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(pctx, time.Duration(conf.RPCClientTimeout))
+func Dial(pctx context.Context, conf config.RPCClient, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	ctx, cancel := context.WithTimeout(pctx, time.Duration(conf.Timeout))
 	defer cancel()
 
 	defaultOpts := []grpc.DialOption{
 		grpc.WithInsecure(),
-		PerRPCPassword(conf.Password),
+		PerRPCPassword(conf.User, conf.Password),
 	}
 	opts = append(opts, defaultOpts...)
 	opts = append(
 		opts,
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(
-			grpc_retry.WithMax(conf.RPCClientMaxRetries),
+			grpc_retry.WithMax(conf.MaxRetries),
 			grpc_retry.WithBackoff(newExponentialBackoff().BackoffWithJitter),
 		)),
 	)
 
 	conn, err := grpc.DialContext(ctx,
-		conf.RPCAddress(),
+		conf.ServerAddress,
 		opts...,
 	)
 	if err != nil {

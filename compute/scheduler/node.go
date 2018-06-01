@@ -18,7 +18,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
-	cli, err := NewClient(ctx, conf.Server)
+	cli, err := NewClient(ctx, conf.RPCClient)
 	if err != nil {
 		return nil, err
 	}

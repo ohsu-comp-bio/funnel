@@ -15,6 +15,7 @@ type Config struct {
 	Compute      string
 	// funnel components
 	Server    Server
+	RPCClient RPCClient
 	Scheduler Scheduler
 	Node      Node
 	Worker    Worker
@@ -45,23 +46,34 @@ type Config struct {
 	HTTPStorage   HTTPStorage
 }
 
+// BasicCredential describes a username and password for use with Funnel's basic auth.
+type BasicCredential struct {
+	User     string
+	Password string
+}
+
+// RPCClient describes configuration for gRPC clients
+type RPCClient struct {
+	BasicCredential
+	ServerAddress string
+	// The timeout to use for making RPC client connections in nanoseconds
+	// This timeout is Only enforced when used in conjunction with the
+	// grpc.WithBlock dial option.
+	Timeout Duration
+	// The maximum number of times that a request will be retried for failures.
+	// Time between retries follows an exponential backoff starting at 5 seconds
+	// up to 1 minute
+	MaxRetries uint
+}
+
 // Server describes configuration for the server.
 type Server struct {
 	ServiceName      string
 	HostName         string
 	HTTPPort         string
 	RPCPort          string
-	User             string
-	Password         string
+	BasicAuth        []BasicCredential
 	DisableHTTPCache bool
-	// The timeout to use for making RPC client connections in nanoseconds
-	// This timeout is Only enforced when used in conjunction with the
-	// grpc.WithBlock dial option.
-	RPCClientTimeout Duration
-	// The maximum number of times that a request will be retried for failures.
-	// Time between retries follows an exponential backoff starting at 5 seconds
-	// up to 1 minute
-	RPCClientMaxRetries uint
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort

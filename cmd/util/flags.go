@@ -15,6 +15,7 @@ func ServerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 
 	f.AddFlagSet(selectorFlags(flagConf))
 	f.AddFlagSet(serverFlags(flagConf))
+	f.AddFlagSet(rpcClientFlags(flagConf))
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))
 	f.AddFlagSet(dbFlags(flagConf))
@@ -32,7 +33,7 @@ func WorkerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
 
 	f.AddFlagSet(selectorFlags(flagConf))
-	f.AddFlagSet(serverFlags(flagConf))
+	f.AddFlagSet(rpcClientFlags(flagConf))
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))
 	f.AddFlagSet(dbFlags(flagConf))
@@ -49,7 +50,7 @@ func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
 
 	f.AddFlagSet(selectorFlags(flagConf))
-	f.AddFlagSet(serverFlags(flagConf))
+	f.AddFlagSet(rpcClientFlags(flagConf))
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))
 	f.AddFlagSet(dbFlags(flagConf))
@@ -69,6 +70,16 @@ func selectorFlags(flagConf *config.Config) *pflag.FlagSet {
 	return f
 }
 
+func rpcClientFlags(flagConf *config.Config) *pflag.FlagSet {
+	f := pflag.NewFlagSet("", pflag.ContinueOnError)
+
+	f.StringVar(&flagConf.RPCClient.ServerAddress, "RPCClient.ServerAddress", flagConf.RPCClient.ServerAddress, "RPC server address")
+	f.Var(&flagConf.RPCClient.Timeout, "RPCClient.Timeout", "Request timeout for RPC client connections")
+	f.UintVar(&flagConf.RPCClient.MaxRetries, "RPCClient.MaxRetries", flagConf.RPCClient.MaxRetries, "Maximum number of times that a request will be retried for failures")
+
+	return f
+}
+
 func serverFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
@@ -76,8 +87,6 @@ func serverFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.Server.HTTPPort, "Server.HTTPPort", flagConf.Server.HTTPPort, "HTTP Port")
 	f.StringVar(&flagConf.Server.RPCPort, "Server.RPCPort", flagConf.Server.RPCPort, "RPC Port")
 	f.StringVar(&flagConf.Server.ServiceName, "Server.ServiceName", flagConf.Server.ServiceName, "Host name or IP")
-	f.Var(&flagConf.Server.RPCClientTimeout, "Server.RPCClientTimeout", "Request timeout for RPC client connections")
-	f.UintVar(&flagConf.Server.RPCClientMaxRetries, "Server.RPCClientMaxRetries", flagConf.Server.RPCClientMaxRetries, "Maximum number of times that a request will be retried for failures")
 
 	return f
 }

@@ -15,7 +15,7 @@ type RPCTaskReader struct {
 }
 
 // NewRPCTaskReader returns a new RPC-based task reader.
-func NewRPCTaskReader(ctx context.Context, conf config.Server) (*RPCTaskReader, error) {
+func NewRPCTaskReader(ctx context.Context, conf config.RPCClient) (*RPCTaskReader, error) {
 	conn, err := util.Dial(ctx, conf)
 	if err != nil {
 		return nil, err

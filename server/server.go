@@ -9,6 +9,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -23,8 +24,7 @@ import (
 type Server struct {
 	RPCAddress       string
 	HTTPPort         string
-	User             string
-	Password         string
+	BasicAuth        []config.BasicCredential
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
 	Nodes            scheduler.SchedulerServiceServer
@@ -67,7 +67,7 @@ func (s *Server) Serve(pctx context.Context) error {
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
 				// API auth check.
-				newAuthInterceptor(s.User, s.Password),
+				newAuthInterceptor(s.BasicAuth),
 				newDebugInterceptor(s.Log),
 			),
 		),
@@ -91,7 +91,7 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 		// TODO this doesnt handle all routes
-		if s.User != "" && s.Password != "" {
+		if len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
 		}
 		switch negotiate(req) {

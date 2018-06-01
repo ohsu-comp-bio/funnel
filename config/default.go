@@ -25,13 +25,11 @@ func DefaultConfig() Config {
 	}
 
 	server := Server{
-		HostName:            "localhost",
-		HTTPPort:            "8000",
-		RPCPort:             "9090",
-		ServiceName:         "Funnel",
-		DisableHTTPCache:    true,
-		RPCClientTimeout:    Duration(time.Second * 60),
-		RPCClientMaxRetries: 10,
+		HostName:         "localhost",
+		HTTPPort:         "8000",
+		RPCPort:          "9090",
+		ServiceName:      "Funnel",
+		DisableHTTPCache: true,
 	}
 
 	c := Config{
@@ -40,6 +38,11 @@ func DefaultConfig() Config {
 		EventWriters: []string{"log"},
 		// funnel components
 		Server: server,
+		RPCClient: RPCClient{
+			ServerAddress: server.RPCAddress(),
+			Timeout:       Duration(time.Second * 60),
+			MaxRetries:    10,
+		},
 		Scheduler: Scheduler{
 			ScheduleRate:    Duration(time.Second),
 			ScheduleChunk:   10,

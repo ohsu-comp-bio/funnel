@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"github.com/ohsu-comp-bio/funnel/util/rpc"
 )
 
 var extask = &tes.Task{
@@ -23,21 +23,12 @@ var extask = &tes.Task{
 func TestBasicAuthFail(t *testing.T) {
 	ctx := context.Background()
 	conf := tests.DefaultConfig()
-	conf.Server.User = "funnel"
-	conf.Server.Password = "abc123"
+	conf.Server.BasicAuth = []config.BasicCredential{{User: "funnel", Password: "abc123"}}
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
 
-	unauthConf := conf.Server
-	unauthConf.Password = ""
-	conn, err := rpc.Dial(ctx, unauthConf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cli := tes.NewTaskServiceClient(conn)
-	defer conn.Close()
-
-	_, err = fun.HTTP.GetTask(ctx, &tes.GetTaskRequest{
+	// HTTP client
+	_, err := fun.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   "1",
 		View: tes.TaskView_MINIMAL,
 	})
@@ -64,10 +55,34 @@ func TestBasicAuthFail(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	_, err = cli.CreateTask(ctx, tests.HelloWorld())
-	if err == nil {
+	// RPC client
+	_, err = fun.RPC.GetTask(ctx, &tes.GetTaskRequest{
+		Id:   "1",
+		View: tes.TaskView_MINIMAL,
+	})
+	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
 		t.Fatal("expected error")
 	}
+
+	_, err = fun.RPC.ListTasks(ctx, &tes.ListTasksRequest{
+		View: tes.TaskView_MINIMAL,
+	})
+	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
+		t.Fatal("expected error")
+	}
+
+	_, err = fun.RPC.CreateTask(ctx, tests.HelloWorld())
+	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
+		t.Fatal("expected error")
+	}
+
+	_, err = fun.RPC.CancelTask(ctx, &tes.CancelTaskRequest{
+		Id: "1",
+	})
+	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
+		t.Fatal("expected error")
+	}
+
 }
 
 func TestBasicAuthed(t *testing.T) {
@@ -77,8 +92,9 @@ func TestBasicAuthed(t *testing.T) {
 	defer os.Unsetenv("FUNNEL_SERVER_PASSWORD")
 
 	conf := tests.DefaultConfig()
-	conf.Server.User = "funnel"
-	conf.Server.Password = "abc123"
+	conf.Server.BasicAuth = []config.BasicCredential{{User: "funnel", Password: "abc123"}}
+	conf.RPCClient.User = "funnel"
+	conf.RPCClient.Password = "abc123"
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
 
@@ -91,6 +107,7 @@ func TestBasicAuthed(t *testing.T) {
 		t.Fatal("expected task to complete")
 	}
 
+	// HTTP client
 	_, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id2,
 		View: tes.TaskView_MINIMAL,
@@ -112,6 +129,34 @@ func TestBasicAuthed(t *testing.T) {
 	}
 
 	_, err = fun.HTTP.CancelTask(context.Background(), &tes.CancelTaskRequest{
+		Id: resp.Id,
+	})
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	// RPC client
+	_, err = fun.RPC.GetTask(context.Background(), &tes.GetTaskRequest{
+		Id:   id2,
+		View: tes.TaskView_MINIMAL,
+	})
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	_, err = fun.RPC.ListTasks(context.Background(), &tes.ListTasksRequest{
+		View: tes.TaskView_MINIMAL,
+	})
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	resp, err = fun.RPC.CreateTask(context.Background(), extask)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	_, err = fun.RPC.CancelTask(context.Background(), &tes.CancelTaskRequest{
 		Id: resp.Id,
 	})
 	if err != nil {

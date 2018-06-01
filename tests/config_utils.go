@@ -92,6 +92,7 @@ func RandomPort() string {
 func RandomPortConfig(conf config.Config) config.Config {
 	conf.Server.RPCPort = RandomPort()
 	conf.Server.HTTPPort = RandomPort()
+	conf.RPCClient.ServerAddress = conf.Server.RPCAddress()
 	return conf
 }
 

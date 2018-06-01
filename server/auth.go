@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"strings"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -12,13 +13,23 @@ import (
 
 // Return a new interceptor function that authorizes RPCs
 // using a password stored in the config.
-func newAuthInterceptor(user, password string) grpc.UnaryServerInterceptor {
+func newAuthInterceptor(creds []config.BasicCredential) grpc.UnaryServerInterceptor {
 
 	// Return a function that is the interceptor.
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo,
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler) (interface{}, error) {
-
-		if err := authorize(ctx, user, password); err != nil {
+		var authorized bool
+		var err error
+		for _, cred := range creds {
+			err = authorize(ctx, cred.User, cred.Password)
+			if err == nil {
+				authorized = true
+			}
+		}
+		if !authorized {
 			return nil, err
 		}
 		return handler(ctx, req)
@@ -27,11 +38,6 @@ func newAuthInterceptor(user, password string) grpc.UnaryServerInterceptor {
 
 // Check the context's metadata for the configured server/API password.
 func authorize(ctx context.Context, user, password string) error {
-	// Allow an empty password to mean that no auth. is checked.
-	if password == "" {
-		return nil
-	}
-
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if len(md["authorization"]) > 0 {
 			raw := md["authorization"][0]

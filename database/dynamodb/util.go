@@ -196,11 +196,13 @@ func (db *DynamoDB) tableIsAlive(ctx context.Context, name string) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker:
-			r, _ := db.client.DescribeTable(&dynamodb.DescribeTableInput{
+			r, err := db.client.DescribeTable(&dynamodb.DescribeTableInput{
 				TableName: aws.String(name),
 			})
-			if *r.Table.TableStatus == "ACTIVE" {
-				return nil
+			if err == nil {
+				if *r.Table.TableStatus == "ACTIVE" {
+					return nil
+				}
 			}
 		}
 	}

@@ -31,21 +31,33 @@ Server:
   # Require basic authentication for the server APIs using a password.
   # If used, make sure to properly restrict access to the config file
   # (e.g. chmod 600 funnel.config.yml)
-  # User: funnel
-  # Password: abc123
+  # BasicAuth:
+  #   - User: user1
+  #     Password: abc123
+  #   - User: user2
+  #     Password: foobar
 
   # Include a "Cache-Control: no-store" HTTP header in Get/List responses
   # to prevent caching by intermediary services.
   DisableHTTPCache: true
 
-  # RPC client connection timeout.
-  RPCClientTimeout: 60s
+RPCClient:
+  # RPC server address 
+  ServerAddress: localhost:9090
+
+  # Credentials for Basic authentication for the server APIs using a password.
+  # If used, make sure to properly restrict access to the config file
+  # (e.g. chmod 600 funnel.config.yml)
+  # User: funnel
+  # Password: abc123
+
+  # connection timeout.
+  Timeout: 60s
 
   # The maximum number of times that a request will be retried for failures.
   # Time between retries follows an exponential backoff starting at 5 seconds
   # up to 1 minute
-  RPCClientMaxRetries: 10
-
+  MaxRetries: 10
 
 # The scheduler is used for the Manual compute backend. 
 Scheduler:

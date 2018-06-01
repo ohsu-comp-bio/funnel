@@ -26,6 +26,9 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 	if result.Server.HTTPPort != defaultConf.Server.HTTPPort {
 		t.Error("expected Config.Server.HTTPPort to equal the value from from config.DefaultValue()")
 	}
+	if result.RPCClient.ServerAddress != serverAddress {
+		t.Error("unexpected Config.RPCClient.ServerAddress")
+	}
 	if result.Compute != defaultConf.Compute {
 		t.Error("expected Config.Compute to equal default value from config.DefaultValue()")
 	}
@@ -41,8 +44,8 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 	if result.Server.RPCAddress() != serverAddress {
 		t.Error("unexpected server address")
 	}
-	if defaultConf.Server.HTTPPort == fileConf.Server.HTTPPort {
-		t.Error("ERROR")
+	if result.RPCClient.ServerAddress != serverAddress {
+		t.Error("unexpected Config.RPCClient.ServerAddress")
 	}
 	if result.Server.HTTPPort != fileConf.Server.HTTPPort {
 		t.Error("expected Config.Server.HTTPPort to equal the value from the config file")

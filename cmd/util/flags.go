@@ -33,6 +33,7 @@ func WorkerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
 
 	f.AddFlagSet(selectorFlags(flagConf))
+	f.AddFlagSet(serverFlags(flagConf))
 	f.AddFlagSet(rpcClientFlags(flagConf))
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))
@@ -50,6 +51,7 @@ func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
 
 	f.AddFlagSet(selectorFlags(flagConf))
+	f.AddFlagSet(serverFlags(flagConf))
 	f.AddFlagSet(rpcClientFlags(flagConf))
 	f.AddFlagSet(workerFlags(flagConf))
 	f.AddFlagSet(nodeFlags(flagConf))

@@ -39,7 +39,7 @@ func TestGetUnknownTask(t *testing.T) {
 		View: tes.TaskView_MINIMAL,
 	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
-		t.Fatalf("expected not found error: %s", err)
+		t.Error("expected not found error", err)
 	}
 
 	_, err = fun.RPC.GetTask(
@@ -48,7 +48,7 @@ func TestGetUnknownTask(t *testing.T) {
 	)
 	s, _ := status.FromError(err)
 	if err == nil || s.Code() != codes.NotFound {
-		t.Fatal("expected not found error", err)
+		t.Error("expected not found error", err)
 	}
 }
 

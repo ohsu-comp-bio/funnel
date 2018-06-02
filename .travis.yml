@@ -21,7 +21,7 @@ jobs:
   include:
   - stage: upload s3
     script:
-      - ./build/goreleaser-linux --rm-dist --snapshot
+      - ./build/make-snapshot.sh
     deploy:
       provider: s3
       all_branches: true

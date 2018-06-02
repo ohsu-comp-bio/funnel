@@ -27,7 +27,7 @@ func TestPersistentPreRun(t *testing.T) {
 		if conf.Server.HTTPPort != fileConf.Server.HTTPPort {
 			t.Fatal("unexpected http port in server config")
 		}
-		if conf.Server.RPCClientTimeout != 1000000000 {
+		if conf.RPCClient.Timeout != 1000000000 {
 			t.Fatal("unexpected rpc client timeout in server config")
 		}
 		if conf.Scheduler.NodePingTimeout != 60000000000 {
@@ -39,7 +39,11 @@ func TestPersistentPreRun(t *testing.T) {
 		return nil
 	}
 
-	c.SetArgs([]string{"run", "--config", tmp, "--Server.HostName", host, "--Server.RPCPort", rpcport, "--Server.RPCClientTimeout", "1s", "--Compute", backend})
+	c.SetArgs([]string{
+		"run", "--config", tmp,
+		"--Server.HostName", host, "--Server.RPCPort", rpcport,
+		"--RPCClient.Timeout", "1s", "--Compute", backend,
+	})
 	err := c.Execute()
 	if err != nil {
 		t.Fatal(err)

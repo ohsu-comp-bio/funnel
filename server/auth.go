@@ -29,6 +29,9 @@ func newAuthInterceptor(creds []config.BasicCredential) grpc.UnaryServerIntercep
 				authorized = true
 			}
 		}
+		if len(creds) == 0 {
+			authorized = true
+		}
 		if !authorized {
 			return nil, err
 		}

@@ -20,8 +20,10 @@ install:
 jobs:
   include:
   - stage: upload s3
+    all_branches: true
     script:
       - ./build/make-snapshot.sh
+      - ls -R build
     deploy:
       provider: s3
       skip_cleanup: true
@@ -32,6 +34,7 @@ jobs:
       local-dir: build/release
       upload-dir: snapshots
       acl: public_read
+      all_branches: true
       on:
         all_branches: true
         repo: ohsu-comp-bio/funnel

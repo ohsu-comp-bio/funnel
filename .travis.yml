@@ -19,6 +19,23 @@ install:
 - make
 jobs:
   include:
+  - stage: upload s3
+    script:
+      - echo "Uploading to s3"
+      - make snapshot
+    deploy:
+      provider: s3
+      all_branches: true
+      skip_cleanup: true
+      access_key_id: AKIAJCP7RTRWV55CDKVQ
+      secret_access_key:
+        secure: nkjzrW5bg8IstyacRQnwNvcbZbrtr4pxEHRYXBPdKyhaBaS8ykWVeOVGx75fyOupkrboO6YsBdK7xaWjLs9JE161IPz7JY9aB2KwdhXws5A3t1Cr/aTB/Q7nTH71sGn4IZn9hqbpSv1La4G9wQ/46aICY+RvbI0Y/dbcjOBLr/4Ua1CtMNe8YQxqVWuCW/libfCqbvVAGOCZAHMk51FFBCykERxcL/vDEG2BH6wBEYt2CjkY6b6O4X8v3AONFr1vSBno6ubTAc2Ott79aSQaii4291Zrl1J+Dz9ClObcqZK64cDnLAGxWJ7iFoVOu0S1tRhpQXBUsgiSHBVYEX+pNsLtcAVUKpkmLetOaNm6cX3P6dOVetuqrGxUYHR16Oh+hSTbytLcOQyv+6GY+JDWNK4TnYP2Qr8d5zGuqf0IkvoMHgMUtHG51cK2gQ2hTzBoECgVcfvPzbPAen5YfYA5DvXX2w49Jbqr1cVLihY0AgDaRI/M2Kmgnjgy0VlPphEADuIObiMJ23MNzr559NzgzzPrU2CnyzTIY0Sg9mcs+11ROmDHkUCuQOIr3xbASX6fFzdqfC0fcKCaxZkj4HV9Kx94j3NjN4AOrpNCVzp7Ot0jsPrhBhkRE2cGaxJ3X0jt4gO24BULtnLYvLuPoStrV19sgl6qi52DIB/SSB2FirY=
+      bucket: funnel-bucket
+      local-dir: build/release
+      upload-dir: snapshots
+      acl: public_read
+      on:
+        repo: ohsu-comp-bio/funnel
   - stage: all
     script: make lint
     env:
@@ -85,15 +102,3 @@ jobs:
     - n=pubsub
 notifications:
   email: false
-deploy:
-  provider: s3
-  skip_cleanup: true
-  access_key_id: AKIAJCP7RTRWV55CDKVQ
-  secret_access_key:
-    secure: nkjzrW5bg8IstyacRQnwNvcbZbrtr4pxEHRYXBPdKyhaBaS8ykWVeOVGx75fyOupkrboO6YsBdK7xaWjLs9JE161IPz7JY9aB2KwdhXws5A3t1Cr/aTB/Q7nTH71sGn4IZn9hqbpSv1La4G9wQ/46aICY+RvbI0Y/dbcjOBLr/4Ua1CtMNe8YQxqVWuCW/libfCqbvVAGOCZAHMk51FFBCykERxcL/vDEG2BH6wBEYt2CjkY6b6O4X8v3AONFr1vSBno6ubTAc2Ott79aSQaii4291Zrl1J+Dz9ClObcqZK64cDnLAGxWJ7iFoVOu0S1tRhpQXBUsgiSHBVYEX+pNsLtcAVUKpkmLetOaNm6cX3P6dOVetuqrGxUYHR16Oh+hSTbytLcOQyv+6GY+JDWNK4TnYP2Qr8d5zGuqf0IkvoMHgMUtHG51cK2gQ2hTzBoECgVcfvPzbPAen5YfYA5DvXX2w49Jbqr1cVLihY0AgDaRI/M2Kmgnjgy0VlPphEADuIObiMJ23MNzr559NzgzzPrU2CnyzTIY0Sg9mcs+11ROmDHkUCuQOIr3xbASX6fFzdqfC0fcKCaxZkj4HV9Kx94j3NjN4AOrpNCVzp7Ot0jsPrhBhkRE2cGaxJ3X0jt4gO24BULtnLYvLuPoStrV19sgl6qi52DIB/SSB2FirY=
-  bucket: funnel-bucket
-  local-dir: build/release
-  upload-dir: snapshots
-  acl: public_read
-  on:
-    repo: ohsu-comp-bio/funnel

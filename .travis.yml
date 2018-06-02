@@ -24,7 +24,6 @@ jobs:
       - ./build/make-snapshot.sh
     deploy:
       provider: s3
-      all_branches: true
       skip_cleanup: true
       access_key_id: AKIAJCP7RTRWV55CDKVQ
       secret_access_key:
@@ -34,6 +33,7 @@ jobs:
       upload-dir: snapshots
       acl: public_read
       on:
+        all_branches: true
         repo: ohsu-comp-bio/funnel
   - stage: all
     script: make lint

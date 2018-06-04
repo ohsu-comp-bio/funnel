@@ -394,7 +394,7 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 		Type:              aws.String("container"),
 	}
 	for _, val := range b.conf.Funnel.EventWriters {
-		jobDef.ContainerProperties.Command = append(jobDef.ContainerProperties.Command, aws.String("--EventWriter"), aws.String(val))
+		jobDef.ContainerProperties.Command = append(jobDef.ContainerProperties.Command, aws.String("--EventWriters"), aws.String(val))
 	}
 
 	_, err = batchCli.RegisterJobDefinition(jobDef)

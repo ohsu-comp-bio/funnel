@@ -5,7 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/go-test/deep"
 )
 
 func TestLocalSupports(t *testing.T) {
@@ -47,6 +51,91 @@ func TestLocalGet(t *testing.T) {
 	}
 	if string(b) != "foo" {
 		t.Fatal("Unexpected content")
+	}
+}
+
+// Tests List on a local directory.
+func TestLocalListDirectory(t *testing.T) {
+	ctx := context.Background()
+	d, _ := filepath.Abs("../tests/storage/testdata/")
+	l := &Local{
+		allowedDirs: []string{d},
+	}
+
+	timefmt := "2006-01-02 15:04:05 -0700 MST"
+	lm2, _ := time.Parse(timefmt, "2018-01-28 13:51:30 -0800 PST")
+	lm1, _ := time.Parse(timefmt, "2018-03-09 11:44:06 -0800 PST")
+
+	list, gerr := l.List(ctx, "file://"+d+"/test_dir")
+	if gerr != nil {
+		t.Fatal(gerr)
+	}
+
+	expected1 := []*Object{
+		{
+			URL:          "file:///Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/subdir/test_dir_file1",
+			Name:         "subdir/test_dir_file1",
+			LastModified: lm1,
+			Size:         14,
+		},
+		{
+			URL:          "file:///Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/test_dir_file2",
+			Name:         "test_dir_file2",
+			LastModified: lm2,
+			Size:         14,
+		},
+	}
+
+	for _, diff := range deep.Equal(list, expected1) {
+		t.Error(diff)
+	}
+
+	list, gerr = l.List(ctx, d+"/test_dir")
+	if gerr != nil {
+		t.Fatal(gerr)
+	}
+
+	expected2 := []*Object{
+		{
+			URL:          "/Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/subdir/test_dir_file1",
+			Name:         "subdir/test_dir_file1",
+			LastModified: lm1,
+			Size:         14,
+		},
+		{
+			URL:          "/Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/test_dir_file2",
+			Name:         "test_dir_file2",
+			LastModified: lm2,
+			Size:         14,
+		},
+	}
+
+	for _, diff := range deep.Equal(list, expected2) {
+		t.Error(diff)
+	}
+
+	list, gerr = l.List(ctx, "../tests/storage/testdata/test_dir")
+	if gerr != nil {
+		t.Fatal(gerr)
+	}
+
+	expected3 := []*Object{
+		{
+			URL:          "../tests/storage/testdata/test_dir/subdir/test_dir_file1",
+			Name:         "subdir/test_dir_file1",
+			LastModified: lm1,
+			Size:         14,
+		},
+		{
+			URL:          "../tests/storage/testdata/test_dir/test_dir_file2",
+			Name:         "test_dir_file2",
+			LastModified: lm2,
+			Size:         14,
+		},
+	}
+
+	for _, diff := range deep.Equal(list, expected3) {
+		t.Error(diff)
 	}
 }
 

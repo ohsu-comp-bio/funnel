@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/go-test/deep"
 )
@@ -57,14 +56,19 @@ func TestLocalGet(t *testing.T) {
 // Tests List on a local directory.
 func TestLocalListDirectory(t *testing.T) {
 	ctx := context.Background()
-	d, _ := filepath.Abs("../tests/storage/testdata/")
+	d, err := filepath.Abs("../tests/storage/testdata/")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	l := &Local{
 		allowedDirs: []string{d},
 	}
 
-	timefmt := "2006-01-02 15:04:05 -0700 MST"
-	lm2, _ := time.Parse(timefmt, "2018-01-28 13:51:30 -0800 PST")
-	lm1, _ := time.Parse(timefmt, "2018-03-09 11:44:06 -0800 PST")
+	stat1, _ := os.Stat("../tests/storage/testdata/test_dir/subdir/test_dir_file1")
+	stat2, _ := os.Stat("../tests/storage/testdata/test_dir/test_dir_file2")
+	lm1 := stat1.ModTime()
+	lm2 := stat2.ModTime()
 
 	list, gerr := l.List(ctx, "file://"+d+"/test_dir")
 	if gerr != nil {
@@ -73,13 +77,13 @@ func TestLocalListDirectory(t *testing.T) {
 
 	expected1 := []*Object{
 		{
-			URL:          "file:///Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/subdir/test_dir_file1",
+			URL:          "file://" + d + "/test_dir/subdir/test_dir_file1",
 			Name:         "subdir/test_dir_file1",
 			LastModified: lm1,
 			Size:         14,
 		},
 		{
-			URL:          "file:///Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/test_dir_file2",
+			URL:          "file://" + d + "/test_dir/test_dir_file2",
 			Name:         "test_dir_file2",
 			LastModified: lm2,
 			Size:         14,
@@ -97,13 +101,13 @@ func TestLocalListDirectory(t *testing.T) {
 
 	expected2 := []*Object{
 		{
-			URL:          "/Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/subdir/test_dir_file1",
+			URL:          d + "/test_dir/subdir/test_dir_file1",
 			Name:         "subdir/test_dir_file1",
 			LastModified: lm1,
 			Size:         14,
 		},
 		{
-			URL:          "/Users/buchanae/src/github.com/ohsu-comp-bio/funnel/tests/storage/testdata/test_dir/test_dir_file2",
+			URL:          d + "/test_dir/test_dir_file2",
 			Name:         "test_dir_file2",
 			LastModified: lm2,
 			Size:         14,

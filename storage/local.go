@@ -56,8 +56,12 @@ func (local *Local) List(ctx context.Context, url string) ([]*Object, error) {
 
 	var objects []*Object
 	for _, f := range files {
+		url, err := local.Join(url, f.Rel)
+		if err != nil {
+			return nil, err
+		}
 		objects = append(objects, &Object{
-			URL:          filepath.Join(url, f.Rel),
+			URL:          url,
 			Name:         f.Rel,
 			LastModified: f.LastModified,
 			Size:         f.Size,

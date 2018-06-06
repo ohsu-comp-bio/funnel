@@ -93,7 +93,7 @@ func webdashBundleJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/bundle.js", size: 1240877, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/bundle.js", size: 1240877, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -113,7 +113,7 @@ func webdashError404Html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/error404.html", size: 121, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/error404.html", size: 121, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -133,7 +133,7 @@ func webdashFaviconIco() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/favicon.ico", size: 1324, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/favicon.ico", size: 1324, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -153,7 +153,7 @@ func webdashHealthHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/health.html", size: 3, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/health.html", size: 3, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -173,7 +173,7 @@ func webdashIndexHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/index.html", size: 3269, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/index.html", size: 3269, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -193,7 +193,7 @@ func webdashListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/list.html", size: 906, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/list.html", size: 906, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -213,7 +213,7 @@ func webdashNodeListHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/node-list.html", size: 481, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/node-list.html", size: 481, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -233,7 +233,7 @@ func webdashNodeHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/node.html", size: 1193, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/node.html", size: 1193, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -253,7 +253,7 @@ func webdashServiceHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/service.html", size: 1136, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/service.html", size: 1136, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -273,7 +273,7 @@ func webdashStyleCss() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/style.css", size: 352557, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/style.css", size: 352557, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -293,7 +293,7 @@ func webdashTaskHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "webdash/task.html", size: 5950, mode: os.FileMode(420), modTime: time.Unix(1527905569, 0)}
+	info := bindataFileInfo{name: "webdash/task.html", size: 5950, mode: os.FileMode(420), modTime: time.Unix(1528243284, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

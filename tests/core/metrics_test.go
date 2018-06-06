@@ -14,12 +14,19 @@ import (
 )
 
 func TestMetrics(t *testing.T) {
+	conf := tests.DefaultConfig()
+	if conf.Database != "mongodb" {
+		t.Skip("metrics are only supported by mongodb")
+	}
+
+	fun := tests.NewFunnel(conf)
+	fun.StartServer()
 	tests.SetLogOutput(log, t)
 
 	id1 := fun.Run(`'echo hello world'`)
 	id2 := fun.Run(`'echo hello world'`)
 	id3 := fun.Run(`'exit 1'`)
-	id4 := fun.Run(`'sleep 10'`)
+	id4 := fun.Run(`'sleep 100'`)
 	_ = id4
 
 	fun.Wait(id1)

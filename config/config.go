@@ -9,17 +9,21 @@ import (
 
 // Config describes configuration for Funnel.
 type Config struct {
-	// component selectors
+  // Event systems to write to (kafka, pubsub, log, etc).
 	EventWriters []string
+  // Name of the database backend to use (mongodb, dynamodb, boltdb, etc).
 	Database     string
+  // Name of the compute backend to use (manual, aws-batch, local, etc).
 	Compute      string
-	// funnel components
+
+  // core services
 	Server    Server
 	RPCClient RPCClient
 	Scheduler Scheduler
 	Node      Node
 	Worker    Worker
 	Logger    logger.Config
+
 	// databases / event handlers
 	BoltDB    BoltDB
 	Badger    Badger
@@ -29,14 +33,17 @@ type Config struct {
 	Kafka     Kafka
 	PubSub    PubSub
 	Datastore Datastore
+
 	// compute
 	HTCondor   HPCBackend
 	Slurm      HPCBackend
 	PBS        HPCBackend
 	GridEngine struct {
+    // GridEngine submit template string.
 		Template string
 	}
 	AWSBatch AWSBatch
+
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage
@@ -48,31 +55,42 @@ type Config struct {
 
 // BasicCredential describes a username and password for use with Funnel's basic auth.
 type BasicCredential struct {
+  // User name
 	User     string
+  // Password
 	Password string
 }
 
 // RPCClient describes configuration for gRPC clients
 type RPCClient struct {
 	BasicCredential
+  // Address of the RPC server.
 	ServerAddress string
-	// The timeout to use for making RPC client connections in nanoseconds
+	// The timeout to use for making RPC client connections in nanoseconds.
+  //
 	// This timeout is Only enforced when used in conjunction with the
 	// grpc.WithBlock dial option.
 	Timeout Duration
 	// The maximum number of times that a request will be retried for failures.
-	// Time between retries follows an exponential backoff starting at 5 seconds
-	// up to 1 minute
+  //
+	// Time between retries follows an exponential backoff starting at 5 seconds,
+	// up to 1 minute.
 	MaxRetries uint
 }
 
 // Server describes configuration for the server.
 type Server struct {
+  // Name of the service, used for metadata in the ServiceInfo endpoint.
 	ServiceName      string
+  // Host name of the server, used to create client connection addresses.
 	HostName         string
+  // Port to run the HTTP server on.
 	HTTPPort         string
+  // Port to run the RPC server on.
 	RPCPort          string
+  // Basic auth credentials (http basic user/password).
 	BasicAuth        []BasicCredential
+  // Disable the HTTP cache by sending no-cache headers in HTTP responses.
 	DisableHTTPCache bool
 }
 
@@ -118,10 +136,15 @@ type Node struct {
 	// A Node will automatically try to detect what resources are available to it.
 	// Defining Resources in the Node configuration overrides this behavior.
 	Resources struct {
+    // Number of CPUs the node provides.
 		Cpus   uint32
+    // Amount of RAM (in gigabytes) the node provides.
 		RamGb  float64 // nolint
+    // Amount of disk space (in gigabytes) the node provides.
 		DiskGb float64
 	}
+  // Duration of time spent idle before the node will decide to shut down.
+  //
 	// If the node has been idle for longer than the timeout, it will shut down.
 	// -1 means there is no timeout. 0 means timeout immediately after the first task.
 	Timeout Duration
@@ -132,9 +155,9 @@ type Node struct {
 
 // Worker contains worker configuration.
 type Worker struct {
-	// Directory to write task files to
+	// Directory to write task files to.
 	WorkDir string
-	// How often the worker should poll for cancel signals
+	// How often the worker should poll for cancel signals.
 	PollingRate Duration
 	// How often to update stdout/stderr log fields.
 	// Setting this to 0 will result in these fields being updated a single time
@@ -143,6 +166,8 @@ type Worker struct {
 	// Max bytes of stdout/stderr to store in the database.
 	// Setting this to 0 turns off stdout/stderr logging.
 	LogTailSize int64
+  // Disable working directory cleanup.
+  //
 	// Normally the worker cleans up its working directory after executing.
 	// This option disables that behavior.
 	LeaveWorkDir bool
@@ -163,12 +188,13 @@ type HPCBackend struct {
 
 // BoltDB describes the configuration for the BoltDB embedded database.
 type BoltDB struct {
+  // Path to the database file.
 	Path string
 }
 
 // Badger describes configuration for the Badger embedded database.
 type Badger struct {
-	// Path to database directory.
+	// Path to the database directory.
 	Path string
 }
 
@@ -178,33 +204,46 @@ type MongoDB struct {
 	Addrs []string
 	// Database is the database name used within MongoDB to store funnel data.
 	Database string
+  // Initial connection timeout.
+  //
 	// Timeout is the amount of time to wait for a server to respond when
 	// first connecting and on follow up operations in the session. If
 	// timeout is zero, the call may block forever waiting for a connection
 	// to be established.
 	Timeout Duration
+  // Username for authentication.
+  //
 	// Username and Password inform the credentials for the initial authentication
 	// done on the database defined by the Database field.
 	Username string
+  // Password for authentication.
 	Password string
 }
 
 // Elastic configures access to an Elasticsearch database.
 type Elastic struct {
+  // Index prefix.
 	IndexPrefix string
+  // URL of the Elasticsearch server.
 	URL         string
 }
 
 // Kafka configure access to a Kafka topic for task event reading/writing.
 type Kafka struct {
+  // List of Kafka servers.
 	Servers []string
+  // Topic name to access.
 	Topic   string
 }
 
 // PubSub configures access to Google Cloud Pub/Sub for task event reading/writing.
 type PubSub struct {
+  // Topic name to access.
 	Topic   string
+  // Google project ID.
 	Project string
+  // Optional path to Google Cloud credentials file.
+  //
 	// If no account file is provided then Funnel will try to use Google Application
 	// Default Credentials to authorize and authenticate the client.
 	CredentialsFile string
@@ -246,7 +285,10 @@ type AWSBatch struct {
 
 // Datastore configures access to a Google Cloud Datastore database backend.
 type Datastore struct {
+  // Google Cloud project ID.
 	Project string
+  // Optional path to Google Cloud credentials file.
+  //
 	// If no account file is provided then Funnel will try to use Google Application
 	// Default Credentials to authorize and authenticate the client.
 	CredentialsFile string
@@ -255,13 +297,16 @@ type Datastore struct {
 // DynamoDB describes the configuration for Amazon DynamoDB backed processes
 // such as the event writer and server.
 type DynamoDB struct {
+  // Basename to prefix all tables with.
 	TableBasename string
 	AWSConfig
 }
 
 // LocalStorage describes the directories Funnel can read from and write to
 type LocalStorage struct {
+  // Disables local storage access.
 	Disabled    bool
+  // List of directories which local storage is allowed to access.
 	AllowedDirs []string
 }
 
@@ -272,7 +317,10 @@ func (l LocalStorage) Valid() bool {
 
 // GoogleCloudStorage describes configuration for the Google Cloud storage backend.
 type GoogleCloudStorage struct {
+  // Disables Google Cloud storage access.
 	Disabled bool
+  // Optional path to Google Cloud credentials file.
+  //
 	// If no account file is provided then Funnel will try to use Google Application
 	// Default Credentials to authorize and authenticate the client.
 	CredentialsFile string
@@ -285,6 +333,7 @@ func (g GoogleCloudStorage) Valid() bool {
 
 // AmazonS3Storage describes the configuration for the Amazon S3 storage backend.
 type AmazonS3Storage struct {
+  // Disables Amazon S3 storage access.
 	Disabled bool
 	AWSConfig
 }
@@ -297,9 +346,13 @@ func (s AmazonS3Storage) Valid() bool {
 
 // GenericS3Storage describes the configuration for the Generic S3 storage backend.
 type GenericS3Storage struct {
+  // Disables generic S3 storage access.
 	Disabled bool
+  // Endpoint of the S3 storage service.
 	Endpoint string
+  // Key for authentication.
 	Key      string
+  // Secret for authentication.
 	Secret   string
 }
 
@@ -310,19 +363,26 @@ func (s GenericS3Storage) Valid() bool {
 
 // SwiftStorage configures the OpenStack Swift object storage backend.
 type SwiftStorage struct {
+  // Disables Swift storage access.
 	Disabled   bool
+  // Username for authentication.
 	UserName   string
+  // Password for authentication.
 	Password   string
+  // URL of the OpenStack/Swift auth service.
 	AuthURL    string
+  // Name of the OpenStack/Swift tenant.
 	TenantName string
+  // ID of the OpenStack/Swift tenant.
 	TenantID   string
+  // Name of the OpenStack/Swift region.
 	RegionName string
 	// Size of chunks to use for large object creation.
+  //
 	// Defaults to 500 MB if not set or set below 10 MB.
 	// The max number of chunks for a single object is 1000.
 	ChunkSizeBytes int64
-	// The maximum number of times to retry on error.
-	// Defaults to 3.
+	// The maximum number of times to retry on error. Defaults to 3.
 	MaxRetries int
 }
 
@@ -342,8 +402,9 @@ func (s SwiftStorage) Valid() bool {
 
 // HTTPStorage configures the http storage backend.
 type HTTPStorage struct {
+  // Disables HTTP storage access.
 	Disabled bool
-	// Timeout duration for http GET calls
+	// Timeout duration for http GET calls.
 	Timeout Duration
 }
 

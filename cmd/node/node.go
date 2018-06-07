@@ -47,9 +47,10 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		},
 	}
 
-	nodeFlags := cmdutil.NodeFlags(&flagConf, &configFile)
+	nodeFlags := cmdutil.ConfigFlags(&flagConf)
 	cmd.SetGlobalNormalizationFunc(cmdutil.NormalizeFlags)
 	f := cmd.PersistentFlags()
+	f.StringVarP(&configFile, "config", "c", configFile, "Config File")
 	f.AddFlagSet(nodeFlags)
 
 	run := &cobra.Command{

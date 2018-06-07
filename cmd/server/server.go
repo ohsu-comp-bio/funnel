@@ -34,12 +34,15 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		flagConf   config.Config
 	)
 
+	serverFlags := cmdutil.ConfigFlags(&flagConf)
+
 	cmd := &cobra.Command{
 		Use:   "server",
 		Short: "Funnel server commands.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
+			cmdutil.LookupEnv(serverFlags)
 			conf, err = cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
 			if err != nil {
 				return fmt.Errorf("error processing config: %v", err)
@@ -48,9 +51,9 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		},
 	}
 
-	serverFlags := cmdutil.ServerFlags(&flagConf, &configFile)
 	cmd.SetGlobalNormalizationFunc(cmdutil.NormalizeFlags)
 	f := cmd.PersistentFlags()
+	f.StringVarP(&configFile, "config", "c", configFile, "Config File")
 	f.AddFlagSet(serverFlags)
 
 	run := &cobra.Command{

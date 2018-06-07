@@ -1,237 +1,218 @@
 package util
 
 import (
-	"strings"
-
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/spf13/pflag"
 )
 
-// ServerFlags returns a new flag set for configuring a Funnel server
-func ServerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
+func ConfigFlags(conf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
-	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
+	f.StringSliceVar(&conf.EventWriters, "EventWriters", conf.EventWriters, "Event systems to write to (kafka, pubsub, log, etc).")
 
-	f.AddFlagSet(selectorFlags(flagConf))
-	f.AddFlagSet(serverFlags(flagConf))
-	f.AddFlagSet(rpcClientFlags(flagConf))
-	f.AddFlagSet(workerFlags(flagConf))
-	f.AddFlagSet(nodeFlags(flagConf))
-	f.AddFlagSet(dbFlags(flagConf))
-	f.AddFlagSet(storageFlags(flagConf))
-	f.AddFlagSet(computeFlags(flagConf))
-	f.AddFlagSet(loggerFlags(flagConf))
+	f.StringVar(&conf.Database, "Database", conf.Database, "Name of the database backend to use (mongodb, dynamodb, boltdb, etc).")
+
+	f.StringVar(&conf.Compute, "Compute", conf.Compute, "Name of the compute backend to use (manual, aws-batch, local, etc).")
+
+	f.StringVar(&conf.Server.ServiceName, "Server.ServiceName", conf.Server.ServiceName, "Name of the service, used for metadata in the ServiceInfo endpoint.")
+
+	f.StringVar(&conf.Server.HostName, "Server.HostName", conf.Server.HostName, "Host name of the server, used to create client connection addresses.")
+
+	f.StringVar(&conf.Server.HTTPPort, "Server.HTTPPort", conf.Server.HTTPPort, "Port to run the HTTP server on.")
+
+	f.StringVar(&conf.Server.RPCPort, "Server.RPCPort", conf.Server.RPCPort, "Port to run the RPC server on.")
+
+	f.BoolVar(&conf.Server.DisableHTTPCache, "Server.DisableHTTPCache", conf.Server.DisableHTTPCache, "Disable the HTTP cache by sending no-cache headers in HTTP responses.")
+
+	f.StringVar(&conf.RPCClient.BasicCredential.User, "RPCClient.BasicCredential.User", conf.RPCClient.BasicCredential.User, "User name")
+
+	f.StringVar(&conf.RPCClient.BasicCredential.Password, "RPCClient.BasicCredential.Password", conf.RPCClient.BasicCredential.Password, "Password")
+
+	f.StringVar(&conf.RPCClient.ServerAddress, "RPCClient.ServerAddress", conf.RPCClient.ServerAddress, "Address of the RPC server.")
+
+	f.Var(&conf.RPCClient.Timeout, "RPCClient.Timeout", "The timeout to use for making RPC client connections in nanoseconds.")
+
+	f.UintVar(&conf.RPCClient.MaxRetries, "RPCClient.MaxRetries", conf.RPCClient.MaxRetries, "The maximum number of times that a request will be retried for failures.")
+
+	f.Var(&conf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", "How often to run a scheduler iteration.")
+
+	f.IntVar(&conf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", conf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration.")
+
+	f.Var(&conf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
+
+	f.Var(&conf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
+
+	f.Var(&conf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB.")
+
+	f.StringVar(&conf.Node.ID, "Node.ID", conf.Node.ID, "")
+
+	f.Uint32Var(&conf.Node.Resources.Cpus, "Node.Resources.Cpus", conf.Node.Resources.Cpus, "Number of CPUs the node provides.")
+
+	f.Float64Var(&conf.Node.Resources.RamGb, "Node.Resources.RamGb", conf.Node.Resources.RamGb, "Amount of RAM (in gigabytes) the node provides.")
+
+	f.Float64Var(&conf.Node.Resources.DiskGb, "Node.Resources.DiskGb", conf.Node.Resources.DiskGb, "Amount of disk space (in gigabytes) the node provides.")
+
+	f.Var(&conf.Node.Timeout, "Node.Timeout", "Duration of time spent idle before the node will decide to shut down.")
+
+	f.Var(&conf.Node.UpdateRate, "Node.UpdateRate", "How often the node sends update requests to the server.")
+
+	f.StringVar(&conf.Worker.WorkDir, "Worker.WorkDir", conf.Worker.WorkDir, "Directory to write task files to.")
+
+	f.Var(&conf.Worker.PollingRate, "Worker.PollingRate", "How often the worker should poll for cancel signals.")
+
+	f.Var(&conf.Worker.LogUpdateRate, "Worker.LogUpdateRate", "How often to update stdout/stderr log fields.")
+
+	f.Int64Var(&conf.Worker.LogTailSize, "Worker.LogTailSize", conf.Worker.LogTailSize, "Max bytes of stdout/stderr to store in the database.")
+
+	f.BoolVar(&conf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", conf.Worker.LeaveWorkDir, "Disable working directory cleanup.")
+
+	f.StringVar(&conf.Logger.Level, "Logger.Level", conf.Logger.Level, "")
+
+	f.StringVar(&conf.Logger.Formatter, "Logger.Formatter", conf.Logger.Formatter, "")
+
+	f.StringVar(&conf.Logger.OutputFile, "Logger.OutputFile", conf.Logger.OutputFile, "")
+
+	f.BoolVar(&conf.Logger.JSONFormat.DisableTimestamp, "Logger.JSONFormat.DisableTimestamp", conf.Logger.JSONFormat.DisableTimestamp, "")
+
+	f.StringVar(&conf.Logger.JSONFormat.TimestampFormat, "Logger.JSONFormat.TimestampFormat", conf.Logger.JSONFormat.TimestampFormat, "")
+
+	f.BoolVar(&conf.Logger.TextFormat.ForceColors, "Logger.TextFormat.ForceColors", conf.Logger.TextFormat.ForceColors, "Set to true to bypass checking for a TTY before outputting colors.")
+
+	f.BoolVar(&conf.Logger.TextFormat.DisableColors, "Logger.TextFormat.DisableColors", conf.Logger.TextFormat.DisableColors, "Force disabling colors.")
+
+	f.BoolVar(&conf.Logger.TextFormat.DisableTimestamp, "Logger.TextFormat.DisableTimestamp", conf.Logger.TextFormat.DisableTimestamp, "Disable timestamp logging.")
+
+	f.BoolVar(&conf.Logger.TextFormat.FullTimestamp, "Logger.TextFormat.FullTimestamp", conf.Logger.TextFormat.FullTimestamp, "Enable logging the full timestamp when a TTY is attached instead of just the time passed since beginning of execution.")
+
+	f.StringVar(&conf.Logger.TextFormat.TimestampFormat, "Logger.TextFormat.TimestampFormat", conf.Logger.TextFormat.TimestampFormat, "TimestampFormat to use for display when a full timestamp is printed")
+
+	f.BoolVar(&conf.Logger.TextFormat.DisableSorting, "Logger.TextFormat.DisableSorting", conf.Logger.TextFormat.DisableSorting, "The fields are sorted by default for a consistent output.")
+
+	f.StringVar(&conf.Logger.TextFormat.Indent, "Logger.TextFormat.Indent", conf.Logger.TextFormat.Indent, "")
+
+	f.StringVar(&conf.BoltDB.Path, "BoltDB.Path", conf.BoltDB.Path, "Path to the database file.")
+
+	f.StringVar(&conf.Badger.Path, "Badger.Path", conf.Badger.Path, "Path to the database directory.")
+
+	f.StringVar(&conf.DynamoDB.TableBasename, "DynamoDB.TableBasename", conf.DynamoDB.TableBasename, "Basename to prefix all tables with.")
+
+	f.StringVar(&conf.DynamoDB.AWSConfig.Endpoint, "DynamoDB.AWSConfig.Endpoint", conf.DynamoDB.AWSConfig.Endpoint, "An optional endpoint URL (hostname only or fully qualified URI) that overrides the default generated endpoint for a client.")
+
+	f.StringVar(&conf.DynamoDB.AWSConfig.Region, "DynamoDB.AWSConfig.Region", conf.DynamoDB.AWSConfig.Region, "The region to send requests to.")
+
+	f.IntVar(&conf.DynamoDB.AWSConfig.MaxRetries, "DynamoDB.AWSConfig.MaxRetries", conf.DynamoDB.AWSConfig.MaxRetries, "The maximum number of times that a request will be retried for failures.")
+
+	f.StringVar(&conf.DynamoDB.AWSConfig.Key, "DynamoDB.AWSConfig.Key", conf.DynamoDB.AWSConfig.Key, "If both the key and secret are empty AWS credentials will be read from the environment.")
+
+	f.StringVar(&conf.DynamoDB.AWSConfig.Secret, "DynamoDB.AWSConfig.Secret", conf.DynamoDB.AWSConfig.Secret, "")
+
+	f.StringVar(&conf.Elastic.IndexPrefix, "Elastic.IndexPrefix", conf.Elastic.IndexPrefix, "Index prefix.")
+
+	f.StringVar(&conf.Elastic.URL, "Elastic.URL", conf.Elastic.URL, "URL of the Elasticsearch server.")
+
+	f.StringSliceVar(&conf.MongoDB.Addrs, "MongoDB.Addrs", conf.MongoDB.Addrs, "Addrs holds the addresses for the seed servers.")
+
+	f.StringVar(&conf.MongoDB.Database, "MongoDB.Database", conf.MongoDB.Database, "Database is the database name used within MongoDB to store funnel data.")
+
+	f.Var(&conf.MongoDB.Timeout, "MongoDB.Timeout", "Initial connection timeout.")
+
+	f.StringVar(&conf.MongoDB.Username, "MongoDB.Username", conf.MongoDB.Username, "Username for authentication.")
+
+	f.StringVar(&conf.MongoDB.Password, "MongoDB.Password", conf.MongoDB.Password, "Password for authentication.")
+
+	f.StringSliceVar(&conf.Kafka.Servers, "Kafka.Servers", conf.Kafka.Servers, "List of Kafka servers.")
+
+	f.StringVar(&conf.Kafka.Topic, "Kafka.Topic", conf.Kafka.Topic, "Topic name to access.")
+
+	f.StringVar(&conf.PubSub.Topic, "PubSub.Topic", conf.PubSub.Topic, "Topic name to access.")
+
+	f.StringVar(&conf.PubSub.Project, "PubSub.Project", conf.PubSub.Project, "Google project ID.")
+
+	f.StringVar(&conf.PubSub.CredentialsFile, "PubSub.CredentialsFile", conf.PubSub.CredentialsFile, "Optional path to Google Cloud credentials file.")
+
+	f.StringVar(&conf.Datastore.Project, "Datastore.Project", conf.Datastore.Project, "Google Cloud project ID.")
+
+	f.StringVar(&conf.Datastore.CredentialsFile, "Datastore.CredentialsFile", conf.Datastore.CredentialsFile, "Optional path to Google Cloud credentials file.")
+
+	f.BoolVar(&conf.HTCondor.DisableReconciler, "HTCondor.DisableReconciler", conf.HTCondor.DisableReconciler, "Turn off task state reconciler.")
+
+	f.Var(&conf.HTCondor.ReconcileRate, "HTCondor.ReconcileRate", "ReconcileRate is how often the compute backend compares states in Funnel's backend to those reported by the backend")
+
+	f.StringVar(&conf.HTCondor.Template, "HTCondor.Template", conf.HTCondor.Template, "")
+
+	f.BoolVar(&conf.Slurm.DisableReconciler, "Slurm.DisableReconciler", conf.Slurm.DisableReconciler, "Turn off task state reconciler.")
+
+	f.Var(&conf.Slurm.ReconcileRate, "Slurm.ReconcileRate", "ReconcileRate is how often the compute backend compares states in Funnel's backend to those reported by the backend")
+
+	f.StringVar(&conf.Slurm.Template, "Slurm.Template", conf.Slurm.Template, "")
+
+	f.BoolVar(&conf.PBS.DisableReconciler, "PBS.DisableReconciler", conf.PBS.DisableReconciler, "Turn off task state reconciler.")
+
+	f.Var(&conf.PBS.ReconcileRate, "PBS.ReconcileRate", "ReconcileRate is how often the compute backend compares states in Funnel's backend to those reported by the backend")
+
+	f.StringVar(&conf.PBS.Template, "PBS.Template", conf.PBS.Template, "")
+
+	f.StringVar(&conf.GridEngine.Template, "GridEngine.Template", conf.GridEngine.Template, "GridEngine submit template string.")
+
+	f.StringVar(&conf.AWSBatch.JobDefinition, "AWSBatch.JobDefinition", conf.AWSBatch.JobDefinition, "JobDefinition can be either a name or the Amazon Resource Name (ARN).")
+
+	f.StringVar(&conf.AWSBatch.JobQueue, "AWSBatch.JobQueue", conf.AWSBatch.JobQueue, "JobQueue can be either a name or the Amazon Resource Name (ARN).")
+
+	f.BoolVar(&conf.AWSBatch.DisableReconciler, "AWSBatch.DisableReconciler", conf.AWSBatch.DisableReconciler, "Turn off task state reconciler.")
+
+	f.Var(&conf.AWSBatch.ReconcileRate, "AWSBatch.ReconcileRate", "ReconcileRate is how often the compute backend compares states in Funnel's backend to those reported by AWS Batch")
+
+	f.StringVar(&conf.AWSBatch.AWSConfig.Endpoint, "AWSBatch.AWSConfig.Endpoint", conf.AWSBatch.AWSConfig.Endpoint, "An optional endpoint URL (hostname only or fully qualified URI) that overrides the default generated endpoint for a client.")
+
+	f.StringVar(&conf.AWSBatch.AWSConfig.Region, "AWSBatch.AWSConfig.Region", conf.AWSBatch.AWSConfig.Region, "The region to send requests to.")
+
+	f.IntVar(&conf.AWSBatch.AWSConfig.MaxRetries, "AWSBatch.AWSConfig.MaxRetries", conf.AWSBatch.AWSConfig.MaxRetries, "The maximum number of times that a request will be retried for failures.")
+
+	f.StringVar(&conf.AWSBatch.AWSConfig.Key, "AWSBatch.AWSConfig.Key", conf.AWSBatch.AWSConfig.Key, "If both the key and secret are empty AWS credentials will be read from the environment.")
+
+	f.StringVar(&conf.AWSBatch.AWSConfig.Secret, "AWSBatch.AWSConfig.Secret", conf.AWSBatch.AWSConfig.Secret, "")
+
+	f.BoolVar(&conf.LocalStorage.Disabled, "LocalStorage.Disabled", conf.LocalStorage.Disabled, "Disables local storage access.")
+
+	f.StringSliceVar(&conf.LocalStorage.AllowedDirs, "LocalStorage.AllowedDirs", conf.LocalStorage.AllowedDirs, "List of directories which local storage is allowed to access.")
+
+	f.BoolVar(&conf.AmazonS3.Disabled, "AmazonS3.Disabled", conf.AmazonS3.Disabled, "Disables Amazon S3 storage access.")
+
+	f.StringVar(&conf.AmazonS3.AWSConfig.Endpoint, "AmazonS3.AWSConfig.Endpoint", conf.AmazonS3.AWSConfig.Endpoint, "An optional endpoint URL (hostname only or fully qualified URI) that overrides the default generated endpoint for a client.")
+
+	f.StringVar(&conf.AmazonS3.AWSConfig.Region, "AmazonS3.AWSConfig.Region", conf.AmazonS3.AWSConfig.Region, "The region to send requests to.")
+
+	f.IntVar(&conf.AmazonS3.AWSConfig.MaxRetries, "AmazonS3.AWSConfig.MaxRetries", conf.AmazonS3.AWSConfig.MaxRetries, "The maximum number of times that a request will be retried for failures.")
+
+	f.StringVar(&conf.AmazonS3.AWSConfig.Key, "AmazonS3.AWSConfig.Key", conf.AmazonS3.AWSConfig.Key, "If both the key and secret are empty AWS credentials will be read from the environment.")
+
+	f.StringVar(&conf.AmazonS3.AWSConfig.Secret, "AmazonS3.AWSConfig.Secret", conf.AmazonS3.AWSConfig.Secret, "")
+
+	f.BoolVar(&conf.GoogleStorage.Disabled, "GoogleStorage.Disabled", conf.GoogleStorage.Disabled, "Disables Google Cloud storage access.")
+
+	f.StringVar(&conf.GoogleStorage.CredentialsFile, "GoogleStorage.CredentialsFile", conf.GoogleStorage.CredentialsFile, "Optional path to Google Cloud credentials file.")
+
+	f.BoolVar(&conf.Swift.Disabled, "Swift.Disabled", conf.Swift.Disabled, "Disables Swift storage access.")
+
+	f.StringVar(&conf.Swift.UserName, "Swift.UserName", conf.Swift.UserName, "Username for authentication.")
+
+	f.StringVar(&conf.Swift.Password, "Swift.Password", conf.Swift.Password, "Password for authentication.")
+
+	f.StringVar(&conf.Swift.AuthURL, "Swift.AuthURL", conf.Swift.AuthURL, "URL of the OpenStack/Swift auth service.")
+
+	f.StringVar(&conf.Swift.TenantName, "Swift.TenantName", conf.Swift.TenantName, "Name of the OpenStack/Swift tenant.")
+
+	f.StringVar(&conf.Swift.TenantID, "Swift.TenantID", conf.Swift.TenantID, "ID of the OpenStack/Swift tenant.")
+
+	f.StringVar(&conf.Swift.RegionName, "Swift.RegionName", conf.Swift.RegionName, "Name of the OpenStack/Swift region.")
+
+	f.Int64Var(&conf.Swift.ChunkSizeBytes, "Swift.ChunkSizeBytes", conf.Swift.ChunkSizeBytes, "Size of chunks to use for large object creation.")
+
+	f.IntVar(&conf.Swift.MaxRetries, "Swift.MaxRetries", conf.Swift.MaxRetries, "The maximum number of times to retry on error.")
+
+	f.BoolVar(&conf.HTTPStorage.Disabled, "HTTPStorage.Disabled", conf.HTTPStorage.Disabled, "Disables HTTP storage access.")
+
+	f.Var(&conf.HTTPStorage.Timeout, "HTTPStorage.Timeout", "Timeout duration for http GET calls.")
 
 	return f
-}
-
-// WorkerFlags returns a new flag set for configuring a Funnel worker
-func WorkerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
-
-	f.AddFlagSet(selectorFlags(flagConf))
-	f.AddFlagSet(serverFlags(flagConf))
-	f.AddFlagSet(rpcClientFlags(flagConf))
-	f.AddFlagSet(workerFlags(flagConf))
-	f.AddFlagSet(nodeFlags(flagConf))
-	f.AddFlagSet(dbFlags(flagConf))
-	f.AddFlagSet(storageFlags(flagConf))
-	f.AddFlagSet(loggerFlags(flagConf))
-
-	return f
-}
-
-// NodeFlags returns a new flag set for configuring a Funnel node
-func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
-
-	f.AddFlagSet(selectorFlags(flagConf))
-	f.AddFlagSet(serverFlags(flagConf))
-	f.AddFlagSet(rpcClientFlags(flagConf))
-	f.AddFlagSet(workerFlags(flagConf))
-	f.AddFlagSet(nodeFlags(flagConf))
-	f.AddFlagSet(dbFlags(flagConf))
-	f.AddFlagSet(storageFlags(flagConf))
-	f.AddFlagSet(loggerFlags(flagConf))
-
-	return f
-}
-
-func selectorFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.StringVar(&flagConf.Compute, "Compute", flagConf.Compute, "Name of compute backed to use")
-	f.StringVar(&flagConf.Database, "Database", flagConf.Database, "Name of database backed to use")
-	f.StringSliceVar(&flagConf.EventWriters, "EventWriters", flagConf.EventWriters, "Name of an event writer backend to use. This flag can be used multiple times")
-
-	return f
-}
-
-func rpcClientFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.StringVar(&flagConf.RPCClient.ServerAddress, "RPCClient.ServerAddress", flagConf.RPCClient.ServerAddress, "RPC server address")
-	f.Var(&flagConf.RPCClient.Timeout, "RPCClient.Timeout", "Request timeout for RPC client connections")
-	f.UintVar(&flagConf.RPCClient.MaxRetries, "RPCClient.MaxRetries", flagConf.RPCClient.MaxRetries, "Maximum number of times that a request will be retried for failures")
-
-	return f
-}
-
-func serverFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.StringVar(&flagConf.Server.HostName, "Server.HostName", flagConf.Server.HostName, "Host name or IP")
-	f.StringVar(&flagConf.Server.HTTPPort, "Server.HTTPPort", flagConf.Server.HTTPPort, "HTTP Port")
-	f.StringVar(&flagConf.Server.RPCPort, "Server.RPCPort", flagConf.Server.RPCPort, "RPC Port")
-	f.StringVar(&flagConf.Server.ServiceName, "Server.ServiceName", flagConf.Server.ServiceName, "Host name or IP")
-
-	return f
-}
-
-func workerFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.Int64Var(&flagConf.Worker.LogTailSize, "Worker.LogTailSize", flagConf.Worker.LogTailSize, "Max bytes to store for stdout/stderr")
-	f.Var(&flagConf.Worker.LogUpdateRate, "Worker.LogUpdateRate", "How often to send stdout/stderr log updates")
-	f.Var(&flagConf.Worker.PollingRate, "Worker.PollingRate", "How often to poll for cancel signals")
-	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working directory")
-	f.BoolVar(&flagConf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", flagConf.Worker.LeaveWorkDir, "Leave working directory after execution")
-
-	return f
-}
-
-func nodeFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.Uint32Var(&flagConf.Node.Resources.Cpus, "Node.Resources.Cpus", flagConf.Node.Resources.Cpus, "Cpus available to Node")
-	f.Float64Var(&flagConf.Node.Resources.RamGb, "Node.Resources.RamGb", flagConf.Node.Resources.RamGb, "Ram (GB) available to Node")
-	f.Float64Var(&flagConf.Node.Resources.DiskGb, "Node.Resources.DiskGb", flagConf.Node.Resources.DiskGb, "Free disk (GB) available to Node")
-	f.Var(&flagConf.Node.Timeout, "Node.Timeout", "Node timeout in seconds")
-	f.Var(&flagConf.Node.UpdateRate, "Node.UpdateRate", "Node update rate")
-	// TODO Metadata
-
-	return f
-}
-
-func loggerFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	f.StringVar(&flagConf.Logger.Level, "Logger.Level", flagConf.Logger.Level, "Level of logging")
-	f.StringVar(&flagConf.Logger.OutputFile, "Logger.OutputFile", flagConf.Logger.OutputFile, "File path to write logs to")
-	f.StringVar(&flagConf.Logger.Formatter, "Logger.Formatter", flagConf.Logger.Formatter, "Logs formatter. One of ['text', 'json']")
-
-	return f
-}
-
-func dbFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	// boltdb
-	f.StringVar(&flagConf.BoltDB.Path, "BoltDB.Path", flagConf.BoltDB.Path, "Path to BoltDB database")
-
-	// dynamodb
-	f.StringVar(&flagConf.DynamoDB.Region, "DynamoDB.Region", flagConf.DynamoDB.Region, "AWS region of DynamoDB tables")
-	f.StringVar(&flagConf.DynamoDB.TableBasename, "DynamoDB.TableBasename", flagConf.DynamoDB.TableBasename, "Basename of DynamoDB tables")
-	f.IntVar(&flagConf.DynamoDB.MaxRetries, "DynamoDB.MaxRetries", flagConf.DynamoDB.MaxRetries, "Maximum number of times that a request will be retried for failures")
-
-	// datastore
-	f.StringVar(&flagConf.Datastore.Project, "Datastore.Project", flagConf.Datastore.Project, "Google project for Datastore")
-
-	// elastic
-	f.StringVar(&flagConf.Elastic.IndexPrefix, "Elastic.IndexPrefix", flagConf.Elastic.IndexPrefix, "Prefix to use for Elasticsearch indices")
-	f.StringVar(&flagConf.Elastic.URL, "Elastic.URL", flagConf.Elastic.URL, "Elasticsearch URL")
-
-	// kafka
-	f.StringSliceVar(&flagConf.Kafka.Servers, "Kafka.Servers", flagConf.Kafka.Servers, "Address of a Kafka server. This flag can be used multiple times")
-	f.StringVar(&flagConf.Kafka.Topic, "Kafka.Topic", flagConf.Kafka.Topic, "Kafka topic to write events to")
-
-	// mongodb
-	f.StringSliceVar(&flagConf.MongoDB.Addrs, "MongoDB.Addrs", flagConf.MongoDB.Addrs, "Address of a MongoDB seed server. This flag can be used multiple times")
-	f.StringVar(&flagConf.MongoDB.Database, "MongoDB.Database", flagConf.MongoDB.Database, "Database name in MongoDB")
-	f.Var(&flagConf.MongoDB.Timeout, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
-
-	return f
-}
-
-func storageFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	// local storage
-	f.BoolVar(&flagConf.LocalStorage.Disabled, "LocalStorage.Disabled", flagConf.LocalStorage.Disabled, "Disable storage backend")
-	f.StringSliceVar(&flagConf.LocalStorage.AllowedDirs, "LocalStorage.AllowedDirs", flagConf.LocalStorage.AllowedDirs, "Directories Funnel is allowed to access. This flag can be used multiple times")
-
-	// amazon s3
-	f.BoolVar(&flagConf.AmazonS3.Disabled, "AmazonS3.Disabled", flagConf.AmazonS3.Disabled, "Disable storage backend")
-	f.IntVar(&flagConf.AmazonS3.MaxRetries, "AmazonS3.MaxRetries", flagConf.AmazonS3.MaxRetries, "Maximum number of times that a request will be retried for failures")
-
-	// google storage
-	f.BoolVar(&flagConf.GoogleStorage.Disabled, "GoogleStorage.Disabled", flagConf.GoogleStorage.Disabled, "Disable storage backend")
-
-	// swift
-	f.BoolVar(&flagConf.Swift.Disabled, "Swift.Disabled", flagConf.Swift.Disabled, "Disable storage backend")
-	f.Int64Var(&flagConf.Swift.ChunkSizeBytes, "Swift.ChunkSizeBytes", flagConf.Swift.ChunkSizeBytes, "Size of chunks to use for large object creation")
-	f.IntVar(&flagConf.Swift.MaxRetries, "Swift.MaxRetries", flagConf.Swift.MaxRetries, "Maximum number of times that a request will be retried for failures")
-
-	// HTTP storage
-	f.BoolVar(&flagConf.HTTPStorage.Disabled, "HTTPStorage.Disabled", flagConf.HTTPStorage.Disabled, "Disable storage backend")
-	f.Var(&flagConf.HTTPStorage.Timeout, "HTTPStorage.Timeout", "Timeout in seconds for request")
-
-	return f
-}
-
-func computeFlags(flagConf *config.Config) *pflag.FlagSet {
-	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
-	// AWS Batch
-	f.StringVar(&flagConf.AWSBatch.Region, "AWSBatch.Region", flagConf.AWSBatch.Region, "AWS region of Batch resources")
-	f.StringVar(&flagConf.AWSBatch.JobDefinition, "AWSBatch.JobDefinition", flagConf.AWSBatch.JobDefinition, "AWS Batch job definition name or ARN")
-	f.StringVar(&flagConf.AWSBatch.JobQueue, "AWSBatch.JobQueue", flagConf.AWSBatch.JobQueue, "AWS Batch job queue name or ARN")
-	f.IntVar(&flagConf.AWSBatch.MaxRetries, "AWSBatch.MaxRetries", flagConf.AWSBatch.MaxRetries, "Maximum number of times that a request will be retried for failures")
-
-	// GridEngine
-	f.StringVar(&flagConf.GridEngine.Template, "GridEngine.Template", flagConf.GridEngine.Template, "Path to submit template file")
-
-	// HTCondor
-	f.StringVar(&flagConf.HTCondor.Template, "HTCondor.Template", flagConf.HTCondor.Template, "Path to submit template file")
-
-	// PBS/Torque
-	f.StringVar(&flagConf.PBS.Template, "PBS.Template", flagConf.PBS.Template, "Path to submit template file")
-
-	// Scheduler
-	f.Var(&flagConf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
-	f.IntVar(&flagConf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", flagConf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration")
-	f.Var(&flagConf.Scheduler.NodePingTimeout, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
-	f.Var(&flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
-	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
-
-	// Slurm
-	f.StringVar(&flagConf.Slurm.Template, "Slurm.Template", flagConf.Slurm.Template, "Path to submit template file")
-
-	return f
-}
-
-func normalize(name string) string {
-	from := []string{"-", "_"}
-	to := "."
-	for _, sep := range from {
-		name = strings.Replace(name, sep, to, -1)
-	}
-	return strings.ToLower(name)
-}
-
-// NormalizeFlags allows for flags to be case and separator insensitive.
-// Use it by passing it to cobra.Command.SetGlobalNormalizationFunc
-func NormalizeFlags(f *pflag.FlagSet, name string) pflag.NormalizedName {
-	lookup := map[string]string{"help": "help", normalize(name): name}
-
-	f.VisitAll(func(f *pflag.Flag) {
-		lookup[normalize(f.Name)] = f.Name
-	})
-
-	return pflag.NormalizedName(lookup[normalize(name)])
 }

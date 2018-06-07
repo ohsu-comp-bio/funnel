@@ -4,10 +4,60 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/spf13/pflag"
 )
+
+func normalize(name string) string {
+	from := []string{"-", "_"}
+	to := "."
+	for _, sep := range from {
+		name = strings.Replace(name, sep, to, -1)
+	}
+	return strings.ToLower(name)
+}
+
+// NormalizeFlags allows for flags to be case and separator insensitive.
+// Use it by passing it to cobra.Command.SetGlobalNormalizationFunc
+func NormalizeFlags(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	lookup := map[string]string{"help": "help", normalize(name): name}
+
+	f.VisitAll(func(f *pflag.Flag) {
+		lookup[normalize(f.Name)] = f.Name
+	})
+
+	return pflag.NormalizedName(lookup[normalize(name)])
+}
+
+// LookupEnv sets flag values based on environment variables.
+func LookupEnv(f *pflag.FlagSet) {
+	f.VisitAll(func(flag *pflag.Flag) {
+		// If the user set the value on the CLI, skip checking the environment.
+		// i.e. CLI flags override env vars.
+		if flag.Changed {
+			return
+		}
+
+		prefix := "Funnel_"
+		key := strings.Replace(flag.Name, ".", "_", -1)
+		// Give people flexibility, check a few variations of upper/lower case
+		keys := []string{
+			prefix + key,
+			strings.ToUpper(prefix + key),
+			strings.ToLower(prefix + key),
+		}
+
+		for _, k := range keys {
+			v, ok := os.LookupEnv(k)
+			if ok {
+				flag.Value.Set(v)
+			}
+		}
+	})
+}
 
 // MergeConfigFileWithFlags is a util used by server commands that use flags to set
 // Funnel config values. These commands can also take in the path to a Funnel config file.

@@ -31,6 +31,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		flagConf   config.Config
 	)
 
+	nodeFlags := cmdutil.ConfigFlags(&flagConf)
+
 	cmd := &cobra.Command{
 		Use:     "node",
 		Aliases: []string{"nodes"},
@@ -38,6 +40,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
+      cmdutil.LookupEnv(nodeFlags)
 			conf, err = cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
 			if err != nil {
 				return fmt.Errorf("error processing config: %v", err)
@@ -47,7 +50,6 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		},
 	}
 
-	nodeFlags := cmdutil.ConfigFlags(&flagConf)
 	cmd.SetGlobalNormalizationFunc(cmdutil.NormalizeFlags)
 	f := cmd.PersistentFlags()
 	f.StringVarP(&configFile, "config", "c", configFile, "Config File")

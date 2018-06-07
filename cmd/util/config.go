@@ -34,29 +34,29 @@ func NormalizeFlags(f *pflag.FlagSet, name string) pflag.NormalizedName {
 
 // LookupEnv sets flag values based on environment variables.
 func LookupEnv(f *pflag.FlagSet) {
-  f.VisitAll(func(flag *pflag.Flag) {
-    // If the user set the value on the CLI, skip checking the environment.
-    // i.e. CLI flags override env vars.
-    if flag.Changed {
-      return
-    }
+	f.VisitAll(func(flag *pflag.Flag) {
+		// If the user set the value on the CLI, skip checking the environment.
+		// i.e. CLI flags override env vars.
+		if flag.Changed {
+			return
+		}
 
-    prefix := "Funnel_"
-    key := strings.Replace(flag.Name, ".", "_", -1)
-    // Give people flexibility, check a few variations of upper/lower case
-    keys := []string{
-      prefix + key,
-      strings.ToUpper(prefix + key),
-      strings.ToLower(prefix + key),
-    }
+		prefix := "Funnel_"
+		key := strings.Replace(flag.Name, ".", "_", -1)
+		// Give people flexibility, check a few variations of upper/lower case
+		keys := []string{
+			prefix + key,
+			strings.ToUpper(prefix + key),
+			strings.ToLower(prefix + key),
+		}
 
-    for _, k := range keys {
-      v, ok := os.LookupEnv(k)
-      if ok {
-        flag.Value.Set(v)
-      }
-    }
-  })
+		for _, k := range keys {
+			v, ok := os.LookupEnv(k)
+			if ok {
+				flag.Value.Set(v)
+			}
+		}
+	})
 }
 
 // MergeConfigFileWithFlags is a util used by server commands that use flags to set

@@ -42,7 +42,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
-      cmdutil.LookupEnv(serverFlags)
+			cmdutil.LookupEnv(serverFlags)
 			conf, err = cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
 			if err != nil {
 				return fmt.Errorf("error processing config: %v", err)

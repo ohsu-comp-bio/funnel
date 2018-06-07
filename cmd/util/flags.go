@@ -216,4 +216,3 @@ func ConfigFlags(conf *config.Config) *pflag.FlagSet {
 
 	return f
 }
-

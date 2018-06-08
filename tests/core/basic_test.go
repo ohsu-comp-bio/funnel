@@ -655,7 +655,6 @@ func TestOutputFileLog(t *testing.T) {
 			{
 				Url:  dir + "/outdir",
 				Path: "/tmp/outdir",
-				Type: tes.FileType_DIRECTORY,
 			},
 			{
 				Url:  dir + "/barfile",

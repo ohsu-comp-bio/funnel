@@ -5,7 +5,6 @@
     {
       "name": "cat input",
       "description": "Input to md5sum. /tmp/in will be created on the host system.",
-      "type": "FILE",
       "path": "/tmp/in",
       "content": "Hello World\n"
     }
@@ -15,7 +14,6 @@
       "name": "cat stdout",
       "description": "Stdout of cat is captures to /tmp/test_out on the host system.",
       "url": "file:///tmp/cat_output",
-      "type": "FILE",
       "path": "/tmp/out"
     }
   ],

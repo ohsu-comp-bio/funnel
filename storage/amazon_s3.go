@@ -174,6 +174,9 @@ func (s3b *AmazonS3) Put(ctx context.Context, url, path string) (*Object, error)
 
 // Join joins the given URL with the given subpath.
 func (s3b *AmazonS3) Join(url, path string) (string, error) {
+	if path == "" {
+		return url, nil
+	}
 	return strings.TrimSuffix(url, "/") + "/" + path, nil
 }
 

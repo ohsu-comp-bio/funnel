@@ -6,7 +6,6 @@
       "name": "md5sum input",
       "description": "Input to md5sum. /tmp/md5sum_input must exist on the host system.",
       "url": "file:///tmp/md5sum_input",
-      "type": "FILE",
       "path": "/tmp/in"
     }
   ],
@@ -15,7 +14,6 @@
       "name": "md5sum stdout",
       "description": "Stdout of md5sum is captured and copied to /tmp/md5_output on the host system.",
       "url": "file:///tmp/md5sum_output",
-      "type": "FILE",
       "path": "/tmp/out"
     }
   ],

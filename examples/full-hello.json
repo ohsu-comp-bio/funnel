@@ -7,8 +7,7 @@
   },
   "outputs": [{
     "url": "/Users/buchanae/src/github.com/ohsu-comp-bio/funnel/_scratch/full-output/",
-    "path": "/outputs",
-    "type": "DIRECTORY"
+    "path": "/outputs"
   }],
   "volumes": ["/vol1", "/vol2"],
   "executors": [

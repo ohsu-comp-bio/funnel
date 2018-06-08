@@ -158,7 +158,7 @@ func TestEmptyDir(t *testing.T) {
 	os.Mkdir(path.Join(fun.StorageDir, "test_in"), 0777)
 	id := fun.Run(`
     --sh 'echo hello'
-    -I in={{ .storage }}/test_in
+    -i in={{ .storage }}/test_in
     -O out={{ .storage }}/test_out
   `)
 	task := fun.Wait(id)

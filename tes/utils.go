@@ -28,12 +28,9 @@ var ErrNotFound = errors.New("task not found")
 
 // Shorthand for task views
 const (
-	Minimal   = TaskView_MINIMAL
-	Basic     = TaskView_BASIC
-	Full      = TaskView_FULL
-	File      = FileType_FILE
-	Directory = FileType_DIRECTORY
-	Glob      = FileType_GLOB
+	Minimal = TaskView_MINIMAL
+	Basic   = TaskView_BASIC
+	Full    = TaskView_FULL
 )
 
 // GenerateID generates a task ID string.

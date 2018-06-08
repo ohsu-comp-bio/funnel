@@ -20,30 +20,31 @@ func FlattenInputs(ctx context.Context, inputs []*tes.Input, store storage.Stora
 
 	var flat []*tes.Input
 	for _, input := range inputs {
-		switch input.Type {
+		list, err := store.List(ctx, input.Url)
+		if err != nil {
+			return nil, fmt.Errorf("resolving input: %v", err)
+		}
 
-		case tes.File:
-			flat = append(flat, input)
+		if len(list) == 0 {
+			ev.Error("input url did not resolve to a file", "url", input.Url)
+			return nil, fmt.Errorf("resolving input: did not resolve to a file")
+		}
 
-		case tes.Directory:
-			list, err := store.List(ctx, input.Url)
-			if err != nil {
-				return nil, fmt.Errorf("listing directory: %s", err)
-			}
-
-			if len(list) == 0 {
-				ev.Warn("download source directory is empty", "url", input.Url)
-				continue
-			}
-
-			for _, obj := range list {
+		for _, obj := range list {
+			if obj.URL == input.Url {
 				flat = append(flat, &tes.Input{
 					Url:  obj.URL,
-					Path: filepath.Join(input.Path, strings.TrimPrefix(obj.URL, strings.TrimSuffix(input.Url, "/")+"/")),
+					Path: input.Path,
 				})
+				continue
 			}
+			flat = append(flat, &tes.Input{
+				Url:  obj.URL,
+				Path: filepath.Join(input.Path, strings.TrimPrefix(obj.URL, strings.TrimSuffix(input.Url, "/")+"/")),
+			})
 		}
 	}
+
 	return flat, nil
 }
 
@@ -86,53 +87,56 @@ func FlattenOutputs(ctx context.Context, outputs []*tes.Output, store storage.St
 
 	var flat []*tes.Output
 	for _, output := range outputs {
-		switch output.Type {
-		case tes.File:
-			flat = append(flat, output)
+		ftype, err := fsutil.InferFileType(output.Path)
+		if err != nil {
+			return nil, fmt.Errorf("inferring file type: %v", err)
+		}
 
-		case tes.Directory:
-			list, err := fsutil.WalkFiles(output.Path)
+		var list []fsutil.Hostfile
+
+		switch ftype {
+		case fsutil.File:
+			absPath, err := filepath.Abs(output.Path)
 			if err != nil {
-				return nil, fmt.Errorf("walking directory: %v", err)
+				return nil, fmt.Errorf("getting absolute path of `%s`: %v", output.Path, err)
+			}
+			list = []fsutil.Hostfile{
+				{
+					Rel: "",
+					Abs: absPath,
+				},
 			}
 
+		case fsutil.Directory:
+			list, err = fsutil.WalkFiles(output.Path)
+			if err != nil {
+				return nil, fmt.Errorf("walking directory `%s`: %v", output.Path, err)
+			}
 			if len(list) == 0 {
-				ev.Warn("output directory is empty", "url", output.Url, "path", output.Path)
+				ev.Warn("directory is empty", "url", output.Url, "path", output.Path)
 				continue
 			}
 
-			for _, f := range list {
-				u, err := store.Join(output.Url, f.Rel)
-				if err != nil {
-					return nil, fmt.Errorf("joining storage url: %v", err)
-				}
-				flat = append(flat, &tes.Output{
-					Url:  u,
-					Path: f.Abs,
-				})
-			}
-
-		case tes.Glob:
-			list, err := fsutil.Glob(output.Path)
+		case fsutil.GlobExpression:
+			list, err = fsutil.Glob(output.Path)
 			if err != nil {
-				return nil, fmt.Errorf("globbing pattern: %v", err)
+				return nil, fmt.Errorf("globbing pattern `%s`: %v", output.Path, err)
 			}
-
 			if len(list) == 0 {
 				ev.Warn("glob matched zero files", "url", output.Url, "path", output.Path)
 				continue
 			}
+		}
 
-			for _, f := range list {
-				u, err := store.Join(output.Url, f.Rel)
-				if err != nil {
-					return nil, fmt.Errorf("joining storage url: %v", err)
-				}
-				flat = append(flat, &tes.Output{
-					Url:  u,
-					Path: f.Abs,
-				})
+		for _, f := range list {
+			u, err := store.Join(output.Url, f.Rel)
+			if err != nil {
+				return nil, fmt.Errorf("joining storage url: %v", err)
 			}
+			flat = append(flat, &tes.Output{
+				Url:  u,
+				Path: f.Abs,
+			})
 		}
 	}
 	return flat, nil

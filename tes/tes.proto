@@ -79,12 +79,6 @@ message Task {
   string creation_time = 13;
 }
 
-enum FileType {
-  FILE = 0;
-  DIRECTORY = 1;
-  GLOB = 2;
-}
-
 // Input describes Task input files.
 message Input {
 
@@ -109,12 +103,7 @@ message Input {
   // Path of the file inside the container.
   // Must be an absolute path.
   string path = 4;
-
-  // REQUIRED
-  //
-  // Type of the file, FILE or DIRECTORY
-  FileType type = 5;
-
+  
   // OPTIONAL
   //
   // File content literal. 
@@ -149,11 +138,6 @@ message Output {
   // Path of the file inside the container.
   // Must be an absolute path.
   string path = 4;
-
-  // REQUIRED
-  //
-  // Type of the file, FILE or DIRECTORY
-  FileType type = 5;
 }
 
 // Executor describes a command to be executed, and its environment.

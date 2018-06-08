@@ -82,6 +82,7 @@ message Task {
 enum FileType {
   FILE = 0;
   DIRECTORY = 1;
+  GLOB = 2;
 }
 
 // Input describes Task input files.

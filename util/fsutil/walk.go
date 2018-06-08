@@ -33,9 +33,13 @@ func WalkFiles(root string) ([]Hostfile, error) {
 			if err != nil {
 				return err
 			}
+			absPath, err := filepath.Abs(p)
+			if err != nil {
+				return err
+			}
 			files = append(files, Hostfile{
 				Rel:          rel,
-				Abs:          p,
+				Abs:          absPath,
 				Size:         f.Size(),
 				LastModified: f.ModTime(),
 			})

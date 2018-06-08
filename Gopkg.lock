@@ -398,6 +398,15 @@
   version = "v0.0.2"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mattn/go-zglob"
+  packages = [
+    ".",
+    "fastwalk"
+  ]
+  revision = "49693fbb3fe3c3a75fc4e4d6fb1d7cedcbdeb385"
+
+[[projects]]
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
   revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
@@ -798,6 +807,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cd4d64701c938a10c7c45314d96738196646dff2aed91440d3feb7ec9b192e9d"
+  inputs-digest = "78bca305478019f06fbcb8b605fa3977ff413a56b0371bdf71890e0cd6d93f0e"
   solver-name = "gps-cdcl"
   solver-version = 1

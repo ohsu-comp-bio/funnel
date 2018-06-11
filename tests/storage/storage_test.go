@@ -107,7 +107,7 @@ func TestSymlinkOutput(t *testing.T) {
 	id := fun.Run(`
     --sh 'echo foo > $dir/foo && ln -s $dir/foo $dir/sym && ln -s $dir/foo $sym'
     -o sym={{ .storage }}/out-sym
-    -O dir={{ .storage }}/out-dir
+    -o dir={{ .storage }}/out-dir
   `)
 	task := fun.Wait(id)
 
@@ -159,7 +159,7 @@ func TestEmptyDir(t *testing.T) {
 	id := fun.Run(`
     --sh 'echo hello'
     -i in={{ .storage }}/test_in
-    -O out={{ .storage }}/test_out
+    -o out={{ .storage }}/test_out
   `)
 	task := fun.Wait(id)
 

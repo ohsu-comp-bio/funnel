@@ -172,7 +172,7 @@ func (sw *Swift) Get(ctx context.Context, url, path string) (*Object, error) {
 	closeErr := dest.Close()
 
 	if copyErr != nil {
-		return nil, &swiftError{"copying file", url, closeErr}
+		return nil, &swiftError{"copying file", url, copyErr}
 	}
 	if closeErr != nil {
 		return nil, &swiftError{"closing file", url, closeErr}
@@ -225,7 +225,7 @@ func (sw *Swift) Put(ctx context.Context, url, path string) (*Object, error) {
 	closeErr := writer.Close()
 
 	if copyErr != nil {
-		return nil, &swiftError{"copying file", url, closeErr}
+		return nil, &swiftError{"copying file", url, copyErr}
 	}
 	if closeErr != nil {
 		return nil, &swiftError{"closing file", url, closeErr}
@@ -281,5 +281,5 @@ type swiftError struct {
 }
 
 func (s *swiftError) Error() string {
-	return fmt.Sprintf("swift: %s for URL %q: %s", s.msg, s.url, s.err)
+	return fmt.Sprintf("swift: %s for URL %q: %v", s.msg, s.url, s.err)
 }

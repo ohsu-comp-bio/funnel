@@ -64,12 +64,12 @@ func NewGoogleCloud(conf config.GoogleCloudStorage) (*GoogleCloud, error) {
 func (gs *GoogleCloud) Stat(ctx context.Context, url string) (*Object, error) {
 	u, err := gs.parse(url)
 	if err != nil {
-		return nil, fmt.Errorf("parsing object URL: %s", err)
+		return nil, err
 	}
 
 	obj, err := gs.svc.Objects.Get(u.bucket, u.path).Context(ctx).Do()
 	if err != nil {
-		return nil, fmt.Errorf("getting object: %s", err)
+		return nil, fmt.Errorf("googleStorage: calling stat on object %s: %v", url, err)
 	}
 
 	modtime, _ := time.Parse(time.RFC3339, obj.Updated)
@@ -86,7 +86,7 @@ func (gs *GoogleCloud) Stat(ctx context.Context, url string) (*Object, error) {
 func (gs *GoogleCloud) List(ctx context.Context, url string) ([]*Object, error) {
 	u, err := gs.parse(url)
 	if err != nil {
-		return nil, fmt.Errorf("parsing object URL: %s", err)
+		return nil, err
 	}
 
 	var objects []*Object
@@ -127,28 +127,28 @@ func (gs *GoogleCloud) Get(ctx context.Context, url, path string) (*Object, erro
 
 	u, err := gs.parse(url)
 	if err != nil {
-		return nil, fmt.Errorf("parsing object URL: %s", err)
+		return nil, err
 	}
 
 	resp, err := gs.svc.Objects.Get(u.bucket, u.path).Context(ctx).Download()
 	if err != nil {
-		return nil, fmt.Errorf("initiating download: %s", err)
+		return nil, fmt.Errorf("googleStorage: getting object %s: %v", url, err)
 	}
 
 	dest, err := os.Create(path)
 	if err != nil {
-		return nil, fmt.Errorf("creating host path: %s", err)
+		return nil, fmt.Errorf("googleStorage: creating file %s: %v", path, err)
 	}
 
 	_, copyErr := io.Copy(dest, fsutil.Reader(ctx, resp.Body))
 	closeErr := dest.Close()
 
 	if copyErr != nil {
-		return nil, fmt.Errorf("copying file: %s", copyErr)
+		return nil, fmt.Errorf("googleStorage: copying file: %v", copyErr)
 	}
 
 	if closeErr != nil {
-		return nil, fmt.Errorf("closing file: %s", closeErr)
+		return nil, fmt.Errorf("googleStorage: closing file: %v", closeErr)
 	}
 
 	return obj, nil
@@ -158,12 +158,12 @@ func (gs *GoogleCloud) Get(ctx context.Context, url, path string) (*Object, erro
 func (gs *GoogleCloud) Put(ctx context.Context, url, path string) (*Object, error) {
 	u, err := gs.parse(url)
 	if err != nil {
-		return nil, fmt.Errorf("parsing object URL: %s", err)
+		return nil, err
 	}
 
 	reader, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("opening host file: %s", err)
+		return nil, fmt.Errorf("googleStorage: opening file: %v", err)
 	}
 	defer reader.Close()
 
@@ -173,7 +173,7 @@ func (gs *GoogleCloud) Put(ctx context.Context, url, path string) (*Object, erro
 
 	_, err = gs.svc.Objects.Insert(u.bucket, obj).Media(fsutil.Reader(ctx, reader)).Do()
 	if err != nil {
-		return nil, fmt.Errorf("uploading object: %s", err)
+		return nil, fmt.Errorf("googleStorage: uploading object %s: %v", url, err)
 	}
 	return gs.Stat(ctx, url)
 }

@@ -31,7 +31,7 @@ func NewHTTP(conf config.HTTPStorage) (*HTTP, error) {
 func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
 	u, err := urllib.Parse(url)
 	if err != nil {
-		return nil, fmt.Errorf("parsing URL: %s", err)
+		return nil, fmt.Errorf("httpStorage: parsing URL: %s", err)
 	}
 
 	req, err := http.NewRequest("HEAD", url, nil)
@@ -46,7 +46,7 @@ func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("requesting info: got non-200 status code %d", resp.StatusCode)
+		return nil, fmt.Errorf("httpStorage: requesting info: got non-200 status code %d", resp.StatusCode)
 	}
 
 	modtime, _ := http.ParseTime(resp.Header.Get("Last-Modified"))
@@ -88,10 +88,10 @@ func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
 	closeErr := dest.Close()
 
 	if copyErr != nil {
-		return nil, fmt.Errorf("copying file: %s", copyErr)
+		return nil, fmt.Errorf("httpStorage: copying file: %s", copyErr)
 	}
 	if closeErr != nil {
-		return nil, fmt.Errorf("closing file: %s", closeErr)
+		return nil, fmt.Errorf("httpStorage: closing file: %s", closeErr)
 	}
 
 	return obj, err

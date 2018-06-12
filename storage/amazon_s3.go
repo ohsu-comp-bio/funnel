@@ -55,7 +55,7 @@ func (s3b *AmazonS3) Stat(ctx context.Context, url string) (*Object, error) {
 		Key:    aws.String(u.path),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("amazonS3: calling stat on URL %s: %v", url, err)
 	}
 	return &Object{
 		URL:          url,
@@ -127,21 +127,19 @@ func (s3b *AmazonS3) Get(ctx context.Context, url, path string) (*Object, error)
 	// Create a file to write the S3 Object contents to.
 	hf, err := os.Create(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("amazonS3: creating file: %v", err)
 	}
-	defer func() {
-		cerr := hf.Close()
-		if cerr != nil {
-			err = fmt.Errorf("%v; %v", err, cerr)
-		}
-	}()
 
-	_, err = manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
+	_, copyErr := manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
 		Bucket: aws.String(u.bucket),
 		Key:    aws.String(u.path),
 	})
-	if err != nil {
-		return nil, err
+	closeErr := hf.Close()
+	if copyErr != nil {
+		return nil, fmt.Errorf("amazonS3: copying file: %v", copyErr)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("amazonS3: closing file: %v", closeErr)
 	}
 
 	return obj, nil
@@ -159,15 +157,18 @@ func (s3b *AmazonS3) Put(ctx context.Context, url, path string) (*Object, error)
 
 	hf, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("opening host file %q, %v", path, err)
+		return nil, fmt.Errorf("amazonS3: opening file: %v", err)
 	}
 	defer hf.Close()
 
-	_, err = manager.UploadWithContext(ctx, &s3manager.UploadInput{
+	_, copyErr := manager.UploadWithContext(ctx, &s3manager.UploadInput{
 		Bucket: aws.String(u.bucket),
 		Key:    aws.String(u.path),
 		Body:   hf,
 	})
+	if copyErr != nil {
+		return nil, fmt.Errorf("amazonS3: copying file: %v", copyErr)
+	}
 
 	return s3b.Stat(ctx, url)
 }

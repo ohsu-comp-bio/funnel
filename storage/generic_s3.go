@@ -38,12 +38,12 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 	opts := minio.GetObjectOptions{}
 	obj, err := s3.client.GetObjectWithContext(ctx, u.bucket, u.path, opts)
 	if err != nil {
-		return nil, fmt.Errorf("generic s3: getting object: %s", err)
+		return nil, fmt.Errorf("genericS3: getting object: %s", err)
 	}
 
 	info, err := obj.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("generic s3: stat object: %s", err)
+		return nil, fmt.Errorf("genericS3: stat object: %s", err)
 	}
 
 	return &Object{
@@ -97,7 +97,7 @@ func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error)
 	opts := minio.GetObjectOptions{}
 	err = s3.client.FGetObjectWithContext(ctx, u.bucket, u.path, path, opts)
 	if err != nil {
-		return nil, fmt.Errorf("generic s3: getting object: %s", err)
+		return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
 	}
 	return obj, nil
 }
@@ -112,7 +112,7 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 	opts := minio.PutObjectOptions{}
 	_, err = s3.client.FPutObjectWithContext(ctx, u.bucket, u.path, path, opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("genericS3: putting object %s: %v", url, err)
 	}
 	return s3.Stat(ctx, url)
 }

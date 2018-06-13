@@ -87,9 +87,11 @@ app.service("TaskService", function(CacheFactory, $http, $q, $location) {
         // Now, for each task in the minimal view, get the basic view.
         // Separating the requests allows tasks to each be cached individually.
         var ids = []
-        for (var i = 0; i < listResponse.tasks.length; i++) {
-          var id = listResponse.tasks[i].id
-          ids.push(id)
+        if (listResponse.tasks) {
+          for (var i = 0; i < listResponse.tasks.length; i++) {
+            var id = listResponse.tasks[i].id
+            ids.push(id)
+          }
         }
         return taskSvc.BatchGet(ids, "BASIC").then(function(tasks) {
           // Reformat the response to look like a ListTasksResponse.

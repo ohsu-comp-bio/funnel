@@ -97,6 +97,7 @@ Funnel has git submodules. The Makefile usually handles this for you, but if nee
 - Commit these changes.
   - Because goreleaser requires a clean working tree in git
   - This is a special case where it's easiest to commit to master.
+- Create a git tag: `git tag X.Y.Z`
 - Run `make release`
   - This will build cross-platform binaries, build release notes,
     and draft an unpublished GitHub release.

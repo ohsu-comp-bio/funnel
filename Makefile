@@ -1,3 +1,6 @@
+# The commands used in this Makefile expect to be interpreted by bash.
+SHELL := /bin/bash
+
 TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v github-release-notes)
 
 PROTO_INC=-I ./ -I $(shell pwd)/util/proto/

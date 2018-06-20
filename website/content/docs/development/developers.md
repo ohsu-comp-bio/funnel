@@ -86,3 +86,11 @@ Funnel has git submodules. The Makefile usually handles this for you, but if nee
 [testify]: https://github.com/stretchr/testify
 [mockery]: https://github.com/vektra/mockery
 [gopath]: https://golang.org/doc/code.html#GOPATH
+
+### Making a release
+
+- Update Makefile, edit `FUNNEL_VERSION` and `LAST_PR_NUMBER`
+  - `LAST_PR_NUMBER` can be found by looking at the previous release notes from the previous release.
+- Run `make website`, which updates the download links and other content.
+  - Check the website locally by running `make website-dev`
+- Commit these changes (goreleaser requires a clean working tree in git).

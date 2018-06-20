@@ -93,6 +93,10 @@
   </url>
   
   <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/metrics/</loc>
+  </url>
+  
+  <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</loc>
   </url>
   
@@ -106,6 +110,10 @@
   
   <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</loc>
+  </url>
+  
+  <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/</loc>
   </url>
   
   <url>

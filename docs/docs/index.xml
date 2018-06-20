@@ -26,9 +26,8 @@ Setup Get started by creating a compute environment, job queue and job definitio
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/security/basic/</guid>
-      <description>Basic Auth By default, a Funnel server allows open access to its API endpoints, but it can be configured to require basic password authentication. To enable this, include a password in your config file:
-Server: User: funnel Password: abc123  Make sure to properly protect the configuration file so that it&amp;rsquo;s not readable by everyone:
-$ chmod 600 funnel.config.yml  To use the password, set the FUNNEL_SERVER_USER and FUNNEL_SERVER_PASSWORD environment variables:</description>
+      <description>Basic Auth By default, a Funnel server allows open access to its API endpoints, but it can be configured to require basic password authentication. To enable this, include users and passwords in your config file:
+Server: BasicAuth: - User: funnel Password: abc123  If you are using BoltDB or Badger, the Funnel worker communicates to the server via gRPC so you will also need to configure the RPC client.</description>
     </item>
     
     <item>
@@ -202,6 +201,15 @@ LocalStorage: # Whitelist of local directory paths which Funnel is allowed to ac
     </item>
     
     <item>
+      <title>Metrics</title>
+      <link>https://ohsu-comp-bio.github.io/funnel/docs/metrics/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://ohsu-comp-bio.github.io/funnel/docs/metrics/</guid>
+      <description> Metrics </description>
+    </item>
+    
+    <item>
       <title>MongoDB</title>
       <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -233,6 +241,17 @@ Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;q
 The Funnel server needs to run on a submission node. Configure Funnel to use PBS by including the following config:
 It is recommended to update the submit file template so that the funnel worker run command takes a config file as an argument (e.g. funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}})
 Compute: pbs PBS: Template: |#!</description>
+    </item>
+    
+    <item>
+      <title>Prometheus</title>
+      <link>https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/</guid>
+      <description>Prometheus Prometheus is a monitoring and metrics collection service. It pulls metrics from various &amp;ldquo;exporters&amp;rdquo;, collects them in a time-series database, provides a query langauge for access that data, and integrates closely with tools such as Grafana for visualization and dashboard building.
+Funnel exports these metrics:
+ funnel_tasks_state_count: the number of tasks in each state (queued, running, etc). funnel_nodes_state_count: the number of nodes in each state (alive, dead, draining, etc).</description>
     </item>
     
     <item>

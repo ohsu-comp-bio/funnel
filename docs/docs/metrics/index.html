@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
   
-  <title>AWS Batch &middot; Funnel</title>
+  <title>Metrics &middot; Funnel</title>
   
 
   
@@ -143,7 +143,7 @@
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/"
-                   class="sidebar-nav-item  active"
+                   class="sidebar-nav-item "
                 >AWS Batch</a></li>
             </ul>
           </li>
@@ -313,88 +313,7 @@
   <div class="main col span_8_of_12">
     
 
-<h1 id="aws-batch">AWS Batch</h1>
-
-<p>This guide covers deploying a Funnel server that leverages <a href="http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html">DynamoDB</a> for storage
-and <a href="http://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html">AWS Batch</a> for task execution.</p>
-
-<h2 id="setup">Setup</h2>
-
-<p>Get started by creating a compute environment, job queue and job definition using either
-the Funnel CLI or the AWS Batch web console. To manage the permissions of instanced
-AWS Batch jobs create a new IAM role. For the Funnel configuration outlined
-in this document, this role will need to provide read and write access to both S3 and DynamoDB.</p>
-
-<p><em>Note</em>: We recommend creating the Job Definition with Funnel by running: <code>funnel aws batch create-job-definition</code>.
-Funnel expects the JobDefinition to start a Funnel worker process with a specific configuration.
-Only advanced users should consider making any substantial changes to this Job Definition.</p>
-
-<p>AWS Batch tasks, by default, launch the ECS Optimized AMI which includes
-an 8GB volume for the operating system and a 22GB volume for Docker image and metadata
-storage. The default Docker configuration allocates up to 10GB of this storage to
-each container instance. <a href="http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html">Read more about the default AMI</a>. Due to these limitations, we
-recommend <a href="http://docs.aws.amazon.com/batch/latest/userguide/create-batch-ami.html">creating a custom AMI</a>. Because AWS Batch has the same requirements for your
-AMI as Amazon ECS, use the default Amazon ECS-optimized Amazon Linux AMI as a base and change it
-to better suit your tasks.</p>
-
-<h3 id="steps">Steps</h3>
-
-<ul>
-<li><a href="https://us-west-2.console.aws.amazon.com/batch/home?region=us-west-2#/compute-environments/new">Create a Compute Environment</a></li>
-<li>(<em>Optional</em>) <a href="http://docs.aws.amazon.com/batch/latest/userguide/create-batch-ami.html">Create a custom AMI</a></li>
-<li><a href="https://us-west-2.console.aws.amazon.com/batch/home?region=us-west-2#/queues/new">Create a Job Queue</a></li>
-<li><a href="https://console.aws.amazon.com/iam/home?region=us-west-2#/roles$new?step=permissions&amp;selectedService=EC2ContainerService&amp;selectedUseCase=EC2ContainerTaskRole">Create an EC2ContainerTaskRole with policies for managing access to S3 and DynamoDB</a></li>
-<li><a href="https://us-west-2.console.aws.amazon.com/batch/home?region=us-west-2#/job-definitions/new">Create a Job Definition</a></li>
-</ul>
-
-<p>For more information check out AWS Batch&rsquo;s <a href="http://docs.aws.amazon.com/batch/latest/userguide/Batch_GetStarted.html">getting started guide</a>.</p>
-
-<h3 id="quickstart">Quickstart</h3>
-
-<pre><code>$ funnel aws batch create-all-resources --region us-west-2
-
-</code></pre>
-
-<p>This command will create a compute environment, job queue, IAM role and job definition.</p>
-
-<h2 id="configuring-the-funnel-server">Configuring the Funnel Server</h2>
-
-<p>Below is an example configuration. Note that the <code>Key</code>
-and <code>Secret</code> fields are left blank in the configuration of the components. This is because
-Funnel will, by default, try to will try to automatically load credentials from the environment.
-Alternatively, you may explicitly set the credentials in the config.</p>
-
-<pre><code class="language-YAML">Database: &quot;dynamodb&quot;
-Compute: &quot;aws-batch&quot;
-EventWriters:
-  - &quot;log&quot;
-
-Dynamodb:
-  TableBasename: &quot;funnel&quot;
-  Region: &quot;us-west-2&quot;
-  Key: &quot;&quot;
-  Secret: &quot;&quot;
-
-Batch:
-  JobDefinition: &quot;funnel-job-def&quot;
-  JobQueue: &quot;funnel-job-queue&quot; 
-  Region: &quot;us-west-2&quot;
-  Key: &quot;&quot;
-  Secret: &quot;&quot;
-          
-AmazonS3:
-  Key: &quot;&quot;
-  Secret: &quot;&quot;
-</code></pre>
-
-<h3 id="start-the-server">Start the server</h3>
-
-<pre><code>funnel server run --config /path/to/config.yaml
-</code></pre>
-
-<h3 id="known-issues">Known issues</h3>
-
-<p>The <code>Task.Resources.DiskGb</code> field does not have any effect. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/317">issue 317</a>.</p>
+<h1 id="metrics">Metrics</h1>
 
   </div>
 

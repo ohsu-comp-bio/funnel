@@ -254,6 +254,21 @@
         
         <li>
           
+          <span class="intermediate">Metrics</span></li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/"
+                   class="sidebar-nav-item "
+                >Prometheus</a></li>
+            </ul>
+          </li>
+          
+          
+        
+        <li>
+          
           <span class="intermediate">Security</span></li>
           
           <li>
@@ -302,9 +317,18 @@
 
 <p>By default, a Funnel server allows open access to its API endpoints, but it
 can be configured to require basic password authentication. To enable this,
-include a password in your config file:</p>
+include users and passwords in your config file:</p>
 
 <pre><code class="language-yaml">Server:
+  BasicAuth:
+    - User: funnel
+      Password: abc123
+</code></pre>
+
+<p>If you are using BoltDB or Badger, the Funnel worker communicates to the server via gRPC
+so you will also need to configure the RPC client.</p>
+
+<pre><code class="language-yaml">RPCClient:
   User: funnel
   Password: abc123
 </code></pre>

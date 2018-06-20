@@ -382,6 +382,41 @@ mock interfaces in test code, for example, to mock the Google Cloud APIs.</p>
 <p>Funnel has git submodules. The Makefile usually handles this for you, but if needed,
 <code>git submodule update --init --recursive</code> will get all the submodules.</p>
 
+<h3 id="making-a-release">Making a release</h3>
+
+<ul>
+<li>Update Makefile, edit <code>FUNNEL_VERSION</code> and <code>LAST_PR_NUMBER</code>
+
+<ul>
+<li><code>LAST_PR_NUMBER</code> can be found by looking at the previous release notes
+from the previous release.</li>
+</ul></li>
+<li>Run <code>make website</code>, which updates the download links and other content.
+
+<ul>
+<li>Check the website locally by running <code>make website-dev</code></li>
+</ul></li>
+<li>Commit these changes.
+
+<ul>
+<li>Because goreleaser requires a clean working tree in git</li>
+<li>This is a special case where it&rsquo;s easiest to commit to master.</li>
+</ul></li>
+<li>Run <code>make release</code>
+
+<ul>
+<li>This will build cross-platform binaries, build release notes,
+and draft an unpublished GitHub release.</li>
+<li>This also builds a docker container and pushes to Docker Hub.
+This does <strong>not</strong> update the &ldquo;latest&rdquo; tag.</li>
+<li>Check the built artifacts by downloading the tarballs from the GitHub draft release
+and running <code>funnel version</code>.</li>
+</ul></li>
+<li><code>git push origin master</code> to push your website and release changes.</li>
+<li>Publish the draft release on GitHub.</li>
+<li>Copy <code>build/release/funnel.rb</code> to the <code>ohsu-comp-bio/homebrew-formula/Formula/funnel.rb</code> Homebrew formula repo, and push those changes to master.</li>
+</ul>
+
   </div>
 
 </div>

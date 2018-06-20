@@ -191,7 +191,7 @@ snapshot: depends
 		--rm-dist \
 		--snapshot
 
-release: depends
+release:
 	@go get github.com/buchanae/github-release-notes
 	@goreleaser \
 		--rm-dist \

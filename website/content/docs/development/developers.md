@@ -90,7 +90,20 @@ Funnel has git submodules. The Makefile usually handles this for you, but if nee
 ### Making a release
 
 - Update Makefile, edit `FUNNEL_VERSION` and `LAST_PR_NUMBER`
-  - `LAST_PR_NUMBER` can be found by looking at the previous release notes from the previous release.
+  - `LAST_PR_NUMBER` can be found by looking at the previous release notes
+    from the previous release.
 - Run `make website`, which updates the download links and other content.
   - Check the website locally by running `make website-dev`
-- Commit these changes (goreleaser requires a clean working tree in git).
+- Commit these changes.
+  - Because goreleaser requires a clean working tree in git
+  - This is a special case where it's easiest to commit to master.
+- Run `make release`
+  - This will build cross-platform binaries, build release notes,
+    and draft an unpublished GitHub release.
+  - This also builds a docker container and pushes to Docker Hub.
+    This does **not** update the "latest" tag.
+  - Check the built artifacts by downloading the tarballs from the GitHub draft release
+    and running `funnel version`.
+- `git push origin master` to push your website and release changes.
+- Publish the draft release on GitHub.
+- Copy `build/release/funnel.rb` to the `ohsu-comp-bio/homebrew-formula/Formula/funnel.rb` Homebrew formula repo, and push those changes to master.

@@ -91,6 +91,9 @@ func DefaultConfig() Config {
 		HTTPStorage: HTTPStorage{
 			Timeout: Duration(time.Second * 60),
 		},
+		FTPStorage: FTPStorage{
+			Timeout: Duration(time.Second * 10),
+		},
 		AmazonS3: AmazonS3Storage{
 			AWSConfig: AWSConfig{
 				MaxRetries: 10,

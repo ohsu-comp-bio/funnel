@@ -84,6 +84,14 @@ func NewMux(conf config.Config) (*Mux, error) {
 		mux.Backends = append(mux.Backends, http)
 	}
 
+	if conf.FTPStorage.Valid() {
+		ftp, err := NewFTP(conf.FTPStorage)
+		if err != nil {
+			return mux, fmt.Errorf("failed to config ftp storage backend: %s", err)
+		}
+		mux.Backends = append(mux.Backends, ftp)
+	}
+
 	return mux, nil
 }
 

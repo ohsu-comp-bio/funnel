@@ -44,6 +44,7 @@ type Config struct {
 	GoogleStorage GoogleCloudStorage
 	Swift         SwiftStorage
 	HTTPStorage   HTTPStorage
+	FTPStorage    FTPStorage
 }
 
 // BasicCredential describes a username and password for use with Funnel's basic auth.
@@ -349,5 +350,17 @@ type HTTPStorage struct {
 
 // Valid validates the HTTPStorage configuration.
 func (h HTTPStorage) Valid() bool {
+	return !h.Disabled
+}
+
+// FTPStorage configures the http storage backend.
+type FTPStorage struct {
+	Disabled bool
+	// Timeout duration for http GET calls
+	Timeout Duration
+}
+
+// Valid validates the FTPStorage configuration.
+func (h FTPStorage) Valid() bool {
 	return !h.Disabled
 }

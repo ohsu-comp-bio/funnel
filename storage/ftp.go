@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/textproto"
 	urllib "net/url"
 	"os"
 	pathlib "path"
@@ -174,7 +175,6 @@ func (b *ftpclient) Get(ctx context.Context, url, path string) (*Object, error) 
 		return nil, err
 	}
 
-	fmt.Println("GET", obj.Name)
 	src, err := b.client.Retr(obj.Name)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: executing RETR request: %s", err)
@@ -212,15 +212,22 @@ func (b *ftpclient) Put(ctx context.Context, url string, hostPath string) (*Obje
 	}
 	defer reader.Close()
 
-	//path := strings.TrimPrefix(u.Path, "/")
-	dir, name := pathlib.Split(u.Path)
-	fmt.Println("PUT", dir, name)
-	if dir != "" {
-		err := b.client.ChangeDir(dir)
-		if err != nil {
-			return nil, fmt.Errorf("ftpStorage: changing directory to %q: %v", dir, err)
+	dirpath, name := pathlib.Split(u.Path)
+	if dirpath != "" {
+		for _, dir := range strings.Split(strings.Trim(dirpath, "/"), "/") {
+			err := b.client.ChangeDir(dir)
+			if e, ok := err.(*textproto.Error); ok && e.Code == ftp.StatusFileUnavailable {
+				// Directory doesn't exist. Create it.
+				err = b.client.MakeDir(dir)
+				if err == nil {
+					err = b.client.ChangeDir(dir)
+				}
+			}
+
+			if err != nil {
+				return nil, fmt.Errorf("ftpStorage: changing directory to %q: %v", dir, err)
+			}
 		}
-		fmt.Println(b.client.CurrentDir())
 	}
 
 	err = b.client.Stor(name, reader)

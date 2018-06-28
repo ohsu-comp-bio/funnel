@@ -88,6 +88,12 @@ jobs:
         - make test-pubsub
       env:
         - n=pubsub
+    - script:
+        - make start-ftp
+        - sleep 10
+        - make test-ftp
+      env:
+        - n=ftp
 
 notifications:
   email: false

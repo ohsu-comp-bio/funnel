@@ -24,7 +24,74 @@ func NewFTP(conf config.FTPStorage) (*FTP, error) {
 	return &FTP{}, nil
 }
 
-func (b *FTP) connect(url string) (*ftp.ServerConn, error) {
+// Stat returns information about the object at the given storage URL.
+func (b *FTP) Stat(ctx context.Context, url string) (*Object, error) {
+	client, err := connect(url)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+	return client.Stat(ctx, url)
+}
+
+// Get copies a file from a given URL to the host path.
+func (b *FTP) Get(ctx context.Context, url, path string) (*Object, error) {
+	client, err := connect(url)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+	return client.Get(ctx, url, path)
+}
+
+// Put is not supported by FTP storage.
+func (b *FTP) Put(ctx context.Context, url string, hostPath string) (*Object, error) {
+	client, err := connect(url)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+	return client.Put(ctx, url, hostPath)
+}
+
+// Join joins the given URL with the given subpath.
+func (b *FTP) Join(url, path string) (string, error) {
+	return ftpJoin(url, path)
+}
+
+// List is not supported by FTP storage.
+func (b *FTP) List(ctx context.Context, url string) ([]*Object, error) {
+	client, err := connect(url)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+	return client.List(ctx, url)
+}
+
+// UnsupportedOperations describes which operations (Get, Put, etc) are not
+// supported for the given URL.
+func (b *FTP) UnsupportedOperations(url string) UnsupportedOperations {
+	if err := b.supportsPrefix(url); err != nil {
+		return AllUnsupported(err)
+	}
+	return AllSupported()
+}
+
+func (b *FTP) supportsPrefix(url string) error {
+	if !strings.HasPrefix(url, "ftp://") && !strings.HasPrefix(url, "sftp://") {
+		return &ErrUnsupportedProtocol{"ftpStorage"}
+	}
+	return nil
+}
+
+// ftpclient exists implements the storage API and reuses an FTP client
+// for recursive calls.
+type ftpclient struct {
+	client *ftp.ServerConn
+}
+
+func connect(url string) (*ftpclient, error) {
 	u, err := urllib.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: parsing URL: %s", err)
@@ -39,40 +106,46 @@ func (b *FTP) connect(url string) (*ftp.ServerConn, error) {
 		}
 	}
 
-	// TODO we should probably optimize client connections.
-	//
-	//      most of the FTP code in this file is creating/using clients
-	//      very inefficiently. For example, a directory download or list,
-	//      is probably going to recreate the same client many times.
 	client, err := ftp.Dial(host)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: connecting to server: %v", err)
 	}
 
-	// TODO should be pulling auth details from both the URL and the config.
-	//      want to figure out how to manage auth creds for multiple FTP sites.
-	err = client.Login("anonymous", "anonymous")
+	user := "anonymous"
+	pass := "anonymous"
+
+	if u.User != nil {
+		user = u.User.Username()
+		// "anonymous" doesn't make sense if there's a username,
+		// so clear it. Then check if the password is set by the URL.
+		pass = ""
+		if p, ok := u.User.Password(); ok {
+			pass = p
+		}
+	}
+
+	err = client.Login(user, pass)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: logging in: %v", err)
 	}
-	return client, nil
+	return &ftpclient{client}, nil
+}
+
+func (b *ftpclient) Close() {
+	b.client.Logout()
+	b.client.Quit()
 }
 
 // Stat returns information about the object at the given storage URL.
-func (b *FTP) Stat(ctx context.Context, url string) (*Object, error) {
+func (b *ftpclient) Stat(ctx context.Context, url string) (*Object, error) {
 	u, err := urllib.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: parsing URL: %s", err)
 	}
 
-	client, err := b.connect(url)
+	resp, err := b.client.List(u.Path)
 	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.List(u.Path)
-	if err != nil {
-		return nil, fmt.Errorf("ftpStorage: listing path: %v", err)
+		return nil, fmt.Errorf("ftpStorage: listing path: %q %v", u.Path, err)
 	}
 
 	if len(resp) != 1 {
@@ -95,19 +168,14 @@ func (b *FTP) Stat(ctx context.Context, url string) (*Object, error) {
 }
 
 // Get copies a file from a given URL to the host path.
-func (b *FTP) Get(ctx context.Context, url, path string) (*Object, error) {
+func (b *ftpclient) Get(ctx context.Context, url, path string) (*Object, error) {
 	obj, err := b.Stat(ctx, url)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := b.connect(url)
-	if err != nil {
-		return nil, err
-	}
-
 	fmt.Println("GET", obj.Name)
-	src, err := client.Retr(obj.Name)
+	src, err := b.client.Retr(obj.Name)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: executing RETR request: %s", err)
 	}
@@ -131,8 +199,7 @@ func (b *FTP) Get(ctx context.Context, url, path string) (*Object, error) {
 	return obj, err
 }
 
-// Put is not supported by FTP storage.
-func (b *FTP) Put(ctx context.Context, url string, hostPath string) (*Object, error) {
+func (b *ftpclient) Put(ctx context.Context, url string, hostPath string) (*Object, error) {
 
 	u, err := urllib.Parse(url)
 	if err != nil {
@@ -145,23 +212,18 @@ func (b *FTP) Put(ctx context.Context, url string, hostPath string) (*Object, er
 	}
 	defer reader.Close()
 
-	client, err := b.connect(url)
-	if err != nil {
-		return nil, err
-	}
-
 	//path := strings.TrimPrefix(u.Path, "/")
 	dir, name := pathlib.Split(u.Path)
 	fmt.Println("PUT", dir, name)
 	if dir != "" {
-		err := client.ChangeDir(dir)
+		err := b.client.ChangeDir(dir)
 		if err != nil {
 			return nil, fmt.Errorf("ftpStorage: changing directory to %q: %v", dir, err)
 		}
-		fmt.Println(client.CurrentDir())
+		fmt.Println(b.client.CurrentDir())
 	}
 
-	err = client.Stor(name, reader)
+	err = b.client.Stor(name, reader)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: uploading file for %q: %v", url, err)
 	}
@@ -169,26 +231,15 @@ func (b *FTP) Put(ctx context.Context, url string, hostPath string) (*Object, er
 	return b.Stat(ctx, url)
 }
 
-// Join joins the given URL with the given subpath.
-func (b *FTP) Join(url, path string) (string, error) {
-	return strings.TrimSuffix(url, "/") + "/" + path, nil
-}
-
-// List is not supported by FTP storage.
-func (b *FTP) List(ctx context.Context, url string) ([]*Object, error) {
+func (b *ftpclient) List(ctx context.Context, url string) ([]*Object, error) {
 	u, err := urllib.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: parsing URL: %s", err)
 	}
 
-	client, err := b.connect(url)
+	resp, err := b.client.List(u.Path)
 	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.List(u.Path)
-	if err != nil {
-		return nil, fmt.Errorf("ftpStorage: listing path: %v", err)
+		return nil, fmt.Errorf("ftpStorage: listing path: %q %v", u.Path, err)
 	}
 
 	// Special case where the user called List on a regular file.
@@ -210,7 +261,11 @@ func (b *FTP) List(ctx context.Context, url string) ([]*Object, error) {
 		switch r.Type {
 
 		case ftp.EntryTypeFolder:
-			joined, err := b.Join(url, r.Name)
+			if r.Name == "." || r.Name == ".." {
+				continue
+			}
+
+			joined, err := ftpJoin(url, r.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -226,7 +281,7 @@ func (b *FTP) List(ctx context.Context, url string) ([]*Object, error) {
 			// TODO there is a "EntryTypeLink" type. can we support that?
 
 		case ftp.EntryTypeFile:
-			joined, err := b.Join(url, r.Name)
+			joined, err := ftpJoin(url, r.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -243,18 +298,7 @@ func (b *FTP) List(ctx context.Context, url string) ([]*Object, error) {
 	return objects, nil
 }
 
-// UnsupportedOperations describes which operations (Get, Put, etc) are not
-// supported for the given URL.
-func (b *FTP) UnsupportedOperations(url string) UnsupportedOperations {
-	if err := b.supportsPrefix(url); err != nil {
-		return AllUnsupported(err)
-	}
-	return AllSupported()
-}
-
-func (b *FTP) supportsPrefix(url string) error {
-	if !strings.HasPrefix(url, "ftp://") && !strings.HasPrefix(url, "sftp://") {
-		return &ErrUnsupportedProtocol{"ftpStorage"}
-	}
-	return nil
+// ftpJoin joins the given URL with the given subpath.
+func ftpJoin(url, path string) (string, error) {
+	return strings.TrimSuffix(url, "/") + "/" + path, nil
 }

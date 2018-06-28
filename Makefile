@@ -170,6 +170,12 @@ test-pubsub:
 	@PUBSUB_EMULATOR_HOST=localhost:8085 \
 	  go test ./tests/pubsub/ -funnel-config `pwd`/tests/pubsub.config.yml
 
+start-ftp:
+	@cd tests/ftp-test-server/ && ./start-server.sh
+
+test-ftp:
+	@go test -v ./tests/storage -run TestFTPStorage
+
 webdash-install:
 	@npm install --prefix ./webdash
 	@go get -u github.com/jteeuwen/go-bindata/...

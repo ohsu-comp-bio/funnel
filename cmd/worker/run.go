@@ -18,16 +18,16 @@ import (
 )
 
 // Run runs the "worker run" command.
-func Run(ctx context.Context, conf config.Config, log *logger.Logger, taskID string) error {
-	w, err := NewWorker(ctx, conf, log)
+func Run(ctx context.Context, conf config.Config, log *logger.Logger, opts *WorkerOpts) error {
+	w, err := NewWorker(ctx, conf, log, opts)
 	if err != nil {
 		return err
 	}
-	return w.Run(ctx, taskID)
+	return w.Run(ctx)
 }
 
 // NewWorker returns a new Funnel worker based on the given config.
-func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*worker.DefaultWorker, error) {
+func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts *WorkerOpts) (*worker.DefaultWorker, error) {
 	log.Debug("NewWorker", "config", conf)
 
 	var err error
@@ -43,61 +43,70 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger) (*wo
 		eventWriterSet[strings.ToLower(w)] = nil
 	}
 
-	for e := range eventWriterSet {
-		switch e {
-		case "log":
-			writer = &events.Logger{Log: log}
-		case "boltdb":
-			writer, err = events.NewRPCWriter(ctx, conf.RPCClient)
-		case "badger":
-			writer, err = events.NewRPCWriter(ctx, conf.RPCClient)
-		case "dynamodb":
-			writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
-		case "datastore":
-			writer, err = datastore.NewDatastore(conf.Datastore)
-		case "elastic":
-			writer, err = elastic.NewElastic(conf.Elastic)
-		case "kafka":
-			writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
-		case "pubsub":
-			writer, err = events.NewPubSubWriter(ctx, conf.PubSub)
-		case "mongodb":
-			writer, err = mongodb.NewMongoDB(conf.MongoDB)
-		default:
-			err = fmt.Errorf("unknown event writer: %s", e)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
-		}
-		if writer != nil {
-			writers = append(writers, writer)
+	// TODO bad hack
+	if opts.TaskFile != "" {
+		writer = &events.Logger{Log: log}
+	} else {
+		for e := range eventWriterSet {
+			switch e {
+			case "log":
+				writer = &events.Logger{Log: log}
+			case "boltdb":
+				writer, err = events.NewRPCWriter(ctx, conf.RPCClient)
+			case "badger":
+				writer, err = events.NewRPCWriter(ctx, conf.RPCClient)
+			case "dynamodb":
+				writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+			case "datastore":
+				writer, err = datastore.NewDatastore(conf.Datastore)
+			case "elastic":
+				writer, err = elastic.NewElastic(conf.Elastic)
+			case "kafka":
+				writer, err = events.NewKafkaWriter(ctx, conf.Kafka)
+			case "pubsub":
+				writer, err = events.NewPubSubWriter(ctx, conf.PubSub)
+			case "mongodb":
+				writer, err = mongodb.NewMongoDB(conf.MongoDB)
+			default:
+				err = fmt.Errorf("unknown event writer: %s", e)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
+			}
+			if writer != nil {
+				writers = append(writers, writer)
+			}
 		}
 	}
 
 	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
 	writer = &events.ErrLogger{Writer: writer, Log: log}
 
-	switch strings.ToLower(conf.Database) {
-	case "datastore":
-		db, err = datastore.NewDatastore(conf.Datastore)
-	case "dynamodb":
-		db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
-	case "elastic":
-		db, err = elastic.NewElastic(conf.Elastic)
-	case "mongodb":
-		db, err = mongodb.NewMongoDB(conf.MongoDB)
-	case "boltdb":
-		reader, err = worker.NewRPCTaskReader(ctx, conf.RPCClient)
-	case "badger":
-		reader, err = worker.NewRPCTaskReader(ctx, conf.RPCClient)
-	default:
-		err = fmt.Errorf("unknown database: '%s'", conf.Database)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate database client: %v", err)
-	}
-	if reader == nil {
-		reader = worker.NewGenericTaskReader(db.GetTask)
+	if opts.TaskFile != "" {
+		reader = &worker.FileTaskReader{Path: opts.TaskFile}
+	} else {
+		switch strings.ToLower(conf.Database) {
+		case "datastore":
+			db, err = datastore.NewDatastore(conf.Datastore)
+		case "dynamodb":
+			db, err = dynamodb.NewDynamoDB(conf.DynamoDB)
+		case "elastic":
+			db, err = elastic.NewElastic(conf.Elastic)
+		case "mongodb":
+			db, err = mongodb.NewMongoDB(conf.MongoDB)
+		case "boltdb":
+			reader, err = worker.NewRPCTaskReader(ctx, conf.RPCClient, opts.TaskID)
+		case "badger":
+			reader, err = worker.NewRPCTaskReader(ctx, conf.RPCClient, opts.TaskID)
+		default:
+			err = fmt.Errorf("unknown database: '%s'", conf.Database)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate database client: %v", err)
+		}
+		if reader == nil {
+			reader = worker.NewGenericTaskReader(db.GetTask, opts.TaskID)
+		}
 	}
 
 	store, err := storage.NewMux(conf)

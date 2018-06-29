@@ -12,30 +12,31 @@ import (
 type RPCTaskReader struct {
 	client tes.TaskServiceClient
 	conn   *grpc.ClientConn
+	taskID string
 }
 
 // NewRPCTaskReader returns a new RPC-based task reader.
-func NewRPCTaskReader(ctx context.Context, conf config.RPCClient) (*RPCTaskReader, error) {
+func NewRPCTaskReader(ctx context.Context, conf config.RPCClient, taskID string) (*RPCTaskReader, error) {
 	conn, err := util.Dial(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
 	cli := tes.NewTaskServiceClient(conn)
-	return &RPCTaskReader{cli, conn}, nil
+	return &RPCTaskReader{cli, conn, taskID}, nil
 }
 
 // Task returns the task descriptor.
-func (r *RPCTaskReader) Task(ctx context.Context, taskID string) (*tes.Task, error) {
+func (r *RPCTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 	return r.client.GetTask(ctx, &tes.GetTaskRequest{
-		Id:   taskID,
+		Id:   r.taskID,
 		View: tes.TaskView_FULL,
 	})
 }
 
 // State returns the current state of the task.
-func (r *RPCTaskReader) State(ctx context.Context, taskID string) (tes.State, error) {
+func (r *RPCTaskReader) State(ctx context.Context) (tes.State, error) {
 	t, err := r.client.GetTask(ctx, &tes.GetTaskRequest{
-		Id:   taskID,
+		Id:   r.taskID,
 		View: tes.TaskView_MINIMAL,
 	})
 	return t.GetState(), err

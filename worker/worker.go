@@ -26,7 +26,7 @@ type DefaultWorker struct {
 }
 
 // Run runs the Worker.
-func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) {
+func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// The code here is verbose, but simple; mainly loops and simple error checking.
 	//
@@ -44,9 +44,21 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	var run helper
 	var task *tes.Task
 
+	task, run.syserr = r.TaskReader.Task(pctx)
+	// TODO if we failed to retrieve the task, we can't do anything useful.
+	//      but, it's also difficult to report the failure usefully.
+	if run.syserr != nil {
+		r.EventWriter.WriteEvent(pctx, events.NewSystemLog("unknown", 0, 0, "error",
+			"failed to get task. ID unknown", map[string]string{
+				"error": run.syserr.Error(),
+			}))
+		runerr = run.syserr
+		return
+	}
+
 	// set up task specific utilities
-	event = events.NewTaskWriter(taskID, 0, r.EventWriter)
-	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, taskID))
+	event = events.NewTaskWriter(task.GetId(), 0, r.EventWriter)
+	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, task.GetId()))
 
 	event.Info("Version", version.LogFields()...)
 	event.State(tes.State_INITIALIZING)
@@ -55,8 +67,6 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 	if name, err := os.Hostname(); err == nil {
 		event.Metadata(map[string]string{"hostname": name})
 	}
-
-	task, run.syserr = r.TaskReader.Task(pctx, taskID)
 
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
@@ -95,7 +105,7 @@ func (r *DefaultWorker) Run(pctx context.Context, taskID string) (runerr error) 
 		run.syserr = e
 	})
 
-	ctx := r.pollForCancel(pctx, taskID, func() { run.taskCanceled = true })
+	ctx := r.pollForCancel(pctx, func() { run.taskCanceled = true })
 	run.ctx = ctx
 
 	// Prepare file mapper, which maps task file URLs to host filesystem paths
@@ -223,7 +233,7 @@ func (r *DefaultWorker) validate(mapper *FileMapper) error {
 	return nil
 }
 
-func (r *DefaultWorker) pollForCancel(pctx context.Context, taskID string, cancelCallback func()) context.Context {
+func (r *DefaultWorker) pollForCancel(pctx context.Context, cancelCallback func()) context.Context {
 	taskctx, cancel := context.WithCancel(pctx)
 
 	// Start a goroutine that polls the server to watch for a canceled state.
@@ -237,7 +247,7 @@ func (r *DefaultWorker) pollForCancel(pctx context.Context, taskID string, cance
 			case <-taskctx.Done():
 				return
 			case <-ticker.C:
-				state, _ := r.TaskReader.State(taskctx, taskID)
+				state, _ := r.TaskReader.State(taskctx)
 				if tes.TerminalState(state) {
 					cancel()
 					cancelCallback()

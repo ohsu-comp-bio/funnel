@@ -19,7 +19,7 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 	conf.Node.ID = scheduler.GenNodeID()
 
 	factory := func(ctx context.Context, taskID string) error {
-		w, err := workerCmd.NewWorker(ctx, conf, log, &workerCmd.WorkerOpts{
+		w, err := workerCmd.NewWorker(ctx, conf, log, &workerCmd.Options{
 			TaskID: taskID,
 		})
 		if err != nil {

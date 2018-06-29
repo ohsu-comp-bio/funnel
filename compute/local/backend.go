@@ -3,15 +3,12 @@ package local
 
 import (
 	"context"
-	"syscall"
-	"time"
 
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 // NewBackend returns a new local Backend instance.
@@ -38,10 +35,9 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 // Submit submits a task. For the Local backend this results in the task
 // running immediately.
 func (b *Backend) Submit(task *tes.Task) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = util.SignalContext(ctx, time.Millisecond, syscall.SIGINT, syscall.SIGTERM)
+	ctx := context.Background()
 
-	w, err := workerCmd.NewWorker(ctx, b.conf, b.log, &workerCmd.WorkerOpts{
+	w, err := workerCmd.NewWorker(ctx, b.conf, b.log, &workerCmd.Options{
 		TaskID: task.Id,
 	})
 	if err != nil {
@@ -49,7 +45,6 @@ func (b *Backend) Submit(task *tes.Task) error {
 	}
 
 	go func() {
-		defer cancel()
 		w.Run(ctx)
 	}()
 	return nil

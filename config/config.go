@@ -37,6 +37,8 @@ type Config struct {
 		Template string
 	}
 	AWSBatch AWSBatch
+  GooglePipelines GooglePipelines
+
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage
@@ -243,6 +245,17 @@ type AWSBatch struct {
 	// to those reported by AWS Batch
 	ReconcileRate Duration
 	AWSConfig
+}
+
+type GooglePipelines struct {
+  // Google Cloud project ID.
+  Project string
+	// If no account file is provided then Funnel will try to use Google Application
+	// Default Credentials to authorize and authenticate the client.
+  CredentialsFile string
+	// ReconcileRate is how often the compute backend compares states in Funnel's backend
+	// to those reported by the backend
+	ReconcileRate Duration
 }
 
 // Datastore configures access to a Google Cloud Datastore database backend.

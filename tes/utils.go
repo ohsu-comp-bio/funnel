@@ -33,6 +33,7 @@ const (
 	Full      = TaskView_FULL
 	File      = FileType_FILE
 	Directory = FileType_DIRECTORY
+	Glob      = FileType_GLOB
 )
 
 // GenerateID generates a task ID string.

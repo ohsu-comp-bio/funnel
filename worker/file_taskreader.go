@@ -24,7 +24,6 @@ func (f *FileTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 		return nil, err
 	}
 
-	fmt.Printf("%#v\n", f.task)
 	return f.task, nil
 }
 

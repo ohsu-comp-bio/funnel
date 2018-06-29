@@ -73,10 +73,10 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts
 			if err != nil {
 				return nil, fmt.Errorf("error occurred while initializing the %s event writer: %v", e, err)
 			}
-			if writer != nil {
-				writers = append(writers, writer)
-			}
 		}
+	}
+	if writer != nil {
+		writers = append(writers, writer)
 	}
 
 	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}

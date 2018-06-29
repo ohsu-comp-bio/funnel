@@ -13,6 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type WorkerOpts struct {
+	TaskID   string
+	TaskFile string
+}
+
 // NewCommand returns the worker command
 func NewCommand() *cobra.Command {
 	cmd, _ := newCommandHooks()
@@ -20,7 +25,7 @@ func NewCommand() *cobra.Command {
 }
 
 type hooks struct {
-	Run func(ctx context.Context, conf config.Config, log *logger.Logger, taskID string) error
+	Run func(ctx context.Context, conf config.Config, log *logger.Logger, opts *WorkerOpts) error
 }
 
 func newCommandHooks() (*cobra.Command, *hooks) {
@@ -32,8 +37,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		configFile string
 		conf       config.Config
 		flagConf   config.Config
-		taskID     string
 	)
+	opts := &WorkerOpts{}
 
 	cmd := &cobra.Command{
 		Use:   "worker",
@@ -59,8 +64,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Short: "Run a task directly, bypassing the server.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if taskID == "" {
-				return fmt.Errorf("no taskID was provided")
+			if opts.TaskID == "" && opts.TaskFile == "" {
+				return fmt.Errorf("no task ID nor task file was provided")
 			}
 
 			log := logger.NewLogger("worker", conf.Logger)
@@ -68,12 +73,13 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			ctx, cancel := context.WithCancel(context.Background())
 			ctx = util.SignalContext(ctx, time.Millisecond*500, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()
-			return hooks.Run(ctx, conf, log, taskID)
+			return hooks.Run(ctx, conf, log, opts)
 		},
 	}
 
 	f = run.Flags()
-	f.StringVarP(&taskID, "taskID", "t", taskID, "Task ID")
+	f.StringVarP(&opts.TaskID, "taskID", "t", opts.TaskID, "Task ID")
+	f.StringVarP(&opts.TaskFile, "taskFile", "f", opts.TaskFile, "Task file")
 	cmd.AddCommand(run)
 
 	return cmd, hooks

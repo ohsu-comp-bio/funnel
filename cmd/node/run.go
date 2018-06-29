@@ -18,12 +18,18 @@ import (
 func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 	conf.Node.ID = scheduler.GenNodeID()
 
-	w, err := workerCmd.NewWorker(ctx, conf, log)
-	if err != nil {
-		return err
+	factory := func(ctx context.Context, taskID string) error {
+		w, err := workerCmd.NewWorker(ctx, conf, log, &workerCmd.WorkerOpts{
+			TaskID: taskID,
+		})
+		if err != nil {
+			return err
+		}
+		w.Run(ctx)
+		return nil
 	}
 
-	n, err := scheduler.NewNodeProcess(ctx, conf, w.Run, log)
+	n, err := scheduler.NewNodeProcess(ctx, conf, factory, log)
 	if err != nil {
 		return err
 	}

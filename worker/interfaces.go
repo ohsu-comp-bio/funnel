@@ -8,6 +8,6 @@ import (
 // TaskReader is a type which reads task information
 // during task execution.
 type TaskReader interface {
-	Task(ctx context.Context, taskID string) (*tes.Task, error)
-	State(ctx context.Context, taskID string) (tes.State, error)
+	Task(ctx context.Context) (*tes.Task, error)
+	State(ctx context.Context) (tes.State, error)
 }

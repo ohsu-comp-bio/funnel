@@ -12,23 +12,17 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"github.com/ohsu-comp-bio/funnel/worker"
 )
 
 // NewBackend returns a new local Backend instance.
 func NewBackend(ctx context.Context, conf config.Config, log *logger.Logger) (*Backend, error) {
-	w, err := workerCmd.NewWorker(ctx, conf, log)
-	if err != nil {
-		return nil, err
-	}
-	return &Backend{conf, w, log}, nil
+	return &Backend{conf, log}, nil
 }
 
 // Backend represents the local backend.
 type Backend struct {
-	conf   config.Config
-	worker *worker.DefaultWorker
-	log    *logger.Logger
+	conf config.Config
+	log  *logger.Logger
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -44,11 +38,19 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 // Submit submits a task. For the Local backend this results in the task
 // running immediately.
 func (b *Backend) Submit(task *tes.Task) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = util.SignalContext(ctx, time.Millisecond, syscall.SIGINT, syscall.SIGTERM)
+
+	w, err := workerCmd.NewWorker(ctx, b.conf, b.log, &workerCmd.WorkerOpts{
+		TaskID: task.Id,
+	})
+	if err != nil {
+		return err
+	}
+
 	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		ctx = util.SignalContext(ctx, time.Millisecond, syscall.SIGINT, syscall.SIGTERM)
 		defer cancel()
-		b.worker.Run(ctx, task.Id)
+		w.Run(ctx)
 	}()
 	return nil
 }

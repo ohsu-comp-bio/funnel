@@ -18,7 +18,7 @@ import (
 )
 
 // Run runs the "worker run" command.
-func Run(ctx context.Context, conf config.Config, log *logger.Logger, opts *WorkerOpts) error {
+func Run(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
 	w, err := NewWorker(ctx, conf, log, opts)
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger, opts *Work
 }
 
 // NewWorker returns a new Funnel worker based on the given config.
-func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts *WorkerOpts) (*worker.DefaultWorker, error) {
+func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) (*worker.DefaultWorker, error) {
 	log.Debug("NewWorker", "config", conf)
 
 	var err error

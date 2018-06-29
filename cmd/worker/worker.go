@@ -13,7 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type WorkerOpts struct {
+// Options holds a few CLI options for worker entrypoints.
+type Options struct {
 	TaskID   string
 	TaskFile string
 }
@@ -25,7 +26,7 @@ func NewCommand() *cobra.Command {
 }
 
 type hooks struct {
-	Run func(ctx context.Context, conf config.Config, log *logger.Logger, opts *WorkerOpts) error
+	Run func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error
 }
 
 func newCommandHooks() (*cobra.Command, *hooks) {
@@ -38,7 +39,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		conf       config.Config
 		flagConf   config.Config
 	)
-	opts := &WorkerOpts{}
+	opts := &Options{}
 
 	cmd := &cobra.Command{
 		Use:   "worker",

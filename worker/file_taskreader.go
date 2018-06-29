@@ -9,11 +9,13 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
+// FileTaskReader provides a TaskReader implementation from a task file.
 type FileTaskReader struct {
 	Path string
 	task *tes.Task
 }
 
+// Task returns the task. A random ID will be generated.
 func (f *FileTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 	if f.task != nil {
 		return f.task, nil
@@ -27,7 +29,12 @@ func (f *FileTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 	return f.task, nil
 }
 
+// State returns the task state. Due to some quirks in the implementation
+// of this reader, this will always return QUEUED.
 func (f *FileTaskReader) State(ctx context.Context) (tes.State, error) {
+	// TODO tes.InitTask is being used internally, which initializes the
+	//      task to QUEUED. So this will always return queued.
+
 	if f.task != nil {
 		return f.task.State, nil
 	}

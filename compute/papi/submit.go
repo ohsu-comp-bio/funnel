@@ -1,7 +1,10 @@
 package papi
 
 import (
+  "bytes"
   "fmt"
+  "encoding/base64"
+	"github.com/golang/protobuf/jsonpb"
   "context"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"google.golang.org/api/genomics/v2alpha1"
@@ -105,9 +108,16 @@ func (b *Backend) submit(task *tes.Task) (string, error) {
     return "", fmt.Errorf("at least one zone is required")
   }
 
+
+  data := &bytes.Buffer{}
+  mar := jsonpb.Marshaler{}
+  _ = mar.Marshal(data, task)
+  b64 := base64.StdEncoding.EncodeToString(data.Bytes())
+
   pl := &genomics.Pipeline{
     Environment: map[string]string{
       "FUNNEL_TASK_ID": task.Id,
+      "FUNNEL_TASK": b64,
     },
     Resources: &genomics.Resources{
       ProjectId: b.conf.Project,
@@ -118,15 +128,13 @@ func (b *Backend) submit(task *tes.Task) (string, error) {
         Preemptible: res.GetPreemptible(),
       },
     },
-  }
-
-  for i, ex := range task.Executors {
-    pl.Actions = append(pl.Actions, &genomics.Action{
-      Name: fmt.Sprintf("task-%s-executor-%d", task.Id, i),
-      Commands: ex.Command,
-      Environment: ex.Env,
-      ImageUri: ex.Image,
-    })
+    Actions: []*genomics.Action{
+      {
+        Name: fmt.Sprintf("funnel-task-%s", task.Id),
+        Commands: []string{"sh", "-c", "worker run --taskBase64 $FUNNEL_TASK"},
+        ImageUri: "ohsucompbio/funnel:SNAPSHOT-4c658ecc",
+      },
+    },
   }
 
   call := b.client.Pipelines.Run(&genomics.RunPipelineRequest{

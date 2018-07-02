@@ -2,6 +2,8 @@ package papi
 
 import (
   "context"
+  "encoding/json"
+  "github.com/kr/pretty"
   "time"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -60,7 +62,14 @@ func (b *Backend) reconcile(ctx context.Context) {
             if job.Done {
               if job.Error != nil {
                 // TODO distinguish between system vs exec error
+                //      worker should be doing this.
                 event.State(tes.SystemError)
+                event.Error("System error", "error", job.Error.Message)
+                for _, raw := range job.Error.Details {
+                  deet := map[string]interface{}{}
+                  json.Unmarshal(raw, &deet)
+                  pretty.Println(deet)
+                }
               } else {
                 event.State(tes.Complete)
               }

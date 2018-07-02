@@ -19,13 +19,14 @@ func TestFTPStorage(t *testing.T) {
 	defer os.RemoveAll("./test_tmp")
 	defer os.RemoveAll("../ftp-test-server/_scratch/ftp-test/bob/test-output-directory")
 	defer os.RemoveAll("../ftp-test-server/_scratch/ftp-test/bob/test-output-file.txt")
+	defer os.RemoveAll("../ftp-test-server/_scratch/ftp-test/bob/testdata")
 
 	if !conf.FTPStorage.Valid() {
 		t.Skipf("Skipping FTP storage e2e tests...")
 	}
 
 	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
-	testBucket := "bob:bob@localhost"
+	testBucket := "bob:bob@localhost:8021"
 	ctx := context.Background()
 
 	protocol := "ftp://"

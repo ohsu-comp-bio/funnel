@@ -174,7 +174,7 @@ start-ftp:
 	@cd tests/ftp-test-server/ && ./start-server.sh
 
 test-ftp:
-	@go test -v ./tests/storage -run TestFTPStorage
+	@go test -v ./tests/storage -run TestFTPStorage -funnel-config `pwd`/tests/ftp.config.yml
 
 webdash-install:
 	@npm install --prefix ./webdash

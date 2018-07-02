@@ -90,7 +90,7 @@ jobs:
         - n=pubsub
     - script:
         - make start-ftp
-        - sleep 10
+        - sleep 30
         - make test-ftp
       env:
         - n=ftp

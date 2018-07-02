@@ -21,6 +21,7 @@ func TestStorageWithConfig(t *testing.T) {
 		GenericS3:     []config.GenericS3Storage{},
 		Swift:         config.SwiftStorage{Disabled: true},
 		HTTPStorage:   config.HTTPStorage{Disabled: true},
+		FTPStorage:    config.FTPStorage{Disabled: true},
 	}
 
 	sc, err := NewMux(c)
@@ -70,7 +71,7 @@ func TestStorageWithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sc.Backends) != 6 {
+	if len(sc.Backends) != 7 {
 		t.Fatal("unexpected number of Storage backends")
 	}
 }

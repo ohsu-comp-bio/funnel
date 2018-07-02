@@ -34,6 +34,7 @@ func DefaultConfig() config.Config {
 	conf.AmazonS3.Disabled = true
 	conf.GoogleStorage.Disabled = true
 	conf.Swift.Disabled = true
+	conf.FTPStorage.Disabled = true
 
 	// Get config from test command line flag, if present.
 	if configFile != "" {

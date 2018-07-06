@@ -22,14 +22,12 @@ func Hash(task *Task) (string, error) {
 	for _, in := range task.Inputs {
 		write(in.Url)
 		write(in.Path)
-		write(in.Type)
 		write(in.Content)
 	}
 
 	for _, out := range task.Outputs {
 		write(out.Url)
 		write(out.Path)
-		write(out.Type)
 	}
 
 	for _, exec := range task.Executors {

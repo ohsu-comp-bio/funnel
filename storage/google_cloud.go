@@ -180,6 +180,9 @@ func (gs *GoogleCloud) Put(ctx context.Context, url, path string) (*Object, erro
 
 // Join joins the given URL with the given subpath.
 func (gs *GoogleCloud) Join(url, path string) (string, error) {
+	if path == "" {
+		return url, nil
+	}
 	return strings.TrimSuffix(url, "/") + "/" + path, nil
 }
 

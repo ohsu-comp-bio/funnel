@@ -35,7 +35,6 @@ func TestMapTask(t *testing.T) {
 				Name: "f4",
 				Url:  "file://" + cwd + "/testdata/f4",
 				Path: "/inputs/testdata/f4",
-				Type: tes.FileType_DIRECTORY,
 			},
 			{
 				Name:    "c1",
@@ -53,7 +52,6 @@ func TestMapTask(t *testing.T) {
 				Name: "o9",
 				Url:  "file://" + cwd + "/testdata/o9",
 				Path: "/outputs/sub/o9",
-				Type: tes.FileType_DIRECTORY,
 			},
 		},
 		Volumes: []string{"/volone", "/voltwo"},
@@ -74,7 +72,6 @@ func TestMapTask(t *testing.T) {
 			Name: "f4",
 			Url:  "file://" + cwd + "/testdata/f4",
 			Path: tmp + "/inputs/testdata/f4",
-			Type: tes.FileType_DIRECTORY,
 		},
 	}
 
@@ -88,7 +85,6 @@ func TestMapTask(t *testing.T) {
 			Name: "o9",
 			Url:  "file://" + cwd + "/testdata/o9",
 			Path: tmp + "/outputs/sub/o9",
-			Type: tes.FileType_DIRECTORY,
 		},
 	}
 

@@ -6,7 +6,6 @@
       "name": "input",
       "description": "Input to command. /tmp/input must exist on the host system.",
       "url": "file:///tmp/input",
-      "type": "FILE",
       "path": "/tmp/in"
     }
   ],
@@ -15,14 +14,12 @@
       "name": "stdout",
       "description": "Stdout of command is captured and copied to /tmp/stdout on the host system.",
       "url": "file:///tmp/stdout",
-      "type": "FILE",
       "path": "/tmp/out"
     },
     {
       "name": "stderr",
       "description": "Stderr of command is captured and copied to /tmp/stderr on the host system.",
       "url": "file:///tmp/stderr",
-      "type": "FILE",
       "path": "/tmp/err"
     }
   ],

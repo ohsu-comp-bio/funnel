@@ -49,9 +49,7 @@ type flagVals struct {
 	wait        bool
 	waitFor     []string
 	inputs      []string
-	inputDirs   []string
 	outputs     []string
-	outputDirs  []string
 	content     []string
 	environ     []string
 	tags        []string
@@ -90,9 +88,7 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 
 	// Input/output
 	f.StringSliceVarP(&v.inputs, "in", "i", v.inputs, "")
-	f.StringSliceVarP(&v.inputDirs, "in-dir", "I", v.inputDirs, "")
 	f.StringSliceVarP(&v.outputs, "out", "o", v.outputs, "")
-	f.StringSliceVarP(&v.outputDirs, "out-dir", "O", v.outputDirs, "")
 	f.StringSliceVar(&v.stdin, "stdin", v.stdin, "")
 	f.StringSliceVar(&v.stdout, "stdout", v.stdout, "")
 	f.StringSliceVar(&v.stderr, "stderr", v.stderr, "")

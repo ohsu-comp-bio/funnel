@@ -236,6 +236,9 @@ func (sw *Swift) Put(ctx context.Context, url, path string) (*Object, error) {
 
 // Join joins the given URL with the given subpath.
 func (sw *Swift) Join(url, path string) (string, error) {
+	if path == "" {
+		return url, nil
+	}
 	return strings.TrimSuffix(url, "/") + "/" + path, nil
 }
 

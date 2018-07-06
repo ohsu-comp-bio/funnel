@@ -125,19 +125,6 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 		})
 	}
 
-	for _, raw := range vals.inputDirs {
-		k, v := parseCliVar(raw)
-		url := resolvePath(v)
-		path := "/inputs/" + stripStoragePrefix(url)
-		setenv(k, path)
-		task.Inputs = append(task.Inputs, &tes.Input{
-			Name: k,
-			Url:  url,
-			Path: path,
-			Type: tes.FileType_DIRECTORY,
-		})
-	}
-
 	for _, raw := range vals.content {
 		k, v := parseCliVar(raw)
 		path := "/inputs/" + stripStoragePrefix(resolvePath(v))
@@ -158,19 +145,6 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 			Name: k,
 			Url:  url,
 			Path: path,
-		})
-	}
-
-	for _, raw := range vals.outputDirs {
-		k, v := parseCliVar(raw)
-		url := resolvePath(v)
-		path := "/outputs/" + stripStoragePrefix(url)
-		setenv(k, path)
-		task.Outputs = append(task.Outputs, &tes.Output{
-			Name: k,
-			Url:  url,
-			Path: path,
-			Type: tes.FileType_DIRECTORY,
 		})
 	}
 

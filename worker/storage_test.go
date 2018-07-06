@@ -29,10 +29,10 @@ func TestFlattenInputs(t *testing.T) {
 	}
 
 	in := []*tes.Input{
-		{Url: "s3://bkt/path", Path: "/inputs/foo", Type: tes.Directory},
-		{Url: "s3://bkt/path", Path: "/inputs/foo/", Type: tes.Directory},
-		{Url: "s3://bkt/path/", Path: "/inputs/foo", Type: tes.Directory},
-		{Url: "s3://bkt/path/", Path: "/inputs/foo/", Type: tes.Directory},
+		{Url: "s3://bkt/path", Path: "/inputs/foo"},
+		{Url: "s3://bkt/path", Path: "/inputs/foo/"},
+		{Url: "s3://bkt/path/", Path: "/inputs/foo"},
+		{Url: "s3://bkt/path/", Path: "/inputs/foo/"},
 	}
 
 	bg := context.Background()

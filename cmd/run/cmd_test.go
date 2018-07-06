@@ -33,7 +33,6 @@ func TestParse(t *testing.T) {
 					Name: "f4",
 					Url:  "file://" + cwd + "/testdata/f4",
 					Path: "/inputs" + cwd + "/testdata/f4",
-					Type: tes.FileType_DIRECTORY,
 				},
 				{
 					Name:    "c1",
@@ -66,7 +65,6 @@ func TestParse(t *testing.T) {
 					Name: "o9",
 					Url:  "file://" + cwd + "/testdata/o9",
 					Path: "/outputs" + cwd + "/testdata/o9",
-					Type: tes.FileType_DIRECTORY,
 				},
 			},
 			Resources: &tes.Resources{
@@ -129,7 +127,7 @@ func TestParse(t *testing.T) {
     --in f1=./testdata/f1.txt
     -i f2=./testdata/f2.txt
     -o f3=./testdata/f3
-    -I f4=./testdata/f4
+    -i f4=./testdata/f4
     -e e1=e1v
     --env e2=e2v
     --stdout ./testdata/stdout-first
@@ -143,7 +141,7 @@ func TestParse(t *testing.T) {
     --preemptible
     --zone zone1
     --zone zone2
-    -O o9=./testdata/o9
+    -o o9=./testdata/o9
     --stderr ./testdata/stderr-second
     -S http://localhost:9001
     -p

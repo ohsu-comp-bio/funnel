@@ -49,12 +49,27 @@ func (local *Local) Stat(ctx context.Context, url string) (*Object, error) {
 
 // List lists the objects at the given url.
 func (local *Local) List(ctx context.Context, url string) ([]*Object, error) {
+	var objects []*Object
+
+	info, err := os.Stat(getPath(url))
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() {
+		objects = append(objects, &Object{
+			URL:          url,
+			Name:         info.Name(),
+			LastModified: info.ModTime(),
+			Size:         info.Size(),
+		})
+		return objects, nil
+	}
+
 	files, err := fsutil.WalkFiles(getPath(url))
 	if err != nil {
 		return nil, err
 	}
 
-	var objects []*Object
 	for _, f := range files {
 		url, err := local.Join(url, f.Rel)
 		if err != nil {
@@ -96,6 +111,9 @@ func (local *Local) Put(ctx context.Context, url, path string) (*Object, error) 
 
 // Join joins the given URL with the given subpath.
 func (local *Local) Join(url, path string) (string, error) {
+	if path == "" {
+		return url, nil
+	}
 	if strings.HasPrefix(url, "file://") {
 		return "file://" + pathlib.Join(strings.TrimPrefix(url, "file://"), path), nil
 	}

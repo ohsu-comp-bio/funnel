@@ -119,6 +119,9 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 
 // Join joins the given URL with the given subpath.
 func (s3 *GenericS3) Join(url, path string) (string, error) {
+	if path == "" {
+		return url, nil
+	}
 	return strings.TrimSuffix(url, "/") + "/" + path, nil
 }
 

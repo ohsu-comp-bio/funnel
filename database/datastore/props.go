@@ -119,7 +119,6 @@ type executor struct {
 
 type param struct {
 	Name, Description, Url, Path, Content string `datastore:",noindex,omitempty"` // nolint
-	Type                                  int32  `datastore:",noindex,omitempty"`
 }
 
 func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
@@ -159,7 +158,6 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 			Description: i.Description,
 			Url:         i.Url,
 			Path:        i.Path,
-			Type:        int32(i.Type),
 		})
 	}
 	for _, i := range t.Outputs {
@@ -168,7 +166,6 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 			Description: i.Description,
 			Url:         i.Url,
 			Path:        i.Path,
-			Type:        int32(i.Type),
 		})
 	}
 	for _, i := range t.Logs {
@@ -237,7 +234,6 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
 			Description: i.Description,
 			Url:         i.Url,
 			Path:        i.Path,
-			Type:        tes.FileType(i.Type),
 		})
 	}
 	for _, i := range c.Outputs {
@@ -246,7 +242,6 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
 			Description: i.Description,
 			Url:         i.Url,
 			Path:        i.Path,
-			Type:        tes.FileType(i.Type),
 		})
 	}
 	for _, i := range c.TaskLogs {

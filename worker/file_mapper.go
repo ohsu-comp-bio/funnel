@@ -259,12 +259,8 @@ func (mapper *FileMapper) AddOutput(output *tes.Output) error {
 		return err
 	}
 
-	hostDir := hostPath
-	mountDir := output.Path
-	if output.Type == tes.FileType_FILE {
-		hostDir = path.Dir(hostPath)
-		mountDir = path.Dir(output.Path)
-	}
+	hostDir := path.Dir(hostPath)
+	mountDir := path.Dir(output.Path)
 
 	err = fsutil.EnsureDir(hostDir)
 	if err != nil {

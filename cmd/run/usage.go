@@ -16,9 +16,7 @@ General flags:
 
 Input/output file flags:
   -i, --in          Input file e.g. varname=/path/to/input.txt
-  -I, --in-dir      Input directory e.g. varname=/path/to/dir
   -o, --out         Output file e.g. varname=/path/to/output.txt
-  -O, --out-dir     Output directory e.g. varname=/path/to/dir
   -C, --content     Include input file content from a file e.g. varname=/path/to/in.txt
       --stdin       File to write to stdin to the command.
       --stdout      File to write to stdout of the command.

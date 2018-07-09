@@ -24,7 +24,7 @@ func TestPersistentPreRun(t *testing.T) {
 	defer cleanup()
 
 	c, h := newCommandHooks()
-	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, taskID string) error {
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
 		if conf.Server.HostName != host {
 			t.Fatal("unexpected Server.HostName in config", conf.Server.HostName)
 		}

@@ -14,6 +14,7 @@ type FileTaskReader struct {
 	task *tes.Task
 }
 
+// NewFileTaskReader creates a new FileTaskReader.
 func NewFileTaskReader(path string) (*FileTaskReader, error) {
 	fh, err := os.Open(path)
 	if err != nil {

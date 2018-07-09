@@ -1125,26 +1125,34 @@ func TestConcurrentStateUpdate(t *testing.T) {
 	f := tests.NewFunnel(c)
 	f.StartServer()
 
-	w, err := workerCmd.NewWorker(ctx, c, log)
-	if err != nil {
-		t.Fatal(err)
-	}
-	e := w.EventWriter
-
 	ids := []string{}
 	for i := 0; i < 10; i++ {
 		id := f.Run(`--sh 'echo hello'`)
 		ids = append(ids, id)
+
 		go func(id string) {
+			opts := &workerCmd.Options{TaskID: id}
+			w, err := workerCmd.NewWorker(ctx, c, log, opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			log.Info("writing state initializing event", "taskID", id)
-			err := e.WriteEvent(ctx, events.NewState(id, tes.Initializing))
+			err = w.EventWriter.WriteEvent(ctx, events.NewState(id, tes.Initializing))
 			if err != nil {
 				log.Error("error writing event", err)
 			}
 		}(id)
+
 		go func(id string) {
+			opts := &workerCmd.Options{TaskID: id}
+			w, err := workerCmd.NewWorker(ctx, c, log, opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			log.Info("writing state canceled event", "taskID", id)
-			err := e.WriteEvent(ctx, events.NewState(id, tes.Canceled))
+			err = w.EventWriter.WriteEvent(ctx, events.NewState(id, tes.Canceled))
 			if err != nil {
 				log.Error("error writing event", "error", err, "taskID", id)
 			}
@@ -1169,12 +1177,13 @@ func TestMetadataEvent(t *testing.T) {
 	f := tests.NewFunnel(c)
 	f.StartServer()
 
-	w, err := workerCmd.NewWorker(ctx, c, log)
+	id := f.Run(`--sh 'echo hello'`)
+
+	w, err := workerCmd.NewWorker(ctx, c, log, &workerCmd.Options{TaskID: id})
 	if err != nil {
 		t.Fatal(err)
 	}
 	e := w.EventWriter
-	id := f.Run(`--sh 'echo hello'`)
 
 	err = e.WriteEvent(ctx, events.NewMetadata(id, 0, map[string]string{"one": "two"}))
 	if err != nil {
@@ -1185,7 +1194,7 @@ func TestMetadataEvent(t *testing.T) {
 		t.Error("error writing event", "error", err, "taskID", id)
 	}
 
-	err = w.Run(ctx, id)
+	err = w.Run(ctx)
 	if err != nil {
 		t.Error("error running task", "error", err, "taskID", id)
 	}

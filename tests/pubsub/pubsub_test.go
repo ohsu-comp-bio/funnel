@@ -62,7 +62,7 @@ func TestPubSubWorkerRun(t *testing.T) {
 	// compute backend is in use
 	id := fun.Run(`'echo hello world'`)
 
-	err := workerCmd.Run(ctx, conf, nil, id)
+	err := workerCmd.Run(ctx, conf, nil, &workerCmd.Options{TaskID: id})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

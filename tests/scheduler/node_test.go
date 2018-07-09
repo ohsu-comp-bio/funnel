@@ -86,11 +86,16 @@ func TestManualBackend(t *testing.T) {
 	srv.Conf.Node.ID = "test-node-manual"
 	// create a node
 	srv.Conf.Node.ID = "test-node-manual"
-	w, err := workercmd.NewWorker(ctx, conf, log)
-	if err != nil {
-		t.Fatal("failed to create worker factory", err)
+
+	factory := func(ctx context.Context, taskID string) error {
+		w, err := workercmd.NewWorker(ctx, conf, log, &workercmd.Options{TaskID: taskID})
+		if err != nil {
+			return err
+		}
+		return w.Run(ctx)
 	}
-	n, err := scheduler.NewNodeProcess(ctx, srv.Conf, w.Run, log)
+
+	n, err := scheduler.NewNodeProcess(ctx, srv.Conf, factory, log)
 	if err != nil {
 		t.Fatal("failed to create node", err)
 	}

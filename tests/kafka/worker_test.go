@@ -61,7 +61,7 @@ func TestKafkaWorkerRun(t *testing.T) {
     --sh 'echo hello world'
   `)
 
-	err = workerCmd.Run(ctx, conf, log, id)
+	err = workerCmd.Run(ctx, conf, log, &workerCmd.Options{TaskID: id})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}

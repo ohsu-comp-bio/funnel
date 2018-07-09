@@ -10,10 +10,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
+// Base64TaskReader reads a task from a base64 encoded string.
 type Base64TaskReader struct {
 	task *tes.Task
 }
 
+// NewBase64TaskReader creates a new Base64TaskReader.
 func NewBase64TaskReader(raw string) (*Base64TaskReader, error) {
 	data, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {

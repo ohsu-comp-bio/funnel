@@ -32,7 +32,7 @@ func TestWorkerRun(t *testing.T) {
   `)
 
 	ctx := context.Background()
-	err := workerCmd.Run(ctx, c, log, id)
+	err := workerCmd.Run(ctx, c, log, &workerCmd.Options{TaskID: id})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -70,7 +70,7 @@ func TestWorkDirCleanup(t *testing.T) {
 	workdir := path.Join(c.Worker.WorkDir, id)
 
 	ctx := context.Background()
-	err := workerCmd.Run(ctx, c, log, id)
+	err := workerCmd.Run(ctx, c, log, &workerCmd.Options{TaskID: id})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -99,7 +99,7 @@ func TestWorkDirCleanup(t *testing.T) {
 	c.Worker.LeaveWorkDir = true
 	workdir = path.Join(c.Worker.WorkDir, id)
 
-	err = workerCmd.Run(ctx, c, log, id)
+	err = workerCmd.Run(ctx, c, log, &workerCmd.Options{TaskID: id})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -141,11 +141,11 @@ type taskReader struct {
 	task *tes.Task
 }
 
-func (r taskReader) Task(ctx gcontext.Context, taskID string) (*tes.Task, error) {
+func (r taskReader) Task(ctx gcontext.Context) (*tes.Task, error) {
 	return r.task, nil
 }
 
-func (r taskReader) State(ctx gcontext.Context, taskID string) (tes.State, error) {
+func (r taskReader) State(ctx gcontext.Context) (tes.State, error) {
 	return r.task.State, nil
 }
 
@@ -180,7 +180,7 @@ func TestLargeLogRate(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	w.Run(ctx, task.Id)
+	w.Run(ctx)
 
 	// Given the difficulty of timing how long it task a task + docker container to start,
 	// we just check that a small amount of events were generated.
@@ -219,7 +219,7 @@ func TestZeroLogRate(t *testing.T) {
 		EventWriter: m,
 	}
 
-	w.Run(context.Background(), task.Id)
+	w.Run(context.Background())
 
 	time.Sleep(time.Second)
 
@@ -260,7 +260,7 @@ func TestZeroLogTailSize(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	w.Run(ctx, task.Id)
+	w.Run(ctx)
 
 	// we expect zero events to be generated
 	if counts.stdout != 0 {
@@ -295,7 +295,7 @@ func TestLogTailContent(t *testing.T) {
 		EventWriter: m,
 	}
 
-	err := w.Run(context.Background(), task.Id)
+	err := w.Run(context.Background())
 	if err != nil {
 		t.Error("unexpected worker.Run error", err)
 	}
@@ -339,7 +339,7 @@ func TestDockerContainerMetadata(t *testing.T) {
 		EventWriter: m,
 	}
 
-	err := w.Run(context.Background(), task.Id)
+	err := w.Run(context.Background())
 	if err != nil {
 		t.Error("unexpected worker.Run error", err)
 	}

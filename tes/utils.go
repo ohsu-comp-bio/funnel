@@ -46,10 +46,20 @@ func GenerateID() string {
 // such as Id, CreationTime, State, etc. If the task fails validation,
 // an error is returned. See Validate().
 // The given task is modified.
-func InitTask(task *Task) error {
-	task.Id = GenerateID()
-	task.State = Queued
-	task.CreationTime = time.Now().Format(time.RFC3339Nano)
+//
+// If "overwrite" is true, the fields Id, State, and CreationTime
+// will always be overwritten, even if already set, otherwise they
+// will only be set if they are empty.
+func InitTask(task *Task, overwrite bool) error {
+	if overwrite || task.Id == "" {
+		task.Id = GenerateID()
+	}
+	if overwrite || task.State == Unknown {
+		task.State = Queued
+	}
+	if overwrite || task.CreationTime == "" {
+		task.CreationTime = time.Now().Format(time.RFC3339Nano)
+	}
 	if err := Validate(task); err != nil {
 		return fmt.Errorf("invalid task message:\n%s", err)
 	}

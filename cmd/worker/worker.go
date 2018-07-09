@@ -15,9 +15,9 @@ import (
 
 // Options holds a few CLI options for worker entrypoints.
 type Options struct {
-	TaskID   string
-	TaskFile string
-  TaskBase64 string
+	TaskID     string
+	TaskFile   string
+	TaskBase64 string
 }
 
 // NewCommand returns the worker command

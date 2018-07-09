@@ -1,9 +1,9 @@
 package worker
 
 import (
-  "bytes"
+	"bytes"
 	"context"
-  "encoding/base64"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -15,18 +15,24 @@ type Base64TaskReader struct {
 }
 
 func NewBase64TaskReader(raw string) (*Base64TaskReader, error) {
-  data, err := base64.StdEncoding.DecodeString(raw)
+	data, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {
 		return nil, fmt.Errorf("decoding task: %v", err)
 	}
 
 	task := &tes.Task{}
-  buf := bytes.NewBuffer(data)
+	buf := bytes.NewBuffer(data)
 	err = jsonpb.Unmarshal(buf, task)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshaling task: %v", err)
 	}
-  return &Base64TaskReader{task}, nil
+
+	err = tes.InitTask(task, false)
+	if err != nil {
+		return nil, fmt.Errorf("initializing task: %v", err)
+	}
+
+	return &Base64TaskReader{task}, nil
 }
 
 // Task returns the task. A random ID will be generated.

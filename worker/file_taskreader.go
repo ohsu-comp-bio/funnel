@@ -27,12 +27,12 @@ func NewFileTaskReader(path string) (*FileTaskReader, error) {
 		return nil, fmt.Errorf("unmarshaling task file: %v", err)
 	}
 
-	err = tes.InitTask(task)
+	err = tes.InitTask(task, false)
 	if err != nil {
-		return nil, fmt.Errorf("validating task: %v", err)
+		return nil, fmt.Errorf("initializing task: %v", err)
 	}
 
-  return &FileTaskReader{task}, nil
+	return &FileTaskReader{task}, nil
 }
 
 // Task returns the task. A random ID will be generated.
@@ -44,5 +44,5 @@ func (f *FileTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 // of this reader, and since there is no online database to connect to,
 // this will always return QUEUED.
 func (f *FileTaskReader) State(ctx context.Context) (tes.State, error) {
-  return f.task.GetState(), nil
+	return f.task.GetState(), nil
 }

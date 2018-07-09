@@ -34,7 +34,7 @@ type TaskService struct {
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
 
-	if err := tes.InitTask(task); err != nil {
+	if err := tes.InitTask(task, true); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 

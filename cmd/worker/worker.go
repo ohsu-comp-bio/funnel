@@ -17,6 +17,7 @@ import (
 type Options struct {
 	TaskID   string
 	TaskFile string
+  TaskBase64 string
 }
 
 // NewCommand returns the worker command
@@ -65,8 +66,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Short: "Run a task directly, bypassing the server.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if opts.TaskID == "" && opts.TaskFile == "" {
-				return fmt.Errorf("no task ID nor task file was provided")
+			if opts.TaskID == "" && opts.TaskFile == "" && opts.TaskBase64 == "" {
+				return fmt.Errorf("no task was provided")
 			}
 
 			log := logger.NewLogger("worker", conf.Logger)
@@ -81,6 +82,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	f = run.Flags()
 	f.StringVarP(&opts.TaskID, "taskID", "t", opts.TaskID, "Task ID")
 	f.StringVarP(&opts.TaskFile, "taskFile", "f", opts.TaskFile, "Task file")
+	f.StringVarP(&opts.TaskBase64, "taskBase64", "b", opts.TaskBase64, "Task base64")
 	cmd.AddCommand(run)
 
 	return cmd, hooks

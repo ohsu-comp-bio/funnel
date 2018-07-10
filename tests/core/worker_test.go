@@ -372,3 +372,61 @@ func TestDockerContainerMetadata(t *testing.T) {
 		t.Error("didn't find container image hash metadata")
 	}
 }
+
+func TestWorkerRunFileTaskReader(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	c := tests.DefaultConfig()
+	ctx := context.Background()
+
+	// Task builder collects events into a task view.
+	task := &tes.Task{}
+	b := events.TaskBuilder{Task: task}
+
+	opts := &workerCmd.Options{
+		TaskFile: "../../examples/hello-world.json",
+	}
+
+	worker, err := workerCmd.NewWorker(ctx, c, log, opts)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	worker.EventWriter = &events.MultiWriter{b, worker.EventWriter}
+
+	err = worker.Run(ctx)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	if task.State != tes.Complete {
+		t.Error("unexpected task state")
+	}
+}
+
+func TestWorkerRunBase64TaskReader(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	c := tests.DefaultConfig()
+	ctx := context.Background()
+
+	// Task builder collects events into a task view.
+	task := &tes.Task{}
+	b := events.TaskBuilder{Task: task}
+
+	opts := &workerCmd.Options{
+		TaskBase64: "ewogICJuYW1lIjogIkhlbGxvIHdvcmxkIiwKICAiZGVzY3JpcHRpb24iOiAiRGVtb25zdHJhdGVzIHRoZSBtb3N0IGJhc2ljIGVjaG8gdGFzay4iLAogICJleGVjdXRvcnMiOiBbCiAgICB7CiAgICAgICJpbWFnZSI6ICJhbHBpbmUiLAogICAgICAiY29tbWFuZCI6IFsiZWNobyIsICJoZWxsbyB3b3JsZCJdCiAgICB9CiAgXQp9Cg==",
+	}
+
+	worker, err := workerCmd.NewWorker(ctx, c, log, opts)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	worker.EventWriter = &events.MultiWriter{b, worker.EventWriter}
+
+	err = worker.Run(ctx)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	if task.State != tes.Complete {
+		t.Error("unexpected task state")
+	}
+}

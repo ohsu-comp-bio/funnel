@@ -16,6 +16,8 @@ type FileTaskReader struct {
 
 // NewFileTaskReader creates a new FileTaskReader.
 func NewFileTaskReader(path string) (*FileTaskReader, error) {
+	// TODO not sure if it's better to return an error immediately,
+	//      or return an error from Task()
 	fh, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("opening task file: %v", err)

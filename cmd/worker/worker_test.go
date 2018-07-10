@@ -54,3 +54,46 @@ func TestPersistentPreRun(t *testing.T) {
 		}
 	}
 }
+
+func TestTaskFileOption(t *testing.T) {
+	c, h := newCommandHooks()
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
+		if opts.TaskFile != "test.task.json" {
+			t.Fatal("unexpected task file option", opts.TaskFile)
+		}
+		return nil
+	}
+
+	c.SetArgs([]string{"run", "--taskFile", "test.task.json"})
+	c.Execute()
+
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
+		if opts.TaskFile != "test.task.json" {
+			t.Fatal("unexpected task file option", opts.TaskFile)
+		}
+		return nil
+	}
+
+	c.SetArgs([]string{"run", "-f", "test.task.json"})
+	c.Execute()
+
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
+		if opts.TaskBase64 != "abcd" {
+			t.Fatal("unexpected task base64 option", opts.TaskBase64)
+		}
+		return nil
+	}
+
+	c.SetArgs([]string{"run", "--taskBase64", "abcd"})
+	c.Execute()
+
+	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
+		if opts.TaskBase64 != "abcd" {
+			t.Fatal("unexpected task base64 option", opts.TaskBase64)
+		}
+		return nil
+	}
+
+	c.SetArgs([]string{"run", "-b", "abcd"})
+	c.Execute()
+}

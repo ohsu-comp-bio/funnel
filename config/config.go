@@ -357,7 +357,9 @@ func (h HTTPStorage) Valid() bool {
 type FTPStorage struct {
 	Disabled bool
 	// Timeout duration for http GET calls
-	Timeout Duration
+	Timeout  Duration
+	User     string
+	Password string
 }
 
 // Valid validates the FTPStorage configuration.

@@ -92,7 +92,9 @@ func DefaultConfig() Config {
 			Timeout: Duration(time.Second * 60),
 		},
 		FTPStorage: FTPStorage{
-			Timeout: Duration(time.Second * 10),
+			Timeout:  Duration(time.Second * 10),
+			User:     "anonymous",
+			Password: "anonymous",
 		},
 		AmazonS3: AmazonS3Storage{
 			AWSConfig: AWSConfig{

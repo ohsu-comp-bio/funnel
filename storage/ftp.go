@@ -27,7 +27,7 @@ func NewFTP(conf config.FTPStorage) (*FTP, error) {
 
 // Stat returns information about the object at the given storage URL.
 func (b *FTP) Stat(ctx context.Context, url string) (*Object, error) {
-	client, err := connect(url)
+	client, err := connect(url, b.conf)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (b *FTP) Stat(ctx context.Context, url string) (*Object, error) {
 
 // Get copies a file from a given URL to the host path.
 func (b *FTP) Get(ctx context.Context, url, path string) (*Object, error) {
-	client, err := connect(url)
+	client, err := connect(url, b.conf)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (b *FTP) Get(ctx context.Context, url, path string) (*Object, error) {
 
 // Put is not supported by FTP storage.
 func (b *FTP) Put(ctx context.Context, url string, hostPath string) (*Object, error) {
-	client, err := connect(url)
+	client, err := connect(url, b.conf)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (b *FTP) Join(url, path string) (string, error) {
 
 // List is not supported by FTP storage.
 func (b *FTP) List(ctx context.Context, url string) ([]*Object, error) {
-	client, err := connect(url)
+	client, err := connect(url, b.conf)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ type ftpclient struct {
 	client *ftp.ServerConn
 }
 
-func connect(url string) (*ftpclient, error) {
+func connect(url string, conf config.FTPStorage) (*ftpclient, error) {
 	u, err := urllib.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("ftpStorage: parsing URL: %s", err)
@@ -112,8 +112,8 @@ func connect(url string) (*ftpclient, error) {
 		return nil, fmt.Errorf("ftpStorage: connecting to server: %v", err)
 	}
 
-	user := "anonymous"
-	pass := "anonymous"
+	user := conf.User
+	pass := conf.Password
 
 	if u.User != nil {
 		user = u.User.Username()

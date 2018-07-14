@@ -1,13 +1,15 @@
 package papi
 
 import (
-  "context"
-  "encoding/json"
-  "github.com/kr/pretty"
-  "time"
-	"github.com/ohsu-comp-bio/funnel/tes"
-	"github.com/ohsu-comp-bio/funnel/logger"
+	"context"
+	"encoding/json"
+	"time"
+
+	"github.com/kr/pretty"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/tes"
+	"google.golang.org/api/genomics/v2alpha1"
 )
 
 // Reconcile loops through tasks and checks the status from Funnel's database
@@ -47,34 +49,43 @@ func (b *Backend) reconcile(ctx context.Context) {
 					pageToken = resp.NextPageToken
 
 					for _, task := range resp.Tasks {
-            //logger.Debug("Reconcile task", task.Id)
-            jobid, ok := task.GetTaskLog(0).GetMetadata()["pipeline_operation_id"]
-            if !ok {
-              continue
-            }
-            job, err := b.client.Projects.Operations.Get(jobid).Context(ctx).Do()
-            if err != nil {
-              logger.Debug("ERROR", err)
-              continue
-            }
-	          event := events.NewTaskWriter(task.Id, 0, b.event)
+						logger.Debug("Reconcile task", task.Id)
 
-            if job.Done {
-              if job.Error != nil {
-                // TODO distinguish between system vs exec error
-                //      worker should be doing this.
-                event.State(tes.SystemError)
-                event.Error("System error", "error", job.Error.Message)
-                for _, raw := range job.Error.Details {
-                  deet := map[string]interface{}{}
-                  json.Unmarshal(raw, &deet)
-                  pretty.Println(deet)
-                }
-              } else {
-                event.State(tes.Complete)
-              }
+						jobid, ok := task.GetTaskLog(0).GetMetadata()["pipeline_operation_id"]
+						if !ok {
+							continue
 						}
-					  time.Sleep(time.Millisecond * 100)
+
+						job, err := b.client.Projects.Operations.Get(jobid).Context(ctx).Do()
+						if err != nil {
+							logger.Debug("ERROR", err)
+							continue
+						}
+						event := events.NewTaskWriter(task.Id, 0, b.event)
+
+						if job.Done {
+							if job.Error != nil {
+								// TODO distinguish between system vs exec error
+								//      worker should be doing this.
+								event.State(tes.SystemError)
+								event.Error("System error", "error", job.Error.Message)
+								for _, raw := range job.Error.Details {
+									deet := map[string]interface{}{}
+									json.Unmarshal(raw, &deet)
+									pretty.Println(deet)
+								}
+
+								meta := &genomics.OperationMetadata{}
+								json.Unmarshal(job.Metadata, meta)
+								for _, ev := range meta.Events {
+									event.Info("Pipelines event", "description", ev.Description)
+								}
+
+							} else {
+								event.State(tes.Complete)
+							}
+						}
+						time.Sleep(time.Millisecond * 100)
 					}
 
 					// continue to next page from ListTasks or break

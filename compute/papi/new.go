@@ -4,34 +4,40 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/genomics/v2alpha1"
+
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tes"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/genomics/v2alpha1"
 )
 
+// Backend provides a compute backend for submitting tasks to
+// Google Cloud Genomics Pipelines API:
+// https://cloud.google.com/genomics/reference/rest/v1alpha2/pipelines
 type Backend struct {
-  client *genomics.Service
-  conf config.GooglePipelines
-  event events.Writer
-  database tes.ReadOnlyServer
+	client   *genomics.Service
+	conf     config.GooglePipelines
+	event    events.Writer
+	database tes.ReadOnlyServer
 }
 
+// NewBackend creates the compute backend and starts a background goroutine
+// for monitoring tasks.
 func NewBackend(ctx context.Context, conf config.GooglePipelines, writer events.Writer, database tes.ReadOnlyServer) (*Backend, error) {
-  client, err := newClient(ctx, conf)
-  if err != nil {
-    return nil, err
-  }
+	client, err := newClient(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
 
-  svc, err := genomics.New(client)
-  if err != nil {
-    return nil, err
-  }
+	svc, err := genomics.New(client)
+	if err != nil {
+		return nil, err
+	}
 
-  b := &Backend{svc, conf, writer, database}
-  go b.reconcile(ctx)
-  return b, nil
+	b := &Backend{svc, conf, writer, database}
+	go b.reconcile(ctx)
+	return b, nil
 }
 
 func newClient(ctx context.Context, conf config.GooglePipelines) (*http.Client, error) {
@@ -59,5 +65,5 @@ func newClient(ctx context.Context, conf config.GooglePipelines) (*http.Client, 
 		}
 	}
 
-  return client, nil
+	return client, nil
 }

@@ -203,11 +203,17 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 	defer os.RemoveAll("../ftp-test-server/_scratch/ftp-test/bob/test-output-file.txt")
 	defer os.RemoveAll("../ftp-test-server/_scratch/ftp-test/bob/testdata")
 
+	conf := tests.DefaultConfig()
+
 	if !conf.FTPStorage.Valid() {
 		t.Skipf("Skipping FTP storage e2e tests...")
 	}
+
 	conf.FTPStorage.User = "bob"
 	conf.FTPStorage.Password = "bob"
+
+	fun := tests.NewFunnel(conf)
+	fun.StartServer()
 
 	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "localhost:8021"

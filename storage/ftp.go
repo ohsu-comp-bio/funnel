@@ -22,7 +22,7 @@ type FTP struct {
 
 // NewFTP creates a new FTP instance.
 func NewFTP(conf config.FTPStorage) (*FTP, error) {
-	return &FTP{}, nil
+	return &FTP{conf: conf}, nil
 }
 
 // Stat returns information about the object at the given storage URL.
@@ -119,8 +119,10 @@ func connect(url string, conf config.FTPStorage) (*ftpclient, error) {
 		user = u.User.Username()
 		// "anonymous" doesn't make sense if there's a username,
 		// so clear it. Then check if the password is set by the URL.
-		pass = ""
-		if p, ok := u.User.Password(); ok {
+		p, ok := u.User.Password()
+		if !ok {
+			pass = ""
+		} else {
 			pass = p
 		}
 	}
@@ -216,9 +218,14 @@ func (b *ftpclient) Put(ctx context.Context, url string, hostPath string) (*Obje
 	if dirpath != "" {
 		for _, dir := range strings.Split(strings.Trim(dirpath, "/"), "/") {
 			err := b.client.ChangeDir(dir)
-			if e, ok := err.(*textproto.Error); ok && e.Code == ftp.StatusFileUnavailable {
+			if isUnavailable(err) {
 				// Directory doesn't exist. Create it.
 				err = b.client.MakeDir(dir)
+				// It's possible that the directory was created by a concurrent process.
+				// In that case, allow the ChangeDir call below to retry.
+				if isUnavailable(err) {
+					err = nil
+				}
 				if err == nil {
 					err = b.client.ChangeDir(dir)
 				}
@@ -236,6 +243,11 @@ func (b *ftpclient) Put(ctx context.Context, url string, hostPath string) (*Obje
 	}
 
 	return b.Stat(ctx, url)
+}
+
+func isUnavailable(err error) bool {
+	e, ok := err.(*textproto.Error)
+	return ok && e.Code == ftp.StatusFileUnavailable
 }
 
 func (b *ftpclient) List(ctx context.Context, url string) ([]*Object, error) {

@@ -1,4 +1,4 @@
-package papi
+package pipelines
 
 import (
 	"context"
@@ -17,14 +17,14 @@ import (
 // https://cloud.google.com/genomics/reference/rest/v1alpha2/pipelines
 type Backend struct {
 	client   *genomics.Service
-	conf     config.GooglePipelines
+	conf     config.Pipelines
 	event    events.Writer
 	database tes.ReadOnlyServer
 }
 
 // NewBackend creates the compute backend and starts a background goroutine
 // for monitoring tasks.
-func NewBackend(ctx context.Context, conf config.GooglePipelines, writer events.Writer, database tes.ReadOnlyServer) (*Backend, error) {
+func NewBackend(ctx context.Context, conf config.Pipelines, writer events.Writer, database tes.ReadOnlyServer) (*Backend, error) {
 	client, err := newClient(ctx, conf)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func NewBackend(ctx context.Context, conf config.GooglePipelines, writer events.
 	return b, nil
 }
 
-func newClient(ctx context.Context, conf config.GooglePipelines) (*http.Client, error) {
+func newClient(ctx context.Context, conf config.Pipelines) (*http.Client, error) {
 	client := &http.Client{}
 
 	if conf.CredentialsFile != "" {

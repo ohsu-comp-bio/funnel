@@ -36,8 +36,8 @@ type Config struct {
 	GridEngine struct {
 		Template string
 	}
-	AWSBatch        AWSBatch
-	GooglePipelines GooglePipelines
+	AWSBatch  AWSBatch
+	Pipelines Pipelines
 
 	// storage
 	LocalStorage  LocalStorage
@@ -247,9 +247,9 @@ type AWSBatch struct {
 	AWSConfig
 }
 
-// GooglePipelines configures access to the Google Cloud Genomics Pipelines
+// Pipelines configures access to the Google Cloud Genomics Pipelines
 // compute backend.
-type GooglePipelines struct {
+type Pipelines struct {
 	// Google Cloud project ID.
 	Project string
 	// If no account file is provided then Funnel will try to use Google Application

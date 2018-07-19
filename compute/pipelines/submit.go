@@ -1,4 +1,4 @@
-package papi
+package pipelines
 
 import (
 	"bytes"

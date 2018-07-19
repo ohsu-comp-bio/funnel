@@ -1,4 +1,4 @@
-package papi
+package pipelines
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 // getResources builds the Google Pipelines Resources struct.
-func getResources(conf config.GooglePipelines, task *tes.Task) (*genomics.Resources, error) {
+func getResources(conf config.Pipelines, task *tes.Task) (*genomics.Resources, error) {
 	res := task.GetResources()
 
 	if conf.Project == "" {

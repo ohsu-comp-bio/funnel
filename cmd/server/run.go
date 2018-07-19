@@ -10,8 +10,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
 	"github.com/ohsu-comp-bio/funnel/compute/local"
 	"github.com/ohsu-comp-bio/funnel/compute/noop"
-	"github.com/ohsu-comp-bio/funnel/compute/papi"
 	"github.com/ohsu-comp-bio/funnel/compute/pbs"
+	"github.com/ohsu-comp-bio/funnel/compute/pipelines"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -212,8 +212,8 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			return nil, err
 		}
 
-	case "google-pipelines":
-		compute, err = papi.NewBackend(ctx, conf.GooglePipelines, writer, reader)
+	case "pipelines":
+		compute, err = pipelines.NewBackend(ctx, conf.Pipelines, writer, reader)
 		if err != nil {
 			return nil, err
 		}

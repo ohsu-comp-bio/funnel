@@ -97,7 +97,7 @@ func FlattenOutputs(ctx context.Context, outputs []*tes.Output, store storage.St
 			}
 
 			if len(list) == 0 {
-				ev.Warn("download source directory is empty", "url", output.Url)
+				ev.Warn("upload source directory is empty", "url", output.Url)
 				continue
 			}
 

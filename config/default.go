@@ -133,6 +133,8 @@ func DefaultConfig() Config {
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
 
+	c.Pipelines.ReconcileRate = Duration(5 * time.Second)
+
 	return c
 }
 

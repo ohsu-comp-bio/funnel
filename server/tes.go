@@ -43,6 +43,9 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	}
 
 	// dispatch to compute backend
+	// TODO might be better to keep this synchronous to capture compute backend errors
+	//      but then what happens to the created task? at least document why this doesn't
+	//      return an error.
 	go ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil

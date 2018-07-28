@@ -11,6 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/local"
 	"github.com/ohsu-comp-bio/funnel/compute/noop"
 	"github.com/ohsu-comp-bio/funnel/compute/pbs"
+	"github.com/ohsu-comp-bio/funnel/compute/pipelines"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/compute/slurm"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -207,6 +208,12 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 
 	case "local":
 		compute, err = local.NewBackend(ctx, conf, log.Sub("local"))
+		if err != nil {
+			return nil, err
+		}
+
+	case "pipelines":
+		compute, err = pipelines.NewBackend(ctx, conf.Pipelines, writer, reader)
 		if err != nil {
 			return nil, err
 		}

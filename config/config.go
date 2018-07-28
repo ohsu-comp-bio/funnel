@@ -36,7 +36,9 @@ type Config struct {
 	GridEngine struct {
 		Template string
 	}
-	AWSBatch AWSBatch
+	AWSBatch  AWSBatch
+	Pipelines Pipelines
+
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage
@@ -243,6 +245,26 @@ type AWSBatch struct {
 	// to those reported by AWS Batch
 	ReconcileRate Duration
 	AWSConfig
+}
+
+// Pipelines configures access to the Google Cloud Genomics Pipelines
+// compute backend.
+type Pipelines struct {
+	// Google Cloud project ID.
+	Project string
+	// If no account file is provided then Funnel will try to use Google Application
+	// Default Credentials to authorize and authenticate the client.
+	CredentialsFile string
+	// ReconcileRate is how often the compute backend compares states in Funnel's backend
+	// to those reported by the backend
+	ReconcileRate Duration
+	// Docker image to use for the Funnel worker.
+	WorkerImage string
+	// If no zones are specifically requested by the task, use this default.
+	DefaultZones []string
+	// Extra arguments added to the end of the "funnel worker run" command.
+	// Mostly useful for development.
+	ExtraArgs []string
 }
 
 // Datastore configures access to a Google Cloud Datastore database backend.

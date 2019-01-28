@@ -7,11 +7,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // NewBackend returns a new Grid Engine HPCBackend instance.
-func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Writer) *compute.HPCBackend {
+func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) *compute.HPCBackend {
 	return &compute.HPCBackend{
 		Name:      "gridengine",
 		SubmitCmd: "qsub",
@@ -20,6 +21,7 @@ func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Wri
 		Template:  conf.GridEngine.Template,
 		Event:     writer,
 		Database:  reader,
+		Log:       log,
 		ExtractID: extractID,
 		// grid engine backend doesnt support state reconciliation
 		MapStates:     nil,

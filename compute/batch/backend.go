@@ -17,7 +17,7 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer) (*Backend, error) {
+func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
@@ -28,6 +28,7 @@ func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlySe
 		conf:     conf,
 		event:    writer,
 		database: reader,
+		log:      log,
 	}
 
 	if !conf.DisableReconciler {
@@ -43,6 +44,7 @@ type Backend struct {
 	conf     config.AWSBatch
 	event    events.Writer
 	database tes.ReadOnlyServer
+	log      *logger.Logger
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -153,6 +155,7 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 func (b *Backend) reconcile(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(b.conf.ReconcileRate))
 
+ReconcileLoop:
 	for {
 		select {
 		case <-ctx.Done():
@@ -163,12 +166,16 @@ func (b *Backend) reconcile(ctx context.Context) {
 			states := []tes.State{tes.Queued, tes.Initializing, tes.Running}
 			for _, s := range states {
 				for {
-					lresp, _ := b.database.ListTasks(ctx, &tes.ListTasksRequest{
+					lresp, err := b.database.ListTasks(ctx, &tes.ListTasksRequest{
 						View:      tes.TaskView_BASIC,
 						State:     s,
 						PageSize:  100,
 						PageToken: pageToken,
 					})
+					if err != nil {
+						b.log.Error("Calling ListTasks", err)
+						continue ReconcileLoop
+					}
 					pageToken = lresp.NextPageToken
 
 					tmap := make(map[string]*tes.Task)
@@ -188,9 +195,13 @@ func (b *Backend) reconcile(ctx context.Context) {
 						continue
 					}
 
-					resp, _ := b.client.DescribeJobs(&batch.DescribeJobsInput{
+					resp, err := b.client.DescribeJobsWithContext(ctx, &batch.DescribeJobsInput{
 						Jobs: jobs,
 					})
+					if err != nil {
+						b.log.Error("Calling DescribeJobsWithContext", err)
+						continue ReconcileLoop
+					}
 
 					for _, j := range resp.Jobs {
 						task := tmap[*j.JobId]
@@ -211,7 +222,6 @@ func (b *Backend) reconcile(ctx context.Context) {
 
 					// continue to next page from ListTasks or break
 					if pageToken == "" {
-						logger.Debug("End reconcile")
 						break
 					}
 					time.Sleep(time.Millisecond * 100)

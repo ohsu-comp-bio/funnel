@@ -13,6 +13,7 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
@@ -36,6 +37,7 @@ type HPCBackend struct {
 	// and system logs to report errors reported by the backend.
 	MapStates     func([]string) ([]*HPCTaskState, error)
 	ReconcileRate time.Duration
+	Log           *logger.Logger
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -136,6 +138,7 @@ func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
 func (b *HPCBackend) Reconcile(ctx context.Context) {
 	ticker := time.NewTicker(b.ReconcileRate)
 
+ReconcileLoop:
 	for {
 		select {
 		case <-ctx.Done():
@@ -146,12 +149,16 @@ func (b *HPCBackend) Reconcile(ctx context.Context) {
 			states := []tes.State{tes.Queued, tes.Initializing, tes.Running}
 			for _, s := range states {
 				for {
-					lresp, _ := b.Database.ListTasks(ctx, &tes.ListTasksRequest{
+					lresp, err := b.Database.ListTasks(ctx, &tes.ListTasksRequest{
 						View:      tes.TaskView_BASIC,
 						State:     s,
 						PageSize:  100,
 						PageToken: pageToken,
 					})
+					if err != nil {
+						b.Log.Error("Calling ListTasks", err)
+						continue ReconcileLoop
+					}
 					pageToken = lresp.NextPageToken
 
 					tmap := make(map[string]*tes.Task)
@@ -171,7 +178,11 @@ func (b *HPCBackend) Reconcile(ctx context.Context) {
 						continue
 					}
 
-					bmap, _ := b.MapStates(ids)
+					bmap, err := b.MapStates(ids)
+					if err != nil {
+						b.Log.Error("Calling MapStates", err)
+						continue ReconcileLoop
+					}
 					for _, t := range bmap {
 						// lookup task by backend specific ID
 						task := tmap[t.ID]

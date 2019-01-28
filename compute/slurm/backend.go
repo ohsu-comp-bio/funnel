@@ -14,11 +14,12 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // NewBackend returns a new Slurm HPCBackend instance.
-func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer) *compute.HPCBackend {
+func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) *compute.HPCBackend {
 	b := &compute.HPCBackend{
 		Name:          "slurm",
 		SubmitCmd:     "sbatch",
@@ -27,6 +28,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		Template:      conf.Slurm.Template,
 		Event:         writer,
 		Database:      reader,
+		Log:           log,
 		ExtractID:     extractID,
 		MapStates:     mapStates,
 		ReconcileRate: time.Duration(conf.Slurm.ReconcileRate),

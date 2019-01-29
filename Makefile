@@ -11,11 +11,11 @@ git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git
 export GIT_BRANCH = $(git_branch)
 export GIT_UPSTREAM = $(git_upstream)
 
-export FUNNEL_VERSION=0.8.0
+export FUNNEL_VERSION=0.9.0
 
 # LAST_PR_NUMBER is used by the release notes builder to generate notes
 # based on pull requests (PR) up until the last release.
-export LAST_PR_NUMBER = 546
+export LAST_PR_NUMBER = 591
 
 VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.BuildDate=$(shell date)" \

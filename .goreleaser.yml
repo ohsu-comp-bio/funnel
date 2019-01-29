@@ -9,15 +9,12 @@ builds:
       - CGO_ENABLED=0
     ldflags: >
       -X github.com/ohsu-comp-bio/funnel/version.BuildDate={{.Date}}
-      -X github.com/ohsu-comp-bio/funnel/version.GitCommit={{.Commit}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitCommit={{.ShortCommit}}
       -X github.com/ohsu-comp-bio/funnel/version.GitBranch={{.Env.GIT_BRANCH}}
       -X github.com/ohsu-comp-bio/funnel/version.GitUpstream={{.Env.GIT_UPSTREAM}}
       -X github.com/ohsu-comp-bio/funnel/version.Version={{.Version}}
 
 dist: build/release
-
-git:
-  short_hash: true
 
 release:
   draft: true
@@ -29,10 +26,9 @@ archive:
   name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
 
 dockers:
-  - image: ohsucompbio/funnel
+  - image_templates: 
+      - "ohsucompbio/funnel:{{.Version}}"
     dockerfile: ./docker/Dockerfile
-    tag_templates:
-      - "{{ .Version }}"
 
 brew:
   github:

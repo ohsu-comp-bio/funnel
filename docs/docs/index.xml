@@ -122,6 +122,18 @@ Database: boltdb BoltDB: # Path to database file Path: ./funnel-work-dir/funnel.
     </item>
     
     <item>
+      <title>FTP</title>
+      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/ftp/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/ftp/</guid>
+      <description>FTP Funnel supports download and uploading files via FTP.
+Currently authentication credentials are take from the URL, e.g. ftp://username:password@ftp.host.tld. This will be improved soon to allow credentials to be added to the configuration file.
+The FTP storage client is enabled by default, but may be explicitly disabled in the worker config:
+FTPStorage: Disabled: false  Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;ftp://my.ftpserver.xyz/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.txt&amp;quot; }, { &amp;quot;url&amp;quot;: &amp;quot;ftp://user:mypassword123@my.</description>
+    </item>
+    
+    <item>
       <title>Funnel Developers</title>
       <link>https://ohsu-comp-bio.github.io/funnel/docs/development/developers/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

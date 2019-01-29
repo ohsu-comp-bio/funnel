@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
   
-  <title>Download &middot; Funnel</title>
+  <title>FTP &middot; Funnel</title>
   
 
   
@@ -57,7 +57,7 @@
         <li>
           
           <a href="https://ohsu-comp-bio.github.io/funnel/download/"
-             class="sidebar-nav-item  active"
+             class="sidebar-nav-item "
           >Download</a></li>
           
         
@@ -92,7 +92,7 @@
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/storage/ftp/"
-                   class="sidebar-nav-item "
+                   class="sidebar-nav-item  active"
                 >FTP</a></li>
             </ul>
           </li>
@@ -322,45 +322,36 @@
   <div class="main col span_8_of_12">
     
 
+<h1 id="ftp">FTP</h1>
 
-<h3>Download 0.9.0</h3>
+<p>Funnel supports download and uploading files via FTP.</p>
 
+<p>Currently authentication credentials are take from the URL, e.g. <code>ftp://username:password@ftp.host.tld</code>. This will be improved soon to allow credentials to be added to the configuration file.</p>
 
-<ul>
-  <li><a href="https://github.com/ohsu-comp-bio/funnel/releases/download/0.9.0/funnel-linux-amd64-0.9.0.tar.gz">linux</a></li>
-  <li><a href="https://github.com/ohsu-comp-bio/funnel/releases/download/0.9.0/funnel-darwin-amd64-0.9.0.tar.gz">mac</a></li>
-  <li><small>Windows is not supported (yet), sorry!</small></li>
-</ul>
+<p>The FTP storage client is enabled by default, but may be explicitly disabled in the
+worker config:</p>
 
-
-
-
-<p>Funnel is a single binary.<br />
-Funnel requires <a href="https://docker.io">Docker</a>.<br />
-Funnel is beta quality. APIs might break, bugs exist, data might be lost.</p>
-
-<h3 id="homebrew">Homebrew</h3>
-
-<pre><code>brew tap ohsu-comp-bio/formula
-brew install funnel
+<pre><code>FTPStorage:
+  Disabled: false
 </code></pre>
 
-<h3>Build the lastest development version <i class="optional">optional</i></h3>
+<h3 id="example-task">Example task</h3>
 
-<p>In order to build the latest code, run:</p>
-
-<pre><code class="language-shell">$ mkdir -p $GOPATH/src/github.com/ohsu-comp-bio/
-$ cd $GOPATH/src/github.com/ohsu-comp-bio/
-$ git clone https://github.com/ohsu-comp-bio/funnel.git
-$ cd funnel
-$ make
+<pre><code>{
+  &quot;name&quot;: &quot;Hello world&quot;,
+  &quot;inputs&quot;: [{
+    &quot;url&quot;: &quot;ftp://my.ftpserver.xyz/hello.txt&quot;,
+    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+  }, {
+    &quot;url&quot;: &quot;ftp://user:mypassword123@my.ftpserver.xyz/hello.txt&quot;,
+    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+  }],
+  &quot;executors&quot;: [{
+    &quot;image&quot;: &quot;alpine&quot;,
+    &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
+  }]
+}
 </code></pre>
-
-<p>Funnel requires Go 1.10+. Check out the <a href="https://ohsu-comp-bio.github.io/funnel/docs/development/developers/">development docs</a> for more detail.</p>
-
-<h3 id="release-history">Release History</h3>
-
-<p>See the <a href="https://github.com/ohsu-comp-bio/funnel/releases">Releases</a>  page for release history.</p>
 
   </div>
 

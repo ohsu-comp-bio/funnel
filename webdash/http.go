@@ -10,7 +10,7 @@ var fs = &assetfs.AssetFS{
 	Asset:     Asset,
 	AssetDir:  AssetDir,
 	AssetInfo: AssetInfo,
-	Prefix:    "webdash/build",
+	//Prefix:    "webdash/build",
 }
 
 var index = MustAsset("index.html")

@@ -176,20 +176,11 @@ start-ftp:
 test-ftp:
 	@go test -v ./tests/storage -run TestFTPStorage -funnel-config `pwd`/tests/ftp.config.yml
 
-webdash-install:
-	@npm install --prefix ./webdash
-	@go get -u github.com/jteeuwen/go-bindata/...
-
-webdash-prep:
-	@mkdir -p build/webdash
-	@./webdash/node_modules/.bin/browserify webdash/app.js -o build/webdash/bundle.js
-	@./webdash/node_modules/.bin/node-sass webdash/style.scss build/webdash/style.css
-	@cp webdash/*.html build/webdash/
-	@cp webdash/favicon.ico build/webdash/
-
 # Build the web dashboard
-webdash: webdash-prep
-	@go-bindata -pkg webdash -prefix "build/" -o webdash/web.go build/webdash
+webdash:
+	@go get -u github.com/go-bindata/go-bindata/...
+	@cd webdash && yarn build
+	@go-bindata -pkg webdash -prefix "webdash/build" -o webdash/web.go webdash/build/...
 
 # Build binaries for all OS/Architectures
 snapshot: depends

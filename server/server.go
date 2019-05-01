@@ -88,8 +88,8 @@ func (s *Server) Serve(pctx context.Context) error {
 	dashmux.Handle("/", webdash.RootHandler())
 	dashfs := webdash.FileServer()
 	mux.Handle("/favicon.ico", dashfs)
+	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
-	mux.Handle("/static/", http.StripPrefix("/static/", dashfs))
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 		// TODO this doesnt handle all routes

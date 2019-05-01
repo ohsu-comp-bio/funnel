@@ -10,9 +10,10 @@ var fs = &assetfs.AssetFS{
 	Asset:     Asset,
 	AssetDir:  AssetDir,
 	AssetInfo: AssetInfo,
-	Prefix:    "webdash",
+	Prefix:    "webdash/build",
 }
-var index = MustAsset("webdash/index.html")
+
+var index = MustAsset("index.html")
 
 // FileServer provides access to the bundled web assets (HTML, CSS, etc)
 // via an http.Handler

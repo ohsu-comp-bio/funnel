@@ -1,30 +1,33 @@
 {
   "name": "funnel",
-  "version": "1.0.0",
-  "description": "Funnel Web App",
-  "main": "app.js",
+  "version": "0.1.0",
+  "private": true,
   "dependencies": {
-    "angular": "1.4.9",
-    "angular-cache": "^4.6.0",
-    "angular-route": "1.4.9",
-    "material-design-lite": "^1.3.0",
-    "node-sass": "^4.11.0",
-    "watchify": "^3.11.0"
-  },
-  "devDependencies": {
-    "browserify": "^16.2.3"
+    "@material-ui/core": "^3.9.3",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-router-dom": "^5.0.0",
+    "react-scripts": "3.0.0"
   },
   "scripts": {
-    "test": "None"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ohsu-comp-bio/funnel.git"
+  "eslintConfig": {
+    "extends": "react-app"
   },
-  "author": "Adam Struck <strucka@ohsu.edu>",
-  "license": "UNLICENSED",
-  "bugs": {
-    "url": "https://github.com/ohsu-comp-bio/funnel/issues"
-  },
-  "homepage": "https://github.com/ohsu-comp-bio/funnel#readme"
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }

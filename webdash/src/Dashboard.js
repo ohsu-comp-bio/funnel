@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch } from "react-router-dom";
+import { Route, Redirect, Switch } from "react-router-dom";
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
@@ -13,8 +13,7 @@ import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import { mainListItems, filterListItems } from './listItems';
-//import SimpleTable from './SimpleTable';
+import { mainListItems, FilterList } from './listItems';
 import { TaskList, Task, Node, NodeList, ServiceInfo, NoMatch } from './Pages.js';
 
 const drawerWidth = 240;
@@ -85,9 +84,6 @@ const styles = theme => ({
   chartContainer: {
     marginLeft: -22,
   },
-  tableContainer: {
-    height: 320,
-  },
   h5: {
     marginBottom: theme.spacing.unit * 2,
   },
@@ -154,13 +150,14 @@ class Dashboard extends React.Component {
           <Divider />
           <List>{mainListItems}</List>
           <Divider />
-          <List>{filterListItems}</List>
+          <FilterList show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}/>
         </Drawer>
         <main className={classes.content}>
           <div className={classes.appBarSpacer} />
           <Switch>
             <Route exact path="/v1/tasks" component={TaskList} />
-            <Route exact path="/" component={TaskList} />
+            <Redirect exact from="/" to="/tasks" />
+            // <Route exact path="/" render={ () => ( <Redirect to="/tasks" /> ) } />
             <Route exact path="/tasks" component={TaskList} />
             <Route exact path="/v1/tasks/:task_id" component={Task} />
             <Route exact path="/tasks/:task_id" component={Task} />
@@ -173,14 +170,6 @@ class Dashboard extends React.Component {
             <Route exact path="/service-info" component={ServiceInfo} />
             <Route component={NoMatch} />
           </Switch>
-        {
-          // <Typography variant="h4" gutterBottom component="h2">
-          //   Products
-          // </Typography>
-          // <div className={classes.tableContainer}>
-          //   <SimpleTable />
-          // </div>
-        }
         </main>
       </div>
     );

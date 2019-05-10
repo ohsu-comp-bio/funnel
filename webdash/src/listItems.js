@@ -59,3 +59,10 @@ export const filterListItems = (
     </ListItem>
   </div>
 );
+
+export function FilterList(props) {
+  if (typeof props.show === 'boolean' && props.show === true) {
+    return filterListItems;
+  }
+  return <div />
+}

@@ -1,11 +1,15 @@
 import React from 'react';
 import Typography from '@material-ui/core/Typography';
+import SimpleTable from './SimpleTable';
 
 export function TaskList() {
-  return (    
-    <Typography variant="h4" gutterBottom component="h2">
-      Tasks
-    </Typography>
+  return (
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">
+        Tasks
+      </Typography>
+      <SimpleTable />
+    </div>
   )
 }
 
@@ -19,9 +23,12 @@ export function Task({ match }) {
 
 export function NodeList() {
   return (
-    <Typography variant="h4" gutterBottom component="h2">
-      Nodes
-    </Typography>
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">
+        Nodes
+      </Typography>
+      <SimpleTable />
+    </div>
  )
 }
 
@@ -36,7 +43,7 @@ export function Node({ match }) {
 export function ServiceInfo() {
   return (
     <Typography variant="h4" gutterBottom component="h2">
-      ServiceInfo
+      Service Info
     </Typography>
  )
 }

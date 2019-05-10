@@ -7,6 +7,7 @@ import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
+import TextField from '@material-ui/core/TextField';
 
 function ListItemLink(props) {
   return <ListItem button component="a" {...props} />;
@@ -54,6 +55,36 @@ export const filterListItems = (
           <MenuItem value="EXECUTOR_ERROR">Executor Error</MenuItem>
           <MenuItem value="SYSTEM_ERROR">System error</MenuItem>
         </Select>
+      </FormControl>
+    </form>
+    </ListItem>
+    <ListItem>
+    <form autoComplete="off">
+      <FormControl>
+        <InputLabel shrink htmlFor="state-placeholder">
+          Tags
+        </InputLabel>
+        <br />
+        <TextField
+          id="tag-key"
+          label="Key"
+          placeholder=""
+          fullWidth
+          margin="normal"
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
+        <TextField
+          id="tag-value"
+          label="Value"
+          placeholder=""
+          fullWidth
+          margin="normal"
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
       </FormControl>
     </form>
     </ListItem>

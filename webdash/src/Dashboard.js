@@ -92,6 +92,9 @@ const styles = theme => ({
 class Dashboard extends React.Component {
   state = {
     open: true,
+    tasks: [],
+    stateFilter: "",
+    tagsFilter: {},
   };
 
   handleDrawerOpen = () => {
@@ -100,6 +103,11 @@ class Dashboard extends React.Component {
 
   handleDrawerClose = () => {
     this.setState({ open: false });
+  };
+
+  updateState = (event) => {
+    console.log("updateState:", event.target)
+    this.setState({ [event.target.name]: event.target.value });
   };
 
   render() {
@@ -150,14 +158,17 @@ class Dashboard extends React.Component {
           <Divider />
           <List>{mainListItems}</List>
           <Divider />
-          <FilterList show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}/>
+          <FilterList 
+            show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}
+            stateFilter={this.state.stateFilter}
+            updateFn={this.updateState}
+          />
         </Drawer>
         <main className={classes.content}>
           <div className={classes.appBarSpacer} />
           <Switch>
             <Route exact path="/v1/tasks" component={TaskList} />
             <Redirect exact from="/" to="/tasks" />
-            // <Route exact path="/" render={ () => ( <Redirect to="/tasks" /> ) } />
             <Route exact path="/tasks" component={TaskList} />
             <Route exact path="/v1/tasks/:task_id" component={Task} />
             <Route exact path="/tasks/:task_id" component={Task} />

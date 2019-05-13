@@ -2,18 +2,22 @@ import React from 'react';
 import Typography from '@material-ui/core/Typography';
 import SimpleTable from './SimpleTable';
 
-export function TaskList() {
-  return (
-    <div>
-      <Typography variant="h4" gutterBottom component="h2">
-        Tasks
-      </Typography>
-      <SimpleTable />
-    </div>
-  )
+class TaskList extends React.Component {
+
+  render() {
+    console.log("TaskList props", this.props)
+    return (
+      <div>
+        <Typography variant="h4" gutterBottom component="h2">
+          Tasks
+        </Typography>
+        <SimpleTable />
+      </div>
+    )
+  }
 }
 
-export function Task({ match }) {
+function Task({ match }) {
   return (
     <Typography variant="h4" gutterBottom component="h2">    
       Task: {match.params.task_id}
@@ -21,7 +25,7 @@ export function Task({ match }) {
  )
 }
 
-export function NodeList() {
+function NodeList() {
   return (
     <div>
       <Typography variant="h4" gutterBottom component="h2">
@@ -32,7 +36,7 @@ export function NodeList() {
  )
 }
 
-export function Node({ match }) {
+function Node({ match }) {
   return (
     <Typography variant="h4" gutterBottom component="h2">    
       Node: {match.params.task_id}
@@ -40,7 +44,7 @@ export function Node({ match }) {
  )
 }
 
-export function ServiceInfo() {
+function ServiceInfo() {
   return (
     <Typography variant="h4" gutterBottom component="h2">
       Service Info
@@ -48,10 +52,12 @@ export function ServiceInfo() {
  )
 }
 
-export function NoMatch() {
+function NoMatch() {
   return (
     <Typography variant="h4" gutterBottom component="h2">
       404 Not Found
     </Typography>
  )
 }
+
+export {TaskList, Task, NodeList, Node, ServiceInfo, NoMatch};

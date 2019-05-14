@@ -79,7 +79,7 @@ const styles = theme => ({
     flexGrow: 1,
     padding: theme.spacing.unit * 3,
     height: '100vh',
-    overflow: 'auto',
+    //overflow: 'auto',
   },
   chartContainer: {
     marginLeft: -22,
@@ -165,7 +165,7 @@ class Dashboard extends React.Component {
           />
         </Drawer>
         <main className={classes.content}>
-          <div className={classes.appBarSpacer} />
+        <div className={classes.appBarSpacer} />
           <Switch>
             <Route exact path="/v1/tasks" component={TaskList} />
             <Redirect exact from="/" to="/tasks" />

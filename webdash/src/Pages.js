@@ -3,9 +3,34 @@ import Typography from '@material-ui/core/Typography';
 import SimpleTable from './SimpleTable';
 
 class TaskList extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      tasks: [],
+    };
+  };
+
+  getTasks = () => {
+    var url = new URL(window.location.pathname, window.location.origin);
+    var params = url.searchParams
+    params.set("view", "BASIC")
+    params.set("pageSize", 50)
+    console.log("getTasks url:", url)
+    fetch(url.toString())
+      .then(
+        (result) => {
+          console.log("getTasks result:", result)
+          //this.setState({tasks: result.tasks})
+        },
+        (error) => {
+          console.log("getTasks error:", error)
+        }
+      )
+  };
 
   render() {
-    console.log("TaskList props", this.props)
+    console.log("TaskList props:", this.props)
+    this.getTasks();
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">

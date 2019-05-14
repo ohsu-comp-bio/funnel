@@ -1,6 +1,6 @@
 import React from 'react';
 import Typography from '@material-ui/core/Typography';
-import TaskTable from './Tables';
+import { TaskTable, SimpleTable } from './Tables';
 
 class TaskList extends React.Component {
   constructor(props) {
@@ -73,15 +73,57 @@ function Task({ match }) {
  )
 }
 
-function NodeList() {
-  return (
-    <div>
-      <Typography variant="h4" gutterBottom component="h2">
-        Nodes
-      </Typography>
-      <TaskTable tasks={[]} />
-    </div>
- )
+class NodeList extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      nodes: [],
+    };
+  };
+  
+  listNodes = () => {
+    var url = new URL("/v1/nodes", window.location.origin);
+    console.log("listNodes url:", url)
+    fetch(url.toString())
+      .then(response => response.json())
+      .then(
+        (result) => {
+          console.log("listNodes result:", result)
+          if (result.nodes !== undefined) {
+            this.setState({nodes: result.nodes})
+          }
+        },
+        (error) => {
+          console.log("listNodes error:", error)
+        }
+      )
+  };
+
+  componentDidMount() {
+    this.listNodes();
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    if (this.state.nodes.length === undefined || this.state.nodes.length === 0) {
+      return true
+    }
+    if (this.state.nodes.length && nextState.nodes.length) {
+      // if the first node is different we should update the table
+      return this.state.nodes[0].id !== nextState.nodes[0].id
+    }
+    return false
+  }
+
+  render() {
+    return (
+      <div>
+        <Typography variant="h4" gutterBottom component="h2">
+          Nodes
+        </Typography>
+        <SimpleTable />
+      </div>
+    );
+  }
 }
 
 function Node({ match }) {

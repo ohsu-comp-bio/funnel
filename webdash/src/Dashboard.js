@@ -33,6 +33,7 @@ const styles = theme => ({
     ...theme.mixins.toolbar,
   },
   appBar: {
+    backgroundColor: "#000000",
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(['width', 'margin'], {
       easing: theme.transitions.easing.sharp,
@@ -117,7 +118,7 @@ class Dashboard extends React.Component {
       <div className={classes.root}>
         <CssBaseline />
         <AppBar
-          position="absolute"
+          position="fixed"
           className={classNames(classes.appBar, this.state.open && classes.appBarShift)}
         >
           <Toolbar disableGutters={!this.state.open} className={classes.toolbar}>

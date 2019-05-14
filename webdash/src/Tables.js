@@ -69,38 +69,41 @@ SimpleTable.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-export default withStyles(styles)(SimpleTable);
+// export default withStyles(styles)(SimpleTable);
 
-function TaskTable(props) {
-  const { classes } = props;
-
-  return (
-    <Paper className={classes.root}>
-      <Table className={classes.table}>
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>State</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {this.props.tasks.map(t => (
-            <TableRow key={t.id}>
-              <TableCell>{t.id}</TableCell>
-              <TableCell>{t.state}</TableCell>
-              <TableCell>{t.name}</TableCell>
+class TaskTable extends React.Component {  
+  render() {
+    const { classes } = this.props;
+    console.log("TaskTable props:", this.props)
+    return (
+      <Paper className={classes.root}>
+        <Table className={classes.table}>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>State</TableCell>
+              <TableCell>Name</TableCell>
               <TableCell></TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Paper>
-  );
+          </TableHead>
+          <TableBody>
+            {this.props.tasks.map(t => (
+              <TableRow key={t.id}>
+                <TableCell>{t.id}</TableCell>
+                <TableCell>{t.state}</TableCell>
+                <TableCell>{t.name}</TableCell>
+                <TableCell></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
+    );
+  }
 }
 
 TaskTable.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
+export default withStyles(styles)(TaskTable);

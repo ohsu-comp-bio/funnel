@@ -1,6 +1,6 @@
 import React from 'react';
 import Typography from '@material-ui/core/Typography';
-import SimpleTable from './SimpleTable';
+import TaskTable from './Tables';
 
 class TaskList extends React.Component {
   constructor(props) {
@@ -17,10 +17,11 @@ class TaskList extends React.Component {
     params.set("pageSize", 50)
     console.log("getTasks url:", url)
     fetch(url.toString())
+      .then(response => response.json())
       .then(
         (result) => {
           console.log("getTasks result:", result)
-          //this.setState({tasks: result.tasks})
+          this.setState({tasks: result.tasks})
         },
         (error) => {
           console.log("getTasks error:", error)
@@ -36,7 +37,7 @@ class TaskList extends React.Component {
         <Typography variant="h4" gutterBottom component="h2">
           Tasks
         </Typography>
-        <SimpleTable />
+        <TaskTable tasks={this.state.tasks}/>
       </div>
     )
   }
@@ -56,7 +57,7 @@ function NodeList() {
       <Typography variant="h4" gutterBottom component="h2">
         Nodes
       </Typography>
-      <SimpleTable />
+      <TaskTable tasks={[]} />
     </div>
  )
 }

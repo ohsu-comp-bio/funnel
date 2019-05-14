@@ -82,7 +82,7 @@ class NodeList extends React.Component {
   };
   
   listNodes = () => {
-    var url = new URL("/v1/nodes", window.location.origin);
+    var url = new URL("/v1/nodes" + window.location.search, window.location.origin);
     console.log("listNodes url:", url)
     fetch(url.toString())
       .then(response => response.json())

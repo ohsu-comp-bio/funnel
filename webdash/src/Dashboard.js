@@ -170,12 +170,12 @@ class Dashboard extends React.Component {
         <div className={classes.appBarSpacer} />
           <Switch>
             <Redirect exact from="/" to="/tasks" />
-            <Route exact path="/v1/tasks" component={() => <TaskList stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter}/>} />
-            <Route exact path="/tasks" component={() => <TaskList stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter}/>} />
+            <Route exact path="/v1/tasks" render={ (props) => <TaskList {...props} stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter} /> } />
+            <Route exact path="/tasks" render={ (props) => <TaskList {...props} stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter} /> } />
             <Route exact path="/v1/tasks/:task_id" component={Task} />
             <Route exact path="/tasks/:task_id" component={Task} />
-            <Route exact path="/v1/nodes" component={NodeList} />
-            <Route exact path="/nodes" component={NodeList} />
+            <Route exact path="/v1/nodes" render={ (props) => <NodeList {...props} /> } />
+            <Route exact path="/nodes" render={ (props) => <NodeList {...props} /> } />
             <Route exact path="/v1/nodes/:node_id" component={Node} />
             <Route exact path="/nodes/:node_id" component={Node} />
             <Route exact path="/v1/tasks/service-info" component={ServiceInfo} />

@@ -10,28 +10,50 @@ class TaskList extends React.Component {
     };
   };
 
-  getTasks = () => {
-    var url = new URL(window.location.pathname, window.location.origin);
+  listTasks = () => {
+    var url = new URL("/v1/tasks" + window.location.search, window.location.origin);
     var params = url.searchParams
     params.set("view", "BASIC")
     params.set("pageSize", 50)
-    console.log("getTasks url:", url)
+    if (this.props.stateFilter !== undefined && this.props.stateFilter !== "") {
+      params.set("state", this.props.stateFilter)
+    }
+    console.log("listTasks url:", url)
     fetch(url.toString())
       .then(response => response.json())
       .then(
         (result) => {
-          console.log("getTasks result:", result)
-          this.setState({tasks: result.tasks})
+          console.log("listTasks result:", result)
+          if (result.tasks !== undefined) {
+            this.setState({tasks: result.tasks})
+          }
         },
         (error) => {
-          console.log("getTasks error:", error)
+          console.log("listTasks error:", error)
         }
       )
   };
 
+  componentDidMount() {
+    this.listTasks();
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    if (this.props.stateFilter !== nextProps.stateFilter) {
+      return true
+    }
+    if (this.state.tasks.length === undefined || this.state.tasks.length === 0) {
+      return true
+    }
+    if (this.state.tasks.length && nextState.tasks.length) {
+      // if the first task is different we should update the table
+      return this.state.tasks[0].id !== nextState.tasks[0].id
+    }
+    return false
+  }
+
   render() {
     console.log("TaskList props:", this.props)
-    this.getTasks();
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">

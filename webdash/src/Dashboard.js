@@ -161,15 +161,16 @@ class Dashboard extends React.Component {
           <FilterList 
             show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}
             stateFilter={this.state.stateFilter}
+            tagsFilter={this.state.tagsFilter}
             updateFn={this.updateState}
           />
         </Drawer>
         <main className={classes.content}>
         <div className={classes.appBarSpacer} />
           <Switch>
-            <Route exact path="/v1/tasks" component={TaskList} />
             <Redirect exact from="/" to="/tasks" />
-            <Route exact path="/tasks" component={TaskList} />
+            <Route exact path="/v1/tasks" component={() => <TaskList stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter}/>} />
+            <Route exact path="/tasks" component={() => <TaskList stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter}/>} />
             <Route exact path="/v1/tasks/:task_id" component={Task} />
             <Route exact path="/tasks/:task_id" component={Task} />
             <Route exact path="/v1/nodes" component={NodeList} />

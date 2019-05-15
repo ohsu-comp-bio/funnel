@@ -152,16 +152,15 @@ class NodeTableRaw extends React.Component {
             <TableRow>
               <TableCell>ID</TableCell>
               <TableCell>State</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell></TableCell>
+              <TableCell>Tasks</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {this.props.nodes.map(n => (
               <TableRow key={n.id}>
-                <TableCell><a href={"/v1/nodes/" + n.id}>{n.id}</a></TableCell>
+                <TableCell><a href={"/v1/nodes/" + n.id}>{ n.hostname || n.id}</a></TableCell>
                 <TableCell>{n.state}</TableCell>
-                <TableCell>{n.name}</TableCell>
+                <TableCell>{n.task_ids.lengthe}</TableCell>
                 <TableCell></TableCell>
               </TableRow>
             ))}
@@ -174,14 +173,94 @@ class NodeTableRaw extends React.Component {
 
 NodeTableRaw.propTypes = {
   classes: PropTypes.object.isRequired,
+  nodes: PropTypes.array.isRequired,
 };
 
-class TaskTableRaw extends React.Component {  
+class TaskTableRaw extends React.Component {
+
+  formatElapsedTime(miliseconds) {
+    var days, hours, minutes, seconds, total_hours, total_minutes, total_seconds;
+
+    total_seconds = parseInt(Math.floor(miliseconds / 1000));
+    total_minutes = parseInt(Math.floor(total_seconds / 60));
+    total_hours = parseInt(Math.floor(total_minutes / 60));
+
+    seconds = parseInt(total_seconds % 60);
+    minutes = parseInt(total_minutes % 60);
+    hours = parseInt(total_hours % 24);
+    days = parseInt(Math.floor(total_hours / 24));
+
+    var time = "";
+    if (days > 0) {
+      time += days + "d "
+    }
+    if (hours > 0 || days > 0) {
+      time += hours + "h "
+    }
+    if (minutes > 0 || hours > 0) {
+      time += minutes + "m "
+    }
+    if (seconds > 0 || minutes > 0) {
+      time += seconds + "s"
+    }
+    if (time === "") {
+      time = "< 1s";
+    }
+    return time;
+  }
+
+  elapsedTime(task) {
+    if (task.logs && task.logs.length) {
+      if (task.logs[0].start_time) {
+        var now = new Date();
+        if (this.isDone(task)) {
+          if (task.logs[0].end_time) {
+            now = Date.parse(task.logs[0].end_time);
+          } else {
+            return "--";
+          }
+        }
+        var started = Date.parse(task.logs[0].start_time);
+        var elapsed = now - started;
+        return this.formatElapsedTime(elapsed);
+      }
+    }
+    return "--";
+  }
+
+  creationTime(task) {
+    if (task.creation_time) {
+      var created = new Date(task.creation_time);
+      var options = {
+        weekday: 'short',  month: 'short', day: 'numeric',
+        hour: 'numeric', minute: 'numeric'
+      };
+      return created.toLocaleDateString("en-US", options);
+    }
+    return "--";
+  }
+
+  isDone(task) {
+    return task.state === "COMPLETE" || task.state === "EXECUTOR_ERROR" || task.state === "CANCELED" || task.state === "SYSTEM_ERROR";
+  }
+
   render() {
     const { classes } = this.props;
-    const tasks = [{id: "1", state: "RUNNING", name: "task 1"},
-                   {id: "2", state: "COMPLETE", name: "task 2"}]
+    const tasks = [
+      {id: "bij587vpbjg2fb6m0beg",
+       state: "CANCELED",
+       name: "sh -c 'echo 1 && sleep 240'",
+       executors:[{image: "alpine",
+                   command: ["sh","-c","echo 1 && sleep 240"]}],
+       logs: [{logs: [{start_time: "2019-04-04T11:59:43.977367-07:00",
+                       stdout: "1\n"}],
+               metadata:{hostname: "BICB230"},
+               start_time: "2019-04-04T11:59:43.854152-07:00"}],
+       creation_time: "2019-04-04T11:59:43.793262-07:00"},
+    ]
+
     console.log("TaskTable props:", this.props)
+
     return (
       <Paper className={classes.root}>
         <Table className={classes.table}>
@@ -190,6 +269,8 @@ class TaskTableRaw extends React.Component {
               <TableCell>ID</TableCell>
               <TableCell>State</TableCell>
               <TableCell>Name</TableCell>
+              <TableCell>Created At</TableCell>
+              <TableCell>Elapsed Time</TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableHead>
@@ -199,6 +280,8 @@ class TaskTableRaw extends React.Component {
                 <TableCell><a href={"/v1/tasks/" + t.id}>{t.id}</a></TableCell>
                 <TableCell>{t.state}</TableCell>
                 <TableCell>{t.name}</TableCell>
+                <TableCell>{this.creationTime(t)}</TableCell>
+                <TableCell>{this.elapsedTime(t)}</TableCell>
                 <TableCell></TableCell>
               </TableRow>
             ))}
@@ -211,6 +294,9 @@ class TaskTableRaw extends React.Component {
 
 TaskTableRaw.propTypes = {
   classes: PropTypes.object.isRequired,
+  tasks: PropTypes.array.isRequired,
+  prevPage: PropTypes.func.isRequired,
+  nextPage: PropTypes.func.isRequired,
 };
 
 const TaskTable = withStyles(styles)(TaskTableRaw);

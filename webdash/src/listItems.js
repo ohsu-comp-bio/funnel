@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import ListSubheader from '@material-ui/core/ListSubheader';
@@ -66,7 +67,7 @@ class FilterList extends React.Component {
         <ListItem>
         <form autoComplete="off">
           <FormControl>
-            <InputLabel shrink htmlFor="state-placeholder">
+            <InputLabel shrink htmlFor="tags-placeholder">
               Tags
             </InputLabel>
             <br />
@@ -100,5 +101,12 @@ class FilterList extends React.Component {
     }
   }
 }
+
+FilterList.propTypes = {
+  show: PropTypes.bool.isRequired,
+  stateFilter: PropTypes.string.isRequired,
+  tagsFilter: PropTypes.object.isRequired,
+  updateFn: PropTypes.func.isRequired,
+};
 
 export {FilterList};

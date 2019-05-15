@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import Typography from '@material-ui/core/Typography';
 import { TaskTable, SimpleTable } from './Tables';
 
@@ -42,6 +43,7 @@ class TaskList extends React.Component {
     if (this.props.stateFilter !== nextProps.stateFilter) {
       return true
     }
+    // TODO: return true on tags filter change
     if (this.state.tasks.length === undefined || this.state.tasks.length === 0) {
       return true
     }
@@ -64,6 +66,11 @@ class TaskList extends React.Component {
     )
   }
 }
+
+TaskList.propTypes = {
+  stateFilter: PropTypes.string.isRequired,
+  tagsFilter: PropTypes.object.isRequired,
+};
 
 function Task({ match }) {
   return (

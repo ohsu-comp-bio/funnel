@@ -141,10 +141,16 @@ SimpleTableRaw.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-class NodeTableRaw extends React.Component {  
+class NodeTableRaw extends React.Component {
+  nTasks(node) {
+    if (node.task_ids !== undefined) {
+      return node.task_ids.length
+    }
+    return 0
+  }
+
   render() {
     const { classes } = this.props;
-    console.log("NodeTable props:", this.props)
     return (
       <Paper className={classes.root}>
         <Table className={classes.table}>
@@ -160,8 +166,7 @@ class NodeTableRaw extends React.Component {
               <TableRow key={n.id}>
                 <TableCell><a href={"/v1/nodes/" + n.id}>{ n.hostname || n.id}</a></TableCell>
                 <TableCell>{n.state}</TableCell>
-                <TableCell>{n.task_ids.lengthe}</TableCell>
-                <TableCell></TableCell>
+                <TableCell>{this.nTasks(n)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -211,16 +216,16 @@ class TaskTableRaw extends React.Component {
 
   elapsedTime(task) {
     if (task.logs && task.logs.length) {
-      if (task.logs[0].start_time) {
+      if (task.logs[0].startTime) {
         var now = new Date();
         if (this.isDone(task)) {
-          if (task.logs[0].end_time) {
-            now = Date.parse(task.logs[0].end_time);
+          if (task.logs[0].endTime) {
+            now = Date.parse(task.logs[0].endTime);
           } else {
             return "--";
           }
         }
-        var started = Date.parse(task.logs[0].start_time);
+        var started = Date.parse(task.logs[0].startTime);
         var elapsed = now - started;
         return this.formatElapsedTime(elapsed);
       }
@@ -229,8 +234,8 @@ class TaskTableRaw extends React.Component {
   }
 
   creationTime(task) {
-    if (task.creation_time) {
-      var created = new Date(task.creation_time);
+    if (task.creationTime) {
+      var created = new Date(task.creationTime);
       var options = {
         weekday: 'short',  month: 'short', day: 'numeric',
         hour: 'numeric', minute: 'numeric'
@@ -246,21 +251,6 @@ class TaskTableRaw extends React.Component {
 
   render() {
     const { classes } = this.props;
-    const tasks = [
-      {id: "bij587vpbjg2fb6m0beg",
-       state: "CANCELED",
-       name: "sh -c 'echo 1 && sleep 240'",
-       executors:[{image: "alpine",
-                   command: ["sh","-c","echo 1 && sleep 240"]}],
-       logs: [{logs: [{start_time: "2019-04-04T11:59:43.977367-07:00",
-                       stdout: "1\n"}],
-               metadata:{hostname: "BICB230"},
-               start_time: "2019-04-04T11:59:43.854152-07:00"}],
-       creation_time: "2019-04-04T11:59:43.793262-07:00"},
-    ]
-
-    console.log("TaskTable props:", this.props)
-
     return (
       <Paper className={classes.root}>
         <Table className={classes.table}>
@@ -275,7 +265,7 @@ class TaskTableRaw extends React.Component {
             </TableRow>
           </TableHead>
           <TableBody>
-            {tasks.map(t => (
+            {this.props.tasks.map(t => (
               <TableRow key={t.id}>
                 <TableCell><a href={"/v1/tasks/" + t.id}>{t.id}</a></TableCell>
                 <TableCell>{t.state}</TableCell>

@@ -23,124 +23,6 @@ const styles = {
   },
 };
 
-function TablePaginationActions(props) {
-  const { count, page, rowsPerPage, onChangePage } = props;
-
-  function handleBackButtonClick(event) {
-    onChangePage(event, page - 1);
-  }
-
-  function handleNextButtonClick(event) {
-    onChangePage(event, page + 1);
-  }
-
-  return (
-    <div style={{flexShrink: 0}}>
-      <IconButton onClick={handleBackButtonClick} disabled={page === 0} aria-label="Previous Page">
-        <KeyboardArrowLeft />
-      </IconButton>
-      <IconButton
-        onClick={handleNextButtonClick}
-        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
-        aria-label="Next Page"
-      >
-        <KeyboardArrowRight />
-      </IconButton>
-    </div>
-  );
-}
-
-TablePaginationActions.propTypes = {
-  count: PropTypes.number.isRequired,
-  onChangePage: PropTypes.func.isRequired,
-  page: PropTypes.number.isRequired,
-  rowsPerPage: PropTypes.number.isRequired,
-};
-
-let id = 0;
-function createData(name, calories, fat, carbs, protein) {
-  id += 1;
-  return { id, name, calories, fat, carbs, protein };
-}
-
-const data = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];
-
-function SimpleTableRaw(props) {
-  const { classes } = props;
-
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const emptyRows = rowsPerPage - Math.min(rowsPerPage, data.length - page * rowsPerPage);
-
-  function handleChangePage(event, newPage) {
-    setPage(newPage);
-  }
-
-  function handleChangeRowsPerPage(event) {
-    setRowsPerPage(event.target.value);
-  }
-
-  return (
-    <Paper className={classes.root}>
-      <Table className={classes.table}>
-        <TableHead>
-          <TableRow>
-            <TableCell>Dessert (100g serving)</TableCell>
-            <TableCell align="right">Calories</TableCell>
-            <TableCell align="right">Fat (g)</TableCell>
-            <TableCell align="right">Carbs (g)</TableCell>
-            <TableCell align="right">Protein (g)</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(n => (
-            <TableRow key={n.id}>
-              <TableCell component="th" scope="row">
-                {n.name}
-              </TableCell>
-              <TableCell align="right">{n.calories}</TableCell>
-              <TableCell align="right">{n.fat}</TableCell>
-              <TableCell align="right">{n.carbs}</TableCell>
-              <TableCell align="right">{n.protein}</TableCell>
-            </TableRow>
-          ))}
-          {emptyRows > 0 && (
-            <TableRow style={{ height: 48 * emptyRows }}>
-              <TableCell colSpan={6} />
-            </TableRow>
-          )}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                count={data.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onChangePage={handleChangePage}
-                onChangeRowsPerPage={handleChangeRowsPerPage}
-                ActionsComponent={TablePaginationActions}
-            />
-          </TableRow>
-        </TableFooter>
-      </Table>
-    </Paper>
-  );
-}
-
-SimpleTableRaw.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
-
 class NodeTableRaw extends React.Component {
   nTasks(node) {
     if (node.task_ids !== undefined) {
@@ -250,6 +132,7 @@ class TaskTableRaw extends React.Component {
   }
 
   render() {
+    console.log("TaskTable props:", this.props)
     const { classes } = this.props;
     return (
       <Paper className={classes.root}>
@@ -276,6 +159,20 @@ class TaskTableRaw extends React.Component {
               </TableRow>
             ))}
           </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TablePagination
+                  rowsPerPageOptions={[50, 100, 150]}
+                  onChangePage={function(event, number) { return }}
+                  page={0}
+                  count={0}
+                  labelDisplayedRows={({ from, to, count }) => ""}
+                  rowsPerPage={this.props.pageSize}
+                  onChangeRowsPerPage={(event) => this.props.setPageSize(event)}
+                  ActionsComponent={(props) => TaskTablePaginationActions(this.props)}
+              />
+            </TableRow>
+          </TableFooter>
         </Table>
       </Paper>
     );
@@ -285,11 +182,52 @@ class TaskTableRaw extends React.Component {
 TaskTableRaw.propTypes = {
   classes: PropTypes.object.isRequired,
   tasks: PropTypes.array.isRequired,
+  nextPageToken: PropTypes.string.isRequired,
+  prevPageToken: PropTypes.string.isRequired,
+  setPageSize: PropTypes.func.isRequired,
   prevPage: PropTypes.func.isRequired,
   nextPage: PropTypes.func.isRequired,
 };
 
+function TaskTablePaginationActions(props) {
+  console.log("TaskTablePaginationActions props:", props)
+
+  function handleBackButtonClick(event) {
+    props.prevPage();
+  }
+
+  function handleNextButtonClick(event) {
+    props.nextPage();
+  }
+
+  return (
+    <div style={{flexShrink: 0}}>
+      <IconButton 
+       onClick={handleBackButtonClick} 
+       disabled={props.prevPageToken.length === 0}
+       aria-label="Previous Page"
+      >
+        <KeyboardArrowLeft />
+      </IconButton>
+      <IconButton
+        onClick={handleNextButtonClick}
+        disabled={props.nextPageToken === ""}
+        aria-label="Next Page"
+      >
+        <KeyboardArrowRight />
+      </IconButton>
+    </div>
+  );
+}
+
+TaskTablePaginationActions.propTypes = {
+  nextPageToken: PropTypes.string.isRequired,
+  prevPageToken: PropTypes.string.isRequired,
+  prevPage: PropTypes.func.isRequired,
+  nextPage: PropTypes.func.isRequired,
+};
+
+
 const TaskTable = withStyles(styles)(TaskTableRaw);
 const NodeTable = withStyles(styles)(NodeTableRaw);
-const SimpleTable = withStyles(styles)(SimpleTableRaw);
-export { TaskTable, NodeTable, SimpleTable };
+export { TaskTable, NodeTable };

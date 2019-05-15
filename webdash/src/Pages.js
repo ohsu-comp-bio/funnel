@@ -1,13 +1,29 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Typography from '@material-ui/core/Typography';
-import { TaskTable, SimpleTable } from './Tables';
+import ReactJson from 'react-json-view';
+import _ from "underscore";
+import { TaskTable, NodeTable, SimpleTable } from './Tables';
 
 class TaskList extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
       tasks: [],
+      // tasks: [
+      //   {
+      //     id: "bij587vpbjg2fb6m0beg",
+      //     state: "CANCELED",
+      //     name: "sh -c 'echo 1 && sleep 240'",
+      //     executors:[{image: "alpine",
+      //                 command: ["sh","-c","echo 1 && sleep 240"]}],
+      //     logs: [{logs: [{startTime: "2019-04-04T11:59:43.977367-07:00",
+      //                     stdout: "1\n"}],
+      //             metadata:{hostname: "BICB230"},
+      //             startTime: "2019-04-04T11:59:43.854152-07:00"}],
+      //     creationTime: "2019-04-04T11:59:43.793262-07:00"
+      //   }
+      // ]
     };
   };
 
@@ -27,6 +43,8 @@ class TaskList extends React.Component {
           console.log("listTasks result:", result)
           if (result.tasks !== undefined) {
             this.setState({tasks: result.tasks})
+          } else {
+            this.setState({tasks: []})
           }
         },
         (error) => {
@@ -35,27 +53,21 @@ class TaskList extends React.Component {
       )
   };
 
-  componentDidMount() {
-    this.listTasks();
-  }
-
   shouldComponentUpdate(nextProps, nextState) {
-    if (this.props.stateFilter !== nextProps.stateFilter) {
+    if (!_.isEqual(this.props.stateFilter, nextProps.stateFilter)) {
       return true
     }
-    // TODO: return true on tags filter change
-    if (this.state.tasks.length === undefined || this.state.tasks.length === 0) {
+    if (!_.isEqual(this.props.tagsFilter, nextProps.tagsFilter)) {
       return true
     }
-    if (this.state.tasks.length && nextState.tasks.length) {
-      // if the first task is different we should update the table
-      return this.state.tasks[0].id !== nextState.tasks[0].id
+    if (!_.isEqual(this.state.tasks, nextState.tasks)) {
+      return true
     }
     return false
   }
 
   render() {
-    console.log("TaskList props:", this.props)
+    this.listTasks();
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">
@@ -90,6 +102,8 @@ class NodeList extends React.Component {
           console.log("listNodes result:", result)
           if (result.nodes !== undefined) {
             this.setState({nodes: result.nodes})
+          } else {
+            this.setState({nodes: []})
           }
         },
         (error) => {
@@ -97,28 +111,23 @@ class NodeList extends React.Component {
         }
       )
   };
-
-  componentDidMount() {
-    this.listNodes();
-  }
-
+  
   shouldComponentUpdate(nextProps, nextState) {
-    if (this.state.nodes.length === undefined || this.state.nodes.length === 0) {
+    if (!_.isEqual(this.state.nodes, nextState.nodes)) {
       return true
-    }
-    if (this.state.nodes.length && nextState.nodes.length) {
-      // if the first node is different we should update the table
-      return this.state.nodes[0].id !== nextState.nodes[0].id
     }
     return false
   }
 
   render() {
+    this.listNodes();
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">
           Nodes
         </Typography>
+        <NodeTable nodes={this.state.nodes} />
+        <br/>
         <SimpleTable />
       </div>
     );
@@ -126,14 +135,14 @@ class NodeList extends React.Component {
 }
 
 function get(url) {
-  if (typeof url !== Object) {
+  if (!url instanceof URL) {
     console.log("get error: expected URL object; got", url)
     return undefined
   }
   var params = url.searchParams
   params.set("view", "FULL")
   console.log("get url:", url)
-  fetch(url.toString())
+  return fetch(url.toString())
     .then(response => response.json())
     .then(
       (result) => {
@@ -147,52 +156,133 @@ function get(url) {
     )
 }
 
-function Task({ match }) {
-  var url = new URL("/v1/tasks/" + match.params.task_id, window.location.origin);
-  var task = get(url);
-  if (task === undefined) {
-    task = NoMatch();
+class Task extends React.Component {
+  state = {
+    task: undefined,
+    // task: {
+    //   id: "bij587vpbjg2fb6m0beg",
+    //   state: "CANCELED",
+    //   name: "sh -c 'echo 1 && sleep 240'",
+    //   executors:[{image: "alpine",
+    //               command: ["sh","-c","echo 1 && sleep 240"]}],
+    //   logs: [{logs: [{startTime: "2019-04-04T11:59:43.977367-07:00",
+    //                   stdout: "1\n"}],
+    //           metadata:{hostname: "BICB230"},
+    //           startTime: "2019-04-04T11:59:43.854152-07:00"}],
+    //   creationTime: "2019-04-04T11:59:43.793262-07:00"
+    // }
+  };
+
+  componentDidMount() {
+    var url = new URL("/v1/tasks/" + this.props.match.params.task_id, window.location.origin);
+    get(url).then((task) => {
+      console.log("task:", task)
+      this.setState({task: task});
+    });
   }
-  return (
-    <div>
-      <Typography variant="h4" gutterBottom component="h2">    
-        Task: {match.params.task_id}
-      </Typography>
-      <div style={{margin:"10px 0px"}}>{task}</div>
-    </div>
-  )
+    
+  render() {
+    var task = (
+      <ReactJson 
+       src={this.state.task}
+       theme={"rjv-default"}
+       name={false}
+       displayObjectSize={false}
+       displayDataTypes={false}
+       enableClipboard={true}
+       collapsed={false}       
+      />
+    );
+    if (this.state.task === undefined) {
+      task = NoMatch();
+    }
+    return (
+      <div>
+        <Typography variant="h4" gutterBottom component="h2">    
+          Task: {this.props.match.params.task_id}
+        </Typography>
+        <div style={{margin:"10px 0px"}}>{task}</div>
+      </div>
+    );
+  }
 }
 
-function Node({ match }) {
-  var url = new URL("/v1/nodes/" + match.params.node_id, window.location.origin);
-  var node = get(url);
-  if (node === undefined) {
-    node = NoMatch();
+class Node extends React.Component {
+  state = {
+    node: undefined,
+  };
+
+  componentDidMount() {
+    var url = new URL("/v1/nodes/" + this.props.match.params.node_id, window.location.origin);
+    get(url).then((node) => {
+      console.log("node:", node)
+      this.setState({node: node});
+    });
   }
-  return (
-    <div>
-      <Typography variant="h4" gutterBottom component="h2">    
-        Node: {match.params.node_id}
-      </Typography>
-      <div style={{margin:"10px 0px"}}>{node}</div>
-    </div>
-  )
+    
+  render() {
+    var node = (
+      <ReactJson 
+       src={this.state.node}
+       theme={"rjv-default"}
+       name={false}
+       displayObjectSize={false}
+       displayDataTypes={false}
+       enableClipboard={true}
+       collapsed={false}       
+      />
+    );
+    if (this.state.node === undefined) {
+      node = NoMatch();
+    }
+    return (
+      <div>
+        <Typography variant="h4" gutterBottom component="h2">    
+          Node: {this.props.match.params.node_id}
+        </Typography>
+        <div style={{margin:"10px 0px"}}>{node}</div>
+      </div>
+    )
+  }
 }
 
-function ServiceInfo() {
-  var url = new URL("/v1/tasks/service-info", window.location.origin);
-  var info = get(url);
-  if (info === undefined) {
-    info = NoMatch();
+class ServiceInfo extends React.Component {
+  state = {
+    info: undefined,
+  };
+
+  componentDidMount() {
+    var url = new URL("/v1/tasks/service-info", window.location.origin);
+    get(url).then((info) => {
+      console.log("service info:", info)
+      this.setState({info: info});
+    });
   }
-  return (
-    <div>
-      <Typography variant="h4" gutterBottom component="h2">    
-        Service Info
-      </Typography>
-      <div style={{margin:"10px 0px"}}>{info}</div>
-    </div>
-  )
+ 
+  render() {
+    var info = (
+      <ReactJson 
+       src={this.state.info}
+       theme={"rjv-default"}
+       name={false}
+       displayObjectSize={false}
+       displayDataTypes={false}
+       enableClipboard={true}
+       collapsed={false}       
+      />
+    );
+    if (this.state.info === undefined) {
+      info = NoMatch();
+    }
+    return (
+      <div>
+        <Typography variant="h4" gutterBottom component="h2">    
+          Service Info
+        </Typography>
+        <div style={{margin:"10px 0px"}}>{info}</div>
+      </div>
+    )
+  }
 }
 
 function NoMatch() {

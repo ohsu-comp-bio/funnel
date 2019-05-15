@@ -72,14 +72,6 @@ TaskList.propTypes = {
   tagsFilter: PropTypes.object.isRequired,
 };
 
-function Task({ match }) {
-  return (
-    <Typography variant="h4" gutterBottom component="h2">    
-      Task: {match.params.task_id}
-    </Typography>
- )
-}
-
 class NodeList extends React.Component {
   constructor(props) {
     super(props)
@@ -133,25 +125,79 @@ class NodeList extends React.Component {
   }
 }
 
-function Node({ match }) {
+function get(url) {
+  if (typeof url !== Object) {
+    console.log("get error: expected URL object; got", url)
+    return undefined
+  }
+  var params = url.searchParams
+  params.set("view", "FULL")
+  console.log("get url:", url)
+  fetch(url.toString())
+    .then(response => response.json())
+    .then(
+      (result) => {
+        console.log("get result:", result)
+        return result
+      },
+      (error) => {
+        console.log("get error:", error)
+        return undefined
+      }
+    )
+}
+
+function Task({ match }) {
+  var url = new URL("/v1/tasks/" + match.params.task_id, window.location.origin);
+  var task = get(url);
+  if (task === undefined) {
+    task = NoMatch();
+  }
   return (
-    <Typography variant="h4" gutterBottom component="h2">    
-      Node: {match.params.task_id}
-    </Typography>
- )
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">    
+        Task: {match.params.task_id}
+      </Typography>
+      <div style={{margin:"10px 0px"}}>{task}</div>
+    </div>
+  )
+}
+
+function Node({ match }) {
+  var url = new URL("/v1/nodes/" + match.params.node_id, window.location.origin);
+  var node = get(url);
+  if (node === undefined) {
+    node = NoMatch();
+  }
+  return (
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">    
+        Node: {match.params.node_id}
+      </Typography>
+      <div style={{margin:"10px 0px"}}>{node}</div>
+    </div>
+  )
 }
 
 function ServiceInfo() {
+  var url = new URL("/v1/tasks/service-info", window.location.origin);
+  var info = get(url);
+  if (info === undefined) {
+    info = NoMatch();
+  }
   return (
-    <Typography variant="h4" gutterBottom component="h2">
-      Service Info
-    </Typography>
- )
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">    
+        Service Info
+      </Typography>
+      <div style={{margin:"10px 0px"}}>{info}</div>
+    </div>
+  )
 }
 
 function NoMatch() {
   return (
-    <Typography variant="h4" gutterBottom component="h2">
+    <Typography variant="h4" gutterBottom component="h2" style={{color: "red"}}>
       404 Not Found
     </Typography>
  )

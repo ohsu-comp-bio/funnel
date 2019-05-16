@@ -13,7 +13,7 @@ import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import { mainListItems, FilterList } from './listItems';
+import { mainListItems, TaskFilters } from './listItems';
 import { TaskList, Task, Node, NodeList, ServiceInfo, NoMatch } from './Pages.js';
 
 const drawerWidth = 240;
@@ -158,7 +158,7 @@ class Dashboard extends React.Component {
           <Divider />
           <List>{mainListItems}</List>
           <Divider />
-          <FilterList 
+          <TaskFilters 
             show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}
             stateFilter={this.state.stateFilter}
             tagsFilter={this.state.tagsFilter}

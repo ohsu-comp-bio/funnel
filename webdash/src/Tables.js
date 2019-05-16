@@ -132,7 +132,7 @@ class TaskTableRaw extends React.Component {
   }
 
   render() {
-    console.log("TaskTable props:", this.props)
+    //console.log("TaskTable props:", this.props)
     const { classes } = this.props;
     return (
       <Paper className={classes.root}>
@@ -183,14 +183,14 @@ TaskTableRaw.propTypes = {
   classes: PropTypes.object.isRequired,
   tasks: PropTypes.array.isRequired,
   nextPageToken: PropTypes.string.isRequired,
-  prevPageToken: PropTypes.string.isRequired,
+  prevPageToken: PropTypes.array.isRequired,
   setPageSize: PropTypes.func.isRequired,
   prevPage: PropTypes.func.isRequired,
   nextPage: PropTypes.func.isRequired,
 };
 
 function TaskTablePaginationActions(props) {
-  console.log("TaskTablePaginationActions props:", props)
+  //console.log("TaskTablePaginationActions props:", props)
 
   function handleBackButtonClick(event) {
     props.prevPage();
@@ -222,11 +222,10 @@ function TaskTablePaginationActions(props) {
 
 TaskTablePaginationActions.propTypes = {
   nextPageToken: PropTypes.string.isRequired,
-  prevPageToken: PropTypes.string.isRequired,
+  prevPageToken: PropTypes.array.isRequired,
   prevPage: PropTypes.func.isRequired,
   nextPage: PropTypes.func.isRequired,
 };
-
 
 const TaskTable = withStyles(styles)(TaskTableRaw);
 const NodeTable = withStyles(styles)(NodeTableRaw);

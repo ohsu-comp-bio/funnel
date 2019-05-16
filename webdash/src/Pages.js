@@ -53,12 +53,12 @@ class TaskList extends React.Component {
     if (this.state.pageToken !== "") {
       params.set("pageToken", this.state.pageToken);
     };
-    console.log("listTasks url:", url);
+    //console.log("listTasks url:", url);
     fetch(url.toString())
       .then(response => response.json())
       .then(
         (result) => {
-          console.log("listTasks result:", result);
+          //console.log("listTasks result:", result);
           var tasks = [];
           if (result.tasks !== undefined) {
             tasks = result.tasks;
@@ -70,7 +70,7 @@ class TaskList extends React.Component {
           this.setState({tasks: tasks, nextPageToken: nextPageToken});
         },
         (error) => {
-          console.log("listTasks error:", error);
+          console.log("listTasks", url.toString(), "error:", error);
         },
       );
   };
@@ -131,12 +131,12 @@ class NodeList extends React.Component {
   
   listNodes() {
     var url = new URL("/v1/nodes" + window.location.search, window.location.origin);
-    console.log("listNodes url:", url);
+    //console.log("listNodes url:", url);
     fetch(url.toString())
       .then(response => response.json())
       .then(
         (result) => {
-          console.log("listNodes result:", result);
+          //console.log("listNodes result:", result);
           if (result.nodes !== undefined) {
             this.setState({nodes: result.nodes});
           } else {
@@ -144,7 +144,7 @@ class NodeList extends React.Component {
           };
         },
         (error) => {
-          console.log("listNodes error:", error);
+          console.log("listNodes", url.toString(), "error:", error);
         },
       );
   };
@@ -173,16 +173,16 @@ function get(url) {
   };
   var params = url.searchParams;
   params.set("view", "FULL");
-  console.log("get url:", url);
+  //console.log("get url:", url);
   return fetch(url.toString())
     .then(response => response.json())
     .then(
       (result) => {
-        console.log("get result:", result);
+        //console.log("get result:", result);
         return result;
       },
       (error) => {
-        console.log("get error:", error);
+        console.log("get", url.toString(), "error:", error);
         return undefined;
       },
     );

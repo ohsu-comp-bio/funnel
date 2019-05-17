@@ -59,7 +59,7 @@ class TaskList extends React.Component {
     if (this.state.pageToken !== "") {
       params.set("pageToken", this.state.pageToken);
     };
-    console.log("listTasks url:", url);
+    //console.log("listTasks url:", url);
     fetch(url.toString())
       .then(response => response.json())
       .then(
@@ -82,8 +82,6 @@ class TaskList extends React.Component {
   };
 
   shouldComponentUpdate(nextProps, nextState) {
-    console.log("current tags", this.props.tagsFilter[0])
-    console.log("next tags", nextProps.tagsFilter[0])
     if (!_.isEqual(this.props.stateFilter, nextProps.stateFilter)) {
       return true;
     };
@@ -104,8 +102,8 @@ class TaskList extends React.Component {
 
   render() {
     this.listTasks();
-    console.log("TaskList state:", this.state)
-    console.log("TaskList props:", this.props)
+    //console.log("TaskList state:", this.state)
+    //console.log("TaskList props:", this.props)
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">
@@ -199,13 +197,13 @@ function get(url) {
 
 class Task extends React.Component {
   state = {
-    task: undefined,
+    task: {},
   };
 
   componentDidMount() {
     var url = new URL("/v1/tasks/" + this.props.match.params.task_id, window.location.origin);
     get(url).then((task) => {
-      console.log("task:", task);
+      //console.log("task:", task);
       this.setState({task: task});
     });
   };
@@ -222,9 +220,6 @@ class Task extends React.Component {
        collapsed={false}       
       />
     );
-    if (this.state.task === undefined) {
-      task = NoMatch();
-    };
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">    
@@ -238,13 +233,13 @@ class Task extends React.Component {
 
 class Node extends React.Component {
   state = {
-    node: undefined,
+    node: {},
   };
 
   componentDidMount() {
     var url = new URL("/v1/nodes/" + this.props.match.params.node_id, window.location.origin);
     get(url).then((node) => {
-      console.log("node:", node);
+      //console.log("node:", node);
       this.setState({node: node});
     });
   };
@@ -261,9 +256,6 @@ class Node extends React.Component {
        collapsed={false}       
       />
     );
-    if (this.state.node === undefined) {
-      node = NoMatch();
-    };
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">    
@@ -277,13 +269,13 @@ class Node extends React.Component {
 
 class ServiceInfo extends React.Component {
   state = {
-    info: undefined,
+    info: {},
   };
 
   componentDidMount() {
     var url = new URL("/v1/tasks/service-info", window.location.origin);
     get(url).then((info) => {
-      console.log("service info:", info);
+      //console.log("service info:", info);
       this.setState({info: info});
     });
   }
@@ -300,9 +292,6 @@ class ServiceInfo extends React.Component {
        collapsed={false}       
       />
     );
-    if (this.state.info === undefined) {
-      info = NoMatch();
-    };
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">    

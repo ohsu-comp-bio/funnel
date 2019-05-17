@@ -88,7 +88,8 @@ func (s *Server) Serve(pctx context.Context) error {
 	dashmux.Handle("/", webdash.RootHandler())
 	dashfs := webdash.FileServer()
 	mux.Handle("/favicon.ico", dashfs)
-  mux.Handle("/manifest.json", dashfs)
+	mux.Handle("/manifest.json", dashfs)
+	mux.Handle("/health.html", dashfs)
 	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
 

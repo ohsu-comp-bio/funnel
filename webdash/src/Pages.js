@@ -50,10 +50,16 @@ class TaskList extends React.Component {
     if (this.props.stateFilter !== "") {
       params.set("state", this.props.stateFilter);
     };
+    for (var i = 0; i < this.props.tagsFilter.length; i++) {
+      var tag = this.props.tagsFilter[i];
+      if (tag.key !== "") {
+        params.set("tags["+tag.key+"]", tag.value);
+      };
+    };
     if (this.state.pageToken !== "") {
       params.set("pageToken", this.state.pageToken);
     };
-    //console.log("listTasks url:", url);
+    console.log("listTasks url:", url);
     fetch(url.toString())
       .then(response => response.json())
       .then(
@@ -76,12 +82,14 @@ class TaskList extends React.Component {
   };
 
   shouldComponentUpdate(nextProps, nextState) {
+    console.log("current tags", this.props.tagsFilter[0])
+    console.log("next tags", nextProps.tagsFilter[0])
     if (!_.isEqual(this.props.stateFilter, nextProps.stateFilter)) {
       return true;
     };
     if (!_.isEqual(this.props.tagsFilter, nextProps.tagsFilter)) {
       return true;
-    };
+    }
     if (!_.isEqual(this.state.pageToken, nextState.pageToken)) {
       return true;
     };
@@ -97,6 +105,7 @@ class TaskList extends React.Component {
   render() {
     this.listTasks();
     console.log("TaskList state:", this.state)
+    console.log("TaskList props:", this.props)
     return (
       <div>
         <Typography variant="h4" gutterBottom component="h2">
@@ -118,7 +127,7 @@ class TaskList extends React.Component {
 
 TaskList.propTypes = {
   stateFilter: PropTypes.string.isRequired,
-  tagsFilter: PropTypes.object.isRequired,
+  tagsFilter: PropTypes.array.isRequired,
 };
 
 class NodeList extends React.Component {
@@ -191,18 +200,6 @@ function get(url) {
 class Task extends React.Component {
   state = {
     task: undefined,
-    // task: {
-    //   id: "bij587vpbjg2fb6m0beg",
-    //   state: "CANCELED",
-    //   name: "sh -c 'echo 1 && sleep 240'",
-    //   executors:[{image: "alpine",
-    //               command: ["sh","-c","echo 1 && sleep 240"]}],
-    //   logs: [{logs: [{startTime: "2019-04-04T11:59:43.977367-07:00",
-    //                   stdout: "1\n"}],
-    //           metadata:{hostname: "BICB230"},
-    //           startTime: "2019-04-04T11:59:43.854152-07:00"}],
-    //   creationTime: "2019-04-04T11:59:43.793262-07:00"
-    // }
   };
 
   componentDidMount() {

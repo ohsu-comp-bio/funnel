@@ -13,7 +13,7 @@ import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import { mainListItems, TaskFilters } from './listItems';
+import { NavListItems, TaskFilters } from './listItems';
 import { TaskList, Task, Node, NodeList, ServiceInfo, NoMatch } from './Pages.js';
 
 const drawerWidth = 240;
@@ -62,6 +62,7 @@ const styles = theme => ({
     position: 'relative',
     whiteSpace: 'nowrap',
     width: drawerWidth,
+    overflowx: "wrap",
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
@@ -91,10 +92,13 @@ const styles = theme => ({
 });
 
 class Dashboard extends React.Component {
-  state = {
-    open: true,
-    stateFilter: "",
-    tagsFilter: {},
+  constructor(props) {
+    super(props)
+    this.state = {
+      open: true,
+      stateFilter: "",
+      tagsFilter: [{key:"", value: ""}],
+    };
   };
 
   handleDrawerOpen = () => {
@@ -105,14 +109,37 @@ class Dashboard extends React.Component {
     this.setState({ open: false });
   };
 
-  updateState = (event) => {
-    console.log("updateState:", event.target)
-    this.setState({ [event.target.name]: event.target.value });
+  updateStateFilter = (event) => {
+    this.setState({ stateFilter: event.target.value });
+  };
+
+  updateTagsFilter = (index, target, val) => {
+    var tags = JSON.parse(JSON.stringify(this.state.tagsFilter));
+    if (target === "key") {
+      tags[index].key = val;
+    } else if (target === "value") {
+      tags[index].value = val;
+    };
+    this.setState({tagsFilter: tags});
+  };
+
+  addTagFilter = () => {
+    this.setState(state => { 
+      const tagsFilter = state.tagsFilter.concat({key: "", value: ""});
+      return {tagsFilter};
+    });
+  };
+
+  removeTagFilter = (index) => {
+    this.setState(state => { 
+      const tagsFilter = state.tagsFilter.filter((item, j) => index !== j);
+      return {tagsFilter};
+    });
   };
 
   render() {
     const { classes } = this.props;
-
+    //console.log("Dashboard state:", this.state)
     return (
       <div className={classes.root}>
         <CssBaseline />
@@ -156,13 +183,16 @@ class Dashboard extends React.Component {
             </IconButton>
           </div>
           <Divider />
-          <List>{mainListItems}</List>
+          <List>{NavListItems}</List>
           <Divider />
           <TaskFilters 
             show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}
             stateFilter={this.state.stateFilter}
             tagsFilter={this.state.tagsFilter}
-            updateFn={this.updateState}
+            updateState={this.updateStateFilter}
+            updateTags={this.updateTagsFilter}
+            addTag={this.addTagFilter}
+            removeTag={this.removeTagFilter}
           />
         </Drawer>
         <main className={classes.content}>

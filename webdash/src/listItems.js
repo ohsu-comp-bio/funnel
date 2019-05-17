@@ -6,15 +6,18 @@ import ListSubheader from '@material-ui/core/ListSubheader';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
-import FormControl from '@material-ui/core/FormControl';
+import FormGroup from '@material-ui/core/FormGroup';
 import Select from '@material-ui/core/Select';
 import TextField from '@material-ui/core/TextField';
+import Icon from '@material-ui/core/Icon';
+import IconButton from '@material-ui/core/IconButton';
+import DeleteIcon from '@material-ui/icons/Delete';
 
 function ListItemLink(props) {
   return <ListItem button component="a" {...props} />;
 }
 
-const mainListItems = (
+const NavListItems = (
   <div>
     <ListItemLink href="/tasks">
        <ListItemText primary="Tasks" />
@@ -29,73 +32,57 @@ const mainListItems = (
 );
 
 class TaskFilters extends React.Component {
-
+ 
   render() {
-    console.log("TaskFilters props:", this.props)
+    //console.log("TaskFilters props:", this.props)
     if (this.props.show === false) {
       return (<div />);
     };
     return (
       <div>
-        <ListSubheader>Filters</ListSubheader>
-        <ListItem>
-          <form autoComplete="off">
-            <FormControl>
-              <InputLabel shrink htmlFor="state-placeholder">
-                State
-              </InputLabel>
-              <Select
-                value={this.props.stateFilter}
-                onChange={(event) => this.props.updateFn(event)}
-                input={<Input name="stateFilter" id="state-placeholder" />}
-                displayEmpty
-                autoWidth
-                name="stateFilter"
-              >
-                <MenuItem value="">
-                  <em>None</em>
-                </MenuItem>
-                <MenuItem value="QUEUED">Queued</MenuItem>
-                <MenuItem value="INITIALIZING">Initializing</MenuItem>
-                <MenuItem value="RUNNING">Running</MenuItem>
-                <MenuItem value="COMPLETE">Complete</MenuItem>
-                <MenuItem value="CANCELED">Canceled</MenuItem>
-                <MenuItem value="EXECUTOR_ERROR">Executor Error</MenuItem>
-                <MenuItem value="SYSTEM_ERROR">System error</MenuItem>
-              </Select>
-            </FormControl>
-          </form>
+        <ListSubheader>Task Filters</ListSubheader>
+        <ListItem style={{paddingBottom:"0"}}>
+          <InputLabel shrink htmlFor="state-placeholder">
+            State
+          </InputLabel>
         </ListItem>
-        <ListItem>
-        <form autoComplete="off">
-            <FormControl>
-              <InputLabel shrink htmlFor="tags-placeholder">
-                Tags
-              </InputLabel>
-              <br />
-              <TextField
-                id="tag-key"
-                label="Key"
-                placeholder=""
-                fullWidth
-                margin="normal"
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-              <TextField
-                id="tag-value"
-                label="Value"
-                placeholder=""
-                fullWidth
-                margin="normal"
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-            </FormControl>
-          </form>
+        <ListItem style={{paddingTop:"5px"}}>
+          <Select
+            value={this.props.stateFilter}
+            onChange={(event) => this.props.updateState(event)}
+            input={<Input name="stateFilter" id="state-placeholder" />}
+            displayEmpty
+            autoWidth
+            name="stateFilter"
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            <MenuItem value="QUEUED">Queued</MenuItem>
+            <MenuItem value="INITIALIZING">Initializing</MenuItem>
+            <MenuItem value="RUNNING">Running</MenuItem>
+            <MenuItem value="COMPLETE">Complete</MenuItem>
+            <MenuItem value="CANCELED">Canceled</MenuItem>
+            <MenuItem value="EXECUTOR_ERROR">Executor Error</MenuItem>
+            <MenuItem value="SYSTEM_ERROR">System error</MenuItem>
+          </Select>
         </ListItem>
+        <ListItem style={{paddingBottom:"0"}}>
+          <InputLabel shrink htmlFor="state-placeholder">
+            Tags
+          </InputLabel>
+          <IconButton onClick={this.props.addTag}>
+            <Icon >add_circle</Icon>
+          </IconButton>
+        </ListItem>
+        {this.props.tagsFilter.map((tag, index) => (
+          <ListItem key={index} style={{paddingTop:"5px", paddingRight:"0px"}}>
+            <TagFilter index={index} tag={tag} updateTags={this.props.updateTags} />
+            <IconButton onClick={() => this.props.removeTag(index)}>
+              <DeleteIcon />
+            </IconButton>
+          </ListItem>
+        ))}
       </div>
     );
   };
@@ -104,8 +91,54 @@ class TaskFilters extends React.Component {
 TaskFilters.propTypes = {
   show: PropTypes.bool.isRequired,
   stateFilter: PropTypes.string.isRequired,
-  tagsFilter: PropTypes.object.isRequired,
-  updateFn: PropTypes.func.isRequired,
+  tagsFilter: PropTypes.array.isRequired,
+  updateState: PropTypes.func.isRequired,
+  updateTags: PropTypes.func.isRequired,
+  addTag: PropTypes.func.isRequired,
 };
 
-export {mainListItems, TaskFilters};
+class TagFilter extends React.Component {
+
+  update = (event) => {
+    //TODO: debounce input
+    this.props.updateTags(this.props.index, event.target.id, event.target.value);
+  };
+
+  render() {
+    //console.log("TagFilter props:", this.props)
+    return(
+      <div style={{borderColor: "#eeeeee", borderWidth: "1px", borderStyle:"solid"}}>
+        <form autoComplete="off">
+          <FormGroup style={{flexDirection:"row", padding:"10px"}}>
+            <TextField 
+             id="key"
+             label="Key"
+             placeholder=""
+             value={this.props.tag.key}
+             margin="normal"
+             style={{marginTop:"0px"}}
+             onChange={(event) => this.update(event)}
+            />
+            <TextField 
+             id="value"
+             label="Value"
+             placeholder=""
+             value={this.props.tag.value}
+             margin="normal"
+             style={{marginTop:"0px"}}
+             onChange={(event) => this.update(event)}
+            />
+          </FormGroup>
+        </form>
+      </div>
+    );
+  };
+}
+
+TagFilter.propTypes = {
+  tag: PropTypes.object.isRequired,
+  index: PropTypes.number.isRequired,
+  updateTags: PropTypes.func.isRequired,
+};
+
+export {NavListItems, TaskFilters};

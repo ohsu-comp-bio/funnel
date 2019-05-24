@@ -46,7 +46,7 @@ class NodeTableRaw extends React.Component {
           <TableBody>
             {this.props.nodes.map(n => (
               <TableRow key={n.id}>
-                <TableCell><a href={"/v1/nodes/" + n.id}>{ n.hostname || n.id}</a></TableCell>
+                <TableCell><a href={"/nodes/" + n.id}>{ n.hostname || n.id}</a></TableCell>
                 <TableCell>{n.state}</TableCell>
                 <TableCell>{this.nTasks(n)}</TableCell>
               </TableRow>
@@ -150,7 +150,7 @@ class TaskTableRaw extends React.Component {
           <TableBody>
             {this.props.tasks.map(t => (
               <TableRow key={t.id}>
-                <TableCell><a href={"/v1/tasks/" + t.id}>{t.id}</a></TableCell>
+                <TableCell><a href={"/tasks/" + t.id}>{t.id}</a></TableCell>
                 <TableCell>{t.state}</TableCell>
                 <TableCell>{t.name}</TableCell>
                 <TableCell>{this.creationTime(t)}</TableCell>

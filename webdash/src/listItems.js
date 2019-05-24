@@ -12,20 +12,22 @@ import TextField from '@material-ui/core/TextField';
 import Icon from '@material-ui/core/Icon';
 import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
+import debounce from 'lodash/debounce'
+import { Link } from "react-router-dom";
 
 function ListItemLink(props) {
-  return <ListItem button component="a" {...props} />;
+  return <ListItem button component={Link} {...props} />;
 }
 
 const NavListItems = (
   <div>
-    <ListItemLink href="/tasks">
+    <ListItemLink to="/tasks">
        <ListItemText primary="Tasks" />
     </ListItemLink>
-    <ListItemLink href="/nodes">
+    <ListItemLink to="/nodes">
       <ListItemText primary="Nodes" />
     </ListItemLink>
-    <ListItemLink href="/service-info">
+    <ListItemLink to="/service-info">
        <ListItemText primary="Service Info" />
     </ListItemLink>
   </div>
@@ -98,14 +100,23 @@ TaskFilters.propTypes = {
 };
 
 class TagFilter extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      key: this.props.tag.key, 
+      value: this.props.tag.value,
+    };
+    this.updateTags = debounce(this.props.updateTags, 500)
+  };
 
   update = (event) => {
-    //TODO: debounce input
-    this.props.updateTags(this.props.index, event.target.id, event.target.value);
+    this.setState({[event.target.id]: event.target.value});
+    this.updateTags(this.props.index, event.target.id, event.target.value);
   };
 
   render() {
     //console.log("TagFilter props:", this.props)
+    //console.log("TagFilter state:", this.state)
     return(
       <div style={{borderColor: "#eeeeee", borderWidth: "1px", borderStyle:"solid"}}>
         <form autoComplete="off">
@@ -114,7 +125,7 @@ class TagFilter extends React.Component {
              id="key"
              label="Key"
              placeholder=""
-             value={this.props.tag.key}
+             value={this.state.key}
              margin="normal"
              style={{marginTop:"0px"}}
              onChange={(event) => this.update(event)}
@@ -123,7 +134,7 @@ class TagFilter extends React.Component {
              id="value"
              label="Value"
              placeholder=""
-             value={this.props.tag.value}
+             value={this.state.value}
              margin="normal"
              style={{marginTop:"0px"}}
              onChange={(event) => this.update(event)}

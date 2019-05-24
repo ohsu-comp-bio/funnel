@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Redirect, Switch } from "react-router-dom";
+import { Route, Redirect, Switch, withRouter } from "react-router-dom";
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
@@ -139,7 +139,10 @@ class Dashboard extends React.Component {
 
   render() {
     const { classes } = this.props;
+    //console.log("Dashboard props:", this.props)
     //console.log("Dashboard state:", this.state)
+    //console.log("Dashboard stateFilter:", this.state.stateFilter)
+    //console.log("Dashboard tagsFilter:", this.state.tagsFilter[0])
     return (
       <div className={classes.root}>
         <CssBaseline />
@@ -222,4 +225,4 @@ Dashboard.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-export default withStyles(styles)(Dashboard);
+export default withRouter(withStyles(styles)(Dashboard));

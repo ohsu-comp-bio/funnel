@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // WriteEvent creates an event for the server to handle.
 func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
+	sess := db.sess.Copy()
+	defer sess.Close()
+	tasks := db.tasks(sess)
+
 	update := bson.M{}
 	selector := bson.M{"id": req.Id}
 
@@ -25,7 +29,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 				Logs: []*tes.ExecutorLog{},
 			},
 		}
-		return db.tasks.Insert(&task)
+		return tasks.Insert(&task)
 
 	case events.Type_TASK_STATE:
 		retrier := util.NewRetrier()
@@ -39,7 +43,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		return retrier.Retry(ctx, func() error {
 			// get current state & version
 			current := make(map[string]interface{})
-			q := db.tasks.Find(bson.M{"id": req.Id}).Select(bson.M{"state": 1, "version": 1})
+			q := tasks.Find(bson.M{"id": req.Id}).Select(bson.M{"state": 1, "version": 1})
 			err := q.One(&current)
 			if err == mgo.ErrNotFound {
 				return tes.ErrNotFound
@@ -58,7 +62,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 			// apply version restriction and set update
 			selector["version"] = current["version"]
 			update = bson.M{"$set": bson.M{"state": to, "version": time.Now().UnixNano()}}
-			return db.tasks.Update(selector, update)
+			return tasks.Update(selector, update)
 		})
 
 	case events.Type_TASK_START_TIME:
@@ -132,5 +136,5 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		}
 	}
 
-	return db.tasks.Update(selector, update)
+	return tasks.Update(selector, update)
 }

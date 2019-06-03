@@ -310,6 +310,20 @@
   version = "v2.2.0"
 
 [[projects]]
+  digest = "1:4b08116de0de75c041bb341686f0b139930f26cb84dfdf7641d435548114181d"
+  name = "github.com/globalsign/mgo"
+  packages = [
+    ".",
+    "bson",
+    "internal/json",
+    "internal/sasl",
+    "internal/scram",
+  ]
+  pruneopts = "UT"
+  revision = "113d3961e7311526535a1ef7042196563d442761"
+  version = "r2018.06.15"
+
+[[projects]]
   digest = "1:4afe9b10ebaf13d77f8bad44b2af5a55c17699b375601a6383a671b0713845b9"
   name = "github.com/go-ini/ini"
   packages = ["."]
@@ -944,20 +958,6 @@
   version = "v1.12.0"
 
 [[projects]]
-  branch = "v2"
-  digest = "1:5052389c6c809eeced44ec24ff9958bfea70b9859b7a25061c6fd9086c8f8989"
-  name = "gopkg.in/mgo.v2"
-  packages = [
-    ".",
-    "bson",
-    "internal/json",
-    "internal/sasl",
-    "internal/scram",
-  ]
-  pruneopts = "UT"
-  revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
-
-[[projects]]
   digest = "1:418363915247a800f7449c1b43b983cbf99c9bd8b8c5094e68f509543437dc9f"
   name = "gopkg.in/olivere/elastic.v5"
   packages = [
@@ -1009,6 +1009,8 @@
     "github.com/getlantern/deepcopy",
     "github.com/ghodss/yaml",
     "github.com/gizak/termui",
+    "github.com/globalsign/mgo",
+    "github.com/globalsign/mgo/bson",
     "github.com/go-test/deep",
     "github.com/golang/gddo/httputil",
     "github.com/golang/protobuf/jsonpb",
@@ -1050,8 +1052,6 @@
     "google.golang.org/grpc/grpclog",
     "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/status",
-    "gopkg.in/mgo.v2",
-    "gopkg.in/mgo.v2/bson",
     "gopkg.in/olivere/elastic.v5",
   ]
   solver-name = "gps-cdcl"

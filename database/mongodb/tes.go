@@ -3,10 +3,10 @@ package mongodb
 import (
 	"fmt"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var basicView = bson.M{
@@ -19,10 +19,13 @@ var minimalView = bson.M{"id": 1, "state": 1}
 
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+	sess := db.sess.Copy()
+	defer sess.Close()
+
 	var task tes.Task
 	var q *mgo.Query
 
-	q = db.tasks.Find(bson.M{"id": req.Id})
+	q = db.tasks(sess).Find(bson.M{"id": req.Id})
 	switch req.View {
 	case tes.TaskView_BASIC:
 		q = q.Select(basicView)
@@ -43,6 +46,9 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 
 // ListTasks returns a list of taskIDs
 func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+	sess := db.sess.Copy()
+	defer sess.Close()
+
 	pageSize := tes.GetPageSize(req.GetPageSize())
 
 	var query = bson.M{}
@@ -60,7 +66,7 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		query[fmt.Sprintf("tags.%s", k)] = bson.M{"$eq": v}
 	}
 
-	q = db.tasks.Find(query).Sort("-creationtime").Limit(pageSize)
+	q = db.tasks(sess).Find(query).Sort("-creationtime").Limit(pageSize)
 
 	switch req.View {
 	case tes.TaskView_BASIC:

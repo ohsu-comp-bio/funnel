@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

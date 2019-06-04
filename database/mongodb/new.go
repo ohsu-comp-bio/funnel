@@ -10,8 +10,8 @@ import (
 
 // MongoDB provides an MongoDB database server backend.
 type MongoDB struct {
-	sess  *mgo.Session
-	conf  config.MongoDB
+	sess *mgo.Session
+	conf config.MongoDB
 }
 
 // NewMongoDB returns a new MongoDB instance.

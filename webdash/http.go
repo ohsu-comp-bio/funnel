@@ -3,7 +3,7 @@ package webdash
 import (
 	"net/http"
 
-	"github.com/elazarl/go-bindata-assetfs"
+	assetfs "github.com/elazarl/go-bindata-assetfs"
 )
 
 var fs = &assetfs.AssetFS{

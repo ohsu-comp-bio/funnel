@@ -17,7 +17,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	// test client timeout
-	err = store.UnsupportedOperations("https://fakeurl.com").Get
+	err = store.UnsupportedOperations("https://fakeurl1234.com").Get
 	if err == nil {
 		t.Error("Expected timeout error")
 	}
@@ -47,7 +47,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	// test Put not supported
-	_, err = store.Put(context.Background(), "https://fakeurl.com", "_test_download/test_https_download.html")
+	_, err = store.Put(context.Background(), "https://fakeurl1234.com", "_test_download/test_https_download.html")
 	if err == nil {
 		t.Error("Expected error for Put call")
 	}

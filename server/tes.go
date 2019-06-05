@@ -43,7 +43,12 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	}
 
 	// dispatch to compute backend
-	go ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
+	go func() {
+		err := ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
+		if err != nil {
+			ts.Log.Error("error submitting task to compute backend", "taskID", task.Id, "error", err)
+		}
+	}()
 
 	return &tes.CreateTaskResponse{Id: task.Id}, nil
 }

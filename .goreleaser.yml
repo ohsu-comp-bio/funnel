@@ -22,11 +22,14 @@ release:
 env_files:
   github_token: .github_token
 
-archive:
-  name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
+archives:
+  - format: tar.gz
+    name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
 
 dockers:
-  - image_templates: 
+  - goos: linux
+    goarch: amd64
+    image_templates:
       - "ohsucompbio/funnel:{{.Version}}"
     dockerfile: ./docker/Dockerfile
 

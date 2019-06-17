@@ -197,6 +197,9 @@ snapshot: depends
 		--rm-dist \
 		--snapshot
 
+# build a docker container locally
+docker: snapshot
+
 release:
 	@go get github.com/buchanae/github-release-notes
 	@goreleaser \

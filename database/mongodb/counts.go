@@ -18,8 +18,8 @@ func (db *MongoDB) TaskStateCounts(ctx context.Context) (map[string]int32, error
 	defer sess.Close()
 
 	pipe := db.tasks(sess).Pipe([]bson.M{
-		bson.M{"$sort": bson.M{"state": 1}},
-		bson.M{"$group": bson.M{"_id": "$state", "count": bson.M{"$sum": 1}}},
+		{"$sort": bson.M{"state": 1}},
+		{"$group": bson.M{"_id": "$state", "count": bson.M{"$sum": 1}}},
 	})
 
 	recs := []stateCount{}

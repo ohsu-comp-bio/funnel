@@ -28,7 +28,7 @@ func TestFTPStorage(t *testing.T) {
 	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "bob:bob@localhost:8021"
 	ctx := context.Background()
-
+	parallelXfer := 10
 	protocol := "ftp://"
 
 	store, err := storage.NewMux(conf)
@@ -40,7 +40,7 @@ func TestFTPStorage(t *testing.T) {
 	inFileURL := protocol + testBucket + "/" + fPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inFileURL, Path: fPath},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -49,7 +49,7 @@ func TestFTPStorage(t *testing.T) {
 	inDirURL := protocol + testBucket + "/" + dPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inDirURL, Path: dPath, Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -111,7 +111,7 @@ func TestFTPStorage(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outFileURL, Path: "./test_tmp/test-gs-file.txt"},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -130,7 +130,7 @@ func TestFTPStorage(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outDirURL, Path: "./test_tmp/test-gs-directory", Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}
@@ -218,7 +218,7 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "localhost:8021"
 	ctx := context.Background()
-
+	parallelXfer := 10
 	protocol := "ftp://"
 
 	store, err := storage.NewMux(conf)
@@ -230,7 +230,7 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 	inFileURL := protocol + testBucket + "/" + fPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inFileURL, Path: fPath},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -239,7 +239,7 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 	inDirURL := protocol + testBucket + "/" + dPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inDirURL, Path: dPath, Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -301,7 +301,7 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outFileURL, Path: "./test_tmp/test-gs-file.txt"},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -320,7 +320,7 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outDirURL, Path: "./test_tmp/test-gs-directory", Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

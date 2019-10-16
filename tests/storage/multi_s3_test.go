@@ -28,6 +28,7 @@ func TestMultiS3Storage(t *testing.T) {
 	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 	ctx := context.Background()
+	parallelXfer := 10
 
 	// Generic S3 backend setup
 	gconf1 := conf.GenericS3[0]
@@ -63,7 +64,7 @@ func TestMultiS3Storage(t *testing.T) {
 	g1FileURL := protocol + gconf1.Endpoint + "/" + testBucket + "/" + fPath + tests.RandomString(6)
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: g1FileURL, Path: fPath},
-	}, gclient1.fcli, ev)
+	}, gclient1.fcli, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -71,7 +72,7 @@ func TestMultiS3Storage(t *testing.T) {
 	g2FileURL := protocol + gconf2.Endpoint + "/" + testBucket + "/" + fPath + tests.RandomString(6)
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: g2FileURL, Path: fPath, Type: tes.Directory},
-	}, gclient2.fcli, ev)
+	}, gclient2.fcli, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -127,7 +128,7 @@ func TestMultiS3Storage(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outFileURL, Path: "./test_tmp/test-s3-file.txt"},
-	}, gclient1.fcli, ev)
+	}, gclient1.fcli, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}

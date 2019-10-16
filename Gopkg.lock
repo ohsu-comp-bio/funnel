@@ -286,6 +286,22 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:5870202748fcf0dc2ea07455327848cddb130acc612edcdf5c57a46dd3539b89"
+  name = "github.com/gammazero/deque"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "46e4ffb7a622d58ccd5c73a7401afac7d5a8edee"
+
+[[projects]]
+  branch = "master"
+  digest = "1:6f1f36f253c393c3df2b393bc3e6f2741698f8622e88e82af19eefaa9f79862e"
+  name = "github.com/gammazero/workerpool"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "971bc780f6d7f265ea1e2aaff23f5644134e27c4"
+
+[[projects]]
   digest = "1:eceec69de4581189a65244bf958b2c4b3a121ed80700f92ae25c03ab2c8f61a2"
   name = "github.com/getlantern/deepcopy"
   packages = ["."]
@@ -1006,6 +1022,7 @@
     "github.com/docker/docker/api/types/filters",
     "github.com/docker/docker/client",
     "github.com/elazarl/go-bindata-assetfs",
+    "github.com/gammazero/workerpool",
     "github.com/getlantern/deepcopy",
     "github.com/ghodss/yaml",
     "github.com/gizak/termui",

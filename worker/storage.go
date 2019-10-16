@@ -48,7 +48,7 @@ func FlattenInputs(ctx context.Context, inputs []*tes.Input, store storage.Stora
 }
 
 // DownloadInputs downloads the given inputs.
-func DownloadInputs(pctx context.Context, inputs []*tes.Input, store storage.Storage, ev *events.TaskWriter) error {
+func DownloadInputs(pctx context.Context, inputs []*tes.Input, store storage.Storage, ev *events.TaskWriter, parallelLimit int) error {
 
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
@@ -67,7 +67,7 @@ func DownloadInputs(pctx context.Context, inputs []*tes.Input, store storage.Sto
 		}))
 	}
 
-	storage.Download(ctx, store, downloads)
+	storage.Download(ctx, store, downloads, parallelLimit)
 
 	var errs util.MultiError
 	for _, x := range downloads {
@@ -117,7 +117,7 @@ func FlattenOutputs(ctx context.Context, outputs []*tes.Output, store storage.St
 }
 
 // UploadOutputs uploads the outputs.
-func UploadOutputs(ctx context.Context, outputs []*tes.Output, store storage.Storage, ev *events.TaskWriter) ([]*tes.OutputFileLog, error) {
+func UploadOutputs(ctx context.Context, outputs []*tes.Output, store storage.Storage, ev *events.TaskWriter, parallelLimit int) ([]*tes.OutputFileLog, error) {
 
 	flat, err := FlattenOutputs(ctx, outputs, store, ev)
 	if err != nil {
@@ -130,7 +130,7 @@ func UploadOutputs(ctx context.Context, outputs []*tes.Output, store storage.Sto
 		uploads = append(uploads, storage.Transfer(&upload{ev: ev, out: output}))
 	}
 
-	storage.Upload(ctx, store, uploads)
+	storage.Upload(ctx, store, uploads, parallelLimit)
 
 	var logs []*tes.OutputFileLog
 	var errs util.MultiError

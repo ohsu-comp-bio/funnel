@@ -56,10 +56,11 @@ func DefaultConfig() Config {
 			Metadata:   map[string]string{},
 		},
 		Worker: Worker{
-			WorkDir:       workDir,
-			PollingRate:   Duration(time.Second * 5),
-			LogUpdateRate: Duration(time.Second * 5),
-			LogTailSize:   10000,
+			WorkDir:              workDir,
+			PollingRate:          Duration(time.Second * 5),
+			LogUpdateRate:        Duration(time.Second * 5),
+			LogTailSize:          10000,
+			MaxParallelTransfers: 10,
 		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers

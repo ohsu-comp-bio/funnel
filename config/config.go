@@ -147,6 +147,8 @@ type Worker struct {
 	// Normally the worker cleans up its working directory after executing.
 	// This option disables that behavior.
 	LeaveWorkDir bool
+	// Limit the number of concurrent downloads/uploads
+	MaxParallelTransfers int
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

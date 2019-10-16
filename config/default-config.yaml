@@ -115,6 +115,9 @@ Worker:
   # This option disables that behavior.
   LeaveWorkDir: false
 
+  # Limit the number of concurrent downloads/uploads
+  MaxParallelTransfers: 10
+
 #-------------------------------------------------------------------------------
 # Databases and/or Event Writers/Handlers
 #-------------------------------------------------------------------------------

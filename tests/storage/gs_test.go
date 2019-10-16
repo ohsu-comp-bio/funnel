@@ -38,6 +38,7 @@ func TestGoogleStorage(t *testing.T) {
 	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 	ctx := context.Background()
+	parallelXfer := 10
 
 	client, err := newGsTest()
 	if err != nil {
@@ -62,7 +63,7 @@ func TestGoogleStorage(t *testing.T) {
 	inFileURL := protocol + testBucket + "/" + fPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inFileURL, Path: fPath},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -71,7 +72,7 @@ func TestGoogleStorage(t *testing.T) {
 	inDirURL := protocol + testBucket + "/" + dPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inDirURL, Path: dPath, Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -133,7 +134,7 @@ func TestGoogleStorage(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outFileURL, Path: "./test_tmp/test-gs-file.txt"},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -152,7 +153,7 @@ func TestGoogleStorage(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outDirURL, Path: "./test_tmp/test-gs-directory", Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

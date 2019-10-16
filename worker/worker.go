@@ -119,7 +119,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Download inputs
 	if run.ok() {
-		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event)
+		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event, r.Conf.MaxParallelTransfers)
 	}
 
 	if run.ok() {
@@ -166,7 +166,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// Upload outputs
 	var outputLog []*tes.OutputFileLog
 	if run.ok() {
-		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event)
+		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event, r.Conf.MaxParallelTransfers)
 	}
 
 	// unmap paths for OutputFileLog

@@ -31,6 +31,7 @@ func TestGenericS3Storage(t *testing.T) {
 	ev := events.NewTaskWriter("test-task", 0, &events.Logger{Log: log})
 	testBucket := "funnel-e2e-tests-" + tests.RandomString(6)
 	ctx := context.Background()
+	parallelXfer := 10
 
 	client, err := newMinioTest(conf.GenericS3[0])
 	if err != nil {
@@ -55,7 +56,7 @@ func TestGenericS3Storage(t *testing.T) {
 	inFileURL := protocol + testBucket + "/" + fPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inFileURL, Path: fPath},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test file:", err)
 	}
@@ -64,7 +65,7 @@ func TestGenericS3Storage(t *testing.T) {
 	inDirURL := protocol + testBucket + "/" + dPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
 		{Url: inDirURL, Path: dPath, Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
 	}
@@ -126,7 +127,7 @@ func TestGenericS3Storage(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outFileURL, Path: "./test_tmp/test-s3-file.txt"},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download file:", err)
 	}
@@ -145,7 +146,7 @@ func TestGenericS3Storage(t *testing.T) {
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
 		{Url: outDirURL, Path: "./test_tmp/test-s3-directory", Type: tes.Directory},
-	}, store, ev)
+	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}

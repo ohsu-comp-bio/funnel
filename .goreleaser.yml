@@ -33,15 +33,15 @@ dockers:
       - "ohsucompbio/funnel:{{.Version}}"
     dockerfile: ./docker/Dockerfile
 
-brew:
-  github:
-    owner: ohsu-comp-bio
-    name: homebrew-formula
-  folder: Formula
-  skip_upload: true
-  description: "distributed task execution toolkit"
-  homepage: "https://ohsu-comp-bio.github.io/funnel/"
-  install: |
-    bin.install "funnel"
-  test: |
-    system "#{bin}/funnel", "version"
+brews:
+  - github:
+      owner: ohsu-comp-bio
+      name: homebrew-formula
+    folder: Formula
+    skip_upload: true
+    description: "distributed task execution toolkit"
+    homepage: "https://ohsu-comp-bio.github.io/funnel/"
+    install: |
+      bin.install "funnel"
+    test: |
+      system "#{bin}/funnel", "version"

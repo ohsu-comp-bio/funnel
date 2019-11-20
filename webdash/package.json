@@ -4,7 +4,7 @@
   "description": "Funnel Web App",
   "main": "app.js",
   "dependencies": {
-    "angular": "1.4.9",
+    "angular": "1.7.9",
     "angular-cache": "^4.6.0",
     "angular-route": "1.4.9",
     "material-design-lite": "^1.3.0",

@@ -4,6 +4,7 @@ import Typography from '@material-ui/core/Typography';
 import ReactJson from 'react-json-view';
 import _ from "underscore";
 import { TaskTable, NodeTable } from './Tables';
+import CancelButton from './cancelTask.js';
 
 class TaskList extends React.Component {
   constructor(props) {
@@ -14,6 +15,18 @@ class TaskList extends React.Component {
       nextPageToken: "",
       prevPageToken: [],
       tasks: [],
+      // tasks: [
+      //   {
+      //     "id": "task1",
+      //     "state": "RUNNING",
+      //     "name": ""
+      //   },
+      //   {
+      //     "id": "task2",
+      //     "state": "COMPLETE",
+      //     "name": ""
+      //   }
+      // ],
     };
   };
 
@@ -198,6 +211,11 @@ function get(url) {
 class Task extends React.Component {
   state = {
     task: {},
+    // task: {
+    //   "id": "task1",
+    //   "state": "RUNNING",
+    //   "name": ""
+    // }
   };
 
   componentDidMount() {
@@ -207,7 +225,21 @@ class Task extends React.Component {
       this.setState({task: task});
     });
   };
-    
+  
+  isDone(task) {
+    return task.state === "COMPLETE" || task.state === "EXECUTOR_ERROR" || task.state === "CANCELED" || task.state === "SYSTEM_ERROR";
+  }
+
+  cancel(task) {
+    if (this.isDone(task)) {
+      return
+    } else {
+      return(
+        <CancelButton task={task} />
+      )
+    }
+  }
+
   render() {
     var task = (
       <ReactJson 
@@ -225,6 +257,7 @@ class Task extends React.Component {
         <Typography variant="h4" gutterBottom component="h2">    
           Task: {this.props.match.params.task_id}
         </Typography>
+        {this.cancel(this.state.task)}
         <div style={{margin:"10px 0px"}}>{task}</div>
       </div>
     );

@@ -13,6 +13,8 @@ import IconButton from '@material-ui/core/IconButton';
 import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 
+import CancelButton from './cancelTask.js';
+
 const styles = {
   root: {
     width: '100%',
@@ -131,9 +133,20 @@ class TaskTableRaw extends React.Component {
     return task.state === "COMPLETE" || task.state === "EXECUTOR_ERROR" || task.state === "CANCELED" || task.state === "SYSTEM_ERROR";
   }
 
+  cancel(task) {
+    if (this.isDone(task)) {
+      return
+    } else {
+      return(
+        <CancelButton task={task} />
+      )
+    }
+  }
+
   render() {
     //console.log("TaskTable props:", this.props)
     const { classes } = this.props;
+
     return (
       <Paper className={classes.root}>
         <Table className={classes.table}>
@@ -155,7 +168,7 @@ class TaskTableRaw extends React.Component {
                 <TableCell>{t.name}</TableCell>
                 <TableCell>{this.creationTime(t)}</TableCell>
                 <TableCell>{this.elapsedTime(t)}</TableCell>
-                <TableCell></TableCell>
+                <TableCell>{this.cancel(t)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

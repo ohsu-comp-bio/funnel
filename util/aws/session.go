@@ -14,6 +14,10 @@ import (
 func NewAWSSession(conf config.AWSConfig) (*session.Session, error) {
 	awsConf := aws.NewConfig()
 
+	if conf.DisableAutoCredentialLoad {
+		awsConf.Credentials = nil
+	}
+
 	if conf.Endpoint != "" {
 		re := regexp.MustCompile("^s3.*\\.amazonaws\\.com/")
 		if !re.MatchString(conf.Endpoint) && !strings.HasPrefix(conf.Endpoint, "https://") {

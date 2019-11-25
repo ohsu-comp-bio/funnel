@@ -230,6 +230,8 @@ type AWSConfig struct {
 	// the environment.
 	Key    string
 	Secret string
+	// Don't automatically read AWS credentials from the environment.
+	DisableAutoCredentialLoad bool
 }
 
 // AWSBatch describes the configuration for the AWS Batch compute backend.
@@ -289,6 +291,10 @@ func (g GoogleCloudStorage) Valid() bool {
 // AmazonS3Storage describes the configuration for the Amazon S3 storage backend.
 type AmazonS3Storage struct {
 	Disabled bool
+	SSE      struct {
+		CustomerKeyFile string
+		KMSKey          string
+	}
 	AWSConfig
 }
 

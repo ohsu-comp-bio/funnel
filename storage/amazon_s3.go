@@ -2,7 +2,10 @@ package storage
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -22,8 +25,13 @@ const s3Protocol = "s3://"
 
 // AmazonS3 provides access to an S3 object store.
 type AmazonS3 struct {
-	sess     *session.Session
-	endpoint string
+	sess                 *session.Session
+	endpoint             string
+	customerAlgorithm    *string
+	customerKey          *string
+	customerKeyMD5       *string
+	kmsKeyID             *string
+	serverSideEncryption *string
 }
 
 // NewAmazonS3 creates an AmazonS3 session instance
@@ -38,7 +46,43 @@ func NewAmazonS3(conf config.AmazonS3Storage) (*AmazonS3, error) {
 		endpoint = endpointRE.ReplaceAllString(conf.Endpoint, "$2/")
 	}
 
-	return &AmazonS3{sess, endpoint}, nil
+	// handle SSE config
+	var customerAlgorithm *string
+	var customerKey *string
+	var customerKeyMD5 *string
+	var kmsKeyID *string
+	var serverSideEncryption *string
+
+	if conf.SSE.CustomerKeyFile != "" && conf.SSE.KMSKey != "" {
+		return nil, fmt.Errorf("invalid SSE config: can't provide both Customer and KMS keys")
+	}
+
+	if conf.SSE.CustomerKeyFile != "" {
+		key, err := ioutil.ReadFile(conf.SSE.CustomerKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("error reading sse-c file: %v", err)
+		}
+
+		customerAlgorithm = aws.String("AES256")
+		customerKey = aws.String(string(key[:]))
+		b := md5.Sum(key)
+		customerKeyMD5 = aws.String(base64.StdEncoding.EncodeToString(b[:]))
+	}
+
+	if conf.SSE.KMSKey != "" {
+		serverSideEncryption = aws.String(s3.ServerSideEncryptionAwsKms)
+		kmsKeyID = aws.String(conf.SSE.KMSKey)
+	}
+
+	return &AmazonS3{
+		sess,
+		endpoint,
+		customerAlgorithm,
+		customerKey,
+		customerKeyMD5,
+		kmsKeyID,
+		serverSideEncryption,
+	}, nil
 }
 
 // Stat returns information about the object at the given storage URL.
@@ -50,10 +94,15 @@ func (s3b *AmazonS3) Stat(ctx context.Context, url string) (*Object, error) {
 
 	sess := s3b.sess.Copy(&aws.Config{Region: aws.String(region)})
 	client := s3.New(sess)
-	res, err := client.HeadObjectWithContext(ctx, &s3.HeadObjectInput{
-		Bucket: aws.String(u.bucket),
-		Key:    aws.String(u.path),
-	})
+	statInput := &s3.HeadObjectInput{
+		Bucket:               aws.String(u.bucket),
+		Key:                  aws.String(u.path),
+		SSECustomerAlgorithm: s3b.customerAlgorithm,
+		SSECustomerKey:       s3b.customerKey,
+		SSECustomerKeyMD5:    s3b.customerKeyMD5,
+	}
+
+	res, err := client.HeadObjectWithContext(ctx, statInput)
 	if err != nil {
 		return nil, fmt.Errorf("amazonS3: calling stat on URL %s: %v", url, err)
 	}
@@ -130,10 +179,15 @@ func (s3b *AmazonS3) Get(ctx context.Context, url, path string) (*Object, error)
 		return nil, fmt.Errorf("amazonS3: creating file: %v", err)
 	}
 
-	_, copyErr := manager.DownloadWithContext(ctx, hf, &s3.GetObjectInput{
-		Bucket: aws.String(u.bucket),
-		Key:    aws.String(u.path),
-	})
+	getInput := &s3.GetObjectInput{
+		Bucket:               aws.String(u.bucket),
+		Key:                  aws.String(u.path),
+		SSECustomerAlgorithm: s3b.customerAlgorithm,
+		SSECustomerKey:       s3b.customerKey,
+		SSECustomerKeyMD5:    s3b.customerKeyMD5,
+	}
+
+	_, copyErr := manager.DownloadWithContext(ctx, hf, getInput)
 	closeErr := hf.Close()
 	if copyErr != nil {
 		return nil, fmt.Errorf("amazonS3: copying file: %v", copyErr)
@@ -161,15 +215,21 @@ func (s3b *AmazonS3) Put(ctx context.Context, url, path string) (*Object, error)
 	}
 	defer hf.Close()
 
-	_, copyErr := manager.UploadWithContext(ctx, &s3manager.UploadInput{
-		Bucket: aws.String(u.bucket),
-		Key:    aws.String(u.path),
-		Body:   hf,
-	})
+	uploadInput := &s3manager.UploadInput{
+		Bucket:               aws.String(u.bucket),
+		Key:                  aws.String(u.path),
+		Body:                 hf,
+		SSECustomerAlgorithm: s3b.customerAlgorithm,
+		SSECustomerKey:       s3b.customerKey,
+		SSECustomerKeyMD5:    s3b.customerKeyMD5,
+		ServerSideEncryption: s3b.serverSideEncryption,
+		SSEKMSKeyId:          s3b.kmsKeyID,
+	}
+
+	_, copyErr := manager.UploadWithContext(ctx, uploadInput)
 	if copyErr != nil {
 		return nil, fmt.Errorf("amazonS3: copying file: %v", copyErr)
 	}
-
 	return s3b.Stat(ctx, url)
 }
 

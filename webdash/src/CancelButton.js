@@ -41,12 +41,10 @@ export default class CancelButton extends React.Component {
   };
 
   handleNo = () => {
-    console.log("ABORT CANCEL")
     this.setState({open: false});
   };
 
   handleYes = () => {
-    console.log("CANCEL")
     this.cancelTask(this.props.task.id);
     this.setState({open: false});
   };

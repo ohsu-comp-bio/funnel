@@ -86,18 +86,17 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 
 // GetServiceInfo returns service metadata.
 func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
-
 	resp := &tes.ServiceInfo{
-		Name:            ts.Name,
-		Doc:             version.String(),
-		TaskStateCounts: map[string]int32{},
-	}
-	// Ensure that all states are present in the response, even if zero.
-	for key := range tes.State_value {
-		resp.TaskStateCounts[key] = 0
+		Name: ts.Name,
+		Doc:  version.String(),
 	}
 
 	if c, ok := ts.Read.(metrics.TaskStateCounter); ok {
+		resp.TaskStateCounts = make(map[string]int32)
+		// Ensure that all states are present in the response, even if zero.
+		for key := range tes.State_value {
+			resp.TaskStateCounts[key] = 0
+		}
 		cs, err := c.TaskStateCounts(ctx)
 		if err != nil {
 			ts.Log.Error("counting task states", "error", err)

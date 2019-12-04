@@ -94,6 +94,7 @@ func (s3b *AmazonS3) Stat(ctx context.Context, url string) (*Object, error) {
 
 	sess := s3b.sess.Copy(&aws.Config{Region: aws.String(region)})
 	client := s3.New(sess)
+
 	statInput := &s3.HeadObjectInput{
 		Bucket:               aws.String(u.bucket),
 		Key:                  aws.String(u.path),
@@ -101,10 +102,23 @@ func (s3b *AmazonS3) Stat(ctx context.Context, url string) (*Object, error) {
 		SSECustomerKey:       s3b.customerKey,
 		SSECustomerKeyMD5:    s3b.customerKeyMD5,
 	}
-
-	res, err := client.HeadObjectWithContext(ctx, statInput)
+	var res *s3.HeadObjectOutput
+	res, err = client.HeadObjectWithContext(ctx, statInput)
 	if err != nil {
-		return nil, fmt.Errorf("amazonS3: calling stat on URL %s: %v", url, err)
+		// the file may not be encrypted => retry without sse-c keys
+		if s3b.customerKey != nil {
+			statInput = &s3.HeadObjectInput{
+				Bucket: aws.String(u.bucket),
+				Key:    aws.String(u.path),
+			}
+			var rerr error
+			res, rerr = client.HeadObjectWithContext(ctx, statInput)
+			if rerr != nil {
+				return nil, fmt.Errorf("amazonS3: calling stat on URL %s: %v", url, err)
+			}
+		} else {
+			return nil, fmt.Errorf("amazonS3: calling stat on URL %s: %v", url, err)
+		}
 	}
 	return &Object{
 		URL:          url,
@@ -186,16 +200,25 @@ func (s3b *AmazonS3) Get(ctx context.Context, url, path string) (*Object, error)
 		SSECustomerKey:       s3b.customerKey,
 		SSECustomerKeyMD5:    s3b.customerKeyMD5,
 	}
-
-	_, copyErr := manager.DownloadWithContext(ctx, hf, getInput)
-	closeErr := hf.Close()
+	var copyErr error
+	var retryErr error
+	_, copyErr = manager.DownloadWithContext(ctx, hf, getInput)
 	if copyErr != nil {
+		if s3b.customerKey != nil {
+			getInput = &s3.GetObjectInput{
+				Bucket: aws.String(u.bucket),
+				Key:    aws.String(u.path),
+			}
+			_, retryErr = manager.DownloadWithContext(ctx, hf, getInput)
+		}
+	}
+	closeErr := hf.Close()
+	if copyErr != nil && retryErr != nil {
 		return nil, fmt.Errorf("amazonS3: copying file: %v", copyErr)
 	}
 	if closeErr != nil {
 		return nil, fmt.Errorf("amazonS3: closing file: %v", closeErr)
 	}
-
 	return obj, nil
 }
 

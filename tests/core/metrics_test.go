@@ -45,6 +45,9 @@ func TestMetrics(t *testing.T) {
 		t.Error("unexpected counts from service info")
 	}
 
+	// TODO unfortunately, we have to wait for the prometheus poller to update
+	time.Sleep(20 * time.Second)
+
 	hresp, err := http.Get(fun.Conf.Server.HTTPAddress() + "/metrics")
 	if err != nil {
 		t.Fatal(err)
@@ -57,17 +60,13 @@ func TestMetrics(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// TODO unfortunately, we have to wait for the prometheus poller to update
-	time.Sleep(20 * time.Second)
-
 	// It's tedious to check these so just find one.
 	for _, m := range met["funnel_tasks_state_count"].Metric {
-		if *m.Label[0].Name == "state" && *m.Label[0].Value == "COMPLETE" {
-			if *m.Gauge.Value != 2 {
-				t.Error("unexpected counts from prometheus endpoint", *m.Gauge.Value)
+		if *m.Label[0].Name == "state" && (*m.Label[0].Value == "EXECUTOR_ERROR" || *m.Label[0].Value == "RUNNING") {
+			if *m.Gauge.Value != 1 {
+				t.Errorf("unexpected counts from prometheus endpoint: state: %s, count: %v != 1", *m.Label[0].Value, *m.Gauge.Value)
 			}
 		}
 	}
-
 	pretty.Println(met["funnel_tasks_state_count"].Metric)
 }

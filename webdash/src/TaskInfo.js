@@ -12,7 +12,7 @@ import { formatTimestamp, elapsedTime } from './utils';
 
 const styles = {
   table: {
-    width: 'initial',
+    width: '100%',
     overflowX: 'auto',
   },
   row: {
@@ -23,18 +23,28 @@ const styles = {
     borderBottomStyle: 'none',
     paddingLeft:'0px',
   },
+  key: {
+    width: '20%',
+  },
+  value: {
+    width: '80%',
+  },
 };
-
 
 class TaskInfoRaw extends React.Component {
 
-  renderRow(key, val) {
+  renderRow(key, val, formatFunc) {
+    if (typeof formatFunc === "function") {
+      val = formatFunc(val)
+    } else if (formatFunc) {
+      console.log("renderRow: formatFunc was not a function:", typeof(formatFunc))
+    }
     const { classes } = this.props;
     if ( key && val ) {
       return (
         <TableRow key={key} className={classes.row}>
-          <TableCell className={classes.cell}><b>{key}</b></TableCell>
-          <TableCell className={classes.cell}>{val}</TableCell>
+          <TableCell className={[classes.cell, classes.key]}><b>{key}</b></TableCell>
+          <TableCell className={[classes.cell, classes.value]}>{val}</TableCell>
         </TableRow>
       )
     }
@@ -57,8 +67,8 @@ class TaskInfoRaw extends React.Component {
       }
       return (
         <TableRow key='Resources' className={classes.row}>
-          <TableCell className={classes.cell}><b>Resources</b></TableCell>
-          <TableCell className={classes.cell}>{s}</TableCell>
+          <TableCell className={[classes.cell, classes.key]}><b>Resources</b></TableCell>
+          <TableCell className={[classes.cell, classes.value]}>{s}</TableCell>
         </TableRow>
       )
     }
@@ -87,10 +97,10 @@ class TaskInfoRaw extends React.Component {
             <TableBody>
               {Object.keys(data).map(k => (
                <TableRow key={k} className={classes.row}>
-                 <TableCell className={classes.cell}>
+                 <TableCell className={[classes.cell, classes.key]}>
                    <b>{k}</b>
                  </TableCell>
-                 <TableCell className={classes.cell}>
+                 <TableCell className={[classes.cell, classes.value]}>
                    {data[k]}
                  </TableCell>
                </TableRow>
@@ -132,18 +142,45 @@ class TaskInfoRaw extends React.Component {
     return
   }
 
+  // should we truncate stdout / stderr ???
   renderExecutors(task) {
+    const { classes } = this.props;
     if ( task.executors ) {
       var executors = task.executors
-      var logs = null
+      var logs = [{}]
       if ( task.logs && task.logs && task.logs[0].logs ) {
         logs = task.logs[0].logs
       }
-      console.log(executors)
-      console.log(logs)
+      const cmdString = function(cmd) {
+       return cmd.join(" ") 
+      }
+      const preFormat = function(s) {
+        return <pre>{s}</pre>
+      }
       return (
         <div style={{padding: '40px 0px 0px 0px'}}>
           {this.renderTitle('Executors')}
+          {executors.map((exec, index) => (
+            <Table className={classes.table}>
+              <TableBody>
+                <TableRow key='Cmd' className={classes.row}>
+                  <TableCell className={[classes.cell, classes.key]}><b>Command</b></TableCell>
+                  <TableCell className={[classes.cell, classes.value]}>{cmdString(exec.command)}</TableCell>
+                </TableRow>
+                <TableRow key='Image' className={classes.row}>
+                  <TableCell className={[classes.cell, classes.key]}><b>Image</b></TableCell>
+                  <TableCell className={[classes.cell, classes.value]}>{exec.image}</TableCell>
+                </TableRow>
+                {this.renderRow('Workdir', exec.workdir)}
+                {this.renderRow('Env', this.renderKV(exec.env, null, '0px 0px 0px 0px'))}
+                {this.renderRow('StartTime', logs[index].startTime, formatTimestamp)}
+                {this.renderRow('EndTime', logs[index].endTime, formatTimestamp)}
+                {this.renderRow('Exit Code', logs[index].exitCode)}
+                {this.renderRow('Stdout', logs[index].stdout, preFormat)}
+                {this.renderRow('Stderr', logs[index].stderr, preFormat)}
+              </TableBody>
+            </Table>
+          ))}
         </div>
       )
     }
@@ -187,24 +224,12 @@ class TaskInfoRaw extends React.Component {
         <Table className={classes.table}>
           <TableBody>
             {this.renderRow('Name', task.name)}
-            <TableRow key='ID' className={classes.row}>
-              <TableCell className={classes.cell}><b>ID</b></TableCell>
-              <TableCell className={classes.cell}>{task.id}</TableCell>
-            </TableRow>
-            <TableRow key='State' className={classes.row}>
-              <TableCell className={classes.cell}><b>State</b></TableCell>
-              <TableCell className={classes.cell}>{task.state}</TableCell>
-            </TableRow>
+            {this.renderRow('ID', task.id)}
+            {this.renderRow('State', task.state)}
             {this.renderRow('Description', task.description)}
             {this.renderResources(task.resources)}
-            <TableRow key='CreationTime' className={classes.row}>
-              <TableCell className={classes.cell}><b>Creation Time</b></TableCell>
-              <TableCell className={classes.cell}>{formatTimestamp(task.creationTime)}</TableCell>
-            </TableRow>
-            <TableRow key='ElapsedTime' className={classes.row}>
-              <TableCell className={classes.cell}><b>Elapsed Time</b></TableCell>
-              <TableCell className={classes.cell}>{elapsedTime(task)}</TableCell>
-            </TableRow>
+            {this.renderRow('Creation Time', task.creationTime, formatTimestamp)}
+            {this.renderRow('Elapsed Time', task, elapsedTime)}
           </TableBody>
         </Table>
 

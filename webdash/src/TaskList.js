@@ -13,7 +13,7 @@ import IconButton from '@material-ui/core/IconButton';
 import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 
-import { formatTimestamp, elapsedTime, renderCancelButton } from './utils';
+import { formatDate, elapsedTime, renderCancelButton } from './utils';
 
 const styles = {
   root: {
@@ -50,7 +50,7 @@ class TaskTableRaw extends React.Component {
                 <TableCell><a href={"/tasks/" + t.id}>{t.id}</a></TableCell>
                 <TableCell>{t.state}</TableCell>
                 <TableCell>{t.name}</TableCell>
-                <TableCell>{formatTimestamp(t.creationTime)}</TableCell>
+                <TableCell>{formatDate(t.creationTime)}</TableCell>
                 <TableCell>{elapsedTime(t)}</TableCell>
                 <TableCell>{renderCancelButton(t)}</TableCell>
               </TableRow>
@@ -59,7 +59,7 @@ class TaskTableRaw extends React.Component {
           <TableFooter>
             <TableRow>
               <TablePagination
-                  rowsPerPageOptions={[50, 100, 150]}
+                  rowsPerPageOptions={[25, 50, 100, 250, 500]}
                   onChangePage={function(event, number) { return }}
                   page={0}
                   count={0}

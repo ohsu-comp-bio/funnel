@@ -48,10 +48,23 @@ function elapsedTime(task) {
       return formatElapsedTime(elapsed);
     }
   }
+  return
+}
+
+function formatTimestamp(utcNanoseconds) {
+  if (utcNanoseconds) {
+    var utcSeconds = parseInt(utcNanoseconds) / 1000000;
+    var date = new Date(utcSeconds);
+    var options = {
+      weekday: 'short',  month: 'short', day: 'numeric',
+      hour: 'numeric', minute: 'numeric'
+    };
+    return date.toLocaleDateString("en-US", options);
+  }
   return "--";
 }
 
-function formatTimestamp(tstamp) {
+function formatDate(tstamp) {
   if (tstamp) {
     var date = new Date(tstamp);
     var options = {
@@ -80,4 +93,4 @@ function renderCancelButton(task) {
   }
 }
 
-export { renderCancelButton, isDone,  formatTimestamp, elapsedTime };
+export { renderCancelButton, isDone, formatDate, formatTimestamp, elapsedTime };

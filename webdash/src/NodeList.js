@@ -34,6 +34,7 @@ class NodeTableRaw extends React.Component {
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
+              <TableCell>Hostname</TableCell>
               <TableCell>State</TableCell>
               <TableCell>Tasks</TableCell>
             </TableRow>
@@ -41,7 +42,8 @@ class NodeTableRaw extends React.Component {
           <TableBody>
             {this.props.nodes.map(n => (
               <TableRow hover key={n.id}>
-                <TableCell><a href={"/nodes/" + n.id}>{ n.hostname || n.id}</a></TableCell>
+                <TableCell><a href={"/nodes/" + n.id}>{n.id}</a></TableCell>
+                <TableCell>{ n.hostname }</TableCell>
                 <TableCell>{n.state}</TableCell>
                 <TableCell>{this.nTasks(n)}</TableCell>
               </TableRow>

@@ -146,11 +146,6 @@ func GetPageSize(reqSize uint32) int {
 		if pageSize > 2048 {
 			pageSize = 2048
 		}
-
-		// min page size
-		if pageSize < 50 {
-			pageSize = 50
-		}
 	}
 
 	return pageSize

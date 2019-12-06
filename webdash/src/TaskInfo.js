@@ -7,8 +7,9 @@ import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import Typography from '@material-ui/core/Typography';
+import classNames from 'classnames';
 
-import { formatTimestamp, elapsedTime } from './utils';
+import { formatDate, elapsedTime } from './utils';
 
 const styles = {
   table: {
@@ -21,7 +22,7 @@ const styles = {
   cell: {
     fontSize: '10pt',
     borderBottomStyle: 'none',
-    paddingLeft:'0px',
+    padding:'1px',
   },
   key: {
     width: '20%',
@@ -34,17 +35,19 @@ const styles = {
 class TaskInfoRaw extends React.Component {
 
   renderRow(key, val, formatFunc) {
-    if (typeof formatFunc === "function") {
-      val = formatFunc(val)
-    } else if (formatFunc) {
-      console.log("renderRow: formatFunc was not a function:", typeof(formatFunc))
-    }
     const { classes } = this.props;
+    if ( val ) {
+      if (typeof formatFunc === "function") {
+        val = formatFunc(val)
+      } else if (formatFunc) {
+        console.log("renderRow: formatFunc was not a function:", typeof(formatFunc))
+      }
+    }
     if ( key && val ) {
       return (
         <TableRow key={key} className={classes.row}>
-          <TableCell className={[classes.cell, classes.key]}><b>{key}</b></TableCell>
-          <TableCell className={[classes.cell, classes.value]}>{val}</TableCell>
+          <TableCell className={classNames(classes.cell, classes.key)}><b>{key}</b></TableCell>
+          <TableCell className={classNames(classes.cell, classes.value)}>{val}</TableCell>
         </TableRow>
       )
     }
@@ -67,8 +70,8 @@ class TaskInfoRaw extends React.Component {
       }
       return (
         <TableRow key='Resources' className={classes.row}>
-          <TableCell className={[classes.cell, classes.key]}><b>Resources</b></TableCell>
-          <TableCell className={[classes.cell, classes.value]}>{s}</TableCell>
+          <TableCell className={classNames(classes.cell, classes.key)}><b>Resources</b></TableCell>
+          <TableCell className={classNames(classes.cell, classes.value)}>{s}</TableCell>
         </TableRow>
       )
     }
@@ -97,10 +100,10 @@ class TaskInfoRaw extends React.Component {
             <TableBody>
               {Object.keys(data).map(k => (
                <TableRow key={k} className={classes.row}>
-                 <TableCell className={[classes.cell, classes.key]}>
+                 <TableCell className={classNames(classes.cell, classes.key)}>
                    <b>{k}</b>
                  </TableCell>
-                 <TableCell className={[classes.cell, classes.value]}>
+                 <TableCell className={classNames(classes.cell, classes.value)}>
                    {data[k]}
                  </TableCell>
                </TableRow>
@@ -164,17 +167,17 @@ class TaskInfoRaw extends React.Component {
             <Table className={classes.table}>
               <TableBody>
                 <TableRow key='Cmd' className={classes.row}>
-                  <TableCell className={[classes.cell, classes.key]}><b>Command</b></TableCell>
-                  <TableCell className={[classes.cell, classes.value]}>{cmdString(exec.command)}</TableCell>
+                  <TableCell className={classNames(classes.cell, classes.key)}><b>Command</b></TableCell>
+                  <TableCell className={classNames(classes.cell, classes.value)}>{cmdString(exec.command)}</TableCell>
                 </TableRow>
                 <TableRow key='Image' className={classes.row}>
-                  <TableCell className={[classes.cell, classes.key]}><b>Image</b></TableCell>
-                  <TableCell className={[classes.cell, classes.value]}>{exec.image}</TableCell>
+                  <TableCell className={classNames(classes.cell, classes.key)}><b>Image</b></TableCell>
+                  <TableCell className={classNames(classes.cell, classes.value)}>{exec.image}</TableCell>
                 </TableRow>
                 {this.renderRow('Workdir', exec.workdir)}
                 {this.renderRow('Env', this.renderKV(exec.env, null, '0px 0px 0px 0px'))}
-                {this.renderRow('StartTime', logs[index].startTime, formatTimestamp)}
-                {this.renderRow('EndTime', logs[index].endTime, formatTimestamp)}
+                {this.renderRow('StartTime', logs[index].startTime, formatDate)}
+                {this.renderRow('EndTime', logs[index].endTime, formatDate)}
                 {this.renderRow('Exit Code', logs[index].exitCode)}
                 {this.renderRow('Stdout', logs[index].stdout, preFormat)}
                 {this.renderRow('Stderr', logs[index].stderr, preFormat)}
@@ -228,7 +231,7 @@ class TaskInfoRaw extends React.Component {
             {this.renderRow('State', task.state)}
             {this.renderRow('Description', task.description)}
             {this.renderResources(task.resources)}
-            {this.renderRow('Creation Time', task.creationTime, formatTimestamp)}
+            {this.renderRow('Creation Time', task.creationTime, formatDate)}
             {this.renderRow('Elapsed Time', task, elapsedTime)}
           </TableBody>
         </Table>

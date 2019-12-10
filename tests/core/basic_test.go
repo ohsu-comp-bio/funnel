@@ -721,11 +721,11 @@ func TestPagination(t *testing.T) {
 	}
 
 	r2, _ := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
-		PageSize: 2,
+		PageSize: 1,
 	})
 
-	// Minimum page size is 50
-	if len(r2.Tasks) != 50 {
+	// Minimum page size is 1
+	if len(r2.Tasks) != 1 {
 		t.Error("wrong minimum page size")
 	}
 

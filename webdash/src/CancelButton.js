@@ -6,16 +6,11 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
-export default class CancelButton extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      open: false
-    }
-  }
+export default function CancelButton(task) {
+  const [open, setOpen] = React.useState(false);
 
-  cancelTask(id) {
-    var url = new URL("/v1/tasks/" + id + ":cancel", window.location.origin);
+  const cancelTask = () => {
+    var url = new URL("/v1/tasks/" + task.id + ":cancel", window.location.origin);
     //console.log("cancelTask url:", url);
     fetch(url.toString(), {
       method: 'POST',
@@ -36,47 +31,46 @@ export default class CancelButton extends React.Component {
     );
   };
 
-  handleClickOpen = () => {
-    this.setState({open: true});
+  const handleClickOpen = () => {
+    setOpen(true);
   };
 
-  handleNo = () => {
-    this.setState({open: false});
+  const handleNo = () => {
+    setOpen(false);
   };
 
-  handleYes = () => {
-    this.cancelTask(this.props.task.id);
-    this.setState({open: false});
+  const handleYes = () => {
+    cancelTask();
+    setOpen(false);
   };
 
-  render() {
-    return (
-      <div>
-        <Button variant="outlined" onClick={this.handleClickOpen}>
-          Cancel
-        </Button>
-        <Dialog
-          open={this.state.open}
-          onClose={this.handleClose}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">Cancel task: {this.props.task.id}?</DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              This action can not be undone.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={this.handleNo} color="primary">
-              No
-            </Button>
-            <Button onClick={this.handleYes} color="primary" autoFocus>
-              Yes
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </div>
-    );
-  }
-}
+  return (
+    <div>
+      <Button variant="outlined" onClick={handleClickOpen}>
+        Cancel
+      </Button>
+      <Dialog
+        open={open}
+        onClose={null}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Cancel task: {task.id}?</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            This action can not be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleNo} color="primary">
+            No
+          </Button>
+          <Button onClick={handleYes} color="primary" autoFocus>
+            Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+};
+

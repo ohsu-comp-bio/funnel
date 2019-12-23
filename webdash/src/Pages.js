@@ -1,18 +1,21 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Typography from '@material-ui/core/Typography';
-// import ReactJson from 'react-json-view';
+import ReactJson from 'react-json-view';
+import { useParams} from "react-router";
 import _ from "underscore";
 import { NodeTable } from './NodeList';
 import { NodeInfo } from './NodeInfo';
 import { SystemInfo } from './SystemInfo';
 import { TaskTable } from './TaskList';
 import { TaskInfo } from './TaskInfo';
-import { renderCancelButton } from './utils';
+import { get, renderCancelButton } from './utils';
+import { SimpleTabs } from './Tabs';
+//import { example_task, example_node, example_service_info, example_task_list, example_node_list } from './ExampleData.js';
 
 class TaskList extends React.Component {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       pageSize: 25,
       pageToken: "",
@@ -133,358 +136,149 @@ TaskList.propTypes = {
   tagsFilter: PropTypes.array.isRequired,
 };
 
-class NodeList extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      nodes: [],
-      // nodes: [
-      //   {
-      //     "id": "366ab31a-8dec-4691-7a24-59be053a3d55",
-      //     "resources": {
-      //       "cpus": 4,
-      //       "ramGb": 17.179869184,
-      //       "diskGb": 669.49789696
-      //     },
-      //     "available": {
-      //       "cpus": 4,
-      //       "ramGb": 17.179869184,
-      //       "diskGb": 669.49789696
-      //     },
-      //     "state": "DEAD",
-      //     "hostname": "BICB230",
-      //     "lastPing": "1575930783260904000"
-      //   },
-      //   {
-      //     "id": "5bd9947c-4222-423c-6718-208c6525caa3",
-      //     "resources": {
-      //       "cpus": 4,
-      //       "ramGb": 17.179869184,
-      //       "diskGb": 672.442179584
-      //     },
-      //     "available": {
-      //       "cpus": 4,
-      //       "ramGb": 17.179869184,
-      //       "diskGb": 672.442179584
-      //     },
-      //     "taskIds": [
-      //       "bnnd427pbjgb7lgg06gg",
-      //       "bnnd427pbjgb7lgg06gg-foo"
-      //     ],
-      //     "state": "ALIVE",
-      //     "hostname": "BICB230",
-      //     "lastPing": "1575930967253002000"
-      //   }
-      // ]
-    };
-  };
+function NodeList() {
+  const [nodes, setNodes] = React.useState([]);
+  //const [nodes, setNodes] = React.useState(example_node_list);
 
-  listNodes() {
-    var url = new URL("/v1/nodes" + window.location.search, window.location.origin);
-    console.log("listNodes url:", url);
+  React.useEffect(() => {
+    var url = new URL("/v1/nodes", window.location.origin);
+    // console.log("listNodes url:", url);
     fetch(url.toString())
       .then(response => response.json())
       .then(
         (result) => {
-          console.log("listNodes result:", result);
           if (result.nodes !== undefined) {
-            this.setState({nodes: result.nodes});
-          } else {
-            this.setState({nodes: []});
-          };
+            setNodes(result.nodes);
+          }
         },
         (error) => {
-          console.log("listNodes", url.toString(), "error:", error);
+          console.log("listNodes err:", error.toString());
         },
       );
-  };
+  });
 
-  shouldComponentUpdate(nextProps, nextState) {
-    if (!_.isEqual(this.state.nodes, nextState.nodes)) {
-      return true;
-    };
-    return false;
-  };
-
-  render() {
-    this.listNodes();
-    console.log("NodeList state:", this.state)
-    return (
-      <div>
-        <Typography variant="h4" gutterBottom component="h2">
-          Nodes
-        </Typography>
-        <NodeTable nodes={this.state.nodes} />
-      </div>
-    );
-  };
+  return (
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">
+        Nodes
+      </Typography>
+      <NodeTable nodes={nodes} />
+    </div>
+  );
 };
 
-function get(url) {
-  if (!url instanceof URL) {
-    console.log("get error: expected URL object; got", url);
-    return undefined;
-  };
-  var params = url.searchParams;
-  if (url.toString().includes("/v1/tasks")) {
-    params.set("view", "FULL");
-  }
-  //console.log("get url:", url);
-  return fetch(url.toString())
-    .then(response => response.json())
-    .then(
-      (result) => {
-        //console.log("get result:", result);
-        return result;
-      },
-      (error) => {
-        console.log("get", url.toString(), "error:", error);
-        throw error
-      },
-    );
-};
-
-class Task extends React.Component {
-  state = {
-    task: {},
-    error: "",
-    // task: {
-    //   "id": "bnj8hlnpbjg64189lu30",
-    //   "state": "COMPLETE",
-    //   "name": "sh -c 'echo starting; cat $file1 \u003e $file2; echo done'",
-    //   "tags": {
-    //     "tag-ONE": "TWO",
-    //     "tag-THREE": "FOUR"
-    //   },
-    //   "volumes": ["/vol1", "/vol2"],
-    //   "inputs": [
-    //     {
-    //       "name": "file1",
-    //       "url": "file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md",
-    //       "path": "/inputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md"
-    //     }
-    //   ],
-    //   "outputs": [
-    //     {
-    //       "name": "stdout-0",
-    //       "url": "file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test.stdout",
-    //       "path": "/outputs/stdout-0"
-    //     },
-    //     {
-    //       "name": "file2",
-    //       "url": "file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test_out",
-    //       "path": "/outputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test_out"
-    //     }
-    //   ],
-    //   "resources": {
-    //     "cpuCores": 2,
-    //     "ramGb": 4,
-    //     "diskGb": 10
-    //   },
-    //   "executors": [
-    //     {
-    //       "image": "ubuntu",
-    //       "command": [
-    //         "sh",
-    //         "-c",
-    //         "echo starting; cat $file1 \u003e $file2; echo done"
-    //       ],
-    //       "stdout": "/outputs/stdout-0",
-    //       "env": {
-    //         "file1": "/inputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md",
-    //         "file2": "/outputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test_out"
-    //       }
-    //     }
-    //   ],
-    //   "logs": [
-    //     {
-    //       "logs": [
-    //         {
-    //           "startTime": "2019-12-03T08:09:58.524782-08:00",
-    //           "endTime": "2019-12-03T08:10:04.209567-08:00",
-    //           "stdout": "starting\ndone\n"
-    //         }
-    //       ],
-    //       "metadata": {
-    //         "hostname": "BICB230"
-    //       },
-    //       "startTime": "2019-12-03T08:09:58.516832-08:00",
-    //       "endTime": "2019-12-03T08:10:04.216273-08:00",
-    //       "outputs": [
-    //         {
-    //           "url": "file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test.stdout",
-    //           "path": "/outputs/stdout-0",
-    //           "sizeBytes": "14"
-    //         },
-    //         {
-    //           "url": "file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test_out",
-    //           "path": "/outputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test_out",
-    //           "sizeBytes": "1209"
-    //         }
-    //       ],
-    //       "systemLogs": [
-    //         "level='info' msg='Version' timestamp='2019-12-03T08:09:58.5126-08:00' task_attempt='0' executor_index='0' GitCommit='a630947d' GitBranch='master' GitUpstream='git@github.com:ohsu-comp-bio/funnel.git' BuildDate='2019-01-29T00:50:30Z' Version='0.9.0'",
-    //         "level='info' msg='download started' timestamp='2019-12-03T08:09:58.521417-08:00' task_attempt='0' executor_index='0' url='file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md'",
-    //         "level='info' msg='download finished' timestamp='2019-12-03T08:09:58.523199-08:00' task_attempt='0' executor_index='0' url='file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md' size='1209' etag=''",
-    //         "level='info' msg='Running command' timestamp='2019-12-03T08:10:02.83215-08:00' task_attempt='0' executor_index='0' cmd='docker run -i --read-only --rm -e file1=/inputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md -e file2=/outputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test_out --name bnj8hlnpbjg64189lu30-0 -v /Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/funnel-work-dir/bnj8hlnpbjg64189lu30/tmp:/tmp:rw -v /Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/funnel-work-dir/bnj8hlnpbjg64189lu30/inputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md:/inputs/Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/README.md:ro -v /Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/funnel-work-dir/bnj8hlnpbjg64189lu30/outputs:/outputs:rw ubuntu sh -c echo starting; cat $file1 \u003e $file2; echo done'",
-    //         "level='info' msg='upload started' timestamp='2019-12-03T08:10:04.211287-08:00' task_attempt='0' executor_index='0' url='file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test_out'",
-    //         "level='info' msg='upload finished' timestamp='2019-12-03T08:10:04.213672-08:00' task_attempt='0' executor_index='0' size='14' url='file:///Users/strucka/go/src/github.com/ohsu-comp-bio/funnel/test.stdout' etag=''"
-    //       ]
-    //     }
-    //   ],
-    //   "creationTime": "2019-12-03T08:09:58.506338-08:00"
-    // }
-  };
-
-  componentDidMount() {
-    var url = new URL("/v1/tasks/" + this.props.match.params.task_id, window.location.origin);
+function Task() {
+  let { task_id } = useParams();
+  const [task, setTask] = React.useState({});
+  //const [task, setTask] = React.useState(example_task);
+ 
+  React.useEffect(() => {
+    var url = new URL("/v1/tasks/" + task_id, window.location.origin);
     get(url).then(
       (task) => {
-      //console.log("task:", task);
-      this.setState({task: task});
-    },
-      (error) => {
-        this.setState({error: "Error: " + error.toString()});
-      });
-  };
+      setTask(task);
+    });
+  }, [task_id]);
 
-  render() {
-    // var task = (
-    //   <ReactJson
-    //    src={this.state.task}
-    //    theme={"rjv-default"}
-    //    name={false}
-    //    displayObjectSize={false}
-    //    displayDataTypes={false}
-    //    enableClipboard={true}
-    //    collapsed={false}
-    //   />
-    // );
-    return (
-      <div>
-        <Typography variant="h4" gutterBottom>
-          Task: {this.props.match.params.task_id}
-        </Typography>
-        <Typography variant="h5" gutterBottom color="textSecondary">
-          {this.state.error}
-        </Typography>
-        {renderCancelButton(this.state.task)}
-        {/* <div style={{margin:"10px 0px"}}>{task}</div> */}
-        <TaskInfo task={this.state.task} />
-      </div>
-    );
-  };
+  const json = (
+    <ReactJson
+     src={task}
+     theme={"rjv-default"}
+     name={false}
+     displayObjectSize={false}
+     displayDataTypes={false}
+     enableClipboard={true}
+     collapsed={false}
+    />
+  );
+
+  const header = (
+    <div>
+      <Typography variant="h4" gutterBottom>
+        Task: {task_id}
+      </Typography>
+      {renderCancelButton(task)}
+    </div>
+  );
+
+  return (
+    SimpleTabs(header, <TaskInfo task={task} />, json)
+  );
 };
 
-class Node extends React.Component {
-  state = {
-    node: {},
-    error: "",
-    // node: {
-    //   "id": "5bd9947c-4222-423c-6718-208c6525caa3",
-    //   "resources": {
-    //     "cpus": 4,
-    //     "ramGb": 17.179869184,
-    //     "diskGb": 672.442179584
-    //   },
-    //   "available": {
-    //     "cpus": 4,
-    //     "ramGb": 17.179869184,
-    //     "diskGb": 672.442179584
-    //   },
-    //   "taskIds": [
-    //     "bnnd427pbjgb7lgg06gg",
-    //     "bnnd427pbjgb7lgg06gg-foo"
-    //   ],
-    //   "state": "ALIVE",
-    //   "hostname": "BICB230",
-    //   "lastPing": "1575930967253002000"
-    // },
-  };
+function Node() {
+  let { node_id } = useParams();
+  const [node, setNode] = React.useState({});
+  //const [node, setNode] = React.useState(example_node);
 
-  componentDidMount() {
-    var url = new URL("/v1/nodes/" + this.props.match.params.node_id, window.location.origin);
+  React.useEffect(() => {
+    var url = new URL("/v1/nodes/" + node_id, window.location.origin);
     get(url).then(
       (node) => {
-        //console.log("node:", node);
-        this.setState({node: node});
-      },
-      (error) => {
-        console.log("get node err:", error.toString());
-        this.setState({error: "Error: " + error.toString()});
-      });;
-  };
+      setNode(node);
+    });
+  }, [node_id]);
 
-  render() {
-    // var node = (
-    //   <ReactJson
-    //    src={this.state.node}
-    //    theme={"rjv-default"}
-    //    name={false}
-    //    displayObjectSize={false}
-    //    displayDataTypes={false}
-    //    enableClipboard={true}
-    //    collapsed={false}
-    //   />
-    // );
-    return (
-      <div>
-        <Typography variant="h4" gutterBottom component="h2">
-          Node: {this.props.match.params.node_id}
-        </Typography>
-        <Typography variant="h5" gutterBottom color="textSecondary">
-          {this.state.error}
-        </Typography>
-        {/* <div style={{margin:"10px 0px"}}>{node}</div> */}
-        <NodeInfo node={this.state.node} />
-      </div>
-    );
-  };
+  const json = (
+    <ReactJson
+      src={node}
+      theme={"rjv-default"}
+      name={false}
+      displayObjectSize={false}
+      displayDataTypes={false}
+      enableClipboard={true}
+      collapsed={false}
+    />
+  );
+
+  const header = (
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">
+        Node: {node_id}
+      </Typography>
+    </div>
+  );
+
+  return (
+    SimpleTabs(header, <NodeInfo node={node} />, json)
+  );
 };
 
-class ServiceInfo extends React.Component {
-  state = {
-    info: {},
-    error: "",
-    // info: {
-    //   "name": "Funnel",
-    //   "doc": "git commit: a630947d\ngit branch: master\ngit upstream: git@github.com:ohsu-comp-bio/funnel.git\nbuild date: 2019-01-29T00:50:30Z\nversion: 0.9.0",
-    //   "taskStateCounts": {
-    //     "CANCELED": 0,
-    //     "COMPLETE": 0,
-    //     "EXECUTOR_ERROR": 0,
-    //     "INITIALIZING": 0,
-    //     "PAUSED": 0,
-    //     "QUEUED": 0,
-    //     "RUNNING": 0,
-    //     "SYSTEM_ERROR": 0,
-    //     "UNKNOWN": 0
-    //   }
-    // }
-  };
+function ServiceInfo() {
+  const [info, setInfo] = React.useState({});
+  //const [info, setInfo] = React.useState(example_service_info);
 
-  componentDidMount() {
+  React.useEffect(() => {
     var url = new URL("/v1/tasks/service-info", window.location.origin);
     get(url).then(
       (info) => {
-      //console.log("service info:", info);
-      this.setState({info: info});
-      },
-      (error) => {
-        this.setState({error: "Error: " + error.toString()});
+      setInfo(info);
       });
-  }
+  });
+  
+  const json = (
+    <ReactJson
+      src={info}
+      theme={"rjv-default"}
+      name={false}
+      displayObjectSize={false}
+      displayDataTypes={false}
+      enableClipboard={true}
+      collapsed={false}
+    />
+  );
 
-  render() {
-    return (
-      <div>
-        <Typography variant="h4" gutterBottom component="h2">
-          Service Info
-        </Typography>
-        <SystemInfo info={this.state.info} />
-      </div>
-    );
-  };
+  const header = (
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">
+        System Info
+      </Typography>
+    </div>
+  );
+
+  return (
+    SimpleTabs(header, <SystemInfo info={info} />, json)
+  );
 };
 
 function NoMatch() {

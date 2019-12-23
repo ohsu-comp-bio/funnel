@@ -1,4 +1,3 @@
-import React from 'react';
 import CancelButton from './CancelButton'
 
 function formatElapsedTime(miliseconds) {
@@ -88,9 +87,33 @@ function renderCancelButton(task) {
     return
   } else {
     return(
-        <CancelButton task={task} />
+        CancelButton(task)
     )
   }
 }
 
-export { renderCancelButton, isDone, formatDate, formatTimestamp, elapsedTime };
+function get(url) {
+  if (!url instanceof URL) {
+    console.log("get error: expected URL object; got", url);
+    return undefined;
+  };
+  var params = url.searchParams;
+  if (url.toString().includes("/v1/tasks")) {
+    params.set("view", "FULL");
+  }
+  //console.log("get url:", url);
+  return fetch(url.toString())
+    .then(response => response.json())
+    .then(
+      (result) => {
+        //console.log("get result:", result);
+        return result;
+      },
+      (error) => {
+        console.log("get", url.toString(), "error:", error);
+        throw error;
+      },
+    );
+};
+
+export { renderCancelButton, isDone, formatDate, formatTimestamp, elapsedTime, get };

@@ -13,10 +13,11 @@ import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import { NavListItems, TaskFilters } from './listItems';
-import { TaskList, Task, Node, NodeList, ServiceInfo, NoMatch } from './Pages.js';
 
-const drawerWidth = 240;
+import { NavListItems, TaskFilters } from './DrawerFilters';
+import { TaskList, Task, Node, NodeList, ServiceInfo, NoMatch } from './Pages';
+
+const drawerWidth = 260;
 
 const styles = theme => ({
   root: {
@@ -79,7 +80,7 @@ const styles = theme => ({
   appBarSpacer: theme.mixins.toolbar,
   content: {
     flexGrow: 1,
-    padding: theme.spacing.unit * 3,
+    padding: theme.spacing(3),
     height: '100vh',
     overflow: 'auto',
   },
@@ -87,138 +88,100 @@ const styles = theme => ({
     marginLeft: -22,
   },
   h5: {
-    marginBottom: theme.spacing.unit * 2,
+    marginBottom: theme.spacing(2),
   },
 });
 
-class Dashboard extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      open: true,
-      stateFilter: "",
-      tagsFilter: [{key:"", value: ""}],
-    };
+function Dashboard({classes}) {
+  const [tagsFilter, setTagsFilter] = React.useState([{key: "", value: ""}]);
+  const [stateFilter, setStateFilter] = React.useState("");
+  const [open, setOpen] = React.useState(window.innerWidth > 500);
+
+  const handleDrawerOpen = () => {
+    setOpen(true);
   };
 
-  handleDrawerOpen = () => {
-    this.setState({ open: true });
+  const handleDrawerClose = () => {
+    setOpen(false);
   };
 
-  handleDrawerClose = () => {
-    this.setState({ open: false });
-  };
+  //console.log("Dashboard classes:", classes)
+  //console.log("Dashboard stateFilter:", stateFilter)
+  //console.log("Dashboard tagsFilter:", tagsFilter)
 
-  updateStateFilter = (event) => {
-    this.setState({ stateFilter: event.target.value });
-  };
-
-  updateTagsFilter = (index, target, val) => {
-    var tags = JSON.parse(JSON.stringify(this.state.tagsFilter));
-    if (target === "key") {
-      tags[index].key = val;
-    } else if (target === "value") {
-      tags[index].value = val;
-    };
-    this.setState({tagsFilter: tags});
-  };
-
-  addTagFilter = () => {
-    this.setState(state => { 
-      const tagsFilter = state.tagsFilter.concat({key: "", value: ""});
-      return {tagsFilter};
-    });
-  };
-
-  removeTagFilter = (index) => {
-    this.setState(state => { 
-      const tagsFilter = state.tagsFilter.filter((item, j) => index !== j);
-      return {tagsFilter};
-    });
-  };
-
-  render() {
-    const { classes } = this.props;
-    //console.log("Dashboard props:", this.props)
-    //console.log("Dashboard state:", this.state)
-    //console.log("Dashboard stateFilter:", this.state.stateFilter)
-    //console.log("Dashboard tagsFilter:", this.state.tagsFilter[0])
-    return (
-      <div className={classes.root}>
-        <CssBaseline />
-        <AppBar
-          position="fixed"
-          className={classNames(classes.appBar, this.state.open && classes.appBarShift)}
-        >
-          <Toolbar disableGutters={!this.state.open} className={classes.toolbar}>
-            <IconButton
-              color="inherit"
-              aria-label="Open drawer"
-              onClick={this.handleDrawerOpen}
-              className={classNames(
-                classes.menuButton,
-                this.state.open && classes.menuButtonHidden,
-              )}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography
-              component="h1"
-              variant="h6"
-              color="inherit"
-              noWrap
-              className={classes.title}
-            >
-              Funnel
-            </Typography>
-          </Toolbar>
-        </AppBar>
-        <Drawer
-          variant="permanent"
-          classes={{
-            paper: classNames(classes.drawerPaper, !this.state.open && classes.drawerPaperClose),
-          }}
-          open={this.state.open}
-        >
-          <div className={classes.toolbarIcon}>
-            <IconButton onClick={this.handleDrawerClose}>
-              <ChevronLeftIcon />
-            </IconButton>
-          </div>
-          <Divider />
-          <List>{NavListItems}</List>
-          <Divider />
-          <TaskFilters 
-            show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}
-            stateFilter={this.state.stateFilter}
-            tagsFilter={this.state.tagsFilter}
-            updateState={this.updateStateFilter}
-            updateTags={this.updateTagsFilter}
-            addTag={this.addTagFilter}
-            removeTag={this.removeTagFilter}
-          />
-        </Drawer>
-        <main className={classes.content}>
+  return (
+    <div className={classes.root}>
+      <CssBaseline />
+      <AppBar
+        position="fixed"
+        className={classNames(classes.appBar, open && classes.appBarShift)}
+      >
+        <Toolbar disableGutters={!open} className={classes.toolbar}>
+          <IconButton
+            color="inherit"
+            aria-label="Open drawer"
+            onClick={handleDrawerOpen}
+            className={classNames(
+              classes.menuButton,
+              open && classes.menuButtonHidden,
+            )}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography
+            component="h1"
+            variant="h6"
+            color="inherit"
+            noWrap
+            className={classes.title}
+          >
+            Funnel
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Drawer
+        variant="permanent"
+        classes={{
+          paper: classNames(classes.drawerPaper, !open && classes.drawerPaperClose),
+        }}
+        open={open}
+      >
+        <div className={classes.toolbarIcon}>
+          <IconButton onClick={handleDrawerClose}>
+            <ChevronLeftIcon />
+          </IconButton>
+        </div>
+        <Divider />
+        <List>{NavListItems}</List>
+        <Divider />
+        <TaskFilters
+          show={window.location.pathname.endsWith("tasks") || window.location.pathname === "/"}
+          stateFilter={stateFilter}
+          tagsFilter={tagsFilter}
+          setStateFilter={setStateFilter}
+          setTagsFilter={setTagsFilter}
+        />
+      </Drawer>
+      <main className={classes.content}>
         <div className={classes.appBarSpacer} />
-          <Switch>
-            <Redirect exact from="/" to="/tasks" />
-            <Route exact path="/v1/tasks" render={ (props) => <TaskList {...props} stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter} /> } />
-            <Route exact path="/tasks" render={ (props) => <TaskList {...props} stateFilter={this.state.stateFilter} tagsFilter={this.state.tagsFilter} /> } />
-            <Route exact path="/v1/tasks/:task_id" component={Task} />
-            <Route exact path="/tasks/:task_id" component={Task} />
-            <Route exact path="/v1/nodes" render={ (props) => <NodeList {...props} /> } />
-            <Route exact path="/nodes" render={ (props) => <NodeList {...props} /> } />
-            <Route exact path="/v1/nodes/:node_id" component={Node} />
-            <Route exact path="/nodes/:node_id" component={Node} />
-            <Route exact path="/v1/tasks/service-info" component={ServiceInfo} />
-            <Route exact path="/tasks/service-info" component={ServiceInfo} />
-            <Route exact path="/service-info" component={ServiceInfo} />
-            <Route component={NoMatch} />
-          </Switch>
-        </main>
-      </div>
-    );
-  }
+        <Switch>
+          <Redirect exact from="/" to="/tasks" />
+          <Route exact path="/v1/tasks" render={ () => <TaskList stateFilter={stateFilter} tagsFilter={tagsFilter} /> } />
+          <Route exact path="/tasks" render={ () => <TaskList stateFilter={stateFilter} tagsFilter={tagsFilter} /> } />
+          <Route exact path="/v1/tasks/:task_id" component={Task} />
+          <Route exact path="/tasks/:task_id" component={Task} />
+          <Route exact path="/v1/nodes" component={NodeList} />
+          <Route exact path="/nodes" component={NodeList} />
+          <Route exact path="/v1/nodes/:node_id" component={Node} />
+          <Route exact path="/nodes/:node_id" component={Node} />
+          <Route exact path="/v1/tasks/service-info" component={ServiceInfo} />
+          <Route exact path="/tasks/service-info" component={ServiceInfo} />
+          <Route exact path="/service-info" component={ServiceInfo} />
+          <Route component={NoMatch} />
+        </Switch>
+      </main>
+    </div>
+  );
 }
 
 Dashboard.propTypes = {

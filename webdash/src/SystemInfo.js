@@ -1,63 +1,66 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { withStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
+import classNames from 'classnames';
 
+import { styles } from './TaskInfo';
 
-class SystemInfo extends React.Component {
+function SystemInfoRaw(props) {
+  const { classes, info } = props;
 
-  renderStateCounts() {
-    const cellstyle = {
-      fontSize: '10pt'
-    }
-    if (this.props.info.taskStateCounts === undefined) {
+  const renderStateCounts = () => {
+    if (info.taskStateCounts === undefined) {
       return (
-        <TableRow key="doc">
-          <TableCell style={cellstyle}><b>Task State Counts</b></TableCell>
-          <TableCell style={cellstyle}>Not Available</TableCell>
+        <TableRow className={classes.row} key="counts">
+          <TableCell className={classNames(classes.cell, classes.key)}><b>Task State Counts</b></TableCell>
+          <TableCell className={classNames(classes.cell, classes.value)}>Not Available</TableCell>
         </TableRow>
-      )
+      );
     } else {
       return (
-        <TableRow key="doc">
-          <TableCell style={cellstyle}><b>Task State Counts</b></TableCell>
-          {Object.keys(this.props.info.taskStateCounts).map(k => (
-              <TableRow key={k}>
-              <TableCell style={cellstyle}>{k}</TableCell>
-              <TableCell style={cellstyle}>{this.props.info.taskStateCounts[k]}</TableCell>
-              </TableRow>
-          ))}
+        <TableRow className={classes.row} key="counts">
+          <TableCell className={classNames(classes.cell, classes.key)}><b>Task State Counts</b></TableCell>
+          <TableCell className={classNames(classes.cell, classes.value)}>
+            <Table>
+              <TableBody>
+                {Object.keys(info.taskStateCounts).map(k => (
+                  <TableRow className={classes.row} key={k}>
+                    <TableCell className={classNames(classes.cell, classes.key)}>{k}</TableCell>
+                    <TableCell className={classNames(classes.cell, classes.value)}>{info.taskStateCounts[k]}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableCell>
         </TableRow>
-      )
+      );
     }
-  }
+  };
 
-  render() {
-    const cellstyle = {
-      fontSize: '10pt'
-    }
-    return (
-        <Table>
-          <TableBody>
-              <TableRow key="name">
-                <TableCell style={cellstyle}><b>Name</b></TableCell>
-                <TableCell style={cellstyle}>{this.props.info.name}</TableCell>
-              </TableRow>
-              <TableRow key="doc">
-                <TableCell style={cellstyle}><b>Doc</b></TableCell>
-                <TableCell style={cellstyle}><pre>{this.props.info.doc}</pre></TableCell>
-              </TableRow>
-              {this.renderStateCounts()}
-          </TableBody>
-        </Table>
-    );
-  }
-}
+  return (
+    <Table className={classes.table}>
+      <TableBody>
+        <TableRow className={classes.row} key="name">
+          <TableCell className={classNames(classes.cell, classes.key)}><b>Name</b></TableCell>
+          <TableCell className={classNames(classes.cell, classes.value)}>{info.name}</TableCell>
+        </TableRow>
+        <TableRow className={classes.row} key="doc">
+          <TableCell className={classNames(classes.cell, classes.key)}><b>Doc</b></TableCell>
+          <TableCell className={classNames(classes.cell, classes.value)}><pre>{info.doc}</pre></TableCell>
+        </TableRow>
+        {renderStateCounts()}
+      </TableBody>
+    </Table>
+  );
+};
 
-SystemInfo.propTypes = {
+SystemInfoRaw.propTypes = {
   info: PropTypes.object.isRequired,
 };
 
+const SystemInfo = withStyles(styles)(SystemInfoRaw);
 export { SystemInfo };

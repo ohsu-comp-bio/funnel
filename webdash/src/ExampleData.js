@@ -106,7 +106,10 @@ const example_node = {
   "lastPing": "1575930967253002000"
 };
 
-const example_task_list = [];
+const example_task_list = [
+  {"id": "1", "state": "COMPLETE"},
+  {"id": "2", "state": "RUNNING"},
+];
 
 const example_node_list = [
   {

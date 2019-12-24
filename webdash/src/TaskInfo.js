@@ -18,6 +18,7 @@ const styles = {
   },
   row: {
     height: '0',
+    width: '100%'
   },
   cell: {
     fontSize: '10pt',
@@ -32,15 +33,15 @@ const styles = {
   },
 };
 
-class TaskInfoRaw extends React.Component {
+function TaskInfoRaw(props) {
+  const { classes, task } = props;
 
-  renderRow(key, val, formatFunc) {
-    const { classes } = this.props;
+  const renderRow = (key, val, formatFunc) => {
     if ( val ) {
       if (typeof formatFunc === "function") {
-        val = formatFunc(val)
+        val = formatFunc(val);
       } else if (formatFunc) {
-        console.log("renderRow: formatFunc was not a function:", typeof(formatFunc))
+        console.log("renderRow: formatFunc was not a function:", typeof(formatFunc));
       }
     }
     if ( key && val ) {
@@ -49,15 +50,14 @@ class TaskInfoRaw extends React.Component {
           <TableCell className={classNames(classes.cell, classes.key)}><b>{key}</b></TableCell>
           <TableCell className={classNames(classes.cell, classes.value)}>{val}</TableCell>
         </TableRow>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
-  renderResources(resources) {
-    const { classes } = this.props;
+  const renderResources = (resources) => {
     if ( resources ) {
-      const r = resources
+      const r = resources;
       var s = r.cpuCores + " CPU cores";
       if (r.ramGb) {
         s += ", " + r.ramGb + " GB RAM";
@@ -73,29 +73,28 @@ class TaskInfoRaw extends React.Component {
           <TableCell className={classNames(classes.cell, classes.key)}><b>Resources</b></TableCell>
           <TableCell className={classNames(classes.cell, classes.value)}>{s}</TableCell>
         </TableRow>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
-  renderTitle(title) {
+  const renderTitle = (title) => {
     if (title) {
       return (
         <div>
           <Typography variant="h6">{title}</Typography>
           <Divider />
         </div>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
-  renderKV(data, title, defaultPadding='40px 0px 0px 0px') {
-    const { classes } = this.props;
+  const renderKV = (data, title, defaultPadding='40px 0px 0px 0px') => {
     if ( data ) {
       return (
         <div style={{padding: defaultPadding}}>
-          {this.renderTitle(title)}
+          {renderTitle(title)}
           <Table className={classes.table}>
             <TableBody>
               {Object.keys(data).map(k => (
@@ -111,58 +110,57 @@ class TaskInfoRaw extends React.Component {
             </TableBody>
           </Table>
         </div>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
   // should we truncate content???
-  renderFileArrays(files, title) {
+  const renderFileArrays = (files, title) => {
     if ( files && Array.isArray(files)) {
       return (
         <div style={{padding: '40px 0px 0px 0px'}}>
-          {this.renderTitle(title)}
+          {renderTitle(title)}
           {files.map(item => (
-            this.renderKV(item, null, '20px 0px 0px 0px')
+            renderKV(item, null, '20px 0px 0px 0px')
           ))}
         </div>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
-  renderMetadata(logs) {
+  const renderMetadata = (logs) => {
     if ( logs && logs.length ) {
-      return this.renderKV(logs[0].metadata, "Metadata")
+      return renderKV(logs[0].metadata, "Metadata");
     }
-    return
-  }
+    return null;
+  };
 
-  renderOutputFileLog(logs) {
+  const renderOutputFileLog = (logs) => {
     if ( logs && logs.length ) {
-      return this.renderFileArrays(logs[0].outputs, "Output File Log")
+      return renderFileArrays(logs[0].outputs, "Output File Log");
     }
-    return
-  }
+    return null;
+  };
 
   // should we truncate stdout / stderr ???
-  renderExecutors(task) {
-    const { classes } = this.props;
+  const renderExecutors = (task) => {
     if ( task.executors ) {
-      var executors = task.executors
-      var logs = [{}]
+      var executors = task.executors;
+      var logs = [{}];
       if ( task.logs && task.logs && task.logs[0].logs ) {
-        logs = task.logs[0].logs
+        logs = task.logs[0].logs;
       }
       const cmdString = function(cmd) {
-       return cmd.join(" ") 
-      }
+       return cmd.join(" ");
+      };
       const preFormat = function(s) {
-        return <pre>{s}</pre>
-      }
+        return <pre>{s}</pre>;
+      };
       return (
         <div style={{padding: '40px 0px 0px 0px'}}>
-          {this.renderTitle('Executors')}
+          {renderTitle('Executors')}
           {executors.map((exec, index) => (
             <Table className={classes.table}>
               <TableBody>
@@ -174,101 +172,97 @@ class TaskInfoRaw extends React.Component {
                   <TableCell className={classNames(classes.cell, classes.key)}><b>Image</b></TableCell>
                   <TableCell className={classNames(classes.cell, classes.value)}>{exec.image}</TableCell>
                 </TableRow>
-                {this.renderRow('Workdir', exec.workdir)}
-                {this.renderRow('Env', this.renderKV(exec.env, null, '0px 0px 0px 0px'))}
-                {this.renderRow('StartTime', logs[index].startTime, formatDate)}
-                {this.renderRow('EndTime', logs[index].endTime, formatDate)}
-                {this.renderRow('Exit Code', logs[index].exitCode)}
-                {this.renderRow('Stdout', logs[index].stdout, preFormat)}
-                {this.renderRow('Stderr', logs[index].stderr, preFormat)}
+                {renderRow('Workdir', exec.workdir)}
+                {renderRow('Env', renderKV(exec.env, null, '0px 0px 0px 0px'))}
+                {renderRow('StartTime', logs[index].startTime, formatDate)}
+                {renderRow('EndTime', logs[index].endTime, formatDate)}
+                {renderRow('Exit Code', logs[index].exitCode)}
+                {renderRow('Stdout', logs[index].stdout, preFormat)}
+                {renderRow('Stderr', logs[index].stderr, preFormat)}
               </TableBody>
             </Table>
           ))}
         </div>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
-  renderSysLogs(logs) {
+  const renderSysLogs = (logs) => {
     if ( logs && logs.length && logs[0].systemLogs && Array.isArray(logs[0].systemLogs)) {
-      const syslogs = logs[0].systemLogs
+      const syslogs = logs[0].systemLogs;
       var entryList = syslogs.map(item => {
-        var parts = item.split("' ").map(p => p.replace(/'/g, "").split("="))
-        return parts
-      })
-      var entries = []
+        var parts = item.split("' ").map(p => p.replace(/'/g, "").split("="));
+        return parts;
+      });
+      var entries = [];
       for (var i in entryList) {        
-        var entry = {}
+        var entry = {};
         for (var j in entryList[i]) {
           if (entryList[i][j][1] !== "") {
-            entry[entryList[i][j][0]] = entryList[i][j][1]
+            entry[entryList[i][j][0]] = entryList[i][j][1];
           }
         }
-        entries.push(entry)
+        entries.push(entry);
       }
       return (
         <div style={{padding: '40px 0px 0px 0px'}}>
-          {this.renderTitle('System Logs')}
-          {entries.map(e => this.renderKV(e, null, '20px 0px 0px 0px'))}
+          {renderTitle('System Logs')}
+          {entries.map(e => renderKV(e, null, '20px 0px 0px 0px'))}
         </div>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
-  renderTask(task) {
-    const { classes } = this.props;
+  const renderTask = (task) => {
     if (!task) {
-      return
+      return null;
     }
     return(
       <div>
         <Table className={classes.table}>
           <TableBody>
-            {this.renderRow('Name', task.name)}
-            {this.renderRow('ID', task.id)}
-            {this.renderRow('State', task.state)}
-            {this.renderRow('Description', task.description)}
-            {this.renderResources(task.resources)}
-            {this.renderRow('Creation Time', task.creationTime, formatDate)}
-            {this.renderRow('Elapsed Time', task, elapsedTime)}
+            {renderRow('Name', task.name)}
+            {renderRow('ID', task.id)}
+            {renderRow('State', task.state)}
+            {renderRow('Description', task.description)}
+            {renderResources(task.resources)}
+            {renderRow('Creation Time', task.creationTime, formatDate)}
+            {renderRow('Elapsed Time', task, elapsedTime)}
           </TableBody>
         </Table>
 
         {/* Tags */}
-        {this.renderKV(task.tags, 'Tags')}
+        {renderKV(task.tags, 'Tags')}
 
         {/* Metadata */}
-        {this.renderMetadata(task.logs, 'Metadata')}
+        {renderMetadata(task.logs, 'Metadata')}
 
         {/* Inputs */}
-        {this.renderFileArrays(task.inputs, 'Inputs')}
+        {renderFileArrays(task.inputs, 'Inputs')}
 
         {/* Outputs */}
-        {this.renderFileArrays(task.outputs, 'Outputs')}
+        {renderFileArrays(task.outputs, 'Outputs')}
 
         {/* Executors */}
-        {this.renderExecutors(task)}
+        {renderExecutors(task)}
 
         {/* Output File Logs */}
-        {this.renderOutputFileLog(task.logs, 'Output File Log')}
+        {renderOutputFileLog(task.logs, 'Output File Log')}
 
         {/* System Logs */}
-        {this.renderSysLogs(task.logs, 'System Logs')}
+        {renderSysLogs(task.logs, 'System Logs')}
 
       </div>
-    )
-  }
+    );
+  };
 
-  render() {
-    const task = this.props.task
-    return (
-      <div>
-        {this.renderTask(task)}
-      </div>
-    )
-  }
+  return (
+    <div>
+      {renderTask(task)}
+    </div>
+  );
 }
 
 TaskInfoRaw.propTypes = {
@@ -276,4 +270,4 @@ TaskInfoRaw.propTypes = {
 };
 
 const TaskInfo = withStyles(styles)(TaskInfoRaw);
-export { TaskInfo };
+export { TaskInfo, styles };

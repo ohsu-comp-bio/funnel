@@ -1,4 +1,3 @@
-import CancelButton from './CancelButton'
 
 function formatElapsedTime(miliseconds) {
   var days, hours, minutes, seconds, total_hours, total_minutes, total_seconds;
@@ -82,16 +81,6 @@ function isDone(task) {
   return task.state === "COMPLETE" || task.state === "EXECUTOR_ERROR" || task.state === "CANCELED" || task.state === "SYSTEM_ERROR";
 }
 
-function renderCancelButton(task) {
-  if (task.state === undefined || isDone(task)) {
-    return
-  } else {
-    return(
-        CancelButton(task)
-    )
-  }
-}
-
 function get(url) {
   if (!url instanceof URL) {
     console.log("get error: expected URL object; got", url);
@@ -116,4 +105,4 @@ function get(url) {
     );
 };
 
-export { renderCancelButton, isDone, formatDate, formatTimestamp, elapsedTime, get };
+export { isDone, formatDate, formatTimestamp, elapsedTime, get };

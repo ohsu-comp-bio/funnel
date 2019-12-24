@@ -6,7 +6,9 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
-export default function CancelButton(task) {
+import { isDone } from './utils';
+
+function CancelButton({task}) {
   const [open, setOpen] = React.useState(false);
 
   const cancelTask = () => {
@@ -40,37 +42,42 @@ export default function CancelButton(task) {
   };
 
   const handleYes = () => {
-    cancelTask();
+    cancelTask(task.id);
     setOpen(false);
   };
+  
+  if (task.state === undefined || isDone(task)) {
+    return (<div />);
+  } else {
+    return (
+      <div>
+        <Button variant="outlined" onClick={handleClickOpen} size="small">
+          Cancel
+        </Button>
+        <Dialog
+          open={open}
+          onClose={null}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">Cancel task: {task.id}?</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              This action can not be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleNo} color="primary">
+              No
+            </Button>
+            <Button onClick={handleYes} color="primary" autoFocus>
+              Yes
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  }
+}
 
-  return (
-    <div>
-      <Button variant="outlined" onClick={handleClickOpen}>
-        Cancel
-      </Button>
-      <Dialog
-        open={open}
-        onClose={null}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">Cancel task: {task.id}?</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            This action can not be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleNo} color="primary">
-            No
-          </Button>
-          <Button onClick={handleYes} color="primary" autoFocus>
-            Yes
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
-  );
-};
-
+export { CancelButton };

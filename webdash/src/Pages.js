@@ -2,77 +2,74 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Typography from '@material-ui/core/Typography';
 import ReactJson from 'react-json-view';
-import { useParams} from "react-router";
-import _ from "underscore";
-import { NodeTable } from './NodeList';
+import { Link, useParams } from "react-router-dom";
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import TableFooter from '@material-ui/core/TableFooter';
+import TablePagination from '@material-ui/core/TablePagination';
+import IconButton from '@material-ui/core/IconButton';
+import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
+import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
+import Paper from '@material-ui/core/Paper';
+
 import { NodeInfo } from './NodeInfo';
 import { SystemInfo } from './SystemInfo';
-import { TaskTable } from './TaskList';
 import { TaskInfo } from './TaskInfo';
-import { get, renderCancelButton } from './utils';
+import { CancelButton } from './CancelButton';
+import { get, isDone } from './utils';
 import { SimpleTabs } from './Tabs';
+import { formatDate, elapsedTime } from './utils';
 //import { example_task, example_node, example_service_info, example_task_list, example_node_list } from './ExampleData.js';
 
-class TaskList extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      pageSize: 25,
-      pageToken: "",
-      nextPageToken: "",
-      prevPageToken: [],
-      tasks: [],
-    };
+function TaskList({stateFilter, tagsFilter}) {
+  const [pageSize, setPageSize] = React.useState(25);
+  const [pageToken, setPageToken] = React.useState("");
+  const [nextPageToken, setNextPageToken] = React.useState("");
+  const [prevPageToken, setPrevPageToken] = React.useState([]);
+  const [tasks, setTasks] = React.useState([]);
+  //const [tasks, setTasks] = React.useState(example_task_list);
+
+  const nextPage = () => {
+    const next = nextPageToken;
+    const current = pageToken;
+    var prev = [...prevPageToken, current];
+    setPrevPageToken(prev);
+    setPageToken(next);
   };
 
-  nextPage = () => {
-    const current = this.state.pageToken;
-    const next = this.state.nextPageToken;
-    var prev = this.state.prevPageToken.concat(current);
-    this.setState({
-      prevPageToken: prev,
-      pageToken: next,
-    });
-  };
-
-  prevPage = () => {
-    var prev = this.state.prevPageToken;
+  const prevPage = () => {
+    var prev = [...prevPageToken];
     const page = prev.pop();
-    this.setState({
-      pageToken: page,
-      prevPageToken: prev,
-    });
+    setPrevPageToken(prev);
+    setPageToken(page);
   };
 
-  setPageSize = (event) => {
-    this.setState({
-      pageSize: event.target.value,
-    });
-  };
-
-  listTasks() {
+  React.useEffect(() => {
     var url = new URL("/v1/tasks" + window.location.search, window.location.origin);
     var params = url.searchParams;
     params.set("view", "BASIC");
-    params.set("pageSize", this.state.pageSize);
-    if (this.props.stateFilter !== "") {
-      params.set("state", this.props.stateFilter);
+    params.set("pageSize", pageSize);
+    if (stateFilter !== "") {
+      params.set("state", stateFilter);
     };
-    for (var i = 0; i < this.props.tagsFilter.length; i++) {
-      var tag = this.props.tagsFilter[i];
+    for (var i = 0; i < tagsFilter.length; i++) {
+      var tag = tagsFilter[i];
       if (tag.key !== "") {
         params.set("tags["+tag.key+"]", tag.value);
       };
     };
-    if (this.state.pageToken !== "") {
-      params.set("pageToken", this.state.pageToken);
+    if (pageToken !== "") {
+      params.set("pageToken", pageToken);
     };
-    //console.log("listTasks url:", url);
+    console.log("listTasks url:", url.toString());
     fetch(url.toString())
       .then(response => response.json())
       .then(
         (result) => {
-          //console.log("listTasks result:", result);
+          console.log("listTasks result:", result);
           var tasks = [];
           if (result.tasks !== undefined) {
             tasks = result.tasks;
@@ -80,55 +77,84 @@ class TaskList extends React.Component {
           var nextPageToken = "";
           if (result.nextPageToken !== undefined) {
             nextPageToken = result.nextPageToken;
-          };
-          this.setState({tasks: tasks, nextPageToken: nextPageToken});
+          };          
+          setTasks(tasks);
+          setNextPageToken(nextPageToken);
         },
         (error) => {
           console.log("listTasks", url.toString(), "error:", error);
         },
       );
-  };
+  }, [stateFilter, tagsFilter, pageSize, pageToken]);
 
-  shouldComponentUpdate(nextProps, nextState) {
-    if (!_.isEqual(this.props.stateFilter, nextProps.stateFilter)) {
-      return true;
-    };
-    if (!_.isEqual(this.props.tagsFilter, nextProps.tagsFilter)) {
-      return true;
-    }
-    if (!_.isEqual(this.state.pageToken, nextState.pageToken)) {
-      return true;
-    };
-    if (!_.isEqual(this.state.pageSize, nextState.pageSize)) {
-      return true;
-    };
-    if (!_.isEqual(this.state.tasks, nextState.tasks)) {
-      return true;
-    };
-    return false;
-  };
-
-  render() {
-    this.listTasks();
-    //console.log("TaskList state:", this.state)
-    //console.log("TaskList props:", this.props)
-    return (
-      <div>
-        <Typography variant="h4" gutterBottom component="h2">
-          Tasks
-        </Typography>
-        <TaskTable
-         tasks={this.state.tasks}
-         pageSize={this.state.pageSize}
-         nextPageToken={this.state.nextPageToken}
-         prevPageToken={this.state.prevPageToken}
-         setPageSize={this.setPageSize}
-         nextPage={this.nextPage}
-         prevPage={this.prevPage}
-        />
-      </div>
-    );
-  };
+  return (
+    <div>
+      <Typography variant="h4" gutterBottom component="h2">
+        Tasks
+      </Typography>
+      <Paper style={{minWidth: "250px", width: "100%", overflowX: "auto"}}>
+        <Table style={{width: "100%"}}>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>State</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Created At</TableCell>
+              <TableCell>Elapsed Time</TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {tasks.map(t => (
+              <TableRow hover key={t.id} style={{height: "63px"}}>
+                <TableCell style={{width: '15%'}}><Link to={"/tasks/" + t.id}>{t.id}</Link></TableCell>
+                <TableCell style={{width: '15%'}}>{t.state}</TableCell>
+                <TableCell style={{width: '30%'}}>{t.name}</TableCell>
+                <TableCell style={{width: '15%'}}>{formatDate(t.creationTime)}</TableCell>
+                <TableCell style={{width: '15%'}}>{elapsedTime(t)}</TableCell>
+                <TableCell style={{width: '10%'}}><CancelButton task={t} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TablePagination
+                rowsPerPageOptions={[25, 50, 100, 250, 500]}
+                onChangePage={function(event, number) { return; }}
+                page={0}
+                count={0}
+                labelDisplayedRows={({ from, to, count }) => ""}
+                rowsPerPage={pageSize}
+                onChangeRowsPerPage={(event) => setPageSize(event.target.value)}
+                ActionsComponent={
+                  (actions) => { 
+                    return (
+                      <div style={{flexShrink: 0}}>
+                        <IconButton 
+                          onClick={(event) => prevPage()}
+                          disabled={prevPageToken.length === 0}
+                          aria-label="Previous Page"
+                        >
+                          <KeyboardArrowLeft />
+                        </IconButton>
+                        <IconButton
+                          onClick={(event) => nextPage()} 
+                          disabled={nextPageToken === ""}
+                          aria-label="Next Page"
+                        >
+                          <KeyboardArrowRight />
+                        </IconButton>
+                      </div>
+                    );
+                  }
+                }
+              />
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </Paper>
+    </div>
+  );
 };
 
 TaskList.propTypes = {
@@ -139,6 +165,13 @@ TaskList.propTypes = {
 function NodeList() {
   const [nodes, setNodes] = React.useState([]);
   //const [nodes, setNodes] = React.useState(example_node_list);
+
+  const nTasks = (node) => {
+    if (node.task_ids !== undefined) {
+      return node.task_ids.length;
+    }
+    return 0;
+  };
 
   React.useEffect(() => {
     var url = new URL("/v1/nodes", window.location.origin);
@@ -162,7 +195,28 @@ function NodeList() {
       <Typography variant="h4" gutterBottom component="h2">
         Nodes
       </Typography>
-      <NodeTable nodes={nodes} />
+      <Paper style={{minWidth: "250px", width: "100%", overflowX: "auto"}}>
+        <Table style={{width: "100%"}}>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Hostname</TableCell>
+              <TableCell>State</TableCell>
+              <TableCell>Tasks</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {nodes.map(n => (
+              <TableRow hover key={n.id}>
+                <TableCell><Link to={"/nodes/" + n.id}>{n.id}</Link></TableCell>
+                <TableCell>{n.hostname}</TableCell>
+                <TableCell>{n.state}</TableCell>
+                <TableCell>{nTasks(n)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
     </div>
   );
 };
@@ -171,24 +225,24 @@ function Task() {
   let { task_id } = useParams();
   const [task, setTask] = React.useState({});
   //const [task, setTask] = React.useState(example_task);
- 
+  
   React.useEffect(() => {
     var url = new URL("/v1/tasks/" + task_id, window.location.origin);
     get(url).then(
       (task) => {
-      setTask(task);
-    });
+        setTask(task);
+      });
   }, [task_id]);
 
   const json = (
     <ReactJson
-     src={task}
-     theme={"rjv-default"}
-     name={false}
-     displayObjectSize={false}
-     displayDataTypes={false}
-     enableClipboard={true}
-     collapsed={false}
+      src={task}
+      theme={"rjv-default"}
+      name={false}
+      displayObjectSize={false}
+      displayDataTypes={false}
+      enableClipboard={true}
+      collapsed={false}
     />
   );
 
@@ -197,7 +251,8 @@ function Task() {
       <Typography variant="h4" gutterBottom>
         Task: {task_id}
       </Typography>
-      {renderCancelButton(task)}
+      <CancelButton task={task} />
+      {!isDone(task) && (<br/>)}
     </div>
   );
 
@@ -215,8 +270,8 @@ function Node() {
     var url = new URL("/v1/nodes/" + node_id, window.location.origin);
     get(url).then(
       (node) => {
-      setNode(node);
-    });
+        setNode(node);
+      });
   }, [node_id]);
 
   const json = (
@@ -252,7 +307,7 @@ function ServiceInfo() {
     var url = new URL("/v1/tasks/service-info", window.location.origin);
     get(url).then(
       (info) => {
-      setInfo(info);
+        setInfo(info);
       });
   });
   
@@ -286,7 +341,7 @@ function NoMatch() {
     <Typography variant="h4" gutterBottom component="h2" style={{color: "red"}}>
       404 Not Found
     </Typography>
- );
+  );
 };
 
 export {TaskList, Task, NodeList, Node, ServiceInfo, NoMatch};

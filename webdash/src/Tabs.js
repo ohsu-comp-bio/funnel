@@ -46,7 +46,7 @@ function SimpleTabs(header, textComponent, jsonComponent) {
   return (
     <div>
       {header}
-      <Paper>      
+      <Paper style={{minWidth: "250px", width: "100%", overflowX: "auto"}}>
         <Tabs value={value} onChange={handleChange} aria-label="simple tabs">
           <Tab label="TEXT" {...a11yProps(0)} />
           <Tab label="JSON" {...a11yProps(1)} />

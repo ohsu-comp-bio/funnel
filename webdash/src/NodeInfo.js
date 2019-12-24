@@ -6,39 +6,21 @@ import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import classNames from 'classnames';
+import { Link } from "react-router-dom";
 
 import { formatTimestamp } from './utils';
+import { styles } from './TaskInfo';
 
-const styles = {
-  table: {
-    width: '100%',
-    overflowX: 'auto',
-  },
-  row: {
-    height: '0',
-  },
-  cell: {
-    fontSize: '10pt',
-    borderBottomStyle: 'none',
-    padding:'1px',
-  },
-  key: {
-    width: '20%',
-  },
-  value: {
-    width: '80%',
-  },
-};
 
-class NodeInfoRaw extends React.Component {
+function NodeInfoRaw(props) {
+  const { classes, node } = props;
 
-  renderRow(key, val, formatFunc) {
-    const { classes } = this.props;
+  const renderRow = (key, val, formatFunc) => {
     if ( val ) {
       if (typeof formatFunc === "function") {
-        val = formatFunc(val)
+        val = formatFunc(val);
       } else if (formatFunc) {
-        console.log("renderRow: formatFunc was not a function:", typeof(formatFunc))
+        console.log("renderRow: formatFunc was not a function:", typeof(formatFunc));
       }
     }
     if ( key && val ) {
@@ -47,25 +29,25 @@ class NodeInfoRaw extends React.Component {
           <TableCell className={classNames(classes.cell, classes.key)}><b>{key}</b></TableCell>
           <TableCell className={classNames(classes.cell, classes.value)}>{val}</TableCell>
         </TableRow>
-      )
+      );
     }
-    return
-  }
+    return null;
+  };
 
-  renderTasks(taskList) {
+  const renderTasks = (taskList) => {
     if (!taskList) {
-      return
+      return null;
     }
     return (
-      this.renderRow('Tasks', taskList.map(tid => ( 
-          <div><a href={"/tasks/" + tid}>{tid}</a><br/></div>
+      renderRow('Tasks', taskList.map(tid => ( 
+          <div><Link to={"/tasks/" + tid}>{tid}</Link><br/></div>
       )))
-    )
-  }
+    );
+  };
 
-  resourceString(resources) {
+  const resourceString = (resources) => {
     if ( resources ) {
-      const r = resources
+      const r = resources;
       var s = r.cpus + " CPU cores";
       if (r.ramGb) {
         s += ", " + r.ramGb + " GB RAM";
@@ -76,42 +58,38 @@ class NodeInfoRaw extends React.Component {
       if (r.preemptible) {
         s += ", preemptible";
       }
-      return s
+      return s;
     }
-    return
-  }
+    return null;
+  };
 
-  renderNode(node) {
-    const { classes } = this.props;
+  const renderNode = (node) => {
     if (!node) {
-      return
+      return null;
     }
-    return(
+    return (
       <div>
         <Table className={classes.table}>
           <TableBody>
-            {this.renderRow('ID', node.id)}
-            {this.renderRow('Hostname', node.hostname)}
-            {this.renderRow('State', node.state)}
-            {this.renderRow('Resources', node.resources, this.resourceString)}
-            {this.renderRow('Available', node.available, this.resourceString)}
-            {this.renderRow('Last Ping', node.lastPing, formatTimestamp)}
-            {this.renderRow('Version', node.version)}
-            {this.renderTasks(node.taskIds)}
+            {renderRow('ID', node.id)}
+            {renderRow('Hostname', node.hostname)}
+            {renderRow('State', node.state)}
+            {renderRow('Resources', node.resources, resourceString)}
+            {renderRow('Available', node.available, resourceString)}
+            {renderRow('Last Ping', node.lastPing, formatTimestamp)}
+            {renderRow('Version', node.version)}
+            {renderTasks(node.taskIds)}
           </TableBody>
         </Table>
       </div>
-    )
-  }
+    );
+  };
 
-  render() {
-    const node = this.props.node
-    return (
-      <div>
-        {this.renderNode(node)}
-      </div>
-    )
-  }
+  return (
+    <div>
+      {renderNode(node)}
+    </div>
+  );
 }
 
 NodeInfoRaw.propTypes = {

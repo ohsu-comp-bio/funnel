@@ -95,6 +95,10 @@ const styles = theme => ({
 function Dashboard({classes}) {
   const [tagsFilter, setTagsFilter] = React.useState([{key: "", value: ""}]);
   const [stateFilter, setStateFilter] = React.useState("");
+  const [pageToken, setPageToken] = React.useState("");
+  const [pageSize, setPageSize] = React.useState(25);
+  const [nextPageToken, setNextPageToken] = React.useState("");
+  const [prevPageToken, setPrevPageToken] = React.useState([]);
   const [open, setOpen] = React.useState(window.innerWidth > 500);
 
   const handleDrawerOpen = () => {
@@ -166,8 +170,30 @@ function Dashboard({classes}) {
         <div className={classes.appBarSpacer} />
         <Switch>
           <Redirect exact from="/" to="/tasks" />
-          <Route exact path="/v1/tasks" render={ () => <TaskList stateFilter={stateFilter} tagsFilter={tagsFilter} /> } />
-          <Route exact path="/tasks" render={ () => <TaskList stateFilter={stateFilter} tagsFilter={tagsFilter} /> } />
+          <Route exact path="/v1/tasks" render={ () => (
+            <TaskList pageSize={pageSize}
+                      setPageSize={setPageSize}
+                      pageToken={pageToken}
+                      setPageToken={setPageToken}
+                      nextPageToken={nextPageToken}
+                      setNextPageToken={setNextPageToken}
+                      prevPageToken={prevPageToken}
+                      setPrevPageToken={setPrevPageToken}
+                      stateFilter={stateFilter}
+                      tagsFilter={tagsFilter} />
+          )} />
+          <Route exact path="/tasks" render={ () => (
+            <TaskList pageSize={pageSize}
+                      setPageSize={setPageSize}
+                      pageToken={pageToken}
+                      setPageToken={setPageToken}
+                      nextPageToken={nextPageToken}
+                      setNextPageToken={setNextPageToken}
+                      prevPageToken={prevPageToken}
+                      setPrevPageToken={setPrevPageToken}
+                      stateFilter={stateFilter}
+                      tagsFilter={tagsFilter} />
+          )} />
           <Route exact path="/v1/tasks/:task_id" component={Task} />
           <Route exact path="/tasks/:task_id" component={Task} />
           <Route exact path="/v1/nodes" component={NodeList} />

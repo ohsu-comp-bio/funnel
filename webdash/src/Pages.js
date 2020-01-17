@@ -24,11 +24,11 @@ import { SimpleTabs } from './Tabs';
 import { formatDate, elapsedTime } from './utils';
 //import { example_task, example_node, example_service_info, example_task_list, example_node_list } from './ExampleData.js';
 
-function TaskList({stateFilter, tagsFilter}) {
-  const [pageSize, setPageSize] = React.useState(25);
-  const [pageToken, setPageToken] = React.useState("");
-  const [nextPageToken, setNextPageToken] = React.useState("");
-  const [prevPageToken, setPrevPageToken] = React.useState([]);
+function TaskList({pageToken, setPageToken,
+                   nextPageToken, setNextPageToken,
+                   prevPageToken, setPrevPageToken,
+                   pageSize, setPageSize,
+                   stateFilter, tagsFilter}) {
   const [tasks, setTasks] = React.useState([]);
   //const [tasks, setTasks] = React.useState(example_task_list);
 
@@ -64,12 +64,12 @@ function TaskList({stateFilter, tagsFilter}) {
     if (pageToken !== "") {
       params.set("pageToken", pageToken);
     };
-    console.log("listTasks url:", url.toString());
+    //console.log("listTasks url:", url.toString());
     fetch(url.toString())
       .then(response => response.json())
       .then(
         (result) => {
-          console.log("listTasks result:", result);
+          //console.log("listTasks result:", result);
           var tasks = [];
           if (result.tasks !== undefined) {
             tasks = result.tasks;
@@ -158,6 +158,14 @@ function TaskList({stateFilter, tagsFilter}) {
 };
 
 TaskList.propTypes = {
+  pageToken: PropTypes.string.isRequired,
+  setPageToken: PropTypes.func.isRequired,
+  nextPageToken: PropTypes.string.isRequired,
+  setNextPageToken: PropTypes.func.isRequired,
+  prevPageToken: PropTypes.array.isRequired,
+  setPrevPageToken: PropTypes.func.isRequired,
+  pageSize: PropTypes.number.isRequired,
+  setPageSize: PropTypes.func.isRequired,
   stateFilter: PropTypes.string.isRequired,
   tagsFilter: PropTypes.array.isRequired,
 };

@@ -111,11 +111,9 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, 
 	}
 
 	var instanceRole string
-	ip, err := iamCli.GetInstanceProfile(&iam.GetInstanceProfileInput{
-		InstanceProfileName: aws.String("ecsInstanceRole"),
-	})
+	grres, err = iamCli.GetRole(&iam.GetRoleInput{RoleName: aws.String("ecsInstanceRole")})
 	if err == nil {
-		instanceRole = *ip.InstanceProfile.Arn
+		instanceRole = *grres.Role.Arn
 	} else {
 		irPolicy := AssumeRolePolicy{
 			Version: "2012-10-17",
@@ -131,7 +129,7 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, 
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling assume role policy for ecsInstanceRole: %v", err)
 		}
-		_, err = iamCli.CreateRole(&iam.CreateRoleInput{
+		cr, err := iamCli.CreateRole(&iam.CreateRoleInput{
 			AssumeRolePolicyDocument: aws.String(string(irBinary)),
 			RoleName:                 aws.String("ecsInstanceRole"),
 		})
@@ -145,13 +143,7 @@ func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, 
 		if err != nil {
 			return nil, fmt.Errorf("error attaching policies to ecsInstanceRole: %v", err)
 		}
-		ip, err = iamCli.GetInstanceProfile(&iam.GetInstanceProfileInput{
-			InstanceProfileName: aws.String("ecsInstanceRole"),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error fetching Intance Profile ARN for ecsInstanceRole: %v", err)
-		}
-		instanceRole = *ip.InstanceProfile.Arn
+		instanceRole = *cr.Role.Arn
 	}
 
 	input := &batch.CreateComputeEnvironmentInput{

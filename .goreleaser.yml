@@ -32,6 +32,11 @@ dockers:
     image_templates:
       - "ohsucompbio/funnel:{{.Version}}"
     dockerfile: ./docker/Dockerfile
+  - goos: linux
+    goarch: amd64
+    image_templates:
+      - "ohsucompbio/funnel-kubernetes-worker:{{.Version}}"
+    dockerfile: ./deployments/kubernetes/Dockerfile
 
 brews:
   - github:

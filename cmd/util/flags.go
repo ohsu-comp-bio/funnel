@@ -181,6 +181,10 @@ func storageFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.BoolVar(&flagConf.HTTPStorage.Disabled, "HTTPStorage.Disabled", flagConf.HTTPStorage.Disabled, "Disable storage backend")
 	f.Var(&flagConf.HTTPStorage.Timeout, "HTTPStorage.Timeout", "Timeout in seconds for request")
 
+	// FTP storage
+	f.BoolVar(&flagConf.FTPStorage.Disabled, "FTPStorage.Disabled", flagConf.FTPStorage.Disabled, "Disable storage backend")
+	f.Var(&flagConf.FTPStorage.Timeout, "FTPStorage.Timeout", "Timeout in seconds for request")
+
 	return f
 }
 
@@ -192,15 +196,26 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.AWSBatch.JobDefinition, "AWSBatch.JobDefinition", flagConf.AWSBatch.JobDefinition, "AWS Batch job definition name or ARN")
 	f.StringVar(&flagConf.AWSBatch.JobQueue, "AWSBatch.JobQueue", flagConf.AWSBatch.JobQueue, "AWS Batch job queue name or ARN")
 	f.IntVar(&flagConf.AWSBatch.MaxRetries, "AWSBatch.MaxRetries", flagConf.AWSBatch.MaxRetries, "Maximum number of times that a request will be retried for failures")
+	f.BoolVar(&flagConf.AWSBatch.DisableReconciler, "AWSBatch.DisableReconciler", flagConf.AWSBatch.DisableReconciler, "Disable the state reconciler")
+	f.Var(&flagConf.AWSBatch.ReconcileRate, "AWSBatch.ReconcileRate", "How often to run the reconciler")
 
 	// GridEngine
 	f.StringVar(&flagConf.GridEngine.Template, "GridEngine.Template", flagConf.GridEngine.Template, "Path to submit template file")
 
 	// HTCondor
 	f.StringVar(&flagConf.HTCondor.Template, "HTCondor.Template", flagConf.HTCondor.Template, "Path to submit template file")
+	f.BoolVar(&flagConf.HTCondor.DisableReconciler, "HTCondor.DisableReconciler", flagConf.HTCondor.DisableReconciler, "Disable the state reconciler")
+	f.Var(&flagConf.HTCondor.ReconcileRate, "HTCondor.ReconcileRate", "How often to run the reconciler")
 
 	// PBS/Torque
 	f.StringVar(&flagConf.PBS.Template, "PBS.Template", flagConf.PBS.Template, "Path to submit template file")
+	f.BoolVar(&flagConf.PBS.DisableReconciler, "PBS.DisableReconciler", flagConf.PBS.DisableReconciler, "Disable the state reconciler")
+	f.Var(&flagConf.PBS.ReconcileRate, "PBS.ReconcileRate", "How often to run the reconciler")
+
+	// Slurm
+	f.StringVar(&flagConf.Slurm.Template, "Slurm.Template", flagConf.Slurm.Template, "Path to submit template file")
+	f.BoolVar(&flagConf.Slurm.DisableReconciler, "Slurm.DisableReconciler", flagConf.Slurm.DisableReconciler, "Disable the state reconciler")
+	f.Var(&flagConf.Slurm.ReconcileRate, "Slurm.ReconcileRate", "How often to run the reconciler")
 
 	// Scheduler
 	f.Var(&flagConf.Scheduler.ScheduleRate, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
@@ -209,8 +224,12 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Var(&flagConf.Scheduler.NodeInitTimeout, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
 	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
-	// Slurm
-	f.StringVar(&flagConf.Slurm.Template, "Slurm.Template", flagConf.Slurm.Template, "Path to submit template file")
+	// Kubernetes
+	f.StringVar(&flagConf.Kubernetes.Template, "Kubernetes.Template", flagConf.Kubernetes.Template, "Path to job template file")
+	f.StringVar(&flagConf.Kubernetes.Namespace, "Kubernetes.Namespace", flagConf.Kubernetes.Namespace, "Namespace to spawn jobs within")
+	f.StringVar(&flagConf.Kubernetes.ConfigFile, "Kubernetes.ConfigFile", flagConf.Kubernetes.ConfigFile, "Path to kubernetes config file")
+	f.BoolVar(&flagConf.Kubernetes.DisableReconciler, "Kubernetes.DisableReconciler", flagConf.Kubernetes.DisableReconciler, "Disable the state reconciler")
+	f.Var(&flagConf.Kubernetes.ReconcileRate, "Kubernetes.ReconcileRate", "How often to run the reconciler")
 
 	return f
 }

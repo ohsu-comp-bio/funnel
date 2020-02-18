@@ -165,7 +165,7 @@ func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf config.C
 	switch name {
 	case "log":
 		writer = &events.Logger{Log: log}
-	case "boltdb", "badger":
+	case "boltdb", "badger", "grpc", "rpc":
 		writer, err = events.NewRPCWriter(ctx, conf.RPCClient)
 	case "dynamodb":
 		writer, err = dynamodb.NewDynamoDB(conf.DynamoDB)

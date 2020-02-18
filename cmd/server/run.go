@@ -8,6 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/batch"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
+	"github.com/ohsu-comp-bio/funnel/compute/kubernetes"
 	"github.com/ohsu-comp-bio/funnel/compute/local"
 	"github.com/ohsu-comp-bio/funnel/compute/noop"
 	"github.com/ohsu-comp-bio/funnel/compute/pbs"
@@ -221,6 +222,13 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		compute = pbs.NewBackend(ctx, conf, reader, writer, log.Sub("pbs"))
 	case "slurm":
 		compute = slurm.NewBackend(ctx, conf, reader, writer, log.Sub("slurm"))
+
+	case "kubernetes":
+		compute, err = kubernetes.NewBackend(ctx, conf.Kubernetes, reader, writer, log.Sub("kubernetes"))
+		if err != nil {
+			return nil, err
+		}
+
 	default:
 		return nil, fmt.Errorf("unknown compute backend: '%s'", conf.Compute)
 	}

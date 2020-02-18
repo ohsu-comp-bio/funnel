@@ -17,3 +17,6 @@ storage/_test_download
 /webdash/bundle.js
 /webdash/style.css
 /vendor
+docker/funnel
+deployments/kubernetes/funnel
+deployments/kubernetes/*.json

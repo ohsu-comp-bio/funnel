@@ -109,30 +109,35 @@ func DefaultConfig() Config {
 	}
 
 	// compute
-	reconcile := Duration(time.Minute * 10)
+	reconcile := Duration(time.Minute * 30)
 
-	htcondorTemplate, _ := intern.Asset("config/htcondor-template.txt")
+	htcondorTemplate := intern.MustAsset("config/htcondor-template.txt")
 	c.HTCondor.Template = string(htcondorTemplate)
 	c.HTCondor.ReconcileRate = reconcile
 	c.HTCondor.DisableReconciler = true
 
-	slurmTemplate, _ := intern.Asset("config/slurm-template.txt")
+	slurmTemplate := intern.MustAsset("config/slurm-template.txt")
 	c.Slurm.Template = string(slurmTemplate)
 	c.Slurm.ReconcileRate = reconcile
 	c.Slurm.DisableReconciler = true
 
-	pbsTemplate, _ := intern.Asset("config/pbs-template.txt")
+	pbsTemplate := intern.MustAsset("config/pbs-template.txt")
 	c.PBS.Template = string(pbsTemplate)
 	c.PBS.ReconcileRate = reconcile
 	c.PBS.DisableReconciler = true
 
-	geTemplate, _ := intern.Asset("config/gridengine-template.txt")
+	geTemplate := intern.MustAsset("config/gridengine-template.txt")
 	c.GridEngine.Template = string(geTemplate)
 
 	c.AWSBatch.JobDefinition = "funnel-job-def"
 	c.AWSBatch.JobQueue = "funnel-job-queue"
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
+
+	kubeTemplate := intern.MustAsset("config/kubernetes-template.yaml")
+	c.Kubernetes.Template = string(kubeTemplate)
+	c.Kubernetes.ReconcileRate = reconcile
+	c.Kubernetes.Namespace = "funnel"
 
 	return c
 }

@@ -50,8 +50,7 @@ proto:
 # Update submodules and build code
 depends:
 	@git submodule update --init --recursive
-	@go get github.com/golang/dep/cmd/dep
-	@dep ensure
+
 
 # Start API reference doc server
 serve-doc:
@@ -64,18 +63,19 @@ tidy:
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs goimports -w
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
+lint-depends:
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.22.2
+
 # Run code style and other checks
 lint:
-	@go get github.com/alecthomas/gometalinter
-	@gometalinter --install > /dev/null
-	@# TODO enable golint on funnel/cmd/termdash
-	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
-		--vendor \
+	@golangci-lint run --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
+		--skip-dirs "vendor" \
+		--skip-dirs "webdash" \
+		--skip-dirs "cmd/webdash" \
+		--skip-dirs "funnel-work-dir" \
 		-e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
-		-s "cmd/termdash" \
-		-e 'webdash/web.go' -s 'funnel-work-dir' \
 		./...
-	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell --vendor ./cmd/termdash/...
+	@golangci-lint run --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell ./cmd/termdash/...
 
 # Run all tests
 test:
@@ -98,7 +98,7 @@ start-mongodb:
 
 test-mongodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/mongo.config.yml
-	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml	
+	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml
 
 test-badger:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/badger.config.yml
@@ -116,7 +116,7 @@ start-datastore:
 
 test-datastore:
 	DATASTORE_EMULATOR_HOST=localhost:12432 \
-	  go test ./tests/core/ -funnel-config `pwd`/tests/datastore.config.yml
+	go test ./tests/core/ -funnel-config `pwd`/tests/datastore.config.yml
 
 start-kafka:
 	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
@@ -168,7 +168,7 @@ start-pubsub:
 
 test-pubsub:
 	@PUBSUB_EMULATOR_HOST=localhost:8085 \
-	  go test ./tests/pubsub/ -funnel-config `pwd`/tests/pubsub.config.yml
+	go test ./tests/pubsub/ -funnel-config `pwd`/tests/pubsub.config.yml
 
 start-ftp:
 	@cd tests/ftp-test-server/ && ./start-server.sh
@@ -189,7 +189,15 @@ snapshot: depends
 		--snapshot
 
 # build a docker container locally
-docker: snapshot
+docker:
+	@GOOS=linux GOARCH=amd64 go build -o ./docker/funnel
+	@cd docker && docker build -t ohsucompbio/funnel:latest .
+
+# build a docker container for use in a kubernetes cluster locally
+docker-kubernetes:
+	@GOOS=linux GOARCH=amd64 go build -o ./deployments/kubernetes/funnel
+	@cp examples/*.json ./deployments/kubernetes/
+	@cd ./deployments/kubernetes && docker build -t ohsucompbio/funnel-kubernetes-worker:latest .
 
 release:
 	@go get github.com/buchanae/github-release-notes

@@ -292,6 +292,62 @@ AWSBatch:
   Key: ""
   Secret: ""
 
+# Kubernetes describes the configuration for the Kubernetes compute backend.
+Kubernetes:
+  # Turn off task state reconciler. When enabled, Funnel communicates with Kubernetes
+  # to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: true
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 30m
+  # Kubernetes Namespace to spawn jobs within
+  Namespace: funnel-tasks
+  Template: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata: 
+      # DO NOT CHANGE NAME
+      name: {{.TaskID}}
+      namespace: {{.Namespace}}
+    spec: 
+      backoffLimit: 0
+      completions: 1
+      template:
+        spec:
+          containers: 
+            - name: {{printf "funnel-worker-%s" .TaskID}}
+              image: ohsucompbio/funnel-dind:latest
+              imagePullPolicy: IfNotPresent
+              args:
+                - 'funnel'
+                - 'worker'
+                - 'run'
+                - '--EventWriters'
+                - 'log'
+                - '--EventWriters'
+                - 'rpc'
+                - '--Server.Hostname'
+                - 'localhost''
+                - '--Server.RPCPort'
+                - '9090'
+                - '--taskID'
+                - {{.TaskId}}
+              resources: 
+                  requests: 
+                    cpu: {{.Cpus}}
+                    memory: {{printf "%.0fG" .RamGb}}
+              volumeMounts: 
+                - name: {{printf "funnel-storage-%s" .TaskID}}
+                  mountPath: {{printf "/opt/funnel/funnel-work-dir/%s" .TaskID}}
+              securityContext:
+                privileged: true
+    
+          restartPolicy: Never
+          volumes: 
+            - name: {{printf "funnel-storage-%s" .TaskID}}
+              emptyDir: {}
+    
 #-------------------------------------------------------------------------------
 # Storage
 #-------------------------------------------------------------------------------
@@ -343,3 +399,9 @@ Swift:
   RegionName: ""
   # 500 MB
   ChunkSizeBytes: 500000000
+
+FTPStorage:
+  Disabled: false
+  Timeout: 10s
+  User: "anonymous"
+  Password: "anonymous"

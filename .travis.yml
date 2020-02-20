@@ -2,7 +2,9 @@ os:
   - linux
 language: go
 go:
-  - "1.10"
+  - "1.12"
+
+dist: xenial
 sudo: required
 
 services:
@@ -12,20 +14,21 @@ services:
 cache:
   directories:
     - $GOPATH/pkg
-    - $GOPATH/src/github.com/ohsu-comp-bio/funnel/.git/modules
-    - $GOPATH/src/github.com/ohsu-comp-bio/funnel/vendor
 
 git:
   submodules: false
 
 install:
+  - export GO111MODULE=on
   - make depends
   - make
 
 jobs:
   include:
     - stage: all
-      script: make lint
+      script:
+        - make lint-depends
+        - make lint
       env:
         - n=lint
     - script: make test

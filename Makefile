@@ -51,7 +51,6 @@ proto:
 depends:
 	@git submodule update --init --recursive
 
-
 # Start API reference doc server
 serve-doc:
 	@go get golang.org/x/tools/cmd/godoc

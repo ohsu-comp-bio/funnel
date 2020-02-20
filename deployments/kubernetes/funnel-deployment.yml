@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: funnel
+  labels:
+    app: funnel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: funnel
+  template:
+    metadata:
+      labels:
+        app: funnel
+    spec:
+      containers:
+        - name: funnel
+          image: ohsucompbio/funnel:latest
+          imagePullPolicy: IfNotPresent
+          command: 
+            - '/opt/funnel/funnel'
+            - 'server'
+            - 'run'
+            - '--config'
+            - '/etc/config/funnel-server-config.yml'
+          resources: 
+            requests: 
+              cpu: 2 
+              memory: 4Gi
+          volumeMounts:
+            - name: funnel-deployment-storage
+              mountPath: /opt/funnel/funnel-work-dir
+            - name: config-volume
+              mountPath: /etc/config
+          ports:
+            - containerPort: 8000
+            - containerPort: 9090
+ 
+      volumes:
+        - name: funnel-deployment-storage
+          emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: funnel-config

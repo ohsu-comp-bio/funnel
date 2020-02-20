@@ -18,21 +18,10 @@ spec:
             - "funnel"
             - "worker"
             - "run"
-            - "--EventWriters"
-            - "log"
-            - "--EventWriters"
-            - "rpc"
-            ## YOU MUST SET THE SERVER HOSTNAME
-            - "--Server.Hostname"
-            - "0.0.0.0"
-            - "--Server.RPCPort"
-            - "9090"
+            - "--config"
+            - "/etc/config/funnel-worker-config.yml"
             - "--taskID"
             - {{.TaskId}}
-            - "--RPCClient.MaxRetries"
-            - "3"
-            - "--RPCClient.Timeout "
-            - "10s"
           resources:
               requests:
                 cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
@@ -40,9 +29,14 @@ spec:
           volumeMounts:
             - name: {{printf "funnel-storage-%s" .TaskId}}
               mountPath: {{printf "/opt/funnel/funnel-work-dir/%s" .TaskId}}
+            - name: config-volume
+              mountPath: /etc/config
           securityContext:
             privileged: true
 
       volumes: 
         - name: {{printf "funnel-storage-%s" .TaskId}}
           emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: funnel-config

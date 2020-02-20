@@ -194,9 +194,9 @@ docker:
 
 # build a docker container for use in a kubernetes cluster locally
 docker-kubernetes:
-	@GOOS=linux GOARCH=amd64 go build -o ./deployments/kubernetes/funnel
-	@cp examples/*.json ./deployments/kubernetes/
-	@cd ./deployments/kubernetes && docker build -t ohsucompbio/funnel-kubernetes-worker:latest .
+	@GOOS=linux GOARCH=amd64 go build -o ./deployments/kubernetes/docker/funnel
+	@cp examples/*.json ./deployments/kubernetes/docker/
+	@cd ./deployments/kubernetes/docker && docker build -t ohsucompbio/funnel-kubernetes-worker:latest .
 
 release:
 	@go get github.com/buchanae/github-release-notes

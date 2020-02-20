@@ -206,25 +206,41 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			return nil, err
 		}
 
+	case "gridengine":
+		compute, err = gridengine.NewBackend(conf, reader, writer, log.Sub("gridengine"))
+		if err != nil {
+			return nil, err
+		}
+
+	case "htcondor":
+		compute, err = htcondor.NewBackend(ctx, conf, reader, writer, log.Sub("htcondor"))
+		if err != nil {
+			return nil, err
+		}
+
+	case "kubernetes":
+		compute, err = kubernetes.NewBackend(ctx, conf.Kubernetes, reader, writer, log.Sub("kubernetes"))
+		if err != nil {
+			return nil, err
+		}
+
 	case "local":
 		compute, err = local.NewBackend(ctx, conf, log.Sub("local"))
 		if err != nil {
 			return nil, err
 		}
 
-	case "gridengine":
-		compute = gridengine.NewBackend(conf, reader, writer, log.Sub("gridengine"))
-	case "htcondor":
-		compute = htcondor.NewBackend(ctx, conf, reader, writer, log.Sub("htcondor"))
 	case "noop":
 		compute = noop.NewBackend()
-	case "pbs":
-		compute = pbs.NewBackend(ctx, conf, reader, writer, log.Sub("pbs"))
-	case "slurm":
-		compute = slurm.NewBackend(ctx, conf, reader, writer, log.Sub("slurm"))
 
-	case "kubernetes":
-		compute, err = kubernetes.NewBackend(ctx, conf.Kubernetes, reader, writer, log.Sub("kubernetes"))
+	case "pbs":
+		compute, err = pbs.NewBackend(ctx, conf, reader, writer, log.Sub("pbs"))
+		if err != nil {
+			return nil, err
+		}
+
+	case "slurm":
+		compute, err = slurm.NewBackend(ctx, conf, reader, writer, log.Sub("slurm"))
 		if err != nil {
 			return nil, err
 		}

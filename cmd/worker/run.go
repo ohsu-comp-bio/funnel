@@ -109,13 +109,11 @@ func newTaskReader(ctx context.Context, conf config.Config, opts *Options) (work
 		db, err := mongodb.NewMongoDB(conf.MongoDB)
 		return newDatabaseTaskReader(opts.TaskID, db, err)
 
-	// These readers connect via RPC (because the database is embedded in the server).
-	case "boltdb", "badger":
-		return worker.NewRPCTaskReader(ctx, conf.RPCClient, opts.TaskID)
-
-	// No matching reader. Fail.
+		// These readers connect via RPC (because the database is embedded in the server).
+		// case "boltdb", "badger":
+		// Default to asking the server for the task.
 	default:
-		return nil, fmt.Errorf("no matching task reader found")
+		return worker.NewRPCTaskReader(ctx, conf.RPCClient, opts.TaskID)
 	}
 }
 

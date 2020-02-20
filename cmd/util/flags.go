@@ -200,20 +200,20 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Var(&flagConf.AWSBatch.ReconcileRate, "AWSBatch.ReconcileRate", "How often to run the reconciler")
 
 	// GridEngine
-	f.StringVar(&flagConf.GridEngine.Template, "GridEngine.Template", flagConf.GridEngine.Template, "Path to submit template file")
+	f.StringVar(&flagConf.GridEngine.TemplateFile, "GridEngine.TemplateFile", flagConf.GridEngine.TemplateFile, "Path to template submit file")
 
 	// HTCondor
-	f.StringVar(&flagConf.HTCondor.Template, "HTCondor.Template", flagConf.HTCondor.Template, "Path to submit template file")
+	f.StringVar(&flagConf.HTCondor.TemplateFile, "HTCondor.TemplateFile", flagConf.HTCondor.TemplateFile, "Path to template submit file")
 	f.BoolVar(&flagConf.HTCondor.DisableReconciler, "HTCondor.DisableReconciler", flagConf.HTCondor.DisableReconciler, "Disable the state reconciler")
 	f.Var(&flagConf.HTCondor.ReconcileRate, "HTCondor.ReconcileRate", "How often to run the reconciler")
 
 	// PBS/Torque
-	f.StringVar(&flagConf.PBS.Template, "PBS.Template", flagConf.PBS.Template, "Path to submit template file")
+	f.StringVar(&flagConf.PBS.TemplateFile, "PBS.TemplateFile", flagConf.PBS.TemplateFile, "Path to template submit file")
 	f.BoolVar(&flagConf.PBS.DisableReconciler, "PBS.DisableReconciler", flagConf.PBS.DisableReconciler, "Disable the state reconciler")
 	f.Var(&flagConf.PBS.ReconcileRate, "PBS.ReconcileRate", "How often to run the reconciler")
 
 	// Slurm
-	f.StringVar(&flagConf.Slurm.Template, "Slurm.Template", flagConf.Slurm.Template, "Path to submit template file")
+	f.StringVar(&flagConf.Slurm.TemplateFile, "Slurm.TemplateFile", flagConf.Slurm.TemplateFile, "Path to template submit file")
 	f.BoolVar(&flagConf.Slurm.DisableReconciler, "Slurm.DisableReconciler", flagConf.Slurm.DisableReconciler, "Disable the state reconciler")
 	f.Var(&flagConf.Slurm.ReconcileRate, "Slurm.ReconcileRate", "How often to run the reconciler")
 
@@ -225,7 +225,7 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
 	// Kubernetes
-	f.StringVar(&flagConf.Kubernetes.Template, "Kubernetes.Template", flagConf.Kubernetes.Template, "Path to job template file")
+	f.StringVar(&flagConf.Kubernetes.TemplateFile, "Kubernetes.TemplateFile", flagConf.Kubernetes.TemplateFile, "Path to job template file")
 	f.StringVar(&flagConf.Kubernetes.Namespace, "Kubernetes.Namespace", flagConf.Kubernetes.Namespace, "Namespace to spawn jobs within")
 	f.StringVar(&flagConf.Kubernetes.ConfigFile, "Kubernetes.ConfigFile", flagConf.Kubernetes.ConfigFile, "Path to kubernetes config file")
 	f.BoolVar(&flagConf.Kubernetes.DisableReconciler, "Kubernetes.DisableReconciler", flagConf.Kubernetes.DisableReconciler, "Disable the state reconciler")

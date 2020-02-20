@@ -109,7 +109,7 @@ func DefaultConfig() Config {
 	}
 
 	// compute
-	reconcile := Duration(time.Minute * 30)
+	reconcile := Duration(time.Minute * 10)
 
 	htcondorTemplate := intern.MustAsset("config/htcondor-template.txt")
 	c.HTCondor.Template = string(htcondorTemplate)
@@ -134,10 +134,7 @@ func DefaultConfig() Config {
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
 
-	kubeTemplate := intern.MustAsset("config/kubernetes-template.yaml")
-	c.Kubernetes.Template = string(kubeTemplate)
 	c.Kubernetes.ReconcileRate = reconcile
-	c.Kubernetes.Namespace = "funnel"
 
 	return c
 }

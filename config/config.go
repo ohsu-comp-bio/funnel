@@ -34,7 +34,8 @@ type Config struct {
 	Slurm      HPCBackend
 	PBS        HPCBackend
 	GridEngine struct {
-		Template string
+		Template     string
+		TemplateFile string
 	}
 	AWSBatch   AWSBatch
 	Kubernetes Kubernetes
@@ -162,7 +163,10 @@ type HPCBackend struct {
 	// ReconcileRate is how often the compute backend compares states in Funnel's backend
 	// to those reported by the backend
 	ReconcileRate Duration
-	Template      string
+	// Template is the template to use for submissions to the HPC backend
+	Template string
+	// TemplateFile is the path to the template to use for submissions to the HPC backend
+	TemplateFile string
 }
 
 // BoltDB describes the configuration for the BoltDB embedded database.
@@ -387,6 +391,8 @@ type Kubernetes struct {
 	ReconcileRate Duration
 	// Batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
 	Template string
+	// TemplateFile is the path to the job template.
+	TemplateFile string
 	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
 	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
 	ConfigFile string

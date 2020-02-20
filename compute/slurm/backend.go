@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -19,7 +20,15 @@ import (
 )
 
 // NewBackend returns a new Slurm HPCBackend instance.
-func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) *compute.HPCBackend {
+func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*compute.HPCBackend, error) {
+	if conf.Slurm.TemplateFile != "" {
+		content, err := ioutil.ReadFile(conf.Slurm.TemplateFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading template: %v", err)
+		}
+		conf.Slurm.Template = string(content)
+	}
+
 	b := &compute.HPCBackend{
 		Name:          "slurm",
 		SubmitCmd:     "sbatch",
@@ -38,7 +47,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		go b.Reconcile(ctx)
 	}
 
-	return b
+	return b, nil
 }
 
 // extractID extracts the task id from the response returned by the `sbatch` command.

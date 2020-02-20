@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -18,7 +19,15 @@ import (
 )
 
 // NewBackend returns a new HTCondor backend instance.
-func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) *compute.HPCBackend {
+func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*compute.HPCBackend, error) {
+	if conf.HTCondor.TemplateFile != "" {
+		content, err := ioutil.ReadFile(conf.HTCondor.TemplateFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading template: %v", err)
+		}
+		conf.HTCondor.Template = string(content)
+	}
+
 	b := &compute.HPCBackend{
 		Name:          "htcondor",
 		SubmitCmd:     "condor_submit",
@@ -37,7 +46,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		go b.Reconcile(ctx)
 	}
 
-	return b
+	return b, nil
 }
 
 // extractID extracts the task id from the response returned by the `condor_submit` command.

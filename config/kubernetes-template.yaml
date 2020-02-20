@@ -9,24 +9,30 @@ spec:
   completions: 1
   template:
     spec:
+      restartPolicy: Never
       containers: 
         - name: {{printf "funnel-worker-%s" .TaskId}}
           image: ohsucompbio/funnel-kubernetes-worker:latest
           imagePullPolicy: IfNotPresent
           args:
-            - 'funnel'
-            - 'worker'
-            - 'run'
-            - '--EventWriters'
-            - 'log'
-            - '--EventWriters'
-            - 'rpc'
-            - '--Server.Hostname'
-            - 'localhost'
-            - '--Server.RPCPort'
-            - '9090'
-            - '--taskID'
+            - "funnel"
+            - "worker"
+            - "run"
+            - "--EventWriters"
+            - "log"
+            - "--EventWriters"
+            - "rpc"
+            ## YOU MUST SET THE SERVER HOSTNAME
+            - "--Server.Hostname"
+            - "0.0.0.0"
+            - "--Server.RPCPort"
+            - "9090"
+            - "--taskID"
             - {{.TaskId}}
+            - "--RPCClient.MaxRetries"
+            - "3"
+            - "--RPCClient.Timeout "
+            - "10s"
           resources:
               requests:
                 cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
@@ -37,7 +43,6 @@ spec:
           securityContext:
             privileged: true
 
-      restartPolicy: Never
       volumes: 
         - name: {{printf "funnel-storage-%s" .TaskId}}
           emptyDir: {}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"text/template"
 	"time"
 
@@ -25,6 +26,19 @@ import (
 
 // NewBackend returns a new local Backend instance.
 func NewBackend(ctx context.Context, conf config.Kubernetes, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
+	if conf.TemplateFile != "" {
+		content, err := ioutil.ReadFile(conf.TemplateFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading template: %v", err)
+		}
+		conf.Template = string(content)
+	}
+	if conf.Template == "" {
+		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes job template")
+	}
+	if conf.Namespace == "" {
+		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes namespace")
+	}
 
 	var kubeconfig *rest.Config
 	var err error
@@ -143,8 +157,12 @@ func (b *Backend) Submit(task *tes.Task) error {
 
 // deleteJob removes deletes a kubernetes v1/batch job.
 func (b *Backend) deleteJob(taskID string) error {
-	var graceper int64 = 30
-	err := b.client.Delete(taskID, &metav1.DeleteOptions{GracePeriodSeconds: &graceper})
+	var gracePeriod int64 = 0
+	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
+	err := b.client.Delete(taskID, &metav1.DeleteOptions{
+		GracePeriodSeconds: &gracePeriod,
+		PropagationPolicy:  &prop,
+	})
 	if err != nil {
 		return fmt.Errorf("deleting job: %v", err)
 	}
@@ -184,7 +202,7 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 // In this context a "FAILED" state is being used as a generic term that captures
 // one or more terminal states for the backend.
 //
-// This loop is also used to cleanup sucessful jobs.
+// This loop is also used to cleanup successful jobs.
 func (b *Backend) reconcile(ctx context.Context, rate time.Duration) {
 	ticker := time.NewTicker(rate)
 ReconcileLoop:
@@ -202,12 +220,14 @@ ReconcileLoop:
 				s := j.Status
 				switch {
 				case s.Succeeded > 0:
+					b.log.Debug("reconcile: cleanuping up successful job", "taskID", j.Name)
 					err := b.deleteJob(j.Name)
 					if err != nil {
-						b.log.Error("reconcile: deleteing sucessful job", "taskID", j.Name, "error", err)
+						b.log.Error("reconcile: cleaning up successful job", "taskID", j.Name, "error", err)
 						continue ReconcileLoop
 					}
 				case s.Failed > 0:
+					b.log.Debug("reconcile: cleaning up failed job", "taskID", j.Name)
 					conds, err := json.Marshal(s.Conditions)
 					if err != nil {
 						b.log.Error("reconcile: marshal failed job conditions", "taskID", j.Name, "error", err)
@@ -221,6 +241,11 @@ ReconcileLoop:
 							map[string]string{"error": string(conds)},
 						),
 					)
+					err = b.deleteJob(j.Name)
+					if err != nil {
+						b.log.Error("reconcile: cleaning up failed job", "taskID", j.Name, "error", err)
+						continue ReconcileLoop
+					}
 				}
 			}
 		}

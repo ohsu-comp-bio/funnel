@@ -23,6 +23,8 @@ VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.GitBranch=$(git_branch)" \
  -X "github.com/ohsu-comp-bio/funnel/version.GitUpstream=$(git_upstream)"
 
+export CGO_ENABLED=0
+
 # Build the code
 install: depends
 	@touch version/version.go

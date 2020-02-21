@@ -11,10 +11,10 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2
-	github.com/aws/aws-sdk-go v1.29.6
+	github.com/aws/aws-sdk-go v1.13.54
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/dgraph-io/badger v1.5.0
+	github.com/dgraph-io/badger/v2 v2.0.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
@@ -35,6 +35,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.13.0
 	github.com/imdario/mergo v0.3.8
 	github.com/jlaffaye/ftp v0.0.0-20191218041957-e1b8fdd0dcc3
+	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kr/pretty v0.2.0
 	github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381
@@ -59,6 +60,7 @@ require (
 	golang.org/x/net v0.0.0-20200219183655-46282727080f
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+	golang.org/x/tools v0.0.0-20200221152158-fe62aff31966 // indirect
 	google.golang.org/api v0.17.0
 	google.golang.org/genproto v0.0.0-20200218151345-dad8c97a84f5
 	google.golang.org/grpc v1.27.1

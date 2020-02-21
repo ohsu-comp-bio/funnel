@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dgraph-io/badger"
+	badger "github.com/dgraph-io/badger/v2"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
@@ -45,6 +45,8 @@ func (db *Badger) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*te
 			PrefetchValues: true,
 			PrefetchSize:   pageSize,
 		})
+		defer it.Close()
+
 		i := 0
 
 		// For pagination, figure out the starting key.
@@ -58,7 +60,11 @@ func (db *Badger) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*te
 
 	taskLoop:
 		for ; it.Valid() && len(tasks) < pageSize; it.Next() {
-			val, err := it.Item().Value()
+			var val []byte
+			err := it.Item().Value(func(d []byte) error {
+				val = copyBytes(d)
+				return nil
+			})
 			if err != nil {
 				return fmt.Errorf("loading item value: %s", err)
 			}
@@ -121,7 +127,11 @@ func (db *Badger) getTask(txn *badger.Txn, id string) (*tes.Task, error) {
 		return nil, fmt.Errorf("loading item: %s", err)
 	}
 
-	val, err := item.Value()
+	var val []byte
+	err = item.Value(func(d []byte) error {
+		val = copyBytes(d)
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("loading item value: %s", err)
 	}
@@ -132,4 +142,10 @@ func (db *Badger) getTask(txn *badger.Txn, id string) (*tes.Task, error) {
 		return nil, fmt.Errorf("unmarshaling data: %s", err)
 	}
 	return task, nil
+}
+
+func copyBytes(in []byte) []byte {
+	out := make([]byte, len(in))
+	copy(out, in)
+	return out
 }

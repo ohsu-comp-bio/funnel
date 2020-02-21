@@ -182,7 +182,8 @@ HTCondor:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 30m
+  ReconcileRate: 10m
+  TemplateFile: ""
   Template: |
     universe = vanilla
     getenv = True
@@ -212,7 +213,8 @@ PBS:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 30m
+  ReconcileRate: 10m
+  TemplateFile: ""
   Template: |
     #!bin/bash
     #PBS -N {{.TaskId}}
@@ -231,6 +233,7 @@ PBS:
     {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
 
 GridEngine:
+  TemplateFile: ""
   Template: |
     #!bin/bash
     #$ -N {{.TaskId}}
@@ -256,7 +259,8 @@ Slurm:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 30m
+  ReconcileRate: 10m
+  TemplateFile: ""
   Template: |
     #!/bin/bash
     #SBATCH --job-name {{.TaskId}}
@@ -282,7 +286,7 @@ AWSBatch:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by AWS Batch
-  ReconcileRate: 30m
+  ReconcileRate: 10m
   # JobDefinition can be either a name or the Amazon Resource Name (ARN).
   JobDefinition: "funnel-job-def"
   # JobQueue can be either a name or the Amazon Resource Name (ARN).
@@ -291,6 +295,22 @@ AWSBatch:
   Region: ""
   Key: ""
   Secret: ""
+
+# Kubernetes describes the configuration for the Kubernetes compute backend.
+Kubernetes:
+  # Turn off task state reconciler. When enabled, Funnel communicates with Kubernetes
+  # to find tasks that are stuck in a queued state or errored and
+  # updates the task state accordingly.
+  DisableReconciler: true
+  # ReconcileRate is how often the compute backend compares states in Funnel's backend
+  # to those reported by the backend
+  ReconcileRate: 10m
+  # Kubernetes Namespace to spawn jobs within
+  Namespace: ""
+  # Batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
+  Template: ""
+  # TemplateFile is the path to the job template.
+  TemplateFile: ""
 
 #-------------------------------------------------------------------------------
 # Storage
@@ -343,3 +363,9 @@ Swift:
   RegionName: ""
   # 500 MB
   ChunkSizeBytes: 500000000
+
+FTPStorage:
+  Disabled: false
+  Timeout: 10s
+  User: "anonymous"
+  Password: "anonymous"

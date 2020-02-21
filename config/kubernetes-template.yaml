@@ -26,6 +26,7 @@ spec:
               requests:
                 cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
                 memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
+                ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
           volumeMounts:
             - name: {{printf "funnel-storage-%s" .TaskId}}
               mountPath: {{printf "/opt/funnel/funnel-work-dir/%s" .TaskId}}

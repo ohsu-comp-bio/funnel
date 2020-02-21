@@ -389,6 +389,8 @@ type Kubernetes struct {
 	// ReconcileRate is how often the compute backend compares states in Funnel's backend
 	// to those reported by the backend
 	ReconcileRate Duration
+	// Disable cleanup of complete/failed jobs. Cleanup is run during reconcile loop.
+	DisableJobCleanup bool
 	// Batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
 	Template string
 	// TemplateFile is the path to the job template.

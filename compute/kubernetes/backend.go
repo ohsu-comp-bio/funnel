@@ -74,7 +74,7 @@ func NewBackend(ctx context.Context, conf config.Kubernetes, reader tes.ReadOnly
 
 	if !conf.DisableReconciler {
 		rate := time.Duration(conf.ReconcileRate)
-		go b.reconcile(ctx, rate)
+		go b.reconcile(ctx, rate, conf.DisableJobCleanup)
 	}
 
 	return b, nil
@@ -203,7 +203,7 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 // one or more terminal states for the backend.
 //
 // This loop is also used to cleanup successful jobs.
-func (b *Backend) reconcile(ctx context.Context, rate time.Duration) {
+func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableCleanup bool) {
 	ticker := time.NewTicker(rate)
 ReconcileLoop:
 	for {
@@ -220,6 +220,9 @@ ReconcileLoop:
 				s := j.Status
 				switch {
 				case s.Succeeded > 0:
+					if disableCleanup {
+						continue ReconcileLoop
+					}
 					b.log.Debug("reconcile: cleanuping up successful job", "taskID", j.Name)
 					err := b.deleteJob(j.Name)
 					if err != nil {
@@ -241,6 +244,9 @@ ReconcileLoop:
 							map[string]string{"error": string(conds)},
 						),
 					)
+					if disableCleanup {
+						continue ReconcileLoop
+					}
 					err = b.deleteJob(j.Name)
 					if err != nil {
 						b.log.Error("reconcile: cleaning up failed job", "taskID", j.Name, "error", err)

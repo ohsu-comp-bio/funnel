@@ -26,8 +26,9 @@ spec:
             - '/etc/config/funnel-server-config.yml'
           resources: 
             requests: 
-              cpu: 2 
-              memory: 4Gi
+              cpu: 2
+              memory: 4G
+              ephemeral-storage: 25G # needed since we are using boltdb
           volumeMounts:
             - name: funnel-deployment-storage
               mountPath: /opt/funnel/funnel-work-dir

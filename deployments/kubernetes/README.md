@@ -51,6 +51,7 @@ Logger:
   Level: debug
 
 Kubernetes:
+  DisableJobCleanup: false
   DisableReconciler: false
   ReconcileRate: 5m
   Namespace: default
@@ -83,6 +84,7 @@ Kubernetes:
                   requests:
                     cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
                     memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
+                    ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
               volumeMounts:
                 - name: {{printf "funnel-storage-%s" .TaskId}}
                   mountPath: {{printf "/opt/funnel/funnel-work-dir/%s" .TaskId}}
@@ -97,10 +99,10 @@ Kubernetes:
               emptyDir: {}
             - name: config-volume
               configMap:
-                name: funnel-config    
+                name: funnel-config
 ```
 
-I recommend setting `DisableReconciler` to `true` for debugging - otherwise failed jobs will be cleanup up. 
+I recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up. 
 
 *funnel-worker-config.yml*
 
@@ -170,7 +172,8 @@ spec:
           resources: 
             requests: 
               cpu: 2 
-              memory: 4Gi
+              memory: 4G
+              ephemeral-storage: 25G # needed since we are using boltdb
           volumeMounts:
             - name: funnel-deployment-storage
               mountPath: /opt/funnel/funnel-work-dir

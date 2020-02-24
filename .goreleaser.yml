@@ -35,8 +35,13 @@ dockers:
   - goos: linux
     goarch: amd64
     image_templates:
-      - "ohsucompbio/funnel-kubernetes-worker:{{.Version}}"
-    dockerfile: ./deployments/kubernetes/Dockerfile
+      - "ohsucompbio/funnel-kube-dind:{{.Version}}"
+    dockerfile: ./deployments/kubernetes/dind/Dockerfile
+  - goos: linux
+    goarch: amd64
+    image_templates:
+      - "ohsucompbio/funnel-kube-dind-rootless:{{.Version}}"
+    dockerfile: ./deployments/kubernetes/dind-rootless/Dockerfile
 
 brews:
   - github:

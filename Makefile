@@ -195,10 +195,16 @@ docker:
 	@cd docker && docker build -t ohsucompbio/funnel:latest .
 
 # build a docker container for use in a kubernetes cluster locally
-docker-kubernetes:
+docker-kubernetes-dind:
 	@GOOS=linux GOARCH=amd64 go build -o ./deployments/kubernetes/docker/funnel
-	@cp examples/*.json ./deployments/kubernetes/docker/
-	@cd ./deployments/kubernetes/docker && docker build -t ohsucompbio/funnel-kubernetes-worker:latest .
+	@cp examples/*.json ./deployments/kubernetes/dind/
+	@cd ./deployments/kubernetes/docker && docker build -t ohsucompbio/funnel-kube-dind:latest .
+
+# build a docker container for use in a kubernetes cluster locally
+docker-kubernetes-dind-rootless:
+	@GOOS=linux GOARCH=amd64 go build -o ./deployments/kubernetes/docker/funnel
+	@cp examples/*.json ./deployments/kubernetes/dind-rootless/
+	@cd ./deployments/kubernetes/docker && docker build -t ohsucompbio/funnel-kube-dind-rootless:latest .
 
 release:
 	@go get github.com/buchanae/github-release-notes

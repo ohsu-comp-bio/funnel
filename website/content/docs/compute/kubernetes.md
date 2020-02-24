@@ -16,6 +16,8 @@ Kuberenetes Resources:
 - [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
 - [Job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
 
+Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/kube/deployments/kubernetes
+
 #### Create a Service:
 
 *funnel-service.yml*
@@ -56,6 +58,8 @@ Use this value to configure the server hostname of the worker config.
 
 #### Create Funnel config files
 
+*Note*: The configures job template uses the image, `ohsucompbio/funnel-kube-dind:latest`, which is built on docker's official [docker-in-docker image (dind)](https://hub.docker.com/_/docker). You can also use the experimental [rootless dind variant](https://docs.docker.com/engine/security/rootless/) by changing the image to `ohsucompbio/funnel-kube-dind-rootless:latest`.
+
 *funnel-server-config.yml*
 
 ```
@@ -86,7 +90,7 @@ Kubernetes:
           restartPolicy: Never
           containers: 
             - name: {{printf "funnel-worker-%s" .TaskId}}
-              image: ohsucompbio/funnel-kubernetes-worker:latest
+              image: ohsucompbio/funnel-kube-dind:latest
               imagePullPolicy: IfNotPresent
               args:
                 - "funnel"

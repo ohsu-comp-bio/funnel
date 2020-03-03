@@ -37,6 +37,7 @@ type Config struct {
 		Template string
 	}
 	AWSBatch AWSBatch
+	Nomad	Nomad
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage
@@ -247,6 +248,19 @@ type AWSBatch struct {
 	// to those reported by AWS Batch
 	ReconcileRate Duration
 	AWSConfig
+}
+
+// Nomad describes the configuration for the Nomad compute backend.
+type Nomad struct {
+	// Batch job template
+	Template string
+	// TemplateFile is the path to the job template.
+	TemplateFile string
+	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
+	ConfigFile string
+	// Namespace to spawn jobs within
+	Namespace string
+
 }
 
 // Datastore configures access to a Google Cloud Datastore database backend.

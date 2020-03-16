@@ -34,6 +34,12 @@ func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
 		return nil, fmt.Errorf("httpStorage: parsing URL: %s", err)
 	}
 
+	// Handle presigned s3 urls
+	if strings.Contains(url, "amazonaws.com") && strings.Contains(url, "AWSAccessKeyId") &&
+		strings.Contains(url, "Signature") && strings.Contains(url, "Expires") {
+		return &Object{URL: url, Name: u.RequestURI()}, nil
+	}
+
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("httpStorage: creating HEAD request: %s", err)
@@ -42,11 +48,11 @@ func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
 
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("httpStorage: executing GET request: %s", err)
+		return nil, fmt.Errorf("httpStorage: executing HEAD request: %s", err)
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("httpStorage: requesting info: got non-200 status code %d", resp.StatusCode)
+		return nil, fmt.Errorf("httpStorage: HEAD request returned status code: %d", resp.StatusCode)
 	}
 
 	modtime, _ := http.ParseTime(resp.Header.Get("Last-Modified"))
@@ -78,6 +84,9 @@ func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
 		return nil, fmt.Errorf("httpStorage: executing GET request: %s", err)
 	}
 	defer src.Body.Close()
+	if src.StatusCode != 200 {
+		return nil, fmt.Errorf("httpStorage: GET request returned status code: %d", src.StatusCode)
+	}
 
 	dest, err := os.Create(path)
 	if err != nil {
@@ -124,15 +133,10 @@ func (b *HTTP) UnsupportedOperations(url string) UnsupportedOperations {
 		Put:  fmt.Errorf("httpStorage: Put operation is not supported"),
 	}
 
-	resp, err := b.client.Head(url)
-	if err != nil {
-		err = fmt.Errorf("httpStorage: HEAD request failed: %s", err)
-	} else if resp.StatusCode != 200 {
-		err = fmt.Errorf("httpStorage: HEAD request to %s returned status: %s", url, resp.Status)
-	}
-
+	_, err := b.Stat(context.Background(), url)
 	ops.Get = err
 	ops.Stat = err
+
 	return ops
 }
 

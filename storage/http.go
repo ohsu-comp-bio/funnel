@@ -34,12 +34,6 @@ func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
 		return nil, fmt.Errorf("httpStorage: parsing URL: %s", err)
 	}
 
-	// Handle presigned s3 urls
-	if strings.Contains(url, "amazonaws.com") && strings.Contains(url, "AWSAccessKeyId") &&
-		strings.Contains(url, "Signature") && strings.Contains(url, "Expires") {
-		return &Object{URL: url, Name: u.RequestURI()}, nil
-	}
-
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("httpStorage: creating HEAD request: %s", err)
@@ -68,9 +62,9 @@ func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
 
 // Get copies a file from a given URL to the host path.
 func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
-	obj, err := b.Stat(ctx, url)
+	u, err := urllib.Parse(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("httpStorage: parsing URL: %s", err)
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -79,13 +73,13 @@ func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
 	}
 	req.WithContext(ctx)
 
-	src, err := b.client.Do(req)
+	resp, err := b.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("httpStorage: executing GET request: %s", err)
 	}
-	defer src.Body.Close()
-	if src.StatusCode != 200 {
-		return nil, fmt.Errorf("httpStorage: GET request returned status code: %d", src.StatusCode)
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("httpStorage: GET request returned status code: %d", resp.StatusCode)
 	}
 
 	dest, err := os.Create(path)
@@ -93,7 +87,7 @@ func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
 		return nil, fmt.Errorf("httpStorage: creating host file: %s", err)
 	}
 
-	_, copyErr := io.Copy(dest, fsutil.Reader(ctx, src.Body))
+	_, copyErr := io.Copy(dest, fsutil.Reader(ctx, resp.Body))
 	closeErr := dest.Close()
 
 	if copyErr != nil {
@@ -103,7 +97,15 @@ func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
 		return nil, fmt.Errorf("httpStorage: closing file: %s", closeErr)
 	}
 
-	return obj, err
+	modtime, _ := http.ParseTime(resp.Header.Get("Last-Modified"))
+
+	return &Object{
+		URL:          url,
+		Name:         u.RequestURI(),
+		Size:         resp.ContentLength,
+		LastModified: modtime,
+		ETag:         resp.Header.Get("ETag"),
+	}, nil
 }
 
 // Put is not supported by HTTP storage.
@@ -132,10 +134,6 @@ func (b *HTTP) UnsupportedOperations(url string) UnsupportedOperations {
 		List: fmt.Errorf("httpStorage: List operation is not supported"),
 		Put:  fmt.Errorf("httpStorage: Put operation is not supported"),
 	}
-
-	_, err := b.Stat(context.Background(), url)
-	ops.Get = err
-	ops.Stat = err
 
 	return ops
 }

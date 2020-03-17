@@ -47,7 +47,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	// test client timeout
-	err = store.Stat(context.Background(), "https://fakeurl1234.com")
+	_, err = store.Stat(context.Background(), "https://fakeurl1234.com")
 	if err == nil {
 		t.Error("Expected timeout error")
 	}

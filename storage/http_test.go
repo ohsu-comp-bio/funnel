@@ -16,34 +16,46 @@ func TestHTTP(t *testing.T) {
 		t.Fatal("Error creating HTTP backend:", err)
 	}
 
-	// test client timeout
-	err = store.UnsupportedOperations("https://fakeurl1234.com").Get
-	if err == nil {
-		t.Error("Expected timeout error")
-	}
-
 	// test Get is supported
 	err = store.UnsupportedOperations("https://google.com").Get
 	if err != nil {
 		t.Error("Unexpected error for unsupported.Get call:", err)
 	}
 
-	// test Get on file that requires auth
-	err = store.UnsupportedOperations("https://s3.amazonaws.com/private").Get
-	if err == nil {
-		t.Error("Expected error for unsupported.Get call")
+	// test Stat is supported
+	err = store.UnsupportedOperations("https://google.com").Stat
+	if err != nil {
+		t.Error("Unexpected error for unsupported.Stat call:", err)
 	}
 
 	// test Get succeeds
 	_, err = store.Get(context.Background(), "https://google.com", "_test_download/test_https_download.html")
 	if err != nil {
-		t.Error("Unexpected error downloading file:", err)
+		t.Error("Unexpected error for Get call:", err)
+	}
+
+	// test Stat succeeds
+	_, err = store.Stat(context.Background(), "https://google.com")
+	if err != nil {
+		t.Error("Unexpected error for Stat call:", err)
+	}
+
+	// test Get on file that requires auth; expect error
+	_, err = store.Get(context.Background(), "https://s3.amazonaws.com/private", "_test_download/test_https_download_private.html")
+	if err == nil {
+		t.Error("Expected error for Get call")
+	}
+
+	// test client timeout
+	err = store.Stat(context.Background(), "https://fakeurl1234.com")
+	if err == nil {
+		t.Error("Expected timeout error")
 	}
 
 	// test List not supported
 	_, err = store.List(context.Background(), "https://google.com")
 	if err == nil {
-		t.Error("Expected error for List irectory")
+		t.Error("Expected error for List call")
 	}
 
 	// test Put not supported

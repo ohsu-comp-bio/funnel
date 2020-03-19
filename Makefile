@@ -98,7 +98,7 @@ start-mongodb:
 
 test-mongodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/mongo.config.yml
-	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml	
+	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml
 
 test-badger:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/badger.config.yml
@@ -189,7 +189,8 @@ snapshot: depends
 		--snapshot
 
 # build a docker container locally
-docker: snapshot
+docker:
+	docker build -t ohsucompbio/funnel:latest ./
 
 release:
 	@go get github.com/buchanae/github-release-notes

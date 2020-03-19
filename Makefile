@@ -191,20 +191,15 @@ snapshot: depends
 
 # build a docker container locally
 docker:
-	@GOOS=linux GOARCH=amd64 go build -o ./docker/funnel
-	@cd docker && docker build -t ohsucompbio/funnel:latest .
+	docker build -t ohsucompbio/funnel:latest ./
 
 # build a docker container for use in a kubernetes cluster locally
 docker-kubernetes-dind:
-	@GOOS=linux GOARCH=amd64 go build -o ./deployments/kubernetes/docker/funnel
-	@cp examples/*.json ./deployments/kubernetes/dind/
-	@cd ./deployments/kubernetes/docker && docker build -t ohsucompbio/funnel-kube-dind:latest .
+	docker build -t ohsucompbio/funnel-kube-dind:latest -f Dockerfile.dind .
 
 # build a docker container for use in a kubernetes cluster locally
 docker-kubernetes-dind-rootless:
-	@GOOS=linux GOARCH=amd64 go build -o ./deployments/kubernetes/docker/funnel
-	@cp examples/*.json ./deployments/kubernetes/dind-rootless/
-	@cd ./deployments/kubernetes/docker && docker build -t ohsucompbio/funnel-kube-dind-rootless:latest .
+	docker build -t ohsucompbio/funnel-kube-dind-rootless:latest -f Dockerfile.dind-rootless .
 
 release:
 	@go get github.com/buchanae/github-release-notes

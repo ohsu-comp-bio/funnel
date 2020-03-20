@@ -1,3 +1,4 @@
+Dockerfile*
 *.github_token
 *.pyc
 *.env

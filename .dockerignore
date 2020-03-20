@@ -1,4 +1,3 @@
-*.git
 *.github_token
 *.pyc
 *.env

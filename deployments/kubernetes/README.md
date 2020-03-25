@@ -163,6 +163,7 @@ spec:
       labels:
         app: funnel
     spec:
+      serviceAccountName: funnel
       containers:
         - name: funnel
           image: ohsucompbio/funnel:latest

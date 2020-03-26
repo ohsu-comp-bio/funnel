@@ -26,23 +26,6 @@ archives:
   - format: tar.gz
     name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
 
-dockers:
-  - goos: linux
-    goarch: amd64
-    image_templates:
-      - "ohsucompbio/funnel:{{.Version}}"
-    dockerfile: ./Dockerfile
-  - goos: linux
-    goarch: amd64
-    image_templates:
-      - "ohsucompbio/funnel-dind:{{.Version}}"
-    dockerfile: ./Dockerfile.dind
-  - goos: linux
-    goarch: amd64
-    image_templates:
-      - "ohsucompbio/funnel-dind-rootless:{{.Version}}"
-    dockerfile: ./Dockerfile.dind-rootless
-
 brews:
   - github:
       owner: ohsu-comp-bio

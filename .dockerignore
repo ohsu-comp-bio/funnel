@@ -1,0 +1,17 @@
+Dockerfile*
+*.github_token
+*.pyc
+*.env
+*.idea
+*.sw[opn]
+**/node_modules
+**/bower_components
+**/.sass-cache/
+**/test_tmp
+**/_scratch
+**/funnel-work-dir
+build
+website
+docs
+deployments
+storage/_test_download

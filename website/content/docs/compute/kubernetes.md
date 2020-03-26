@@ -14,6 +14,7 @@ Kuberenetes Resources:
 - [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
 - [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 - [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
+- [Roles and RoleBindings](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings)
 - [Job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
 
 Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/kube/deployments/kubernetes
@@ -58,7 +59,7 @@ Use this value to configure the server hostname of the worker config.
 
 #### Create Funnel config files
 
-*Note*: The configures job template uses the image, `ohsucompbio/funnel-kube-dind:latest`, which is built on docker's official [docker-in-docker image (dind)](https://hub.docker.com/_/docker). You can also use the experimental [rootless dind variant](https://docs.docker.com/engine/security/rootless/) by changing the image to `ohsucompbio/funnel-kube-dind-rootless:latest`.
+*Note*: The configures job template uses the image, `ohsucompbio/funnel-dind:latest`, which is built on docker's official [docker-in-docker image (dind)](https://hub.docker.com/_/docker). You can also use the experimental [rootless dind variant](https://docs.docker.com/engine/security/rootless/) by changing the image to `ohsucompbio/funnel-dind-rootless:latest`.
 
 *funnel-server-config.yml*
 
@@ -158,6 +159,55 @@ Server:
 kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
 ```
 
+#### Create a Service Account for Funnel
+
+Define a Role and RoleBinding:
+
+*role.yml*
+
+```
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: funnel-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch", "extensions"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["extensions", "apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+```
+
+*role_binding.yml*
+
+```
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: funnel-rolebinding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: funnel-sa
+roleRef:
+  kind: Role
+  name: funnel-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+Create the service account, role and role binding:
+
+```
+kubectl create serviceaccount funnel-sa --namespace default
+kubectl create -f role.yml
+kubectl create -f role_binding.yml
+```
+
 #### Create a Deployment
 
 *funnel-deployment.yml*
@@ -179,6 +229,7 @@ spec:
       labels:
         app: funnel
     spec:
+      serviceAccountName: funnel-sa
       containers:
         - name: funnel
           image: ohsucompbio/funnel:latest

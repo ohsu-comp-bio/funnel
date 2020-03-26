@@ -90,7 +90,7 @@ Kubernetes:
           restartPolicy: Never
           containers: 
             - name: {{printf "funnel-worker-%s" .TaskId}}
-              image: ohsucompbio/funnel-kube-dind:latest
+              image: ohsucompbio/funnel-dind:latest
               imagePullPolicy: IfNotPresent
               args:
                 - "funnel"
@@ -184,7 +184,7 @@ spec:
           image: ohsucompbio/funnel:latest
           imagePullPolicy: IfNotPresent
           command: 
-            - '/opt/funnel/funnel'
+            - 'funnel'
             - 'server'
             - 'run'
             - '--config'

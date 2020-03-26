@@ -169,7 +169,7 @@ spec:
           image: ohsucompbio/funnel:latest
           imagePullPolicy: IfNotPresent
           command: 
-            - '/opt/funnel/funnel'
+            - 'funnel'
             - 'server'
             - 'run'
             - '--config'

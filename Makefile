@@ -11,11 +11,11 @@ git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git
 export GIT_BRANCH = $(git_branch)
 export GIT_UPSTREAM = $(git_upstream)
 
-export FUNNEL_VERSION=0.9.0
+export FUNNEL_VERSION=0.10.0
 
 # LAST_PR_NUMBER is used by the release notes builder to generate notes
 # based on pull requests (PR) up until the last release.
-export LAST_PR_NUMBER = 591
+export LAST_PR_NUMBER = 605
 
 VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.BuildDate=$(shell date)" \
@@ -193,13 +193,13 @@ snapshot: depends
 docker:
 	docker build -t ohsucompbio/funnel:latest ./
 
-# build a docker container for use in a kubernetes cluster locally
-docker-kubernetes-dind:
-	docker build -t ohsucompbio/funnel-kube-dind:latest -f Dockerfile.dind .
+# build a docker container that supports docker-in-docker
+docker-dind:
+	docker build -t ohsucompbio/funnel-dind:latest -f Dockerfile.dind .
 
-# build a docker container for use in a kubernetes cluster locally
-docker-kubernetes-dind-rootless:
-	docker build -t ohsucompbio/funnel-kube-dind-rootless:latest -f Dockerfile.dind-rootless .
+# build a docker container that supports rootless docker-in-docker
+docker-dind-rootless:
+	docker build -t ohsucompbio/funnel-dind-rootless:latest -f Dockerfile.dind-rootless .
 
 release:
 	@go get github.com/buchanae/github-release-notes

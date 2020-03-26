@@ -31,17 +31,17 @@ dockers:
     goarch: amd64
     image_templates:
       - "ohsucompbio/funnel:{{.Version}}"
-    dockerfile: ./docker/Dockerfile
+    dockerfile: ./Dockerfile
   - goos: linux
     goarch: amd64
     image_templates:
-      - "ohsucompbio/funnel-kube-dind:{{.Version}}"
-    dockerfile: ./deployments/kubernetes/dind/Dockerfile
+      - "ohsucompbio/funnel-dind:{{.Version}}"
+    dockerfile: ./Dockerfile.dind
   - goos: linux
     goarch: amd64
     image_templates:
-      - "ohsucompbio/funnel-kube-dind-rootless:{{.Version}}"
-    dockerfile: ./deployments/kubernetes/dind-rootless/Dockerfile
+      - "ohsucompbio/funnel-dind-rootless:{{.Version}}"
+    dockerfile: ./Dockerfile.dind-rootless
 
 brews:
   - github:

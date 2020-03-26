@@ -162,6 +162,8 @@ github.com/gizak/termui v2.3.0+incompatible h1:S8wJoNumYfc/rR5UezUM4HsPEo3RJh0LK
 github.com/gizak/termui v2.3.0+incompatible/go.mod h1:PkJoWUt/zacQKysNfQtcw1RW+eK2SxkieVBtl+4ovLA=
 github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8 h1:DujepqpGd1hyOd7aW59XpK7Qymp8iy83xq74fLr21is=
 github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8/go.mod h1:xkRDCp4j0OGD1HRkm4kmhM+pmpv3AKq5SU7GMg4oO/Q=
+github.com/go-bindata/go-bindata v3.1.2+incompatible h1:5vjJMVhowQdPzjE1LdxyFF7YFTXg5IgGVW4gBr5IbvE=
+github.com/go-bindata/go-bindata v3.1.2+incompatible/go.mod h1:xK8Dsgwmeed+BBsSy2XTopBn/8uK2HWuGSnA11C3Joo=
 github.com/go-critic/go-critic v0.4.0 h1:sXD3pix0wDemuPuSlrXpJNNYXlUiKiysLrtPVQmxkzI=
 github.com/go-critic/go-critic v0.4.0/go.mod h1:7/14rZGnZbY6E38VEGk2kVhoq6itzc1E68facVDK23g=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=

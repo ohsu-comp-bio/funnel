@@ -26,6 +26,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/gizak/termui v2.3.0+incompatible
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
+	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/go-test/deep v1.0.5
 	github.com/golang/gddo v0.0.0-20200219175727-df439dd5819e

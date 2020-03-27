@@ -4,7 +4,7 @@ RUN apk add make git bash build-base
 ENV GOPATH=/go
 ENV PATH="/go/bin:${PATH}"
 ADD ./ /go/src/github.com/ohsu-comp-bio/funnel
-RUN cd /go/src/github.com/ohsu-comp-bio/funnel && go build ./
+RUN cd /go/src/github.com/ohsu-comp-bio/funnel && make build
 
 # final stage
 FROM alpine

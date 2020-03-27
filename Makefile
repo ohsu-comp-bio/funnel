@@ -26,9 +26,14 @@ VERSION_LDFLAGS=\
 export CGO_ENABLED=0
 
 # Build the code
-install: depends
+install:
 	@touch version/version.go
-	@go install -ldflags '$(VERSION_LDFLAGS)' github.com/ohsu-comp-bio/funnel
+	@go install -ldflags '$(VERSION_LDFLAGS)' .
+
+# Build the code
+build:
+	@touch version/version.go
+	@go build -ldflags '$(VERSION_LDFLAGS)' .
 
 # Generate the protobuf/gRPC code
 proto:
@@ -48,10 +53,6 @@ proto:
 		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/tes,plugins=grpc:. \
 		--grpc-gateway_out=logtostderr=true:. \
 		events.proto
-
-# Update submodules and build code
-depends:
-	@git submodule update --init --recursive
 
 # Start API reference doc server
 serve-doc:
@@ -238,4 +239,4 @@ website-dev:
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto website docker webdash
+.PHONY: proto website docker webdash build

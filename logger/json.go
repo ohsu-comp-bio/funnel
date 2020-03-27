@@ -12,8 +12,9 @@ type jsonFormatter struct {
 func (f *jsonFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if f.fmt == nil {
 		f.fmt = &logrus.JSONFormatter{
-			DisableTimestamp: f.conf.DisableTimestamp,
-			TimestampFormat:  f.conf.TimestampFormat,
+			DisableHTMLEscape: true,
+			DisableTimestamp:  f.conf.DisableTimestamp,
+			TimestampFormat:   f.conf.TimestampFormat,
 		}
 	}
 	return f.fmt.Format(entry)

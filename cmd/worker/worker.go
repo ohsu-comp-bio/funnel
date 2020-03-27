@@ -71,7 +71,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 			}
 
 			log := logger.NewLogger("worker", conf.Logger)
-			logger.SetGRPCLogger(log)
+			logger.SetGRPCLogger(log.Sub("worker-grpc"))
 			ctx, cancel := context.WithCancel(context.Background())
 			ctx = util.SignalContext(ctx, time.Millisecond*500, syscall.SIGINT, syscall.SIGTERM)
 			defer cancel()

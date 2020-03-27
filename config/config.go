@@ -34,9 +34,11 @@ type Config struct {
 	Slurm      HPCBackend
 	PBS        HPCBackend
 	GridEngine struct {
-		Template string
+		Template     string
+		TemplateFile string
 	}
-	AWSBatch AWSBatch
+	AWSBatch   AWSBatch
+	Kubernetes Kubernetes
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage
@@ -161,7 +163,10 @@ type HPCBackend struct {
 	// ReconcileRate is how often the compute backend compares states in Funnel's backend
 	// to those reported by the backend
 	ReconcileRate Duration
-	Template      string
+	// Template is the template to use for submissions to the HPC backend
+	Template string
+	// TemplateFile is the path to the template to use for submissions to the HPC backend
+	TemplateFile string
 }
 
 // BoltDB describes the configuration for the BoltDB embedded database.
@@ -373,4 +378,26 @@ type FTPStorage struct {
 // Valid validates the FTPStorage configuration.
 func (h FTPStorage) Valid() bool {
 	return !h.Disabled
+}
+
+// Kubernetes describes the configuration for the Kubernetes compute backend.
+type Kubernetes struct {
+	// Turn off task state reconciler. When enabled, Funnel communicates with Kuberenetes
+	// to find tasks that are stuck in a queued state or errored and updates the task state
+	// accordingly.
+	DisableReconciler bool
+	// ReconcileRate is how often the compute backend compares states in Funnel's backend
+	// to those reported by the backend
+	ReconcileRate Duration
+	// Disable cleanup of complete/failed jobs. Cleanup is run during reconcile loop.
+	DisableJobCleanup bool
+	// Batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
+	Template string
+	// TemplateFile is the path to the job template.
+	TemplateFile string
+	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
+	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
+	ConfigFile string
+	// Namespace to spawn jobs within
+	Namespace string
 }

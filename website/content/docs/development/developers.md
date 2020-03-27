@@ -13,27 +13,24 @@ This page contains a rough collection of notes for people wanting to build Funne
 
 ### Building the Funnel source
 
-1. Install [Go 1.10+][go]. Check the version with `go version`.
-1. Ensure GOPATH is set. See [the docs][gopath] for help. Also, you probably want to add `$GOPATH/bin` to your `PATH`.
-1. Clone funnel into your GOPATH. 
+1. Install [Go 1.11+][go]. Check the version with `go version`.
+2. Ensure GOPATH is set. See [the docs][gopath] for help. Also, you probably want to add `$GOPATH/bin` to your `PATH`.
+3. Clone funnel and build
 
 	```shell
-	$ mkdir -p $GOPATH/src/github.com/ohsu-comp-bio/
-	$ cd $GOPATH/src/github.com/ohsu-comp-bio/
 	$ git clone https://github.com/ohsu-comp-bio/funnel.git
 	$ cd funnel
 	$ make
 	```
 	
-1. Funnel is now downloaded and installed. Try `funnel version`.
-1. `cd $GOPATH/src/github.com/ohsu-comp-bio/funnel`
-1. Now you're in the Funnel repo. You can edit the code and run `make install` to recompile.
+4. Funnel is now downloaded and installed. Try `funnel version`.
+5. You can edit the code and run `make install` to recompile.
 
 ### Developer Tools
 
 A Funnel development environment includes:
 
-- [Go 1.10+][go] for the majority of the code.
+- [Go 1.11+][go] for the majority of the code.
 - [Task Execution Schemas][tes] for task APIs.
 - [Protobuf][protobuf] + [gRPC][grpc] for RPC communication.
 - [gRPC Gateway][gateway] for HTTP communication.

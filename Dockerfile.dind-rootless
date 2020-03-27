@@ -7,11 +7,12 @@ ADD ./ /go/src/github.com/ohsu-comp-bio/funnel
 RUN cd /go/src/github.com/ohsu-comp-bio/funnel && make build
 
 # final stage
-FROM alpine
+FROM docker:stable-dind-rootless
 WORKDIR /opt/funnel
 VOLUME /opt/funnel/funnel-work-dir
 EXPOSE 8000 9090
 ENV PATH="/app:${PATH}"
 COPY --from=build-env  /go/src/github.com/ohsu-comp-bio/funnel/funnel /app/
+ADD ./deployments/kubernetes/dind-rootless/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-ENTRYPOINT ["/app/funnel"]
+ENTRYPOINT ["entrypoint.sh"]

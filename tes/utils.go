@@ -1,6 +1,8 @@
 package tes
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -21,6 +23,31 @@ func MarshalToString(t *Task) (string, error) {
 		return "", fmt.Errorf("can't marshal nil task")
 	}
 	return Marshaler.MarshalToString(t)
+}
+
+// Base64Encode encodes a task as a base64 encoded string
+func Base64Encode(t *Task) (string, error) {
+	str, err := Marshaler.MarshalToString(t)
+	if err != nil {
+		return "", err
+	}
+	str = base64.StdEncoding.EncodeToString([]byte(str))
+	return str, nil
+}
+
+// Base64Decode decodes a base64 encoded string into a task
+func Base64Decode(raw string) (*Task, error) {
+	data, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		return nil, fmt.Errorf("decoding task: %v", err)
+	}
+	task := &Task{}
+	buf := bytes.NewBuffer(data)
+	err = jsonpb.Unmarshal(buf, task)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshaling task: %v", err)
+	}
+	return task, nil
 }
 
 // ErrNotFound is returned when a task is not found.

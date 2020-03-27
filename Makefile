@@ -11,11 +11,11 @@ git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git
 export GIT_BRANCH = $(git_branch)
 export GIT_UPSTREAM = $(git_upstream)
 
-export FUNNEL_VERSION=0.9.0
+export FUNNEL_VERSION=0.10.0
 
 # LAST_PR_NUMBER is used by the release notes builder to generate notes
 # based on pull requests (PR) up until the last release.
-export LAST_PR_NUMBER = 591
+export LAST_PR_NUMBER = 605
 
 VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.BuildDate=$(shell date)" \
@@ -23,10 +23,17 @@ VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.GitBranch=$(git_branch)" \
  -X "github.com/ohsu-comp-bio/funnel/version.GitUpstream=$(git_upstream)"
 
+export CGO_ENABLED=0
+
 # Build the code
-install: depends
+install:
 	@touch version/version.go
-	@go install -ldflags '$(VERSION_LDFLAGS)' github.com/ohsu-comp-bio/funnel
+	@go install -ldflags '$(VERSION_LDFLAGS)' .
+
+# Build the code
+build:
+	@touch version/version.go
+	@go build -ldflags '$(VERSION_LDFLAGS)' .
 
 # Generate the protobuf/gRPC code
 proto:
@@ -47,12 +54,6 @@ proto:
 		--grpc-gateway_out=logtostderr=true:. \
 		events.proto
 
-# Update submodules and build code
-depends:
-	@git submodule update --init --recursive
-	@go get github.com/golang/dep/cmd/dep
-	@dep ensure
-
 # Start API reference doc server
 serve-doc:
 	@go get golang.org/x/tools/cmd/godoc
@@ -64,18 +65,19 @@ tidy:
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs goimports -w
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
+lint-depends:
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.22.2
+
 # Run code style and other checks
 lint:
-	@go get github.com/alecthomas/gometalinter
-	@gometalinter --install > /dev/null
-	@# TODO enable golint on funnel/cmd/termdash
-	@gometalinter --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
-		--vendor \
+	@golangci-lint run --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
+		--skip-dirs "vendor" \
+		--skip-dirs "webdash" \
+		--skip-dirs "cmd/webdash" \
+		--skip-dirs "funnel-work-dir" \
 		-e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
-		-s "cmd/termdash" \
-		-e 'webdash/web.go' -s 'funnel-work-dir' \
 		./...
-	@gometalinter --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell --vendor ./cmd/termdash/...
+	@golangci-lint run --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell ./cmd/termdash/...
 
 # Run all tests
 test:
@@ -116,7 +118,7 @@ start-datastore:
 
 test-datastore:
 	DATASTORE_EMULATOR_HOST=localhost:12432 \
-	  go test ./tests/core/ -funnel-config `pwd`/tests/datastore.config.yml
+	go test ./tests/core/ -funnel-config `pwd`/tests/datastore.config.yml
 
 start-kafka:
 	@docker rm -f funnel-kafka > /dev/null 2>&1 || echo
@@ -168,7 +170,7 @@ start-pubsub:
 
 test-pubsub:
 	@PUBSUB_EMULATOR_HOST=localhost:8085 \
-	  go test ./tests/pubsub/ -funnel-config `pwd`/tests/pubsub.config.yml
+	go test ./tests/pubsub/ -funnel-config `pwd`/tests/pubsub.config.yml
 
 start-ftp:
 	@cd tests/ftp-test-server/ && ./start-server.sh
@@ -191,6 +193,14 @@ snapshot: depends
 # build a docker container locally
 docker:
 	docker build -t ohsucompbio/funnel:latest ./
+
+# build a docker container that supports docker-in-docker
+docker-dind:
+	docker build -t ohsucompbio/funnel-dind:latest -f Dockerfile.dind .
+
+# build a docker container that supports rootless docker-in-docker
+docker-dind-rootless:
+	docker build -t ohsucompbio/funnel-dind-rootless:latest -f Dockerfile.dind-rootless .
 
 release:
 	@go get github.com/buchanae/github-release-notes
@@ -229,4 +239,4 @@ website-dev:
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto website docker webdash
+.PHONY: proto website docker webdash build

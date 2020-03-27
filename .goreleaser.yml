@@ -26,13 +26,6 @@ archives:
   - format: tar.gz
     name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
 
-dockers:
-  - goos: linux
-    goarch: amd64
-    image_templates:
-      - "ohsucompbio/funnel:{{.Version}}"
-    dockerfile: ./docker/Dockerfile
-
 brews:
   - github:
       owner: ohsu-comp-bio

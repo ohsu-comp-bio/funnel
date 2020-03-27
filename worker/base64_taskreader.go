@@ -1,12 +1,9 @@
 package worker
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -17,16 +14,9 @@ type Base64TaskReader struct {
 
 // NewBase64TaskReader creates a new Base64TaskReader.
 func NewBase64TaskReader(raw string) (*Base64TaskReader, error) {
-	data, err := base64.StdEncoding.DecodeString(raw)
+	task, err := tes.Base64Decode(raw)
 	if err != nil {
-		return nil, fmt.Errorf("decoding task: %v", err)
-	}
-
-	task := &tes.Task{}
-	buf := bytes.NewBuffer(data)
-	err = jsonpb.Unmarshal(buf, task)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling task: %v", err)
+		return nil, err
 	}
 
 	err = tes.InitTask(task, false)

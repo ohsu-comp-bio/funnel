@@ -22,14 +22,12 @@ brew install funnel
 
 In order to build the latest code, run:
 ```shell
-$ mkdir -p $GOPATH/src/github.com/ohsu-comp-bio/
-$ cd $GOPATH/src/github.com/ohsu-comp-bio/
 $ git clone https://github.com/ohsu-comp-bio/funnel.git
 $ cd funnel
 $ make
 ```
 
-Funnel requires Go 1.10+. Check out the [development docs][dev] for more detail.
+Funnel requires Go 1.11+. Check out the [development docs][dev] for more detail.
 
 ### Release History
 

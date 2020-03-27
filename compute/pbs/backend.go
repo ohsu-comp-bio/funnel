@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"time"
 
@@ -16,7 +17,15 @@ import (
 )
 
 // NewBackend returns a new PBS (Portable Batch System) HPCBackend instance.
-func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) *compute.HPCBackend {
+func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*compute.HPCBackend, error) {
+	if conf.PBS.TemplateFile != "" {
+		content, err := ioutil.ReadFile(conf.PBS.TemplateFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading template: %v", err)
+		}
+		conf.PBS.Template = string(content)
+	}
+
 	b := &compute.HPCBackend{
 		Name:          "pbs",
 		SubmitCmd:     "qsub",
@@ -35,7 +44,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		go b.Reconcile(ctx)
 	}
 
-	return b
+	return b, nil
 }
 
 // extractID extracts the task id from the response returned by the `qsub` command.

@@ -2,6 +2,8 @@
 package gridengine
 
 import (
+	"fmt"
+	"io/ioutil"
 	"regexp"
 
 	"github.com/ohsu-comp-bio/funnel/compute"
@@ -12,7 +14,15 @@ import (
 )
 
 // NewBackend returns a new Grid Engine HPCBackend instance.
-func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) *compute.HPCBackend {
+func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*compute.HPCBackend, error) {
+	if conf.GridEngine.TemplateFile != "" {
+		content, err := ioutil.ReadFile(conf.GridEngine.TemplateFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading template: %v", err)
+		}
+		conf.GridEngine.Template = string(content)
+	}
+
 	return &compute.HPCBackend{
 		Name:      "gridengine",
 		SubmitCmd: "qsub",
@@ -26,7 +36,7 @@ func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Wri
 		// grid engine backend doesnt support state reconciliation
 		MapStates:     nil,
 		ReconcileRate: 0,
-	}
+	}, nil
 }
 
 // extractID extracts the task id from the response returned by the `qsub` command.

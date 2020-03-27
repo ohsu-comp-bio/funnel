@@ -3,7 +3,7 @@ package badger
 import (
 	"fmt"
 
-	"github.com/dgraph-io/badger"
+	badger "github.com/dgraph-io/badger/v2"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
@@ -19,9 +19,7 @@ func NewBadger(conf config.Badger) (*Badger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating database directory: %s", err)
 	}
-	opts := badger.DefaultOptions
-	opts.Dir = conf.Path
-	opts.ValueDir = conf.Path
+	opts := badger.DefaultOptions(conf.Path)
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %s", err)

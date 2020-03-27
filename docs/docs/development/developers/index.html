@@ -377,11 +377,6 @@ Run the worker tests with &ldquo;Cancel&rdquo; in the name: <code>go test ./work
 <h3 id="mocking">Mocking</h3>
 <p>The <a href="https://github.com/stretchr/testify">testify</a> and <a href="https://github.com/vektra/mockery">mockery</a> tools are used to generate and use
 mock interfaces in test code, for example, to mock the Google Cloud APIs.</p>
-<h3 id="vendoring">Vendoring</h3>
-<p>Go dependencies are vendored using <a href="https://golang.github.io/dep/">dep</a>. Run <code>dep ensure</code> to add/prune dependencies.</p>
-<h3 id="submodules">Submodules</h3>
-<p>Funnel has git submodules. The Makefile usually handles this for you, but if needed,
-<code>git submodule update --init --recursive</code> will get all the submodules.</p>
 <h3 id="making-a-release">Making a release</h3>
 <ul>
 <li>Update Makefile, edit <code>FUNNEL_VERSION</code> and <code>LAST_PR_NUMBER</code>
@@ -406,13 +401,12 @@ from the previous release.</li>
 <ul>
 <li>This will build cross-platform binaries, build release notes,
 and draft an unpublished GitHub release.</li>
-<li>This also builds a docker container and pushes to Docker Hub.
-This does <strong>not</strong> update the &ldquo;latest&rdquo; tag.</li>
 <li>Check the built artifacts by downloading the tarballs from the GitHub draft release
 and running <code>funnel version</code>.</li>
 </ul>
 </li>
 <li><code>git push origin master</code> to push your website and release changes.</li>
+<li>A tagged docker image for the release will be built automatically on <a href="https://hub.docker.com/repository/docker/ohsucompbio/funnel">dockerhub</a>.</li>
 <li>Publish the draft release on GitHub.</li>
 <li>Copy <code>build/release/funnel.rb</code> to the <code>ohsu-comp-bio/homebrew-formula/Formula/funnel.rb</code> Homebrew formula repo, and push those changes to master.</li>
 </ul>

@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,15 +329,10 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="dynamodb">DynamoDB</h1>
-
+    <h1 id="dynamodb">DynamoDB</h1>
 <p>Funnel supports storing task data in DynamoDB. Storing scheduler data is not supported currently, so using the node scheduler with DynamoDB won&rsquo;t work. Using AWS Batch for compute scheduling may be a better option.
 Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.</p>
-
 <p>Available Config:</p>
-
 <pre><code>Database: dynamodb
 
 DynamoDB:
@@ -340,10 +344,7 @@ DynamoDB:
   Key: &quot;&quot;
   # AWS Secret Access Key
   Secret: &quot;&quot;
-</code></pre>
-
-<h3 id="known-issues">Known issues</h3>
-
+</code></pre><h3 id="known-issues">Known issues</h3>
 <p>Dynamo does not store scheduler data. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/340">issue 340</a>.</p>
 
   </div>

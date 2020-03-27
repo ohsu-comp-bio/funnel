@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,17 +329,12 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="prometheus">Prometheus</h1>
-
+    <h1 id="prometheus">Prometheus</h1>
 <p><a href="https://prometheus.io/">Prometheus</a> is a monitoring and metrics collection service. It pulls metrics
 from various &ldquo;exporters&rdquo;, collects them in a time-series database, provides
 a query langauge for access that data, and integrates closely with tools
 such as <a href="https://grafana.com/">Grafana</a> for visualization and dashboard building.</p>
-
 <p>Funnel exports these metrics:</p>
-
 <ul>
 <li><code>funnel_tasks_state_count</code>: the number of tasks
 in each state (queued, running, etc).</li>

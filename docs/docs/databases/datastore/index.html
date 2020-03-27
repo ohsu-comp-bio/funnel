@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,22 +329,14 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="google-cloud-datastore">Google Cloud Datastore</h1>
-
+    <h1 id="google-cloud-datastore">Google Cloud Datastore</h1>
 <p>Funnel supports storing tasks (but not scheduler data) in Google Cloud Datastore.</p>
-
 <p>This implementation currently doesn&rsquo;t work with Appengine, since Appengine places
 special requirements on the context of requests and requires a separate library.</p>
-
 <p>Two entity types are used, &ldquo;Task&rdquo; and &ldquo;TaskPart&rdquo; (for larger pieces of task content,
 such as stdout/err logs).</p>
-
 <p>Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.</p>
-
 <p>Config:</p>
-
 <pre><code>Database: datastore
 
 Datastore:
@@ -345,7 +346,6 @@ Datastore:
   # from the environment.
   CredentialsFile: &quot;&quot;
 </code></pre>
-
   </div>
 
 </div>

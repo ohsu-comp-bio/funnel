@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,25 +329,17 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="http-s">HTTP(S)</h1>
-
+    <h1 id="https">HTTP(S)</h1>
 <p>Funnel supports downloading files from public URLs via GET requests. No authentication
 mechanism is allowed. This backend can be used to fetch objects from cloud storage
 providers exposed using presigned URLs.</p>
-
 <p>The HTTP storage client is enabled by default, but may be explicitly disabled in the
 worker config:</p>
-
 <pre><code>HTTPStorage:
   Disabled: false
   # Timeout for http(s) GET requests.
   Timeout: 30s
-</code></pre>
-
-<h3 id="example-task">Example task</h3>
-
+</code></pre><h3 id="example-task">Example task</h3>
 <pre><code>{
   &quot;name&quot;: &quot;Hello world&quot;,
   &quot;inputs&quot;: [{
@@ -351,7 +352,6 @@ worker config:</p>
   }]
 }
 </code></pre>
-
   </div>
 
 </div>

@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,40 +329,34 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="developers">Developers</h1>
-
+    <h1 id="developers">Developers</h1>
 <p>This page contains a rough collection of notes for people wanting to build Funnel from source and/or edit the code.</p>
-
 <h3 id="building-the-funnel-source">Building the Funnel source</h3>
-
 <ol>
-<li>Install <a href="https://golang.org">Go 1.10+</a>. Check the version with <code>go version</code>.</li>
-<li>Ensure GOPATH is set. See <a href="https://golang.org/doc/code.html#GOPATH">the docs</a> for help. Also, you probably want to add <code>$GOPATH/bin</code> to your <code>PATH</code>.</li>
-
-<li><p>Clone funnel into your GOPATH.</p>
-
-<pre><code class="language-shell">$ mkdir -p $GOPATH/src/github.com/ohsu-comp-bio/
-$ cd $GOPATH/src/github.com/ohsu-comp-bio/
-$ git clone https://github.com/ohsu-comp-bio/funnel.git
+<li>
+<p>Install <a href="https://golang.org">Go 1.11+</a>. Check the version with <code>go version</code>.</p>
+</li>
+<li>
+<p>Ensure GOPATH is set. See <a href="https://golang.org/doc/code.html#GOPATH">the docs</a> for help. Also, you probably want to add <code>$GOPATH/bin</code> to your <code>PATH</code>.</p>
+</li>
+<li>
+<p>Clone funnel and build</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ git clone https://github.com/ohsu-comp-bio/funnel.git
 $ cd funnel
 $ make
-</code></pre></li>
-
-<li><p>Funnel is now downloaded and installed. Try <code>funnel version</code>.</p></li>
-
-<li><p><code>cd $GOPATH/src/github.com/ohsu-comp-bio/funnel</code></p></li>
-
-<li><p>Now you&rsquo;re in the Funnel repo. You can edit the code and run <code>make install</code> to recompile.</p></li>
+</code></pre></div><p>``</p>
+</li>
+<li>
+<p>Funnel is now downloaded and installed. Try <code>funnel version</code>.</p>
+</li>
+<li>
+<p>You can edit the code and run <code>make install</code> to recompile.</p>
+</li>
 </ol>
-
 <h3 id="developer-tools">Developer Tools</h3>
-
 <p>A Funnel development environment includes:</p>
-
 <ul>
-<li><a href="https://golang.org">Go 1.10+</a> for the majority of the code.</li>
+<li><a href="https://golang.org">Go 1.11+</a> for the majority of the code.</li>
 <li><a href="https://github.com/ga4gh/task-execution-schemas">Task Execution Schemas</a> for task APIs.</li>
 <li><a href="https://github.com/google/protobuf">Protobuf</a> + <a href="http://www.grpc.io/">gRPC</a> for RPC communication.</li>
 <li><a href="https://github.com/grpc-ecosystem/grpc-gateway">gRPC Gateway</a> for HTTP communication.</li>
@@ -364,56 +367,42 @@ $ make
 <li><a href="https://www.gnu.org/software/make/">Make</a> for development/build commands.</li>
 <li><a href="https://nodejs.org">NodeJS</a> and <a href="https://www.npmjs.com/">NPM</a> for web dashboard development.</li>
 </ul>
-
 <h3 id="makefile">Makefile</h3>
-
 <p>Most development tasks are run through <code>make</code> commands, including build, release, testing, website docs, lint, tidy, webdash dev, and more.  See the <a href="https://github.com/ohsu-comp-bio/funnel/blob/master/Makefile">Makefile</a> for an up-to-date list of commands.</p>
-
 <h3 id="go-tests">Go Tests</h3>
-
-<p>Run all tests: <code>make test</code><br />
-Run the worker tests: <code>go test ./worker/...</code><br />
+<p>Run all tests: <code>make test</code><br>
+Run the worker tests: <code>go test ./worker/...</code><br>
 Run the worker tests with &ldquo;Cancel&rdquo; in the name: <code>go test ./worker -run Cancel</code></p>
-
 <p>You get the idea. See the <code>go test</code> docs for more.</p>
-
 <h3 id="mocking">Mocking</h3>
-
 <p>The <a href="https://github.com/stretchr/testify">testify</a> and <a href="https://github.com/vektra/mockery">mockery</a> tools are used to generate and use
 mock interfaces in test code, for example, to mock the Google Cloud APIs.</p>
-
 <h3 id="vendoring">Vendoring</h3>
-
 <p>Go dependencies are vendored using <a href="https://golang.github.io/dep/">dep</a>. Run <code>dep ensure</code> to add/prune dependencies.</p>
-
 <h3 id="submodules">Submodules</h3>
-
 <p>Funnel has git submodules. The Makefile usually handles this for you, but if needed,
 <code>git submodule update --init --recursive</code> will get all the submodules.</p>
-
 <h3 id="making-a-release">Making a release</h3>
-
 <ul>
 <li>Update Makefile, edit <code>FUNNEL_VERSION</code> and <code>LAST_PR_NUMBER</code>
-
 <ul>
 <li><code>LAST_PR_NUMBER</code> can be found by looking at the previous release notes
 from the previous release.</li>
-</ul></li>
+</ul>
+</li>
 <li>Run <code>make website</code>, which updates the download links and other content.
-
 <ul>
 <li>Check the website locally by running <code>make website-dev</code></li>
-</ul></li>
+</ul>
+</li>
 <li>Commit these changes.
-
 <ul>
 <li>Because goreleaser requires a clean working tree in git</li>
 <li>This is a special case where it&rsquo;s easiest to commit to master.</li>
-</ul></li>
+</ul>
+</li>
 <li>Create a git tag: <code>git tag X.Y.Z</code></li>
 <li>Run <code>make release</code>
-
 <ul>
 <li>This will build cross-platform binaries, build release notes,
 and draft an unpublished GitHub release.</li>
@@ -421,7 +410,8 @@ and draft an unpublished GitHub release.</li>
 This does <strong>not</strong> update the &ldquo;latest&rdquo; tag.</li>
 <li>Check the built artifacts by downloading the tarballs from the GitHub draft release
 and running <code>funnel version</code>.</li>
-</ul></li>
+</ul>
+</li>
 <li><code>git push origin master</code> to push your website and release changes.</li>
 <li>Publish the draft release on GitHub.</li>
 <li>Copy <code>build/release/funnel.rb</code> to the <code>ohsu-comp-bio/homebrew-formula/Formula/funnel.rb</code> Homebrew formula repo, and push those changes to master.</li>

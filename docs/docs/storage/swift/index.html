@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,16 +329,11 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="openstack-swift">OpenStack Swift</h1>
-
+    <h1 id="openstack-swift">OpenStack Swift</h1>
 <p>Funnel supports using <a href="https://docs.openstack.org/swift/latest/">OpenStack Swift</a> for file storage.</p>
-
 <p>The Swift storage client is enabled by default, and will try to automatically
 load credentials from the environment. Alternatively, you
 may explicitly set the credentials in the worker config:</p>
-
 <pre><code>Swift:
   Disabled: false
   UserName: &quot;&quot;
@@ -340,10 +344,7 @@ may explicitly set the credentials in the worker config:</p>
   RegionName: &quot;&quot;
   # 500 MB
   ChunkSizeBytes: 500000000
-</code></pre>
-
-<h3 id="example-task">Example task</h3>
-
+</code></pre><h3 id="example-task">Example task</h3>
 <pre><code>{
   &quot;name&quot;: &quot;Hello world&quot;,
   &quot;inputs&quot;: [{
@@ -360,10 +361,7 @@ may explicitly set the credentials in the worker config:</p>
     &quot;stdout&quot;: &quot;/outputs/hello-out.txt&quot;,
   }]
 }
-</code></pre>
-
-<h3 id="known-issues">Known Issues:</h3>
-
+</code></pre><h3 id="known-issues">Known Issues:</h3>
 <p>The config currently only supports OpenStack v2 auth. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/336">issue #336</a>.</p>
 
   </div>

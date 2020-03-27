@@ -58,7 +58,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log := logger.NewLogger("node", conf.Logger)
-			logger.SetGRPCLogger(log)
+			logger.SetGRPCLogger(log.Sub("node-grpc"))
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			return hooks.Run(ctx, conf, log)

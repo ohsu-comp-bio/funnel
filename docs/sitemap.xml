@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
@@ -16,7 +16,6 @@
   
   <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/categories/</loc>
-    <priority>0</priority>
   </url>
   
   <url>
@@ -41,7 +40,6 @@
   
   <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/</loc>
-    <priority>0</priority>
   </url>
   
   <url>
@@ -93,6 +91,10 @@
   </url>
   
   <url>
+    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/</loc>
+  </url>
+  
+  <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/local/</loc>
   </url>
   
@@ -138,7 +140,6 @@
   
   <url>
     <loc>https://ohsu-comp-bio.github.io/funnel/tags/</loc>
-    <priority>0</priority>
   </url>
   
   <url>

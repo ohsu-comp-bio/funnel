@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,13 +329,9 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="kafka">Kafka</h1>
-
+    <h1 id="kafka">Kafka</h1>
 <p>Funnel supports writing task events to a Kafka topic. To use this, add an event
 writer to the config:</p>
-
 <pre><code>EventWriters:
   - kafka
   - log
@@ -336,7 +341,6 @@ Kafka:
     - localhost:9092
   Topic: funnel-events
 </code></pre>
-
   </div>
 
 </div>

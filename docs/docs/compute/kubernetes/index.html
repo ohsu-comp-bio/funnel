@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
   
-  <title>Deploying a cluster &middot; Funnel</title>
+  <title>Kubernetes &middot; Funnel</title>
   
 
   
@@ -143,7 +143,7 @@
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/"
-                   class="sidebar-nav-item  active"
+                   class="sidebar-nav-item "
                 >Deploying a cluster</a></li>
             </ul>
           </li>
@@ -179,7 +179,7 @@
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
-                   class="sidebar-nav-item "
+                   class="sidebar-nav-item  active"
                 >Kubernetes</a></li>
             </ul>
           </li>
@@ -329,66 +329,220 @@
   </div>
 
   <div class="main col span_8_of_12">
-    <h1 id="deploying-a-cluster">Deploying a cluster</h1>
-<p>This guide describes the basics of starting a cluster of Funnel nodes.
-This guide is a work in progress.</p>
-<p>A node is a service
-which runs on each machine in a cluster. The node connects to the Funnel server and reports
-available resources. The Funnel scheduler process assigns tasks to nodes. When a task is
-assigned, a node will start a worker process. There is one worker process per task.</p>
-<p>Nodes aren&rsquo;t always required. In some cases it makes sense to rely on an existing,
-external system for scheduling tasks and managing cluster resources, such as AWS Batch,
-HTCondor, Slurm, Grid Engine, etc. Funnel provides integration with
-these services without using nodes or the scheduler.</p>
-<h3 id="usage">Usage</h3>
-<p>Nodes are available via the <code>funnel node</code> command. To start a node, run</p>
-<pre><code>funnel node run --config node.config.yml
-</code></pre><p>To activate the Funnel scheduler, use the <code>manual</code> backend in the config.</p>
-<p>The available scheduler and node config:</p>
-<pre><code># Activate the Funnel scheduler.
-Compute: manual
+    <h1 id="kubernetes">Kubernetes</h1>
+<p>This guide will take you through the process of setting up Funnel as a kubernetes service.</p>
+<p>Kuberenetes Resources:</p>
+<ul>
+<li><a href="https://kubernetes.io/docs/concepts/services-networking/service/">Service</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/">Deployment</a></li>
+<li><a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/">ConfigMap</a></li>
+<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings">Roles and RoleBindings</a></li>
+<li><a href="https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/">Job</a></li>
+</ul>
+<p>Additional Funnel deployment resources can be found here: <a href="https://github.com/ohsu-comp-bio/funnel/tree/kube/deployments/kubernetes">https://github.com/ohsu-comp-bio/funnel/tree/kube/deployments/kubernetes</a></p>
+<h4 id="create-a-service">Create a Service:</h4>
+<p><em>funnel-service.yml</em></p>
+<pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: funnel
+spec:
+  selector:
+    app: funnel
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: rpc
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
 
-Scheduler:
-  # How often to run a scheduler iteration.
-  ScheduleRate: 1s
+</code></pre><p>Deploy it:</p>
+<pre><code>kubectl apply -f funnel-service.yml
+</code></pre><p>Get the clusterIP:</p>
+<pre><code>kubectl get services funnel --output=yaml | grep clusterIP
+</code></pre><p>Use this value to configure the server hostname of the worker config.</p>
+<h4 id="create-funnel-config-files">Create Funnel config files</h4>
+<p><em>Note</em>: The configures job template uses the image, <code>ohsucompbio/funnel-dind:latest</code>, which is built on docker&rsquo;s official <a href="https://hub.docker.com/_/docker">docker-in-docker image (dind)</a>. You can also use the experimental <a href="https://docs.docker.com/engine/security/rootless/">rootless dind variant</a> by changing the image to <code>ohsucompbio/funnel-dind-rootless:latest</code>.</p>
+<p><em>funnel-server-config.yml</em></p>
+<pre><code>Database: boltdb
 
-  # How many tasks to schedule in one iteration.
-  ScheduleChunk: 10
-
-  # How long to wait between updates before marking a node dead.
-  NodePingTimeout: 1m
-
-  # How long to wait for a node to start, before marking the node dead.
-  NodeInitTimeout: 5m
-
-
-Node:
-  # If empty, a node ID will be automatically generated using the hostname.
-  ID: &quot;&quot;
-
-  # If the node has been idle for longer than the timeout, it will shut down.
-  # -1 means there is no timeout. 0 means timeout immediately after the first task.
-  Timeout: -1s
-
-  # A Node will automatically try to detect what resources are available to it. 
-  # Defining Resources in the Node configuration overrides this behavior.
-  Resources:
-    # CPUs available.
-    # Cpus: 0
-    # RAM available, in GB.
-    # RamGb: 0.0
-    # Disk space available, in GB.
-    # DiskGb: 0.0
-
-  # For low-level tuning.
-  # How often to sync with the Funnel server.
-  UpdateRate: 5s
+Compute: kubernetes
 
 Logger:
-  # Logging levels: debug, info, error
-  Level: info
-  # Write logs to this path. If empty, logs are written to stderr.
-  OutputFile: &quot;&quot;
+  Level: debug
+
+Kubernetes:
+  DisableJobCleanup: false
+  DisableReconciler: false
+  ReconcileRate: 5m
+  Namespace: default
+  Template: | 
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      ## DO NOT CHANGE NAME
+      name: {{.TaskId}}
+      namespace: {{.Namespace}}
+    spec: 
+      backoffLimit: 0
+      completions: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers: 
+            - name: {{printf &quot;funnel-worker-%s&quot; .TaskId}}
+              image: ohsucompbio/funnel-dind:latest
+              imagePullPolicy: IfNotPresent
+              args:
+                - &quot;funnel&quot;
+                - &quot;worker&quot;
+                - &quot;run&quot;
+                - &quot;--config&quot;
+                - &quot;/etc/config/funnel-worker-config.yml&quot;
+                - &quot;--taskID&quot;
+                - {{.TaskId}}
+              resources:
+                  requests:
+                    cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{&quot;100m&quot;}}{{end}}
+                    memory: {{if ne .RamGb 0.0 -}}{{printf &quot;%.0fG&quot; .RamGb}}{{else}}{{&quot;16M&quot;}}{{end}}
+                    ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf &quot;%.0fG&quot; .DiskGb}}{{else}}{{&quot;100M&quot;}}{{end}}
+              volumeMounts:
+                - name: {{printf &quot;funnel-storage-%s&quot; .TaskId}}
+                  mountPath: {{printf &quot;/opt/funnel/funnel-work-dir/%s&quot; .TaskId}}
+                - name: config-volume
+                  mountPath: /etc/config
+
+              securityContext:
+                privileged: true
+    
+          volumes: 
+            - name: {{printf &quot;funnel-storage-%s&quot; .TaskId}}
+              emptyDir: {}
+            - name: config-volume
+              configMap:
+                name: funnel-config
+</code></pre><p>I recommend setting <code>DisableJobCleanup</code> to <code>true</code> for debugging - otherwise failed jobs will be cleanup up.</p>
+<p><em>funnel-worker-config.yml</em></p>
+<p><em><strong>Remember to modify the template below to have the actual server hostname.</strong></em></p>
+<pre><code>Database: boltdb
+
+BoltDB:
+  Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
+
+Compute: kubernetes
+
+Logger:
+  Level: debug
+
+RPCClient:
+  MaxRetries: 3
+  Timeout: 30s
+
+EventWriters:
+  - rpc
+  - log
+
+Server:
+  HostName: &lt; funnel service clusterIP &gt;
+  RPCPort: 9090
+</code></pre><h4 id="create-a-configmap">Create a ConfigMap</h4>
+<pre><code>kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+</code></pre><h4 id="create-a-service-account-for-funnel">Create a Service Account for Funnel</h4>
+<p>Define a Role and RoleBinding:</p>
+<p><em>role.yml</em></p>
+<pre><code>kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: funnel-role
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+- apiGroups: [&quot;batch&quot;, &quot;extensions&quot;]
+  resources: [&quot;jobs&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]
+- apiGroups: [&quot;extensions&quot;, &quot;apps&quot;]
+  resources: [&quot;deployments&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]
+</code></pre><p><em>role_binding.yml</em></p>
+<pre><code>kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: funnel-rolebinding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: funnel-sa
+roleRef:
+  kind: Role
+  name: funnel-role
+  apiGroup: rbac.authorization.k8s.io
+</code></pre><p>Create the service account, role and role binding:</p>
+<pre><code>kubectl create serviceaccount funnel-sa --namespace default
+kubectl create -f role.yml
+kubectl create -f role_binding.yml
+</code></pre><h4 id="create-a-deployment">Create a Deployment</h4>
+<p><em>funnel-deployment.yml</em></p>
+<pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: funnel
+  labels:
+    app: funnel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: funnel
+  template:
+    metadata:
+      labels:
+        app: funnel
+    spec:
+      serviceAccountName: funnel-sa
+      containers:
+        - name: funnel
+          image: ohsucompbio/funnel:latest
+          imagePullPolicy: IfNotPresent
+          command: 
+            - 'funnel'
+            - 'server'
+            - 'run'
+            - '--config'
+            - '/etc/config/funnel-server-config.yml'
+          resources: 
+            requests: 
+              cpu: 2 
+              memory: 4G
+              ephemeral-storage: 25G # needed since we are using boltdb
+          volumeMounts:
+            - name: funnel-deployment-storage
+              mountPath: /opt/funnel/funnel-work-dir
+            - name: config-volume
+              mountPath: /etc/config
+          ports:
+            - containerPort: 8000
+            - containerPort: 9090
+
+      volumes:
+        - name: funnel-deployment-storage
+          emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: funnel-config
+</code></pre><p>Deploy it:</p>
+<pre><code>kubectl apply -f funnel-deployment.yml
+</code></pre><h4 id="proxy-the-service-for-local-testing">Proxy the Service for local testing</h4>
+<pre><code>kubectl port-forward service/funnel 8000:8000
+</code></pre><p>Now you can access the funnel server locally. Verify by running:</p>
+<pre><code>funnel task list
+</code></pre><p>Now try running a task:</p>
+<pre><code>funnel examples hello-world &gt; hello.json
+funnel task create hello.json
 </code></pre>
   </div>
 

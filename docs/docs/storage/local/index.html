@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,29 +329,19 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="local">Local</h1>
-
+    <h1 id="local">Local</h1>
 <p>Funnel supports using the local filesystem for file storage.</p>
-
 <p>Funnel limits which directories may be accessed, by default only allowing directories
 under the current working directory of the Funnel worker.</p>
-
 <p>Config:</p>
-
 <pre><code>LocalStorage:
   # Whitelist of local directory paths which Funnel is allowed to access.
   AllowedDirs:
     - ./
     - /path/to/allowed/dir
     - ...etc
-</code></pre>
-
-<h3 id="example-task">Example task</h3>
-
+</code></pre><h3 id="example-task">Example task</h3>
 <p>Files must be absolute paths in <code>file:///path/to/file.txt</code> URL form.</p>
-
 <pre><code>{
   &quot;name&quot;: &quot;Hello world&quot;,
   &quot;inputs&quot;: [{
@@ -359,18 +358,13 @@ under the current working directory of the Funnel worker.</p>
     &quot;stdout&quot;: &quot;/outputs/hello-out.txt&quot;,
   }]
 }
-</code></pre>
-
-<h3 id="file-hard-linking-behavior">File hard linking behavior</h3>
-
+</code></pre><h3 id="file-hard-linking-behavior">File hard linking behavior</h3>
 <p>For efficiency, Funnel will attempt not to copy the input files, instead trying
 create a hard link to the source file. In some cases this isn&rsquo;t possible. For example,
 if the source file is on a network file system mount (e.g. NFS) but the Funnel worker&rsquo;s
 working directory is on the local scratch disk, a hard link would cross a file system
 boundary, which is not possible. In this case, Funnel will copy the file.</p>
-
 <h3 id="file-ownership-behavior">File ownership behavior</h3>
-
 <p>One difficult area of files and Docker containers is file owner/group management.
 If a Docker container runs as root, it&rsquo;s likely that the file will end up being owned
 by root on the host system. In this case, some step (Funnel or another task) will

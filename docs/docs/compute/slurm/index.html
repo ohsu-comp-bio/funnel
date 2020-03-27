@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,21 +329,15 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="slurm">Slurm</h1>
-
+    <h1 id="slurm">Slurm</h1>
 <p>Funnel can be configured to submit workers to <a href="https://slurm.schedmd.com/">Slurm</a> by making calls
 to <code>sbatch</code>.</p>
-
 <p>The Funnel server needs to run on a submission node.
 Configure Funnel to use Slurm by including the following config:</p>
-
 <p>It is recommended to update the submit file template so that the
 <code>funnel worker run</code> command takes a config file as an argument
 (e.g. <code>funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}</code>)</p>
-
-<pre><code class="language-YAML">Compute: slurm
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-YAML" data-lang="YAML">Compute: slurm
 
 Slurm:
     Template: |<p style="margin-left: 3em">#!/bin/bash
@@ -355,10 +358,7 @@ Slurm:
 funnel worker run --taskID {{.TaskId}}
 </p>
 
-</code></pre>
-
-<p>The following variables are available for use in the template:</p>
-
+</code></pre></div><p>The following variables are available for use in the template:</p>
 <table>
 <thead>
 <tr>
@@ -366,40 +366,33 @@ funnel worker run --taskID {{.TaskId}}
 <th align="left">Description</th>
 </tr>
 </thead>
-
 <tbody>
 <tr>
 <td align="left">TaskId</td>
 <td align="left">funnel task id</td>
 </tr>
-
 <tr>
 <td align="left">WorkDir</td>
 <td align="left">funnel working directory</td>
 </tr>
-
 <tr>
 <td align="left">Cpus</td>
 <td align="left">requested cpu cores</td>
 </tr>
-
 <tr>
 <td align="left">RamGb</td>
 <td align="left">requested ram</td>
 </tr>
-
 <tr>
 <td align="left">DiskGb</td>
 <td align="left">requested free disk space</td>
 </tr>
-
 <tr>
 <td align="left">Zone</td>
 <td align="left">requested zone (could be used for queue name)</td>
 </tr>
 </tbody>
 </table>
-
 <p>See <a href="https://golang.org/pkg/text/template">https://golang.org/pkg/text/template</a> for information on creating templates.</p>
 
   </div>

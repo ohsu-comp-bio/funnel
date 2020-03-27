@@ -178,6 +178,15 @@
           <li>
             <ul class="sidebar-nav sidebar-nav-nested">
               <li>
+                <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/"
+                   class="sidebar-nav-item "
+                >Kubernetes</a></li>
+            </ul>
+          </li>
+          
+          <li>
+            <ul class="sidebar-nav sidebar-nav-nested">
+              <li>
                 <a href="https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/"
                    class="sidebar-nav-item "
                 >PBS/Torque</a></li>
@@ -320,12 +329,8 @@
   </div>
 
   <div class="main col span_8_of_12">
-    
-
-<h1 id="tasks">Tasks</h1>
-
+    <h1 id="tasks">Tasks</h1>
 <p>A task defines a unit of work:</p>
-
 <ul>
 <li>metadata</li>
 <li>input files to download</li>
@@ -334,9 +339,7 @@
 <li>state</li>
 <li>logs</li>
 </ul>
-
 <p>The example task below downloads a file named <code>hello.txt</code> from S3 and calls <code>cat hello.txt</code> using the <a href="https://hub.docker.com/_/alpine/">alpine</a> container. This task also writes the executor&rsquo;s stdout to a file, and uploads the stdout to s3.</p>
-
 <pre><code>{
   &quot;name&quot;: &quot;Hello world&quot;,
   &quot;inputs&quot;: [{
@@ -360,65 +363,55 @@
       &quot;stdout&quot;: &quot;/outputs/stdout&quot;
   }]
 }
-</code></pre>
-
-<p>Tasks have multiple &ldquo;executors&rdquo;; containers and commands run in a sequence.
+</code></pre><p>Tasks have multiple &ldquo;executors&rdquo;; containers and commands run in a sequence.
 Funnel runs executors via Docker.</p>
-
 <p>Tasks also have state and logs:</p>
-
-<pre><code class="language-JSON">{
-  &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
-  &quot;state&quot;: &quot;COMPLETE&quot;,
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JSON" data-lang="JSON">{
+  <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;b85khc2rl6qkqbhg8vig&#34;</span>,
+  <span style="color:#f92672">&#34;state&#34;</span>: <span style="color:#e6db74">&#34;COMPLETE&#34;</span>,
+  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Hello world&#34;</span>,
+  <span style="color:#f92672">&#34;inputs&#34;</span>: [
     {
-      &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
-      &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+      <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;s3://funnel-bucket/hello.txt&#34;</span>,
+      <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/inputs/hello.txt&#34;</span>
     }
   ],
-  &quot;outputs&quot;: [
+  <span style="color:#f92672">&#34;outputs&#34;</span>: [
     {
-      &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
-      &quot;path&quot;: &quot;/outputs/stdout&quot;
+      <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;s3://funnel-bucket/output.txt&#34;</span>,
+      <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/outputs/stdout&#34;</span>
     }
   ],
-  &quot;executors&quot;: [
+  <span style="color:#f92672">&#34;executors&#34;</span>: [
     {
-      &quot;image&quot;: &quot;alpine&quot;,
-      &quot;command&quot;: [
-        &quot;cat&quot;,
-        &quot;/inputs/hello.txt&quot;
+      <span style="color:#f92672">&#34;image&#34;</span>: <span style="color:#e6db74">&#34;alpine&#34;</span>,
+      <span style="color:#f92672">&#34;command&#34;</span>: [
+        <span style="color:#e6db74">&#34;cat&#34;</span>,
+        <span style="color:#e6db74">&#34;/inputs/hello.txt&#34;</span>
       ],
-      &quot;stdout&quot;: &quot;/outputs/stdout&quot;
+      <span style="color:#f92672">&#34;stdout&#34;</span>: <span style="color:#e6db74">&#34;/outputs/stdout&#34;</span>
     }
   ],
-  &quot;logs&quot;: [
+  <span style="color:#f92672">&#34;logs&#34;</span>: [
     {
-      &quot;logs&quot;: [
+      <span style="color:#f92672">&#34;logs&#34;</span>: [
         {
-          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
-          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
-          &quot;stdout&quot;: &quot;Hello, Funnel!\n&quot;
+          <span style="color:#f92672">&#34;startTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:05.127885125-08:00&#34;</span>,
+          <span style="color:#f92672">&#34;endTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:08.484461502-08:00&#34;</span>,
+          <span style="color:#f92672">&#34;stdout&#34;</span>: <span style="color:#e6db74">&#34;Hello, Funnel!\n&#34;</span>
         }
       ],
-      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
-      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+      <span style="color:#f92672">&#34;startTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:04.433593468-08:00&#34;</span>,
+      <span style="color:#f92672">&#34;endTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:08.487707039-08:00&#34;</span>
     }
   ],
-  &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+  <span style="color:#f92672">&#34;creationTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:04.427163701-08:00&#34;</span>
 }
-</code></pre>
-
-<p>There are logs for each task attempt and each executor. Notice that the stdout is
+</code></pre></div><p>There are logs for each task attempt and each executor. Notice that the stdout is
 conveniently captured by <code>logs[0].logs[0].stdout</code>.</p>
-
 <h3 id="task-api">Task API</h3>
-
 <p>The API lets you create, get, list, and cancel tasks.</p>
-
 <h3 id="create">Create</h3>
-
 <pre><code>POST /v1/tasks
 {
   &quot;name&quot;: &quot;Hello world&quot;,
@@ -440,18 +433,12 @@ conveniently captured by <code>logs[0].logs[0].stdout</code>.</p>
 
 # The response is a task ID:
 b85khc2rl6qkqbhg8vig
-</code></pre>
-
-<h3 id="get">Get</h3>
-
+</code></pre><h3 id="get">Get</h3>
 <pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig
 
 {&quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;, &quot;state&quot;: &quot;COMPLETE&quot;}
-</code></pre>
-
-<p>By default, the minimal task view is returned which describes only the ID and state.
+</code></pre><p>By default, the minimal task view is returned which describes only the ID and state.
 In order to get the original task with some basic logs, use the &ldquo;BASIC&rdquo; task view:</p>
-
 <pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
 {
   &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
@@ -493,11 +480,8 @@ In order to get the original task with some basic logs, use the &ldquo;BASIC&rdq
   ],
   &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
 }
-</code></pre>
-
-<p>The &ldquo;BASIC&rdquo; doesn&rsquo;t include some fields such as stdout/err logs, because these fields may be potentially large.
+</code></pre><p>The &ldquo;BASIC&rdquo; doesn&rsquo;t include some fields such as stdout/err logs, because these fields may be potentially large.
 In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
-
 <pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=FULL
 {
   &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
@@ -534,10 +518,7 @@ In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
   ],
   &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
 }
-</code></pre>
-
-<h3 id="list">List</h3>
-
+</code></pre><h3 id="list">List</h3>
 <pre><code>GET /v1/tasks
 {
   &quot;tasks&quot;: [
@@ -559,12 +540,8 @@ In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
     }
   ]
 }
-</code></pre>
-
-<p>List has the same task views as Get: MINIMAL, BASIC, and FULL.</p>
-
+</code></pre><p>List has the same task views as Get: MINIMAL, BASIC, and FULL.</p>
 <p>The task list is paginated:</p>
-
 <pre><code>GET /v1/tasks?page_token=1h123h12j2h3k
 {
   &quot;next_page_token&quot;: &quot;1n3n1j23k12n3k123&quot;,
@@ -576,20 +553,12 @@ In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
     # ... more tasks here ...
   ]
 }
-</code></pre>
-
-<h3 id="cancel">Cancel</h3>
-
+</code></pre><h3 id="cancel">Cancel</h3>
 <p>Tasks cannot be modified by the user after creation, with one exception – they can be canceled.</p>
-
 <pre><code>POST /v1/tasks/b85l8tirl6qkqbhg8vj0:cancel
-</code></pre>
-
-<h3 id="full-task-spec">Full task spec</h3>
-
-<p>Here&rsquo;s a more detailed description of a task.<br />
+</code></pre><h3 id="full-task-spec">Full task spec</h3>
+<p>Here&rsquo;s a more detailed description of a task.<br>
 For a full, in-depth spec, read the TES standard&rsquo;s <a href="https://github.com/ga4gh/task-execution-schemas/blob/master/task_execution.proto">task_execution.proto</a>.</p>
-
 <pre><code>{
     # The task's ID. Set by the server.
     # Output only.
@@ -805,7 +774,6 @@ For a full, in-depth spec, read the TES standard&rsquo;s <a href="https://github
   ],
 }
 </code></pre>
-
   </div>
 
 </div>

@@ -58,15 +58,6 @@ You get the idea. See the `go test` docs for more.
 The [testify][testify] and [mockery][mockery] tools are used to generate and use
 mock interfaces in test code, for example, to mock the Google Cloud APIs.
 
-### Vendoring
-
-Go dependencies are vendored using [dep][dep]. Run `dep ensure` to add/prune dependencies.
-
-### Submodules
-
-Funnel has git submodules. The Makefile usually handles this for you, but if needed,
-`git submodule update --init --recursive` will get all the submodules.
-
 [go]: https://golang.org
 [angular]: https://angularjs.org/
 [protobuf]: https://github.com/google/protobuf
@@ -98,10 +89,9 @@ Funnel has git submodules. The Makefile usually handles this for you, but if nee
 - Run `make release`
   - This will build cross-platform binaries, build release notes,
     and draft an unpublished GitHub release.
-  - This also builds a docker container and pushes to Docker Hub.
-    This does **not** update the "latest" tag.
   - Check the built artifacts by downloading the tarballs from the GitHub draft release
     and running `funnel version`.
 - `git push origin master` to push your website and release changes.
+- A tagged docker image for the release will be built automatically on [dockerhub](https://hub.docker.com/repository/docker/ohsucompbio/funnel).
 - Publish the draft release on GitHub.
 - Copy `build/release/funnel.rb` to the `ohsu-comp-bio/homebrew-formula/Formula/funnel.rb` Homebrew formula repo, and push those changes to master.

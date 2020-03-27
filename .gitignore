@@ -20,3 +20,4 @@ storage/_test_download
 docker/funnel
 deployments/kubernetes/**/funnel
 deployments/kubernetes/**/*.json
+funnel

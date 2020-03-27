@@ -13,6 +13,7 @@ require (
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2
 	github.com/aws/aws-sdk-go v1.13.54
 	github.com/boltdb/bolt v1.3.1
+	github.com/buchanae/github-release-notes v0.0.0-20180827045457-200e1dacadbb // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/dgraph-io/badger/v2 v2.0.1
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
@@ -32,6 +33,8 @@ require (
 	github.com/golang/gddo v0.0.0-20200219175727-df439dd5819e
 	github.com/golang/protobuf v1.3.3
 	github.com/golangci/golangci-lint v1.22.2 // indirect
+	github.com/google/go-github v17.0.0+incompatible // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.13.0
 	github.com/imdario/mergo v0.3.8

@@ -2,6 +2,9 @@ package events
 
 import (
 	"context"
+	"fmt"
+	"runtime"
+	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
@@ -51,7 +54,15 @@ func (el *Logger) WriteEvent(ctx context.Context, ev *Event) error {
 		case "warning":
 			log.Warn(ev.GetSystemLog().Msg, args...)
 		case "error":
-			log.Error(ev.GetSystemLog().Msg, args...)
+			if pc, file, line, ok := runtime.Caller(2); ok {
+				file = file[strings.LastIndex(file, "/")+1:]
+				funcName := runtime.FuncForPC(pc).Name()
+				src := fmt.Sprintf("%s:%s:%d", file, funcName, line)
+				args = append(args, "src", src)
+				log.Error(ev.GetSystemLog().Msg, args...)
+			} else {
+				log.Error(ev.GetSystemLog().Msg, args...)
+			}
 		case "info":
 			log.Info(ev.GetSystemLog().Msg, args...)
 		case "debug":
@@ -62,3 +73,5 @@ func (el *Logger) WriteEvent(ctx context.Context, ev *Event) error {
 	}
 	return nil
 }
+
+func (el *Logger) Close() {}

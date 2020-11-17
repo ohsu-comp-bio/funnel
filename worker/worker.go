@@ -181,8 +181,9 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	return
 }
 
-func (r *DefaultWorker) Close() (runerr error) {
-	return nil
+func (r *DefaultWorker) Close() {
+	r.TaskReader.Close()
+	r.EventWriter.Close()
 }
 
 // openLogs opens/creates the logs files for a step and updates those fields.

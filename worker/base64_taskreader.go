@@ -40,4 +40,4 @@ func (f *Base64TaskReader) State(ctx context.Context) (tes.State, error) {
 }
 
 // Close the Base64TaskReader
-func (f *Base64TaskReader) Close() { }
+func (f *Base64TaskReader) Close() {}

@@ -32,6 +32,8 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	return nil
 }
 
+func (b *Backend) Close() {}
+
 // Submit submits a task. For the Local backend this results in the task
 // running immediately.
 func (b *Backend) Submit(task *tes.Task) error {

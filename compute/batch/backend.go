@@ -62,6 +62,11 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	return nil
 }
 
+func (b *Backend) Close() {
+	b.database.Close()
+	b.event.Close()
+}
+
 // Submit submits a task to the AWS batch service.
 func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()

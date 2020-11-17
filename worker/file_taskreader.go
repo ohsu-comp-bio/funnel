@@ -51,4 +51,4 @@ func (f *FileTaskReader) State(ctx context.Context) (tes.State, error) {
 }
 
 // Close the FileTaskReader
-func (f *FileTaskReader) Close() { }
+func (f *FileTaskReader) Close() {}

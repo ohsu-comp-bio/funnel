@@ -35,5 +35,5 @@ func (db *Datastore) Init() error {
 }
 
 func (db *Datastore) Close() {
-		db.client.Close()
+	db.client.Close()
 }

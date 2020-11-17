@@ -20,3 +20,5 @@ type Backend struct{}
 func (b *Backend) WriteEvent(context.Context, *events.Event) error {
 	return nil
 }
+
+func (b *Backend) Close() {}

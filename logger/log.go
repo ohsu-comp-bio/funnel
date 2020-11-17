@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/logrusorgru/aurora"
@@ -120,6 +121,14 @@ func (l *Logger) Error(msg string, args ...interface{}) {
 		f = util.ArgListToMap("error", args[0])
 	} else {
 		f = util.ArgListToMap(args...)
+	}
+	//l.base.WithFields(f).Error(msg)
+	if _, ok := f["src"]; !ok {
+		if pc, file, line, ok := runtime.Caller(1); ok {
+			file = file[strings.LastIndex(file, "/")+1:]
+			funcName := runtime.FuncForPC(pc).Name()
+			f["src"] = fmt.Sprintf("%s:%s:%d", file, funcName, line)
+		}
 	}
 	l.base.WithFields(f).Error(msg)
 }

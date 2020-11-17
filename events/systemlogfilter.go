@@ -28,3 +28,7 @@ func (w *SystemLogFilter) WriteEvent(ctx context.Context, ev *Event) error {
 
 	return nil
 }
+
+func (w *SystemLogFilter) Close() {
+	w.Writer.Close()
+}

@@ -96,7 +96,6 @@ func (taskBolt *BoltDB) Init() error {
 	})
 }
 
-
 func (taskBolt *BoltDB) Close() {
 	taskBolt.db.Close()
 }

@@ -137,6 +137,8 @@ func (e *eventCounter) WriteEvent(ctx context.Context, ev *events.Event) error {
 	return nil
 }
 
+func (e *eventCounter) Close() {}
+
 type taskReader struct {
 	task *tes.Task
 }
@@ -148,6 +150,8 @@ func (r taskReader) Task(ctx gcontext.Context) (*tes.Task, error) {
 func (r taskReader) State(ctx gcontext.Context) (tes.State, error) {
 	return r.task.State, nil
 }
+
+func (r taskReader) Close() {}
 
 // Test that stdout generates events at an expected, consistent rate.
 // The task dumps megabytes of random data to stdout. The test waits

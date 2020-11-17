@@ -46,6 +46,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 
 	go func() {
 		w.Run(ctx)
+		w.Close()
 	}()
 	return nil
 }

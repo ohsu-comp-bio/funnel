@@ -181,6 +181,10 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	return
 }
 
+func (r *DefaultWorker) Close() (runerr error) {
+	return nil
+}
+
 // openLogs opens/creates the logs files for a step and updates those fields.
 func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
 

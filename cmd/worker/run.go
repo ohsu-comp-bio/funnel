@@ -123,7 +123,7 @@ func newDatabaseTaskReader(taskID string, db tes.ReadOnlyServer, err error) (wor
 	if err != nil {
 		return nil, fmt.Errorf("creating database task reader: %v", err)
 	}
-	return worker.NewGenericTaskReader(db.GetTask, taskID), nil
+	return worker.NewGenericTaskReader(db.GetTask, taskID, db.Close), nil
 }
 
 // eventWriterBuilder is a helper for building a set of event writers,

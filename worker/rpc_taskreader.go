@@ -44,5 +44,6 @@ func (r *RPCTaskReader) State(ctx context.Context) (tes.State, error) {
 
 // Close closes the connection.
 func (r *RPCTaskReader) Close() {
+	
 	r.conn.Close()
 }

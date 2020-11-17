@@ -9,6 +9,7 @@ import (
 type ReadOnlyServer interface {
 	ListTasks(ctx context.Context, in *ListTasksRequest) (*ListTasksResponse, error)
 	GetTask(ctx context.Context, in *GetTaskRequest) (*Task, error)
+	Close()
 }
 
 // ReadOnlyClient describes the TES interface with only the Get/List tasks methods

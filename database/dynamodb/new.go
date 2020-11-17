@@ -47,3 +47,7 @@ func NewDynamoDB(conf config.DynamoDB) (*DynamoDB, error) {
 func (db *DynamoDB) Init() error {
 	return db.createTables()
 }
+
+func (db *DynamoDB) Close() {
+	//db.client.Close()
+}

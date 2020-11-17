@@ -108,7 +108,6 @@ func (db *MongoDB) Init() error {
 }
 
 // Close closes the database session.
-func (db *MongoDB) Close() error {
+func (db *MongoDB) Close() {
 	db.sess.Close()
-	return nil
 }

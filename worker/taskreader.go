@@ -8,12 +8,13 @@ import (
 // GenericTaskReader provides read access to tasks.
 type GenericTaskReader struct {
 	get    func(ctx context.Context, in *tes.GetTaskRequest) (*tes.Task, error)
+	close  func()
 	taskID string
 }
 
 // NewGenericTaskReader returns a new generic task reader.
-func NewGenericTaskReader(get func(ctx context.Context, in *tes.GetTaskRequest) (*tes.Task, error), taskID string) *GenericTaskReader {
-	return &GenericTaskReader{get, taskID}
+func NewGenericTaskReader(get func(ctx context.Context, in *tes.GetTaskRequest) (*tes.Task, error), taskID string, close func()) *GenericTaskReader {
+	return &GenericTaskReader{get, close, taskID}
 }
 
 // Task returns the task descriptor.
@@ -31,4 +32,8 @@ func (r *GenericTaskReader) State(ctx context.Context) (tes.State, error) {
 		View: tes.TaskView_MINIMAL,
 	})
 	return t.GetState(), err
+}
+
+func (r *GenericTaskReader) Close() {
+	r.close()
 }

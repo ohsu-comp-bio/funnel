@@ -33,3 +33,7 @@ func NewDatastore(conf config.Datastore) (*Datastore, error) {
 func (db *Datastore) Init() error {
 	return nil
 }
+
+func (db *Datastore) Close() {
+		db.client.Close()
+}

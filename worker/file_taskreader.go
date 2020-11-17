@@ -49,3 +49,6 @@ func (f *FileTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 func (f *FileTaskReader) State(ctx context.Context) (tes.State, error) {
 	return f.task.GetState(), nil
 }
+
+// Close the FileTaskReader
+func (f *FileTaskReader) Close() { }

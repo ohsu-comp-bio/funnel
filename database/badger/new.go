@@ -32,6 +32,10 @@ func (db *Badger) Init() error {
 	return nil
 }
 
+func (db *Badger) Close() {
+	db.db.Close()
+}
+
 var taskKeyPrefix = []byte("tasks")
 
 func taskKey(id string) []byte {

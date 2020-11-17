@@ -10,4 +10,5 @@ import (
 type TaskReader interface {
 	Task(ctx context.Context) (*tes.Task, error)
 	State(ctx context.Context) (tes.State, error)
+	Close()
 }

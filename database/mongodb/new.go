@@ -10,8 +10,9 @@ import (
 
 // MongoDB provides an MongoDB database server backend.
 type MongoDB struct {
-	sess *mgo.Session
-	conf config.MongoDB
+	sess   *mgo.Session
+	conf   config.MongoDB
+	active bool
 }
 
 // NewMongoDB returns a new MongoDB instance.
@@ -32,8 +33,9 @@ func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 		return nil, err
 	}
 	db := &MongoDB{
-		sess: sess,
-		conf: conf,
+		sess:   sess,
+		conf:   conf,
+		active: true,
 	}
 	return db, nil
 }
@@ -109,5 +111,8 @@ func (db *MongoDB) Init() error {
 
 // Close closes the database session.
 func (db *MongoDB) Close() {
-	db.sess.Close()
+	if db.active {
+		db.sess.Close()
+	}
+	db.active = false
 }

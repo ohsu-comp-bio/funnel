@@ -11,6 +11,7 @@ import (
 )
 
 func TestCreateStdin(t *testing.T) {
+	tests.ParseConfig()
 	conf := tests.DefaultConfig()
 	conf.Compute = "noop"
 	fun := tests.NewFunnel(conf)

@@ -99,8 +99,8 @@ start-mongodb:
 	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
 
 test-mongodb:
-	@go test ./tests/core/ -funnel-config `pwd`/tests/mongo.config.yml
-	@go test ./tests/scheduler/ -funnel-config `pwd`/tests/mongo.config.yml
+	@go test ./tests/core/ --funnel-config `pwd`/tests/mongo.config.yml
+	@go test ./tests/scheduler/ --funnel-config `pwd`/tests/mongo.config.yml
 
 test-badger:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/badger.config.yml

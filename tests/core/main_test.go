@@ -1,8 +1,8 @@
 package core
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/logger"

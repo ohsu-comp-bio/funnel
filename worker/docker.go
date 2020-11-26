@@ -84,13 +84,16 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 		cmd.Stderr = dcmd.Stderr
 	}
 	go dcmd.inspectContainer(ctx)
-	return cmd.Run()
+	out := cmd.Run()
+	dcmd.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
+	return out
 }
 
 // Stop stops the container.
 func (dcmd DockerCommand) Stop() error {
 	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
-	cmd := exec.Command("docker", "stop", dcmd.ContainerName)
+	// cmd := exec.Command("docker", "stop", dcmd.ContainerName)
+	cmd := exec.Command("docker", "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 

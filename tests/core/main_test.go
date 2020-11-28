@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -14,7 +13,6 @@ var log = logger.NewLogger("funnel-e2e-core", logger.DefaultConfig())
 
 func TestMain(m *testing.M) {
 	tests.ParseConfig()
-	fmt.Printf("Starting test main")
 	fun = tests.NewFunnel(tests.DefaultConfig())
 	fun.StartServer()
 	e := m.Run()

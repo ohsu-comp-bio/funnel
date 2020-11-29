@@ -130,6 +130,7 @@ func (f *Funnel) PollForServerStart() error {
 		for {
 			_, err := http.Get(f.Conf.Server.HTTPAddress())
 			if err == nil {
+				log.Info(fmt.Sprintf("Server at %s found", f.Conf.Server.HTTPAddress()))
 				close(ready)
 				break
 			}
@@ -326,18 +327,22 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 	var err error
 	gopath := os.Getenv("GOPATH")
 
-	if runtime.GOOS == "linux" {
-		funnelBinary, err = filepath.Abs(filepath.Join(
-			gopath, "bin/", "funnel",
-		))
+	if gopath == "" {
+		funnelBinary, err = filepath.Abs("../../funnel")
 	} else {
-		funnelBinary, err = filepath.Abs(filepath.Join(
-			gopath, "src/github.com/ohsu-comp-bio/funnel/build/release/linux_amd64/funnel",
-		))
-	}
-	if err != nil {
-		log.Error("Error finding funnel binary", err)
-		panic(err)
+		if runtime.GOOS == "linux" {
+			funnelBinary, err = filepath.Abs(filepath.Join(
+				gopath, "bin/", "funnel",
+			))
+		} else {
+			funnelBinary, err = filepath.Abs(filepath.Join(
+				gopath, "src/github.com/ohsu-comp-bio/funnel/build/release/linux_amd64/funnel",
+			))
+		}
+		if err != nil {
+			log.Error("Error finding funnel binary", err)
+			panic(err)
+		}
 	}
 
 	// write config file

@@ -55,9 +55,7 @@ func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	return nil
 }
 
-func (b *HPCBackend) Close() {
-	//TODO: Close things here?
-}
+func (b *HPCBackend) Close() {}
 
 // Submit submits a task via "qsub", "condor_submit", "sbatch", etc.
 func (b *HPCBackend) Submit(task *tes.Task) error {

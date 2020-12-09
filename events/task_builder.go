@@ -64,3 +64,5 @@ func (tb TaskBuilder) WriteEvent(ctx context.Context, ev *Event) error {
 
 	return nil
 }
+
+func (tb TaskBuilder) Close() {}

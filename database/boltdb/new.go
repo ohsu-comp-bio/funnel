@@ -95,3 +95,7 @@ func (taskBolt *BoltDB) Init() error {
 		return nil
 	})
 }
+
+func (taskBolt *BoltDB) Close() {
+	taskBolt.db.Close()
+}

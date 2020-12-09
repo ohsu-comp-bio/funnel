@@ -21,7 +21,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 	// subctx helps ensure that these goroutines are cleaned up,
 	// even when the task is canceled.
-	subctx, cleanup := context.WithCancel(ctx)
+	subctx, cleanup := context.WithCancel(context.Background())
 	defer cleanup()
 
 	done := make(chan error, 1)
@@ -55,7 +55,8 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			// Likely the task was canceled.
-			go s.Command.Stop()
+			s.Command.Stop()
+			<-done
 			s.Event.EndTime(time.Now())
 			return ctx.Err()
 

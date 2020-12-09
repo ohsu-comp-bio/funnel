@@ -8,6 +8,10 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tests"
 )
 
+func TestMain(m *testing.M) {
+	tests.ParseConfig()
+}
+
 func TestReadQueue(t *testing.T) {
 	c := tests.DefaultConfig()
 	c.Compute = "manual"

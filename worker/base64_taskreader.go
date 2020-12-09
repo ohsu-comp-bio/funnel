@@ -38,3 +38,6 @@ func (f *Base64TaskReader) Task(ctx context.Context) (*tes.Task, error) {
 func (f *Base64TaskReader) State(ctx context.Context) (tes.State, error) {
 	return f.task.GetState(), nil
 }
+
+// Close the Base64TaskReader
+func (f *Base64TaskReader) Close() {}

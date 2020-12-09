@@ -70,6 +70,8 @@ func (p *PubSubWriter) WriteEvent(ctx context.Context, ev *Event) error {
 	return nil
 }
 
+func (p *PubSubWriter) Close() {}
+
 // ReadPubSub reads events from the topic configured by "conf".
 // The subscription "subname" will be created if it doesn't exist.
 // This blocks until the context is canceled.

@@ -105,6 +105,10 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	return nil
 }
 
+func (b *Backend) Close() {
+	//TODO: close database?
+}
+
 // createJob uses the configured template to create a kubernetes batch job.
 func (b *Backend) createJob(task *tes.Task) (*v1.Job, error) {
 	submitTpl, err := template.New(task.Id).Parse(b.template)

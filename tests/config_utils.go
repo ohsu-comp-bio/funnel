@@ -19,7 +19,7 @@ import (
 
 var configFile string
 
-func init() {
+func ParseConfig() {
 	// nanoseconds are important because the tests run faster than a millisecond
 	// which can cause port conflicts
 	rand.Seed(time.Now().UTC().UnixNano())

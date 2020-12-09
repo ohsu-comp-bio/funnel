@@ -44,9 +44,8 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 }
 
 // Close closes the database client.
-func (es *Elastic) Close() error {
+func (es *Elastic) Close() {
 	es.client.Stop()
-	return nil
 }
 
 func (es *Elastic) initIndex(ctx context.Context, name, body string) error {

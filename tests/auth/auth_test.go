@@ -21,6 +21,7 @@ var extask = &tes.Task{
 }
 
 func TestBasicAuthFail(t *testing.T) {
+	tests.ParseConfig()
 	ctx := context.Background()
 	conf := tests.DefaultConfig()
 	conf.Server.BasicAuth = []config.BasicCredential{{User: "funnel", Password: "abc123"}}

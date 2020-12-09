@@ -49,6 +49,10 @@ func (k *KafkaWriter) WriteEvent(ctx context.Context, ev *Event) error {
 	return err
 }
 
+func (k *KafkaWriter) Close() {
+	k.producer.Close()
+}
+
 // KafkaReader reads events to a Kafka topic and writes them
 // to a Writer.
 type KafkaReader struct {

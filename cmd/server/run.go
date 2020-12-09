@@ -47,7 +47,6 @@ type Server struct {
 // Database represents the base funnel database interface
 type Database interface {
 	tes.ReadOnlyServer
-	events.Writer
 	Init() error
 }
 

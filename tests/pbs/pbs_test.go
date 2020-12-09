@@ -13,6 +13,7 @@ var fun *tests.Funnel
 var serverName string
 
 func TestMain(m *testing.M) {
+	tests.ParseConfig()
 	conf := tests.DefaultConfig()
 
 	if conf.Compute != "pbs" {

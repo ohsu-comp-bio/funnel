@@ -208,6 +208,10 @@ release:
 		--rm-dist \
 		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at ${LAST_PR_NUMBER})
 
+release-dep:
+	@go get github.com/goreleaser/goreleaser
+	@go get github.com/buchanae/github-release-notes
+
 # Generate mocks for testing.
 gen-mocks:
 	@go get github.com/vektra/mockery/...

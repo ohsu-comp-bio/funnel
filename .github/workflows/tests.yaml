@@ -67,3 +67,19 @@ jobs:
         make start-mongodb
         sleep 10
         make test-mongodb
+
+  badgerTest:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Download funnel bin
+      uses: actions/download-artifact@v2
+      with:
+        name: funnelBin
+    - name: Badger Test
+      run: |
+        chmod +x funnel
+        make test-badger

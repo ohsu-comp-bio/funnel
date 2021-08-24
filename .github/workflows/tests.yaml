@@ -14,7 +14,9 @@ jobs:
       run: make lint-depends
 
     - name: Lint
-      run: make lint
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        make lint
 
   build:
     runs-on: ubuntu-latest

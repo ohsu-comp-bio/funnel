@@ -67,6 +67,7 @@ tidy:
 
 lint-depends:
 	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.22.2
+	go install golang.org/x/tools/cmd/goimports
 
 # Run code style and other checks
 lint:

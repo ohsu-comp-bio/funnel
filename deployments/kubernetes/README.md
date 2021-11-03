@@ -1,6 +1,6 @@
 # Using Funnel with Kubernetes
 
-Examples can be found here: https://github.com/ohsu-comp-bio/funnel/tree/kube/deployments/kubernetes
+Examples can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
 
 #### Create a Service:
 

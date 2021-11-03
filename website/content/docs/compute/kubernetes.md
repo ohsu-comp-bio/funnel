@@ -17,7 +17,7 @@ Kuberenetes Resources:
 - [Roles and RoleBindings](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings)
 - [Job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
 
-Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/kube/deployments/kubernetes
+Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
 
 #### Create a Service:
 

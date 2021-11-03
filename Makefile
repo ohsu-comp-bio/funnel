@@ -67,17 +67,18 @@ tidy:
 
 lint-depends:
 	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.22.2
+	go install golang.org/x/tools/cmd/goimports
 
 # Run code style and other checks
 lint:
-	@golangci-lint run --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
+	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
 		--skip-dirs "vendor" \
 		--skip-dirs "webdash" \
 		--skip-dirs "cmd/webdash" \
 		--skip-dirs "funnel-work-dir" \
 		-e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
 		./...
-	@golangci-lint run --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell ./cmd/termdash/...
+	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell ./cmd/termdash/...
 
 # Run all tests
 test:

@@ -86,7 +86,7 @@ A node is a service which runs on each machine in a cluster. The node connects t
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/download/</guid>
-      <description>Download 0.10.0  linux mac Windows is not supported (yet), sorry!  Funnel is a single binary.
+      <description>Download 0.10.1  linux mac Windows is not supported (yet), sorry!  Funnel is a single binary.
 Funnel requires Docker.
 Funnel is beta quality. APIs might break, bugs exist, data might be lost.
 Homebrew brew tap ohsu-comp-bio/formula brew install funnel In order to build the latest code, run:
@@ -224,7 +224,7 @@ EventWriters: - kafka - log Kafka: Servers: - localhost:9092 Topic: funnel-event
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/</guid>
       <description>Kubernetes This guide will take you through the process of setting up Funnel as a kubernetes service.
 Kuberenetes Resources:
- Service Deployment ConfigMap Roles and RoleBindings Job  Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/kube/deployments/kubernetes
+ Service Deployment ConfigMap Roles and RoleBindings Job  Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
 Create a Service: funnel-service.yml
 apiVersion: v1 kind: Service metadata: name: funnel spec: selector: app: funnel ports: - name: http protocol: TCP port: 8000 targetPort: 8000 - name: rpc protocol: TCP port: 9090 targetPort: 9090 Deploy it:</description>
     </item>

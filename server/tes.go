@@ -22,7 +22,7 @@ import (
 // that common operations are handled consistently, such as setting IDs, handling 404s,
 // GetServiceInfo, etc.
 type TaskService struct {
-	events.UnimplementedEventServiceServer
+	tes.UnimplementedTaskServiceServer
 	Name    string
 	Event   events.Writer
 	Compute events.Writer

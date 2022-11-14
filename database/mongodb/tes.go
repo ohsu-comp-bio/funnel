@@ -27,9 +27,9 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 
 	q = db.tasks(sess).Find(bson.M{"id": req.Id})
 	switch req.View {
-	case tes.TaskView_BASIC:
+	case tes.View_BASIC.String():
 		q = q.Select(basicView)
-	case tes.TaskView_MINIMAL:
+	case tes.View_MINIMAL.String():
 		q = q.Select(minimalView)
 	}
 
@@ -62,16 +62,16 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		query["state"] = bson.M{"$eq": req.State}
 	}
 
-	for k, v := range req.Tags {
+	for k, v := range req.GetTags() {
 		query[fmt.Sprintf("tags.%s", k)] = bson.M{"$eq": v}
 	}
 
 	q = db.tasks(sess).Find(query).Sort("-creationtime").Limit(pageSize)
 
 	switch req.View {
-	case tes.TaskView_BASIC:
+	case tes.View_BASIC.String():
 		q = q.Select(basicView)
-	case tes.TaskView_MINIMAL:
+	case tes.View_MINIMAL.String():
 		q = q.Select(minimalView)
 	}
 

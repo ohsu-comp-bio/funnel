@@ -19,11 +19,11 @@ func (db *DynamoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 	var err error
 
 	switch req.View {
-	case tes.TaskView_MINIMAL:
+	case tes.View_MINIMAL.String():
 		response, err = db.getMinimalView(ctx, req.Id)
-	case tes.TaskView_BASIC:
+	case tes.View_BASIC.String():
 		response, err = db.getBasicView(ctx, req.Id)
-	case tes.TaskView_FULL:
+	case tes.View_FULL.String():
 		response, err = db.getFullView(ctx, req.Id)
 	}
 	if err != nil {
@@ -73,7 +73,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		filterParts = append(filterParts, "#state = :stateFilter")
 	}
 
-	for k, v := range req.Tags {
+	for k, v := range req.GetTags() {
 		tmpl := "tags.%s = :%sFilter"
 		filterParts = append(filterParts, fmt.Sprintf(tmpl, k, k))
 		if v == "" {
@@ -91,7 +91,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		query.FilterExpression = aws.String(strings.Join(filterParts, " AND "))
 	}
 
-	if req.View == tes.TaskView_MINIMAL {
+	if req.View == tes.View_MINIMAL.String() {
 		query.ExpressionAttributeNames = map[string]*string{
 			"#state": aws.String("state"),
 		}
@@ -115,7 +115,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		return nil, err
 	}
 
-	if req.View == tes.TaskView_FULL {
+	if req.View == tes.View_FULL.String() {
 		for _, item := range response.Items {
 			// TODO handle errors
 			_ = db.getContent(ctx, item)

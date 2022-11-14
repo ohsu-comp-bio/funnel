@@ -22,7 +22,7 @@ func ResourcesFit(t *tes.Task, n *Node) error {
 		return fmt.Errorf("Fail zero ram available")
 	case n.GetAvailable().GetDiskGb() <= 0.0:
 		return fmt.Errorf("Fail zero disk available")
-	case n.GetAvailable().GetCpus() < req.GetCpuCores():
+	case n.GetAvailable().GetCpus() < uint32(req.GetCpuCores()):
 		return fmt.Errorf(
 			"Fail cpus, requested %d, available %d",
 			req.GetCpuCores(),

@@ -19,7 +19,7 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 
 	res := []string{}
 
-	view, err := getTaskView(taskView)
+	_, err = getTaskView(taskView)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 	for _, taskID := range ids {
 		resp, err := cli.GetTask(context.Background(), &tes.GetTaskRequest{
 			Id:   taskID,
-			View: tes.TaskView(view),
+			View: taskView,
 		})
 		if err != nil {
 			return err

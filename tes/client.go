@@ -58,7 +58,7 @@ type Client struct {
 // GetTask returns the raw bytes from GET /v1/tasks/{id}
 func (c *Client) GetTask(ctx context.Context, req *GetTaskRequest) (*Task, error) {
 	// Send request
-	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View.String()
+	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
@@ -79,15 +79,15 @@ func (c *Client) GetTask(ctx context.Context, req *GetTaskRequest) (*Task, error
 func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTasksResponse, error) {
 	// Build url query parameters
 	v := url.Values{}
-	addUInt32(v, "page_size", req.GetPageSize())
+	addInt32(v, "page_size", req.GetPageSize())
 	addString(v, "page_token", req.GetPageToken())
-	addString(v, "view", req.GetView().String())
+	addString(v, "view", req.GetView())
 
 	if req.GetState() != Unknown {
 		addString(v, "state", req.State.String())
 	}
 
-	for key, val := range req.Tags {
+	for key, val := range req.GetTags() {
 		v.Add(fmt.Sprintf("tags[%s]", key), val)
 	}
 
@@ -164,7 +164,7 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 }
 
 // GetServiceInfo returns result of GET /v1/tasks/service-info
-func (c *Client) GetServiceInfo(ctx context.Context, req *ServiceInfoRequest) (*ServiceInfo, error) {
+func (c *Client) GetServiceInfo(ctx context.Context, req *GetServiceInfoRequest) (*ServiceInfo, error) {
 	u := c.address + "/v1/tasks/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
@@ -191,7 +191,7 @@ func (c *Client) WaitForTask(ctx context.Context, taskIDs ...string) error {
 		for _, id := range taskIDs {
 			r, err := c.GetTask(ctx, &GetTaskRequest{
 				Id:   id,
-				View: TaskView_MINIMAL,
+				View: View_MINIMAL.String(),
 			})
 			if err != nil {
 				return err

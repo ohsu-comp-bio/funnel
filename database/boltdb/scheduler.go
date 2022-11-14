@@ -36,7 +36,7 @@ func (taskBolt *BoltDB) ReadQueue(n int) []*tes.Task {
 		c := tx.Bucket(TasksQueued).Cursor()
 		for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
 			id := string(k)
-			task, _ := getTaskView(tx, id, tes.TaskView_FULL)
+			task, _ := getTaskView(tx, id, tes.View_FULL)
 			tasks = append(tasks, task)
 		}
 		return nil

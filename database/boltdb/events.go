@@ -52,7 +52,7 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 
 	// Check that the task exists
 	err = taskBolt.db.View(func(tx *bolt.Tx) error {
-		_, err := getTaskView(tx, req.Id, tes.TaskView_MINIMAL)
+		_, err := getTaskView(tx, req.Id, tes.View_MINIMAL)
 		return err
 	})
 	if err != nil {

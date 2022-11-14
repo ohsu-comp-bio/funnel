@@ -1,9 +1,11 @@
 syntax = "proto3";
 
+option go_package = "github.com/ohsu-comp-bio/funnel/events";
+
 package events;
 
 import "tes.proto";
-import "google/api/annotations.proto";
+//import "google/api/annotations.proto";
 
 message Metadata {
   map<string, string> value = 1;

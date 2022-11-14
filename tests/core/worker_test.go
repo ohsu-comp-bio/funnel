@@ -41,7 +41,7 @@ func TestWorkerRun(t *testing.T) {
 
 	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -77,7 +77,7 @@ func TestWorkDirCleanup(t *testing.T) {
 
 	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -106,7 +106,7 @@ func TestWorkDirCleanup(t *testing.T) {
 
 	task, err = f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error", err)

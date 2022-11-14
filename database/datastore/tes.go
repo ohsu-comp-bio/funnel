@@ -26,9 +26,9 @@ func (d *Datastore) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 	}
 
 	switch req.View {
-	case tes.Minimal:
+	case tes.View_MINIMAL.String():
 		task = task.GetMinimalView()
-	case tes.Full:
+	case tes.View_FULL.String():
 		// Determine the keys needed to load the various parts of the full view.
 		parts := viewPartKeys(task)
 		err := d.getFullView(ctx, parts, map[string]*tes.Task{
@@ -88,7 +88,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		q = q.Filter("State =", int32(req.State))
 	}
 
-	for k, v := range req.Tags {
+	for k, v := range req.GetTags() {
 		q = q.Filter("TagStrings =", encodeKV(k, v))
 	}
 
@@ -122,9 +122,9 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		}
 
 		switch req.View {
-		case tes.Minimal:
+		case tes.View_MINIMAL.String():
 			task = task.GetMinimalView()
-		case tes.Full:
+		case tes.View_FULL.String():
 			// Determine the keys needed to load the various parts of the full view.
 			parts = append(parts, viewPartKeys(task)...)
 			byID[task.Id] = task
@@ -133,7 +133,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	}
 
 	// Load the full view parts
-	if req.View == tes.Full {
+	if req.View == tes.View_FULL.String() {
 		err := d.getFullView(ctx, parts, byID)
 		if err != nil {
 			return nil, err

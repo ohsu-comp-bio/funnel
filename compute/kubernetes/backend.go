@@ -176,7 +176,7 @@ func (b *Backend) deleteJob(taskID string) error {
 // Cancel removes tasks that are pending kubernetes v1/batch jobs.
 func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 	task, err := b.database.GetTask(
-		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_MINIMAL},
+		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()},
 	)
 	if err != nil {
 		return err

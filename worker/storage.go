@@ -192,7 +192,7 @@ func (u *upload) Finished(obj *storage.Object) {
 	u.log = &tes.OutputFileLog{
 		Url:       obj.URL,
 		Path:      u.out.Path,
-		SizeBytes: obj.Size,
+		SizeBytes: fmt.Sprintf("%d", obj.Size),
 	}
 	u.ev.Info("upload finished", "url", obj.URL, "etag", obj.ETag, "size", obj.Size)
 }

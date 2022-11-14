@@ -5,7 +5,6 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/metrics"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/version"
 	"golang.org/x/net/context"
@@ -23,6 +22,7 @@ import (
 // that common operations are handled consistently, such as setting IDs, handling 404s,
 // GetServiceInfo, etc.
 type TaskService struct {
+	events.UnimplementedEventServiceServer
 	Name    string
 	Event   events.Writer
 	Compute events.Writer
@@ -85,27 +85,30 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 }
 
 // GetServiceInfo returns service metadata.
-func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.ServiceInfoRequest) (*tes.ServiceInfo, error) {
+func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.GetServiceInfoRequest) (*tes.ServiceInfo, error) {
 	resp := &tes.ServiceInfo{
-		Name: ts.Name,
-		Doc:  version.String(),
+		Name:    ts.Name,
+		Version: version.String(),
 	}
 
-	if c, ok := ts.Read.(metrics.TaskStateCounter); ok {
-		resp.TaskStateCounts = make(map[string]int32)
-		// Ensure that all states are present in the response, even if zero.
-		for key := range tes.State_value {
-			resp.TaskStateCounts[key] = 0
+	/*
+		//Task metrics no longer in service info as of TES 1.1
+		if c, ok := ts.Read.(metrics.TaskStateCounter); ok {
+			resp.TaskStateCounts = make(map[string]int32)
+			// Ensure that all states are present in the response, even if zero.
+			for key := range tes.State_value {
+				resp.TaskStateCounts[key] = 0
+			}
+			cs, err := c.TaskStateCounts(ctx)
+			if err != nil {
+				ts.Log.Error("counting task states", "error", err)
+			}
+			// Override the zero values in the response.
+			for key, count := range cs {
+				resp.TaskStateCounts[key] = count
+			}
 		}
-		cs, err := c.TaskStateCounts(ctx)
-		if err != nil {
-			ts.Log.Error("counting task states", "error", err)
-		}
-		// Override the zero values in the response.
-		for key, count := range cs {
-			resp.TaskStateCounts[key] = count
-		}
-	}
+	*/
 
 	return resp, nil
 }

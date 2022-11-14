@@ -22,7 +22,7 @@ func NewGenericTaskReader(get func(ctx context.Context, in *tes.GetTaskRequest) 
 func (r *GenericTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 	return r.get(ctx, &tes.GetTaskRequest{
 		Id:   r.taskID,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 }
 
@@ -33,7 +33,7 @@ func (r *GenericTaskReader) State(ctx context.Context) (tes.State, error) {
 	}
 	t, err := r.get(ctx, &tes.GetTaskRequest{
 		Id:   r.taskID,
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	return t.GetState(), err
 }

@@ -12,13 +12,13 @@ import (
 // List runs the "task list" CLI command, which connects to the server,
 // calls ListTasks() and requests the given task view.
 // Output is written to the given writer.
-func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, pageSize uint32, all bool, writer io.Writer) error {
+func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, pageSize int32, all bool, writer io.Writer) error {
 	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
 	}
 
-	view, err := getTaskView(taskView)
+	_, err = getTaskView(taskView)
 	if err != nil {
 		return err
 	}
@@ -30,22 +30,25 @@ func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, 
 		return err
 	}
 
-	tags := make(map[string]string)
+	tagKeys := []string{}
+	tagVals := []string{}
 	for _, v := range tagsFilter {
 		parts := strings.Split(v, "=")
 		if len(parts) != 2 {
 			return fmt.Errorf("tags must be of the form: KEY=VALUE")
 		}
-		tags[parts[0]] = parts[1]
+		tagKeys = append(tagKeys, parts[0])
+		tagVals = append(tagVals, parts[1])
 	}
 
 	for {
 		req := &tes.ListTasksRequest{
-			View:      tes.TaskView(view),
+			View:      taskView,
 			PageToken: pageToken,
 			PageSize:  pageSize,
 			State:     state,
-			Tags:      tags,
+			TagKey:    tagKeys,
+			TagValue:  tagVals,
 		}
 
 		resp, err := cli.ListTasks(context.Background(), req)

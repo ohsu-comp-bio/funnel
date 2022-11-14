@@ -181,9 +181,9 @@ func (f *Funnel) Cancel(id string) error {
 }
 
 // ListView returns a task list (calls ListTasks) with the given view.
-func (f *Funnel) ListView(view tes.TaskView) []*tes.Task {
+func (f *Funnel) ListView(view tes.View) []*tes.Task {
 	t, err := f.RPC.ListTasks(context.Background(), &tes.ListTasksRequest{
-		View: view,
+		View: view.String(),
 	})
 	if err != nil {
 		panic(err)
@@ -192,10 +192,10 @@ func (f *Funnel) ListView(view tes.TaskView) []*tes.Task {
 }
 
 // GetView returns a task (calls GetTask) with the given view.
-func (f *Funnel) GetView(id string, view tes.TaskView) *tes.Task {
+func (f *Funnel) GetView(id string, view tes.View) *tes.Task {
 	t, err := f.RPC.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
-		View: view,
+		View: view.String(),
 	})
 	if err != nil {
 		panic(err)
@@ -205,7 +205,7 @@ func (f *Funnel) GetView(id string, view tes.TaskView) *tes.Task {
 
 // Get gets a task by ID
 func (f *Funnel) Get(id string) *tes.Task {
-	return f.GetView(id, tes.TaskView_FULL)
+	return f.GetView(id, tes.View_FULL)
 }
 
 // Run uses `funnel run` syntax to create a task.

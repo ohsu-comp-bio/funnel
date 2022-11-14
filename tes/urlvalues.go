@@ -15,3 +15,9 @@ func addUInt32(u url.Values, key string, value uint32) {
 		u.Add(key, fmt.Sprint(value))
 	}
 }
+
+func addInt32(u url.Values, key string, value int32) {
+	if value != 0 {
+		u.Add(key, fmt.Sprint(value))
+	}
+}

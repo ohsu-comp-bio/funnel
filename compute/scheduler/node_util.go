@@ -16,7 +16,7 @@ func UpdateNode(ctx context.Context, cli tes.ReadOnlyServer, node, existing *Nod
 	for _, id := range node.TaskIds {
 		task, err := cli.GetTask(ctx, &tes.GetTaskRequest{
 			Id:   id,
-			View: tes.TaskView_BASIC,
+			View: tes.View_BASIC.String(),
 		})
 		if err != nil {
 			continue
@@ -56,7 +56,7 @@ func SubtractResources(t *tes.Task, in *Resources) *Resources {
 
 	// Cpus are represented by an unsigned int, and if we blindly
 	// subtract it will rollover to a very large number. So check first.
-	rcpus := tres.GetCpuCores()
+	rcpus := uint32(tres.GetCpuCores())
 	if rcpus >= out.Cpus {
 		out.Cpus = 0
 	} else {

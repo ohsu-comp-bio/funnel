@@ -52,7 +52,7 @@ func TestGetTask(t *testing.T) {
 	}
 	body, err := c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: TaskView_MINIMAL,
+		View: View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +83,7 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	}
 	body, err := c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: TaskView_MINIMAL,
+		View: View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +113,7 @@ func TestClientTimeout(t *testing.T) {
 
 	_, err = c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: TaskView_MINIMAL,
+		View: View_MINIMAL.String(),
 	})
 	close(ch)
 	if err == nil {

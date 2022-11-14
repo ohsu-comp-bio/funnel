@@ -37,21 +37,37 @@ build:
 
 # Generate the protobuf/gRPC code
 proto:
+	@go run ./util/openapi2proto/main.go ./tes/task-execution-schemas/openapi/task_execution_service.openapi.yaml > tes/tes.proto
 	@cd tes && protoc \
 		$(PROTO_INC) \
-		--go_out=plugins=grpc:. \
-		--grpc-gateway_out=logtostderr=true:. \
+		--go_out ./ \
+  		--go_opt paths=source_relative \
+		--go-grpc_out ./ \
+		--go-grpc_opt paths=source_relative \
+		--grpc-gateway_out ./ \
+		--grpc-gateway_opt logtostderr=true \
+		--grpc-gateway_opt paths=source_relative \
 		tes.proto
 	@cd compute/scheduler && protoc \
 		$(PROTO_INC) \
-		--go_out=plugins=grpc:. \
-		--grpc-gateway_out=logtostderr=true:. \
+		--go_out ./ \
+  		--go_opt paths=source_relative \
+		--go-grpc_out ./ \
+		--go-grpc_opt paths=source_relative \
+		--grpc-gateway_out ./ \
+		--grpc-gateway_opt logtostderr=true \
+		--grpc-gateway_opt paths=source_relative \
 		scheduler.proto
 	@cd events && protoc \
 		$(PROTO_INC) \
 		-I ../tes \
-		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/tes,plugins=grpc:. \
-		--grpc-gateway_out=logtostderr=true:. \
+		--go_out ./ \
+  		--go_opt paths=source_relative \
+		--go-grpc_out ./ \
+		--go-grpc_opt paths=source_relative \
+		--grpc-gateway_out ./ \
+		--grpc-gateway_opt logtostderr=true \
+		--grpc-gateway_opt paths=source_relative \
 		events.proto
 
 # Start API reference doc server

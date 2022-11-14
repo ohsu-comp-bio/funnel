@@ -115,13 +115,6 @@ func (taskBolt *BoltDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*
 	var err error
 
 	err = taskBolt.db.View(func(tx *bolt.Tx) error {
-		if req.View == "" {
-			req.View = tes.View_MINIMAL.String()
-		}
-		_, ok := tes.View_value[req.View]
-		if !ok {
-			return fmt.Errorf("Unknown view: %s", req.View)
-		}
 		task, err = getTaskView(tx, req.Id, tes.View(tes.View_value[req.View]))
 		return err
 	})
@@ -179,10 +172,6 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 			task, _ := getTaskView(tx, string(k), tes.View(tes.View_value[view]))
 
 			if req.State != tes.Unknown && req.State != task.State {
-				continue taskLoop
-			}
-
-			if !strings.HasPrefix(task.Name, req.NamePrefix) {
 				continue taskLoop
 			}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/globalsign/mgo"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,7 +15,7 @@ import (
 // MongoDB provides an MongoDB database server backend.
 type MongoDB struct {
 	scheduler.UnimplementedSchedulerServiceServer
-	client *mongo.Client
+	sess   *mgo.Session
 	conf   config.MongoDB
 	active bool
 }

@@ -82,15 +82,13 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	addInt32(v, "page_size", req.GetPageSize())
 	addString(v, "page_token", req.GetPageToken())
 	addString(v, "view", req.GetView())
-	addString(v, "name_prefix", req.GetNamePrefix())
 
 	if req.GetState() != Unknown {
 		addString(v, "state", req.State.String())
 	}
 
 	for key, val := range req.GetTags() {
-		v.Add("tag_key", key)
-		v.Add("tag_value", val)
+		v.Add(fmt.Sprintf("tags[%s]", key), val)
 	}
 
 	// Send request
@@ -164,9 +162,9 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 	return resp, nil
 }
 
-// GetServiceInfo returns result of GET /v1/service-info
+// GetServiceInfo returns result of GET /v1/tasks/service-info
 func (c *Client) GetServiceInfo(ctx context.Context, req *GetServiceInfoRequest) (*ServiceInfo, error) {
-	u := c.address + "/v1/service-info"
+	u := c.address + "/v1/tasks/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)

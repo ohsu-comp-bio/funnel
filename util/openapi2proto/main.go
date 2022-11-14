@@ -16,7 +16,7 @@ type Field struct {
 	Name     string
 	Type     string
 	Repeated bool
-	ID       int
+	Id       int
 	Source   *openapi3.SchemaRef
 }
 
@@ -55,7 +55,7 @@ func getType(p *openapi3.SchemaRef) (bool, string) {
 			_, aType := getType(p.Value.AdditionalProperties)
 			return false, fmt.Sprintf("map<string,%s>", aType)
 		}
-		return false, "map<string,string>"
+		return false, fmt.Sprintf("map<string,string>")
 		//return fmt.Sprintf("%#v", p.Value)
 	case "array":
 		if p.Value.Items.Ref != "" {
@@ -98,7 +98,7 @@ func getFields(schema *openapi3.SchemaRef) []Field {
 	}
 	sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 	for i := range fields {
-		fields[i].ID = i + 1
+		fields[i].Id = i + 1
 	}
 	return fields
 }
@@ -133,7 +133,7 @@ func parseMessageSchema(name string, schema *openapi3.SchemaRef) (Message, error
 		//fmt.Printf("Fields: %#vs\n", fields)
 		sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 		for i := range fields {
-			fields[i].ID = i + 1
+			fields[i].Id = i + 1
 		}
 		m := Message{Name: name, Fields: fields}
 		return m, nil
@@ -227,7 +227,7 @@ func main() {
 					reqFields = append(reqFields, Field{Name: param.Value.Name, Type: t, Repeated: r})
 				}
 				for i := range reqFields {
-					reqFields[i].ID = i + 1
+					reqFields[i].Id = i + 1
 				}
 				m := Message{Name: req.Get.OperationID + "Request", Fields: reqFields}
 				messages = append(messages, m)
@@ -241,7 +241,7 @@ func main() {
 					reqFields = append(reqFields, Field{Name: param.Value.Name, Type: t, Repeated: r})
 				}
 				for i := range reqFields {
-					reqFields[i].ID = i + 1
+					reqFields[i].Id = i + 1
 				}
 				if req.Post.RequestBody != nil {
 					//if not a reference to schema, build it
@@ -299,7 +299,7 @@ enum {{$enum.Name}} { {{range $j, $value := $enum.Values}}
 {{end}}
 {{range $i, $message := .messages}}
 message {{$message.Name}} { {{range $j, $field := $message.Fields}}
-	{{if $field.Repeated}}repeated {{end}}{{$field.Type}} {{$field.Name}} = {{$field.ID}};{{end}}
+	{{if $field.Repeated}}repeated {{end}}{{$field.Type}} {{$field.Name}} = {{$field.Id}};{{end}}
 }
 {{end}}
 
@@ -308,16 +308,6 @@ service TaskService {
     rpc {{$path.Name}}({{$path.InputType}}) returns ({{$path.OutputType}}) {
       option (google.api.http) = {
         {{$path.Mode}}: "{{$path.Path}}"
-		additional_bindings {
-			{{$path.Mode}}: "/v1{{$path.Path}}"
-			{{- if eq $path.Mode "post"}}
-			body: "*"{{end}}
-		}
-		additional_bindings {
-			{{$path.Mode}}: "/ga4gh/tes/v1{{$path.Path}}"
-			{{- if eq $path.Mode "post"}}
-			body: "*"{{end}}
-		}
 		{{- if eq $path.Mode "post"}}
 		body: "*"{{end}}
       };
@@ -331,9 +321,6 @@ service TaskService {
 	if err != nil {
 		fmt.Printf("Template Error: %s\n", err)
 	} else {
-		err := tmpl.Execute(os.Stdout, map[string]interface{}{"messages": messages, "enums": enums, "services": service})
-		if err != nil {
-			log.Fatalf("Template Error: %s", err)
-		}
+		tmpl.Execute(os.Stdout, map[string]interface{}{"messages": messages, "enums": enums, "services": service})
 	}
 }

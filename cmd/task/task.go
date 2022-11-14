@@ -82,7 +82,6 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	lf.StringVarP(&pageToken, "page-token", "p", pageToken, "Page token")
 	lf.StringVar(&stateFilter, "state", stateFilter, "State filter")
 	lf.StringSliceVar(&tagsFilter, "tag", tagsFilter, "Tag filter. May be used multiple times to specify more than one tag")
-	lf.StringVar(&namePrefix, "name-prefix", namePrefix, "Name prefix")
 	lf.Int32VarP(&pageSize, "page-size", "s", pageSize, "Page size")
 	lf.BoolVar(&listAll, "all", listAll, "List all tasks")
 
@@ -124,7 +123,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 type hooks struct {
 	Create func(server string, messages []string, r io.Reader, w io.Writer) error
 	Get    func(server string, ids []string, view string, w io.Writer) error
-	List   func(server, view, pageToken, stateFilter string, tagsFilter []string, namePrefix string, pageSize int32, all bool, w io.Writer) error
+	List   func(server, view, pageToken, stateFilter string, tagsFilter []string, pageSize int32, all bool, w io.Writer) error
 	Cancel func(server string, ids []string, w io.Writer) error
 	Wait   func(server string, ids []string) error
 }

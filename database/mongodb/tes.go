@@ -24,9 +24,9 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 
 	switch req.View {
 	case tes.View_BASIC.String():
-		opts = opts.SetProjection(basicView)
+		q = q.Select(basicView)
 	case tes.View_MINIMAL.String():
-		opts = opts.SetProjection(minimalView)
+		q = q.Select(minimalView)
 	}
 
 	err := db.tasks(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}, opts).Decode(&task)
@@ -51,8 +51,8 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		query["state"] = bson.M{"$eq": req.State}
 	}
 
-	if req.NamePrefix != "" {
-		query["name"] = bson.M{"$regex": fmt.Sprintf("^%s", req.NamePrefix)}
+	for k, v := range req.GetTags() {
+		query[fmt.Sprintf("tags.%s", k)] = bson.M{"$eq": v}
 	}
 
 	for k, v := range req.GetTags() {
@@ -67,14 +67,9 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 
 	switch req.View {
 	case tes.View_BASIC.String():
-		opts = opts.SetProjection(basicView)
+		q = q.Select(basicView)
 	case tes.View_MINIMAL.String():
-		opts = opts.SetProjection(minimalView)
-	}
-
-	cursor, err := db.tasks(db.client).Find(context.TODO(), query, opts)
-	if err != nil {
-		return nil, err
+		q = q.Select(minimalView)
 	}
 
 	var tasks []*tes.Task

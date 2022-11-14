@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 )
@@ -45,6 +46,7 @@ var SysLogs = []byte("system-logs")
 // BoltDB provides handlers for gRPC endpoints.
 // Data is stored/retrieved from the BoltDB key-value database.
 type BoltDB struct {
+	scheduler.UnimplementedSchedulerServiceServer
 	db *bolt.DB
 }
 

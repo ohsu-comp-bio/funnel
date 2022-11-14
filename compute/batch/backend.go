@@ -119,7 +119,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 // Cancel removes tasks from the AWS batch job queue.
 func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 	task, err := b.database.GetTask(
-		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_BASIC},
+		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_BASIC.String()},
 	)
 	if err != nil {
 		return err
@@ -172,7 +172,7 @@ ReconcileLoop:
 			for _, s := range states {
 				for {
 					lresp, err := b.database.ListTasks(ctx, &tes.ListTasksRequest{
-						View:      tes.TaskView_BASIC,
+						View:      tes.View_BASIC.String(),
 						State:     s,
 						PageSize:  100,
 						PageToken: pageToken,

@@ -29,7 +29,7 @@ func NewRPCTaskReader(ctx context.Context, conf config.RPCClient, taskID string)
 func (r *RPCTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 	return r.client.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   r.taskID,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 }
 
@@ -37,7 +37,7 @@ func (r *RPCTaskReader) Task(ctx context.Context) (*tes.Task, error) {
 func (r *RPCTaskReader) State(ctx context.Context) (tes.State, error) {
 	t, err := r.client.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   r.taskID,
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	return t.GetState(), err
 }

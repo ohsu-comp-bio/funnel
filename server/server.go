@@ -82,21 +82,8 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
-
-	marsh := NewMarshaler()
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh))
-	
-	// m := protojson.MarshalOptions{
-	// 	Indent:          "  ",
-	// 	EmitUnpopulated: true,
-	// 	UseProtoNames:   true,
-	// }
-	// u := protojson.UnmarshalOptions{}
-	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-	// 	MarshalOptions:   m,
-	// 	UnmarshalOptions: u,
-	// }))
-
+	mar := runtime.JSONBuiltin{}
+	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()

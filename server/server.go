@@ -80,9 +80,9 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
-	mar := runtime.JSONPb(tes.Marshaler)
+	mar := runtime.JSONBuiltin{}
 	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
-	runtime.OtherErrorHandler = s.handleError
+	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()
 	dashmux.Handle("/", webdash.RootHandler())

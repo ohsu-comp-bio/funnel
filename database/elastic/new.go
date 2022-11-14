@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
@@ -14,6 +15,7 @@ var basic = elastic.NewFetchSourceContext(true).
 
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {
+	scheduler.UnimplementedSchedulerServiceServer
 	client    *elastic.Client
 	conf      config.Elastic
 	taskIndex string
@@ -35,10 +37,10 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 		return nil, err
 	}
 	es := &Elastic{
-		client,
-		conf,
-		conf.IndexPrefix + "-tasks",
-		conf.IndexPrefix + "-nodes",
+		client:    client,
+		conf:      conf,
+		taskIndex: conf.IndexPrefix + "-tasks",
+		nodeIndex: conf.IndexPrefix + "-nodes",
 	}
 	return es, nil
 }

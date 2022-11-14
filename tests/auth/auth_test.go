@@ -31,14 +31,14 @@ func TestBasicAuthFail(t *testing.T) {
 	// HTTP client
 	_, err := fun.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   "1",
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
 		t.Fatal("expected error")
 	}
 
 	_, err = fun.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
 		t.Fatal("expected error")
@@ -59,14 +59,14 @@ func TestBasicAuthFail(t *testing.T) {
 	// RPC client
 	_, err = fun.RPC.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   "1",
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
 		t.Fatal("expected error")
 	}
 
 	_, err = fun.RPC.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
 		t.Fatal("expected error")
@@ -111,14 +111,14 @@ func TestBasicAuthed(t *testing.T) {
 	// HTTP client
 	_, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id2,
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
 
 	_, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -139,14 +139,14 @@ func TestBasicAuthed(t *testing.T) {
 	// RPC client
 	_, err = fun.RPC.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id2,
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
 
 	_, err = fun.RPC.ListTasks(context.Background(), &tes.ListTasksRequest{
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error:", err)

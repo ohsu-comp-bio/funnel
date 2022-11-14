@@ -39,7 +39,8 @@ func TestGetTask(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
 		ta := Task{Id: "test-id"}
-		Marshaler.Marshal(w, &ta)
+		o, _ := Marshaler.Marshal(&ta)
+		w.Write(o)
 	})
 
 	ts := testServer(mux)
@@ -70,7 +71,8 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
 		ta := Task{Id: "test-id"}
-		Marshaler.Marshal(w, &ta)
+		o, _ := Marshaler.Marshal(&ta)
+		w.Write(o)
 	})
 
 	ts := testServer(mux)

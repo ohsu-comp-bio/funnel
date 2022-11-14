@@ -4,6 +4,7 @@ import "golang.org/x/net/context"
 
 // Service is a wrapper for providing a Writer as a gRPC service.
 type Service struct {
+	UnimplementedEventServiceServer
 	Writer
 }
 

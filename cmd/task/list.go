@@ -65,10 +65,7 @@ func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, 
 		}
 	}
 
-	response, err := cli.Marshaler.MarshalToString(output)
-	if err != nil {
-		return fmt.Errorf("marshaling error: %v", err)
-	}
+	response := cli.Marshaler.Format(output)
 
 	fmt.Fprintf(writer, "%s\n", response)
 	return nil

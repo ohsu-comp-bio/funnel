@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // NewClient returns a new HTTP client for accessing
@@ -50,7 +50,7 @@ func NewClient(address string) (*Client, error) {
 type Client struct {
 	address   string
 	client    *http.Client
-	Marshaler *jsonpb.Marshaler
+	Marshaler *protojson.MarshalOptions
 	User      string
 	Password  string
 }
@@ -68,7 +68,7 @@ func (c *Client) GetTask(ctx context.Context, req *GetTaskRequest) (*Task, error
 	}
 	// Parse response
 	resp := &Task{}
-	err = jsonpb.UnmarshalString(string(body), resp)
+	err = protojson.Unmarshal(body, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	}
 	// Parse response
 	resp := &ListTasksResponse{}
-	err = jsonpb.UnmarshalString(string(body), resp)
+	err = protojson.Unmarshal(body, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -116,15 +116,14 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 		return nil, fmt.Errorf("invalid task message: %v", verr)
 	}
 
-	var b bytes.Buffer
-	err := Marshaler.Marshal(&b, task)
+	b, err := Marshaler.Marshal(task)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling task message: %v", err)
 	}
 
 	// Send request
 	u := c.address + "/v1/tasks"
-	hreq, _ := http.NewRequest("POST", u, &b)
+	hreq, _ := http.NewRequest("POST", u, bytes.NewReader(b))
 	hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
@@ -135,7 +134,7 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 
 	// Parse response
 	resp := &CreateTaskResponse{}
-	err = jsonpb.UnmarshalString(string(body), resp)
+	err = protojson.Unmarshal(body, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +155,7 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 
 	// Parse response
 	resp := &CancelTaskResponse{}
-	err = jsonpb.UnmarshalString(string(body), resp)
+	err = protojson.Unmarshal(body, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +175,7 @@ func (c *Client) GetServiceInfo(ctx context.Context, req *GetServiceInfoRequest)
 
 	// Parse response
 	resp := &ServiceInfo{}
-	err = jsonpb.UnmarshalString(string(body), resp)
+	err = protojson.Unmarshal(body, resp)
 	if err != nil {
 		return nil, err
 	}

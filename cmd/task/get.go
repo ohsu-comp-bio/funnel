@@ -32,10 +32,7 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 		if err != nil {
 			return err
 		}
-		out, err := cli.Marshaler.MarshalToString(resp)
-		if err != nil {
-			return err
-		}
+		out := cli.Marshaler.Format(resp)
 		res = append(res, out)
 	}
 

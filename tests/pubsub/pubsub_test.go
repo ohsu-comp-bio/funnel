@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -50,12 +51,14 @@ func TestPubSubWorkerRun(t *testing.T) {
 	task := &tes.Task{}
 	b := events.TaskBuilder{Task: task}
 
+	var result *multierror.Error
+
 	// Read events from pubsub, write into task builder.
 	subname := "test-pubsub-" + tests.RandomString(10)
 	go func() {
 		err := events.ReadPubSub(ctx, conf.PubSub, subname, b)
 		if err != nil {
-			t.Fatal(err)
+			result = multierror.Append(result, err)
 		}
 	}()
 
@@ -69,6 +72,10 @@ func TestPubSubWorkerRun(t *testing.T) {
 	}
 	fun.Wait(id)
 	time.Sleep(time.Second)
+
+	if result != nil {
+		t.Fatal(result)
+	}
 
 	// Check the task (built from a stream of kafka events).
 	if task.State != tes.State_COMPLETE {

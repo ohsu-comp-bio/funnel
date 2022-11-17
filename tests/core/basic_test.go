@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -280,9 +281,10 @@ func TestGetTaskView(t *testing.T) {
 }
 
 // TODO this is a bit hacky for now because we're reusing the same
-//      server + DB for all the e2e tests, so ListTasks gets the
-//      results of all of those. It works for the moment, but
-//      should probably run against a clean environment.
+//
+//	server + DB for all the e2e tests, so ListTasks gets the
+//	results of all of those. It works for the moment, but
+//	should probably run against a clean environment.
 func TestListTaskView(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	var tasks []*tes.Task
@@ -1117,6 +1119,8 @@ func TestConcurrentStateUpdate(t *testing.T) {
 	f := tests.NewFunnel(c)
 	f.StartServer()
 
+	var result *multierror.Error
+
 	ids := []string{}
 	for i := 0; i < 10; i++ {
 		id := f.Run(`--sh 'echo hello'`)
@@ -1126,12 +1130,14 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			opts := &workerCmd.Options{TaskID: id}
 			w, err := workerCmd.NewWorker(ctx, c, log, opts)
 			if err != nil {
-				t.Fatal(err)
+				result = multierror.Append(result, err)
+				return
 			}
 
 			log.Info("writing state initializing event", "taskID", id)
 			err = w.EventWriter.WriteEvent(ctx, events.NewState(id, tes.Initializing))
 			if err != nil {
+				result = multierror.Append(result, err)
 				log.Error("error writing event", err)
 			}
 		}(id)
@@ -1140,15 +1146,21 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			opts := &workerCmd.Options{TaskID: id}
 			w, err := workerCmd.NewWorker(ctx, c, log, opts)
 			if err != nil {
-				t.Fatal(err)
+				result = multierror.Append(result, err)
+				return
 			}
 
 			log.Info("writing state canceled event", "taskID", id)
 			err = w.EventWriter.WriteEvent(ctx, events.NewState(id, tes.Canceled))
 			if err != nil {
+				result = multierror.Append(result, err)
 				log.Error("error writing event", "error", err, "taskID", id)
 			}
 		}(id)
+	}
+
+	if result != nil {
+		t.Error(result)
 	}
 
 	for _, i := range ids {

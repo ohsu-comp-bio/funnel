@@ -125,7 +125,8 @@ func (n *NodeProcess) checkConnection(ctx context.Context) {
 // handles signals from the server (new task, cancel task, etc), reports resources, etc.
 //
 // TODO Sync should probably use a channel to sync data access.
-//      Probably only a problem for test code, where Sync is called directly.
+//
+//	Probably only a problem for test code, where Sync is called directly.
 func (n *NodeProcess) sync(ctx context.Context) {
 	var r *Node
 	var err error

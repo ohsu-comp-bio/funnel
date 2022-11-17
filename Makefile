@@ -82,12 +82,12 @@ tidy:
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
 lint-depends:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.22.2
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
 	go install golang.org/x/tools/cmd/goimports
 
 # Run code style and other checks
 lint:
-	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
+	@golangci-lint run --timeout 3m --disable-all --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
 		--skip-dirs "vendor" \
 		--skip-dirs "webdash" \
 		--skip-dirs "cmd/webdash" \

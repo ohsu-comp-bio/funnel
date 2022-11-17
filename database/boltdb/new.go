@@ -40,7 +40,8 @@ var ExecutorStderr = []byte("executor-stderr")
 var Nodes = []byte("nodes")
 
 // SysLogs defeines the name of a bucket with maps
-// task ID -> tes.TaskLog.SystemLogs
+//
+//	task ID -> tes.TaskLog.SystemLogs
 var SysLogs = []byte("system-logs")
 
 // BoltDB provides handlers for gRPC endpoints.

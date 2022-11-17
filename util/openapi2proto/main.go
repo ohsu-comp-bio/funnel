@@ -16,7 +16,7 @@ type Field struct {
 	Name     string
 	Type     string
 	Repeated bool
-	Id       int
+	ID       int
 	Source   *openapi3.SchemaRef
 }
 
@@ -98,7 +98,7 @@ func getFields(schema *openapi3.SchemaRef) []Field {
 	}
 	sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 	for i := range fields {
-		fields[i].Id = i + 1
+		fields[i].ID = i + 1
 	}
 	return fields
 }
@@ -133,7 +133,7 @@ func parseMessageSchema(name string, schema *openapi3.SchemaRef) (Message, error
 		//fmt.Printf("Fields: %#vs\n", fields)
 		sort.SliceStable(fields, func(i, j int) bool { return fields[i].Name < fields[j].Name })
 		for i := range fields {
-			fields[i].Id = i + 1
+			fields[i].ID = i + 1
 		}
 		m := Message{Name: name, Fields: fields}
 		return m, nil
@@ -227,7 +227,7 @@ func main() {
 					reqFields = append(reqFields, Field{Name: param.Value.Name, Type: t, Repeated: r})
 				}
 				for i := range reqFields {
-					reqFields[i].Id = i + 1
+					reqFields[i].ID = i + 1
 				}
 				m := Message{Name: req.Get.OperationID + "Request", Fields: reqFields}
 				messages = append(messages, m)
@@ -241,7 +241,7 @@ func main() {
 					reqFields = append(reqFields, Field{Name: param.Value.Name, Type: t, Repeated: r})
 				}
 				for i := range reqFields {
-					reqFields[i].Id = i + 1
+					reqFields[i].ID = i + 1
 				}
 				if req.Post.RequestBody != nil {
 					//if not a reference to schema, build it

@@ -1144,7 +1144,7 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			log.Info("writing state initializing event", "taskID", id)
 			err = w.EventWriter.WriteEvent(ctx, events.NewState(id, tes.Initializing))
 			if err != nil {
-				// Not appending errors here as the task may have already been canceled
+				result = multierror.Append(result, err)
 				log.Error("error writing event", err)
 			}
 		}(id)

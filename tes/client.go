@@ -165,7 +165,7 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 
 // GetServiceInfo returns result of GET /v1/tasks/service-info
 func (c *Client) GetServiceInfo(ctx context.Context, req *ServiceInfoRequest) (*ServiceInfo, error) {
-	u := c.address + "/v1/tasks/service-info"
+	u := c.address + "/v1/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)

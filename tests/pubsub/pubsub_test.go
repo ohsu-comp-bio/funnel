@@ -55,7 +55,7 @@ func TestPubSubWorkerRun(t *testing.T) {
 	go func() {
 		err := events.ReadPubSub(ctx, conf.PubSub, subname, b)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	}()
 

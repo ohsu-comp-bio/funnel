@@ -6,9 +6,9 @@ import (
 
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/ohsu-comp-bio/funnel/config"
-	pscpu "github.com/shirou/gopsutil/cpu"
-	psdisk "github.com/shirou/gopsutil/disk"
-	psmem "github.com/shirou/gopsutil/mem"
+	pscpu "github.com/shirou/gopsutil/v3/cpu"
+	psdisk "github.com/shirou/gopsutil/v3/disk"
+	psmem "github.com/shirou/gopsutil/v3/mem"
 )
 
 // GenNodeID returns a UUID string.

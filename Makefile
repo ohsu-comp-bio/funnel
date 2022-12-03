@@ -39,46 +39,54 @@ build:
 proto:
 	@cd tes && protoc \
 		$(PROTO_INC) \
-		--go_out=plugins=grpc:. \
-		--grpc-gateway_out=logtostderr=true:. \
+		--go_opt=paths=source_relative \
+		--go-grpc_opt=paths=source_relative,require_unimplemented_servers=false \
+		--grpc-gateway_opt=paths=source_relative \
+		--grpc-gateway_opt=logtostderr=true \
+		--go_out=. \
+		--go-grpc_out=. \
+		--grpc-gateway_out=. \
 		tes.proto
 	@cd compute/scheduler && protoc \
 		$(PROTO_INC) \
-		--go_out=plugins=grpc:. \
-		--grpc-gateway_out=logtostderr=true:. \
+		--go_opt=paths=source_relative \
+		--go-grpc_opt=paths=source_relative,require_unimplemented_servers=false \
+		--grpc-gateway_opt=paths=source_relative \
+		--grpc-gateway_opt=logtostderr=true \
+		--go_out=. \
+		--go-grpc_out=. \
+		--grpc-gateway_out=. \
 		scheduler.proto
 	@cd events && protoc \
 		$(PROTO_INC) \
 		-I ../tes \
-		--go_out=Mtes.proto=github.com/ohsu-comp-bio/funnel/tes,plugins=grpc:. \
-		--grpc-gateway_out=logtostderr=true:. \
+		--go_opt=paths=source_relative \
+		--go-grpc_opt=paths=source_relative,require_unimplemented_servers=false \
+		--grpc-gateway_opt=paths=source_relative \
+		--grpc-gateway_opt=logtostderr=true \
+		--go_out=. \
+		--go-grpc_out=. \
+		--grpc-gateway_out=. \
 		events.proto
 
 # Start API reference doc server
 serve-doc:
-	@go get golang.org/x/tools/cmd/godoc
+	@go install golang.org/x/tools/cmd/godoc@latest
 	godoc --http=:6060
 
 # Automatially update code formatting
 tidy:
-	@go get golang.org/x/tools/cmd/goimports
+	@go install golang.org/x/tools/cmd/goimports@latest
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs goimports -w
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
 lint-depends:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.22.2
-	go install golang.org/x/tools/cmd/goimports
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	go install golang.org/x/tools/cmd/goimports@latest
 
 # Run code style and other checks
 lint:
-	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
-		--skip-dirs "vendor" \
-		--skip-dirs "webdash" \
-		--skip-dirs "cmd/webdash" \
-		--skip-dirs "funnel-work-dir" \
-		-e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
-		./...
-	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell ./cmd/termdash/...
+	@golangci-lint run ./...
 
 # Run all tests
 test:
@@ -181,12 +189,12 @@ test-ftp:
 
 # Build the web dashboard
 webdash:
-	@go get -u github.com/go-bindata/go-bindata/...
+	@go install github.com/go-bindata/go-bindata/...@latest
 	@cd webdash && yarn build
 	@go-bindata -pkg webdash -prefix "webdash/build" -o webdash/web.go webdash/build/...
 
 # Build binaries for all OS/Architectures
-snapshot: depends
+snapshot:
 	@goreleaser \
 		--rm-dist \
 		--snapshot
@@ -204,23 +212,23 @@ docker-dind-rootless:
 	docker build -t ohsucompbio/funnel-dind-rootless:latest -f Dockerfile.dind-rootless .
 
 release:
-	@go get github.com/buchanae/github-release-notes
 	@goreleaser \
 		--rm-dist \
 		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at ${LAST_PR_NUMBER})
 
-release-dep:
-	@go get github.com/goreleaser/goreleaser
-	@go get github.com/buchanae/github-release-notes
+release-depends:
+	go install github.com/goreleaser/goreleaser@latest
+	go install github.com/buchanae/github-release-notes@latest
 
 # Generate mocks for testing.
 gen-mocks:
-	@go get github.com/vektra/mockery/...
+	@go install github.com/vektra/mockery/...@latest
 	@mockery -dir compute/scheduler -name Client -inpkg -output compute/scheduler
 	@mockery -dir compute/scheduler -name SchedulerServiceServer -inpkg -output compute/scheduler
 
 # Bundle example task messages into Go code.
 bundle-examples:
+	@go install github.com/go-bindata/go-bindata/...@latest
 	@go-bindata -pkg examples -o examples/internal/bundle.go $(shell find examples/ -name '*.json')
 	@go-bindata -pkg config -o config/internal/bundle.go $(shell find config/ -name '*.txt' -o -name '*.yaml')
 	@gofmt -w -s examples/internal/bundle.go config/internal/bundle.go

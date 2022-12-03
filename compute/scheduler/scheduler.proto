@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package scheduler;
 
+option go_package = "github.com/ohsu-comp-bio/funnel/compute/scheduler";
+
 import "google/api/annotations.proto";
 
 message Resources {

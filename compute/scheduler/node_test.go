@@ -22,11 +22,19 @@ func TestStopNode(t *testing.T) {
 	stop := n.Start()
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, time.Millisecond*100)
-	defer cleanup()
-	stop()
-	n.Wait()
-	n.Client.AssertCalled(t, "Close")
+	timeout := time.After(time.Millisecond * 100)
+	done := make(chan bool)
+	go func() {
+		stop()
+		n.Wait()
+		n.Client.AssertCalled(t, "Close")
+		done <- true
+	}()
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
 }
 
 // Mainly exercising a panic bug caused by an unhandled
@@ -62,11 +70,18 @@ func TestNodeTimeout(t *testing.T) {
 	n.Start()
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, time.Duration(conf.Node.Timeout*500))
-	defer cleanup()
-
-	// Wait for the node to exit
-	n.Wait()
+	timeout := time.After(time.Duration(conf.Node.Timeout * 500))
+	done := make(chan bool)
+	go func() {
+		// Wait for the node to exit
+		n.Wait()
+		done <- true
+	}()
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
 }
 
 // Test that a node does nothing where there are no assigned tasks.

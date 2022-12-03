@@ -4,13 +4,13 @@ import (
 	"net/http"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
+	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
 var fs = &assetfs.AssetFS{
 	Asset:     Asset,
 	AssetDir:  AssetDir,
 	AssetInfo: AssetInfo,
-	//Prefix:    "webdash/build",
 }
 
 var index = MustAsset("index.html")
@@ -22,8 +22,11 @@ func FileServer() http.Handler {
 }
 
 // RootHandler returns an http handler which always responds with the /index.html file.
-func RootHandler() http.Handler {
+func RootHandler(log *logger.Logger) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		resp.Write(index)
+		_, err := resp.Write(index)
+		if err != nil {
+			log.Error("HTTP handler error", "error", err, "url", req.URL)
+		}
 	})
 }

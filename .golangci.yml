@@ -1,0 +1,24 @@
+run:
+  concurrency: 4
+  timeout: 5m
+
+skip-dirs:
+  - "cmd/webdash"
+  - "webdash"
+
+skip-dirs-use-default: true
+
+skip-files:
+  - ".*bundle\\.go$"
+  - ".*\\.pb\\.go$"
+  - ".*\\.pb\\.gw\\.go$"
+  - "webdash/web\\.go$"
+
+linters:
+  disable-all: true
+  enable:
+    - golint
+    - vet
+    - gofmt
+    - goimports
+    - misspell

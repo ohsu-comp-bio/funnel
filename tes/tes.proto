@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package tes;
 
+option go_package = "github.com/ohsu-comp-bio/funnel/tes";
+
 // Import HTTP RESTful annotations.
 import "google/api/annotations.proto";
 

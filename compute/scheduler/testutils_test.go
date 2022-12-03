@@ -78,17 +78,3 @@ func (t *testNode) AddTasks(ids ...string) {
 	t.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
 		Return(&Node{}, nil)
 }
-
-func timeLimit(t *testing.T, d time.Duration) func() {
-	stop := make(chan struct{})
-	go func() {
-		select {
-		case <-time.NewTimer(d).C:
-			t.Fatal("time limit expired")
-		case <-stop:
-		}
-	}()
-	return func() {
-		close(stop)
-	}
-}

@@ -5,7 +5,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/ohsu-comp-bio/funnel/config"
-	oldctx "golang.org/x/net/context"
 	"google.golang.org/api/option"
 )
 
@@ -97,7 +96,7 @@ func ReadPubSub(ctx context.Context, conf config.PubSub, subname string, w Write
 		}
 	}
 
-	sub.Receive(ctx, func(ctx oldctx.Context, m *pubsub.Message) {
+	sub.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		ev := &Event{}
 		err := Unmarshal(m.Data, ev)
 		if err != nil {

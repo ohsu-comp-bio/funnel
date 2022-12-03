@@ -280,9 +280,10 @@ func TestGetTaskView(t *testing.T) {
 }
 
 // TODO this is a bit hacky for now because we're reusing the same
-//      server + DB for all the e2e tests, so ListTasks gets the
-//      results of all of those. It works for the moment, but
-//      should probably run against a clean environment.
+//
+//	server + DB for all the e2e tests, so ListTasks gets the
+//	results of all of those. It works for the moment, but
+//	should probably run against a clean environment.
 func TestListTaskView(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	var tasks []*tes.Task
@@ -1134,7 +1135,7 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			opts := &workerCmd.Options{TaskID: id}
 			w, err := workerCmd.NewWorker(ctx, c, log, opts)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 
 			log.Info("writing state initializing event", "taskID", id)
@@ -1148,7 +1149,7 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			opts := &workerCmd.Options{TaskID: id}
 			w, err := workerCmd.NewWorker(ctx, c, log, opts)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 
 			log.Info("writing state canceled event", "taskID", id)

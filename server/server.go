@@ -85,7 +85,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	runtime.OtherErrorHandler = s.handleError
 
 	dashmux := http.NewServeMux()
-	dashmux.Handle("/", webdash.RootHandler())
+	dashmux.Handle("/", webdash.RootHandler(s.Log))
 	dashfs := webdash.FileServer()
 	mux.Handle("/favicon.ico", dashfs)
 	mux.Handle("/manifest.json", dashfs)

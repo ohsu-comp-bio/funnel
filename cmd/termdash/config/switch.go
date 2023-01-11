@@ -46,6 +46,6 @@ func GetSwitchVal(k string) bool {
 // Toggle a boolean switch
 func Toggle(k string) {
 	sw := GetSwitch(k)
-	newVal := sw.Val != true
+	newVal := !sw.Val
 	sw.Val = newVal
 }

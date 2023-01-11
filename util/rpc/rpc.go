@@ -10,6 +10,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // PerRPCPassword returns a new gRPC DialOption which includes a basic auth.
@@ -44,7 +45,7 @@ func Dial(pctx context.Context, conf config.RPCClient, opts ...grpc.DialOption) 
 	defer cancel()
 
 	defaultOpts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		PerRPCPassword(conf.User, conf.Password),
 	}
 	opts = append(opts, defaultOpts...)

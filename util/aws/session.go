@@ -19,7 +19,7 @@ func NewAWSSession(conf config.AWSConfig) (*session.Session, error) {
 	}
 
 	if conf.Endpoint != "" {
-		re := regexp.MustCompile("^s3.*\\.amazonaws\\.com/")
+		re := regexp.MustCompile(`^s3.*\.amazonaws\.com/`)
 		if !re.MatchString(conf.Endpoint) && !strings.HasPrefix(conf.Endpoint, "https://") {
 			awsConf.WithDisableSSL(true)
 		}

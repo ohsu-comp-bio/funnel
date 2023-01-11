@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -334,21 +335,21 @@
 <p>Currently authentication credentials are take from the URL, e.g. <code>ftp://username:password@ftp.host.tld</code>. This will be improved soon to allow credentials to be added to the configuration file.</p>
 <p>The FTP storage client is enabled by default, but may be explicitly disabled in the
 worker config:</p>
-<pre><code>FTPStorage:
+<pre tabindex="0"><code>FTPStorage:
   Disabled: false
 </code></pre><h3 id="example-task">Example task</h3>
-<pre><code>{
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [{
-    &quot;url&quot;: &quot;ftp://my.ftpserver.xyz/hello.txt&quot;,
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+<pre tabindex="0"><code>{
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [{
+    &#34;url&#34;: &#34;ftp://my.ftpserver.xyz/hello.txt&#34;,
+    &#34;path&#34;: &#34;/inputs/hello.txt&#34;
   }, {
-    &quot;url&quot;: &quot;ftp://user:mypassword123@my.ftpserver.xyz/hello.txt&quot;,
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+    &#34;url&#34;: &#34;ftp://user:mypassword123@my.ftpserver.xyz/hello.txt&#34;,
+    &#34;path&#34;: &#34;/inputs/hello.txt&#34;
   }],
-  &quot;executors&quot;: [{
-    &quot;image&quot;: &quot;alpine&quot;,
-    &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
+  &#34;executors&#34;: [{
+    &#34;image&#34;: &#34;alpine&#34;,
+    &#34;command&#34;: [&#34;cat&#34;, &#34;/inputs/hello.txt&#34;],
   }]
 }
 </code></pre>

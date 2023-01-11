@@ -7,7 +7,7 @@ import (
 	"github.com/andreyvit/diff"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
-	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 func TestTaskNoExecutorsValidationError(t *testing.T) {
@@ -20,7 +20,7 @@ func TestTaskNoExecutorsValidationError(t *testing.T) {
 Task.Executors: at least one executor is required
 `
 
-	e := grpc.ErrorDesc(err)
+	e := status.Convert(err).Message()
 	if e != expected {
 		t.Error("unexpected error message", diff.LineDiff(e, expected))
 	}
@@ -40,7 +40,7 @@ func TestTaskInputContentValidationError(t *testing.T) {
 		t.Error("expected validation error")
 	}
 
-	e := grpc.ErrorDesc(err)
+	e := status.Convert(err).Message()
 
 	if !strings.Contains(e, "Task.Inputs[0].Content") {
 		t.Error("unexpected error message")
@@ -98,7 +98,7 @@ Task.Outputs[0].Path: required, but empty
 Task.Volumes[0]: must be an absolute path
 `
 
-	e := grpc.ErrorDesc(err)
+	e := status.Convert(err).Message()
 	if e != expected {
 		t.Errorf("expected volumes error message. diff:\n%s", diff.LineDiff(e, expected))
 	}

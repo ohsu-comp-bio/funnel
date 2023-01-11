@@ -264,7 +264,10 @@ func TestZeroLogTailSize(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	w.Run(ctx)
+	err := w.Run(ctx)
+	if err != nil {
+		t.Log(err)
+	}
 
 	// we expect zero events to be generated
 	if counts.stdout != 0 {

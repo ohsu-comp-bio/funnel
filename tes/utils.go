@@ -52,6 +52,7 @@ func Base64Decode(raw string) (*Task, error) {
 
 // ErrNotFound is returned when a task is not found.
 var ErrNotFound = errors.New("task not found")
+var ErrConcurrentStateChange = errors.New("Concurrent stage change")
 
 // Shorthand for task views
 const (

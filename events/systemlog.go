@@ -68,8 +68,7 @@ func (sle *SystemLogWriter) Warn(msg string, args ...interface{}) error {
 // ("key", value, "key2", value2) => {"key": value, "key2", value2}
 func fields(args ...interface{}) map[string]string {
 	ss := make(map[string]string)
-	si := make(map[string]interface{})
-	si = util.ArgListToMap(args...)
+	si := util.ArgListToMap(args...)
 	for k, v := range si {
 		ss[k] = fmt.Sprintf("%+v", v)
 	}
@@ -99,6 +98,6 @@ func escape(s string) string {
 }
 
 func safeKey(s string) string {
-	re := regexp.MustCompile("[\\s]+")
+	re := regexp.MustCompile(`[\s]+`)
 	return re.ReplaceAllString(s, "_")
 }

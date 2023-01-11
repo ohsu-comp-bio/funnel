@@ -30,7 +30,10 @@ func TestNodeDead(t *testing.T) {
 	// Wait for node to ping timeout.
 	time.Sleep(time.Duration(conf.Scheduler.NodePingTimeout))
 	// Should mark node as dead.
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Error(err)
+	}
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if err != nil {

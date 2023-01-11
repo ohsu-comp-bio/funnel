@@ -36,7 +36,6 @@ func TestMain(m *testing.M) {
 	}()
 
 	exit = m.Run()
-	return
 }
 
 func TestHelloWorld(t *testing.T) {

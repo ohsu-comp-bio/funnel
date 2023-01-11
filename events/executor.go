@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/util/ring"
@@ -130,8 +131,8 @@ func (ew *ExecutorWriter) LogTail(ctx context.Context, size int64) (stdout, stde
 // tail of the content (up to "size") and emit events. Events
 // are rate limited by "interval", e.g. a max of one event every
 // 5 seconds.
-func (ew *ExecutorWriter) StreamLogTail(ctx context.Context, size int64, interval time.Duration) (stdout, stderr io.Writer) {
-	return StreamLogTail(ctx, ew.gen.taskID, ew.gen.attempt, ew.gen.index, size, interval, ew.out)
+func (ew *ExecutorWriter) StreamLogTail(ctx context.Context, size int64, interval time.Duration, wg *sync.WaitGroup) (stdout, stderr io.Writer) {
+	return StreamLogTail(ctx, ew.gen.taskID, ew.gen.attempt, ew.gen.index, size, interval, ew.out, wg)
 }
 
 // LogTail returns stdout/err io.Writers which will track the
@@ -172,7 +173,7 @@ func LogTail(ctx context.Context, taskID string, attempt, index uint32, size int
 // tail of the content (up to "size") and emit events. Events
 // are rate limited by "interval", e.g. a max of one event every
 // 5 seconds.
-func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, size int64, interval time.Duration, out Writer) (stdout, stderr io.Writer) {
+func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, size int64, interval time.Duration, out Writer, wg *sync.WaitGroup) (stdout, stderr io.Writer) {
 
 	// The rate limiter allows the input writers to trigger events
 	// immediately, without waiting for the ticker, as long as
@@ -228,8 +229,11 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 	// whole buffer (log tail) every tick, so when the output event writer
 	// catches up, it will write the new, complete tail.
 
+	wg.Add(1)
 	// output event writer routine
 	go func() {
+		defer wg.Done()
+
 		for e := range eventch {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			out.WriteEvent(ctx, e)

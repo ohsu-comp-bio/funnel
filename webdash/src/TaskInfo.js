@@ -158,6 +158,7 @@ function TaskInfoRaw(props) {
       const preFormat = function(s) {
         return <pre>{s}</pre>;
       };
+
       return (
         <div style={{padding: '40px 0px 0px 0px'}}>
           {renderTitle('Executors')}
@@ -174,11 +175,15 @@ function TaskInfoRaw(props) {
                 </TableRow>
                 {renderRow('Workdir', exec.workdir)}
                 {renderRow('Env', renderKV(exec.env, null, '0px 0px 0px 0px'))}
-                {renderRow('StartTime', logs[index].startTime, formatDate)}
-                {renderRow('EndTime', logs[index].endTime, formatDate)}
-                {renderRow('Exit Code', logs[index].exitCode)}
+                {logs[index] != undefined && 
+                <>
+                {renderRow('StartTime', logs[index].start_time, formatDate)}
+                {renderRow('EndTime', logs[index].end_time, formatDate)}
+                {renderRow('Exit Code', logs[index].exit_code)}
                 {renderRow('Stdout', logs[index].stdout, preFormat)}
                 {renderRow('Stderr', logs[index].stderr, preFormat)}
+                </>
+                }
               </TableBody>
             </Table>
           ))}

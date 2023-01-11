@@ -58,7 +58,10 @@ function TaskList({pageToken, setPageToken,
     for (var i = 0; i < tagsFilter.length; i++) {
       var tag = tagsFilter[i];
       if (tag.key !== "") {
-        params.set("tags["+tag.key+"]", tag.value);
+        params.set("tag_key", tag.key);
+      };
+      if (tag.value !== "") {
+        params.set("tag_value", tag.value);
       };
     };
     if (pageToken !== "") {
@@ -312,12 +315,12 @@ function ServiceInfo() {
   //const [info, setInfo] = React.useState(example_service_info);
 
   React.useEffect(() => {
-    var url = new URL("/v1/tasks/service-info", window.location.origin);
+    var url = new URL("/v1/service-info", window.location.origin);
     get(url).then(
       (info) => {
         setInfo(info);
       });
-  });
+  }, []);
   
   const json = (
     <ReactJson

@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -334,7 +335,7 @@
 <p>Funnel limits which directories may be accessed, by default only allowing directories
 under the current working directory of the Funnel worker.</p>
 <p>Config:</p>
-<pre><code>LocalStorage:
+<pre tabindex="0"><code>LocalStorage:
   # Whitelist of local directory paths which Funnel is allowed to access.
   AllowedDirs:
     - ./
@@ -342,20 +343,20 @@ under the current working directory of the Funnel worker.</p>
     - ...etc
 </code></pre><h3 id="example-task">Example task</h3>
 <p>Files must be absolute paths in <code>file:///path/to/file.txt</code> URL form.</p>
-<pre><code>{
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [{
-    &quot;url&quot;: &quot;file:///path/to/funnel-data/hello.txt&quot;,
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+<pre tabindex="0"><code>{
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [{
+    &#34;url&#34;: &#34;file:///path/to/funnel-data/hello.txt&#34;,
+    &#34;path&#34;: &#34;/inputs/hello.txt&#34;
   }],
-  &quot;outputs&quot;: [{
-    &quot;url&quot;: &quot;file:///path/to/funnel-data/output.txt&quot;,
-    &quot;path&quot;: &quot;/outputs/hello-out.txt&quot;
+  &#34;outputs&#34;: [{
+    &#34;url&#34;: &#34;file:///path/to/funnel-data/output.txt&#34;,
+    &#34;path&#34;: &#34;/outputs/hello-out.txt&#34;
   }],
-  &quot;executors&quot;: [{
-    &quot;image&quot;: &quot;alpine&quot;,
-    &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
-    &quot;stdout&quot;: &quot;/outputs/hello-out.txt&quot;,
+  &#34;executors&#34;: [{
+    &#34;image&#34;: &#34;alpine&#34;,
+    &#34;command&#34;: [&#34;cat&#34;, &#34;/inputs/hello.txt&#34;],
+    &#34;stdout&#34;: &#34;/outputs/hello-out.txt&#34;,
   }]
 }
 </code></pre><h3 id="file-hard-linking-behavior">File hard linking behavior</h3>

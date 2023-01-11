@@ -1,0 +1,20 @@
+      {
+        "name": "CompTest",
+        "description": "CompTest",
+        "executors": [
+          {
+            "image": "alpine",
+            "command": [
+              "ERROR"
+            ],
+            "ignore_error": true
+          },
+          {
+            "image": "alpine",
+            "command": [
+              "echo",
+              "hello"
+            ]
+          }
+        ]
+      }

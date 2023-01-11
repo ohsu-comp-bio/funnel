@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -357,37 +358,36 @@ to better suit your tasks.</p>
 </ul>
 <p>For more information check out AWS Batch&rsquo;s <a href="http://docs.aws.amazon.com/batch/latest/userguide/Batch_GetStarted.html">getting started guide</a>.</p>
 <h3 id="quickstart">Quickstart</h3>
-<pre><code>$ funnel aws batch create-all-resources --region us-west-2
-
+<pre tabindex="0"><code>$ funnel aws batch create-all-resources --region us-west-2
 </code></pre><p>This command will create a compute environment, job queue, IAM role and job definition.</p>
 <h2 id="configuring-the-funnel-server">Configuring the Funnel Server</h2>
 <p>Below is an example configuration. Note that the <code>Key</code>
 and <code>Secret</code> fields are left blank in the configuration of the components. This is because
 Funnel will, by default, try to will try to automatically load credentials from the environment.
 Alternatively, you may explicitly set the credentials in the config.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-YAML" data-lang="YAML"><span style="color:#66d9ef">Database</span>: <span style="color:#e6db74">&#34;dynamodb&#34;</span>
-<span style="color:#66d9ef">Compute</span>: <span style="color:#e6db74">&#34;aws-batch&#34;</span>
-<span style="color:#66d9ef">EventWriters</span>:
-  - <span style="color:#e6db74">&#34;log&#34;</span>
-
-<span style="color:#66d9ef">Dynamodb</span>:
-  <span style="color:#66d9ef">TableBasename</span>: <span style="color:#e6db74">&#34;funnel&#34;</span>
-  <span style="color:#66d9ef">Region</span>: <span style="color:#e6db74">&#34;us-west-2&#34;</span>
-  <span style="color:#66d9ef">Key</span>: <span style="color:#e6db74">&#34;&#34;</span>
-  <span style="color:#66d9ef">Secret</span>: <span style="color:#e6db74">&#34;&#34;</span>
-
-<span style="color:#66d9ef">Batch</span>:
-  <span style="color:#66d9ef">JobDefinition</span>: <span style="color:#e6db74">&#34;funnel-job-def&#34;</span>
-  <span style="color:#66d9ef">JobQueue</span>: <span style="color:#e6db74">&#34;funnel-job-queue&#34;</span> 
-  <span style="color:#66d9ef">Region</span>: <span style="color:#e6db74">&#34;us-west-2&#34;</span>
-  <span style="color:#66d9ef">Key</span>: <span style="color:#e6db74">&#34;&#34;</span>
-  <span style="color:#66d9ef">Secret</span>: <span style="color:#e6db74">&#34;&#34;</span>
-          
-<span style="color:#66d9ef">AmazonS3</span>:
-  <span style="color:#66d9ef">Key</span>: <span style="color:#e6db74">&#34;&#34;</span>
-  <span style="color:#66d9ef">Secret</span>: <span style="color:#e6db74">&#34;&#34;</span>
-</code></pre></div><h3 id="start-the-server">Start the server</h3>
-<pre><code>funnel server run --config /path/to/config.yaml
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-YAML" data-lang="YAML"><span style="display:flex;"><span><span style="color:#f92672">Database</span>: <span style="color:#e6db74">&#34;dynamodb&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">Compute</span>: <span style="color:#e6db74">&#34;aws-batch&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">EventWriters</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#e6db74">&#34;log&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">Dynamodb</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">TableBasename</span>: <span style="color:#e6db74">&#34;funnel&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Region</span>: <span style="color:#e6db74">&#34;us-west-2&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Key</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Secret</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">Batch</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">JobDefinition</span>: <span style="color:#e6db74">&#34;funnel-job-def&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">JobQueue</span>: <span style="color:#e6db74">&#34;funnel-job-queue&#34;</span> 
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Region</span>: <span style="color:#e6db74">&#34;us-west-2&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Key</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Secret</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>          
+</span></span><span style="display:flex;"><span><span style="color:#f92672">AmazonS3</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Key</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Secret</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span></code></pre></div><h3 id="start-the-server">Start the server</h3>
+<pre tabindex="0"><code>funnel server run --config /path/to/config.yaml
 </code></pre><h3 id="known-issues">Known issues</h3>
 <p>The <code>Task.Resources.DiskGb</code> field does not have any effect. See <a href="https://github.com/ohsu-comp-bio/funnel/issues/317">issue 317</a>.</p>
 

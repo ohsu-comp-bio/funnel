@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 
 	fun = tests.NewFunnel(conf)
 	serverName = "funnel-test-server-" + tests.RandomString(6)
-	fun.StartServerInDocker(serverName, "ohsucompbio/slurm:latest", []string{"--hostname", "ernie"})
+	fun.StartServerInDocker(serverName, "quay.io/ohsu-comp-bio/slurm:latest", []string{"--hostname", "slurmctl", "--cap-add", "sys_admin"})
 
 	exit := 0
 	defer func() {

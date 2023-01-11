@@ -9,6 +9,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func BenchmarkRunSerialNoNodes(b *testing.B) {
@@ -77,7 +78,7 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 			case id := <-ids:
 				// fake node that writes to UpdateExecutorLogs every tick
 				go func(id string) {
-					conn, err := grpc.Dial(fun.Conf.Server.RPCAddress(), grpc.WithInsecure())
+					conn, err := grpc.Dial(fun.Conf.Server.RPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 					if err != nil {
 						panic(err)
 					}

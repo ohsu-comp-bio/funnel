@@ -82,13 +82,15 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	addInt32(v, "page_size", req.GetPageSize())
 	addString(v, "page_token", req.GetPageToken())
 	addString(v, "view", req.GetView())
+	addString(v, "name_prefix", req.GetNamePrefix())
 
 	if req.GetState() != Unknown {
 		addString(v, "state", req.State.String())
 	}
 
 	for key, val := range req.GetTags() {
-		v.Add(fmt.Sprintf("tags[%s]", key), val)
+		v.Add("tag_key", key)
+		v.Add("tag_value", val)
 	}
 
 	// Send request
@@ -124,7 +126,7 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 	// Send request
 	u := c.address + "/v1/tasks"
 	hreq, _ := http.NewRequest("POST", u, bytes.NewReader(b))
-	hreq.WithContext(ctx)
+	// hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
@@ -162,9 +164,9 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 	return resp, nil
 }
 
-// GetServiceInfo returns result of GET /v1/tasks/service-info
+// GetServiceInfo returns result of GET /v1/service-info
 func (c *Client) GetServiceInfo(ctx context.Context, req *GetServiceInfoRequest) (*ServiceInfo, error) {
-	u := c.address + "/v1/tasks/service-info"
+	u := c.address + "/v1/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)

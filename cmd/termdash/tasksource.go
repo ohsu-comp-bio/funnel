@@ -88,9 +88,7 @@ func (ts *TaskSource) List(previous, next bool) (TaskWidgets, error) {
 	}
 
 	ts.lock.Lock()
-	for _, t := range ts.tasks {
-		tasks = append(tasks, t)
-	}
+	tasks = append(tasks, ts.tasks...)
 	ts.lock.Unlock()
 
 	sort.Sort(tasks)

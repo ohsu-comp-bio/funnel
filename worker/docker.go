@@ -71,6 +71,7 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	args = append(args, dcmd.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
+	err = dcmd.Event.Info(fmt.Sprintf("args: %s", args))
 	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)
 

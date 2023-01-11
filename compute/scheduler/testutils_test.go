@@ -32,7 +32,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 		conf:      conf,
 		client:    s,
 		log:       log,
-		resources: res,
+		resources: &res,
 		workerRun: NoopWorker,
 		workers:   newRunSet(),
 		timeout:   util.NewIdleTimeout(time.Duration(conf.Node.Timeout)),

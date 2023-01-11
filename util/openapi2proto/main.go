@@ -299,7 +299,7 @@ enum {{$enum.Name}} { {{range $j, $value := $enum.Values}}
 {{end}}
 {{range $i, $message := .messages}}
 message {{$message.Name}} { {{range $j, $field := $message.Fields}}
-	{{if $field.Repeated}}repeated {{end}}{{$field.Type}} {{$field.Name}} = {{$field.Id}};{{end}}
+	{{if $field.Repeated}}repeated {{end}}{{$field.Type}} {{$field.Name}} = {{$field.ID}};{{end}}
 }
 {{end}}
 
@@ -321,6 +321,9 @@ service TaskService {
 	if err != nil {
 		fmt.Printf("Template Error: %s\n", err)
 	} else {
-		tmpl.Execute(os.Stdout, map[string]interface{}{"messages": messages, "enums": enums, "services": service})
+		err := tmpl.Execute(os.Stdout, map[string]interface{}{"messages": messages, "enums": enums, "services": service})
+		if err != nil {
+			log.Fatalf("Template Error: %s", err)
+		}
 	}
 }

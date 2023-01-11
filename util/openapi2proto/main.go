@@ -55,7 +55,7 @@ func getType(p *openapi3.SchemaRef) (bool, string) {
 			_, aType := getType(p.Value.AdditionalProperties)
 			return false, fmt.Sprintf("map<string,%s>", aType)
 		}
-		return false, fmt.Sprintf("map<string,string>")
+		return false, "map<string,string>"
 		//return fmt.Sprintf("%#v", p.Value)
 	case "array":
 		if p.Value.Items.Ref != "" {
@@ -299,7 +299,7 @@ enum {{$enum.Name}} { {{range $j, $value := $enum.Values}}
 {{end}}
 {{range $i, $message := .messages}}
 message {{$message.Name}} { {{range $j, $field := $message.Fields}}
-	{{if $field.Repeated}}repeated {{end}}{{$field.Type}} {{$field.Name}} = {{$field.Id}};{{end}}
+	{{if $field.Repeated}}repeated {{end}}{{$field.Type}} {{$field.Name}} = {{$field.ID}};{{end}}
 }
 {{end}}
 
@@ -308,6 +308,16 @@ service TaskService {
     rpc {{$path.Name}}({{$path.InputType}}) returns ({{$path.OutputType}}) {
       option (google.api.http) = {
         {{$path.Mode}}: "{{$path.Path}}"
+		additional_bindings {
+			{{$path.Mode}}: "/v1{{$path.Path}}"
+			{{- if eq $path.Mode "post"}}
+			body: "*"{{end}}
+		}
+		additional_bindings {
+			{{$path.Mode}}: "/ga4gh/tes/v1{{$path.Path}}"
+			{{- if eq $path.Mode "post"}}
+			body: "*"{{end}}
+		}
 		{{- if eq $path.Mode "post"}}
 		body: "*"{{end}}
       };
@@ -321,6 +331,9 @@ service TaskService {
 	if err != nil {
 		fmt.Printf("Template Error: %s\n", err)
 	} else {
-		tmpl.Execute(os.Stdout, map[string]interface{}{"messages": messages, "enums": enums, "services": service})
+		err := tmpl.Execute(os.Stdout, map[string]interface{}{"messages": messages, "enums": enums, "services": service})
+		if err != nil {
+			log.Fatalf("Template Error: %s", err)
+		}
 	}
 }

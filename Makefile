@@ -11,11 +11,11 @@ git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git
 export GIT_BRANCH = $(git_branch)
 export GIT_UPSTREAM = $(git_upstream)
 
-export FUNNEL_VERSION=0.10.1
+export FUNNEL_VERSION=0.11.0-rc.1
 
 # LAST_PR_NUMBER is used by the release notes builder to generate notes
 # based on pull requests (PR) up until the last release.
-export LAST_PR_NUMBER = 605
+export LAST_PR_NUMBER = 716
 
 VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.BuildDate=$(shell date)" \
@@ -33,7 +33,13 @@ install:
 # Build the code
 build:
 	@touch version/version.go
-	@go build -ldflags '$(VERSION_LDFLAGS)' .
+	@go build -ldflags '$(VERSION_LDFLAGS)' -buildvcs=false .
+
+# Build an unoptimized version of the code for use during debugging 
+# https://go.dev/doc/gdb
+debug:
+	@go install -gcflags=all="-N -l"
+	@funnel server run
 
 # Generate the protobuf/gRPC code
 proto:
@@ -70,6 +76,15 @@ proto:
 		--grpc-gateway_opt paths=source_relative \
 		events.proto
 
+
+proto-depends:
+	@git submodule update --init --recursive
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.11.1
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.11.1
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@go install github.com/ckaznocha/protoc-gen-lint@v0.2.4
+
 # Start API reference doc server
 serve-doc:
 	@go get golang.org/x/tools/cmd/godoc
@@ -87,7 +102,7 @@ lint-depends:
 
 # Run code style and other checks
 lint:
-	@golangci-lint run --timeout 3m --disable-all --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
+	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
 		--skip-dirs "vendor" \
 		--skip-dirs "webdash" \
 		--skip-dirs "cmd/webdash" \
@@ -113,7 +128,7 @@ test-elasticsearch:
 
 start-mongodb:
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
+	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo > /dev/null
 
 test-mongodb:
 	@go test ./tests/core/ --funnel-config `pwd`/tests/mongo.config.yml
@@ -149,7 +164,7 @@ test-htcondor:
 	@go test -timeout 120s ./tests/htcondor -funnel-config `pwd`/tests/htcondor.config.yml
 
 test-slurm:
-	@docker pull ohsucompbio/slurm
+	@docker pull quay.io/ohsu-comp-bio/slurm
 	@go test -timeout 120s ./tests/slurm -funnel-config `pwd`/tests/slurm.config.yml
 
 test-gridengine:
@@ -165,9 +180,9 @@ test-amazon-s3:
 
 start-generic-s3:
 	@docker rm -f funnel-s3server > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-s3server -p 18888:8000 scality/s3server:mem-6018536a
+	@docker run -d --name funnel-s3server -p 18888:8000 zenko/cloudserver
 	@docker rm -f funnel-minio > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-minio -p 9000:9000 -e "MINIO_ACCESS_KEY=fakekey" -e "MINIO_SECRET_KEY=fakesecret" -e "MINIO_REGION=us-east-1" minio/minio:RELEASE.2017-10-27T18-59-02Z server /data
+	@docker run -d --name funnel-minio -p 9000:9000 -e "MINIO_ACCESS_KEY=fakekey" -e "MINIO_SECRET_KEY=fakesecret" -e "MINIO_REGION=us-east-1" minio/minio server /data
 
 test-generic-s3:
 	@go test ./tests/storage -funnel-config `pwd`/tests/amazoncli-minio-s3.config.yml -run TestAmazonS3Storage
@@ -202,9 +217,9 @@ webdash:
 	@go-bindata -pkg webdash -prefix "webdash/build" -o webdash/web.go webdash/build/...
 
 # Build binaries for all OS/Architectures
-snapshot: depends
+snapshot: release-dep
 	@goreleaser \
-		--rm-dist \
+		--clean \
 		--snapshot
 
 # build a docker container locally
@@ -219,12 +234,14 @@ docker-dind:
 docker-dind-rootless:
 	docker build -t ohsucompbio/funnel-dind-rootless:latest -f Dockerfile.dind-rootless .
 
+# Create a release on Github using GoReleaser 
 release:
 	@go get github.com/buchanae/github-release-notes
 	@goreleaser \
-		--rm-dist \
+		--clean \
 		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at ${LAST_PR_NUMBER})
 
+# Install dependencies for release
 release-dep:
 	@go get github.com/goreleaser/goreleaser
 	@go get github.com/buchanae/github-release-notes
@@ -260,4 +277,4 @@ website-dev:
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto website docker webdash build
+.PHONY: proto website docker webdash build debug

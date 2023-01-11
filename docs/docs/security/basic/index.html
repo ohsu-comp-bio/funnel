@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -333,23 +334,23 @@
 <p>By default, a Funnel server allows open access to its API endpoints, but it
 can be configured to require basic password authentication. To enable this,
 include users and passwords in your config file:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">Server</span>:
-  <span style="color:#66d9ef">BasicAuth</span>:
-    - <span style="color:#66d9ef">User</span>: funnel
-      <span style="color:#66d9ef">Password</span>: abc123
-</code></pre></div><p>If you are using BoltDB or Badger, the Funnel worker communicates to the server via gRPC
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">Server</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">BasicAuth</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">User</span>: <span style="color:#ae81ff">funnel</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">Password</span>: <span style="color:#ae81ff">abc123</span>
+</span></span></code></pre></div><p>If you are using BoltDB or Badger, the Funnel worker communicates to the server via gRPC
 so you will also need to configure the RPC client.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">RPCClient</span>:
-  <span style="color:#66d9ef">User</span>: funnel
-  <span style="color:#66d9ef">Password</span>: abc123
-</code></pre></div><p>Make sure to properly protect the configuration file so that it&rsquo;s not readable
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">RPCClient</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">User</span>: <span style="color:#ae81ff">funnel</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">Password</span>: <span style="color:#ae81ff">abc123</span>
+</span></span></code></pre></div><p>Make sure to properly protect the configuration file so that it&rsquo;s not readable
 by everyone:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ chmod <span style="color:#ae81ff">600</span> funnel.config.yml
-</code></pre></div><p>To use the password, set the <code>FUNNEL_SERVER_USER</code> and <code>FUNNEL_SERVER_PASSWORD</code> environment variables:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ export FUNNEL_SERVER_USER<span style="color:#f92672">=</span>funnel
-$ export FUNNEL_SERVER_PASSWORD<span style="color:#f92672">=</span>abc123
-$ funnel task list
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ chmod <span style="color:#ae81ff">600</span> funnel.config.yml
+</span></span></code></pre></div><p>To use the password, set the <code>FUNNEL_SERVER_USER</code> and <code>FUNNEL_SERVER_PASSWORD</code> environment variables:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ export FUNNEL_SERVER_USER<span style="color:#f92672">=</span>funnel
+</span></span><span style="display:flex;"><span>$ export FUNNEL_SERVER_PASSWORD<span style="color:#f92672">=</span>abc123
+</span></span><span style="display:flex;"><span>$ funnel task list
+</span></span></code></pre></div>
   </div>
 
 </div>

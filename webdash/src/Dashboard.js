@@ -200,8 +200,7 @@ function Dashboard({classes}) {
           <Route exact path="/nodes" component={NodeList} />
           <Route exact path="/v1/nodes/:node_id" component={Node} />
           <Route exact path="/nodes/:node_id" component={Node} />
-          <Route exact path="/v1/tasks/service-info" component={ServiceInfo} />
-          <Route exact path="/tasks/service-info" component={ServiceInfo} />
+          <Route exact path="/v1/service-info" component={ServiceInfo} />
           <Route exact path="/service-info" component={ServiceInfo} />
           <Route component={NoMatch} />
         </Switch>

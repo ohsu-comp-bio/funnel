@@ -3,8 +3,9 @@ package mongodb
 import (
 	"context"
 
-	"github.com/globalsign/mgo/bson"
 	"github.com/ohsu-comp-bio/funnel/tes"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type stateCount struct {
@@ -14,16 +15,24 @@ type stateCount struct {
 
 // TaskStateCounts returns the number of tasks in each state.
 func (db *MongoDB) TaskStateCounts(ctx context.Context) (map[string]int32, error) {
-	sess := db.sess.Copy()
-	defer sess.Close()
+	stateStage := bson.D{{
+		Key: "$sort", Value: bson.D{{Key: "state", Value: 1}},
+	}}
 
-	pipe := db.tasks(sess).Pipe([]bson.M{
-		{"$sort": bson.M{"state": 1}},
-		{"$group": bson.M{"_id": "$state", "count": bson.M{"$sum": 1}}},
-	})
+	groupStage := bson.D{
+		{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$state"},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+		},
+		}}
+
+	cursor, err := db.tasks(db.client).Aggregate(context.TODO(), mongo.Pipeline{stateStage, groupStage})
+	if err != nil {
+		return nil, err
+	}
 
 	recs := []stateCount{}
-	err := pipe.All(&recs)
+	err = cursor.All(context.TODO(), &recs)
 	if err != nil {
 		return nil, err
 	}

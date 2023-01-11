@@ -1,0 +1,15 @@
+{
+  "name": "Task with tag :",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": [
+        "echo",
+        "hello"
+      ]
+    }
+  ],
+  "tags": {
+    "": ""
+  }
+}

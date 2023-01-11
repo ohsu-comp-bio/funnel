@@ -61,7 +61,5 @@ func (cg *Grid) Buffer() ui.Buffer {
 }
 
 func (cg *Grid) AddRows(rows ...ui.GridBufferer) {
-	for _, r := range rows {
-		cg.Rows = append(cg.Rows, r)
-	}
+	cg.Rows = append(cg.Rows, rows...)
 }

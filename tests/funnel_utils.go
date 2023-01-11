@@ -16,6 +16,7 @@ import (
 	"time"
 
 	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
@@ -241,9 +242,9 @@ func (f *Funnel) RunE(s string) (string, error) {
 	return f.RunTask(tasks[0])
 }
 
-// RunTask calls CreateTask with the given task message and returns the ID.
+// RunTask calls CreateTask with the given task message and returns the ID.“
 func (f *Funnel) RunTask(t *tes.Task) (string, error) {
-	resp, cerr := f.RPC.CreateTask(context.Background(), t, grpc.FailFast(false))
+	resp, cerr := f.RPC.CreateTask(context.Background(), t, grpc.WaitForReady(true))
 	if cerr != nil {
 		return "", cerr
 	}
@@ -254,6 +255,8 @@ func (f *Funnel) RunTask(t *tes.Task) (string, error) {
 func (f *Funnel) Wait(id string) *tes.Task {
 	for range time.NewTicker(f.rate).C {
 		t := f.Get(id)
+		log.Info("waiting for task", "taskID", id)
+		log.Info("taskState", "State?", t.State)
 		if t.State != tes.State_QUEUED && t.State != tes.State_INITIALIZING &&
 			t.State != tes.State_RUNNING {
 			return t
@@ -377,7 +380,6 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	log.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 
 	// start server
 	done := make(chan error, 1)
@@ -424,14 +426,12 @@ func (f *Funnel) findTestServerContainers() []string {
 }
 
 func (f *Funnel) killTestServerContainers(ids []string) {
-	timeout := 10 * time.Second
 	for _, n := range ids {
-		err := f.Docker.ContainerStop(context.Background(), strings.TrimPrefix(n, "/"), &timeout)
+		err := f.Docker.ContainerStop(context.Background(), strings.TrimPrefix(n, "/"), container.StopOptions{})
 		if err != nil {
 			panic(err)
 		}
 	}
-	return
 }
 
 // CleanupTestServerContainer stops the docker container running the test funnel server

@@ -5,6 +5,9 @@ import (
 	"net"
 	"net/http"
 
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/golang/gddo/httputil"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -75,13 +78,23 @@ func (s *Server) Serve(pctx context.Context) error {
 	)
 
 	dialOpts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
-	mar := runtime.JSONBuiltin{}
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
+	// mar := runtime.JSONBuiltin{}
+	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
+	m := protojson.MarshalOptions{
+		Indent:          "  ",
+		EmitUnpopulated: true,
+		UseProtoNames:   true,
+	}
+	u := protojson.UnmarshalOptions{}
+	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+		MarshalOptions:   m,
+		UnmarshalOptions: u,
+	}))
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()

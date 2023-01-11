@@ -42,7 +42,10 @@ func TestGenericS3Storage(t *testing.T) {
 		t.Fatal("error creating test bucket:", err)
 	}
 	defer func() {
-		client.deleteBucket(testBucket)
+		err = client.deleteBucket(testBucket)
+		if err != nil {
+			t.Fatal("error deleting test bucket:", err)
+		}
 	}()
 
 	protocol := "s3://"

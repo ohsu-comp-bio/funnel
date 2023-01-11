@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -342,10 +343,10 @@ HTCondor, Slurm, Grid Engine, etc. Funnel provides integration with
 these services without using nodes or the scheduler.</p>
 <h3 id="usage">Usage</h3>
 <p>Nodes are available via the <code>funnel node</code> command. To start a node, run</p>
-<pre><code>funnel node run --config node.config.yml
+<pre tabindex="0"><code>funnel node run --config node.config.yml
 </code></pre><p>To activate the Funnel scheduler, use the <code>manual</code> backend in the config.</p>
 <p>The available scheduler and node config:</p>
-<pre><code># Activate the Funnel scheduler.
+<pre tabindex="0"><code># Activate the Funnel scheduler.
 Compute: manual
 
 Scheduler:
@@ -364,7 +365,7 @@ Scheduler:
 
 Node:
   # If empty, a node ID will be automatically generated using the hostname.
-  ID: &quot;&quot;
+  ID: &#34;&#34;
 
   # If the node has been idle for longer than the timeout, it will shut down.
   # -1 means there is no timeout. 0 means timeout immediately after the first task.
@@ -388,7 +389,7 @@ Logger:
   # Logging levels: debug, info, error
   Level: info
   # Write logs to this path. If empty, logs are written to stderr.
-  OutputFile: &quot;&quot;
+  OutputFile: &#34;&#34;
 </code></pre>
   </div>
 

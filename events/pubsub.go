@@ -99,7 +99,7 @@ func ReadPubSub(ctx context.Context, conf config.PubSub, subname string, w Write
 
 	sub.Receive(ctx, func(ctx oldctx.Context, m *pubsub.Message) {
 		ev := &Event{}
-		err := Unmarshal(m.Data, ev)
+		Unmarshal(m.Data, ev)
 		if err != nil {
 			return
 		}

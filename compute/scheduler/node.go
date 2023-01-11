@@ -41,7 +41,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 		conf:      conf,
 		client:    cli,
 		log:       log,
-		resources: res,
+		resources: &res,
 		workerRun: factory,
 		workers:   newRunSet(),
 		timeout:   timeout,
@@ -55,7 +55,7 @@ type NodeProcess struct {
 	conf      config.Config
 	client    Client
 	log       *logger.Logger
-	resources Resources
+	resources *Resources
 	workerRun Worker
 	workers   *runSet
 	timeout   util.IdleTimeout
@@ -65,7 +65,7 @@ type NodeProcess struct {
 
 // Run runs a node with the given config. This is responsible for communication
 // with the server and starting task workers
-func (n *NodeProcess) Run(ctx context.Context) {
+func (n *NodeProcess) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -99,7 +99,7 @@ func (n *NodeProcess) Run(ctx context.Context) {
 
 			// The workers get 10 seconds to finish up.
 			n.workers.Wait(time.Second * 10)
-			return
+			return nil
 
 		case <-ticker.C:
 			n.sync(ctx)
@@ -154,7 +154,7 @@ func (n *NodeProcess) sync(ctx context.Context) {
 
 	// Node data has been updated. Send back to server for database update.
 	var derr error
-	n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
+	*n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
 	if derr != nil {
 		n.log.Error("error detecting resources", "error", derr)
 	}
@@ -170,7 +170,7 @@ func (n *NodeProcess) sync(ctx context.Context) {
 
 	_, err = n.client.PutNode(context.Background(), &Node{
 		Id:        n.conf.Node.ID,
-		Resources: &n.resources,
+		Resources: n.resources,
 		State:     n.state,
 		Version:   r.GetVersion(),
 		Metadata:  meta,

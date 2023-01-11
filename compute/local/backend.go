@@ -66,7 +66,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 		return err
 	}
 
-	go func() {
+	go func() { 
 		w.Run(ctx)
 		w.Close()
 	}()

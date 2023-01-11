@@ -36,9 +36,9 @@ type HPCBackend struct {
 	// are mapped to TES states along with an optional reason for this mapping.
 	// The Reconcile function can then use the response to update the task states
 	// and system logs to report errors reported by the backend.
-	MapStates         func([]string) ([]*HPCTaskState, error)
-	ReconcileRate     time.Duration
-	Log               *logger.Logger
+	MapStates     func([]string) ([]*HPCTaskState, error)
+	ReconcileRate time.Duration
+	Log           *logger.Logger
 	backendParameters map[string]string
 	events.Computer
 }

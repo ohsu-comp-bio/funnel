@@ -95,13 +95,13 @@ func TestBrokenSymlinkInput(t *testing.T) {
 }
 
 /*
-Test the case where a container creates a symlink in an output path.
-From the view of the host system where Funnel is running, this creates
-a broken link, because the source of the symlink is a path relative
-to the container filesystem.
-
-Funnel can fix some of these cases using volume definitions, which
-is being tested here.
+  Test the case where a container creates a symlink in an output path.
+  From the view of the host system where Funnel is running, this creates
+  a broken link, because the source of the symlink is a path relative
+  to the container filesystem.
+  
+  Funnel can fix some of these cases using volume definitions, which
+  is being tested here.
 */
 func TestSymlinkOutput(t *testing.T) {
 	tests.SetLogOutput(log, t)

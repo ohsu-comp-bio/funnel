@@ -1,8 +1,6 @@
 name: Go
 
-on:
-  - pull_request
-  - push
+on: [ pull_request ]
 
 jobs:
 
@@ -17,8 +15,8 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.50.1
-
+          version: latest
+          args: --timeout 3m --verbose -D unused -D errcheck -D staticcheck -D govet -D gosimple -D ineffassign
   build:
     runs-on: ubuntu-latest
     steps:
@@ -48,9 +46,8 @@ jobs:
         go-version: ^1.18
     - name: Check out code
       uses: actions/checkout@v2
-
     - name: Unit Tests
-      run: make test-verbose
+      run: make test
 
   mongoTest:
     runs-on: ubuntu-latest

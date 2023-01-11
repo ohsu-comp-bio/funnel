@@ -24,8 +24,8 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		task := req.GetTask()
 		task.Logs = []*tes.TaskLog{
 			{
-				Logs:       []*tes.ExecutorLog{},
-				Metadata:   map[string]string{},
+				Logs: []*tes.ExecutorLog{},
+				Metadata: map[string]string{},
 				SystemLogs: []string{},
 			},
 		}
@@ -57,7 +57,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 			// apply version restriction and set update
 			selector["version"] = current["version"]
 			update = bson.M{"$set": bson.M{"state": to, "version": time.Now().UnixNano()}}
-
+			
 			result, err := tasks.UpdateOne(context.TODO(), selector, update)
 			if result.MatchedCount == 0 {
 				return tes.ErrConcurrentStateChange

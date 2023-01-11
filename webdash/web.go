@@ -173,22 +173,21 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() ([]byte, error){
-	"asset-manifest.json":                       asset_manifest_json,
-	"favicon.ico":                               favicon_ico,
-	"health.html":                               health_html,
-	"index.html":                                index_html,
-	"manifest.json":                             manifest_json,
-	"static/css/main.f25bc237.chunk.css":        static_css_main_f25bc237_chunk_css,
-	"static/css/main.f25bc237.chunk.css.map":    static_css_main_f25bc237_chunk_css_map,
-	"static/js/2.c3bfd590.chunk.js":             static_js_2_c3bfd590_chunk_js,
+	"asset-manifest.json": asset_manifest_json,
+	"favicon.ico": favicon_ico,
+	"health.html": health_html,
+	"index.html": index_html,
+	"manifest.json": manifest_json,
+	"static/css/main.f25bc237.chunk.css": static_css_main_f25bc237_chunk_css,
+	"static/css/main.f25bc237.chunk.css.map": static_css_main_f25bc237_chunk_css_map,
+	"static/js/2.c3bfd590.chunk.js": static_js_2_c3bfd590_chunk_js,
 	"static/js/2.c3bfd590.chunk.js.LICENSE.txt": static_js_2_c3bfd590_chunk_js_license_txt,
-	"static/js/2.c3bfd590.chunk.js.map":         static_js_2_c3bfd590_chunk_js_map,
-	"static/js/main.1ae3ce12.chunk.js":          static_js_main_1ae3ce12_chunk_js,
-	"static/js/main.1ae3ce12.chunk.js.map":      static_js_main_1ae3ce12_chunk_js_map,
-	"static/js/runtime-main.1453c325.js":        static_js_runtime_main_1453c325_js,
-	"static/js/runtime-main.1453c325.js.map":    static_js_runtime_main_1453c325_js_map,
+	"static/js/2.c3bfd590.chunk.js.map": static_js_2_c3bfd590_chunk_js_map,
+	"static/js/main.1ae3ce12.chunk.js": static_js_main_1ae3ce12_chunk_js,
+	"static/js/main.1ae3ce12.chunk.js.map": static_js_main_1ae3ce12_chunk_js_map,
+	"static/js/runtime-main.1453c325.js": static_js_runtime_main_1453c325_js,
+	"static/js/runtime-main.1453c325.js.map": static_js_runtime_main_1453c325_js_map,
 }
-
 // AssetDir returns the file names below a certain
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
@@ -227,29 +226,42 @@ func AssetDir(name string) ([]string, error) {
 }
 
 type _bintree_t struct {
-	Func     func() ([]byte, error)
+	Func func() ([]byte, error)
 	Children map[string]*_bintree_t
 }
-
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
-	"asset-manifest.json": {asset_manifest_json, map[string]*_bintree_t{}},
-	"favicon.ico":         {favicon_ico, map[string]*_bintree_t{}},
-	"health.html":         {health_html, map[string]*_bintree_t{}},
-	"index.html":          {index_html, map[string]*_bintree_t{}},
-	"manifest.json":       {manifest_json, map[string]*_bintree_t{}},
-	"static": {nil, map[string]*_bintree_t{
-		"css": {nil, map[string]*_bintree_t{
-			"main.f25bc237.chunk.css":     {static_css_main_f25bc237_chunk_css, map[string]*_bintree_t{}},
-			"main.f25bc237.chunk.css.map": {static_css_main_f25bc237_chunk_css_map, map[string]*_bintree_t{}},
+	"asset-manifest.json": &_bintree_t{asset_manifest_json, map[string]*_bintree_t{
+	}},
+	"favicon.ico": &_bintree_t{favicon_ico, map[string]*_bintree_t{
+	}},
+	"health.html": &_bintree_t{health_html, map[string]*_bintree_t{
+	}},
+	"index.html": &_bintree_t{index_html, map[string]*_bintree_t{
+	}},
+	"manifest.json": &_bintree_t{manifest_json, map[string]*_bintree_t{
+	}},
+	"static": &_bintree_t{nil, map[string]*_bintree_t{
+		"css": &_bintree_t{nil, map[string]*_bintree_t{
+			"main.f25bc237.chunk.css": &_bintree_t{static_css_main_f25bc237_chunk_css, map[string]*_bintree_t{
+			}},
+			"main.f25bc237.chunk.css.map": &_bintree_t{static_css_main_f25bc237_chunk_css_map, map[string]*_bintree_t{
+			}},
 		}},
-		"js": {nil, map[string]*_bintree_t{
-			"2.c3bfd590.chunk.js":             {static_js_2_c3bfd590_chunk_js, map[string]*_bintree_t{}},
-			"2.c3bfd590.chunk.js.LICENSE.txt": {static_js_2_c3bfd590_chunk_js_license_txt, map[string]*_bintree_t{}},
-			"2.c3bfd590.chunk.js.map":         {static_js_2_c3bfd590_chunk_js_map, map[string]*_bintree_t{}},
-			"main.1ae3ce12.chunk.js":          {static_js_main_1ae3ce12_chunk_js, map[string]*_bintree_t{}},
-			"main.1ae3ce12.chunk.js.map":      {static_js_main_1ae3ce12_chunk_js_map, map[string]*_bintree_t{}},
-			"runtime-main.1453c325.js":        {static_js_runtime_main_1453c325_js, map[string]*_bintree_t{}},
-			"runtime-main.1453c325.js.map":    {static_js_runtime_main_1453c325_js_map, map[string]*_bintree_t{}},
+		"js": &_bintree_t{nil, map[string]*_bintree_t{
+			"2.c3bfd590.chunk.js": &_bintree_t{static_js_2_c3bfd590_chunk_js, map[string]*_bintree_t{
+			}},
+			"2.c3bfd590.chunk.js.LICENSE.txt": &_bintree_t{static_js_2_c3bfd590_chunk_js_license_txt, map[string]*_bintree_t{
+			}},
+			"2.c3bfd590.chunk.js.map": &_bintree_t{static_js_2_c3bfd590_chunk_js_map, map[string]*_bintree_t{
+			}},
+			"main.1ae3ce12.chunk.js": &_bintree_t{static_js_main_1ae3ce12_chunk_js, map[string]*_bintree_t{
+			}},
+			"main.1ae3ce12.chunk.js.map": &_bintree_t{static_js_main_1ae3ce12_chunk_js_map, map[string]*_bintree_t{
+			}},
+			"runtime-main.1453c325.js": &_bintree_t{static_js_runtime_main_1453c325_js, map[string]*_bintree_t{
+			}},
+			"runtime-main.1453c325.js.map": &_bintree_t{static_js_runtime_main_1453c325_js_map, map[string]*_bintree_t{
+			}},
 		}},
 	}},
 }}

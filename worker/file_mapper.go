@@ -151,7 +151,7 @@ func (mapper *FileMapper) HostPath(src string) (string, error) {
 // OpenHostFile opens a file on the host file system at a mapped path.
 // "src" is an unmapped path. This function will handle mapping the path.
 //
-// # This function calls os.Open
+// This function calls os.Open
 //
 // If the path can't be mapped or the file can't be opened, an error is returned.
 func (mapper *FileMapper) OpenHostFile(src string) (*os.File, error) {
@@ -169,7 +169,7 @@ func (mapper *FileMapper) OpenHostFile(src string) (*os.File, error) {
 // CreateHostFile creates a file on the host file system at a mapped path.
 // "src" is an unmapped path. This function will handle mapping the path.
 //
-// # This function calls os.Create
+// This function calls os.Create
 //
 // If the path can't be mapped or the file can't be created, an error is returned.
 func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {

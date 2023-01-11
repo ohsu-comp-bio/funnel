@@ -175,6 +175,10 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 				continue taskLoop
 			}
 
+			if !strings.HasPrefix(task.Name, req.NamePrefix) {
+				continue taskLoop
+			}
+
 			for k, v := range req.GetTags() {
 				tval, ok := task.Tags[k]
 				if !ok || (tval != v && v != "") {

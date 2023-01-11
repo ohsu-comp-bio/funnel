@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/globalsign/mgo"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,14 +14,14 @@ import (
 // MongoDB provides an MongoDB database server backend.
 type MongoDB struct {
 	scheduler.UnimplementedSchedulerServiceServer
-	sess   *mgo.Session
+	client *mongo.Client
 	conf   config.MongoDB
 	active bool
 }
 
 func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 	client, err := mongo.Connect(
-		context.TODO(),
+		context.TODO(), 
 		options.Client().ApplyURI(conf.Addrs[0]))
 
 	if err != nil {
@@ -61,7 +60,7 @@ func (db *MongoDB) Init() error {
 		case "tasks":
 			tasksFound = true
 		case "nodes":
-			nodesFound = true
+			nodesFound = true 
 		}
 	}
 
@@ -72,11 +71,11 @@ func (db *MongoDB) Init() error {
 		}
 
 		indexModel := mongo.IndexModel{
-			Keys: bson.D{
-				{Key: "-id", Value: -1},
-				{Key: "-creationtime", Value: -1},
-			},
-			Options: options.Index().SetUnique(true).SetSparse(true),
+				Keys: bson.D{
+					{"-id", -1},
+					{"-creationtime", -1},
+				},
+				Options: options.Index().SetUnique(true).SetSparse(true),
 		}
 		_, err = tasks.Indexes().CreateOne(context.TODO(), indexModel)
 		if err != nil {
@@ -92,7 +91,7 @@ func (db *MongoDB) Init() error {
 
 		indexModel := mongo.IndexModel{
 			Keys: bson.D{
-				{Key: "-id", Value: -1},
+				{"-id", -1},
 			},
 			Options: options.Index().SetUnique(true).SetSparse(true),
 		}

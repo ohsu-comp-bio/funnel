@@ -92,8 +92,8 @@ func (b *Backend) Submit(task *tes.Task) error {
 		if ram > 0 {
 			req.ContainerOverrides.Memory = aws.Int64(ram)
 			req.ContainerOverrides.ResourceRequirements = []*batch.ResourceRequirement{
-				{
-					Type:  aws.String("MEMORY"),
+				&batch.ResourceRequirement {
+					Type: aws.String("MEMORY"),
 					Value: aws.String(strconv.FormatInt(ram, 10)),
 				},
 			}

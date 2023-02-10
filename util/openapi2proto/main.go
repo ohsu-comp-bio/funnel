@@ -307,7 +307,7 @@ service TaskService {
 {{range $i, $path := .services}}
     rpc {{$path.Name}}({{$path.InputType}}) returns ({{$path.OutputType}}) {
       option (google.api.http) = {
-        {{$path.Mode}}: "{{$path.Path}}"
+        {{$path.Mode}}: "/v1{{$path.Path}}"
 		{{- if eq $path.Mode "post"}}
 		body: "*"{{end}}
       };

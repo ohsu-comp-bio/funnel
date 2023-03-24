@@ -82,3 +82,17 @@ jobs:
       run: |
         chmod +x funnel
         make test-badger
+
+  complianceTest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: 'elixir-cloud-aai/tes-compliance-suite'
+      - name: Start Funnel server
+        run: |
+          funnel server run
+      - run: |
+          cd tes-compliance-suite  
+          python setup.py install
+          tes-compliance-suite report --server "http://localhost:8000/"

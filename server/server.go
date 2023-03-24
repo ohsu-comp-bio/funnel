@@ -2,6 +2,7 @@
 package server
 
 import (
+	"google.golang.org/protobuf/encoding/protojson"
 	"net"
 	"net/http"
 
@@ -82,8 +83,15 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
-	mar := runtime.JSONBuiltin{}
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
+	// mar := runtime.JSONBuiltin{}
+	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
+	m := protojson.MarshalOptions{
+		Indent:          "  ",
+		EmitUnpopulated: false,
+	}
+	u := protojson.UnmarshalOptions{
+	}
+	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{m, u}))
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()

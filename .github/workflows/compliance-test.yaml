@@ -1,0 +1,59 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+# Optionally debug via SSH
+# Ref: https://fleetdm.com/engineering/tips-for-github-actions-usability
+#
+# To use this step uncomment and place anywhere in the build steps. The build will pause on this step and
+# output a ssh address associated with the Github action worker. Helpful for debugging build steps and
+# and intermediary files/artifacts.
+# Example:
+#   Web shell: https://tmate.io/t/q8FU3U9SvmMVxAhMHRyExNhr8
+#   SSH: ssh q8FU3U9SvmMVxAhMHRyExNhr8@sfo2.tmate.io
+#
+# - name: Setup tmate session
+#   uses: mxschmitt/action-tmate@v3
+
+name: Go
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.18
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: go build -v ./
+
+    - name: Store funnel
+      uses: actions/upload-artifact@v2
+      with:
+        name: funnelBin
+        path: funnel
+
+  complianceTest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: 'elixir-cloud-aai/tes-compliance-suite'
+      - name: Start Funnel server
+        run: |
+          funnel server run
+      - run: |
+          cd tes-compliance-suite  
+          python setup.py install
+          tes-compliance-suite report --server "http://localhost:8000/"
+
+      # Development debug session
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3

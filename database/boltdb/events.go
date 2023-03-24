@@ -260,6 +260,7 @@ func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("DEBUG ExecutorLog:", el)
 	return tx.Bucket(ExecutorLogs).Put([]byte(id), logbytes)
 }
 

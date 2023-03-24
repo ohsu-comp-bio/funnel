@@ -146,6 +146,7 @@ function TaskInfoRaw(props) {
 
   // should we truncate stdout / stderr ???
   const renderExecutors = (task) => {
+    console.log("DEBUG task:", task);
     if ( task.executors ) {
       var executors = task.executors;
       var logs = [{}];
@@ -174,9 +175,9 @@ function TaskInfoRaw(props) {
                 </TableRow>
                 {renderRow('Workdir', exec.workdir)}
                 {renderRow('Env', renderKV(exec.env, null, '0px 0px 0px 0px'))}
-                {renderRow('StartTime', logs[index].startTime, formatDate)}
-                {renderRow('EndTime', logs[index].endTime, formatDate)}
-                {renderRow('Exit Code', logs[index].exitCode)}
+                {renderRow('StartTime', logs[index].start_time, formatDate)}
+                {renderRow('EndTime', logs[index].end_time, formatDate)}
+                {renderRow('Exit Code', logs[index].exit_code)}
                 {renderRow('Stdout', logs[index].stdout, preFormat)}
                 {renderRow('Stderr', logs[index].stderr, preFormat)}
               </TableBody>

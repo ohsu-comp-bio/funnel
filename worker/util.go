@@ -11,9 +11,11 @@ import (
 // getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
 // The exit code is zero if the command completed without error.
 func getExitCode(err error) int {
+	fmt.Println("DEBUG err:", err)
 	if err != nil {
 		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
 			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
+				fmt.Println("DEBUG status.ExitStatus():", status.ExitStatus())
 				return status.ExitStatus()
 			}
 		} else {

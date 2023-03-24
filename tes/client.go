@@ -93,9 +93,11 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
+	fmt.Println("DEBUG u:", u)
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
-	hreq.SetBasicAuth(c.User, c.Password)
+	fmt.Println("DEBUG hreq:", hreq)
+	// hreq.WithContext(ctx)
+	// hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err

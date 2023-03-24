@@ -1,6 +1,7 @@
 package events
 
 import (
+	"fmt"
 	"context"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -13,6 +14,7 @@ type TaskBuilder struct {
 
 // WriteEvent updates the Task object.
 func (tb TaskBuilder) WriteEvent(ctx context.Context, ev *Event) error {
+	fmt.Println("DEBUG ev:", ev)
 	t := tb.Task
 	t.Id = ev.Id
 	attempt := int(ev.Attempt)

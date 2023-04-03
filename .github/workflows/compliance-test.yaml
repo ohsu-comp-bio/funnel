@@ -76,4 +76,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: reports
-          path: report-v*
+          path: reports/*

@@ -67,10 +67,10 @@ jobs:
         run: |
           mkdir reports
           . venv/bin/activate
-          tes-compliance-suite report --version "1.0.0" --server "http://localhost:8000/"
-          mv report.json reports/report-v1.0.json
-          tes-compliance-suite report --version "1.1.0" --server "http://localhost:8000/"
-          mv report.json reports/report-v1.1.json
+          tes-compliance-suite report --version "1.0.0" --server "http://localhost:8000/" -o reports
+          mv reports/report.json reports/report-v1.0.json
+          tes-compliance-suite report --version "1.1.0" --server "http://localhost:8000/" -o reports
+          mv reports/report.json reports/report-v1.1.json
 
       - name: Store reports
         uses: actions/upload-artifact@v2

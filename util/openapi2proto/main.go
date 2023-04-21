@@ -307,7 +307,17 @@ service TaskService {
 {{range $i, $path := .services}}
     rpc {{$path.Name}}({{$path.InputType}}) returns ({{$path.OutputType}}) {
       option (google.api.http) = {
-        {{$path.Mode}}: "/v1{{$path.Path}}"
+        {{$path.Mode}}: "{{$path.Path}}"
+		additional_bindings {
+			{{$path.Mode}}: "/v1{{$path.Path}}"
+			{{- if eq $path.Mode "post"}}
+			body: "*"{{end}}
+		}
+		additional_bindings {
+			{{$path.Mode}}: "/ga4gh/tes/v1{{$path.Path}}"
+			{{- if eq $path.Mode "post"}}
+			body: "*"{{end}}
+		}
 		{{- if eq $path.Mode "post"}}
 		body: "*"{{end}}
       };

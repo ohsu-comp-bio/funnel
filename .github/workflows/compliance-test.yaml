@@ -63,12 +63,18 @@ jobs:
           chmod +x funnel
           ./funnel server run &> funnel.logs &
 
-      - name: Start Reports
+      - name: Prepare reporting
         run: |
           mkdir reports
           . venv/bin/activate
+
+      - name: Test v1.0 compliance
+        run: |
           tes-compliance-suite report --version "1.0.0" --server "http://localhost:8000/" -o reports
           mv reports/report.json reports/report-v1.0.json
+
+      - name: Test v1.1 compliance
+        run: |
           tes-compliance-suite report --version "1.1.0" --server "http://localhost:8000/" -o reports
           mv reports/report.json reports/report-v1.1.json
 
@@ -77,3 +83,14 @@ jobs:
         with:
           name: reports
           path: reports/*
+
+      - name: Pushes to another repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'web'
+          destination-github-username: 'ohsu-comp-bio'
+          destination-repository-name: 'funnel-compliance'
+          target-branch: main

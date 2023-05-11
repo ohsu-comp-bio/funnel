@@ -30,7 +30,7 @@ require (
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-test/deep v1.0.5
 	github.com/golang/gddo v0.0.0-20200219175727-df439dd5819e
-	github.com/golang/protobuf v1.3.3
+	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.13.0
 	github.com/imdario/mergo v0.3.8
@@ -47,12 +47,12 @@ require (
 	github.com/nsf/termbox-go v0.0.0-20200204031403-4d2b513ad8be // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
-	github.com/prometheus/client_golang v1.4.1
-	github.com/prometheus/common v0.9.1
+	github.com/prometheus/client_golang v1.11.1
+	github.com/prometheus/common v0.26.0
 	github.com/rs/xid v1.2.1
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shirou/gopsutil v2.20.1+incompatible
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

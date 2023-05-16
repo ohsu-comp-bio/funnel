@@ -211,9 +211,9 @@ webdash:
 	@go-bindata -pkg webdash -prefix "webdash/build" -o webdash/web.go webdash/build/...
 
 # Build binaries for all OS/Architectures
-snapshot: depends
+snapshot: release-dep
 	@goreleaser \
-		--rm-dist \
+		--clean \
 		--snapshot
 
 # build a docker container locally
@@ -228,12 +228,14 @@ docker-dind:
 docker-dind-rootless:
 	docker build -t ohsucompbio/funnel-dind-rootless:latest -f Dockerfile.dind-rootless .
 
+# Create a release on Github using GoReleaser 
 release:
 	@go get github.com/buchanae/github-release-notes
 	@goreleaser \
-		--rm-dist \
+		--clean \
 		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at ${LAST_PR_NUMBER})
 
+# Install dependencies for release
 release-dep:
 	@go get github.com/goreleaser/goreleaser
 	@go get github.com/buchanae/github-release-notes

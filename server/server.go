@@ -87,7 +87,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
 	m := protojson.MarshalOptions{
 		Indent:          "  ",
-		EmitUnpopulated: false,
+		EmitUnpopulated: true,
 	}
 	u := protojson.UnmarshalOptions{
 	}

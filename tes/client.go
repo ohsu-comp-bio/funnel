@@ -82,6 +82,7 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	addInt32(v, "page_size", req.GetPageSize())
 	addString(v, "page_token", req.GetPageToken())
 	addString(v, "view", req.GetView())
+	addString(v, "name_prefix", req.GetNamePrefix())
 
 	if req.GetState() != Unknown {
 		addString(v, "state", req.State.String())

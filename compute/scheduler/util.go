@@ -24,6 +24,7 @@ func GenNodeID() string {
 // Upon error, detectResources will return the resources given by the config
 // with the error.
 func detectResources(conf config.Node, workdir string) (Resources, error) {
+	fmt.Println("detectResources")
 	res := Resources{
 		Cpus:   conf.Resources.Cpus,
 		RamGb:  conf.Resources.RamGb,

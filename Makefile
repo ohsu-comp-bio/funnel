@@ -35,6 +35,11 @@ build:
 	@touch version/version.go
 	@go build -ldflags '$(VERSION_LDFLAGS)' .
 
+# Build an unoptimized version of the code for use during debugging 
+# https://go.dev/doc/gdb
+debug:
+	@go build -gcflags=all="-N -l"
+
 # Generate the protobuf/gRPC code
 proto:
 	@go run ./util/openapi2proto/main.go ./tes/task-execution-schemas/openapi/task_execution_service.openapi.yaml > tes/tes.proto

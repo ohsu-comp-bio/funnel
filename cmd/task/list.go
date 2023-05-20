@@ -12,7 +12,8 @@ import (
 // List runs the "task list" CLI command, which connects to the server,
 // calls ListTasks() and requests the given task view.
 // Output is written to the given writer.
-func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, pageSize int32, all bool, writer io.Writer) error {
+func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, namePrefix string, pageSize int32, all bool, writer io.Writer) error {
+	fmt.Println("DEBUG List()")
 	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err
@@ -49,6 +50,7 @@ func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, 
 			State:     state,
 			TagKey:    tagKeys,
 			TagValue:  tagVals,
+			NamePrefix: namePrefix,
 		}
 
 		resp, err := cli.ListTasks(context.Background(), req)

@@ -150,9 +150,11 @@ function TaskInfoRaw(props) {
     if ( task.executors ) {
       var executors = task.executors;
       var logs = [{}];
+      console.log("DEBUG logs before:", logs);
       if ( task.logs && task.logs && task.logs[0].logs ) {
         logs = task.logs[0].logs;
       }
+      console.log("DEBUG logs after:", logs);
       const cmdString = function(cmd) {
        return cmd.join(" ");
       };

@@ -38,6 +38,7 @@ type HPCBackend struct {
 	MapStates     func([]string) ([]*HPCTaskState, error)
 	ReconcileRate time.Duration
 	Log           *logger.Logger
+	events.Computer
 }
 
 // WriteEvent writes an event to the compute backend.

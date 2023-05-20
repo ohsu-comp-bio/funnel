@@ -2,9 +2,10 @@
 package server
 
 import (
-	"google.golang.org/protobuf/encoding/protojson"
 	"net"
 	"net/http"
+
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/golang/gddo/httputil"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -88,6 +89,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	m := protojson.MarshalOptions{
 		Indent:          "  ",
 		EmitUnpopulated: true,
+		UseProtoNames: true,
 	}
 	u := protojson.UnmarshalOptions{
 	}
@@ -122,10 +124,6 @@ func (s *Server) Serve(pctx context.Context) error {
 				resp.Header().Set("Cache-Control", "no-store")
 			}
 
-			// TODO: Initial attempt at redirection
-			// if (strings.Contains(req.URL.Path, "/ga4gh/tes/v1")) {
-			// 	strings.Replace(req.URL.Path, "/v1", "", 0)
-			// }
 			grpcMux.ServeHTTP(resp, req)
 		}
 		fmt.Println("DEBUG resp:", resp)

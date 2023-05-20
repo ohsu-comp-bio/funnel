@@ -3,6 +3,7 @@ package boltdb
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -139,6 +140,7 @@ func getTaskView(tx *bolt.Tx, id string, view tes.View) (*tes.Task, error) {
 
 // ListTasks returns a list of taskIDs
 func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
+	fmt.Println("DEBUG ListTasks()")
 	var tasks []*tes.Task
 	// If the tags filter request is non-nil we need the basic or full view
 	view := req.View
@@ -173,9 +175,13 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 				continue taskLoop
 			}
 
+			if !strings.HasPrefix(task.Name, req.NamePrefix) {
+				continue taskLoop
+			}
+
 			for k, v := range req.GetTags() {
 				tval, ok := task.Tags[k]
-				if !ok || tval != v {
+				if !ok || (tval != v && v != "") {
 					continue taskLoop
 				}
 			}

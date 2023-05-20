@@ -14,7 +14,7 @@
           {
             "name": "access-file",
             "description": "Access file resource via streaming",
-            "url": "s3://my-object-store/file1",
+            "url": "/Users/beckmanl/code/funnel/README.md",
             "path": "/data/file1",
             "streamable": true
           }

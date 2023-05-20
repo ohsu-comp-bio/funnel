@@ -26,7 +26,7 @@ type TaskService struct {
 	tes.UnimplementedTaskServiceServer
 	Name    string
 	Event   events.Writer
-	Compute events.Writer
+	Compute events.Computer
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
 }
@@ -37,6 +37,11 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 
 	if err := tes.InitTask(task, true); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	err := ts.Compute.CheckBackendParameterSupport(task);
+	if err != nil {
+		return nil, fmt.Errorf("error from backend: %s", err)
 	}
 
 	if err := ts.Event.WriteEvent(ctx, events.NewTaskCreated(task)); err != nil {
@@ -89,6 +94,9 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.GetServiceInfoRequest) (*tes.ServiceInfo, error) {
 	resp := &tes.ServiceInfo{
 		CreatedAt:                     "2016-03-21T16:27:49-07:00",
+		// TODO: Change this to "mailto:ellrott@ohsu.edu" when support for "mailto:" URL's are
+		// added to tes-compliance-suite
+		ContactUrl: 				   "https://ohsu-comp-bio.github.io/funnel/",
 		Description:                   "Funnel is a toolkit for distributed task execution via a simple, standard API.",
 		DocumentationUrl:              "https://ohsu-comp-bio.github.io/funnel/",
 		Environment:                   "development",

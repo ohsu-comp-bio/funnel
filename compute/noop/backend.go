@@ -14,7 +14,9 @@ func NewBackend() *Backend {
 
 // Backend is a scheduler backend that doesn't do anything
 // which is useful for testing.
-type Backend struct{}
+type Backend struct{
+	events.Computer
+}
 
 // WriteEvent is a noop and returns nil.
 func (b *Backend) WriteEvent(context.Context, *events.Event) error {

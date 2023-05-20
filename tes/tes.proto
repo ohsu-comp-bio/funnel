@@ -8,6 +8,11 @@ package tes;
 import "google/api/annotations.proto";
 
 
+enum FileType { 
+	FILE = 0;
+	DIRECTORY = 1;
+}
+
 enum State { 
 	UNKNOWN = 0;
 	QUEUED = 1;
@@ -20,11 +25,6 @@ enum State {
 	CANCELED = 8;
 	PREEMPTED = 9;
 	CANCELING = 10;
-}
-
-enum FileType { 
-	FILE = 0;
-	DIRECTORY = 1;
 }
 
 enum view { 

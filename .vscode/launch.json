@@ -1,19 +1,20 @@
 {
     "configurations": [
-    {
-        "name": "Attach to Process",
-        "type": "go",
-        "request": "attach",
-        "mode": "local",
-        "processId": "${command:pickProcess}",
-    },
-    {
-        "name": "Launch file",
-        "type": "go",
-        "request": "launch",
-        "mode": "auto",
-        "program": "${file}",
-        "args": ["${workspaceFolder}/tes/task-execution-schemas/openapi/task_execution_service.openapi.yaml"],
-    }
+        {
+            "name": "CLI",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "main.go",
+            "args": ["task", "list", "--tag", "foo=bar"],
+        },
+        {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "justMyCode": true,
+            "processId": "${command:pickProcess}",
+        },
     ]
 }

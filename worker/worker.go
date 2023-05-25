@@ -128,6 +128,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Run steps
 	if run.ok() {
+		ignoreError := false
 		for i, d := range task.GetExecutors() {
 			s := &stepWorker{
 				Conf:  r.Conf,
@@ -146,13 +147,15 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
-			if run.ok() {
+			if run.ok() || ignoreError {
 				run.syserr = r.openStepLogs(mapper, s, d)
 			}
 
-			if run.ok() {
+			if run.ok() || ignoreError {
 				run.execerr = s.Run(ctx)
 			}
+
+			ignoreError = d.GetIgnoreError()
 		}
 	}
 

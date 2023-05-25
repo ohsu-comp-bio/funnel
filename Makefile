@@ -38,7 +38,8 @@ build:
 # Build an unoptimized version of the code for use during debugging 
 # https://go.dev/doc/gdb
 debug:
-	@go build -gcflags=all="-N -l"
+	@go install -gcflags=all="-N -l"
+	@funnel server run
 
 # Generate the protobuf/gRPC code
 proto:
@@ -276,4 +277,4 @@ website-dev:
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto website docker webdash build
+.PHONY: proto website docker webdash build debug

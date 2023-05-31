@@ -16,6 +16,7 @@ import (
 	"time"
 
 	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
@@ -424,9 +425,8 @@ func (f *Funnel) findTestServerContainers() []string {
 }
 
 func (f *Funnel) killTestServerContainers(ids []string) {
-	timeout := 10 * time.Second
 	for _, n := range ids {
-		err := f.Docker.ContainerStop(context.Background(), strings.TrimPrefix(n, "/"), &timeout)
+		err := f.Docker.ContainerStop(context.Background(), strings.TrimPrefix(n, "/"), container.StopOptions{})
 		if err != nil {
 			panic(err)
 		}

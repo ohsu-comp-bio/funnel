@@ -6,7 +6,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "main.go",
-            "args": ["task", "list", "--tag", "foo=bar"],
+            "args": ["server", "run"],
         },
         {
             "name": "Attach to Process",

@@ -530,7 +530,10 @@ func TestSingleCharLog(t *testing.T) {
 	if task.Logs[0].Logs[0].Stdout != "a\n" {
 		t.Fatal("Missing logs")
 	}
-	fun.Cancel(id)
+	err := fun.Cancel(id)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 // Test that a completed task cannot change state.
@@ -559,7 +562,10 @@ func TestCancel(t *testing.T) {
     --sh 'echo never'
   `)
 	fun.WaitForExec(id, 1)
-	fun.Cancel(id)
+	err := fun.Cancel(id)
+	if err != nil {
+		t.Fatal(err)
+	}
 	fun.WaitForDockerDestroy(id + "-0")
 	task := fun.Get(id)
 	if task.State != tes.State_CANCELED {
@@ -601,7 +607,10 @@ func TestExecutorLogLength(t *testing.T) {
   `)
 	fun.WaitForExec(id, 2)
 	task := fun.Get(id)
-	fun.Cancel(id)
+	err := fun.Cancel(id)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(task.Logs[0].Logs) != 2 {
 		t.Fatal("Unexpected executor log count")
 	}
@@ -622,7 +631,10 @@ func TestMarkCompleteBug(t *testing.T) {
 	if task.State != tes.State_RUNNING {
 		t.Fatal("Unexpected task state")
 	}
-	fun.Cancel(id)
+	err := fun.Cancel(id)
+	if err != nil {	
+		t.Error(err)
+	}
 }
 
 func TestTaskStartEndTimeLogs(t *testing.T) {

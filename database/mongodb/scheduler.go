@@ -8,8 +8,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
@@ -66,7 +66,7 @@ func (db *MongoDB) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (
 	var node scheduler.Node
 	err := db.nodes(sess).Find(bson.M{"id": req.Id}).One(&node)
 	if err == mgo.ErrNotFound {
-		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
 	}
 	return &node, err
 }
@@ -78,7 +78,7 @@ func (db *MongoDB) DeleteNode(ctx context.Context, req *scheduler.Node) (*schedu
 
 	err := db.nodes(sess).Remove(bson.M{"id": req.Id})
 	if err == mgo.ErrNotFound {
-		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", mgo.ErrNotFound.Error(), req.Id))
 	}
 	return nil, err
 }

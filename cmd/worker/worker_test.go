@@ -65,7 +65,10 @@ func TestTaskFileOption(t *testing.T) {
 	}
 
 	c.SetArgs([]string{"run", "--taskFile", "test.task.json"})
-	c.Execute()
+	err := c.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
 		if opts.TaskFile != "test.task.json" {
@@ -75,7 +78,10 @@ func TestTaskFileOption(t *testing.T) {
 	}
 
 	c.SetArgs([]string{"run", "-f", "test.task.json"})
-	c.Execute()
+	err = c.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
 		if opts.TaskBase64 != "abcd" {
@@ -85,7 +91,10 @@ func TestTaskFileOption(t *testing.T) {
 	}
 
 	c.SetArgs([]string{"run", "--taskBase64", "abcd"})
-	c.Execute()
+	err = c.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	h.Run = func(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
 		if opts.TaskBase64 != "abcd" {
@@ -95,5 +104,8 @@ func TestTaskFileOption(t *testing.T) {
 	}
 
 	c.SetArgs([]string{"run", "-b", "abcd"})
-	c.Execute()
+	err = c.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

@@ -37,7 +37,10 @@ func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	if b == nil {
 		return tes.ErrNotFound
 	}
-	proto.Unmarshal(b, task)
+	err := proto.Unmarshal(b, task)
+	if err != nil {
+		return err
+	}
 	loadTaskLogs(tx, task)
 
 	// remove content from inputs
@@ -56,7 +59,10 @@ func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 	if b == nil {
 		return tes.ErrNotFound
 	}
-	proto.Unmarshal(b, task)
+	err := proto.Unmarshal(b, task)
+	if err != nil {
+		return err
+	}
 	loadTaskLogs(tx, task)
 
 	// Load executor stdout/err
@@ -96,14 +102,20 @@ func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
 
 	b := tx.Bucket(TasksLog).Get([]byte(task.Id))
 	if b != nil {
-		proto.Unmarshal(b, tasklog)
+		err := proto.Unmarshal(b, tasklog)
+		if err != nil {
+			return
+		}
 	}
 
 	for i := range task.Executors {
 		o := tx.Bucket(ExecutorLogs).Get([]byte(fmt.Sprint(task.Id, i)))
 		if o != nil {
 			var execlog tes.ExecutorLog
-			proto.Unmarshal(o, &execlog)
+			err := proto.Unmarshal(o, &execlog)
+			if err != nil {
+				return
+			}
 			tasklog.Logs = append(tasklog.Logs, &execlog)
 		}
 	}
@@ -149,7 +161,7 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 	}
 	pageSize := tes.GetPageSize(req.GetPageSize())
 
-	taskBolt.db.View(func(tx *bolt.Tx) error {
+	err := taskBolt.db.View(func(tx *bolt.Tx) error {
 		c := tx.Bucket(TaskBucket).Cursor()
 
 		i := 0
@@ -195,6 +207,9 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	out := tes.ListTasksResponse{
 		Tasks: tasks,

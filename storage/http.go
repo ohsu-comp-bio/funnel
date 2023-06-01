@@ -38,7 +38,7 @@ func (b *HTTP) Stat(ctx context.Context, url string) (*Object, error) {
 	if err != nil {
 		return nil, fmt.Errorf("httpStorage: creating HEAD request: %s", err)
 	}
-	req.WithContext(ctx)
+	_ = req.WithContext(ctx)
 
 	resp, err := b.client.Do(req)
 	if err != nil {
@@ -71,7 +71,7 @@ func (b *HTTP) Get(ctx context.Context, url, path string) (*Object, error) {
 	if err != nil {
 		return nil, fmt.Errorf("httpStorage: creating GET request: %s", err)
 	}
-	req.WithContext(ctx)
+	_ = req.WithContext(ctx)
 
 	resp, err := b.client.Do(req)
 	if err != nil {

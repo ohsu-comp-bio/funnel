@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/golang/gddo/httputil"
@@ -79,7 +80,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	)
 
 	dialOpts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
 	// Set up HTTP proxy of gRPC API
@@ -93,7 +94,10 @@ func (s *Server) Serve(pctx context.Context) error {
 	}
 	u := protojson.UnmarshalOptions{
 	}
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{m, u}))
+	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+		MarshalOptions: m, 
+		UnmarshalOptions: u,
+	}))
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()
@@ -178,7 +182,10 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	<-ctx.Done()
 	grpcServer.GracefulStop()
-	httpServer.Shutdown(context.TODO())
+	err = httpServer.Shutdown(context.TODO())
+	if err != nil {
+		return err
+	}
 
 	return srverr
 }

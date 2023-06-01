@@ -55,7 +55,7 @@ func getType(p *openapi3.SchemaRef) (bool, string) {
 			_, aType := getType(p.Value.AdditionalProperties)
 			return false, fmt.Sprintf("map<string,%s>", aType)
 		}
-		return false, fmt.Sprintf("map<string,string>")
+		return false, "map<string,string>"
 		//return fmt.Sprintf("%#v", p.Value)
 	case "array":
 		if p.Value.Items.Ref != "" {

@@ -40,7 +40,10 @@ func TestGetMetadata(t *testing.T) {
 		if v, ok := r.URL.Query()["recursive"]; !ok || v[0] != "true" {
 			t.Fatal("Expected recursive query")
 		}
-		w.Write(loadTestData("metadata1"))
+		_, err := w.Write(loadTestData("metadata1"))
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 	defer ts.Close()
 

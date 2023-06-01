@@ -25,7 +25,10 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 		if err != nil {
 			return err
 		}
-		w.Run(ctx)
+		err = w.Run(ctx)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -34,8 +37,8 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 		return err
 	}
 
-	runctx, cancel := context.WithCancel(context.Background())
-	runctx = util.SignalContext(ctx, time.Nanosecond, syscall.SIGINT, syscall.SIGTERM)
+	_, cancel := context.WithCancel(context.Background())
+	runctx := util.SignalContext(ctx, time.Nanosecond, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	hupsig := make(chan os.Signal, 1)
@@ -51,7 +54,10 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 	}()
 	signal.Notify(hupsig, syscall.SIGHUP)
 
-	n.Run(runctx)
+	err = n.Run(runctx)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

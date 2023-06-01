@@ -172,7 +172,10 @@ func parseTopLevelArgs(vals *flagVals, args []string) error {
 
 func parseTaskArgs(vals *flagVals, args []string) {
 	fl := newFlags(vals)
-	fl.Parse(args)
+	err := fl.Parse(args)
+	if err != nil {
+		return
+	}
 	buildExecs(fl, vals, args)
 }
 
@@ -185,7 +188,7 @@ func parseTaskArgs(vals *flagVals, args []string) {
 func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
 	vals.execs = nil
 	var exec *executor
-	flags.ParseAll(args, func(f *pflag.Flag, value string) error {
+	err := flags.ParseAll(args, func(f *pflag.Flag, value string) error {
 		switch f.Name {
 		case "sh", "exec":
 			if exec != nil {
@@ -207,6 +210,9 @@ func buildExecs(flags *pflag.FlagSet, vals *flagVals, args []string) {
 		}
 		return nil
 	})
+	if err != nil {
+		return
+	}
 	if exec != nil {
 		vals.execs = append(vals.execs, *exec)
 	}

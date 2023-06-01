@@ -135,8 +135,15 @@ func connect(url string, conf config.FTPStorage) (*ftpclient, error) {
 }
 
 func (b *ftpclient) Close() {
-	b.client.Logout()
-	b.client.Quit()
+	err := b.client.Logout()
+	if err != nil {
+		return
+	}
+
+	err = b.client.Quit()
+	if err != nil {
+		return
+	}
 }
 
 // Stat returns information about the object at the given storage URL.

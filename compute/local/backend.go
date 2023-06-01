@@ -32,7 +32,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 	}
 
 	taskBackendParameters := task.Resources.GetBackendParameters()		
-	for k, _ := range taskBackendParameters {
+	for k := range taskBackendParameters {
 		_, ok := b.backendParameters[k]
 		if !ok {
 			return errors.New("backend parameters not supported")
@@ -68,7 +68,10 @@ func (b *Backend) Submit(task *tes.Task) error {
 	}
 
 	go func() {
-		w.Run(ctx)
+		err = w.Run(ctx)
+		if err != nil {
+			b.log.Error("Error calling Run", err)
+		}
 		w.Close()
 	}()
 	return nil

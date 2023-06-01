@@ -63,11 +63,17 @@ func (s *Scheduler) CheckNodes() error {
 
 		if node.State == NodeState_GONE {
 			for _, tid := range node.TaskIds {
-				s.Event.WriteEvent(ctx, events.NewState(tid, tes.State_SYSTEM_ERROR))
-				s.Event.WriteEvent(ctx, events.NewSystemLog(tid, 0, 0, "info",
+				err = s.Event.WriteEvent(ctx, events.NewState(tid, tes.State_SYSTEM_ERROR))
+				if err != nil {
+					return err
+				}
+				err = s.Event.WriteEvent(ctx, events.NewSystemLog(tid, 0, 0, "info",
 					"Cleaning up Task assigned to dead/gone node", map[string]string{
 						"nodeID": node.Id,
 					}))
+				if err != nil {
+					return err
+				}
 			}
 			_, err = s.Nodes.DeleteNode(ctx, node)
 		} else {
@@ -100,10 +106,13 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 				"nodeID", offer.Node.Id,
 				"node", offer.Node,
 			)
-			s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "info",
+			err = s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "info",
 				"Assigning task to node", map[string]string{
 					"nodeID": offer.Node.Id,
 				}))
+			if err != nil {
+				return err
+			}
 
 			// TODO this is important! write a test for this line.
 			//      when a task is assigned, its state is immediately Initializing
@@ -116,11 +125,15 @@ func (s *Scheduler) Schedule(ctx context.Context) error {
 					"taskID", task.Id,
 					"nodeID", offer.Node.Id,
 				)
-				s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "error",
+				err := s.Event.WriteEvent(ctx, events.NewSystemLog(task.Id, 0, 0, "error",
 					"Error in AssignTask", map[string]string{
 						"error":  err.Error(),
 						"nodeID": offer.Node.Id,
 					}))
+
+				if err != nil {
+					return err
+				}
 				continue
 			}
 

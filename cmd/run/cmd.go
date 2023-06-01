@@ -22,7 +22,8 @@ var Cmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := Run(args)
 		if err != nil {
-			//cmd.Usage()
+			err := cmd.Usage()
+			return err
 		}
 		return err
 	},

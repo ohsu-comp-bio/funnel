@@ -38,7 +38,10 @@ var jobDefCmd = &cobra.Command{
 
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}
-			config.ParseFile(funnelConfigFile, &funnelConf)
+			err := config.ParseFile(funnelConfigFile, &funnelConf)
+			if err != nil {
+				return err
+			}
 			conf.Funnel = funnelConf
 		}
 

@@ -161,8 +161,14 @@ func LogTail(ctx context.Context, taskID string, attempt, index uint32, size int
 
 	go func() {
 		<-ctx.Done()
-		flush(stdoutbuf, Type_EXECUTOR_STDOUT)
-		flush(stdoutbuf, Type_EXECUTOR_STDERR)
+		err := flush(stdoutbuf, Type_EXECUTOR_STDOUT)
+		if err != nil {
+			return
+		}
+		err = flush(stdoutbuf, Type_EXECUTOR_STDERR)
+		if err != nil {
+			return
+		}
 	}()
 
 	return stdoutbuf, stderrbuf
@@ -232,8 +238,11 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 	go func() {
 		for e := range eventch {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-			out.WriteEvent(ctx, e)
+			err := out.WriteEvent(ctx, e)
 			cancel()
+			if err != nil {
+				return
+			}
 		}
 	}()
 
@@ -258,12 +267,18 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 					flushboth(immediate)
 				}
 			case b := <-stdoutch:
-				stdoutbuf.Write(b)
+				_, err := stdoutbuf.Write(b)
+				if err != nil {
+					return
+				}
 				if limiter.Allow() {
 					flushboth(immediate)
 				}
 			case b := <-stderrch:
-				stderrbuf.Write(b)
+				_, err := stderrbuf.Write(b)
+				if err != nil {
+					return
+				}
 				if limiter.Allow() {
 					flushboth(immediate)
 				}

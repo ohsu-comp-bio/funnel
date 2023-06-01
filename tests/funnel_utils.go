@@ -111,7 +111,10 @@ func (f *Funnel) Cleanup() {
 // StartServer starts the server
 func (f *Funnel) StartServer() {
 	go func() {
-		f.Srv.Run(context.Background())
+		err := f.Srv.Run(context.Background())
+		if err != nil {
+			return
+		}
 	}()
 
 	err := f.PollForServerStart()
@@ -242,9 +245,9 @@ func (f *Funnel) RunE(s string) (string, error) {
 	return f.RunTask(tasks[0])
 }
 
-// RunTask calls CreateTask with the given task message and returns the ID.
+// RunTask calls CreateTask with the given task message and returns the ID.``
 func (f *Funnel) RunTask(t *tes.Task) (string, error) {
-	resp, cerr := f.RPC.CreateTask(context.Background(), t, grpc.FailFast(false))
+	resp, cerr := f.RPC.CreateTask(context.Background(), t, grpc.WaitForReady(true))
 	if cerr != nil {
 		return "", cerr
 	}
@@ -329,7 +332,7 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 	gopath := os.Getenv("GOPATH")
 
 	if gopath == "" {
-		funnelBinary, err = filepath.Abs("../../funnel")
+		funnelBinary, _ = filepath.Abs("../../funnel")
 	} else {
 		if runtime.GOOS == "linux" {
 			funnelBinary, err = filepath.Abs(filepath.Join(
@@ -348,8 +351,14 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 
 	// write config file
 	configPath, _ := filepath.Abs(filepath.Join(f.Conf.Worker.WorkDir, "config.yml"))
-	config.ToYamlFile(f.Conf, configPath)
-	os.Chmod(configPath, 0644)
+	err = config.ToYamlFile(f.Conf, configPath)
+	if err != nil {
+		return
+	}
+	err = os.Chmod(configPath, 0644)
+	if err != nil {
+		return
+	}
 
 	httpPort, _ := strconv.ParseInt(f.Conf.Server.HTTPPort, 0, 32)
 	rpcPort, _ := strconv.ParseInt(f.Conf.Server.RPCPort, 0, 32)
@@ -357,7 +366,7 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 	// detect gid of /var/run/docker.sock
 	fi, err := os.Stat("/var/run/docker.sock")
 	if err != nil {
-		panic(err)
+		return
 	}
 	gid := fi.Sys().(*syscall.Stat_t).Gid
 
@@ -405,24 +414,24 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 	case <-ready:
 		break
 	}
-	return
 }
 
-func (f *Funnel) findTestServerContainers() []string {
-	res := []string{}
-	containers, err := f.Docker.ContainerList(context.Background(), dockerTypes.ContainerListOptions{})
-	if err != nil {
-		panic(err)
-	}
-	for _, c := range containers {
-		for _, n := range c.Names {
-			if strings.Contains(n, "funnel-test-server-") {
-				res = append(res, n)
-			}
-		}
-	}
-	return res
-}
+// TODO: commenting out for now for linting check
+// func (f *Funnel) findTestServerContainers() []string {
+// 	res := []string{}
+// 	containers, err := f.Docker.ContainerList(context.Background(), dockerTypes.ContainerListOptions{})
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	for _, c := range containers {
+// 		for _, n := range c.Names {
+// 			if strings.Contains(n, "funnel-test-server-") {
+// 				res = append(res, n)
+// 			}
+// 		}
+// 	}
+// 	return res
+// }
 
 func (f *Funnel) killTestServerContainers(ids []string) {
 	for _, n := range ids {
@@ -431,14 +440,12 @@ func (f *Funnel) killTestServerContainers(ids []string) {
 			panic(err)
 		}
 	}
-	return
 }
 
 // CleanupTestServerContainer stops the docker container running the test funnel server
 func (f *Funnel) CleanupTestServerContainer(containerName string) {
 	f.Cleanup()
 	f.killTestServerContainers([]string{containerName})
-	return
 }
 
 // HelloWorld is a simple, valid task that is easy to reuse in tests.

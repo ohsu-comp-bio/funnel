@@ -65,5 +65,8 @@ func testEmptyTask(t *testing.T, p Predicate, name string) {
 
 	j := &tes.Task{}
 	w := &Node{}
-	p(j, w)
+	err := p(j, w)
+	if err != nil {
+		t.Error("Predicate failed", err)
+	}
 }

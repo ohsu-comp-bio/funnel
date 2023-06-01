@@ -17,7 +17,10 @@ type stepWorker struct {
 }
 
 func (s *stepWorker) Run(ctx context.Context) error {
-	s.Event.StartTime(time.Now())
+	err := s.Event.StartTime(time.Now())
+	if err != nil {
+		return err
+	}
 
 	// subctx helps ensure that these goroutines are cleaned up,
 	// even when the task is canceled.
@@ -55,14 +58,26 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			// Likely the task was canceled.
-			s.Command.Stop()
+			err := s.Command.Stop()
+			if err != nil {
+				return err
+			}
 			<-done
-			s.Event.EndTime(time.Now())
+			err = s.Event.EndTime(time.Now())
+			if err != nil {
+				return err
+			}
 			return ctx.Err()
 
 		case result := <-done:
-			s.Event.EndTime(time.Now())
-			s.Event.ExitCode(getExitCode(result))
+			err := s.Event.EndTime(time.Now())
+			if err != nil {
+				return err
+			}
+			err = s.Event.ExitCode(getExitCode(result))
+			if err != nil {
+				return err
+			}
 			return result
 		}
 	}

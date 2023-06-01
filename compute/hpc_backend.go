@@ -75,8 +75,11 @@ func (b *HPCBackend) Submit(task *tes.Task) error {
 
 	err = cmd.Run()
 	if err != nil {
-		b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-		b.Event.WriteEvent(
+		err := b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+		if err != nil {
+			b.Log.Error("Error writing state event", err)
+		}
+		err = b.Event.WriteEvent(
 			ctx,
 			events.NewSystemLog(
 				task.Id, 0, 0, "error",
@@ -84,6 +87,9 @@ func (b *HPCBackend) Submit(task *tes.Task) error {
 				map[string]string{"error": err.Error(), "stderr": stderr.String(), "stdout": stdout.String()},
 			),
 		)
+		if err != nil {
+			b.Log.Error("Error writing state event", err)
+		}
 		return err
 	}
 
@@ -194,8 +200,11 @@ ReconcileLoop:
 						}
 
 						if t.TESState == tes.SystemError {
-							b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-							b.Event.WriteEvent(
+							err := b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+							if err != nil {
+								b.Log.Error("Error writing state event", err)
+							}
+							err = b.Event.WriteEvent(
 								ctx,
 								events.NewSystemLog(
 									task.Id, 0, 0, "error",
@@ -207,8 +216,14 @@ ReconcileLoop:
 									},
 								),
 							)
+							if err != nil {
+								b.Log.Error("Error writing state event", err)
+							}
 							if t.Remove {
-								exec.Command(b.CancelCmd, t.ID).Run()
+								err := exec.Command(b.CancelCmd, t.ID).Run()
+								if err != nil {
+									b.Log.Error("Error calling CancelCmd", err)
+								}
 							}
 						}
 					}

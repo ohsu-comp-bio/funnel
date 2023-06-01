@@ -34,10 +34,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 	case events.Type_TASK_STATE:
 		retrier := util.NewRetrier()
 		retrier.ShouldRetry = func(err error) bool {
-			if err == mgo.ErrNotFound {
-				return true
-			}
-			return false
+			return err == mgo.ErrNotFound
 		}
 
 		return retrier.Retry(ctx, func() error {

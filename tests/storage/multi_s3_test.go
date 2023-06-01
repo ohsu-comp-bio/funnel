@@ -41,7 +41,10 @@ func TestMultiS3Storage(t *testing.T) {
 		t.Fatal("error creating test bucket:", err)
 	}
 	defer func() {
-		gclient1.deleteBucket(testBucket)
+		err = gclient1.deleteBucket(testBucket)
+		if err != nil {
+			t.Fatal("error deleting test bucket:", err)
+		}
 	}()
 
 	gconf2 := conf.GenericS3[1]
@@ -54,7 +57,10 @@ func TestMultiS3Storage(t *testing.T) {
 		t.Fatal("error creating test bucket:", err)
 	}
 	defer func() {
-		gclient2.deleteBucket(testBucket)
+		err = gclient2.deleteBucket(testBucket)
+		if err != nil {
+			t.Fatal("error deleting test bucket:", err)
+		}
 	}()
 
 	// Stage input files

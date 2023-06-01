@@ -107,7 +107,10 @@ func TerminalState(s State) bool {
 // GetBasicView returns the basic view of a task.
 func (task *Task) GetBasicView() *Task {
 	view := &Task{}
-	deepcopy.Copy(view, task)
+	err := deepcopy.Copy(view, task)
+	if err != nil {
+		return nil
+	}
 
 	// remove contents from inputs
 	for _, v := range view.Inputs {

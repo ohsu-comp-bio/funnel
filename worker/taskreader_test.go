@@ -12,7 +12,7 @@ func TestFileTaskReader(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	task, err := r.Task(ctx)
+	task, _ := r.Task(ctx)
 	if task.Name != "Hello world" {
 		t.Error("unexpected task content")
 	}
@@ -29,7 +29,7 @@ func TestBase64TaskReader(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	task, err := r.Task(ctx)
+	task, _ := r.Task(ctx)
 	if task.Name != "Hello world" {
 		t.Error("unexpected task content")
 	}

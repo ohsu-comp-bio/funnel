@@ -3,6 +3,7 @@ package dynamodb
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -366,7 +367,7 @@ func (db *DynamoDB) deleteTask(ctx context.Context, id string) error {
 				// TODO handle error without panic
 				_, err := db.client.DeleteItem(item)
 				if err != nil {
-					panic(err)
+					log.Fatalf("failed to delete content item: %v", err)
 				}
 			}
 			return page.LastEvaluatedKey != nil

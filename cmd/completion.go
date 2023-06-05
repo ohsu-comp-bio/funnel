@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ Add "source <(funnel completion bash)" to your bash profile.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := RootCmd.GenBashCompletion(os.Stdout)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Error generating bash completion: %v", err)
 		}
 	},
 }

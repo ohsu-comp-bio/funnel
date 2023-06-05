@@ -20,8 +20,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-
-	"fmt"
 )
 
 // Server represents a Funnel server. The server handles
@@ -110,8 +108,6 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-		fmt.Println("DEBUG req:", req)
-		fmt.Println("DEBUG negotiate(req):", negotiate(req))
 		// TODO this doesnt handle all routes
 		if len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
@@ -130,7 +126,6 @@ func (s *Server) Serve(pctx context.Context) error {
 
 			grpcMux.ServeHTTP(resp, req)
 		}
-		fmt.Println("DEBUG resp:", resp)
 	})
 
 	// Register TES service

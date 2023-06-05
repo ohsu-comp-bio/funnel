@@ -1,7 +1,6 @@
 package boltdb
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -59,7 +58,6 @@ func NewBoltDB(conf config.BoltDB) (*BoltDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("DEBUG conf:", conf)
 	db, err := bolt.Open(conf.Path, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})

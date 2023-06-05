@@ -49,7 +49,6 @@ function TaskList({pageToken, setPageToken,
 
   React.useEffect(() => {
     var url = new URL("/v1/tasks" + window.location.search, window.location.origin);
-    console.log("DEBUG url:", url);
     var params = url.searchParams;
     params.set("view", "BASIC");
     params.set("pageSize", pageSize);

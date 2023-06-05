@@ -24,8 +24,8 @@ func TestRetrier(t *testing.T) {
 		i++
 		return fmt.Errorf("always error")
 	})
-	if err != nil {
-		t.Error("unexpected error", err)
+	if err == nil {
+		t.Error("Expected error")
 	}
 	if i != 3 {
 		t.Error("unexpected number of retries", i)

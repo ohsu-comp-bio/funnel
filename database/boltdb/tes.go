@@ -152,7 +152,6 @@ func getTaskView(tx *bolt.Tx, id string, view tes.View) (*tes.Task, error) {
 
 // ListTasks returns a list of taskIDs
 func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-	fmt.Println("DEBUG ListTasks()")
 	var tasks []*tes.Task
 	// If the tags filter request is non-nil we need the basic or full view
 	view := req.View

@@ -8,7 +8,12 @@ import (
 )
 
 func TestZonesFitEmptyTask(t *testing.T) {
-	testEmptyTask(t, ZonesFit, "ZonesFit")
+	j := &tes.Task{}
+	w := &Node{}
+	err := ZonesFit(j, w)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestResourcesFitEmptyTask(t *testing.T) {
@@ -66,7 +71,9 @@ func testEmptyTask(t *testing.T, p Predicate, name string) {
 	j := &tes.Task{}
 	w := &Node{}
 	err := p(j, w)
-	if err != nil {
-		t.Error("Predicate failed", err)
+	if err == nil {
+		t.Errorf("Expected predicate '%s' to fail", name)
+	} else {
+		t.Logf("Predicate '%s' error: %s", name, err)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // NewBackend returns a new noop Backend instance.
@@ -16,6 +17,10 @@ func NewBackend() *Backend {
 // which is useful for testing.
 type Backend struct{
 	events.Computer
+}
+
+func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
+	return nil
 }
 
 // WriteEvent is a noop and returns nil.

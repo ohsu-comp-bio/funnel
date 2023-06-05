@@ -13,7 +13,6 @@ import (
 // calls ListTasks() and requests the given task view.
 // Output is written to the given writer.
 func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, namePrefix string, pageSize int32, all bool, writer io.Writer) error {
-	fmt.Println("DEBUG List()")
 	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err

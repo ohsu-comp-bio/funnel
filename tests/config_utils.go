@@ -102,7 +102,7 @@ func RandomPortConfig(conf config.Config) config.Config {
 
 // TempDirConfig returns a modified config with workdir and db path set to a temp. directory.
 func TempDirConfig(conf config.Config) config.Config {
-	err := os.Mkdir("./test_tmp", os.ModePerm)
+	err := os.MkdirAll("./test_tmp", os.ModePerm)
 	if err != nil {
 		panic(err)
 	}

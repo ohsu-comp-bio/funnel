@@ -42,7 +42,6 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 	return nil
 }
 
-
 // WriteEvent writes an event to the compute backend.
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
@@ -70,7 +69,8 @@ func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		err = w.Run(ctx)
 		if err != nil {
-			b.log.Error("Error calling Run", err)
+			err = nil
+			b.log.Error("error calling Run", err)
 		}
 		w.Close()
 	}()

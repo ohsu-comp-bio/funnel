@@ -1,7 +1,6 @@
 package webdash
 
 import (
-	"fmt"
 	"net/http"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
@@ -29,7 +28,6 @@ func RootHandler() http.Handler {
 	}
 
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		fmt.Println("DEBUG req:", req)
 		// url := "http://localhost:3000"
 		_, err := resp.Write(index)
 		if err != nil {

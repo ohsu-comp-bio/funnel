@@ -69,7 +69,6 @@ func (b *Backend) Submit(task *tes.Task) error {
 	go func() {
 		err = w.Run(ctx)
 		if err != nil {
-			err = nil
 			b.log.Error("error calling Run", err)
 		}
 		w.Close()

@@ -34,7 +34,8 @@ func NewDockerClient() (*client.Client, error) {
 			}
 			// Error message example:
 			//   Error getting metadata for container: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
-			os.Setenv("DOCKER_API_VERSION", version[1])
+			// Hardcoding Docker version until version[1] returns valid version
+			os.Setenv("DOCKER_API_VERSION", "1.24")
 			return NewDockerClient()
 		}
 	}

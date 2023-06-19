@@ -89,7 +89,8 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	}
 
 	for key, val := range req.GetTags() {
-		v.Add(fmt.Sprintf("tags[%s]", key), val)
+		v.Add("tag_key", key)
+		v.Add("tag_value", val)
 	}
 
 	// Send request

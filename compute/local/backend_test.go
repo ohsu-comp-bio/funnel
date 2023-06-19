@@ -13,8 +13,8 @@ func createBackend(p map[string]string) *Backend {
 	conf := config.DefaultConfig()
 	log := logger.NewLogger("test", logger.DefaultConfig())
 	b := &Backend{
-		conf: conf,
-		log:  log,
+		conf:              conf,
+		log:               log,
 		backendParameters: p,
 	}
 	return b
@@ -46,7 +46,7 @@ func TestBackendParamaters(t *testing.T) {
 	b := createBackend(nil)
 	task := createTask(&tes.Resources{
 		BackendParametersStrict: false,
-		BackendParameters: map[string]string{"foo": "bar"},
+		BackendParameters:       map[string]string{"foo": "bar"},
 	})
 
 	err := b.CheckBackendParameterSupport(task)
@@ -57,7 +57,7 @@ func TestBackendParamatersStrict(t *testing.T) {
 	b := createBackend(map[string]string{"foo": "bar"})
 	task := createTask(&tes.Resources{
 		BackendParametersStrict: true,
-		BackendParameters: map[string]string{"foo": "baz"},
+		BackendParameters:       map[string]string{"foo": "baz"},
 	})
 
 	err := b.CheckBackendParameterSupport(task)
@@ -68,7 +68,7 @@ func TestBackendParamatersStrictFail(t *testing.T) {
 	b := createBackend(nil)
 	task := createTask(&tes.Resources{
 		BackendParametersStrict: true,
-		BackendParameters: map[string]string{"foo": "bar"},
+		BackendParameters:       map[string]string{"foo": "bar"},
 	})
 
 	err := b.CheckBackendParameterSupport(task)

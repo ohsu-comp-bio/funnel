@@ -632,7 +632,7 @@ func TestMarkCompleteBug(t *testing.T) {
 		t.Fatal("Unexpected task state")
 	}
 	err := fun.Cancel(id)
-	if err != nil {	
+	if err != nil {
 		t.Error(err)
 	}
 }

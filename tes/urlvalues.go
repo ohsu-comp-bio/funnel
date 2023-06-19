@@ -10,6 +10,7 @@ func addString(u url.Values, key, value string) {
 		u.Add(key, value)
 	}
 }
+
 // func addUInt32(u url.Values, key string, value uint32) {
 // 	if value != 0 {
 // 		u.Add(key, fmt.Sprint(value))

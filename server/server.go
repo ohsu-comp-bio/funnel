@@ -88,12 +88,11 @@ func (s *Server) Serve(pctx context.Context) error {
 	m := protojson.MarshalOptions{
 		Indent:          "  ",
 		EmitUnpopulated: true,
-		UseProtoNames: true,
+		UseProtoNames:   true,
 	}
-	u := protojson.UnmarshalOptions{
-	}
+	u := protojson.UnmarshalOptions{}
 	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-		MarshalOptions: m, 
+		MarshalOptions:   m,
 		UnmarshalOptions: u,
 	}))
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects

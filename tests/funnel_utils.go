@@ -245,7 +245,7 @@ func (f *Funnel) RunE(s string) (string, error) {
 	return f.RunTask(tasks[0])
 }
 
-// RunTask calls CreateTask with the given task message and returns the ID.``
+// RunTask calls CreateTask with the given task message and returns the ID.“
 func (f *Funnel) RunTask(t *tes.Task) (string, error) {
 	resp, cerr := f.RPC.CreateTask(context.Background(), t, grpc.WaitForReady(true))
 	if cerr != nil {

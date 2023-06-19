@@ -7,12 +7,10 @@ import (
 )
 
 var fs = &assetfs.AssetFS{
-	Asset:     Asset,
-	AssetDir:  AssetDir,
+	Asset:    Asset,
+	AssetDir: AssetDir,
 	//Prefix:    "webdash/build",
 }
-
-
 
 // FileServer provides access to the bundled web assets (HTML, CSS, etc)
 // via an http.Handler

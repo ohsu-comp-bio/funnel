@@ -23,7 +23,7 @@ func TestGet(t *testing.T) {
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
-	}	
+	}
 }
 
 // "get" command should have default view of FULL
@@ -41,7 +41,7 @@ func TestGetDefaultView(t *testing.T) {
 	err := cmd.Execute()
 	if err != nil {
 		t.Error(err)
-	}	
+	}
 }
 
 func TestList(t *testing.T) {

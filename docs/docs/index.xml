@@ -5,11 +5,7 @@
     <link>https://ohsu-comp-bio.github.io/funnel/docs/</link>
     <description>Recent content in Docs on Funnel</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="https://ohsu-comp-bio.github.io/funnel/docs/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="https://ohsu-comp-bio.github.io/funnel/docs/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>AWS Batch</title>
       <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/</link>
@@ -88,7 +84,7 @@ A node is a service which runs on each machine in a cluster. The node connects t
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/</guid>
       <description>DynamoDB Funnel supports storing task data in DynamoDB. Storing scheduler data is not supported currently, so using the node scheduler with DynamoDB won&amp;rsquo;t work. Using AWS Batch for compute scheduling may be a better option. Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.
 Available Config:
-Database: dynamodb DynamoDB: # Basename to use for dynamodb tables TableBasename: &amp;quot;funnel&amp;quot; # AWS region Region: &amp;quot;us-west-2&amp;quot; # AWS Access key ID Key: &amp;quot;&amp;quot; # AWS Secret Access Key Secret: &amp;quot;&amp;quot; Known issues Dynamo does not store scheduler data.</description>
+Database: dynamodb DynamoDB: # Basename to use for dynamodb tables TableBasename: &amp;#34;funnel&amp;#34; # AWS region Region: &amp;#34;us-west-2&amp;#34; # AWS Access key ID Key: &amp;#34;&amp;#34; # AWS Secret Access Key Secret: &amp;#34;&amp;#34; Known issues Dynamo does not store scheduler data.</description>
     </item>
     
     <item>
@@ -99,7 +95,7 @@ Database: dynamodb DynamoDB: # Basename to use for dynamodb tables TableBasename
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/</guid>
       <description>Elasticsearch Funnel supports storing tasks and scheduler data in Elasticsearch.
 Config:
-Database: elastic Elastic: # Prefix to use for indexes IndexPrefix: &amp;quot;funnel&amp;quot; URL: http://localhost:9200 </description>
+Database: elastic Elastic: # Prefix to use for indexes IndexPrefix: &amp;#34;funnel&amp;#34; URL: http://localhost:9200 </description>
     </item>
     
     <item>
@@ -131,7 +127,7 @@ Database: boltdb BoltDB: # Path to database file Path: ./funnel-work-dir/funnel.
       <description>FTP Funnel supports download and uploading files via FTP.
 Currently authentication credentials are take from the URL, e.g. ftp://username:password@ftp.host.tld. This will be improved soon to allow credentials to be added to the configuration file.
 The FTP storage client is enabled by default, but may be explicitly disabled in the worker config:
-FTPStorage: Disabled: false Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;ftp://my.ftpserver.xyz/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.txt&amp;quot; }, { &amp;quot;url&amp;quot;: &amp;quot;ftp://user:mypassword123@my.ftpserver.xyz/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.</description>
+FTPStorage: Disabled: false Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;ftp://my.ftpserver.xyz/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34; }, { &amp;#34;url&amp;#34;: &amp;#34;ftp://user:mypassword123@my.ftpserver.xyz/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.</description>
     </item>
     
     <item>
@@ -141,10 +137,10 @@ FTPStorage: Disabled: false Example task { &amp;quot;name&amp;quot;: &amp;quot;H
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/development/developers/</guid>
       <description>Developers This page contains a rough collection of notes for people wanting to build Funnel from source and/or edit the code.
-Building the Funnel source   Install Go 1.11+. Check the version with go version.
-  Ensure GOPATH is set. See the docs for help. Also, you probably want to add $GOPATH/bin to your PATH.
-  Clone funnel and build
-$ git clone https://github.com/ohsu-comp-bio/funnel.git $ cd funnel $ make ``</description>
+Building the Funnel source Install Go 1.11+. Check the version with go version.
+Ensure GOPATH is set. See the docs for help. Also, you probably want to add $GOPATH/bin to your PATH.
+Clone funnel and build
+$ git clone https://github.com/ohsu-comp-bio/funnel.git $ cd funnel $ make Funnel is now downloaded and installed.</description>
     </item>
     
     <item>
@@ -155,7 +151,7 @@ $ git clone https://github.com/ohsu-comp-bio/funnel.git $ cd funnel $ make ``</d
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/</guid>
       <description>Google Storage Funnel supports using Google Storage (GS) for file storage.
 The Google storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-GoogleStorage: Disabled: false # Path to account credentials file. AccountFile: &amp;quot;&amp;quot; Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;gs://funnel-bucket/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.txt&amp;quot; }], &amp;quot;outputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;gs://funnel-bucket/output.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/outputs/hello-out.txt&amp;quot; }], &amp;quot;executors&amp;quot;: [{ &amp;quot;image&amp;quot;: &amp;quot;alpine&amp;quot;, &amp;quot;command&amp;quot;: [&amp;quot;cat&amp;quot;, &amp;quot;/inputs/hello.</description>
+GoogleStorage: Disabled: false # Path to account credentials file. AccountFile: &amp;#34;&amp;#34; Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;gs://funnel-bucket/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34; }], &amp;#34;outputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;gs://funnel-bucket/output.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34; }], &amp;#34;executors&amp;#34;: [{ &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;, &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.</description>
     </item>
     
     <item>
@@ -190,7 +186,7 @@ Compute: htcondor HTCondor: Template: |universe = vanilla getenv = True executab
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</guid>
       <description>HTTP(S) Funnel supports downloading files from public URLs via GET requests. No authentication mechanism is allowed. This backend can be used to fetch objects from cloud storage providers exposed using presigned URLs.
 The HTTP storage client is enabled by default, but may be explicitly disabled in the worker config:
-HTTPStorage: Disabled: false # Timeout for http(s) GET requests. Timeout: 30s Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;http://fakedomain.com/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.</description>
+HTTPStorage: Disabled: false # Timeout for http(s) GET requests. Timeout: 30s Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;http://fakedomain.com/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.</description>
     </item>
     
     <item>
@@ -211,7 +207,7 @@ EventWriters: - kafka - log Kafka: Servers: - localhost:9092 Topic: funnel-event
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/</guid>
       <description>Kubernetes This guide will take you through the process of setting up Funnel as a kubernetes service.
 Kuberenetes Resources:
- Service Deployment ConfigMap Roles and RoleBindings Job  Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
+Service Deployment ConfigMap Roles and RoleBindings Job Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
 Create a Service: funnel-service.yml
 apiVersion: v1 kind: Service metadata: name: funnel spec: selector: app: funnel ports: - name: http protocol: TCP port: 8000 targetPort: 8000 - name: rpc protocol: TCP port: 9090 targetPort: 9090 Deploy it:</description>
     </item>
@@ -226,7 +222,7 @@ apiVersion: v1 kind: Service metadata: name: funnel spec: selector: app: funnel 
 Funnel limits which directories may be accessed, by default only allowing directories under the current working directory of the Funnel worker.
 Config:
 LocalStorage: # Whitelist of local directory paths which Funnel is allowed to access. AllowedDirs: - ./ - /path/to/allowed/dir - ...etc Example task Files must be absolute paths in file:///path/to/file.txt URL form.
-{ &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;file:///path/to/funnel-data/hello.</description>
+{ &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;file:///path/to/funnel-data/hello.</description>
     </item>
     
     <item>
@@ -246,7 +242,7 @@ LocalStorage: # Whitelist of local directory paths which Funnel is allowed to ac
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</guid>
       <description>MongoDB Funnel supports storing tasks and scheduler data in MongoDB.
 Config:
-Database: mongodb MongoDB: # Addresses for the seed servers. Addrs: - &amp;quot;localhost&amp;quot; # Database name used within MongoDB to store funnel data. Database: &amp;quot;funnel&amp;quot; Username: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot; </description>
+Database: mongodb MongoDB: # Addresses for the seed servers. Addrs: - &amp;#34;localhost&amp;#34; # Database name used within MongoDB to store funnel data. Database: &amp;#34;funnel&amp;#34; Username: &amp;#34;&amp;#34; Password: &amp;#34;&amp;#34; </description>
     </item>
     
     <item>
@@ -257,7 +253,7 @@ Database: mongodb MongoDB: # Addresses for the seed servers. Addrs: - &amp;quot;
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</guid>
       <description>OpenStack Swift Funnel supports using OpenStack Swift for file storage.
 The Swift storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-Swift: Disabled: false UserName: &amp;quot;&amp;quot; Password: &amp;quot;&amp;quot; AuthURL: &amp;quot;&amp;quot; TenantName: &amp;quot;&amp;quot; TenantID: &amp;quot;&amp;quot; RegionName: &amp;quot;&amp;quot; # 500 MB ChunkSizeBytes: 500000000 Example task { &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ &amp;quot;url&amp;quot;: &amp;quot;swift://funnel-bucket/hello.txt&amp;quot;, &amp;quot;path&amp;quot;: &amp;quot;/inputs/hello.</description>
+Swift: Disabled: false UserName: &amp;#34;&amp;#34; Password: &amp;#34;&amp;#34; AuthURL: &amp;#34;&amp;#34; TenantName: &amp;#34;&amp;#34; TenantID: &amp;#34;&amp;#34; RegionName: &amp;#34;&amp;#34; # 500 MB ChunkSizeBytes: 500000000 Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;swift://funnel-bucket/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.</description>
     </item>
     
     <item>
@@ -280,7 +276,7 @@ Compute: pbs PBS: Template: |#!</description>
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/</guid>
       <description>Prometheus Prometheus is a monitoring and metrics collection service. It pulls metrics from various &amp;ldquo;exporters&amp;rdquo;, collects them in a time-series database, provides a query langauge for access that data, and integrates closely with tools such as Grafana for visualization and dashboard building.
 Funnel exports these metrics:
- funnel_tasks_state_count: the number of tasks in each state (queued, running, etc). funnel_nodes_state_count: the number of nodes in each state (alive, dead, draining, etc). funnel_nodes_total_cpus: the total number of CPUs available by all nodes.</description>
+funnel_tasks_state_count: the number of tasks in each state (queued, running, etc). funnel_nodes_state_count: the number of nodes in each state (alive, dead, draining, etc). funnel_nodes_total_cpus: the total number of CPUs available by all nodes.</description>
     </item>
     
     <item>
@@ -291,7 +287,7 @@ Funnel exports these metrics:
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/</guid>
       <description>S3 Amazon S3 Funnel supports using AWS S3 for file storage.
 The Amazon S3 storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-AmazonS3: Disabled: false # The maximum number of times that a request will be retried for failures. MaxRetries: 10 Key: &amp;quot;&amp;quot; Secret: &amp;quot;&amp;quot; The Amazon S3 storage client also supports SSE-KMS and SSE-C configurations.</description>
+AmazonS3: Disabled: false # The maximum number of times that a request will be retried for failures. MaxRetries: 10 Key: &amp;#34;&amp;#34; Secret: &amp;#34;&amp;#34; The Amazon S3 storage client also supports SSE-KMS and SSE-C configurations.</description>
     </item>
     
     <item>
@@ -331,8 +327,8 @@ Compute: slurm Slurm: Template: |#!</description>
       
       <guid>https://ohsu-comp-bio.github.io/funnel/docs/tasks/</guid>
       <description>Tasks A task defines a unit of work:
- metadata input files to download a sequence of Docker containers + commands to run, output files to upload state logs  The example task below downloads a file named hello.txt from S3 and calls cat hello.txt using the alpine container. This task also writes the executor&amp;rsquo;s stdout to a file, and uploads the stdout to s3.
-{ &amp;quot;name&amp;quot;: &amp;quot;Hello world&amp;quot;, &amp;quot;inputs&amp;quot;: [{ # URL to download file from.</description>
+metadata input files to download a sequence of Docker containers + commands to run, output files to upload state logs The example task below downloads a file named hello.txt from S3 and calls cat hello.txt using the alpine container. This task also writes the executor&amp;rsquo;s stdout to a file, and uploads the stdout to s3.
+{ &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ # URL to download file from.</description>
     </item>
     
   </channel>

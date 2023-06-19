@@ -224,7 +224,7 @@ func TestNodeCleanup(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_ ,err = e.WriteEvent(ctx, events.NewState(t3.Id, tes.SystemError))
+	_, err = e.WriteEvent(ctx, events.NewState(t3.Id, tes.SystemError))
 	if err != nil {
 		t.Error(err)
 	}

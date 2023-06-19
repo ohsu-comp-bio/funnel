@@ -39,7 +39,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	err := ts.Compute.CheckBackendParameterSupport(task);
+	err := ts.Compute.CheckBackendParameterSupport(task)
 	if err != nil {
 		return nil, fmt.Errorf("error from backend: %s", err)
 	}
@@ -93,33 +93,33 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 // GetServiceInfo returns service metadata.
 func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.GetServiceInfoRequest) (*tes.ServiceInfo, error) {
 	resp := &tes.ServiceInfo{
-		CreatedAt:                     "2016-03-21T16:27:49-07:00",
+		CreatedAt: "2016-03-21T16:27:49-07:00",
 		// TODO: Change this to "mailto:ellrott@ohsu.edu" when support for "mailto:" URL's are
 		// added to tes-compliance-suite
-		ContactUrl: 				   "https://ohsu-comp-bio.github.io/funnel/",
-		Description:                   "Funnel is a toolkit for distributed task execution via a simple, standard API.",
-		DocumentationUrl:              "https://ohsu-comp-bio.github.io/funnel/",
-		Environment:                   "development",
-		Id:                            "org.ga4gh.funnel",
-		Name:                          ts.Name,
-		Organization:                  map[string]string{
-										"name": "OHSU Computational Biology",
-										"url": "https://github.com/ohsu-comp-bio",
-									   },
-		Storage:                       []string{
-											"file:///path/to/local/funnel-storage",
-											"s3://ohsu-compbio-funnel/storage",
-										},
+		ContactUrl:       "https://ohsu-comp-bio.github.io/funnel/",
+		Description:      "Funnel is a toolkit for distributed task execution via a simple, standard API.",
+		DocumentationUrl: "https://ohsu-comp-bio.github.io/funnel/",
+		Environment:      "development",
+		Id:               "org.ga4gh.funnel",
+		Name:             ts.Name,
+		Organization: map[string]string{
+			"name": "OHSU Computational Biology",
+			"url":  "https://github.com/ohsu-comp-bio",
+		},
+		Storage: []string{
+			"file:///path/to/local/funnel-storage",
+			"s3://ohsu-compbio-funnel/storage",
+		},
 		TesResourcesBackendParameters: []string{
-											"",
-										},
-		Type:                          &tes.ServiceType{
-											Artifact: "tes",
-											Group:  "org.ga4gh",
-											Version: version.String(),
-										},
-		UpdatedAt:                     time.Now().Format(time.RFC3339),
-		Version: 					   version.String(),
+			"",
+		},
+		Type: &tes.ServiceType{
+			Artifact: "tes",
+			Group:    "org.ga4gh",
+			Version:  version.String(),
+		},
+		UpdatedAt: time.Now().Format(time.RFC3339),
+		Version:   version.String(),
 	}
 
 	/*

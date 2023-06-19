@@ -17,7 +17,7 @@ type Backend struct {
 }
 
 func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
-	taskBackendParameters := task.Resources.GetBackendParameters()		
+	taskBackendParameters := task.Resources.GetBackendParameters()
 	for k := range taskBackendParameters {
 		_, ok := b.backendParameters[k]
 		if !ok {

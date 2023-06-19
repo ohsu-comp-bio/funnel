@@ -74,6 +74,9 @@ jobs:
           python setup.py install
           mkdir reports
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Test compliance
         run: |
           source venv/bin/activate

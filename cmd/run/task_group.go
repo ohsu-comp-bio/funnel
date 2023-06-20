@@ -56,7 +56,10 @@ func (tg *taskGroup) _run(task *tes.Task, wait bool, waitFor []string) error {
 
 	if len(waitFor) > 0 {
 		for _, tid := range waitFor {
-			tg.client.WaitForTask(context.Background(), tid)
+			err := tg.client.WaitForTask(context.Background(), tid)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

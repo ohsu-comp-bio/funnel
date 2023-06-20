@@ -4,6 +4,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -48,10 +49,13 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// TODO if we failed to retrieve the task, we can't do anything useful.
 	//      but, it's also difficult to report the failure usefully.
 	if run.syserr != nil {
-		r.EventWriter.WriteEvent(pctx, events.NewSystemLog("unknown", 0, 0, "error",
+		err := r.EventWriter.WriteEvent(pctx, events.NewSystemLog("unknown", 0, 0, "error",
 			"failed to get task. ID unknown", map[string]string{
 				"error": run.syserr.Error(),
 			}))
+		if err != nil {
+			return err
+		}
 		runerr = run.syserr
 		return
 	}
@@ -60,42 +64,81 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	event = events.NewTaskWriter(task.GetId(), 0, r.EventWriter)
 	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, task.GetId()))
 
-	event.Info("Version", version.LogFields()...)
-	event.State(tes.State_INITIALIZING)
-	event.StartTime(time.Now())
+	err := event.Info("Version", version.LogFields()...)
+	if err != nil {
+		return err
+	}
+	err = event.State(tes.State_INITIALIZING)
+	if err != nil {
+		return err
+	}
+	err = event.StartTime(time.Now())
+	if err != nil {
+		return err
+	}
 
 	if name, err := os.Hostname(); err == nil {
-		event.Metadata(map[string]string{"hostname": name})
+		err := event.Metadata(map[string]string{"hostname": name})
+		if err != nil {
+			return err
+		}
 	}
 
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
-		event.EndTime(time.Now())
+		err := event.EndTime(time.Now())
+		if err != nil {
+			log.Printf("failed to set end time: %v", err)
+		}
 
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
-			event.Info("Canceled")
-			event.State(tes.State_CANCELED)
+			err := event.Info("Canceled")
+			if err != nil {
+				log.Print(err)
+			}
+			err = event.State(tes.State_CANCELED)
+			if err != nil {
+				log.Print(err)
+			}
 			runerr = fmt.Errorf("task canceled")
 		case run.syserr != nil:
 			// Something else failed
-			event.Error("System error", "error", run.syserr)
-			event.State(tes.State_SYSTEM_ERROR)
+			err := event.Error("System error", "error", run.syserr)
+			if err != nil {
+				log.Print(err)
+			}
+			err = event.State(tes.State_SYSTEM_ERROR)
+			if err != nil {
+				log.Print(err)
+			}
 			runerr = run.syserr
 		case run.execerr != nil:
 			// One of the executors failed
-			event.Error("Exec error", "error", run.execerr)
-			event.State(tes.State_EXECUTOR_ERROR)
+			err := event.Error("Exec error", "error", run.execerr)
+			if err != nil {
+				log.Print(err)
+			}
+			err = event.State(tes.State_EXECUTOR_ERROR)
+			if err != nil {
+				log.Print(err)
+			}
 			runerr = run.execerr
 		default:
-			event.State(tes.State_COMPLETE)
+			err := event.State(tes.State_COMPLETE)
+			if err != nil {
+				log.Print(err)
+			}
 		}
 
 		// cleanup workdir
 		if !r.Conf.LeaveWorkDir {
-			mapper.Cleanup()
+			err := mapper.Cleanup()
+			if err != nil {
+				panic(err)
+			}
 		}
 	}()
 
@@ -123,7 +166,10 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	}
 
 	if run.ok() {
-		event.State(tes.State_RUNNING)
+		err := event.State(tes.State_RUNNING)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Run steps
@@ -178,7 +224,10 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	}
 
 	if len(outputLog) > 0 {
-		event.Outputs(outputLog)
+		err := event.Outputs(outputLog)
+		if err != nil {
+			return err
+		}
 	}
 
 	return
@@ -197,7 +246,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	if d.Stdin != "" {
 		s.Command.Stdin, err = mapper.OpenHostFile(d.Stdin)
 		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
+			err := s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
@@ -206,7 +255,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	if d.Stdout != "" {
 		s.Command.Stdout, err = mapper.CreateHostFile(d.Stdout)
 		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
+			err := s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
@@ -215,7 +264,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	if d.Stderr != "" {
 		s.Command.Stderr, err = mapper.CreateHostFile(d.Stderr)
 		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
+			err := s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}

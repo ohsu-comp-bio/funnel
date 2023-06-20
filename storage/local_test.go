@@ -37,7 +37,10 @@ func TestLocalGet(t *testing.T) {
 	// File test
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
-	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+	err = ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	_, gerr := l.Get(ctx, "file://"+ip, cp)
 	if gerr != nil {
@@ -163,7 +166,10 @@ func TestLocalGetPath(t *testing.T) {
 
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
-	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+	err = ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	_, gerr := l.Get(ctx, ip, cp)
 	if gerr != nil {
@@ -191,7 +197,10 @@ func TestLocalPut(t *testing.T) {
 	// File test
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
-	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+	err = ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	_, gerr := l.Put(ctx, "file://"+op, cp)
 	if gerr != nil {
@@ -218,7 +227,10 @@ func TestLocalPutPath(t *testing.T) {
 
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
-	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+	err = ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	_, gerr := l.Put(ctx, op, cp)
 	if gerr != nil {
@@ -252,8 +264,14 @@ func TestSameFile(t *testing.T) {
 	cp := path.Join(tmp, "output.txt")
 	cp2 := path.Join(tmp, "output2.txt")
 	op := path.Join(tmpOut, "output.txt")
-	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
-	ioutil.WriteFile(cp2, []byte("bar"), os.ModePerm)
+	err = ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ioutil.WriteFile(cp2, []byte("bar"), os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = linkFile(ctx, cp, op)
 	if err != nil {

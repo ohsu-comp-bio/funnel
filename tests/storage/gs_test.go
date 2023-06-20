@@ -14,6 +14,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 	gs "google.golang.org/api/storage/v1"
 )
 
@@ -49,7 +50,10 @@ func TestGoogleStorage(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		client.deleteBucket(testBucket)
+		err = client.deleteBucket(testBucket)
+		if err != nil {
+			t.Fatal("error deleting test bucket:", err)
+		}
 	}()
 
 	protocol := "gs://"
@@ -227,7 +231,7 @@ func newGsTest() (*gsTest, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := gs.New(defClient)
+	client, err := gs.NewService(context.TODO(), option.WithHTTPClient(defClient))
 	if err != nil {
 		return nil, err
 	}

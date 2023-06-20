@@ -33,13 +33,19 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	// Sync docker API version info.
 	err := SyncDockerAPIVersion()
 	if err != nil {
-		dcmd.Event.Error("failed to sync docker client API version", err)
+		err := dcmd.Event.Error("failed to sync docker client API version", err)
+		if err != nil {
+			return err
+		}
 	}
 
 	pullcmd := exec.Command("docker", "pull", dcmd.Image)
 	err = pullcmd.Run()
 	if err != nil {
-		dcmd.Event.Error("failed to pull docker image", err)
+		err := dcmd.Event.Error("failed to pull docker image", err)
+		if err != nil {
+			return err
+		}
 	}
 
 	args := []string{"run", "-i", "--read-only"}
@@ -71,7 +77,10 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	args = append(args, dcmd.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
+	err = dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
+	if err != nil {
+		return err
+	}
 	cmd := exec.Command("docker", args...)
 
 	if dcmd.Stdin != nil {
@@ -85,13 +94,19 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	}
 	go dcmd.inspectContainer(ctx)
 	out := cmd.Run()
-	dcmd.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
+	err = dcmd.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
+	if err != nil {
+		return err
+	}
 	return out
 }
 
 // Stop stops the container.
 func (dcmd DockerCommand) Stop() error {
-	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
+	err := dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
+	if err != nil {
+		return err
+	}
 	// cmd := exec.Command("docker", "stop", dcmd.ContainerName)
 	cmd := exec.Command("docker", "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
 	return cmd.Run()
@@ -132,10 +147,13 @@ func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
 				meta := []metadata{}
 				err := json.Unmarshal(out, &meta)
 				if err == nil && len(meta) == 1 {
-					dcmd.Event.Info("container metadata",
+					err := dcmd.Event.Info("container metadata",
 						"containerID", meta[0].ID,
 						"containerName", meta[0].Name,
 						"containerImageHash", meta[0].Image)
+					if err != nil {
+						return
+					}
 					return
 				}
 			}

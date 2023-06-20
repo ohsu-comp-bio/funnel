@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -17,7 +18,10 @@ var bash = &cobra.Command{
 	Long: `This command generates bash CLI completion code.
 Add "source <(funnel completion bash)" to your bash profile.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		RootCmd.GenBashCompletion(os.Stdout)
+		err := RootCmd.GenBashCompletion(os.Stdout)
+		if err != nil {
+			log.Fatalf("Error generating bash completion: %v", err)
+		}
 	},
 }
 

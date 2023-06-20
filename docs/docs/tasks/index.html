@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -340,93 +341,93 @@
 <li>logs</li>
 </ul>
 <p>The example task below downloads a file named <code>hello.txt</code> from S3 and calls <code>cat hello.txt</code> using the <a href="https://hub.docker.com/_/alpine/">alpine</a> container. This task also writes the executor&rsquo;s stdout to a file, and uploads the stdout to s3.</p>
-<pre><code>{
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [{
+<pre tabindex="0"><code>{
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [{
     # URL to download file from.
-    &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
+    &#34;url&#34;: &#34;s3://funnel-bucket/hello.txt&#34;,
     # Path to download file to.
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+    &#34;path&#34;: &#34;/inputs/hello.txt&#34;
   }],
-  &quot;outputs&quot;: [{
+  &#34;outputs&#34;: [{
     # URL to upload file to.
-    &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
+    &#34;url&#34;: &#34;s3://funnel-bucket/output.txt&#34;,
     # Local path to upload file from.
-    &quot;path&quot;: &quot;/outputs/stdout&quot;
+    &#34;path&#34;: &#34;/outputs/stdout&#34;
   }],
-  &quot;executors&quot;: [{
+  &#34;executors&#34;: [{
       # Container image name.
-      &quot;image&quot;: &quot;alpine&quot;,
+      &#34;image&#34;: &#34;alpine&#34;,
       # Command to run (argv).
-      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
+      &#34;command&#34;: [&#34;cat&#34;, &#34;/inputs/hello.txt&#34;],
       # Capture the stdout of the command to /outputs/stdout
-      &quot;stdout&quot;: &quot;/outputs/stdout&quot;
+      &#34;stdout&#34;: &#34;/outputs/stdout&#34;
   }]
 }
 </code></pre><p>Tasks have multiple &ldquo;executors&rdquo;; containers and commands run in a sequence.
 Funnel runs executors via Docker.</p>
 <p>Tasks also have state and logs:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-JSON" data-lang="JSON">{
-  <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;b85khc2rl6qkqbhg8vig&#34;</span>,
-  <span style="color:#f92672">&#34;state&#34;</span>: <span style="color:#e6db74">&#34;COMPLETE&#34;</span>,
-  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Hello world&#34;</span>,
-  <span style="color:#f92672">&#34;inputs&#34;</span>: [
-    {
-      <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;s3://funnel-bucket/hello.txt&#34;</span>,
-      <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/inputs/hello.txt&#34;</span>
-    }
-  ],
-  <span style="color:#f92672">&#34;outputs&#34;</span>: [
-    {
-      <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;s3://funnel-bucket/output.txt&#34;</span>,
-      <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/outputs/stdout&#34;</span>
-    }
-  ],
-  <span style="color:#f92672">&#34;executors&#34;</span>: [
-    {
-      <span style="color:#f92672">&#34;image&#34;</span>: <span style="color:#e6db74">&#34;alpine&#34;</span>,
-      <span style="color:#f92672">&#34;command&#34;</span>: [
-        <span style="color:#e6db74">&#34;cat&#34;</span>,
-        <span style="color:#e6db74">&#34;/inputs/hello.txt&#34;</span>
-      ],
-      <span style="color:#f92672">&#34;stdout&#34;</span>: <span style="color:#e6db74">&#34;/outputs/stdout&#34;</span>
-    }
-  ],
-  <span style="color:#f92672">&#34;logs&#34;</span>: [
-    {
-      <span style="color:#f92672">&#34;logs&#34;</span>: [
-        {
-          <span style="color:#f92672">&#34;startTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:05.127885125-08:00&#34;</span>,
-          <span style="color:#f92672">&#34;endTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:08.484461502-08:00&#34;</span>,
-          <span style="color:#f92672">&#34;stdout&#34;</span>: <span style="color:#e6db74">&#34;Hello, Funnel!\n&#34;</span>
-        }
-      ],
-      <span style="color:#f92672">&#34;startTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:04.433593468-08:00&#34;</span>,
-      <span style="color:#f92672">&#34;endTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:08.487707039-08:00&#34;</span>
-    }
-  ],
-  <span style="color:#f92672">&#34;creationTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:04.427163701-08:00&#34;</span>
-}
-</code></pre></div><p>There are logs for each task attempt and each executor. Notice that the stdout is
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-JSON" data-lang="JSON"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;b85khc2rl6qkqbhg8vig&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;state&#34;</span>: <span style="color:#e6db74">&#34;COMPLETE&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Hello world&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;inputs&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;s3://funnel-bucket/hello.txt&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/inputs/hello.txt&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ],
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;outputs&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;s3://funnel-bucket/output.txt&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/outputs/stdout&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ],
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;executors&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;image&#34;</span>: <span style="color:#e6db74">&#34;alpine&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;command&#34;</span>: [
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;cat&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;/inputs/hello.txt&#34;</span>
+</span></span><span style="display:flex;"><span>      ],
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;stdout&#34;</span>: <span style="color:#e6db74">&#34;/outputs/stdout&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ],
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;logs&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;logs&#34;</span>: [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">&#34;startTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:05.127885125-08:00&#34;</span>,
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">&#34;endTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:08.484461502-08:00&#34;</span>,
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">&#34;stdout&#34;</span>: <span style="color:#e6db74">&#34;Hello, Funnel!\n&#34;</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>      ],
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;startTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:04.433593468-08:00&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;endTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:08.487707039-08:00&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ],
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;creationTime&#34;</span>: <span style="color:#e6db74">&#34;2017-11-14T11:49:04.427163701-08:00&#34;</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>There are logs for each task attempt and each executor. Notice that the stdout is
 conveniently captured by <code>logs[0].logs[0].stdout</code>.</p>
 <h3 id="task-api">Task API</h3>
 <p>The API lets you create, get, list, and cancel tasks.</p>
 <h3 id="create">Create</h3>
-<pre><code>POST /v1/tasks
+<pre tabindex="0"><code>POST /v1/tasks
 {
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [{
-    &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [{
+    &#34;url&#34;: &#34;s3://funnel-bucket/hello.txt&#34;,
+    &#34;path&#34;: &#34;/inputs/hello.txt&#34;
   }],
-  &quot;outputs&quot;: [{
-    &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
-    &quot;path&quot;: &quot;/outputs/stdout&quot;
+  &#34;outputs&#34;: [{
+    &#34;url&#34;: &#34;s3://funnel-bucket/output.txt&#34;,
+    &#34;path&#34;: &#34;/outputs/stdout&#34;
   }],
-  &quot;executors&quot;: [{
-      &quot;image&quot;: &quot;alpine&quot;,
-      &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
-      &quot;stdout&quot;: &quot;/outputs/stdout&quot;
+  &#34;executors&#34;: [{
+      &#34;image&#34;: &#34;alpine&#34;,
+      &#34;command&#34;: [&#34;cat&#34;, &#34;/inputs/hello.txt&#34;],
+      &#34;stdout&#34;: &#34;/outputs/stdout&#34;
   }]
 }
 
@@ -434,137 +435,137 @@ conveniently captured by <code>logs[0].logs[0].stdout</code>.</p>
 # The response is a task ID:
 b85khc2rl6qkqbhg8vig
 </code></pre><h3 id="get">Get</h3>
-<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig
+<pre tabindex="0"><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig
 
-{&quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;, &quot;state&quot;: &quot;COMPLETE&quot;}
+{&#34;id&#34;: &#34;b85khc2rl6qkqbhg8vig&#34;, &#34;state&#34;: &#34;COMPLETE&#34;}
 </code></pre><p>By default, the minimal task view is returned which describes only the ID and state.
 In order to get the original task with some basic logs, use the &ldquo;BASIC&rdquo; task view:</p>
-<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
+<pre tabindex="0"><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=BASIC
 {
-  &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
-  &quot;state&quot;: &quot;COMPLETE&quot;,
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [
+  &#34;id&#34;: &#34;b85khc2rl6qkqbhg8vig&#34;,
+  &#34;state&#34;: &#34;COMPLETE&#34;,
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [
     {
-      &quot;url&quot;: &quot;gs://funnel-bucket/hello.txt&quot;,
-      &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+      &#34;url&#34;: &#34;gs://funnel-bucket/hello.txt&#34;,
+      &#34;path&#34;: &#34;/inputs/hello.txt&#34;
     }
   ],
-  &quot;outputs&quot;: [
+  &#34;outputs&#34;: [
     {
-      &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
-      &quot;path&quot;: &quot;/outputs/stdout&quot;
+      &#34;url&#34;: &#34;s3://funnel-bucket/output.txt&#34;,
+      &#34;path&#34;: &#34;/outputs/stdout&#34;
     }
   ],
-  &quot;executors&quot;: [
+  &#34;executors&#34;: [
     {
-      &quot;image&quot;: &quot;alpine&quot;,
-      &quot;command&quot;: [
-        &quot;cat&quot;,
-        &quot;/inputs/hello.txt&quot;
+      &#34;image&#34;: &#34;alpine&#34;,
+      &#34;command&#34;: [
+        &#34;cat&#34;,
+        &#34;/inputs/hello.txt&#34;
       ],
-      &quot;stdout&quot;: &quot;/outputs/stdout&quot;,
+      &#34;stdout&#34;: &#34;/outputs/stdout&#34;,
     }
   ],
-  &quot;logs&quot;: [
+  &#34;logs&#34;: [
     {
-      &quot;logs&quot;: [
+      &#34;logs&#34;: [
         {
-          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
-          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
+          &#34;startTime&#34;: &#34;2017-11-14T11:49:05.127885125-08:00&#34;,
+          &#34;endTime&#34;: &#34;2017-11-14T11:49:08.484461502-08:00&#34;,
         }
       ],
-      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
-      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+      &#34;startTime&#34;: &#34;2017-11-14T11:49:04.433593468-08:00&#34;,
+      &#34;endTime&#34;: &#34;2017-11-14T11:49:08.487707039-08:00&#34;
     }
   ],
-  &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+  &#34;creationTime&#34;: &#34;2017-11-14T11:49:04.427163701-08:00&#34;
 }
 </code></pre><p>The &ldquo;BASIC&rdquo; doesn&rsquo;t include some fields such as stdout/err logs, because these fields may be potentially large.
 In order to get everything, use the &ldquo;FULL&rdquo; view:</p>
-<pre><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=FULL
+<pre tabindex="0"><code>GET /v1/tasks/b85khc2rl6qkqbhg8vig?view=FULL
 {
-  &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
-  &quot;state&quot;: &quot;COMPLETE&quot;,
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [
+  &#34;id&#34;: &#34;b85khc2rl6qkqbhg8vig&#34;,
+  &#34;state&#34;: &#34;COMPLETE&#34;,
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [
     {
-      &quot;url&quot;: &quot;gs://funnel-bucket/hello.txt&quot;,
-      &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+      &#34;url&#34;: &#34;gs://funnel-bucket/hello.txt&#34;,
+      &#34;path&#34;: &#34;/inputs/hello.txt&#34;
     }
   ],
-  &quot;executors&quot;: [
+  &#34;executors&#34;: [
     {
-      &quot;image&quot;: &quot;alpine&quot;,
-      &quot;command&quot;: [
-        &quot;cat&quot;,
-        &quot;/inputs/hello.txt&quot;
+      &#34;image&#34;: &#34;alpine&#34;,
+      &#34;command&#34;: [
+        &#34;cat&#34;,
+        &#34;/inputs/hello.txt&#34;
       ],
-      &quot;stdout&quot;: &quot;/outputs/stdout&quot;,
+      &#34;stdout&#34;: &#34;/outputs/stdout&#34;,
     }
   ],
-  &quot;logs&quot;: [
+  &#34;logs&#34;: [
     {
-      &quot;logs&quot;: [
+      &#34;logs&#34;: [
         {
-          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
-          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
-          &quot;stdout&quot;: &quot;Hello, Funnel!\n&quot;
+          &#34;startTime&#34;: &#34;2017-11-14T11:49:05.127885125-08:00&#34;,
+          &#34;endTime&#34;: &#34;2017-11-14T11:49:08.484461502-08:00&#34;,
+          &#34;stdout&#34;: &#34;Hello, Funnel!\n&#34;
         }
       ],
-      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
-      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+      &#34;startTime&#34;: &#34;2017-11-14T11:49:04.433593468-08:00&#34;,
+      &#34;endTime&#34;: &#34;2017-11-14T11:49:08.487707039-08:00&#34;
     }
   ],
-  &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+  &#34;creationTime&#34;: &#34;2017-11-14T11:49:04.427163701-08:00&#34;
 }
 </code></pre><h3 id="list">List</h3>
-<pre><code>GET /v1/tasks
+<pre tabindex="0"><code>GET /v1/tasks
 {
-  &quot;tasks&quot;: [
+  &#34;tasks&#34;: [
     {
-      &quot;id&quot;: &quot;b85l8tirl6qkqbhg8vj0&quot;,
-      &quot;state&quot;: &quot;COMPLETE&quot;
+      &#34;id&#34;: &#34;b85l8tirl6qkqbhg8vj0&#34;,
+      &#34;state&#34;: &#34;COMPLETE&#34;
     },
     {
-      &quot;id&quot;: &quot;b85khc2rl6qkqbhg8vig&quot;,
-      &quot;state&quot;: &quot;COMPLETE&quot;
+      &#34;id&#34;: &#34;b85khc2rl6qkqbhg8vig&#34;,
+      &#34;state&#34;: &#34;COMPLETE&#34;
     },
     {
-      &quot;id&quot;: &quot;b85kgt2rl6qkpuptua70&quot;,
-      &quot;state&quot;: &quot;SYSTEM_ERROR&quot;
+      &#34;id&#34;: &#34;b85kgt2rl6qkpuptua70&#34;,
+      &#34;state&#34;: &#34;SYSTEM_ERROR&#34;
     },
     {
-      &quot;id&quot;: &quot;b857gnirl6qjfou61fh0&quot;,
-      &quot;state&quot;: &quot;SYSTEM_ERROR&quot;
+      &#34;id&#34;: &#34;b857gnirl6qjfou61fh0&#34;,
+      &#34;state&#34;: &#34;SYSTEM_ERROR&#34;
     }
   ]
 }
 </code></pre><p>List has the same task views as Get: MINIMAL, BASIC, and FULL.</p>
 <p>The task list is paginated:</p>
-<pre><code>GET /v1/tasks?page_token=1h123h12j2h3k
+<pre tabindex="0"><code>GET /v1/tasks?page_token=1h123h12j2h3k
 {
-  &quot;next_page_token&quot;: &quot;1n3n1j23k12n3k123&quot;,
-  &quot;tasks&quot;: [
+  &#34;next_page_token&#34;: &#34;1n3n1j23k12n3k123&#34;,
+  &#34;tasks&#34;: [
     {
-      &quot;id&quot;: &quot;b85l8tirl6qkqbhg8vj0&quot;,
-      &quot;state&quot;: &quot;COMPLETE&quot;
+      &#34;id&#34;: &#34;b85l8tirl6qkqbhg8vj0&#34;,
+      &#34;state&#34;: &#34;COMPLETE&#34;
     },
     # ... more tasks here ...
   ]
 }
 </code></pre><h3 id="cancel">Cancel</h3>
 <p>Tasks cannot be modified by the user after creation, with one exception – they can be canceled.</p>
-<pre><code>POST /v1/tasks/b85l8tirl6qkqbhg8vj0:cancel
+<pre tabindex="0"><code>POST /v1/tasks/b85l8tirl6qkqbhg8vj0:cancel
 </code></pre><h3 id="full-task-spec">Full task spec</h3>
 <p>Here&rsquo;s a more detailed description of a task.<br>
 For a full, in-depth spec, read the TES standard&rsquo;s <a href="https://github.com/ga4gh/task-execution-schemas/blob/master/task_execution.proto">task_execution.proto</a>.</p>
-<pre><code>{
-    # The task's ID. Set by the server.
+<pre tabindex="0"><code>{
+    # The task&#39;s ID. Set by the server.
     # Output only.
-    &quot;id&quot;: &quot;1234567&quot;,
+    &#34;id&#34;: &#34;1234567&#34;,
 
-    # The task's state. Possible states:
+    # The task&#39;s state. Possible states:
     #   QUEUED
     #   INITILIZING
     #   RUNNING
@@ -575,181 +576,181 @@ For a full, in-depth spec, read the TES standard&rsquo;s <a href="https://github
     #   CANCELED
     #
     # Output only.
-    &quot;state&quot;: &quot;QUEUED&quot;,
+    &#34;state&#34;: &#34;QUEUED&#34;,
 
     # Metadata
-    &quot;name&quot;:        &quot;Task name.&quot;,
-    &quot;description&quot;: &quot;Task description.&quot;,
-    &quot;tags&quot;: {
-      &quot;custom-tag-1&quot;: &quot;tag-value-1&quot;,
-      &quot;custom-tag-2&quot;: &quot;tag-value-2&quot;,
+    &#34;name&#34;:        &#34;Task name.&#34;,
+    &#34;description&#34;: &#34;Task description.&#34;,
+    &#34;tags&#34;: {
+      &#34;custom-tag-1&#34;: &#34;tag-value-1&#34;,
+      &#34;custom-tag-2&#34;: &#34;tag-value-2&#34;,
     },
 
     # Resource requests
-    &quot;resources&quot;: {
+    &#34;resources&#34;: {
       # Number of CPU cores requested.
-      &quot;cpuCores&quot;: 1,
+      &#34;cpuCores&#34;: 1,
 
       # RAM request, in gigabytes.
-      &quot;ramGb&quot;:    1.0,
+      &#34;ramGb&#34;:    1.0,
 
       # Disk space request, in gigabytes.
-      &quot;diskGb&quot;:   100.0,
+      &#34;diskGb&#34;:   100.0,
 
       # Request preemptible machines,
       # e.g. preemptible VM in Google Cloud, an instance from the AWS Spot Market, etc.
-      &quot;preemptible&quot;: false,
+      &#34;preemptible&#34;: false,
 
        # Request that the task run in these compute zones.
-       &quot;zones&quot;: [&quot;zone1&quot;, &quot;zone2&quot;],
+       &#34;zones&#34;: [&#34;zone1&#34;, &#34;zone2&#34;],
     },
 
     # Input files will be downloaded by the worker.
     # This example uses s3, but Funnel supports multiple filesystems.
-    &quot;inputs&quot;: [
+    &#34;inputs&#34;: [
       {
-        &quot;name&quot;: &quot;Input file.&quot;,
-        &quot;description&quot;: &quot;Input file description.&quot;,
+        &#34;name&#34;: &#34;Input file.&#34;,
+        &#34;description&#34;: &#34;Input file description.&#34;,
 
         # URL to download file from.
-        &quot;url&quot;:  &quot;s3://my-bucket/object/path/file.txt&quot;,
+        &#34;url&#34;:  &#34;s3://my-bucket/object/path/file.txt&#34;,
         # Path to download file to.
-        &quot;path&quot;: &quot;/container/input.txt&quot;
+        &#34;path&#34;: &#34;/container/input.txt&#34;
       },
       {
-        &quot;name&quot;: &quot;Input directory.&quot;,
-        &quot;description&quot;: &quot;Directories are also supported.&quot;,
-        &quot;url&quot;:  &quot;s3://my-bucket/my-data/&quot;,
-        &quot;path&quot;: &quot;/inputs/my-data/&quot;,
-        &quot;type&quot;: &quot;DIRECTORY&quot;
+        &#34;name&#34;: &#34;Input directory.&#34;,
+        &#34;description&#34;: &#34;Directories are also supported.&#34;,
+        &#34;url&#34;:  &#34;s3://my-bucket/my-data/&#34;,
+        &#34;path&#34;: &#34;/inputs/my-data/&#34;,
+        &#34;type&#34;: &#34;DIRECTORY&#34;
       },
 
       # A task may include the file content directly in the task message.
       # This is sometimes useful for small files such as scripts,
       # which you want to include without talking directly to the filesystem.
       {
-        &quot;path&quot;: &quot;/inputs/script.py&quot;,
-        &quot;content&quot;: &quot;import socket; print socket.gethostname()&quot;
+        &#34;path&#34;: &#34;/inputs/script.py&#34;,
+        &#34;content&#34;: &#34;import socket; print socket.gethostname()&#34;
       }
     ],
 
     # Output files will be uploaded to storage by the worker.
-    &quot;outputs&quot;: [
+    &#34;outputs&#34;: [
       {
-        &quot;name&quot;: &quot;Output file.&quot;,
-        &quot;description&quot;: &quot;Output file description.&quot;,
-        &quot;url&quot;:  &quot;s3://my-bucket/output-data/results.txt&quot;,
-        &quot;path&quot;: &quot;/outputs/results.txt&quot;
+        &#34;name&#34;: &#34;Output file.&#34;,
+        &#34;description&#34;: &#34;Output file description.&#34;,
+        &#34;url&#34;:  &#34;s3://my-bucket/output-data/results.txt&#34;,
+        &#34;path&#34;: &#34;/outputs/results.txt&#34;
       },
       {
-        &quot;name&quot;: &quot;Output directory.&quot;,
-        &quot;description&quot;: &quot;Directories are also supported.&quot;,
-        &quot;url&quot;:  &quot;s3://my-bucket/output-data/output-dir/&quot;,
-        &quot;path&quot;: &quot;/outputs/data-dir/&quot;,
-        &quot;type&quot;: &quot;DIRECTORY&quot;
+        &#34;name&#34;: &#34;Output directory.&#34;,
+        &#34;description&#34;: &#34;Directories are also supported.&#34;,
+        &#34;url&#34;:  &#34;s3://my-bucket/output-data/output-dir/&#34;,
+        &#34;path&#34;: &#34;/outputs/data-dir/&#34;,
+        &#34;type&#34;: &#34;DIRECTORY&#34;
       }
     ],
 
     # Executors define a sequence of containers + commands to run.
     # Execution stop on the first non-zero exit code.
-    &quot;executors&quot;: [
+    &#34;executors&#34;: [
       {
         # Container image name.
         # Funnel supports running executor containers via Docker.
-        &quot;image&quot;: &quot;ubuntu&quot;,
+        &#34;image&#34;: &#34;ubuntu&#34;,
 
         # Command arguments (argv).
         # The first item is the executable to run.
-        &quot;command&quot;: [&quot;my-tool-1&quot;, &quot;/container/input&quot;],
+        &#34;command&#34;: [&#34;my-tool-1&#34;, &#34;/container/input&#34;],
 
         # Local file path to read stdin from.
-        &quot;stdin&quot;: &quot;/inputs/stdin.txt&quot;,
+        &#34;stdin&#34;: &#34;/inputs/stdin.txt&#34;,
 
         # Local file path to write stdout to.
-        &quot;stdout&quot;: &quot;/container/output&quot;,
+        &#34;stdout&#34;: &#34;/container/output&#34;,
 
         # Local file path to write stderr to.
-        &quot;stderr&quot;: &quot;/container/stderr&quot;,
+        &#34;stderr&#34;: &#34;/container/stderr&#34;,
 
         # Set the working directory before executing the command.
-        &quot;workdir&quot;: &quot;/data/workdir&quot;,
+        &#34;workdir&#34;: &#34;/data/workdir&#34;,
 
         # Environment variables
-        &quot;env&quot;: {
-          &quot;ENV1&quot;: &quot;value1&quot;,
-          &quot;ENV2&quot;: &quot;value2&quot;,
+        &#34;env&#34;: {
+          &#34;ENV1&#34;: &#34;value1&#34;,
+          &#34;ENV2&#34;: &#34;value2&#34;,
         }
       },
 
       # Second executor runs after the first completes, on the same machine.
       {
-        &quot;image&quot;: &quot;ubuntu&quot;,
-        &quot;command&quot;: [&quot;cat&quot;, &quot;/container/input&quot;],
-        &quot;stdout&quot;: &quot;/container/output&quot;,
-        &quot;stderr&quot;: &quot;/container/stderr&quot;,
-        &quot;workdir&quot;: &quot;/tmp&quot;
+        &#34;image&#34;: &#34;ubuntu&#34;,
+        &#34;command&#34;: [&#34;cat&#34;, &#34;/container/input&#34;],
+        &#34;stdout&#34;: &#34;/container/output&#34;,
+        &#34;stderr&#34;: &#34;/container/stderr&#34;,
+        &#34;workdir&#34;: &#34;/tmp&#34;
       }
     ]
 
     # Date/time the task was created.
     # Set the the server.
     # Output only.
-    &quot;creationTime&quot;: &quot;2017-11-14T11:49:04.427163701-08:00&quot;
+    &#34;creationTime&#34;: &#34;2017-11-14T11:49:04.427163701-08:00&#34;
 
     # Task logs.
     # Output only.
     #
-    # If there's a system error, the task may be attempted multiple times,
+    # If there&#39;s a system error, the task may be attempted multiple times,
     # so this field is a list of attempts. In most cases, there will be only
     # one or zero entries here.
-    &quot;logs&quot;: [
+    &#34;logs&#34;: [
 
       # Attempt start/end times, in RFC3339 format.
-      &quot;startTime&quot;: &quot;2017-11-14T11:49:04.433593468-08:00&quot;,
-      &quot;endTime&quot;: &quot;2017-11-14T11:49:08.487707039-08:00&quot;
+      &#34;startTime&#34;: &#34;2017-11-14T11:49:04.433593468-08:00&#34;,
+      &#34;endTime&#34;: &#34;2017-11-14T11:49:08.487707039-08:00&#34;
 
       # Arbitrary metadata set by Funnel.
-      &quot;metadata&quot;: {
-        &quot;hostname&quot;: &quot;worker-1&quot;,
+      &#34;metadata&#34;: {
+        &#34;hostname&#34;: &#34;worker-1&#34;,
       },
 
       # Arbitrary system logs which Funnel thinks are useful to the user.
-      &quot;systemLogs&quot;: [
-        &quot;task was assigned to worker 1&quot;,
-        &quot;docker command: docker run -v /vol:/data alpine cmd arg1 arg2&quot;,
+      &#34;systemLogs&#34;: [
+        &#34;task was assigned to worker 1&#34;,
+        &#34;docker command: docker run -v /vol:/data alpine cmd arg1 arg2&#34;,
       ],
 
       # Log of files uploaded to storage by the worker,
       # including all files in directories, with file sizes.
-      &quot;outputs&quot;: [
+      &#34;outputs&#34;: [
         {
-          &quot;url&quot;: &quot;s3://my-bucket/output-data/results.txt&quot;,
-          &quot;path&quot;: &quot;/outputs/results.txt&quot;,
-          &quot;sizeBytes&quot;: 123
+          &#34;url&#34;: &#34;s3://my-bucket/output-data/results.txt&#34;,
+          &#34;path&#34;: &#34;/outputs/results.txt&#34;,
+          &#34;sizeBytes&#34;: 123
         },
         {
-          &quot;url&quot;: &quot;s3://my-bucket/output-data/output-dir/file1.txt&quot;,
-          &quot;path&quot;: &quot;/outputs/data-dir/file1.txt&quot;,
-          &quot;sizeBytes&quot;: 123
+          &#34;url&#34;: &#34;s3://my-bucket/output-data/output-dir/file1.txt&#34;,
+          &#34;path&#34;: &#34;/outputs/data-dir/file1.txt&#34;,
+          &#34;sizeBytes&#34;: 123
         },
         {
-          &quot;url&quot;: &quot;s3://my-bucket/output-data/output-dir/file2.txt&quot;,
-          &quot;path&quot;: &quot;/outputs/data-dir/file2.txt&quot;,
-          &quot;sizeBytes&quot;: 123
+          &#34;url&#34;: &#34;s3://my-bucket/output-data/output-dir/file2.txt&#34;,
+          &#34;path&#34;: &#34;/outputs/data-dir/file2.txt&#34;,
+          &#34;sizeBytes&#34;: 123
         }
         {
-          &quot;url&quot;: &quot;s3://my-bucket/output-data/output-dir/subdir/file3.txt&quot;,
-          &quot;path&quot;: &quot;/outputs/data-dir/subdir/file3.txt&quot;,
-          &quot;sizeBytes&quot;: 123
+          &#34;url&#34;: &#34;s3://my-bucket/output-data/output-dir/subdir/file3.txt&#34;,
+          &#34;path&#34;: &#34;/outputs/data-dir/subdir/file3.txt&#34;,
+          &#34;sizeBytes&#34;: 123
         }
       ],
 
       # Executor logs. One entry per executor.
-      &quot;logs&quot;: [
+      &#34;logs&#34;: [
         {
           # Executor start/end time, in RFC3339 format.
-          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
-          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
+          &#34;startTime&#34;: &#34;2017-11-14T11:49:05.127885125-08:00&#34;,
+          &#34;endTime&#34;: &#34;2017-11-14T11:49:08.484461502-08:00&#34;,
 
           # Executor stdout/err. Only available in the FULL task view.
           #
@@ -758,16 +759,16 @@ For a full, in-depth spec, read the TES standard&rsquo;s <a href="https://github
           # tail will be logged. If the full output is needed, the task
           # may use Executor.stdout and an output to upload the full content
           # to storage.
-          &quot;stdout&quot;: &quot;Hello, Funnel!&quot;,
-          &quot;stderr&quot;: &quot;&quot;,
+          &#34;stdout&#34;: &#34;Hello, Funnel!&#34;,
+          &#34;stderr&#34;: &#34;&#34;,
 
           # Exit code
-          &quot;exitCode&quot;: 0,
+          &#34;exit_code&#34;: 0,
         },
         {
-          &quot;startTime&quot;: &quot;2017-11-14T11:49:05.127885125-08:00&quot;,
-          &quot;endTime&quot;: &quot;2017-11-14T11:49:08.484461502-08:00&quot;,
-          &quot;stdout&quot;: &quot;Hello, Funnel!\n&quot;
+          &#34;startTime&#34;: &#34;2017-11-14T11:49:05.127885125-08:00&#34;,
+          &#34;endTime&#34;: &#34;2017-11-14T11:49:08.484461502-08:00&#34;,
+          &#34;stdout&#34;: &#34;Hello, Funnel!\n&#34;
         }
       ],
     }

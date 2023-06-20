@@ -1,19 +1,16 @@
 package webdash
 
 import (
-	"fmt"
 	"net/http"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 )
 
 var fs = &assetfs.AssetFS{
-	Asset:     Asset,
-	AssetDir:  AssetDir,
+	Asset:    Asset,
+	AssetDir: AssetDir,
 	//Prefix:    "webdash/build",
 }
-
-
 
 // FileServer provides access to the bundled web assets (HTML, CSS, etc)
 // via an http.Handler
@@ -29,8 +26,10 @@ func RootHandler() http.Handler {
 	}
 
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		fmt.Println("DEBUG req:", req)
 		// url := "http://localhost:3000"
-		resp.Write(index)
+		_, err := resp.Write(index)
+		if err != nil {
+			return
+		}
 	})
 }

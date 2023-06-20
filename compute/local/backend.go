@@ -20,8 +20,8 @@ func NewBackend(ctx context.Context, conf config.Config, log *logger.Logger) (*B
 
 // Backend represents the local backend.
 type Backend struct {
-	conf config.Config
-	log  *logger.Logger
+	conf              config.Config
+	log               *logger.Logger
 	backendParameters map[string]string
 	events.Computer
 }
@@ -31,8 +31,8 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 		return nil
 	}
 
-	taskBackendParameters := task.Resources.GetBackendParameters()		
-	for k, _ := range taskBackendParameters {
+	taskBackendParameters := task.Resources.GetBackendParameters()
+	for k := range taskBackendParameters {
 		_, ok := b.backendParameters[k]
 		if !ok {
 			return errors.New("backend parameters not supported")
@@ -42,14 +42,13 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 	return nil
 }
 
-
 // WriteEvent writes an event to the compute backend.
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
 		return b.Submit(ev.GetTask())
-	}	
+	}
 	return nil
 }
 
@@ -59,7 +58,7 @@ func (b *Backend) Close() {}
 // running immediately.
 func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()
-	
+
 	w, err := workerCmd.NewWorker(ctx, b.conf, b.log, &workerCmd.Options{
 		TaskID: task.Id,
 	})
@@ -68,7 +67,10 @@ func (b *Backend) Submit(task *tes.Task) error {
 	}
 
 	go func() {
-		w.Run(ctx)
+		err = w.Run(ctx)
+		if err != nil {
+			b.log.Error("error calling Run", err)
+		}
 		w.Close()
 	}()
 	return nil

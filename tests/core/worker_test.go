@@ -184,7 +184,10 @@ func TestLargeLogRate(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	w.Run(ctx)
+	err := w.Run(ctx)
+	if err != nil {
+		t.Log(err)
+	}
 
 	// Given the difficulty of timing how long it task a task + docker container to start,
 	// we just check that a small amount of events were generated.
@@ -223,7 +226,10 @@ func TestZeroLogRate(t *testing.T) {
 		EventWriter: m,
 	}
 
-	w.Run(context.Background())
+	err := w.Run(context.Background())
+	if err != nil {
+		t.Log(err)
+	}
 
 	time.Sleep(time.Second)
 
@@ -264,7 +270,10 @@ func TestZeroLogTailSize(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	w.Run(ctx)
+	err := w.Run(ctx)
+	if err != nil {
+		t.Log(err)
+	}
 
 	// we expect zero events to be generated
 	if counts.stdout != 0 {

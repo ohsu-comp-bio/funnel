@@ -36,8 +36,14 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 			return err
 		}
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			tx.Bucket(TaskBucket).Put(idBytes, taskString)
-			tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
+			err := tx.Bucket(TaskBucket).Put(idBytes, taskString)
+			if err != nil {
+				return err
+			}
+			err = tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
+			if err != nil {
+				return err
+			}
 			return nil
 		})
 		if err != nil {
@@ -142,8 +148,11 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 			return err
 		}
 
-		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
-			tx.Bucket(SysLogs).Put(idBytes, logbytes)
+		_ = taskBolt.db.Update(func(tx *bolt.Tx) error {
+			err := tx.Bucket(SysLogs).Put(idBytes, logbytes)
+			if err != nil {
+				return err
+			}
 			return nil
 		})
 	}
@@ -179,19 +188,28 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 	case Canceled, Complete, ExecutorError, SystemError:
 		// Remove from queue
-		tx.Bucket(TasksQueued).Delete(idBytes)
+		err := tx.Bucket(TasksQueued).Delete(idBytes)
+		if err != nil {
+			return err
+		}
 
 	case Running, Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
 			return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())
 		}
-		tx.Bucket(TasksQueued).Delete(idBytes)
+		err := tx.Bucket(TasksQueued).Delete(idBytes)
+		if err != nil {
+			return err
+		}
 
 	default:
 		return fmt.Errorf("Unknown target state: %s", target.String())
 	}
 
-	tx.Bucket(TaskState).Put(idBytes, []byte(target.String()))
+	err := tx.Bucket(TaskState).Put(idBytes, []byte(target.String()))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -260,7 +278,6 @@ func updateExecutorLogs(tx *bolt.Tx, id string, el *tes.ExecutorLog) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("DEBUG ExecutorLog:", el)
 	return tx.Bucket(ExecutorLogs).Put([]byte(id), logbytes)
 }
 

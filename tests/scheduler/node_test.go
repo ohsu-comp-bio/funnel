@@ -37,9 +37,17 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(bg)
 	defer cancel()
-	go n.Run(ctx)
+	go func() {
+		err := n.Run(ctx)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
 
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Fatal(err)
+	}
 	time.Sleep(time.Duration(conf.Node.UpdateRate * 2))
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
@@ -54,7 +62,10 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 
 	cancel()
 	time.Sleep(time.Duration(conf.Node.UpdateRate * 2))
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Error(err)
+	}
 
 	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
 	if err != nil {
@@ -100,7 +111,12 @@ func TestManualBackend(t *testing.T) {
 		t.Fatal("failed to create node", err)
 	}
 
-	go n.Run(ctx)
+	go func() {
+		err := n.Run(ctx)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
 
 	// run tasks and check that they all complete
 	tasks := []string{}
@@ -147,7 +163,12 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create node")
 	}
-	go n.Run(ctx)
+	go func() {
+		err := n.Run(ctx)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
 
 	id := srv.Run(`
       --sh 'echo hello world'
@@ -179,47 +200,86 @@ func TestNodeCleanup(t *testing.T) {
 	e := srv.Server.Events
 
 	t1 := tests.HelloWorld()
-	srv.Server.Tasks.CreateTask(ctx, t1)
-	e.WriteEvent(ctx, events.NewState(t1.Id, tes.Complete))
+	_, err := srv.Server.Tasks.CreateTask(ctx, t1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = e.WriteEvent(ctx, events.NewState(t1.Id, tes.Complete))
+	if err != nil {
+		t.Error(err)
+	}
 
 	t2 := tests.HelloWorld()
-	srv.Server.Tasks.CreateTask(ctx, t2)
-	e.WriteEvent(ctx, events.NewState(t2.Id, tes.Running))
+	_, err = srv.Server.Tasks.CreateTask(ctx, t2)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = e.WriteEvent(ctx, events.NewState(t2.Id, tes.Running))
+	if err != nil {
+		t.Error(err)
+	}
 
 	t3 := tests.HelloWorld()
-	srv.Server.Tasks.CreateTask(ctx, t3)
-	e.WriteEvent(ctx, events.NewState(t3.Id, tes.SystemError))
+	_, err = srv.Server.Tasks.CreateTask(ctx, t3)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = e.WriteEvent(ctx, events.NewState(t3.Id, tes.SystemError))
+	if err != nil {
+		t.Error(err)
+	}
 
 	t4 := tests.HelloWorld()
-	srv.Server.Tasks.CreateTask(ctx, t4)
-	e.WriteEvent(ctx, events.NewState(t4.Id, tes.Running))
+	_, err = srv.Server.Tasks.CreateTask(ctx, t4)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = e.WriteEvent(ctx, events.NewState(t4.Id, tes.Running))
+	if err != nil {
+		t.Error(err)
+	}
 
 	t5 := tests.HelloWorld()
-	srv.Server.Tasks.CreateTask(ctx, t5)
-	e.WriteEvent(ctx, events.NewState(t5.Id, tes.Running))
+	_, err = srv.Server.Tasks.CreateTask(ctx, t5)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = e.WriteEvent(ctx, events.NewState(t5.Id, tes.Running))
+	if err != nil {
+		t.Error(err)
+	}
 
-	srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
+	_, err = srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:      "test-gone-node-cleanup-restart-1",
 		State:   scheduler.NodeState_GONE,
 		TaskIds: []string{t1.Id, t2.Id, t3.Id},
 	})
+	if err != nil {
+		t.Error(err)
+	}
 
-	srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
+	_, err = srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:      "test-gone-node-cleanup-restart-2",
 		State:   scheduler.NodeState_GONE,
 		TaskIds: []string{t4.Id},
 	})
+	if err != nil {
+		t.Error(err)
+	}
 
-	srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
+	_, err = srv.Scheduler.Nodes.PutNode(ctx, &scheduler.Node{
 		Id:      "test-gone-node-cleanup-restart-3",
 		State:   scheduler.NodeState_ALIVE,
 		TaskIds: []string{t5.Id},
 	})
+	if err != nil {
+		t.Error(err)
+	}
 
 	ns, _ := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	log.Info("nodes before", ns)
 
-	err := srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
 	if err != nil {
 		t.Error(err)
 	}
@@ -282,9 +342,17 @@ func TestNodeDrain(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(bg)
 	defer cancel()
-	go n.Run(ctx)
+	go func() {
+		err := n.Run(ctx)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
 
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Fatal(err)
+	}
 	time.Sleep(time.Duration(conf.Node.UpdateRate * 10))
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
@@ -302,7 +370,10 @@ func TestNodeDrain(t *testing.T) {
 	first := srv.Run("echo")
 
 	time.Sleep(time.Duration(conf.Node.UpdateRate * 10))
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Fatal(err)
+	}
 	resp, err = srv.Scheduler.Nodes.ListNodes(bg, &scheduler.ListNodesRequest{})
 	if err != nil {
 		t.Fatal(err)

@@ -90,6 +90,10 @@ func (b *Backend) Submit(task *tes.Task) error {
 		ram := int64(task.Resources.RamGb * 953.674)
 		if ram > 0 {
 			req.ContainerOverrides.Memory = aws.Int64(ram)
+			// req.ContainerOverrides.ResourceRequirements = []*batch.ResourceRequirement{
+			// 	0: aws.String("GPU"),
+			// 	0: aws.Int64(ram),
+			// }
 		}
 
 		vcpus := int64(task.Resources.CpuCores)
@@ -100,8 +104,11 @@ func (b *Backend) Submit(task *tes.Task) error {
 
 	resp, err := b.client.SubmitJob(req)
 	if err != nil {
-		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-		b.event.WriteEvent(
+		err := b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+		if err != nil {
+			b.log.Error("Error writing state event", err)
+		}
+		err = b.event.WriteEvent(
 			ctx,
 			events.NewSystemLog(
 				task.Id, 0, 0, "error",
@@ -109,6 +116,9 @@ func (b *Backend) Submit(task *tes.Task) error {
 				map[string]string{"error": err.Error()},
 			),
 		)
+		if err != nil {
+			b.log.Error("Error writing state event", err)
+		}
 		return err
 	}
 
@@ -214,8 +224,11 @@ ReconcileLoop:
 						jstate := *j.Status
 
 						if jstate == "FAILED" {
-							b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-							b.event.WriteEvent(
+							err := b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+							if err != nil {
+								b.log.Error("Error writing state event", err)
+							}
+							err = b.event.WriteEvent(
 								ctx,
 								events.NewSystemLog(
 									task.Id, 0, 0, "error",
@@ -223,6 +236,9 @@ ReconcileLoop:
 									map[string]string{"error": *j.StatusReason, "awsbatch_id": *j.JobId},
 								),
 							)
+							if err != nil {
+								b.log.Error("Error writing state event", err)
+							}
 						}
 					}
 

@@ -72,7 +72,10 @@ func TestifyConfig(conf config.Config) config.Config {
 
 	storageDir, _ := ioutil.TempDir("./test_tmp", "funnel-test-storage-")
 	wd, _ := os.Getwd()
-	fsutil.EnsureDir(storageDir)
+	err := fsutil.EnsureDir(storageDir)
+	if err != nil {
+		panic(err)
+	}
 
 	conf.LocalStorage = config.LocalStorage{
 		AllowedDirs: []string{storageDir, wd},
@@ -99,7 +102,10 @@ func RandomPortConfig(conf config.Config) config.Config {
 
 // TempDirConfig returns a modified config with workdir and db path set to a temp. directory.
 func TempDirConfig(conf config.Config) config.Config {
-	os.Mkdir("./test_tmp", os.ModePerm)
+	err := os.MkdirAll("./test_tmp", os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 	f, _ := ioutil.TempDir("./test_tmp", "funnel-test-")
 	conf.Worker.WorkDir = f
 	conf.BoltDB.Path = path.Join(f, "funnel.db")

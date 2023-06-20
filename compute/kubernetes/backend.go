@@ -242,8 +242,11 @@ ReconcileLoop:
 					if err != nil {
 						b.log.Error("reconcile: marshal failed job conditions", "taskID", j.Name, "error", err)
 					}
-					b.event.WriteEvent(ctx, events.NewState(j.Name, tes.SystemError))
-					b.event.WriteEvent(
+					err = b.event.WriteEvent(ctx, events.NewState(j.Name, tes.SystemError))
+					if err != nil {
+						b.log.Error("reconcile: writing failed job state", "taskID", j.Name, "error", err)
+					}
+					err = b.event.WriteEvent(
 						ctx,
 						events.NewSystemLog(
 							j.Name, 0, 0, "error",
@@ -251,6 +254,9 @@ ReconcileLoop:
 							map[string]string{"error": string(conds)},
 						),
 					)
+					if err != nil {
+						b.log.Error("reconcile: writing failed job state", "taskID", j.Name, "error", err)
+					}
 					if disableCleanup {
 						continue ReconcileLoop
 					}

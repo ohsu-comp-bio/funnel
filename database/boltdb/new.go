@@ -1,7 +1,6 @@
 package boltdb
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -55,8 +54,10 @@ type BoltDB struct {
 // NewBoltDB returns a new instance of BoltDB, accessing the database at
 // the given path, and including the given ServerConfig.
 func NewBoltDB(conf config.BoltDB) (*BoltDB, error) {
-	fsutil.EnsurePath(conf.Path)
-	fmt.Println("DEBUG conf:", conf)
+	err := fsutil.EnsurePath(conf.Path)
+	if err != nil {
+		return nil, err
+	}
 	db, err := bolt.Open(conf.Path, 0600, &bolt.Options{
 		Timeout: time.Second * 5,
 	})
@@ -71,31 +72,58 @@ func (taskBolt *BoltDB) Init() error {
 	// Check to make sure all the required buckets have been created
 	return taskBolt.db.Update(func(tx *bolt.Tx) error {
 		if tx.Bucket(TaskBucket) == nil {
-			tx.CreateBucket(TaskBucket)
+			_, err := tx.CreateBucket(TaskBucket)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(TasksQueued) == nil {
-			tx.CreateBucket(TasksQueued)
+			_, err := tx.CreateBucket(TasksQueued)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(TaskState) == nil {
-			tx.CreateBucket(TaskState)
+			_, err := tx.CreateBucket(TaskState)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(TasksLog) == nil {
-			tx.CreateBucket(TasksLog)
+			_, err := tx.CreateBucket(TasksLog)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(ExecutorLogs) == nil {
-			tx.CreateBucket(ExecutorLogs)
+			_, err := tx.CreateBucket(ExecutorLogs)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(ExecutorStdout) == nil {
-			tx.CreateBucket(ExecutorStdout)
+			_, err := tx.CreateBucket(ExecutorStdout)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(ExecutorStderr) == nil {
-			tx.CreateBucket(ExecutorStderr)
+			_, err := tx.CreateBucket(ExecutorStderr)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(Nodes) == nil {
-			tx.CreateBucket(Nodes)
+			_, err := tx.CreateBucket(Nodes)
+			if err != nil {
+				return err
+			}
 		}
 		if tx.Bucket(SysLogs) == nil {
-			tx.CreateBucket(SysLogs)
+			_, err := tx.CreateBucket(SysLogs)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})

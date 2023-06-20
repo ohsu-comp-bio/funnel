@@ -57,7 +57,10 @@ func (t *testNode) Start() context.CancelFunc {
 	t.Client.On("GetNode", mock.Anything, mock.Anything, mock.Anything).
 		Return(&Node{}, nil)
 	go func() {
-		t.NodeProcess.Run(ctx)
+		err := t.NodeProcess.Run(ctx)
+		if err != nil {
+			return
+		}
 		close(t.done)
 	}()
 	return cancel
@@ -84,7 +87,7 @@ func timeLimit(t *testing.T, d time.Duration) func() {
 	go func() {
 		select {
 		case <-time.NewTimer(d).C:
-			t.Fatal("time limit expired")
+			t.Error("time limit expired")
 		case <-stop:
 		}
 	}()

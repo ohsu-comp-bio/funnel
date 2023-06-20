@@ -32,10 +32,10 @@ func (*noTimeout) Done() <-chan time.Time {
 	return nil
 }
 func (*noTimeout) Start() {
-	return
+	// return
 }
 func (*noTimeout) Stop() {
-	return
+	// return
 }
 
 // NoIdleTimeout creates an IdleTimeout that never times out.

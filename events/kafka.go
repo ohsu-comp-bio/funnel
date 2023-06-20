@@ -82,7 +82,10 @@ func NewKafkaReader(ctx context.Context, conf config.Kafka, w Writer) (*KafkaRea
 				// TODO
 				continue
 			}
-			w.WriteEvent(context.Background(), ev)
+			err = w.WriteEvent(context.Background(), ev)
+			if err != nil {
+				return
+			}
 		}
 	}()
 

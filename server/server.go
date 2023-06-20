@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/golang/gddo/httputil"
@@ -19,8 +20,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-
-	"fmt"
 )
 
 // Server represents a Funnel server. The server handles
@@ -79,7 +78,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	)
 
 	dialOpts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
 	// Set up HTTP proxy of gRPC API
@@ -89,11 +88,13 @@ func (s *Server) Serve(pctx context.Context) error {
 	m := protojson.MarshalOptions{
 		Indent:          "  ",
 		EmitUnpopulated: true,
-		UseProtoNames: true,
+		UseProtoNames:   true,
 	}
-	u := protojson.UnmarshalOptions{
-	}
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{m, u}))
+	u := protojson.UnmarshalOptions{}
+	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+		MarshalOptions:   m,
+		UnmarshalOptions: u,
+	}))
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()
@@ -106,8 +107,6 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-		fmt.Println("DEBUG req:", req)
-		fmt.Println("DEBUG negotiate(req):", negotiate(req))
 		// TODO this doesnt handle all routes
 		if len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
@@ -126,7 +125,6 @@ func (s *Server) Serve(pctx context.Context) error {
 
 			grpcMux.ServeHTTP(resp, req)
 		}
-		fmt.Println("DEBUG resp:", resp)
 	})
 
 	// Register TES service
@@ -178,7 +176,10 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	<-ctx.Done()
 	grpcServer.GracefulStop()
-	httpServer.Shutdown(context.TODO())
+	err = httpServer.Shutdown(context.TODO())
+	if err != nil {
+		return err
+	}
 
 	return srverr
 }

@@ -60,7 +60,7 @@ func (c *Client) GetTask(ctx context.Context, req *GetTaskRequest) (*Task, error
 	// Send request
 	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	_ = hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
@@ -89,17 +89,16 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	}
 
 	for key, val := range req.GetTags() {
-		v.Add(fmt.Sprintf("tags[%s]", key), val)
+		v.Add("tag_key", key)
+		v.Add("tag_value", val)
 	}
 
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
-	fmt.Println("DEBUG u:", u)
 	hreq, _ := http.NewRequest("GET", u, nil)
 	hreq.SetBasicAuth(c.User, c.Password)
-	fmt.Println("DEBUG hreq:", hreq)
 	// hreq.WithContext(ctx)
-	// hreq.SetBasicAuth(c.User, c.Password)
+	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
 		return nil, err
@@ -128,7 +127,7 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 	// Send request
 	u := c.address + "/v1/tasks"
 	hreq, _ := http.NewRequest("POST", u, bytes.NewReader(b))
-	hreq.WithContext(ctx)
+	// hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
@@ -149,7 +148,7 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResponse, error) {
 	u := c.address + "/v1/tasks/" + req.Id + ":cancel"
 	hreq, _ := http.NewRequest("POST", u, nil)
-	hreq.WithContext(ctx)
+	// hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
@@ -170,7 +169,7 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 func (c *Client) GetServiceInfo(ctx context.Context, req *GetServiceInfoRequest) (*ServiceInfo, error) {
 	u := c.address + "/v1/tasks/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	// hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {

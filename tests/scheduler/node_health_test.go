@@ -30,7 +30,10 @@ func TestNodeDead(t *testing.T) {
 	// Wait for node to ping timeout.
 	time.Sleep(time.Duration(conf.Scheduler.NodePingTimeout))
 	// Should mark node as dead.
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Error(err)
+	}
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if err != nil {
@@ -64,7 +67,10 @@ func TestNodeInitFail(t *testing.T) {
 	}
 
 	time.Sleep(time.Duration(conf.Scheduler.NodeInitTimeout))
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Error(err)
+	}
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if err != nil {
@@ -96,10 +102,16 @@ func TestNodeDeadTimeout(t *testing.T) {
 		t.Error(err)
 	}
 
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Error(err)
+	}
 
 	time.Sleep(time.Duration(conf.Scheduler.NodeDeadTimeout))
-	srv.Scheduler.CheckNodes()
+	err = srv.Scheduler.CheckNodes()
+	if err != nil {
+		t.Error(err)
+	}
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
 	if err != nil {

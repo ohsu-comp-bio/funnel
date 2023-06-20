@@ -52,7 +52,10 @@ func TestCancel(t *testing.T) {
 	f.StartServer()
 
 	id := f.Run(`'sleep 1000'`)
-	f.Cancel(id)
+	err := f.Cancel(id)
+	if err != nil {
+		t.Error(err)
+	}
 	task := f.Get(id)
 	if task.State != tes.Canceled {
 		t.Error("expected canceled state")

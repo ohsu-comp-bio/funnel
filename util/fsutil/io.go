@@ -18,7 +18,10 @@ func Reader(ctx context.Context, r io.Reader) io.Reader {
 			SetReadDeadline(time.Time) error
 		}
 		if d, ok := r.(deadliner); ok {
-			d.SetReadDeadline(deadline)
+			err := d.SetReadDeadline(deadline)
+			if err != nil {
+				return nil
+			}
 		}
 	}
 	return reader{ctx, r}
@@ -52,7 +55,10 @@ func Writer(ctx context.Context, w io.Writer) io.Writer {
 			SetWriteDeadline(time.Time) error
 		}
 		if d, ok := w.(deadliner); ok {
-			d.SetWriteDeadline(deadline)
+			err := d.SetWriteDeadline(deadline)
+			if err != nil {
+				return nil
+			}
 		}
 	}
 	return writer{ctx, w}

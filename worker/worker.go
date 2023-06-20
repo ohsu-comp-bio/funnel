@@ -89,7 +89,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	defer func() {
 		err := event.EndTime(time.Now())
 		if err != nil {
-			log.Fatalf("failed to set end time: %v", err)
+			log.Printf("failed to set end time: %v", err)
 		}
 
 		switch {
@@ -97,39 +97,39 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			// The task was canceled.
 			err := event.Info("Canceled")
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 			err = event.State(tes.State_CANCELED)
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 			runerr = fmt.Errorf("task canceled")
 		case run.syserr != nil:
 			// Something else failed
 			err := event.Error("System error", "error", run.syserr)
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 			err = event.State(tes.State_SYSTEM_ERROR)
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 			runerr = run.syserr
 		case run.execerr != nil:
 			// One of the executors failed
 			err := event.Error("Exec error", "error", run.execerr)
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 			err = event.State(tes.State_EXECUTOR_ERROR)
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 			runerr = run.execerr
 		default:
 			err := event.State(tes.State_COMPLETE)
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 		}
 

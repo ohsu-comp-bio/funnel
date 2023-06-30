@@ -128,7 +128,7 @@ test-elasticsearch:
 
 start-mongodb:
 	@docker rm -f funnel-mongodb-test > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:3.5.13 > /dev/null
+	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo:latest > /dev/null
 
 test-mongodb:
 	@go test ./tests/core/ --funnel-config `pwd`/tests/mongo.config.yml

@@ -14,7 +14,7 @@ import (
 )
 
 func TestMetrics(t *testing.T) {
-	conf := tests.DefaultConfig()
+	conf := tests.MongoConfig()
 	if conf.Database != "mongodb" {
 		t.Skip("metrics are only supported by mongodb")
 	}

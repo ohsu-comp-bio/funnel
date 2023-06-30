@@ -47,6 +47,16 @@ func DefaultConfig() config.Config {
 	return TestifyConfig(conf)
 }
 
+func MongoConfig() config.Config {
+	conf := DefaultConfig()
+	conf.Database = "mongodb"
+	conf.EventWriters = []string{"log"}
+	conf.MongoDB.Addrs = []string{"localhost:27000"}
+	conf.MongoDB.Timeout = config.Duration(time.Second * 5)
+
+	return conf
+}
+
 // TestifyConfig modifies a ports, directory paths, etc. to avoid
 // conflicts between tests.
 func TestifyConfig(conf config.Config) config.Config {

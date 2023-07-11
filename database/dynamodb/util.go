@@ -366,10 +366,7 @@ func (db *DynamoDB) deleteTask(ctx context.Context, id string) error {
 				// TODO handle error
 				db.client.DeleteItem(item)
 			}
-			if page.LastEvaluatedKey == nil {
-				return false
-			}
-			return true
+			return page.LastEvaluatedKey != nil
 		})
 
 	if err != nil {
@@ -474,10 +471,7 @@ func (db *DynamoDB) getContent(ctx context.Context, in map[string]*dynamodb.Attr
 				i, _ := strconv.ParseInt(*item["index"].N, 10, 64)
 				in["inputs"].L[i].M["content"] = item["content"]
 			}
-			if page.LastEvaluatedKey == nil {
-				return false
-			}
-			return true
+			return page.LastEvaluatedKey != nil
 		},
 	)
 	if err != nil {
@@ -511,10 +505,7 @@ func (db *DynamoDB) getExecutorOutput(ctx context.Context, in map[string]*dynamo
 					}
 				}
 			}
-			if page.LastEvaluatedKey == nil {
-				return false
-			}
-			return true
+			return page.LastEvaluatedKey != nil
 		},
 	)
 	if err != nil {
@@ -543,10 +534,7 @@ func (db *DynamoDB) getSystemLogs(ctx context.Context, in map[string]*dynamodb.A
 				i, _ := strconv.ParseInt(*item["attempt"].N, 10, 64)
 				in["logs"].L[i].M["system_logs"] = item["system_logs"]
 			}
-			if page.LastEvaluatedKey == nil {
-				return false
-			}
-			return true
+			return page.LastEvaluatedKey != nil
 		},
 	)
 	if err != nil {

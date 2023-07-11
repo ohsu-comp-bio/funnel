@@ -132,7 +132,7 @@ func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
 	case view == tes.TaskView_FULL:
 		err = loadFullTaskView(tx, id, task)
 	default:
-		err = fmt.Errorf("Unknown view: %s", view.String())
+		err = fmt.Errorf("unknown view: %s", view.String())
 	}
 	return task, err
 }

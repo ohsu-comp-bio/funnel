@@ -339,10 +339,10 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 				gopath, "src/github.com/ohsu-comp-bio/funnel/build/release/linux_amd64/funnel",
 			))
 		}
-		if err != nil {
-			log.Error("Error finding funnel binary", err)
-			panic(err)
-		}
+	}
+	if err != nil {
+		log.Error("Error finding funnel binary", err)
+		panic(err)
 	}
 
 	// write config file
@@ -404,7 +404,6 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 	case <-ready:
 		break
 	}
-	return
 }
 
 func (f *Funnel) findTestServerContainers() []string {
@@ -431,14 +430,12 @@ func (f *Funnel) killTestServerContainers(ids []string) {
 			panic(err)
 		}
 	}
-	return
 }
 
 // CleanupTestServerContainer stops the docker container running the test funnel server
 func (f *Funnel) CleanupTestServerContainer(containerName string) {
 	f.Cleanup()
 	f.killTestServerContainers([]string{containerName})
-	return
 }
 
 // HelloWorld is a simple, valid task that is easy to reuse in tests.

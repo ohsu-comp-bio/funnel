@@ -58,7 +58,7 @@ func (taskBolt *BoltDB) PutNode(ctx context.Context, node *scheduler.Node) (*sch
 		}
 
 		if existing.GetVersion() != 0 && node.Version != existing.GetVersion() {
-			return fmt.Errorf("Version outdated")
+			return fmt.Errorf("version outdated")
 		}
 
 		err := scheduler.UpdateNode(ctx, taskBolt, node, existing)

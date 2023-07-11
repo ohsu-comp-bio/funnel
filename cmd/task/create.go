@@ -22,10 +22,10 @@ func Create(server string, files []string, reader io.Reader, writer io.Writer) e
 
 	for _, taskFile := range files {
 		f, err := os.Open(taskFile)
-		defer f.Close()
 		if err != nil {
 			return err
 		}
+		defer f.Close()
 		reader = io.MultiReader(reader, f)
 	}
 

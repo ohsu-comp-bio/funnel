@@ -31,7 +31,7 @@ func handlePanic(cb func(error)) {
 			b := debug.Stack()
 			cb(fmt.Errorf("panic: %s\n%s", e, string(b)))
 		} else {
-			cb(fmt.Errorf("Unknown worker panic: %+v", r))
+			cb(fmt.Errorf("unknown worker panic: %+v", r))
 		}
 	}
 }

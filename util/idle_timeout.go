@@ -31,12 +31,9 @@ type noTimeout struct{}
 func (*noTimeout) Done() <-chan time.Time {
 	return nil
 }
-func (*noTimeout) Start() {
-	return
-}
-func (*noTimeout) Stop() {
-	return
-}
+func (*noTimeout) Start() {}
+
+func (*noTimeout) Stop() {}
 
 // NoIdleTimeout creates an IdleTimeout that never times out.
 func NoIdleTimeout() IdleTimeout {

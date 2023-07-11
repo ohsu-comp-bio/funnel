@@ -142,7 +142,7 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 			return err
 		}
 
-		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+		return taskBolt.db.Update(func(tx *bolt.Tx) error {
 			tx.Bucket(SysLogs).Put(idBytes, logbytes)
 			return nil
 		})
@@ -162,20 +162,20 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 	case tes.TerminalState(target) && tes.TerminalState(current):
 		// Avoid switching between two terminal states.
-		return fmt.Errorf("Won't switch between two terminal states: %s -> %s",
+		return fmt.Errorf("won't switch between two terminal states: %s -> %s",
 			current, target)
 
 	case tes.TerminalState(current) && !tes.TerminalState(target):
 		// Error when trying to switch out of a terminal state to a non-terminal one.
-		return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())
+		return fmt.Errorf("unexpected transition from %s to %s", current.String(), target.String())
 
 	case target == Queued:
-		return fmt.Errorf("Can't transition to Queued state")
+		return fmt.Errorf("can't transition to Queued state")
 	}
 
 	switch target {
 	case Unknown, Paused:
-		return fmt.Errorf("Unimplemented task state %s", target.String())
+		return fmt.Errorf("unimplemented task state %s", target.String())
 
 	case Canceled, Complete, ExecutorError, SystemError:
 		// Remove from queue
@@ -183,12 +183,12 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 
 	case Running, Initializing:
 		if current != Unknown && current != Queued && current != Initializing {
-			return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())
+			return fmt.Errorf("unexpected transition from %s to %s", current.String(), target.String())
 		}
 		tx.Bucket(TasksQueued).Delete(idBytes)
 
 	default:
-		return fmt.Errorf("Unknown target state: %s", target.String())
+		return fmt.Errorf("unknown target state: %s", target.String())
 	}
 
 	tx.Bucket(TaskState).Put(idBytes, []byte(target.String()))

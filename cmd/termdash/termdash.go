@@ -50,7 +50,7 @@ func termdash(tesHTTPServerAddress string) error {
 	ui.ColorMap = colorMap
 
 	if err := ui.Init(); err != nil {
-		return fmt.Errorf("Error initializing termdash UI: %v", err)
+		return fmt.Errorf("error initializing termdash UI: %v", err)
 	}
 	defer Shutdown()
 

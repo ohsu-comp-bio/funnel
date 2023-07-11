@@ -60,7 +60,7 @@ func (c *Client) GetTask(ctx context.Context, req *GetTaskRequest) (*Task, error
 	// Send request
 	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View.String()
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
@@ -94,7 +94,7 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
@@ -125,7 +125,7 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 	// Send request
 	u := c.address + "/v1/tasks"
 	hreq, _ := http.NewRequest("POST", u, &b)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
@@ -146,7 +146,7 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResponse, error) {
 	u := c.address + "/v1/tasks/" + req.Id + ":cancel"
 	hreq, _ := http.NewRequest("POST", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
@@ -167,7 +167,7 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 func (c *Client) GetServiceInfo(ctx context.Context, req *ServiceInfoRequest) (*ServiceInfo, error) {
 	u := c.address + "/v1/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {

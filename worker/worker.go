@@ -226,13 +226,13 @@ func (r *DefaultWorker) validate(mapper *FileMapper) error {
 	for _, input := range mapper.Inputs {
 		unsupported := r.Store.UnsupportedOperations(input.Url)
 		if unsupported.Get != nil {
-			return fmt.Errorf("Input download not supported by storage: %v", unsupported.Get)
+			return fmt.Errorf("input download not supported by storage: %v", unsupported.Get)
 		}
 	}
 	for _, output := range mapper.Outputs {
 		unsupported := r.Store.UnsupportedOperations(output.Url)
 		if unsupported.Put != nil {
-			return fmt.Errorf("Output upload not supported by storage: %v", unsupported.Put)
+			return fmt.Errorf("output upload not supported by storage: %v", unsupported.Put)
 		}
 	}
 	return nil

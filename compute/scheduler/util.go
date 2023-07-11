@@ -32,15 +32,15 @@ func detectResources(conf config.Node, workdir string) (Resources, error) {
 
 	cpuinfo, err := pscpu.Info()
 	if err != nil {
-		return res, fmt.Errorf("Error detecting cpu cores: %s", err)
+		return res, fmt.Errorf("error detecting cpu cores: %s", err)
 	}
 	vmeminfo, err := psmem.VirtualMemory()
 	if err != nil {
-		return res, fmt.Errorf("Error detecting memory: %s", err)
+		return res, fmt.Errorf("error detecting memory: %s", err)
 	}
 	diskinfo, err := psdisk.Usage(workdir)
 	if err != nil {
-		return res, fmt.Errorf("Error detecting available disk: %s", err)
+		return res, fmt.Errorf("error detecting available disk: %s", err)
 	}
 
 	if conf.Resources.Cpus == 0 {

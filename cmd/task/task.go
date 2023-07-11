@@ -133,7 +133,7 @@ func getTaskState(str string) (tes.State, error) {
 	}
 	i, ok := tes.State_value[strings.ToUpper(str)]
 	if !ok {
-		return tes.Unknown, fmt.Errorf("Unknown task state: %s. Valid states: ['queued', 'initializing', 'running', 'canceled', 'complete', 'system_error', 'executor_error']", str)
+		return tes.Unknown, fmt.Errorf("unknown task state: %s. Valid states: ['queued', 'initializing', 'running', 'canceled', 'complete', 'system_error', 'executor_error']", str)
 	}
 	return tes.State(i), nil
 }
@@ -144,7 +144,7 @@ func getTaskView(taskView string) (int32, error) {
 	var ok bool
 	view, ok = tes.TaskView_value[taskView]
 	if !ok {
-		return view, fmt.Errorf("Unknown task view: %s. Valid task views: ['basic', 'minimal', 'full']", taskView)
+		return view, fmt.Errorf("unknown task view: %s. Valid task views: ['basic', 'minimal', 'full']", taskView)
 	}
 	return view, nil
 }

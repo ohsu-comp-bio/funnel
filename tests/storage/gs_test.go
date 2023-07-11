@@ -14,6 +14,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tests"
 	"github.com/ohsu-comp-bio/funnel/worker"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 	gs "google.golang.org/api/storage/v1"
 )
 
@@ -223,11 +224,12 @@ type gsTest struct {
 }
 
 func newGsTest() (*gsTest, error) {
-	defClient, err := google.DefaultClient(context.Background(), gs.CloudPlatformScope)
+	ctx := context.Background()
+	defClient, err := google.DefaultClient(ctx, gs.CloudPlatformScope)
 	if err != nil {
 		return nil, err
 	}
-	client, err := gs.New(defClient)
+	client, err := gs.NewService(ctx, option.WithHTTPClient(defClient))
 	if err != nil {
 		return nil, err
 	}

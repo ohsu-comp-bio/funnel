@@ -40,7 +40,7 @@ var Cmd = &cobra.Command{
 		name := args[0]
 		data, ok := byShortName[name]
 		if !ok {
-			return fmt.Errorf("No example by the name of %s", name)
+			return fmt.Errorf("no example by the name of %s", name)
 		}
 
 		fmt.Println(data)

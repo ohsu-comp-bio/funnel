@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -47,7 +46,7 @@ func TestAmazonS3AnonymousGet(t *testing.T) {
 }
 
 func TestGoogleStorageAnonymousGet(t *testing.T) {
-	svc, err := storage.New(&http.Client{})
+	svc, err := storage.NewService(context.Background())
 	if err != nil {
 		t.Fatal("Error creating GS backend:", err)
 	}

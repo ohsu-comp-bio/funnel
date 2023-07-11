@@ -143,7 +143,7 @@ func (mapper *FileMapper) HostPath(src string) (string, error) {
 	p := path.Join(mapper.WorkDir, src)
 	p = path.Clean(p)
 	if !mapper.IsSubpath(p, mapper.WorkDir) {
-		return "", fmt.Errorf("Invalid path: %s is not a valid subpath of %s", p, mapper.WorkDir)
+		return "", fmt.Errorf("invalid path: %s is not a valid subpath of %s", p, mapper.WorkDir)
 	}
 	return p, nil
 }
@@ -236,7 +236,7 @@ func (mapper *FileMapper) AddInput(input *tes.Input) error {
 	if input.Content != "" {
 		err := ioutil.WriteFile(hostPath, []byte(input.Content), 0775)
 		if err != nil {
-			return fmt.Errorf("Error writing content of task input to file %v", err)
+			return fmt.Errorf("error writing content of task input to file %v", err)
 		}
 		return nil
 	}

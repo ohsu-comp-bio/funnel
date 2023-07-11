@@ -9,7 +9,7 @@ import (
 func detectFunnelBinaryPath() (string, error) {
 	path, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("Failed to detect path of funnel binary")
+		return "", fmt.Errorf("failed to detect path of funnel binary")
 	}
 	return path, err
 }

@@ -15,28 +15,28 @@ func ResourcesFit(t *tes.Task, n *Node) error {
 
 	switch {
 	case n.GetPreemptible() && !req.GetPreemptible():
-		return fmt.Errorf("Fail preemptible")
+		return fmt.Errorf("fail preemptible")
 	case n.GetAvailable().GetCpus() <= 0:
-		return fmt.Errorf("Fail zero cpus available")
+		return fmt.Errorf("fail zero cpus available")
 	case n.GetAvailable().GetRamGb() <= 0.0:
-		return fmt.Errorf("Fail zero ram available")
+		return fmt.Errorf("fail zero ram available")
 	case n.GetAvailable().GetDiskGb() <= 0.0:
-		return fmt.Errorf("Fail zero disk available")
+		return fmt.Errorf("fail zero disk available")
 	case n.GetAvailable().GetCpus() < req.GetCpuCores():
 		return fmt.Errorf(
-			"Fail cpus, requested %d, available %d",
+			"fail cpus, requested %d, available %d",
 			req.GetCpuCores(),
 			n.GetAvailable().GetCpus(),
 		)
 	case n.GetAvailable().GetRamGb() < req.GetRamGb():
 		return fmt.Errorf(
-			"Fail ram, requested %f, available %f",
+			"fail ram, requested %f, available %f",
 			req.GetRamGb(),
 			n.GetAvailable().GetRamGb(),
 		)
 	case n.GetAvailable().GetDiskGb() < req.GetDiskGb():
 		return fmt.Errorf(
-			"Fail disk, requested %f, available %f",
+			"fail disk, requested %f, available %f",
 			req.GetDiskGb(),
 			n.GetAvailable().GetDiskGb(),
 		)
@@ -61,7 +61,7 @@ func ZonesFit(t *tes.Task, n *Node) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Failed zones")
+	return fmt.Errorf("failed zones")
 }
 
 // NotDead returns true if the node state is not Dead or Gone.
@@ -69,13 +69,13 @@ func NotDead(j *tes.Task, n *Node) error {
 	if n.State != NodeState_DEAD && n.State != NodeState_GONE {
 		return nil
 	}
-	return fmt.Errorf("Fail not dead")
+	return fmt.Errorf("fail not dead")
 }
 
 // Alive returns true if the node state is not Dead or Gone.
 func Alive(j *tes.Task, n *Node) error {
 	if n.State != NodeState_ALIVE {
-		return fmt.Errorf("Fail not alive")
+		return fmt.Errorf("fail not alive")
 	}
 	return nil
 }

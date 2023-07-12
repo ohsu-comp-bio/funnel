@@ -29,10 +29,14 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 	res, _ := detectResources(conf.Node, conf.Worker.WorkDir)
 	s := new(MockClient)
 	n := &NodeProcess{
-		conf:      conf,
-		client:    s,
-		log:       log,
-		resources: res,
+		conf:   conf,
+		client: s,
+		log:    log,
+		resources: Resources{
+			Cpus:   res.Cpus,
+			RamGb:  res.RamGb,
+			DiskGb: res.DiskGb,
+		},
 		workerRun: NoopWorker,
 		workers:   newRunSet(),
 		timeout:   util.NewIdleTimeout(time.Duration(conf.Node.Timeout)),

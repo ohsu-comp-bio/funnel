@@ -38,10 +38,14 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 	state := NodeState_UNINITIALIZED
 
 	return &NodeProcess{
-		conf:      conf,
-		client:    cli,
-		log:       log,
-		resources: res,
+		conf:   conf,
+		client: cli,
+		log:    log,
+		resources: Resources{
+			Cpus:   res.Cpus,
+			RamGb:  res.RamGb,
+			DiskGb: res.DiskGb,
+		},
 		workerRun: factory,
 		workers:   newRunSet(),
 		timeout:   timeout,

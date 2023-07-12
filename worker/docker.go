@@ -84,9 +84,9 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 		cmd.Stderr = dcmd.Stderr
 	}
 	go dcmd.inspectContainer(ctx)
-	out := cmd.Run()
-	dcmd.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
-	return out
+	cmdErr := cmd.Run()
+	dcmd.Event.Info("Command finished", "error", cmdErr)
+	return cmdErr
 }
 
 // Stop stops the container.

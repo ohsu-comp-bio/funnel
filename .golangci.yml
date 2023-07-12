@@ -14,6 +14,10 @@ skip-files:
   - ".*\\.pb\\.gw\\.go$"
   - "webdash/web\\.go$"
 
+issues:
+  exclude-use-default: true
+  max-same-issues: 5
+
 linters:
   disable-all: true
   enable:

@@ -98,6 +98,6 @@ func escape(s string) string {
 }
 
 func safeKey(s string) string {
-	re := regexp.MustCompile(`[\\s]+`)
+	re := regexp.MustCompile(`[\s]+`)
 	return re.ReplaceAllString(s, "_")
 }

@@ -138,6 +138,7 @@ func TestUrlParsing(t *testing.T) {
 	if err != nil {
 		t.Error("unexpected error", err)
 	}
+	t.Logf("url: %+v", url)
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
 		t.Log("actual:", url.bucket)

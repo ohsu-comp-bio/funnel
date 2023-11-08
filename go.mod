@@ -31,7 +31,7 @@ require (
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
-	github.com/go-test/deep v1.0.5
+	github.com/go-test/deep v1.1.0
 	github.com/golang/gddo v0.0.0-20200219175727-df439dd5819e
 	github.com/golang/protobuf v1.5.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0

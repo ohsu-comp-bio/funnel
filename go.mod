@@ -3,7 +3,7 @@ module github.com/ohsu-comp-bio/funnel
 go 1.13
 
 require (
-	cloud.google.com/go/datastore v1.13.0
+	cloud.google.com/go/datastore v1.15.0
 	cloud.google.com/go/pubsub v1.33.0
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.26.1
@@ -28,7 +28,7 @@ require (
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
-	github.com/go-test/deep v1.0.5
+	github.com/go-test/deep v1.1.0
 	github.com/golang/gddo v0.0.0-20200219175727-df439dd5819e
 	github.com/golang/protobuf v1.5.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
@@ -58,10 +58,10 @@ require (
 	github.com/stretchr/testify v1.8.3
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
-	golang.org/x/oauth2 v0.11.0
+	golang.org/x/oauth2 v0.13.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.126.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
+	google.golang.org/api v0.150.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b
 	google.golang.org/grpc v1.59.0
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/olivere/elastic.v5 v5.0.84

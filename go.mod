@@ -3,8 +3,8 @@ module github.com/ohsu-comp-bio/funnel
 go 1.13
 
 require (
-	cloud.google.com/go/datastore v1.11.0
-	cloud.google.com/go/pubsub v1.30.0
+	cloud.google.com/go/datastore v1.13.0
+	cloud.google.com/go/pubsub v1.33.0
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.26.1
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
@@ -33,6 +33,7 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3
 	github.com/imdario/mergo v0.3.8
 	github.com/jlaffaye/ftp v0.0.0-20191218041957-e1b8fdd0dcc3
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
@@ -62,11 +63,12 @@ require (
 	github.com/stretchr/testify v1.8.3
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
-	golang.org/x/oauth2 v0.7.0
+	golang.org/x/oauth2 v0.11.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.114.0
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
-	google.golang.org/grpc v1.56.3
+	google.golang.org/api v0.126.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
+	google.golang.org/grpc v1.59.0
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/olivere/elastic.v5 v5.0.84
 	gotest.tools/v3 v3.5.1 // indirect

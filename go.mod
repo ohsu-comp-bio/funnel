@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/pubsub v1.33.0
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.26.1
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
+	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2
 	github.com/aws/aws-sdk-go v1.47.5
@@ -45,12 +45,12 @@ require (
 	github.com/nsf/termbox-go v0.0.0-20200204031403-4d2b513ad8be // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
-	github.com/prometheus/client_golang v1.4.1
-	github.com/prometheus/common v0.9.1
+	github.com/prometheus/client_golang v1.17.0
+	github.com/prometheus/common v0.44.0
 	github.com/rs/xid v1.2.1
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5

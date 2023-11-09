@@ -40,10 +40,9 @@ require (
 	github.com/kr/pretty v0.3.1
 	github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381
 	github.com/minio/minio-go v6.0.14+incompatible
-	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
-	github.com/moby/term v0.5.0 // indirect
-	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/ncw/swift v1.0.50
+	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/ncw/swift v1.0.53
+	github.com/nsf/termbox-go v0.0.0-20200204031403-4d2b513ad8be // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/prometheus/client_golang v1.4.1

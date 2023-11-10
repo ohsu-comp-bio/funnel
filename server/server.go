@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/golang/gddo/httputil"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -83,18 +82,21 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
-	// mar := runtime.JSONBuiltin{}
-	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
-	m := protojson.MarshalOptions{
-		Indent:          "  ",
-		EmitUnpopulated: false,
-		UseProtoNames:   true,
-	}
-	u := protojson.UnmarshalOptions{}
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-		MarshalOptions:   m,
-		UnmarshalOptions: u,
-	}))
+
+	marsh := NewMarshaler()
+	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh))
+	
+	// m := protojson.MarshalOptions{
+	// 	Indent:          "  ",
+	// 	EmitUnpopulated: true,
+	// 	UseProtoNames:   true,
+	// }
+	// u := protojson.UnmarshalOptions{}
+	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+	// 	MarshalOptions:   m,
+	// 	UnmarshalOptions: u,
+	// }))
+
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()

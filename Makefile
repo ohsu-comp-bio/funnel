@@ -43,7 +43,6 @@ debug:
 
 # Generate the protobuf/gRPC code
 proto:
-	@go run ./util/openapi2proto/main.go ./tes/task-execution-schemas/openapi/task_execution_service.openapi.yaml > tes/tes.proto
 	@cd tes && protoc \
 		$(PROTO_INC) \
 		--go_out ./ \

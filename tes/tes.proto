@@ -74,6 +74,15 @@ message Executor {
 	string workdir = 8;
 }
 
+message ExecutorBasic { 
+	repeated string command = 1;
+	map<string,string> env = 2;
+	bool ignore_error = 3;
+	string image = 4;
+	string stdin = 5;
+	string workdir = 6;
+}
+
 message ExecutorLog { 
 	string end_time = 1;
 	int32 exit_code = 2;
@@ -92,9 +101,29 @@ message Input {
 	string url = 7;
 }
 
+message InputBasic { 
+	string description = 1;
+	string name = 2;
+	string path = 3;
+	bool streamable = 4;
+	FileType type = 5;
+	string url = 6;
+}
+
+
 message ListTasksResponse { 
 	string next_page_token = 1;
 	repeated Task tasks = 2;
+}
+
+message ListTasksResponseMin { 
+	string next_page_token = 1;
+	repeated TaskMin tasks = 2;
+}
+
+message ListTasksResponseBasic { 
+	string next_page_token = 1;
+	repeated TaskBasic tasks = 2;
 }
 
 message Output { 
@@ -159,6 +188,26 @@ message Task {
 	repeated string volumes = 12;
 }
 
+message TaskMin { 
+	string id = 4;
+	State state = 10;
+}
+
+message TaskBasic { 
+	string creation_time = 1;
+	string description = 2;
+	repeated ExecutorBasic executors = 3;
+	string id = 4;
+	repeated InputBasic inputs = 5;
+	repeated TaskLogBasic logs = 6;
+	string name = 7;
+	repeated Output outputs = 8;
+	Resources resources = 9;
+	State state = 10;
+	map<string,string> tags = 11;
+	repeated string volumes = 12;
+}
+
 message TaskLog { 
 	string end_time = 1;
 	repeated ExecutorLog logs = 2;
@@ -168,6 +217,13 @@ message TaskLog {
 	repeated string system_logs = 6;
 }
 
+message TaskLogBasic { 
+	string end_time = 1;
+	repeated ExecutorLog logs = 2;
+	map<string,string> metadata = 3;
+	repeated OutputFileLog outputs = 4;
+	string start_time = 5;
+}
 
 service TaskService {
 

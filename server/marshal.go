@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -62,6 +63,7 @@ func (mclean *MarshalNew) MarshalTask(task *tes.Task) ([]byte, error) {
 }
 
 func (mclean *MarshalNew) MarshalList(list *tes.ListTasksResponse) ([]byte, error) {
+	fmt.Println("list: ", list)
 	if len(list.Tasks) == 0 {
 		return mclean.m.Marshal(list)
 	}

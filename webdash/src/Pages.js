@@ -67,7 +67,6 @@ function TaskList({pageToken, setPageToken,
     if (pageToken !== "") {
       params.set("pageToken", pageToken);
     };
-    //console.log("listTasks url:", url.toString());
     fetch(url.toString())
       .then(response => response.json())
       .then(

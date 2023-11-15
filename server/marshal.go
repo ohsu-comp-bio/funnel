@@ -39,21 +39,83 @@ func (mclean *MarshalNew) ContentType(i interface{}) string {
 // itself. This is mainly to get around a weird behavior of the GRPC gateway
 // streaming output
 func (mclean *MarshalNew) Marshal(v interface{}) ([]byte, error) {
-    // Type assertion to get the underlying *tes.Task
-    task, ok := v.(*tes.Task)
-    if !ok {
-        // v is not of type *tes.Task
-		return mclean.m.Marshal(v)
+
+	list, ok := v.(*tes.ListTasksResponse)
+    if ok {
+        // v is of type *tes.ListTasksResponse
+		return mclean.MarshalList(list)
     }
+
+	task, ok := v.(*tes.Task)
+	if ok {
+		// v is of type *tes.Task
+		return mclean.MarshalTask(task)
+	}
+
+	return mclean.m.Marshal(v)
+}
+
+func (mclean *MarshalNew) MarshalTask(task *tes.Task) ([]byte, error) {
+	view, _ := mclean.DetectView(task)
+	newTask := mclean.TranslateTask(task, view)
+	return mclean.m.Marshal(newTask)
+}
+
+func (mclean *MarshalNew) MarshalList(list *tes.ListTasksResponse) ([]byte, error) {
+	if len(list.Tasks) == 0 {
+		return mclean.m.Marshal(list)
+	}
+
+	task := list.Tasks[0]
+	view, _ := mclean.DetectView(task)
+
+	if view == tes.View_MINIMAL {
+		minList := &tes.ListTasksResponseMin{}
+		for _, task := range list.Tasks {
+			minTask := mclean.TranslateTask(task, view).(*tes.TaskMin)
+			minList.Tasks = append(minList.Tasks, minTask)
+		}
+		return mclean.m.Marshal(minList)
+	}
+
+	if view == tes.View_BASIC {
+		basicList := &tes.ListTasksResponseBasic{}
+		for _, task := range list.Tasks {
+			basicTask := mclean.TranslateTask(task, view).(*tes.TaskBasic)
+			basicList.Tasks = append(basicList.Tasks, basicTask)
+		}
+		return mclean.m.Marshal(basicList)
+	}
+
+	return mclean.m.Marshal(list)
+}
+
+func (mclean *MarshalNew) DetectView(task *tes.Task) (tes.View, error) {
 	if task.CreationTime == "" {
-		// view = "MINIMAL"
+		// return a MINIMAL view
+		return tes.View_MINIMAL, nil
+	}
+	
+	if len(task.Logs[0].SystemLogs) == 0 {
+		return tes.View_BASIC, nil
+	} 
+
+	// view = "FULL"
+	return tes.View_FULL, nil
+}
+
+func (mclean *MarshalNew) TranslateTask(task *tes.Task, view tes.View) interface{} {
+	// view = "MINIMAL"
+	if view == tes.View_MINIMAL {
 		min := &tes.TaskMin{
 			Id:    task.Id,
 			State: task.State,
 		}
-		return mclean.m.Marshal(min)
-	} else if len(task.Logs[0].SystemLogs) == 0 {
-		// view = "BASIC"
+		return min
+	}
+	
+	// view = "BASIC"
+	if view == tes.View_BASIC {
 		executors := []*tes.ExecutorBasic{}
 		for _, executor := range task.Executors {
 			executors = append(executors, &tes.ExecutorBasic{
@@ -89,7 +151,7 @@ func (mclean *MarshalNew) Marshal(v interface{}) ([]byte, error) {
 			})
 		}
 
-		basic := &tes.TaskBasic{
+		basic := &tes.TaskBasic {
 			CreationTime: task.CreationTime,
 			Description:  task.Description,
 			Executors:    executors,
@@ -104,11 +166,11 @@ func (mclean *MarshalNew) Marshal(v interface{}) ([]byte, error) {
 			Volumes: 	  task.Volumes,
 		}
 
-		return mclean.m.Marshal(basic)
-	} else {
-		// view = "FULL"
-		return mclean.m.Marshal(v)
+		return basic
 	}
+
+	// view = "FULL"
+	return task
 }
 
 // NewDecoder shims runtime.Marshaler.NewDecoder

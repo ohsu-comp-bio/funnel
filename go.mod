@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go v1.47.5
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/dgraph-io/badger/v2 v2.0.1
+	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -9,16 +8,19 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// MarshalNew is a shim class to 'fix' outgoing streamed messages
-// in the default implementation, grpc-gateway wraps the individual messages
-// of the stream with a {"result" : <value>}. The cleaner idendifies that and
-// removes the wrapper
-type MarshalNew struct {
+// CustomMarshal is a custom marshaler for the GRPC gateway that returns the required fields based on the View value:
+// - View_MINIMAL: returns only the id and state fields
+// - View_BASIC: returns the id, state, creation_time, description, name, inputs, outputs, resources, tags, volumes, executors, and logs fields
+// - View_FULL: returns all fields
+//
+// This could be improved by updating the generated protobuf code to include the View field in the Task struct
+// Related discussion: https://github.com/ohsu-comp-bio/funnel/pull/716#discussion_r1375155983
+type CustomMarshal struct {
 	m runtime.Marshaler
 }
 
 func NewMarshaler() runtime.Marshaler {
-	return &MarshalNew{
+	return &CustomMarshal{
 		m: &runtime.JSONPb{
 			protojson.MarshalOptions{
 				Indent:          "  ",
@@ -31,15 +33,15 @@ func NewMarshaler() runtime.Marshaler {
 }
 
 // ContentType return content type of marshler
-func (mclean *MarshalNew) ContentType(i interface{}) string {
-	return mclean.m.ContentType(i)
+func (marshal *CustomMarshal) ContentType(i interface{}) string {
+	return marshal.m.ContentType(i)
 }
 
 // Marshal serializes v into a JSON encoded byte array. If v is of
 // type `proto.Message` the then field "result" is extracted and returned by
 // itself. This is mainly to get around a weird behavior of the GRPC gateway
 // streaming output
-func (mclean *MarshalNew) Marshal(v interface{}) ([]byte, error) {
+func (mclean *CustomMarshal) Marshal(v interface{}) ([]byte, error) {
 
 	list, ok := v.(*tes.ListTasksResponse)
     if ok {
@@ -56,14 +58,13 @@ func (mclean *MarshalNew) Marshal(v interface{}) ([]byte, error) {
 	return mclean.m.Marshal(v)
 }
 
-func (mclean *MarshalNew) MarshalTask(task *tes.Task) ([]byte, error) {
+func (mclean *CustomMarshal) MarshalTask(task *tes.Task) ([]byte, error) {
 	view, _ := mclean.DetectView(task)
 	newTask := mclean.TranslateTask(task, view)
 	return mclean.m.Marshal(newTask)
 }
 
-func (mclean *MarshalNew) MarshalList(list *tes.ListTasksResponse) ([]byte, error) {
-	fmt.Println("list: ", list)
+func (mclean *CustomMarshal) MarshalList(list *tes.ListTasksResponse) ([]byte, error) {
 	if len(list.Tasks) == 0 {
 		return mclean.m.Marshal(list)
 	}
@@ -92,7 +93,7 @@ func (mclean *MarshalNew) MarshalList(list *tes.ListTasksResponse) ([]byte, erro
 	return mclean.m.Marshal(list)
 }
 
-func (mclean *MarshalNew) DetectView(task *tes.Task) (tes.View, error) {
+func (mclean *CustomMarshal) DetectView(task *tes.Task) (tes.View, error) {
 	if task.CreationTime == "" {
 		// return a MINIMAL view
 		return tes.View_MINIMAL, nil
@@ -106,7 +107,7 @@ func (mclean *MarshalNew) DetectView(task *tes.Task) (tes.View, error) {
 	return tes.View_FULL, nil
 }
 
-func (mclean *MarshalNew) TranslateTask(task *tes.Task, view tes.View) interface{} {
+func (mclean *CustomMarshal) TranslateTask(task *tes.Task, view tes.View) interface{} {
 	// view = "MINIMAL"
 	if view == tes.View_MINIMAL {
 		min := &tes.TaskMin{
@@ -176,16 +177,16 @@ func (mclean *MarshalNew) TranslateTask(task *tes.Task, view tes.View) interface
 }
 
 // NewDecoder shims runtime.Marshaler.NewDecoder
-func (mclean *MarshalNew) NewDecoder(r io.Reader) runtime.Decoder {
+func (mclean *CustomMarshal) NewDecoder(r io.Reader) runtime.Decoder {
 	return mclean.m.NewDecoder(r)
 }
 
 // NewEncoder shims runtime.Marshaler.NewEncoder
-func (mclean *MarshalNew) NewEncoder(w io.Writer) runtime.Encoder {
+func (mclean *CustomMarshal) NewEncoder(w io.Writer) runtime.Encoder {
 	return mclean.m.NewEncoder(w)
 }
 
 // Unmarshal shims runtime.Marshaler.Unmarshal
-func (mclean *MarshalNew) Unmarshal(data []byte, v interface{}) error {
+func (mclean *CustomMarshal) Unmarshal(data []byte, v interface{}) error {
 	return mclean.m.Unmarshal(data, v)
 }

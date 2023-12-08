@@ -20,8 +20,8 @@ require (
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.5.0 // indirect
-	github.com/elazarl/go-bindata-assetfs v1.0.0
+	github.com/docker/go-units v0.4.0 // indirect
+	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/gammazero/workerpool v0.0.0-20200206003619-019d125201ab
 	github.com/getkin/kin-openapi v0.98.0
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a

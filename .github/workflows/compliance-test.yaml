@@ -32,6 +32,8 @@ on:
     workflows: ["Build"]
     types:
       - completed
+    branches: 
+      - '**'
 
 jobs:
   compliance:

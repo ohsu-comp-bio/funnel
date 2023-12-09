@@ -1,0 +1,26 @@
+{
+  "name": "Nextflow Canary Tests",
+  "description": "Run the Nextflow Canary tests to verify Nextflow support",
+  "tags": {
+    "Project": "Nextflow"
+  },
+  "outputs": [
+    {
+      "url": "/tmp",
+      "path": "/.nextflow/",
+      "type": "DIRECTORY"
+    },
+    {
+      "url": "/tmp",
+      "path": "/root/",
+      "type": "DIRECTORY"
+    }
+  ],
+  "executors": [
+    {
+      "image": "quay.io/ohsu-comp-bio/nf-canary",
+      "command": ["sh", "-c", "cd /root; nextflow -Djdk.lang.Process.launchMechanism=vfork run /nf-canary/main.nf"]
+    }
+  ]
+}
+

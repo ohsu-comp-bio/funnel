@@ -181,6 +181,24 @@ func linkFile(ctx context.Context, source string, dest string) error {
 	if same {
 		return nil
 	}
+	if source != parent {
+		fileInfo, err := os.Stat(parent)
+		if err != nil{
+			return err
+		}
+		if fileInfo.IsDir() {
+			fmt.Printf("DEBUG: %v is a symlink to directory %v.\n", source, parent)
+			fmt.Printf("DEBUG dest: %v\n", dest)
+			// create a symbolic link from source to parent
+			err = os.Symlink(parent, dest)
+			if err != nil {
+				return fmt.Errorf("failed to create symbolic link: %v", err)
+			}
+
+			return nil
+		}
+	}
+
 	err = os.Link(parent, dest)
 	if err != nil {
 		err = copyFile(ctx, source, dest)

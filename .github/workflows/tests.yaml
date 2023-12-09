@@ -135,7 +135,6 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: funnelBin
-        path: funnel
 
     - name: Run Nextflow test (nf-canary)
       run: |

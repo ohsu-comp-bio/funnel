@@ -3,8 +3,12 @@ FROM golang:1.21.4-alpine AS build-env
 RUN apk add make git bash build-base
 ENV GOPATH=/go
 ENV PATH="/go/bin:${PATH}"
-ADD ./ /go/src/github.com/ohsu-comp-bio/funnel
-RUN cd /go/src/github.com/ohsu-comp-bio/funnel && make build
+
+WORKDIR /go/src/github.com/ohsu-comp-bio/funnel
+COPY go.* .
+RUN go mod download
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/go-build make build
 
 # final stage
 FROM docker:stable-dind-rootless

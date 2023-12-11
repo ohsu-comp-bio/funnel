@@ -4,28 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/ohsu-comp-bio/funnel/events"
 )
 
 // DockerCommand is responsible for configuring and running a docker container.
 type DockerCommand struct {
-	Image           string
-	Command         []string
-	Volumes         []Volume
-	Workdir         string
 	ContainerName   string
 	RemoveContainer bool
-	Env             map[string]string
-	Stdin           io.Reader
-	Stdout          io.Writer
-	Stderr          io.Writer
-	Event           *events.ExecutorWriter
+	Command 	
 }
 
 // Run runs the Docker command and blocks until done.
@@ -68,7 +57,7 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	}
 
 	args = append(args, dcmd.Image)
-	args = append(args, dcmd.Command...)
+	args = append(args, dcmd.ShellCommand...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
 	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))

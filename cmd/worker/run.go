@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -70,11 +71,31 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts
 	}
 	store.AttachLogger(log)
 
+	if conf.Kubernetes.ExecutorTemplateFile != "" {
+		content, err := ioutil.ReadFile(conf.Kubernetes.ExecutorTemplateFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading template: %v", err)
+		}
+		conf.Kubernetes.ExecutorTemplate = string(content)
+	}
+
+	// The executor always defaults to docker, unless explicitly set to kubernetes.
+	var executor = worker.Executor{
+		Backend: "docker",
+	}
+	
+	if conf.Kubernetes.Executor == "kubernetes" {
+		executor.Backend = "kubernetes"
+		executor.Template = conf.Kubernetes.ExecutorTemplate
+		executor.Namespace = conf.Kubernetes.Namespace
+	}
+
 	return &worker.DefaultWorker{
-		Conf:        conf.Worker,
-		Store:       store,
-		TaskReader:  reader,
-		EventWriter: writer,
+		Executor:       executor,
+		Conf:           conf.Worker,
+		Store:          store,
+		TaskReader:     reader,
+		EventWriter:    writer,
 	}, nil
 }
 

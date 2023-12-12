@@ -225,6 +225,8 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Var(&flagConf.Scheduler.NodeDeadTimeout, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
 	// Kubernetes
+	f.StringVar(&flagConf.Kubernetes.Executor, "Kubernetes.Executor", flagConf.Kubernetes.Executor, "Executor to use for executing tasks (docker or kubernetes)")
+	f.StringVar(&flagConf.Kubernetes.ExecutorTemplateFile, "Kubernetes.ExecutorTemplateFile", flagConf.Kubernetes.ExecutorTemplateFile, "Path to executor job template file")
 	f.StringVar(&flagConf.Kubernetes.TemplateFile, "Kubernetes.TemplateFile", flagConf.Kubernetes.TemplateFile, "Path to job template file")
 	f.StringVar(&flagConf.Kubernetes.Namespace, "Kubernetes.Namespace", flagConf.Kubernetes.Namespace, "Namespace to spawn jobs within")
 	f.StringVar(&flagConf.Kubernetes.ConfigFile, "Kubernetes.ConfigFile", flagConf.Kubernetes.ConfigFile, "Path to kubernetes config file")

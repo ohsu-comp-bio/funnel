@@ -152,7 +152,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 	if err != nil {
 		return fmt.Errorf("creating job spec: %v", err)
 	}
-	_, err = b.client.Create(job)
+	_, err = b.client.Create(context.TODO(), job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("creating job: %v", err)
 	}
@@ -163,7 +163,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 func (b *Backend) deleteJob(taskID string) error {
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
-	err := b.client.Delete(taskID, &metav1.DeleteOptions{
+	err := b.client.Delete(context.TODO(), taskID, metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &prop,
 	})
@@ -215,7 +215,7 @@ ReconcileLoop:
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			jobs, err := b.client.List(metav1.ListOptions{})
+			jobs, err := b.client.List(context.TODO() ,metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
 				continue ReconcileLoop

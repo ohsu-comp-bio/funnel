@@ -9,13 +9,13 @@ spec:
   completions: 1
   template:
     spec:
+      serviceAccountName: funnel-sa
       restartPolicy: Never
       containers: 
-        - name: {{printf "funnel-worker-%s" .TaskId}}
-          image: ohsucompbio/funnel-kubernetes-worker:latest
-          imagePullPolicy: IfNotPresent
+        - name: funnel-worker-{{.TaskId}}
+          image: ohsucompbio/funnel-dind-rootless:latest
+          imagePullPolicy: Always
           args:
-            - "funnel"
             - "worker"
             - "run"
             - "--config"
@@ -28,16 +28,16 @@ spec:
                 memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
                 ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
           volumeMounts:
-            - name: {{printf "funnel-storage-%s" .TaskId}}
-              mountPath: {{printf "/opt/funnel/funnel-work-dir/%s" .TaskId}}
+            - name: funnel-storage-{{.TaskId}}
+              mountPath: /opt/funnel/funnel-work-dir/{{.TaskId}}
+              subPath: {{.TaskId}}
             - name: config-volume
               mountPath: /etc/config
-          securityContext:
-            privileged: true
 
       volumes: 
-        - name: {{printf "funnel-storage-%s" .TaskId}}
-          emptyDir: {}
         - name: config-volume
           configMap:
             name: funnel-config
+        - name: funnel-storage-{{.TaskId}}
+          persistentVolumeClaim:
+            claimName: storage-pvc 

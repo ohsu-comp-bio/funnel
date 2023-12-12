@@ -134,6 +134,11 @@ func DefaultConfig() Config {
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
 
+	kubernetesTemplate := intern.MustAsset("config/kubernetes-template.yaml")
+	executorTemplate := intern.MustAsset("config/kubernetes-executor-template.yaml")
+	c.Kubernetes.Executor = "docker"
+	c.Kubernetes.Template = string(kubernetesTemplate)
+	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
 	c.Kubernetes.ReconcileRate = reconcile
 
 	return c

@@ -137,14 +137,6 @@ func (kcmd KubernetesCommand) Stop() error {
 	return nil
 }
 
-func (kcmd KubernetesCommand) GetStdout() io.Writer {
-	return kcmd.Stdout
-}
-
-func (kcmd KubernetesCommand) GetStderr() io.Writer {
-	return kcmd.Stderr
-}
-
 // Waits until the job finishes
 func waitForJobFinnish(ctx context.Context, watcher watch.Interface) {
 	for {

@@ -22,8 +22,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.1
-	github.com/gammazero/workerpool v0.0.0-20200206003619-019d125201ab
-	github.com/getkin/kin-openapi v0.98.0
+	github.com/gammazero/workerpool v1.1.3
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a
 	github.com/ghodss/yaml v1.0.0
 	github.com/gizak/termui v2.3.0+incompatible

@@ -32,7 +32,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/imdario/mergo v0.3.8
-	github.com/jlaffaye/ftp v0.0.0-20191218041957-e1b8fdd0dcc3
+	github.com/jlaffaye/ftp v0.2.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kr/pretty v0.3.1
 	github.com/logrusorgru/aurora v2.0.3+incompatible

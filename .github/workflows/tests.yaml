@@ -1,8 +1,10 @@
 name: Go
 
 on:
-  - pull_request
-  - push
+  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
 
@@ -139,5 +141,7 @@ jobs:
     - name: Run Nextflow test (nf-canary)
       run: |
         chmod +x funnel
-        funnel server run --config funnel.config
-        funnel task create examples/nextflow.json
+        ./funnel server run &
+        git clone https://github.com/ohsu-comp-bio/nf-canary
+        cd nf-canary
+        nextflow run main.nf

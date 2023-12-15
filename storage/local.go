@@ -170,7 +170,9 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 func linkFile(ctx context.Context, source string, dest string) error {
 	var err error
 	// without this resulting link could be a symlink
+	fmt.Println("DEBUG eval source:", source)
 	parent, err := filepath.EvalSymlinks(source)
+	fmt.Println("DEBUG eval parent:", parent)
 	if err != nil {
 		return fmt.Errorf("failed to eval symlinks: %v", err)
 	}
@@ -188,20 +190,20 @@ func linkFile(ctx context.Context, source string, dest string) error {
 		}
 		if fileInfo.IsDir() {
 			fmt.Printf("DEBUG: %v is a symlink to directory %v.\n", source, parent)
-			fmt.Printf("DEBUG dest: %v\n", dest)
 			// create a symbolic link from source to parent
-			err = os.Symlink(parent, dest)
+			err = os.Symlink(parent, source)
 			if err != nil {
-				return fmt.Errorf("failed to create symbolic link: %v", err)
+				return fmt.Errorf("failed to create symlink: %v", err)
 			}
-
 			return nil
 		}
 	}
 
 	err = os.Link(parent, dest)
 	if err != nil {
+		fmt.Println("DEBUG copy source:", source)
 		err = copyFile(ctx, source, dest)
+		fmt.Println("DEBUG copy dest:", dest)
 		if err != nil {
 			return fmt.Errorf("failed to copy file: %v", err)
 		}

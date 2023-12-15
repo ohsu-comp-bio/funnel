@@ -1,0 +1,49 @@
+name: Go
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.18
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: make build
+
+    - name: Store funnel
+      uses: actions/upload-artifact@v2
+      with:
+        name: funnelBin
+        path: funnel
+
+  nextflow:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Download funnel
+      uses: actions/download-artifact@v2
+      with:
+        name: funnelBin
+        path: funnel
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+
+    - name: Run Nextflow test (nf-canary)
+      run: |
+        chmod +x funnel
+        ./funnel server run &
+        git clone https://github.com/ohsu-comp-bio/nf-canary
+        cd nf-canary
+        nextflow run main.nf

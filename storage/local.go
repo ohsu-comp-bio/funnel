@@ -168,95 +168,86 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 
 // Hard links file source to destination dest.
 func linkFile(ctx context.Context, source string, dest string) error {
-	var err error
-	// without this resulting link could be a symlink
-	fmt.Println("DEBUG eval source:", source)
-	
-	// If source has a glob or wildcard, get the filepath using the filepath.Glob function
-	if strings.Contains(source, "*") {
-		globs, err := filepath.Glob(source)
-		if err != nil {
-			return fmt.Errorf("failed to get filepath using Glob: %v", err)
-		}
-		fmt.Println("DEBUG globs:", globs)
-		for _, glob := range globs {
-			fmt.Println("DEBUG glob, dest:", glob, dest)
-			destInfo, err := os.Stat(dest)
-			if err != nil{
-				return err
-			}
-			if destInfo.IsDir() {
-				dest = filepath.Join(dest, filepath.Base(glob))
-			}
-			err = linkFile(ctx, glob, dest)
-			if err != nil {
-				return fmt.Errorf("failed to link file: %v", err)
-			}
-			return nil
-		}
-	}
+    // If source has a glob or wildcard, get the filepath using the filepath.Glob function
+    if strings.Contains(source, "*") {
+        globs, err := filepath.Glob(source)
+        if err != nil {
+            return fmt.Errorf("failed to get filepath using Glob: %v", err)
+        }
+        for _, glob := range globs {
+            // Correctly calculate the destination for each file
+            destFile := filepath.Join(dest, filepath.Base(glob))
+            err := processItem(ctx, glob, destFile)
+            if err != nil {
+                return err
+            }
+        }
+        return nil
+    } else {
+        return processItem(ctx, source, dest)
+    }
+}
 
-	parent, err := filepath.EvalSymlinks(source)
-	fmt.Println("DEBUG eval parent:", parent)
-	if err != nil {
-		fmt.Println("DEBUG eval err:", err)
-		return fmt.Errorf("failed to eval symlinks: %v", err)
-	}
-	same, err := sameFile(parent, dest)
-	if err != nil {
-		return fmt.Errorf("failed to check if file is the same file: %v", err)
-	}
-	if same {
-		return nil
-	}
-	if source != parent {
-		fileInfo, err := os.Stat(parent)
-		if err != nil{
-			return err
-		}
-		if fileInfo.IsDir() {
-			fmt.Printf("DEBUG: %v is a symlink to directory %v.\n", source, parent)
-			// create a symbolic link from source to parent
-			err = os.Symlink(parent, source)
-			if err != nil {
-				return fmt.Errorf("failed to create symlink: %v", err)
-			}
-			return nil
-		}
-	}
 
-	err = os.Link(parent, dest)
-	if err != nil {
-		fmt.Println("DEBUG link err:", err)
-		
-		// If the source is a directory, walk the directory and link all files
-		fileInfo, err := os.Stat(parent)
-		if err != nil{
-			return err
-		}
-		if fileInfo.IsDir() {
-			fmt.Printf("DEBUG %v is a directory...\n", parent)
-			files, err := FilePathWalkDir(parent)
-			fmt.Println("DEBUG files:", files)
-			if err != nil {
-				panic(err)
-			}
+// Process a single item (file or directory)
+func processItem(ctx context.Context, source, dest string) error {
+    fileInfo, err := os.Stat(source)
+    if err != nil {
+        return err
+    }
 
-			for _, file := range files {
-				linkFile(ctx, file, dest)
-			}
+    if fileInfo.IsDir() {
+        return processDirectory(ctx, source, dest)
+    } else {
+        return processFile(ctx, source, dest)
+    }
+}
 
-			return nil
-		}
+// Process a directory
+func processDirectory(ctx context.Context, source, dest string) error {
+    // Create destination directory
+    err := os.MkdirAll(dest, 0755) // Adjust permissions as needed
+    if err != nil {
+        return err
+    }
 
-		fmt.Println("DEBUG copy source:", source)
-		fmt.Println("DEBUG copy dest:", dest)
-		err = copyFile(ctx, source, dest)
-		if err != nil {
-			return fmt.Errorf("failed to copy file: %v", err)
-		}
-	}
-	return err
+    entries, err := os.ReadDir(source)
+    if err != nil {
+        return err
+    }
+
+    for _, entry := range entries {
+        srcPath := filepath.Join(source, entry.Name())
+        destPath := filepath.Join(dest, entry.Name())
+
+        if entry.IsDir() {
+            err = processDirectory(ctx, srcPath, destPath)
+        } else {
+            err = processFile(ctx, srcPath, destPath)
+        }
+
+        if err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+// Process a single file
+func processFile(ctx context.Context, source, dest string) error {
+    same, err := sameFile(source, dest)
+    if err != nil {
+        return err
+    }
+    if same {
+        return nil
+    }
+
+    err = os.Link(source, dest)
+    if err != nil {
+        return copyFile(ctx, source, dest)
+    }
+    return nil
 }
 
 func FilePathWalkDir(root string) ([]string, error) {

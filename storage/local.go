@@ -171,9 +171,35 @@ func linkFile(ctx context.Context, source string, dest string) error {
 	var err error
 	// without this resulting link could be a symlink
 	fmt.Println("DEBUG eval source:", source)
+	
+	// If source has a glob or wildcard, get the filepath using the filepath.Glob function
+	if strings.Contains(source, "*") {
+		globs, err := filepath.Glob(source)
+		if err != nil {
+			return fmt.Errorf("failed to get filepath using Glob: %v", err)
+		}
+		fmt.Println("DEBUG globs:", globs)
+		for _, glob := range globs {
+			fmt.Println("DEBUG glob, dest:", glob, dest)
+			destInfo, err := os.Stat(dest)
+			if err != nil{
+				return err
+			}
+			if destInfo.IsDir() {
+				dest = filepath.Join(dest, filepath.Base(glob))
+			}
+			err = linkFile(ctx, glob, dest)
+			if err != nil {
+				return fmt.Errorf("failed to link file: %v", err)
+			}
+			return nil
+		}
+	}
+
 	parent, err := filepath.EvalSymlinks(source)
 	fmt.Println("DEBUG eval parent:", parent)
 	if err != nil {
+		fmt.Println("DEBUG eval err:", err)
 		return fmt.Errorf("failed to eval symlinks: %v", err)
 	}
 	same, err := sameFile(parent, dest)
@@ -201,14 +227,47 @@ func linkFile(ctx context.Context, source string, dest string) error {
 
 	err = os.Link(parent, dest)
 	if err != nil {
+		fmt.Println("DEBUG link err:", err)
+		
+		// If the source is a directory, walk the directory and link all files
+		fileInfo, err := os.Stat(parent)
+		if err != nil{
+			return err
+		}
+		if fileInfo.IsDir() {
+			fmt.Printf("DEBUG %v is a directory...\n", parent)
+			files, err := FilePathWalkDir(parent)
+			fmt.Println("DEBUG files:", files)
+			if err != nil {
+				panic(err)
+			}
+
+			for _, file := range files {
+				linkFile(ctx, file, dest)
+			}
+
+			return nil
+		}
+
 		fmt.Println("DEBUG copy source:", source)
-		err = copyFile(ctx, source, dest)
 		fmt.Println("DEBUG copy dest:", dest)
+		err = copyFile(ctx, source, dest)
 		if err != nil {
 			return fmt.Errorf("failed to copy file: %v", err)
 		}
 	}
 	return err
+}
+
+func FilePathWalkDir(root string) ([]string, error) {
+    var files []string
+    err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+        if !info.IsDir() {
+            files = append(files, path)
+        }
+        return nil
+    })
+    return files, err
 }
 
 func sameFile(source string, dest string) (bool, error) {

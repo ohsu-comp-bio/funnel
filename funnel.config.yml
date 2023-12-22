@@ -6,4 +6,3 @@ LocalStorage:
 
 Worker:
   LeaveWorkDir: true
-

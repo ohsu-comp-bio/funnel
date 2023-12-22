@@ -13,10 +13,6 @@
 # output a ssh address associated with the Github action worker. Helpful for debugging build steps and
 # and intermediary files/artifacts.
 #
-# Example:
-#   Web shell: https://tmate.io/t/q8FU3U9SvmMVxAhMHRyExNhr8
-#   SSH: ssh q8FU3U9SvmMVxAhMHRyExNhr8@sfo2.tmate.io
-#
 # - name: "Debug: Package dependancies for tmate (CentOS)"
 #   run: |
 #     yum install -y xz

@@ -19,7 +19,8 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 
 	res := []string{}
 
-	_, err = getTaskView(taskView)
+	taskValue, err := getTaskView(taskView)
+	taskView = tes.View_name[taskValue]
 	if err != nil {
 		return err
 	}

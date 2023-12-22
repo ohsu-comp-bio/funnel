@@ -40,10 +40,13 @@ require (
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/moby/term v0.5.0 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/ncw/swift v1.0.53
 	github.com/nsf/termbox-go v0.0.0-20200204031403-4d2b513ad8be // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/common v0.45.0
 	github.com/rs/xid v1.5.0
@@ -62,9 +65,10 @@ require (
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.154.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231120223509-83a465c0220f
-	google.golang.org/grpc v1.60.0
+	google.golang.org/grpc v1.60.1
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/olivere/elastic.v5 v5.0.84
+	gotest.tools/v3 v3.5.1 // indirect
 	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.28.4

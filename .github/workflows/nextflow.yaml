@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - name: Download funnel (if not cached)
+    - name: Download Funnel
       uses: actions/download-artifact@v2
       with:
         name: funnelBin
@@ -76,8 +76,9 @@ jobs:
           tes.endpoint = 'http://localhost:8000'
         EOF
 
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+
     - name: Run nf-canary tests
       run: |
-        ls
-        cd nf-canary
         ../nextflow/launch.sh run main.nf

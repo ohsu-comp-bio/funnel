@@ -55,20 +55,18 @@ jobs:
       uses: actions/cache@v2
       with:
         path: funnel
-        key: ${{ runner.os }}-funnel-${{ hashFiles('funnel.go') }}
+        key: ${{ runner.os }}-funnel-${{ hashFiles('main.go') }}
     
     - name: Start Funnel
       working-directory: 
       run: |
-        pwd
-        ls
-        ls funnel/
         cd funnel/
-        chmod +x funnel
+        chmod +x ./funnel
         ./funnel server --LocalStorage.AllowedDirs $HOME run &
 
     - name: Install Nextflow
       run: |
+        pwd
         cd ..
         git clone https://github.com/ohsu-comp-bio/nextflow -b feature/test-1.1-bin
         cd nextflow
@@ -76,6 +74,7 @@ jobs:
 
     - name: Install nf-canary and GA4GH-TES plugin
       run: |
+        pwd
         cd ..
         git clone https://github.com/ohsu-comp-bio/nf-canary
         cd nf-canary
@@ -89,4 +88,5 @@ jobs:
 
     - name: Run nf-canary tests
       run: |
+        pwd
         ../nextflow/launch.sh run main.nf

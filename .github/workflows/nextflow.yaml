@@ -76,9 +76,7 @@ jobs:
           tes.endpoint = 'http://localhost:8000'
         EOF
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-
     - name: Run nf-canary tests
       run: |
+        cd ../nf-canary
         ../nextflow/launch.sh run main.nf

@@ -15,15 +15,25 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
-    - name: Build
-      run: make build
-
-    - name: Cache Funnel Binary
+    - name: Cache Funnel binary
       uses: actions/cache@v2
       with:
         path: funnel
-        key: funnel-${{ github.sha }}
+        key: ${{ runner.os }}-funnel-${{ hashFiles('main.go') }}
+        restore-keys: |
+          ${{ runner.os }}-funnel-
 
+    - name: Build Funnel (if cache does not exist)
+      if: steps.cache-funnel.outputs.cache-hit != 'true'
+      run: make build
+
+    - name: Store funnel (if built)
+      if: steps.cache-funnel.outputs.cache-hit != 'true'
+      uses: actions/upload-artifact@v2
+      with:
+        name: funnelBin
+        path: funnel
+  
     - name: Store funnel
       uses: actions/upload-artifact@v2
       with:
@@ -34,19 +44,18 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - name: Restore Cached Funnel Binary
-      id: cache-funnel
-      uses: actions/cache@v2
-      with:
-        path: funnel
-        key: funnel-${{ github.sha }}
-
-    - name: Download funnel
-      if: steps.cache-funnel.outputs.cache-hit != 'true'
+    - name: Download funnel (if not cached)
       uses: actions/download-artifact@v2
+      if: needs.build.outputs.cache-hit != 'true'
       with:
         name: funnelBin
         path: funnel
+
+    - name: Restore Funnel from cache (if exists)
+      uses: actions/cache@v2
+      with:
+        path: funnel
+        key: ${{ runner.os }}-funnel-${{ hashFiles('funnel.go') }}
     
     - name: Start Funnel
       working-directory: 

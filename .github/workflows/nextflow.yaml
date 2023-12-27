@@ -26,8 +26,14 @@ jobs:
       if: steps.cache-funnel.outputs.cache-hit != 'true'
       run: make build
 
-    - name: Store funnel (if built)
-      if: steps.cache-funnel.outputs.cache-hit != 'true'
+    - name: Restore Funnel from cache (if exists)
+      if: steps.cache-funnel.outputs.cache-hit == 'true'
+      uses: actions/cache@v2
+      with:
+        path: funnel
+        key: ${{ runner.os }}-funnel
+
+    - name: Store Funnel
       uses: actions/upload-artifact@v2
       with:
         name: funnelBin

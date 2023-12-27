@@ -17,9 +17,10 @@ jobs:
 
     - name: Cache Funnel binary
       uses: actions/cache@v2
+      id: cache-funnel
       with:
         path: funnel
-        key: ${{ runner.os }}-funnel-${{ hashFiles('main.go') }}
+        key: ${{ runner.os }}-funnel
         restore-keys: |
           ${{ runner.os }}-funnel-
 
@@ -55,7 +56,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: funnel
-        key: ${{ runner.os }}-funnel-${{ hashFiles('main.go') }}
+        key: ${{ runner.os }}-funnel
     
     - name: Start Funnel
       working-directory: 

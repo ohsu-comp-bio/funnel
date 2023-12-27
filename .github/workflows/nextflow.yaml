@@ -18,6 +18,12 @@ jobs:
     - name: Build
       run: make build
 
+    - name: Cache Funnel Binary
+      uses: actions/cache@v2
+      with:
+        path: funnel
+        key: funnel-${{ github.sha }}
+
     - name: Store funnel
       uses: actions/upload-artifact@v2
       with:
@@ -28,18 +34,26 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Restore Cached Funnel Binary
+      id: cache-funnel
+      uses: actions/cache@v2
+      with:
+        path: funnel
+        key: funnel-${{ github.sha }}
+
     - name: Download funnel
+      if: steps.cache-funnel.outputs.cache-hit != 'true'
       uses: actions/download-artifact@v2
       with:
         name: funnelBin
         path: funnel
-
+    
     - name: Start Funnel
       working-directory: 
       run: |
         cd funnel
         chmod +x funnel
-        ./funnel server --LocalStorage.AllowedDirs $HOME run &> /dev/null
+        ./funnel server --LocalStorage.AllowedDirs $HOME run &
 
     - name: Install Nextflow
       run: |

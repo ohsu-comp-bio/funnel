@@ -60,6 +60,10 @@ jobs:
     - name: Start Funnel
       working-directory: 
       run: |
+        pwd
+        ls
+        ls funnel/
+        cd funnel/
         chmod +x funnel
         ./funnel server --LocalStorage.AllowedDirs $HOME run &
 

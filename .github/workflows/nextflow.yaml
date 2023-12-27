@@ -34,17 +34,25 @@ jobs:
         name: funnelBin
         path: funnel
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    - name: Start Funnel
+      working-directory: 
+      run: |
+        cd funnel
+        chmod +x funnel
+        ./funnel server --LocalStorage.AllowedDirs $HOME run &> /dev/null
 
     - name: Install Nextflow
       run: |
-        git clone https://github.com/nextflow-io/nextflow -b tes-update-1.1
+        cd ..
+        git clone https://github.com/ohsu-comp-bio/nextflow -b feature/test-1.1-bin
         cd nextflow
         make compile
 
-    - name: Install Nextflow GA4GH-TES plugin
+    - name: Install nf-canary and GA4GH-TES plugin
       run: |
+        cd ..
+        git clone https://github.com/ohsu-comp-bio/nf-canary
+        cd nf-canary
         cat <<EOF >> nextflow.config
           plugins {
             id 'nf-ga4gh'
@@ -53,13 +61,6 @@ jobs:
           tes.endpoint = 'http://localhost:8000'
         EOF
 
-    - name: Start Funnel
+    - name: Run nf-canary tests
       run: |
-        chmod +x funnel
-        ./funnel server run &
-
-    - name: Run Nextflow test (nf-canary)
-      run: |
-        git clone https://github.com/ohsu-comp-bio/nf-canary
-        cd nf-canary
-        nextflow run main.nf
+        ../nextflow/launch.sh run main.nf

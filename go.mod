@@ -69,7 +69,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20231120223509-83a465c0220f
 	google.golang.org/grpc v1.60.1
 	gopkg.in/ini.v1 v1.51.0 // indirect
-	gopkg.in/olivere/elastic.v5 v5.0.84
+	gopkg.in/olivere/elastic.v5 v5.0.86
 	gotest.tools/v3 v3.5.1 // indirect
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0

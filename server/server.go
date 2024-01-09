@@ -4,8 +4,10 @@ package server
 import (
 	"net"
 	"net/http"
+	"strings"
 
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"github.com/golang/gddo/httputil"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -54,6 +56,40 @@ func newDebugInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
+// customErrorHandler is a custom error handler for the gRPC gateway
+// Returns '400' for invalid backend parameters and '500' for all other errors
+// Required for Compliance Tests
+func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+    const fallback = `{"error": "failed to process the request"}`
+
+    st, ok := status.FromError(err)
+    if !ok {
+        w.WriteHeader(http.StatusInternalServerError)
+        w.Write([]byte(fallback))
+        return
+    }
+
+    // Map specific gRPC error codes to HTTP status codes
+	if (strings.Contains(st.Message(), "backend parameters not supported")) {
+        w.WriteHeader(http.StatusBadRequest)
+	} else {
+        w.WriteHeader(http.StatusInternalServerError)
+	}
+
+    // Write the error message
+    jErr := JSONError{Error: st.Message()}
+    jErrBytes, mErr := marshaler.Marshal(jErr)
+    if mErr != nil {
+        w.Write([]byte(fallback))
+        return
+    }
+    w.Write(jErrBytes)
+}
+
+type JSONError struct {
+    Error string `json:"error"`
+}
+
 // Serve starts the server and does not block. This will open TCP ports
 // for both RPC and HTTP.
 func (s *Server) Serve(pctx context.Context) error {
@@ -84,7 +120,8 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux := http.NewServeMux()
 
 	marsh := NewMarshaler()
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh))
+	grpcMux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh), runtime.WithErrorHandler(customErrorHandler))
 	
 	// m := protojson.MarshalOptions{
 	// 	Indent:          "  ",

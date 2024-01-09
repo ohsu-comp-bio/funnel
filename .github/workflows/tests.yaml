@@ -2,11 +2,8 @@ name: Go
 
 on:
   push:
-    branches:
-      - master
 
 jobs:
-
   lint:
     name: lint
     runs-on: ubuntu-latest

@@ -98,6 +98,7 @@ jobs:
           cd openapi-test-runner
           python3 -m venv venv
           source venv/bin/activate
+          pip install -r requirements.txt
           python setup.py install  
           openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
 

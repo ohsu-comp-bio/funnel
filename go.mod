@@ -59,12 +59,12 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	golang.org/x/crypto v0.17.0
-	golang.org/x/net v0.19.0
-	golang.org/x/oauth2 v0.15.0
+	golang.org/x/crypto v0.18.0
+	golang.org/x/net v0.20.0
+	golang.org/x/oauth2 v0.16.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.155.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20231211222908-989df2bf70f3
+	google.golang.org/api v0.157.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917
 	google.golang.org/grpc v1.60.1
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/olivere/elastic.v5 v5.0.86

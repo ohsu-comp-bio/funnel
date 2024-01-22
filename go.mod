@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	cloud.google.com/go/datastore v1.15.0
-	cloud.google.com/go/pubsub v1.33.0
+	cloud.google.com/go/pubsub v1.34.0
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.26.1
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137

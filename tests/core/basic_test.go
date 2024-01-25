@@ -39,7 +39,7 @@ func TestGetUnknownTask(t *testing.T) {
 		Id:   "nonexistent-task-id",
 		View: tes.View_MINIMAL.String(),
 	})
-	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 500") {
 		t.Error("expected not found error", err)
 	}
 

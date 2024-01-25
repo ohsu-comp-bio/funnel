@@ -50,12 +50,12 @@ func authorize(ctx context.Context, user, password string) error {
 				if requser == user && reqpass == password {
 					return nil
 				}
-				return status.Errorf(codes.PermissionDenied, "")
+				return status.Errorf(codes.PermissionDenied, "AUTH DENIED")
 			}
 		}
 	}
 
-	return status.Errorf(codes.Unauthenticated, "")
+	return status.Errorf(codes.Unauthenticated, "UNAUTHENTICATED")
 }
 
 // parseBasicAuth parses an HTTP Basic Authentication string.

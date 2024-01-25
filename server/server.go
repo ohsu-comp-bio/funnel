@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
@@ -58,7 +59,7 @@ func newDebugInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 
 // customErrorHandler is a custom error handler for the gRPC gateway
 // Returns '400' for invalid backend parameters and '500' for all other errors
-// Required for Compliance Tests
+// Required for TES Compliance Tests
 func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
     const fallback = `{"error": "failed to process the request"}`
 
@@ -70,10 +71,25 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
     }
 
     // Map specific gRPC error codes to HTTP status codes
-	if (strings.Contains(st.Message(), "backend parameters not supported")) {
-        w.WriteHeader(http.StatusBadRequest)
-	} else {
-        w.WriteHeader(http.StatusInternalServerError)
+	switch st.Code() {
+	case codes.NotFound:
+		// Special case for missing tasks (TES Compliance Suite)
+		if (strings.Contains(st.Message(), "task not found")) {
+			w.WriteHeader(http.StatusInternalServerError) // 500
+		} else {
+			w.WriteHeader(http.StatusNotFound) // 404
+		}
+	case codes.PermissionDenied:
+		w.WriteHeader(http.StatusForbidden) // 403
+	case codes.Unauthenticated:
+		w.WriteHeader(http.StatusUnauthorized) // 401
+	default:
+		// Special case for missing backend parameters (TODO: send error codes from backends?)
+		if (strings.Contains(st.Message(), "backend parameters not supported")) {
+			w.WriteHeader(http.StatusBadRequest) // 400
+		} else {
+			w.WriteHeader(http.StatusInternalServerError) // 500
+		}
 	}
 
     // Write the error message

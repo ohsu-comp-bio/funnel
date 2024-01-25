@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	cloud.google.com/go/datastore v1.15.0
-	cloud.google.com/go/pubsub v1.33.0
+	cloud.google.com/go/pubsub v1.35.0
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.26.1
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
@@ -64,11 +64,10 @@ require (
 	golang.org/x/oauth2 v0.16.0
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.157.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917
+	google.golang.org/genproto/googleapis/api v0.0.0-20240122161410-6c6643bf1457
 	google.golang.org/grpc v1.60.1
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/olivere/elastic.v5 v5.0.86
-	gotest.tools/v3 v3.5.1 // indirect
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.29.0

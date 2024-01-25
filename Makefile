@@ -130,10 +130,12 @@ start-mongodb:
 	@docker run -d --name funnel-mongodb-test -p 27000:27017 docker.io/mongo > /dev/null
 
 test-mongodb:
+	@go version
 	@go test ./tests/core/ --funnel-config `pwd`/tests/mongo.config.yml
 	@go test ./tests/scheduler/ --funnel-config `pwd`/tests/mongo.config.yml
 
 test-badger:
+	@go version
 	@go test ./tests/core/ -funnel-config `pwd`/tests/badger.config.yml
 
 start-dynamodb:
@@ -163,6 +165,7 @@ test-htcondor:
 	@go test -timeout 120s ./tests/htcondor -funnel-config `pwd`/tests/htcondor.config.yml
 
 test-slurm:
+	@go version
 	@docker pull quay.io/ohsu-comp-bio/slurm
 	@go test -timeout 120s ./tests/slurm -funnel-config `pwd`/tests/slurm.config.yml
 
@@ -178,6 +181,7 @@ test-amazon-s3:
 	@go test ./tests/storage -funnel-config `pwd`/tests/s3.config.yml -run TestAmazonS3
 
 start-generic-s3:
+	@go version
 	@docker rm -f funnel-s3server > /dev/null 2>&1 || echo
 	@docker run -d --name funnel-s3server -p 18888:8000 zenko/cloudserver
 	@docker rm -f funnel-minio > /dev/null 2>&1 || echo

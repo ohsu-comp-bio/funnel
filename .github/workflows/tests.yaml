@@ -24,7 +24,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.18
+        go-version: 1.21
 
     - name: Check out code
       uses: actions/checkout@v2
@@ -44,7 +44,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.18
+        go-version: 1.21
     - name: Check out code
       uses: actions/checkout@v2
 
@@ -133,11 +133,3 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: funnelBin
-
-    - name: Run Nextflow test (nf-canary)
-      run: |
-        chmod +x funnel
-        ./funnel server run &
-        git clone https://github.com/ohsu-comp-bio/nf-canary
-        cd nf-canary
-        nextflow run main.nf

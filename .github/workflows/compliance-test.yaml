@@ -93,7 +93,7 @@ jobs:
           # Clone the 'upstream' OpenAPI Test Runner when PR #65 is merged
           # https://github.com/elixir-cloud-aai/openapi-test-runner/pull/65
           # git clone https://github.com/elixir-cloud-aai/openapi-test-runner
-          git clone https://github.com/ohsu-comp-bio/openapi-test-runner.git
+          git clone https://github.com/ohsu-comp-bio/openapi-test-runner
           
           cd openapi-test-runner
           python3 -m venv venv
@@ -102,13 +102,9 @@ jobs:
           python setup.py install  
           openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
 
-      - uses: actions/checkout@v3
-        with:
-          repository: lbeckman314/tes-compliance-suite
-          ref: feature/tesv1.1
-
       - name: Install TES compliance suite
         run: |
+          git clone https://github.com/lbeckman314/tes-compliance-suite -b feature/tesv1.1
           cd tes-compliance-suite
           /root/.pyenv/shims/python3 -m venv venv
           source venv/bin/activate

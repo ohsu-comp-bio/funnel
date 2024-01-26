@@ -235,7 +235,10 @@ func processDirectory(ctx context.Context, source, dest string) error {
 
 // Process a single file
 func processFile(ctx context.Context, source, dest string) error {
-    same, err := sameFile(source, dest)
+    // without this resulting link could be a symlink
+    parent, err := filepath.EvalSymlinks(source)   
+
+    same, err := sameFile(parent, dest)
     if err != nil {
         return err
     }
@@ -243,9 +246,9 @@ func processFile(ctx context.Context, source, dest string) error {
         return nil
     }
 
-    err = os.Link(source, dest)
+    err = os.Link(parent, dest)
     if err != nil {
-        return copyFile(ctx, source, dest)
+        return copyFile(ctx, parent, dest)
     }
     return nil
 }

@@ -72,6 +72,10 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 
     // Map specific gRPC error codes to HTTP status codes
 	switch st.Code() {
+	case codes.Unauthenticated:
+		w.WriteHeader(http.StatusUnauthorized) // 401
+	case codes.PermissionDenied:
+		w.WriteHeader(http.StatusForbidden) // 403
 	case codes.NotFound:
 		// Special case for missing tasks (TES Compliance Suite)
 		if (strings.Contains(st.Message(), "task not found")) {
@@ -79,17 +83,8 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		} else {
 			w.WriteHeader(http.StatusNotFound) // 404
 		}
-	case codes.PermissionDenied:
-		w.WriteHeader(http.StatusForbidden) // 403
-	case codes.Unauthenticated:
-		w.WriteHeader(http.StatusUnauthorized) // 401
 	default:
-		// Special case for missing backend parameters (TODO: send error codes from backends?)
-		if (strings.Contains(st.Message(), "backend parameters not supported")) {
-			w.WriteHeader(http.StatusBadRequest) // 400
-		} else {
-			w.WriteHeader(http.StatusInternalServerError) // 500
-		}
+		w.WriteHeader(http.StatusInternalServerError) // 500
 	}
 
     // Write the error message

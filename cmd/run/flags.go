@@ -54,6 +54,7 @@ type flagVals struct {
 	outputDirs  []string
 	content     []string
 	environ     []string
+	socket      []string
 	tags        []string
 	volumes     []string
 	zones       []string
@@ -111,6 +112,7 @@ func newFlags(v *flagVals) *pflag.FlagSet {
 	f.StringSliceVar(&v.volumes, "vol", v.volumes, "")
 	f.StringSliceVar(&v.tags, "tag", v.tags, "")
 	f.StringSliceVarP(&v.environ, "env", "e", v.environ, "")
+	f.StringSliceVar(&v.socket, "socket", v.socket, "")
 
 	f.BoolVar(&v.wait, "wait", v.wait, "")
 	f.StringSliceVar(&v.waitFor, "wait-for", v.waitFor, "")

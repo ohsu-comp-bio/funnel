@@ -2,9 +2,13 @@
 package server
 
 import (
+	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,6 +34,7 @@ import (
 type Server struct {
 	RPCAddress       string
 	HTTPPort         string
+	Socket           string
 	BasicAuth        []config.BasicCredential
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
@@ -101,6 +106,26 @@ type JSONError struct {
     Error string `json:"error"`
 }
 
+// Create a new Unix domain socket based on the Server config
+func (s *Server) createSocket() (net.Listener, error) {
+	// Create a Unix domain socket
+	socket, err := net.Listen("unix", s.Socket)
+	if err != nil {
+		return nil, err
+	}
+	   
+    // Cleanup the sockfile.
+    c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        <-c
+        os.Remove(s.Socket)
+        os.Exit(1)
+    }()
+
+	return socket, nil
+}
+
 // Serve starts the server and does not block. This will open TCP ports
 // for both RPC and HTTP.
 func (s *Server) Serve(pctx context.Context) error {
@@ -111,6 +136,15 @@ func (s *Server) Serve(pctx context.Context) error {
 	lis, err := net.Listen("tcp", s.RPCAddress)
 	if err != nil {
 		return err
+	}
+
+	// If socket flag is give, then open Unix domain socket for RPC
+	fmt.Println("DEBUG: Socket: ", s.Socket)
+	if s.Socket != "" {
+		lis, err = s.createSocket()
+		if err != nil {
+			return err
+		}
 	}
 
 	grpcServer := grpc.NewServer(
@@ -133,17 +167,6 @@ func (s *Server) Serve(pctx context.Context) error {
 	marsh := NewMarshaler()
 	grpcMux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh), runtime.WithErrorHandler(customErrorHandler))
-	
-	// m := protojson.MarshalOptions{
-	// 	Indent:          "  ",
-	// 	EmitUnpopulated: true,
-	// 	UseProtoNames:   true,
-	// }
-	// u := protojson.UnmarshalOptions{}
-	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-	// 	MarshalOptions:   m,
-	// 	UnmarshalOptions: u,
-	// }))
 
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
@@ -211,6 +234,8 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	var srverr error
 	go func() {
+		fmt.Println("DEBUG: Starting gRPC server")
+		fmt.Println("DEBUG: lis:", lis)
 		srverr = grpcServer.Serve(lis)
 		cancel()
 	}()

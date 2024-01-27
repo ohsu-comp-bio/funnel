@@ -44,6 +44,7 @@ type Funnel struct {
 	RPC    tes.TaskServiceClient
 	HTTP   *tes.Client
 	Docker *docker.Client
+	Socket *tes.Client
 
 	// Config
 	Conf       config.Config

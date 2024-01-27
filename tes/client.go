@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,6 +45,26 @@ func NewClient(address string) (*Client, error) {
 		User:      user,
 		Password:  password,
 	}, nil
+}
+
+// NewSocketClient creates a new client for accessing the TES server via a Unix Domain Socket.
+func NewSocketClient(socket string) (*http.Client, error) {
+    // Custom dialer that dials using the Unix Domain Socket
+    dialer := func(ctx context.Context, network, addr string) (net.Conn, error) {
+        return net.Dial("unix", socket)
+    }
+
+    // Custom HTTP transport using the dialer
+    transport := &http.Transport{
+        DialContext: dialer,
+    }
+
+    // Set up the HTTP client with the custom transport
+    client := &http.Client{
+        Transport: transport,
+    }
+
+	return client, nil
 }
 
 // Client represents the HTTP Task client.

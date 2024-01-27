@@ -15,6 +15,7 @@ import (
 // calling CreateTask, and writing output to the given writer.
 // Tasks are loaded from the "files" arg. "files" are file paths to JSON objects.
 func Create(server string, files []string, reader io.Reader, writer io.Writer) error {
+	// If socket flag is provided, use the socket client
 	cli, err := tes.NewClient(server)
 	if err != nil {
 		return err

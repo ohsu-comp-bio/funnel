@@ -75,6 +75,7 @@ type Server struct {
 	HostName         string
 	HTTPPort         string
 	RPCPort          string
+	Socket   	     string
 	BasicAuth        []BasicCredential
 	DisableHTTPCache bool
 }
@@ -98,6 +99,11 @@ func (c *Server) RPCAddress() string {
 		rpc = rpc + ":" + c.RPCPort
 	}
 	return rpc
+}
+
+// SocketAddress returns the Socket address based on HostName and Socket
+func (c *Server) SocketAddress() string {
+	return c.Socket
 }
 
 // Scheduler contains funnel's basic scheduler configuration.

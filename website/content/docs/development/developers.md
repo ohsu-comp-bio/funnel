@@ -13,7 +13,7 @@ This page contains a rough collection of notes for people wanting to build Funne
 
 ### Building the Funnel source
 
-1. Install [Go 1.11+][go]. Check the version with `go version`.
+1. Install [Go 1.21+][go]. Check the version with `go version`.
 2. Ensure GOPATH is set. See [the docs][gopath] for help. Also, you probably want to add `$GOPATH/bin` to your `PATH`.
 3. Clone funnel and build
 
@@ -30,7 +30,7 @@ This page contains a rough collection of notes for people wanting to build Funne
 
 A Funnel development environment includes:
 
-- [Go 1.11+][go] for the majority of the code.
+- [Go 1.21+][go] for the majority of the code.
 - [Task Execution Schemas][tes] for task APIs.
 - [Protobuf][protobuf] + [gRPC][grpc] for RPC communication.
 - [gRPC Gateway][gateway] for HTTP communication.

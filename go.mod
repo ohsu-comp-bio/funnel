@@ -6,7 +6,7 @@ toolchain go1.21.5
 
 require (
 	cloud.google.com/go/datastore v1.15.0
-	cloud.google.com/go/pubsub v1.35.0
+	cloud.google.com/go/pubsub v1.36.1
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.26.1
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137

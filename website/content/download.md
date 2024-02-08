@@ -27,7 +27,7 @@ $ cd funnel
 $ make
 ```
 
-Funnel requires Go 1.11+. Check out the [development docs][dev] for more detail.
+Funnel requires Go 1.21+. Check out the [development docs][dev] for more detail.
 
 ### Release History
 

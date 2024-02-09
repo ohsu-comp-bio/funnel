@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/minio/minio-go"
@@ -28,6 +29,34 @@ func NewGenericS3(conf config.GenericS3Storage) (*GenericS3, error) {
 	return &GenericS3{client, endpoint + "/"}, nil
 }
 
+func isDir(minioClient *minio.Client, bucketName, objectName string) (bool, error) {
+	// Check if the objectName ends with '/' - often used to represent 'folders'
+	if strings.HasSuffix(objectName, "/") {
+		return true, nil
+	}
+
+	// List objects with the prefix to see if there are multiple keys with the given prefix
+	// Create a done channel.
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+
+	// Recursively list all objects
+	recursive := true
+	for object := range minioClient.ListObjects(bucketName, objectName, recursive, doneCh) {
+		if object.Err != nil {
+			return false, object.Err
+		}
+
+		// If any object's key starts with the objectName and is not equal, it's a directory
+		if strings.HasPrefix(object.Key, objectName) && object.Key != objectName {
+			return true, nil
+		}
+	}
+
+	// If no objects share the prefix or the objectName exactly matches a key, it's considered a file
+	return false, nil
+}
+
 // Stat returns information about the object at the given storage URL.
 func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 	u, err := s3.parse(url)
@@ -39,6 +68,15 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 	obj, err := s3.client.GetObjectWithContext(ctx, u.bucket, u.path, opts)
 	if err != nil {
 		return nil, fmt.Errorf("genericS3: getting object: %s", err)
+	}
+
+	isDir, err := isDir(s3.client, u.bucket, u.path)
+	if isDir {
+		return &Object{
+			URL:  url,
+			Name: u.path,
+			Size: 0,
+		}, nil
 	}
 
 	info, err := obj.Stat()
@@ -84,6 +122,24 @@ func (s3 *GenericS3) List(ctx context.Context, url string) ([]*Object, error) {
 
 // Get copies an object from S3 to the host path.
 func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error) {
+	objects, _ := s3.List(ctx, url)
+	for _, obj := range objects {
+		objBase := filepath.Base(obj.URL)
+		pathBase := filepath.Base(path)
+
+		if objBase != pathBase {
+			// TES Input is a directory, so we need to update the path to include the file
+			s3.getFile(ctx, obj.URL, filepath.Join(path, objBase))
+		} else {
+			s3.getFile(ctx, obj.URL, path)
+		}
+
+	}
+	return s3.Stat(ctx, url)
+}
+
+// Get a single file
+func (s3 *GenericS3) getFile(ctx context.Context, url, path string) (*Object, error) {
 	obj, err := s3.Stat(ctx, url)
 	if err != nil {
 		return nil, err

@@ -15,23 +15,8 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
-    - name: Cache Funnel binary
-      uses: actions/cache@v2
-      id: cache-funnel
-      with:
-        path: funnel
-        key: ${{ runner.os }}-funnel
-
     - name: Build Funnel (if cache does not exist)
-      if: steps.cache-funnel.outputs.cache-hit != 'true'
       run: make build
-
-    - name: Restore Funnel from cache (if exists)
-      if: steps.cache-funnel.outputs.cache-hit == 'true'
-      uses: actions/cache@v2
-      with:
-        path: funnel
-        key: ${{ runner.os }}-funnel
 
     - name: Store Funnel
       uses: actions/upload-artifact@v2
@@ -59,14 +44,14 @@ jobs:
     - name: Install Nextflow
       run: |
         cd ..
-        git clone https://github.com/ohsu-comp-bio/nextflow -b feature/test-1.1-bin
+        git clone https://github.com/nextflow-io/nextflow/ -b tes-update-1.1
         cd nextflow
         make compile
 
     - name: Install nf-canary and GA4GH-TES plugin
       run: |
         cd ..
-        git clone https://github.com/ohsu-comp-bio/nf-canary
+        git clone https://github.com/seqeralabs/nf-canary
         cd nf-canary
         cat <<EOF >> nextflow.config
           plugins {

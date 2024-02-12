@@ -178,7 +178,7 @@ test-pbs-torque:
 	@go test -timeout 120s ./tests/pbs -funnel-config `pwd`/tests/pbs.config.yml
 
 test-amazon-s3:
-	@go test ./tests/storage -funnel-config `pwd`/tests/s3.config.yml -run TestAmazonS3
+	@go test -v ./tests/storage -funnel-config `pwd`/tests/s3.config.yml -run TestAmazonS3
 
 start-generic-s3:
 	@docker rm -f funnel-s3server > /dev/null 2>&1 || echo
@@ -187,10 +187,10 @@ start-generic-s3:
 	@docker run -d --name funnel-minio -p 9000:9000 -e "MINIO_ACCESS_KEY=fakekey" -e "MINIO_SECRET_KEY=fakesecret" -e "MINIO_REGION=us-east-1" minio/minio server /data
 
 test-generic-s3:
-	@go test ./tests/storage -funnel-config `pwd`/tests/amazoncli-minio-s3.config.yml -run TestAmazonS3Storage
-	@go test ./tests/storage -funnel-config `pwd`/tests/scality-s3.config.yml -run TestGenericS3Storage
-	@go test ./tests/storage -funnel-config `pwd`/tests/minio-s3.config.yml -run TestGenericS3Storage
-	@go test ./tests/storage -funnel-config `pwd`/tests/multi-s3.config.yml -run TestGenericS3Storage
+	@go test -v ./tests/storage -funnel-config `pwd`/tests/amazoncli-minio-s3.config.yml -run TestAmazonS3Storage
+	@go test -v ./tests/storage -funnel-config `pwd`/tests/scality-s3.config.yml -run TestGenericS3Storage
+	@go test -v ./tests/storage -funnel-config `pwd`/tests/minio-s3.config.yml -run TestGenericS3Storage
+	@go test -v ./tests/storage -funnel-config `pwd`/tests/multi-s3.config.yml -run TestGenericS3Storage
 
 test-gs:
 	@go test ./tests/storage -run TestGoogleStorage -funnel-config `pwd`/tests/gs.config.yml ${GCE_PROJECT_ID}

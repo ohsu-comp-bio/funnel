@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -29,6 +30,7 @@ func NewGenericS3(conf config.GenericS3Storage) (*GenericS3, error) {
 	return &GenericS3{client, endpoint + "/"}, nil
 }
 
+// Returns true if a remote S3 object is a directory, false otherwise
 func isDir(minioClient *minio.Client, bucketName, objectName string) (bool, error) {
 	// Check if the objectName ends with '/' - often used to represent 'folders'
 	if strings.HasSuffix(objectName, "/") {
@@ -122,24 +124,6 @@ func (s3 *GenericS3) List(ctx context.Context, url string) ([]*Object, error) {
 
 // Get copies an object from S3 to the host path.
 func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error) {
-	objects, _ := s3.List(ctx, url)
-	for _, obj := range objects {
-		objBase := filepath.Base(obj.URL)
-		pathBase := filepath.Base(path)
-
-		if objBase != pathBase {
-			// TES Input is a directory, so we need to update the path to include the file
-			s3.getFile(ctx, obj.URL, filepath.Join(path, objBase))
-		} else {
-			s3.getFile(ctx, obj.URL, path)
-		}
-
-	}
-	return s3.Stat(ctx, url)
-}
-
-// Get a single file
-func (s3 *GenericS3) getFile(ctx context.Context, url, path string) (*Object, error) {
 	obj, err := s3.Stat(ctx, url)
 	if err != nil {
 		return nil, err
@@ -150,15 +134,33 @@ func (s3 *GenericS3) getFile(ctx context.Context, url, path string) (*Object, er
 		return nil, err
 	}
 
-	opts := minio.GetObjectOptions{}
-	err = s3.client.FGetObjectWithContext(ctx, u.bucket, u.path, path, opts)
-	if err != nil {
-		return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
+	isDir, err := isDir(s3.client, u.bucket, u.path)
+	if isDir {
+		objects, err := s3.List(ctx, url)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, obj := range objects {
+			// Recursively download files and subdirectories
+			_, err := s3.Get(ctx, obj.URL, filepath.Join(path, obj.Name))
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		opts := minio.GetObjectOptions{}
+		err = s3.client.FGetObjectWithContext(ctx, u.bucket, u.path, path, opts)
+		if err != nil {
+			return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
+		}
 	}
+
 	return obj, nil
 }
 
 // Put copies an object (file) from the host path to S3.
+// Update Put function to be able to upload directories (a la Get() function)
 func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error) {
 	u, err := s3.parse(url)
 	if err != nil {
@@ -166,10 +168,43 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 	}
 
 	opts := minio.PutObjectOptions{}
-	_, err = s3.client.FPutObjectWithContext(ctx, u.bucket, u.path, path, opts)
+
+	// Check if the path is a directory
+	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return nil, fmt.Errorf("genericS3: putting object %s: %v", url, err)
+		return nil, err
 	}
+	if fileInfo.IsDir() {
+		// Walk the directory and upload all files and subdirectories
+		err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				// Upload the file
+				relativePath, err := filepath.Rel(path, filePath)
+				if err != nil {
+					return err
+				}
+				uploadPath := filepath.Join(u.path, relativePath)
+				_, err = s3.client.FPutObjectWithContext(ctx, u.bucket, uploadPath, filePath, opts)
+				if err != nil {
+					return fmt.Errorf("genericS3: putting object %s: %v", url, err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Upload the file directly
+		_, err = s3.client.FPutObjectWithContext(ctx, u.bucket, u.path, path, opts)
+		if err != nil {
+			return nil, fmt.Errorf("genericS3: putting object %s: %v", url, err)
+		}
+	}
+
 	return s3.Stat(ctx, url)
 }
 

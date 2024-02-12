@@ -18,6 +18,7 @@ var conf = tests.DefaultConfig()
 
 func TestMain(m *testing.M) {
 	tests.ParseConfig()
+	conf = tests.DefaultConfig()
 	conf.Worker.LeaveWorkDir = true
 	fun = tests.NewFunnel(conf)
 	fun.StartServer()

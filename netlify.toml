@@ -8,8 +8,8 @@
 
 [context.deploy-preview]
   base = "website/"
-  command = "echo $DEPLOY_PRIME_URL && hugo --verbose -b $DEPLOY_PRIME_URL --destination public && pwd && ls"
+  command = "echo $DEPLOY_PRIME_URL && hugo --verbose -b $DEPLOY_PRIME_URL/ --destination public && pwd && ls"
 
 [context.branch-deploy]
   base = "website/"
-  command = "echo $DEPLOY_PRIME_URL && hugo --verbose --buildDrafts -b $DEPLOY_PRIME_URL --destination public && pwd && ls"
+  command = "echo $DEPLOY_PRIME_URL && hugo --verbose --buildDrafts -b $DEPLOY_PRIME_URL/ --destination public && pwd && ls"

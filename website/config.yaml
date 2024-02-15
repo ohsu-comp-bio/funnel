@@ -1,4 +1,4 @@
-baseURL: https://deploy-preview-749--ohsu-comp-bio-funnel.netlify.app
+baseURL: https://ohsu-comp-bio.github.io/funnel/
 canonifyURLs: true
 languageCode: en-us
 title: Funnel

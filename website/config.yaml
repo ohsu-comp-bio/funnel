@@ -1,4 +1,4 @@
-baseURL: ""
+baseURL: https://ohsu-comp-bio.github.io/funnel/
 canonifyURLs: true
 languageCode: en-us
 title: Funnel

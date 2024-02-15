@@ -6,7 +6,7 @@
   HUGO_VERSION = "0.113.0"
 
 [context.deploy-preview]
-  command = "echo $DEPLOY_PRIME_URL && hugo --verbose -b $DEPLOY_PRIME_URL"
+  command = "echo $DEPLOY_PRIME_URL && hugo --verbose -b $DEPLOY_PRIME_URL --source ./website"
 
 [context.branch-deploy]
-  command = "echo $DEPLOY_PRIME_URL && hugo --verbose --buildDrafts -b $DEPLOY_PRIME_URL"
+  command = "echo $DEPLOY_PRIME_URL && hugo --verbose --buildDrafts -b $DEPLOY_PRIME_URL --source ./website"

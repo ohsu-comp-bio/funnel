@@ -9,4 +9,4 @@
   command = "echo $DEPLOY_PRIME_URL && hugo --verbose -b $DEPLOY_PRIME_URL"
 
 [context.branch-deploy]
-  command = "echo &DEPLOY_PRIME_URL && hugo --verbose --buildDrafts -b $DEPLOY_PRIME_URL"
+  command = "echo $DEPLOY_PRIME_URL && hugo --verbose --buildDrafts -b $DEPLOY_PRIME_URL"

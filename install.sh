@@ -28,10 +28,6 @@ else
     RELEASE_URL=$(get_tag_release_url $VERSION_TAG)
 fi
 
-DIR="./.funnel"
-mkdir -p $DIR
-cd $DIR
-
 # Determine OS and Architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
@@ -84,7 +80,7 @@ DEST=$2
 # Determine where to install the Funnel binary
 if [ -z "$DEST" ]; then
     echo "No destination specified, installing to $HOME/bin..."
-    DEST=$HOME/bin
+    DEST=$HOME/.local/bin
 fi
 echo "Installing Funnel to $DEST..."
 mkdir -p $DEST
@@ -95,4 +91,3 @@ rm $TAR_NAME $CHECKSUM_FILE
 
 echo "Installation successful"
 echo "Run 'funnel --help' for more info"
-

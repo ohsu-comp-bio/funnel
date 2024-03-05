@@ -25,6 +25,8 @@ name: Compliance Test
 
 on:
   push:
+    branches:
+      - master
 
 jobs:
   build:

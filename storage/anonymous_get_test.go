@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"google.golang.org/api/option"
 	"google.golang.org/api/storage/v1"
 )
 
@@ -47,14 +48,14 @@ func TestAmazonS3AnonymousGet(t *testing.T) {
 }
 
 func TestGoogleStorageAnonymousGet(t *testing.T) {
-	svc, err := storage.New(&http.Client{})
+	svc, err := storage.NewService(context.TODO(), option.WithHTTPClient(&http.Client{}))
 	if err != nil {
 		t.Fatal("Error creating GS backend:", err)
 	}
 
 	store := &GoogleCloud{svc}
 
-	_, err = store.Get(context.Background(), "gs://uspto-pair/applications/05900016.zip", "_test_download/05900016.zip")
+	_, err = store.Get(context.Background(), "gs://uspto-pair/applications/07820856.zip", "_test_download/07820856.zip")
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}

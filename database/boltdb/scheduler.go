@@ -8,8 +8,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // queueTask adds a task to the scheduler queue.
@@ -31,12 +31,11 @@ func (taskBolt *BoltDB) queueTask(task *tes.Task) error {
 func (taskBolt *BoltDB) ReadQueue(n int) []*tes.Task {
 	tasks := make([]*tes.Task, 0)
 	taskBolt.db.View(func(tx *bolt.Tx) error {
-
 		// Iterate over the TasksQueued bucket, reading the first `n` tasks
 		c := tx.Bucket(TasksQueued).Cursor()
 		for k, _ := c.First(); k != nil && len(tasks) < n; k, _ = c.Next() {
 			id := string(k)
-			task, _ := getTaskView(tx, id, tes.TaskView_FULL)
+			task, _ := getTaskView(tx, id, tes.View_FULL)
 			tasks = append(tasks, task)
 		}
 		return nil
@@ -90,7 +89,7 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *scheduler.GetNodeReque
 	})
 
 	if err == errNotFound {
-		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
 	}
 
 	if err != nil {

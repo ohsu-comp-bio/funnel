@@ -1,0 +1,16 @@
+      {
+        "name": "CompTest",
+        "description": "CompTest",
+        "executors": [
+          {
+            "image": "alpine",
+            "command": [
+              "echo",
+              "hello"
+            ]
+          }
+        ],
+        "tags": {
+          "foo": "bar"
+        }
+      }

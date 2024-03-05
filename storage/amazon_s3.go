@@ -280,7 +280,7 @@ func (s3b *AmazonS3) parse(rawurl string) (*urlparts, string, error) {
 	if s3b.endpoint != "" {
 		path = strings.TrimPrefix(path, s3b.endpoint)
 	} else {
-		re := regexp.MustCompile("^s3.*\\.amazonaws\\.com/")
+		re := regexp.MustCompile(`^s3.*\.amazonaws\.com/`)
 		path = re.ReplaceAllString(path, "")
 	}
 	if path == "" {

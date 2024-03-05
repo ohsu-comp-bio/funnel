@@ -26,9 +26,9 @@ func (d *Datastore) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 	}
 
 	switch req.View {
-	case tes.Minimal:
+	case tes.View_MINIMAL.String():
 		task = task.GetMinimalView()
-	case tes.Full:
+	case tes.View_FULL.String():
 		// Determine the keys needed to load the various parts of the full view.
 		parts := viewPartKeys(task)
 		err := d.getFullView(ctx, parts, map[string]*tes.Task{
@@ -47,7 +47,7 @@ func (d *Datastore) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 // multiple tasks in one call, in order to support ListTasks. The "tasks" arg
 // is a map of task ID -> task.
 func (d *Datastore) getFullView(ctx context.Context, keys []*datastore.Key, tasks map[string]*tes.Task) error {
-	proplists := make([]datastore.PropertyList, len(keys), len(keys))
+	proplists := make([]datastore.PropertyList, len(keys))
 	err := d.client.GetMulti(ctx, keys, proplists)
 	merr, isMerr := err.(datastore.MultiError)
 	if err != nil && !isMerr {
@@ -85,11 +85,11 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	}
 
 	if req.State != tes.Unknown {
-		q = q.Filter("State =", int32(req.State))
+		q = q.FilterField("State", "=", int32(req.State))
 	}
 
-	for k, v := range req.Tags {
-		q = q.Filter("TagStrings =", encodeKV(k, v))
+	for k, v := range req.GetTags() {
+		q = q.FilterField("TagStrings", "=", encodeKV(k, v))
 	}
 
 	var tasks []*tes.Task
@@ -109,7 +109,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		keys = append(keys, key)
 	}
 
-	proplists := make([]datastore.PropertyList, len(keys), len(keys))
+	proplists := make([]datastore.PropertyList, len(keys))
 	err := d.client.GetMulti(ctx, keys, proplists)
 	if err != nil {
 		return nil, err
@@ -122,9 +122,9 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		}
 
 		switch req.View {
-		case tes.Minimal:
+		case tes.View_MINIMAL.String():
 			task = task.GetMinimalView()
-		case tes.Full:
+		case tes.View_FULL.String():
 			// Determine the keys needed to load the various parts of the full view.
 			parts = append(parts, viewPartKeys(task)...)
 			byID[task.Id] = task
@@ -133,7 +133,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	}
 
 	// Load the full view parts
-	if req.View == tes.Full {
+	if req.View == tes.View_FULL.String() {
 		err := d.getFullView(ctx, parts, byID)
 		if err != nil {
 			return nil, err

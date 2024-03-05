@@ -44,7 +44,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 
 	if vals.cpu > 0 || vals.ram > 0 || vals.disk > 0 || len(vals.zones) > 0 || vals.preemptible {
 		task.Resources = &tes.Resources{
-			CpuCores:    uint32(vals.cpu),
+			CpuCores:    int32(vals.cpu),
 			RamGb:       vals.ram,
 			DiskGb:      vals.disk,
 			Zones:       vals.zones,

@@ -88,6 +88,7 @@ type Backend struct {
 	event     events.Writer
 	database  tes.ReadOnlyServer
 	log       *logger.Logger
+	events.Computer
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -95,7 +96,7 @@ type Backend struct {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ev.GetTask())
+		return b.Submit(ctx, ev.GetTask())
 
 	case events.Type_TASK_STATE:
 		if ev.GetState() == tes.State_CANCELED {
@@ -147,12 +148,14 @@ func (b *Backend) createJob(task *tes.Task) (*v1.Job, error) {
 }
 
 // Submit submits a task to the as a kubernetes v1/batch job.
-func (b *Backend) Submit(task *tes.Task) error {
+func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 	job, err := b.createJob(task)
 	if err != nil {
 		return fmt.Errorf("creating job spec: %v", err)
 	}
-	_, err = b.client.Create(job)
+	_, err = b.client.Create(ctx, job, metav1.CreateOptions{
+		FieldManager: task.Id,
+	})
 	if err != nil {
 		return fmt.Errorf("creating job: %v", err)
 	}
@@ -160,10 +163,10 @@ func (b *Backend) Submit(task *tes.Task) error {
 }
 
 // deleteJob removes deletes a kubernetes v1/batch job.
-func (b *Backend) deleteJob(taskID string) error {
+func (b *Backend) deleteJob(ctx context.Context, taskID string) error {
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
-	err := b.client.Delete(taskID, &metav1.DeleteOptions{
+	err := b.client.Delete(ctx, taskID, metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &prop,
 	})
@@ -176,7 +179,7 @@ func (b *Backend) deleteJob(taskID string) error {
 // Cancel removes tasks that are pending kubernetes v1/batch jobs.
 func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 	task, err := b.database.GetTask(
-		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_MINIMAL},
+		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()},
 	)
 	if err != nil {
 		return err
@@ -187,7 +190,7 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 		return nil
 	}
 
-	return b.deleteJob(taskID)
+	return b.deleteJob(ctx, taskID)
 }
 
 // Reconcile loops through tasks and checks the status from Funnel's database
@@ -215,7 +218,7 @@ ReconcileLoop:
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			jobs, err := b.client.List(metav1.ListOptions{})
+			jobs, err := b.client.List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
 				continue ReconcileLoop
@@ -228,7 +231,7 @@ ReconcileLoop:
 						continue ReconcileLoop
 					}
 					b.log.Debug("reconcile: cleanuping up successful job", "taskID", j.Name)
-					err := b.deleteJob(j.Name)
+					err := b.deleteJob(ctx, j.Name)
 					if err != nil {
 						b.log.Error("reconcile: cleaning up successful job", "taskID", j.Name, "error", err)
 						continue ReconcileLoop
@@ -251,7 +254,7 @@ ReconcileLoop:
 					if disableCleanup {
 						continue ReconcileLoop
 					}
-					err = b.deleteJob(j.Name)
+					err = b.deleteJob(ctx, j.Name)
 					if err != nil {
 						b.log.Error("reconcile: cleaning up failed job", "taskID", j.Name, "error", err)
 						continue ReconcileLoop

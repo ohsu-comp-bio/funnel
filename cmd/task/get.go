@@ -19,7 +19,8 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 
 	res := []string{}
 
-	view, err := getTaskView(taskView)
+	taskValue, err := getTaskView(taskView)
+	taskView = tes.View_name[taskValue]
 	if err != nil {
 		return err
 	}
@@ -27,15 +28,12 @@ func Get(server string, ids []string, taskView string, w io.Writer) error {
 	for _, taskID := range ids {
 		resp, err := cli.GetTask(context.Background(), &tes.GetTaskRequest{
 			Id:   taskID,
-			View: tes.TaskView(view),
+			View: taskView,
 		})
 		if err != nil {
 			return err
 		}
-		out, err := cli.Marshaler.MarshalToString(resp)
-		if err != nil {
-			return err
-		}
+		out := cli.Marshaler.Format(resp)
 		res = append(res, out)
 	}
 

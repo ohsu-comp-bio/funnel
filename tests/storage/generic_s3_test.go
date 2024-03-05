@@ -17,6 +17,7 @@ import (
 )
 
 func TestGenericS3Storage(t *testing.T) {
+	conf = tests.DefaultConfig()
 	tests.SetLogOutput(log, t)
 	defer os.RemoveAll("./test_tmp")
 
@@ -42,7 +43,10 @@ func TestGenericS3Storage(t *testing.T) {
 		t.Fatal("error creating test bucket:", err)
 	}
 	defer func() {
-		client.deleteBucket(testBucket)
+		err = client.deleteBucket(testBucket)
+		if err != nil {
+			t.Fatal("error deleting test bucket:", err)
+		}
 	}()
 
 	protocol := "s3://"
@@ -64,7 +68,7 @@ func TestGenericS3Storage(t *testing.T) {
 	dPath := "testdata/test_dir"
 	inDirURL := protocol + testBucket + "/" + dPath
 	_, err = worker.UploadOutputs(ctx, []*tes.Output{
-		{Url: inDirURL, Path: dPath, Type: tes.Directory},
+		{Url: inDirURL, Path: dPath},
 	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("error uploading test directory:", err)
@@ -79,24 +83,20 @@ func TestGenericS3Storage(t *testing.T) {
 			{
 				Url:  inFileURL,
 				Path: "/opt/inputs/test-file.txt",
-				Type: tes.FileType_FILE,
 			},
 			{
 				Url:  inDirURL,
 				Path: "/opt/inputs/test-directory",
-				Type: tes.FileType_DIRECTORY,
 			},
 		},
 		Outputs: []*tes.Output{
 			{
 				Path: "/opt/workdir/test-output-file.txt",
 				Url:  outFileURL,
-				Type: tes.FileType_FILE,
 			},
 			{
 				Path: "/opt/workdir/test-output-directory",
 				Url:  outDirURL,
-				Type: tes.FileType_DIRECTORY,
 			},
 		},
 		Executors: []*tes.Executor{
@@ -145,13 +145,13 @@ func TestGenericS3Storage(t *testing.T) {
 	}
 
 	err = worker.DownloadInputs(ctx, []*tes.Input{
-		{Url: outDirURL, Path: "./test_tmp/test-s3-directory", Type: tes.Directory},
+		{Url: outDirURL, Path: "./test_tmp/test-s3-directory"},
 	}, store, ev, parallelXfer)
 	if err != nil {
 		t.Fatal("Failed to download directory:", err)
 	}
 
-	b, err = ioutil.ReadFile("./test_tmp/test-s3-directory/test-output-file.txt")
+	b, err = ioutil.ReadFile("./test_tmp/test-s3-directory/test-output-directory/test-output-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read file in downloaded directory", err)
 	}
@@ -171,14 +171,12 @@ func TestGenericS3Storage(t *testing.T) {
 			{
 				Url:  protocol + testBucket + "/this/path/does/not/exist",
 				Path: "/opt/inputs/test-directory",
-				Type: tes.FileType_DIRECTORY,
 			},
 		},
 		Outputs: []*tes.Output{
 			{
 				Path: "/opt/workdir/this/path/does/not/exist/test-output-directory",
 				Url:  outDirURL,
-				Type: tes.FileType_DIRECTORY,
 			},
 		},
 		Executors: []*tes.Executor{
@@ -197,17 +195,17 @@ func TestGenericS3Storage(t *testing.T) {
 	}
 
 	taskFinal = fun.Wait(resp.Id)
-	if taskFinal.State != tes.State_COMPLETE {
+	if taskFinal.State != tes.State_SYSTEM_ERROR {
 		t.Fatal("Expected task failure")
 	}
 	found := false
 	for _, log := range taskFinal.Logs[0].SystemLogs {
-		if strings.Contains(log, "level='warning'") {
+		if strings.Contains(log, "level='error'") {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatal("Expected warning in system logs")
+		t.Fatal("Expected error in system logs")
 	}
 }
 

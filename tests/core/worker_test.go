@@ -41,7 +41,7 @@ func TestWorkerRun(t *testing.T) {
 
 	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -77,7 +77,7 @@ func TestWorkDirCleanup(t *testing.T) {
 
 	task, err := f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -106,7 +106,7 @@ func TestWorkDirCleanup(t *testing.T) {
 
 	task, err = f.HTTP.GetTask(ctx, &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal("unexpected error", err)
@@ -264,7 +264,10 @@ func TestZeroLogTailSize(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	w.Run(ctx)
+	err := w.Run(ctx)
+	if err != nil {
+		t.Log(err)
+	}
 
 	// we expect zero events to be generated
 	if counts.stdout != 0 {

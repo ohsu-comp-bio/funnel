@@ -213,7 +213,7 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
 	z.Tags = unmarshalMap(c.Tags)
 	if c.Resources != nil {
 		z.Resources = &tes.Resources{
-			CpuCores:    uint32(c.Resources.CpuCores),
+			CpuCores:    int32(c.Resources.CpuCores),
 			RamGb:       c.Resources.RamGb,
 			DiskGb:      c.Resources.DiskGb,
 			Preemptible: c.Resources.Preemptible,

@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -334,31 +335,31 @@
 <p>The Swift storage client is enabled by default, and will try to automatically
 load credentials from the environment. Alternatively, you
 may explicitly set the credentials in the worker config:</p>
-<pre><code>Swift:
+<pre tabindex="0"><code>Swift:
   Disabled: false
-  UserName: &quot;&quot;
-  Password: &quot;&quot;
-  AuthURL: &quot;&quot;
-  TenantName: &quot;&quot;
-  TenantID: &quot;&quot;
-  RegionName: &quot;&quot;
+  UserName: &#34;&#34;
+  Password: &#34;&#34;
+  AuthURL: &#34;&#34;
+  TenantName: &#34;&#34;
+  TenantID: &#34;&#34;
+  RegionName: &#34;&#34;
   # 500 MB
   ChunkSizeBytes: 500000000
 </code></pre><h3 id="example-task">Example task</h3>
-<pre><code>{
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [{
-    &quot;url&quot;: &quot;swift://funnel-bucket/hello.txt&quot;,
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+<pre tabindex="0"><code>{
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [{
+    &#34;url&#34;: &#34;swift://funnel-bucket/hello.txt&#34;,
+    &#34;path&#34;: &#34;/inputs/hello.txt&#34;
   }],
-  &quot;outputs&quot;: [{
-    &quot;url&quot;: &quot;swift://funnel-bucket/output.txt&quot;,
-    &quot;path&quot;: &quot;/outputs/hello-out.txt&quot;
+  &#34;outputs&#34;: [{
+    &#34;url&#34;: &#34;swift://funnel-bucket/output.txt&#34;,
+    &#34;path&#34;: &#34;/outputs/hello-out.txt&#34;
   }],
-  &quot;executors&quot;: [{
-    &quot;image&quot;: &quot;alpine&quot;,
-    &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
-    &quot;stdout&quot;: &quot;/outputs/hello-out.txt&quot;,
+  &#34;executors&#34;: [{
+    &#34;image&#34;: &#34;alpine&#34;,
+    &#34;command&#34;: [&#34;cat&#34;, &#34;/inputs/hello.txt&#34;],
+    &#34;stdout&#34;: &#34;/outputs/hello-out.txt&#34;,
   }]
 }
 </code></pre><h3 id="known-issues">Known Issues:</h3>

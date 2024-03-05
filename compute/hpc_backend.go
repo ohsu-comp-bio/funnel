@@ -3,6 +3,7 @@ package compute
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -35,9 +36,11 @@ type HPCBackend struct {
 	// are mapped to TES states along with an optional reason for this mapping.
 	// The Reconcile function can then use the response to update the task states
 	// and system logs to report errors reported by the backend.
-	MapStates     func([]string) ([]*HPCTaskState, error)
-	ReconcileRate time.Duration
-	Log           *logger.Logger
+	MapStates         func([]string) ([]*HPCTaskState, error)
+	ReconcileRate     time.Duration
+	Log               *logger.Logger
+	backendParameters map[string]string
+	events.Computer
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -97,7 +100,7 @@ func (b *HPCBackend) Submit(task *tes.Task) error {
 // Cancel cancels a task via "qdel", "condor_rm", "scancel", etc.
 func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
 	task, err := b.Database.GetTask(
-		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.TaskView_BASIC},
+		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_BASIC.String()},
 	)
 	if err != nil {
 		return err
@@ -152,7 +155,7 @@ ReconcileLoop:
 			for _, s := range states {
 				for {
 					lresp, err := b.Database.ListTasks(ctx, &tes.ListTasksRequest{
-						View:      tes.TaskView_BASIC,
+						View:      tes.View_BASIC.String(),
 						State:     s,
 						PageSize:  100,
 						PageToken: pageToken,
@@ -294,4 +297,20 @@ type HPCTaskState struct {
 	State    string
 	Reason   string
 	Remove   bool
+}
+
+func (b *HPCBackend) CheckBackendParameterSupport(task *tes.Task) error {
+	if !task.Resources.GetBackendParametersStrict() {
+		return nil
+	}
+
+	taskBackendParameters := task.Resources.GetBackendParameters()
+	for k := range taskBackendParameters {
+		_, ok := b.backendParameters[k]
+		if !ok {
+			return errors.New("backend parameters not supported")
+		}
+	}
+
+	return nil
 }

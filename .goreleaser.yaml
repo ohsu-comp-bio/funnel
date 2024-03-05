@@ -5,6 +5,7 @@ builds:
       - linux
     goarch:
       - amd64
+      - arm64
     env:
       - CGO_ENABLED=0
     ldflags: >
@@ -27,7 +28,7 @@ archives:
     name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
 
 brews:
-  - github:
+  - tap:
       owner: ohsu-comp-bio
       name: homebrew-formula
     folder: Formula

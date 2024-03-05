@@ -61,18 +61,19 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 
 	var (
 		pageToken   string
-		pageSize    uint32
+		pageSize    int32
 		listAll     bool
 		listView    string
 		stateFilter string
 		tagsFilter  []string
+		namePrefix  string
 	)
 
 	list := &cobra.Command{
 		Use:   "list",
 		Short: "List all tasks.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return h.List(tesServer, listView, pageToken, stateFilter, tagsFilter, pageSize, listAll, cmd.OutOrStdout())
+			return h.List(tesServer, listView, pageToken, stateFilter, tagsFilter, namePrefix, pageSize, listAll, cmd.OutOrStdout())
 		},
 	}
 
@@ -81,7 +82,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	lf.StringVarP(&pageToken, "page-token", "p", pageToken, "Page token")
 	lf.StringVar(&stateFilter, "state", stateFilter, "State filter")
 	lf.StringSliceVar(&tagsFilter, "tag", tagsFilter, "Tag filter. May be used multiple times to specify more than one tag")
-	lf.Uint32VarP(&pageSize, "page-size", "s", pageSize, "Page size")
+	lf.StringVar(&namePrefix, "name-prefix", namePrefix, "Name prefix")
+	lf.Int32VarP(&pageSize, "page-size", "s", pageSize, "Page size")
 	lf.BoolVar(&listAll, "all", listAll, "List all tasks")
 
 	var getView string
@@ -122,7 +124,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 type hooks struct {
 	Create func(server string, messages []string, r io.Reader, w io.Writer) error
 	Get    func(server string, ids []string, view string, w io.Writer) error
-	List   func(server, view, pageToken, stateFilter string, tagsFilter []string, pageSize uint32, all bool, w io.Writer) error
+	List   func(server, view, pageToken, stateFilter string, tagsFilter []string, namePrefix string, pageSize int32, all bool, w io.Writer) error
 	Cancel func(server string, ids []string, w io.Writer) error
 	Wait   func(server string, ids []string) error
 }
@@ -142,7 +144,7 @@ func getTaskView(taskView string) (int32, error) {
 	taskView = strings.ToUpper(taskView)
 	var view int32
 	var ok bool
-	view, ok = tes.TaskView_value[taskView]
+	view, ok = tes.View_value[taskView]
 	if !ok {
 		return view, fmt.Errorf("Unknown task view: %s. Valid task views: ['basic', 'minimal', 'full']", taskView)
 	}

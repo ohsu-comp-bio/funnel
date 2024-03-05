@@ -1,0 +1,20 @@
+{
+  "name": "CompTest",
+  "description": "CompTest",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": [
+        "echo",
+        "hello"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "name": "access-file",
+      "url": "file:///Users/beckmanl/code/funnel/hello.txt",
+      "path": "/inputs/hello.txt"
+    }
+  ]
+}

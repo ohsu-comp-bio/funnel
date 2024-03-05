@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -337,7 +338,7 @@ Configure Funnel to use PBS by including the following config:</p>
 <p>It is recommended to update the submit file template so that the
 <code>funnel worker run</code> command takes a config file as an argument
 (e.g. <code>funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}</code>)</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-YAML" data-lang="YAML">Compute: pbs
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-YAML" data-lang="YAML"><span style="display:flex;"><span><span style="color:#ae81ff">Compute: pbs
 
 PBS:
     Template: |<p style="margin-left: 3em">#!/bin/bash
@@ -356,39 +357,39 @@ PBS:
 
 funnel worker run --taskID {{.TaskId}}
 </p>
-
-</code></pre></div><p>The following variables are available for use in the template:</p>
+</span>
+</span></span></code></pre></div><p>The following variables are available for use in the template:</p>
 <table>
 <thead>
 <tr>
-<th align="left">Variable</th>
-<th align="left">Description</th>
+<th style="text-align:left">Variable</th>
+<th style="text-align:left">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="left">TaskId</td>
-<td align="left">funnel task id</td>
+<td style="text-align:left">TaskId</td>
+<td style="text-align:left">funnel task id</td>
 </tr>
 <tr>
-<td align="left">WorkDir</td>
-<td align="left">funnel working directory</td>
+<td style="text-align:left">WorkDir</td>
+<td style="text-align:left">funnel working directory</td>
 </tr>
 <tr>
-<td align="left">Cpus</td>
-<td align="left">requested cpu cores</td>
+<td style="text-align:left">Cpus</td>
+<td style="text-align:left">requested cpu cores</td>
 </tr>
 <tr>
-<td align="left">RamGb</td>
-<td align="left">requested ram</td>
+<td style="text-align:left">RamGb</td>
+<td style="text-align:left">requested ram</td>
 </tr>
 <tr>
-<td align="left">DiskGb</td>
-<td align="left">requested free disk space</td>
+<td style="text-align:left">DiskGb</td>
+<td style="text-align:left">requested free disk space</td>
 </tr>
 <tr>
-<td align="left">Zone</td>
-<td align="left">requested zone (could be used for queue name)</td>
+<td style="text-align:left">Zone</td>
+<td style="text-align:left">requested zone (could be used for queue name)</td>
 </tr>
 </tbody>
 </table>

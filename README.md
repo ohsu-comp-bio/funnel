@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/ohsu-comp-bio/funnel.svg?branch=master)](https://travis-ci.org/ohsu-comp-bio/funnel)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ohsu-comp-bio/funnel/tests.yaml)](https://github.com/ohsu-comp-bio/funnel/actions/workflows/tests.yaml)
+[![Compliance Tests Status](https://img.shields.io/github/actions/workflow/status/ohsu-comp-bio/funnel/compliance-test.yaml?label=Compliance%20Tests)](https://github.com/ohsu-comp-bio/funnel/actions/workflows/compliance-test.yaml)
 [![Gitter](https://badges.gitter.im/ohsu-comp-bio/funnel.svg)](https://gitter.im/ohsu-comp-bio/funnel)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Godoc](https://img.shields.io/badge/godoc-ref-blue.svg)](http://godoc.org/github.com/ohsu-comp-bio/funnel)

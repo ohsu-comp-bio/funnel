@@ -1,0 +1,135 @@
+# Workflow for running the TES compliance suite against Funnel
+
+# This includes the following steps:
+#  1. Build Funnel and store the resulting binary artifact
+#  2. Install tes-compliance-suite and run against every version of TES simultaneously
+#  3. start-report-deployment: Send a dispatch to the funnel-compliance repository to generate and publish
+#     the tes-compliance-suite report to https://ohsu-comp-bio.github.io/funnel-compliance/
+
+# Optionally debug via SSH
+# Ref: https://fleetdm.com/engineering/tips-for-github-actions-usability
+#
+# To use this step uncomment and place anywhere in the build steps. The build will pause on this step and
+# output a ssh address associated with the Github action worker. Helpful for debugging build steps and
+# and intermediary files/artifacts.
+#
+# - name: "Debug: Package dependancies for tmate (CentOS)"
+#   run: |
+#     yum install -y xz
+#     ln -s /bin/true /bin/apt-get
+#
+# - name: Setup tmate session
+#   uses: mxschmitt/action-tmate@v3
+
+name: Compliance Test
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: quay.io/ohsu-comp-bio/slurm
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.21
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: make build
+
+    - name: Store funnel
+      uses: actions/upload-artifact@v2
+      with:
+        name: funnelBin
+        path: funnel
+
+  compliance:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [1.0.0, 1.1.0]
+        db: ["boltdb", "mongodb"]
+        compute: ["local", "slurm"]
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ohsu-comp-bio/slurm
+      options: --hostname slurmctl --cap-add sys_admin
+    steps:
+      # Required to access the 'tests/mongo.config.yml' file
+      # Perhaps uploading it as an artifact would be more efficient?
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: funnelBin
+
+      - name: Start Funnel server
+        run: |
+          touch config.yml
+          if [ ${{ matrix.db }} = "mongodb" ]; then
+            make start-mongodb
+            cat `pwd`/tests/mongo.config.yml >> config.yml
+            # Required for Funnel to connect MongoDB
+            echo "172.17.0.1 localhost" >> /etc/hosts
+          elif [ ${{ matrix.compute }} = "slurm" ]; then
+            cat `pwd`/tests/slurm.config.yml >> config.yml
+            cp config.yml /opt/funnel_config.yml
+            # Start Slurm
+            /usr/local/bin/docker-entrypoint.sh
+          fi
+          chmod +x funnel
+          FLAGS="--config `pwd`/config.yml"
+          ./funnel server run $FLAGS &> funnel.logs &
+
+      - name: Run OpenAPI Test Runner
+        run: |
+          # Clone the 'upstream' OpenAPI Test Runner when PR #65 is merged
+          # https://github.com/elixir-cloud-aai/openapi-test-runner/pull/65
+          # git clone https://github.com/elixir-cloud-aai/openapi-test-runner
+          git clone https://github.com/ohsu-comp-bio/openapi-test-runner -b fix/create-and-filter-task
+          
+          cd openapi-test-runner
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          python setup.py install  
+          openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
+
+      - name: Install TES compliance suite
+        run: |
+          git clone https://github.com/lbeckman314/tes-compliance-suite -b feature/tesv1.1
+          cd tes-compliance-suite
+          /root/.pyenv/shims/python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          python setup.py install
+          mkdir reports
+
+      - name: Test compliance (Report Publishing)
+        run: |
+          cd tes-compliance-suite
+          source venv/bin/activate
+          tes-compliance-suite report --version "${{ matrix.version }}" --server "http://localhost:8000/"
+
+  start-report-deployment:
+    needs: compliance
+    runs-on: ubuntu-latest
+    steps:
+      # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-dispatch-event
+      - name: Start report generation
+        uses: passeidireto/trigger-external-workflow-action@main
+        env:
+          PAYLOAD_AUTHOR: "Funnel"
+          PAYLOAD_REVISION: "3"
+        with:
+          repository: ohsu-comp-bio/funnel-compliance
+          event: start-report
+          github_pat: ${{ secrets.ACTIONS_TOKEN }}
+      

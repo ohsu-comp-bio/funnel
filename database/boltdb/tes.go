@@ -3,6 +3,7 @@ package boltdb
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
@@ -114,22 +115,30 @@ func (taskBolt *BoltDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*
 	var err error
 
 	err = taskBolt.db.View(func(tx *bolt.Tx) error {
-		task, err = getTaskView(tx, req.Id, req.View)
+		if req.View == "" {
+			req.View = tes.View_MINIMAL.String()
+		}
+		_, ok := tes.View_value[req.View]
+		if !ok {
+			return fmt.Errorf("Unknown view: %s", req.View)
+		}
+		task, err = getTaskView(tx, req.Id, tes.View(tes.View_value[req.View]))
 		return err
 	})
 	return task, err
 }
 
-func getTaskView(tx *bolt.Tx, id string, view tes.TaskView) (*tes.Task, error) {
+func getTaskView(tx *bolt.Tx, id string, view tes.View) (*tes.Task, error) {
 	var err error
+
 	task := &tes.Task{}
 
 	switch {
-	case view == tes.TaskView_MINIMAL:
+	case view == tes.View_MINIMAL:
 		err = loadMinimalTaskView(tx, id, task)
-	case view == tes.TaskView_BASIC:
+	case view == tes.View_BASIC:
 		err = loadBasicTaskView(tx, id, task)
-	case view == tes.TaskView_FULL:
+	case view == tes.View_FULL:
 		err = loadFullTaskView(tx, id, task)
 	default:
 		err = fmt.Errorf("Unknown view: %s", view.String())
@@ -142,8 +151,8 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 	var tasks []*tes.Task
 	// If the tags filter request is non-nil we need the basic or full view
 	view := req.View
-	if req.View == tes.Minimal && req.Tags != nil {
-		view = tes.Basic
+	if req.View == tes.Minimal.String() && req.GetTags() != nil {
+		view = tes.View_BASIC.String()
 	}
 	pageSize := tes.GetPageSize(req.GetPageSize())
 
@@ -167,22 +176,24 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 
 	taskLoop:
 		for ; k != nil && i < pageSize; k, _ = c.Prev() {
-			task, _ := getTaskView(tx, string(k), view)
+			task, _ := getTaskView(tx, string(k), tes.View_FULL)
 
 			if req.State != tes.Unknown && req.State != task.State {
 				continue taskLoop
 			}
 
-			for k, v := range req.Tags {
+			if !strings.HasPrefix(task.Name, req.NamePrefix) {
+				continue taskLoop
+			}
+
+			for k, v := range req.GetTags() {
 				tval, ok := task.Tags[k]
-				if !ok || tval != v {
+				if !ok || (tval != v && v != "") {
 					continue taskLoop
 				}
 			}
 
-			if req.View == tes.Minimal {
-				task = task.GetMinimalView()
-			}
+			task, _ = getTaskView(tx, string(k), tes.View(tes.View_value[view]))
 
 			tasks = append(tasks, task)
 			i++

@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // Return a new interceptor function that authorizes RPCs
@@ -49,12 +50,12 @@ func authorize(ctx context.Context, user, password string) error {
 				if requser == user && reqpass == password {
 					return nil
 				}
-				return grpc.Errorf(codes.PermissionDenied, "")
+				return status.Errorf(codes.PermissionDenied, "AUTH DENIED")
 			}
 		}
 	}
 
-	return grpc.Errorf(codes.Unauthenticated, "")
+	return status.Errorf(codes.Unauthenticated, "UNAUTHENTICATED")
 }
 
 // parseBasicAuth parses an HTTP Basic Authentication string.

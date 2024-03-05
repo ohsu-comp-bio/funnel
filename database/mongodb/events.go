@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // WriteEvent creates an event for the server to handle.
 func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
-	sess := db.sess.Copy()
-	defer sess.Close()
-	tasks := db.tasks(sess)
+	tasks := db.tasks(db.client)
 
 	update := bson.M{}
 	selector := bson.M{"id": req.Id}
@@ -26,34 +24,31 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		task := req.GetTask()
 		task.Logs = []*tes.TaskLog{
 			{
-				Logs: []*tes.ExecutorLog{},
+				Logs:       []*tes.ExecutorLog{},
+				Metadata:   map[string]string{},
+				SystemLogs: []string{},
 			},
 		}
-		return tasks.Insert(&task)
+		_, err := tasks.InsertOne(context.TODO(), &task)
+		return err
 
 	case events.Type_TASK_STATE:
 		retrier := util.NewRetrier()
 		retrier.ShouldRetry = func(err error) bool {
-			if err == mgo.ErrNotFound {
-				return true
-			}
-			return false
+			return err == tes.ErrConcurrentStateChange
 		}
 
 		return retrier.Retry(ctx, func() error {
 			// get current state & version
 			current := make(map[string]interface{})
-			q := tasks.Find(bson.M{"id": req.Id}).Select(bson.M{"state": 1, "version": 1})
-			err := q.One(&current)
-			if err == mgo.ErrNotFound {
-				return tes.ErrNotFound
-			}
+			opts := options.FindOne().SetProjection(bson.M{"state": 1, "version": 1})
+			err := tasks.FindOne(context.TODO(), bson.M{"id": req.Id}, opts).Decode(&current)
 			if err != nil {
-				return err
+				return tes.ErrNotFound
 			}
 
 			// validate state transition
-			from := tes.State(current["state"].(int))
+			from := tes.State(current["state"].(int32))
 			to := req.GetState()
 			if err = tes.ValidateTransition(from, to); err != nil {
 				return err
@@ -62,7 +57,13 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 			// apply version restriction and set update
 			selector["version"] = current["version"]
 			update = bson.M{"$set": bson.M{"state": to, "version": time.Now().UnixNano()}}
-			return tasks.Update(selector, update)
+
+			result, err := tasks.UpdateOne(context.TODO(), selector, update)
+			if result.MatchedCount == 0 {
+				return tes.ErrConcurrentStateChange
+			}
+
+			return err
 		})
 
 	case events.Type_TASK_START_TIME:
@@ -136,5 +137,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		}
 	}
 
-	return tasks.Update(selector, update)
+	opts := options.Update().SetUpsert(true)
+	_, err := tasks.UpdateOne(context.TODO(), selector, update, opts)
+	return err
 }

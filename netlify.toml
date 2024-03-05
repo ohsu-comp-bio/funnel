@@ -1,0 +1,15 @@
+[build]
+  base = "website/"
+  publish = "public"
+  command = "hugo -b $URL"
+
+[build.environment]
+  HUGO_VERSION = "0.113.0"
+
+[context.deploy-preview]
+  base = "website/"
+  command = "hugo --verbose -b $DEPLOY_PRIME_URL/ --destination public"
+
+[context.branch-deploy]
+  base = "website/"
+  command = "hugo --verbose --buildDrafts -b $DEPLOY_PRIME_URL/ --destination public"

@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -335,26 +336,26 @@
 <p>The Amazon S3 storage client is enabled by default, and will try to automatically
 load credentials from the environment. Alternatively, you
 may explicitly set the credentials in the worker config:</p>
-<pre><code>AmazonS3:
+<pre tabindex="0"><code>AmazonS3:
   Disabled: false
   # The maximum number of times that a request will be retried for failures.
   MaxRetries: 10
-  Key: &quot;&quot;
-  Secret: &quot;&quot;
+  Key: &#34;&#34;
+  Secret: &#34;&#34;
 </code></pre><p>The Amazon S3 storage client also supports SSE-KMS and SSE-C configurations.</p>
 <p>For SSE-KMS as long as your credentials can access the KMS key used for the
 given bucket, no special configuration is required. However, you can specifiy a
 specific KMS key if desired:</p>
-<pre><code>AmazonS3:
+<pre tabindex="0"><code>AmazonS3:
 SSE:
-    KMSKey: &quot;1a03ce70-5f03-484e-8396-0e97de661b79&quot;
+    KMSKey: &#34;1a03ce70-5f03-484e-8396-0e97de661b79&#34;
 </code></pre><p>For SSE-C:</p>
 <p>Generate a key file:</p>
-<pre><code>openssl rand -out sse-c.key 32
+<pre tabindex="0"><code>openssl rand -out sse-c.key 32
 </code></pre><p>Then configure the storage client to use it:</p>
-<pre><code>AmazonS3:
+<pre tabindex="0"><code>AmazonS3:
   SSE:
-    CustomerKeyFile: &quot;./sse-c.key&quot;
+    CustomerKeyFile: &#34;./sse-c.key&#34;
 </code></pre><p>Note that this file will need to be available to all Funnel workers.</p>
 <h2 id="other-s3-api-providers">Other S3 API Providers</h2>
 <p>Funnel also supports using non-Amazon S3 API providers (<a href="http://ceph.com/">Ceph</a>,
@@ -363,26 +364,26 @@ SSE:
 You must configure them.</p>
 <p>This storage client currently only supports the
 <a href="http://docs.aws.amazon.com/general/latest/gr/signature-version-2.html">version 2 signing process</a>.</p>
-<pre><code>GenericS3:
+<pre tabindex="0"><code>GenericS3:
   - Disabled: false
-    Endpoint: &quot;&quot;
-    Key: &quot;&quot;
-    Secret: &quot;&quot;
+    Endpoint: &#34;&#34;
+    Key: &#34;&#34;
+    Secret: &#34;&#34;
 </code></pre><h3 id="example-task">Example task</h3>
-<pre><code>{
-  &quot;name&quot;: &quot;Hello world&quot;,
-  &quot;inputs&quot;: [{
-    &quot;url&quot;: &quot;s3://funnel-bucket/hello.txt&quot;,
-    &quot;path&quot;: &quot;/inputs/hello.txt&quot;
+<pre tabindex="0"><code>{
+  &#34;name&#34;: &#34;Hello world&#34;,
+  &#34;inputs&#34;: [{
+    &#34;url&#34;: &#34;s3://funnel-bucket/hello.txt&#34;,
+    &#34;path&#34;: &#34;/inputs/hello.txt&#34;
   }],
-  &quot;outputs&quot;: [{
-    &quot;url&quot;: &quot;s3://funnel-bucket/output.txt&quot;,
-    &quot;path&quot;: &quot;/outputs/hello-out.txt&quot;
+  &#34;outputs&#34;: [{
+    &#34;url&#34;: &#34;s3://funnel-bucket/output.txt&#34;,
+    &#34;path&#34;: &#34;/outputs/hello-out.txt&#34;
   }],
-  &quot;executors&quot;: [{
-    &quot;image&quot;: &quot;alpine&quot;,
-    &quot;command&quot;: [&quot;cat&quot;, &quot;/inputs/hello.txt&quot;],
-    &quot;stdout&quot;: &quot;/outputs/hello-out.txt&quot;,
+  &#34;executors&#34;: [{
+    &#34;image&#34;: &#34;alpine&#34;,
+    &#34;command&#34;: [&#34;cat&#34;, &#34;/inputs/hello.txt&#34;],
+    &#34;stdout&#34;: &#34;/outputs/hello-out.txt&#34;,
   }]
 }
 </code></pre>

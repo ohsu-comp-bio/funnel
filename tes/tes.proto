@@ -1,599 +1,297 @@
+
 syntax = "proto3";
+
+option go_package = "github.com/ohsu-comp-bio/funnel/tes";
 
 package tes;
 
-// Import HTTP RESTful annotations.
 import "google/api/annotations.proto";
 
-// Task describes an instance of a task.
-message Task {
 
-  // OUTPUT ONLY
-  //
-  // Task identifier assigned by the server.
-  string id = 1;
-
-  // OUTPUT ONLY
-  State state = 2;
-
-  // OPTIONAL
-  string name = 3;
-
-  // OPTIONAL
-  string description = 5;
-
-  // OPTIONAL
-  //
-  // Input files.
-  // Inputs will be downloaded and mounted into the executor container.
-  repeated Input inputs = 6;
-
-  // OPTIONAL
-  //
-  // Output files.
-  // Outputs will be uploaded from the executor container to long-term storage.
-  repeated Output outputs = 7;
-
-  // OPTIONAL
-  //
-  // Request that the task be run with these resources.
-  Resources resources = 8;
-
-  // REQUIRED
-  //
-  // A list of executors to be run, sequentially. Execution stops
-  // on the first error.
-  repeated Executor executors = 9;
-
-  // OPTIONAL
-  //
-  // Volumes are directories which may be used to share data between
-  // Executors. Volumes are initialized as empty directories by the
-  // system when the task starts and are mounted at the same path
-  // in each Executor.
-  //
-  // For example, given a volume defined at "/vol/A",
-  // executor 1 may write a file to "/vol/A/exec1.out.txt", then
-  // executor 2 may read from that file.
-  //
-  // (Essentially, this translates to a `docker run -v` flag where
-  // the container path is the same for each executor).
-  repeated string volumes = 10;
-
-  // OPTIONAL
-  //
-  // A key-value map of arbitrary tags.
-  map<string, string> tags = 11;
-
-  // OUTPUT ONLY
-  //
-  // Task logging information.
-  // Normally, this will contain only one entry, but in the case where
-  // a task fails and is retried, an entry will be appended to this list.
-  repeated TaskLog logs = 12;
-
-  // OUTPUT ONLY, REQUIRED
-  //
-  // Date + time the task was created, in RFC 3339 format.
-  // This is set by the system, not the client.
-  string creation_time = 13;
+enum State { 
+	UNKNOWN = 0;
+	QUEUED = 1;
+	INITIALIZING = 2;
+	RUNNING = 3;
+	PAUSED = 4;
+	COMPLETE = 5;
+	EXECUTOR_ERROR = 6;
+	SYSTEM_ERROR = 7;
+	CANCELED = 8;
+	PREEMPTED = 9;
+	CANCELING = 10;
 }
 
-enum FileType {
-  FILE = 0;
-  DIRECTORY = 1;
+enum FileType { 
+	FILE = 0;
+	DIRECTORY = 1;
 }
 
-// Input describes Task input files.
-message Input {
-
-  // OPTIONAL
-  string name = 1;
-
-  // OPTIONAL
-  string description = 2;
-
-  // REQUIRED, unless "content" is set.
-  //
-  // URL in long term storage, for example:
-  // s3://my-object-store/file1
-  // gs://my-bucket/file2
-  // file:///path/to/my/file
-  // /path/to/my/file
-  // etc...
-  string url = 3;
-
-  // REQUIRED
-  //
-  // Path of the file inside the container.
-  // Must be an absolute path.
-  string path = 4;
-
-  // REQUIRED
-  //
-  // Type of the file, FILE or DIRECTORY
-  FileType type = 5;
-
-  // OPTIONAL
-  //
-  // File content literal. 
-  // Implementations should support a minimum of 128 KiB in this field and may define its own maximum.
-  // UTF-8 encoded
-  //
-  // If content is not empty, "url" must be ignored.
-  string content = 6;
+enum view { 
+	MINIMAL = 0;
+	BASIC = 1;
+	FULL = 2;
 }
 
-// Output describes Task output files.
-message Output {
 
-  // OPTIONAL
-  string name = 1;
-
-  // OPTIONAL
-  string description = 2;
-
-  // REQUIRED
-  //
-  // URL in long term storage, for example:
-  // s3://my-object-store/file1
-  // gs://my-bucket/file2
-  // file:///path/to/my/file
-  // /path/to/my/file
-  // etc...
-  string url = 3;
-
-  // REQUIRED
-  //
-  // Path of the file inside the container.
-  // Must be an absolute path.
-  string path = 4;
-
-  // REQUIRED
-  //
-  // Type of the file, FILE or DIRECTORY
-  FileType type = 5;
+message CancelTaskRequest { 
+	string id = 1;
 }
 
-// Executor describes a command to be executed, and its environment.
-message Executor {
-
-  // REQUIRED
-  //
-  // Name of the container image, for example:
-  // ubuntu
-  // quay.io/aptible/ubuntu
-  // gcr.io/my-org/my-image
-  // etc...
-  string image = 1;
-
-  // REQUIRED
-  //
-  // A sequence of program arguments to execute, where the first argument
-  // is the program to execute (i.e. argv).
-  repeated string command = 2;
-
-  // OPTIONAL
-  //
-  // The working directory that the command will be executed in.
-  // Defaults to the directory set by the container image.
-  string workdir = 3;
-
-  // OPTIONAL
-  //
-  // Path inside the container to a file which will be piped
-  // to the executor's stdin. Must be an absolute path.
-  string stdin = 6;
-
-  // OPTIONAL
-  //
-  // Path inside the container to a file where the executor's
-  // stdout will be written to. Must be an absolute path.
-  string stdout = 4;
-
-  // OPTIONAL
-  //
-  // Path inside the container to a file where the executor's
-  // stderr will be written to. Must be an absolute path.
-  string stderr = 5;
-
-  // OPTIONAL
-  //
-  // Enviromental variables to set within the container.
-  map<string,string> env = 8;
+message GetServiceInfoRequest { 
 }
 
-// Resources describes the resources requested by a task.
-message Resources {
-
-  // OPTIONAL
-  //
-  // Requested number of CPUs
-  uint32 cpu_cores = 1;
-
-  // OPTIONAL
-  //
-  // Is the task allowed to run on preemptible compute instances (e.g. AWS Spot)?
-  bool preemptible = 2;
-
-  // OPTIONAL
-  //
-  // Requested RAM required in gigabytes (GB)
-  double ram_gb = 3;
-
-  // OPTIONAL
-  //
-  // Requested disk size in gigabytes (GB)
-  double disk_gb = 4;
-
-  // OPTIONAL
-  //
-  // Request that the task be run in these compute zones.
-  repeated string zones = 5;
+message GetTaskRequest { 
+	string id = 1;
+	string view = 2;
 }
 
-// OUTPUT ONLY
-//
-// TaskLog describes logging information related to a Task.
-message TaskLog {
-
-  // REQUIRED
-  //
-  // Logs for each executor
-  repeated ExecutorLog logs = 1;
-
-  // OPTIONAL
-  //
-  // Arbitrary logging metadata included by the implementation.
-  map<string, string> metadata = 2;
-
-  // OPTIONAL
-  //
-  // When the task started, in RFC 3339 format.
-  string start_time = 3;
-
-  // OPTIONAL
-  //
-  // When the task ended, in RFC 3339 format.
-  string end_time = 4;
-
-  // REQUIRED
-  //
-  // Information about all output files. Directory outputs are
-  // flattened into separate items.
-  repeated OutputFileLog outputs = 5;
-  
-  // OPTIONAL
-  //
-  // System logs are any logs the system decides are relevant,
-  // which are not tied directly to an Executor process.
-  // Content is implementation specific: format, size, etc.
-  //
-  // System logs may be collected here to provide convenient access.
-  //
-  // For example, the system may include the name of the host
-  // where the task is executing, an error message that caused
-  // a SYSTEM_ERROR state (e.g. disk is full), etc.
-  //
-  // System logs are only included in the FULL task view.
-  repeated string system_logs = 6;
+message ListTasksRequest { 
+	string name_prefix = 1;
+	State state = 2;
+	repeated string tag_key = 3;
+	repeated string tag_value = 4;
+	int32 page_size = 5;
+	string page_token = 6;
+	string view = 7;
 }
 
-// OUTPUT ONLY
-//
-// ExecutorLog describes logging information related to an Executor.
-message ExecutorLog {
-
-  // OPTIONAL
-  //
-  // Time the executor started, in RFC 3339 format.
-  string start_time = 2;
-
-  // OPTIONAL
-  //
-  // Time the executor ended, in RFC 3339 format.
-  string end_time = 3;
-
-  // OPTIONAL
-  //
-  // Stdout content.
-  //
-  // This is meant for convenience. No guarantees are made about the content.
-  // Implementations may chose different approaches: only the head, only the tail,
-  // a URL reference only, etc.
-  //
-  // In order to capture the full stdout users should set Executor.stdout
-  // to a container file path, and use Task.outputs to upload that file
-  // to permanent storage.
-  string stdout = 4;
-
-  // OPTIONAL
-  //
-  // Stderr content.
-  //
-  // This is meant for convenience. No guarantees are made about the content.
-  // Implementations may chose different approaches: only the head, only the tail,
-  // a URL reference only, etc.
-  //
-  // In order to capture the full stderr users should set Executor.stderr
-  // to a container file path, and use Task.outputs to upload that file
-  // to permanent storage.
-  string stderr = 5;
-
-  // REQUIRED
-  //
-  // Exit code.
-  int32 exit_code = 6;
+message CancelTaskResponse { 
 }
 
-// OUTPUT ONLY
-//
-// OutputFileLog describes a single output file. This describes
-// file details after the task has completed successfully,
-// for logging purposes.
-message OutputFileLog {
-
-  // REQUIRED
-  //
-  // URL of the file in storage, e.g. s3://bucket/file.txt
-  string url = 1;
-
-  // REQUIRED
-  //
-  // Path of the file inside the container. Must be an absolute path.
-  string path = 2;
-
-  // REQUIRED
-  //
-  // Size of the file in bytes.
-  int64 size_bytes = 3;
+message CreateTaskResponse { 
+	string id = 1;
 }
 
-// OUTPUT ONLY
-//
-// Task states.
-enum State {
-
-  // The state of the task is unknown.
-  //
-  // This provides a safe default for messages where this field is missing,
-  // for example, so that a missing field does not accidentally imply that
-  // the state is QUEUED.
-  UNKNOWN = 0;
-
-  // The task is queued.
-  QUEUED = 1;
-
-  // The task has been assigned to a worker and is currently preparing to run.
-  // For example, the worker may be turning on, downloading input files, etc.
-  INITIALIZING = 2;
-
-  // The task is running. Input files are downloaded and the first Executor
-  // has been started.
-  RUNNING = 3;
-
-  // The task is paused.
-  //
-  // An implementation may have the ability to pause a task, but this is not required.
-  PAUSED = 4;
-
-  // The task has completed running. Executors have exited without error
-  // and output files have been successfully uploaded.
-  COMPLETE = 5;
-
-  // The task encountered an error in one of the Executor processes. Generally,
-  // this means that an Executor exited with a non-zero exit code.
-  EXECUTOR_ERROR = 6;
-
-  // The task was stopped due to a system error, but not from an Executor,
-  // for example an upload failed due to network issues, the worker's ran out
-  // of disk space, etc.
-  SYSTEM_ERROR = 7;
-
-  // The task was canceled by the user.
-  CANCELED = 8;
+message Executor { 
+	repeated string command = 1;
+	map<string,string> env = 2;
+	bool ignore_error = 3;
+	string image = 4;
+	string stderr = 5;
+	string stdin = 6;
+	string stdout = 7;
+	string workdir = 8;
 }
 
-// OUTPUT ONLY
-//
-// CreateTaskResponse describes a response from the CreateTask endpoint.
-message CreateTaskResponse {
-  // REQUIRED
-  //
-  // Task identifier assigned by the server.
-  string id = 1;
+message ExecutorBasic { 
+	repeated string command = 1;
+	map<string,string> env = 2;
+	bool ignore_error = 3;
+	string image = 4;
+	string stdin = 5;
+	string workdir = 6;
 }
 
-// GetTaskRequest describes a request to the GetTask endpoint.
-message GetTaskRequest {
-  // REQUIRED
-  //
-  // Task identifier.
-  string id = 1;
-
-  // OPTIONAL
-  //
-  // Affects the fields included in the returned Task messages.
-  // See TaskView below.
-  TaskView view = 2;
+message ExecutorLog { 
+	string end_time = 1;
+	int32 exit_code = 2;
+	string start_time = 3;
+	string stderr = 4;
+	string stdout = 5;
 }
 
-// ListTasksRequest describes a request to the ListTasks service endpoint.
-message ListTasksRequest {
-
-  // OPTIONAL
-  //
-  // Number of tasks to return in one page.
-  // Must be less than 2048. Defaults to 256.
-  uint32 page_size = 3;
-
-  // OPTIONAL
-  //
-  // Page token is used to retrieve the next page of results.
-  // If unspecified, returns the first page of results.
-  // See ListTasksResponse.next_page_token
-  string page_token = 4;
-
-  // OPTIONAL
-  //
-  // Affects the fields included in the returned Task messages.
-  // See TaskView below.
-  TaskView view = 5;
-
-  // Filters
-  // =======
-  // Filters are combined together using logical AND.
-  // Logical OR and NOT are not supported.
-
-  // OPTIONAL
-  //
-  // Filter tasks by state.
-  // Filtering by the UNKNOWN state is not allowed.
-  State state = 6;
-
-  // OPTIONAL
-  // 
-  // Filter tasks based on the Task.tags field.
-  // A tag filter matches a Task tag if both the key and value are exact matches.
-  //
-  //   Filter                            Tags                          Match?
-  //   ----------------------------------------------------------------------
-  //   {"foo": "bar"}                    {"foo": "bar"}                Yes
-  //   {"foo": ""}                       {"foo": ""}                   Yes
-  //   {"foo": "bar", "baz": "bat"}      {"foo": "bar", "baz": "bat"}  Yes
-  //   {"foo": "bar"}                    {"foo": "bar", "baz": "bat"}  Yes
-  //   {"foo": "bar", "baz": "bat"}      {"foo": "bar"}                No
-  //   {"foo": ""}                       {"foo": "bar"}                No
-  map<string,string> tags = 7;
+message Input { 
+	string content = 1;
+	string description = 2;
+	string name = 3;
+	string path = 4;
+	bool streamable = 5;
+	FileType type = 6;
+	string url = 7;
 }
 
-// TaskView affects the fields returned by the ListTasks endpoint.
-//
-// Some of the fields in task can be large strings (e.g. logs),
-// which can be a burden on the network. In the default BASIC view,
-// these heavyweight fields are not included, however, a client may
-// request the FULL version to include these fields.
-enum TaskView {
-
-  // Task message will include ONLY the fields:
-  //   Task.Id
-  //   Task.State
-  MINIMAL = 0;
-
-  // Task message will include all fields EXCEPT:
-  //   Task.ExecutorLog.stdout
-  //   Task.ExecutorLog.stderr
-  //   Input.content
-  //   TaskLog.system_logs
-  BASIC = 1;
-
-  // Task message includes all fields.
-  FULL = 2;
+message InputBasic { 
+	string description = 1;
+	string name = 2;
+	string path = 3;
+	bool streamable = 4;
+	FileType type = 5;
+	string url = 6;
 }
 
-// OUTPUT ONLY
-//
-// ListTasksResponse describes a response from the ListTasks endpoint.
-message ListTasksResponse {
 
-  // REQUIRED
-  //
-  // List of tasks.
-  repeated Task tasks = 1;
-
-  // OPTIONAL
-  //
-  // Token used to return the next page of results.
-  // See TaskListRequest.next_page_token
-  string next_page_token = 2;
+message ListTasksResponse { 
+	string next_page_token = 1;
+	repeated Task tasks = 2;
 }
 
-// CancelTaskRequest describes a request to the CancelTask endpoint.
-message CancelTaskRequest {
-  // REQUIRED
-  //
-  // Task identifier.
-  string id = 1;
+message ListTasksResponseMin { 
+	string next_page_token = 1;
+	repeated TaskMin tasks = 2;
 }
 
-// OUTPUT ONLY
-//
-// CancelTaskResponse describes a response from the CancelTask endpoint.
-message CancelTaskResponse {}
-
-// ServiceInfoRequest describes a request to the ServiceInfo endpoint.
-message ServiceInfoRequest {}
-
-// OUTPUT ONLY
-//
-// ServiceInfo describes information about the service,
-// such as storage details, resource availability,
-// and other documentation.
-message ServiceInfo {
-
-  // Returns the name of the service, e.g. "ohsu-compbio-funnel".
-  string name = 1;
-
-  // Returns a documentation string, e.g. "Hey, we're OHSU Comp. Bio!".
-  string doc = 2;
-
-  // Lists some, but not necessarily all, storage locations supported by the service.
-  //
-  // Must be in a valid URL format.
-  // e.g. 
-  // file:///path/to/local/funnel-storage
-  // s3://ohsu-compbio-funnel/storage
-  // etc.
-  repeated string storage = 3;
-
-  map<string, int32> task_state_counts = 4;
+message ListTasksResponseBasic { 
+	string next_page_token = 1;
+	repeated TaskBasic tasks = 2;
 }
 
-// TaskService describes the HTTP/gRPC service API provided by TES
-// services to create, list, get, update tasks.
+message Output { 
+	string description = 1;
+	string name = 2;
+	string path = 3;
+	string path_prefix = 4;
+	FileType type = 5;
+	string url = 6;
+}
+
+message OutputFileLog { 
+	string path = 1;
+	string size_bytes = 2;
+	string url = 3;
+}
+
+message Resources { 
+	map<string,string> backend_parameters = 1;
+	bool backend_parameters_strict = 2;
+	int32 cpu_cores = 3;
+	double disk_gb = 4;
+	bool preemptible = 5;
+	double ram_gb = 6;
+	repeated string zones = 7;
+}
+
+message ServiceInfo { 
+	string contactUrl = 1;
+	string createdAt = 2;
+	string description = 3;
+	string documentationUrl = 4;
+	string environment = 5;
+	string id = 6;
+	string name = 7;
+	map<string,string> organization = 8;
+	repeated string storage = 9;
+	repeated string tesResources_backend_parameters = 10;
+	ServiceType type = 11;
+	string updatedAt = 12;
+	string version = 13;
+}
+
+message ServiceType { 
+	string artifact = 1;
+	string group = 2;
+	string version = 3;
+}
+
+message Task { 
+	string creation_time = 1;
+	string description = 2;
+	repeated Executor executors = 3;
+	string id = 4;
+	repeated Input inputs = 5;
+	repeated TaskLog logs = 6;
+	string name = 7;
+	repeated Output outputs = 8;
+	Resources resources = 9;
+	State state = 10;
+	map<string,string> tags = 11;
+	repeated string volumes = 12;
+}
+
+message TaskMin { 
+	string id = 4;
+	State state = 10;
+}
+
+message TaskBasic { 
+	string creation_time = 1;
+	string description = 2;
+	repeated ExecutorBasic executors = 3;
+	string id = 4;
+	repeated InputBasic inputs = 5;
+	repeated TaskLogBasic logs = 6;
+	string name = 7;
+	repeated Output outputs = 8;
+	Resources resources = 9;
+	State state = 10;
+	map<string,string> tags = 11;
+	repeated string volumes = 12;
+}
+
+message TaskLog { 
+	string end_time = 1;
+	repeated ExecutorLog logs = 2;
+	map<string,string> metadata = 3;
+	repeated OutputFileLog outputs = 4;
+	string start_time = 5;
+	repeated string system_logs = 6;
+}
+
+message TaskLogBasic { 
+	string end_time = 1;
+	repeated ExecutorLog logs = 2;
+	map<string,string> metadata = 3;
+	repeated OutputFileLog outputs = 4;
+	string start_time = 5;
+}
+
 service TaskService {
 
-  // GetServiceInfo provides information about the service,
-  // such as storage details, resource availability, and 
-  // other documentation.
-  rpc GetServiceInfo(ServiceInfoRequest) returns (ServiceInfo) {
-    option (google.api.http) = {
-      get: "/v1/tasks/service-info"
-    };
-  }
-
-  // Create a new task.
-  rpc CreateTask(Task) returns (CreateTaskResponse) {
-    option (google.api.http) = {
-      post: "/v1/tasks"
-      body: "*"
-    };
-  }
-
-  // List tasks.
-  // TaskView is requested as such: "v1/tasks?view=BASIC"
-  // Filter examples:
-  // "v1/tasks?view=MINIMAL&tags[workflowID]=e59fb57a-eb87-4c02-b7e2-562b586b5db3"
-  // "v1/tasks?state=RUNNING"
-  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
-    option (google.api.http) = {
-      get: "/v1/tasks"
-    };
-  }
-
-  // Get a task.
-  // TaskView is requested as such: "v1/tasks/{id}?view=FULL"
-  rpc GetTask(GetTaskRequest) returns (Task) {
+    rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
       option (google.api.http) = {
-        get: "/v1/tasks/{id}"
+        get: "/tasks"
+		additional_bindings {
+			get: "/v1/tasks"
+		}
+		additional_bindings {
+			get: "/ga4gh/tes/v1/tasks"
+		}
       };
-  }
+    }
 
-  // Cancel a task.
-  rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {
-    option (google.api.http) = {
-      post: "/v1/tasks/{id}:cancel"
-    };
-  }
+    rpc CreateTask(Task) returns (CreateTaskResponse) {
+      option (google.api.http) = {
+        post: "/tasks"
+		additional_bindings {
+			post: "/v1/tasks"
+			body: "*"
+		}
+		additional_bindings {
+			post: "/ga4gh/tes/v1/tasks"
+			body: "*"
+		}
+		body: "*"
+      };
+    }
+
+    rpc GetTask(GetTaskRequest) returns (Task) {
+      option (google.api.http) = {
+        get: "/tasks/{id}"
+		additional_bindings {
+			get: "/v1/tasks/{id}"
+		}
+		additional_bindings {
+			get: "/ga4gh/tes/v1/tasks/{id}"
+		}
+      };
+    }
+
+    rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {
+      option (google.api.http) = {
+        post: "/tasks/{id}:cancel"
+		additional_bindings {
+			post: "/v1/tasks/{id}:cancel"
+			body: "*"
+		}
+		additional_bindings {
+			post: "/ga4gh/tes/v1/tasks/{id}:cancel"
+			body: "*"
+		}
+		body: "*"
+      };
+    }
+
+    rpc GetServiceInfo(GetServiceInfoRequest) returns (ServiceInfo) {
+      option (google.api.http) = {
+        get: "/service-info"
+		additional_bindings {
+			get: "/v1/service-info"
+		}
+		additional_bindings {
+			get: "/ga4gh/tes/v1/service-info"
+		}
+      };
+    }
 
 }
+

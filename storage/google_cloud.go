@@ -13,6 +13,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 	"google.golang.org/api/storage/v1"
 )
 
@@ -52,7 +53,7 @@ func NewGoogleCloud(conf config.GoogleCloudStorage) (*GoogleCloud, error) {
 		}
 	}
 
-	svc, cerr := storage.New(client)
+	svc, cerr := storage.NewService(ctx, option.WithHTTPClient(client))
 	if cerr != nil {
 		return nil, cerr
 	}

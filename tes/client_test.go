@@ -39,7 +39,11 @@ func TestGetTask(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
 		ta := Task{Id: "test-id"}
-		Marshaler.Marshal(w, &ta)
+		o, _ := Marshaler.Marshal(&ta)
+		_, err = w.Write(o)
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	ts := testServer(mux)
@@ -52,7 +56,7 @@ func TestGetTask(t *testing.T) {
 	}
 	body, err := c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: TaskView_MINIMAL,
+		View: View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +74,11 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/tasks/test-id", func(w http.ResponseWriter, r *http.Request) {
 		ta := Task{Id: "test-id"}
-		Marshaler.Marshal(w, &ta)
+		o, _ := Marshaler.Marshal(&ta)
+		_, err = w.Write(o)
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	ts := testServer(mux)
@@ -83,7 +91,7 @@ func TestGetTaskTrailingSlash(t *testing.T) {
 	}
 	body, err := c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: TaskView_MINIMAL,
+		View: View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +121,7 @@ func TestClientTimeout(t *testing.T) {
 
 	_, err = c.GetTask(context.Background(), &GetTaskRequest{
 		Id:   "test-id",
-		View: TaskView_MINIMAL,
+		View: View_MINIMAL.String(),
 	})
 	close(ch)
 	if err == nil {

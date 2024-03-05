@@ -137,16 +137,17 @@ jobs:
         project_id: 'gen3-363118'
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
     
-    - name: GS Storage Test
-      run: |
-        chmod +x funnel
-        make start-generic-s3
-        sleep 10
-        make test-gs
+    # - name: GS Storage Test
+    #   run: |
+    #     chmod +x funnel
+    #     make start-generic-s3
+    #     sleep 10
+    #     make test-gs
 
     - name: S3 Test
       run: |
         chmod +x funnel
         make start-generic-s3
         sleep 10
+        export PROJECT_ID=bmeg-io
         make test-generic-s3

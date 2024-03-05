@@ -134,7 +134,7 @@ jobs:
  
     - uses: 'google-github-actions/auth@v2'
       with:
-        project_id: 'gen3-363118'
+        project_id: 'bmeg-io'
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
     
     # - name: GS Storage Test

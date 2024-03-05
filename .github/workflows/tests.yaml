@@ -144,10 +144,10 @@ jobs:
     #     sleep 10
     #     make test-generic-s3
     
-    - name: GS Storage Test
+    - name: Google Storage Test
       run: |
         chmod +x funnel
         make start-generic-s3
         sleep 10
-        export PROJECT_ID=bmeg-io
+        export GCE_PROJECT_ID=bmeg-io
         make test-gs

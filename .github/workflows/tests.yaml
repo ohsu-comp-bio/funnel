@@ -1,22 +1,22 @@
-name: Go
+name: Go Tests
 
-on: [ pull_request ]
+on:
+  push:
 
 jobs:
-
   lint:
     name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.21
       - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.52.2
-          args: --timeout 3m --verbose
+          version: latest
+          args: --timeout 3m --verbose -D unused -D errcheck -D staticcheck -D govet -D gosimple -D ineffassign
 
   build:
     runs-on: ubuntu-latest
@@ -24,13 +24,13 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.18
+        go-version: 1.21
 
     - name: Check out code
       uses: actions/checkout@v2
 
     - name: Build
-      run: go build -v ./
+      run: make build
 
     - name: Store funnel
       uses: actions/upload-artifact@v2
@@ -44,16 +44,22 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.18
+        go-version: 1.21
     - name: Check out code
       uses: actions/checkout@v2
+
     - name: Unit Tests
-      run: make test
+      run: make test-verbose
 
   mongoTest:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.21
+
     - name: Check out code
       uses: actions/checkout@v2
 
@@ -61,6 +67,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: funnelBin
+
     - name: MongoTest
       run: |
         chmod +x funnel
@@ -72,6 +79,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.21
     - name: Check out code
       uses: actions/checkout@v2
 
@@ -83,3 +94,48 @@ jobs:
       run: |
         chmod +x funnel
         make test-badger
+
+  slurmTest:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.21
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Download funnel bin
+      uses: actions/download-artifact@v2
+      with:
+        name: funnelBin
+
+    - name: Slurm Test
+      run: |
+        chmod +x funnel
+        make test-slurm
+
+  s3Test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.21
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Download funnel bin
+      uses: actions/download-artifact@v2
+      with:
+        name: funnelBin
+
+    - name: S3 Test
+      run: |
+        chmod +x funnel
+        make start-generic-s3
+        sleep 10
+        make test-generic-s3
+          

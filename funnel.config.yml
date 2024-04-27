@@ -1,0 +1,8 @@
+LocalStorage:
+  # Whitelist of local directory paths which Funnel is allowed to access.
+  AllowedDirs:
+    - ./
+    - /tmp
+
+Worker:
+  LeaveWorkDir: true

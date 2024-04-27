@@ -23,9 +23,9 @@ func (db *Badger) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Ta
 	}
 
 	switch req.View {
-	case tes.Minimal:
+	case tes.View_MINIMAL.String():
 		task = task.GetMinimalView()
-	case tes.Basic:
+	case tes.View_BASIC.String():
 		task = task.GetBasicView()
 	}
 	return task, nil
@@ -77,7 +77,7 @@ func (db *Badger) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*te
 			}
 
 			// Filter tasks by tag.
-			for k, v := range req.Tags {
+			for k, v := range req.GetTags() {
 				tval, ok := task.Tags[k]
 				if !ok || tval != v {
 					continue taskLoop
@@ -90,9 +90,9 @@ func (db *Badger) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*te
 			}
 
 			switch req.View {
-			case tes.Minimal:
+			case tes.View_MINIMAL.String():
 				task = task.GetMinimalView()
-			case tes.Basic:
+			case tes.View_BASIC.String():
 				task = task.GetBasicView()
 			}
 

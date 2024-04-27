@@ -49,10 +49,7 @@ func (tg *taskGroup) _run(task *tes.Task, wait bool, waitFor []string) error {
 
 	if tg.printTask {
 		// Marshal message to JSON
-		taskJSON, merr := tg.client.Marshaler.MarshalToString(task)
-		if merr != nil {
-			return merr
-		}
+		taskJSON := tg.client.Marshaler.Format(task)
 		fmt.Println(taskJSON)
 		return nil
 	}

@@ -21,3 +21,5 @@ docker/funnel
 deployments/kubernetes/**/funnel
 deployments/kubernetes/**/*.json
 funnel
+dist/
+.vscode

@@ -99,7 +99,6 @@ func TestManualBackend(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create node", err)
 	}
-
 	go n.Run(ctx)
 
 	// run tasks and check that they all complete
@@ -147,7 +146,12 @@ func TestDeadNodeTaskCleanup(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create node")
 	}
-	go n.Run(ctx)
+	go func() {
+		err := n.Run(ctx)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
 
 	id := srv.Run(`
       --sh 'echo hello world'

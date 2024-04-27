@@ -41,7 +41,7 @@ func DefaultScores(w *Node, t *tes.Task) Scores {
 	avail := w.GetAvailable()
 	s := Scores{}
 
-	s[CPU] = float32(avail.GetCpus()+req.GetCpuCores()) / float32(tot.GetCpus())
+	s[CPU] = float32(int32(avail.GetCpus())+req.GetCpuCores()) / float32(tot.GetCpus())
 	s[RAM] = float32(avail.GetRamGb() + req.GetRamGb()/tot.GetRamGb())
 	return s
 }

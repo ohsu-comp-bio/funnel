@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -17,6 +18,9 @@ type stepWorker struct {
 }
 
 func (s *stepWorker) Run(ctx context.Context) error {
+	// WaitGroup to block closing the worker until the last event is written from events/executor.go:StreamLogTail()
+	var wg sync.WaitGroup
+	defer wg.Wait()
 	s.Event.StartTime(time.Now())
 
 	// subctx helps ensure that these goroutines are cleaned up,
@@ -31,7 +35,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 	// Tail the stdout/err log streams.
 	if s.Conf.LogTailSize > 0 {
 		if s.Conf.LogUpdateRate > 0 {
-			stdout, stderr = s.Event.StreamLogTail(subctx, s.Conf.LogTailSize, time.Duration(s.Conf.LogUpdateRate))
+			stdout, stderr = s.Event.StreamLogTail(subctx, s.Conf.LogTailSize, time.Duration(s.Conf.LogUpdateRate), &wg)
 		} else {
 			stdout, stderr = s.Event.LogTail(subctx, s.Conf.LogTailSize)
 		}

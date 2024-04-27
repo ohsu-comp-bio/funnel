@@ -176,7 +176,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 	writer = &events.SystemLogFilter{Writer: &writers, Level: conf.Logger.Level}
 
 	// Compute
-	var compute events.Writer
+	var compute events.Computer
 	switch strings.ToLower(conf.Compute) {
 	case "manual":
 		if nodes == nil {
@@ -197,7 +197,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			Queue: queue,
 			Event: &events.ErrLogger{Writer: writer, Log: log.Sub("scheduler")},
 		}
-		compute = events.Noop{}
+		compute = events.Backend{}
 
 	case "aws-batch":
 		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, writer, log.Sub("aws-batch"))

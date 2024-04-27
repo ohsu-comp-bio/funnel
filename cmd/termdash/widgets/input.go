@@ -80,7 +80,7 @@ func (i *Input) KeyPress(e ui.Event) {
 	if len(i.Data) >= i.MaxLen {
 		return
 	}
-	if strings.Index(inputChars, ch) > -1 {
+	if strings.Contains(inputChars, ch) {
 		i.Data += ch
 		i.stream <- i.Data
 		ui.Render(i)

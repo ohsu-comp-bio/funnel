@@ -1,0 +1,67 @@
+name: Nextflow Test
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.21
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build Funnel (if cache does not exist)
+      run: make build
+
+    - name: Store Funnel
+      uses: actions/upload-artifact@v2
+      with:
+        name: funnelBin
+        path: funnel
+  
+  nextflow:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Download Funnel
+      uses: actions/download-artifact@v2
+      with:
+        name: funnelBin
+        path: funnel
+
+    - name: Start Funnel
+      working-directory: 
+      run: |
+        cd funnel/
+        chmod +x ./funnel
+        ./funnel server --LocalStorage.AllowedDirs $HOME run &
+
+    - name: Install Nextflow
+      run: |
+        cd ..
+        git clone https://github.com/nextflow-io/nextflow/ -b tes-update-1.1
+        cd nextflow
+        make compile
+
+    - name: Install nf-canary and GA4GH-TES plugin
+      run: |
+        cd ..
+        git clone https://github.com/seqeralabs/nf-canary
+        cd nf-canary
+        cat <<EOF >> nextflow.config
+          plugins {
+            id 'nf-ga4gh'
+          }
+          process.executor = 'tes'
+          tes.endpoint = 'http://localhost:8000'
+        EOF
+  
+    - name: Run nf-canary tests
+      run: |
+        cd ../nf-canary
+        ../nextflow/launch.sh run main.nf

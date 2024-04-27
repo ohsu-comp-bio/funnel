@@ -39,6 +39,7 @@
           <li><a href="https://ohsu-comp-bio.github.io/funnel/docs/">Docs</a></li>
           <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
           <li><a href="https://gitter.im/ohsu-comp-bio/funnel">Chat</a></li>
+          <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
         </ul>
       <div class="global-header-ohsucb">
         <a href="https://www.ohsu.edu/xd/education/schools/school-of-medicine/departments/computational-biology/"><h2>OHSU Comp Bio</h2></a>
@@ -342,7 +343,7 @@
 <p>Additional Funnel deployment resources can be found here: <a href="https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes">https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes</a></p>
 <h4 id="create-a-service">Create a Service:</h4>
 <p><em>funnel-service.yml</em></p>
-<pre><code>apiVersion: v1
+<pre tabindex="0"><code>apiVersion: v1
 kind: Service
 metadata:
   name: funnel
@@ -358,16 +359,15 @@ spec:
       protocol: TCP
       port: 9090
       targetPort: 9090
-
 </code></pre><p>Deploy it:</p>
-<pre><code>kubectl apply -f funnel-service.yml
+<pre tabindex="0"><code>kubectl apply -f funnel-service.yml
 </code></pre><p>Get the clusterIP:</p>
-<pre><code>kubectl get services funnel --output=yaml | grep clusterIP
+<pre tabindex="0"><code>kubectl get services funnel --output=yaml | grep clusterIP
 </code></pre><p>Use this value to configure the server hostname of the worker config.</p>
 <h4 id="create-funnel-config-files">Create Funnel config files</h4>
 <p><em>Note</em>: The configures job template uses the image, <code>ohsucompbio/funnel-dind:latest</code>, which is built on docker&rsquo;s official <a href="https://hub.docker.com/_/docker">docker-in-docker image (dind)</a>. You can also use the experimental <a href="https://docs.docker.com/engine/security/rootless/">rootless dind variant</a> by changing the image to <code>ohsucompbio/funnel-dind-rootless:latest</code>.</p>
 <p><em>funnel-server-config.yml</em></p>
-<pre><code>Database: boltdb
+<pre tabindex="0"><code>Database: boltdb
 
 Compute: kubernetes
 
@@ -393,25 +393,25 @@ Kubernetes:
         spec:
           restartPolicy: Never
           containers: 
-            - name: {{printf &quot;funnel-worker-%s&quot; .TaskId}}
+            - name: {{printf &#34;funnel-worker-%s&#34; .TaskId}}
               image: ohsucompbio/funnel-dind:latest
               imagePullPolicy: IfNotPresent
               args:
-                - &quot;funnel&quot;
-                - &quot;worker&quot;
-                - &quot;run&quot;
-                - &quot;--config&quot;
-                - &quot;/etc/config/funnel-worker-config.yml&quot;
-                - &quot;--taskID&quot;
+                - &#34;funnel&#34;
+                - &#34;worker&#34;
+                - &#34;run&#34;
+                - &#34;--config&#34;
+                - &#34;/etc/config/funnel-worker-config.yml&#34;
+                - &#34;--taskID&#34;
                 - {{.TaskId}}
               resources:
                   requests:
-                    cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{&quot;100m&quot;}}{{end}}
-                    memory: {{if ne .RamGb 0.0 -}}{{printf &quot;%.0fG&quot; .RamGb}}{{else}}{{&quot;16M&quot;}}{{end}}
-                    ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf &quot;%.0fG&quot; .DiskGb}}{{else}}{{&quot;100M&quot;}}{{end}}
+                    cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{&#34;100m&#34;}}{{end}}
+                    memory: {{if ne .RamGb 0.0 -}}{{printf &#34;%.0fG&#34; .RamGb}}{{else}}{{&#34;16M&#34;}}{{end}}
+                    ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf &#34;%.0fG&#34; .DiskGb}}{{else}}{{&#34;100M&#34;}}{{end}}
               volumeMounts:
-                - name: {{printf &quot;funnel-storage-%s&quot; .TaskId}}
-                  mountPath: {{printf &quot;/opt/funnel/funnel-work-dir/%s&quot; .TaskId}}
+                - name: {{printf &#34;funnel-storage-%s&#34; .TaskId}}
+                  mountPath: {{printf &#34;/opt/funnel/funnel-work-dir/%s&#34; .TaskId}}
                 - name: config-volume
                   mountPath: /etc/config
 
@@ -419,7 +419,7 @@ Kubernetes:
                 privileged: true
     
           volumes: 
-            - name: {{printf &quot;funnel-storage-%s&quot; .TaskId}}
+            - name: {{printf &#34;funnel-storage-%s&#34; .TaskId}}
               emptyDir: {}
             - name: config-volume
               configMap:
@@ -427,7 +427,7 @@ Kubernetes:
 </code></pre><p>I recommend setting <code>DisableJobCleanup</code> to <code>true</code> for debugging - otherwise failed jobs will be cleanup up.</p>
 <p><em>funnel-worker-config.yml</em></p>
 <p><em><strong>Remember to modify the template below to have the actual server hostname.</strong></em></p>
-<pre><code>Database: boltdb
+<pre tabindex="0"><code>Database: boltdb
 
 BoltDB:
   Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
@@ -449,27 +449,27 @@ Server:
   HostName: &lt; funnel service clusterIP &gt;
   RPCPort: 9090
 </code></pre><h4 id="create-a-configmap">Create a ConfigMap</h4>
-<pre><code>kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+<pre tabindex="0"><code>kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
 </code></pre><h4 id="create-a-service-account-for-funnel">Create a Service Account for Funnel</h4>
 <p>Define a Role and RoleBinding:</p>
 <p><em>role.yml</em></p>
-<pre><code>kind: Role
+<pre tabindex="0"><code>kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   namespace: default
   name: funnel-role
 rules:
-- apiGroups: [&quot;&quot;]
-  resources: [&quot;pods&quot;]
-  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
-- apiGroups: [&quot;batch&quot;, &quot;extensions&quot;]
-  resources: [&quot;jobs&quot;]
-  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]
-- apiGroups: [&quot;extensions&quot;, &quot;apps&quot;]
-  resources: [&quot;deployments&quot;]
-  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]
+- apiGroups: [&#34;&#34;]
+  resources: [&#34;pods&#34;]
+  verbs: [&#34;get&#34;, &#34;list&#34;, &#34;watch&#34;]
+- apiGroups: [&#34;batch&#34;, &#34;extensions&#34;]
+  resources: [&#34;jobs&#34;]
+  verbs: [&#34;get&#34;, &#34;list&#34;, &#34;watch&#34;, &#34;create&#34;, &#34;update&#34;, &#34;patch&#34;, &#34;delete&#34;]
+- apiGroups: [&#34;extensions&#34;, &#34;apps&#34;]
+  resources: [&#34;deployments&#34;]
+  verbs: [&#34;get&#34;, &#34;list&#34;, &#34;watch&#34;, &#34;create&#34;, &#34;update&#34;, &#34;patch&#34;, &#34;delete&#34;]
 </code></pre><p><em>role_binding.yml</em></p>
-<pre><code>kind: RoleBinding
+<pre tabindex="0"><code>kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: funnel-rolebinding
@@ -482,12 +482,12 @@ roleRef:
   name: funnel-role
   apiGroup: rbac.authorization.k8s.io
 </code></pre><p>Create the service account, role and role binding:</p>
-<pre><code>kubectl create serviceaccount funnel-sa --namespace default
+<pre tabindex="0"><code>kubectl create serviceaccount funnel-sa --namespace default
 kubectl create -f role.yml
 kubectl create -f role_binding.yml
 </code></pre><h4 id="create-a-deployment">Create a Deployment</h4>
 <p><em>funnel-deployment.yml</em></p>
-<pre><code>apiVersion: apps/v1
+<pre tabindex="0"><code>apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: funnel
@@ -509,11 +509,11 @@ spec:
           image: ohsucompbio/funnel:latest
           imagePullPolicy: IfNotPresent
           command: 
-            - 'funnel'
-            - 'server'
-            - 'run'
-            - '--config'
-            - '/etc/config/funnel-server-config.yml'
+            - &#39;funnel&#39;
+            - &#39;server&#39;
+            - &#39;run&#39;
+            - &#39;--config&#39;
+            - &#39;/etc/config/funnel-server-config.yml&#39;
           resources: 
             requests: 
               cpu: 2 
@@ -535,13 +535,13 @@ spec:
           configMap:
             name: funnel-config
 </code></pre><p>Deploy it:</p>
-<pre><code>kubectl apply -f funnel-deployment.yml
+<pre tabindex="0"><code>kubectl apply -f funnel-deployment.yml
 </code></pre><h4 id="proxy-the-service-for-local-testing">Proxy the Service for local testing</h4>
-<pre><code>kubectl port-forward service/funnel 8000:8000
+<pre tabindex="0"><code>kubectl port-forward service/funnel 8000:8000
 </code></pre><p>Now you can access the funnel server locally. Verify by running:</p>
-<pre><code>funnel task list
+<pre tabindex="0"><code>funnel task list
 </code></pre><p>Now try running a task:</p>
-<pre><code>funnel examples hello-world &gt; hello.json
+<pre tabindex="0"><code>funnel examples hello-world &gt; hello.json
 funnel task create hello.json
 </code></pre>
   </div>

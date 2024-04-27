@@ -9,3 +9,7 @@ menu:
       parent: Development
       url: https://godoc.org/github.com/ohsu-comp-bio/funnel
       weight: 30
+security:
+  funcs:
+    getenv:
+      - ^FUNNEL_

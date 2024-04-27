@@ -1,0 +1,48 @@
+# Credit: rhnvrm
+# Adapted from: https://rohanverma.net/blog/2021/02/09/minio-github-actions/
+
+name: S3 Integration Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  s3Test-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup minio
+        run: |
+          docker run -d -p 9000:9000 --name minio \
+                     -e "MINIO_ROOT_USER=minioadmin" \
+                     -e "MINIO_ROOT_PASSWORD=minioadmin" \
+                     -v /tmp/data:/data \
+                     -v /tmp/config:/root/.minio \
+                     minio/minio server /data
+
+          cat <<EOF > funnel.config.yml
+          LocalStorage:
+            Disabled: true
+          AmazonS3:
+            Disabled: true
+          GoogleStorage:
+            Disabled: true
+          HTTPStorage:
+            Disabled: true
+          FTPStorage:
+            Disabled: true
+          GenericS3:
+            - Disabled: false
+              Endpoint: "localhost:9000"
+              Key: "minioadmin"
+              Secret: "minioadmin"
+          EOF
+
+          wget https://github.com/ohsu-comp-bio/funnel/releases/download/untagged-217841a99d14ccfe289c/funnel-darwin-arm64-0.11.0.tar.gz
+          tar -zxvf funnel-darwin-arm64-0.11.0.tar.gz
+          chmod +x funnel
+          ./funnel server run --config funnel.config.yml &
+          ./funnel task run examples/s3-test.yml

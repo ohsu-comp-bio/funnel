@@ -1,5 +1,5 @@
 ---
-title: Download
+title: Download 0.11.0
 menu:
   main:
     weight: -2000
@@ -15,7 +15,7 @@ Funnel is beta quality. APIs might break, bugs exist, data might be lost.
 
 ```
 brew tap ohsu-comp-bio/formula
-brew install funnel@0.11
+brew install funnel
 ```
 
 <h3>Build the lastest development version <i class="optional">optional</i></h3>

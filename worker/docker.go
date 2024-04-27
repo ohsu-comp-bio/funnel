@@ -57,7 +57,12 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	}
 
 	args = append(args, dcmd.Image)
-	args = append(args, dcmd.ShellCommand...)
+	// if dcmd.Command contains the ["/bin/bash", "-ue"] string, replace it with "/bin/bash -ue"
+	c := strings.Join(dcmd.Command, " ")
+	if strings.Contains(c, "[/bin/bash, -ue]") {
+		dcmd.Command = transformCommandSlice(dcmd.Command)
+	}
+	args = append(args, dcmd.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
 	err = dcmd.Event.Info(fmt.Sprintf("args: %s", args))

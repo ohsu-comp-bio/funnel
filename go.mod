@@ -59,9 +59,9 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2
 	google.golang.org/grpc v1.63.2
 	gopkg.in/olivere/elastic.v5 v5.0.86
-	k8s.io/api v0.29.1
+	k8s.io/api v0.30.0
 	k8s.io/apimachinery v0.30.0
-	k8s.io/client-go v0.29.1
+	k8s.io/client-go v0.30.0
 )
 
 require (

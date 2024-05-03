@@ -5,7 +5,7 @@ toolchain go1.22.2
 
 require (
 	cloud.google.com/go/datastore v1.15.0
-	cloud.google.com/go/pubsub v1.36.1
+	cloud.google.com/go/pubsub v1.37.0
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.26.1
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
@@ -74,7 +74,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.112.0 // indirect
+	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/auth v0.3.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect

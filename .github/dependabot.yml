@@ -4,5 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    # Raise pull requests for version updates against the `develop` branch
     target-branch: "develop"
+    groups:
+      dependabot:
+        patterns:
+          - "*"
+

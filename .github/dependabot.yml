@@ -5,8 +5,8 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "develop"
-    group:
-      - "golang-libraries"
-    labels: 
-      - "dependencies"
+    groups:
+      dependabot:
+        patterns:
+          - "*"
 

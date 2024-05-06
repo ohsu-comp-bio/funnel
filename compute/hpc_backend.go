@@ -17,6 +17,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/fsutil"
+	"github.com/ohsu-comp-bio/funnel/version"
 )
 
 // HPCBackend represents an HPCBackend such as HtCondor, Slurm, Grid Engine, etc.
@@ -46,9 +47,12 @@ type HPCBackend struct {
 // WriteEvent writes an event to the compute backend.
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
+	//fmt.Println("DEBUG: ctx: ", ctx)
+	//fmt.Println("DEBUG: ctx.HostName: ", ctx.Value("HostName"))
+	fmt.Println("DEBUG: WriteEvent ev: ", ev)
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ev.GetTask())
+		return b.Submit(ctx, ev.GetTask())
 
 	case events.Type_TASK_STATE:
 		if ev.GetState() == tes.State_CANCELED {
@@ -61,10 +65,9 @@ func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
 func (b *HPCBackend) Close() {}
 
 // Submit submits a task via "qsub", "condor_submit", "sbatch", etc.
-func (b *HPCBackend) Submit(task *tes.Task) error {
-	ctx := context.Background()
-
-	submitPath, err := b.setupTemplatedHPCSubmit(task)
+func (b *HPCBackend) Submit(ctx context.Context, task *tes.Task) error {
+	fmt.Println("DEBUG: ctx: ", ctx)
+	submitPath, err := b.setupTemplatedHPCSubmit(ctx, task)
 	if err != nil {
 		return err
 	}
@@ -74,9 +77,18 @@ func (b *HPCBackend) Submit(task *tes.Task) error {
 	cmd := exec.Command(b.SubmitCmd, submitPath)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	fmt.Println("DEBUG: cmd:", cmd)
+	
+
+	var event *events.TaskWriter
+	event = events.NewTaskWriter(task.GetId(), 0, b.Event)
+	event.Info("Version", version.LogFields()...)
+	event.State(tes.State_INITIALIZING)
+	event.StartTime(time.Now())
 
 	err = cmd.Run()
 	if err != nil {
+		fmt.Println("DEBUG: err:", err)
 		b.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
 		b.Event.WriteEvent(
 			ctx,
@@ -90,6 +102,7 @@ func (b *HPCBackend) Submit(task *tes.Task) error {
 	}
 
 	backendID := b.ExtractID(stdout.String())
+	fmt.Println("DEBUG: backendID:", backendID)
 
 	return b.Event.WriteEvent(
 		ctx,
@@ -142,6 +155,7 @@ func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
 // stuck in the queued state because the resource request that can never be fulfilled.
 func (b *HPCBackend) Reconcile(ctx context.Context) {
 	ticker := time.NewTicker(b.ReconcileRate)
+	fmt.Println("DEBUG: b.ReconcileRate:", b.ReconcileRate)
 
 ReconcileLoop:
 	for {
@@ -175,6 +189,7 @@ ReconcileLoop:
 							ids = append(ids, bid)
 						}
 					}
+					fmt.Println("DEBUG: ids:", ids)
 
 					if len(ids) == 0 {
 						if pageToken == "" {
@@ -229,7 +244,8 @@ ReconcileLoop:
 // setupTemplatedHPCSubmit sets up a task submission in a HPC environment with
 // a shared file system. It generates a submission file based on a template for
 // schedulers such as SLURM, HTCondor, SGE, PBS/Torque, etc.
-func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
+func (b *HPCBackend) setupTemplatedHPCSubmit(ctx context.Context, task *tes.Task) (string, error) {
+	fmt.Println("DEBUG: setupTemplatedHPCSubmit()")
 	var err error
 
 	// TODO document that these working dirs need manual cleanup
@@ -237,6 +253,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	workdir, _ = filepath.Abs(workdir)
 	err = fsutil.EnsureDir(workdir)
 	if err != nil {
+		fmt.Println("DEBUG: err 0:", err)
 		return "", err
 	}
 
@@ -245,11 +262,15 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 	submitPath := path.Join(workdir, submitName)
 	f, err := os.Create(submitPath)
 	if err != nil {
+		fmt.Println("DEBUG: err 1:", err)
 		return "", err
 	}
 
 	submitTpl, err := template.New(submitName).Parse(b.Template)
+	fmt.Println("DEBUG: submitTpl:", submitTpl)
+	fmt.Println("DEBUG: b.Template:", b.Template)
 	if err != nil {
+		fmt.Println("DEBUG: err 2:", err)
 		return "", err
 	}
 
@@ -264,6 +285,9 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		zone = zones[0]
 	}
 
+	args := fmt.Sprintf("--Server.HostName %v", ctx.Value("HostName"))
+	fmt.Println("DEBUG: args:", args)
+
 	err = submitTpl.Execute(f, map[string]interface{}{
 		"TaskId":  task.Id,
 		"WorkDir": workdir,
@@ -271,12 +295,16 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		"RamGb":   res.GetRamGb(),
 		"DiskGb":  res.GetDiskGb(),
 		"Zone":    zone,
+		"Args":	   args,
 	})
 	if err != nil {
+		fmt.Println("DEBUG: err 3:", err)
 		return "", err
 	}
+	fmt.Println("DEBUG: f.Name()", f.Name())
 	f.Close()
 
+	fmt.Println("DEBUG: submitPath", submitPath)
 	return submitPath, nil
 }
 

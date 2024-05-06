@@ -3,6 +3,7 @@ package config
 
 import (
 	"os"
+	"fmt"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
@@ -88,6 +89,7 @@ func (c Server) HTTPAddress() string {
 	if c.HTTPPort != "" {
 		http = http + ":" + c.HTTPPort
 	}
+	fmt.Println("DEBUG: http:", http)
 	return http
 }
 
@@ -97,6 +99,7 @@ func (c *Server) RPCAddress() string {
 	if c.RPCPort != "" {
 		rpc = rpc + ":" + c.RPCPort
 	}
+	fmt.Println("DEBUG: rpc:", rpc)
 	return rpc
 }
 

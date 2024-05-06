@@ -86,6 +86,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/frankban/quicktest v1.14.4 // indirect
 	github.com/gammazero/deque v0.0.0-20190521012701-46e4ffb7a622 // indirect
+	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/go-ini/ini v1.52.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect

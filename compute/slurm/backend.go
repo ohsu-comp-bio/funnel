@@ -43,6 +43,8 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		ReconcileRate: time.Duration(conf.Slurm.ReconcileRate),
 	}
 
+	fmt.Println("DEBUG: conf.Slurm.DisableReconciler:", conf.Slurm.DisableReconciler)
+	fmt.Println("DEBUG: conf.Slurm.ReconcileRate:", conf.Slurm.ReconcileRate)
 	if !conf.Slurm.DisableReconciler {
 		go b.Reconcile(ctx)
 	}
@@ -88,6 +90,7 @@ func mapStates(ids []string) ([]*compute.HPCTaskState, error) {
 	}
 
 	cmd = exec.Command("sacct", "--noheader", "--format", "jobid,state", "--job", strings.Join(ids, ","))
+	fmt.Println("DEBUG: cmd.String():", cmd.String())
 	stdout, err = cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("sacct command failed: %v", err)

@@ -2,6 +2,7 @@
 package server
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -106,6 +107,7 @@ type JSONError struct {
 func (s *Server) Serve(pctx context.Context) error {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
+	fmt.Println("DEBUG: Serve()")
 
 	// Open TCP connection for RPC
 	lis, err := net.Listen("tcp", s.RPCAddress)

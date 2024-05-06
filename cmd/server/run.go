@@ -142,6 +142,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		eventWriterSet[strings.ToLower(w)] = nil
 	}
 
+	fmt.Println("DEBUG: eventWriterSet:", eventWriterSet)
 	for e := range eventWriterSet {
 		switch e {
 		case strings.ToLower(conf.Database):
@@ -271,6 +272,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 				Compute: compute,
 				Read:    reader,
 				Log:     log,
+				HostName: conf.Server.HostName, 
 			},
 			Events: &events.Service{Writer: writer},
 			Nodes:  nodes,

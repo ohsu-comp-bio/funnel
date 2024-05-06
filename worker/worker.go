@@ -44,6 +44,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	var run helper
 	var task *tes.Task
 
+	fmt.Println("DEBUG: pctx: ", pctx)
 	task, run.syserr = r.TaskReader.Task(pctx)
 	// TODO if we failed to retrieve the task, we can't do anything useful.
 	//      but, it's also difficult to report the failure usefully.
@@ -97,9 +98,6 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		}
 
 		// cleanup workdir
-		if !r.Conf.LeaveWorkDir {
-			mapper.Cleanup()
-		}
 	}()
 
 	// Recover from panics

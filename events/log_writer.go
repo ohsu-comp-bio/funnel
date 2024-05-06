@@ -16,6 +16,7 @@ type Logger struct {
 
 // WriteEvent writes an event to the logger.
 func (el *Logger) WriteEvent(ctx context.Context, ev *Event) error {
+	fmt.Println("DEBUG: WriteEvnet ev:", ev)
 	ts := ev.Type.String()
 	log := el.Log.WithFields(
 		"taskID", ev.Id,

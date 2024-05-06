@@ -3,6 +3,7 @@
 #SBATCH --ntasks 1
 #SBATCH --error {{.WorkDir}}/funnel-stderr
 #SBATCH --output {{.WorkDir}}/funnel-stdout
+#SBATCH --gres disk:1
 {{if ne .Cpus 0 -}}
 {{printf "#SBATCH --cpus-per-task %d" .Cpus}}
 {{- end}}
@@ -13,4 +14,9 @@
 {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
 {{- end}}
 
-funnel worker run --taskID {{.TaskId}}
+srun /usr/local/bin/mkdir-scratch.sh
+SCRATCH_PATH="/mnt/scratch/${SLURM_JOB_ID}"
+cd $SCRATCH_PATH
+srun bash -c 'funnel worker run --taskID {{.TaskId}} {{.Args}}' --temp-dir $SCRATCH_PATH
+cd -
+srun /usr/local/bin/rmdir-scratch.sh

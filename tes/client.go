@@ -35,7 +35,7 @@ func NewClient(address string) (*Client, error) {
 		endpoint = "http://" + endpoint
 	}
 
-	return &Client{
+	client := &Client{
 		address: endpoint,
 		client: &http.Client{
 			Timeout: 60 * time.Second,
@@ -43,7 +43,10 @@ func NewClient(address string) (*Client, error) {
 		Marshaler: &Marshaler,
 		User:      user,
 		Password:  password,
-	}, nil
+	}
+	
+	fmt.Println("DEBUG: client:", client)
+	return client, nil
 }
 
 // Client represents the HTTP Task client.

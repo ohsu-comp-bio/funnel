@@ -29,6 +29,7 @@ type TaskService struct {
 	Compute events.Computer
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
+	HostName string
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -44,6 +45,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		return nil, fmt.Errorf("error from backend: %s", err)
 	}
 
+	ctx = context.WithValue(ctx, "HostName", ts.HostName)
 	if err := ts.Event.WriteEvent(ctx, events.NewTaskCreated(task)); err != nil {
 		return nil, fmt.Errorf("error creating task: %s", err)
 	}

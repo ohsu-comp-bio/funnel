@@ -25,13 +25,13 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 		dcmd.Event.Error("failed to sync docker client API version", err)
 	}
 
-	pullcmd := exec.Command("docker", "pull", dcmd.Image)
+	pullcmd := exec.Command(dcmd.Engine, "pull", dcmd.Image)
 	err = pullcmd.Run()
 	if err != nil {
 		dcmd.Event.Error("failed to pull docker image", err)
 	}
 
-	args := []string{"run", "-i", "--read-only"}
+	args := []string{dcmd.Engine, "run", "-i", "--read-only"}
 
 	if dcmd.RemoveContainer {
 		args = append(args, "--rm")
@@ -66,8 +66,9 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
 	err = dcmd.Event.Info(fmt.Sprintf("args: %s", args))
-	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
-	cmd := exec.Command("docker", args...)
+	dcmd.Event.Info("Running command", "cmd", dcmd.Engine+" "+strings.Join(args, " "))
+	strings.Split(dcmd.Engine, " ")
+	cmd := exec.Command("sudo", args...)
 
 	if dcmd.Stdin != nil {
 		cmd.Stdin = dcmd.Stdin
@@ -88,7 +89,7 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 func (dcmd DockerCommand) Stop() error {
 	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
 	// cmd := exec.Command("docker", "stop", dcmd.ContainerName)
-	cmd := exec.Command("docker", "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
+	cmd := exec.Command("sudo", "opt/acc/sbin/exadocker", "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 
@@ -130,7 +131,7 @@ func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			cmd := exec.CommandContext(ctx, "docker", "inspect", dcmd.ContainerName)
+			cmd := exec.CommandContext(ctx, "sudo", "/opt/acc/sbin/exadocker", "inspect", dcmd.ContainerName)
 			out, err := cmd.Output()
 			if err == nil {
 				meta := []metadata{}
@@ -156,10 +157,10 @@ type dockerVersion struct {
 // the server.
 func SyncDockerAPIVersion() error {
 	if os.Getenv("DOCKER_API_VERSION") == "" {
-		cmd := exec.Command("docker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		cmd := exec.Command("sudo", "/opt/acc/sbin/exadocker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
 		out, err := cmd.Output()
 		if err != nil {
-			return fmt.Errorf("docker version command failed: %v", err)
+			return fmt.Errorf("sudo", "/opt/acc/sbin/exadocker version command failed: %v", err)
 		}
 		version := &dockerVersion{}
 		err = json.Unmarshal(out, version)

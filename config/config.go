@@ -151,6 +151,9 @@ type Worker struct {
 	LeaveWorkDir bool
 	// Limit the number of concurrent downloads/uploads
 	MaxParallelTransfers int
+	// Container engine to use for executing tasks.
+	// Typically this is "docker".
+	Engine string
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

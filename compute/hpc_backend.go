@@ -48,7 +48,7 @@ type HPCBackend struct {
 func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ev.GetTask())
+		return b.Submit(ctx, ev.GetTask())
 
 	case events.Type_TASK_STATE:
 		if ev.GetState() == tes.State_CANCELED {
@@ -61,10 +61,8 @@ func (b *HPCBackend) WriteEvent(ctx context.Context, ev *events.Event) error {
 func (b *HPCBackend) Close() {}
 
 // Submit submits a task via "qsub", "condor_submit", "sbatch", etc.
-func (b *HPCBackend) Submit(task *tes.Task) error {
-	ctx := context.Background()
-
-	submitPath, err := b.setupTemplatedHPCSubmit(task)
+func (b *HPCBackend) Submit(ctx context.Context, task *tes.Task) error {
+	submitPath, err := b.setupTemplatedHPCSubmit(ctx, task)
 	if err != nil {
 		return err
 	}
@@ -229,7 +227,7 @@ ReconcileLoop:
 // setupTemplatedHPCSubmit sets up a task submission in a HPC environment with
 // a shared file system. It generates a submission file based on a template for
 // schedulers such as SLURM, HTCondor, SGE, PBS/Torque, etc.
-func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
+func (b *HPCBackend) setupTemplatedHPCSubmit(ctx context.Context, task *tes.Task) (string, error) {
 	var err error
 
 	// TODO document that these working dirs need manual cleanup
@@ -264,6 +262,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		zone = zones[0]
 	}
 
+	args := fmt.Sprintf("--Server.HostName %v", ctx.Value("HostName"))
 	err = submitTpl.Execute(f, map[string]interface{}{
 		"TaskId":  task.Id,
 		"WorkDir": workdir,
@@ -271,12 +270,16 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(task *tes.Task) (string, error) {
 		"RamGb":   res.GetRamGb(),
 		"DiskGb":  res.GetDiskGb(),
 		"Zone":    zone,
+		"Args":    args,
 	})
 	if err != nil {
+		fmt.Println("DEBUG: err 3:", err)
 		return "", err
 	}
+	fmt.Println("DEBUG: f.Name()", f.Name())
 	f.Close()
 
+	fmt.Println("DEBUG: submitPath", submitPath)
 	return submitPath, nil
 }
 

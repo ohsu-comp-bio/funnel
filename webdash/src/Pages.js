@@ -315,7 +315,6 @@ function ServiceInfo() {
 
   React.useEffect(() => {
     var url = new URL("/v1/service-info", window.location.origin);
-    console.log("DEBUG: ServiceInfo url:", url);
     get(url).then(
       (info) => {
         console.log("DEBUG: ServiceInfo info:", info);

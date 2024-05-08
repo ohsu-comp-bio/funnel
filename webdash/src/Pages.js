@@ -317,7 +317,6 @@ function ServiceInfo() {
     var url = new URL("/v1/service-info", window.location.origin);
     get(url).then(
       (info) => {
-        console.log("DEBUG: ServiceInfo info:", info);
         setInfo(info);
       });
   }, []);

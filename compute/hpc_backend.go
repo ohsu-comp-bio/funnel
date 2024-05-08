@@ -273,13 +273,10 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(ctx context.Context, task *tes.Task
 		"Args":    args,
 	})
 	if err != nil {
-		fmt.Println("DEBUG: err 3:", err)
 		return "", err
 	}
-	fmt.Println("DEBUG: f.Name()", f.Name())
 	f.Close()
 
-	fmt.Println("DEBUG: submitPath", submitPath)
 	return submitPath, nil
 }
 

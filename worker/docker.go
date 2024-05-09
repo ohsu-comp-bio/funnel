@@ -89,7 +89,7 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 func (dcmd DockerCommand) Stop() error {
 	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
 	// cmd := exec.Command("docker", "stop", dcmd.ContainerName)
-	cmd := exec.Command("sudo", "opt/acc/sbin/exadocker", "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
+	cmd := exec.Command(dcmd.Engine, "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 
@@ -157,10 +157,10 @@ type dockerVersion struct {
 // the server.
 func SyncDockerAPIVersion() error {
 	if os.Getenv("DOCKER_API_VERSION") == "" {
-		cmd := exec.Command("sudo", "/opt/acc/sbin/exadocker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		cmd := exec.Command("docker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
 		out, err := cmd.Output()
 		if err != nil {
-			return fmt.Errorf("sudo", "/opt/acc/sbin/exadocker version command failed: %v", err)
+			return fmt.Errorf("docker version command failed: %v", err)
 		}
 		version := &dockerVersion{}
 		err = json.Unmarshal(out, version)

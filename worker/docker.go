@@ -26,6 +26,7 @@ type DockerCommand struct {
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Event           *events.ExecutorWriter
+	Tags            map[string]string
 }
 
 // Run runs the Docker command and blocks until done.
@@ -51,6 +52,12 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	if dcmd.Env != nil {
 		for k, v := range dcmd.Env {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+
+	if dcmd.Tags != nil {
+		for k, v := range dcmd.Tags {
+			args = append(args, "-l", fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 

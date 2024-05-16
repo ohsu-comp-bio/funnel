@@ -8,22 +8,10 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/ohsu-comp-bio/funnel/events"
 )
 
 type Exadocker struct {
-	Image           string
-	Command         []string
-	Volumes         []Volume
-	Workdir         string
-	ContainerName   string
-	RemoveContainer bool
-	Env             map[string]string
-	Stdin           io.Reader
-	Stdout          io.Writer
-	Stderr          io.Writer
-	Event           *events.ExecutorWriter
+	ContainerConfig
 }
 
 type ExadockerInfo struct {
@@ -32,79 +20,101 @@ type ExadockerInfo struct {
 	Name  string
 }
 
-var _ ContainerEngine = Exadocker{}
-
 // Run runs the Docker command and blocks until done.
-func (exa Exadocker) Run(ctx context.Context) error {
+func (exadocker Exadocker) Run(ctx context.Context) error {
 	// Sync docker API version info.
 	err := SyncDockerAPIVersion()
 	if err != nil {
-		exa.Event.Error("failed to sync docker client API version", err)
+		exadocker.Event.Error("failed to sync docker client API version", err)
 	}
 
-	pullcmd := exec.Command("docker", "pull", exa.Image)
+	commandArgs := append(exadocker.Driver[1:], "pull", exadocker.Image)
+	pullcmd := exec.Command(exadocker.Driver[0], commandArgs...)
+
+	// Run the command and check for errors.
 	err = pullcmd.Run()
 	if err != nil {
-		exa.Event.Error("failed to pull docker image", err)
+		exadocker.Event.Error("failed to pull docker image", err)
 	}
 
-	args := []string{"run", "-i", "--read-only"}
+	args := exadocker.Driver[1:]
+	args = append(args, "run", "-i", "--read-only")
 
-	if exa.RemoveContainer {
+	if exadocker.RemoveContainer {
 		args = append(args, "--rm")
 	}
 
-	if exa.Env != nil {
-		for k, v := range exa.Env {
+	if exadocker.Env != nil {
+		for k, v := range exadocker.Env {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 
-	if exa.ContainerName != "" {
-		args = append(args, "--name", exa.ContainerName)
+	if exadocker.ContainerName != "" {
+		args = append(args, "--name", exadocker.ContainerName)
 	}
 
-	if exa.Workdir != "" {
-		args = append(args, "-w", exa.Workdir)
+	if exadocker.Workdir != "" {
+		args = append(args, "-w", exadocker.Workdir)
 	}
 
-	for _, vol := range exa.Volumes {
+	for _, vol := range exadocker.Volumes {
 		arg := formatVolumeArg(vol)
 		args = append(args, "-v", arg)
 	}
 
-	args = append(args, exa.Image)
-	args = append(args, exa.Command...)
+	args = append(args, exadocker.GetImage())
+	args = append(args, exadocker.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	exa.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command(exadocker.Driver[0], args...)
 
-	if exa.Stdin != nil {
-		cmd.Stdin = exa.Stdin
+	if exadocker.Stdin != nil {
+		cmd.Stdin = exadocker.Stdin
 	}
-	if exa.Stdout != nil {
-		cmd.Stdout = exa.Stdout
+	if exadocker.Stdout != nil {
+		cmd.Stdout = exadocker.Stdout
 	}
-	if exa.Stderr != nil {
-		cmd.Stderr = exa.Stderr
+	if exadocker.Stderr != nil {
+		cmd.Stderr = exadocker.Stderr
 	}
-	go exa.inspectContainer(ctx)
+	go exadocker.inspectContainer(ctx)
 	out := cmd.Run()
-	exa.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
+	exadocker.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
 	return out
 }
 
 // Stop stops the container.
-func (exa Exadocker) Stop() error {
-	exa.Event.Info("Stopping container", "container", exa.ContainerName)
+func (exadocker Exadocker) Stop() error {
+	exadocker.Event.Info("Stopping container", "container", exadocker.ContainerName)
 	// cmd := exec.Command("docker", "stop", exa.ContainerName)
-	cmd := exec.Command("docker", "rm", "-f", exa.ContainerName) //switching to this to be a bit more forceful
+	driverArgs := strings.Join(exadocker.Driver[1:], " ")
+	cmd := exec.Command(exadocker.Driver[0], driverArgs, "rm", "-f", exadocker.ContainerName) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 
-func (exa Exadocker) Inspect(ctx context.Context) (ContainerInfo, error) {
-	info := ContainerInfo{
+func (exadocker Exadocker) GetImage() string {
+	return exadocker.Image
+}
+
+func (exadocker Exadocker) GetIO() (io.Reader, io.Writer, io.Writer) {
+	return exadocker.Stdin, exadocker.Stdout, exadocker.Stderr
+}
+
+func (exadocker Exadocker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+	if stdin != nil {
+		exadocker.Stdin = stdin
+	}
+	if stdout != nil {
+		exadocker.Stdout = stdout
+	}
+	if stderr != nil {
+		exadocker.Stderr = stderr
+	}
+}
+
+func (exadocker Exadocker) Inspect(ctx context.Context) (ContainerConfig, error) {
+	info := ContainerConfig{
 		Id:    "1234",
 		Image: "image",
 		Name:  "container",
@@ -113,7 +123,7 @@ func (exa Exadocker) Inspect(ctx context.Context) (ContainerInfo, error) {
 }
 
 // inspectContainer inspects the docker container for metadata.
-func (exa *Exadocker) inspectContainer(ctx context.Context) {
+func (exadocker *Exadocker) inspectContainer(ctx context.Context) {
 	// Give the container time to start.
 	time.Sleep(2 * time.Second)
 
@@ -126,13 +136,14 @@ func (exa *Exadocker) inspectContainer(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			cmd := exec.CommandContext(ctx, "docker", "inspect", exa.ContainerName)
+			driverArgs := strings.Join(exadocker.Driver[1:], " ")
+			cmd := exec.CommandContext(ctx, exadocker.Command[0], driverArgs, "inspect", exadocker.ContainerName)
 			out, err := cmd.Output()
 			if err == nil {
 				meta := []metadata{}
 				err := json.Unmarshal(out, &meta)
 				if err == nil && len(meta) == 1 {
-					exa.Event.Info("container metadata",
+					exadocker.Event.Info("container metadata",
 						"containerID", meta[0].ID,
 						"containerName", meta[0].Name,
 						"containerImageHash", meta[0].Image)

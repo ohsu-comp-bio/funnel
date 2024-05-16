@@ -148,6 +148,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// Run steps
 	if run.ok() {
 		ignoreError := false
+		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
 			var command = Command{
 				Image:         d.Image,
@@ -259,6 +260,8 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 			return err
 		}
 	}
+
+	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil
 }

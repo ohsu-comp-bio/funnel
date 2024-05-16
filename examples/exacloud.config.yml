@@ -7,7 +7,7 @@ LocalStorage:
 Worker:
   LeaveWorkDir: true
   ContainerEngine: exadocker
-  ContainerCommand: sudo /opt/acc/sbin/exadocker
+  Driver: sudo /opt/acc/sbin/exadocker
 
 Server:
   HostName: exahead1

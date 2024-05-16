@@ -41,14 +41,14 @@ type ContainerConfig struct {
 
 type ContainerEngineFactory struct{}
 
-func (f *ContainerEngineFactory) NewContainerEngine(engineType string, containerConfig ContainerConfig) (ContainerEngine, error) {
-	switch engineType {
+func (f *ContainerEngineFactory) NewContainerEngine(containerType string, containerConfig ContainerConfig) (ContainerEngine, error) {
+	switch containerType {
 	// case "docker":
 	// 	return NewDockerEngine(containerConfig)
 	case "exadocker":
 		return NewExadockerEngine(containerConfig)
 	default:
-		return nil, fmt.Errorf("unsupported container engine type: %s", engineType)
+		return nil, fmt.Errorf("unsupported container type: %s", containerType)
 	}
 }
 

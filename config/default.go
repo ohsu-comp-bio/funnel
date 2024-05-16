@@ -61,7 +61,7 @@ func DefaultConfig() Config {
 			LogUpdateRate:        Duration(time.Second * 5),
 			LogTailSize:          10000,
 			MaxParallelTransfers: 10,
-			Engine:               "docker",
+			ContainerType:        "docker",
 		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers

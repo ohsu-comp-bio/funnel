@@ -145,9 +145,12 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 				RemoveContainer: true,
 				Event:           event.NewExecutorWriter(uint32(i)),
 			}
-			containerEngine, err := f.NewContainerEngine(r.Conf.Engine, containerConfig)
+			if r.Conf.ContainerDriver != "" {
+				containerConfig.Driver = []string{r.Conf.ContainerDriver}
+			}
+			containerEngine, err := f.NewContainerEngine(r.Conf.ContainerType, containerConfig)
 			if err != nil {
-				return err
+				run.syserr = err
 			}
 
 			s := &stepWorker{

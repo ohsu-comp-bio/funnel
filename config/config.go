@@ -153,7 +153,10 @@ type Worker struct {
 	MaxParallelTransfers int
 	// Container engine to use for executing tasks.
 	// Typically this is "docker".
-	Engine string
+	ContainerType string
+	// Command to use for the container engine.
+	// This can be used to override the default command used to run containers.
+	ContainerDriver string
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

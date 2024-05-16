@@ -132,21 +132,28 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// Run steps
 	if run.ok() {
 		ignoreError := false
+		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
+			containerConfig := ContainerConfig{
+				Image:         d.Image,
+				Command:       d.Command,
+				Env:           d.Env,
+				Volumes:       mapper.Volumes,
+				Workdir:       d.Workdir,
+				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
+				// TODO make RemoveContainer configurable
+				RemoveContainer: true,
+				Event:           event.NewExecutorWriter(uint32(i)),
+			}
+			containerEngine, err := f.NewContainerEngine(r.Conf.Engine, containerConfig)
+			if err != nil {
+				return err
+			}
+
 			s := &stepWorker{
-				Conf:  r.Conf,
-				Event: event.NewExecutorWriter(uint32(i)),
-				Command: &DockerCommand{
-					Image:         d.Image,
-					Command:       d.Command,
-					Env:           d.Env,
-					Volumes:       mapper.Volumes,
-					Workdir:       d.Workdir,
-					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
-					// TODO make RemoveContainer configurable
-					RemoveContainer: true,
-					Event:           event.NewExecutorWriter(uint32(i)),
-				},
+				Conf:    r.Conf,
+				Event:   event.NewExecutorWriter(uint32(i)),
+				Command: containerEngine,
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
@@ -195,10 +202,14 @@ func (r *DefaultWorker) Close() {
 // openLogs opens/creates the logs files for a step and updates those fields.
 func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
 
-	// Find the path for task stdin
+	var stdin *os.File
+	var stdout *os.File
+	var stderr *os.File
 	var err error
+
+	// Find the path for task stdin
 	if d.Stdin != "" {
-		s.Command.Stdin, err = mapper.OpenHostFile(d.Stdin)
+		stdin, err = mapper.OpenHostFile(d.Stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -207,7 +218,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Command.Stdout, err = mapper.CreateHostFile(d.Stdout)
+		stdout, err = mapper.CreateHostFile(d.Stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -216,12 +227,14 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Command.Stderr, err = mapper.CreateHostFile(d.Stderr)
+		stderr, err = mapper.CreateHostFile(d.Stderr)
 		if err != nil {
 			_ = s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
+
+	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil
 }

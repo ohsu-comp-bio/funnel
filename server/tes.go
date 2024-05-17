@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -29,7 +30,7 @@ type TaskService struct {
 	Compute events.Computer
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
-	HostName string
+	Config  config.Config
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -45,7 +46,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		return nil, fmt.Errorf("error from backend: %s", err)
 	}
 
-	ctx = context.WithValue(ctx, "HostName", ts.HostName)
+	ctx = context.WithValue(ctx, "Config", ts.Config)
 	if err := ts.Event.WriteEvent(ctx, events.NewTaskCreated(task)); err != nil {
 		return nil, fmt.Errorf("error creating task: %s", err)
 	}

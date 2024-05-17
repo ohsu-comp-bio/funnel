@@ -271,7 +271,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 				Compute: compute,
 				Read:    reader,
 				Log:     log,
-				HostName: conf.Server.HostName, 
+				Config:  conf,
 			},
 			Events: &events.Service{Writer: writer},
 			Nodes:  nodes,

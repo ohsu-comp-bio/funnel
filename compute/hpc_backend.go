@@ -263,7 +263,8 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(ctx context.Context, task *tes.Task
 	}
 
 	conf := ctx.Value("Config").(config.Config)
-	configFile := config.ToYamlFile(conf, filepath.Join(workdir, "config.yaml"))
+	configFile := filepath.Join(workdir, "config.yaml")
+	err = config.ToYamlFile(conf, configFile)
 	args := fmt.Sprintf("--config %v", configFile)
 	err = submitTpl.Execute(f, map[string]interface{}{
 		"TaskId":  task.Id,

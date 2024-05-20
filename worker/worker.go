@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -134,6 +135,8 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		ignoreError := false
 		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
+			fmt.Println("DEBUG: d:", d)
+			fmt.Println("DEBUG: d.Stdout:", d.Stdout)
 			containerConfig := ContainerConfig{
 				Image:         d.Image,
 				Command:       d.Command,
@@ -146,7 +149,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 				Event:           event.NewExecutorWriter(uint32(i)),
 			}
 			if r.Conf.ContainerDriver != "" {
-				containerConfig.Driver = []string{r.Conf.ContainerDriver}
+				containerConfig.Driver = strings.Fields(r.Conf.ContainerDriver)
 			}
 			containerEngine, err := f.NewContainerEngine(r.Conf.ContainerType, containerConfig)
 			if err != nil {
@@ -237,6 +240,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 		}
 	}
 
+	fmt.Println("DEBUG: stdout:", stdout)
 	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil

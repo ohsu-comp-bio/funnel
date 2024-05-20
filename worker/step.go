@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -43,6 +44,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 	// Capture stdout/err to file.
 	_, out, err := s.Command.GetIO()
+	fmt.Println("DEBUG: out:", out)
 	if out != nil {
 		stdout = io.MultiWriter(out, stdout)
 	}

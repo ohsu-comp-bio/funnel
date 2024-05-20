@@ -23,16 +23,18 @@ type ExadockerInfo struct {
 // Run runs the Docker command and blocks until done.
 func (exadocker Exadocker) Run(ctx context.Context) error {
 	// Sync docker API version info.
-	err := SyncDockerAPIVersion()
-	if err != nil {
-		exadocker.Event.Error("failed to sync docker client API version", err)
-	}
+	// err := SyncDockerAPIVersion()
+	// if err != nil {
+	// 	exadocker.Event.Error("failed to sync docker client API version", err)
+	// }
 
 	commandArgs := append(exadocker.Driver[1:], "pull", exadocker.Image)
 	pullcmd := exec.Command(exadocker.Driver[0], commandArgs...)
+	// fmt.Println("DEBUG: exadocker.Driver:", exadocker.Driver)
+	// fmt.Println("DEBUG: pullcmd:", pullcmd)
 
 	// Run the command and check for errors.
-	err = pullcmd.Run()
+	err := pullcmd.Run()
 	if err != nil {
 		exadocker.Event.Error("failed to pull docker image", err)
 	}
@@ -59,7 +61,7 @@ func (exadocker Exadocker) Run(ctx context.Context) error {
 	}
 
 	for _, vol := range exadocker.Volumes {
-		arg := formatVolumeArg(vol)
+		arg := formatExaVolumeArg(vol)
 		args = append(args, "-v", arg)
 	}
 
@@ -68,12 +70,15 @@ func (exadocker Exadocker) Run(ctx context.Context) error {
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
 	cmd := exec.Command(exadocker.Driver[0], args...)
+	// fmt.Println("DEBUG: cmd:", cmd)
 
 	if exadocker.Stdin != nil {
 		cmd.Stdin = exadocker.Stdin
 	}
 	if exadocker.Stdout != nil {
+		fmt.Println("DEBUG: exadocker.Stdout:", exadocker.Stdout)
 		cmd.Stdout = exadocker.Stdout
+		fmt.Println("DEBUG: cmd.Stdout:", cmd.Stdout)
 	}
 	if exadocker.Stderr != nil {
 		cmd.Stderr = exadocker.Stderr
@@ -91,6 +96,18 @@ func (exadocker Exadocker) Stop() error {
 	driverArgs := strings.Join(exadocker.Driver[1:], " ")
 	cmd := exec.Command(exadocker.Driver[0], driverArgs, "rm", "-f", exadocker.ContainerName) //switching to this to be a bit more forceful
 	return cmd.Run()
+}
+
+func formatExaVolumeArg(v Volume) string {
+	// `o` is structed as "HostPath:ContainerPath:Mode".
+	mode := "rw"
+	if v.Readonly {
+		mode = "ro"
+	}
+	// fmt.Println("DEBUG: v.HostPath a:", v.HostPath)
+	v.HostPath = "/mnt/scratch/${SLURM_JOB_ID}" + v.HostPath
+	// fmt.Println("DEBUG: v.HostPath b:", v.HostPath)
+	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
 }
 
 func (exadocker Exadocker) GetImage() string {

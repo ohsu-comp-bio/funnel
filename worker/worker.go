@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -261,6 +262,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 		}
 	}
 
+	fmt.Println("DEBUG: stdout:", stdout)
 	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil

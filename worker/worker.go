@@ -60,6 +60,13 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// set up task specific utilities
 	event = events.NewTaskWriter(task.GetId(), 0, r.EventWriter)
 	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, task.GetId()))
+	if r.Conf.ScratchPath != "" {
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		mapper.ScratchDir = filepath.Join(scratchAbsDir, filepath.Join(r.Conf.WorkDir, task.GetId()))
+	}
 
 	event.Info("Version", version.LogFields()...)
 	event.State(tes.State_INITIALIZING)
@@ -123,6 +130,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Download inputs
 	if run.ok() {
+		fmt.Println("DEBUG: mapper.Inputs:", mapper.Inputs)
 		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event, r.Conf.MaxParallelTransfers)
 	}
 
@@ -130,13 +138,45 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		event.State(tes.State_RUNNING)
 	}
 
+	fmt.Println("DEBUG: run.ok():", run.ok())
+
+	// Create symlinks between the working directory and the Scratch Directory
+	fmt.Println("DEBUG: r.Conf.ScratchPath:", r.Conf.ScratchPath)
+	if run.ok() && r.Conf.ScratchPath != "" {
+		err := mapper.CopyInputsToScratch(r.Conf.ScratchPath)
+		if err != nil {
+			fmt.Println("DEBUG: err:", err)
+			return err
+		}
+		fmt.Println("DEBUG mapper.Volumes:", mapper.Volumes)
+		// Get the absolute path of the scratch directory
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		fmt.Println("DEBUG: scratchAbsDir:", scratchAbsDir)
+		// For every volume in mapper, add the Scratch Path prefix to the host path
+		for idx, v := range mapper.Volumes {
+			fmt.Println("DEBUG: v a:", v)
+			v.HostPath = filepath.Join(scratchAbsDir, v.HostPath)
+			fmt.Println("DEBUG: v b:", v)
+			mapper.Volumes[idx] = v
+		}
+
+		fmt.Println("DEBUG mapper.Volumes:", mapper.Volumes)
+	}
+
+	fmt.Println("DEBUG r:", r)
+	fmt.Println("DEBUG task.Outputs:", task.Outputs)
+	fmt.Println("DEBUG: run.ok():", run.ok())
+
 	// Run steps
 	if run.ok() {
 		ignoreError := false
 		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
-			fmt.Println("DEBUG: d:", d)
-			fmt.Println("DEBUG: d.Stdout:", d.Stdout)
+			// fmt.Println("DEBUG: d:", d)
+			// fmt.Println("DEBUG: d.Stdout:", d.Stdout)
 			containerConfig := ContainerConfig{
 				Image:         d.Image,
 				Command:       d.Command,
@@ -164,6 +204,8 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
 			if run.ok() || ignoreError {
+				fmt.Println("DEBUG: r.openStepLogs s:", s)
+				fmt.Println("DEBUG: r.openStepLogs d:", d)
 				run.syserr = r.openStepLogs(mapper, s, d)
 			}
 
@@ -174,12 +216,22 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			ignoreError = d.GetIgnoreError()
 		}
 	}
+	fmt.Println("DEBUG: run.ok():", run.ok())
 
 	// Try to fix symlinks broken by docker filesystems.
 	if run.ok() {
+		fmt.Println("DEBUG: mapper.Outputs:", mapper.Outputs)
 		for _, output := range mapper.Outputs {
+			fmt.Println("DEBUG: output:", output)
 			fixLinks(mapper, output.Path)
 		}
+	}
+
+	fmt.Println("DEBUG: run.ok():", run.ok())
+
+	if run.ok() && r.Conf.ScratchPath != "" {
+		fmt.Println("Copying Outputs to WorkDir...")
+		mapper.CopyOutputsToWorkDir(r.Conf.ScratchPath)
 	}
 
 	// Upload outputs
@@ -213,9 +265,13 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	var stderr *os.File
 	var err error
 
+	fmt.Println("DEBUG: openStepLogs d.stdin:", d.Stdin)
+	fmt.Println("DEBUG: openStepLogs d.stdout:", d.Stdout)
+	fmt.Println("DEBUG: openStepLogs d.stderr:", d.Stderr)
+
 	// Find the path for task stdin
 	if d.Stdin != "" {
-		stdin, err = mapper.OpenHostFile(d.Stdin)
+		stdin, err = mapper.CreateHostFile(d.Stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -240,7 +296,10 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 		}
 	}
 
-	fmt.Println("DEBUG: stdout:", stdout)
+	fmt.Println("DEBUG: openStepLogs stdin:", stdin)
+	fmt.Println("DEBUG: openStepLogs stdout:", stdout)
+	fmt.Println("DEBUG: openStepLogs stderr:", stderr)
+	fmt.Println("DEBUG: Calling SetIO from openStepLogs...")
 	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil

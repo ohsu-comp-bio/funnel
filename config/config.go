@@ -137,6 +137,8 @@ type Node struct {
 type Worker struct {
 	// Directory to write task files to
 	WorkDir string
+	// Additional directory to symlink to the working directory.
+	ScratchPath string
 	// How often the worker should poll for cancel signals
 	PollingRate Duration
 	// How often to update stdout/stderr log fields.

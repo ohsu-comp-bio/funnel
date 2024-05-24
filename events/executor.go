@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -135,7 +136,7 @@ func (ew *ExecutorWriter) StreamLogTail(ctx context.Context, size int64, interva
 	return StreamLogTail(ctx, ew.gen.taskID, ew.gen.attempt, ew.gen.index, size, interval, ew.out, wg)
 }
 
-// LogTail returns stdout/err io.Writers which will track the
+// logTail returns stdout/err io.Writers which will track the
 // tail of the content (up to "size") and emit events once the ctx.Done
 // is closed.
 func LogTail(ctx context.Context, taskID string, attempt, index uint32, size int64, out Writer) (stdout, stderr io.Writer) {
@@ -153,8 +154,10 @@ func LogTail(ctx context.Context, taskID string, attempt, index uint32, size int
 		s := buf.String()
 		switch t {
 		case Type_EXECUTOR_STDOUT:
+			fmt.Println("DEBUG: LogTail Type_EXECUTOR_STDOUT:", s)
 			e = NewStdout(taskID, attempt, index, s)
 		case Type_EXECUTOR_STDERR:
+			fmt.Println("DEBUG: LogTail Type_EXECUTOR_STDERR:", s)
 			e = NewStderr(taskID, attempt, index, s)
 		}
 		return out.WriteEvent(ctx, e)
@@ -190,6 +193,7 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 	close(immediate)
 
 	flush := func(buf *ring.Buffer, t Type, timeout <-chan time.Time) {
+		fmt.Println("DEBUG: buf.NewBytesWritten():", buf.NewBytesWritten())
 		// Only flush if new bytes have been written to the buffer.
 		if buf.NewBytesWritten() == 0 {
 			return
@@ -200,8 +204,10 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 		s := buf.String()
 		switch t {
 		case Type_EXECUTOR_STDOUT:
+			fmt.Println("DEBUG: StreamLogTail Type_EXECUTOR_STDOUT:", s)
 			e = NewStdout(taskID, attempt, index, s)
 		case Type_EXECUTOR_STDERR:
+			fmt.Println("DEBUG: StreamLogTail Type_EXECUTOR_STDERR:", s)
 			e = NewStderr(taskID, attempt, index, s)
 		}
 
@@ -257,16 +263,19 @@ func StreamLogTail(ctx context.Context, taskID string, attempt, index uint32, si
 				return
 			case <-ticker.C:
 				w := stdoutbuf.NewBytesWritten() + stderrbuf.NewBytesWritten()
+				fmt.Println("DEBUG: StreamLogTail w:", w)
 				// Don't use a limiter token if no content has been written.
 				if w > 0 && limiter.Allow() {
 					flushboth(immediate)
 				}
 			case b := <-stdoutch:
+				fmt.Println("DEBUG: StreamLogTail stdout b:", b)
 				stdoutbuf.Write(b)
 				if limiter.Allow() {
 					flushboth(immediate)
 				}
 			case b := <-stderrch:
+				fmt.Println("DEBUG: StreamLogTail stderr b:", b)
 				stderrbuf.Write(b)
 				if limiter.Allow() {
 					flushboth(immediate)

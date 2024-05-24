@@ -53,6 +53,7 @@ func DownloadInputs(pctx context.Context, inputs []*tes.Input, store storage.Sto
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
 
+	fmt.Println("DEBUG: inputs:", inputs)
 	flat, err := FlattenInputs(ctx, inputs, store, ev)
 	if err != nil {
 		return err
@@ -60,6 +61,7 @@ func DownloadInputs(pctx context.Context, inputs []*tes.Input, store storage.Sto
 
 	var downloads []storage.Transfer
 	for _, input := range flat {
+		fmt.Println("DEBUG: input:", input)
 		downloads = append(downloads, storage.Transfer(&download{
 			ev:     ev,
 			in:     input,

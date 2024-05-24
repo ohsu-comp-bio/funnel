@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -25,6 +26,7 @@ type FileMapper struct {
 	Inputs  []*tes.Input
 	Outputs []*tes.Output
 	WorkDir string
+	ScratchDir string
 }
 
 // Volume represents a volume mounted into a docker container.
@@ -96,6 +98,148 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 	return nil
 }
 
+func (mapper *FileMapper) CopyInputsToScratch(scratchDir string) error {
+	fmt.Println("DEBUG: mapper.Inputs:", mapper.Inputs)
+	scratchAbsDir, err := filepath.Abs(scratchDir)
+	if err != nil {
+		return err
+	}
+	fmt.Println("DEBUG: scratchAbsDir:", scratchAbsDir)
+
+	// Copy the input file or directory to the scratch target
+	for _, input := range mapper.Inputs {
+		scratchTarget := filepath.Join(scratchAbsDir, input.Path)
+		fmt.Println("DEBUG: input.Path:", input.Path)
+		fmt.Println("DEBUG: scratchTarget:", scratchTarget)
+
+		info, err := os.Stat(input.Path)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if info.IsDir() {
+			// Ensure the scratch target directory exists
+			if err := os.MkdirAll(scratchTarget, 0755); err != nil {
+				return fmt.Errorf("failed to create scratch directory: %w", err)
+			}
+			copyDir(input.Path, scratchTarget)
+		} else {
+			// Ensure the scratch target directory exists
+			if err := os.MkdirAll(path.Dir(scratchTarget), 0755); err != nil {
+				return fmt.Errorf("failed to create scratch directory: %w", err)
+			}
+			err = copyFile(input.Path, scratchTarget)
+			fmt.Println("DEBUG: err:", err)
+			dat, err := os.ReadFile(scratchTarget)
+			fmt.Println("DEBUG: err:", err)
+			fmt.Println("DEBUG: Reading file:", scratchTarget)
+			fmt.Println("DEBUG:", string(dat))
+		}
+	}
+
+	return nil
+}
+
+func (mapper *FileMapper) CopyOutputsToWorkDir(scratchDir string) error {
+	fmt.Println("DEBUG: mapper.Outputs:", mapper.Outputs)
+	scratchAbsDir, err := filepath.Abs(scratchDir)
+	if err != nil {
+		return err
+	}
+	fmt.Println("DEBUG: scratchAbsDir:", scratchAbsDir)
+	err = filepath.Walk(scratchAbsDir,
+		func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		fmt.Println("DEBUG: Scratch Files:", path, info.Size())
+		return nil
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Copy the input file or directory to the scratch target
+	for _, output := range mapper.Outputs {
+		scratchTarget := filepath.Join(scratchAbsDir, output.Path)
+		fmt.Println("DEBUG: scratchTarget:", scratchTarget)
+		fmt.Println("DEBUG: output.Path:", output.Path)
+
+		info, err := os.Stat(scratchTarget)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("DEBUG: info:", info)
+		if info.IsDir() {
+			// Ensure the scratch target directory exists
+			if err := os.MkdirAll(output.Path, 0755); err != nil {
+				return fmt.Errorf("failed to create output path: %w", err)
+			}
+			copyDir(scratchTarget, output.Path)
+		} else {
+			// Ensure the scratch target directory exists
+			if err := os.MkdirAll(path.Dir(output.Path), 0755); err != nil {
+				return fmt.Errorf("failed to create output path: %w", err)
+			}
+			err = copyFile(scratchTarget, output.Path)
+			fmt.Println("DEBUG: err:", err)
+		}
+	}
+
+	return nil
+}
+
+func copyDir(src string, dst string) error {
+	// fmt.Println("DEBUG: copyDir src:", src)
+	// fmt.Println("DEBUG: copyDir dst:", dst)
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		// fmt.Println("DEBUG: err:", err)
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := os.MkdirAll(dstPath, 0755); err != nil {
+				// fmt.Println("DEBUG: err:", err)
+				return err
+			}
+			if err := copyDir(srcPath, dstPath); err != nil {
+				// fmt.Println("DEBUG: err:", err)
+				return err
+			}
+		} else {
+			fmt.Println("DEBUG: copyDir copyFile")
+			if err := copyFile(srcPath, dstPath); err != nil {
+				fmt.Println("DEBUG: err:", err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func copyFile(src string, dst string) error {
+	fmt.Println("DEBUG: src:", src)
+	fmt.Println("DEBUG: dst:", dst)
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
 // AddVolume adds a mapped volume to the mapper. A corresponding Volume record
 // is added to mapper.Volumes.
 //
@@ -148,6 +292,15 @@ func (mapper *FileMapper) HostPath(src string) (string, error) {
 	return p, nil
 }
 
+func (mapper *FileMapper) HostScratchPath(src string) (string, error) {
+	p := path.Join(mapper.ScratchDir, src)
+	p = path.Clean(p)
+	if !mapper.IsSubpath(p, mapper.ScratchDir) {
+		return "", fmt.Errorf("Invalid path: %s is not a valid subpath of %s", p, mapper.ScratchDir)
+	}
+	return p, nil
+}
+
 // OpenHostFile opens a file on the host file system at a mapped path.
 // "src" is an unmapped path. This function will handle mapping the path.
 //
@@ -173,7 +326,14 @@ func (mapper *FileMapper) OpenHostFile(src string) (*os.File, error) {
 //
 // If the path can't be mapped or the file can't be created, an error is returned.
 func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
-	p, perr := mapper.HostPath(src)
+	fmt.Println("DEBUG: CreateHostFile src:", src)
+	var p string
+	var perr error
+	if mapper.ScratchDir != "" {
+		p, perr = mapper.HostScratchPath(src)
+	} else {
+		p, perr = mapper.HostPath(src)
+	}
 	if perr != nil {
 		return nil, perr
 	}
@@ -185,6 +345,8 @@ func (mapper *FileMapper) CreateHostFile(src string) (*os.File, error) {
 	if oerr != nil {
 		return nil, oerr
 	}
+	fmt.Println("DEBUG: CreateHostFile p:", p)
+	fmt.Println("DEBUG: CreateHostFile f:", f)
 	return f, nil
 }
 

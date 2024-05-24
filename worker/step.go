@@ -35,8 +35,11 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 	// Tail the stdout/err log streams.
 	if s.Conf.LogTailSize > 0 {
+		// fmt.Println("DEBUG: s.Conf.LogTailSize:", s.Conf.LogTailSize)
+		// fmt.Println("DEBUG: Creating stdout...")
 		if s.Conf.LogUpdateRate > 0 {
 			stdout, stderr = s.Event.StreamLogTail(subctx, s.Conf.LogTailSize, time.Duration(s.Conf.LogUpdateRate), &wg)
+			// fmt.Println("DEBUG: stdout:", stdout)
 		} else {
 			stdout, stderr = s.Event.LogTail(subctx, s.Conf.LogTailSize)
 		}
@@ -44,14 +47,24 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 	// Capture stdout/err to file.
 	_, out, err := s.Command.GetIO()
-	fmt.Println("DEBUG: out:", out)
+	fmt.Println("DEBUG: step.go out:", out)
+	fmt.Println("DEBUG: step.go err:", err)
 	if out != nil {
 		stdout = io.MultiWriter(out, stdout)
 	}
 	if err != nil {
 		stderr = io.MultiWriter(err, stderr)
 	}
+	// fmt.Println("DEBUG: step.go s.Command:", s.Command)
+	fmt.Println("DEBUG: step.go stdout:", stdout)
+	fmt.Println("DEBUG: step.go stderr:", stderr)
+	fmt.Println("DEBUG: Calling SetIO from step.go...")
 	s.Command.SetIO(nil, stdout, stderr)
+	// fmt.Println("DEBUG: step.go s.Command:", s.Command)
+	_, out, err = s.Command.GetIO()
+	// fmt.Println("DEBUG: step.go in:", in)
+	// fmt.Println("DEBUG: step.go out:", out)
+	// fmt.Println("DEBUG: step.go err:", err)
 
 	go func() {
 		done <- s.Command.Run(subctx)

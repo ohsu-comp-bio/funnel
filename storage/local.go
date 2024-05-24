@@ -112,7 +112,7 @@ func (local *Local) UnsupportedOperations(url string) UnsupportedOperations {
 	path := getPath(url)
 	if !isAllowed(path, local.allowedDirs) {
 		err := fmt.Errorf(
-			"localStorage: can't access file, path is not in allowed directories: %s", url)
+			"localStorage: can't access file, path is not in allowed directories: %s, %s", url, local.allowedDirs)
 		return AllUnsupported(err)
 	}
 	return AllSupported()

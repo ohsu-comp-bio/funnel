@@ -71,6 +71,13 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// set up task specific utilities
 	event = events.NewTaskWriter(task.GetId(), 0, r.EventWriter)
 	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, task.GetId()))
+	if r.Conf.ScratchPath != "" {
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		mapper.ScratchDir = filepath.Join(scratchAbsDir, filepath.Join(r.Conf.WorkDir, task.GetId()))
+	}
 
 	event.Info("Version", version.LogFields()...)
 	event.State(tes.State_INITIALIZING)
@@ -206,6 +213,11 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		}
 	}
 
+	if run.ok() && r.Conf.ScratchPath != "" {
+		fmt.Println("Copying Outputs to WorkDir...")
+		mapper.CopyOutputsToWorkDir(r.Conf.ScratchPath)
+	}
+
 	// Upload outputs
 	var outputLog []*tes.OutputFileLog
 	if run.ok() {
@@ -262,7 +274,6 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 		}
 	}
 
-	fmt.Println("DEBUG: stdout:", stdout)
 	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil

@@ -59,7 +59,7 @@ func (f *ContainerEngineFactory) NewContainerEngine(containerType string, contai
 // }
 
 func NewExadockerEngine(config ContainerConfig) (ContainerEngine, error) {
-	return Exadocker{
+	return &Exadocker{
 		ContainerConfig: config,
 	}, nil
 }

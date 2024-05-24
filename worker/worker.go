@@ -60,6 +60,13 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// set up task specific utilities
 	event = events.NewTaskWriter(task.GetId(), 0, r.EventWriter)
 	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, task.GetId()))
+	if r.Conf.ScratchPath != "" {
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		mapper.ScratchDir = filepath.Join(scratchAbsDir, filepath.Join(r.Conf.WorkDir, task.GetId()))
+	}
 
 	event.Info("Version", version.LogFields()...)
 	event.State(tes.State_INITIALIZING)
@@ -130,13 +137,30 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		event.State(tes.State_RUNNING)
 	}
 
+	// Create symlinks between the working directory and the Scratch Directory
+	if run.ok() && r.Conf.ScratchPath != "" {
+		err := mapper.CopyInputsToScratch(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		// Get the absolute path of the scratch directory
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		// For every volume in mapper, add the Scratch Path prefix to the host path
+		for idx, v := range mapper.Volumes {
+			v.HostPath = filepath.Join(scratchAbsDir, v.HostPath)
+			mapper.Volumes[idx] = v
+		}
+
+	}
+
 	// Run steps
 	if run.ok() {
 		ignoreError := false
 		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
-			fmt.Println("DEBUG: d:", d)
-			fmt.Println("DEBUG: d.Stdout:", d.Stdout)
 			containerConfig := ContainerConfig{
 				Image:         d.Image,
 				Command:       d.Command,
@@ -182,6 +206,11 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		}
 	}
 
+	if run.ok() && r.Conf.ScratchPath != "" {
+		fmt.Println("Copying Outputs to WorkDir...")
+		mapper.CopyOutputsToWorkDir(r.Conf.ScratchPath)
+	}
+
 	// Upload outputs
 	var outputLog []*tes.OutputFileLog
 	if run.ok() {
@@ -215,7 +244,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Find the path for task stdin
 	if d.Stdin != "" {
-		stdin, err = mapper.OpenHostFile(d.Stdin)
+		stdin, err = mapper.CreateHostFile(d.Stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -240,7 +269,6 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 		}
 	}
 
-	fmt.Println("DEBUG: stdout:", stdout)
 	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil

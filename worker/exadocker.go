@@ -60,7 +60,9 @@ func (exadocker Exadocker) Run(ctx context.Context) error {
 		args = append(args, "-w", exadocker.Workdir)
 	}
 
+	fmt.Println("DEBUG: exadocker.Volumes:", exadocker.Volumes)
 	for _, vol := range exadocker.Volumes {
+		fmt.Println("DEBUG: vol:", vol)
 		arg := formatExaVolumeArg(vol)
 		args = append(args, "-v", arg)
 	}
@@ -69,23 +71,30 @@ func (exadocker Exadocker) Run(ctx context.Context) error {
 	args = append(args, exadocker.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
+	fmt.Println("DEBUG: exadocker:", exadocker)
 	cmd := exec.Command(exadocker.Driver[0], args...)
-	// fmt.Println("DEBUG: cmd:", cmd)
+	fmt.Println("DEBUG: cmd:", cmd)
 
 	if exadocker.Stdin != nil {
 		cmd.Stdin = exadocker.Stdin
 	}
+	fmt.Println("DEBUG: exadocker.Stdout:", exadocker.Stdout)
 	if exadocker.Stdout != nil {
-		fmt.Println("DEBUG: exadocker.Stdout:", exadocker.Stdout)
 		cmd.Stdout = exadocker.Stdout
+		// cmd.Stdout = os.Stdout
 		fmt.Println("DEBUG: cmd.Stdout:", cmd.Stdout)
 	}
+	fmt.Println("DEBUG: exadocker.Stderr:", exadocker.Stderr)
 	if exadocker.Stderr != nil {
 		cmd.Stderr = exadocker.Stderr
+		fmt.Println("DEBUG: cmd.Stderr:", cmd.Stderr)
 	}
 	go exadocker.inspectContainer(ctx)
+
+	// fmt.Println("DEBUG: exadocker.Stdout:", exadocker.Stdout)
 	out := cmd.Run()
 	exadocker.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
+	fmt.Println("DEBUG: out:", out)
 	return out
 }
 
@@ -105,7 +114,7 @@ func formatExaVolumeArg(v Volume) string {
 		mode = "ro"
 	}
 	// fmt.Println("DEBUG: v.HostPath a:", v.HostPath)
-	v.HostPath = "/mnt/scratch/${SLURM_JOB_ID}" + v.HostPath
+	// v.HostPath = "/mnt/scratch/${SLURM_JOB_ID}" + v.HostPath
 	// fmt.Println("DEBUG: v.HostPath b:", v.HostPath)
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
 }
@@ -118,7 +127,11 @@ func (exadocker Exadocker) GetIO() (io.Reader, io.Writer, io.Writer) {
 	return exadocker.Stdin, exadocker.Stdout, exadocker.Stderr
 }
 
-func (exadocker Exadocker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+func (exadocker *Exadocker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+	fmt.Println("DEBUG: In SetIO...")
+	fmt.Println("DEBUG: exadocker.go stdin:", stdin)
+	fmt.Println("DEBUG: exadocker.go stdout:", stdout)
+	fmt.Println("DEBUG: exadocker.go stderr:", stderr)
 	if stdin != nil {
 		exadocker.Stdin = stdin
 	}
@@ -128,6 +141,9 @@ func (exadocker Exadocker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Wr
 	if stderr != nil {
 		exadocker.Stderr = stderr
 	}
+	fmt.Println("DEBUG: exadocker.Stdin:", exadocker.Stdin)
+	fmt.Println("DEBUG: exadocker.Stdout:", exadocker.Stdout)
+	fmt.Println("DEBUG: exadocker.Stderr:", exadocker.Stderr)
 }
 
 func (exadocker Exadocker) Inspect(ctx context.Context) (ContainerConfig, error) {

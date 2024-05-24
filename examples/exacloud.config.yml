@@ -32,11 +32,11 @@ Slurm:
     {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
     {{- end}}
 
-    srun /usr/local/bin/mkdir-scratch.sh
+    srun /usr/local/bin/mkdir-scratch.sh > /dev/null
     SCRATCH_PATH="/mnt/scratch/${SLURM_JOB_ID}"
-    cd $SCRATCH_PATH
-    srun bash -c 'funnel worker run --taskID {{.TaskId}} {{.Args}}' --temp-dir $SCRATCH_PATH
-    sleep 3
-    cd -
-    srun /usr/local/bin/rmdir-scratch.sh
 
+    cd $SCRATCH_PATH
+    srun bash -c 'funnel worker run --taskID {{.TaskId}} {{.Args}} --Worker.ScratchPath .' --temp-dir $SCRATCH_PATH
+
+    cd - > /dev/null
+    srun /usr/local/bin/rmdir-scratch.sh > /dev/null

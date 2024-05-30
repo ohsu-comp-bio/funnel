@@ -59,8 +59,6 @@ func (f *ContainerEngineFactory) NewContainerEngine(containerType string, contai
 	switch containerType {
 	case "docker":
 		return NewDockerEngine(containerConfig)
-	case "exadocker":
-		return NewExadockerEngine(containerConfig)
 	default:
 		return nil, fmt.Errorf("unsupported container type: %s", containerType)
 	}
@@ -68,12 +66,6 @@ func (f *ContainerEngineFactory) NewContainerEngine(containerType string, contai
 
 func NewDockerEngine(config ContainerConfig) (ContainerEngine, error) {
 	return &Docker{
-		ContainerConfig: config,
-	}, nil
-}
-
-func NewExadockerEngine(config ContainerConfig) (ContainerEngine, error) {
-	return &Exadocker{
 		ContainerConfig: config,
 	}, nil
 }

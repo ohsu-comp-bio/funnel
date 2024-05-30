@@ -124,7 +124,7 @@ func (mapper *FileMapper) CopyInputsToScratch(scratchDir string) error {
 				return fmt.Errorf("failed to create scratch directory: %w", err)
 			}
 			err = copyFile(input.Path, scratchTarget)
-			dat, err := os.ReadFile(scratchTarget)
+			_, _ = os.ReadFile(scratchTarget)
 		}
 	}
 

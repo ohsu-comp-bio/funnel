@@ -18,71 +18,78 @@ type DockerCommand struct {
 }
 
 // Run runs the Docker command and blocks until done.
-func (dcmd DockerCommand) Run(ctx context.Context) error {
+func (docker Docker) Run(ctx context.Context) error {
 	// Sync docker API version info.
-	err := SyncDockerAPIVersion()
+	err := docker.SyncAPIVersion()
 	if err != nil {
-		dcmd.Event.Error("failed to sync docker client API version", err)
+		docker.Event.Error("failed to sync docker client API version", err)
 	}
 
-	pullcmd := exec.Command("docker", "pull", dcmd.Image)
+	pullcmd := exec.Command("docker", "pull", docker.Image)
 	err = pullcmd.Run()
 	if err != nil {
-		dcmd.Event.Error("failed to pull docker image", err)
+		docker.Event.Error("failed to pull docker image", err)
 	}
 
-	args := []string{"run", "-i", "--read-only"}
+	var args []string
 
-	if dcmd.RemoveContainer {
+	if len(docker.ContainerConfig.Driver) > 1 {
+		// Merge driver parts and command parts
+		args = append(args, docker.ContainerConfig.Driver[1:]...)
+	}
+
+	args = append(args, "run", "-i", "--read-only")
+
+	if docker.RemoveContainer {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.Env != nil {
-		for k, v := range dcmd.Env {
+	if docker.Env != nil {
+		for k, v := range docker.Env {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 
-	if dcmd.ContainerName != "" {
-		args = append(args, "--name", dcmd.ContainerName)
+	if docker.ContainerName != "" {
+		args = append(args, "--name", docker.ContainerName)
 	}
 
-	if dcmd.Workdir != "" {
-		args = append(args, "-w", dcmd.Workdir)
+	if docker.Workdir != "" {
+		args = append(args, "-w", docker.Workdir)
 	}
 
-	for _, vol := range dcmd.Volumes {
+	for _, vol := range docker.Volumes {
 		arg := formatVolumeArg(vol)
 		args = append(args, "-v", arg)
 	}
 
-	args = append(args, dcmd.Image)
-	args = append(args, dcmd.Command...)
+	args = append(args, docker.Image)
+	args = append(args, docker.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
-	cmd := exec.Command("docker", args...)
+	docker.Event.Info("Running command", "cmd", docker.ContainerConfig.Driver[0]+" "+strings.Join(args, " "))
+	cmd := exec.Command(docker.ContainerConfig.Driver[0], args...)
 
-	if dcmd.Stdin != nil {
-		cmd.Stdin = dcmd.Stdin
+	if docker.Stdin != nil {
+		cmd.Stdin = docker.Stdin
 	}
-	if dcmd.Stdout != nil {
-		cmd.Stdout = dcmd.Stdout
+	if docker.Stdout != nil {
+		cmd.Stdout = docker.Stdout
 	}
-	if dcmd.Stderr != nil {
-		cmd.Stderr = dcmd.Stderr
+	if docker.Stderr != nil {
+		cmd.Stderr = docker.Stderr
 	}
-	go dcmd.inspectContainer(ctx)
+	go docker.InspectContainer(ctx)
 	out := cmd.Run()
-	dcmd.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
+	docker.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
 	return out
 }
 
 // Stop stops the container.
-func (dcmd DockerCommand) Stop() error {
-	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
-	// cmd := exec.Command("docker", "stop", dcmd.ContainerName)
-	cmd := exec.Command("docker", "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
+func (docker Docker) Stop() error {
+	docker.Event.Info("Stopping container", "container", docker.ContainerName)
+	// cmd := exec.Command("docker", "stop", docker.ContainerName)
+	cmd := exec.Command("docker", "rm", "-f", docker.ContainerName) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 
@@ -95,14 +102,28 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
 }
 
-type metadata struct {
-	ID    string
-	Name  string
-	Image string
+func (docker Docker) GetImage() string {
+	return docker.Image
+}
+
+func (docker Docker) GetIO() (io.Reader, io.Writer, io.Writer) {
+	return docker.Stdin, docker.Stdout, docker.Stderr
+}
+
+func (docker *Docker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+	if stdin != nil && stdin != (*os.File)(nil) {
+		docker.Stdin = stdin
+	}
+	if stdout != nil && stdout != (*os.File)(nil) {
+		docker.Stdout = stdout
+	}
+	if stderr != nil && stderr != (*os.File)(nil) {
+		docker.Stderr = stderr
+	}
 }
 
 // inspectContainer inspects the docker container for metadata.
-func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
+func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 	// Give the container time to start.
 	time.Sleep(2 * time.Second)
 
@@ -113,40 +134,37 @@ func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
 	for i := 0; i < 5; i++ {
 		select {
 		case <-ctx.Done():
-			return
+			return ContainerConfig{}
 		case <-ticker.C:
-			cmd := exec.CommandContext(ctx, "docker", "inspect", dcmd.ContainerName)
+			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.ContainerName)
 			out, err := cmd.Output()
 			if err == nil {
-				meta := []metadata{}
+				meta := []ContainerConfig{}
 				err := json.Unmarshal(out, &meta)
 				if err == nil && len(meta) == 1 {
-					dcmd.Event.Info("container metadata",
-						"containerID", meta[0].ID,
+					docker.Event.Info("container metadata",
+						"containerID", meta[0].Id,
 						"containerName", meta[0].Name,
 						"containerImageHash", meta[0].Image)
-					return
+					return meta[0]
 				}
 			}
 		}
 	}
-}
 
-type dockerVersion struct {
-	Client string
-	Server string
+	return ContainerConfig{}
 }
 
 // SyncDockerAPIVersion ensures that the client uses the same API version as
 // the server.
-func SyncDockerAPIVersion() error {
+func (docker *Docker) SyncAPIVersion() error {
 	if os.Getenv("DOCKER_API_VERSION") == "" {
 		cmd := exec.Command("docker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
 		out, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf("docker version command failed: %v", err)
 		}
-		version := &dockerVersion{}
+		version := &ContainerVersion{}
 		err = json.Unmarshal(out, version)
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal docker version: %v", err)

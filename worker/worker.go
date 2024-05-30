@@ -214,7 +214,6 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	}
 
 	if run.ok() && r.Conf.ScratchPath != "" {
-		fmt.Println("Copying Outputs to WorkDir...")
 		mapper.CopyOutputsToWorkDir(r.Conf.ScratchPath)
 	}
 

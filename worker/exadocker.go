@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -89,7 +90,7 @@ func (exadocker Exadocker) Run(ctx context.Context) error {
 		cmd.Stderr = exadocker.Stderr
 		fmt.Println("DEBUG: cmd.Stderr:", cmd.Stderr)
 	}
-	go exadocker.inspectContainer(ctx)
+	go exadocker.InspectContainer(ctx)
 
 	// fmt.Println("DEBUG: exadocker.Stdout:", exadocker.Stdout)
 	out := cmd.Run()
@@ -156,7 +157,7 @@ func (exadocker Exadocker) Inspect(ctx context.Context) (ContainerConfig, error)
 }
 
 // inspectContainer inspects the docker container for metadata.
-func (exadocker *Exadocker) inspectContainer(ctx context.Context) {
+func (exadocker *Exadocker) InspectContainer(ctx context.Context) ContainerConfig {
 	// Give the container time to start.
 	time.Sleep(2 * time.Second)
 
@@ -167,22 +168,44 @@ func (exadocker *Exadocker) inspectContainer(ctx context.Context) {
 	for i := 0; i < 5; i++ {
 		select {
 		case <-ctx.Done():
-			return
+			return ContainerConfig{}
 		case <-ticker.C:
-			driverArgs := strings.Join(exadocker.Driver[1:], " ")
-			cmd := exec.CommandContext(ctx, exadocker.Command[0], driverArgs, "inspect", exadocker.ContainerName)
+			cmd := exec.CommandContext(ctx, "docker", "inspect", exadocker.ContainerName)
 			out, err := cmd.Output()
 			if err == nil {
-				meta := []metadata{}
+				meta := []ContainerConfig{}
 				err := json.Unmarshal(out, &meta)
 				if err == nil && len(meta) == 1 {
 					exadocker.Event.Info("container metadata",
-						"containerID", meta[0].ID,
+						"containerID", meta[0].Id,
 						"containerName", meta[0].Name,
 						"containerImageHash", meta[0].Image)
-					return
+					return meta[0]
 				}
 			}
 		}
 	}
+
+	return ContainerConfig{}
+}
+
+// SyncDockerAPIVersion ensures that the client uses the same API version as
+// the server.
+func (exadocker *Exadocker) SyncAPIVersion() error {
+	if os.Getenv("DOCKER_API_VERSION") == "" {
+		cmd := exec.Command("docker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		out, err := cmd.Output()
+		if err != nil {
+			return fmt.Errorf("docker version command failed: %v", err)
+		}
+		version := &ContainerVersion{}
+		err = json.Unmarshal(out, version)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal docker version: %v", err)
+		}
+		if version.Client != version.Server {
+			os.Setenv("DOCKER_API_VERSION", version.Server)
+		}
+	}
+	return nil
 }

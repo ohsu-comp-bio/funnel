@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -43,10 +44,10 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 	// Capture stdout/err to file.
 	_, out, err := s.Command.GetIO()
-	if out != nil {
+	if out != nil && out != (*os.File)(nil) {
 		stdout = io.MultiWriter(out, stdout)
 	}
-	if err != nil {
+	if err != nil && err != (*os.File)(nil) {
 		stderr = io.MultiWriter(err, stderr)
 	}
 	s.Command.SetIO(nil, stdout, stderr)

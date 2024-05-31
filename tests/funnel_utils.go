@@ -411,7 +411,7 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 
 func (f *Funnel) findTestServerContainers() []string {
 	res := []string{}
-	containers, err := f.Docker.ContainerList(context.Background(), dockerTypes.ContainerListOptions{})
+	containers, err := f.Docker.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
 		panic(err)
 	}

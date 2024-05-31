@@ -39,38 +39,39 @@ type ServicePath struct {
 }
 
 func getType(p *openapi3.SchemaRef) (bool, string) {
-	switch p.Value.Type {
-	case "integer":
+	if p.Value.Type.Includes("integer") {
 		return false, "int32"
-	case "boolean":
+	}
+	if p.Value.Type.Includes("boolean") {
 		return false, "bool"
-	case "number":
+	}
+	if p.Value.Type.Includes("number") {
 		return false, "double"
-	case "object":
+	}
+	if p.Value.Type.Includes("object") {
 		if p.Ref != "" {
 			t := strings.Split(p.Ref, "/")
 			return false, t[len(t)-1]
 		}
-		if p.Value.AdditionalProperties != nil {
-			_, aType := getType(p.Value.AdditionalProperties)
+		if p.Value.AdditionalProperties.Has != nil && *p.Value.AdditionalProperties.Has != false {
+			_, aType := getType(p.Value.AdditionalProperties.Schema)
 			return false, fmt.Sprintf("map<string,%s>", aType)
 		}
 		return false, "map<string,string>"
-		//return fmt.Sprintf("%#v", p.Value)
-	case "array":
+	}
+	if p.Value.Type.Includes("array") {
 		if p.Value.Items.Ref != "" {
 			t := strings.Split(p.Value.Items.Ref, "/")
 			return true, t[len(t)-1]
 		}
 		_, aType := getType(p.Value.Items)
 		return true, aType
-	default:
-		if p.Ref != "" {
-			t := strings.Split(p.Ref, "/")
-			return false, t[len(t)-1]
-		}
-		return false, p.Value.Type
 	}
+	if p.Ref != "" {
+		t := strings.Split(p.Ref, "/")
+		return false, t[len(t)-1]
+	}
+	return false, p.Value.Type.Slice()[0]
 }
 
 func getParamType(param *openapi3.Parameter) (bool, string) {
@@ -81,7 +82,7 @@ func getParamType(param *openapi3.Parameter) (bool, string) {
 		return false, t[len(t)-1]
 	}
 
-	if param.Schema.Value.Type != "" {
+	if param.Schema.Value.Type != nil && param.Schema.Value.Type.Includes("") == false {
 		return getType(param.Schema)
 	}
 	return false, ""
@@ -172,7 +173,7 @@ func cleanSchema(messages []Message, enums []Enum, services []ServicePath) {
 }
 
 func getResponseMessage(resp *openapi3.Responses) string {
-	schema := resp.Get(200).Value.Content.Get("application/json").Schema
+	schema := resp.Status(200).Value.Content.Get("application/json").Schema
 	s := strings.Split(schema.Ref, "/")
 	return s[len(s)-1]
 }
@@ -218,7 +219,7 @@ func main() {
 			}
 		}
 
-		for path, req := range doc.Paths {
+		for path, req := range doc.Paths.Map() {
 			if req.Get != nil {
 				//log.Printf("Get: %s %s\n", path, req.Get.OperationID)
 				reqFields := []Field{}
@@ -252,14 +253,14 @@ func main() {
 			}
 		}
 
-		for path, req := range doc.Paths {
+		for path, req := range doc.Paths.Map() {
 			p := ServicePath{}
 			if req.Get != nil {
 				p.Name = req.Get.OperationID
 				p.Path = path
 				p.Mode = "get"
 				p.InputType = req.Get.OperationID + "Request"
-				p.OutputType = getResponseMessage(&req.Get.Responses)
+				p.OutputType = getResponseMessage(req.Get.Responses)
 				service = append(service, p)
 			}
 			if req.Post != nil {
@@ -274,7 +275,7 @@ func main() {
 				} else {
 					p.InputType = req.Post.OperationID + "Request"
 				}
-				p.OutputType = getResponseMessage(&req.Post.Responses)
+				p.OutputType = getResponseMessage(req.Post.Responses)
 				service = append(service, p)
 			}
 		}

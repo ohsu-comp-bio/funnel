@@ -33,9 +33,9 @@ func (docker Docker) Run(ctx context.Context) error {
 
 	var args []string
 
-	if len(docker.ContainerConfig.Driver) > 1 {
+	if len(docker.ContainerConfig.DriverCommand) > 1 {
 		// Merge driver parts and command parts
-		args = append(args, docker.ContainerConfig.Driver[1:]...)
+		args = append(args, docker.ContainerConfig.DriverCommand[1:]...)
 	}
 
 	args = append(args, "run", "-i", "--read-only")
@@ -50,8 +50,8 @@ func (docker Docker) Run(ctx context.Context) error {
 		}
 	}
 
-	if docker.ContainerName != "" {
-		args = append(args, "--name", docker.ContainerName)
+	if docker.Name != "" {
+		args = append(args, "--name", docker.Name)
 	}
 
 	if docker.Workdir != "" {
@@ -67,8 +67,8 @@ func (docker Docker) Run(ctx context.Context) error {
 	args = append(args, docker.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	docker.Event.Info("Running command", "cmd", docker.ContainerConfig.Driver[0]+" "+strings.Join(args, " "))
-	cmd := exec.Command(docker.ContainerConfig.Driver[0], args...)
+	docker.Event.Info("Running command", "cmd", docker.ContainerConfig.DriverCommand[0]+" "+strings.Join(args, " "))
+	cmd := exec.Command(docker.ContainerConfig.DriverCommand[0], args...)
 
 	if docker.Stdin != nil {
 		cmd.Stdin = docker.Stdin
@@ -87,9 +87,9 @@ func (docker Docker) Run(ctx context.Context) error {
 
 // Stop stops the container.
 func (docker Docker) Stop() error {
-	docker.Event.Info("Stopping container", "container", docker.ContainerName)
-	// cmd := exec.Command("docker", "stop", docker.ContainerName)
-	cmd := exec.Command("docker", "rm", "-f", docker.ContainerName) //switching to this to be a bit more forceful
+	docker.Event.Info("Stopping container", "container", docker.Name)
+	// cmd := exec.Command("docker", "stop", docker.Name)
+	cmd := exec.Command("docker", "rm", "-f", docker.Name) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 
@@ -136,11 +136,13 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 		case <-ctx.Done():
 			return ContainerConfig{}
 		case <-ticker.C:
-			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.ContainerName)
+			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.Name)
 			out, err := cmd.Output()
 			if err == nil {
+				fmt.Println("DEBUG: string(out):", string(out))
+
 				meta := []ContainerConfig{}
-				err := json.Unmarshal(out, &meta)
+				err = json.Unmarshal(out, &meta)
 				if err == nil && len(meta) == 1 {
 					docker.Event.Info("container metadata",
 						"containerID", meta[0].Id,

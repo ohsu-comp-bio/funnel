@@ -35,11 +35,10 @@ type ContainerConfig struct {
 	Id              string
 	Image           string
 	Name            string
-	Driver          []string
+	DriverCommand   []string
 	Command         []string
 	Volumes         []Volume
 	Workdir         string
-	ContainerName   string
 	RemoveContainer bool
 	Env             map[string]string
 	Stdin           io.Reader

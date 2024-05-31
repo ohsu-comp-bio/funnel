@@ -13,7 +13,10 @@ import (
 // NewDockerClient returns a new docker client. This util handles
 // working around some client/server API version mismatch issues.
 func NewDockerClient() (*client.Client, error) {
-	dclient, err := client.NewClientWithOpts()
+	dclient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -162,18 +162,18 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
 			containerConfig := ContainerConfig{
-				Image:         d.Image,
-				Command:       d.Command,
-				Env:           d.Env,
-				Volumes:       mapper.Volumes,
-				Workdir:       d.Workdir,
-				ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
+				Image:   d.Image,
+				Command: d.Command,
+				Env:     d.Env,
+				Volumes: mapper.Volumes,
+				Workdir: d.Workdir,
+				Name:    fmt.Sprintf("%s-%d", task.Id, i),
 				// TODO make RemoveContainer configurable
 				RemoveContainer: true,
 				Event:           event.NewExecutorWriter(uint32(i)),
 			}
 			if r.Conf.ContainerDriver != "" {
-				containerConfig.Driver = strings.Fields(r.Conf.ContainerDriver)
+				containerConfig.DriverCommand = strings.Fields(r.Conf.ContainerDriver)
 			}
 			containerEngine, err := f.NewContainerEngine(r.Conf.ContainerType, containerConfig)
 			if err != nil {

@@ -332,6 +332,9 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 
 	if gopath == "" {
 		funnelBinary, err = filepath.Abs("../../funnel")
+		if err != nil {
+			log.Error("Error finding funnel binary", err)
+		}
 	} else {
 		if runtime.GOOS == "linux" {
 			funnelBinary, err = filepath.Abs(filepath.Join(

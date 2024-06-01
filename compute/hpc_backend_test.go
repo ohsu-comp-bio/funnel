@@ -1,6 +1,7 @@
 package compute
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -58,7 +59,7 @@ funnel worker run --taskID {{.TaskId}}
 		Conf:      conf,
 	}
 
-	sf, err := b.setupTemplatedHPCSubmit(task)
+	sf, err := b.setupTemplatedHPCSubmit(context.Background(), task)
 	if err != nil {
 		t.Fatal(err)
 	}

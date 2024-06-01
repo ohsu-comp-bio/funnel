@@ -51,7 +51,6 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		stderr = io.MultiWriter(err, stderr)
 	}
 	s.Command.SetIO(nil, stdout, stderr)
-	_, out, err = s.Command.GetIO()
 
 	go func() {
 		done <- s.Command.Run(subctx)

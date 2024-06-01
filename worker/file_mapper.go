@@ -124,6 +124,9 @@ func (mapper *FileMapper) CopyInputsToScratch(scratchDir string) error {
 				return fmt.Errorf("failed to create scratch directory: %w", err)
 			}
 			err = copyFile(input.Path, scratchTarget)
+			if err != nil {
+				return fmt.Errorf("failed to copy input file to scratch directory: %w", err)
+			}
 			_, _ = os.ReadFile(scratchTarget)
 		}
 	}
@@ -157,16 +160,19 @@ func (mapper *FileMapper) CopyOutputsToWorkDir(scratchDir string) error {
 		}
 		if info.IsDir() {
 			// Ensure the scratch target directory exists
-			if err := os.MkdirAll(output.Path, 0755); err != nil {
+			if err = os.MkdirAll(output.Path, 0755); err != nil {
 				return fmt.Errorf("failed to create output path: %w", err)
 			}
 			copyDir(scratchTarget, output.Path)
 		} else {
 			// Ensure the scratch target directory exists
-			if err := os.MkdirAll(path.Dir(output.Path), 0755); err != nil {
+			if err = os.MkdirAll(path.Dir(output.Path), 0755); err != nil {
 				return fmt.Errorf("failed to create output path: %w", err)
 			}
 			err = copyFile(scratchTarget, output.Path)
+			if err != nil {
+				return fmt.Errorf("failed to copy output file to output directory: %w", err)
+			}
 		}
 	}
 

@@ -146,6 +146,9 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 			tx.Bucket(SysLogs).Put(idBytes, logbytes)
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return err

@@ -263,7 +263,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(ctx context.Context, task *tes.Task
 	}
 
 	var args string
-	if ctx.Value("Config") == nil {
+	if ctx.Value("Config") != nil {
 		conf := ctx.Value("Config").(config.Config)
 		configFile := filepath.Join(workdir, "config.yaml")
 		err = config.ToYamlFile(conf, configFile)

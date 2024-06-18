@@ -137,6 +137,8 @@ type Node struct {
 type Worker struct {
 	// Directory to write task files to
 	WorkDir string
+	// Additional directory to symlink to the working directory.
+	ScratchPath string
 	// How often the worker should poll for cancel signals
 	PollingRate Duration
 	// How often to update stdout/stderr log fields.
@@ -151,6 +153,12 @@ type Worker struct {
 	LeaveWorkDir bool
 	// Limit the number of concurrent downloads/uploads
 	MaxParallelTransfers int
+	// Container engine to use for executing tasks.
+	// Typically this is "docker".
+	ContainerType string
+	// Command to use for the container engine.
+	// This can be used to override the default command used to run containers.
+	ContainerDriver string
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

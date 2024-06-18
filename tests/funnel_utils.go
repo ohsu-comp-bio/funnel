@@ -332,6 +332,9 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 
 	if gopath == "" {
 		funnelBinary, err = filepath.Abs("../../funnel")
+		if err != nil {
+			log.Error("Error finding funnel binary", err)
+		}
 	} else {
 		if runtime.GOOS == "linux" {
 			funnelBinary, err = filepath.Abs(filepath.Join(
@@ -411,7 +414,7 @@ func (f *Funnel) StartServerInDocker(containerName, imageName string, extraArgs 
 
 func (f *Funnel) findTestServerContainers() []string {
 	res := []string{}
-	containers, err := f.Docker.ContainerList(context.Background(), dockerTypes.ContainerListOptions{})
+	containers, err := f.Docker.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
 		panic(err)
 	}

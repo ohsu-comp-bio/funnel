@@ -9,97 +9,93 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/ohsu-comp-bio/funnel/events"
 )
 
-// DockerCommand is responsible for configuring and running a docker container.
-type DockerCommand struct {
-	Image           string
-	Command         []string
-	Volumes         []Volume
-	Workdir         string
-	ContainerName   string
-	RemoveContainer bool
-	Env             map[string]string
-	Stdin           io.Reader
-	Stdout          io.Writer
-	Stderr          io.Writer
-	Event           *events.ExecutorWriter
+// Docker is responsible for configuring and running a docker container.
+type Docker struct {
+	ContainerConfig
 }
 
 // Run runs the Docker command and blocks until done.
-func (dcmd DockerCommand) Run(ctx context.Context) error {
+func (docker Docker) Run(ctx context.Context) error {
 	// Sync docker API version info.
-	err := SyncDockerAPIVersion()
+	err := docker.SyncAPIVersion()
 	if err != nil {
-		dcmd.Event.Error("failed to sync docker client API version", err)
+		docker.Event.Error("failed to sync docker client API version", err)
 	}
 
-	pullcmd := exec.Command("docker", "pull", dcmd.Image)
+	var pullArgs []string
+
+	if len(docker.ContainerConfig.DriverCommand) > 1 {
+		// Merge driver parts and command parts
+		pullArgs = append(pullArgs, docker.ContainerConfig.DriverCommand[1:]...)
+	}
+
+	pullArgs = append(pullArgs, "pull", docker.Image)
+	pullcmd := exec.Command(docker.ContainerConfig.DriverCommand[0], pullArgs...)
 	err = pullcmd.Run()
 	if err != nil {
-		dcmd.Event.Error("failed to pull docker image", err)
+		docker.Event.Error("failed to pull docker image", err)
 	}
 
-	args := []string{"run", "-i", "--read-only"}
+	var args []string
 
-	if dcmd.RemoveContainer {
+	if len(docker.ContainerConfig.DriverCommand) > 1 {
+		// Merge driver parts and command parts
+		args = append(args, docker.ContainerConfig.DriverCommand[1:]...)
+	}
+
+	args = append(args, "run", "-i", "--read-only")
+
+	if docker.RemoveContainer {
 		args = append(args, "--rm")
 	}
 
-	if dcmd.Env != nil {
-		for k, v := range dcmd.Env {
+	if docker.Env != nil {
+		for k, v := range docker.Env {
 			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 
-	if dcmd.ContainerName != "" {
-		args = append(args, "--name", dcmd.ContainerName)
+	if docker.Name != "" {
+		args = append(args, "--name", docker.Name)
 	}
 
-	if dcmd.Workdir != "" {
-		args = append(args, "-w", dcmd.Workdir)
+	if docker.Workdir != "" {
+		args = append(args, "-w", docker.Workdir)
 	}
 
-	for _, vol := range dcmd.Volumes {
+	for _, vol := range docker.Volumes {
 		arg := formatVolumeArg(vol)
 		args = append(args, "-v", arg)
 	}
 
-	args = append(args, dcmd.Image)
-	// if dcmd.Command contains the ["/bin/bash", "-ue"] string, replace it with "/bin/bash -ue"
-	c := strings.Join(dcmd.Command, " ")
-	if strings.Contains(c, "[/bin/bash, -ue]") {
-		dcmd.Command = transformCommandSlice(dcmd.Command)
-	}
-	args = append(args, dcmd.Command...)
+	args = append(args, docker.Image)
+	args = append(args, docker.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	err = dcmd.Event.Info(fmt.Sprintf("args: %s", args))
-	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command(docker.ContainerConfig.DriverCommand[0], args...)
 
-	if dcmd.Stdin != nil {
-		cmd.Stdin = dcmd.Stdin
+	if docker.Stdin != nil {
+		cmd.Stdin = docker.Stdin
 	}
-	if dcmd.Stdout != nil {
-		cmd.Stdout = dcmd.Stdout
+	if docker.Stdout != nil {
+		cmd.Stdout = docker.Stdout
 	}
-	if dcmd.Stderr != nil {
-		cmd.Stderr = dcmd.Stderr
+	if docker.Stderr != nil {
+		cmd.Stderr = docker.Stderr
 	}
-	go dcmd.inspectContainer(ctx)
+	go docker.InspectContainer(ctx)
 	out := cmd.Run()
-	dcmd.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
+	docker.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
 	return out
 }
 
 // Stop stops the container.
-func (dcmd DockerCommand) Stop() error {
-	dcmd.Event.Info("Stopping container", "container", dcmd.ContainerName)
-	// cmd := exec.Command("docker", "stop", dcmd.ContainerName)
-	cmd := exec.Command("docker", "rm", "-f", dcmd.ContainerName) //switching to this to be a bit more forceful
+func (docker Docker) Stop() error {
+	docker.Event.Info("Stopping container", "container", docker.Name)
+	// cmd := exec.Command("docker", "stop", docker.Name)
+	cmd := exec.Command("docker", "rm", "-f", docker.Name) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 
@@ -112,23 +108,28 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
 }
 
-func transformCommandSlice(cmd []string) []string {
-	if len(cmd) == 0 {
-		return cmd // Handle empty slice
-	}
-
-	cmd[2] = "/bin/bash -ue .command.run &> .command.log"
-	return cmd
+func (docker Docker) GetImage() string {
+	return docker.Image
 }
 
-type metadata struct {
-	ID    string
-	Name  string
-	Image string
+func (docker Docker) GetIO() (io.Reader, io.Writer, io.Writer) {
+	return docker.Stdin, docker.Stdout, docker.Stderr
+}
+
+func (docker *Docker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+	if stdin != nil && stdin != (*os.File)(nil) {
+		docker.Stdin = stdin
+	}
+	if stdout != nil && stdout != (*os.File)(nil) {
+		docker.Stdout = stdout
+	}
+	if stderr != nil && stderr != (*os.File)(nil) {
+		docker.Stderr = stderr
+	}
 }
 
 // inspectContainer inspects the docker container for metadata.
-func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
+func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 	// Give the container time to start.
 	time.Sleep(2 * time.Second)
 
@@ -139,40 +140,46 @@ func (dcmd *DockerCommand) inspectContainer(ctx context.Context) {
 	for i := 0; i < 5; i++ {
 		select {
 		case <-ctx.Done():
-			return
+			return ContainerConfig{}
 		case <-ticker.C:
-			cmd := exec.CommandContext(ctx, "docker", "inspect", dcmd.ContainerName)
+			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.Name)
 			out, err := cmd.Output()
 			if err == nil {
-				meta := []metadata{}
-				err := json.Unmarshal(out, &meta)
+
+				meta := []ContainerConfig{}
+				err = json.Unmarshal(out, &meta)
 				if err == nil && len(meta) == 1 {
-					dcmd.Event.Info("container metadata",
-						"containerID", meta[0].ID,
+					docker.Event.Info("container metadata",
+						"containerID", meta[0].Id,
 						"containerName", meta[0].Name,
 						"containerImageHash", meta[0].Image)
-					return
+					return meta[0]
 				}
 			}
 		}
 	}
-}
 
-type dockerVersion struct {
-	Client string
-	Server string
+	return ContainerConfig{}
 }
 
 // SyncDockerAPIVersion ensures that the client uses the same API version as
 // the server.
-func SyncDockerAPIVersion() error {
+func (docker *Docker) SyncAPIVersion() error {
 	if os.Getenv("DOCKER_API_VERSION") == "" {
-		cmd := exec.Command("docker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		var args []string
+
+		if len(docker.ContainerConfig.DriverCommand) > 1 {
+			// Merge driver parts and command parts
+			args = append(args, docker.ContainerConfig.DriverCommand[1:]...)
+		}
+
+		args = append(args, "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		cmd := exec.Command(docker.ContainerConfig.DriverCommand[0], args...)
 		out, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf("docker version command failed: %v", err)
 		}
-		version := &dockerVersion{}
+		version := &ContainerVersion{}
 		err = json.Unmarshal(out, version)
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal docker version: %v", err)

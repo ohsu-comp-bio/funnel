@@ -1,11 +1,11 @@
 # Workflow for running the TES compliance suite against Funnel
-
+#
 # This includes the following steps:
 #  1. Build Funnel and store the resulting binary artifact
 #  2. Install tes-compliance-suite and run against every version of TES simultaneously
 #  3. start-report-deployment: Send a dispatch to the funnel-compliance repository to generate and publish
 #     the tes-compliance-suite report to https://ohsu-comp-bio.github.io/funnel-compliance/
-
+#
 # Optionally debug via SSH
 # Ref: https://fleetdm.com/engineering/tips-for-github-actions-usability
 #
@@ -90,11 +90,7 @@ jobs:
 
       - name: Run OpenAPI Test Runner
         run: |
-          # Clone the 'upstream' OpenAPI Test Runner when PR #65 is merged
-          # https://github.com/elixir-cloud-aai/openapi-test-runner/pull/65
-          # git clone https://github.com/elixir-cloud-aai/openapi-test-runner
-          git clone https://github.com/ohsu-comp-bio/openapi-test-runner -b fix/create-and-filter-task
-          
+          git clone https://github.com/elixir-cloud-aai/openapi-test-runner
           cd openapi-test-runner
           python3 -m venv venv
           source venv/bin/activate
@@ -102,20 +98,15 @@ jobs:
           python setup.py install  
           openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
 
-      - name: Install TES compliance suite
+      - name: Install Legacy TES compliance suite (Report Generation)
         run: |
           git clone https://github.com/lbeckman314/tes-compliance-suite -b feature/tesv1.1
           cd tes-compliance-suite
-          /root/.pyenv/shims/python3 -m venv venv
+          python3 -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
           python setup.py install
           mkdir reports
-
-      - name: Test compliance (Report Publishing)
-        run: |
-          cd tes-compliance-suite
-          source venv/bin/activate
           tes-compliance-suite report --version "${{ matrix.version }}" --server "http://localhost:8000/"
 
   start-report-deployment:

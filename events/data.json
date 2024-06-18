@@ -1,0 +1,14 @@
+{
+  "id": "event123",
+  "timestamp": "2024-05-20T12:34:56Z",
+  "type": "TASK_CREATED",
+  "task": {
+    "id": "task123",
+    "executors": [
+      {
+	"image": "alpine",
+	"command": ["echo", "hello world"]
+      }
+    ]
+  }
+}

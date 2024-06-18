@@ -53,6 +53,7 @@ func newDebugInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 			"resp", resp,
 			"err", err,
 		)
+
 		return resp, err
 	}
 }
@@ -84,7 +85,11 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 			w.WriteHeader(http.StatusNotFound) // 404
 		}
 	default:
-		w.WriteHeader(http.StatusInternalServerError) // 500
+		if (strings.Contains(st.Message(), "backend parameters not supported")) {
+			w.WriteHeader(http.StatusBadRequest) // 400
+		} else {
+			w.WriteHeader(http.StatusInternalServerError) // 500
+		}
 	}
 
     // Write the error message

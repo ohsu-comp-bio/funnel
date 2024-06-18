@@ -154,24 +154,40 @@ func (mapper *FileMapper) CopyOutputsToWorkDir(scratchDir string) error {
 	for _, output := range mapper.Outputs {
 		scratchTarget := filepath.Join(scratchAbsDir, output.Path)
 
-		info, err := os.Stat(scratchTarget)
+		matches, err := filepath.Glob(scratchTarget)
 		if err != nil {
-			fmt.Println(err)
-		}
-		if info.IsDir() {
-			// Ensure the scratch target directory exists
-			if err = os.MkdirAll(output.Path, 0755); err != nil {
-				return fmt.Errorf("failed to create output path: %w", err)
-			}
-			copyDir(scratchTarget, output.Path)
-		} else {
-			// Ensure the scratch target directory exists
-			if err = os.MkdirAll(path.Dir(output.Path), 0755); err != nil {
-				return fmt.Errorf("failed to create output path: %w", err)
-			}
-			err = copyFile(scratchTarget, output.Path)
+            return fmt.Errorf("invalid pattern %s: %w", scratchTarget, err)
+        }
+        if len(matches) == 0 {
+            return fmt.Errorf("no files matched the pattern: %s", scratchTarget)
+        }
+
+		parentDir := filepath.Dir(output.Path)
+		for _, src := range matches {
+			info, err := os.Stat(src)
 			if err != nil {
-				return fmt.Errorf("failed to copy output file to output directory: %w", err)
+				return fmt.Errorf("failed to stat output path: %w", err)
+			}
+			// If output is a directory
+			if info.IsDir() {
+				// Ensure the scratch target directory exists
+				if err = os.MkdirAll(output.Path, 0755); err != nil {
+					return fmt.Errorf("failed to create output path: %w", err)
+				}
+				copyDir(src, output.Path)
+			// If output is a file
+			} else {
+				// Ensure the scratch target directory exists
+				if err = os.MkdirAll(path.Dir(parentDir), 0755); err != nil {
+					return fmt.Errorf("failed to create output path: %w", err)
+				}
+
+				workDirPath := filepath.Join(parentDir, info.Name())
+
+				err = copyFile(src, workDirPath)
+				if err != nil {
+					return fmt.Errorf("failed to copy output file to output directory: %w", err)
+				}
 			}
 		}
 	}

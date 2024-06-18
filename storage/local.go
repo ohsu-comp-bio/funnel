@@ -168,6 +168,7 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 
 // Hard links file source to destination dest.
 func linkFile(ctx context.Context, source string, dest string) error {
+
     // If source has a glob or wildcard, get the filepath using the filepath.Glob function
     if strings.Contains(source, "*") {
         globs, err := filepath.Glob(source)
@@ -176,8 +177,7 @@ func linkFile(ctx context.Context, source string, dest string) error {
         }
         for _, glob := range globs {
             // Correctly calculate the destination for each file
-            destFile := filepath.Join(dest, filepath.Base(glob))
-            err := processItem(ctx, glob, destFile)
+            err := processItem(ctx, glob, dest)
             if err != nil {
                 return err
             }
@@ -195,6 +195,7 @@ func processItem(ctx context.Context, source, dest string) error {
     if err != nil {
         return err
     }
+
 
     if fileInfo.IsDir() {
         return processDirectory(ctx, source, dest)

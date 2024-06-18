@@ -24,7 +24,15 @@ func (docker Docker) Run(ctx context.Context) error {
 		docker.Event.Error("failed to sync docker client API version", err)
 	}
 
-	pullcmd := exec.Command("docker", "pull", docker.Image)
+	var pullArgs []string
+
+	if len(docker.ContainerConfig.DriverCommand) > 1 {
+		// Merge driver parts and command parts
+		pullArgs = append(pullArgs, docker.ContainerConfig.DriverCommand[1:]...)
+	}
+
+	pullArgs = append(pullArgs, "pull", docker.Image)
+	pullcmd := exec.Command(docker.ContainerConfig.DriverCommand[0], pullArgs...)
 	err = pullcmd.Run()
 	if err != nil {
 		docker.Event.Error("failed to pull docker image", err)
@@ -66,7 +74,6 @@ func (docker Docker) Run(ctx context.Context) error {
 	args = append(args, docker.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	docker.Event.Info("Running command", "cmd", docker.ContainerConfig.DriverCommand[0]+" "+strings.Join(args, " "))
 	cmd := exec.Command(docker.ContainerConfig.DriverCommand[0], args...)
 
 	if docker.Stdin != nil {
@@ -138,7 +145,6 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.Name)
 			out, err := cmd.Output()
 			if err == nil {
-				fmt.Println("DEBUG: string(out):", string(out))
 
 				meta := []ContainerConfig{}
 				err = json.Unmarshal(out, &meta)
@@ -160,7 +166,15 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 // the server.
 func (docker *Docker) SyncAPIVersion() error {
 	if os.Getenv("DOCKER_API_VERSION") == "" {
-		cmd := exec.Command("docker", "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		var args []string
+
+		if len(docker.ContainerConfig.DriverCommand) > 1 {
+			// Merge driver parts and command parts
+			args = append(args, docker.ContainerConfig.DriverCommand[1:]...)
+		}
+
+		args = append(args, "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
+		cmd := exec.Command(docker.ContainerConfig.DriverCommand[0], args...)
 		out, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf("docker version command failed: %v", err)

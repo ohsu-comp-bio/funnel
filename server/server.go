@@ -78,13 +78,17 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.WriteHeader(http.StatusForbidden) // 403
 	case codes.NotFound:
 		// Special case for missing tasks (TES Compliance Suite)
-		if (strings.Contains(st.Message(), "task not found")) {
+		if strings.Contains(st.Message(), "task not found") {
 			w.WriteHeader(http.StatusInternalServerError) // 500
 		} else {
 			w.WriteHeader(http.StatusNotFound) // 404
 		}
 	default:
-		w.WriteHeader(http.StatusInternalServerError) // 500
+		if strings.Contains(st.Message(), "backend parameters not supported") {
+			w.WriteHeader(http.StatusBadRequest) // 400
+		} else {
+			w.WriteHeader(http.StatusInternalServerError) // 500
+		}
 	}
 
     // Write the error message

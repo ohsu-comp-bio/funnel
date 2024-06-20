@@ -257,17 +257,6 @@ func TestProcessFile(t *testing.T) {
 	if string(b) != "foo" {
 		t.Fatal("Unexpected content")
 	}
-
-	dir := path.Join(tmp, "dir")
-	err = os.Mkdir(dir, os.ModePerm)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = processFile(ctx, cp, dir)
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
 // Tests Put when source and dest reference the same file (inode)

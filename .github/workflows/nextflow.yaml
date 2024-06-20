@@ -41,12 +41,13 @@ jobs:
         chmod +x ./funnel
         ./funnel server --LocalStorage.AllowedDirs $HOME run &
 
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+
     - name: Install Nextflow
       run: |
-        cd ..
-        git clone https://github.com/nextflow-io/nextflow
-        cd nextflow
-        make compile
+        curl -s https://get.nextflow.io | bash
+        chmod +x nextflow
 
     - name: Install nf-canary and GA4GH-TES plugin
       run: |

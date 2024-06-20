@@ -148,7 +148,7 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 	}
 	defer sf.Close()
 
-	// If dest is a directory, create a file in that directory with the same name as source
+	// If dest is a directory, set destination to be to be a file in that directory
 	fileInfo, err := os.Stat(dest)
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %v", err)
@@ -198,7 +198,7 @@ func linkFile(ctx context.Context, source string, dest string) error {
 }
 
 // Process a single item (file or directory)
-func processItem(ctx context.Context, source, dest string) error {
+func processItem(ctx context.Context, source string, dest string) error {
 	fileInfo, err := os.Stat(source)
 	if err != nil {
 		return err
@@ -212,7 +212,7 @@ func processItem(ctx context.Context, source, dest string) error {
 }
 
 // Process a directory
-func processDirectory(ctx context.Context, source, dest string) error {
+func processDirectory(ctx context.Context, source string, dest string) error {
 	// Create destination directory
 	err := os.MkdirAll(dest, 0755) // Adjust permissions as needed
 	if err != nil {
@@ -242,7 +242,7 @@ func processDirectory(ctx context.Context, source, dest string) error {
 }
 
 // Process a single file
-func processFile(ctx context.Context, source, dest string) error {
+func processFile(ctx context.Context, source string, dest string) error {
 	// without this resulting link could be a symlink
 	parent, err := filepath.EvalSymlinks(source)
 	if err != nil {

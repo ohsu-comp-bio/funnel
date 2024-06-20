@@ -62,16 +62,16 @@ func newDebugInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 // Returns '400' for invalid backend parameters and '500' for all other errors
 // Required for TES Compliance Tests
 func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-    const fallback = `{"error": "failed to process the request"}`
+	const fallback = `{"error": "failed to process the request"}`
 
-    st, ok := status.FromError(err)
-    if !ok {
-        w.WriteHeader(http.StatusInternalServerError)
-        w.Write([]byte(fallback))
-        return
-    }
+	st, ok := status.FromError(err)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fallback))
+		return
+	}
 
-    // Map specific gRPC error codes to HTTP status codes
+	// Map specific gRPC error codes to HTTP status codes
 	switch st.Code() {
 	case codes.Unauthenticated:
 		w.WriteHeader(http.StatusUnauthorized) // 401
@@ -79,31 +79,31 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.WriteHeader(http.StatusForbidden) // 403
 	case codes.NotFound:
 		// Special case for missing tasks (TES Compliance Suite)
-		if (strings.Contains(st.Message(), "task not found")) {
+		if strings.Contains(st.Message(), "task not found") {
 			w.WriteHeader(http.StatusInternalServerError) // 500
 		} else {
 			w.WriteHeader(http.StatusNotFound) // 404
 		}
 	default:
-		if (strings.Contains(st.Message(), "backend parameters not supported")) {
+		if strings.Contains(st.Message(), "backend parameters not supported") {
 			w.WriteHeader(http.StatusBadRequest) // 400
 		} else {
 			w.WriteHeader(http.StatusInternalServerError) // 500
 		}
 	}
 
-    // Write the error message
-    jErr := JSONError{Error: st.Message()}
-    jErrBytes, mErr := marshaler.Marshal(jErr)
-    if mErr != nil {
-        w.Write([]byte(fallback))
-        return
-    }
-    w.Write(jErrBytes)
+	// Write the error message
+	jErr := JSONError{Error: st.Message()}
+	jErrBytes, mErr := marshaler.Marshal(jErr)
+	if mErr != nil {
+		w.Write([]byte(fallback))
+		return
+	}
+	w.Write(jErrBytes)
 }
 
 type JSONError struct {
-    Error string `json:"error"`
+	Error string `json:"error"`
 }
 
 // Serve starts the server and does not block. This will open TCP ports
@@ -138,7 +138,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	marsh := NewMarshaler()
 	grpcMux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh), runtime.WithErrorHandler(customErrorHandler))
-	
+
 	// m := protojson.MarshalOptions{
 	// 	Indent:          "  ",
 	// 	EmitUnpopulated: true,

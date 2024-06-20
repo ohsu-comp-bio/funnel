@@ -35,7 +35,6 @@ jobs:
         path: funnel
 
     - name: Start Funnel
-      working-directory: 
       run: |
         cd funnel/
         chmod +x ./funnel
@@ -44,7 +43,7 @@ jobs:
     - name: Install Nextflow
       run: |
         cd ..
-        git clone https://github.com/nextflow-io/nextflow/ -b tes-update-1.1
+        git clone https://github.com/nextflow-io/nextflow
         cd nextflow
         make compile
 

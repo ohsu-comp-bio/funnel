@@ -148,15 +148,6 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 	}
 	defer sf.Close()
 
-	// If dest is a directory, set destination to be to be a file in that directory
-	fileInfo, err := os.Stat(dest)
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %v", err)
-	}
-	if fileInfo.IsDir() {
-		dest = filepath.Join(dest, filepath.Base(source))
-	}
-
 	// Create and open dest file for writing
 	df, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0775)
 	if err != nil {
@@ -186,6 +177,7 @@ func linkFile(ctx context.Context, source string, dest string) error {
 		}
 		for _, glob := range globs {
 			// Correctly calculate the destination for each file
+			dest = filepath.Join(dest, filepath.Base(glob))
 			err := processItem(ctx, glob, dest)
 			if err != nil {
 				return err

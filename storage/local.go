@@ -177,6 +177,8 @@ func linkFile(ctx context.Context, source string, dest string) error {
 		}
 		for _, glob := range globs {
 			// Correctly calculate the destination for each file
+			// TODO: Verify that path_prefix is being removed from the dest filepath
+			dest = filepath.Join(dest, filepath.Base(glob))
 			err := processItem(ctx, glob, dest)
 			if err != nil {
 				return err

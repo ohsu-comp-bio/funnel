@@ -102,8 +102,7 @@ func workerFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working directory")
 	f.StringVar(&flagConf.Worker.ScratchPath, "Worker.ScratchPath", flagConf.Worker.ScratchPath, "Scratch directory")
 	f.BoolVar(&flagConf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", flagConf.Worker.LeaveWorkDir, "Leave working directory after execution")
-	f.StringVar(&flagConf.Worker.ContainerType, "Worker.ContainerType", flagConf.Worker.ContainerType, "Container engine to use for executing tasks. One of ['docker', 'exadocker']")
-	f.StringVar(&flagConf.Worker.ContainerDriver, "Worker.ContainerDriver", flagConf.Worker.ContainerDriver, "Overrides the default command used to run containers.")
+	f.StringVar(&flagConf.Worker.DriverCommand, "Worker.DriverCommand", flagConf.Worker.DriverCommand, "Overrides the default command used to run containers.")
 
 	return f
 }

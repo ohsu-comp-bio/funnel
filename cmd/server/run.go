@@ -264,6 +264,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			HTTPPort:         conf.Server.HTTPPort,
 			BasicAuth:        conf.Server.BasicAuth,
 			DisableHTTPCache: conf.Server.DisableHTTPCache,
+			Socket:           conf.Server.Socket,
 			Log:              log,
 			Tasks: &server.TaskService{
 				Name:    conf.Server.ServiceName,

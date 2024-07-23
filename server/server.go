@@ -36,6 +36,7 @@ type Server struct {
 	Nodes            scheduler.SchedulerServiceServer
 	DisableHTTPCache bool
 	Log              *logger.Logger
+	Socket           string
 }
 
 // Return a new interceptor function that logs all requests at the Debug level

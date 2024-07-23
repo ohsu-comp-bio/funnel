@@ -77,6 +77,7 @@ type Server struct {
 	RPCPort          string
 	BasicAuth        []BasicCredential
 	DisableHTTPCache bool
+	Socket           string
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort

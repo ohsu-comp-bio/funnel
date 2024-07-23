@@ -61,8 +61,18 @@ func DefaultConfig() Config {
 			LogUpdateRate:        Duration(time.Second * 5),
 			LogTailSize:          10000,
 			MaxParallelTransfers: 10,
-			ContainerType:        "docker",
-			ContainerDriver:      "docker",
+			Container: ContainerConfig{
+				DriverCommand: "docker",
+				RunCommand: `run -i --read-only 
+{{if .RemoveContainer}}--rm{{end}}
+{{range $k, $v := .Env}}-e {{$k}}={{$v}} {{end}}
+{{if .Name}}--name {{.Name}}{{end}}
+{{if .Workdir}}-w {{.Workdir}}{{end}}
+{{range .Volumes}}-v {{.HostPath}}:{{.ContainerPath}}:{{if .Readonly}}ro{{else}}rw{{end}}{{end}}
+{{.Image}} {{.Command}}`,
+				PullCommand: "pull {{.Image}}",
+				StopCommand: "rm -f {{.Name}}",
+			},
 		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers

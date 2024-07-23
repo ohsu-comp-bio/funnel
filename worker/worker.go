@@ -163,7 +163,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		for i, d := range task.GetExecutors() {
 			containerConfig := ContainerConfig{
 				Image:   d.Image,
-				Command: d.Command,
+				Command: strings.Join(d.Command, " "),
 				Env:     d.Env,
 				Volumes: mapper.Volumes,
 				Workdir: d.Workdir,
@@ -172,10 +172,11 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 				RemoveContainer: true,
 				Event:           event.NewExecutorWriter(uint32(i)),
 			}
-			if r.Conf.ContainerDriver != "" {
-				containerConfig.DriverCommand = strings.Fields(r.Conf.ContainerDriver)
-			}
-			containerEngine, err := f.NewContainerEngine(r.Conf.ContainerType, containerConfig)
+			containerConfig.DriverCommand = r.Conf.Container.DriverCommand
+			containerConfig.RunCommand = r.Conf.Container.RunCommand
+			containerConfig.PullCommand = r.Conf.Container.PullCommand
+			containerConfig.StopCommand = r.Conf.Container.StopCommand
+			containerEngine, err := f.NewContainerEngine(containerConfig)
 			if err != nil {
 				run.syserr = err
 			}

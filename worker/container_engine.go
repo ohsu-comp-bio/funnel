@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -35,8 +34,7 @@ type ContainerConfig struct {
 	Id              string
 	Image           string
 	Name            string
-	DriverCommand   []string
-	Command         []string
+	Command         string
 	Volumes         []Volume
 	Workdir         string
 	RemoveContainer bool
@@ -45,6 +43,10 @@ type ContainerConfig struct {
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Event           *events.ExecutorWriter
+	DriverCommand   string
+	RunCommand      string // template string
+	PullCommand     string // template string
+	StopCommand     string // template string
 }
 
 type ContainerVersion struct {
@@ -54,13 +56,8 @@ type ContainerVersion struct {
 
 type ContainerEngineFactory struct{}
 
-func (f *ContainerEngineFactory) NewContainerEngine(containerType string, containerConfig ContainerConfig) (ContainerEngine, error) {
-	switch containerType {
-	case "docker":
-		return NewDockerEngine(containerConfig)
-	default:
-		return nil, fmt.Errorf("unsupported container type: %s", containerType)
-	}
+func (f *ContainerEngineFactory) NewContainerEngine(containerConfig ContainerConfig) (ContainerEngine, error) {
+	return NewDockerEngine(containerConfig)
 }
 
 func NewDockerEngine(config ContainerConfig) (ContainerEngine, error) {

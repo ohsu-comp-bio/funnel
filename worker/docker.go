@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -24,57 +26,56 @@ func (docker Docker) Run(ctx context.Context) error {
 		docker.Event.Error("failed to sync docker client API version", err)
 	}
 
-	var pullArgs []string
-
-	if len(docker.ContainerConfig.DriverCommand) > 1 {
-		// Merge driver parts and command parts
-		pullArgs = append(pullArgs, docker.ContainerConfig.DriverCommand[1:]...)
-	}
-
-	pullArgs = append(pullArgs, "pull", docker.Image)
-	pullcmd := exec.Command(docker.ContainerConfig.DriverCommand[0], pullArgs...)
-	err = pullcmd.Run()
+	err = docker.executeCommand(ctx, docker.PullCommand)
 	if err != nil {
 		docker.Event.Error("failed to pull docker image", err)
 	}
 
-	var args []string
-
-	if len(docker.ContainerConfig.DriverCommand) > 1 {
-		// Merge driver parts and command parts
-		args = append(args, docker.ContainerConfig.DriverCommand[1:]...)
+	err = docker.executeCommand(ctx, docker.RunCommand)
+	if err != nil {
+		docker.Event.Error("failed to run docker container", err)
 	}
 
-	args = append(args, "run", "-i", "--read-only")
+	go docker.InspectContainer(ctx)
+	return nil
+}
 
-	if docker.RemoveContainer {
-		args = append(args, "--rm")
+// Stop stops the container.
+func (docker Docker) Stop() error {
+	docker.Event.Info("Stopping container", "container", docker.Name)
+	// cmd := exec.Command("docker", "stop", docker.Name)
+	// cmd := exec.Command("docker", "rm", "-f", docker.Name) //switching to this to be a bit more forceful
+	// return cmd.Run()
+	err := docker.executeCommand(context.Background(), docker.StopCommand)
+	if err != nil {
+		docker.Event.Error("failed to stop docker container", err)
+		return err
+	}
+	return nil
+}
+
+func (docker Docker) executeCommand(ctx context.Context, commandTemplate string) error {
+	tmpl, err := template.New("command").Parse(commandTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to parse template for command: %w", err)
 	}
 
-	if docker.Env != nil {
-		for k, v := range docker.Env {
-			args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
-		}
+	var cmdBuffer bytes.Buffer
+	err = tmpl.Execute(&cmdBuffer, docker.ContainerConfig)
+	if err != nil {
+		return fmt.Errorf("failed to execute template for command: %w", err)
 	}
 
-	if docker.Name != "" {
-		args = append(args, "--name", docker.Name)
+	cmdParts := strings.Fields(cmdBuffer.String())
+	driverCmd := strings.Fields(docker.DriverCommand)
+
+	var cmd *exec.Cmd
+	if len(driverCmd) > 1 {
+		cmdArgs := append(driverCmd[1:], cmdParts...)
+		cmd = exec.CommandContext(ctx, driverCmd[0], cmdArgs...)
+	} else {
+		cmd = exec.CommandContext(ctx, driverCmd[0], cmdParts...)
 	}
-
-	if docker.Workdir != "" {
-		args = append(args, "-w", docker.Workdir)
-	}
-
-	for _, vol := range docker.Volumes {
-		arg := formatVolumeArg(vol)
-		args = append(args, "-v", arg)
-	}
-
-	args = append(args, docker.Image)
-	args = append(args, docker.Command...)
-
-	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
-	cmd := exec.Command(docker.ContainerConfig.DriverCommand[0], args...)
 
 	if docker.Stdin != nil {
 		cmd.Stdin = docker.Stdin
@@ -85,17 +86,7 @@ func (docker Docker) Run(ctx context.Context) error {
 	if docker.Stderr != nil {
 		cmd.Stderr = docker.Stderr
 	}
-	go docker.InspectContainer(ctx)
-	out := cmd.Run()
-	docker.Event.Info("Command %s Complete exit=%s", strings.Join(args, " "), out)
-	return out
-}
 
-// Stop stops the container.
-func (docker Docker) Stop() error {
-	docker.Event.Info("Stopping container", "container", docker.Name)
-	// cmd := exec.Command("docker", "stop", docker.Name)
-	cmd := exec.Command("docker", "rm", "-f", docker.Name) //switching to this to be a bit more forceful
 	return cmd.Run()
 }
 
@@ -167,14 +158,15 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 func (docker *Docker) SyncAPIVersion() error {
 	if os.Getenv("DOCKER_API_VERSION") == "" {
 		var args []string
+		driverCmd := strings.Fields(docker.ContainerConfig.DriverCommand)
 
 		if len(docker.ContainerConfig.DriverCommand) > 1 {
 			// Merge driver parts and command parts
-			args = append(args, docker.ContainerConfig.DriverCommand[1:]...)
+			args = append(args, driverCmd[1:]...)
 		}
 
 		args = append(args, "version", "--format", `{"Server": "{{.Server.APIVersion}}", "Client": "{{.Client.APIVersion}}"}`)
-		cmd := exec.Command(docker.ContainerConfig.DriverCommand[0], args...)
+		cmd := exec.Command(driverCmd[0], args...)
 		out, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf("docker version command failed: %v", err)

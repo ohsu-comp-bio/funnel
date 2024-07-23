@@ -57,11 +57,7 @@ type ContainerVersion struct {
 type ContainerEngineFactory struct{}
 
 func (f *ContainerEngineFactory) NewContainerEngine(containerConfig ContainerConfig) (ContainerEngine, error) {
-	return NewDockerEngine(containerConfig)
-}
-
-func NewDockerEngine(config ContainerConfig) (ContainerEngine, error) {
 	return &Docker{
-		ContainerConfig: config,
+		ContainerConfig: containerConfig,
 	}, nil
 }

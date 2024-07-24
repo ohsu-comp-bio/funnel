@@ -25,6 +25,8 @@ name: Compliance Test
 
 on:
   push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -32,7 +34,7 @@ jobs:
     container: quay.io/ohsu-comp-bio/slurm
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: 1.21
 

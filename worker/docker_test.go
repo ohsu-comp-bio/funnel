@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"math/rand"
+
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
@@ -13,10 +15,10 @@ import (
 var defaultConfig = ContainerConfig{
 	Id:              "123",
 	Image:           "alpine",
-	Name:            "funnel-test",
+	Name:            "funnel-test-" + RandomString(6),
 	DriverCommand:   "docker",
-	Command:         "echo Hello, World!",
-	RunCommand:      "run --name {{.Name}} {{.Image}} {{range .Command}} {{.}} {{end}}",
+	Command:         []string{"sh", "-c", "echo Hello, World!"},
+	RunCommand:      "run --name {{.Name}} {{.Image}} {{.Command}}",
 	PullCommand:     "pull {{.Image}}",
 	RemoveContainer: true,
 	Event: events.NewExecutorWriter("123", 1, 1, &events.Logger{
@@ -38,7 +40,7 @@ func TestDockerExecuteCommand(t *testing.T) {
 	docker := Docker{
 		ContainerConfig: defaultConfig,
 	}
-	err := docker.executeCommand(context.Background(), "run --rm alpine echo Hello, World!")
+	err := docker.executeCommand(context.Background(), "run --rm alpine echo Hello, World!", true)
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
@@ -52,7 +54,7 @@ func TestDockerStop(t *testing.T) {
 
 	// Run the container command in a separate goroutine
 	go func() {
-		err := docker.executeCommand(ctx, "run --rm alpine sleep 30")
+		err := docker.executeCommand(ctx, "run --rm alpine sleep 30", true)
 		if err != nil && ctx.Err() == nil {
 			t.Errorf("Expected no error, but got: %v", err)
 		}
@@ -124,4 +126,14 @@ func TestDockerSyncAPIVersion(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
+}
+
+// RandomString generates a random string of length n
+func RandomString(n int) string {
+	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -163,7 +162,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		for i, d := range task.GetExecutors() {
 			containerConfig := ContainerConfig{
 				Image:   d.Image,
-				Command: strings.Join(d.Command, " "),
+				Command: d.Command,
 				Env:     d.Env,
 				Volumes: mapper.Volumes,
 				Workdir: d.Workdir,

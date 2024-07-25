@@ -34,7 +34,7 @@ type ContainerConfig struct {
 	Id              string
 	Image           string
 	Name            string
-	Command         string
+	Command         []string
 	Volumes         []Volume
 	Workdir         string
 	RemoveContainer bool

@@ -63,13 +63,13 @@ func DefaultConfig() Config {
 			MaxParallelTransfers: 10,
 			Container: ContainerConfig{
 				DriverCommand: "docker",
-				RunCommand: `run -i --read-only 
-{{if .RemoveContainer}}--rm{{end}}
-{{range $k, $v := .Env}}-e {{$k}}={{$v}} {{end}}
-{{if .Name}}--name {{.Name}}{{end}}
-{{if .Workdir}}-w {{.Workdir}}{{end}}
-{{range .Volumes}}-v {{.HostPath}}:{{.ContainerPath}}:{{if .Readonly}}ro{{else}}rw{{end}}{{end}}
-{{.Image}} {{.Command}}`,
+				RunCommand: "run -i --read-only " +
+					"{{if .RemoveContainer}}--rm{{end}} " +
+					"{{range $k, $v := .Env}}-e {{$k}}={{$v}} {{end}} " +
+					"{{if .Name}}--name {{.Name}}{{end}} " +
+					"{{if .Workdir}}-w {{.Workdir}}{{end}} " +
+					"{{range .Volumes}}-v {{.HostPath}}:{{.ContainerPath}}:{{if .Readonly}}ro{{else}}rw{{end}} {{end}} " +
+					"{{.Image}} {{.Command}}",
 				PullCommand: "pull {{.Image}}",
 				StopCommand: "rm -f {{.Name}}",
 			},

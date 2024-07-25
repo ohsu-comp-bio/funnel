@@ -26,27 +26,23 @@ func (docker Docker) Run(ctx context.Context) error {
 		docker.Event.Error("failed to sync docker client API version", err)
 	}
 
-	err = docker.executeCommand(ctx, docker.PullCommand)
+	err = docker.executeCommand(ctx, docker.PullCommand, false)
 	if err != nil {
 		docker.Event.Error("failed to pull docker image", err)
 	}
 
-	err = docker.executeCommand(ctx, docker.RunCommand)
+	err = docker.executeCommand(ctx, docker.RunCommand, true)
 	if err != nil {
 		docker.Event.Error("failed to run docker container", err)
 	}
 
-	go docker.InspectContainer(ctx)
-	return nil
+	return err
 }
 
 // Stop stops the container.
 func (docker Docker) Stop() error {
 	docker.Event.Info("Stopping container", "container", docker.Name)
-	// cmd := exec.Command("docker", "stop", docker.Name)
-	// cmd := exec.Command("docker", "rm", "-f", docker.Name) //switching to this to be a bit more forceful
-	// return cmd.Run()
-	err := docker.executeCommand(context.Background(), docker.StopCommand)
+	err := docker.executeCommand(context.Background(), docker.StopCommand, false)
 	if err != nil {
 		docker.Event.Error("failed to stop docker container", err)
 		return err
@@ -54,7 +50,13 @@ func (docker Docker) Stop() error {
 	return nil
 }
 
-func (docker Docker) executeCommand(ctx context.Context, commandTemplate string) error {
+func (docker Docker) executeCommand(ctx context.Context, commandTemplate string, enableIO bool) error {
+	var usingCommand bool = false
+	if strings.Contains(commandTemplate, "{{.Command}}") {
+		usingCommand = true
+		commandTemplate = strings.ReplaceAll(commandTemplate, "{{.Command}}", "")
+	}
+
 	tmpl, err := template.New("command").Parse(commandTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to parse template for command: %w", err)
@@ -67,8 +69,12 @@ func (docker Docker) executeCommand(ctx context.Context, commandTemplate string)
 	}
 
 	cmdParts := strings.Fields(cmdBuffer.String())
-	driverCmd := strings.Fields(docker.DriverCommand)
+	if usingCommand {
+		go docker.InspectContainer(ctx)
+		cmdParts = append(cmdParts, docker.Command...)
+	}
 
+	driverCmd := strings.Fields(docker.DriverCommand)
 	var cmd *exec.Cmd
 	if len(driverCmd) > 1 {
 		cmdArgs := append(driverCmd[1:], cmdParts...)
@@ -77,14 +83,16 @@ func (docker Docker) executeCommand(ctx context.Context, commandTemplate string)
 		cmd = exec.CommandContext(ctx, driverCmd[0], cmdParts...)
 	}
 
-	if docker.Stdin != nil {
-		cmd.Stdin = docker.Stdin
-	}
-	if docker.Stdout != nil {
-		cmd.Stdout = docker.Stdout
-	}
-	if docker.Stderr != nil {
-		cmd.Stderr = docker.Stderr
+	if enableIO {
+		if docker.Stdin != nil {
+			cmd.Stdin = docker.Stdin
+		}
+		if docker.Stdout != nil {
+			cmd.Stdout = docker.Stdout
+		}
+		if docker.Stderr != nil {
+			cmd.Stderr = docker.Stderr
+		}
 	}
 
 	return cmd.Run()
@@ -121,6 +129,7 @@ func (docker *Docker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer)
 
 // inspectContainer inspects the docker container for metadata.
 func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
+	fmt.Println("DEBUG: InspectContainer()")
 	// Give the container time to start.
 	time.Sleep(2 * time.Second)
 
@@ -131,6 +140,7 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 	for i := 0; i < 5; i++ {
 		select {
 		case <-ctx.Done():
+			fmt.Println("DEBUG: ctx.Done()")
 			return ContainerConfig{}
 		case <-ticker.C:
 			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.Name)

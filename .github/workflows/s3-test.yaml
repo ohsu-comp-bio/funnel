@@ -5,6 +5,8 @@ name: S3 Integration Test
 
 on:
   push:
+    branches:
+      - main
 
 jobs:
   s3Test-integration:
@@ -39,7 +41,7 @@ jobs:
               Secret: "minioadmin"
           EOF
 
-          wget https://github.com/ohsu-comp-bio/funnel/releases/download/untagged-217841a99d14ccfe289c/funnel-darwin-arm64-0.11.0.tar.gz
+          /bin/bash -c "$(curl -fsSL https://github.com/ohsu-comp-bio/funnel/releases/download/0.11.0/install.sh)"
           tar -zxvf funnel-darwin-arm64-0.11.0.tar.gz
           chmod +x funnel
           ./funnel server run --config funnel.config.yml &

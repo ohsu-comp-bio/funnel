@@ -42,7 +42,6 @@ jobs:
 
     - name: Install Nextflow
       run: |
-        cd ..
         git clone https://github.com/nextflow-io/nextflow
         cd nextflow
         make compile
@@ -59,10 +58,6 @@ jobs:
           tes.endpoint = 'http://localhost:8000'
         EOF
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-
     - name: Run nf-canary tests
       run: |
-        cd nextflow
-        nextflow run nf-canary/main.nf
+        ./nextflow/nextflow run nf-canary/main.nf

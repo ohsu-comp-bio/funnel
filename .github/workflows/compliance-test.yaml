@@ -25,6 +25,8 @@ name: Compliance Test
 
 on:
   push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -123,4 +125,4 @@ jobs:
           repository: ohsu-comp-bio/funnel-compliance
           event: start-report
           github_pat: ${{ secrets.ACTIONS_TOKEN }}
-      
+ 

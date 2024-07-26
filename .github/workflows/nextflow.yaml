@@ -49,6 +49,7 @@ jobs:
 
     - name: Install nf-canary and GA4GH-TES plugin
       run: |
+        cd ..
         git clone https://github.com/seqeralabs/nf-canary
         cd nf-canary
         cat <<EOF >> nextflow.config

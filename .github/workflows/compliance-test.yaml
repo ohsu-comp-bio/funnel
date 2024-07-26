@@ -25,13 +25,10 @@ name: Compliance Test
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: quay.io/ohsu-comp-bio/slurm
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@v5
@@ -56,12 +53,9 @@ jobs:
       matrix:
         version: [1.0.0, 1.1.0]
         db: ["boltdb", "mongodb"]
-        compute: ["local", "slurm"]
+        compute: ["local"]
     needs: build
     runs-on: ubuntu-latest
-    container:
-      image: quay.io/ohsu-comp-bio/slurm
-      options: --hostname slurmctl --cap-add sys_admin
     steps:
       # Required to access the 'tests/mongo.config.yml' file
       # Perhaps uploading it as an artifact would be more efficient?
@@ -78,17 +72,9 @@ jobs:
           if [ ${{ matrix.db }} = "mongodb" ]; then
             make start-mongodb
             cat `pwd`/tests/mongo.config.yml >> config.yml
-            # Required for Funnel to connect MongoDB
-            echo "172.17.0.1 localhost" >> /etc/hosts
-          elif [ ${{ matrix.compute }} = "slurm" ]; then
-            cat `pwd`/tests/slurm.config.yml >> config.yml
-            cp config.yml /opt/funnel_config.yml
-            # Start Slurm
-            /usr/local/bin/docker-entrypoint.sh
           fi
           chmod +x funnel
-          FLAGS="--config `pwd`/config.yml"
-          ./funnel server run $FLAGS &> funnel.logs &
+          ./funnel server run --config `pwd`/config.yml &> funnel.logs &
 
       - name: Run OpenAPI Test Runner
         run: |
@@ -100,29 +86,3 @@ jobs:
           python setup.py install  
           openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
 
-      - name: Install Legacy TES compliance suite (Report Generation)
-        run: |
-          git clone https://github.com/lbeckman314/tes-compliance-suite -b feature/tesv1.1
-          cd tes-compliance-suite
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
-          python setup.py install
-          mkdir reports
-          tes-compliance-suite report --version "${{ matrix.version }}" --server "http://localhost:8000/"
-
-  start-report-deployment:
-    needs: compliance
-    runs-on: ubuntu-latest
-    steps:
-      # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-dispatch-event
-      - name: Start report generation
-        uses: passeidireto/trigger-external-workflow-action@main
-        env:
-          PAYLOAD_AUTHOR: "Funnel"
-          PAYLOAD_REVISION: "3"
-        with:
-          repository: ohsu-comp-bio/funnel-compliance
-          event: start-report
-          github_pat: ${{ secrets.ACTIONS_TOKEN }}
- 

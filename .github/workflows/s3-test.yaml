@@ -5,8 +5,6 @@ name: S3 Integration Test
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   s3Test-integration:

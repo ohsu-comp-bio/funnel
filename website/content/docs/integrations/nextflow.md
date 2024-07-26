@@ -2,7 +2,7 @@
 title: Nextflow
 menu:
   main:
-    parent: Interop
+    parent: Integrations
 ---
 
 > ⚠️ Nextflow support is currently in development and requires a few additional steps to run which are included below.

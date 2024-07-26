@@ -176,7 +176,8 @@ func linkFile(ctx context.Context, source string, dest string) error {
 			return fmt.Errorf("failed to get filepath using Glob: %v", err)
 		}
 		for _, glob := range globs {
-			// Correctly calculate the destination for each file
+			// Since tesOutput.path contains a wildcard, then the dest path must be a directory
+			// Ref: https://github.com/ga4gh/task-execution-schemas/blob/v1.1/openapi/task_execution_service.openapi.yaml#L528
 			// TODO: Verify that path_prefix is being removed from the dest filepath
 			dest = filepath.Join(dest, filepath.Base(glob))
 			err := processItem(ctx, glob, dest)

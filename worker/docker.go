@@ -129,7 +129,6 @@ func (docker *Docker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer)
 
 // inspectContainer inspects the docker container for metadata.
 func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
-	fmt.Println("DEBUG: InspectContainer()")
 	// Give the container time to start.
 	time.Sleep(2 * time.Second)
 
@@ -140,7 +139,6 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 	for i := 0; i < 5; i++ {
 		select {
 		case <-ctx.Done():
-			fmt.Println("DEBUG: ctx.Done()")
 			return ContainerConfig{}
 		case <-ticker.C:
 			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.Name)

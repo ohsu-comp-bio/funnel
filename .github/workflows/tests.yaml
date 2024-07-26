@@ -17,7 +17,7 @@ jobs:
         with:
           version: latest
           # TODO: Re-enable all linters
-          args: --timeout 3m --verbose -D unused -D errcheck -D staticcheck -D govet -D gosimple -D ineffassign -D typecheck
+          args: --timeout 3m --verbose
 
   build:
     runs-on: ubuntu-latest

@@ -3,7 +3,7 @@ package examples
 import (
 	"testing"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 

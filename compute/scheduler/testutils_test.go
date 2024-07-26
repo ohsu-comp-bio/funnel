@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -81,13 +82,18 @@ func (t *testNode) AddTasks(ids ...string) {
 
 func timeLimit(t *testing.T, d time.Duration) func() {
 	stop := make(chan struct{})
+	errs := make(chan error)
 	go func() {
 		select {
 		case <-time.NewTimer(d).C:
-			t.Fatal("time limit expired")
+			errs <- errors.New("timed out")
 		case <-stop:
 		}
 	}()
+	err := <-errs
+	if err != nil {
+		t.Fatal(err)
+	}
 	return func() {
 		close(stop)
 	}

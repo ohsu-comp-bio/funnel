@@ -78,7 +78,7 @@ func BenchmarkRunConcurrentWithFakeNodes(b *testing.B) {
 			case id := <-ids:
 				// fake node that writes to UpdateExecutorLogs every tick
 				go func(id string) {
-					conn, err := grpc.Dial(fun.Conf.Server.RPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+					conn, err := grpc.NewClient(fun.Conf.Server.RPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 					if err != nil {
 						panic(err)
 					}

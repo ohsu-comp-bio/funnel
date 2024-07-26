@@ -26,8 +26,10 @@ func TestHelloWorld(t *testing.T) {
 		t.Fatal("unexpected task state")
 	}
 
-	if task.Logs[0].Logs[0].Stdout != "hello world\n" {
-		t.Fatal("Missing stdout")
+	expected := "hello world\n"
+	actual := task.Logs[0].Logs[0].Stdout
+	if actual != expected {
+		t.Fatal("Missing stdout. Expected:", expected, "Got:", actual)
 	}
 }
 

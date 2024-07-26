@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -34,7 +33,7 @@ func NewGoogleCloud(conf config.GoogleCloudStorage) (*GoogleCloud, error) {
 	if conf.CredentialsFile != "" {
 		// Pull the client configuration (e.g. auth) from a given account file.
 		// This is likely downloaded from Google Cloud manually via IAM & Admin > Service accounts.
-		bytes, rerr := ioutil.ReadFile(conf.CredentialsFile)
+		bytes, rerr := os.ReadFile(conf.CredentialsFile)
 		if rerr != nil {
 			return nil, rerr
 		}

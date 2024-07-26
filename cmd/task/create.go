@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
@@ -22,6 +22,9 @@ func Create(server string, files []string, reader io.Reader, writer io.Writer) e
 
 	for _, taskFile := range files {
 		f, err := os.Open(taskFile)
+		if err != nil {
+			return err
+		}
 		defer f.Close()
 		if err != nil {
 			return err

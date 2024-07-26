@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -64,7 +65,7 @@ funnel worker run --taskID {{.TaskId}}
 		t.Fatal(err)
 	}
 
-	actual, rerr := ioutil.ReadFile(sf)
+	actual, rerr := os.ReadFile(sf)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}

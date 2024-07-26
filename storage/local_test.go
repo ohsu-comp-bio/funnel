@@ -44,7 +44,7 @@ func TestLocalGet(t *testing.T) {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(cp)
+	b, rerr := os.ReadFile(cp)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -170,7 +170,7 @@ func TestLocalGetPath(t *testing.T) {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(cp)
+	b, rerr := os.ReadFile(cp)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -198,7 +198,7 @@ func TestLocalPut(t *testing.T) {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(op)
+	b, rerr := os.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -225,7 +225,7 @@ func TestLocalPutPath(t *testing.T) {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(op)
+	b, rerr := os.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -293,7 +293,7 @@ func TestSameFile(t *testing.T) {
 	}
 
 	// Check the resulting content
-	b, err := ioutil.ReadFile(op)
+	b, err := os.ReadFile(op)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -308,7 +308,7 @@ func TestSameFile(t *testing.T) {
 	}
 
 	// Check the resulting content
-	b, err = ioutil.ReadFile(op)
+	b, err = os.ReadFile(op)
 	if err != nil {
 		t.Fatal(err)
 	}

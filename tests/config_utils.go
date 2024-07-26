@@ -22,7 +22,7 @@ var configFile string
 func ParseConfig() {
 	// nanoseconds are important because the tests run faster than a millisecond
 	// which can cause port conflicts
-	rand.Seed(time.Now().UTC().UnixNano())
+	rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 	flag.StringVar(&configFile, "funnel-config", configFile, "Funnel config file. Must be an absolute path.")
 	flag.Parse()
 }

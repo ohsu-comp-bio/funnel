@@ -309,7 +309,7 @@ func (f *Funnel) Tempdir() string {
 
 // WriteFile writes a file to the local (temporary) storage directory.
 func (f *Funnel) WriteFile(name string, content string) {
-	err := ioutil.WriteFile(f.StorageDir+"/"+name, []byte(content), os.ModePerm)
+	err := os.WriteFile(f.StorageDir+"/"+name, []byte(content), os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
@@ -317,7 +317,7 @@ func (f *Funnel) WriteFile(name string, content string) {
 
 // ReadFile reads a file to the local (temporary) storage directory.
 func (f *Funnel) ReadFile(name string) string {
-	b, err := ioutil.ReadFile(f.StorageDir + "/" + name)
+	b, err := os.ReadFile(f.StorageDir + "/" + name)
 	if err != nil {
 		panic(err)
 	}

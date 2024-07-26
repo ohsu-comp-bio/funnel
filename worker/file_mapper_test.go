@@ -139,7 +139,7 @@ func TestMapTask(t *testing.T) {
 		t.Fatal("unexpected mapper inputs")
 	}
 
-	c, err := ioutil.ReadFile(tmp + "/inputs/testdata/contents.txt")
+	c, err := os.ReadFile(tmp + "/inputs/testdata/contents.txt")
 	if err != nil {
 		t.Fatal(err)
 	}

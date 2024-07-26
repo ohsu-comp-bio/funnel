@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -17,8 +17,8 @@ func TestCreateStdin(t *testing.T) {
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
 
-	a, _ := ioutil.ReadFile("hello-world.json")
-	b, _ := ioutil.ReadFile("hello-world.json")
+	a, _ := os.ReadFile("hello-world.json")
+	b, _ := os.ReadFile("hello-world.json")
 
 	in := &bytes.Buffer{}
 	out := &bytes.Buffer{}

@@ -96,6 +96,9 @@ func (docker Docker) executeCommand(ctx context.Context, commandTemplate string,
 		}
 	}
 
+	if usingCommand {
+		docker.Event.Info("Running command", "cmd", cmd.String())
+	}
 	return cmd.Run()
 }
 

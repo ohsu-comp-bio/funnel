@@ -64,7 +64,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Download funnel bin
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4.1.7
       with:
         name: funnelBin
 
@@ -87,7 +87,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Download funnel bin
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4.1.7
       with:
         name: funnelBin
     - name: Badger Test
@@ -107,7 +107,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Download funnel bin
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4.1.7
       with:
         name: funnelBin
 
@@ -128,7 +128,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Download funnel bin
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4.1.7
       with:
         name: funnelBin
 

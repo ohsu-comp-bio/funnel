@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"text/template"
@@ -82,13 +83,30 @@ func NewBackend(ctx context.Context, conf config.Kubernetes, reader tes.ReadOnly
 
 // Backend represents the local backend.
 type Backend struct {
-	client    batchv1.JobInterface
-	namespace string
-	template  string
-	event     events.Writer
-	database  tes.ReadOnlyServer
-	log       *logger.Logger
+	client            batchv1.JobInterface
+	namespace         string
+	template          string
+	event             events.Writer
+	database          tes.ReadOnlyServer
+	log               *logger.Logger
+	backendParameters map[string]string
 	events.Computer
+}
+
+func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
+	if !task.Resources.GetBackendParametersStrict() {
+		return nil
+	}
+
+	taskBackendParameters := task.Resources.GetBackendParameters()
+	for k := range taskBackendParameters {
+		_, ok := b.backendParameters[k]
+		if !ok {
+			return errors.New("backend parameters not supported")
+		}
+	}
+
+	return nil
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -153,7 +171,8 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 	if err != nil {
 		return fmt.Errorf("creating job spec: %v", err)
 	}
-	_, err = b.client.Create(ctx, job, metav1.CreateOptions{
+	ctx = context.Background()
+	job, err = b.client.Create(ctx, job, metav1.CreateOptions{
 		FieldManager: task.Id,
 	})
 	if err != nil {

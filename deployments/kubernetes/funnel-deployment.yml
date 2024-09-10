@@ -28,7 +28,7 @@ spec:
             requests:
               cpu: 2000m
               memory: 4G
-              ephemeral-storage: 25G # needed since we are using boltdb
+              ephemeral-storage: 25G
           volumeMounts:
             - name: funnel-deployment-storage
               mountPath: /opt/funnel/funnel-work-dir

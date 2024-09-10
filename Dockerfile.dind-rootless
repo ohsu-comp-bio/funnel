@@ -1,5 +1,5 @@
 # build stage
-FROM golang:1.20-alpine AS build-env
+FROM golang:1.23-alpine AS build-env
 RUN apk add make git bash build-base
 ENV GOPATH=/go
 ENV PATH="/go/bin:${PATH}"
@@ -7,7 +7,7 @@ ADD ./ /go/src/github.com/ohsu-comp-bio/funnel
 RUN cd /go/src/github.com/ohsu-comp-bio/funnel && make build
 
 # final stage
-FROM docker:stable-dind-rootless
+FROM docker:dind-rootless
 WORKDIR /opt/funnel
 VOLUME /opt/funnel/funnel-work-dir
 EXPOSE 8000 9090

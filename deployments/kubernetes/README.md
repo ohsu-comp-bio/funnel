@@ -1,5 +1,5 @@
 > [!NOTE]
-> Kubernetes support is in active development and may involve frequent updates
+> Funnel's Kubernetes support is in active development and may involve frequent updates
 
 # Using Funnel with Kubernetes
 

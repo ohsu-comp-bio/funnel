@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -232,9 +233,24 @@ func (s3b *AmazonS3) Put(ctx context.Context, url, path string) (*Object, error)
 	sess := s3b.sess.Copy(&aws.Config{Region: aws.String(region)})
 	manager := s3manager.NewUploader(sess)
 
-	hf, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("amazonS3: opening file: %v", err)
+	var hf *os.File
+	// If path contains a wildcard, then handle globbing
+	if strings.Contains(path, "*") {
+		globs, err := filepath.Glob(path)
+		if err != nil {
+			return nil, fmt.Errorf("amazonS3: failed to resolve path %v: %v", path, err)
+		}
+		for _, glob := range globs {
+			hf, err = os.Open(glob)
+			if err != nil {
+				return nil, fmt.Errorf("amazonS3: opening file %v: %v", glob, err)
+			}
+		}
+	} else {
+		hf, err = os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("amazonS3: opening fil %v: %v", path, err)
+		}
 	}
 	defer hf.Close()
 

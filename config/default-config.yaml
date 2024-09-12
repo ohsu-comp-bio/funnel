@@ -8,7 +8,7 @@ Compute: local
 
 # The name of the active event writer backend(s).
 # Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
-EventWriters: 
+EventWriters:
   - boltdb
   - log
 
@@ -42,7 +42,7 @@ Server:
   DisableHTTPCache: true
 
 RPCClient:
-  # RPC server address 
+  # RPC server address
   ServerAddress: localhost:9090
 
   # Credentials for Basic authentication for the server APIs using a password.
@@ -59,7 +59,7 @@ RPCClient:
   # up to 1 minute
   MaxRetries: 10
 
-# The scheduler is used for the Manual compute backend. 
+# The scheduler is used for the Manual compute backend.
 Scheduler:
   # How often to run a scheduler iteration.
   ScheduleRate: 1s
@@ -78,7 +78,7 @@ Node:
   # -1 means there is no timeout. 0 means timeout immediately after the first task.
   Timeout: -1s
 
-  # A Node will automatically try to detect what resources are available to it. 
+  # A Node will automatically try to detect what resources are available to it.
   # Defining Resources in the Node configuration overrides this behavior.
   Resources:
     # CPUs available.
@@ -149,7 +149,7 @@ Datastore:
   # Optional. If possible, credentials will be automatically discovered
   # from the environment.
   CredentialsFile: ""
-  
+
 MongoDB:
   # Addrs holds the addresses for the seed servers.
   Addrs:
@@ -298,6 +298,8 @@ AWSBatch:
 
 # Kubernetes describes the configuration for the Kubernetes compute backend.
 Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "docker" 
   # Turn off task state reconciler. When enabled, Funnel communicates with Kubernetes
   # to find tasks that are stuck in a queued state or errored and
   # updates the task state accordingly.
@@ -307,10 +309,17 @@ Kubernetes:
   ReconcileRate: 10m
   # Kubernetes Namespace to spawn jobs within
   Namespace: ""
-  # Batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
+  # Master batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
   Template: ""
-  # TemplateFile is the path to the job template.
+  # TemplateFile is the path to the master job template.
   TemplateFile: ""
+
+  # Configuration of the Kubernetes executor.
+
+  # Job template used for executing the tasks.
+  ExecutorTemplate: ""
+  # ExecutorTemplateFile is the path to the executor template.
+  ExecutorTemplateFile: ""
 
 #-------------------------------------------------------------------------------
 # Storage

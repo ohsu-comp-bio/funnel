@@ -1,63 +1,56 @@
 module github.com/ohsu-comp-bio/funnel
 
-go 1.13
+go 1.22.0
+
+toolchain go1.22.2
 
 require (
-	cloud.google.com/go/datastore v1.11.0
-	cloud.google.com/go/pubsub v1.30.0
-	github.com/Microsoft/go-winio v0.4.14 // indirect
-	github.com/Shopify/sarama v1.26.1
-	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
+	cloud.google.com/go/datastore v1.19.0
+	cloud.google.com/go/pubsub v1.43.0
+	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/Shopify/sarama v1.38.1
+	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2
-	github.com/aws/aws-sdk-go v1.13.54
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/dgraph-io/badger/v2 v2.0.1
+	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v24.0.7+incompatible
-	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
-	github.com/elazarl/go-bindata-assetfs v1.0.0
-	github.com/gammazero/workerpool v0.0.0-20200206003619-019d125201ab
+	github.com/docker/docker v27.2.1+incompatible
+	github.com/docker/go-connections v0.5.0 // indirect
+	github.com/docker/go-units v0.5.0 // indirect
+	github.com/elazarl/go-bindata-assetfs v1.0.1
+	github.com/gammazero/workerpool v1.1.3
+	github.com/getkin/kin-openapi v0.127.0
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a
 	github.com/ghodss/yaml v1.0.0
 	github.com/gizak/termui v2.3.0+incompatible
-	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
-	github.com/go-ini/ini v1.52.0 // indirect
-	github.com/go-ole/go-ole v1.2.1 // indirect
-	github.com/go-test/deep v1.0.5
-	github.com/golang/gddo v0.0.0-20200219175727-df439dd5819e
-	github.com/golang/protobuf v1.5.3
-	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/imdario/mergo v0.3.8
-	github.com/jlaffaye/ftp v0.0.0-20191218041957-e1b8fdd0dcc3
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
+	github.com/go-ini/ini v1.67.0 // indirect
+	github.com/go-ole/go-ole v1.3.0 // indirect
+	github.com/go-test/deep v1.1.1
+	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f
+	github.com/golang/protobuf v1.5.4
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
+	github.com/imdario/mergo v0.3.16
+	github.com/jlaffaye/ftp v0.2.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kr/pretty v0.3.1
 	github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381
 	github.com/maruel/panicparse v1.3.0 // indirect
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/minio/minio-go v6.0.14+incompatible
-	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/ncw/swift v1.0.50
-	github.com/nsf/termbox-go v0.0.0-20200204031403-4d2b513ad8be // indirect
+	github.com/ncw/swift v1.0.53
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
-	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
-	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/prometheus/client_golang v1.4.1
-	github.com/prometheus/common v0.9.1
-	github.com/rs/xid v1.2.1
-	github.com/sergi/go-diff v1.1.0 // indirect
-	github.com/shirou/gopsutil v2.20.1+incompatible
-	github.com/sirupsen/logrus v1.5.0
-	github.com/smartystreets/goconvey v1.6.4 // indirect
-	github.com/spf13/cobra v0.0.5
+	github.com/prometheus/client_golang v1.20.3
+	github.com/prometheus/common v0.59.1
+	github.com/rs/xid v1.6.0
+	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/sirupsen/logrus v1.9.3
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.3
 	golang.org/x/crypto v0.14.0

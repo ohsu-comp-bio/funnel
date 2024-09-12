@@ -4,10 +4,15 @@ package server
 import (
 	"net"
 	"net/http"
+	"strings"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"github.com/golang/gddo/httputil"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -52,6 +57,54 @@ func newDebugInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
+// customErrorHandler is a custom error handler for the gRPC gateway
+// Returns '400' for invalid backend parameters and '500' for all other errors
+// Required for TES Compliance Tests
+func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+    const fallback = `{"error": "failed to process the request"}`
+
+    st, ok := status.FromError(err)
+    if !ok {
+        w.WriteHeader(http.StatusInternalServerError)
+        w.Write([]byte(fallback))
+        return
+    }
+
+    // Map specific gRPC error codes to HTTP status codes
+	switch st.Code() {
+	case codes.Unauthenticated:
+		w.WriteHeader(http.StatusUnauthorized) // 401
+	case codes.PermissionDenied:
+		w.WriteHeader(http.StatusForbidden) // 403
+	case codes.NotFound:
+		// Special case for missing tasks (TES Compliance Suite)
+		if strings.Contains(st.Message(), "task not found") {
+			w.WriteHeader(http.StatusInternalServerError) // 500
+		} else {
+			w.WriteHeader(http.StatusNotFound) // 404
+		}
+	default:
+		if strings.Contains(st.Message(), "backend parameters not supported") {
+			w.WriteHeader(http.StatusBadRequest) // 400
+		} else {
+			w.WriteHeader(http.StatusInternalServerError) // 500
+		}
+	}
+
+    // Write the error message
+    jErr := JSONError{Error: st.Message()}
+    jErrBytes, mErr := marshaler.Marshal(jErr)
+    if mErr != nil {
+        w.Write([]byte(fallback))
+        return
+    }
+    w.Write(jErrBytes)
+}
+
+type JSONError struct {
+    Error string `json:"error"`
+}
+
 // Serve starts the server and does not block. This will open TCP ports
 // for both RPC and HTTP.
 func (s *Server) Serve(pctx context.Context) error {
@@ -75,14 +128,28 @@ func (s *Server) Serve(pctx context.Context) error {
 	)
 
 	dialOpts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
 	// Set up HTTP proxy of gRPC API
 	mux := http.NewServeMux()
-	mar := runtime.JSONPb(tes.Marshaler)
-	grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption("*/*", &mar))
-	runtime.OtherErrorHandler = s.handleError
+
+	marsh := NewMarshaler()
+	grpcMux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh), runtime.WithErrorHandler(customErrorHandler))
+	
+	// m := protojson.MarshalOptions{
+	// 	Indent:          "  ",
+	// 	EmitUnpopulated: true,
+	// 	UseProtoNames:   true,
+	// }
+	// u := protojson.UnmarshalOptions{}
+	// grpcMux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+	// 	MarshalOptions:   m,
+	// 	UnmarshalOptions: u,
+	// }))
+
+	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
 	dashmux := http.NewServeMux()
 	dashmux.Handle("/", webdash.RootHandler())

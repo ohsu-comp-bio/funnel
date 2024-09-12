@@ -34,16 +34,21 @@ func TestMetrics(t *testing.T) {
 	fun.Wait(id3)
 
 	bg := context.Background()
-	resp, err := fun.HTTP.GetServiceInfo(bg, &tes.ServiceInfoRequest{})
+	resp, err := fun.HTTP.GetServiceInfo(bg, &tes.GetServiceInfoRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	log.Info("INFO", resp)
-	counts := resp.TaskStateCounts
-	if len(counts) != 9 || counts["COMPLETE"] != 2 || counts["EXECUTOR_ERROR"] != 1 || counts["RUNNING"] != 1 {
-		t.Error("unexpected counts from service info")
-	}
+	_ = resp //TODO: Add more tests here
+
+	/*
+		// Metrics no longer in service info as of TES 1.1
+		log.Info("INFO", resp)
+		counts := resp.TaskStateCounts
+		if len(counts) != 9 || counts["COMPLETE"] != 2 || counts["EXECUTOR_ERROR"] != 1 || counts["RUNNING"] != 1 {
+			t.Error("unexpected counts from service info")
+		}
+	*/
 
 	// TODO unfortunately, we have to wait for the prometheus poller to update
 	time.Sleep(20 * time.Second)

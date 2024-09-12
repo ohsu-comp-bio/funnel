@@ -60,6 +60,7 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	args = append(args, dcmd.ShellCommand...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
+	err = dcmd.Event.Info(fmt.Sprintf("args: %s", args))
 	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)
 
@@ -93,6 +94,15 @@ func formatVolumeArg(v Volume) string {
 		mode = "ro"
 	}
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
+}
+
+func transformCommandSlice(cmd []string) []string {
+	if len(cmd) == 0 {
+		return cmd // Handle empty slice
+	}
+
+	cmd[2] = "/bin/bash -ue .command.run &> .command.log"
+	return cmd
 }
 
 type metadata struct {

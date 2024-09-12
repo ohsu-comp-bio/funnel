@@ -79,11 +79,14 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		event.Metadata(map[string]string{"hostname": name})
 	}
 
+	// TODO: Increment taskgroup waitgroup, defer done on waitgroup
+	// Decrement taskgroup waitgroup on exit to make sure that the final logging step is called
+	// before the worker is closed (and the backend database connection is closed).
+	//
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
 		event.EndTime(time.Now())
-
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
@@ -144,6 +147,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Run steps
 	if run.ok() {
+		ignoreError := false
 		for i, d := range task.GetExecutors() {
 			var command = Command{
 				Image:         d.Image,
@@ -181,13 +185,15 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
-			if run.ok() {
+			if run.ok() || ignoreError {
 				run.syserr = r.openStepLogs(mapper, s, d)
 			}
 
-			if run.ok() {
+			if run.ok() || ignoreError {
 				run.execerr = s.Run(ctx)
 			}
+
+			ignoreError = d.GetIgnoreError()
 		}
 	}
 
@@ -249,7 +255,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 		stderr, err := mapper.CreateHostFile(d.Stderr)
 		s.Command.SetStderr(stderr)
 		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
+			_ = s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}

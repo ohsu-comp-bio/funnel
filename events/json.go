@@ -3,7 +3,7 @@ package events
 import (
 	"bytes"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/gogo/protobuf/jsonpb"
 )
 
 // Marshaler provides a default JSON marshaler.

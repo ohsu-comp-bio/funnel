@@ -3,9 +3,9 @@ package mongodb
 import (
 	"fmt"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
 	"github.com/ohsu-comp-bio/funnel/tes"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/context"
 )
 
@@ -19,26 +19,19 @@ var minimalView = bson.M{"id": 1, "state": 1}
 
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
-	sess := db.sess.Copy()
-	defer sess.Close()
-
 	var task tes.Task
-	var q *mgo.Query
+	var opts = options.FindOne()
 
-	q = db.tasks(sess).Find(bson.M{"id": req.Id})
 	switch req.View {
-	case tes.TaskView_BASIC:
-		q = q.Select(basicView)
-	case tes.TaskView_MINIMAL:
-		q = q.Select(minimalView)
+	case tes.View_BASIC.String():
+		opts = opts.SetProjection(basicView)
+	case tes.View_MINIMAL.String():
+		opts = opts.SetProjection(minimalView)
 	}
 
-	err := q.One(&task)
-	if err == mgo.ErrNotFound {
-		return nil, tes.ErrNotFound
-	}
+	err := db.tasks(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}, opts).Decode(&task)
 	if err != nil {
-		return nil, err
+		return nil, tes.ErrNotFound
 	}
 
 	return &task, nil
@@ -46,13 +39,9 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 
 // ListTasks returns a list of taskIDs
 func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
-	sess := db.sess.Copy()
-	defer sess.Close()
-
 	pageSize := tes.GetPageSize(req.GetPageSize())
 
 	var query = bson.M{}
-	var q *mgo.Query
 	var err error
 	if req.PageToken != "" {
 		query["id"] = bson.M{"$lt": req.PageToken}
@@ -62,21 +51,34 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		query["state"] = bson.M{"$eq": req.State}
 	}
 
-	for k, v := range req.Tags {
-		query[fmt.Sprintf("tags.%s", k)] = bson.M{"$eq": v}
+	if req.NamePrefix != "" {
+		query["name"] = bson.M{"$regex": fmt.Sprintf("^%s", req.NamePrefix)}
 	}
 
-	q = db.tasks(sess).Find(query).Sort("-creationtime").Limit(pageSize)
+	for k, v := range req.GetTags() {
+		if v == "" {
+			query[fmt.Sprintf("tags.%s", k)] = bson.M{"$exists": true}
+		} else {
+			query[fmt.Sprintf("tags.%s", k)] = bson.M{"$eq": v}
+		}
+	}
+
+	var opts = options.Find().SetSort(bson.M{"creationtime": -1}).SetLimit(int64(pageSize))
 
 	switch req.View {
-	case tes.TaskView_BASIC:
-		q = q.Select(basicView)
-	case tes.TaskView_MINIMAL:
-		q = q.Select(minimalView)
+	case tes.View_BASIC.String():
+		opts = opts.SetProjection(basicView)
+	case tes.View_MINIMAL.String():
+		opts = opts.SetProjection(minimalView)
+	}
+
+	cursor, err := db.tasks(db.client).Find(context.TODO(), query, opts)
+	if err != nil {
+		return nil, err
 	}
 
 	var tasks []*tes.Task
-	err = q.All(&tasks)
+	err = cursor.All(context.TODO(), &tasks)
 	if err != nil {
 		return nil, err
 	}

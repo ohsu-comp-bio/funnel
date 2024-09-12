@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-config
+data:
+  funnel-server-config.yml: |
+    Database: boltdb
+
+    BoltDB:
+      Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
+
+    Compute: kubernetes
+
+    Logger:
+      Level: debug
+
+    Kubernetes:
+      DisableJobCleanup: false
+      DisableReconciler: false
+      ReconcileRate: 5m
+      Namespace: default 
+      Template: | 
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          ## DO NOT CHANGE NAME
+          name: {{.TaskId}}
+          namespace: {{.Namespace}}
+        spec: 
+          backoffLimit: 0
+          completions: 1
+          template:
+            spec:
+              serviceAccountName: funnel-sa
+              restartPolicy: Never
+              containers: 
+                - name: funnel-worker-{{.TaskId}}
+                  image: ohsucompbio/funnel-dind-rootless:latest
+                  imagePullPolicy: Always
+                  args:
+                    - "worker"
+                    - "run"
+                    - "--config"
+                    - "/etc/config/funnel-worker-config.yml"
+                    - "--taskID"
+                    - {{.TaskId}}
+                  resources:
+                      requests:
+                        cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
+                        memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
+                        ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
+                  volumeMounts:
+                    - name: funnel-storage-{{.TaskId}}
+                      mountPath: /opt/funnel/funnel-work-dir/{{.TaskId}}
+                      subPath: {{.TaskId}}
+                    - name: config-volume
+                      mountPath: /etc/config
+        
+              volumes: 
+                - name: config-volume
+                  configMap:
+                    name: funnel-config
+                - name: funnel-storage-{{.TaskId}}
+                  persistentVolumeClaim:
+                    claimName: storage-pvc 
+
+
+  funnel-worker-config.yml: |
+    Database: boltdb
+
+    Compute: kubernetes
+
+    Logger:
+      Level: debug
+
+    RPCClient:
+      MaxRetries: 3
+      Timeout: 30s
+
+    EventWriters:
+      - rpc
+      - log
+
+    Server:
+      HostName: funnel
+      RPCPort: 9090
+    
+    Kubernetes:
+      # Change to "kubernetes" to use the kubernetes executor
+      Executor: docker 
+      Namespace: default 
+      ExecutorTemplate: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: {{.TaskId}}-{{.JobId}}
+          namespace: {{.Namespace}}
+          labels:
+            job-name: {{.TaskId}}-{{.JobId}}
+        spec: 
+          backoffLimit: 0
+          completions: 1
+          template:
+            spec:
+              restartPolicy: Never
+              containers: 
+              - name: funnel-worker-{{.TaskId}}
+                image: {{.Image}}
+                imagePullPolicy: Always
+                command: ["/bin/sh", "-c"]
+                args: {{.Command}}
+                workingDir: {{.Workdir}}
+                resources:
+                  requests:
+                    cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
+                    memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
+                    ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
+
+                volumeMounts:
+                ### DO NOT CHANGE THIS
+                {{range $idx, $item := .Volumes}}
+                - name: storage 
+                  mountPath: {{$item.ContainerPath}}
+                  subPath: {{$.TaskId}}{{$item.ContainerPath}}
+                {{end}}
+
+              volumes: 
+              - name: storage
+                persistentVolumeClaim:
+                  claimName: storage-pvc 

@@ -214,9 +214,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	if run.ok() {
 		// Resolve wildcards in the output paths
-		for _, output := range mapper.Outputs {
-			resolveWildcards(mapper, output)
-		}
+		resolveWildcards(mapper)
 	}
 
 	if run.ok() && r.Conf.ScratchPath != "" {

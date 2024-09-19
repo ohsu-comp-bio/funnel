@@ -250,38 +250,39 @@ func fixLinks(mapper *FileMapper, basepath string) {
 }
 
 // resolveWildcards resolves any wildcards/globs in the output paths.
-func resolveWildcards(mapper *FileMapper, output *tes.Output) error {
+func resolveWildcards(mapper *FileMapper) error {
 	var outputs []*tes.Output
 
-	// If path contains a wildcard, handle globbing and upload each file individually
-	if strings.Contains(output.Path, "*") {
-		globs, err := filepath.Glob(output.Path)
-		if err != nil {
-			return fmt.Errorf("failed to resolve path %v: %v", output.Path, err)
-		}
-
-		for _, glob := range globs {
-			out := proto.Clone(output).(*tes.Output)
-			out.Path = glob
-
-			// Construct URL by:
-			// - removing the mapper.WorkDir from the output.Path
-			// - then removing the PathPrefix
-			// - then joining the output.URL
-			globPath := strings.TrimPrefix(glob, mapper.WorkDir)
-			fixPath := strings.TrimPrefix(globPath, output.PathPrefix)
-			out.Url, err = url.JoinPath(output.Url, fixPath)
+	for _, output := range mapper.Outputs {
+		// If path contains a wildcard, handle globbing and upload each file individually
+		if strings.Contains(output.Path, "*") {
+			globs, err := filepath.Glob(output.Path)
 			if err != nil {
-				return fmt.Errorf("failed to join URL: %v", err)
+				return fmt.Errorf("failed to resolve path %v: %v", output.Path, err)
 			}
 
-			outputs = append(outputs, out)
+			for _, glob := range globs {
+				out := proto.Clone(output).(*tes.Output)
+				out.Path = glob
+
+				// Construct URL by:
+				// - removing the mapper.WorkDir from the output.Path
+				// - then removing the PathPrefix
+				// - then joining the output.URL
+				globPath := strings.TrimPrefix(glob, mapper.WorkDir)
+				fixPath := strings.TrimPrefix(globPath, output.PathPrefix)
+				out.Url, err = url.JoinPath(output.Url, fixPath)
+				if err != nil {
+					return fmt.Errorf("failed to join URL: %v", err)
+				}
+
+				outputs = append(outputs, out)
+			}
+		} else {
+			outputs = append(outputs, output)
 		}
-	} else {
-		outputs = append(outputs, output)
 	}
 
 	mapper.Outputs = outputs
-
 	return nil
 }

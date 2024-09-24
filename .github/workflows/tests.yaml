@@ -11,12 +11,31 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.21
+
       - uses: actions/checkout@v3
+      
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          args: --timeout 3m --verbose -D unused -D errcheck -D staticcheck -D govet -D gosimple -D ineffassign
+          # Matches the "primary" golangci-lint command in the Makefile
+          args: |
+              --timeout 3m --disable-all --enable=govet --enable=gofmt --enable=goimports --enable=misspell \
+              --skip-dirs "vendor" \
+              --skip-dirs "webdash" \
+              --skip-dirs "cmd/webdash" \
+              --skip-dirs "funnel-work-dir" \
+              -e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
+              ./...
+      
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          # Matches the "termdash" golangci-lint command in the Makefile
+          args: |
+              --timeout 3m --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell \
+              ./cmd/termdash/...
 
   build:
     runs-on: ubuntu-latest

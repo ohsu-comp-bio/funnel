@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -21,7 +21,7 @@ type testNode struct {
 }
 
 func newTestNode(conf config.Config, t *testing.T) testNode {
-	workDir, _ := ioutil.TempDir("", "funnel-test-storage-")
+	workDir, _ := os.MkdirTemp("", "funnel-test-storage-")
 	conf.Worker.WorkDir = workDir
 	log := logger.NewLogger("test-node", logger.DebugConfig())
 

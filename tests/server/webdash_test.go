@@ -1,7 +1,7 @@
 package server
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -21,7 +21,7 @@ func TestWebdash(t *testing.T) {
 
 	// Get the response body
 	defer resp.Body.Close()
-	b, berr := ioutil.ReadAll(resp.Body)
+	b, berr := io.ReadAll(resp.Body)
 	if berr != nil {
 		t.Fatal(berr)
 	}

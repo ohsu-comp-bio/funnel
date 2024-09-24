@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -116,7 +115,7 @@ func TestFTPStorage(t *testing.T) {
 		t.Fatal("Failed to download file:", err)
 	}
 
-	b, err := ioutil.ReadFile("./test_tmp/test-gs-file.txt")
+	b, err := os.ReadFile("./test_tmp/test-gs-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read downloaded file:", err)
 	}
@@ -135,7 +134,7 @@ func TestFTPStorage(t *testing.T) {
 		t.Fatal("Failed to download directory:", err)
 	}
 
-	b, err = ioutil.ReadFile("./test_tmp/test-gs-directory/test-output-file.txt")
+	b, err = os.ReadFile("./test_tmp/test-gs-directory/test-output-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read file in downloaded directory", err)
 	}
@@ -306,7 +305,7 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 		t.Fatal("Failed to download file:", err)
 	}
 
-	b, err := ioutil.ReadFile("./test_tmp/test-gs-file.txt")
+	b, err := os.ReadFile("./test_tmp/test-gs-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read downloaded file:", err)
 	}
@@ -325,7 +324,7 @@ func TestFTPStorageConfigAuth(t *testing.T) {
 		t.Fatal("Failed to download directory:", err)
 	}
 
-	b, err = ioutil.ReadFile("./test_tmp/test-gs-directory/test-output-file.txt")
+	b, err = os.ReadFile("./test_tmp/test-gs-directory/test-output-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read file in downloaded directory", err)
 	}

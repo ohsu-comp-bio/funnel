@@ -1,17 +1,17 @@
 package gce
 
 import (
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 )
 
 func loadTestData(name string) []byte {
-	b, err := ioutil.ReadFile(name + ".json")
+	b, err := os.ReadFile(name + ".json")
 	if err != nil {
 		panic(err)
 	}

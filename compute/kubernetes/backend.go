@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"text/template"
 	"time"
 
@@ -27,7 +27,7 @@ import (
 // NewBackend returns a new local Backend instance.
 func NewBackend(ctx context.Context, conf config.Kubernetes, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
 	if conf.TemplateFile != "" {
-		content, err := ioutil.ReadFile(conf.TemplateFile)
+		content, err := os.ReadFile(conf.TemplateFile)
 		if err != nil {
 			return nil, fmt.Errorf("reading template: %v", err)
 		}

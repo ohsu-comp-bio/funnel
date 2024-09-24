@@ -1,7 +1,6 @@
 package util
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -42,7 +41,7 @@ func MergeConfigFileWithFlags(file string, flagConf config.Config) (config.Confi
 // - "path" is the path of the file.
 // - "cleanup" can be called to remove the temporary file.
 func TempConfigFile(c config.Config, name string) (path string, cleanup func()) {
-	tmpdir, err := ioutil.TempDir("", "")
+	tmpdir, err := os.MkdirTemp("", "")
 	if err != nil {
 		panic(err)
 	}

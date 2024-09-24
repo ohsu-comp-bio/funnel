@@ -3,7 +3,7 @@ package gridengine
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 
 	"github.com/ohsu-comp-bio/funnel/compute"
@@ -16,7 +16,7 @@ import (
 // NewBackend returns a new Grid Engine HPCBackend instance.
 func NewBackend(conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*compute.HPCBackend, error) {
 	if conf.GridEngine.TemplateFile != "" {
-		content, err := ioutil.ReadFile(conf.GridEngine.TemplateFile)
+		content, err := os.ReadFile(conf.GridEngine.TemplateFile)
 		if err != nil {
 			return nil, fmt.Errorf("reading template: %v", err)
 		}

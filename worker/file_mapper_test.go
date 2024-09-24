@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 )
 
 func TestMapTask(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "funnel-test-mapper")
+	tmp, err := os.MkdirTemp("", "funnel-test-mapper")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +138,7 @@ func TestMapTask(t *testing.T) {
 		t.Fatal("unexpected mapper inputs")
 	}
 
-	c, err := ioutil.ReadFile(tmp + "/inputs/testdata/contents.txt")
+	c, err := os.ReadFile(tmp + "/inputs/testdata/contents.txt")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -66,7 +66,7 @@ func (db *MongoDB) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (
 	var node scheduler.Node
 	err := db.nodes(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}).Decode(&node)
 	if err == mongo.ErrNoDocuments {
-		return nil, status.Errorf(codes.NotFound, "foo")
+		return nil, status.Errorf(codes.NotFound, "%v: nodeID: %s", err, req.Id)
 	}
 
 	return &node, nil
@@ -78,7 +78,7 @@ func (db *MongoDB) DeleteNode(ctx context.Context, req *scheduler.Node) (*schedu
 	_, err := db.nodes(db.client).DeleteOne(context.TODO(), bson.M{"id": req.Id})
 	fmt.Println("DeleteNode", req.Id, err)
 	if err == mongo.ErrNoDocuments {
-		return nil, status.Errorf(codes.NotFound, "foo")
+		return nil, status.Errorf(codes.NotFound, "%v: nodeID: %s", err, req.Id)
 	}
 	return nil, err
 }

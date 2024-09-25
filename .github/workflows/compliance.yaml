@@ -13,6 +13,11 @@
 # output a ssh address associated with the Github action worker. Helpful for debugging build steps and
 # and intermediary files/artifacts.
 #
+# - name: "Debug: Package dependancies for tmate (CentOS)"
+#   run: |
+#     yum install -y xz
+#     ln -s /bin/true /bin/apt-get
+#
 # - name: Setup tmate session
 #   uses: mxschmitt/action-tmate@v3
 
@@ -20,27 +25,11 @@ name: Compliance Test
 
 on:
   push:
+  pull_request:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v5
-      with:
-        go-version: 1.21
-
-    - name: Check out code
-      uses: actions/checkout@v2
-
-    - name: Build
-      run: make build
-
-    - name: Store funnel
-      uses: actions/upload-artifact@v4
-      with:
-        name: funnelBin
-        path: funnel
+    uses: ./.github/workflows/build.yml
 
   compliance:
     strategy:
@@ -48,7 +37,8 @@ jobs:
       matrix:
         version: [1.0.0, 1.1.0]
         db: ["boltdb", "mongodb"]
-        compute: ["local"]
+        compute: ["local", "kubernetes"]
+        storage: ["local", "s3"]
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -57,17 +47,29 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: funnelBin
+          name: funnel
 
       - name: Start Funnel server
         run: |
           touch config.yml
+
           if [ ${{ matrix.db }} = "mongodb" ]; then
             make start-mongodb
             cat `pwd`/tests/mongo.config.yml >> config.yml
           fi
+
+          if [ ${{ matrix.storage }} = "s3" ]; then
+            docker run -d -p 9000:9000 --name minio \
+                       -e "MINIO_ROOT_USER=minioadmin" \
+                       -e "MINIO_ROOT_PASSWORD=minioadmin" \
+                       -v /tmp/data:/data \
+                       -v /tmp/config:/root/.minio \
+                       minio/minio server /data
+            cat `pwd`/tests/s3.config.yml >> config.yml
+          fi
+
           chmod +x funnel
           ./funnel server run --config `pwd`/config.yml &> funnel.logs &
 

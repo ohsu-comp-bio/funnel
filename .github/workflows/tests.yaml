@@ -2,6 +2,7 @@ name: Go Tests
 
 on:
   push:
+  pull_request:
 
 jobs:
   lint:
@@ -37,31 +38,11 @@ jobs:
               --timeout 3m --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell \
               ./cmd/termdash/...
 
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.21
-
-    - name: Check out code
-      uses: actions/checkout@v2
-
-    - name: Build
-      run: make build
-
-    - name: Store funnel
-      uses: actions/upload-artifact@v4
-      with:
-        name: funnelBin
-        path: funnel
-
   unitTest:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: 1.21
     - name: Check out code
@@ -70,12 +51,15 @@ jobs:
     - name: Unit Tests
       run: make test-verbose
 
+  build:
+    uses: ./.github/workflows/build.yml
+
   mongoTest:
     runs-on: ubuntu-latest
     needs: build
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: 1.21
 
@@ -85,7 +69,7 @@ jobs:
     - name: Download funnel bin
       uses: actions/download-artifact@v4
       with:
-        name: funnelBin
+        name: funnel
 
     - name: MongoTest
       run: |
@@ -99,7 +83,7 @@ jobs:
     needs: build
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: 1.21
     - name: Check out code
@@ -108,7 +92,7 @@ jobs:
     - name: Download funnel bin
       uses: actions/download-artifact@v4
       with:
-        name: funnelBin
+        name: funnel
     - name: Badger Test
       run: |
         chmod +x funnel
@@ -119,7 +103,7 @@ jobs:
     needs: build
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: 1.21
     - name: Check out code
@@ -128,7 +112,7 @@ jobs:
     - name: Download funnel bin
       uses: actions/download-artifact@v4
       with:
-        name: funnelBin
+        name: funnel
 
     - name: Slurm Test
       run: |
@@ -140,7 +124,7 @@ jobs:
     needs: build
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: 1.21
     - name: Check out code
@@ -149,7 +133,7 @@ jobs:
     - name: Download funnel bin
       uses: actions/download-artifact@v4
       with:
-        name: funnelBin
+        name: funnel
 
     - name: S3 Test
       run: |

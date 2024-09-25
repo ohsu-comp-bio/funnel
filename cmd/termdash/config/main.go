@@ -9,10 +9,6 @@ var (
 )
 
 func Init() {
-	for _, p := range params {
-		GlobalParams = append(GlobalParams, p)
-	}
-	for _, s := range switches {
-		GlobalSwitches = append(GlobalSwitches, s)
-	}
+	GlobalParams = append(GlobalParams, params...)
+	GlobalSwitches = append(GlobalSwitches, switches...)
 }

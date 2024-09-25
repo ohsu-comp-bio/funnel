@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -11,12 +12,15 @@ import (
 
 type stepWorker struct {
 	Conf    config.Worker
-	Command *DockerCommand
+	Command TaskCommand
 	Event   *events.ExecutorWriter
 	IP      string
 }
 
 func (s *stepWorker) Run(ctx context.Context) error {
+	// WaitGroup to block closing the worker until the last event is written from events/executor.go:StreamLogTail()
+	var wg sync.WaitGroup
+	defer wg.Wait()
 	s.Event.StartTime(time.Now())
 
 	// subctx helps ensure that these goroutines are cleaned up,
@@ -31,21 +35,21 @@ func (s *stepWorker) Run(ctx context.Context) error {
 	// Tail the stdout/err log streams.
 	if s.Conf.LogTailSize > 0 {
 		if s.Conf.LogUpdateRate > 0 {
-			stdout, stderr = s.Event.StreamLogTail(subctx, s.Conf.LogTailSize, time.Duration(s.Conf.LogUpdateRate))
+			stdout, stderr = s.Event.StreamLogTail(subctx, s.Conf.LogTailSize, time.Duration(s.Conf.LogUpdateRate), &wg)
 		} else {
 			stdout, stderr = s.Event.LogTail(subctx, s.Conf.LogTailSize)
 		}
 	}
 
 	// Capture stdout/err to file.
-	if s.Command.Stdout != nil {
-		stdout = io.MultiWriter(s.Command.Stdout, stdout)
+	if s.Command.GetStdout() != nil {
+		stdout = io.MultiWriter(s.Command.GetStdout(), stdout) }
+	if s.Command.GetStderr() != nil {
+		stderr = io.MultiWriter(s.Command.GetStderr(), stderr)
 	}
-	if s.Command.Stderr != nil {
-		stderr = io.MultiWriter(s.Command.Stderr, stderr)
-	}
-	s.Command.Stdout = stdout
-	s.Command.Stderr = stderr
+
+	s.Command.SetStdout(stdout)
+	s.Command.SetStderr(stderr)
 
 	go func() {
 		done <- s.Command.Run(subctx)

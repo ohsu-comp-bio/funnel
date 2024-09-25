@@ -1,0 +1,19 @@
+      {
+        "name": "CompTest",
+        "description": "CompTest",
+        "executors": [
+          {
+            "image": "alpine",
+            "command": [
+              "echo",
+              "hello"
+            ]
+          }
+        ],
+        "resources": {
+          "backend_parameters": {
+            "INVALID" : "PARAMETER"
+          },
+          "backend_parameters_strict": true
+        }
+      }

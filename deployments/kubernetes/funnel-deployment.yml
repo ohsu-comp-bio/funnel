@@ -18,16 +18,15 @@ spec:
       containers:
         - name: funnel
           image: ohsucompbio/funnel:latest
-          imagePullPolicy: IfNotPresent
-          command: 
-            - 'funnel'
-            - 'server'
-            - 'run'
-            - '--config'
-            - '/etc/config/funnel-server-config.yml'
-          resources: 
-            requests: 
-              cpu: 2
+          imagePullPolicy: Never
+          args:
+            - "server"
+            - "run"
+            - "--config"
+            - "/etc/config/funnel-server-config.yml"
+          resources:
+            requests:
+              cpu: 2000m
               memory: 4G
               ephemeral-storage: 25G # needed since we are using boltdb
           volumeMounts:
@@ -38,10 +37,11 @@ spec:
           ports:
             - containerPort: 8000
             - containerPort: 9090
- 
+
       volumes:
         - name: funnel-deployment-storage
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: storage-pvc
         - name: config-volume
           configMap:
             name: funnel-config

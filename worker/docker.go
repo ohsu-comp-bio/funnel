@@ -4,21 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/ohsu-comp-bio/funnel/events"
 )
 
 // DockerCommand is responsible for configuring and running a docker container.
 type DockerCommand struct {
-	Image           string
-	Command         []string
-	Volumes         []Volume
-	Workdir         string
 	ContainerName   string
 	RemoveContainer bool
 	Env             map[string]string
@@ -75,9 +68,15 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 	}
 
 	args = append(args, dcmd.Image)
+	// if dcmd.Command contains the ["/bin/bash", "-ue"] string, replace it with "/bin/bash -ue"
+	c := strings.Join(dcmd.Command, " ")
+	if strings.Contains(c, "[/bin/bash, -ue]") {
+		dcmd.Command = transformCommandSlice(dcmd.Command)
+	}
 	args = append(args, dcmd.Command...)
 
 	// Roughly: `docker run --rm -i --read-only -w [workdir] -v [bindings] [imageName] [cmd]`
+	err = dcmd.Event.Info(fmt.Sprintf("args: %s", args))
 	dcmd.Event.Info("Running command", "cmd", "docker "+strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)
 
@@ -111,6 +110,15 @@ func formatVolumeArg(v Volume) string {
 		mode = "ro"
 	}
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
+}
+
+func transformCommandSlice(cmd []string) []string {
+	if len(cmd) == 0 {
+		return cmd // Handle empty slice
+	}
+
+	cmd[2] = "/bin/bash -ue .command.run &> .command.log"
+	return cmd
 }
 
 type metadata struct {

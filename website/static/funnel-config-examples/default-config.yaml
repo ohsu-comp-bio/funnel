@@ -153,7 +153,7 @@ Datastore:
 MongoDB:
   # Addrs holds the addresses for the seed servers.
   Addrs:
-    - localhost
+    - mongodb://localhost
   # Database is the database name used within MongoDB to store funnel data.
   Database: funnel
   # Timeout is the amount of time to wait for a server to respond when
@@ -277,7 +277,7 @@ Slurm:
     {{printf "#SBATCH --tmp %.0fGB" .DiskGb}}
     {{- end}}
 
-    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}}
+    {{.Executable}} worker run --config {{.Config}} --taskID {{.TaskId}} --Server.hostname exahead1
 
 # AWSBatch describes the configuration for the AWS Batch compute backend.
 AWSBatch:

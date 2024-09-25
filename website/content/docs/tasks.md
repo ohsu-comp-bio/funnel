@@ -478,7 +478,7 @@ For a full, in-depth spec, read the TES standard's [task_execution.proto](https:
           "stderr": "",
 
           # Exit code
-          "exitCode": 0,
+          "exit_code": 0,
         },
         {
           "startTime": "2017-11-14T11:49:05.127885125-08:00",

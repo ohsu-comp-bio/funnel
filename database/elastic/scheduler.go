@@ -8,8 +8,8 @@ import (
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
@@ -54,7 +54,7 @@ func (es *Elastic) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (
 		Do(ctx)
 
 	if elastic.IsNotFound(err) {
-		return nil, grpc.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
 	}
 	if err != nil {
 		return nil, err

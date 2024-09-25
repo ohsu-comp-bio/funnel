@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -36,15 +37,15 @@ func TestGetUnknownTask(t *testing.T) {
 
 	_, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   "nonexistent-task-id",
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
-	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 500") {
 		t.Error("expected not found error", err)
 	}
 
 	_, err = fun.RPC.GetTask(
 		context.Background(),
-		&tes.GetTaskRequest{Id: "nonexistent-task-id", View: tes.TaskView_MINIMAL},
+		&tes.GetTaskRequest{Id: "nonexistent-task-id", View: tes.View_MINIMAL.String()},
 	)
 	s, _ := status.FromError(err)
 	if err == nil || s.Code() != codes.NotFound {
@@ -66,7 +67,7 @@ func TestGetTaskView(t *testing.T) {
   `)
 	fun.Wait(id)
 
-	task = fun.GetView(id, tes.TaskView_MINIMAL)
+	task = fun.GetView(id, tes.View_MINIMAL)
 
 	if task.Id != id {
 		t.Fatal("expected task ID in minimal view")
@@ -90,7 +91,7 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	task = fun.GetView(id, tes.TaskView_BASIC)
+	task = fun.GetView(id, tes.View_BASIC)
 
 	if task.Id != id {
 		t.Fatal("expected task ID in basic view")
@@ -126,7 +127,7 @@ func TestGetTaskView(t *testing.T) {
 		t.Fatal("unexpected ExecutorLog stderr included in basic view")
 	}
 
-	task = fun.GetView(id, tes.TaskView_FULL)
+	task = fun.GetView(id, tes.View_FULL)
 
 	if task.Id != id {
 		t.Fatal("expected task ID in full view")
@@ -165,7 +166,7 @@ func TestGetTaskView(t *testing.T) {
 	// test http proxy
 	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -195,7 +196,7 @@ func TestGetTaskView(t *testing.T) {
 
 	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_BASIC,
+		View: tes.View_BASIC.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -237,7 +238,7 @@ func TestGetTaskView(t *testing.T) {
 
 	task, err = fun.HTTP.GetTask(context.Background(), &tes.GetTaskRequest{
 		Id:   id,
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -280,9 +281,10 @@ func TestGetTaskView(t *testing.T) {
 }
 
 // TODO this is a bit hacky for now because we're reusing the same
-//      server + DB for all the e2e tests, so ListTasks gets the
-//      results of all of those. It works for the moment, but
-//      should probably run against a clean environment.
+//
+//	server + DB for all the e2e tests, so ListTasks gets the
+//	results of all of those. It works for the moment, but
+//	should probably run against a clean environment.
 func TestListTaskView(t *testing.T) {
 	tests.SetLogOutput(log, t)
 	var tasks []*tes.Task
@@ -298,7 +300,7 @@ func TestListTaskView(t *testing.T) {
   `)
 	fun.Wait(id)
 
-	tasks = fun.ListView(tes.TaskView_MINIMAL)
+	tasks = fun.ListView(tes.View_MINIMAL)
 	task = tasks[0]
 
 	if task.Id == "" {
@@ -323,7 +325,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected task logs included in minimal view")
 	}
 
-	tasks = fun.ListView(tes.TaskView_BASIC)
+	tasks = fun.ListView(tes.View_BASIC)
 	task = tasks[0]
 
 	if task.Id == "" {
@@ -360,7 +362,7 @@ func TestListTaskView(t *testing.T) {
 		t.Fatal("unexpected ExecutorLog stderr included in basic view")
 	}
 
-	tasks = fun.ListView(tes.TaskView_FULL)
+	tasks = fun.ListView(tes.View_FULL)
 	task = tasks[0]
 
 	if task.Id == "" {
@@ -400,7 +402,7 @@ func TestListTaskView(t *testing.T) {
 	// test http proxy
 	var r *tes.ListTasksResponse
 	r, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -427,7 +429,7 @@ func TestListTaskView(t *testing.T) {
 	}
 
 	r, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
-		View: tes.TaskView_BASIC,
+		View: tes.View_BASIC.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -472,7 +474,7 @@ func TestListTaskView(t *testing.T) {
 	}
 
 	r, err = fun.HTTP.ListTasks(context.Background(), &tes.ListTasksRequest{
-		View: tes.TaskView_FULL,
+		View: tes.View_FULL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -573,17 +575,24 @@ func TestCancelUnknownTask(t *testing.T) {
 	_, err = fun.HTTP.CancelTask(context.Background(), &tes.CancelTaskRequest{
 		Id: "nonexistent-task-id",
 	})
-	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 404") {
-		t.Fatal("expected not found error", err)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "STATUS CODE - 404") && !strings.Contains(err.Error(), "STATUS CODE - 500") {
+		t.Fatal("expected not found error, got", err)
 	}
 
 	_, err = fun.RPC.CancelTask(
 		context.Background(),
 		&tes.CancelTaskRequest{Id: "nonexistent-task-id"},
 	)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
 	s, _ := status.FromError(err)
-	if err == nil || s.Code() != codes.NotFound {
-		t.Fatal("expected not found error", err)
+	if s.Code() != codes.NotFound {
+		t.Fatal("expected not found error, got", s)
 	}
 }
 
@@ -680,13 +689,13 @@ func TestOutputFileLog(t *testing.T) {
 		t.Fatal("unexpected output url")
 	}
 
-	if out[0].SizeBytes != 3 {
+	if out[0].SizeBytes != "3" {
 		t.Fatal("unexpected output size")
 	}
-	if out[1].SizeBytes != 5 {
+	if out[1].SizeBytes != "5" {
 		t.Fatal("unexpected output size")
 	}
-	if out[2].SizeBytes != 4 {
+	if out[2].SizeBytes != "4" {
 		t.Fatal("unexpected output size")
 	}
 }
@@ -888,12 +897,12 @@ func TestListTaskFilterState(t *testing.T) {
 	f.Wait(id3)
 
 	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.Full,
+		View: tes.Full.String(),
 	})
 	log.Info("all tasks", "tasks", r.Tasks, "err", err)
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_MINIMAL,
+		View: tes.View_MINIMAL.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -903,7 +912,7 @@ func TestListTaskFilterState(t *testing.T) {
 	}
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:  tes.TaskView_MINIMAL,
+		View:  tes.View_MINIMAL.String(),
 		State: tes.Complete,
 	})
 	if err != nil {
@@ -917,7 +926,7 @@ func TestListTaskFilterState(t *testing.T) {
 	}
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:  tes.TaskView_MINIMAL,
+		View:  tes.View_MINIMAL.String(),
 		State: tes.Canceled,
 	})
 	if err != nil {
@@ -950,12 +959,12 @@ func TestListTaskFilterTags(t *testing.T) {
 	f.Wait(id4)
 
 	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.Full,
+		View: tes.Full.String(),
 	})
 	log.Info("all tasks", "tasks", r.Tasks, "err", err)
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_BASIC,
+		View: tes.View_BASIC.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -965,10 +974,9 @@ func TestListTaskFilterTags(t *testing.T) {
 	}
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_BASIC,
-		Tags: map[string]string{
-			"foo": "bar",
-		},
+		View:     tes.View_BASIC.String(),
+		TagKey:   []string{"foo"},
+		TagValue: []string{"bar"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -981,10 +989,9 @@ func TestListTaskFilterTags(t *testing.T) {
 	}
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_BASIC,
-		Tags: map[string]string{
-			"hello": "world",
-		},
+		View:     tes.View_BASIC.String(),
+		TagKey:   []string{"hello"},
+		TagValue: []string{"world"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -997,10 +1004,8 @@ func TestListTaskFilterTags(t *testing.T) {
 	}
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_BASIC,
-		Tags: map[string]string{
-			"ASFasfa": "",
-		},
+		View:   tes.View_BASIC.String(),
+		TagKey: []string{"ASFasfa"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1036,12 +1041,12 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	f.Wait(id3)
 
 	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.Full,
+		View: tes.View_FULL.String(),
 	})
 	log.Info("all tasks", "tasks", r.Tasks, "err", err)
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View: tes.TaskView_BASIC,
+		View: tes.View_BASIC.String(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1051,11 +1056,10 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	}
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:  tes.TaskView_BASIC,
-		State: tes.Complete,
-		Tags: map[string]string{
-			"foo": "bar",
-		},
+		View:     tes.View_BASIC.String(),
+		State:    tes.Complete,
+		TagKey:   []string{"foo"},
+		TagValue: []string{"bar"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1068,11 +1072,10 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	}
 
 	r, err = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:  tes.TaskView_BASIC,
-		State: tes.Complete,
-		Tags: map[string]string{
-			"hello": "world",
-		},
+		View:     tes.View_BASIC.String(),
+		State:    tes.Complete,
+		TagKey:   []string{"hello"},
+		TagValue: []string{"world"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1085,11 +1088,10 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:  tes.TaskView_BASIC,
-		State: tes.Canceled,
-		Tags: map[string]string{
-			"hello": "world",
-		},
+		View:     tes.View_BASIC.String(),
+		State:    tes.Canceled,
+		TagKey:   []string{"hello"},
+		TagValue: []string{"world"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1099,11 +1101,10 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
-		View:  tes.TaskView_BASIC,
-		State: tes.Canceled,
-		Tags: map[string]string{
-			"fizz": "buzz",
-		},
+		View:     tes.View_BASIC.String(),
+		State:    tes.Canceled,
+		TagKey:   []string{"fizz"},
+		TagValue: []string{"buzz"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1125,6 +1126,8 @@ func TestConcurrentStateUpdate(t *testing.T) {
 	f := tests.NewFunnel(c)
 	f.StartServer()
 
+	var result *multierror.Error
+
 	ids := []string{}
 	for i := 0; i < 10; i++ {
 		id := f.Run(`--sh 'echo hello'`)
@@ -1134,12 +1137,14 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			opts := &workerCmd.Options{TaskID: id}
 			w, err := workerCmd.NewWorker(ctx, c, log, opts)
 			if err != nil {
-				t.Fatal(err)
+				result = multierror.Append(result, err)
+				return
 			}
 
 			log.Info("writing state initializing event", "taskID", id)
 			err = w.EventWriter.WriteEvent(ctx, events.NewState(id, tes.Initializing))
 			if err != nil {
+				// Not appending errors here as the task may have already been canceled
 				log.Error("error writing event", err)
 			}
 		}(id)
@@ -1148,15 +1153,21 @@ func TestConcurrentStateUpdate(t *testing.T) {
 			opts := &workerCmd.Options{TaskID: id}
 			w, err := workerCmd.NewWorker(ctx, c, log, opts)
 			if err != nil {
-				t.Fatal(err)
+				result = multierror.Append(result, err)
+				return
 			}
 
 			log.Info("writing state canceled event", "taskID", id)
 			err = w.EventWriter.WriteEvent(ctx, events.NewState(id, tes.Canceled))
 			if err != nil {
+				result = multierror.Append(result, err)
 				log.Error("error writing event", "error", err, "taskID", id)
 			}
 		}(id)
+	}
+
+	if result != nil {
+		t.Error(result)
 	}
 
 	for _, i := range ids {

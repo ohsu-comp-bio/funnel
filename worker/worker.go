@@ -19,10 +19,21 @@ import (
 // sequential process of task initialization, execution, finalization,
 // and logging.
 type DefaultWorker struct {
-	Conf        config.Worker
-	Store       storage.Storage
-	TaskReader  TaskReader
-	EventWriter events.Writer
+	Executor       Executor
+	Conf           config.Worker
+	Store          storage.Storage
+	TaskReader     TaskReader
+	EventWriter    events.Writer
+}
+
+// Configuration of the task executor.
+type Executor struct {
+	// "docker" or "kubernetes"
+	Backend   string
+	// Kubernetes executor template
+	Template  string
+	// Kubernetes namespace
+	Namespace string
 }
 
 // Run runs the Worker.
@@ -68,11 +79,14 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		event.Metadata(map[string]string{"hostname": name})
 	}
 
+	// TODO: Increment taskgroup waitgroup, defer done on waitgroup
+	// Decrement taskgroup waitgroup on exit to make sure that the final logging step is called
+	// before the worker is closed (and the backend database connection is closed).
+	//
 	// Run the final logging/state steps in a deferred function
 	// to ensure they always run, even if there's a missed error.
 	defer func() {
 		event.EndTime(time.Now())
-
 		switch {
 		case run.taskCanceled:
 			// The task was canceled.
@@ -126,9 +140,44 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		event.State(tes.State_RUNNING)
 	}
 
+	var resources = task.GetResources()
+	if resources == nil {
+		resources = &tes.Resources{}
+	}
+
 	// Run steps
 	if run.ok() {
+		ignoreError := false
 		for i, d := range task.GetExecutors() {
+			var command = Command{
+				Image:         d.Image,
+				ShellCommand:  d.Command,
+				Volumes:       mapper.Volumes,
+				Workdir:       d.Workdir,
+				Env:           d.Env,
+				Event:         event.NewExecutorWriter(uint32(i)),
+			}
+
+			var taskCommand TaskCommand
+			if r.Executor.Backend == "kubernetes" {
+				taskCommand = &KubernetesCommand{
+					TaskId:       task.Id,
+					JobId:        i, 
+					StdinFile:    d.Stdin,
+					TaskTemplate: r.Executor.Template,
+					Namespace:    r.Executor.Namespace,
+					Resources:    resources,
+					Command:      command,
+				}
+			} else {
+				taskCommand = &DockerCommand{
+					ContainerName:   fmt.Sprintf("%s-%d", task.Id, i),
+					//TODO Make RemoveContainer configurable
+				 	RemoveContainer: true,
+					Command:         command,
+				}
+			}
+
 			s := &stepWorker{
 				Conf:  r.Conf,
 				Event: event.NewExecutorWriter(uint32(i)),
@@ -147,13 +196,15 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
-			if run.ok() {
+			if run.ok() || ignoreError {
 				run.syserr = r.openStepLogs(mapper, s, d)
 			}
 
-			if run.ok() {
+			if run.ok() || ignoreError {
 				run.execerr = s.Run(ctx)
 			}
+
+			ignoreError = d.GetIgnoreError()
 		}
 	}
 
@@ -191,9 +242,9 @@ func (r *DefaultWorker) Close() {
 func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
 
 	// Find the path for task stdin
-	var err error
 	if d.Stdin != "" {
-		s.Command.Stdin, err = mapper.OpenHostFile(d.Stdin)
+		stdin, err := mapper.OpenHostFile(d.Stdin)
+		s.Command.SetStdin(stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -202,7 +253,8 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Command.Stdout, err = mapper.CreateHostFile(d.Stdout)
+		stdout, err := mapper.CreateHostFile(d.Stdout)
+		s.Command.SetStdout(stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -211,9 +263,10 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Command.Stderr, err = mapper.CreateHostFile(d.Stderr)
+		stderr, err := mapper.CreateHostFile(d.Stderr)
+		s.Command.SetStderr(stderr)
 		if err != nil {
-			s.Event.Error("Couldn't prepare log files", err)
+			_ = s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}

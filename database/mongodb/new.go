@@ -1,68 +1,62 @@
 package mongodb
 
 import (
+	"context"
 	"fmt"
-	"time"
 
-	"github.com/globalsign/mgo"
+	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // MongoDB provides an MongoDB database server backend.
 type MongoDB struct {
-	sess   *mgo.Session
+	scheduler.UnimplementedSchedulerServiceServer
+	client *mongo.Client
 	conf   config.MongoDB
 	active bool
 }
 
-// NewMongoDB returns a new MongoDB instance.
 func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
-	sess, err := mgo.DialWithInfo(&mgo.DialInfo{
-		Addrs:         conf.Addrs,
-		Username:      conf.Username,
-		Password:      conf.Password,
-		Database:      conf.Database,
-		Timeout:       time.Duration(conf.Timeout),
-		AppName:       "funnel",
-		PoolLimit:     4096,
-		PoolTimeout:   0, // wait for connection to become available
-		MinPoolSize:   10,
-		MaxIdleTimeMS: 120000, // 2 min
-	})
+	client, err := mongo.Connect(
+		context.TODO(),
+		options.Client().ApplyURI(conf.Addrs[0]))
+
 	if err != nil {
 		return nil, err
 	}
+
 	db := &MongoDB{
-		sess:   sess,
+		client: client,
 		conf:   conf,
 		active: true,
 	}
 	return db, nil
 }
 
-func (db *MongoDB) tasks(sess *mgo.Session) *mgo.Collection {
-	return sess.DB(db.conf.Database).C("tasks")
+func (db *MongoDB) tasks(client *mongo.Client) *mongo.Collection {
+	return client.Database(db.conf.Database).Collection("tasks")
 }
 
-func (db *MongoDB) nodes(sess *mgo.Session) *mgo.Collection {
-	return sess.DB(db.conf.Database).C("nodes")
+func (db *MongoDB) nodes(client *mongo.Client) *mongo.Collection {
+	return client.Database(db.conf.Database).Collection("nodes")
 }
 
 // Init creates tables in MongoDB.
 func (db *MongoDB) Init() error {
-	sess := db.sess.Copy()
-	defer sess.Close()
-	tasks := db.tasks(sess)
-	nodes := db.nodes(sess)
+	tasks := db.tasks(db.client)
+	nodes := db.nodes(db.client)
 
-	names, err := sess.DB(db.conf.Database).CollectionNames()
+	names, err := db.client.Database(db.conf.Database).ListCollectionNames(context.TODO(), bson.D{}, nil)
 	if err != nil {
-		return fmt.Errorf("error listing collection names in database %s: %v", db.conf.Database, err)
+		return err
 	}
 	var tasksFound bool
 	var nodesFound bool
-	for _, n := range names {
-		switch n {
+	for _, name := range names {
+		switch name {
 		case "tasks":
 			tasksFound = true
 		case "nodes":
@@ -71,36 +65,37 @@ func (db *MongoDB) Init() error {
 	}
 
 	if !tasksFound {
-		err = tasks.Create(&mgo.CollectionInfo{})
+		err = db.client.Database(db.conf.Database).CreateCollection(context.Background(), "tasks", nil)
 		if err != nil {
 			return fmt.Errorf("error creating tasks collection in database %s: %v", db.conf.Database, err)
 		}
 
-		err = tasks.EnsureIndex(mgo.Index{
-			Key:        []string{"-id", "-creationtime"},
-			Unique:     true,
-			DropDups:   true,
-			Background: true,
-			Sparse:     true,
-		})
+		indexModel := mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "-id", Value: -1},
+				{Key: "-creationtime", Value: -1},
+			},
+			Options: options.Index().SetUnique(true).SetSparse(true),
+		}
+		_, err = tasks.Indexes().CreateOne(context.TODO(), indexModel)
 		if err != nil {
 			return err
 		}
 	}
 
 	if !nodesFound {
-		err = nodes.Create(&mgo.CollectionInfo{})
+		err = db.client.Database(db.conf.Database).CreateCollection(context.Background(), "nodes", nil)
 		if err != nil {
 			return fmt.Errorf("error creating nodes collection in database %s: %v", db.conf.Database, err)
 		}
 
-		err = nodes.EnsureIndex(mgo.Index{
-			Key:        []string{"id"},
-			Unique:     true,
-			DropDups:   true,
-			Background: true,
-			Sparse:     true,
-		})
+		indexModel := mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "-id", Value: -1},
+			},
+			Options: options.Index().SetUnique(true).SetSparse(true),
+		}
+		_, err = nodes.Indexes().CreateOne(context.TODO(), indexModel)
 		if err != nil {
 			return err
 		}
@@ -112,7 +107,7 @@ func (db *MongoDB) Init() error {
 // Close closes the database session.
 func (db *MongoDB) Close() {
 	if db.active {
-		db.sess.Close()
+		db.client.Disconnect(context.TODO())
 	}
 	db.active = false
 }

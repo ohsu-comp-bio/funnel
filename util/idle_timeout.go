@@ -6,18 +6,19 @@ import "time"
 // Start() and Stop() are used to control the timer, and Done() is used to
 // detect when the timeout has been reached.
 //
-//     in := make(chan int)
-//     requestInput(in)
-//     t := IdleTimeoutAfter(time.Second * 10)
-//     for {
-//       select {
-//       case <-t.Done():
-//         // ... code to respond to timeout
-//       case <-in:
-//         // Reset the timeout.
-//         t.Start()
-//       }
-//    }
+// in := make(chan int)
+// requestInput(in)
+// t := IdleTimeoutAfter(time.Second * 10)
+//
+//	for {
+//	  select {
+//	  case <-t.Done():
+//	    // ... code to respond to timeout
+//	  case <-in:
+//	    // Reset the timeout.
+//	    t.Start()
+//	  }
+//	}
 type IdleTimeout interface {
 	Done() <-chan time.Time
 	Start()
@@ -32,10 +33,10 @@ func (*noTimeout) Done() <-chan time.Time {
 	return nil
 }
 func (*noTimeout) Start() {
-	return
+	// return
 }
 func (*noTimeout) Stop() {
-	return
+	// return
 }
 
 // NoIdleTimeout creates an IdleTimeout that never times out.
@@ -51,13 +52,13 @@ type timerTimeout struct {
 
 // Done returns a channel which can be used to wait for the timeout.
 //
-//     t := IdleTimeoutAfter(time.Second * 10)
-//     for {
-//       select {
-//       case <-t.Done():
-//         // ... code to respond to timeout
-//       }
-//    }
+//	t := IdleTimeoutAfter(time.Second * 10)
+//	for {
+//	  select {
+//	  case <-t.Done():
+//	    // ... code to respond to timeout
+//	  }
+//	}
 func (t *timerTimeout) Done() <-chan time.Time {
 	if t.timer != nil {
 		return t.timer.C

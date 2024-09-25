@@ -3,13 +3,12 @@ package util
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
 // EmptyReader returns an io.Reader which is empty and immediately closed.
 func EmptyReader() io.Reader {
-	return ioutil.NopCloser(bytes.NewReader(nil))
+	return io.NopCloser(bytes.NewReader(nil))
 }
 
 // StdinPipe will return stdin if it's available, otherwise it will return

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -28,7 +27,7 @@ func TestLocalSupports(t *testing.T) {
 // Tests Get on a "file://" URL, e.g. "file:///path/to/foo.txt"
 func TestLocalGet(t *testing.T) {
 	ctx := context.Background()
-	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	tmp, err := os.MkdirTemp("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,14 +36,14 @@ func TestLocalGet(t *testing.T) {
 	// File test
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
-	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+	os.WriteFile(ip, []byte("foo"), os.ModePerm)
 
 	_, gerr := l.Get(ctx, "file://"+ip, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(cp)
+	b, rerr := os.ReadFile(cp)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -155,7 +154,7 @@ func TestLocalJoin(t *testing.T) {
 // Tests Get on a URL that is a path, e.g. "/path/to/foo.txt"
 func TestLocalGetPath(t *testing.T) {
 	ctx := context.Background()
-	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	tmp, err := os.MkdirTemp("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,14 +162,14 @@ func TestLocalGetPath(t *testing.T) {
 
 	ip := path.Join(tmp, "input.txt")
 	cp := path.Join(tmp, "container.txt")
-	ioutil.WriteFile(ip, []byte("foo"), os.ModePerm)
+	os.WriteFile(ip, []byte("foo"), os.ModePerm)
 
 	_, gerr := l.Get(ctx, ip, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(cp)
+	b, rerr := os.ReadFile(cp)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -182,7 +181,7 @@ func TestLocalGetPath(t *testing.T) {
 // Tests Put on a "file://" URL, e.g. "file:///path/to/foo.txt"
 func TestLocalPut(t *testing.T) {
 	ctx := context.Background()
-	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	tmp, err := os.MkdirTemp("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,14 +190,14 @@ func TestLocalPut(t *testing.T) {
 	// File test
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
-	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+	os.WriteFile(cp, []byte("foo"), os.ModePerm)
 
 	_, gerr := l.Put(ctx, "file://"+op, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(op)
+	b, rerr := os.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -210,7 +209,7 @@ func TestLocalPut(t *testing.T) {
 // Tests Put on a URL that is a path, e.g. "/path/to/foo.txt"
 func TestLocalPutPath(t *testing.T) {
 	ctx := context.Background()
-	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	tmp, err := os.MkdirTemp("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,14 +217,14 @@ func TestLocalPutPath(t *testing.T) {
 
 	cp := path.Join(tmp, "container.txt")
 	op := path.Join(tmp, "output.txt")
-	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
+	os.WriteFile(cp, []byte("foo"), os.ModePerm)
 
 	_, gerr := l.Put(ctx, op, cp)
 	if gerr != nil {
 		t.Fatal(gerr)
 	}
 
-	b, rerr := ioutil.ReadFile(op)
+	b, rerr := os.ReadFile(op)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}
@@ -239,11 +238,11 @@ func TestLocalPutPath(t *testing.T) {
 // against the case where the same path is 'Put' twice
 func TestSameFile(t *testing.T) {
 	ctx := context.Background()
-	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	tmp, err := os.MkdirTemp("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpOut, err := ioutil.TempDir("", "funnel-test-local-storage")
+	tmpOut, err := os.MkdirTemp("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,8 +251,8 @@ func TestSameFile(t *testing.T) {
 	cp := path.Join(tmp, "output.txt")
 	cp2 := path.Join(tmp, "output2.txt")
 	op := path.Join(tmpOut, "output.txt")
-	ioutil.WriteFile(cp, []byte("foo"), os.ModePerm)
-	ioutil.WriteFile(cp2, []byte("bar"), os.ModePerm)
+	os.WriteFile(cp, []byte("foo"), os.ModePerm)
+	os.WriteFile(cp2, []byte("bar"), os.ModePerm)
 
 	err = linkFile(ctx, cp, op)
 	if err != nil {
@@ -268,7 +267,7 @@ func TestSameFile(t *testing.T) {
 	}
 
 	// Check the resulting content
-	b, err := ioutil.ReadFile(op)
+	b, err := os.ReadFile(op)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +282,7 @@ func TestSameFile(t *testing.T) {
 	}
 
 	// Check the resulting content
-	b, err = ioutil.ReadFile(op)
+	b, err = os.ReadFile(op)
 	if err != nil {
 		t.Fatal(err)
 	}

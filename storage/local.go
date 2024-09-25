@@ -168,100 +168,99 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 
 // Hard links file source to destination dest.
 func linkFile(ctx context.Context, source string, dest string) error {
-    // If source has a glob or wildcard, get the filepath using the filepath.Glob function
-    if strings.Contains(source, "*") {
-        globs, err := filepath.Glob(source)
-        if err != nil {
-            return fmt.Errorf("failed to get filepath using Glob: %v", err)
-        }
-        for _, glob := range globs {
-            // Correctly calculate the destination for each file
-            destFile := filepath.Join(dest, filepath.Base(glob))
-            err := processItem(ctx, glob, destFile)
-            if err != nil {
-                return err
-            }
-        }
-        return nil
-    } else {
-        return processItem(ctx, source, dest)
-    }
+	// If source has a glob or wildcard, get the filepath using the filepath.Glob function
+	if strings.Contains(source, "*") {
+		globs, err := filepath.Glob(source)
+		if err != nil {
+			return fmt.Errorf("failed to get filepath using Glob: %v", err)
+		}
+		for _, glob := range globs {
+			// Correctly calculate the destination for each file
+			destFile := filepath.Join(dest, filepath.Base(glob))
+			err := processItem(ctx, glob, destFile)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	} else {
+		return processItem(ctx, source, dest)
+	}
 }
-
 
 // Process a single item (file or directory)
 func processItem(ctx context.Context, source, dest string) error {
-    fileInfo, err := os.Stat(source)
-    if err != nil {
-        return err
-    }
+	fileInfo, err := os.Stat(source)
+	if err != nil {
+		return err
+	}
 
-    if fileInfo.IsDir() {
-        return processDirectory(ctx, source, dest)
-    } else {
-        return processFile(ctx, source, dest)
-    }
+	if fileInfo.IsDir() {
+		return processDirectory(ctx, source, dest)
+	} else {
+		return processFile(ctx, source, dest)
+	}
 }
 
 // Process a directory
 func processDirectory(ctx context.Context, source, dest string) error {
-    // Create destination directory
-    err := os.MkdirAll(dest, 0755) // Adjust permissions as needed
-    if err != nil {
-        return err
-    }
+	// Create destination directory
+	err := os.MkdirAll(dest, 0755) // Adjust permissions as needed
+	if err != nil {
+		return err
+	}
 
-    entries, err := os.ReadDir(source)
-    if err != nil {
-        return err
-    }
+	entries, err := os.ReadDir(source)
+	if err != nil {
+		return err
+	}
 
-    for _, entry := range entries {
-        srcPath := filepath.Join(source, entry.Name())
-        destPath := filepath.Join(dest, entry.Name())
+	for _, entry := range entries {
+		srcPath := filepath.Join(source, entry.Name())
+		destPath := filepath.Join(dest, entry.Name())
 
-        if entry.IsDir() {
-            err = processDirectory(ctx, srcPath, destPath)
-        } else {
-            err = processFile(ctx, srcPath, destPath)
-        }
+		if entry.IsDir() {
+			err = processDirectory(ctx, srcPath, destPath)
+		} else {
+			err = processFile(ctx, srcPath, destPath)
+		}
 
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Process a single file
 func processFile(ctx context.Context, source, dest string) error {
-    // without this resulting link could be a symlink
-    parent, err := filepath.EvalSymlinks(source)   
+	// without this resulting link could be a symlink
+	parent, err := filepath.EvalSymlinks(source)
 
-    same, err := sameFile(parent, dest)
-    if err != nil {
-        return err
-    }
-    if same {
-        return nil
-    }
+	same, err := sameFile(parent, dest)
+	if err != nil {
+		return err
+	}
+	if same {
+		return nil
+	}
 
-    err = os.Link(parent, dest)
-    if err != nil {
-        return copyFile(ctx, parent, dest)
-    }
-    return nil
+	err = os.Link(parent, dest)
+	if err != nil {
+		return copyFile(ctx, parent, dest)
+	}
+	return nil
 }
 
 func FilePathWalkDir(root string) ([]string, error) {
-    var files []string
-    err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-        if !info.IsDir() {
-            files = append(files, path)
-        }
-        return nil
-    })
-    return files, err
+	var files []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
 }
 
 func sameFile(source string, dest string) (bool, error) {

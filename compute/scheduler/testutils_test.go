@@ -2,7 +2,8 @@ package scheduler
 
 import (
 	"context"
-	"io/ioutil"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -20,7 +21,7 @@ type testNode struct {
 }
 
 func newTestNode(conf config.Config, t *testing.T) testNode {
-	workDir, _ := ioutil.TempDir("", "funnel-test-storage-")
+	workDir, _ := os.MkdirTemp("", "funnel-test-storage-")
 	conf.Worker.WorkDir = workDir
 	log := logger.NewLogger("test-node", logger.DebugConfig())
 
@@ -32,7 +33,7 @@ func newTestNode(conf config.Config, t *testing.T) testNode {
 		conf:      conf,
 		client:    s,
 		log:       log,
-		resources: &res,
+		resources: res,
 		workerRun: NoopWorker,
 		workers:   newRunSet(),
 		timeout:   util.NewIdleTimeout(time.Duration(conf.Node.Timeout)),
@@ -81,14 +82,27 @@ func (t *testNode) AddTasks(ids ...string) {
 
 func timeLimit(t *testing.T, d time.Duration) func() {
 	stop := make(chan struct{})
+	errCh := make(chan error, 1) // Channel to report errors
+
 	go func() {
 		select {
 		case <-time.NewTimer(d).C:
-			t.Fatal("time limit expired")
+			errCh <- fmt.Errorf("time limit expired") // Send error
 		case <-stop:
+			return
 		}
 	}()
+
+	// This is the cancel function that will be returned
 	return func() {
 		close(stop)
+		select {
+		case err := <-errCh:
+			if err != nil {
+				t.Fatal(err) // Report error from the main goroutine
+			}
+		default:
+			// No error, do nothing
+		}
 	}
 }

@@ -3,7 +3,7 @@ package run
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -197,7 +197,7 @@ func valsToTask(vals flagVals) (task *tes.Task, err error) {
 }
 
 func getContent(p string) string {
-	b, err := ioutil.ReadFile(p)
+	b, err := os.ReadFile(p)
 	if err != nil {
 		panic(err)
 	}

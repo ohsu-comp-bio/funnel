@@ -16,7 +16,7 @@ func TestBase64Encode(t *testing.T) {
 		},
 	}
 
-	expected := "ewogICJleGVjdXRvcnMiOiAgWwogICAgewogICAgICAiY29tbWFuZCI6ICBbCiAgICAgICAgImVjaG8iLAogICAgICAgICJoZWxsbyB3b3JsZCIKICAgICAgXSwKICAgICAgImltYWdlIjogICJhbHBpbmUiCiAgICB9CiAgXSwKICAiaWQiOiAgInRhc2sxIgp9"
+	expected := "ewogICJleGVjdXRvcnMiOiBbCiAgICB7CiAgICAgICJjb21tYW5kIjogWwogICAgICAgICJlY2hvIiwKICAgICAgICAiaGVsbG8gd29ybGQiCiAgICAgIF0sCiAgICAgICJpbWFnZSI6ICJhbHBpbmUiCiAgICB9CiAgXSwKICAiaWQiOiAidGFzazEiCn0="
 
 	encoded, err := Base64Encode(task)
 	if err != nil {

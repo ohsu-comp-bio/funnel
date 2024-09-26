@@ -4,10 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/events"
 )
 
 // DockerCommand is responsible for configuring and running a docker container.
@@ -50,7 +54,9 @@ func (dcmd DockerCommand) Run(ctx context.Context) error {
 
 	if dcmd.Tags != nil {
 		for k, v := range dcmd.Tags {
-			args = append(args, "-l", fmt.Sprintf("%s=%s", k, v))
+			safeKey := sanitizeTagValue(k)
+			safeValue := sanitizeTagValue(v)
+			args = append(args, "-l", fmt.Sprintf("%s=%s", safeKey, safeValue))
 		}
 	}
 
@@ -182,4 +188,12 @@ func SyncDockerAPIVersion() error {
 		}
 	}
 	return nil
+}
+
+// sanitizeTagValue sanitizes the input string to avoid command injection.
+// This function allows only alphanumeric characters, dashes, underscores, and dots.
+func sanitizeTagValue(value string) string {
+	// Replace anything that is not an alphanumeric character, dash, underscore, or dot
+	re := regexp.MustCompile(`[^a-zA-Z0-9-_\.]`)
+	return re.ReplaceAllString(value, "")
 }

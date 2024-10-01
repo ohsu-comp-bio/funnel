@@ -100,7 +100,9 @@ func workerFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Var(&flagConf.Worker.LogUpdateRate, "Worker.LogUpdateRate", "How often to send stdout/stderr log updates")
 	f.Var(&flagConf.Worker.PollingRate, "Worker.PollingRate", "How often to poll for cancel signals")
 	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working directory")
+	f.StringVar(&flagConf.Worker.ScratchPath, "Worker.ScratchPath", flagConf.Worker.ScratchPath, "Scratch directory")
 	f.BoolVar(&flagConf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", flagConf.Worker.LeaveWorkDir, "Leave working directory after execution")
+	f.StringVar(&flagConf.Worker.DriverCommand, "Worker.DriverCommand", flagConf.Worker.DriverCommand, "Overrides the default command used to run containers.")
 
 	return f
 }

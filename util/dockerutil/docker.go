@@ -13,7 +13,10 @@ import (
 // NewDockerClient returns a new docker client. This util handles
 // working around some client/server API version mismatch issues.
 func NewDockerClient() (*client.Client, error) {
-	dclient, err := client.NewEnvClient()
+	dclient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -34,9 +37,7 @@ func NewDockerClient() (*client.Client, error) {
 			}
 			// Error message example:
 			//   Error getting metadata for container: Error response from daemon: client is newer than server (client API version: 1.26, server API version: 1.24)
-			// Hardcoding Docker version until version[1] returns valid version
-			// os.Setenv("DOCKER_API_VERSION", version[1])
-			os.Setenv("DOCKER_API_VERSION", "1.24")
+			os.Setenv("DOCKER_API_VERSION", version[1])
 			return NewDockerClient()
 		}
 	}

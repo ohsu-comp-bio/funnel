@@ -2,7 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -12,7 +12,7 @@ import (
 
 func TestCreateJobc(t *testing.T) {
 	conf := config.DefaultConfig().Kubernetes
-	content, err := ioutil.ReadFile("../../config/kubernetes-template.yaml")
+	content, err := os.ReadFile("../../config/kubernetes-template.yaml")
 	if err != nil {
 		t.Fatal(fmt.Errorf("reading template: %v", err))
 	}

@@ -4,15 +4,15 @@
   "executors": [
     {
       "image": "ubuntu",
-      "command": ["md5sum", "/tmp/file.xml"]
+      "command": ["md5sum", "/tmp/release.json"]
     }
   ],
   "inputs": [
     {
       "name": "input",
-      "description": "Download a public file from S3 Storage (IRS form 990 data)",
-      "url": "s3://irs-form-990/200931393493000150_public.xml",
-      "path": "/tmp/file.xml"
+      "description": "Download a public file from S3 Storage (CZ CELLxGENE Discover Census Data: https://registry.opendata.aws/tag/bioinformatics/)",
+      "url": "s3://cellxgene-census-public-us-west-2/cell-census/release.json",
+      "path": "/tmp/release.json"
     }
   ]
 }

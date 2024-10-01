@@ -2,103 +2,101 @@ name: Go Tests
 
 on:
   push:
-    # branches:
-    #   - main
-  # pull_request:
+  pull_request:
 
 jobs:
-  # lint:
-  #   name: lint
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/setup-go@v3
-  #       with:
-  #         go-version: 1.21
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
 
-  #     - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       
-  #     - name: golangci-lint
-  #       uses: golangci/golangci-lint-action@v3
-  #       with:
-  #         version: latest
-  #         # Matches the "primary" golangci-lint command in the Makefile
-  #         args: |
-  #             --timeout 3m --disable-all --enable=govet --enable=gofmt --enable=goimports --enable=misspell \
-  #             --skip-dirs "vendor" \
-  #             --skip-dirs "webdash" \
-  #             --skip-dirs "cmd/webdash" \
-  #             --skip-dirs "funnel-work-dir" \
-  #             -e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
-  #             ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          # Matches the "primary" golangci-lint command in the Makefile
+          args: |
+              --timeout 3m --disable-all --enable=govet --enable=gofmt --enable=goimports --enable=misspell \
+              --skip-dirs "vendor" \
+              --skip-dirs "webdash" \
+              --skip-dirs "cmd/webdash" \
+              --skip-dirs "funnel-work-dir" \
+              -e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
+              ./...
       
-  #     - name: golangci-lint
-  #       uses: golangci/golangci-lint-action@v3
-  #       with:
-  #         version: latest
-  #         # Matches the "termdash" golangci-lint command in the Makefile
-  #         args: |
-  #             --timeout 3m --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell \
-  #             ./cmd/termdash/...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          # Matches the "termdash" golangci-lint command in the Makefile
+          args: |
+              --timeout 3m --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell \
+              ./cmd/termdash/...
 
-  # unitTest:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Set up Go 1.x
-  #     uses: actions/setup-go@v5
-  #     with:
-  #       go-version: 1.21
-  #   - name: Check out code
-  #     uses: actions/checkout@v2
+  unitTest:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.21
+    - name: Check out code
+      uses: actions/checkout@v2
 
-  #   - name: Unit Tests
-  #     run: make test-verbose
+    - name: Unit Tests
+      run: make test-verbose
 
   build:
     uses: ./.github/workflows/build.yml
 
-  # mongoTest:
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   steps:
-  #   - name: Set up Go 1.x
-  #     uses: actions/setup-go@v5
-  #     with:
-  #       go-version: 1.21
+  mongoTest:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.21
 
-  #   - name: Check out code
-  #     uses: actions/checkout@v2
+    - name: Check out code
+      uses: actions/checkout@v2
 
-  #   - name: Download funnel bin
-  #     uses: actions/download-artifact@v4
-  #     with:
-  #       name: funnel
+    - name: Download funnel bin
+      uses: actions/download-artifact@v4
+      with:
+        name: funnel
 
-  #   - name: MongoTest
-  #     run: |
-  #       chmod +x funnel
-  #       make start-mongodb
-  #       sleep 10
-  #       make test-mongodb
+    - name: MongoTest
+      run: |
+        chmod +x funnel
+        make start-mongodb
+        sleep 10
+        make test-mongodb
 
-  # badgerTest:
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   steps:
-  #   - name: Set up Go 1.x
-  #     uses: actions/setup-go@v5
-  #     with:
-  #       go-version: 1.21
-  #   - name: Check out code
-  #     uses: actions/checkout@v2
+  badgerTest:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.21
+    - name: Check out code
+      uses: actions/checkout@v2
 
-  #   - name: Download funnel bin
-  #     uses: actions/download-artifact@v4
-  #     with:
-  #       name: funnel
-  #   - name: Badger Test
-  #     run: |
-  #       chmod +x funnel
-  #       make test-badger
+    - name: Download funnel bin
+      uses: actions/download-artifact@v4
+      with:
+        name: funnel
+    - name: Badger Test
+      run: |
+        chmod +x funnel
+        make test-badger
 
   slurmTest:
     runs-on: ubuntu-latest
@@ -121,26 +119,26 @@ jobs:
         chmod +x funnel
         make test-slurm
 
-  # s3Test:
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   steps:
-  #   - name: Set up Go 1.x
-  #     uses: actions/setup-go@v5
-  #     with:
-  #       go-version: 1.21
-  #   - name: Check out code
-  #     uses: actions/checkout@v2
+  s3Test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.21
+    - name: Check out code
+      uses: actions/checkout@v2
 
-  #   - name: Download funnel bin
-  #     uses: actions/download-artifact@v4
-  #     with:
-  #       name: funnel
+    - name: Download funnel bin
+      uses: actions/download-artifact@v4
+      with:
+        name: funnel
 
-  #   - name: S3 Test
-  #     run: |
-  #       chmod +x funnel
-  #       make start-generic-s3
-  #       sleep 10
-  #       make test-generic-s3
- 
+    - name: S3 Test
+      run: |
+        chmod +x funnel
+        make start-generic-s3
+        sleep 10
+        make test-generic-s3
+          

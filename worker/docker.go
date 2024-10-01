@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,11 +13,9 @@ import (
 	"time"
 )
 
-// DockerCommand is responsible for configuring and running a docker container.
-type DockerCommand struct {
-	ContainerName   string
-	RemoveContainer bool
-	Command 	
+// Docker is responsible for configuring and running a docker container.
+type Docker struct {
+	ContainerConfig
 }
 
 // Run runs the Docker command and blocks until done.

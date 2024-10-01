@@ -147,9 +147,23 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		event.State(tes.State_RUNNING)
 	}
 
-	var resources = task.GetResources()
-	if resources == nil {
-		resources = &tes.Resources{}
+	// Create symlinks between the working directory and the Scratch Directory
+	if run.ok() && r.Conf.ScratchPath != "" {
+		err := mapper.CopyInputsToScratch(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		// Get the absolute path of the scratch directory
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		// For every volume in mapper, add the Scratch Path prefix to the host path
+		for idx, v := range mapper.Volumes {
+			v.HostPath = filepath.Join(scratchAbsDir, v.HostPath)
+			mapper.Volumes[idx] = v
+		}
+
 	}
 
 	// Run steps
@@ -157,39 +171,30 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		ignoreError := false
 		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
-			var command = Command{
-				Image:         d.Image,
-				ShellCommand:  d.Command,
-				Volumes:       mapper.Volumes,
-				Workdir:       d.Workdir,
-				Env:           d.Env,
-				Event:         event.NewExecutorWriter(uint32(i)),
+			containerConfig := ContainerConfig{
+				Image:   d.Image,
+				Command: d.Command,
+				Env:     d.Env,
+				Volumes: mapper.Volumes,
+				Workdir: d.Workdir,
+				Name:    fmt.Sprintf("%s-%d", task.Id, i),
+				// TODO make RemoveContainer configurable
+				RemoveContainer: true,
+				Event:           event.NewExecutorWriter(uint32(i)),
 			}
-
-			var taskCommand TaskCommand
-			if r.Executor.Backend == "kubernetes" {
-				taskCommand = &KubernetesCommand{
-					TaskId:       task.Id,
-					JobId:        i, 
-					StdinFile:    d.Stdin,
-					TaskTemplate: r.Executor.Template,
-					Namespace:    r.Executor.Namespace,
-					Resources:    resources,
-					Command:      command,
-				}
-			} else {
-				taskCommand = &DockerCommand{
-					ContainerName:   fmt.Sprintf("%s-%d", task.Id, i),
-					//TODO Make RemoveContainer configurable
-				 	RemoveContainer: true,
-					Command:         command,
-				}
+			containerConfig.DriverCommand = r.Conf.Container.DriverCommand
+			containerConfig.RunCommand = r.Conf.Container.RunCommand
+			containerConfig.PullCommand = r.Conf.Container.PullCommand
+			containerConfig.StopCommand = r.Conf.Container.StopCommand
+			containerEngine, err := f.NewContainerEngine(containerConfig)
+			if err != nil {
+				run.syserr = err
 			}
 
 			s := &stepWorker{
-				Conf:  r.Conf,
-				Event: event.NewExecutorWriter(uint32(i)),
-				Command: taskCommand,
+				Conf:    r.Conf,
+				Event:   event.NewExecutorWriter(uint32(i)),
+				Command: containerEngine,
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
@@ -247,10 +252,14 @@ func (r *DefaultWorker) Close() {
 // openLogs opens/creates the logs files for a step and updates those fields.
 func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
 
+	var stdin *os.File
+	var stdout *os.File
+	var stderr *os.File
+	var err error
+
 	// Find the path for task stdin
 	if d.Stdin != "" {
-		stdin, err := mapper.OpenHostFile(d.Stdin)
-		s.Command.SetStdin(stdin)
+		stdin, err = mapper.CreateHostFile(d.Stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -259,8 +268,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		stdout, err := mapper.CreateHostFile(d.Stdout)
-		s.Command.SetStdout(stdout)
+		stdout, err = mapper.CreateHostFile(d.Stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -269,8 +277,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		stderr, err := mapper.CreateHostFile(d.Stderr)
-		s.Command.SetStderr(stderr)
+		stderr, err = mapper.CreateHostFile(d.Stderr)
 		if err != nil {
 			_ = s.Event.Error("Couldn't prepare log files", err)
 			return err

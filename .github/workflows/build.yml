@@ -36,9 +36,6 @@ jobs:
         path: ./funnel
         key: ${{ runner.os }}-funnel-bin-${{ hashFiles('**/go.sum') }}-${{ github.ref }}
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-
     - name: Upload Funnel binary as artifact
       uses: actions/upload-artifact@v4
       with:

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/tests"
 )
@@ -15,14 +16,14 @@ import (
 var fun *tests.Funnel
 var serverName string
 
-func TestMain(t *testing.T) {
+func TestMain(m *testing.M) {
 	tests.ParseConfig()
 	conf := tests.DefaultConfig()
 
-	// if conf.Compute != "slurm" {
-	// 	logger.Debug("Skipping slurm e2e tests...")
-	// 	os.Exit(0)
-	// }
+	if conf.Compute != "slurm" {
+		logger.Debug("Skipping slurm e2e tests...")
+		os.Exit(0)
+	}
 
 	fun = tests.NewFunnel(conf)
 	serverName = "funnel-test-server-" + tests.RandomString(6)
@@ -34,7 +35,7 @@ func TestMain(t *testing.T) {
 		os.Exit(exit)
 	}()
 
-	// exit = t.Run()
+	exit = m.Run()
 	return
 }
 

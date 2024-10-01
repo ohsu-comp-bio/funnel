@@ -116,9 +116,6 @@ jobs:
       with:
         name: funnel
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-
     - name: Slurm Test
       run: |
         chmod +x funnel

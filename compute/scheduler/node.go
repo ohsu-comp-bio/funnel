@@ -41,7 +41,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 		conf:      conf,
 		client:    cli,
 		log:       log,
-		resources: &res,
+		resources: res,
 		workerRun: factory,
 		workers:   newRunSet(),
 		timeout:   timeout,
@@ -154,7 +154,7 @@ func (n *NodeProcess) sync(ctx context.Context) {
 
 	// Node data has been updated. Send back to server for database update.
 	var derr error
-	*n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
+	n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
 	if derr != nil {
 		n.log.Error("error detecting resources", "error", derr)
 	}

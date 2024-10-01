@@ -19,19 +19,19 @@ import (
 // sequential process of task initialization, execution, finalization,
 // and logging.
 type DefaultWorker struct {
-	Executor       Executor
-	Conf           config.Worker
-	Store          storage.Storage
-	TaskReader     TaskReader
-	EventWriter    events.Writer
+	Executor    Executor
+	Conf        config.Worker
+	Store       storage.Storage
+	TaskReader  TaskReader
+	EventWriter events.Writer
 }
 
 // Configuration of the task executor.
 type Executor struct {
 	// "docker" or "kubernetes"
-	Backend   string
+	Backend string
 	// Kubernetes executor template
-	Template  string
+	Template string
 	// Kubernetes namespace
 	Namespace string
 }

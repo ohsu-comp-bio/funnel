@@ -7,15 +7,15 @@ import (
 )
 
 type Command struct {
-	Image           string
-	ShellCommand    []string
-	Volumes         []Volume
-	Workdir         string
-	Env             map[string]string
-	Stdin           io.Reader
-	Stdout          io.Writer
-	Stderr          io.Writer
-	Event           *events.ExecutorWriter
+	Image        string
+	ShellCommand []string
+	Volumes      []Volume
+	Workdir      string
+	Env          map[string]string
+	Stdin        io.Reader
+	Stdout       io.Writer
+	Stderr       io.Writer
+	Event        *events.ExecutorWriter
 	TaskCommand
 }
 

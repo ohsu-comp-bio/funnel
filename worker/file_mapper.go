@@ -156,11 +156,11 @@ func (mapper *FileMapper) CopyOutputsToWorkDir(scratchDir string) error {
 
 		matches, err := filepath.Glob(scratchTarget)
 		if err != nil {
-            return fmt.Errorf("invalid pattern %s: %w", scratchTarget, err)
-        }
-        if len(matches) == 0 {
-            return fmt.Errorf("no files matched the pattern: %s", scratchTarget)
-        }
+			return fmt.Errorf("invalid pattern %s: %w", scratchTarget, err)
+		}
+		if len(matches) == 0 {
+			return fmt.Errorf("no files matched the pattern: %s", scratchTarget)
+		}
 
 		parentDir := filepath.Dir(output.Path)
 		for _, src := range matches {
@@ -175,7 +175,7 @@ func (mapper *FileMapper) CopyOutputsToWorkDir(scratchDir string) error {
 					return fmt.Errorf("failed to create output path: %w", err)
 				}
 				copyDir(src, output.Path)
-			// If output is a file
+				// If output is a file
 			} else {
 				// Ensure the scratch target directory exists
 				if err = os.MkdirAll(path.Dir(parentDir), 0755); err != nil {

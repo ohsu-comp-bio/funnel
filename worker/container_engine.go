@@ -39,7 +39,6 @@ type ContainerConfig struct {
 	Workdir         string
 	RemoveContainer bool
 	Env             map[string]string
-	Tags            map[string]string
 	Stdin           io.Reader
 	Stdout          io.Writer
 	Stderr          io.Writer
@@ -48,6 +47,8 @@ type ContainerConfig struct {
 	RunCommand      string // template string
 	PullCommand     string // template string
 	StopCommand     string // template string
+	EnableTags      bool
+	Tags            map[string]string
 }
 
 type ContainerVersion struct {

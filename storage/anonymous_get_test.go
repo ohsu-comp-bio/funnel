@@ -41,6 +41,10 @@ func TestAmazonS3AnonymousGet(t *testing.T) {
 		endpoint: "",
 	}
 
+	// AWS S3 Public Datasets:
+	// - https://registry.opendata.aws/
+	// 1000 Genomes Public Dataset:
+	// - https://registry.opendata.aws/1000-genomes/
 	_, err = store.Get(context.Background(), "s3://1000genomes/README.analysis_history", "_test_download/README.analysis_history")
 	if err != nil {
 		t.Error("Error downloading file:", err)
@@ -55,7 +59,11 @@ func TestGoogleStorageAnonymousGet(t *testing.T) {
 
 	store := &GoogleCloud{svc}
 
-	_, err = store.Get(context.Background(), "gs://uspto-pair/applications/07820856.zip", "_test_download/07820856.zip")
+	// Google Cloud Public Datasets:
+	// - https://cloud.google.com/datasets?hl=en
+	// Broad Institute Public Dataset:
+	// - https://console.cloud.google.com/storage/browser/gcp-public-data--broad-references;tab=objects?prefix=&forceOnObjectsSortingFiltering=false
+	_, err = store.Get(context.Background(), "gs://gcp-public-data--broad-references/C.elegans/WBcel235/README.txt", "_test_download/README.txt")
 	if err != nil {
 		t.Error("Error downloading file:", err)
 	}

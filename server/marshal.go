@@ -22,12 +22,12 @@ type CustomMarshal struct {
 func NewMarshaler() runtime.Marshaler {
 	return &CustomMarshal{
 		m: &runtime.JSONPb{
-			protojson.MarshalOptions{
+			MarshalOptions: protojson.MarshalOptions{
 				Indent:          "  ",
 				EmitUnpopulated: true,
 				UseProtoNames:   true,
 			},
-			protojson.UnmarshalOptions{},
+			UnmarshalOptions: protojson.UnmarshalOptions{},
 		},
 	}
 }
@@ -44,10 +44,10 @@ func (marshal *CustomMarshal) ContentType(i interface{}) string {
 func (mclean *CustomMarshal) Marshal(v interface{}) ([]byte, error) {
 
 	list, ok := v.(*tes.ListTasksResponse)
-    if ok {
-        // v is of type *tes.ListTasksResponse
+	if ok {
+		// v is of type *tes.ListTasksResponse
 		return mclean.MarshalList(list)
-    }
+	}
 
 	task, ok := v.(*tes.Task)
 	if ok {
@@ -98,10 +98,10 @@ func (mclean *CustomMarshal) DetectView(task *tes.Task) (tes.View, error) {
 		// return a MINIMAL view
 		return tes.View_MINIMAL, nil
 	}
-	
+
 	if len(task.Logs[0].SystemLogs) == 0 {
 		return tes.View_BASIC, nil
-	} 
+	}
 
 	// view = "FULL"
 	return tes.View_FULL, nil
@@ -116,18 +116,18 @@ func (mclean *CustomMarshal) TranslateTask(task *tes.Task, view tes.View) interf
 		}
 		return min
 	}
-	
+
 	// view = "BASIC"
 	if view == tes.View_BASIC {
 		executors := []*tes.ExecutorBasic{}
 		for _, executor := range task.Executors {
 			executors = append(executors, &tes.ExecutorBasic{
-				Command: 	 executor.Command,
-				Env:    	 executor.Env,
+				Command:     executor.Command,
+				Env:         executor.Env,
 				IgnoreError: executor.IgnoreError,
-				Image: 		 executor.Image,
-				Stdin: 		 executor.Stdin,
-				Workdir: 	 executor.Workdir,
+				Image:       executor.Image,
+				Stdin:       executor.Stdin,
+				Workdir:     executor.Workdir,
 			})
 		}
 
@@ -135,11 +135,11 @@ func (mclean *CustomMarshal) TranslateTask(task *tes.Task, view tes.View) interf
 		for _, input := range task.Inputs {
 			inputs = append(inputs, &tes.InputBasic{
 				Description: input.Description,
-				Name: 		 input.Name,
-				Path: 		 input.Path,
+				Name:        input.Name,
+				Path:        input.Path,
 				Streamable:  input.Streamable,
-				Type: 		 input.Type,
-				Url: 		 input.Url,
+				Type:        input.Type,
+				Url:         input.Url,
 			})
 		}
 
@@ -154,19 +154,19 @@ func (mclean *CustomMarshal) TranslateTask(task *tes.Task, view tes.View) interf
 			})
 		}
 
-		basic := &tes.TaskBasic {
+		basic := &tes.TaskBasic{
 			CreationTime: task.CreationTime,
 			Description:  task.Description,
 			Executors:    executors,
-			Id:			  task.Id,
-			Inputs:		  inputs,
-			Logs:	 	  logs,
-			Name: 		  task.Name,
-			Outputs:	  task.Outputs,
-			Resources: 	  task.Resources,
-			State: 		  task.State,
-			Tags: 		  task.Tags,
-			Volumes: 	  task.Volumes,
+			Id:           task.Id,
+			Inputs:       inputs,
+			Logs:         logs,
+			Name:         task.Name,
+			Outputs:      task.Outputs,
+			Resources:    task.Resources,
+			State:        task.State,
+			Tags:         task.Tags,
+			Volumes:      task.Volumes,
 		}
 
 		return basic

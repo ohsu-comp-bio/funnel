@@ -89,7 +89,7 @@ func (taskBolt *BoltDB) GetNode(ctx context.Context, req *scheduler.GetNodeReque
 	})
 
 	if err == errNotFound {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("%v: nodeID: %s", err.Error(), req.Id))
+		return nil, status.Errorf(codes.NotFound, "%v: nodeID: %s", err.Error(), req.Id)
 	}
 
 	if err != nil {

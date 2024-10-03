@@ -1,5 +1,5 @@
 # build stage
-FROM golang:1.20-alpine AS build-env
+FROM golang:1.23-alpine AS build-env
 RUN apk add make git bash build-base
 ENV GOPATH=/go
 ENV PATH="/go/bin:${PATH}"
@@ -11,7 +11,7 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build make build
 
 # final stage
-FROM docker:stable-dind
+FROM docker:dind
 WORKDIR /opt/funnel
 VOLUME /opt/funnel/funnel-work-dir
 EXPOSE 8000 9090

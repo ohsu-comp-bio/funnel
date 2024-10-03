@@ -2,6 +2,7 @@
 package config
 
 import (
+	"io"
 	"os"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -137,6 +138,8 @@ type Node struct {
 type Worker struct {
 	// Directory to write task files to
 	WorkDir string
+	// Additional directory to symlink to the working directory.
+	ScratchPath string
 	// How often the worker should poll for cancel signals
 	PollingRate Duration
 	// How often to update stdout/stderr log fields.
@@ -151,6 +154,28 @@ type Worker struct {
 	LeaveWorkDir bool
 	// Limit the number of concurrent downloads/uploads
 	MaxParallelTransfers int
+	// Container engine to use for executing tasks.
+	Container ContainerConfig
+	// Command to use for the container engine.
+	// This can be used to override the default command used to run containers.
+	DriverCommand string
+}
+
+type ContainerConfig struct {
+	Id              string
+	Image           string
+	Name            string
+	Command         []string
+	Workdir         string
+	RemoveContainer bool
+	Env             map[string]string
+	Stdin           io.Reader
+	Stdout          io.Writer
+	Stderr          io.Writer
+	DriverCommand   string
+	RunCommand      string // template string
+	PullCommand     string // template string
+	StopCommand     string // template string
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

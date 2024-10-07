@@ -437,3 +437,111 @@ func TestWorkerRunBase64TaskReader(t *testing.T) {
 		t.Error("unexpected task state")
 	}
 }
+
+func TestGenerateContainerConfig(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	conf := tests.DefaultConfig()
+	task := tes.Task{
+		Id: "test-task-" + tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"echo", "hello world"},
+				Env:     map[string]string{"KEY": "value"},
+				Workdir: "/workdir",
+			},
+		},
+		Tags: map[string]string{
+			"safe-tag": "safe",
+		},
+	}
+
+	w := worker.DefaultWorker{
+		Conf:  conf.Worker,
+		Store: &storage.Mux{},
+	}
+
+	volumes := []worker.Volume{
+		{HostPath: "/hostpath", ContainerPath: "/containerpath"},
+	}
+
+	config, err := w.GenerateContainerConfig(task.Executors[0], volumes, &task)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	if config.Image != "alpine" {
+		t.Errorf("expected image 'alpine', got %s", config.Image)
+	}
+	if len(config.Command) != 2 || config.Command[0] != "echo" || config.Command[1] != "hello world" {
+		t.Errorf("unexpected command %v", config.Command)
+	}
+	if config.Env["KEY"] != "value" {
+		t.Errorf("expected env 'KEY=value', got %s", config.Env["KEY"])
+	}
+	if config.Workdir != "/workdir" {
+		t.Errorf("expected workdir '/workdir', got %s", config.Workdir)
+	}
+	if len(config.Volumes) != 1 || config.Volumes[0].HostPath != "/hostpath" || config.Volumes[0].ContainerPath != "/containerpath" {
+		t.Errorf("unexpected volumes %v", config.Volumes)
+	}
+	if config.Tags["safe-tag"] != "safe" {
+		t.Errorf("expected tag 'safe-tag=safe', got %s", config.Tags["safe-tag"])
+	}
+}
+
+func TestGenerateContainerConfigWithTags(t *testing.T) {
+	tests.SetLogOutput(log, t)
+
+	task := tes.Task{
+		Id: "test-task-" + tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"echo", "hello world"},
+				Env:     map[string]string{"KEY": "value"},
+				Workdir: "/workdir",
+			},
+		},
+		Tags: map[string]string{
+			"safe-tag":    "safe",
+			"exploit-tag": "normal; echo 'hacked!'",
+		},
+	}
+
+	conf := tests.DefaultConfig()
+
+	w := worker.DefaultWorker{
+		Conf:  conf.Worker,
+		Store: &storage.Mux{},
+	}
+
+	volumes := []worker.Volume{
+		{HostPath: "/hostpath", ContainerPath: "/containerpath"},
+	}
+
+	config, err := w.GenerateContainerConfig(task.Executors[0], volumes, &task)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	if config.Tags != nil {
+		t.Error("expected tags to be nil, got", config.Tags)
+	}
+
+	conf.Worker.Container.EnableTags = true
+
+	w.Conf = conf.Worker
+
+	config, err = w.GenerateContainerConfig(task.Executors[0], volumes, &task)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	if config.Tags["safe-tag"] != "safe" {
+		t.Errorf("expected tag 'safe-tag=safe', got %s", config.Tags["safe-tag"])
+	}
+	if config.Tags["exploit-tag"] != "normalechohacked" {
+		t.Errorf("expected sanitized tag 'exploit-tag=normalechohacked', got %s", config.Tags["exploit-tag"])
+	}
+}

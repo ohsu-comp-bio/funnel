@@ -172,31 +172,9 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		ignoreError := false
 		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
-			containerConfig := ContainerConfig{
-				Image:   d.Image,
-				Command: d.Command,
-				// TODO: Where is d.Env set?
-				// Do we need to sanitize these values as well?
-				Env:     d.Env,
-				Volumes: mapper.Volumes,
-				Workdir: d.Workdir,
-				Name:    fmt.Sprintf("%s-%d", task.Id, i),
-				// TODO make RemoveContainer configurable
-				RemoveContainer: true,
-				Event:           event.NewExecutorWriter(uint32(i)),
-			}
-			containerConfig.DriverCommand = r.Conf.Container.DriverCommand
-			containerConfig.RunCommand = r.Conf.Container.RunCommand
-			containerConfig.PullCommand = r.Conf.Container.PullCommand
-			containerConfig.StopCommand = r.Conf.Container.StopCommand
-
-			// Hide this behind explicit flag/option in configuration
-			if r.Conf.Container.EnableTags {
-				for k, v := range task.Tags {
-					safeTag := r.sanitizeValues(v)
-					containerConfig.Tags[k] = safeTag
-				}
-			}
+			containerConfig, err := r.GenerateContainerConfig(d, mapper.Volumes, task)
+			containerConfig.Name = fmt.Sprintf("%s-%d", task.Id, i)
+			containerConfig.Event = event.NewExecutorWriter(uint32(i))
 
 			containerEngine, err := f.NewContainerEngine(containerConfig)
 			if err != nil {
@@ -261,6 +239,36 @@ func (r *DefaultWorker) Close() {
 	r.EventWriter.Close()
 }
 
+func (r *DefaultWorker) GenerateContainerConfig(d *tes.Executor, volumes []Volume, task *tes.Task) (ContainerConfig, error) {
+	config := ContainerConfig{
+		Image:   d.Image,
+		Command: d.Command,
+		// TODO: Where is d.Env set?
+		// Do we need to sanitize these values as well?
+		Env:     d.Env,
+		Volumes: volumes,
+		Workdir: d.Workdir,
+		// TODO make RemoveContainer configurable
+		RemoveContainer: true,
+	}
+	config.DriverCommand = r.Conf.Container.DriverCommand
+	config.RunCommand = r.Conf.Container.RunCommand
+	config.PullCommand = r.Conf.Container.PullCommand
+	config.StopCommand = r.Conf.Container.StopCommand
+
+	// Hide this behind explicit flag/option in configuration
+	if r.Conf.Container.EnableTags {
+		config.Tags = make(map[string]string)
+
+		for k, v := range task.Tags {
+			safeTag := r.sanitizeValues(v)
+			config.Tags[k] = safeTag
+		}
+	}
+
+	return config, nil
+}
+
 // openLogs opens/creates the logs files for a step and updates those fields.
 func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
 
@@ -322,7 +330,7 @@ func (r *DefaultWorker) validate(mapper *FileMapper) error {
 // Sanitizes the input string to avoid command injection.
 // Only allows alphanumeric characters, dashes, underscores, and dots.
 func (r *DefaultWorker) sanitizeValues(value string) string {
-	// Replace anything that is not an alphanumeric character, dash, underscore, or dot
+	// Remove anything that is not an alphanumeric character, dash, underscore, or dot
 	re := regexp.MustCompile(`[^a-zA-Z0-9-_\.]`)
 	return re.ReplaceAllString(value, "")
 }

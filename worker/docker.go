@@ -26,12 +26,12 @@ func (docker Docker) Run(ctx context.Context) error {
 		docker.Event.Error("failed to sync docker client API version", err)
 	}
 
-	err = docker.executeCommand(ctx, docker.PullCommand, false)
+	_, err = docker.executeCommand(ctx, docker.PullCommand, false)
 	if err != nil {
 		docker.Event.Error("failed to pull docker image", err)
 	}
 
-	err = docker.executeCommand(ctx, docker.RunCommand, true)
+	_, err = docker.executeCommand(ctx, docker.RunCommand, true)
 	if err != nil {
 		docker.Event.Error("failed to run docker container", err)
 	}
@@ -42,7 +42,7 @@ func (docker Docker) Run(ctx context.Context) error {
 // Stop stops the container.
 func (docker Docker) Stop() error {
 	docker.Event.Info("Stopping container", "container", docker.Name)
-	err := docker.executeCommand(context.Background(), docker.StopCommand, false)
+	_, err := docker.executeCommand(context.Background(), docker.StopCommand, false)
 	if err != nil {
 		docker.Event.Error("failed to stop docker container", err)
 		return err
@@ -50,7 +50,7 @@ func (docker Docker) Stop() error {
 	return nil
 }
 
-func (docker Docker) executeCommand(ctx context.Context, commandTemplate string, enableIO bool) error {
+func (docker Docker) executeCommand(ctx context.Context, commandTemplate string, enableIO bool) (string, error) {
 	var usingCommand bool = false
 	if strings.Contains(commandTemplate, "{{.Command}}") {
 		usingCommand = true
@@ -59,13 +59,13 @@ func (docker Docker) executeCommand(ctx context.Context, commandTemplate string,
 
 	tmpl, err := template.New("command").Parse(commandTemplate)
 	if err != nil {
-		return fmt.Errorf("failed to parse template for command: %w", err)
+		return "", fmt.Errorf("failed to parse template for command: %w", err)
 	}
 
 	var cmdBuffer bytes.Buffer
 	err = tmpl.Execute(&cmdBuffer, docker.ContainerConfig)
 	if err != nil {
-		return fmt.Errorf("failed to execute template for command: %w", err)
+		return "", fmt.Errorf("failed to execute template for command: %w", err)
 	}
 
 	cmdParts := strings.Fields(cmdBuffer.String())
@@ -98,7 +98,7 @@ func (docker Docker) executeCommand(ctx context.Context, commandTemplate string,
 	if usingCommand {
 		docker.Event.Info("Running command", "cmd", cmd.String())
 	}
-	return cmd.Run()
+	return cmd.String(), cmd.Run()
 }
 
 func formatVolumeArg(v Volume) string {

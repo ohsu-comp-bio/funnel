@@ -168,6 +168,7 @@ func copyFile(ctx context.Context, source string, dest string) (err error) {
 
 // Hard links file source to destination dest.
 func linkFile(ctx context.Context, source string, dest string) error {
+
 	// If source has a glob or wildcard, get the filepath using the filepath.Glob function
 	if strings.Contains(source, "*") {
 		globs, err := filepath.Glob(source)
@@ -175,9 +176,11 @@ func linkFile(ctx context.Context, source string, dest string) error {
 			return fmt.Errorf("failed to get filepath using Glob: %v", err)
 		}
 		for _, glob := range globs {
-			// Correctly calculate the destination for each file
-			destFile := filepath.Join(dest, filepath.Base(glob))
-			err := processItem(ctx, glob, destFile)
+			// Since tesOutput.path contains a wildcard, then the dest path must be a directory
+			// Ref: https://github.com/ga4gh/task-execution-schemas/blob/v1.1/openapi/task_execution_service.openapi.yaml#L528
+			// TODO: Verify that path_prefix is being removed from the dest filepath
+			dest = filepath.Join(dest, filepath.Base(glob))
+			err := processItem(ctx, glob, dest)
 			if err != nil {
 				return err
 			}
@@ -189,7 +192,7 @@ func linkFile(ctx context.Context, source string, dest string) error {
 }
 
 // Process a single item (file or directory)
-func processItem(ctx context.Context, source, dest string) error {
+func processItem(ctx context.Context, source string, dest string) error {
 	fileInfo, err := os.Stat(source)
 	if err != nil {
 		return err
@@ -203,7 +206,7 @@ func processItem(ctx context.Context, source, dest string) error {
 }
 
 // Process a directory
-func processDirectory(ctx context.Context, source, dest string) error {
+func processDirectory(ctx context.Context, source string, dest string) error {
 	// Create destination directory
 	err := os.MkdirAll(dest, 0755) // Adjust permissions as needed
 	if err != nil {

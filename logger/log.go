@@ -4,7 +4,6 @@ package logger
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -74,7 +73,7 @@ func (l *Logger) SetOutput(o io.Writer) {
 
 // Discard configures the logger to discard all logs.
 func (l *Logger) Discard() {
-	l.SetOutput(ioutil.Discard)
+	l.SetOutput(io.Discard)
 }
 
 // Debug logs a debug message.

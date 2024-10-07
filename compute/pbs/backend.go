@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"time"
 
@@ -19,7 +19,7 @@ import (
 // NewBackend returns a new PBS (Portable Batch System) HPCBackend instance.
 func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*compute.HPCBackend, error) {
 	if conf.PBS.TemplateFile != "" {
-		content, err := ioutil.ReadFile(conf.PBS.TemplateFile)
+		content, err := os.ReadFile(conf.PBS.TemplateFile)
 		if err != nil {
 			return nil, fmt.Errorf("reading template: %v", err)
 		}

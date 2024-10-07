@@ -2,8 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -391,7 +389,7 @@ func (mapper *FileMapper) AddInput(input *tes.Input) error {
 
 	// If 'content' field is set create the file
 	if input.Content != "" {
-		err := ioutil.WriteFile(hostPath, []byte(input.Content), 0775)
+		err := os.WriteFile(hostPath, []byte(input.Content), 0775)
 		if err != nil {
 			return fmt.Errorf("Error writing content of task input to file %v", err)
 		}

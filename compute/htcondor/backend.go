@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -21,7 +21,7 @@ import (
 // NewBackend returns a new HTCondor backend instance.
 func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*compute.HPCBackend, error) {
 	if conf.HTCondor.TemplateFile != "" {
-		content, err := ioutil.ReadFile(conf.HTCondor.TemplateFile)
+		content, err := os.ReadFile(conf.HTCondor.TemplateFile)
 		if err != nil {
 			return nil, fmt.Errorf("reading template: %v", err)
 		}

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -133,7 +132,7 @@ func TestMultiS3Storage(t *testing.T) {
 		t.Fatal("Failed to download file:", err)
 	}
 
-	b, err := ioutil.ReadFile("./test_tmp/test-s3-file.txt")
+	b, err := os.ReadFile("./test_tmp/test-s3-file.txt")
 	if err != nil {
 		t.Fatal("Failed to read downloaded file:", err)
 	}

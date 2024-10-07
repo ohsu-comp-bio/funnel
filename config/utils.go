@@ -3,7 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -22,7 +22,7 @@ func ToYamlFile(c Config, path string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, b, 0600)
+	return os.WriteFile(path, b, 0600)
 }
 
 // Parse parses a YAML doc into the given Config instance.
@@ -56,7 +56,7 @@ func ParseFile(relpath string, conf *Config) error {
 	}
 
 	// Read file
-	source, err := ioutil.ReadFile(path)
+	source, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read config at path %s: \n%v", path, err)
 	}

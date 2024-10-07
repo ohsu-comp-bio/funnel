@@ -3,7 +3,7 @@ package gce
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -101,7 +101,7 @@ func LoadMetadataFromURL(url string) (*Metadata, error) {
 		return nil, fmt.Errorf("Non-200 response status from GCE Metadata: %d", resp.StatusCode)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

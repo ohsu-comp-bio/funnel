@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -250,7 +249,7 @@ func TestUrlParsing(t *testing.T) {
 }
 
 func TestWalkFiles(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "funnel-test-local-storage")
+	tmp, err := os.MkdirTemp("", "funnel-test-local-storage")
 	if err != nil {
 		t.Fatal(err)
 	}

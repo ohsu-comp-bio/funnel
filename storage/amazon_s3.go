@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -59,7 +58,7 @@ func NewAmazonS3(conf config.AmazonS3Storage) (*AmazonS3, error) {
 	}
 
 	if conf.SSE.CustomerKeyFile != "" {
-		key, err := ioutil.ReadFile(conf.SSE.CustomerKeyFile)
+		key, err := os.ReadFile(conf.SSE.CustomerKeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("error reading sse-c file: %v", err)
 		}

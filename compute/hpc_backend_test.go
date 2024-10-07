@@ -3,7 +3,7 @@ package compute
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestSetupTemplatedHPCSubmit(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "funnel-test-scheduler")
+	tmp, err := os.MkdirTemp("", "funnel-test-scheduler")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ funnel worker run --taskID {{.TaskId}}
 		t.Fatal(err)
 	}
 
-	actual, rerr := ioutil.ReadFile(sf)
+	actual, rerr := os.ReadFile(sf)
 	if rerr != nil {
 		t.Fatal(rerr)
 	}

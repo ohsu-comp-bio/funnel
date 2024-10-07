@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"testing"
 	"time"
 

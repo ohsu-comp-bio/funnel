@@ -2,6 +2,8 @@ package worker
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"

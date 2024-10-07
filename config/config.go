@@ -176,8 +176,6 @@ type ContainerConfig struct {
 	RunCommand      string // template string
 	PullCommand     string // template string
 	StopCommand     string // template string
-	EnableTags      bool
-	Tags            map[string]string
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as

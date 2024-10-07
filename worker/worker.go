@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -175,8 +174,6 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			containerConfig := ContainerConfig{
 				Image:   d.Image,
 				Command: d.Command,
-				// TODO: Where is d.Env set?
-				// Do we need to sanitize these values as well?
 				Env:     d.Env,
 				Volumes: mapper.Volumes,
 				Workdir: d.Workdir,
@@ -189,15 +186,6 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			containerConfig.RunCommand = r.Conf.Container.RunCommand
 			containerConfig.PullCommand = r.Conf.Container.PullCommand
 			containerConfig.StopCommand = r.Conf.Container.StopCommand
-
-			// Hide this behind explicit flag/option in configuration
-			if r.Conf.Container.EnableTags {
-				for k, v := range task.Tags {
-					safeTag := r.sanitizeValues(v)
-					containerConfig.Tags[k] = safeTag
-				}
-			}
-
 			containerEngine, err := f.NewContainerEngine(containerConfig)
 			if err != nil {
 				run.syserr = err

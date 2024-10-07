@@ -88,6 +88,7 @@ func DefaultConfig() Config {
 					"{{.Image}} {{.Command}}",
 				PullCommand: "pull {{.Image}}",
 				StopCommand: "rm -f {{.Name}}",
+				EnableTags:  false,
 			},
 		},
 		Logger: logger.DefaultConfig(),

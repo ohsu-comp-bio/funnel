@@ -40,7 +40,7 @@ func TestDockerExecuteCommand(t *testing.T) {
 	docker := Docker{
 		ContainerConfig: defaultConfig,
 	}
-	err := docker.executeCommand(context.Background(), "run --rm alpine echo Hello, World!", true)
+	_, err := docker.executeCommand(context.Background(), "run --rm alpine echo Hello, World!", true)
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestDockerStop(t *testing.T) {
 
 	// Run the container command in a separate goroutine
 	go func() {
-		err := docker.executeCommand(ctx, "run --rm alpine sleep 30", true)
+		_, err := docker.executeCommand(ctx, "run --rm alpine sleep 30", true)
 		if err != nil && ctx.Err() == nil {
 			t.Errorf("Expected no error, but got: %v", err)
 		}
@@ -125,6 +125,39 @@ func TestDockerSyncAPIVersion(t *testing.T) {
 	err := docker.SyncAPIVersion()
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
+	}
+}
+
+func TestDockerTags(t *testing.T) {
+	config := defaultConfig
+	config.EnableTags = true
+
+	// Test with safe tags
+	config.Tags = map[string]string{
+		"safe-tag": "safe",
+	}
+	docker := Docker{
+		ContainerConfig: config,
+	}
+	cmd, err := docker.executeCommand(context.Background(), docker.RunCommand, true)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	if cmd != "foo" {
+		t.Errorf("Expected 'foo', but got: %s", cmd)
+	}
+
+	// Test with exploit tags
+	config.Tags = map[string]string{
+		"safe-tag":    "safe",
+		"exploit-tag": "normal; echo 'hacked!'",
+	}
+	cmd, err = docker.executeCommand(context.Background(), docker.RunCommand, true)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	if cmd != "foo" {
+		t.Errorf("Expected 'foo', but got: %s", cmd)
 	}
 }
 

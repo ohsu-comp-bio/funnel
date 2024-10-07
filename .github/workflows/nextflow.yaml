@@ -6,25 +6,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v5
-      with:
-        go-version: 1.21
+    uses: ./.github/workflows/build.yml
 
-    - name: Check out code
-      uses: actions/checkout@v2
-
-    - name: Build Funnel (if cache does not exist)
-      run: make build
-
-    - name: Store Funnel
-      uses: actions/upload-artifact@v4
-      with:
-        name: funnelBin
-        path: funnel
-  
   nextflow:
     needs: build
     runs-on: ubuntu-latest

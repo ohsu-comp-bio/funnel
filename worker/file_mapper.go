@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"

@@ -226,15 +226,7 @@ snapshot: release-dep
 
 # build a docker container locally
 docker:
-	docker build -t ohsucompbio/funnel:latest ./
-
-# build a docker container that supports docker-in-docker
-docker-dind:
-	docker build -t ohsucompbio/funnel-dind:latest -f Dockerfile.dind .
-
-# build a docker container that supports rootless docker-in-docker
-docker-dind-rootless:
-	docker build -t ohsucompbio/funnel-dind-rootless:latest -f Dockerfile.dind-rootless .
+	docker build -t quay.io/ohsu-comp-bio/funnel:latest ./
 
 # Create a release on Github using GoReleaser 
 release:
@@ -268,12 +260,11 @@ website:
 	@cp ./config/*.txt ./website/static/funnel-config-examples/
 	@cp ./config/default-config.yaml ./website/static/funnel-config-examples/
 	hugo --source ./website
+	npx -y pagefind --site docs
 
 # Serve the Funnel website on localhost:1313
-website-dev:
-	@cp ./config/*.txt ./website/static/funnel-config-examples/
-	@cp ./config/default-config.yaml ./website/static/funnel-config-examples/
-	hugo --source ./website -w server
+website-dev: website
+	hugo --source ./website --watch server
 
 # Remove build/development files.
 clean:

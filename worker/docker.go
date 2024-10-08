@@ -11,15 +11,34 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/ohsu-comp-bio/funnel/events"
 )
 
-// Docker is responsible for configuring and running a docker container.
-type Docker struct {
-	ContainerConfig
+// DockerCommand is responsible for configuring and running a docker container.
+type DockerCommand struct {
+	Id              string
+	Name            string
+	Volumes         []Volume
+	Workdir         string
+	RemoveContainer bool
+	Event           *events.ExecutorWriter
+	DriverCommand   string
+	RunCommand      string // template string
+	PullCommand     string // template string
+	StopCommand     string // template string
+	EnableTags      bool
+	Tags            map[string]string
+	Command
+}
+
+type DockerVersion struct {
+	Client string
+	Server string
 }
 
 // Run runs the Docker command and blocks until done.
-func (docker Docker) Run(ctx context.Context) error {
+func (docker DockerCommand) Run(ctx context.Context) error {
 	// Sync docker API version info.
 	err := docker.SyncAPIVersion()
 	if err != nil {
@@ -40,7 +59,7 @@ func (docker Docker) Run(ctx context.Context) error {
 }
 
 // Stop stops the container.
-func (docker Docker) Stop() error {
+func (docker DockerCommand) Stop() error {
 	docker.Event.Info("Stopping container", "container", docker.Name)
 	err := docker.executeCommand(context.Background(), docker.StopCommand, false)
 	if err != nil {
@@ -50,7 +69,7 @@ func (docker Docker) Stop() error {
 	return nil
 }
 
-func (docker Docker) executeCommand(ctx context.Context, commandTemplate string, enableIO bool) error {
+func (docker DockerCommand) executeCommand(ctx context.Context, commandTemplate string, enableIO bool) error {
 	var usingCommand bool = false
 	if strings.Contains(commandTemplate, "{{.Command}}") {
 		usingCommand = true
@@ -63,7 +82,7 @@ func (docker Docker) executeCommand(ctx context.Context, commandTemplate string,
 	}
 
 	var cmdBuffer bytes.Buffer
-	err = tmpl.Execute(&cmdBuffer, docker.ContainerConfig)
+	err = tmpl.Execute(&cmdBuffer, docker)
 	if err != nil {
 		return fmt.Errorf("failed to execute template for command: %w", err)
 	}
@@ -71,7 +90,7 @@ func (docker Docker) executeCommand(ctx context.Context, commandTemplate string,
 	cmdParts := strings.Fields(cmdBuffer.String())
 	if usingCommand {
 		go docker.InspectContainer(ctx)
-		cmdParts = append(cmdParts, docker.Command...)
+		cmdParts = append(cmdParts, docker.Command.ShellCommand...)
 	}
 
 	driverCmd := strings.Fields(docker.DriverCommand)
@@ -110,15 +129,15 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
 }
 
-func (docker Docker) GetImage() string {
+func (docker DockerCommand) GetImage() string {
 	return docker.Image
 }
 
-func (docker Docker) GetIO() (io.Reader, io.Writer, io.Writer) {
+func (docker DockerCommand) GetIO() (io.Reader, io.Writer, io.Writer) {
 	return docker.Stdin, docker.Stdout, docker.Stderr
 }
 
-func (docker *Docker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+func (docker *DockerCommand) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
 	if stdin != nil && stdin != (*os.File)(nil) {
 		docker.Stdin = stdin
 	}
@@ -131,7 +150,7 @@ func (docker *Docker) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer)
 }
 
 // inspectContainer inspects the docker container for metadata.
-func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
+func (docker *DockerCommand) InspectContainer(ctx context.Context) DockerCommand {
 	// Give the container time to start.
 	time.Sleep(2 * time.Second)
 
@@ -142,13 +161,13 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 	for i := 0; i < 5; i++ {
 		select {
 		case <-ctx.Done():
-			return ContainerConfig{}
+			return DockerCommand{}
 		case <-ticker.C:
 			cmd := exec.CommandContext(ctx, "docker", "inspect", docker.Name)
 			out, err := cmd.Output()
 			if err == nil {
 
-				meta := []ContainerConfig{}
+				meta := []DockerCommand{}
 				err = json.Unmarshal(out, &meta)
 				if err == nil && len(meta) == 1 {
 					docker.Event.Info("container metadata",
@@ -161,17 +180,25 @@ func (docker *Docker) InspectContainer(ctx context.Context) ContainerConfig {
 		}
 	}
 
-	return ContainerConfig{}
+	return DockerCommand{}
+}
+
+func (docker *DockerCommand) GetStdout() io.Writer {
+	return docker.Stdout
+}
+
+func (docker *DockerCommand) GetStderr() io.Writer {
+	return docker.Stderr
 }
 
 // SyncDockerAPIVersion ensures that the client uses the same API version as
 // the server.
-func (docker *Docker) SyncAPIVersion() error {
+func (docker *DockerCommand) SyncAPIVersion() error {
 	if os.Getenv("DOCKER_API_VERSION") == "" {
 		var args []string
-		driverCmd := strings.Fields(docker.ContainerConfig.DriverCommand)
+		driverCmd := strings.Fields(docker.DriverCommand)
 
-		if len(docker.ContainerConfig.DriverCommand) > 1 {
+		if len(docker.DriverCommand) > 1 {
 			// Merge driver parts and command parts
 			args = append(args, driverCmd[1:]...)
 		}
@@ -182,7 +209,7 @@ func (docker *Docker) SyncAPIVersion() error {
 		if err != nil {
 			return fmt.Errorf("docker version command failed: %v", err)
 		}
-		version := &ContainerVersion{}
+		version := &DockerVersion{}
 		err = json.Unmarshal(out, version)
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal docker version: %v", err)

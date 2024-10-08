@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -72,7 +72,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts
 	store.AttachLogger(log)
 
 	if conf.Kubernetes.ExecutorTemplateFile != "" {
-		content, err := ioutil.ReadFile(conf.Kubernetes.ExecutorTemplateFile)
+		content, err := os.ReadFile(conf.Kubernetes.ExecutorTemplateFile)
 		if err != nil {
 			return nil, fmt.Errorf("reading template: %v", err)
 		}

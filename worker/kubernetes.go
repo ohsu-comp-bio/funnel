@@ -87,7 +87,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	// Wait until the job finishes
 	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	defer watcher.Stop()
-	waitForJobFinnish(ctx, watcher)
+	waitForJobFinish(ctx, watcher)
 
 	pods, err := clientset.CoreV1().Pods(kcmd.Namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	if err != nil {
@@ -146,7 +146,7 @@ func (kcmd KubernetesCommand) GetStderr() io.Writer {
 }
 
 // Waits until the job finishes
-func waitForJobFinnish(ctx context.Context, watcher watch.Interface) {
+func waitForJobFinish(ctx context.Context, watcher watch.Interface) {
 	for {
 		select {
 		case event := <-watcher.ResultChan():

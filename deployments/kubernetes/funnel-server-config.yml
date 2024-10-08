@@ -28,7 +28,7 @@ Kubernetes:
           restartPolicy: Never
           containers: 
             - name: {{printf "funnel-worker-%s" .TaskId}}
-              image: quay.io/ohsu-comp-bio/funnel-dind:latest
+              image: quay.io/ohsu-comp-bio/funnel:latest
               imagePullPolicy: IfNotPresent
               args:
                 - "funnel"

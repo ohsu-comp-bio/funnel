@@ -433,4 +433,6 @@ type Kubernetes struct {
 	ConfigFile string
 	// Namespace to spawn jobs within
 	Namespace string
+	// ServiceAccount is the name of the service account to use when running tasks.
+	ServiceAccount string
 }

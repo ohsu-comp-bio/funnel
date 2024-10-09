@@ -36,6 +36,8 @@ type Executor struct {
 	Template string
 	// Kubernetes namespace
 	Namespace string
+	// Kubernetes service account name
+	ServiceAccount string
 }
 
 // Run runs the Worker.

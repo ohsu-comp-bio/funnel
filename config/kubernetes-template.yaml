@@ -9,7 +9,7 @@ spec:
   completions: 1
   template:
     spec:
-      serviceAccountName: funnel-sa
+      serviceAccountName: {{.ServiceAccount}}
       restartPolicy: Never
       containers: 
         - name: funnel-worker-{{.TaskId}}

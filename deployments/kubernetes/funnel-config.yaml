@@ -103,6 +103,7 @@ data:
           template:
             spec:
               restartPolicy: Never
+              serviceAccountName: funnel-sa
               containers: 
               - name: funnel-worker-{{.TaskId}}
                 image: {{.Image}}

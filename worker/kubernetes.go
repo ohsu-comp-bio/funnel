@@ -19,12 +19,13 @@ import (
 
 // KubernetesCommand is responsible for configuring and running a task in a Kubernetes cluster.
 type KubernetesCommand struct {
-	TaskId       string
-	JobId        int
-	StdinFile    string
-	TaskTemplate string
-	Namespace    string
-	Resources    *tes.Resources
+	TaskId         string
+	JobId          int
+	StdinFile      string
+	TaskTemplate   string
+	Namespace      string
+	Resources      *tes.Resources
+	ServiceAccount string
 	Command
 }
 
@@ -44,16 +45,17 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	var buf bytes.Buffer
 	err = tpl.Execute(&buf, map[string]interface{}{
-		"TaskId":    taskId,
-		"JobId":     kcmd.JobId,
-		"Namespace": kcmd.Namespace,
-		"Image":     kcmd.Image,
-		"Command":   command,
-		"Workdir":   kcmd.Workdir,
-		"Volumes":   kcmd.Volumes,
-		"Cpus":      kcmd.Resources.CpuCores,
-		"RamGb":     kcmd.Resources.RamGb,
-		"DiskGb":    kcmd.Resources.DiskGb,
+		"TaskId":         taskId,
+		"JobId":          kcmd.JobId,
+		"Namespace":      kcmd.Namespace,
+		"Image":          kcmd.Image,
+		"Command":        command,
+		"Workdir":        kcmd.Workdir,
+		"Volumes":        kcmd.Volumes,
+		"Cpus":           kcmd.Resources.CpuCores,
+		"RamGb":          kcmd.Resources.RamGb,
+		"DiskGb":         kcmd.Resources.DiskGb,
+		"ServiceAccount": kcmd.ServiceAccount,
 	})
 
 	if err != nil {

@@ -1,7 +1,7 @@
 > [!NOTE]
 > Funnel's Kubernetes support is in active development and may involve frequent updates
 
-# Kubernetes
+# Overview
 
 This guide will take you through the process of setting up Funnel as a kubernetes service.
 
@@ -12,9 +12,9 @@ Kuberenetes Resources:
 - [Roles and RoleBindings](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings)
 - [Job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
 
-Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
+# Deployment Steps
 
-#### Create a Service:
+## 1. Create a Service:
 
 *[funnel-service.yml](./funnel-service.yml)*
 
@@ -30,7 +30,7 @@ kubectl get services funnel --output=yaml | grep "clusterIP:"
 
 Use this value to configure the server hostname of the worker config.
 
-#### Create Funnel config files
+## 2. Create Funnel config files
 
 *[funnel-server-config.yml](.funnel-server-config.yml)*
 
@@ -40,13 +40,13 @@ We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise fai
 
 ***Remember to modify the file to have the actual server hostname.***
 
-#### Create a ConfigMap
+## 3. Create a ConfigMap
 
 ```sh
 kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
 ```
 
-#### Create a Service Account for Funnel
+## 4. Create a Service Account for Funnel
 
 Define a Role and RoleBinding:
 
@@ -60,7 +60,7 @@ kubectl create -f role.yml
 kubectl create -f role_binding.yml
 ```
 
-#### Create a Deployment
+## 5. Create a Deployment
 
 *[funnel-deployment.yml](./funnel-deployment.yml)*
 
@@ -68,7 +68,7 @@ kubectl create -f role_binding.yml
 kubectl apply -f funnel-deployment.yml
 ```
 
-#### Proxy the Service for local testing
+## 6. Proxy the Service for local testing
 
 ```sh
 kubectl port-forward service/funnel 8000:8000

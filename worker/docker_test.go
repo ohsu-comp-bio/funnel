@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -12,12 +11,16 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
-var defaultConfig = ContainerConfig{
+var command = Command{
+	Image:        "alpine",
+	ShellCommand: []string{"sh", "-c", "echo Hello, World!"},
+}
+
+var docker = DockerCommand{
 	Id:              "123",
-	Image:           "alpine",
 	Name:            "funnel-test-" + RandomString(6),
+	Command:         command,
 	DriverCommand:   "docker",
-	Command:         []string{"sh", "-c", "echo Hello, World!"},
 	RunCommand:      "run --name {{.Name}} {{.Image}} {{.Command}}",
 	PullCommand:     "pull {{.Image}}",
 	RemoveContainer: true,
@@ -27,9 +30,6 @@ var defaultConfig = ContainerConfig{
 }
 
 func TestDockerRun(t *testing.T) {
-	docker := Docker{
-		ContainerConfig: defaultConfig,
-	}
 	err := docker.Run(context.Background())
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
@@ -37,9 +37,6 @@ func TestDockerRun(t *testing.T) {
 }
 
 func TestDockerExecuteCommand(t *testing.T) {
-	docker := Docker{
-		ContainerConfig: defaultConfig,
-	}
 	err := docker.executeCommand(context.Background(), "run --rm alpine echo Hello, World!", true)
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
@@ -47,9 +44,6 @@ func TestDockerExecuteCommand(t *testing.T) {
 }
 
 func TestDockerStop(t *testing.T) {
-	docker := Docker{
-		ContainerConfig: defaultConfig,
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Run the container command in a separate goroutine
@@ -87,31 +81,13 @@ func TestFormatVolumeArg(t *testing.T) {
 }
 
 func TestDockerGetImage(t *testing.T) {
-	docker := Docker{
-		ContainerConfig: defaultConfig,
-	}
 	expected := "alpine"
 	result := docker.GetImage()
 	if result != expected {
 		t.Errorf("Expected %s, but got %s", expected, result)
 	}
 }
-
-func TestDockerSetIO(t *testing.T) {
-	docker := Docker{}
-	stdin := &bytes.Buffer{}
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	docker.SetIO(stdin, stdout, stderr)
-	if docker.Stdin != stdin || docker.Stdout != stdout || docker.Stderr != stderr {
-		t.Errorf("Expected stdin, stdout, and stderr to be set correctly")
-	}
-}
-
 func TestDockerInspectContainer(t *testing.T) {
-	docker := Docker{
-		ContainerConfig: defaultConfig,
-	}
 	config := docker.InspectContainer(context.Background())
 	if config.Id == "" {
 		t.Errorf("Expected non-nil container config")
@@ -119,9 +95,6 @@ func TestDockerInspectContainer(t *testing.T) {
 }
 
 func TestDockerSyncAPIVersion(t *testing.T) {
-	docker := Docker{
-		ContainerConfig: defaultConfig,
-	}
 	err := docker.SyncAPIVersion()
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)

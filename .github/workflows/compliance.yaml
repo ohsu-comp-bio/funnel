@@ -70,6 +70,11 @@ jobs:
             cat `pwd`/tests/s3.config.yml >> config.yml
           fi
 
+          if [ ${{ matrix.compute }} = "kubernetes" ]; then
+            kubectl apply -f tests/k8s
+            cat `pwd`/tests/k8s.config.yml >> config.yml
+          fi
+
           chmod +x funnel
           ./funnel server run --config `pwd`/config.yml &> funnel.logs &
 

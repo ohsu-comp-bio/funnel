@@ -2,359 +2,248 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Funnel</title>
-    <link>https://ohsu-comp-bio.github.io/funnel/</link>
+    <link>http://localhost:1313/funnel/</link>
     <description>Recent content on Funnel</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://ohsu-comp-bio.github.io/funnel/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:1313/funnel/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>AWS Batch</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/</link>
+      <link>http://localhost:1313/funnel/docs/compute/aws-batch/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/</guid>
-      <description>AWS Batch This guide covers deploying a Funnel server that leverages DynamoDB for storage and AWS Batch for task execution.
-Setup Get started by creating a compute environment, job queue and job definition using either the Funnel CLI or the AWS Batch web console. To manage the permissions of instanced AWS Batch jobs create a new IAM role. For the Funnel configuration outlined in this document, this role will need to provide read and write access to both S3 and DynamoDB.</description>
+      <guid>http://localhost:1313/funnel/docs/compute/aws-batch/</guid>
+      <description>&lt;h1 id=&#34;aws-batch&#34;&gt;AWS Batch&lt;/h1&gt;&#xA;&lt;p&gt;This guide covers deploying a Funnel server that leverages &lt;a href=&#34;http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html&#34;&gt;DynamoDB&lt;/a&gt; for storage&#xA;and &lt;a href=&#34;http://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html&#34;&gt;AWS Batch&lt;/a&gt; for task execution.&lt;/p&gt;&#xA;&lt;h2 id=&#34;setup&#34;&gt;Setup&lt;/h2&gt;&#xA;&lt;p&gt;Get started by creating a compute environment, job queue and job definition using either&#xA;the Funnel CLI or the AWS Batch web console. To manage the permissions of instanced&#xA;AWS Batch jobs create a new IAM role. For the Funnel configuration outlined&#xA;in this document, this role will need to provide read and write access to both S3 and DynamoDB.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Basic Auth</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/security/basic/</link>
+      <link>http://localhost:1313/funnel/docs/security/basic/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/security/basic/</guid>
-      <description>Basic Auth By default, a Funnel server allows open access to its API endpoints, but it can be configured to require basic password authentication. To enable this, include users and passwords in your config file:
-Server: BasicAuth: - User: funnel Password: abc123 If you are using BoltDB or Badger, the Funnel worker communicates to the server via gRPC so you will also need to configure the RPC client.
-RPCClient: User: funnel Password: abc123 Make sure to properly protect the configuration file so that it&amp;rsquo;s not readable by everyone:</description>
+      <guid>http://localhost:1313/funnel/docs/security/basic/</guid>
+      <description>&lt;h1 id=&#34;basic-auth&#34;&gt;Basic Auth&lt;/h1&gt;&#xA;&lt;p&gt;By default, a Funnel server allows open access to its API endpoints, but it&#xA;can be configured to require basic password authentication. To enable this,&#xA;include users and passwords in your config file:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;Server&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;BasicAuth&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    - &lt;span style=&#34;color:#f92672&#34;&gt;User&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;funnel&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;Password&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;abc123&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;If you are using BoltDB or Badger, the Funnel worker communicates to the server via gRPC&#xA;so you will also need to configure the RPC client.&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;RPCClient&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;User&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;funnel&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;Password&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;abc123&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Make sure to properly protect the configuration file so that it&amp;rsquo;s not readable&#xA;by everyone:&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Compute</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/</link>
+      <link>http://localhost:1313/funnel/docs/compute/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/</guid>
-      <description>Compute </description>
+      <guid>http://localhost:1313/funnel/docs/compute/</guid>
+      <description>&lt;h1 id=&#34;compute&#34;&gt;Compute&lt;/h1&gt;</description>
     </item>
-    
     <item>
       <title>Databases</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/</link>
+      <link>http://localhost:1313/funnel/docs/databases/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/</guid>
-      <description>Databases </description>
+      <guid>http://localhost:1313/funnel/docs/databases/</guid>
+      <description>&lt;h1 id=&#34;databases&#34;&gt;Databases&lt;/h1&gt;</description>
     </item>
-    
     <item>
       <title>Datastore</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/</link>
+      <link>http://localhost:1313/funnel/docs/databases/datastore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/</guid>
-      <description>Google Cloud Datastore Funnel supports storing tasks (but not scheduler data) in Google Cloud Datastore.
-This implementation currently doesn&amp;rsquo;t work with Appengine, since Appengine places special requirements on the context of requests and requires a separate library.
-Two entity types are used, &amp;ldquo;Task&amp;rdquo; and &amp;ldquo;TaskPart&amp;rdquo; (for larger pieces of task content, such as stdout/err logs).
-Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.</description>
+      <guid>http://localhost:1313/funnel/docs/databases/datastore/</guid>
+      <description>&lt;h1 id=&#34;google-cloud-datastore&#34;&gt;Google Cloud Datastore&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports storing tasks (but not scheduler data) in Google Cloud Datastore.&lt;/p&gt;&#xA;&lt;p&gt;This implementation currently doesn&amp;rsquo;t work with Appengine, since Appengine places&#xA;special requirements on the context of requests and requires a separate library.&lt;/p&gt;&#xA;&lt;p&gt;Two entity types are used, &amp;ldquo;Task&amp;rdquo; and &amp;ldquo;TaskPart&amp;rdquo; (for larger pieces of task content,&#xA;such as stdout/err logs).&lt;/p&gt;&#xA;&lt;p&gt;Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Deploying a cluster</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/</link>
+      <link>http://localhost:1313/funnel/docs/compute/deployment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/</guid>
-      <description>Deploying a cluster This guide describes the basics of starting a cluster of Funnel nodes. This guide is a work in progress.
-A node is a service which runs on each machine in a cluster. The node connects to the Funnel server and reports available resources. The Funnel scheduler process assigns tasks to nodes. When a task is assigned, a node will start a worker process. There is one worker process per task.</description>
+      <guid>http://localhost:1313/funnel/docs/compute/deployment/</guid>
+      <description>&lt;h1 id=&#34;deploying-a-cluster&#34;&gt;Deploying a cluster&lt;/h1&gt;&#xA;&lt;p&gt;This guide describes the basics of starting a cluster of Funnel nodes.&#xA;This guide is a work in progress.&lt;/p&gt;&#xA;&lt;p&gt;A node is a service&#xA;which runs on each machine in a cluster. The node connects to the Funnel server and reports&#xA;available resources. The Funnel scheduler process assigns tasks to nodes. When a task is&#xA;assigned, a node will start a worker process. There is one worker process per task.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Development</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/development/</link>
+      <link>http://localhost:1313/funnel/docs/development/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/development/</guid>
-      <description>Development </description>
+      <guid>http://localhost:1313/funnel/docs/development/</guid>
+      <description>&lt;h1 id=&#34;development&#34;&gt;Development&lt;/h1&gt;</description>
     </item>
-    
     <item>
-      <title>Download</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/download/</link>
+      <title>Download 0.11.0</title>
+      <link>http://localhost:1313/funnel/download/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/download/</guid>
-      <description>Download 0.10.1 linux mac Windows is not supported (yet), sorry! Funnel is a single binary.
-Funnel requires Docker.
-Funnel is beta quality. APIs might break, bugs exist, data might be lost.
-Homebrew brew tap ohsu-comp-bio/formula brew install funnel In order to build the latest code, run:
-$ git clone https://github.com/ohsu-comp-bio/funnel.git $ cd funnel $ make Funnel requires Go 1.11+. Check out the development docs for more detail.
-Release History See the Releases page for release history.</description>
+      <guid>http://localhost:1313/funnel/download/</guid>
+      <description>&lt;h3&gt;Download 0.11.1-rc.5&lt;/h3&gt;&#xA;&#xA;&#xA;&lt;ul&gt;&#xA;  &lt;li&gt;&lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/releases/download/0.11.1-rc.5/funnel-linux-amd64-0.11.1-rc.5.tar.gz&#34;&gt;linux&lt;/a&gt;&lt;/li&gt;&#xA;  &lt;li&gt;&lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/releases/download/0.11.1-rc.5/funnel-darwin-amd64-0.11.1-rc.5.tar.gz&#34;&gt;mac&lt;/a&gt;&lt;/li&gt;&#xA;  &lt;li&gt;&lt;small&gt;Windows is not supported (yet), sorry!&lt;/small&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&#xA;&#xA;&#xA;&lt;p&gt;Funnel is a single binary.&lt;br&gt;&#xA;Funnel requires &lt;a href=&#34;https://docker.io&#34;&gt;Docker&lt;/a&gt;.&lt;br&gt;&#xA;Funnel is beta quality. APIs might break, bugs exist, data might be lost.&lt;/p&gt;&#xA;&lt;h3 id=&#34;homebrew&#34;&gt;Homebrew&lt;/h3&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;brew tap ohsu-comp-bio/formula&#xA;brew install funnel@0.11&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3&gt;Build the lastest development version &lt;i class=&#34;optional&#34;&gt;optional&lt;/i&gt;&lt;/h3&gt;&#xA;&lt;p&gt;In order to build the latest code, run:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ git clone https://github.com/ohsu-comp-bio/funnel.git&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ cd funnel&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ make&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Funnel requires Go 1.21+. Check out the &lt;a href=&#34;http://localhost:1313/funnel/docs/development/developers/&#34;&gt;development docs&lt;/a&gt; for more detail.&lt;/p&gt;&#xA;&lt;h3 id=&#34;release-history&#34;&gt;Release History&lt;/h3&gt;&#xA;&lt;p&gt;See the &lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/releases&#34;&gt;Releases&lt;/a&gt;  page for release history.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>DynamoDB</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/</link>
+      <link>http://localhost:1313/funnel/docs/databases/dynamodb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/</guid>
-      <description>DynamoDB Funnel supports storing task data in DynamoDB. Storing scheduler data is not supported currently, so using the node scheduler with DynamoDB won&amp;rsquo;t work. Using AWS Batch for compute scheduling may be a better option. Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.
-Available Config:
-Database: dynamodb DynamoDB: # Basename to use for dynamodb tables TableBasename: &amp;#34;funnel&amp;#34; # AWS region Region: &amp;#34;us-west-2&amp;#34; # AWS Access key ID Key: &amp;#34;&amp;#34; # AWS Secret Access Key Secret: &amp;#34;&amp;#34; Known issues Dynamo does not store scheduler data.</description>
+      <guid>http://localhost:1313/funnel/docs/databases/dynamodb/</guid>
+      <description>&lt;h1 id=&#34;dynamodb&#34;&gt;DynamoDB&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports storing task data in DynamoDB. Storing scheduler data is not supported currently, so using the node scheduler with DynamoDB won&amp;rsquo;t work. Using AWS Batch for compute scheduling may be a better option.&#xA;Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.&lt;/p&gt;&#xA;&lt;p&gt;Available Config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Database: dynamodb&#xA;&#xA;DynamoDB:&#xA;  # Basename to use for dynamodb tables&#xA;  TableBasename: &amp;#34;funnel&amp;#34;&#xA;  # AWS region&#xA;  Region: &amp;#34;us-west-2&amp;#34;&#xA;  # AWS Access key ID&#xA;  Key: &amp;#34;&amp;#34;&#xA;  # AWS Secret Access Key&#xA;  Secret: &amp;#34;&amp;#34;&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;known-issues&#34;&gt;Known issues&lt;/h3&gt;&#xA;&lt;p&gt;Dynamo does not store scheduler data. See &lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/issues/340&#34;&gt;issue 340&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Elasticsearch</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/</link>
+      <link>http://localhost:1313/funnel/docs/databases/elasticsearch/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/</guid>
-      <description>Elasticsearch Funnel supports storing tasks and scheduler data in Elasticsearch.
-Config:
-Database: elastic Elastic: # Prefix to use for indexes IndexPrefix: &amp;#34;funnel&amp;#34; URL: http://localhost:9200 </description>
+      <guid>http://localhost:1313/funnel/docs/databases/elasticsearch/</guid>
+      <description>&lt;h1 id=&#34;elasticsearch&#34;&gt;Elasticsearch&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports storing tasks and scheduler data in Elasticsearch.&lt;/p&gt;&#xA;&lt;p&gt;Config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Database: elastic&#xA;&#xA;Elastic:&#xA;  # Prefix to use for indexes&#xA;  IndexPrefix: &amp;#34;funnel&amp;#34;&#xA;  URL: http://localhost:9200&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
     </item>
-    
     <item>
       <title>Embedded</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/</link>
+      <link>http://localhost:1313/funnel/docs/databases/boltdb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/</guid>
-      <description>Embedded By default, Funnel uses an embedded database named BoltDB to store task and scheduler data. This is great for development and a simple server without external dependencies, but it doesn&amp;rsquo;t scale well to larger clusters.
-Available config:
-Database: boltdb BoltDB: # Path to database file Path: ./funnel-work-dir/funnel.db </description>
+      <guid>http://localhost:1313/funnel/docs/databases/boltdb/</guid>
+      <description>&lt;h1 id=&#34;embedded&#34;&gt;Embedded&lt;/h1&gt;&#xA;&lt;p&gt;By default, Funnel uses an embedded database named &lt;a href=&#34;https://github.com/boltdb/bolt&#34;&gt;BoltDB&lt;/a&gt; to store task&#xA;and scheduler data. This is great for development and a simple server without&#xA;external dependencies, but it doesn&amp;rsquo;t scale well to larger clusters.&lt;/p&gt;&#xA;&lt;p&gt;Available config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Database: boltdb&#xA;&#xA;BoltDB:&#xA;  # Path to database file&#xA;  Path: ./funnel-work-dir/funnel.db&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
     </item>
-    
     <item>
       <title>Events</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/events/</link>
+      <link>http://localhost:1313/funnel/docs/events/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/events/</guid>
-      <description>Events </description>
+      <guid>http://localhost:1313/funnel/docs/events/</guid>
+      <description>&lt;h1 id=&#34;events&#34;&gt;Events&lt;/h1&gt;</description>
     </item>
-    
     <item>
       <title>FTP</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/ftp/</link>
+      <link>http://localhost:1313/funnel/docs/storage/ftp/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/ftp/</guid>
-      <description>FTP Funnel supports download and uploading files via FTP.
-Currently authentication credentials are take from the URL, e.g. ftp://username:password@ftp.host.tld. This will be improved soon to allow credentials to be added to the configuration file.
-The FTP storage client is enabled by default, but may be explicitly disabled in the worker config:
-FTPStorage: Disabled: false Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;ftp://my.ftpserver.xyz/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34; }, { &amp;#34;url&amp;#34;: &amp;#34;ftp://user:mypassword123@my.ftpserver.xyz/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.</description>
+      <guid>http://localhost:1313/funnel/docs/storage/ftp/</guid>
+      <description>&lt;h1 id=&#34;ftp&#34;&gt;FTP&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports download and uploading files via FTP.&lt;/p&gt;&#xA;&lt;p&gt;Currently authentication credentials are take from the URL, e.g. &lt;code&gt;ftp://username:password@ftp.host.tld&lt;/code&gt;. This will be improved soon to allow credentials to be added to the configuration file.&lt;/p&gt;&#xA;&lt;p&gt;The FTP storage client is enabled by default, but may be explicitly disabled in the&#xA;worker config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;FTPStorage:&#xA;  Disabled: false&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;example-task&#34;&gt;Example task&lt;/h3&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{&#xA;  &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;,&#xA;  &amp;#34;inputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;ftp://my.ftpserver.xyz/hello.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34;&#xA;  }, {&#xA;    &amp;#34;url&amp;#34;: &amp;#34;ftp://user:mypassword123@my.ftpserver.xyz/hello.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;executors&amp;#34;: [{&#xA;    &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;,&#xA;    &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.txt&amp;#34;],&#xA;  }]&#xA;}&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
     </item>
-    
     <item>
       <title>Funnel Developers</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/development/developers/</link>
+      <link>http://localhost:1313/funnel/docs/development/developers/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/development/developers/</guid>
-      <description>Developers This page contains a rough collection of notes for people wanting to build Funnel from source and/or edit the code.
-Building the Funnel source Install Go 1.11+. Check the version with go version.
-Ensure GOPATH is set. See the docs for help. Also, you probably want to add $GOPATH/bin to your PATH.
-Clone funnel and build
-$ git clone https://github.com/ohsu-comp-bio/funnel.git $ cd funnel $ make Funnel is now downloaded and installed.</description>
+      <guid>http://localhost:1313/funnel/docs/development/developers/</guid>
+      <description>&lt;h1 id=&#34;developers&#34;&gt;Developers&lt;/h1&gt;&#xA;&lt;p&gt;This page contains a rough collection of notes for people wanting to build Funnel from source and/or edit the code.&lt;/p&gt;&#xA;&lt;h3 id=&#34;building-the-funnel-source&#34;&gt;Building the Funnel source&lt;/h3&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Install &lt;a href=&#34;https://golang.org&#34;&gt;Go 1.21+&lt;/a&gt;. Check the version with &lt;code&gt;go version&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Ensure GOPATH is set. See &lt;a href=&#34;https://golang.org/doc/code.html#GOPATH&#34;&gt;the docs&lt;/a&gt; for help. Also, you probably want to add &lt;code&gt;$GOPATH/bin&lt;/code&gt; to your &lt;code&gt;PATH&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Clone funnel and build&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ git clone https://github.com/ohsu-comp-bio/funnel.git&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ cd funnel&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;$ make&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Funnel is now downloaded and installed. Try &lt;code&gt;funnel version&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Google Storage</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/</link>
+      <link>http://localhost:1313/funnel/docs/storage/google-storage/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/</guid>
-      <description>Google Storage Funnel supports using Google Storage (GS) for file storage.
-The Google storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-GoogleStorage: Disabled: false # Path to account credentials file. AccountFile: &amp;#34;&amp;#34; Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;gs://funnel-bucket/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34; }], &amp;#34;outputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;gs://funnel-bucket/output.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34; }], &amp;#34;executors&amp;#34;: [{ &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;, &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.</description>
+      <guid>http://localhost:1313/funnel/docs/storage/google-storage/</guid>
+      <description>&lt;h1 id=&#34;google-storage&#34;&gt;Google Storage&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports using &lt;a href=&#34;https://cloud.google.com/storage/&#34;&gt;Google Storage&lt;/a&gt; (GS) for file storage.&lt;/p&gt;&#xA;&lt;p&gt;The Google storage client is enabled by default, and will try to automatically&#xA;load credentials from the environment. Alternatively, you&#xA;may explicitly set the credentials in the worker config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;GoogleStorage:&#xA;  Disabled: false&#xA;  # Path to account credentials file.&#xA;  AccountFile: &amp;#34;&amp;#34;&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;example-task&#34;&gt;Example task&lt;/h3&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{&#xA;  &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;,&#xA;  &amp;#34;inputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;gs://funnel-bucket/hello.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;outputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;gs://funnel-bucket/output.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;executors&amp;#34;: [{&#xA;    &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;,&#xA;    &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.txt&amp;#34;],&#xA;    &amp;#34;stdout&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34;,&#xA;  }]&#xA;}&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
     </item>
-    
     <item>
       <title>Grid Engine</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/</link>
+      <link>http://localhost:1313/funnel/docs/compute/grid-engine/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/</guid>
-      <description>Grid Engine Funnel can be configured to submit workers to Grid Engine by making calls to qsub.
-The Funnel server needs to run on a submission node. Configure Funnel to use Grid Engine by including the following config:
-It is recommended to update the submit file template so that the funnel worker run command takes a config file as an argument (e.g. funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}})
-Compute: gridengine GridEngine: Template: |#!</description>
+      <guid>http://localhost:1313/funnel/docs/compute/grid-engine/</guid>
+      <description>&lt;h1 id=&#34;grid-engine&#34;&gt;Grid Engine&lt;/h1&gt;&#xA;&lt;p&gt;Funnel can be configured to submit workers to &lt;a href=&#34;http://gridscheduler.sourceforge.net/documentation.html&#34;&gt;Grid Engine&lt;/a&gt; by making calls&#xA;to &lt;code&gt;qsub&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;The Funnel server needs to run on a submission node.&#xA;Configure Funnel to use Grid Engine by including the following config:&lt;/p&gt;&#xA;&lt;p&gt;It is recommended to update the submit file template so that the&#xA;&lt;code&gt;funnel worker run&lt;/code&gt; command takes a config file as an argument&#xA;(e.g. &lt;code&gt;funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}&lt;/code&gt;)&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-YAML&#34; data-lang=&#34;YAML&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;Compute: gridengine&#xA;&#xA;GridEngine:&#xA;    Template: |&lt;p style=&#34;margin-left: 3em&#34;&gt;#!/bin/bash&#xA;#$ -N {{.TaskId}}&#xA;#$ -o {{.WorkDir}}/funnel-stdout&#xA;#$ -e {{.WorkDir}}/funnel-stderr&#xA;{{if ne .Cpus 0 -}}&#xA;{{printf &amp;#34;#$ -pe mpi %d&amp;#34; .Cpus}}&#xA;{{- end}}&#xA;{{if ne .RamGb 0.0 -}}&#xA;{{printf &amp;#34;#$ -l h_vmem=%.0fG&amp;#34; .RamGb}}&#xA;{{- end}}&#xA;{{if ne .DiskGb 0.0 -}}&#xA;{{printf &amp;#34;#$ -l h_fsize=%.0fG&amp;#34; .DiskGb}}&#xA;{{- end}}&#xA;&#xA;funnel worker run --taskID {{.TaskId}}&#xA;&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>HTCondor</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/</link>
+      <link>http://localhost:1313/funnel/docs/compute/htcondor/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/</guid>
-      <description>HTCondor Funnel can be configured to submit workers to HTCondor by making calls to condor_submit.
-The Funnel server needs to run on a submission node. Configure Funnel to use HTCondor by including the following config:
-It is recommended to update the submit file template so that the funnel worker run command takes a config file as an argument (e.g. funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}})
-Compute: htcondor HTCondor: Template: |universe = vanilla getenv = True executable = funnel arguments = worker run --taskID {{.</description>
+      <guid>http://localhost:1313/funnel/docs/compute/htcondor/</guid>
+      <description>&lt;h1 id=&#34;htcondor&#34;&gt;HTCondor&lt;/h1&gt;&#xA;&lt;p&gt;Funnel can be configured to submit workers to &lt;a href=&#34;https://research.cs.wisc.edu/htcondor/&#34;&gt;HTCondor&lt;/a&gt; by making&#xA;calls to &lt;code&gt;condor_submit&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;The Funnel server needs to run on a submission node.&#xA;Configure Funnel to use HTCondor by including the following config:&lt;/p&gt;&#xA;&lt;p&gt;It is recommended to update the submit file template so that the&#xA;&lt;code&gt;funnel worker run&lt;/code&gt; command takes a config file as an argument&#xA;(e.g. &lt;code&gt;funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}&lt;/code&gt;)&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-YAML&#34; data-lang=&#34;YAML&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;Compute: htcondor&#xA;&#xA;HTCondor:&#xA;    Template: |&lt;p style=&#34;margin-left: 3em&#34;&gt;universe = vanilla&#xA;getenv = True&#xA;executable = funnel&#xA;arguments = worker run --taskID {{.TaskId}}&#xA;log = {{.WorkDir}}/condor-event-log&#xA;error = {{.WorkDir}}/funnel-stderr&#xA;output = {{.WorkDir}}/funnel-stdout&#xA;should_transfer_files = YES&#xA;when_to_transfer_output = ON_EXIT_OR_EVICT&#xA;{{if ne .Cpus 0 -}}&#xA;{{printf &amp;#34;request_cpus = %d&amp;#34; .Cpus}}&#xA;{{- end}}&#xA;{{if ne .RamGb 0.0 -}}&#xA;{{printf &amp;#34;request_memory = %.0f GB&amp;#34; .RamGb}}&#xA;{{- end}}&#xA;{{if ne .DiskGb 0.0 -}}&#xA;{{printf &amp;#34;request_disk = %.0f GB&amp;#34; .DiskGb}}&#xA;{{- end}}&#xA;&#xA;queue&#xA;&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>HTTP(S)</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</link>
+      <link>http://localhost:1313/funnel/docs/storage/http/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</guid>
-      <description>HTTP(S) Funnel supports downloading files from public URLs via GET requests. No authentication mechanism is allowed. This backend can be used to fetch objects from cloud storage providers exposed using presigned URLs.
-The HTTP storage client is enabled by default, but may be explicitly disabled in the worker config:
-HTTPStorage: Disabled: false # Timeout for http(s) GET requests. Timeout: 30s Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;http://fakedomain.com/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.</description>
+      <guid>http://localhost:1313/funnel/docs/storage/http/</guid>
+      <description>&lt;h1 id=&#34;https&#34;&gt;HTTP(S)&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports downloading files from public URLs via GET requests. No authentication&#xA;mechanism is allowed. This backend can be used to fetch objects from cloud storage&#xA;providers exposed using presigned URLs.&lt;/p&gt;&#xA;&lt;p&gt;The HTTP storage client is enabled by default, but may be explicitly disabled in the&#xA;worker config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;HTTPStorage:&#xA;  Disabled: false&#xA;  # Timeout for http(s) GET requests.&#xA;  Timeout: 30s&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;example-task&#34;&gt;Example task&lt;/h3&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{&#xA;  &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;,&#xA;  &amp;#34;inputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;http://fakedomain.com/hello.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;executors&amp;#34;: [{&#xA;    &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;,&#xA;    &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.txt&amp;#34;],&#xA;  }]&#xA;}&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
     </item>
-    
     <item>
       <title>Kafka</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/</link>
+      <link>http://localhost:1313/funnel/docs/events/kafka/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/</guid>
-      <description>Kafka Funnel supports writing task events to a Kafka topic. To use this, add an event writer to the config:
-EventWriters: - kafka - log Kafka: Servers: - localhost:9092 Topic: funnel-events </description>
+      <guid>http://localhost:1313/funnel/docs/events/kafka/</guid>
+      <description>&lt;h1 id=&#34;kafka&#34;&gt;Kafka&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports writing task events to a Kafka topic. To use this, add an event&#xA;writer to the config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;EventWriters:&#xA;  - kafka&#xA;  - log&#xA;&#xA;Kafka:&#xA;  Servers:&#xA;    - localhost:9092&#xA;  Topic: funnel-events&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
     </item>
-    
     <item>
       <title>Kubernetes</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/</link>
+      <link>http://localhost:1313/funnel/docs/compute/kubernetes/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/</guid>
-      <description>Kubernetes This guide will take you through the process of setting up Funnel as a kubernetes service.
-Kuberenetes Resources:
-Service Deployment ConfigMap Roles and RoleBindings Job Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
-Create a Service: funnel-service.yml
-apiVersion: v1 kind: Service metadata: name: funnel spec: selector: app: funnel ports: - name: http protocol: TCP port: 8000 targetPort: 8000 - name: rpc protocol: TCP port: 9090 targetPort: 9090 Deploy it:</description>
+      <guid>http://localhost:1313/funnel/docs/compute/kubernetes/</guid>
+      <description>&lt;h1 id=&#34;kubernetes&#34;&gt;Kubernetes&lt;/h1&gt;&#xA;&lt;p&gt;This guide will take you through the process of setting up Funnel as a kubernetes service.&lt;/p&gt;&#xA;&lt;p&gt;Kuberenetes Resources:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;https://kubernetes.io/docs/concepts/services-networking/service/&#34;&gt;Service&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;https://kubernetes.io/docs/concepts/workloads/controllers/deployment/&#34;&gt;Deployment&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/&#34;&gt;ConfigMap&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings&#34;&gt;Roles and RoleBindings&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/&#34;&gt;Job&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;Additional Funnel deployment resources can be found here: &lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes&#34;&gt;https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes&lt;/a&gt;&lt;/p&gt;&#xA;&lt;h4 id=&#34;create-a-service&#34;&gt;Create a Service:&lt;/h4&gt;&#xA;&lt;p&gt;&lt;em&gt;funnel-service.yml&lt;/em&gt;&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;apiVersion&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;v1&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;kind&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;Service&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;metadata&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;name&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;funnel&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;spec&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;selector&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;app&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;funnel&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;ports&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    - &lt;span style=&#34;color:#f92672&#34;&gt;name&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;http&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;protocol&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;TCP&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;port&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;8000&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;targetPort&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;8000&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    - &lt;span style=&#34;color:#f92672&#34;&gt;name&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;rpc&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;protocol&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;TCP&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;port&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;9090&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;targetPort&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;9090&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Deploy it:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubectl apply -f funnel-service.yml&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Get the clusterIP:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubectl get services funnel --output&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;yaml | grep &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;clusterIP:&amp;#34;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Use this value to configure the server hostname of the worker config.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Local</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/local/</link>
+      <link>http://localhost:1313/funnel/docs/storage/local/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/local/</guid>
-      <description>Local Funnel supports using the local filesystem for file storage.
-Funnel limits which directories may be accessed, by default only allowing directories under the current working directory of the Funnel worker.
-Config:
-LocalStorage: # Whitelist of local directory paths which Funnel is allowed to access. AllowedDirs: - ./ - /path/to/allowed/dir - ...etc Example task Files must be absolute paths in file:///path/to/file.txt URL form.
-{ &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;file:///path/to/funnel-data/hello.</description>
+      <guid>http://localhost:1313/funnel/docs/storage/local/</guid>
+      <description>&lt;h1 id=&#34;local&#34;&gt;Local&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports using the local filesystem for file storage.&lt;/p&gt;&#xA;&lt;p&gt;Funnel limits which directories may be accessed, by default only allowing directories&#xA;under the current working directory of the Funnel worker.&lt;/p&gt;&#xA;&lt;p&gt;Config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;LocalStorage:&#xA;  # Whitelist of local directory paths which Funnel is allowed to access.&#xA;  AllowedDirs:&#xA;    - ./&#xA;    - /path/to/allowed/dir&#xA;    - ...etc&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;example-task&#34;&gt;Example task&lt;/h3&gt;&#xA;&lt;p&gt;Files must be absolute paths in &lt;code&gt;file:///path/to/file.txt&lt;/code&gt; URL form.&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{&#xA;  &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;,&#xA;  &amp;#34;inputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;file:///path/to/funnel-data/hello.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;outputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;file:///path/to/funnel-data/output.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;executors&amp;#34;: [{&#xA;    &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;,&#xA;    &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.txt&amp;#34;],&#xA;    &amp;#34;stdout&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34;,&#xA;  }]&#xA;}&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;file-hard-linking-behavior&#34;&gt;File hard linking behavior&lt;/h3&gt;&#xA;&lt;p&gt;For efficiency, Funnel will attempt not to copy the input files, instead trying&#xA;create a hard link to the source file. In some cases this isn&amp;rsquo;t possible. For example,&#xA;if the source file is on a network file system mount (e.g. NFS) but the Funnel worker&amp;rsquo;s&#xA;working directory is on the local scratch disk, a hard link would cross a file system&#xA;boundary, which is not possible. In this case, Funnel will copy the file.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Metrics</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/metrics/</link>
+      <link>http://localhost:1313/funnel/docs/metrics/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/metrics/</guid>
-      <description>Metrics </description>
+      <guid>http://localhost:1313/funnel/docs/metrics/</guid>
+      <description>&lt;h1 id=&#34;metrics&#34;&gt;Metrics&lt;/h1&gt;</description>
     </item>
-    
     <item>
       <title>MongoDB</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</link>
+      <link>http://localhost:1313/funnel/docs/databases/mongodb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</guid>
-      <description>MongoDB Funnel supports storing tasks and scheduler data in MongoDB.
-Config:
-Database: mongodb MongoDB: # Addresses for the seed servers. Addrs: - &amp;#34;localhost&amp;#34; # Database name used within MongoDB to store funnel data. Database: &amp;#34;funnel&amp;#34; Username: &amp;#34;&amp;#34; Password: &amp;#34;&amp;#34; </description>
+      <guid>http://localhost:1313/funnel/docs/databases/mongodb/</guid>
+      <description>&lt;h1 id=&#34;mongodb&#34;&gt;MongoDB&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports storing tasks and scheduler data in MongoDB.&lt;/p&gt;&#xA;&lt;p&gt;Config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Database: mongodb&#xA;&#xA;MongoDB:&#xA;  # Addresses for the seed servers.&#xA;  Addrs:&#xA;    - &amp;#34;localhost&amp;#34;&#xA;  # Database name used within MongoDB to store funnel data.&#xA;  Database: &amp;#34;funnel&amp;#34;&#xA;  Username: &amp;#34;&amp;#34;&#xA;  Password: &amp;#34;&amp;#34;&#xA;&lt;/code&gt;&lt;/pre&gt;</description>
     </item>
-    
+    <item>
+      <title>Nextflow</title>
+      <link>http://localhost:1313/funnel/docs/integrations/nextflow/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/funnel/docs/integrations/nextflow/</guid>
+      <description>&lt;blockquote&gt;&#xA;&lt;p&gt;⚠️ Nextflow support is currently in development and requires a few additional steps to run which are included below.&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;h1 id=&#34;nextflow&#34;&gt;Nextflow&lt;/h1&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://nextflow.io/&#34;&gt;Nextflow&lt;/a&gt; is a workflow engine with a &lt;a href=&#34;&#34;&gt;rich ecosystem&lt;/a&gt; of pipelines centered around biological analysis.&lt;/p&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Nextflow enables scalable and reproducible scientific workflows using software containers. It allows the adaptation of pipelines written in the most common scripting languages.&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Its fluent DSL simplifies the implementation and the deployment of complex parallel and reactive workflows on clouds and clusters.&lt;/p&gt;</description>
+    </item>
     <item>
       <title>OpenStack Swift</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</link>
+      <link>http://localhost:1313/funnel/docs/storage/swift/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</guid>
-      <description>OpenStack Swift Funnel supports using OpenStack Swift for file storage.
-The Swift storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-Swift: Disabled: false UserName: &amp;#34;&amp;#34; Password: &amp;#34;&amp;#34; AuthURL: &amp;#34;&amp;#34; TenantName: &amp;#34;&amp;#34; TenantID: &amp;#34;&amp;#34; RegionName: &amp;#34;&amp;#34; # 500 MB ChunkSizeBytes: 500000000 Example task { &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ &amp;#34;url&amp;#34;: &amp;#34;swift://funnel-bucket/hello.txt&amp;#34;, &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.</description>
+      <guid>http://localhost:1313/funnel/docs/storage/swift/</guid>
+      <description>&lt;h1 id=&#34;openstack-swift&#34;&gt;OpenStack Swift&lt;/h1&gt;&#xA;&lt;p&gt;Funnel supports using &lt;a href=&#34;https://docs.openstack.org/swift/latest/&#34;&gt;OpenStack Swift&lt;/a&gt; for file storage.&lt;/p&gt;&#xA;&lt;p&gt;The Swift storage client is enabled by default, and will try to automatically&#xA;load credentials from the environment. Alternatively, you&#xA;may explicitly set the credentials in the worker config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Swift:&#xA;  Disabled: false&#xA;  UserName: &amp;#34;&amp;#34;&#xA;  Password: &amp;#34;&amp;#34;&#xA;  AuthURL: &amp;#34;&amp;#34;&#xA;  TenantName: &amp;#34;&amp;#34;&#xA;  TenantID: &amp;#34;&amp;#34;&#xA;  RegionName: &amp;#34;&amp;#34;&#xA;  # 500 MB&#xA;  ChunkSizeBytes: 500000000&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;example-task&#34;&gt;Example task&lt;/h3&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{&#xA;  &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;,&#xA;  &amp;#34;inputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;swift://funnel-bucket/hello.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;outputs&amp;#34;: [{&#xA;    &amp;#34;url&amp;#34;: &amp;#34;swift://funnel-bucket/output.txt&amp;#34;,&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;executors&amp;#34;: [{&#xA;    &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;,&#xA;    &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.txt&amp;#34;],&#xA;    &amp;#34;stdout&amp;#34;: &amp;#34;/outputs/hello-out.txt&amp;#34;,&#xA;  }]&#xA;}&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;known-issues&#34;&gt;Known Issues:&lt;/h3&gt;&#xA;&lt;p&gt;The config currently only supports OpenStack v2 auth. See &lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/issues/336&#34;&gt;issue #336&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Overview</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/</link>
+      <link>http://localhost:1313/funnel/docs/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/</guid>
-      <description>Overview Funnel makes distributed, batch processing easier by providing a simple task API and a set of components which can easily adapted to a vareity of platforms.
-Task A task defines a unit of work: metadata, input files to download, a sequence of Docker containers + commands to run, output files to upload, state, and logs. The API allows you to create, get, list, and cancel tasks.
-Tasks are accessed via the funnel task command.</description>
+      <guid>http://localhost:1313/funnel/docs/</guid>
+      <description>&lt;h1 id=&#34;overview&#34;&gt;Overview&lt;/h1&gt;&#xA;&lt;p&gt;Funnel makes distributed, batch processing easier by providing a simple task API and a set of&#xA;components which can easily adapted to a vareity of platforms.&lt;/p&gt;&#xA;&lt;h3 id=&#34;task&#34;&gt;Task&lt;/h3&gt;&#xA;&lt;p&gt;A task defines a unit of work: metadata, input files to download, a sequence of Docker containers + commands to run,&#xA;output files to upload, state, and logs. The API allows you to create, get, list, and cancel tasks.&lt;/p&gt;&#xA;&lt;p&gt;Tasks are accessed via the &lt;code&gt;funnel task&lt;/code&gt; command. There&amp;rsquo;s an HTTP client in the &lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/tree/master/client&#34;&gt;client package&lt;/a&gt;,&#xA;and a set of utilities and a gRPC client in the &lt;a href=&#34;https://github.com/ohsu-comp-bio/funnel/tree/master/proto/tes&#34;&gt;proto/tes package&lt;/a&gt;.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>PBS/Torque</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</link>
+      <link>http://localhost:1313/funnel/docs/compute/pbs-torque/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</guid>
-      <description>PBS/Torque Funnel can be configured to submit workers to PBS/Torque by making calls to qsub.
-The Funnel server needs to run on a submission node. Configure Funnel to use PBS by including the following config:
-It is recommended to update the submit file template so that the funnel worker run command takes a config file as an argument (e.g. funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}})
-Compute: pbs PBS: Template: |#!</description>
+      <guid>http://localhost:1313/funnel/docs/compute/pbs-torque/</guid>
+      <description>&lt;h1 id=&#34;pbstorque&#34;&gt;PBS/Torque&lt;/h1&gt;&#xA;&lt;p&gt;Funnel can be configured to submit workers to &lt;a href=&#34;http://www.adaptivecomputing.com/products/open-source/torque/&#34;&gt;PBS/Torque&lt;/a&gt; by making calls&#xA;to &lt;code&gt;qsub&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;The Funnel server needs to run on a submission node.&#xA;Configure Funnel to use PBS by including the following config:&lt;/p&gt;&#xA;&lt;p&gt;It is recommended to update the submit file template so that the&#xA;&lt;code&gt;funnel worker run&lt;/code&gt; command takes a config file as an argument&#xA;(e.g. &lt;code&gt;funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}&lt;/code&gt;)&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-YAML&#34; data-lang=&#34;YAML&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;Compute: pbs&#xA;&#xA;PBS:&#xA;    Template: |&lt;p style=&#34;margin-left: 3em&#34;&gt;#!/bin/bash&#xA;#PBS -N {{.TaskId}}&#xA;#PBS -o {{.WorkDir}}/funnel-stdout&#xA;#PBS -e {{.WorkDir}}/funnel-stderr&#xA;{{if ne .Cpus 0 -}}&#xA;{{printf &amp;#34;#PBS -l nodes=1:ppn=%d&amp;#34; .Cpus}}&#xA;{{- end}}&#xA;{{if ne .RamGb 0.0 -}}&#xA;{{printf &amp;#34;#PBS -l mem=%.0fgb&amp;#34; .RamGb}}&#xA;{{- end}}&#xA;{{if ne .DiskGb 0.0 -}}&#xA;{{printf &amp;#34;#PBS -l file=%.0fgb&amp;#34; .DiskGb}}&#xA;{{- end}}&#xA;&#xA;funnel worker run --taskID {{.TaskId}}&#xA;&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Prometheus</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/</link>
+      <link>http://localhost:1313/funnel/docs/metrics/prometheus/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/</guid>
-      <description>Prometheus Prometheus is a monitoring and metrics collection service. It pulls metrics from various &amp;ldquo;exporters&amp;rdquo;, collects them in a time-series database, provides a query langauge for access that data, and integrates closely with tools such as Grafana for visualization and dashboard building.
-Funnel exports these metrics:
-funnel_tasks_state_count: the number of tasks in each state (queued, running, etc). funnel_nodes_state_count: the number of nodes in each state (alive, dead, draining, etc). funnel_nodes_total_cpus: the total number of CPUs available by all nodes.</description>
+      <guid>http://localhost:1313/funnel/docs/metrics/prometheus/</guid>
+      <description>&lt;h1 id=&#34;prometheus&#34;&gt;Prometheus&lt;/h1&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://prometheus.io/&#34;&gt;Prometheus&lt;/a&gt; is a monitoring and metrics collection service. It pulls metrics&#xA;from various &amp;ldquo;exporters&amp;rdquo;, collects them in a time-series database, provides&#xA;a query langauge for access that data, and integrates closely with tools&#xA;such as &lt;a href=&#34;https://grafana.com/&#34;&gt;Grafana&lt;/a&gt; for visualization and dashboard building.&lt;/p&gt;&#xA;&lt;p&gt;Funnel exports these metrics:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_tasks_state_count&lt;/code&gt;: the number of tasks&#xA;in each state (queued, running, etc).&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_nodes_state_count&lt;/code&gt;: the number of nodes&#xA;in each state (alive, dead, draining, etc).&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_nodes_total_cpus&lt;/code&gt;: the total number&#xA;of CPUs available by all nodes.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_nodes_total_ram_bytes&lt;/code&gt;: the total number&#xA;of bytes of RAM available by all nodes.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_nodes_total_disk_bytes&lt;/code&gt;: the total number&#xA;of bytes of disk space available by all nodes.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_nodes_available_cpus&lt;/code&gt;: the available number&#xA;of CPUs available by all nodes.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_nodes_available_ram_bytes&lt;/code&gt;: the available number&#xA;of bytes of RAM available by all nodes.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;funnel_nodes_available_disk_bytes&lt;/code&gt;: the available number&#xA;of bytes of disk space available by all nodes.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
-    
+    <item>
+      <title>py-tes</title>
+      <link>http://localhost:1313/funnel/docs/integrations/py-tes/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/funnel/docs/integrations/py-tes/</guid>
+      <description>&lt;blockquote&gt;&#xA;&lt;p&gt;⚠️ py-tes support is in active development and may be subject to change.&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;h1 id=&#34;py-tes&#34;&gt;py-tes&lt;/h1&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://github.com/ohsu-comp-bio/py-tes&#34;&gt;py-tes&lt;/a&gt; is a library for interacting with servers implementing the &lt;a href=&#34;https://github.com/ga4gh/task-execution-schemas&#34;&gt;GA4GH Task Execution Schema&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h2 id=&#34;getting-started&#34;&gt;Getting Started&lt;/h2&gt;&#xA;&lt;h3 id=&#34;install&#34;&gt;Install&lt;/h3&gt;&#xA;&lt;p&gt;Available on &lt;a href=&#34;https://pypi.org/project/py-tes/&#34;&gt;PyPI&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;pip install py-tes&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;example-python-script&#34;&gt;Example Python Script&lt;/h3&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;import tes&#xA;&#xA;task = tes.Task(&#xA;    executors=[&#xA;        tes.Executor(&#xA;            image=&amp;#34;alpine&amp;#34;,&#xA;            command=[&amp;#34;echo&amp;#34;, &amp;#34;hello&amp;#34;]&#xA;        )&#xA;    ]&#xA;)&#xA;&#xA;cli = tes.HTTPClient(&amp;#34;http://funnel.example.com&amp;#34;, timeout=5)&#xA;task_id = cli.create_task(task)&#xA;res = cli.get_task(task_id)&#xA;cli.cancel_task(task_id)&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;additional-resources&#34;&gt;Additional Resources&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://github.com/ohsu-comp-bio/py-tes&#34;&gt;py-tes Homepage&lt;/a&gt;&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://ohsu-comp-bio.github.io/py-tes/&#34;&gt;py-tes Documentation&lt;/a&gt;&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://pypi.org/project/py-tes/&#34;&gt;py-tes on PyPi&lt;/a&gt;&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
     <item>
       <title>S3</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/</link>
+      <link>http://localhost:1313/funnel/docs/storage/s3/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/</guid>
-      <description>S3 Amazon S3 Funnel supports using AWS S3 for file storage.
-The Amazon S3 storage client is enabled by default, and will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the worker config:
-AmazonS3: Disabled: false # The maximum number of times that a request will be retried for failures. MaxRetries: 10 Key: &amp;#34;&amp;#34; Secret: &amp;#34;&amp;#34; The Amazon S3 storage client also supports SSE-KMS and SSE-C configurations.</description>
+      <guid>http://localhost:1313/funnel/docs/storage/s3/</guid>
+      <description>&lt;h1 id=&#34;s3&#34;&gt;S3&lt;/h1&gt;&#xA;&lt;h2 id=&#34;amazon-s3&#34;&gt;Amazon S3&lt;/h2&gt;&#xA;&lt;p&gt;Funnel supports using &lt;a href=&#34;https://aws.amazon.com/s3/&#34;&gt;AWS S3&lt;/a&gt; for file storage.&lt;/p&gt;&#xA;&lt;p&gt;The Amazon S3 storage client is enabled by default, and will try to automatically&#xA;load credentials from the environment. Alternatively, you&#xA;may explicitly set the credentials in the worker config:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;AmazonS3:&#xA;  Disabled: false&#xA;  # The maximum number of times that a request will be retried for failures.&#xA;  MaxRetries: 10&#xA;  Key: &amp;#34;&amp;#34;&#xA;  Secret: &amp;#34;&amp;#34;&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The Amazon S3 storage client also supports SSE-KMS and SSE-C configurations.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Security</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/security/</link>
+      <link>http://localhost:1313/funnel/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/security/</guid>
-      <description>Security </description>
+      <guid>http://localhost:1313/funnel/docs/security/</guid>
+      <description>&lt;h1 id=&#34;security&#34;&gt;Security&lt;/h1&gt;</description>
     </item>
-    
     <item>
       <title>Slurm</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/compute/slurm/</link>
+      <link>http://localhost:1313/funnel/docs/compute/slurm/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/compute/slurm/</guid>
-      <description>Slurm Funnel can be configured to submit workers to Slurm by making calls to sbatch.
-The Funnel server needs to run on a submission node. Configure Funnel to use Slurm by including the following config:
-It is recommended to update the submit file template so that the funnel worker run command takes a config file as an argument (e.g. funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}})
-Compute: slurm Slurm: Template: |#!</description>
+      <guid>http://localhost:1313/funnel/docs/compute/slurm/</guid>
+      <description>&lt;h1 id=&#34;slurm&#34;&gt;Slurm&lt;/h1&gt;&#xA;&lt;p&gt;Funnel can be configured to submit workers to &lt;a href=&#34;https://slurm.schedmd.com/&#34;&gt;Slurm&lt;/a&gt; by making calls&#xA;to &lt;code&gt;sbatch&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;The Funnel server needs to run on a submission node.&#xA;Configure Funnel to use Slurm by including the following config:&lt;/p&gt;&#xA;&lt;p&gt;It is recommended to update the submit file template so that the&#xA;&lt;code&gt;funnel worker run&lt;/code&gt; command takes a config file as an argument&#xA;(e.g. &lt;code&gt;funnel worker run --config /opt/funnel_config.yml --taskID {{.TaskId}}&lt;/code&gt;)&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-YAML&#34; data-lang=&#34;YAML&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;Compute: slurm&#xA;&#xA;Slurm:&#xA;    Template: |&lt;p style=&#34;margin-left: 3em&#34;&gt;#!/bin/bash&#xA;#SBATCH --job-name {{.TaskId}}&#xA;#SBATCH --ntasks 1&#xA;#SBATCH --error {{.WorkDir}}/funnel-stderr&#xA;#SBATCH --output {{.WorkDir}}/funnel-stdout&#xA;{{if ne .Cpus 0 -}}&#xA;{{printf &amp;#34;#SBATCH --cpus-per-task %d&amp;#34; .Cpus}}&#xA;{{- end}}&#xA;{{if ne .RamGb 0.0 -}}&#xA;{{printf &amp;#34;#SBATCH --mem %.0fGB&amp;#34; .RamGb}}&#xA;{{- end}}&#xA;{{if ne .DiskGb 0.0 -}}&#xA;{{printf &amp;#34;#SBATCH --tmp %.0fGB&amp;#34; .DiskGb}}&#xA;{{- end}}&#xA;&#xA;funnel worker run --taskID {{.TaskId}}&#xA;&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Storage</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/storage/</link>
+      <link>http://localhost:1313/funnel/docs/storage/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/storage/</guid>
-      <description>Storage </description>
+      <guid>http://localhost:1313/funnel/docs/storage/</guid>
+      <description>&lt;h1 id=&#34;storage&#34;&gt;Storage&lt;/h1&gt;</description>
     </item>
-    
     <item>
       <title>Tasks</title>
-      <link>https://ohsu-comp-bio.github.io/funnel/docs/tasks/</link>
+      <link>http://localhost:1313/funnel/docs/tasks/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://ohsu-comp-bio.github.io/funnel/docs/tasks/</guid>
-      <description>Tasks A task defines a unit of work:
-metadata input files to download a sequence of Docker containers + commands to run, output files to upload state logs The example task below downloads a file named hello.txt from S3 and calls cat hello.txt using the alpine container. This task also writes the executor&amp;rsquo;s stdout to a file, and uploads the stdout to s3.
-{ &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;, &amp;#34;inputs&amp;#34;: [{ # URL to download file from.</description>
+      <guid>http://localhost:1313/funnel/docs/tasks/</guid>
+      <description>&lt;h1 id=&#34;tasks&#34;&gt;Tasks&lt;/h1&gt;&#xA;&lt;p&gt;A task defines a unit of work:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;metadata&lt;/li&gt;&#xA;&lt;li&gt;input files to download&lt;/li&gt;&#xA;&lt;li&gt;a sequence of Docker containers + commands to run,&lt;/li&gt;&#xA;&lt;li&gt;output files to upload&lt;/li&gt;&#xA;&lt;li&gt;state&lt;/li&gt;&#xA;&lt;li&gt;logs&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;The example task below downloads a file named &lt;code&gt;hello.txt&lt;/code&gt; from S3 and calls &lt;code&gt;cat hello.txt&lt;/code&gt; using the &lt;a href=&#34;https://hub.docker.com/_/alpine/&#34;&gt;alpine&lt;/a&gt; container. This task also writes the executor&amp;rsquo;s stdout to a file, and uploads the stdout to s3.&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{&#xA;  &amp;#34;name&amp;#34;: &amp;#34;Hello world&amp;#34;,&#xA;  &amp;#34;inputs&amp;#34;: [{&#xA;    # URL to download file from.&#xA;    &amp;#34;url&amp;#34;: &amp;#34;s3://funnel-bucket/hello.txt&amp;#34;,&#xA;    # Path to download file to.&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/inputs/hello.txt&amp;#34;&#xA;  }],&#xA;  &amp;#34;outputs&amp;#34;: [{&#xA;    # URL to upload file to.&#xA;    &amp;#34;url&amp;#34;: &amp;#34;s3://funnel-bucket/output.txt&amp;#34;,&#xA;    # Local path to upload file from.&#xA;    &amp;#34;path&amp;#34;: &amp;#34;/outputs/stdout&amp;#34;&#xA;  }],&#xA;  &amp;#34;executors&amp;#34;: [{&#xA;      # Container image name.&#xA;      &amp;#34;image&amp;#34;: &amp;#34;alpine&amp;#34;,&#xA;      # Command to run (argv).&#xA;      &amp;#34;command&amp;#34;: [&amp;#34;cat&amp;#34;, &amp;#34;/inputs/hello.txt&amp;#34;],&#xA;      # Capture the stdout of the command to /outputs/stdout&#xA;      &amp;#34;stdout&amp;#34;: &amp;#34;/outputs/stdout&amp;#34;&#xA;  }]&#xA;}&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Tasks have multiple &amp;ldquo;executors&amp;rdquo;; containers and commands run in a sequence.&#xA;Funnel runs executors via Docker.&lt;/p&gt;</description>
     </item>
-    
   </channel>
 </rss>

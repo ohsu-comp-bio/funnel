@@ -11,6 +11,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      serviceAccountName: {{.ServiceAccount}}
       containers: 
       - name: funnel-worker-{{.TaskId}}
         image: {{.Image}}

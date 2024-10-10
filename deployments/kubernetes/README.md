@@ -45,7 +45,7 @@ Use this value to configure the server hostname of the worker config.
 #### Create Funnel config files
 
 > [!TIP]
-> The configures job template uses the image, `ohsucompbio/funnel-dind:latest`, which is built on docker's official [docker-in-docker image (dind)](https://hub.docker.com/_/docker). You can also use the experimental [rootless dind variant](https://docs.docker.com/engine/security/rootless/) by changing the image to `quay.io/ohsu-comp-bio/funnel-dind-rootless:latest`
+> The configures job template uses the image, `quay.io/ohsu-comp-bio/funnel-dind:latest`, which is built on docker's official [docker-in-docker image (dind)](https://hub.docker.com/_/docker). You can also use the experimental [rootless dind variant](https://docs.docker.com/engine/security/rootless/) by changing the image to `quay.io/ohsu-comp-bio/funnel-dind-rootless:latest`
 
 *funnel-server-config.yml*
 
@@ -224,7 +224,6 @@ spec:
           image: quay.io/ohsu-comp-bio/funnel:latest
           imagePullPolicy: IfNotPresent
           command: 
-            - 'funnel'
             - 'server'
             - 'run'
             - '--config'

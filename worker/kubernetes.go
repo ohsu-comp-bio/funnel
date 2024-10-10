@@ -19,12 +19,13 @@ import (
 
 // KubernetesCommand is responsible for configuring and running a task in a Kubernetes cluster.
 type KubernetesCommand struct {
-	TaskId       string
-	JobId        int
-	StdinFile    string
-	TaskTemplate string
-	Namespace    string
-	Resources    *tes.Resources
+	TaskId         string
+	JobId          int
+	StdinFile      string
+	TaskTemplate   string
+	Namespace      string
+	Resources      *tes.Resources
+	ServiceAccount string
 	Command
 }
 
@@ -44,16 +45,17 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	var buf bytes.Buffer
 	err = tpl.Execute(&buf, map[string]interface{}{
-		"TaskId":    taskId,
-		"JobId":     kcmd.JobId,
-		"Namespace": kcmd.Namespace,
-		"Image":     kcmd.Image,
-		"Command":   command,
-		"Workdir":   kcmd.Workdir,
-		"Volumes":   kcmd.Volumes,
-		"Cpus":      kcmd.Resources.CpuCores,
-		"RamGb":     kcmd.Resources.RamGb,
-		"DiskGb":    kcmd.Resources.DiskGb,
+		"TaskId":         taskId,
+		"JobId":          kcmd.JobId,
+		"Namespace":      kcmd.Namespace,
+		"Image":          kcmd.Image,
+		"Command":        command,
+		"Workdir":        kcmd.Workdir,
+		"Volumes":        kcmd.Volumes,
+		"Cpus":           kcmd.Resources.CpuCores,
+		"RamGb":          kcmd.Resources.RamGb,
+		"DiskGb":         kcmd.Resources.DiskGb,
+		"ServiceAccount": kcmd.ServiceAccount,
 	})
 
 	if err != nil {
@@ -87,7 +89,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	// Wait until the job finishes
 	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	defer watcher.Stop()
-	waitForJobFinnish(ctx, watcher)
+	waitForJobFinish(ctx, watcher)
 
 	pods, err := clientset.CoreV1().Pods(kcmd.Namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	if err != nil {
@@ -146,7 +148,7 @@ func (kcmd KubernetesCommand) GetStderr() io.Writer {
 }
 
 // Waits until the job finishes
-func waitForJobFinnish(ctx context.Context, watcher watch.Interface) {
+func waitForJobFinish(ctx context.Context, watcher watch.Interface) {
 	for {
 		select {
 		case event := <-watcher.ResultChan():

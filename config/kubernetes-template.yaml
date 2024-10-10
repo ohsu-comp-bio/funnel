@@ -9,11 +9,11 @@ spec:
   completions: 1
   template:
     spec:
-      serviceAccountName: funnel-sa
+      serviceAccountName: {{.ServiceAccount}}
       restartPolicy: Never
       containers: 
         - name: funnel-worker-{{.TaskId}}
-          image: ohsucompbio/funnel-dind-rootless:latest
+          image: quay.io/ohsu-comp-bio/funnel:latest
           imagePullPolicy: Always
           args:
             - "worker"

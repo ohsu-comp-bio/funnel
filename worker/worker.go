@@ -25,6 +25,7 @@ type DefaultWorker struct {
 	Store       storage.Storage
 	TaskReader  TaskReader
 	EventWriter events.Writer
+	Command
 }
 
 // Configuration of the task executor.
@@ -35,6 +36,8 @@ type Executor struct {
 	Template string
 	// Kubernetes namespace
 	Namespace string
+	// Kubernetes service account name
+	ServiceAccount string
 }
 
 // Run runs the Worker.
@@ -169,44 +172,62 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Run steps
 	if run.ok() {
+		var resources = task.GetResources()
+		if resources == nil {
+			resources = &tes.Resources{}
+		}
+
 		ignoreError := false
-		f := ContainerEngineFactory{}
 		for i, d := range task.GetExecutors() {
-			containerConfig := ContainerConfig{
-				Image:   d.Image,
-				Command: d.Command,
-				// TODO: Where is d.Env set?
-				// Do we need to sanitize these values as well?
-				Env:     d.Env,
-				Volumes: mapper.Volumes,
-				Workdir: d.Workdir,
-				Name:    fmt.Sprintf("%s-%d", task.Id, i),
-				// TODO make RemoveContainer configurable
-				RemoveContainer: true,
-				Event:           event.NewExecutorWriter(uint32(i)),
+			var command = Command{
+				Image:        d.Image,
+				ShellCommand: d.Command,
+				Volumes:      mapper.Volumes,
+				Workdir:      d.Workdir,
+				Env:          d.Env,
+				Event:        event.NewExecutorWriter(uint32(i)),
 			}
-			containerConfig.DriverCommand = r.Conf.Container.DriverCommand
-			containerConfig.RunCommand = r.Conf.Container.RunCommand
-			containerConfig.PullCommand = r.Conf.Container.PullCommand
-			containerConfig.StopCommand = r.Conf.Container.StopCommand
 
-			// Hide this behind explicit flag/option in configuration
-			if r.Conf.Container.EnableTags {
-				for k, v := range task.Tags {
-					safeTag := r.sanitizeValues(v)
-					containerConfig.Tags[k] = safeTag
+			var taskCommand TaskCommand
+
+			if r.Executor.Backend == "kubernetes" {
+				taskCommand = &KubernetesCommand{
+					TaskId:       task.Id,
+					JobId:        i,
+					StdinFile:    d.Stdin,
+					TaskTemplate: r.Executor.Template,
+					Namespace:    r.Executor.Namespace,
+					Resources:    resources,
+					Command:      command,
 				}
-			}
+			} else {
+				taskCommand = &DockerCommand{
+					Volumes: mapper.Volumes,
+					Workdir: d.Workdir,
+					Name:    fmt.Sprintf("%s-%d", task.Id, i),
+					// TODO make RemoveContainer configurable
+					RemoveContainer: true,
+					Event:           event.NewExecutorWriter(uint32(i)),
+					DriverCommand:   r.Conf.Container.DriverCommand,
+					RunCommand:      r.Conf.Container.RunCommand,
+					PullCommand:     r.Conf.Container.PullCommand,
+					StopCommand:     r.Conf.Container.StopCommand,
+					Command:         command,
+				}
 
-			containerEngine, err := f.NewContainerEngine(containerConfig)
-			if err != nil {
-				run.syserr = err
+				// Hide this behind explicit flag/option in configuration
+				// if r.Conf.Container.EnableTags {
+				// 	for k, v := range task.Tags {
+				// 		safeTag := r.sanitizeValues(v)
+				// 		taskCommand.Tags[k] = safeTag
+				// 	}
+				// }
 			}
 
 			s := &stepWorker{
 				Conf:    r.Conf,
 				Event:   event.NewExecutorWriter(uint32(i)),
-				Command: containerEngine,
+				Command: taskCommand,
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
@@ -272,6 +293,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	// Find the path for task stdin
 	if d.Stdin != "" {
 		stdin, err = mapper.CreateHostFile(d.Stdin)
+		s.Command.SetStdin(stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -281,6 +303,7 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	// Create file for task stdout
 	if d.Stdout != "" {
 		stdout, err = mapper.CreateHostFile(d.Stdout)
+		s.Command.SetStdout(stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -290,13 +313,12 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 	// Create file for task stderr
 	if d.Stderr != "" {
 		stderr, err = mapper.CreateHostFile(d.Stderr)
+		s.Command.SetStderr(stderr)
 		if err != nil {
 			_ = s.Event.Error("Couldn't prepare log files", err)
 			return err
 		}
 	}
-
-	s.Command.SetIO(stdin, stdout, stderr)
 
 	return nil
 }

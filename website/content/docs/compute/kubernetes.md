@@ -10,7 +10,7 @@ menu:
 
 This guide will take you through the process of setting up Funnel as a kubernetes service.
 
-Kuberenetes Resources: 
+Kuberenetes Resources:
 - [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
 - [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 - [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
@@ -23,7 +23,7 @@ Additional Funnel deployment resources can be found here: https://github.com/ohs
 
 *funnel-service.yml*
 
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -45,25 +45,23 @@ spec:
 
 Deploy it:
 
-```
+```sh
 kubectl apply -f funnel-service.yml
 ```
 
 Get the clusterIP:
 
-```
-kubectl get services funnel --output=yaml | grep clusterIP
+```sh
+kubectl get services funnel --output=yaml | grep "clusterIP:"
 ```
 
-Use this value to configure the server hostname of the worker config. 
+Use this value to configure the server hostname of the worker config.
 
 #### Create Funnel config files
 
-*Note*: The configures job template uses the image, `ohsucompbio/funnel-dind:latest`, which is built on docker's official [docker-in-docker image (dind)](https://hub.docker.com/_/docker). You can also use the experimental [rootless dind variant](https://docs.docker.com/engine/security/rootless/) by changing the image to `ohsucompbio/funnel-dind-rootless:latest`.
-
 *funnel-server-config.yml*
 
-```
+```yaml
 Database: boltdb
 
 Compute: kubernetes
@@ -72,26 +70,29 @@ Logger:
   Level: debug
 
 Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "kubernetes"
   DisableJobCleanup: false
   DisableReconciler: false
   ReconcileRate: 5m
   Namespace: default
-  Template: | 
+  Template: |
     apiVersion: batch/v1
     kind: Job
     metadata:
       ## DO NOT CHANGE NAME
       name: {{.TaskId}}
       namespace: {{.Namespace}}
-    spec: 
+    spec:
       backoffLimit: 0
       completions: 1
       template:
         spec:
           restartPolicy: Never
-          containers: 
+          serviceAccountName: funnel-sa
+          containers:
             - name: {{printf "funnel-worker-%s" .TaskId}}
-              image: ohsucompbio/funnel-dind:latest
+              image: quay.io/ohsu-comp-bio/funnel:latest
               imagePullPolicy: IfNotPresent
               args:
                 - "funnel"
@@ -114,8 +115,8 @@ Kubernetes:
 
               securityContext:
                 privileged: true
-    
-          volumes: 
+
+          volumes:
             - name: {{printf "funnel-storage-%s" .TaskId}}
               emptyDir: {}
             - name: config-volume
@@ -123,19 +124,23 @@ Kubernetes:
                 name: funnel-config
 ```
 
-I recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up. 
+We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up.
 
 *funnel-worker-config.yml*
 
 ***Remember to modify the template below to have the actual server hostname.***
 
-```
+```yaml
 Database: boltdb
 
 BoltDB:
   Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
 
 Compute: kubernetes
+
+Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "kubernetes"
 
 Logger:
   Level: debug
@@ -155,7 +160,7 @@ Server:
 
 #### Create a ConfigMap
 
-```
+```sh
 kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
 ```
 
@@ -165,7 +170,7 @@ Define a Role and RoleBinding:
 
 *role.yml*
 
-```
+```yaml
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -175,6 +180,9 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
 - apiGroups: ["batch", "extensions"]
   resources: ["jobs"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -185,7 +193,7 @@ rules:
 
 *role_binding.yml*
 
-```
+```yaml
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -202,7 +210,7 @@ roleRef:
 
 Create the service account, role and role binding:
 
-```
+```sh
 kubectl create serviceaccount funnel-sa --namespace default
 kubectl create -f role.yml
 kubectl create -f role_binding.yml
@@ -212,7 +220,7 @@ kubectl create -f role_binding.yml
 
 *funnel-deployment.yml*
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -232,17 +240,17 @@ spec:
       serviceAccountName: funnel-sa
       containers:
         - name: funnel
-          image: ohsucompbio/funnel:latest
+          image: quay.io/ohsu-comp-bio/funnel:latest
           imagePullPolicy: IfNotPresent
-          command: 
+          command:
             - 'funnel'
             - 'server'
             - 'run'
             - '--config'
             - '/etc/config/funnel-server-config.yml'
-          resources: 
-            requests: 
-              cpu: 2 
+          resources:
+            requests:
+              cpu: 2
               memory: 4G
               ephemeral-storage: 25G # needed since we are using boltdb
           volumeMounts:
@@ -264,25 +272,25 @@ spec:
 
 Deploy it:
 
-```
+```sh
 kubectl apply -f funnel-deployment.yml
 ```
 
 #### Proxy the Service for local testing
 
-```
+```sh
 kubectl port-forward service/funnel 8000:8000
 ```
 
 Now you can access the funnel server locally. Verify by running:
 
-```
+```sh
 funnel task list
 ```
 
 Now try running a task:
 
-```
+```sh
 funnel examples hello-world > hello.json
 funnel task create hello.json
 ```

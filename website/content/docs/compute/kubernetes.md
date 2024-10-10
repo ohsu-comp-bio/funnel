@@ -95,7 +95,6 @@ Kubernetes:
               image: quay.io/ohsu-comp-bio/funnel:latest
               imagePullPolicy: IfNotPresent
               args:
-                - "funnel"
                 - "worker"
                 - "run"
                 - "--config"

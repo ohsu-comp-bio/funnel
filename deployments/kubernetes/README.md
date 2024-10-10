@@ -64,10 +64,10 @@ lubectl apply -f role_binding.yml
 
 Define a PVC for storage:
 
-> *[pvc.yml](./pvc.yml)*
+> *[funnel-storage-pvc.yml](./funnel-storage-pvc.yml)*
 
 ```sh
-kubectl apply -f pvc.yml
+kubectl apply -f funnel-storage-pvc.yml
 ```
 
 ## 6. Create a Deployment

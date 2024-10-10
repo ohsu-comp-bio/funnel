@@ -55,7 +55,7 @@ Define a Role and RoleBinding:
 > *[role_binding.yml](./role_binding.yml)*
 
 ```sh
-kubectl apply serviceaccount funnel-sa --namespace default
+kubectl create serviceaccount funnel-sa --namespace default
 kubectl apply -f role.yml
 kubectl apply -f role_binding.yml
 ```

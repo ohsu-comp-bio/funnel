@@ -32,7 +32,7 @@ Use this value to configure the server hostname of the worker config.
 
 ## 2. Create Funnel config files
 
-> *[funnel-server-config.yml](.funnel-server-config.yml)*
+> *[funnel-server-config.yml](./funnel-server-config.yml)*
 
 We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up.
 

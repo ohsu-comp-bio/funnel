@@ -43,7 +43,7 @@ We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise fai
 ## 3. Create a ConfigMap
 
 ```sh
-kubectl apply configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
 ```
 
 ## 4. Create a Service Account for Funnel

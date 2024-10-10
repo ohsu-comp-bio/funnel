@@ -1,6 +1,13 @@
 Database: boltdb
 
+BoltDB:
+  Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
+
 Compute: kubernetes
+
+Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "kubernetes"
 
 Logger:
   Level: debug
@@ -14,5 +21,5 @@ EventWriters:
   - log
 
 Server:
-  HostName: 10.104.102.82
+  HostName: < funnel service clusterIP >
   RPCPort: 9090

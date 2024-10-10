@@ -15,7 +15,7 @@ Funnel is beta quality. APIs might break, bugs exist, data might be lost.
 
 ```
 brew tap ohsu-comp-bio/formula
-brew install funnel
+brew install funnel@0.11
 ```
 
 <h3>Build the lastest development version <i class="optional">optional</i></h3>

@@ -2,7 +2,7 @@
 title: Nextflow
 menu:
   main:
-    parent: Interop
+    parent: Integrations
 ---
 
 > ⚠️ Nextflow support is currently in development and requires a few additional steps to run which are included below.
@@ -23,38 +23,62 @@ To set up Nextflow to use Funnel as the TES executor, run the following steps:
 
 ### 1. Install Nextflow
 
+*Adapted from the [Nextflow Documentation](https://nextflow.io/docs/latest/install.html)*
+
+#### a. Install Nextflow:
+
 ```sh
-git clone https://github.com/nextflow-io/nextflow -b tes-update-1.1
-
-cd nextflow
-
-make compile
+curl -s https://get.nextflow.io | bash
 ```
 
-This will create a new `launch.sh` file that can be used to run the Nextflow workflow below.
+This will create the nextflow executable in the current directory.
+
+#### b. Make Nextflow executable:
+
+```sh
+chmod +x nextflow
+```
+
+#### c. Move Nextflow into an executable path:
+
+```sh
+sudo mv nextflow /usr/local/bin
+```
+
+#### d. Confirm that Nextflow is installed correctly:
+
+```sh
+nextflow info
+```
 
 ### 2. Update Nextflow Config
 
 Add the following to your `nextflow.config` in order to use the GA4GH TES plugin:
 
 ```yaml
+cat <<EOF >> nextflow.config
 plugins {
   id 'nf-ga4gh'
 }
 
 process.executor = 'tes'
 tes.endpoint = 'http://localhost:8000'   # <--- Funnel's default address 
+EOF
 ```
 
-### 3. Start Funnel and Run Workflow
+### 3. Start the Funnel Server
 
-Finally, start the Funnel server and launch Nextflow:
+Start the Funnel server:
 
 ```sh
 funnel server run
+```
+ 
+### 4. Run Nextflow
 
-alias nextflow=~/nextflow/launch.sh  # <--- Change this line to match your local nextflow directory
+In another window, run the workflow:
 
+```sh
 nextflow run main.nf -c nextflow.config
 ```
 

@@ -19,6 +19,10 @@ func (db *MongoDB) ReadQueue(n int) []*tes.Task {
 	var tasks []*tes.Task
 	opts := options.Find().SetSort(bson.M{"creationtime": 1}).SetLimit(int64(n))
 	cursor, err := db.tasks(db.client).Find(context.TODO(), bson.M{"state": tes.State_QUEUED}, opts)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 
 	err = cursor.All(context.TODO(), &tasks)
 	if err != nil {

@@ -2,7 +2,7 @@
 title: py-tes
 menu:
   main:
-    parent: Interop
+    parent: Integrations
 ---
 
 > ⚠️ py-tes support is in active development and may be subject to change.

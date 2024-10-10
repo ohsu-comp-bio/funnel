@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"io"
+
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
@@ -11,4 +13,14 @@ type TaskReader interface {
 	Task(ctx context.Context) (*tes.Task, error)
 	State(ctx context.Context) (tes.State, error)
 	Close()
+}
+
+type TaskCommand interface {
+	Run(context.Context) error
+	Stop() error
+	GetStdout() io.Writer
+	GetStderr() io.Writer
+	SetStdout(io.Writer)
+	SetStderr(io.Writer)
+	SetStdin(io.Reader)
 }

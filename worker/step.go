@@ -54,6 +54,9 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		s.Command.SetStderr(stderr)
 	}
 
+	s.Command.SetStdout(stdout)
+	s.Command.SetStderr(stderr)
+
 	go func() {
 		done <- s.Command.Run(subctx)
 	}()

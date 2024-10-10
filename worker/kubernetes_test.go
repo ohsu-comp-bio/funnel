@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
-	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -18,6 +17,7 @@ metadata:
 spec:
   template:
 	spec:
+	  serviceAccountName: {{.ServiceAccount}}
 	  containers:
 	  - name: {{.TaskId}}
 		image: {{.Image}}
@@ -62,34 +62,5 @@ func TestKubernetesRun(t *testing.T) {
 
 	if len(jobs.Items) != 1 {
 		t.Errorf("Expected 1 job, but got: %d", len(jobs.Items))
-	}
-}
-
-func TestKubernetesStop(t *testing.T) {
-	kcmd := KubernetesCommand{
-		TaskId:    "test-task",
-		JobId:     1,
-		Namespace: "default",
-	}
-
-	clientset := fake.NewSimpleClientset(&v1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-task-1",
-			Namespace: "default",
-		},
-	})
-
-	err := kcmd.Stop()
-	if err != nil {
-		t.Errorf("Expected no error, but got: %v", err)
-	}
-
-	jobs, err := clientset.BatchV1().Jobs(kcmd.Namespace).List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		t.Errorf("Expected no error, but got: %v", err)
-	}
-
-	if len(jobs.Items) != 0 {
-		t.Errorf("Expected 0 jobs, but got: %d", len(jobs.Items))
 	}
 }

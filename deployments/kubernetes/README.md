@@ -1,9 +1,18 @@
 > [!NOTE]
 > Funnel's Kubernetes support is in active development and may involve frequent updates
 
-# Using Funnel with Kubernetes
+# Kubernetes
 
-Examples can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
+This guide will take you through the process of setting up Funnel as a kubernetes service.
+
+Kuberenetes Resources:
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
+- [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
+- [Roles and RoleBindings](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings)
+- [Job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
+
+Additional Funnel deployment resources can be found here: https://github.com/ohsu-comp-bio/funnel/tree/master/deployments/kubernetes
 
 #### Create a Service:
 
@@ -26,6 +35,7 @@ spec:
       protocol: TCP
       port: 9090
       targetPort: 9090
+
 ```
 
 Deploy it:
@@ -37,23 +47,17 @@ kubectl apply -f funnel-service.yml
 Get the clusterIP:
 
 ```sh
-kubectl get services funnel --output=yaml | grep clusterIP
+kubectl get services funnel --output=yaml | grep "clusterIP:"
 ```
 
-Use this value to configure the server hostname of the worker config. 
+Use this value to configure the server hostname of the worker config.
 
 #### Create Funnel config files
-
-> [!TIP]
-> The configures job template uses the image, `quay.io/ohsu-comp-bio/funnel-dind:latest`, which is built on docker's official [docker-in-docker image (dind)](https://hub.docker.com/_/docker). You can also use the experimental [rootless dind variant](https://docs.docker.com/engine/security/rootless/) by changing the image to `quay.io/ohsu-comp-bio/funnel-dind-rootless:latest`
 
 *funnel-server-config.yml*
 
 ```yaml
 Database: boltdb
-
-BoltDB:
-  Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
 
 Compute: kubernetes
 
@@ -61,29 +65,31 @@ Logger:
   Level: debug
 
 Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "kubernetes"
   DisableJobCleanup: false
   DisableReconciler: false
   ReconcileRate: 5m
   Namespace: default
-  Template: | 
+  Template: |
     apiVersion: batch/v1
     kind: Job
     metadata:
       ## DO NOT CHANGE NAME
       name: {{.TaskId}}
       namespace: {{.Namespace}}
-    spec: 
+    spec:
       backoffLimit: 0
       completions: 1
       template:
         spec:
           restartPolicy: Never
-          containers: 
+          serviceAccountName: funnel-sa
+          containers:
             - name: {{printf "funnel-worker-%s" .TaskId}}
-              image: quay.io/ohsu-comp-bio/funnel-dind:latest
+              image: quay.io/ohsu-comp-bio/funnel:latest
               imagePullPolicy: IfNotPresent
               args:
-                - "funnel"
                 - "worker"
                 - "run"
                 - "--config"
@@ -93,8 +99,8 @@ Kubernetes:
               resources:
                   requests:
                     cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
-                    memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16Mi"}}{{end}}
-                    ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100Mi"}}{{end}}
+                    memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
+                    ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
               volumeMounts:
                 - name: {{printf "funnel-storage-%s" .TaskId}}
                   mountPath: {{printf "/opt/funnel/funnel-work-dir/%s" .TaskId}}
@@ -103,8 +109,8 @@ Kubernetes:
 
               securityContext:
                 privileged: true
-    
-          volumes: 
+
+          volumes:
             - name: {{printf "funnel-storage-%s" .TaskId}}
               emptyDir: {}
             - name: config-volume
@@ -112,7 +118,7 @@ Kubernetes:
                 name: funnel-config
 ```
 
-I recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up. 
+We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up.
 
 *funnel-worker-config.yml*
 
@@ -125,6 +131,10 @@ BoltDB:
   Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
 
 Compute: kubernetes
+
+Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "kubernetes"
 
 Logger:
   Level: debug
@@ -164,6 +174,9 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
 - apiGroups: ["batch", "extensions"]
   resources: ["jobs"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -191,7 +204,7 @@ roleRef:
 
 Create the service account, role and role binding:
 
-```
+```sh
 kubectl create serviceaccount funnel-sa --namespace default
 kubectl create -f role.yml
 kubectl create -f role_binding.yml
@@ -223,20 +236,17 @@ spec:
         - name: funnel
           image: quay.io/ohsu-comp-bio/funnel:latest
           imagePullPolicy: IfNotPresent
-          command: 
+          command:
+            - 'funnel'
             - 'server'
             - 'run'
             - '--config'
             - '/etc/config/funnel-server-config.yml'
-          resources: 
-            requests: 
-              cpu: 500m
-              memory: 1G
-              ephemeral-storage: 25G
-            limits:
-              cpu: 2000m
+          resources:
+            requests:
+              cpu: 2
               memory: 4G
-              ephemeral-storage: 25G
+              ephemeral-storage: 25G # needed since we are using boltdb
           volumeMounts:
             - name: funnel-deployment-storage
               mountPath: /opt/funnel/funnel-work-dir

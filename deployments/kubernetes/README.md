@@ -43,7 +43,7 @@ We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise fai
 ## 3. Create a ConfigMap
 
 ```sh
-kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+lubectl apply configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
 ```
 
 ## 4. Create a Service Account for Funnel
@@ -55,12 +55,22 @@ Define a Role and RoleBinding:
 > *[role_binding.yml](./role_binding.yml)*
 
 ```sh
-kubectl create serviceaccount funnel-sa --namespace default
-kubectl create -f role.yml
-kubectl create -f role_binding.yml
+lubectl apply serviceaccount funnel-sa --namespace default
+lubectl apply -f role.yml
+lubectl apply -f role_binding.yml
 ```
 
-## 5. Create a Deployment
+## 5. Create a Persistent Volume Claim
+
+Define a PVC for storage:
+
+> *[pvc.yml](./pvc.yml)*
+
+```sh
+lubectl apply -f pvc.yml
+```
+
+## 6. Create a Deployment
 
 > *[funnel-deployment.yml](./funnel-deployment.yml)*
 
@@ -68,7 +78,7 @@ kubectl create -f role_binding.yml
 kubectl apply -f funnel-deployment.yml
 ```
 
-## 6. Proxy the Service for local testing
+## 7. Proxy the Service for local testing
 
 ```sh
 kubectl port-forward service/funnel 8000:8000

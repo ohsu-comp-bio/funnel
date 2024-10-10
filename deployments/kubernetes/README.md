@@ -67,7 +67,7 @@ Define a PVC for storage:
 > *[pvc.yml](./pvc.yml)*
 
 ```sh
-lubectl apply -f pvc.yml
+kubectl apply -f pvc.yml
 ```
 
 ## 6. Create a Deployment

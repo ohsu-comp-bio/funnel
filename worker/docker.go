@@ -133,22 +133,6 @@ func (docker DockerCommand) GetImage() string {
 	return docker.Image
 }
 
-func (docker DockerCommand) GetIO() (io.Reader, io.Writer, io.Writer) {
-	return docker.Stdin, docker.Stdout, docker.Stderr
-}
-
-func (docker *DockerCommand) SetIO(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
-	if stdin != nil && stdin != (*os.File)(nil) {
-		docker.Stdin = stdin
-	}
-	if stdout != nil && stdout != (*os.File)(nil) {
-		docker.Stdout = stdout
-	}
-	if stderr != nil && stderr != (*os.File)(nil) {
-		docker.Stderr = stderr
-	}
-}
-
 // inspectContainer inspects the docker container for metadata.
 func (docker *DockerCommand) InspectContainer(ctx context.Context) DockerCommand {
 	// Give the container time to start.

@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -88,18 +87,6 @@ func TestDockerGetImage(t *testing.T) {
 		t.Errorf("Expected %s, but got %s", expected, result)
 	}
 }
-
-func TestDockerSetIO(t *testing.T) {
-	docker := DockerCommand{}
-	stdin := &bytes.Buffer{}
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	docker.SetIO(stdin, stdout, stderr)
-	if docker.Stdin != stdin || docker.Stdout != stdout || docker.Stderr != stderr {
-		t.Errorf("Expected stdin, stdout, and stderr to be set correctly")
-	}
-}
-
 func TestDockerInspectContainer(t *testing.T) {
 	config := docker.InspectContainer(context.Background())
 	if config.Id == "" {

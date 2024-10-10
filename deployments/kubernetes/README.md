@@ -43,7 +43,7 @@ We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise fai
 ## 3. Create a ConfigMap
 
 ```sh
-lubectl apply configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+kubectl apply configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
 ```
 
 ## 4. Create a Service Account for Funnel
@@ -55,9 +55,9 @@ Define a Role and RoleBinding:
 > *[role_binding.yml](./role_binding.yml)*
 
 ```sh
-lubectl apply serviceaccount funnel-sa --namespace default
-lubectl apply -f role.yml
-lubectl apply -f role_binding.yml
+kubectl apply serviceaccount funnel-sa --namespace default
+kubectl apply -f role.yml
+kubectl apply -f role_binding.yml
 ```
 
 ## 5. Create a Persistent Volume Claim

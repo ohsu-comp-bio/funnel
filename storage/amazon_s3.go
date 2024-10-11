@@ -248,7 +248,7 @@ func (s3b *AmazonS3) Put(ctx context.Context, url, path string) (*Object, error)
 	} else {
 		hf, err = os.Open(path)
 		if err != nil {
-			return nil, fmt.Errorf("amazonS3: opening fil %v: %v", path, err)
+			return nil, fmt.Errorf("amazonS3: opening file %v: %v", path, err)
 		}
 	}
 	defer hf.Close()

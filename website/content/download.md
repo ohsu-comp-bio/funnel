@@ -13,7 +13,7 @@ Funnel is beta quality. APIs might break, bugs exist, data might be lost.
 
 ### Homebrew
 
-```
+```sh
 brew tap ohsu-comp-bio/formula
 brew install funnel@0.11
 ```

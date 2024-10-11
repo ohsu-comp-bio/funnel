@@ -11,7 +11,7 @@ Funnel supports storing task data in DynamoDB. Storing scheduler data is not sup
 Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.
 
 Available Config:
-```
+```yaml
 Database: dynamodb
 
 DynamoDB:

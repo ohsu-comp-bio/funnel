@@ -18,7 +18,7 @@ such as stdout/err logs).
 Funnel will, by default, try to will try to automatically load credentials from the environment. Alternatively, you may explicitly set the credentials in the config.
 
 Config:
-```
+```yaml
 Database: datastore
 
 Datastore:

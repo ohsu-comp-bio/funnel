@@ -14,7 +14,7 @@ providers exposed using presigned URLs.
 The HTTP storage client is enabled by default, but may be explicitly disabled in the 
 worker config:
 
-```
+```yaml
 HTTPStorage:
   Disabled: false
   # Timeout for http(s) GET requests.
@@ -22,7 +22,7 @@ HTTPStorage:
 ```
 
 ### Example task
-```
+```json
 {
   "name": "Hello world",
   "inputs": [{

@@ -10,7 +10,7 @@ menu:
 Funnel supports storing tasks and scheduler data in Elasticsearch.
 
 Config:
-```
+```yaml
 Database: elastic
 
 Elastic:

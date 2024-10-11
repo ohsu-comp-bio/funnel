@@ -17,13 +17,13 @@ menu:
 
 Available on [PyPI](https://pypi.org/project/py-tes/).
 
-```
+```sh
 pip install py-tes
 ```
 
 ### Example Python Script
 
-```
+```py
 import tes
 
 task = tes.Task(

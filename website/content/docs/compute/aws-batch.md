@@ -81,7 +81,7 @@ AmazonS3:
 
 ### Start the server
 
-```
+```sh
 funnel server run --config /path/to/config.yaml
 ```
 

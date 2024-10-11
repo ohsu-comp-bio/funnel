@@ -1,6 +1,6 @@
 function addCopyButtonToCodeBlocks() {
     // Don't run the script on the main landing page
-    if (window.location.pathname === "/funnel/") {
+    if (window.location.pathname === "/funnel/" || window.location.pathname === "/") {
         return;
     }
 

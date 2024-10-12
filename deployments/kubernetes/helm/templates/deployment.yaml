@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "funnel.fullname" . }}
+  labels:
+    {{- include "funnel.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "funnel.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "funnel.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "funnel.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - 'funnel'
+            - 'server'
+            - 'run'
+            - '--config'
+            - '/etc/config/funnel-server-config.yml'
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+              ephemeral-storage: {{ .Values.resources.requests.ephemeral-storage }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+              ephemeral-storage: {{ .Values.resources.limits.ephemeral-storage }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+            - name: rpc
+              containerPort: {{ .Values.service.rpcPort }}
+          volumeMounts:
+            - name: funnel-deployment-storage
+              mountPath: /opt/funnel/funnel-work-dir
+            - name: config-volume
+              mountPath: /etc/config
+      volumes:
+        - name: funnel-deployment-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-storage-pvc
+        - name: config-volume
+          configMap:
+            name: {{ .Release.Name }}-config

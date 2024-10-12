@@ -1,0 +1,32 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/ohsu-comp-bio/funnel
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1G
+    ephemeral-storage: 25G
+  limits:
+    cpu: 2000m
+    memory: 4G
+    ephemeral-storage: 25G
+
+server:
+  hostname: ""
+  rpcPort: 9090
+
+storage:
+  size: 10Gi
+  path: /mnt/data
+
+rbac:
+  create: true
+
+service:
+  type: ClusterIP
+  httpPort: 8000
+  rpcPort: 9090

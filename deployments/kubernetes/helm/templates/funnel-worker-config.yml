@@ -1,25 +1,17 @@
 Database: boltdb
-
 BoltDB:
   Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
-
 Compute: kubernetes
-
 Kubernetes:
-  # The executor used to execute tasks. Available executors: docker, kubernetes
   Executor: "kubernetes"
-
 Logger:
   Level: debug
-
 RPCClient:
   MaxRetries: 3
   Timeout: 30s
-
 EventWriters:
   - rpc
   - log
-
 Server:
-  HostName: "${HOSTNAME}"
-  RPCPort: 9090
+  HostName: {{ .Values.server.hostname | default "" }}
+  RPCPort: {{ .Values.server.rpcPort | default 9090 }}

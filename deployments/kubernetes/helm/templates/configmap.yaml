@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  funnel-server-config.yml: |-
+    {{ .Files.Get "funnel-server-config.yaml" | indent 4 }}
+  funnel-worker-config.yml: |-
+    {{ .Files.Get "funnel-worker-config.yaml" | indent 4 }}

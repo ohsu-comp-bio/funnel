@@ -1,0 +1,25 @@
+1. To access the Funnel application, use the following instructions:
+
+{{- if .Values.ingress.enabled }}
+The application can be accessed via the ingress host:
+
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+
+{{- else if eq .Values.service.type "NodePort" }}
+Run the following commands to obtain the NodePort URL:
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "funnel.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+
+{{- else if eq .Values.service.type "LoadBalancer" }}
+NOTE: It may take a few minutes for the LoadBalancer IP to become available.
+  kubectl get svc --namespace {{ .Release.Namespace }} {{ include "funnel.fullname" . }}
+
+{{- else if eq .Values.service.type "ClusterIP" }}
+To access the service locally, use:
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "funnel.fullname" . }} 8080:{{ .Values.service.httpPort }}
+  echo "Visit http://127.0.0.1:8080"
+
+{{- end }}

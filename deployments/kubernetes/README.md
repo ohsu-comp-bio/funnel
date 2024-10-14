@@ -1,4 +1,3 @@
-> [!WARNING]
 > Funnel's Kubernetes support is in active development and may involve frequent updates 🚧
 
 # Overview

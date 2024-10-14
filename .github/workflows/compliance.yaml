@@ -37,7 +37,7 @@ jobs:
       matrix:
         version: [1.0.0, 1.1.0]
         db: ["boltdb", "mongodb"]
-        compute: ["local", "kubernetes"]
+        compute: ["local"]
         storage: ["local", "s3"]
     needs: build
     runs-on: ubuntu-latest

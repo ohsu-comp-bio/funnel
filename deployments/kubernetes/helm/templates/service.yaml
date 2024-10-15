@@ -1,19 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "funnel.fullname" . }}
-  labels:
-    {{- include "funnel.labels" . | nindent 4 }}
+  name: funnel-service
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
     - name: http
       protocol: TCP
-      port: {{ .Values.service.httpPort }}
-      targetPort: {{ .Values.service.httpPort }}
+      port: 8000
+      targetPort: 8000
     - name: rpc
       protocol: TCP
-      port: {{ .Values.service.rpcPort }}
-      targetPort: {{ .Values.service.rpcPort }}
   selector:
     {{- include "funnel.selectorLabels" . | nindent 4 }}
+      port: 9090
+      targetPort: 9090

@@ -47,7 +47,7 @@ Selector labels
 */}}
 {{- define "funnel.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "funnel.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/instance: funnel
 {{- end }}
 
 {{/*

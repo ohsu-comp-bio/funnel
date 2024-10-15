@@ -2,12 +2,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "funnel.fullname" . }}-rolebinding
+  name: funnel-rolebinding
 subjects:
   - kind: ServiceAccount
-    name: {{ include "funnel.serviceAccountName" . }}
+    name: funnel-sa
 roleRef:
   kind: Role
-  name: {{ include "funnel.fullname" . }}-role
+  name: funnel-role
   apiGroup: rbac.authorization.k8s.io
 {{- end }}

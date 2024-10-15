@@ -7,21 +7,23 @@ image:
 
 resources:
   requests:
-    cpu: 500m
-    memory: 1G
-    ephemeral-storage: 25G
+    cpu: 100m
+    memory: 100Mi
   limits:
-    cpu: 2000m
-    memory: 4G
-    ephemeral-storage: 25G
+    cpu: 1000m
+    memory: 1Gi
 
 server:
   hostname: ""
   rpcPort: 9090
 
 storage:
+  enabled: true
   size: 10Gi
   path: /mnt/data
+  pv:
+    enabled: true
+    reclaimPolicy: Retain
 
 rbac:
   create: true
@@ -30,3 +32,7 @@ service:
   type: ClusterIP
   httpPort: 8000
   rpcPort: 9090
+
+serviceAccount:
+  create: true
+  name: funnel-sa

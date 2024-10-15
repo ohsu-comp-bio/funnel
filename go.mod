@@ -43,7 +43,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/ncw/swift v1.0.53
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/common v0.60.0
 	github.com/rs/xid v1.6.0
 	github.com/shirou/gopsutil v3.21.11+incompatible

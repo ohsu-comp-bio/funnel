@@ -1,5 +1,0 @@
-1. To access the Funnel application, use the following instructions:
-
-To access the service locally, use:
-  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "funnel.fullname" . }} 8080:8000
-  echo "Visit http://127.0.0.1:8080"

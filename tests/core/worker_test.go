@@ -437,3 +437,42 @@ func TestWorkerRunBase64TaskReader(t *testing.T) {
 		t.Error("unexpected task state")
 	}
 }
+
+func TestWorkerRunKubernetesExecutor(t *testing.T) {
+	tests.SetLogOutput(log, t)
+	conf := tests.DefaultConfig()
+	task := tes.Task{
+		Id: "test-task-" + tes.GenerateID(),
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"echo", "Hello, World!"},
+			},
+		},
+	}
+
+	counts := &eventCounter{}
+	logger := &events.Logger{Log: log}
+	m := &events.MultiWriter{logger, counts}
+
+	w := worker.DefaultWorker{
+		Conf:        conf.Worker,
+		Store:       &storage.Mux{},
+		TaskReader:  taskReader{&task},
+		EventWriter: m,
+	}
+
+	w.Executor.Backend = "kubernetes"
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	err := w.Run(ctx)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	// if task.State != tes.Complete {
+	// 	t.Error("unexpected task state")
+	// }
+}

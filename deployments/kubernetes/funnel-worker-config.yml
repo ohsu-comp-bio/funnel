@@ -21,5 +21,5 @@ EventWriters:
   - log
 
 Server:
-  HostName: "${HOSTNAME}"
+  HostName: < funnel service clusterIP >
   RPCPort: 9090

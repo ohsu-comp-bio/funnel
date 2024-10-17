@@ -10,7 +10,7 @@ menu:
 Funnel supports storing tasks and scheduler data in MongoDB.
 
 Config:
-```
+```yaml
 Database: mongodb
 
 MongoDB:

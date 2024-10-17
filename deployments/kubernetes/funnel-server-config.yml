@@ -1,37 +1,36 @@
 Database: boltdb
 
-BoltDB:
-  Path: /opt/funnel/funnel-work-dir/funnel.bolt.db
-
 Compute: kubernetes
 
 Logger:
   Level: debug
 
 Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "kubernetes"
   DisableJobCleanup: false
   DisableReconciler: false
   ReconcileRate: 5m
   Namespace: default
-  Template: | 
+  Template: |
     apiVersion: batch/v1
     kind: Job
     metadata:
       ## DO NOT CHANGE NAME
       name: {{.TaskId}}
       namespace: {{.Namespace}}
-    spec: 
+    spec:
       backoffLimit: 0
       completions: 1
       template:
         spec:
           restartPolicy: Never
-          containers: 
+          serviceAccountName: funnel-sa
+          containers:
             - name: {{printf "funnel-worker-%s" .TaskId}}
-              image: ohsucompbio/funnel-dind:latest
+              image: quay.io/ohsu-comp-bio/funnel:latest
               imagePullPolicy: IfNotPresent
               args:
-                - "funnel"
                 - "worker"
                 - "run"
                 - "--config"
@@ -51,11 +50,10 @@ Kubernetes:
 
               securityContext:
                 privileged: true
-    
-          volumes: 
+
+          volumes:
             - name: {{printf "funnel-storage-%s" .TaskId}}
               emptyDir: {}
             - name: config-volume
               configMap:
-                name: funnel-config
-    
+                name: funnel-config    

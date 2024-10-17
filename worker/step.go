@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 type stepWorker struct {
 	Conf    config.Worker
-	Command *DockerCommand
+	Command TaskCommand
 	Event   *events.ExecutorWriter
 	IP      string
 }
@@ -42,14 +43,19 @@ func (s *stepWorker) Run(ctx context.Context) error {
 	}
 
 	// Capture stdout/err to file.
-	if s.Command.Stdout != nil {
-		stdout = io.MultiWriter(s.Command.Stdout, stdout)
+	out := s.Command.GetStdout()
+	if out != nil && out != (*os.File)(nil) {
+		stdout = io.MultiWriter(out, stdout)
+		s.Command.SetStdout(stdout)
 	}
-	if s.Command.Stderr != nil {
-		stderr = io.MultiWriter(s.Command.Stderr, stderr)
+	err := s.Command.GetStderr()
+	if err != nil && err != (*os.File)(nil) {
+		stderr = io.MultiWriter(err, stderr)
+		s.Command.SetStderr(stderr)
 	}
-	s.Command.Stdout = stdout
-	s.Command.Stderr = stderr
+
+	s.Command.SetStdout(stdout)
+	s.Command.SetStderr(stderr)
 
 	go func() {
 		done <- s.Command.Run(subctx)

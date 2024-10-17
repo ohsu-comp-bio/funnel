@@ -13,3 +13,8 @@ security:
   funcs:
     getenv:
       - ^FUNNEL_
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true

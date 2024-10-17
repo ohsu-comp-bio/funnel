@@ -13,7 +13,7 @@ The Google storage client is enabled by default, and will try to automatically
 load credentials from the environment. Alternatively, you
 may explicitly set the credentials in the worker config:
 
-```
+```yaml
 GoogleStorage:
   Disabled: false
   # Path to account credentials file.
@@ -21,7 +21,7 @@ GoogleStorage:
 ```
 
 ### Example task
-```
+```json
 {
   "name": "Hello world",
   "inputs": [{

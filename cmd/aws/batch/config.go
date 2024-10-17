@@ -116,7 +116,7 @@ func DefaultConfig() Config {
 		},
 		JobDef: JobDefinitionConfig{
 			Name:      "funnel-job-def",
-			Image:     "docker.io/ohsucompbio/funnel:latest",
+			Image:     "quay.io/ohsu-comp-bio/funnel:latest",
 			VCPUs:     1,
 			MemoryMiB: 128,
 		},

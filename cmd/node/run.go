@@ -34,8 +34,8 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
 		return err
 	}
 
-	runctx, cancel := context.WithCancel(context.Background())
-	runctx = util.SignalContext(ctx, time.Nanosecond, syscall.SIGINT, syscall.SIGTERM)
+	_, cancel := context.WithCancel(context.Background())
+	runctx := util.SignalContext(ctx, time.Nanosecond, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	hupsig := make(chan os.Signal, 1)

@@ -83,7 +83,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 
 	if err != nil {
-		return fmt.Errorf("creating job: %v", err)
+		return fmt.Errorf("creating job in worker: %v", err)
 	}
 
 	// Wait until the job finishes

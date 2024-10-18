@@ -12,11 +12,19 @@ This guide will take you through the process of setting up Funnel as a kubernete
 
 #### Create a Service:
 
-*funnel-service.yml*
+# Deploying
 
-```yaml
-{{< read-file "static/funnel-config-examples/kubernetes/funnel-service.yml" >}}
+## 1. Deploying with Helm ⚡️
+
+```sh
+helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
+helm repo update
+helm upgrade --install ohsu funnel
 ```
+
+{{< details title="(Alternative) Deploying with `kubectl` ⚙️" >}}
+
+### 1. Create a Service:
 
 Deploy it:
 
@@ -24,39 +32,27 @@ Deploy it:
 kubectl apply -f funnel-service.yml
 ```
 
+### 2. Create Funnel config files
+
+> *[funnel-server.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-server.yaml)*
+
+> *[funnel-worker.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-worker.yaml)*
+
 Get the clusterIP:
 
 ```sh
-kubectl get services funnel --output=yaml | grep "clusterIP:"
+export HOSTNAME=$(kubectl get services funnel --output=jsonpath='{.spec.clusterIP}')
+
+sed -i "s|\${HOSTNAME}|${HOSTNAME}|g" funnel-worker.yaml
 ```
 
-Use this value to configure the server hostname of the worker config.
-
-#### Create Funnel config files
-
-*funnel-server-config.yml*
-
-```yaml
-{{< read-file "static/funnel-config-examples/kubernetes/funnel-server-config.yml" >}}
-```
-
-We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up.
-
-*funnel-worker-config.yml*
-
-***Remember to modify the template below to have the actual server hostname.***
-
-```yaml
-{{< read-file "static/funnel-config-examples/kubernetes/funnel-worker-config.yml" >}}
-```
-
-#### Create a ConfigMap
+### 3. Create a ConfigMap
 
 ```sh
-kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+kubectl create configmap funnel-config --from-file=funnel-server.yaml --from-file=funnel-worker.yaml
 ```
 
-#### Create a Service Account for Funnel
+### 4. Create a Service Account for Funnel
 
 Define a Role and RoleBinding:
 
@@ -80,7 +76,7 @@ kubectl create -f role.yml
 kubectl create -f role_binding.yml
 ```
 
-#### Create a Deployment
+### 5. Create a Persistent Volume Claim
 
 *funnel-deployment.yml*
 
@@ -88,13 +84,17 @@ kubectl create -f role_binding.yml
 {{< read-file "static/funnel-config-examples/kubernetes/funnel-deployment.yml" >}}
 ```
 
-Deploy it:
+### 6. Create a Deployment
+
+> *[funnel-deployment.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-deployment.yml)*
 
 ```sh
 kubectl apply -f funnel-deployment.yml
 ```
 
-#### Proxy the Service for local testing
+{{< /details >}}
+
+# 2. Proxy the Service for local testing
 
 ```sh
 kubectl port-forward service/funnel 8000:8000

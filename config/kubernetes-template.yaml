@@ -9,17 +9,17 @@ spec:
   completions: 1
   template:
     spec:
-      serviceAccountName: {{.ServiceAccount}}
+      serviceAccountName: funnel-sa
       restartPolicy: Never
       containers: 
         - name: funnel-worker-{{.TaskId}}
-          image: quay.io/ohsu-comp-bio/funnel:latest
+          image: quay.io/ohsu-comp-bio/funnel:{{.Image}}
           imagePullPolicy: Always
           args:
             - "worker"
             - "run"
             - "--config"
-            - "/etc/config/funnel-worker-config.yml"
+            - "/etc/config/funnel-worker.yaml"
             - "--taskID"
             - {{.TaskId}}
           resources:
@@ -40,4 +40,4 @@ spec:
             name: funnel-config
         - name: funnel-storage-{{.TaskId}}
           persistentVolumeClaim:
-            claimName: storage-pvc 
+            claimName: funnel-pvc 

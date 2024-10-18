@@ -22,10 +22,18 @@ Kuberenetes Resources:
 kubectl apply -f funnel-service.yml
 ```
 
+## 2. Create Funnel config files
+
+> *[funnel-server.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-server.yaml)*
+
+> *[funnel-worker.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-worker.yaml)*
+
 Get the clusterIP:
 
 ```sh
-kubectl get services funnel --output=yaml | grep "clusterIP:"
+export HOSTNAME=$(kubectl get services funnel --output=jsonpath='{.spec.clusterIP}')
+
+sed -i "s|\${HOSTNAME}|${HOSTNAME}|g" funnel-worker.yaml
 ```
 
 Use this value to configure the server hostname of the worker config.
@@ -43,7 +51,7 @@ We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise fai
 ## 3. Create a ConfigMap
 
 ```sh
-kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+kubectl create configmap funnel-config --from-file=funnel-server.yaml --from-file=funnel-worker.yaml
 ```
 
 ## 4. Create a Service Account for Funnel

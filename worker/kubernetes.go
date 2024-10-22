@@ -48,7 +48,6 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"TaskId":         taskId,
 		"JobId":          kcmd.JobId,
 		"Namespace":      kcmd.Namespace,
-		"Image":          kcmd.Image,
 		"Command":        command,
 		"Workdir":        kcmd.Workdir,
 		"Volumes":        kcmd.Volumes,

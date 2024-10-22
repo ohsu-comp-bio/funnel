@@ -11,7 +11,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      serviceAccountName: {{.ServiceAccount}}
+      serviceAccountName: funnel-sa
       containers: 
       - name: funnel-worker-{{.TaskId}}
         # TODO: Should this be configurable?
@@ -37,4 +37,4 @@ spec:
       volumes: 
       - name: storage
         persistentVolumeClaim:
-          claimName: storage-pvc 
+          claimName: funnel-pvc 

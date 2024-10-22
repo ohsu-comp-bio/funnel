@@ -23,22 +23,24 @@ kubectl apply -f funnel-service.yml
 
 ## 2. Create Funnel config files
 
-> *[funnel-server-config.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-server-config.yml)*
+> *[funnel-server.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-server.yaml)*
 
-> *[funnel-worker-config.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-worker-config.yml)*
+> *[funnel-worker.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-worker.yaml)*
 
 Get the clusterIP:
 
 ```sh
 export HOSTNAME=$(kubectl get services funnel --output=jsonpath='{.spec.clusterIP}')
 
-sed -i "s|\${HOSTNAME}|${HOSTNAME}|g" funnel-worker-config.yml
+sed -i "s|\${HOSTNAME}|${HOSTNAME}|g" funnel-worker.yaml
 ```
+
+Use this value to configure the server hostname of the worker config.
 
 ## 3. Create a ConfigMap
 
 ```sh
-kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+kubectl create configmap funnel-config --from-file=funnel-server.yaml --from-file=funnel-worker.yaml
 ```
 
 ## 4. Create a Service Account for Funnel

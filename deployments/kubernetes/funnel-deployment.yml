@@ -24,7 +24,7 @@ spec:
             - 'server'
             - 'run'
             - '--config'
-            - '/etc/config/funnel-server-config.yml'
+            - '/etc/config/funnel-server.yaml'
           resources: 
             requests: 
               cpu: 500m

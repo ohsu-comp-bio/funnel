@@ -37,6 +37,8 @@ jobs:
       matrix:
         version: [1.0.0, 1.1.0]
         db: ["boltdb", "mongodb"]
+        # Temporary: Only test local compute backend until we bring up a K8s cluster in Github Actions
+        # compute: ["local", "kubernetes"]
         compute: ["local"]
         storage: ["local", "s3"]
     needs: build

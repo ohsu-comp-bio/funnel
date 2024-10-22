@@ -19,37 +19,47 @@ Kuberenetes Resources:
 - [Roles and RoleBindings](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings)
 - [Job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
 
-# Deployment Steps
+# Deploying
 
-## 1. Create a Service:
+## 1. Deploying with Helm ⚡️
 
-> *[funnel-service.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-service.yml)*
+```sh
+helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
+helm repo update
+helm upgrade --install ohsu funnel
+```
+
+{{< details title="(Alternative) Deploying with `kubectl` ⚙️" >}}
+
+### 1. Create a Service:
+
+Deploy it:
 
 ```sh
 kubectl apply -f funnel-service.yml
 ```
 
-## 2. Create Funnel config files
+### 2. Create Funnel config files
 
-> *[funnel-server-config.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-server-config.yml)*
+> *[funnel-server.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-server.yaml)*
 
-> *[funnel-worker-config.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-worker-config.yml)*
+> *[funnel-worker.yaml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-worker.yaml)*
 
 Get the clusterIP:
 
 ```sh
 export HOSTNAME=$(kubectl get services funnel --output=jsonpath='{.spec.clusterIP}')
 
-sed -i "s|\${HOSTNAME}|${HOSTNAME}|g" funnel-worker-config.yml
+sed -i "s|\${HOSTNAME}|${HOSTNAME}|g" funnel-worker.yaml
 ```
 
-## 3. Create a ConfigMap
+### 3. Create a ConfigMap
 
 ```sh
-kubectl create configmap funnel-config --from-file=funnel-server-config.yml --from-file=funnel-worker-config.yml
+kubectl create configmap funnel-config --from-file=funnel-server.yaml --from-file=funnel-worker.yaml
 ```
 
-## 4. Create a Service Account for Funnel
+### 4. Create a Service Account for Funnel
 
 Define a Role and RoleBinding:
 
@@ -63,9 +73,7 @@ kubectl apply -f role.yml
 kubectl apply -f role_binding.yml
 ```
 
-## 5. Create a Persistent Volume Claim
-
-Define a PVC for storage:
+### 5. Create a Persistent Volume Claim
 
 > *[funnel-storage-pvc.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-storage-pvc.yml)*
 
@@ -73,7 +81,7 @@ Define a PVC for storage:
 kubectl apply -f funnel-storage-pvc.yml
 ```
 
-## 6. Create a Deployment
+### 6. Create a Deployment
 
 > *[funnel-deployment.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-deployment.yml)*
 
@@ -81,7 +89,9 @@ kubectl apply -f funnel-storage-pvc.yml
 kubectl apply -f funnel-deployment.yml
 ```
 
-## 7. Proxy the Service for local testing
+{{< /details >}}
+
+# 2. Proxy the Service for local testing
 
 ```sh
 kubectl port-forward service/funnel 8000:8000

@@ -1,4 +1,3 @@
-> [!WARNING]
 > Funnel's Kubernetes support is in active development and may involve frequent updates 🚧
 
 # Overview
@@ -16,7 +15,7 @@ Kuberenetes Resources:
 
 ## 1. Create a Service:
 
-> *[funnel-service.yml](./funnel-service.yml)*
+> *[funnel-service.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-service.yml)*
 
 ```sh
 kubectl apply -f funnel-service.yml
@@ -38,16 +37,6 @@ sed -i "s|\${HOSTNAME}|${HOSTNAME}|g" funnel-worker.yaml
 
 Use this value to configure the server hostname of the worker config.
 
-## 2. Create Funnel config files
-
-> *[funnel-server-config.yml](./funnel-server-config.yml)*
-
-We recommend setting `DisableJobCleanup` to `true` for debugging - otherwise failed jobs will be cleanup up.
-
-> *[funnel-worker-config.yml](./funnel-worker-config.yml)*
-
-***Remember to modify the file to have the actual server hostname.***
-
 ## 3. Create a ConfigMap
 
 ```sh
@@ -58,9 +47,9 @@ kubectl create configmap funnel-config --from-file=funnel-server.yaml --from-fil
 
 Define a Role and RoleBinding:
 
-> *[role.yml](./role.yml)*
+> *[role.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/role.yml)*
 
-> *[role_binding.yml](./role_binding.yml)*
+> *[role_binding.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/role_binding.yml)*
 
 ```sh
 kubectl create serviceaccount funnel-sa --namespace default
@@ -72,7 +61,7 @@ kubectl apply -f role_binding.yml
 
 Define a PVC for storage:
 
-> *[funnel-storage-pvc.yml](./funnel-storage-pvc.yml)*
+> *[funnel-storage-pvc.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-storage-pvc.yml)*
 
 ```sh
 kubectl apply -f funnel-storage-pvc.yml
@@ -80,7 +69,7 @@ kubectl apply -f funnel-storage-pvc.yml
 
 ## 6. Create a Deployment
 
-> *[funnel-deployment.yml](./funnel-deployment.yml)*
+> *[funnel-deployment.yml](https://github.com/ohsu-comp-bio/funnel/blob/develop/deployments/kubernetes/funnel-deployment.yml)*
 
 ```sh
 kubectl apply -f funnel-deployment.yml

@@ -14,7 +14,8 @@ spec:
       serviceAccountName: funnel-sa
       containers: 
       - name: funnel-worker-{{.TaskId}}
-        image: {{.Image}}
+        # TODO: Should this be configurable?
+        image: development
         imagePullPolicy: Always
         command: ["/bin/sh", "-c"]
         args: {{.Command}}

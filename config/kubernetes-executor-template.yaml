@@ -15,7 +15,7 @@ spec:
       containers: 
       - name: funnel-worker-{{.TaskId}}
         # TODO: Should this be configurable?
-        image: development
+        image: quay.io/ohsu-comp-bio/funnel:development
         imagePullPolicy: Always
         command: ["/bin/sh", "-c"]
         args: {{.Command}}

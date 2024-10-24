@@ -13,7 +13,8 @@ spec:
       restartPolicy: Never
       containers: 
         - name: funnel-worker-{{.TaskId}}
-          image: quay.io/ohsu-comp-bio/funnel:{{.Image}}
+          # TODO: Should this be configurable?
+          image: quay.io/ohsu-comp-bio/funnel:development
           imagePullPolicy: Always
           args:
             - "worker"

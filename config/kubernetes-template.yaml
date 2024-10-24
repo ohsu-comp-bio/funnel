@@ -9,17 +9,18 @@ spec:
   completions: 1
   template:
     spec:
+      serviceAccountName: funnel-sa
       restartPolicy: Never
       containers: 
-        - name: {{printf "funnel-worker-%s" .TaskId}}
-          image: ohsucompbio/funnel-kubernetes-worker:latest
-          imagePullPolicy: IfNotPresent
+        - name: funnel-worker-{{.TaskId}}
+          # TODO: Should this be configurable?
+          image: quay.io/ohsu-comp-bio/funnel:development
+          imagePullPolicy: Always
           args:
-            - "funnel"
             - "worker"
             - "run"
             - "--config"
-            - "/etc/config/funnel-worker-config.yml"
+            - "/etc/config/funnel-worker.yaml"
             - "--taskID"
             - {{.TaskId}}
           resources:
@@ -28,16 +29,16 @@ spec:
                 memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
                 ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
           volumeMounts:
-            - name: {{printf "funnel-storage-%s" .TaskId}}
-              mountPath: {{printf "/opt/funnel/funnel-work-dir/%s" .TaskId}}
+            - name: funnel-storage-{{.TaskId}}
+              mountPath: /opt/funnel/funnel-work-dir/{{.TaskId}}
+              subPath: {{.TaskId}}
             - name: config-volume
               mountPath: /etc/config
-          securityContext:
-            privileged: true
 
       volumes: 
-        - name: {{printf "funnel-storage-%s" .TaskId}}
-          emptyDir: {}
         - name: config-volume
           configMap:
             name: funnel-config
+        - name: funnel-storage-{{.TaskId}}
+          persistentVolumeClaim:
+            claimName: funnel-pvc 

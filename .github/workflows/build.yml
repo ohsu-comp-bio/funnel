@@ -23,7 +23,6 @@ jobs:
         key: ${{ runner.os }}-funnel-bin-${{ hashFiles('**/go.sum') }}-${{ github.ref }}
         restore-keys: |
           ${{ runner.os }}-funnel-bin-${{ github.ref }}
-          ${{ runner.os }}-funnel-bin-
 
     - name: Build Funnel (if cache doesn't exist)
       run: |

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"text/template"
@@ -82,13 +83,30 @@ func NewBackend(ctx context.Context, conf config.Kubernetes, reader tes.ReadOnly
 
 // Backend represents the local backend.
 type Backend struct {
-	client    batchv1.JobInterface
-	namespace string
-	template  string
-	event     events.Writer
-	database  tes.ReadOnlyServer
-	log       *logger.Logger
+	client            batchv1.JobInterface
+	namespace         string
+	template          string
+	event             events.Writer
+	database          tes.ReadOnlyServer
+	log               *logger.Logger
+	backendParameters map[string]string
 	events.Computer
+}
+
+func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
+	if !task.Resources.GetBackendParametersStrict() {
+		return nil
+	}
+
+	taskBackendParameters := task.Resources.GetBackendParameters()
+	for k := range taskBackendParameters {
+		_, ok := b.backendParameters[k]
+		if !ok {
+			return errors.New("backend parameters not supported")
+		}
+	}
+
+	return nil
 }
 
 // WriteEvent writes an event to the compute backend.
@@ -129,10 +147,16 @@ func (b *Backend) createJob(task *tes.Task) (*v1.Job, error) {
 		"Cpus":      res.GetCpuCores(),
 		"RamGb":     res.GetRamGb(),
 		"DiskGb":    res.GetDiskGb(),
+		// TODO: How to handle multiple executors/images?
+		"Image": task.Executors[0].Image,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("executing template: %v", err)
 	}
+
+	fmt.Println("DEBUG: task.Id:", task.Id)
+	fmt.Println("DEBUG: b.template:", b.template)
+	fmt.Println("DEBUG: buf.String():", buf.String())
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
@@ -147,17 +171,18 @@ func (b *Backend) createJob(task *tes.Task) (*v1.Job, error) {
 	return job, nil
 }
 
-// Submit submits a task to the as a kubernetes v1/batch job.
+// Submit submits a task to the server as a kubernetes v1/batch job.
 func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 	job, err := b.createJob(task)
 	if err != nil {
 		return fmt.Errorf("creating job spec: %v", err)
 	}
-	_, err = b.client.Create(ctx, job, metav1.CreateOptions{
+	ctx = context.Background()
+	job, err = b.client.Create(ctx, job, metav1.CreateOptions{
 		FieldManager: task.Id,
 	})
 	if err != nil {
-		return fmt.Errorf("creating job: %v", err)
+		return fmt.Errorf("creating job in backend: %v", err)
 	}
 	return nil
 }

@@ -13,6 +13,9 @@ func TestFileTaskReader(t *testing.T) {
 
 	ctx := context.Background()
 	task, err := r.Task(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if task.Name != "Hello world" {
 		t.Error("unexpected task content")
 	}
@@ -30,6 +33,9 @@ func TestBase64TaskReader(t *testing.T) {
 
 	ctx := context.Background()
 	task, err := r.Task(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if task.Name != "Hello world" {
 		t.Error("unexpected task content")
 	}

@@ -243,3 +243,23 @@ pre {
   color: #aaa;
   font-style: normal;
 }
+
+.code-block-header {
+  background-color: #404040;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: smaller;
+  color: darkgray;
+  padding: 0.2em 1em 0.2em 1em;
+}
+.copy-code-button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1em;
+}
+.copy-code-button:focus {
+  outline: none;
+}

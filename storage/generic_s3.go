@@ -73,6 +73,9 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 	}
 
 	isDir, err := isDir(s3.client, u.bucket, u.path)
+	if err != nil {
+		return nil, fmt.Errorf("genericS3: stat object: %s", err)
+	}
 	if isDir {
 		return &Object{
 			URL:  url,
@@ -135,6 +138,9 @@ func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error)
 	}
 
 	isDir, err := isDir(s3.client, u.bucket, u.path)
+	if err != nil {
+		return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
+	}
 	if isDir {
 		objects, err := s3.List(ctx, url)
 		if err != nil {

@@ -61,6 +61,34 @@ func DefaultConfig() Config {
 			LogUpdateRate:        Duration(time.Second * 5),
 			LogTailSize:          10000,
 			MaxParallelTransfers: 10,
+			// `docker run` command flags
+			// https://docs.docker.com/reference/cli/docker/container/run/
+			Container: ContainerConfig{
+				DriverCommand: "docker",
+				RunCommand: "run -i --read-only " +
+					// Remove container after it exits
+					"{{if .RemoveContainer}}--rm{{end}} " +
+
+					// Environment variables
+					"{{range $k, $v := .Env}}--env {{$k}}={{$v}} {{end}} " +
+
+					// Tags/Labels
+					"{{range $k, $v := .Tags}}--label {{$k}}={{$v}} {{end}} " +
+
+					// Container Name
+					"{{if .Name}}--name {{.Name}}{{end}} " +
+
+					// Workdir
+					"{{if .Workdir}}--workdir {{.Workdir}}{{end}} " +
+
+					// Volumes
+					"{{range .Volumes}}--volume {{.HostPath}}:{{.ContainerPath}}:{{if .Readonly}}ro{{else}}rw{{end}} {{end}} " +
+
+					// Image and Command
+					"{{.Image}} {{.Command}}",
+				PullCommand: "pull {{.Image}}",
+				StopCommand: "rm -f {{.Name}}",
+			},
 		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers
@@ -134,6 +162,13 @@ func DefaultConfig() Config {
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
 
+	kubernetesTemplate := intern.MustAsset("config/kubernetes-template.yaml")
+	executorTemplate := intern.MustAsset("config/kubernetes-executor-template.yaml")
+	c.Kubernetes.Executor = "docker"
+	c.Kubernetes.Namespace = "default"
+	c.Kubernetes.ServiceAccount = "funnel-sa"
+	c.Kubernetes.Template = string(kubernetesTemplate)
+	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
 	c.Kubernetes.ReconcileRate = reconcile
 
 	return c

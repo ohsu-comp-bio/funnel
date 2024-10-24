@@ -28,10 +28,10 @@ archives:
     name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Version}}"
 
 brews:
-  - tap:
+  - repository:
       owner: ohsu-comp-bio
       name: homebrew-formula
-    folder: Formula
+    directory: Formula
     skip_upload: true
     description: "distributed task execution toolkit"
     homepage: "https://ohsu-comp-bio.github.io/funnel/"

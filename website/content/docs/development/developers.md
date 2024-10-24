@@ -92,6 +92,6 @@ mock interfaces in test code, for example, to mock the Google Cloud APIs.
   - Check the built artifacts by downloading the tarballs from the GitHub draft release
     and running `funnel version`.
 - `git push origin master` to push your website and release changes.
-- A tagged docker image for the release will be built automatically on [dockerhub](https://hub.docker.com/repository/docker/ohsucompbio/funnel).
+- A tagged docker image for the release will be built automatically on [dockerhub](https://hub.docker.com/repository/docker/quay.io/ohsu-comp-bio/funnel).
 - Publish the draft release on GitHub.
 - Copy `build/release/funnel.rb` to the `ohsu-comp-bio/homebrew-formula/Formula/funnel.rb` Homebrew formula repo, and push those changes to master.

@@ -19,7 +19,7 @@ jobs:
     uses: ./.github/workflows/build.yml
 
   test:
-    # needs: build
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

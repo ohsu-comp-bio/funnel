@@ -26,6 +26,9 @@ jobs:
         with:
           name: funnel
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Install k3d
         run: |
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
@@ -34,9 +37,6 @@ jobs:
           helm upgrade --install funnel ohsu/funnel
           kubectl wait --for=condition=Ready pod -l app=funnel
           kubectl port-forward svc/funnel 8000:8000 &
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
       - name: Submit Task
         run: |

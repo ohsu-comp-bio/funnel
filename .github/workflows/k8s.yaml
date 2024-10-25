@@ -39,6 +39,8 @@ jobs:
           # Wait for the Deployment to be available
           kubectl wait --for=condition=available deployment/funnel --timeout=60s
 
+          sleep 5
+
           # Wait for the Pod to be Ready
           kubectl wait --for=condition=Ready pod -l app=funnel --timeout=60s
 

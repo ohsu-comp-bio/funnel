@@ -37,7 +37,8 @@ jobs:
           helm upgrade --install funnel ohsu/funnel
           
           kubectl wait --for=condition=available deployment/funnel --timeout=30s
-          kubectl wait --for=condition=available pod/funnel --timeout=30s
+
+          kubectl get pods
 
           kubectl port-forward svc/funnel 8000:8000 &
 

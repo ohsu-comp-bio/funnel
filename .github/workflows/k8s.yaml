@@ -25,7 +25,32 @@ jobs:
       - name: Install k3d
         run: |
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-        #   kubectl get nodes
+          k3d cluster create test-cluster
+          helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
+          helm upgrade --install funnel ohsu/funnel
+          kubectl wait --for=condition=Ready pod -l app=funnel
+          kubectl port-forward svc/funnel 8000:8000 &
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: funnel
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+
+      - name: Submit Task
+        run: |
+          export PATH="$PATH:$(pwd)"
+          chmod +x funnel
+          funnel examples hello-world > hello-world.json
+          funnel task create hello-world.json
+
+      - name: Wait for task to complete
+        run: |
+          export PATH="$PATH:$(pwd)"
+          ID=$(funnel task create hello-world.json)
+          
+          kubectl wait --for=condition=Succeeded pod -l job-name=$ID
+
+          # Exits 0 if the task is complete, otherwise exits 1
+          funnel task list $ID | grep -q COMPLETE

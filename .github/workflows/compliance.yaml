@@ -13,11 +13,6 @@
 # output a ssh address associated with the Github action worker. Helpful for debugging build steps and
 # and intermediary files/artifacts.
 #
-# - name: "Debug: Package dependancies for tmate (CentOS)"
-#   run: |
-#     yum install -y xz
-#     ln -s /bin/true /bin/apt-get
-#
 # - name: Setup tmate session
 #   uses: mxschmitt/action-tmate@v3
 
@@ -89,4 +84,3 @@ jobs:
           pip install -r requirements.txt
           python setup.py install  
           openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
-

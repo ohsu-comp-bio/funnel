@@ -36,10 +36,13 @@ jobs:
           helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
           helm upgrade --install funnel ohsu/funnel
           
-          kubectl wait --for=condition=available deployment/funnel --timeout=30s
+          # Wait for the Deployment to be available
+          kubectl wait --for=condition=available deployment/funnel --timeout=60s
 
-          kubectl get pods
+          # Wait for the Pod to be Ready
+          kubectl wait --for=condition=Ready pod -l app=funnel --timeout=60s
 
+          # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &
 
       - name: Submit Task

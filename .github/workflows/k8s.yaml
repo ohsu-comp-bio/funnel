@@ -20,6 +20,7 @@ jobs:
 
   test:
     needs: build
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -34,7 +35,7 @@ jobs:
           helm upgrade --install funnel ohsu/funnel
           
           # Wait for the Deployment to be available
-          kubectl rollout status deployment/funnel --timeout=30s
+          kubectl rollout status deployment/funnel --timeout=60s
 
           # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &

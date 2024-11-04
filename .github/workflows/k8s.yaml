@@ -32,8 +32,8 @@ jobs:
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
           k3d cluster create test-cluster
           
-    #   - name: Setup tmate session
-    #     uses: mxschmitt/action-tmate@v3
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Deploy Funnel
         run: |

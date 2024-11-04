@@ -41,7 +41,7 @@ jobs:
           helm upgrade --install funnel ohsu/funnel --set storage.className=standard
           
           # Wait for the Deployment to be available
-          kubectl rollout status deployment/funnel --timeout=60s
+          kubectl rollout status deployment/funnel --timeout=120s
 
           # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &

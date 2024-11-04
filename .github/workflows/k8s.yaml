@@ -31,17 +31,16 @@ jobs:
         run: |
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
           k3d cluster create test-cluster
-          
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
       - name: Deploy Funnel
         run: |
           helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
-          helm upgrade --install funnel ohsu/funnel --set storage.className=standard
+          # 'local-path' is a k3d specific storage class
+          # Ref: https://k3d.io/v5.7.4/usage/k3s/#local-path-provisioner
+          helm upgrade --install funnel ohsu/funnel --set storage.className=local-path --set storage.provisioner=local-path
           
           # Wait for the Deployment to be available
-          kubectl rollout status deployment/funnel --timeout=120s
+          kubectl rollout status deployment/funnel --timeout=30s
 
           # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &
@@ -52,7 +51,7 @@ jobs:
           chmod +x funnel
           funnel examples hello-world > hello-world.json
           ID=$(funnel task create hello-world.json)
-          kubectl wait --for=condition=Complete job/$ID --timeout=120s
+          kubectl wait --for=condition=Complete job/$ID --timeout=30s
           
           # Exits 0 if the task is complete, otherwise exits 1
           funnel task get $ID | grep -q COMPLETE

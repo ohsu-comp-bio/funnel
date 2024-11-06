@@ -108,6 +108,6 @@ funnel task create hello-world.json
 
 - [Helm Repo Source](https://github.com/ohsu-comp-bio/helm-charts)
 
-- [Helm Charts](https://github.com/ohsu-comp-bio/funnel/tree/develop/deployments/kubernetes/helm/funnel)
+- [Helm Charts](https://github.com/ohsu-comp-bio/funnel/tree/develop/deployments/kubernetes/helm)
 
 - [The Chart Best Practices Guide](https://helm.sh/docs/chart_best_practices/)

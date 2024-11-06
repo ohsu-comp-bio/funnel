@@ -3,6 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: funnel-rolebinding
+  namespace: {{ .Release.Namespace }} 
 subjects:
   - kind: ServiceAccount
     name: funnel-sa

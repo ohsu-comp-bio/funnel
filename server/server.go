@@ -102,6 +102,11 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 	w.Write(jErrBytes)
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 type JSONError struct {
 	Error string `json:"error"`
 }
@@ -158,6 +163,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.Handle("/favicon.ico", dashfs)
 	mux.Handle("/manifest.json", dashfs)
 	mux.Handle("/health.html", dashfs)
+	mux.HandleFunc("/healthz", healthHandler)
 	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
 

@@ -147,16 +147,10 @@ func (b *Backend) createJob(task *tes.Task) (*v1.Job, error) {
 		"Cpus":      res.GetCpuCores(),
 		"RamGb":     res.GetRamGb(),
 		"DiskGb":    res.GetDiskGb(),
-		// TODO: How to handle multiple executors/images?
-		"Image": task.Executors[0].Image,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("executing template: %v", err)
 	}
-
-	fmt.Println("DEBUG: task.Id:", task.Id)
-	fmt.Println("DEBUG: b.template:", b.template)
-	fmt.Println("DEBUG: buf.String():", buf.String())
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)

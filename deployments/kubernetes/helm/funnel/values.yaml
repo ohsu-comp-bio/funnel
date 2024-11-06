@@ -1,10 +1,53 @@
+# Kubernetes-specifc Settings
+replicaCount: 1
+
+image:
+  repository: quay.io/ohsu-comp-bio/funnel
+  tag: development
+  pullPolicy: IfNotPresent
+
+labels:
+  app: funnel
+
+rbac:
+  create: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 100Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+service:
+  type: ClusterIP
+  httpPort: 8000
+  rpcPort: 9090
+
+serviceAccount:
+  create: true
+  name: funnel-sa
+
+storage:
+  provisioner: kubernetes.io/aws-ebs
+  enabled: true
+  size: 10Gi
+  path: /mnt/data
+  pv:
+    enabled: false
+    reclaimPolicy: Retain
+
+# Funnel Default Settings
+# Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
+
 # The name of the active server database backend
 # Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb
 Database: boltdb
 
 # The name of the active compute backend
 # Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch, kubernetes
-Compute: local
+Compute: kubernetes
 
 # The name of the active event writer backend(s).
 # Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
@@ -82,13 +125,13 @@ Node:
   # Defining Resources in the Node configuration overrides this behavior.
   Resources:
     # CPUs available.
-    # Cpus: 0
+    Cpus: 0
 
     # RAM available, in GB.
-    # RamGb: 0.0
+    RamGb: 0.0
 
     # Disk space available, in GB.
-    # DiskGb: 0.0
+    DiskGb: 0.0
 
   # For low-level tuning.
   # How often to sync with the Funnel server.
@@ -363,7 +406,7 @@ GoogleStorage:
   # Optional. If possible, credentials will be automatically discovered
   # from the environment.
   CredentialsFile: ""
-
+# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch, kubernetes/Kube
 Swift:
   Disabled: false
   UserName: ""

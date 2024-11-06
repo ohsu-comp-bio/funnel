@@ -55,6 +55,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"RamGb":          kcmd.Resources.RamGb,
 		"DiskGb":         kcmd.Resources.DiskGb,
 		"ServiceAccount": kcmd.ServiceAccount,
+		"Image":          kcmd.Image, // TODO: How to handle multiple images for the executors?
 	})
 
 	if err != nil {

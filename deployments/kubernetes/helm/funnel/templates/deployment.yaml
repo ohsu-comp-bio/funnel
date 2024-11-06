@@ -2,10 +2,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "funnel.fullname" . }}
+  namespace: {{ .Release.Namespace }} 
   labels:
     {{- include "funnel.labels" . | nindent 4 }}
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # This ensures only one pod is unavailable during the update process
+      maxSurge: 0        # No new pod is created until the old one is fully terminated
   selector:
     matchLabels:
       {{- include "funnel.selectorLabels" . | nindent 6 }}
@@ -13,6 +19,9 @@ spec:
     metadata:
       labels:
         {{- include "funnel.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/values: {{ .Values | quote | sha256sum }}
     spec:
       serviceAccountName: {{ include "funnel.serviceAccountName" . }}
       containers:
@@ -24,7 +33,7 @@ spec:
             - 'server'
             - 'run'
             - '--config'
-            - '/etc/config/funnel-server-config.yaml'
+            - '/etc/config/funnel-server.yaml'
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
@@ -37,6 +46,21 @@ spec:
               containerPort: 8000
             - name: rpc
               containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: funnel-deployment-storage
               mountPath: /opt/funnel/funnel-work-dir

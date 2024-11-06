@@ -14,8 +14,7 @@ spec:
       serviceAccountName: funnel-sa
       containers: 
       - name: funnel-worker-{{.TaskId}}
-        # TODO: Should this be configurable?
-        image: quay.io/ohsu-comp-bio/funnel:development
+        image: {{.Image}}
         imagePullPolicy: Always
         command: ["/bin/sh", "-c"]
         args: {{.Command}}
@@ -26,15 +25,15 @@ spec:
             memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
             ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
 
-        volumeMounts:
-        ### DO NOT CHANGE THIS
-        {{range $idx, $item := .Volumes}}
-        - name: storage 
-          mountPath: {{$item.ContainerPath}}
-          subPath: {{$.TaskId}}{{$item.ContainerPath}}
-        {{end}}
+      #   volumeMounts:
+      #   ### DO NOT CHANGE THIS
+      #   {{range $idx, $item := .Volumes}}
+      #   - name: storage 
+      #     mountPath: {{$item.ContainerPath}}
+      #     subPath: {{$.TaskId}}{{$item.ContainerPath}}
+      #   {{end}}
 
-      volumes: 
-      - name: storage
-        persistentVolumeClaim:
-          claimName: funnel-pvc 
+      # volumes: 
+      # - name: storage
+      #   persistentVolumeClaim:
+      #     claimName: funnel-pvc 

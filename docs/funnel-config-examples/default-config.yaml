@@ -3,7 +3,7 @@
 Database: boltdb
 
 # The name of the active compute backend
-# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch
+# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch, kubernetes
 Compute: local
 
 # The name of the active event writer backend(s).

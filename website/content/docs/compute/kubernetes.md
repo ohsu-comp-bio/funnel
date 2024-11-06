@@ -6,20 +6,9 @@ menu:
     weight: 20
 ---
 
-> Funnel's Kubernetes support is in active development and may involve frequent updates 🚧
+> Funnel on Kubernetes is in active development and may involve frequent updates 🚧
 
-# Overview
-
-This guide will take you through the process of setting up Funnel as a kubernetes service.
-
-Kuberenetes Resources:
-- [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
-- [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
-- [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/)
-- [Roles and RoleBindings](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#default-roles-and-role-bindings)
-- [Job](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/)
-
-# Deploying
+# Quick Start
 
 ## 1. Deploying with Helm ⚡️
 
@@ -97,15 +86,24 @@ kubectl apply -f funnel-deployment.yml
 kubectl port-forward service/funnel 8000:8000
 ```
 
-Now you can access the funnel server locally. Verify by running:
+Now the funnel server can be accessed as if it were running locally. This can be verified by listing all tasks, which will return an empty JSON list:
 
 ```sh
 funnel task list
+# {}
 ```
 
-Now try running a task:
+A task can then be submitted following the [standard workflow](../../tasks):
 
 ```sh
-funnel examples hello-world > hello.json
-funnel task create hello.json
+funnel examples hello-world > hello-world.json
+
+funnel task create hello-world.json
+# <Task ID>
 ```
+
+# Additional Resources 📚
+
+- [Helm Charts](https://github.com/ohsu-comp-bio/funnel/tree/feature/k8s-github-actions/deployments/kubernetes/helm/funnel)
+
+- [Helm Repo](https://ohsu-comp-bio.github.io/helm-charts)

@@ -1,3 +1,5 @@
+# Task Executor
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -24,16 +26,10 @@ spec:
             cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
             memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
             ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
+        volumeMounts:
+          - name: worker-storage
+            mountPath: /opt/funnel    # Mount the same shared directory
 
-      #   volumeMounts:
-      #   ### DO NOT CHANGE THIS
-      #   {{range $idx, $item := .Volumes}}
-      #   - name: storage 
-      #     mountPath: {{$item.ContainerPath}}
-      #     subPath: {{$.TaskId}}{{$item.ContainerPath}}
-      #   {{end}}
-
-      # volumes: 
-      # - name: storage
-      #   persistentVolumeClaim:
-      #     claimName: funnel-pvc 
+      volumes:
+        - name: worker-storage
+          emptyDir: {}  # Uses same configuration as worker

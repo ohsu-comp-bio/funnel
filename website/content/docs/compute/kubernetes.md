@@ -102,6 +102,10 @@ funnel task create hello-world.json
 # <Task ID>
 ```
 
+# Storage Architecture
+
+![K8s Storage](/img/k8s-pvc.png)
+
 # Additional Resources 📚
 
 - [Helm Repo](https://ohsu-comp-bio.github.io/helm-charts)

@@ -61,4 +61,4 @@ jobs:
 
     - name: Run nf-canary tests
       run: |
-        ./nextflow/nextflow run nf-canary/main.nf
+        nextflow run nf-canary/main.nf

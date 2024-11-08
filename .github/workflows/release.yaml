@@ -14,6 +14,10 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
+      - master
+      - develop
   workflow_dispatch:
 
 jobs:

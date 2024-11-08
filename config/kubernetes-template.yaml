@@ -1,7 +1,8 @@
+# Funnel Worker
+
 apiVersion: batch/v1
 kind: Job
 metadata:
-  ## DO NOT CHANGE NAME
   name: {{.TaskId}}
   namespace: {{.Namespace}}
 spec: 
@@ -13,7 +14,6 @@ spec:
       restartPolicy: Never
       containers: 
         - name: funnel-worker-{{.TaskId}}
-          # TODO: Should this be configurable?
           image: quay.io/ohsu-comp-bio/funnel:development
           imagePullPolicy: Always
           args:
@@ -24,15 +24,23 @@ spec:
             - "--taskID"
             - {{.TaskId}}
           resources:
-              requests:
-                cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
-                memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
-                ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
+            requests:
+              cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
+              memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
+              ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
           volumeMounts:
             - name: config-volume
               mountPath: /etc/config
+            - name: worker-storage
+              mountPath: /opt/funnel    # Shared workspace directory
 
       volumes: 
         - name: config-volume
           configMap:
             name: funnel-config
+        - name: worker-storage
+          emptyDir: {}  # Default medium is node's disk
+          # Optionally, you can specify size limit and medium:
+          # emptyDir:
+          #   sizeLimit: 1Gi
+          #   medium: Memory  # For tmpfs-based storage

@@ -1,3 +1,5 @@
+# Task Executor
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -24,3 +26,10 @@ spec:
             cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
             memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
             ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
+        volumeMounts:
+          - name: worker-storage
+            mountPath: /opt/funnel    # Mount the same shared directory
+
+      volumes:
+        - name: worker-storage
+          emptyDir: {}  # Uses same configuration as worker

@@ -29,9 +29,6 @@ spec:
                 memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
                 ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
           volumeMounts:
-            # - name: funnel-storage-{{.TaskId}}
-            #   mountPath: /opt/funnel/funnel-work-dir/{{.TaskId}}
-            #   subPath: {{.TaskId}}
             - name: config-volume
               mountPath: /etc/config
 
@@ -39,6 +36,3 @@ spec:
         - name: config-volume
           configMap:
             name: funnel-config
-        # - name: funnel-storage-{{.TaskId}}
-        #   persistentVolumeClaim:
-        #     claimName: funnel-pvc 

@@ -31,6 +31,7 @@ jobs:
 
         # Install Java 17
         curl -s https://get.sdkman.io | bash
+        source "/home/runner/.sdkman/bin/sdkman-init.sh"
         sdk install java 17.0.10-tem
         java -version
 

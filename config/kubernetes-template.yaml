@@ -1,5 +1,4 @@
 # Funnel Worker
-
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -29,18 +28,18 @@ spec:
               memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
               ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
           volumeMounts:
-            - name: config-volume
-              mountPath: /etc/config
-            - name: worker-storage
-              mountPath: /opt/funnel    # Shared workspace directory
+          - name: config-volume
+            mountPath: /etc/config
+          
+          - name: funnel-storage-{{.TaskId}}
+            mountPath: /opt/funnel/funnel-work-dir/{{.TaskId}}
+            subPath: {{.TaskId}}
 
       volumes: 
-        - name: config-volume
-          configMap:
-            name: funnel-config
-        - name: worker-storage
-          emptyDir: {}  # Default medium is node's disk
-          # Optionally, you can specify size limit and medium:
-          # emptyDir:
-          #   sizeLimit: 1Gi
-          #   medium: Memory  # For tmpfs-based storage
+      - name: config-volume
+        configMap:
+          name: funnel-config
+
+      - name: funnel-storage-{{.TaskId}}
+        persistentVolumeClaim:
+          claimName: funnel-pvc-{{.TaskId}}

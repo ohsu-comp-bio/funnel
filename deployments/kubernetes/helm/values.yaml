@@ -30,6 +30,7 @@ serviceAccount:
   name: funnel-sa
 
 storage:
+  className: gp2
   provisioner: kubernetes.io/aws-ebs
   enabled: true
   size: 10Gi
@@ -37,6 +38,12 @@ storage:
   pv:
     enabled: false
     reclaimPolicy: Retain
+
+taskStorage:
+  className: gp2
+  provisioner: kubernetes.io/aws-ebs
+  enabled: true
+  size: 1Gi
 
 # Funnel Default Settings
 # Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml

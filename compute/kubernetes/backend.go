@@ -12,6 +12,9 @@ import (
 	"time"
 
 	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -71,6 +74,7 @@ func NewBackend(ctx context.Context, conf config.Kubernetes, reader tes.ReadOnly
 		event:     writer,
 		database:  reader,
 		log:       log,
+		config:    kubeconfig,
 	}
 
 	if !conf.DisableReconciler {
@@ -90,6 +94,7 @@ type Backend struct {
 	database          tes.ReadOnlyServer
 	log               *logger.Logger
 	backendParameters map[string]string
+	config            *rest.Config
 	events.Computer
 }
 
@@ -128,7 +133,8 @@ func (b *Backend) Close() {
 	//TODO: close database?
 }
 
-// createJob uses the configured template to create a kubernetes batch job.
+// Create the Funnel Worker job
+// Executor job is created in worker/kubernetes.go#Run
 func (b *Backend) createJob(task *tes.Task) (*v1.Job, error) {
 	submitTpl, err := template.New(task.Id).Parse(b.template)
 	if err != nil {
@@ -165,19 +171,92 @@ func (b *Backend) createJob(task *tes.Task) (*v1.Job, error) {
 	return job, nil
 }
 
-// Submit submits a task to the server as a kubernetes v1/batch job.
+func (b *Backend) createPVC(ctx context.Context, taskID string, resources *tes.Resources) error {
+	clientset, err := kubernetes.NewForConfig(b.config) // You'll need to store the config during NewBackend
+	if err != nil {
+		return fmt.Errorf("getting kubernetes client: %v", err)
+	}
+
+	storageSize := resource.NewQuantity(1024*1024*1024, resource.BinarySI) // 1Gi default
+	if resources != nil && resources.DiskGb > 0 {
+		storageSize = resource.NewQuantity(int64(resources.DiskGb*1024*1024*1024), resource.BinarySI)
+	}
+
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("funnel-pvc-%s", taskID),
+			Labels: map[string]string{
+				"app":    "funnel",
+				"taskId": taskID,
+			},
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
+			},
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *storageSize,
+				},
+			},
+		},
+	}
+
+	_, err = clientset.CoreV1().PersistentVolumeClaims(b.namespace).Create(ctx, pvc, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("creating shared PVC: %v", err)
+	}
+
+	return nil
+}
+
+// Add this helper function for PVC cleanup
+func (b *Backend) deletePVC(ctx context.Context, taskID string) error {
+	clientset, err := kubernetes.NewForConfig(b.config)
+	if err != nil {
+		return fmt.Errorf("getting kubernetes client: %v", err)
+	}
+
+	pvcName := fmt.Sprintf("funnel-pvc-%s", taskID)
+	err = clientset.CoreV1().PersistentVolumeClaims(b.namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
+	if err != nil {
+		// If the PVC is already gone, ignore the error
+		if k8errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("deleting shared PVC: %v", err)
+	}
+
+	return nil
+}
+
+// Submit creates both the PVC and the worker job with better error handling
 func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
+	// Create a new background context instead of inheriting from the potentially canceled one
+	submitCtx := context.Background()
+
+	// TODO: Update this so that a PVC is only created if the task has inputs or outputs
+	// If the task has either inputs or outputs, then create a PVC
+	// shared between the Funnel Worker and the Executor
+	// e.g. `if len(task.Inputs) > 0 || len(task.Outputs) > 0 {}`
+	err := b.createPVC(submitCtx, task.Id, task.GetResources())
+	if err != nil {
+		return fmt.Errorf("creating shared storage: %v", err)
+	}
+
+	// Create the worker job
 	job, err := b.createJob(task)
 	if err != nil {
 		return fmt.Errorf("creating job spec: %v", err)
 	}
-	ctx = context.Background()
-	job, err = b.client.Create(ctx, job, metav1.CreateOptions{
+
+	_, err = b.client.Create(submitCtx, job, metav1.CreateOptions{
 		FieldManager: task.Id,
 	})
 	if err != nil {
 		return fmt.Errorf("creating job in backend: %v", err)
 	}
+
 	return nil
 }
 
@@ -192,6 +271,12 @@ func (b *Backend) deleteJob(ctx context.Context, taskID string) error {
 	if err != nil {
 		return fmt.Errorf("deleting job: %v", err)
 	}
+
+	// Delete Worker PVC
+	if err := b.deletePVC(ctx, taskID); err != nil {
+		b.log.Error("failed to delete PVC", "taskID", taskID, "error", err)
+	}
+
 	return nil
 }
 
@@ -250,6 +335,12 @@ ReconcileLoop:
 						continue ReconcileLoop
 					}
 					b.log.Debug("reconcile: cleanuping up successful job", "taskID", j.Name)
+
+					// Delete Worker PVC
+					if err := b.deletePVC(ctx, j.Name); err != nil {
+						b.log.Error("failed to delete PVC", "taskID", j.Name, "error", err)
+					}
+
 					err := b.deleteJob(ctx, j.Name)
 					if err != nil {
 						b.log.Error("reconcile: cleaning up successful job", "taskID", j.Name, "error", err)
@@ -273,6 +364,12 @@ ReconcileLoop:
 					if disableCleanup {
 						continue ReconcileLoop
 					}
+
+					// Delete Worker PVC
+					if err := b.deletePVC(ctx, j.Name); err != nil {
+						b.log.Error("reconcile: cleaning up PVC for failed job", "taskID", j.Name, "error", err)
+					}
+
 					err = b.deleteJob(ctx, j.Name)
 					if err != nil {
 						b.log.Error("reconcile: cleaning up failed job", "taskID", j.Name, "error", err)

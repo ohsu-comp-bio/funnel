@@ -29,7 +29,8 @@ type KubernetesCommand struct {
 	Command
 }
 
-// Creates a new Kuberntes Job which will run the task.
+// Create the Executor K8s job
+// Funnel Worker job is created in compute/kubernetes/backend.go#createJob
 func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var taskId = kcmd.TaskId
 	tpl, err := template.New(taskId).Parse(kcmd.TaskTemplate)
@@ -55,7 +56,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"RamGb":          kcmd.Resources.RamGb,
 		"DiskGb":         kcmd.Resources.DiskGb,
 		"ServiceAccount": kcmd.ServiceAccount,
-		"Image":          kcmd.Image, // TODO: How to handle multiple images for the executors?
+		"Image":          kcmd.Image,
 	})
 
 	if err != nil {

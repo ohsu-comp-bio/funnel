@@ -4,10 +4,17 @@ kind: Job
 metadata:
   name: {{.TaskId}}
   namespace: {{.Namespace}}
+  labels:
+    app: funnel-worker
+    task-id: {{.TaskId}}
 spec: 
   backoffLimit: 0
   completions: 1
   template:
+    metadata:
+      labels:
+        app: funnel-worker
+        task-id: {{.TaskId}}
     spec:
       serviceAccountName: funnel-sa
       restartPolicy: Never

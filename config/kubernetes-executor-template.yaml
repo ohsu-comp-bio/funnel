@@ -5,6 +5,7 @@ metadata:
   name: {{.TaskId}}-{{.JobId}}
   namespace: {{.Namespace}}
   labels:
+    app: funnel-executor
     job-name: {{.TaskId}}-{{.JobId}}
 spec:
   backoffLimit: 0
@@ -13,19 +14,6 @@ spec:
     spec:
       restartPolicy: Never
       serviceAccountName: funnel-sa
-      # Setup symlinks from work dir to target paths
-      initContainers:
-      - name: setup-dirs
-        image: busybox
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            # Create a directory to bind mount the worker's files
-            # Create parent directories for any path specified in the task
-            # Create the symlink from worker dir to target path
-            echo "initContainer: Creating directories and symlinks"
-        securityContext:
-          runAsUser: 0  # Run as root to ensure directory creation works
       containers:
       - name: funnel-worker-{{.TaskId}}
         image: {{.Image}}

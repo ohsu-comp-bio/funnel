@@ -409,6 +409,10 @@ func (h FTPStorage) Valid() bool {
 
 // Kubernetes describes the configuration for the Kubernetes compute backend.
 type Kubernetes struct {
+	// The bucket to use for the task's Working Directory
+	Bucket string
+	// The region to use for the task's Bucket
+	Region string
 	// The executor used to execute tasks. Available executors: docker, kubernetes
 	Executor string
 	// Turn off task state reconciler. When enabled, Funnel communicates with Kuberenetes
@@ -428,6 +432,10 @@ type Kubernetes struct {
 	ExecutorTemplate string
 	// ExecutorTemplateFile is the path to the executor template.
 	ExecutorTemplateFile string
+	// Worker/Executor PV job template.
+	PVTemplate string
+	// Worker/Executor PVC job template.
+	PVCTemplate string
 	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
 	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
 	ConfigFile string

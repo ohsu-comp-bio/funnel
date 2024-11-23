@@ -164,11 +164,17 @@ func DefaultConfig() Config {
 
 	kubernetesTemplate := intern.MustAsset("config/kubernetes-template.yaml")
 	executorTemplate := intern.MustAsset("config/kubernetes-executor-template.yaml")
-	c.Kubernetes.Executor = "docker"
+	pvTemplate := intern.MustAsset("config/kubernetes-pv.yaml")
+	pvcTemplate := intern.MustAsset("config/kubernetes-pvc.yaml")
+	c.Kubernetes.Executor = "kubernetes"
 	c.Kubernetes.Namespace = "default"
 	c.Kubernetes.ServiceAccount = "funnel-sa"
 	c.Kubernetes.Template = string(kubernetesTemplate)
 	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
+	c.Kubernetes.Bucket = ""
+	c.Kubernetes.Region = ""
+	c.Kubernetes.PVTemplate = string(pvTemplate)
+	c.Kubernetes.PVCTemplate = string(pvcTemplate)
 	c.Kubernetes.ReconcileRate = reconcile
 
 	return c

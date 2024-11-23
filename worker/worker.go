@@ -34,6 +34,10 @@ type Executor struct {
 	Backend string
 	// Kubernetes executor template
 	Template string
+	// Kubernetes persistent volume template
+	PVTemplate string
+	// Kubernetes persistent volume claim template
+	PVCTemplate string
 	// Kubernetes namespace
 	Namespace string
 	// Kubernetes service account name

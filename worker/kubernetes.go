@@ -29,7 +29,7 @@ type KubernetesCommand struct {
 	Command
 }
 
-// Create the Executor K8s job
+// Create the Executor K8s job from kubernetes-executor-template.yaml
 // Funnel Worker job is created in compute/kubernetes/backend.go#createJob
 func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var taskId = kcmd.TaskId

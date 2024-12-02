@@ -56,6 +56,15 @@ type BasicCredential struct {
 	Password string
 }
 
+type OidcAuth struct {
+	ServiceConfigURL string
+	ClientId         string
+	ClientSecret     string
+	RedirectURL      string
+	RequireScope     string
+	RequireAudience  string
+}
+
 // RPCClient describes configuration for gRPC clients
 type RPCClient struct {
 	BasicCredential
@@ -77,6 +86,7 @@ type Server struct {
 	HTTPPort         string
 	RPCPort          string
 	BasicAuth        []BasicCredential
+	OidcAuth         OidcAuth
 	DisableHTTPCache bool
 }
 

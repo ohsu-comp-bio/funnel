@@ -104,7 +104,9 @@ funnel task create hello-world.json
 
 # Storage Architecture
 
-![K8s Storage](/img/k8s-pvc.png)
+<a href="https://www.figma.com/board/bzgv8kVL2QKESU3Sqn7S1a/Funnel-%2B-Gen3?node-id=2-1059&t=9bcuG0bMAcxBLcRD-1">
+  <img title="K8s Storage" src="/img/k8s-pvc.png" />
+</a>
 
 # Additional Resources 📚
 

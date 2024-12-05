@@ -2,76 +2,78 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/</loc>
+    <loc>http://localhost:1313/funnel/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/aws-batch/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/aws-batch/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/security/basic/</loc>
+    <loc>http://localhost:1313/funnel/docs/security/basic/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/categories/</loc>
+    <loc>http://localhost:1313/funnel/categories/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/</loc>
+    <loc>http://localhost:1313/funnel/docs/databases/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/datastore/</loc>
+    <loc>http://localhost:1313/funnel/docs/databases/datastore/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/deployment/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/deployment/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/development/</loc>
+    <loc>http://localhost:1313/funnel/docs/development/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/</loc>
+    <loc>http://localhost:1313/funnel/download/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/download/</loc>
+    <loc>http://localhost:1313/funnel/docs/databases/dynamodb/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/dynamodb/</loc>
+    <loc>http://localhost:1313/funnel/docs/databases/elasticsearch/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/elasticsearch/</loc>
+    <loc>http://localhost:1313/funnel/docs/databases/boltdb/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/boltdb/</loc>
+    <loc>http://localhost:1313/funnel/docs/events/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/events/</loc>
+    <loc>http://localhost:1313/funnel/docs/storage/ftp/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/ftp/</loc>
+    <loc>http://localhost:1313/funnel/docs/development/developers/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/development/developers/</loc>
+    <loc>http://localhost:1313/funnel/docs/storage/google-storage/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/google-storage/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/grid-engine/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/grid-engine/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/htcondor/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/htcondor/</loc>
+    <loc>http://localhost:1313/funnel/docs/storage/http/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/http/</loc>
+    <loc>http://localhost:1313/funnel/docs/events/kafka/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/events/kafka/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/kubernetes/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/kubernetes/</loc>
+    <loc>http://localhost:1313/funnel/docs/storage/local/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/local/</loc>
+    <loc>http://localhost:1313/funnel/docs/metrics/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/metrics/</loc>
+    <loc>http://localhost:1313/funnel/docs/databases/mongodb/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/databases/mongodb/</loc>
+    <loc>http://localhost:1313/funnel/docs/integrations/nextflow/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/swift/</loc>
+    <loc>http://localhost:1313/funnel/docs/storage/swift/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/</loc>
+    <loc>http://localhost:1313/funnel/docs/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/pbs-torque/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/pbs-torque/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/metrics/prometheus/</loc>
+    <loc>http://localhost:1313/funnel/docs/metrics/prometheus/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/s3/</loc>
+    <loc>http://localhost:1313/funnel/docs/integrations/py-tes/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/security/</loc>
+    <loc>http://localhost:1313/funnel/docs/storage/s3/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/compute/slurm/</loc>
+    <loc>http://localhost:1313/funnel/docs/security/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/storage/</loc>
+    <loc>http://localhost:1313/funnel/docs/compute/slurm/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/tags/</loc>
+    <loc>http://localhost:1313/funnel/docs/storage/</loc>
   </url><url>
-    <loc>https://ohsu-comp-bio.github.io/funnel/docs/tasks/</loc>
+    <loc>http://localhost:1313/funnel/tags/</loc>
+  </url><url>
+    <loc>http://localhost:1313/funnel/docs/tasks/</loc>
   </url>
 </urlset>

@@ -14,13 +14,13 @@ Currently authentication credentials are take from the URL, e.g. `ftp://username
 The FTP storage client is enabled by default, but may be explicitly disabled in the 
 worker config:
 
-```
+```yaml
 FTPStorage:
   Disabled: false
 ```
 
 ### Example task
-```
+```json
 {
   "name": "Hello world",
   "inputs": [{

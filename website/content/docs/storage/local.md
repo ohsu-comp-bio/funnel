@@ -14,7 +14,7 @@ Funnel limits which directories may be accessed, by default only allowing direct
 under the current working directory of the Funnel worker.
 
 Config:
-```
+```yaml
 LocalStorage:
   # Whitelist of local directory paths which Funnel is allowed to access.
   AllowedDirs:

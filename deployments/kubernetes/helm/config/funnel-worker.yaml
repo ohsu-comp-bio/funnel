@@ -1,0 +1,37 @@
+Database: {{ .Values.Database }}
+
+Compute: {{ .Values.Compute }}
+
+Kubernetes:
+  Executor: "kubernetes"
+  Namespace: {{ .Release.Namespace }}
+
+Logger:
+  Level: {{ .Values.Logger.level }}
+
+RPCClient:
+  MaxRetries: {{ .Values.RPCClient.maxRetries }}
+  Timeout: {{ .Values.RPCClient.timeout }}
+
+EventWriters:
+  {{- range .Values.EventWriters }}
+  - {{ . }}
+  {{- end }}
+
+AmazonS3:
+  Disabled: {{ .Values.AmazonS3.Disabled }}
+  MaxRetries: {{ .Values.AmazonS3.MaxRetries }}
+  Key: {{ .Values.AmazonS3.Key }}
+  Secret: {{ .Values.AmazonS3.Secret }}
+
+Server:
+  HostName: funnel.{{ .Release.Namespace }}.svc.cluster.local
+  RPCPort: {{ .Values.Server.RPCPort }}
+
+Worker:
+  WorkDir: {{ .Values.Worker.WorkDir }}
+  PollingRate: {{ .Values.Worker.PollingRate }}
+  LogUpdateRate: {{ .Values.Worker.LogUpdateRate }}
+  LogTailSize: {{ .Values.Worker.LogTailSize }}
+  LeaveWorkDir: {{ .Values.Worker.LeaveWorkDir }}
+  MaxParallelTransfers: {{ .Values.Worker.MaxParallelTransfers }}

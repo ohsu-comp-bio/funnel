@@ -53,6 +53,7 @@ func newDebugInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 			"resp", resp,
 			"err", err,
 		)
+
 		return resp, err
 	}
 }
@@ -84,7 +85,11 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 			w.WriteHeader(http.StatusNotFound) // 404
 		}
 	default:
-		w.WriteHeader(http.StatusInternalServerError) // 500
+		if strings.Contains(st.Message(), "backend parameters not supported") {
+			w.WriteHeader(http.StatusBadRequest) // 400
+		} else {
+			w.WriteHeader(http.StatusInternalServerError) // 500
+		}
 	}
 
 	// Write the error message
@@ -95,6 +100,11 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		return
 	}
 	w.Write(jErrBytes)
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
 
 type JSONError struct {
@@ -153,6 +163,7 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.Handle("/favicon.ico", dashfs)
 	mux.Handle("/manifest.json", dashfs)
 	mux.Handle("/health.html", dashfs)
+	mux.HandleFunc("/healthz", healthHandler)
 	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
 

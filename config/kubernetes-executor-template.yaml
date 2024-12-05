@@ -1,0 +1,53 @@
+# Task Executor
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.TaskId}}-{{.JobId}}
+  namespace: {{.Namespace}}
+  labels:
+    job-name: {{.TaskId}}-{{.JobId}}
+spec:
+  backoffLimit: 0
+  completions: 1
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: funnel-sa
+      # Setup symlinks from work dir to target paths
+      initContainers:
+      - name: setup-dirs
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            # Create a directory to bind mount the worker's files
+            # Create parent directories for any path specified in the task
+            # Create the symlink from worker dir to target path
+            echo "initContainer: Creating directories and symlinks"
+        securityContext:
+          runAsUser: 0  # Run as root to ensure directory creation works
+      containers:
+      - name: funnel-worker-{{.TaskId}}
+        image: {{.Image}}
+        imagePullPolicy: Always
+        command: ["/bin/sh", "-c"]
+        args: {{.Command}}
+        workingDir: {{.Workdir}}
+        resources:
+          requests:
+            cpu: {{if ne .Cpus 0 -}}{{.Cpus}}{{ else }}{{"100m"}}{{end}}
+            memory: {{if ne .RamGb 0.0 -}}{{printf "%.0fG" .RamGb}}{{else}}{{"16M"}}{{end}}
+            ephemeral-storage: {{if ne .DiskGb 0.0 -}}{{printf "%.0fG" .DiskGb}}{{else}}{{"100M"}}{{end}}
+        
+        volumeMounts:
+        ### DO NOT CHANGE THIS
+        {{range $idx, $item := .Volumes}}
+        - name: funnel-storage-{{$.TaskId}}
+          mountPath: {{$item.ContainerPath}}
+          subPath: {{$.TaskId}}{{$item.ContainerPath}}
+        {{end}}
+
+      volumes: 
+      - name: funnel-storage-{{.TaskId}}
+        persistentVolumeClaim:
+          claimName: funnel-pvc-{{.TaskId}}

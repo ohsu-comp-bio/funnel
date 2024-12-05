@@ -147,7 +147,11 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		case strings.ToLower(conf.Database):
 			continue
 		case "log":
-			continue
+			if conf.Compute == "slurm" {
+				writer = &events.Logger{Log: log}
+			} else {
+				continue
+			}
 		case "boltdb":
 			writer, err = boltdb.NewBoltDB(conf.BoltDB)
 		case "badger":
@@ -271,6 +275,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 				Compute: compute,
 				Read:    reader,
 				Log:     log,
+				Config:  conf,
 			},
 			Events: &events.Service{Writer: writer},
 			Nodes:  nodes,

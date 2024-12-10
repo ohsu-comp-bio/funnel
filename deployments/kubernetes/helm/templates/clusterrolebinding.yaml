@@ -5,7 +5,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: funnel-sa
-  namespace: funnel
+  namespace: {{ .Release.Namespace }} 
 roleRef:
   kind: ClusterRole
   name: funnel-clusterrole

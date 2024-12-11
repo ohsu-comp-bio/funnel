@@ -6,30 +6,15 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 
-import { isDone } from './utils';
+import { isDone, post } from './utils';
 
 function CancelButton({task}) {
   const [open, setOpen] = React.useState(false);
 
   const cancelTask = () => {
     var url = new URL("/v1/tasks/" + task.id + ":cancel", window.location.origin);
-    //console.log("cancelTask url:", url);
-    fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    .then(response => response.json())
-    .then(
-      (result) => {
-        return result;
-      },
-      (error) => {
-        console.log("cancelTask", url.toString(), "error:", error);
-        return undefined;
-      },
+    post(url).catch((error) =>
+      console.log("cancelTask", url.toString(), "error:", error)
     );
   };
 
@@ -45,7 +30,7 @@ function CancelButton({task}) {
     cancelTask(task.id);
     setOpen(false);
   };
-  
+
   if (task.state === undefined || isDone(task)) {
     return (<div />);
   } else {

@@ -11,7 +11,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v5
       with:
-        go-version: 1.21
+        go-version: 1.22
 
     - name: Check out code
       uses: actions/checkout@v2
@@ -23,6 +23,7 @@ jobs:
         key: ${{ runner.os }}-funnel-bin-${{ hashFiles('**/go.sum') }}-${{ github.ref }}
         restore-keys: |
           ${{ runner.os }}-funnel-bin-${{ github.ref }}
+          ${{ runner.os }}-funnel-bin-
 
     - name: Build Funnel (if cache doesn't exist)
       run: |

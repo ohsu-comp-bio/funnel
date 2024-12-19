@@ -1,15 +1,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: funnel-clusterrole
+  name: {{ .Release.Namespace }}-{{ .Release.Name }}-clusterrole
 rules:
 - apiGroups: [""]
   resources:
-  - persistentvolumes
+    - persistentvolumes
   verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - delete
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - delete

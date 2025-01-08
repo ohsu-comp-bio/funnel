@@ -3,8 +3,15 @@ Database: {{ .Values.Database }}
 Compute: {{ .Values.Compute }}
 
 Kubernetes:
-  Executor: "kubernetes"
+  Executor: {{ .Values.Kubernetes.Executor }}
   Namespace: {{ .Release.Namespace }}
+  DisableReconciler: {{ .Values.Kubernetes.DisableReconciler }}
+  ReconcileRate: {{ .Values.Kubernetes.ReconcileRate }}
+  ServiceAccount: {{ .Values.Kubernetes.ServiceAccount }}
+  Template: {{ .Values.Kubernetes.Template }}
+  TemplateFile: {{ .Values.Kubernetes.TemplateFile }}
+  Bucket: {{ .Values.Kubernetes.Bucket }}
+  Region: {{ .Values.Kubernetes.Region }}
 
 Logger:
   Level: {{ .Values.Logger.level }}

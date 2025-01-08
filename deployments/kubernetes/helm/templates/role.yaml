@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }} 
 rules:
   - apiGroups: [""]
-    resources: ["pods", "pods/log", "persistentvolumeclaims"]  # Added PVCs
+    resources: ["pods", "pods/log", "persistentvolumeclaims"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["batch", "extensions"]
     resources: ["jobs"]

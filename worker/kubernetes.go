@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/template"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -26,10 +27,11 @@ type KubernetesCommand struct {
 	Namespace      string
 	Resources      *tes.Resources
 	ServiceAccount string
+	Clientset      kubernetes.Interface
 	Command
 }
 
-// Create the Executor K8s job
+// Create the Executor K8s job from kubernetes-executor-template.yaml
 // Funnel Worker job is created in compute/kubernetes/backend.go#createJob
 func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var taskId = kcmd.TaskId
@@ -42,6 +44,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var command = kcmd.ShellCommand
 	if kcmd.StdinFile != "" {
 		command = append(command, "<", kcmd.StdinFile)
+	}
+	for i, v := range command {
+		if strings.Contains(v, " ") {
+			command[i] = fmt.Sprintf("'%s'", v)
+		}
 	}
 
 	var buf bytes.Buffer
@@ -74,9 +81,13 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		return err
 	}
 
-	clientset, err := getKubernetesClientset()
-	if err != nil {
-		return err
+	clientset := kcmd.Clientset
+	if clientset == nil {
+		var err error
+		clientset, err = getKubernetesClientset()
+		if err != nil {
+			return err
+		}
 	}
 
 	var client = clientset.BatchV1().Jobs(kcmd.Namespace)

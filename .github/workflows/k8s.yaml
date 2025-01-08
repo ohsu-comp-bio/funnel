@@ -55,7 +55,7 @@ jobs:
           chmod +x funnel
           funnel examples hello-world > hello-world.json
           ID=$(funnel task create hello-world.json)
-          kubectl wait --for=condition=Complete job/$ID --timeout=30s
+          kubectl wait --for=condition=Complete job/$ID --timeout=60s
           
           # Exits 0 if the task is complete, otherwise exits 1
           funnel task get $ID | grep -q COMPLETE

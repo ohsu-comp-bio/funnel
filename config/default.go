@@ -166,7 +166,7 @@ func DefaultConfig() Config {
 	executorTemplate := intern.MustAsset("config/kubernetes-executor-template.yaml")
 	pvTemplate := intern.MustAsset("config/kubernetes-pv.yaml")
 	pvcTemplate := intern.MustAsset("config/kubernetes-pvc.yaml")
-	c.Kubernetes.Executor = "kubernetes"
+	c.Kubernetes.Executor = "docker"
 	c.Kubernetes.Namespace = "default"
 	c.Kubernetes.ServiceAccount = "funnel-sa"
 	c.Kubernetes.Template = string(kubernetesTemplate)

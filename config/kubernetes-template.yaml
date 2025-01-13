@@ -16,6 +16,7 @@ spec:
         app: funnel-worker
         task-id: {{.TaskId}}
     spec:
+      priorityClassName: non-preemptible-class
       serviceAccountName: funnel-sa
       restartPolicy: Never
       containers: 

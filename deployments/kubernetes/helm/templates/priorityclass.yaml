@@ -1,0 +1,7 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: non-preemptible-class
+value: 100000
+globalDefault: false
+description: "Priority class for non-preemptible pods"

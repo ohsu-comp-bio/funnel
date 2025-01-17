@@ -37,23 +37,6 @@ Server:
   #   - User: user2
   #     Password: foobar
 
-  # Require Bearer JWT authentication for the server APIs.
-  # Server won't launch when configuration URL cannot be loaded.
-  # OidcAuth:
-  #   # URL of the OIDC service configuration (activates OIDC configuration):
-  #   # Example: https://example.org/oidc/.well-knwon/openid-configuration
-  #   ServiceConfigURL:
-  #   # Client ID and secret are sent with the token introspection request
-  #   # (Basic authentication):
-  #   ClientId:
-  #   ClientSecret:
-  #   # The URL where OIDC should redirect after login (keep the path '/login')
-  #   RedirectURL: "http://localhost:8000/login"
-  #   # Optional: if specified, this scope value must be in the token:
-  #   RequireScope:
-  #   # Optional: if specified, this audience value must be in the token:
-  #   RequireAudience:
-
   # Include a "Cache-Control: no-store" HTTP header in Get/List responses
   # to prevent caching by intermediary services.
   DisableHTTPCache: true

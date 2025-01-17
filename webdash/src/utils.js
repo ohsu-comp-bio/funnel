@@ -13,16 +13,16 @@ function formatElapsedTime(miliseconds) {
 
   var time = "";
   if (days > 0) {
-    time += days + "d ";
+    time += days + "d "
   }
   if (hours > 0 || days > 0) {
-    time += hours + "h ";
+    time += hours + "h "
   }
   if (minutes > 0 || hours > 0) {
-    time += minutes + "m ";
+    time += minutes + "m "
   }
   if (seconds > 0 || minutes > 0) {
-    time += seconds + "s";
+    time += seconds + "s"
   }
   if (time === "") {
     time = "< 1s";
@@ -46,7 +46,7 @@ function elapsedTime(task) {
       return formatElapsedTime(elapsed);
     }
   }
-  return;
+  return
 }
 
 function formatTimestamp(utcNanoseconds) {
@@ -54,11 +54,8 @@ function formatTimestamp(utcNanoseconds) {
     var utcSeconds = parseInt(utcNanoseconds) / 1000000;
     var date = new Date(utcSeconds);
     var options = {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
+      weekday: 'short',  month: 'short', day: 'numeric',
+      hour: 'numeric', minute: 'numeric'
     };
     return date.toLocaleDateString("en-US", options);
   }
@@ -69,11 +66,8 @@ function formatDate(tstamp) {
   if (tstamp) {
     var date = new Date(tstamp);
     var options = {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
+      weekday: 'short',  month: 'short', day: 'numeric',
+      hour: 'numeric', minute: 'numeric'
     };
     return date.toLocaleDateString("en-US", options);
   }
@@ -82,70 +76,33 @@ function formatDate(tstamp) {
 
 function isDone(task) {
   if (task.state === undefined) {
-    return false;
+    return false
   }
-  return (
-    task.state === "COMPLETE" ||
-    task.state === "EXECUTOR_ERROR" ||
-    task.state === "CANCELED" ||
-    task.state === "SYSTEM_ERROR"
-  );
+  return task.state === "COMPLETE" || task.state === "EXECUTOR_ERROR" || task.state === "CANCELED" || task.state === "SYSTEM_ERROR";
 }
 
-// Initialises request headers for future requests.
-// If authentication is required, immediately redirects to '/login'.
-const fetchOptsPromise = fetch("/login/token")
-  .then((response) => {
-    if (response.status !== 200) {
-      throw new Error("User authentication is required");
-    }
-    return response.text();
-  })
-  .then((token) => {
-    const fetchOpts = {};
-    if (token) fetchOpts.headers = { Authorization: "Bearer " + token };
-    return fetchOpts;
-  })
-  .catch((_) => (window.location.pathname = "/login"));
-
-// Updates fetch API configuration for POST requests.
-function fetchWithPost(fetchOpts, doPost) {
-  if (!doPost) return fetchOpts;
-  return {
-    method: "POST",
-    headers: {
-      ...(fetchOpts.headers || {}),
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-  };
-}
-
-// Retrieves data from given URL. Usually, it's a GET-request.
-// When postJson is true, it's a POST-request without body.
-// Returns the Promise from the fetch() call.
-function get(url, postJson) {
+function get(url) {
   if (!url instanceof URL) {
-    throw new Error("Expected URL object; got: " + typeof url);
-  } else if (url.pathname.includes("/v1/tasks")) {
-    url.searchParams.set("view", "FULL");
+    console.log("get error: expected URL object; got", url);
+    return undefined;
+  };
+  var params = url.searchParams;
+  if (url.toString().includes("/v1/tasks")) {
+    params.set("view", "FULL");
   }
+  //console.log("get url:", url);
+  return fetch(url.toString())
+    .then(response => response.json())
+    .then(
+      (result) => {
+        //console.log("get result:", result);
+        return result;
+      },
+      (error) => {
+        console.log("get", url.toString(), "error:", error);
+        throw error;
+      },
+    );
+};
 
-  return fetchOptsPromise
-    .then((fetchOpts) => fetchWithPost(fetchOpts, postJson))
-    .then((fetchOpts) => fetch(url.toString(), fetchOpts))
-    .then((response) => response.json())
-    .catch((error) => {
-      console.log("get", url.toString(), "error:", error);
-      throw error;
-    },
-  );
-}
-
-// Performs POST-request to given URL without payload
-// Returns the Promise from the fetch() call.
-function post(url) {
-  return get(url, true);
-}
-
-export { isDone, formatDate, formatTimestamp, elapsedTime, get, post };
+export { isDone, formatDate, formatTimestamp, elapsedTime, get };

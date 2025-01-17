@@ -31,7 +31,6 @@ type Server struct {
 	RPCAddress       string
 	HTTPPort         string
 	BasicAuth        []config.BasicCredential
-	OidcAuth         config.OidcAuth
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
 	Nodes            scheduler.SchedulerServiceServer
@@ -124,13 +123,11 @@ func (s *Server) Serve(pctx context.Context) error {
 		return err
 	}
 
-	auth := NewAuthentication(s.BasicAuth, s.OidcAuth)
-
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
 				// API auth check.
-				auth.Interceptor,
+				newAuthInterceptor(s.BasicAuth),
 				newDebugInterceptor(s.Log),
 			),
 		),
@@ -169,12 +166,10 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
-	mux.HandleFunc("/login", auth.LoginHandler)
-	mux.HandleFunc("/login/token", auth.EchoTokenHandler)
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 		// TODO this doesnt handle all routes
-		if s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
+		if len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
 		}
 		switch negotiate(req) {

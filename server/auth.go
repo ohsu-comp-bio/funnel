@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/base64"
-	"net/http"
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -13,145 +12,75 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Authentication struct {
-	basic map[string]string
-	oidc  *OidcConfig
-}
+// Return a new interceptor function that authorizes RPCs
+// using a password stored in the config.
+func newAuthInterceptor(creds []config.BasicCredential) grpc.UnaryServerInterceptor {
 
-// Extracted info about the current user, which is exposed through Context.
-type UserInfo struct {
-	// Public users are non-authenticated, in case Funnel configuration does
-	// not require OIDC nor Basic authentication.
-	IsPublic bool
-	// Username of an authenticated user (subject field from JWT).
-	Username string
-	// In case of OIDC authentication, the provided Bearer token, which can be
-	// used when requesting task input data.
-	Token string
-}
-
-// Context key type for storing UserInfo.
-// Note: UserInfo is not in the context when the system internally requests data.
-type userInfoContextKey string
-
-var (
-	errMissingMetadata    = status.Errorf(codes.InvalidArgument, "Missing metadata in the context")
-	errTokenRequired      = status.Errorf(codes.Unauthenticated, "Basic/Bearer authorization token missing")
-	errInvalidBasicToken  = status.Errorf(codes.Unauthenticated, "Basic-authentication failed")
-	errInvalidBearerToken = status.Errorf(codes.Unauthenticated, "Bearer authorization token not accepted")
-	publicUserInfo        = UserInfo{IsPublic: true, Username: ""}
-	UserInfoKey           = userInfoContextKey("user-info")
-)
-
-func NewAuthentication(creds []config.BasicCredential, oidc config.OidcAuth) *Authentication {
-	basicCreds := make(map[string]string)
-
-	for _, cred := range creds {
-		credBytes := []byte(cred.User + ":" + cred.Password)
-		fullValue := "Basic " + base64.StdEncoding.EncodeToString(credBytes)
-		basicCreds[fullValue] = cred.User
-	}
-
-	return &Authentication{
-		basic: basicCreds,
-		oidc:  initOidcConfig(oidc),
-	}
-}
-
-// Return a new gRPC interceptor function that authorizes RPCs.
-func (a *Authentication) Interceptor(
-	ctx context.Context,
-	req interface{},
-	info *grpc.UnaryServerInfo,
-	handler grpc.UnaryHandler) (interface{}, error) {
-
-	// Case when authentication is not required:
-	if len(a.basic) == 0 && a.oidc == nil {
-		ctx = context.WithValue(ctx, UserInfoKey, &publicUserInfo)
+	// Return a function that is the interceptor.
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler) (interface{}, error) {
+		var authorized bool
+		var err error
+		for _, cred := range creds {
+			err = authorize(ctx, cred.User, cred.Password)
+			if err == nil {
+				authorized = true
+			}
+		}
+		if len(creds) == 0 {
+			authorized = true
+		}
+		if !authorized {
+			return nil, err
+		}
 		return handler(ctx, req)
 	}
+}
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, errMissingMetadata
-	}
-
-	values := md["authorization"]
-	if len(values) == 0 {
-		return nil, errTokenRequired
-	}
-
-	authorized := false
-	authErr := errTokenRequired
-	authorization := values[0]
-
-	if strings.HasPrefix(authorization, "Basic ") {
-		authErr = errInvalidBasicToken
-		username := a.basic[authorization]
-		authorized = username != ""
-
-		if authorized {
-			ctx = context.WithValue(ctx, UserInfoKey, &UserInfo{Username: username})
-		}
-	} else if a.oidc != nil && strings.HasPrefix(authorization, "Bearer ") {
-		authErr = errInvalidBearerToken
-		jwtString := strings.TrimPrefix(authorization, "Bearer ")
-		subject := a.oidc.ParseJwtSubject(jwtString)
-		authorized = subject != ""
-
-		if authorized {
-			ctx = context.WithValue(ctx, UserInfoKey, &UserInfo{Username: subject, Token: jwtString})
+// Check the context's metadata for the configured server/API password.
+func authorize(ctx context.Context, user, password string) error {
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if len(md["authorization"]) > 0 {
+			raw := md["authorization"][0]
+			requser, reqpass, ok := parseBasicAuth(raw)
+			if ok {
+				if requser == user && reqpass == password {
+					return nil
+				}
+				return status.Errorf(codes.PermissionDenied, "AUTH DENIED")
+			}
 		}
 	}
 
-	if !authorized {
-		return nil, authErr
-	}
-
-	return handler(ctx, req)
+	return status.Errorf(codes.Unauthenticated, "UNAUTHENTICATED")
 }
 
-// HTTP request handler for the /login endpoint. Initiates user authentication
-// flow based on the configuration (OIDC, Basic, none).
-func (a *Authentication) LoginHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		http.Error(w, "Only GET method is supported.", http.StatusMethodNotAllowed)
+// parseBasicAuth parses an HTTP Basic Authentication string.
+// "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin", "open sesame", true).
+//
+// Taken from Go core: https://golang.org/src/net/http/request.go?s=27379:27445#L828
+func parseBasicAuth(auth string) (username, password string, ok bool) {
+	const prefix = "Basic "
+
+	if !strings.HasPrefix(auth, prefix) {
+		return
 	}
 
-	if a.oidc != nil {
-		a.oidc.HandleAuthCode(w, req)
-	} else if len(a.basic) > 0 {
-		a.handleBasicAuth(w, req)
-	} else {
-		http.Redirect(w, req, "/", http.StatusSeeOther)
-	}
-}
+	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
 
-// HTTP request handler for the /login/token endpoint. In case of OIDC enabled,
-// prints the JWT from the sent cookie. In all other cases, an empty HTTP 200
-// response.
-func (a *Authentication) EchoTokenHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		http.Error(w, "Only GET method is supported.", http.StatusMethodNotAllowed)
+	if err != nil {
+		return
 	}
 
-	if a.oidc != nil {
-		a.oidc.EchoTokenHandler(w, req)
-	} else {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Content-Length", "0")
-		w.WriteHeader(http.StatusOK)
-	}
-}
+	cs := string(c)
+	s := strings.IndexByte(cs, ':')
 
-func (a *Authentication) handleBasicAuth(w http.ResponseWriter, req *http.Request) {
-	// Check if provided value in the header is valid:
-	if a.basic[req.Header.Get("Authorization")] == "" {
-		http.Redirect(w, req, "/", http.StatusSeeOther)
-	} else {
-		w.Header().Set("WWW-Authenticate", "Basic realm=Funnel")
-		msg := "User authentication is required (Basic authentication with " +
-			"username and password)"
-		http.Error(w, msg, http.StatusUnauthorized)
+	if s < 0 {
+		return
 	}
+
+	return cs[:s], cs[s+1:], true
 }

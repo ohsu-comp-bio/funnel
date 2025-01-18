@@ -267,6 +267,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			RPCAddress:       ":" + conf.Server.RPCPort,
 			HTTPPort:         conf.Server.HTTPPort,
 			BasicAuth:        conf.Server.BasicAuth,
+			OidcAuth:         conf.Server.OidcAuth,
 			DisableHTTPCache: conf.Server.DisableHTTPCache,
 			Log:              log,
 			Tasks: &server.TaskService{

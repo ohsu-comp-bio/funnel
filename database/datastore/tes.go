@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"cloud.google.com/go/datastore"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -21,7 +22,7 @@ func (d *Datastore) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 	}
 
 	task := &tes.Task{}
-	if err := unmarshalTask(task, props); err != nil {
+	if err := unmarshalTask(task, props, ctx); err != nil {
 		return nil, err
 	}
 
@@ -84,6 +85,10 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		q = q.Start(c)
 	}
 
+	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
+		q = q.FilterField("Owner", "=", userInfo.Username)
+	}
+
 	if req.State != tes.Unknown {
 		q = q.FilterField("State", "=", int32(req.State))
 	}
@@ -117,7 +122,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 
 	for _, props := range proplists {
 		task := &tes.Task{}
-		if err := unmarshalTask(task, props); err != nil {
+		if err := unmarshalTask(task, props, ctx); err != nil {
 			return nil, err
 		}
 

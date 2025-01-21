@@ -30,6 +30,7 @@ func DefaultConfig() Config {
 		RPCPort:          "9090",
 		ServiceName:      "Funnel",
 		DisableHTTPCache: true,
+		TaskAccess:       "All",
 	}
 
 	c := Config{

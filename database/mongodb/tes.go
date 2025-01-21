@@ -3,6 +3,7 @@ package mongodb
 import (
 	"fmt"
 
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,6 +18,10 @@ var basicView = bson.M{
 }
 var minimalView = bson.M{"id": 1, "state": 1}
 
+type TaskOwner struct {
+	Owner string `bson:"owner"`
+}
+
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	var task tes.Task
@@ -29,8 +34,18 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 		opts = opts.SetProjection(minimalView)
 	}
 
-	err := db.tasks(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}, opts).Decode(&task)
-	if err != nil {
+	result := db.tasks(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}, opts)
+	if result.Err() != nil {
+		return nil, tes.ErrNotFound
+	}
+
+	var owner TaskOwner
+	_ = result.Decode(&owner)
+	if !server.GetUser(ctx).IsAccessible(owner.Owner) {
+		return nil, tes.ErrNotPermitted
+	}
+
+	if err := result.Decode(&task); err != nil {
 		return nil, tes.ErrNotFound
 	}
 
@@ -53,6 +68,10 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 
 	if req.NamePrefix != "" {
 		query["name"] = bson.M{"$regex": fmt.Sprintf("^%s", req.NamePrefix)}
+	}
+
+	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
+		query["owner"] = bson.M{"$eq": userInfo.Username}
 	}
 
 	for k, v := range req.GetTags() {

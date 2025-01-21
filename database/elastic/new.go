@@ -9,7 +9,7 @@ import (
 	elastic "gopkg.in/olivere/elastic.v5"
 )
 
-var minimal = elastic.NewFetchSourceContext(true).Include("id", "state")
+var minimal = elastic.NewFetchSourceContext(true).Include("id", "state", "owner")
 var basic = elastic.NewFetchSourceContext(true).
 	Exclude("logs.logs.stderr", "logs.logs.stdout", "inputs.content", "logs.system_logs")
 
@@ -76,6 +76,9 @@ func (es *Elastic) Init() error {
             "type": "keyword"
           },
           "state": {
+            "type": "keyword"
+          },
+          "owner": {
             "type": "keyword"
           },
           "inputs": {

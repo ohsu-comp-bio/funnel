@@ -1,11 +1,13 @@
 package datastore
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
 	"cloud.google.com/go/datastore"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -88,6 +90,7 @@ type part struct {
 type task struct {
 	Id, CreationTime  string `datastore:",omitempty"` // nolint
 	State             int32
+	Owner             string
 	Name, Description string     `datastore:",noindex,omitempty"`
 	Executors         []executor `datastore:",noindex,omitempty"`
 	Inputs            []param    `datastore:",noindex,omitempty"`
@@ -122,10 +125,11 @@ type param struct {
 	Type                                  int32  `datastore:",noindex,omitempty"`
 }
 
-func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
+func marshalTask(t *tes.Task, ctx context.Context) ([]*datastore.Key, []interface{}) {
 	z := &task{
 		Id:           t.Id,
 		State:        int32(t.State),
+		Owner:        server.GetUsername(ctx),
 		CreationTime: t.CreationTime,
 		Name:         t.Name,
 		Description:  t.Description,
@@ -197,11 +201,15 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 	return keys, data
 }
 
-func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
+func unmarshalTask(z *tes.Task, props datastore.PropertyList, ctx context.Context) error {
 	c := &task{}
 	err := datastore.LoadStruct(c, props)
 	if err != nil {
 		return err
+	}
+
+	if !server.GetUser(ctx).IsAccessible(c.Owner) {
+		return tes.ErrNotPermitted
 	}
 
 	z.Id = c.Id

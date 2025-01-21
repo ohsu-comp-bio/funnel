@@ -2,7 +2,9 @@ package server
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -14,15 +16,25 @@ import (
 )
 
 type Authentication struct {
-	basic map[string]string
-	oidc  *OidcConfig
+	admins map[string]bool
+	basic  map[string]string
+	oidc   *OidcConfig
 }
+
+const (
+	AccessAll          = "All"
+	AccessOwner        = "Owner"
+	AccessOwnerOrAdmin = "OwnerOrAdmin"
+)
 
 // Extracted info about the current user, which is exposed through Context.
 type UserInfo struct {
 	// Public users are non-authenticated, in case Funnel configuration does
 	// not require OIDC nor Basic authentication.
 	IsPublic bool
+	// Administrator is a Basic-authentication user with `Admin: true` property
+	// in the configuration file.
+	IsAdmin bool
 	// Username of an authenticated user (subject field from JWT).
 	Username string
 	// In case of OIDC authentication, the provided Bearer token, which can be
@@ -39,22 +51,53 @@ var (
 	errTokenRequired      = status.Errorf(codes.Unauthenticated, "Basic/Bearer authorization token missing")
 	errInvalidBasicToken  = status.Errorf(codes.Unauthenticated, "Basic-authentication failed")
 	errInvalidBearerToken = status.Errorf(codes.Unauthenticated, "Bearer authorization token not accepted")
-	publicUserInfo        = UserInfo{IsPublic: true, Username: ""}
+	publicUserInfo        = UserInfo{IsPublic: true, IsAdmin: false, Username: ""}
 	UserInfoKey           = userInfoContextKey("user-info")
+	accessMode            = AccessAll
 )
 
-func NewAuthentication(creds []config.BasicCredential, oidc config.OidcAuth) *Authentication {
+func GetUser(ctx context.Context) *UserInfo {
+	if userInfo, ok := ctx.Value(UserInfoKey).(*UserInfo); ok {
+		return userInfo
+	}
+	return &publicUserInfo
+}
+
+func GetUsername(ctx context.Context) string {
+	return GetUser(ctx).Username
+}
+
+func NewAuthentication(
+	creds []config.BasicCredential,
+	oidc config.OidcAuth,
+	taskAccess string,
+) *Authentication {
 	basicCreds := make(map[string]string)
+	adminUsers := make(map[string]bool)
 
 	for _, cred := range creds {
 		credBytes := []byte(cred.User + ":" + cred.Password)
 		fullValue := "Basic " + base64.StdEncoding.EncodeToString(credBytes)
 		basicCreds[fullValue] = cred.User
+		if cred.Admin {
+			adminUsers[cred.User] = true
+		}
+	}
+
+	if taskAccess == AccessAll || taskAccess == AccessOwner || taskAccess == AccessOwnerOrAdmin {
+		accessMode = taskAccess
+	} else if taskAccess == "" {
+		accessMode = AccessAll
+	} else {
+		fmt.Printf("[ERROR] Bad configuration value for Server.TaskAccess (%s). "+
+			"Expected 'All', 'Owner', or 'OwnerOrAdmin'.\n", accessMode)
+		os.Exit(1)
 	}
 
 	return &Authentication{
-		basic: basicCreds,
-		oidc:  initOidcConfig(oidc),
+		admins: adminUsers,
+		basic:  basicCreds,
+		oidc:   initOidcConfig(oidc),
 	}
 }
 
@@ -91,16 +134,15 @@ func (a *Authentication) Interceptor(
 		authorized = username != ""
 
 		if authorized {
-			ctx = context.WithValue(ctx, UserInfoKey, &UserInfo{Username: username})
+			isAdmin := a.admins[username]
+			ctx = context.WithValue(ctx, UserInfoKey,
+				&UserInfo{Username: username, IsAdmin: isAdmin})
 		}
 	} else if a.oidc != nil && strings.HasPrefix(authorization, "Bearer ") {
 		authErr = errInvalidBearerToken
-		jwtString := strings.TrimPrefix(authorization, "Bearer ")
-		subject := a.oidc.ParseJwtSubject(jwtString)
-		authorized = subject != ""
-
-		if authorized {
-			ctx = context.WithValue(ctx, UserInfoKey, &UserInfo{Username: subject, Token: jwtString})
+		if userInfo := a.oidc.Authorize(authorization); userInfo != nil {
+			ctx = context.WithValue(ctx, UserInfoKey, userInfo)
+			authorized = true
 		}
 	}
 
@@ -154,4 +196,33 @@ func (a *Authentication) handleBasicAuth(w http.ResponseWriter, req *http.Reques
 			"username and password)"
 		http.Error(w, msg, http.StatusUnauthorized)
 	}
+}
+
+// Reports whether the current user can access data with the specified owner.
+// Evaluation depends on configuration (Server.TaskAccess), current username,
+// and the username recorded in the task. For public users and unknown task
+// owners, the username is an empty string.
+func (u *UserInfo) IsAccessible(dataOwner string) bool {
+	if accessMode == AccessAll {
+		return true
+	}
+
+	isOwner := u != nil && u.Username == dataOwner
+	if accessMode == AccessOwner {
+		return isOwner
+	}
+
+	if accessMode == AccessOwnerOrAdmin {
+		return isOwner || u != nil && u.IsAdmin
+	}
+
+	return false
+}
+
+// Reports whether the current user can access all tasks considering the
+// configuration (Server.TaskAccess) and whether the user has Admin status.
+// If the result is false, data access must be verified (see: IsAccessible).
+func (u *UserInfo) CanSeeAllTasks() bool {
+	return accessMode == AccessAll ||
+		accessMode == AccessOwnerOrAdmin && u != nil && u.IsAdmin
 }

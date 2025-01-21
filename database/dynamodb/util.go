@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -251,6 +252,10 @@ func (db *DynamoDB) createTask(ctx context.Context, task *tes.Task) error {
 
 	av["version"] = &dynamodb.AttributeValue{
 		S: aws.String(strconv.FormatInt(time.Now().UnixNano(), 10)),
+	}
+
+	av["owner"] = &dynamodb.AttributeValue{
+		S: aws.String(server.GetUsername(ctx)),
 	}
 
 	// Add nil fields to make updates easier

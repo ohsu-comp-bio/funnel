@@ -2,13 +2,19 @@ package elastic
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 	elastic "gopkg.in/olivere/elastic.v5"
 )
+
+type TaskOwner struct {
+	Owner string `json:"owner"`
+}
 
 func (es *Elastic) getTask(ctx context.Context, req *tes.GetTaskRequest) (*elastic.GetResult, error) {
 	g := es.client.Get().
@@ -27,6 +33,15 @@ func (es *Elastic) getTask(ctx context.Context, req *tes.GetTaskRequest) (*elast
 	if elastic.IsNotFound(err) {
 		return nil, tes.ErrNotFound
 	}
+
+	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
+		partial := TaskOwner{}
+		_ = json.Unmarshal(*res.Source, &partial)
+		if !userInfo.IsAccessible(partial.Owner) {
+			return nil, tes.ErrNotPermitted
+		}
+	}
+
 	return res, err
 }
 
@@ -54,6 +69,11 @@ func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	}
 
 	filterParts := []elastic.Query{}
+
+	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
+		filterParts = append(filterParts, elastic.NewTermQuery("owner", userInfo.Username))
+	}
+
 	if req.State != tes.Unknown {
 		filterParts = append(filterParts, elastic.NewTermQuery("state", req.State.String()))
 	}

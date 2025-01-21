@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	elastic "gopkg.in/olivere/elastic.v5"
@@ -91,18 +92,22 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
 		task := ev.GetTask()
-		mar := jsonpb.Marshaler{}
-		s, err := mar.MarshalToString(task)
-		if err != nil {
-			return err
-		}
 
-		_, err = es.client.Index().
+		res, err := es.client.Index().
 			Index(es.taskIndex).
 			Type("task").
 			Id(task.Id).
-			BodyString(s).
+			BodyJson(task).
 			Do(ctx)
+
+		_, err = es.client.Update().
+			Index(res.Index).
+			Type(res.Type).
+			Id(res.Id).
+			Version(res.Version).
+			Doc(map[string]string{"owner": server.GetUsername(ctx)}).
+			Do(ctx)
+
 		return err
 
 	case events.Type_TASK_STATE:

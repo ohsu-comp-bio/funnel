@@ -14,7 +14,7 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 	switch e.Type {
 
 	case events.Type_TASK_CREATED:
-		putKeys, putData := marshalTask(e.GetTask())
+		putKeys, putData := marshalTask(e.GetTask(), ctx)
 		_, err := d.client.PutMulti(ctx, putKeys, putData)
 		return err
 
@@ -62,7 +62,7 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 			}
 
 			task := &tes.Task{}
-			if err := unmarshalTask(task, props); err != nil {
+			if err := unmarshalTask(task, props, ctx); err != nil {
 				return err
 			}
 
@@ -80,7 +80,7 @@ func (d *Datastore) WriteEvent(ctx context.Context, e *events.Event) error {
 				return err
 			}
 
-			putKeys, putData := marshalTask(task)
+			putKeys, putData := marshalTask(task, ctx)
 			_, err = tx.PutMulti(putKeys, putData)
 			return err
 		})

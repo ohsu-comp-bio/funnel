@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
@@ -32,6 +33,14 @@ func (db *DynamoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 
 	if response.Item == nil {
 		return nil, tes.ErrNotFound
+	}
+
+	taskOwner := ""
+	if attrValue, ok := response.Item["owner"]; ok {
+		taskOwner = *attrValue.S
+	}
+	if !server.GetUser(ctx).IsAccessible(taskOwner) {
+		return nil, tes.ErrNotPermitted
 	}
 
 	err = dynamodbattribute.UnmarshalMap(response.Item, &task)
@@ -63,6 +72,13 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	}
 
 	filterParts := []string{}
+
+	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
+		filterParts = append(filterParts, "owner = :ownerFilter")
+		attrValue := &dynamodb.AttributeValue{S: aws.String(userInfo.Username)}
+		query.ExpressionAttributeValues[":ownerFilter"] = attrValue
+	}
+
 	if req.State != tes.Unknown {
 		query.ExpressionAttributeNames = map[string]*string{
 			"#state": aws.String("state"),

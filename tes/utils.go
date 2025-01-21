@@ -54,6 +54,10 @@ func Base64Decode(raw string) (*Task, error) {
 var ErrNotFound = errors.New("task not found")
 var ErrConcurrentStateChange = errors.New("Concurrent stage change")
 
+// ErrNotPermitted is returned when the owner of a task does not match the
+// current non-admin user.
+var ErrNotPermitted = errors.New("permission denied")
+
 // Shorthand for task views
 const (
 	Minimal   = View_MINIMAL

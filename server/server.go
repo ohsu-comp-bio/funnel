@@ -32,6 +32,7 @@ type Server struct {
 	HTTPPort         string
 	BasicAuth        []config.BasicCredential
 	OidcAuth         config.OidcAuth
+	TaskAccess       string
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
 	Nodes            scheduler.SchedulerServiceServer
@@ -124,7 +125,7 @@ func (s *Server) Serve(pctx context.Context) error {
 		return err
 	}
 
-	auth := NewAuthentication(s.BasicAuth, s.OidcAuth)
+	auth := NewAuthentication(s.BasicAuth, s.OidcAuth, s.TaskAccess)
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(

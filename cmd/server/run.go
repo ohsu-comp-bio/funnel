@@ -269,6 +269,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			BasicAuth:        conf.Server.BasicAuth,
 			OidcAuth:         conf.Server.OidcAuth,
 			DisableHTTPCache: conf.Server.DisableHTTPCache,
+			TaskAccess:       conf.Server.TaskAccess,
 			Log:              log,
 			Tasks: &server.TaskService{
 				Name:    conf.Server.ServiceName,

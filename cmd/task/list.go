@@ -18,7 +18,8 @@ func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, 
 		return err
 	}
 
-	_, err = getTaskView(taskView)
+	taskValue, err := getTaskView(taskView)
+	taskView = tes.View_name[taskValue]
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,6 +31,12 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 			},
 		}
 		_, err := tasks.InsertOne(context.TODO(), &task)
+
+		if err == nil {
+			updateOwner := bson.M{"$set": bson.M{"owner": server.GetUsername(ctx)}}
+			_, err = tasks.UpdateOne(context.TODO(), bson.M{"id": req.Id}, updateOwner)
+		}
+
 		return err
 
 	case events.Type_TASK_STATE:

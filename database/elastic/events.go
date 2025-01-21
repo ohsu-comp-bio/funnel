@@ -100,13 +100,15 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 			BodyJson(task).
 			Do(ctx)
 
-		_, err = es.client.Update().
-			Index(res.Index).
-			Type(res.Type).
-			Id(res.Id).
-			Version(res.Version).
-			Doc(map[string]string{"owner": server.GetUsername(ctx)}).
-			Do(ctx)
+		if err == nil {
+			_, err = es.client.Update().
+				Index(res.Index).
+				Type(res.Type).
+				Id(res.Id).
+				Version(res.Version).
+				Doc(map[string]string{"owner": server.GetUsername(ctx)}).
+				Do(ctx)
+		}
 
 		return err
 

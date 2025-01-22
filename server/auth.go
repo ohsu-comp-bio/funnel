@@ -52,6 +52,7 @@ var (
 	errInvalidBasicToken  = status.Errorf(codes.Unauthenticated, "Basic-authentication failed")
 	errInvalidBearerToken = status.Errorf(codes.Unauthenticated, "Bearer authorization token not accepted")
 	publicUserInfo        = UserInfo{IsPublic: true, IsAdmin: false, Username: ""}
+	systemUserInfo        = UserInfo{IsPublic: false, IsAdmin: true, Username: "SYSTEM"}
 	UserInfoKey           = userInfoContextKey("user-info")
 	accessMode            = AccessAll
 )
@@ -60,7 +61,7 @@ func GetUser(ctx context.Context) *UserInfo {
 	if userInfo, ok := ctx.Value(UserInfoKey).(*UserInfo); ok {
 		return userInfo
 	}
-	return &publicUserInfo
+	return &systemUserInfo
 }
 
 func GetUsername(ctx context.Context) string {
@@ -203,7 +204,7 @@ func (a *Authentication) handleBasicAuth(w http.ResponseWriter, req *http.Reques
 // and the username recorded in the task. For public users and unknown task
 // owners, the username is an empty string.
 func (u *UserInfo) IsAccessible(dataOwner string) bool {
-	if accessMode == AccessAll {
+	if *u == systemUserInfo || accessMode == AccessAll {
 		return true
 	}
 
@@ -223,6 +224,7 @@ func (u *UserInfo) IsAccessible(dataOwner string) bool {
 // configuration (Server.TaskAccess) and whether the user has Admin status.
 // If the result is false, data access must be verified (see: IsAccessible).
 func (u *UserInfo) CanSeeAllTasks() bool {
-	return accessMode == AccessAll ||
+	return *u == systemUserInfo ||
+		accessMode == AccessAll ||
 		accessMode == AccessOwnerOrAdmin && u != nil && u.IsAdmin
 }

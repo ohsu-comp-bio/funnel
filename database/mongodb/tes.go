@@ -5,8 +5,8 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"golang.org/x/net/context"
 )
 
@@ -24,7 +24,6 @@ type TaskOwner struct {
 
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
-	var task tes.Task
 	var opts = options.FindOne()
 
 	switch req.View {
@@ -34,7 +33,10 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 		opts = opts.SetProjection(minimalView)
 	}
 
-	result := db.tasks(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}, opts)
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	result := db.tasks().FindOne(mctx, bson.M{"id": req.Id}, opts)
 	if result.Err() != nil {
 		return nil, tes.ErrNotFound
 	}
@@ -45,10 +47,10 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 		return nil, tes.ErrNotPermitted
 	}
 
+	var task tes.Task
 	if err := result.Decode(&task); err != nil {
 		return nil, tes.ErrNotFound
 	}
-
 	return &task, nil
 }
 
@@ -91,13 +93,19 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		opts = opts.SetProjection(minimalView)
 	}
 
-	cursor, err := db.tasks(db.client).Find(context.TODO(), query, opts)
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	cursor, err := db.tasks().Find(mctx, query, opts)
 	if err != nil {
 		return nil, err
 	}
 
+	mctx, cancel = db.wrap(ctx)
+	defer cancel()
+
 	var tasks []*tes.Task
-	err = cursor.All(context.TODO(), &tasks)
+	err = cursor.All(mctx, &tasks)
 	if err != nil {
 		return nil, err
 	}

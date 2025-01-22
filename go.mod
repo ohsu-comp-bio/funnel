@@ -51,7 +51,6 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
-	go.mongodb.org/mongo-driver v1.17.2
 	golang.org/x/crypto v0.32.0
 	golang.org/x/net v0.34.0
 	golang.org/x/oauth2 v0.25.0
@@ -69,6 +68,8 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/lestrrat-go/jwx/v2 v2.1.3
+	go.mongodb.org/mongo-driver/v2 v2.0.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241219192143-6b3ec007d9bb
 	google.golang.org/protobuf v1.36.1
 )
@@ -132,7 +133,6 @@ require (
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.6 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
-	github.com/lestrrat-go/jwx/v2 v2.1.3 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/maruel/panicparse v1.6.2 // indirect

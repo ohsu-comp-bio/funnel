@@ -168,11 +168,16 @@ func (db *MongoDB) findTaskStateAndVersion(ctx context.Context, taskId string) (
 	defer cancel()
 
 	props := make(map[string]interface{})
-	opts := options.FindOne().SetProjection(bson.M{"state": 1, "version": 1})
+	opts := options.FindOne().SetProjection(bson.M{"state": 1, "version": 1, "owner": 1})
 	err := db.tasks().FindOne(mctx, bson.M{"id": taskId}, opts).Decode(&props)
 
 	if err != nil {
 		return tes.State_UNKNOWN, nil, err
+	}
+
+	taskOwner := props["owner"].(string)
+	if !server.GetUser(ctx).IsAccessible(taskOwner) {
+		return tes.State_UNKNOWN, nil, tes.ErrNotPermitted
 	}
 
 	state := tes.State(props["state"].(int32))

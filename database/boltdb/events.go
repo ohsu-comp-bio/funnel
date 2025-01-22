@@ -67,6 +67,9 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 	switch req.Type {
 	case events.Type_TASK_STATE:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+			if err := checkOwner(tx, req.Id, ctx); err != nil {
+				return err
+			}
 			return transitionTaskState(tx, req.Id, req.GetState())
 		})
 

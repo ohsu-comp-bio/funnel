@@ -23,15 +23,8 @@ func (db *Badger) WriteEvent(ctx context.Context, req *events.Event) error {
 		RandomizationFactor: 0.5,
 		MaxTries:            50,
 		ShouldRetry: func(err error) bool {
-			// Don't retry not found errors.
-			if err == tes.ErrNotFound {
-				return false
-			}
-			// Don't retry on state transition errors.
-			if _, ok := err.(*tes.TransitionError); ok {
-				return false
-			}
-			return true
+			_, isTransitionError := err.(*tes.TransitionError)
+			return !isTransitionError && err != tes.ErrNotFound && err != tes.ErrNotPermitted
 		},
 	}
 

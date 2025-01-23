@@ -58,13 +58,13 @@ require (
 	google.golang.org/api v0.215.0
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/grpc v1.69.2
-	gopkg.in/olivere/elastic.v5 v5.0.86
 	k8s.io/api v0.33.0-alpha.0
 	k8s.io/apimachinery v0.33.0-alpha.0
 	k8s.io/client-go v0.33.0-alpha.0
 )
 
 require (
+	github.com/elastic/go-elasticsearch/v8 v8.17.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1
 	github.com/hashicorp/go-multierror v1.1.1
@@ -95,6 +95,7 @@ require (
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect

@@ -172,6 +172,16 @@ Elastic:
   IndexPrefix: funnel
   # URL of the elasticsearch server.
   URL: http://localhost:9200
+  # Optional. Username for HTTP Basic Authentication.
+  Username:
+  # Optional. Password for HTTP Basic Authentication.
+  Password:
+  # Optional. Endpoint for the Elastic Service (https://elastic.co/cloud).
+  CloudID:
+  # Optional. Base64-encoded token for authorization; if set, overrides username/password and service token.
+  APIKey:
+  # Optional. Service token for authorization; if set, overrides username/password.
+  ServiceToken:
 
 # Google Cloud Datastore task database.
 Datastore:

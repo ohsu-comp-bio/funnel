@@ -1,15 +1,16 @@
 package elastic
 
 import (
-	"bytes"
 	"context"
+	"encoding/json"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/result"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/scriptlanguage"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	elastic "gopkg.in/olivere/elastic.v5"
 )
 
 var updateTaskLogs = `
@@ -64,48 +65,53 @@ for (; params.index > ctx._source.logs[params.attempt].logs.length - 1; ) {
 ctx._source.logs[params.attempt].logs[params.index][params.field] = params.value;
 `
 
-func taskLogUpdate(attempt uint32, field string, value interface{}) *elastic.Script {
-	return elastic.NewScript(updateTaskLogs).
-		Lang("painless").
-		Param("attempt", attempt).
-		Param("field", field).
-		Param("value", value)
+func asRawMessage(v interface{}) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return json.RawMessage(b)
 }
 
-func execLogUpdate(attempt, index uint32, field string, value interface{}) *elastic.Script {
-	return elastic.NewScript(updateExecutorLogs).
-		Lang("painless").
-		Param("attempt", attempt).
-		Param("index", index).
-		Param("field", field).
-		Param("value", value)
+func taskLogUpdate(attempt uint32, field string, value interface{}) *types.Script {
+	return &types.Script{
+		Lang:   &scriptlanguage.Painless,
+		Source: &updateTaskLogs,
+		Params: map[string]json.RawMessage{
+			"attempt": asRawMessage(attempt),
+			"field":   asRawMessage(field),
+			"value":   asRawMessage(value),
+		},
+	}
+}
+
+func execLogUpdate(attempt, index uint32, field string, value interface{}) *types.Script {
+	return &types.Script{
+		Lang:   &scriptlanguage.Painless,
+		Source: &updateExecutorLogs,
+		Params: map[string]json.RawMessage{
+			"attempt": asRawMessage(attempt),
+			"index":   asRawMessage(index),
+			"field":   asRawMessage(field),
+			"value":   asRawMessage(value),
+		},
+	}
 }
 
 // WriteEvent writes a task update event.
 func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
-	u := es.client.Update().
-		Index(es.taskIndex).
-		Type("task").
-		RetryOnConflict(10).
-		Id(ev.Id)
+	u := es.client.Update(es.taskIndex, ev.Id).RetryOnConflict(10)
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
 		task := ev.GetTask()
 
-		res, err := es.client.Index().
-			Index(es.taskIndex).
-			Type("task").
+		res, err := es.client.Index(es.taskIndex).
 			Id(task.Id).
-			BodyJson(task).
+			Document(task).
 			Do(ctx)
 
 		if err == nil {
-			_, err = es.client.Update().
-				Index(res.Index).
-				Type(res.Type).
-				Id(res.Id).
-				Version(res.Version).
+			_, err = es.client.Update(res.Index_, res.Id_).
+				IfSeqNo(int64ToStr(res.SeqNo_)).
+				IfPrimaryTerm(int64ToStr(res.PrimaryTerm_)).
 				Doc(map[string]string{"owner": server.GetUsername(ctx)}).
 				Do(ctx)
 		}
@@ -115,21 +121,16 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 	case events.Type_TASK_STATE:
 		retrier := util.NewRetrier()
 		retrier.ShouldRetry = func(err error) bool {
-			if elastic.IsConflict(err) || elastic.IsConnErr(err) {
-				return true
-			}
-			return false
+			_, isTransitionError := err.(*tes.TransitionError)
+			return !isTransitionError && err != tes.ErrNotFound && err != tes.ErrNotPermitted
 		}
 
 		return retrier.Retry(ctx, func() error {
 			// get current state & version
-			res, err := es.getTask(ctx, &tes.GetTaskRequest{Id: ev.Id})
-			if err != nil {
-				return err
-			}
-
-			task := &tes.Task{}
-			err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), task)
+			task, seqNo, primaryTerm, err := es.getTask(ctx, &tes.GetTaskRequest{
+				Id:   ev.Id,
+				View: tes.View_MINIMAL.String(),
+			})
 			if err != nil {
 				return err
 			}
@@ -142,11 +143,9 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 			}
 
 			// apply version restriction and set update
-			_, err = es.client.Update().
-				Index(es.taskIndex).
-				Type("task").
-				Id(ev.Id).
-				Version(*res.Version).
+			_, err = es.client.Update(es.taskIndex, ev.Id).
+				IfSeqNo(seqNo).
+				IfPrimaryTerm(primaryTerm).
 				Doc(map[string]string{"state": to.String()}).
 				Do(ctx)
 			return err
@@ -183,8 +182,8 @@ func (es *Elastic) WriteEvent(ctx context.Context, ev *events.Event) error {
 		u = u.Script(taskLogUpdate(ev.Attempt, "system_logs", ev.SysLogString()))
 	}
 
-	_, err := u.Do(ctx)
-	if elastic.IsNotFound(err) {
+	resp, err := u.Do(ctx)
+	if resp.Result == result.Noop || resp.Result == result.Notfound {
 		return tes.ErrNotFound
 	}
 	return err

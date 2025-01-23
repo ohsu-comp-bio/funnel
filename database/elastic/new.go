@@ -2,21 +2,22 @@ package elastic
 
 import (
 	"context"
-	"time"
 
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
-	elastic "gopkg.in/olivere/elastic.v5"
 )
 
-var minimal = elastic.NewFetchSourceContext(true).Include("id", "state", "owner")
-var basic = elastic.NewFetchSourceContext(true).
-	Exclude("logs.logs.stderr", "logs.logs.stdout", "inputs.content", "logs.system_logs")
+var (
+	minimalInclude = []string{"id", "state", "owner"}
+	basicExclude   = []string{"inputs.content", "logs.logs.stderr", "logs.logs.stdout", "logs.system_logs"}
+)
 
 // Elastic provides an elasticsearch database server backend.
 type Elastic struct {
 	scheduler.UnimplementedSchedulerServiceServer
-	client    *elastic.Client
+	client    *elasticsearch.TypedClient
 	conf      config.Elastic
 	taskIndex string
 	nodeIndex string
@@ -24,15 +25,14 @@ type Elastic struct {
 
 // NewElastic returns a new Elastic instance.
 func NewElastic(conf config.Elastic) (*Elastic, error) {
-	client, err := elastic.NewClient(
-		elastic.SetURL(conf.URL),
-		elastic.SetSniff(false),
-		elastic.SetRetrier(
-			elastic.NewBackoffRetrier(
-				elastic.NewExponentialBackoff(time.Millisecond*50, time.Minute),
-			),
-		),
-	)
+	client, err := elasticsearch.NewTypedClient(elasticsearch.Config{
+		Addresses:    []string{conf.URL}, // A list of Elasticsearch nodes to use.
+		Username:     conf.Username,      // Username for HTTP Basic Authentication.
+		Password:     conf.Password,      // Password for HTTP Basic Authentication.
+		CloudID:      conf.CloudID,       // Endpoint for the Elastic Service (https://elastic.co/cloud).
+		APIKey:       conf.APIKey,        // Base64-encoded token for authorization; if set, overrides username/password and service token.
+		ServiceToken: conf.ServiceToken,  // Service token for authorization; if set, overrides username/password.
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -47,59 +47,43 @@ func NewElastic(conf config.Elastic) (*Elastic, error) {
 
 // Close closes the database client.
 func (es *Elastic) Close() {
-	es.client.Stop()
+	// no-op
 }
 
-func (es *Elastic) initIndex(ctx context.Context, name, body string) error {
-	exists, err := es.client.
-		IndexExists(name).
-		Do(ctx)
-
-	if err != nil {
-		return err
-	} else if !exists {
-		if _, err := es.client.CreateIndex(name).Body(body).Do(ctx); err != nil {
-			return err
+func (es *Elastic) initIndex(ctx context.Context, name string, properties *map[string]types.Property) error {
+	exists, err := es.client.Indices.Exists(name).Do(ctx)
+	if err == nil && !exists {
+		var mappings *types.TypeMapping = nil
+		if properties != nil {
+			mappings = &types.TypeMapping{
+				Properties: *properties,
+			}
 		}
+		_, err = es.client.Indices.Create(name).Mappings(mappings).Do(ctx)
 	}
-	return nil
+	return err
 }
 
 // Init creates the Elasticsearch indices.
 func (es *Elastic) Init() error {
 	ctx := context.Background()
-	taskMappings := `{
-    "mappings": {
-      "task":{
-        "properties":{
-          "id": {
-            "type": "keyword"
-          },
-          "state": {
-            "type": "keyword"
-          },
-          "owner": {
-            "type": "keyword"
-          },
-          "inputs": {
-            "type": "nested"
-          },
-          "logs": {
-            "type": "nested",
-            "properties": {
-              "logs": {
-                "type": "nested"
-              }
-            }
-          }
-        }
-      }
-    }
-  }`
-	if err := es.initIndex(ctx, es.taskIndex, taskMappings); err != nil {
+
+	taskProperties := &map[string]types.Property{
+		"id":     types.KeywordProperty{},
+		"state":  types.KeywordProperty{},
+		"owner":  types.KeywordProperty{},
+		"inputs": types.NestedProperty{},
+		"logs": types.NestedProperty{
+			Properties: map[string]types.Property{
+				"logs": types.NestedProperty{},
+			},
+		},
+	}
+
+	if err := es.initIndex(ctx, es.taskIndex, taskProperties); err != nil {
 		return err
 	}
-	if err := es.initIndex(ctx, es.nodeIndex, ""); err != nil {
+	if err := es.initIndex(ctx, es.nodeIndex, nil); err != nil {
 		return err
 	}
 	return nil

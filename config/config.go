@@ -244,8 +244,13 @@ type MongoDB struct {
 
 // Elastic configures access to an Elasticsearch database.
 type Elastic struct {
-	IndexPrefix string
-	URL         string
+	IndexPrefix  string
+	URL          string
+	Username     string
+	Password     string
+	CloudID      string
+	APIKey       string
+	ServiceToken string
 }
 
 // Kafka configure access to a Kafka topic for task event reading/writing.

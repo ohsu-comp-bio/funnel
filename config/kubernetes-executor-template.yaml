@@ -12,6 +12,13 @@ spec:
   completions: 1
   template:
     spec:
+      nodeSelector:
+        role: workflow
+      tolerations:
+        - key: "role"
+          operator: "Equal"
+          value: "workflow"
+          effect: "NoSchedule"
       restartPolicy: OnFailure
       serviceAccountName: funnel-sa
       containers:

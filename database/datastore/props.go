@@ -201,24 +201,17 @@ func marshalTask(t *tes.Task, ctx context.Context) ([]*datastore.Key, []interfac
 	return keys, data
 }
 
-func unmarshalTask(z *tes.Task, props datastore.PropertyList, ctx context.Context) error {
-	c := &task{}
-	err := datastore.LoadStruct(c, props)
-	if err != nil {
-		return err
+func (c *task) unmarshal() *tes.Task {
+	z := &tes.Task{
+		Id:           c.Id,
+		CreationTime: c.CreationTime,
+		State:        tes.State(c.State),
+		Name:         c.Name,
+		Description:  c.Description,
+		Volumes:      c.Volumes,
+		Tags:         unmarshalMap(c.Tags),
 	}
 
-	if !server.GetUser(ctx).IsAccessible(c.Owner) {
-		return tes.ErrNotPermitted
-	}
-
-	z.Id = c.Id
-	z.CreationTime = c.CreationTime
-	z.State = tes.State(c.State)
-	z.Name = c.Name
-	z.Description = c.Description
-	z.Volumes = c.Volumes
-	z.Tags = unmarshalMap(c.Tags)
 	if c.Resources != nil {
 		z.Resources = &tes.Resources{
 			CpuCores:    int32(c.Resources.CpuCores),
@@ -262,7 +255,7 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList, ctx context.Contex
 		tl.Metadata = unmarshalMap(i.Metadata)
 		z.Logs = append(z.Logs, tl)
 	}
-	return nil
+	return z
 }
 
 func unmarshalPart(t *tes.Task, props datastore.PropertyList) error {
@@ -330,4 +323,25 @@ func stringifyMap(m map[string]string) []string {
 
 func encodeKV(k, v string) string {
 	return url.QueryEscape(k) + ":" + url.QueryEscape(v)
+}
+
+func mergeKvs(existing []kv, updates map[string]string) []kv {
+	tmp := map[string]string{}
+
+	// Populate 'tmp' with existing values:
+	for _, kv := range existing {
+		tmp[kv.Key] = kv.Value
+	}
+
+	// Update 'tmp' with new values:
+	for k, v := range updates {
+		tmp[k] = v
+	}
+
+	// Convert 'tmp' to a kv-list:
+	result := []kv{}
+	for k, v := range tmp {
+		result = append(result, kv{Key: k, Value: v})
+	}
+	return result
 }

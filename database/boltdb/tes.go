@@ -234,7 +234,7 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 
 func checkOwner(tx *bolt.Tx, taskId string, ctx context.Context) error {
 	// Skip access-check for system-related operations where ctx is undefined:
-	if ctx == nil {
+	if ctx == nil || server.GetUser(ctx).CanSeeAllTasks() {
 		return nil
 	}
 

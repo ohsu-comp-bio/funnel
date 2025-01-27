@@ -24,11 +24,14 @@ type MongoDB struct {
 func NewMongoDB(conf config.MongoDB) (*MongoDB, error) {
 	opts := options.Client().
 		SetHosts(conf.Addrs).
-		SetAppName("funnel").
-		SetAuth(options.Credential{
+		SetAppName("funnel")
+
+	if len(conf.Username) > 0 && len(conf.Password) > 0 {
+		opts = opts.SetAuth(options.Credential{
 			Username: conf.Username,
 			Password: conf.Password,
 		})
+	}
 
 	client, err := mongo.Connect(opts)
 	if err != nil {

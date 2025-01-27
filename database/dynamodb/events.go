@@ -244,9 +244,7 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 	item.ExpressionAttributeNames = expr.Names()
 	item.ExpressionAttributeValues = expr.Values()
 	item.UpdateExpression = expr.Update()
-	if *expr.Condition() != "" {
-		item.ConditionExpression = expr.Condition()
-	}
+	item.ConditionExpression = expr.Condition()
 
 	_, err = db.client.UpdateItemWithContext(ctx, item)
 	return checkErrNotFound(err)

@@ -3,11 +3,11 @@ package dynamodb
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
@@ -54,64 +54,48 @@ func (db *DynamoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 // ListTasks returns a list of taskIDs
 func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
-	var tasks []*tes.Task
-	var query *dynamodb.QueryInput
-	pageSize := int64(tes.GetPageSize(req.GetPageSize()))
-
-	query = &dynamodb.QueryInput{
-		TableName:              aws.String(db.taskTable),
-		Limit:                  aws.Int64(pageSize),
-		ScanIndexForward:       aws.Bool(false),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String(fmt.Sprintf("%s = :v1", db.partitionKey)),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v1": {
-				S: aws.String(db.partitionValue),
-			},
-		},
-	}
-
-	filterParts := []string{}
+	exp := expression.NewBuilder().
+		WithKeyCondition(expression.Key(db.partitionKey).Equal(expression.Value(db.partitionValue)))
 
 	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
-		filterParts = append(filterParts, "owner = :ownerFilter")
-		attrValue := &dynamodb.AttributeValue{S: aws.String(userInfo.Username)}
-		query.ExpressionAttributeValues[":ownerFilter"] = attrValue
+		exp = exp.WithFilter(expression.Name("owner").Equal(expression.Value(userInfo.Username)))
 	}
 
 	if req.State != tes.Unknown {
-		query.ExpressionAttributeNames = map[string]*string{
-			"#state": aws.String("state"),
-		}
-		query.ExpressionAttributeValues[":stateFilter"] = &dynamodb.AttributeValue{
-			N: aws.String(strconv.Itoa(int(req.State))),
-		}
-		filterParts = append(filterParts, "#state = :stateFilter")
+		numStr := strconv.Itoa(int(req.State))
+		exp = exp.WithFilter(expression.Name("state").Equal(expression.Value(numStr)))
 	}
 
 	for k, v := range req.GetTags() {
-		tmpl := "tags.%s = :%sFilter"
-		filterParts = append(filterParts, fmt.Sprintf(tmpl, k, k))
+		var fieldValue expression.ValueBuilder
 		if v == "" {
-			query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
-				NULL: aws.Bool(true),
-			}
+			fieldValue = expression.Value(expression.Null)
 		} else {
-			query.ExpressionAttributeValues[fmt.Sprintf(":%sFilter", k)] = &dynamodb.AttributeValue{
-				S: aws.String(v),
-			}
+			fieldValue = expression.Value(v)
 		}
-	}
-
-	if len(filterParts) > 0 {
-		query.FilterExpression = aws.String(strings.Join(filterParts, " AND "))
+		exp = exp.WithFilter(expression.Name("tags." + k).Equal(fieldValue))
 	}
 
 	if req.View == tes.View_MINIMAL.String() {
-		query.ExpressionAttributeNames = map[string]*string{
-			"#state": aws.String("state"),
-		}
-		query.ProjectionExpression = aws.String("id, #state")
+		exp = exp.WithProjection(expression.NamesList(expression.Name("id"), expression.Name("state")))
+	}
+
+	eb, err := exp.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	pageSize := int64(tes.GetPageSize(req.GetPageSize()))
+	query := &dynamodb.QueryInput{
+		TableName:                 aws.String(db.taskTable),
+		Limit:                     aws.Int64(pageSize),
+		ScanIndexForward:          aws.Bool(false),
+		ConsistentRead:            aws.Bool(true),
+		KeyConditionExpression:    eb.KeyCondition(),
+		ExpressionAttributeNames:  eb.Names(),
+		ExpressionAttributeValues: eb.Values(),
+		FilterExpression:          eb.Filter(),
+		ProjectionExpression:      eb.Projection(),
 	}
 
 	if req.PageToken != "" {
@@ -141,6 +125,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		}
 	}
 
+	var tasks []*tes.Task
 	err = dynamodbattribute.UnmarshalListOfMaps(response.Items, &tasks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to DynamoDB unmarshal Tasks, %v", err)
@@ -150,7 +135,7 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		Tasks: tasks,
 	}
 
-	if response.LastEvaluatedKey != nil {
+	if len(tasks) > 0 && response.LastEvaluatedKey != nil {
 		out.NextPageToken = *response.LastEvaluatedKey["id"].S
 	}
 

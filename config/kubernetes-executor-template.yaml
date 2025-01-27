@@ -8,11 +8,18 @@ metadata:
     app: funnel-executor
     job-name: {{.TaskId}}-{{.JobId}}
 spec:
-  backoffLimit: 0
+  backoffLimit: 10
   completions: 1
   template:
     spec:
-      restartPolicy: Never
+      nodeSelector:
+        role: workflow
+      tolerations:
+        - key: "role"
+          operator: "Equal"
+          value: "workflow"
+          effect: "NoSchedule"
+      restartPolicy: OnFailure
       serviceAccountName: funnel-sa
       containers:
       - name: funnel-worker-{{.TaskId}}

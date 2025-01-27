@@ -8,7 +8,7 @@ metadata:
     app: funnel-worker
     task-id: {{.TaskId}}
 spec: 
-  backoffLimit: 0
+  backoffLimit: 10
   completions: 1
   template:
     metadata:
@@ -16,9 +16,15 @@ spec:
         app: funnel-worker
         task-id: {{.TaskId}}
     spec:
-      priorityClassName: non-preemptible-class
+      nodeSelector:
+        role: workflow
+      tolerations:
+        - key: "role"
+          operator: "Equal"
+          value: "workflow"
+          effect: "NoSchedule"
       serviceAccountName: funnel-sa
-      restartPolicy: Never
+      restartPolicy: OnFailure
       containers: 
         - name: funnel-worker-{{.TaskId}}
           image: quay.io/ohsu-comp-bio/funnel:development

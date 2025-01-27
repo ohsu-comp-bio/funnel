@@ -107,7 +107,7 @@ func DefaultConfig() Config {
 			IndexPrefix: "funnel",
 		},
 		MongoDB: MongoDB{
-			Addrs:    []string{"mongodb://localhost"},
+			Addrs:    []string{"localhost"},
 			Timeout:  Duration(time.Minute * 5),
 			Database: "funnel",
 		},

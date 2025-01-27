@@ -47,7 +47,6 @@ Server:
   #   # Example: https://example.org/oidc/.well-knwon/openid-configuration
   #   ServiceConfigURL:
   #   # Client ID and secret are sent with the token introspection request
-  #   # (Basic authentication):
   #   ClientId:
   #   ClientSecret:
   #   # The URL where OIDC should redirect after login (keep the path '/login')
@@ -195,7 +194,7 @@ Datastore:
 MongoDB:
   # Addrs holds the addresses for the seed servers.
   Addrs:
-    - mongodb://localhost
+    - localhost
   # Database is the database name used within MongoDB to store funnel data.
   Database: funnel
   # Timeout is the amount of time to wait for a server to respond when

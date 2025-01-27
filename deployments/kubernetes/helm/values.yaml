@@ -203,7 +203,7 @@ Datastore:
 MongoDB:
   # Addrs holds the addresses for the seed servers.
   Addrs:
-    - mongodb://localhost
+    - localhost
   # Database is the database name used within MongoDB to store funnel data.
   Database: funnel
   # Timeout is the amount of time to wait for a server to respond when

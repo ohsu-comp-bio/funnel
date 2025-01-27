@@ -48,7 +48,7 @@ func (db *Badger) writeEvent(ctx context.Context, req *events.Event) error {
 				return fmt.Errorf("marshaling task to bytes: %s", err)
 			}
 
-			// Store the username as task owner (if the user is authenticated):
+			// Store the username as task owner:
 			err = txn.Set(ownerKey(task.Id), []byte(server.GetUsername(ctx)))
 			if err != nil {
 				return fmt.Errorf("storing owner info: %s", err)

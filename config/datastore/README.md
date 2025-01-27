@@ -11,9 +11,9 @@ https://cloud.google.com/datastore/docs/reference/libraries?hl=en#authentication
 
 ## Datastore Indexes
 
-For retrieving list of tasks, Funnel needs [composite
+For retrieving a list of tasks, Funnel needs [composite
 indexes](https://cloud.google.com/datastore/docs/concepts/indexes?hl=en) to be
-defined the Datastore using the Google Cloud CLI and the
+defined in the Datastore using the Google Cloud CLI and the
 [index.yaml](./index.yaml) file:
 
 ```shell
@@ -23,4 +23,4 @@ gcloud datastore indexes create path/to/index.yaml --database='funnel'
 Note that it will take a bit of time before the indexes are ready for accepting
 requests. You can see the status of those indexes through the Google Cloud
 console: https://console.cloud.google.com/datastore/databases/ (**Indexes**
-under the target database).
+view under the target database).

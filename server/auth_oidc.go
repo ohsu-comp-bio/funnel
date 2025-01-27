@@ -89,6 +89,7 @@ func (c *OidcConfig) initConfig() {
 	c.oauth2.Endpoint.AuthURL = c.remote.AuthorizationEndpoint
 	c.oauth2.Endpoint.TokenURL = c.remote.TokenEndpoint
 
+	c.admins = map[string]bool{}
 	for _, username := range c.local.Admins {
 		c.admins[username] = true
 	}

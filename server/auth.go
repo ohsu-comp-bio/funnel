@@ -32,8 +32,9 @@ type UserInfo struct {
 	// Public users are non-authenticated, in case Funnel configuration does
 	// not require OIDC nor Basic authentication.
 	IsPublic bool
-	// Administrator is a Basic-authentication user with `Admin: true` property
-	// in the configuration file.
+	// Administrators are defined by the configuration file:
+	// 1) Basic-authentication: a user with the `Admin: true` property.
+	// 2) OIDC-authentication: one of the usernames under the `Admins` property.
 	IsAdmin bool
 	// Username of an authenticated user (subject field from JWT).
 	Username string

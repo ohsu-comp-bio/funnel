@@ -87,6 +87,8 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 		return result, status.Errorf(codes.NotFound, "%v: taskID: %s", err.Error(), req.Id)
 	} else if err == tes.ErrNotPermitted {
 		return result, status.Errorf(codes.PermissionDenied, "%v: taskID: %s", err.Error(), req.Id)
+	} else if err != nil {
+		return result, err
 	}
 
 	// dispatch to compute backend

@@ -46,9 +46,6 @@ jobs:
           # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Submit Task
         run: |
           export PATH="$PATH:$(pwd)"

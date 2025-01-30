@@ -58,6 +58,9 @@ func (db *DynamoDB) WriteEvent(ctx context.Context, e *events.Event) error {
 			if response.Item == nil {
 				return tes.ErrNotFound
 			}
+			if !isAccessible(ctx, response) {
+				return tes.ErrNotPermitted
+			}
 
 			err = dynamodbattribute.UnmarshalMap(response.Item, &current)
 			if err != nil {

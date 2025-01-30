@@ -438,3 +438,11 @@ func (db *DynamoDB) getSystemLogs(ctx context.Context, in map[string]*dynamodb.A
 		},
 	)
 }
+
+func isAccessible(ctx context.Context, response *dynamodb.GetItemOutput) bool {
+	taskOwner := ""
+	if attrValue, ok := response.Item["owner"]; ok {
+		taskOwner = *attrValue.S
+	}
+	return server.GetUser(ctx).IsAccessible(taskOwner)
+}

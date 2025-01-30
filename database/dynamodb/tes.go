@@ -2,7 +2,6 @@ package dynamodb
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -30,16 +29,10 @@ func (db *DynamoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 	if err != nil {
 		return nil, err
 	}
-
 	if response.Item == nil {
 		return nil, tes.ErrNotFound
 	}
-
-	taskOwner := ""
-	if attrValue, ok := response.Item["owner"]; ok {
-		taskOwner = *attrValue.S
-	}
-	if !server.GetUser(ctx).IsAccessible(taskOwner) {
+	if !isAccessible(ctx, response) {
 		return nil, tes.ErrNotPermitted
 	}
 
@@ -54,16 +47,15 @@ func (db *DynamoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 // ListTasks returns a list of taskIDs
 func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 
-	exp := expression.NewBuilder().
-		WithKeyCondition(expression.Key(db.partitionKey).Equal(expression.Value(db.partitionValue)))
+	filters := []expression.ConditionBuilder{}
 
 	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
-		exp = exp.WithFilter(expression.Name("owner").Equal(expression.Value(userInfo.Username)))
+		filters = append(filters, expression.Name("owner").Equal(expression.Value(userInfo.Username)))
 	}
 
 	if req.State != tes.Unknown {
-		numStr := strconv.Itoa(int(req.State))
-		exp = exp.WithFilter(expression.Name("state").Equal(expression.Value(numStr)))
+		num := int(req.State)
+		filters = append(filters, expression.Name("state").Equal(expression.Value(num)))
 	}
 
 	for k, v := range req.GetTags() {
@@ -73,11 +65,20 @@ func (db *DynamoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		} else {
 			fieldValue = expression.Value(v)
 		}
-		exp = exp.WithFilter(expression.Name("tags." + k).Equal(fieldValue))
+		filters = append(filters, expression.Name("tags."+k).Equal(fieldValue))
 	}
+
+	exp := expression.NewBuilder().
+		WithKeyCondition(expression.Key(db.partitionKey).Equal(expression.Value(db.partitionValue)))
 
 	if req.View == tes.View_MINIMAL.String() {
 		exp = exp.WithProjection(expression.NamesList(expression.Name("id"), expression.Name("state")))
+	}
+
+	if len(filters) == 1 {
+		exp.WithFilter(filters[0])
+	} else if len(filters) > 1 {
+		exp.WithFilter(expression.And(filters[0], filters[1], filters[2:]...))
 	}
 
 	eb, err := exp.Build()

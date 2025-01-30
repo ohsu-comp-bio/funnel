@@ -10,6 +10,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
@@ -43,7 +44,7 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 			// get current state & version
 			state, version, err := db.findTaskStateAndVersion(ctx, req.Id)
 			if err != nil {
-				return tes.ErrNotFound
+				return err
 			}
 
 			// validate state transition
@@ -172,7 +173,9 @@ func (db *MongoDB) findTaskStateAndVersion(ctx context.Context, taskId string) (
 	opts := options.FindOne().SetProjection(bson.M{"state": 1, "version": 1, "owner": 1})
 	err := db.tasks().FindOne(mctx, bson.M{"id": taskId}, opts).Decode(&props)
 
-	if err != nil {
+	if err == mongo.ErrNoDocuments {
+		return tes.State_UNKNOWN, nil, tes.ErrNotFound
+	} else if err != nil {
 		return tes.State_UNKNOWN, nil, err
 	}
 

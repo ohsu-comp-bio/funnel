@@ -16,7 +16,7 @@ var basicView = bson.M{
 	"logs.logs.stderr": 0,
 	"inputs.content":   0,
 }
-var minimalView = bson.M{"id": 1, "state": 1}
+var minimalView = bson.M{"id": 1, "owner": 1, "state": 1}
 
 type TaskOwner struct {
 	Owner string `bson:"owner"`

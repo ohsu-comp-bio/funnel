@@ -98,7 +98,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	if err != nil {
 		// Retry creating the Executor Pod on failure
 		var retryCount int
-		for retryCount < 3 {
+		for retryCount < 5 {
 			_, err = client.Create(ctx, job, metav1.CreateOptions{})
 			if err == nil {
 				break
@@ -107,7 +107,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 			time.Sleep(2 * time.Second)
 		}
 		if retryCount == 3 {
-			return fmt.Errorf("creating job in worker after 3 attempts: %v", err)
+			return fmt.Errorf("Funnel Worker: Failed to create Executor Job after 3 attempts: %v", err)
 		}
 	}
 
@@ -128,7 +128,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		if err != nil {
 			// Retry reading the Executor Logs on failure
 			var retryCount int
-			for retryCount < 3 {
+			for retryCount < 5 {
 				podLogs, err := req.Stream(ctx)
 				if err == nil {
 					defer podLogs.Close()
@@ -143,8 +143,8 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 				retryCount++
 				time.Sleep(2 * time.Second)
 			}
-			if retryCount == 3 {
-				return fmt.Errorf("failed to read logs after 3 attempts: %v", err)
+			if retryCount == 5 {
+				return fmt.Errorf("Funnel Worker: Failed to read Executor Logs after 5 attempts: %v", err)
 			}
 			return err
 		}

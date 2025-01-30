@@ -95,6 +95,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 
 	if err != nil {
+		// TODO: Retry creating the Exeuctor Pod on failure
 		return fmt.Errorf("creating job in worker: %v", err)
 	}
 
@@ -113,6 +114,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		podLogs, err := req.Stream(ctx)
 
 		if err != nil {
+			// TODO: Retry reading the Executor Logs on failure
 			return err
 		}
 

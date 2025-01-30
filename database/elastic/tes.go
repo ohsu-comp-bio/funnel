@@ -72,38 +72,39 @@ func (es *Elastic) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 // ListTasks lists tasks, duh.
 func (es *Elastic) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*tes.ListTasksResponse, error) {
 	pageSize := tes.GetPageSize(req.GetPageSize())
-
-	matchFilters := make(map[string]types.MatchQuery)
-	termFilters := make(map[string]types.TermQuery)
+	filters := map[string]string{}
 
 	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
-		termFilters["owner"] = types.TermQuery{Value: userInfo.Username}
+		filters["owner"] = userInfo.Username
 	}
 
 	if req.State != tes.Unknown {
-		termFilters["state"] = types.TermQuery{Value: req.State.String()}
+		filters["state"] = req.State.String()
 	}
 
 	for k, v := range req.GetTags() {
 		field := fmt.Sprintf("tags.%s.keyword", k)
-		matchFilters[field] = types.MatchQuery{Query: v}
-	}
-
-	query := types.Query{
-		Bool: &types.BoolQuery{},
-	}
-
-	if len(termFilters) > 0 {
-		query.Bool.Filter = append(query.Bool.Filter, types.Query{Term: termFilters})
-	}
-	if len(matchFilters) > 0 {
-		query.Bool.Filter = append(query.Bool.Filter, types.Query{Match: matchFilters})
+		filters[field] = v
 	}
 
 	sort := types.SortOptions{
 		SortOptions: map[string]types.FieldSort{
 			"id": {Order: &sortorder.Desc},
 		},
+	}
+
+	query := types.Query{
+		Bool: &types.BoolQuery{
+			Filter: []types.Query{},
+		},
+	}
+
+	for key, value := range filters {
+		query.Bool.Filter = append(query.Bool.Filter, types.Query{
+			Term: map[string]types.TermQuery{
+				key: {Value: value},
+			},
+		})
 	}
 
 	search := es.client.Search().

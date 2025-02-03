@@ -255,6 +255,10 @@ func (c *task) unmarshal() *tes.Task {
 		tl.Metadata = unmarshalMap(i.Metadata)
 		z.Logs = append(z.Logs, tl)
 	}
+	// Ensure at least one empty log for the JSON response:
+	if len(z.Logs) == 0 {
+		z.Logs = []*tes.TaskLog{{}}
+	}
 	return z
 }
 

@@ -113,8 +113,7 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	out := tes.ListTasksResponse{
 		Tasks: tasks,
 	}
-	// TODO figure out when not to return a next page token
-	if len(tasks) > 0 {
+	if len(tasks) == pageSize {
 		out.NextPageToken = tasks[len(tasks)-1].Id
 	}
 

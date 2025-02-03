@@ -171,7 +171,7 @@ func GetPageSize(reqSize int32) int {
 	// default page size
 	var pageSize = 256
 
-	if reqSize != 0 {
+	if reqSize > 0 {
 		pageSize = int(reqSize)
 
 		// max page size

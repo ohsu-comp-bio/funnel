@@ -103,8 +103,8 @@ type task struct {
 }
 
 type tasklog struct {
-	*tes.TaskLog
 	Metadata []kv `datastore:",noindex,omitempty"`
+	*tes.TaskLog
 }
 
 type resources struct {

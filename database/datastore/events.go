@@ -138,7 +138,7 @@ func getTaskLog(task *task, e *events.Event) *tasklog {
 	targetLogIndex := int(e.Attempt)
 
 	// Grow slice length if necessary
-	for j := len(task.TaskLogs); j <= targetLogIndex; j++ {
+	for range targetLogIndex + 1 - len(task.TaskLogs) {
 		item := tasklog{
 			TaskLog:  &tes.TaskLog{},
 			Metadata: []kv{},
@@ -146,8 +146,7 @@ func getTaskLog(task *task, e *events.Event) *tasklog {
 		task.TaskLogs = append(task.TaskLogs, item)
 	}
 
-	result := task.TaskLogs[targetLogIndex]
-	return &result
+	return &task.TaskLogs[targetLogIndex]
 }
 
 // Retrieves the ExecutorLog from the provided tasklog as referenced in the

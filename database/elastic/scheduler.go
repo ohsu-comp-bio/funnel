@@ -1,30 +1,46 @@
 package elastic
 
 import (
-	"bytes"
 	"fmt"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/refresh"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/result"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	elastic "gopkg.in/olivere/elastic.v5"
+)
+
+var (
+	readQueueQuery *types.Query = &types.Query{
+		Bool: &types.BoolQuery{
+			Filter: []types.Query{
+				{
+					Term: map[string]types.TermQuery{
+						"state": {Value: tes.State_QUEUED.String()},
+					},
+				},
+			},
+		},
+	}
+	readQueueSort types.SortOptions = types.SortOptions{
+		SortOptions: map[string]types.FieldSort{
+			"id": {Order: &sortorder.Asc},
+		},
+	}
 )
 
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (es *Elastic) ReadQueue(n int) []*tes.Task {
-	ctx := context.Background()
-
-	q := elastic.NewTermQuery("state", tes.State_QUEUED.String())
-	res, err := es.client.Search().
-		Index(es.taskIndex).
-		Type("task").
+	res, err := es.client.Search().Index(es.taskIndex).
+		Query(readQueueQuery).
+		SourceExcludes_(basicExclude...).
 		Size(n).
-		Sort("id", true).
-		Query(q).
-		Do(ctx)
+		Sort(readQueueSort).
+		Do(context.Background())
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -32,28 +48,19 @@ func (es *Elastic) ReadQueue(n int) []*tes.Task {
 
 	var tasks []*tes.Task
 	for _, hit := range res.Hits.Hits {
-		t := &tes.Task{}
-		err := jsonpb.Unmarshal(bytes.NewReader(*hit.Source), t)
-		if err != nil {
-			continue
+		task := &tes.Task{}
+		if err := customJson.Unmarshal(hit.Source_, task); err == nil {
+			tasks = append(tasks, task)
 		}
-
-		t = t.GetBasicView()
-		tasks = append(tasks, t)
 	}
-
 	return tasks
 }
 
 // GetNode gets a node
 func (es *Elastic) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (*scheduler.Node, error) {
-	res, err := es.client.Get().
-		Index(es.nodeIndex).
-		Type("node").
-		Id(req.Id).
-		Do(ctx)
+	res, err := es.client.Get(es.nodeIndex, req.Id).Do(ctx)
 
-	if elastic.IsNotFound(err) {
+	if !res.Found {
 		return nil, status.Errorf(codes.NotFound, "%v: nodeID: %s", err.Error(), req.Id)
 	}
 	if err != nil {
@@ -61,12 +68,12 @@ func (es *Elastic) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (
 	}
 
 	node := &scheduler.Node{}
-	err = jsonpb.Unmarshal(bytes.NewReader(*res.Source), node)
+	err = customJson.Unmarshal(res.Source_, node)
 	if err != nil {
 		return nil, err
 	}
 	// Must happen after the unmarshal
-	node.Version = *res.Version
+	node.Version = *res.Version_
 	return node, nil
 }
 
@@ -75,26 +82,23 @@ func (es *Elastic) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (
 // For optimisic locking, if the node already exists and node.Version
 // doesn't match the version in the database, an error is returned.
 func (es *Elastic) PutNode(ctx context.Context, node *scheduler.Node) (*scheduler.PutNodeResponse, error) {
-	g := es.client.Get().
-		Index(es.nodeIndex).
-		Type("node").
-		Preference("_primary").
-		Id(node.Id)
+	g := es.client.Get(es.nodeIndex, node.Id).Preference("_primary")
 
-		// If the version is 0, then this should be creating a new node.
+	// If the version is 0, then this should be creating a new node.
 	if node.GetVersion() != 0 {
-		g = g.Version(node.GetVersion())
+		v := node.GetVersion()
+		g.Version(int64ToStr(&v))
 	}
 
 	res, err := g.Do(ctx)
-
-	if err != nil && !elastic.IsNotFound(err) {
+	if err != nil {
 		return nil, err
 	}
 
 	existing := &scheduler.Node{}
-	if err == nil {
-		jsonpb.Unmarshal(bytes.NewReader(*res.Source), existing)
+	err = customJson.Unmarshal(res.Source_, existing)
+	if err != nil {
+		return nil, err
 	}
 
 	err = scheduler.UpdateNode(ctx, es, node, existing)
@@ -102,35 +106,30 @@ func (es *Elastic) PutNode(ctx context.Context, node *scheduler.Node) (*schedule
 		return nil, err
 	}
 
-	mar := jsonpb.Marshaler{}
-	s, err := mar.MarshalToString(node)
-	if err != nil {
-		return nil, err
-	}
-
-	i := es.client.Index().
-		Index(es.nodeIndex).
-		Type("node").
+	i := es.client.Index(es.nodeIndex).
 		Id(node.Id).
-		Refresh("true").
-		BodyString(s)
+		Refresh(refresh.True).
+		Document(node)
 
 	if node.GetVersion() != 0 {
-		i = i.Version(node.GetVersion())
+		v := node.GetVersion()
+		i = i.Version(int64ToStr(&v))
 	}
-	_, err = i.Do(ctx)
+	resp, err := i.Do(ctx)
+	if resp.Result != result.Created && resp.Result != result.Updated {
+		return nil, fmt.Errorf(
+			"Node [%s] was not recorded in ElasticSearch; response was: %s",
+			node.Id, resp.Result)
+	}
 
 	return &scheduler.PutNodeResponse{}, err
 }
 
 // DeleteNode deletes a node by ID.
 func (es *Elastic) DeleteNode(ctx context.Context, node *scheduler.Node) (*scheduler.DeleteNodeResponse, error) {
-	_, err := es.client.Delete().
-		Index(es.nodeIndex).
-		Type("node").
-		Id(node.Id).
-		Version(node.Version).
-		Refresh("true").
+	_, err := es.client.Delete(es.nodeIndex, node.Id).
+		Version(int64ToStr(&node.Version)).
+		Refresh(refresh.True).
 		Do(ctx)
 	return &scheduler.DeleteNodeResponse{}, err
 }
@@ -139,7 +138,6 @@ func (es *Elastic) DeleteNode(ctx context.Context, node *scheduler.Node) (*sched
 func (es *Elastic) ListNodes(ctx context.Context, req *scheduler.ListNodesRequest) (*scheduler.ListNodesResponse, error) {
 	res, err := es.client.Search().
 		Index(es.nodeIndex).
-		Type("node").
 		Version(true).
 		Size(1000).
 		Do(ctx)
@@ -151,11 +149,11 @@ func (es *Elastic) ListNodes(ctx context.Context, req *scheduler.ListNodesReques
 	resp := &scheduler.ListNodesResponse{}
 	for _, hit := range res.Hits.Hits {
 		node := &scheduler.Node{}
-		err = jsonpb.Unmarshal(bytes.NewReader(*hit.Source), node)
+		err = customJson.Unmarshal(hit.Source_, node)
 		if err != nil {
 			return nil, err
 		}
-		node.Version = *hit.Version
+		node.Version = *hit.Version_
 		resp.Nodes = append(resp.Nodes, node)
 	}
 

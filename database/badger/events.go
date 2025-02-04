@@ -8,6 +8,7 @@ import (
 	badger "github.com/dgraph-io/badger/v2"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
 )
@@ -22,15 +23,8 @@ func (db *Badger) WriteEvent(ctx context.Context, req *events.Event) error {
 		RandomizationFactor: 0.5,
 		MaxTries:            50,
 		ShouldRetry: func(err error) bool {
-			// Don't retry not found errors.
-			if err == tes.ErrNotFound {
-				return false
-			}
-			// Don't retry on state transition errors.
-			if _, ok := err.(*tes.TransitionError); ok {
-				return false
-			}
-			return true
+			_, isTransitionError := err.(*tes.TransitionError)
+			return !isTransitionError && err != tes.ErrNotFound && err != tes.ErrNotPermitted
 		},
 	}
 
@@ -54,11 +48,17 @@ func (db *Badger) writeEvent(ctx context.Context, req *events.Event) error {
 				return fmt.Errorf("marshaling task to bytes: %s", err)
 			}
 
+			// Store the username as task owner:
+			err = txn.Set(ownerKey(task.Id), []byte(server.GetUsername(ctx)))
+			if err != nil {
+				return fmt.Errorf("storing owner info: %s", err)
+			}
+
 			return txn.Set(taskKey(task.Id), val)
 		}
 
 		// The rest of the events below all update a task, so we need to make sure it exists.
-		task, err := db.getTask(txn, req.Id)
+		task, err := getTask(txn, req.Id, ctx)
 		if err != nil {
 			return err
 		}

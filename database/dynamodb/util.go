@@ -3,7 +3,6 @@ package dynamodb
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -253,6 +253,10 @@ func (db *DynamoDB) createTask(ctx context.Context, task *tes.Task) error {
 		S: aws.String(strconv.FormatInt(time.Now().UnixNano(), 10)),
 	}
 
+	av["owner"] = &dynamodb.AttributeValue{
+		S: aws.String(server.GetUsername(ctx)),
+	}
+
 	// Add nil fields to make updates easier
 	av["logs"] = &dynamodb.AttributeValue{
 		L: []*dynamodb.AttributeValue{
@@ -315,86 +319,26 @@ func (db *DynamoDB) createTaskInputContent(ctx context.Context, task *tes.Task) 
 	return nil
 }
 
-func (db *DynamoDB) deleteTask(ctx context.Context, id string) error {
-	var item *dynamodb.DeleteItemInput
-	var err error
-
-	item = &dynamodb.DeleteItemInput{
-		TableName: aws.String(db.taskTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			db.partitionKey: {
-				S: aws.String(db.partitionValue),
-			},
-			"id": {
-				S: aws.String(id),
-			},
+func (db *DynamoDB) taskKey(id string) map[string]*dynamodb.AttributeValue {
+	return map[string]*dynamodb.AttributeValue{
+		db.partitionKey: {
+			S: aws.String(db.partitionValue),
+		},
+		"id": {
+			S: aws.String(id),
 		},
 	}
-	_, err = db.client.DeleteItemWithContext(ctx, item)
-	if err != nil {
-		return err
-	}
-
-	query := &dynamodb.QueryInput{
-		TableName:              aws.String(db.contentTable),
-		Limit:                  aws.Int64(10),
-		ScanIndexForward:       aws.Bool(false),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String("id = :v1"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v1": {
-				S: aws.String(id),
-			},
-		},
-		ExpressionAttributeNames: map[string]*string{
-			"#index": aws.String("index"),
-		},
-		ProjectionExpression: aws.String("id, #index"),
-	}
-
-	err = db.client.QueryPagesWithContext(
-		ctx,
-		query,
-		func(page *dynamodb.QueryOutput, lastPage bool) bool {
-			for _, res := range page.Items {
-				item = &dynamodb.DeleteItemInput{
-					TableName: aws.String(db.contentTable),
-					Key: map[string]*dynamodb.AttributeValue{
-						"id":    res["id"],
-						"index": res["index"],
-					},
-				}
-				// TODO handle error without panic
-				_, err := db.client.DeleteItem(item)
-				if err != nil {
-					log.Fatalf("failed to delete content item: %v", err)
-				}
-			}
-			return page.LastEvaluatedKey != nil
-		})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (db *DynamoDB) getMinimalView(ctx context.Context, id string) (*dynamodb.GetItemOutput, error) {
 	item := &dynamodb.GetItemInput{
 		TableName: aws.String(db.taskTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			db.partitionKey: {
-				S: aws.String(db.partitionValue),
-			},
-			"id": {
-				S: aws.String(id),
-			},
-		},
+		Key:       db.taskKey(id),
 		ExpressionAttributeNames: map[string]*string{
+			"#owner": aws.String("owner"),
 			"#state": aws.String("state"),
 		},
-		ProjectionExpression: aws.String("id, #state"),
+		ProjectionExpression: aws.String("id, #owner, #state"),
 	}
 	return db.client.GetItemWithContext(ctx, item)
 }
@@ -402,32 +346,13 @@ func (db *DynamoDB) getMinimalView(ctx context.Context, id string) (*dynamodb.Ge
 func (db *DynamoDB) getBasicView(ctx context.Context, id string) (*dynamodb.GetItemOutput, error) {
 	item := &dynamodb.GetItemInput{
 		TableName: aws.String(db.taskTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			db.partitionKey: {
-				S: aws.String(db.partitionValue),
-			},
-			"id": {
-				S: aws.String(id),
-			},
-		},
+		Key:       db.taskKey(id),
 	}
 	return db.client.GetItemWithContext(ctx, item)
 }
 
 func (db *DynamoDB) getFullView(ctx context.Context, id string) (*dynamodb.GetItemOutput, error) {
-	item := &dynamodb.GetItemInput{
-		TableName: aws.String(db.taskTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			db.partitionKey: {
-				S: aws.String(db.partitionValue),
-			},
-			"id": {
-				S: aws.String(id),
-			},
-		},
-	}
-
-	resp, err := db.client.GetItemWithContext(ctx, item)
+	resp, err := db.getBasicView(ctx, id)
 	if err != nil || resp.Item == nil {
 		return resp, err
 	}
@@ -454,22 +379,23 @@ func (db *DynamoDB) getFullView(ctx context.Context, id string) (*dynamodb.GetIt
 
 	return resp, nil
 }
-
-func (db *DynamoDB) getContent(ctx context.Context, in map[string]*dynamodb.AttributeValue) error {
-	query := &dynamodb.QueryInput{
-		TableName:              aws.String(db.contentTable),
-		Limit:                  aws.Int64(10),
+func (db *DynamoDB) queryInput(table string, id *dynamodb.AttributeValue, limit int64) *dynamodb.QueryInput {
+	return &dynamodb.QueryInput{
+		TableName:              aws.String(table),
+		Limit:                  aws.Int64(limit),
 		ScanIndexForward:       aws.Bool(false),
 		ConsistentRead:         aws.Bool(true),
 		KeyConditionExpression: aws.String("id = :v1"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v1": in["id"],
+			":v1": id,
 		},
 	}
+}
 
-	err := db.client.QueryPagesWithContext(
+func (db *DynamoDB) getContent(ctx context.Context, in map[string]*dynamodb.AttributeValue) error {
+	return db.client.QueryPagesWithContext(
 		ctx,
-		query,
+		db.queryInput(db.contentTable, in["id"], 10),
 		func(page *dynamodb.QueryOutput, lastPage bool) bool {
 			for _, item := range page.Items {
 				i, _ := strconv.ParseInt(*item["index"].N, 10, 64)
@@ -478,27 +404,12 @@ func (db *DynamoDB) getContent(ctx context.Context, in map[string]*dynamodb.Attr
 			return page.LastEvaluatedKey != nil
 		},
 	)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (db *DynamoDB) getExecutorOutput(ctx context.Context, in map[string]*dynamodb.AttributeValue, val string, table string) error {
-	query := &dynamodb.QueryInput{
-		TableName:              aws.String(table),
-		Limit:                  aws.Int64(10),
-		ScanIndexForward:       aws.Bool(false),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String("id = :v1"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v1": in["id"],
-		},
-	}
-
-	err := db.client.QueryPagesWithContext(
+	return db.client.QueryPagesWithContext(
 		ctx,
-		query,
+		db.queryInput(table, in["id"], 10),
 		func(page *dynamodb.QueryOutput, lastPage bool) bool {
 			for _, item := range page.Items {
 				i, _ := strconv.ParseInt(*item["index"].N, 10, 64)
@@ -512,27 +423,12 @@ func (db *DynamoDB) getExecutorOutput(ctx context.Context, in map[string]*dynamo
 			return page.LastEvaluatedKey != nil
 		},
 	)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (db *DynamoDB) getSystemLogs(ctx context.Context, in map[string]*dynamodb.AttributeValue) error {
-	query := &dynamodb.QueryInput{
-		TableName:              aws.String(db.syslogsTable),
-		Limit:                  aws.Int64(50),
-		ScanIndexForward:       aws.Bool(false),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String("id = :v1"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":v1": in["id"],
-		},
-	}
-
-	err := db.client.QueryPagesWithContext(
+	return db.client.QueryPagesWithContext(
 		ctx,
-		query,
+		db.queryInput(db.syslogsTable, in["id"], 50),
 		func(page *dynamodb.QueryOutput, lastPage bool) bool {
 			for _, item := range page.Items {
 				i, _ := strconv.ParseInt(*item["attempt"].N, 10, 64)
@@ -541,8 +437,12 @@ func (db *DynamoDB) getSystemLogs(ctx context.Context, in map[string]*dynamodb.A
 			return page.LastEvaluatedKey != nil
 		},
 	)
-	if err != nil {
-		return err
+}
+
+func isAccessible(ctx context.Context, response *dynamodb.GetItemOutput) bool {
+	taskOwner := ""
+	if attrValue, ok := response.Item["owner"]; ok {
+		taskOwner = *attrValue.S
 	}
-	return nil
+	return server.GetUser(ctx).IsAccessible(taskOwner)
 }

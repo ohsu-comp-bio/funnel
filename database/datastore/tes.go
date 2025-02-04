@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"cloud.google.com/go/datastore"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -10,20 +11,20 @@ import (
 // GetTask implements the TES GetTask interface.
 func (d *Datastore) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	key := taskKey(req.Id)
+	entity := &task{}
 
-	var props datastore.PropertyList
-	err := d.client.Get(ctx, key, &props)
+	err := d.client.Get(ctx, key, entity)
 	if err == datastore.ErrNoSuchEntity {
 		return nil, tes.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-
-	task := &tes.Task{}
-	if err := unmarshalTask(task, props); err != nil {
-		return nil, err
+	if !server.GetUser(ctx).IsAccessible(entity.Owner) {
+		return nil, tes.ErrNotPermitted
 	}
+
+	task := entity.unmarshal()
 
 	switch req.View {
 	case tes.View_MINIMAL.String():
@@ -74,7 +75,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 
 	page := req.PageToken
 	size := tes.GetPageSize(req.GetPageSize())
-	q := datastore.NewQuery("Task").KeysOnly().Limit(size).Order("-CreationTime")
+	q := datastore.NewQuery("Task").Limit(size).Order("-CreationTime")
 
 	if page != "" {
 		c, err := datastore.DecodeCursor(page)
@@ -82,6 +83,10 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 			return nil, err
 		}
 		q = q.Start(c)
+	}
+
+	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
+		q = q.FilterField("Owner", "=", userInfo.Username)
 	}
 
 	if req.State != tes.Unknown {
@@ -93,33 +98,20 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	}
 
 	var tasks []*tes.Task
-	var keys []*datastore.Key
 	var parts []*datastore.Key
 	byID := map[string]*tes.Task{}
 
 	it := d.client.Run(ctx, q)
 	for {
-		key, err := it.Next(nil)
+		t := &task{}
+		_, err := it.Next(t)
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
 			return nil, err
 		}
-		keys = append(keys, key)
-	}
-
-	proplists := make([]datastore.PropertyList, len(keys))
-	err := d.client.GetMulti(ctx, keys, proplists)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, props := range proplists {
-		task := &tes.Task{}
-		if err := unmarshalTask(task, props); err != nil {
-			return nil, err
-		}
+		task := t.unmarshal()
 
 		switch req.View {
 		case tes.View_MINIMAL.String():
@@ -142,7 +134,7 @@ func (d *Datastore) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 
 	resp := &tes.ListTasksResponse{Tasks: tasks}
 
-	if len(keys) == size {
+	if len(tasks) == size {
 		c, err := it.Cursor()
 		if err != nil {
 			return nil, err

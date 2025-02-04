@@ -7,19 +7,36 @@ menu:
 ---
 # Basic Auth
 
-By default, a Funnel server allows open access to its API endpoints, but it 
-can be configured to require basic password authentication. To enable this, 
+By default, a Funnel server allows open access to its API endpoints, but it
+can be configured to require basic password authentication. To enable this,
 include users and passwords in your config file:
 
 ```yaml
 Server:
   BasicAuth:
+    - User: admin
+      Password: someReallyComplexSecret
+      Admin: true
     - User: funnel
       Password: abc123
+
+  TaskAccess: OwnerOrAdmin
 ```
 
+The `TaskAccess` property configures the visibility and access-mode for tasks:
+
+* `All` (default) - all tasks are visible to everyone
+* `Owner` - tasks are visible to the users who created them
+* `OwnerOrAdmin` - extends `Owner` by allowing Admin-users (`Admin: true`)
+  access everything
+
+As new tasks are created, the username behind the request is recorded as the
+owner of the task. Depending on the `TaskAccess` property, if owner-based
+acces-mode is enabled, the owner of the task is compared to username of current
+request to decide if the user may see and interact with the task.
+
 If you are using BoltDB or Badger, the Funnel worker communicates to the server via gRPC
-so you will also need to configure the RPC client. 
+so you will also need to configure the RPC client.
 
 ```yaml
 RPCClient:
@@ -27,7 +44,7 @@ RPCClient:
   Password: abc123
 ```
 
-Make sure to properly protect the configuration file so that it's not readable 
+Make sure to properly protect the configuration file so that it's not readable
 by everyone:
 
 ```bash

@@ -3,9 +3,10 @@ package mongodb
 import (
 	"fmt"
 
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"golang.org/x/net/context"
 )
 
@@ -15,11 +16,14 @@ var basicView = bson.M{
 	"logs.logs.stderr": 0,
 	"inputs.content":   0,
 }
-var minimalView = bson.M{"id": 1, "state": 1}
+var minimalView = bson.M{"id": 1, "owner": 1, "state": 1}
+
+type TaskOwner struct {
+	Owner string `bson:"owner"`
+}
 
 // GetTask gets a task, which describes a running task
 func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
-	var task tes.Task
 	var opts = options.FindOne()
 
 	switch req.View {
@@ -29,11 +33,24 @@ func (db *MongoDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.T
 		opts = opts.SetProjection(minimalView)
 	}
 
-	err := db.tasks(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}, opts).Decode(&task)
-	if err != nil {
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	result := db.tasks().FindOne(mctx, bson.M{"id": req.Id}, opts)
+	if result.Err() != nil {
 		return nil, tes.ErrNotFound
 	}
 
+	var owner TaskOwner
+	_ = result.Decode(&owner)
+	if !server.GetUser(ctx).IsAccessible(owner.Owner) {
+		return nil, tes.ErrNotPermitted
+	}
+
+	var task tes.Task
+	if err := result.Decode(&task); err != nil {
+		return nil, tes.ErrNotFound
+	}
 	return &task, nil
 }
 
@@ -55,6 +72,10 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		query["name"] = bson.M{"$regex": fmt.Sprintf("^%s", req.NamePrefix)}
 	}
 
+	if userInfo := server.GetUser(ctx); !userInfo.CanSeeAllTasks() {
+		query["owner"] = bson.M{"$eq": userInfo.Username}
+	}
+
 	for k, v := range req.GetTags() {
 		if v == "" {
 			query[fmt.Sprintf("tags.%s", k)] = bson.M{"$exists": true}
@@ -72,13 +93,19 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 		opts = opts.SetProjection(minimalView)
 	}
 
-	cursor, err := db.tasks(db.client).Find(context.TODO(), query, opts)
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	cursor, err := db.tasks().Find(mctx, query, opts)
 	if err != nil {
 		return nil, err
 	}
 
+	mctx, cancel = db.wrap(ctx)
+	defer cancel()
+
 	var tasks []*tes.Task
-	err = cursor.All(context.TODO(), &tasks)
+	err = cursor.All(mctx, &tasks)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +113,7 @@ func (db *MongoDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*t
 	out := tes.ListTasksResponse{
 		Tasks: tasks,
 	}
-	// TODO figure out when not to return a next page token
-	if len(tasks) > 0 {
+	if len(tasks) == pageSize {
 		out.NextPageToken = tasks[len(tasks)-1].Id
 	}
 

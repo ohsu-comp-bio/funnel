@@ -19,6 +19,9 @@ var TaskBucket = []byte("tasks")
 // task ID -> nil
 var TasksQueued = []byte("tasks-queued")
 
+// TaskOwner maps: task ID -> owner string
+var TaskOwner = []byte("tasks-owner")
+
 // TaskState maps: task ID -> state string
 var TaskState = []byte("tasks-state")
 
@@ -72,6 +75,9 @@ func (taskBolt *BoltDB) Init() error {
 		}
 		if tx.Bucket(TasksQueued) == nil {
 			tx.CreateBucket(TasksQueued)
+		}
+		if tx.Bucket(TaskOwner) == nil {
+			tx.CreateBucket(TaskOwner)
 		}
 		if tx.Bucket(TaskState) == nil {
 			tx.CreateBucket(TaskState)

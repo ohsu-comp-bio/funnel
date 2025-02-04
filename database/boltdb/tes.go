@@ -7,6 +7,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
@@ -22,55 +23,66 @@ func getTaskState(tx *bolt.Tx, id string) tes.State {
 	return tes.State(v)
 }
 
-func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
+func loadTask(tx *bolt.Tx, id string, task *tes.Task, ctx context.Context) error {
 	b := tx.Bucket(TaskBucket).Get([]byte(id))
 	if b == nil {
 		return tes.ErrNotFound
+	}
+
+	if err := checkOwner(tx, id, ctx); err != nil {
+		return err
+	}
+
+	if task != nil {
+		proto.Unmarshal(b, task)
+		task.State = getTaskState(tx, id)
+	}
+
+	return nil
+}
+
+func loadMinimalTaskView(tx *bolt.Tx, id string, task *tes.Task, ctx context.Context) error {
+	if err := loadTask(tx, id, nil, ctx); err != nil {
+		return err
 	}
 	task.Id = id
 	task.State = getTaskState(tx, id)
 	return nil
 }
 
-func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
-	if b == nil {
-		return tes.ErrNotFound
+func loadBasicTaskView(tx *bolt.Tx, id string, task *tes.Task, ctx context.Context) error {
+	err := loadTask(tx, id, task, ctx)
+	if err != nil {
+		return err
 	}
-	proto.Unmarshal(b, task)
+
 	loadTaskLogs(tx, task)
 
 	// remove content from inputs
-	inputs := []*tes.Input{}
 	for _, v := range task.Inputs {
 		v.Content = ""
-		inputs = append(inputs, v)
 	}
-	task.Inputs = inputs
 
-	return loadMinimalTaskView(tx, id, task)
+	return nil
 }
 
-func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
-	b := tx.Bucket(TaskBucket).Get([]byte(id))
-	if b == nil {
-		return tes.ErrNotFound
+func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task, ctx context.Context) error {
+	err := loadTask(tx, id, task, ctx)
+	if err != nil {
+		return err
 	}
-	proto.Unmarshal(b, task)
 	loadTaskLogs(tx, task)
 
 	// Load executor stdout/err
 	for _, tl := range task.Logs {
 		for j, el := range tl.Logs {
-			key := fmt.Sprint(id, j)
+			key := []byte(fmt.Sprint(id, j))
 
-			b := tx.Bucket(ExecutorStdout).Get([]byte(key))
-			if b != nil {
+			if b := tx.Bucket(ExecutorStdout).Get(key); b != nil {
 				el.Stdout = string(b)
 			}
 
-			b = tx.Bucket(ExecutorStderr).Get([]byte(key))
-			if b != nil {
+			if b := tx.Bucket(ExecutorStderr).Get(key); b != nil {
 				el.Stderr = string(b)
 			}
 		}
@@ -87,7 +99,7 @@ func loadFullTaskView(tx *bolt.Tx, id string, task *tes.Task) error {
 		task.Logs[0].SystemLogs = syslogs
 	}
 
-	return loadMinimalTaskView(tx, id, task)
+	return nil
 }
 
 func loadTaskLogs(tx *bolt.Tx, task *tes.Task) {
@@ -122,24 +134,24 @@ func (taskBolt *BoltDB) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*
 		if !ok {
 			return fmt.Errorf("Unknown view: %s", req.View)
 		}
-		task, err = getTaskView(tx, req.Id, tes.View(tes.View_value[req.View]))
+		task, err = getTaskView(tx, req.Id, tes.View(tes.View_value[req.View]), ctx)
 		return err
 	})
 	return task, err
 }
 
-func getTaskView(tx *bolt.Tx, id string, view tes.View) (*tes.Task, error) {
+func getTaskView(tx *bolt.Tx, id string, view tes.View, ctx context.Context) (*tes.Task, error) {
 	var err error
 
 	task := &tes.Task{}
 
 	switch {
 	case view == tes.View_MINIMAL:
-		err = loadMinimalTaskView(tx, id, task)
+		err = loadMinimalTaskView(tx, id, task, ctx)
 	case view == tes.View_BASIC:
-		err = loadBasicTaskView(tx, id, task)
+		err = loadBasicTaskView(tx, id, task, ctx)
 	case view == tes.View_FULL:
-		err = loadFullTaskView(tx, id, task)
+		err = loadFullTaskView(tx, id, task, ctx)
 	default:
 		err = fmt.Errorf("Unknown view: %s", view.String())
 	}
@@ -154,6 +166,7 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 	if req.View == tes.Minimal.String() && req.GetTags() != nil {
 		view = tes.View_BASIC.String()
 	}
+	viewMode := tes.View(tes.View_value[view])
 	pageSize := tes.GetPageSize(req.GetPageSize())
 
 	taskBolt.db.View(func(tx *bolt.Tx) error {
@@ -176,7 +189,12 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 
 	taskLoop:
 		for ; k != nil && i < pageSize; k, _ = c.Prev() {
-			task, _ := getTaskView(tx, string(k), tes.View_FULL)
+			taskId := string(k)
+
+			task, err := getTaskView(tx, taskId, tes.View_BASIC, ctx)
+			if err != nil {
+				continue taskLoop // Skip the task as access to it was not confirmed
+			}
 
 			if req.State != tes.Unknown && req.State != task.State {
 				continue taskLoop
@@ -193,7 +211,9 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 				}
 			}
 
-			task, _ = getTaskView(tx, string(k), tes.View(tes.View_value[view]))
+			if viewMode != tes.View_BASIC {
+				task, _ = getTaskView(tx, taskId, viewMode, ctx)
+			}
 
 			tasks = append(tasks, task)
 			i++
@@ -210,4 +230,21 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 	}
 
 	return &out, nil
+}
+
+func checkOwner(tx *bolt.Tx, taskId string, ctx context.Context) error {
+	// Skip access-check for system-related operations where ctx is undefined:
+	if ctx == nil || server.GetUser(ctx).CanSeeAllTasks() {
+		return nil
+	}
+
+	taskOwner := ""
+	if owner := tx.Bucket(TaskOwner).Get([]byte(taskId)); owner != nil {
+		taskOwner = string(owner)
+	}
+
+	if server.GetUser(ctx).IsAccessible(taskOwner) {
+		return nil
+	}
+	return tes.ErrNotPermitted
 }

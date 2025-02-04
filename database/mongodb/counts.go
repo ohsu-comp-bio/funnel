@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type stateCount struct {
@@ -26,13 +26,19 @@ func (db *MongoDB) TaskStateCounts(ctx context.Context) (map[string]int32, error
 		},
 		}}
 
-	cursor, err := db.tasks(db.client).Aggregate(context.TODO(), mongo.Pipeline{stateStage, groupStage})
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	cursor, err := db.tasks().Aggregate(mctx, mongo.Pipeline{stateStage, groupStage})
 	if err != nil {
 		return nil, err
 	}
 
+	mctx, cancel = db.wrap(ctx)
+	defer cancel()
+
 	recs := []stateCount{}
-	err = cursor.All(context.TODO(), &recs)
+	err = cursor.All(mctx, &recs)
 	if err != nil {
 		return nil, err
 	}

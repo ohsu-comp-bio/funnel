@@ -1,11 +1,13 @@
 package datastore
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
 	"cloud.google.com/go/datastore"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -88,6 +90,7 @@ type part struct {
 type task struct {
 	Id, CreationTime  string `datastore:",omitempty"` // nolint
 	State             int32
+	Owner             string
 	Name, Description string     `datastore:",noindex,omitempty"`
 	Executors         []executor `datastore:",noindex,omitempty"`
 	Inputs            []param    `datastore:",noindex,omitempty"`
@@ -100,8 +103,8 @@ type task struct {
 }
 
 type tasklog struct {
-	*tes.TaskLog
 	Metadata []kv `datastore:",noindex,omitempty"`
+	*tes.TaskLog
 }
 
 type resources struct {
@@ -122,10 +125,11 @@ type param struct {
 	Type                                  int32  `datastore:",noindex,omitempty"`
 }
 
-func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
+func marshalTask(t *tes.Task, ctx context.Context) ([]*datastore.Key, []interface{}) {
 	z := &task{
 		Id:           t.Id,
 		State:        int32(t.State),
+		Owner:        server.GetUsername(ctx),
 		CreationTime: t.CreationTime,
 		Name:         t.Name,
 		Description:  t.Description,
@@ -197,20 +201,17 @@ func marshalTask(t *tes.Task) ([]*datastore.Key, []interface{}) {
 	return keys, data
 }
 
-func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
-	c := &task{}
-	err := datastore.LoadStruct(c, props)
-	if err != nil {
-		return err
+func (c *task) unmarshal() *tes.Task {
+	z := &tes.Task{
+		Id:           c.Id,
+		CreationTime: c.CreationTime,
+		State:        tes.State(c.State),
+		Name:         c.Name,
+		Description:  c.Description,
+		Volumes:      c.Volumes,
+		Tags:         unmarshalMap(c.Tags),
 	}
 
-	z.Id = c.Id
-	z.CreationTime = c.CreationTime
-	z.State = tes.State(c.State)
-	z.Name = c.Name
-	z.Description = c.Description
-	z.Volumes = c.Volumes
-	z.Tags = unmarshalMap(c.Tags)
 	if c.Resources != nil {
 		z.Resources = &tes.Resources{
 			CpuCores:    int32(c.Resources.CpuCores),
@@ -254,7 +255,11 @@ func unmarshalTask(z *tes.Task, props datastore.PropertyList) error {
 		tl.Metadata = unmarshalMap(i.Metadata)
 		z.Logs = append(z.Logs, tl)
 	}
-	return nil
+	// Ensure at least one empty log for the JSON response:
+	if len(z.Logs) == 0 {
+		z.Logs = []*tes.TaskLog{{}}
+	}
+	return z
 }
 
 func unmarshalPart(t *tes.Task, props datastore.PropertyList) error {
@@ -322,4 +327,25 @@ func stringifyMap(m map[string]string) []string {
 
 func encodeKV(k, v string) string {
 	return url.QueryEscape(k) + ":" + url.QueryEscape(v)
+}
+
+func mergeKvs(existing []kv, updates map[string]string) []kv {
+	tmp := map[string]string{}
+
+	// Populate 'tmp' with existing values:
+	for _, kv := range existing {
+		tmp[kv.Key] = kv.Value
+	}
+
+	// Update 'tmp' with new values:
+	for k, v := range updates {
+		tmp[k] = v
+	}
+
+	// Convert 'tmp' to a kv-list:
+	result := []kv{}
+	for k, v := range tmp {
+		result = append(result, kv{Key: k, Value: v})
+	}
+	return result
 }

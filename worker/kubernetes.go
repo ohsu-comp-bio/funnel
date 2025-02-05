@@ -5,8 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
 	v1 "k8s.io/api/batch/v1"
@@ -94,8 +96,22 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 
+	var maxRetries = 5
+
 	if err != nil {
-		return fmt.Errorf("creating job in worker: %v", err)
+		// Retry creating the Executor Pod on failure
+		var retryCount int
+		for retryCount < maxRetries {
+			_, err = client.Create(ctx, job, metav1.CreateOptions{})
+			if err == nil {
+				break
+			}
+			retryCount++
+			time.Sleep(2 * time.Second)
+		}
+		if retryCount == maxRetries {
+			return fmt.Errorf("Funnel Worker: Failed to create Executor Job after %v attempts: %v", maxRetries, err)
+		}
 	}
 
 	// Wait until the job finishes
@@ -109,25 +125,63 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	}
 
 	for _, v := range pods.Items {
-		req := clientset.CoreV1().Pods(kcmd.Namespace).GetLogs(v.Name, &corev1.PodLogOptions{})
-		podLogs, err := req.Stream(ctx)
-
+		// Wait for the pod to reach Running state
+		pod, err := waitForPodRunning(ctx, kcmd.Namespace, v.Name, 5*time.Minute)
 		if err != nil {
-			return err
+			log.Fatalf("Error waiting for pod: %v", err)
 		}
 
-		defer podLogs.Close()
-		buf := new(bytes.Buffer)
-		_, err = io.Copy(buf, podLogs)
+		// Stream logs from the running pod
+		err = streamPodLogs(ctx, kcmd.Namespace, pod.Name, kcmd.Stdout)
 		if err != nil {
-			return err
+			log.Fatalf("Error streaming logs: %v", err)
 		}
-
-		var bytes = buf.Bytes()
-		kcmd.Stdout.Write(bytes)
 	}
 
 	return nil
+}
+
+func waitForPodRunning(ctx context.Context, namespace string, podName string, timeout time.Duration) (*corev1.Pod, error) {
+	clientset, err := getKubernetesClientset()
+	if err != nil {
+		return nil, fmt.Errorf("failed getting kubernetes clientset: %v", err)
+	}
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	timeoutCh := time.After(timeout)
+
+	for {
+		select {
+		case <-timeoutCh:
+			return nil, fmt.Errorf("timed out waiting for pod %s to be in running state", podName)
+		case <-ticker.C:
+			pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+			if err != nil {
+				return nil, fmt.Errorf("getting pod %s: %v", podName, err)
+			}
+
+			return pod, nil
+		}
+	}
+}
+
+func streamPodLogs(ctx context.Context, namespace string, podName string, stdout io.Writer) error {
+	clientset, err := getKubernetesClientset()
+	if err != nil {
+		return fmt.Errorf("getting kubernetes clientset: %v", err)
+	}
+
+	req := clientset.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{})
+	podLogs, err := req.Stream(ctx)
+	if err != nil {
+		return fmt.Errorf("streaming logs: %v", err)
+	}
+	defer podLogs.Close()
+
+	_, err = io.Copy(stdout, podLogs)
+	return err
 }
 
 // Deletes the job running the task.

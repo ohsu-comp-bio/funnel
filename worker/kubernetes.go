@@ -162,12 +162,7 @@ func waitForPodRunning(ctx context.Context, namespace string, podName string, ti
 				return nil, fmt.Errorf("getting pod %s: %v", podName, err)
 			}
 
-			// Check if pod is in a terminal state
-			if pod.Status.Phase == corev1.PodRunning {
-				return pod, nil
-			} else if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded {
-				return nil, fmt.Errorf("pod %s is in a terminal state: %s", podName, pod.Status.Phase)
-			}
+			return pod, nil
 		}
 	}
 }

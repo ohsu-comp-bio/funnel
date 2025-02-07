@@ -147,6 +147,22 @@ func (f *Funnel) PollForServerStart() error {
 	}
 }
 
+// Changes the user who will be making the RPC calls.
+// Panics if that user is not defined in the configuration.
+func (f *Funnel) SwitchUser(username string) {
+	for _, cred := range f.Conf.Server.BasicAuth {
+		if cred.User == username {
+			if f.Conf.RPCClient.User != username {
+				f.Conf.RPCClient.User = cred.User
+				f.Conf.RPCClient.Password = cred.Password
+				f.addRPCClient()
+			}
+			return
+		}
+	}
+	panic("Cannot switch to an undefined user: " + username)
+}
+
 // WaitForDockerDestroy waits for a "destroy" event
 // from docker for the given container ID
 //

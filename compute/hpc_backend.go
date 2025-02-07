@@ -104,11 +104,6 @@ func (b *HPCBackend) Cancel(ctx context.Context, taskID string) error {
 		return err
 	}
 
-	// only cancel tasks in a QUEUED state
-	if task.State != tes.State_QUEUED {
-		return nil
-	}
-
 	backendID := getBackendTaskID(task, b.Name)
 	if backendID == "" {
 		return fmt.Errorf("no %s_id found in metadata for task %s", b.Name, taskID)

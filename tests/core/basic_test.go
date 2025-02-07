@@ -300,14 +300,16 @@ func TestListTaskView(t *testing.T) {
   `)
 	fun.Wait(id)
 
+	time.Sleep(500 * time.Millisecond)
+
 	tasks = fun.ListView(tes.View_MINIMAL)
 	task = tasks[0]
 
-	if task.Id == "" {
+	if task.Id != id {
 		t.Fatal("expected task ID in minimal view")
 	}
-	if task.State == tes.State_UNKNOWN {
-		t.Fatal("expected state in minimal view")
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected the COMPLETE state in minimal view, got ", task.State)
 	}
 	if task.Name != "" {
 		t.Fatal("unexpected task name included in minimal view")
@@ -328,11 +330,11 @@ func TestListTaskView(t *testing.T) {
 	tasks = fun.ListView(tes.View_BASIC)
 	task = tasks[0]
 
-	if task.Id == "" {
+	if task.Id != id {
 		t.Fatal("expected task ID in basic view")
 	}
-	if task.State == tes.State_UNKNOWN {
-		t.Fatal("expected state in basic view")
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected the COMPLETE state in basic view, got ", task.State)
 	}
 	if task.Name == "" {
 		t.Fatal("expected task name to be included basic view")
@@ -365,11 +367,11 @@ func TestListTaskView(t *testing.T) {
 	tasks = fun.ListView(tes.View_FULL)
 	task = tasks[0]
 
-	if task.Id == "" {
+	if task.Id != id {
 		t.Fatal("expected task ID in full view")
 	}
-	if task.State == tes.State_UNKNOWN {
-		t.Fatal("expected state in full view")
+	if task.State != tes.State_COMPLETE {
+		t.Fatal("expected the COMPLETE state in full view, got ", task.State)
 	}
 	if task.Name == "" {
 		t.Fatal("expected task name to be included full view")
@@ -525,9 +527,19 @@ func TestSingleCharLog(t *testing.T) {
     --sh 'echo a; sleep 100'
   `)
 	fun.WaitForRunning(id)
-	time.Sleep(time.Second * 5)
-	task := fun.Get(id)
-	if task.Logs[0].Logs[0].Stdout != "a\n" {
+
+	// The EXECUTOR_STDOUT event may take some time, so let's wait max 10 seconds
+	stdout := ""
+	for range time.NewTicker(10 * time.Second).C {
+		task := fun.Get(id)
+		stdout = task.Logs[0].Logs[0].Stdout
+		if stdout != "" {
+			t.Log("Non-empty Stdout detected.")
+			break
+		}
+	}
+
+	if stdout != "a\n" {
 		t.Fatal("Missing logs")
 	}
 	fun.Cancel(id)
@@ -793,10 +805,17 @@ func TestSmallPaginationAndSortOrder(t *testing.T) {
 		t.Fatal("expected empty database")
 	}
 
-	for i := 0; i < 150; i++ {
-		f.Run(`--sh 'echo 1'`)
+	taskIds := make([]string, 150)
+	for i := range 150 {
+		taskIds[149-i] = f.Run(`--sh 'echo 1'`)
 	}
-	time.Sleep(time.Second * 5)
+
+	request := &tes.GetTaskRequest{View: tes.View_BASIC.String()}
+	for _, taskId := range taskIds {
+		request.Id = taskId
+		task, err := f.RPC.GetTask(ctx, request)
+		t.Log("GetTask", request.Id, task.State.String(), err)
+	}
 
 	r4, err := f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
 		PageSize: 50,
@@ -896,6 +915,8 @@ func TestListTaskFilterState(t *testing.T) {
 	}
 	f.Wait(id3)
 
+	time.Sleep(500 * time.Millisecond)
+
 	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.Full.String(),
 	})
@@ -933,10 +954,10 @@ func TestListTaskFilterState(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(r.Tasks) != 1 {
-		t.Error("expected 1 tasks", r.Tasks)
+		t.Fatal("expected 1 tasks", r.Tasks)
 	}
 	if r.Tasks[0].Id != id3 {
-		t.Error("unexpected canceled task IDs", r.Tasks)
+		t.Fatal("unexpected canceled task IDs", r.Tasks)
 	}
 }
 
@@ -1040,6 +1061,8 @@ func TestListTaskMultipleFilters(t *testing.T) {
 	}
 	f.Wait(id3)
 
+	time.Sleep(500 * time.Millisecond)
+
 	r, err := f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.View_FULL.String(),
 	})
@@ -1081,10 +1104,10 @@ func TestListTaskMultipleFilters(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(r.Tasks) != 1 {
-		t.Error("expected 1 tasks", r.Tasks)
+		t.Fatal("expected 1 tasks", r.Tasks)
 	}
 	if r.Tasks[0].Id != id2 {
-		t.Error("unexpected task IDs", r.Tasks)
+		t.Fatal("unexpected task IDs", r.Tasks)
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
@@ -1097,7 +1120,7 @@ func TestListTaskMultipleFilters(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(r.Tasks) != 0 {
-		t.Error("expected 0 tasks", r.Tasks)
+		t.Fatal("expected 0 tasks", r.Tasks)
 	}
 
 	r, _ = f.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
@@ -1110,10 +1133,10 @@ func TestListTaskMultipleFilters(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(r.Tasks) != 1 {
-		t.Error("expected 1 tasks", r.Tasks)
+		t.Fatal("expected 1 tasks", r.Tasks)
 	}
 	if r.Tasks[0].Id != id3 {
-		t.Error("unexpected task IDs", r.Tasks)
+		t.Fatal("unexpected task IDs", r.Tasks)
 	}
 }
 
@@ -1216,7 +1239,9 @@ func TestMetadataEvent(t *testing.T) {
 	}
 
 	if len(task.Logs[0].Metadata) != 3 {
-		t.Error("unexpected number of items in task metadata", task)
+		t.Errorf("expected 3 items in task metadata, got %d: %s",
+			len(task.Logs[0].Metadata),
+			task.Logs[0].Metadata)
 	}
 
 	for k, v := range task.Logs[0].Metadata {

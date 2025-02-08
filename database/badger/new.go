@@ -37,6 +37,7 @@ func (db *Badger) Close() {
 }
 
 var taskKeyPrefix = []byte("tasks")
+var ownerKeyPrefix = []byte("owners")
 
 func taskKey(id string) []byte {
 	idb := []byte(id)
@@ -44,4 +45,13 @@ func taskKey(id string) []byte {
 	key = append(key, taskKeyPrefix...)
 	key = append(key, idb...)
 	return key
+}
+
+func ownerKey(id string) []byte {
+	return append(ownerKeyPrefix, []byte(id)...)
+}
+
+func ownerKeyFromTaskKey(taskKey []byte) []byte {
+	taskId := taskKey[len(taskKeyPrefix):]
+	return append(ownerKeyPrefix, taskId...)
 }

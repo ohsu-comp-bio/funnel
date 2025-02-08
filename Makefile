@@ -35,7 +35,7 @@ build:
 	@touch version/version.go
 	@go build -ldflags '$(VERSION_LDFLAGS)' -buildvcs=false .
 
-# Build an unoptimized version of the code for use during debugging 
+# Build an unoptimized version of the code for use during debugging
 # https://go.dev/doc/gdb
 debug:
 	@go install -gcflags=all="-N -l"
@@ -119,7 +119,7 @@ test-verbose:
 
 start-elasticsearch:
 	@docker rm -f funnel-es-test > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:5.6.3 > /dev/null
+	@docker run -d --name funnel-es-test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.io/elastic/elasticsearch:8.17.1 > /dev/null
 
 test-elasticsearch:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/elastic.config.yml
@@ -140,7 +140,7 @@ test-badger:
 
 start-dynamodb:
 	@docker rm -f funnel-dynamodb-test > /dev/null 2>&1 || echo
-	@docker run -d --name funnel-dynamodb-test -p 18000:8000 docker.io/dwmkerr/dynamodb:38 -sharedDb > /dev/null
+	@docker run -d --name funnel-dynamodb-test -p 18000:8000 docker.io/amazon/dynamodb-local > /dev/null
 
 test-dynamodb:
 	@go test ./tests/core/ -funnel-config `pwd`/tests/dynamo.config.yml
@@ -228,7 +228,7 @@ snapshot: release-dep
 docker:
 	docker build -t quay.io/ohsu-comp-bio/funnel:latest ./
 
-# Create a release on Github using GoReleaser 
+# Create a release on Github using GoReleaser
 release:
 	@go get github.com/buchanae/github-release-notes
 	@goreleaser \

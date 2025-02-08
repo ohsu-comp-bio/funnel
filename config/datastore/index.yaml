@@ -1,0 +1,51 @@
+# These index-definitions need to be imported to Datastore (if `database: datastore`)
+# Using Google Cloud CLI: gcloud datastore indexes create path/to/index.yaml
+
+indexes:
+
+- kind: Task
+  properties:
+  - name: Owner
+  - name: State
+  - name: TagStrings
+  - name: CreationTime
+    direction: desc
+
+- kind: Task
+  properties:
+  - name: Owner
+  - name: State
+  - name: CreationTime
+    direction: desc
+
+- kind: Task
+  properties:
+  - name: Owner
+  - name: TagStrings
+  - name: CreationTime
+    direction: desc
+
+- kind: Task
+  properties:
+  - name: Owner
+  - name: CreationTime
+    direction: desc
+
+- kind: Task
+  properties:
+  - name: State
+  - name: TagStrings
+  - name: CreationTime
+    direction: desc
+
+- kind: Task
+  properties:
+  - name: State
+  - name: CreationTime
+    direction: desc
+
+- kind: Task
+  properties:
+  - name: TagStrings
+  - name: CreationTime
+    direction: desc

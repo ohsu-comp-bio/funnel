@@ -30,6 +30,7 @@ func DefaultConfig() Config {
 		RPCPort:          "9090",
 		ServiceName:      "Funnel",
 		DisableHTTPCache: true,
+		TaskAccess:       "All",
 	}
 
 	c := Config{
@@ -106,7 +107,7 @@ func DefaultConfig() Config {
 			IndexPrefix: "funnel",
 		},
 		MongoDB: MongoDB{
-			Addrs:    []string{"mongodb://localhost"},
+			Addrs:    []string{"localhost"},
 			Timeout:  Duration(time.Minute * 5),
 			Database: "funnel",
 		},

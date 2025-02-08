@@ -4,5 +4,5 @@ EventWriters:
   - log
 
 MongoDB:
-  Addrs: 
-    - mongodb://localhost:27000
+  Addrs:
+    - localhost:27000

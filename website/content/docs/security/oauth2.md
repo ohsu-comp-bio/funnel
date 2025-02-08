@@ -21,8 +21,6 @@ token is still active (i.e., no token invalidation before expiring).
 Optionally, Funnel can also validate the scope and audience claims to contain
 specific values.
 
-It is not possible to configure administrative users for the OAuth2 authentication mode.
-
 To enable JWT authentication, specify `OidcAuth` section in your config file:
 
 ```yaml
@@ -44,7 +42,26 @@ Server:
 
     # The URL where OIDC should redirect after login (keep the path '/login')
     RedirectURL: "http://localhost:8000/login"
+
+    # List of OIDC subjects promoted to Admin status.
+    Admins:
+      - user.one@example.org
+      - user.two@example.org
+
+  TaskAccess: OwnerOrAdmin
 ```
+
+The `TaskAccess` property configures the visibility and access-mode for tasks:
+
+* `All` (default) - all tasks are visible to everyone
+* `Owner` - tasks are visible to the users who created them
+* `OwnerOrAdmin` - extends `Owner` by allowing Admin-users (defined under
+  `Admins`) access everything
+
+As new tasks are created, the username behind the request is recorded as the
+owner of the task. Depending on the `TaskAccess` property, if owner-based
+acces-mode is enabled, the owner of the task is compared to username of current
+request to decide if the user may see and interact with the task.
 
 Make sure to properly protect the configuration file so that it's not readable
 by everyone:

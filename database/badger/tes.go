@@ -1,11 +1,13 @@
 package badger
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
 	badger "github.com/dgraph-io/badger/v2"
 	proto "github.com/golang/protobuf/proto"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -14,7 +16,7 @@ func (db *Badger) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Ta
 	var task *tes.Task
 
 	err := db.db.View(func(txn *badger.Txn) error {
-		t, err := db.getTask(txn, req.Id)
+		t, err := getTask(txn, req.Id, ctx)
 		task = t
 		return err
 	})
@@ -60,6 +62,18 @@ func (db *Badger) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*te
 
 	taskLoop:
 		for ; it.Valid() && len(tasks) < pageSize; it.Next() {
+			// Iterator items are reverse-ordered by keys (starting with
+			// task-keys). So by the time the task-key prefix is passed, only
+			// owner-keys remains, and they can be skipped.
+			if !bytes.HasPrefix(it.Item().Key(), taskKeyPrefix) {
+				break
+			}
+
+			taskOwner := getTaskOwner(txn, ownerKeyFromTaskKey(it.Item().Key()))
+			if !isAccessible(ctx, taskOwner) {
+				continue
+			}
+
 			var val []byte
 			err := it.Item().Value(func(d []byte) error {
 				val = copyBytes(d)
@@ -118,10 +132,13 @@ func (db *Badger) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*te
 	return &out, nil
 }
 
-func (db *Badger) getTask(txn *badger.Txn, id string) (*tes.Task, error) {
+func getTask(txn *badger.Txn, id string, ctx context.Context) (*tes.Task, error) {
 	item, err := txn.Get(taskKey(id))
 	if err == badger.ErrKeyNotFound {
 		return nil, tes.ErrNotFound
+	}
+	if !isAccessible(ctx, getTaskOwner(txn, ownerKey(id))) {
+		return nil, tes.ErrNotPermitted
 	}
 	if err != nil {
 		return nil, fmt.Errorf("loading item: %s", err)
@@ -142,6 +159,21 @@ func (db *Badger) getTask(txn *badger.Txn, id string) (*tes.Task, error) {
 		return nil, fmt.Errorf("unmarshaling data: %s", err)
 	}
 	return task, nil
+}
+
+func getTaskOwner(txn *badger.Txn, ownerKey []byte) string {
+	taskOwner := ""
+	if item, err := txn.Get(ownerKey); err == nil {
+		_ = item.Value(func(d []byte) error {
+			taskOwner = string(d)
+			return nil
+		})
+	}
+	return taskOwner
+}
+
+func isAccessible(ctx context.Context, taskOwner string) bool {
+	return server.GetUser(ctx).IsAccessible(taskOwner)
 }
 
 func copyBytes(in []byte) []byte {

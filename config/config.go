@@ -54,6 +54,7 @@ type Config struct {
 type BasicCredential struct {
 	User     string
 	Password string
+	Admin    bool
 }
 
 type OidcAuth struct {
@@ -63,6 +64,7 @@ type OidcAuth struct {
 	RedirectURL      string
 	RequireScope     string
 	RequireAudience  string
+	Admins           []string
 }
 
 // RPCClient describes configuration for gRPC clients
@@ -88,6 +90,12 @@ type Server struct {
 	BasicAuth        []BasicCredential
 	OidcAuth         OidcAuth
 	DisableHTTPCache bool
+
+	// Defines task access and visibility by options:
+	// "All" (default) – all tasks are visible to everyone
+	// "Owner" - tasks are visible to the users who created them
+	// "OwnerOrAdmin" - extends "Owner" by allowing Admin-users see everything
+	TaskAccess string
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort
@@ -236,8 +244,13 @@ type MongoDB struct {
 
 // Elastic configures access to an Elasticsearch database.
 type Elastic struct {
-	IndexPrefix string
-	URL         string
+	IndexPrefix  string
+	URL          string
+	Username     string
+	Password     string
+	CloudID      string
+	APIKey       string
+	ServiceToken string
 }
 
 // Kafka configure access to a Kafka topic for task event reading/writing.

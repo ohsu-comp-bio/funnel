@@ -37,6 +37,7 @@ type IntrospectionResponse struct {
 // OIDC configuration structure used for validating input from request.
 type OidcConfig struct {
 	local  config.OidcAuth
+	admins map[string]bool
 	remote OidcRemoteConfig
 	oauth2 oauth2.Config
 	jwks   jwk.Cache
@@ -87,6 +88,11 @@ func (c *OidcConfig) initConfig() {
 	c.oauth2.Endpoint.AuthStyle = oauth2.AuthStyleInParams
 	c.oauth2.Endpoint.AuthURL = c.remote.AuthorizationEndpoint
 	c.oauth2.Endpoint.TokenURL = c.remote.TokenEndpoint
+
+	c.admins = map[string]bool{}
+	for _, username := range c.local.Admins {
+		c.admins[username] = true
+	}
 }
 
 func (c *OidcConfig) initJwks() {
@@ -201,6 +207,17 @@ func (c *OidcConfig) computeState(req *http.Request) string {
 	hash.Write([]byte(str))
 	b := hash.Sum(nil)
 	return hex.EncodeToString(b)[:10]
+}
+
+func (c *OidcConfig) Authorize(authorization string) *UserInfo {
+	jwtString := strings.TrimPrefix(authorization, "Bearer ")
+	subject := c.ParseJwtSubject(jwtString)
+	isAdmin := c.admins[subject]
+
+	if subject == "" {
+		return nil
+	}
+	return &UserInfo{Username: subject, Token: jwtString, IsAdmin: isAdmin}
 }
 
 func (c *OidcConfig) ParseJwtSubject(jwtString string) string {

@@ -421,3 +421,17 @@ FTPStorage:
   Timeout: 10s
   User: "anonymous"
   Password: "anonymous"
+
+# When HTSGETStorage.ServiceURL (e.g. 'http://my.htsget.svc/') is a valid URL,
+# input-file URL with prefix "htsget://{reads|variants}/" becomes supported.
+# Only one HTSGET-service can be referenced.
+HTSGETStorage:
+  ServiceURL:
+  Timeout: 30s
+
+# When SDAStorage.ServiceURL is a valid URL (e.g. 'https://my.sda.svc/'),
+# input-file URL with prefix "sda://" becomes supported.
+# Only one SDA-service can be referenced.
+SDAStorage:
+  ServiceURL:
+  Timeout: 30s

@@ -1,0 +1,24 @@
+{
+  "name": "Full Hello world",
+  "description": "Demonstrates the most basic echo task with all the extras.",
+  "tags": {
+    "tag-ONE": "TWO",
+    "tag-THREE": "FOUR"
+  },
+  "outputs": [{
+    "url": "/Users/buchanae/src/github.com/ohsu-comp-bio/funnel/_scratch/full-output/",
+    "path": "/outputs",
+    "type": "DIRECTORY"
+  }],
+  "volumes": ["/vol1", "/vol2"],
+  "executors": [
+    {
+      "image": "alpine",
+      "command": ["sh", "-c", "echo foo > /outputs/foo; echo bar > /outputs/bar"],
+      "env": {
+        "ONE": "TWO",
+        "THREE": "FOUR"
+      }
+    }
+  ]
+}

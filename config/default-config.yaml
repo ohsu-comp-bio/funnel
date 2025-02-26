@@ -390,6 +390,14 @@ AmazonS3:
   Key: ""
   # AWS Secret Access Key
   Secret: ""
+  # Server Side Encryption (SSE) settings
+  SSE:
+    # Customer Provided Key
+    # ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html
+    CustomerKeyFile: ""
+    # KMS Key
+    # ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html
+    KMSKey: ""
 
 # Configure storage backends for S3 providers such as Minio and/or Ceph
 # GenericS3:

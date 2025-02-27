@@ -2,9 +2,11 @@ package server
 
 import (
 	"encoding/base64"
+	"log"
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/plugin"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -36,6 +38,36 @@ func newAuthInterceptor(creds []config.BasicCredential) grpc.UnaryServerIntercep
 		if !authorized {
 			return nil, err
 		}
+		return handler(ctx, req)
+	}
+}
+
+// Return a new interceptor function that authorizes RPCs
+// using a password stored in the config.
+func newPluginInterceptor(creds config.Plugins) grpc.UnaryServerInterceptor {
+
+	// Return a function that is the interceptor.
+	return func(
+		ctx context.Context, req interface{}, info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler) (interface{}, error) {
+		var authorized bool
+		var err error
+
+		if creds.Disabled {
+			log.Printf("Plugins Disabled")
+		}
+
+		// Load plugins from the plugin-binaries directory.
+		var pm plugin.Manager
+		if err := (&pm).LoadPlugins(creds.Dir); err != nil {
+			log.Printf("Error loading plugins: %v", err)
+		}
+		defer pm.Close()
+
+		if !authorized {
+			log.Printf("User not authorized: %v", err)
+		}
+
 		return handler(ctx, req)
 	}
 }

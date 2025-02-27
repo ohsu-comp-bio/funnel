@@ -90,6 +90,9 @@ func DefaultConfig() Config {
 				StopCommand: "rm -f {{.Name}}",
 			},
 		},
+		Plugins: Plugins{
+			Disabled: true,
+		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers
 		BoltDB: BoltDB{

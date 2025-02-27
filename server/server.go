@@ -38,6 +38,7 @@ type Server struct {
 	Nodes            scheduler.SchedulerServiceServer
 	DisableHTTPCache bool
 	Log              *logger.Logger
+	Plugins          config.Plugins
 }
 
 // Return a new interceptor function that logs all requests at the Debug level
@@ -133,6 +134,7 @@ func (s *Server) Serve(pctx context.Context) error {
 				// API auth check.
 				auth.Interceptor,
 				newDebugInterceptor(s.Log),
+				newPluginInterceptor(s.Plugins),
 			),
 		),
 	)

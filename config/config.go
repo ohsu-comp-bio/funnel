@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -48,6 +49,30 @@ type Config struct {
 	Swift         SwiftStorage
 	HTTPStorage   HTTPStorage
 	FTPStorage    FTPStorage
+	// plugins
+	Plugins Plugins
+}
+
+// Plugins describes which plugins to use and where to find them.
+type Plugins struct {
+	Disabled bool
+	Dir      string
+	Plugins  []string
+}
+
+func (c Config) ValidatePlugins() error {
+	if c.Plugins.Disabled {
+		return nil
+	}
+
+	for _, p := range c.Plugins.Plugins {
+		// Check if the plugin is in the plugin directory
+		if _, err := os.Stat(c.Plugins.Dir + "/" + p); err != nil {
+			return fmt.Errorf("plugin %s not found in plugin directory %s", p, c.Plugins.Dir)
+		}
+	}
+
+	return nil
 }
 
 // BasicCredential describes a username and password for use with Funnel's basic auth.

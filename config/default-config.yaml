@@ -149,6 +149,9 @@ Worker:
   # Limit the number of concurrent downloads/uploads
   MaxParallelTransfers: 10
 
+Plugins:
+  Disabled: true
+
 #-------------------------------------------------------------------------------
 # Databases and/or Event Writers/Handlers
 #-------------------------------------------------------------------------------

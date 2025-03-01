@@ -134,7 +134,6 @@ func (s *Server) Serve(pctx context.Context) error {
 				// API auth check.
 				auth.Interceptor,
 				newDebugInterceptor(s.Log),
-				newPluginInterceptor(s.Plugins),
 			),
 		),
 	)

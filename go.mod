@@ -65,7 +65,9 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.17.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1
+	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/go-plugin v1.6.3
 	github.com/lestrrat-go/jwx/v2 v2.1.3
 	go.mongodb.org/mongo-driver/v2 v2.0.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250204164813-702378808489
@@ -95,6 +97,7 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
+	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
@@ -114,6 +117,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
+	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -132,6 +136,8 @@ require (
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/maruel/panicparse v1.6.2 // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -142,6 +148,7 @@ require (
 	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/oasdiff/yaml v0.0.0-20241210131133-6b86fb107d80 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20241210130736-a94c01f36349 // indirect
+	github.com/oklog/run v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect

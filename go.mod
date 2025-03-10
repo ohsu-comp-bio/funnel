@@ -66,13 +66,13 @@ require (
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.6.3
-	github.com/lestrrat-go/jwx/v2 v2.1.3
-	go.mongodb.org/mongo-driver/v2 v2.0.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20250204164813-702378808489
+	github.com/lestrrat-go/jwx/v2 v2.1.4
+	go.mongodb.org/mongo-driver/v2 v2.1.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb
 	google.golang.org/protobuf v1.36.5
 )
 

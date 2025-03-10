@@ -68,6 +68,9 @@ AmazonS3:
   MaxRetries: {{ .Values.AmazonS3.MaxRetries }}
   Key: {{ .Values.AmazonS3.Key }}
   Secret: {{ .Values.AmazonS3.Secret }}
+  SSE: 
+    CustomerKeyFile: {{ .Values.AmazonS3.SSE.CustomerKeyFile }}
+    KMSKey: {{ .Values.AmazonS3.SSE.KMSKey }}
 
 DynamoDB:
   TableBasename: {{ .Values.DynamoDB.TableBasename }}

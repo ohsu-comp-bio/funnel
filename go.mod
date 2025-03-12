@@ -54,12 +54,12 @@ require (
 	golang.org/x/net v0.37.0
 	golang.org/x/oauth2 v0.28.0
 	golang.org/x/time v0.11.0
-	google.golang.org/api v0.224.0
+	google.golang.org/api v0.225.0
 	google.golang.org/genproto v0.0.0-20250122153221-138b5a5a4fd4 // indirect
 	google.golang.org/grpc v1.71.0
-	k8s.io/api v0.33.0-alpha.3
-	k8s.io/apimachinery v0.33.0-alpha.3
-	k8s.io/client-go v0.33.0-alpha.3
+	k8s.io/api v0.33.0-beta.0
+	k8s.io/apimachinery v0.33.0-beta.0
+	k8s.io/client-go v0.33.0-beta.0
 )
 
 require (
@@ -108,7 +108,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.5 // indirect
@@ -185,9 +184,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7 // indirect
+	k8s.io/kube-openapi v0.0.0-20250304201544-e5f78fe3ede9 // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
+	sigs.k8s.io/randfill v1.0.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )

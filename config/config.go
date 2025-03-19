@@ -2,10 +2,10 @@
 package config
 
 import (
-	"fmt"
 	"io"
 	"os"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/cat/plugins"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
@@ -49,6 +49,8 @@ type Config struct {
 	Swift         SwiftStorage
 	HTTPStorage   HTTPStorage
 	FTPStorage    FTPStorage
+	// TODO: Interface passed back will need to have enough configuration to update these fields (e.g. GenericS3 Storage with User Keys)
+	// Currently we're not updating the Worker config and only relying on the Server to authenticate the user
 	// plugins
 	Plugins Plugins
 }
@@ -57,22 +59,9 @@ type Config struct {
 type Plugins struct {
 	Disabled bool
 	Dir      string
-	Plugins  []string
-}
-
-func (c Config) ValidatePlugins() error {
-	if c.Plugins.Disabled {
-		return nil
-	}
-
-	for _, p := range c.Plugins.Plugins {
-		// Check if the plugin is in the plugin directory
-		if _, err := os.Stat(c.Plugins.Dir + "/" + p); err != nil {
-			return fmt.Errorf("plugin %s not found in plugin directory %s", p, c.Plugins.Dir)
-		}
-	}
-
-	return nil
+	Plugin   string
+	Input    string
+	Response plugins.Response
 }
 
 // BasicCredential describes a username and password for use with Funnel's basic auth.

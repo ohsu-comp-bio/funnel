@@ -205,7 +205,6 @@ func (b *Backend) createPVC(task *tes.Task) (*corev1.PersistentVolumeClaim, erro
 		return nil, fmt.Errorf("decoding PVC spec: %v", err)
 	}
 
-	fmt.Println("PVC spec: ", string(buf.Bytes()))
 	pvc, ok := obj.(*corev1.PersistentVolumeClaim)
 	if !ok {
 		return nil, fmt.Errorf("failed to decode PVC spec")
@@ -240,7 +239,6 @@ func (b *Backend) createPV(task *tes.Task) (*corev1.PersistentVolume, error) {
 		return nil, fmt.Errorf("decoding PV spec: %v", err)
 	}
 
-	fmt.Println("PV spec: ", string(buf.Bytes()))
 	pv, ok := obj.(*corev1.PersistentVolume)
 	if !ok {
 		return nil, fmt.Errorf("failed to decode PV spec")

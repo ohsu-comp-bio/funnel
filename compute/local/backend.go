@@ -4,6 +4,7 @@ package local
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -47,6 +48,9 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
+		resp := ctx.Value("Auth")
+		fmt.Println("DEBUG: resp from plugin:", resp)
+
 		return b.Submit(ev.GetTask())
 	}
 	return nil
@@ -59,6 +63,7 @@ func (b *Backend) Close() {}
 func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()
 
+	// TODO: b.conf will need to be updated after authentication
 	w, err := workerCmd.NewWorker(ctx, b.conf, b.log, &workerCmd.Options{
 		TaskID: task.Id,
 	})

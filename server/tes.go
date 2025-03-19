@@ -1,21 +1,18 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
 	"time"
 
-	"github.com/ohsu-comp-bio/funnel/auth"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/plugin"
+	"github.com/ohsu-comp-bio/funnel/plugins"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/version"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -38,51 +35,55 @@ type TaskService struct {
 	Config  config.Config
 }
 
-// authorize turns the text of post.Contents into HTML and returns it; it uses
-// the plugin manager to invoke loaded plugins on the contents within it.
-func (ts *TaskService) Authorize(pm *plugin.Manager, authHeader http.Header, task *tes.Task) (auth.Auth, error) {
-	return pm.ApplyContentsHooks(authHeader, task)
+// LoadPlugins loads plugins for a task.
+func (ts *TaskService) LoadPlugins(task *tes.Task) (plugins.Response, error) {
+	m := &plugins.Manager{}
+	defer m.Close()
+
+	plugin, err := m.Client(ts.Config.Plugins.Dir)
+	if err != nil {
+		return plugins.Response{}, fmt.Errorf("failed to get plugin client: %w", err)
+	}
+
+	// TODO: Check if "overloading" the task tag is an acceptable way to pass plugin inputs
+	inputs := task.Tags[ts.Config.Plugins.Input]
+	if inputs == "" {
+		return plugins.Response{}, fmt.Errorf("task tags must contain a '%v' field", ts.Config.Plugins.Input)
+	}
+
+	rawResp, err := plugin.Get(inputs)
+	if err != nil {
+		return plugins.Response{}, fmt.Errorf("failed to authorize '%s' via plugin: %w", inputs, err)
+	}
+
+	// Unmarshal the response
+	var resp plugins.Response
+	err = json.Unmarshal([]byte(rawResp), &resp)
+	if err != nil {
+		return plugins.Response{}, fmt.Errorf("failed to parse plugin response: %w", err)
+	}
+
+	return resp, nil
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	// Load plugins from the plugin-binaries directory.
-	var pm plugin.Manager
-	if err := (&pm).LoadPlugins(ts.Config.Plugins.Dir); err != nil {
-		log.Fatal("Error loading plugins:", err)
+	if !ts.Config.Plugins.Disabled {
+		pluginResponse, err := ts.LoadPlugins(task)
+		if err != nil {
+			return nil, fmt.Errorf("Error loading plugins: %v", err)
+		}
+
+		// TODO: Validate response (against schema or config?)
+		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 	}
-	defer pm.Close()
-
-	// Extract metadata from the context
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "missing metadata")
-	}
-
-	// Get the Auth header
-	authHeaders := md.Get("authorization")
-	if len(authHeaders) == 0 {
-		return nil, status.Errorf(codes.Unauthenticated, "missing authorization header")
-	}
-	authHeader := authHeaders[0]
-
-	headers := http.Header{}
-	headers.Set("Authorization", authHeader)
-	resp, err := ts.Authorize(&pm, headers, task)
-
-	if err != nil {
-		return nil, fmt.Errorf("Error: %v ❌\n", err)
-	}
-
-	// TODO: Do something the response (update Worker Config)
-	fmt.Printf("Response: %v ✅\n", resp)
 
 	if err := tes.InitTask(task, true); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "%v", err.Error())
 	}
 
-	err = ts.Compute.CheckBackendParameterSupport(task)
+	err := ts.Compute.CheckBackendParameterSupport(task)
 	if err != nil {
 		return nil, fmt.Errorf("error from backend: %s", err)
 	}

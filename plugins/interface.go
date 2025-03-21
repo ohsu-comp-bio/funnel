@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"google.golang.org/grpc"
 )
@@ -32,7 +33,9 @@ var PluginMap = map[string]plugin.Plugin{
 
 // TODO: Should this be moved to config/config.go?
 type Response struct {
-	Config map[string]string `json:"config"` // Key-value pairs for configuration
+	Code    int            `json:"code,omitempty"`
+	Message string         `json:"message,omitempty"`
+	Config  *config.Config `json:"config,omitempty"`
 }
 
 // Authorize is the interface that we're exposing as a plugin.

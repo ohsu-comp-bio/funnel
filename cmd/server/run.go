@@ -62,11 +62,6 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 
 	writers := events.MultiWriter{}
 
-	// Plugins
-	if err := conf.ValidatePlugins(); err != nil {
-		return nil, fmt.Errorf("error loading plugins: %v", err)
-	}
-
 	// Database
 	switch strings.ToLower(conf.Database) {
 	case "boltdb":

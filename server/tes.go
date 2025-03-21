@@ -36,34 +36,34 @@ type TaskService struct {
 }
 
 // LoadPlugins loads plugins for a task.
-func (ts *TaskService) LoadPlugins(task *tes.Task) (plugins.Response, error) {
+func (ts *TaskService) LoadPlugins(task *tes.Task) (*plugins.Response, error) {
 	m := &plugins.Manager{}
 	defer m.Close()
 
 	plugin, err := m.Client(ts.Config.Plugins.Dir)
 	if err != nil {
-		return plugins.Response{}, fmt.Errorf("failed to get plugin client: %w", err)
+		return nil, fmt.Errorf("failed to get plugin client: %w", err)
 	}
 
 	// TODO: Check if "overloading" the task tag is an acceptable way to pass plugin inputs
 	inputs := task.Tags[ts.Config.Plugins.Input]
 	if inputs == "" {
-		return plugins.Response{}, fmt.Errorf("task tags must contain a '%v' field", ts.Config.Plugins.Input)
+		return nil, fmt.Errorf("task tags must contain a '%v' field", ts.Config.Plugins.Input)
 	}
 
 	rawResp, err := plugin.Get(inputs)
 	if err != nil {
-		return plugins.Response{}, fmt.Errorf("failed to authorize '%s' via plugin: %w", inputs, err)
+		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", inputs, err)
 	}
 
 	// Unmarshal the response
 	var resp plugins.Response
 	err = json.Unmarshal([]byte(rawResp), &resp)
 	if err != nil {
-		return plugins.Response{}, fmt.Errorf("failed to parse plugin response: %w", err)
+		return nil, fmt.Errorf("failed to parse plugin response: %w", err)
 	}
 
-	return resp, nil
+	return &resp, nil
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.

@@ -24,6 +24,16 @@ spec:
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
       serviceAccountName: {{ include "funnel.serviceAccountName" . }}
+      initContainers:
+        - name: plugin
+          image: "quay.io/ohsu-comp-bio/funnel-plugins:latest"
+          volumeMounts:
+          - name: plugin-volume
+            mountPath: /opt/funnel/plugin-binaries
+          command: ["/bin/sh", "-c"]
+          args:
+            - "cp /app/build/plugins/authorizer /opt/funnel/plugin-binaries/auth-plugin"
+
       containers:
         - name: funnel
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -34,6 +44,7 @@ spec:
             - 'run'
             - '--config'
             - '/etc/config/funnel-server.yaml'
+            # Keep it simple — just mount the plugin via local volume
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
@@ -66,10 +77,14 @@ spec:
               mountPath: /opt/funnel/funnel-work-dir
             - name: config-volume
               mountPath: /etc/config
+            - name: plugin-volume
+              mountPath: /opt/funnel/plugin-binaries
       volumes:
         - name: funnel-deployment-storage
           persistentVolumeClaim:
             claimName: funnel-pvc
         - name: config-volume
           configMap:
-            name: funnel-config
+            name: funnel-server-config
+        - name: plugin-volume
+          emptyDir: {}  # Shared volume

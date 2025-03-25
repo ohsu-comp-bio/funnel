@@ -7,6 +7,8 @@ metadata:
   labels:
     app: funnel-worker
     task-id: {{.TaskId}}
+    # Custom Labels support
+    {{- include ".extraLabels" . | nindent 8 }}
 spec: 
   backoffLimit: 10
   completions: 1
@@ -16,13 +18,6 @@ spec:
         app: funnel-worker
         task-id: {{.TaskId}}
     spec:
-      nodeSelector:
-        role: workflow
-      tolerations:
-        - key: "role"
-          operator: "Equal"
-          value: "workflow"
-          effect: "NoSchedule"
       serviceAccountName: funnel-sa
       restartPolicy: OnFailure
       containers: 
@@ -52,7 +47,7 @@ spec:
       volumes: 
       - name: config-volume
         configMap:
-          name: funnel-config
+          name: funnel-worker-config-{{.TaskId}}
 
       - name: funnel-storage-{{.TaskId}}
         persistentVolumeClaim:

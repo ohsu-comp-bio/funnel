@@ -102,3 +102,10 @@ Kafka:
   - {{ . }}
   {{- end }}
   Topic: {{ .Values.Kafka.Topic }}
+
+Plugins:
+  Disabled: {{ .Values.Plugins.Disabled }}
+  Dir: {{ .Values.Plugins.Dir }}
+  Plugin: {{ .Values.Plugins.Plugin }}
+  Host: {{ .Values.Plugins.Host }}
+  Input: {{ .Values.Plugins.Input }}

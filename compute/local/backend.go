@@ -11,7 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/plugins"
+	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -48,7 +48,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 // WriteEvent writes an event to the compute backend.
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
-	// TODO: Shoudl this be moved to the switch statement so it's only run on TASK_CREATED?
+	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
 	if !b.conf.Plugins.Disabled {
 		err := b.UpdateConfig(ctx)
 		if err != nil {
@@ -64,7 +64,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 }
 
 func (b *Backend) UpdateConfig(ctx context.Context) error {
-	resp, ok := ctx.Value("pluginResponse").(*plugins.Response)
+	resp, ok := ctx.Value("pluginResponse").(*shared.Response)
 	if !ok {
 		return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 	}

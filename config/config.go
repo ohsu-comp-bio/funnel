@@ -60,6 +60,7 @@ type Plugins struct {
 	Disabled bool
 	Dir      string
 	Plugin   string
+	Host     string
 	Input    string
 	Response plugins.Response
 }
@@ -473,6 +474,8 @@ type Kubernetes struct {
 	PVTemplate string
 	// Worker/Executor PVC job template.
 	PVCTemplate string
+	// Worker ConfigMap template — this will hold the actual worker configuration file (e.g. funnel-worker.yaml)
+	ConfigMapTemplate string
 	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
 	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
 	ConfigFile string

@@ -1,4 +1,5 @@
-package plugins
+// 'shared' package contains shared data between the host and plugins.
+package shared
 
 import (
 	"context"
@@ -11,6 +12,13 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Define a struct that matches the expected JSON response
+type Response struct {
+	Code    int            `json:"code,omitempty"`
+	Message string         `json:"message,omitempty"`
+	Config  *config.Config `json:"config,omitempty"`
+}
+
 // Handshake is a common handshake that is shared by plugin and host.
 var Handshake = plugin.HandshakeConfig{
 	// This isn't required when using VersionedPlugins
@@ -22,7 +30,7 @@ var Handshake = plugin.HandshakeConfig{
 // Create an hclog.Logger
 var Logger = hclog.New(&hclog.LoggerOptions{
 	Name:  "plugin",
-	Level: hclog.Warn,
+	Level: hclog.Trace,
 })
 
 // PluginMap is the map of plugins we can dispense.
@@ -31,16 +39,9 @@ var PluginMap = map[string]plugin.Plugin{
 	"authorize":      &AuthorizePlugin{},
 }
 
-// TODO: Should this be moved to config/config.go?
-type Response struct {
-	Code    int            `json:"code,omitempty"`
-	Message string         `json:"message,omitempty"`
-	Config  *config.Config `json:"config,omitempty"`
-}
-
 // Authorize is the interface that we're exposing as a plugin.
 type Authorize interface {
-	Get(user string) ([]byte, error)
+	Get(user string, host string) ([]byte, error)
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this.

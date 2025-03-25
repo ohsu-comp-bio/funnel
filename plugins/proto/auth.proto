@@ -4,6 +4,7 @@ option go_package = "./proto";
 
 message GetRequest {
     string user = 1;
+    string host = 2;
 }
 
 message GetResponse {

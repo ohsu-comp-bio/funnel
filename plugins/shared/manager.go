@@ -3,7 +3,7 @@
 // Adapted from 'RPC-based plugins in Go' by Eli Bendersky (@eliben):
 // ref: https://eli.thegreenplace.net/2023/rpc-based-plugins-in-go/
 // ref: https://github.com/eliben/code-for-blog/blob/main/2023/go-plugin-htmlize-rpc/plugin/manager.go
-package plugins
+package shared
 
 import (
 	"fmt"

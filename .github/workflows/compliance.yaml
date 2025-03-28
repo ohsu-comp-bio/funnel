@@ -19,11 +19,11 @@
 name: Compliance Test
 
 on:
-  push:
+  pull_request:
     branches:
       - main
       - master
-  pull_request:
+      - develop
 
 jobs:
   build:

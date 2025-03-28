@@ -442,3 +442,10 @@ FTPStorage:
   Timeout: 10s
   User: "anonymous"
   Password: "anonymous"
+
+Plugins:
+  Disabled: true
+  Dir: plugin-binaries/
+  Plugin: auth
+  Host: http://test-server:8080/token?user=
+  Input: user

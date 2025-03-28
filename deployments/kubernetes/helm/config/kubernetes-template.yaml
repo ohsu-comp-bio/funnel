@@ -16,18 +16,12 @@ spec:
         app: funnel-worker
         task-id: {{.TaskId}}
     spec:
-      nodeSelector:
-        role: workflow
-      tolerations:
-        - key: "role"
-          operator: "Equal"
-          value: "workflow"
-          effect: "NoSchedule"
       serviceAccountName: funnel-sa
       restartPolicy: OnFailure
       containers: 
         - name: funnel-worker-{{.TaskId}}
-          image: quay.io/ohsu-comp-bio/funnel:development
+          # TODO: Make the image + tag configurable
+          image: quay.io/ohsu-comp-bio/funnel:testing
           imagePullPolicy: Always
           args:
             - "worker"
@@ -52,7 +46,7 @@ spec:
       volumes: 
       - name: config-volume
         configMap:
-          name: funnel-config
+          name: funnel-worker-config-{{.TaskId}}
 
       - name: funnel-storage-{{.TaskId}}
         persistentVolumeClaim:

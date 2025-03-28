@@ -1,12 +1,14 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/version"
 	"golang.org/x/net/context"
@@ -33,9 +35,59 @@ type TaskService struct {
 	Config  config.Config
 }
 
+// LoadPlugins loads plugins for a task.
+func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
+	m := &shared.Manager{}
+	defer m.Close()
+
+	ts.Log.Info("getting plugin client", "dir", ts.Config.Plugins.Dir)
+	plugin, err := m.Client(ts.Config.Plugins.Dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plugin client: %w", err)
+	}
+
+	// TODO: Check if "overloading" the task tag is an acceptable way to pass plugin inputs
+	ts.Log.Info("loading plugins", "task.Tags", ts.Config.Plugins.Input)
+	user := task.Tags[ts.Config.Plugins.Input]
+	if user == "" {
+		return nil, fmt.Errorf("task tags must contain a '%v' field", ts.Config.Plugins.Input)
+	}
+
+	// Hardcoding the hostname for now, this should be configurable (based on Plugin config?)
+	host := ts.Config.Plugins.Host
+
+	ts.Log.Info("plugin host", "host", host)
+	ts.Log.Info("plugin user", "user", user)
+	rawResp, err := plugin.Get(user, host)
+	if err != nil {
+		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", user, err)
+	}
+
+	// Unmarshal the response
+	ts.Log.Info("parsing plugin response")
+	var resp shared.Response
+	err = json.Unmarshal([]byte(rawResp), &resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse plugin response: %w", err)
+	}
+
+	return &resp, nil
+}
+
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
+	if !ts.Config.Plugins.Disabled {
+		ts.Log.Info("loading plugins")
+		pluginResponse, err := ts.LoadPlugins(task)
+		if err != nil {
+			return nil, fmt.Errorf("Error loading plugins: %v", err)
+		}
+
+		// TODO: Validate response (against schema or config?)
+		ts.Log.Info("plugin response", "response", pluginResponse)
+		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
+	}
 
 	if err := tes.InitTask(task, true); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "%v", err.Error())

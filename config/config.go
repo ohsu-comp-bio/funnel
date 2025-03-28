@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/cat/plugins"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
@@ -48,6 +49,20 @@ type Config struct {
 	Swift         SwiftStorage
 	HTTPStorage   HTTPStorage
 	FTPStorage    FTPStorage
+	// TODO: Interface passed back will need to have enough configuration to update these fields (e.g. GenericS3 Storage with User Keys)
+	// Currently we're not updating the Worker config and only relying on the Server to authenticate the user
+	// plugins
+	Plugins Plugins
+}
+
+// Plugins describes which plugins to use and where to find them.
+type Plugins struct {
+	Disabled bool
+	Dir      string
+	Plugin   string
+	Host     string
+	Input    string
+	Response plugins.Response
 }
 
 // BasicCredential describes a username and password for use with Funnel's basic auth.
@@ -459,6 +474,8 @@ type Kubernetes struct {
 	PVTemplate string
 	// Worker/Executor PVC job template.
 	PVCTemplate string
+	// Worker ConfigMap template — this will hold the actual worker configuration file (e.g. funnel-worker.yaml)
+	ConfigMapTemplate string
 	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
 	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
 	ConfigFile string

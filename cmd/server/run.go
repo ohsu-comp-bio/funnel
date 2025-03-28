@@ -222,7 +222,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		}
 
 	case "kubernetes":
-		compute, err = kubernetes.NewBackend(ctx, conf.Kubernetes, reader, writer, log.Sub("kubernetes"))
+		compute, err = kubernetes.NewBackend(ctx, conf, reader, writer, log.Sub("kubernetes"))
 		if err != nil {
 			return nil, err
 		}
@@ -279,8 +279,9 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 				Log:     log,
 				Config:  conf,
 			},
-			Events: &events.Service{Writer: writer},
-			Nodes:  nodes,
+			Events:  &events.Service{Writer: writer},
+			Nodes:   nodes,
+			Plugins: conf.Plugins,
 		},
 		Scheduler: sched,
 	}, nil

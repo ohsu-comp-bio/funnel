@@ -219,7 +219,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					Command:         command,
 				}
 
-				// Hide this behind explicit flag/option in configuration
+				// TODO: Hide this behind explicit flag/option in configuration
 				// if r.Conf.Container.EnableTags {
 				// 	for k, v := range task.Tags {
 				// 		safeTag := r.sanitizeValues(v)

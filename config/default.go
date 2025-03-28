@@ -91,6 +91,9 @@ func DefaultConfig() Config {
 				StopCommand: "rm -f {{.Name}}",
 			},
 		},
+		Plugins: Plugins{
+			Disabled: true,
+		},
 		Logger: logger.DefaultConfig(),
 		// databases / event handlers
 		BoltDB: BoltDB{
@@ -165,8 +168,10 @@ func DefaultConfig() Config {
 
 	kubernetesTemplate := intern.MustAsset("config/kubernetes-template.yaml")
 	executorTemplate := intern.MustAsset("config/kubernetes-executor-template.yaml")
+	configMapTemplate := intern.MustAsset("config/kubernetes-configmap-template.yaml")
 	pvTemplate := intern.MustAsset("config/kubernetes-pv.yaml")
 	pvcTemplate := intern.MustAsset("config/kubernetes-pvc.yaml")
+
 	c.Kubernetes.Executor = "docker"
 	c.Kubernetes.Namespace = "default"
 	c.Kubernetes.ServiceAccount = "funnel-sa"
@@ -176,6 +181,7 @@ func DefaultConfig() Config {
 	c.Kubernetes.Region = ""
 	c.Kubernetes.PVTemplate = string(pvTemplate)
 	c.Kubernetes.PVCTemplate = string(pvcTemplate)
+	c.Kubernetes.ConfigMapTemplate = string(configMapTemplate)
 	c.Kubernetes.ReconcileRate = reconcile
 
 	return c

@@ -24,6 +24,10 @@ on:
       - main
       - master
   pull_request:
+    branches:
+      - main
+      - master
+      - develop
 
 jobs:
   build:

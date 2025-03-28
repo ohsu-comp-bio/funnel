@@ -17,7 +17,7 @@ import (
 // Executor job is created in worker/kubernetes.go#Run
 func CreateJob(task *tes.Task, namespace string, tpl string) error {
 	// Parse Worker Template
-	submitTpl, err := template.New(task.Id).Parse(tpl)
+	t, err := template.New(task.Id).Parse(tpl)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -28,7 +28,7 @@ func CreateJob(task *tes.Task, namespace string, tpl string) error {
 	}
 
 	var buf bytes.Buffer
-	err = submitTpl.Execute(&buf, map[string]interface{}{
+	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    task.Id,
 		"Namespace": namespace,
 		"Cpus":      res.GetCpuCores(),

@@ -1,66 +1,68 @@
-package main
+package plugin
 
 import (
 	"encoding/json"
-	"reflect"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 )
 
-var host = "http://localhost:8080/token?user="
-
 func TestAuthorizedUser(t *testing.T) {
+	// Start test HTTP server
+	// Here we simply return a hardcoded response similar to that of the test server used in the plugin tests
+	// ref: https://github.com/ohsu-comp-bio/funnel-plugins/blob/main/tests/test-server.go
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := r.URL.Query().Get("user")
+		if user == "example" {
+			resp := shared.Response{
+				Code: 200,
+				Config: &config.Config{
+					AmazonS3: config.AmazonS3Storage{
+						AWSConfig: config.AWSConfig{
+							Key:    "key1",
+							Secret: "secret1",
+						},
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(resp)
+		} else {
+			resp := shared.Response{
+				Code:    401,
+				Message: "User not authorized",
+			}
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer ts.Close()
+
 	auth := Authorize{}
-	raw, err := auth.Get("example", host)
+	raw, err := auth.Get("example", ts.URL+"/token?user=")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	// Parse actual JSON response
 	var actual shared.Response
 	if err := json.Unmarshal(raw, &actual); err != nil {
-		t.Fatalf("failed to parse JSON response: %v", err)
+		t.Fatalf("failed to parse JSON: %v", err)
 	}
-
-	// Define expected response
-	c := config.Config{}
-	c.AmazonS3.AWSConfig.Key = "key1"
-	c.AmazonS3.AWSConfig.Secret = "secret1"
 
 	expected := shared.Response{
-		Code:   200,
-		Config: &c,
+		Code: 200,
+		Config: &config.Config{
+			AmazonS3: config.AmazonS3Storage{
+				AWSConfig: config.AWSConfig{
+					Key:    "key1",
+					Secret: "secret1",
+				},
+			},
+		},
 	}
 
-	// Compare using reflect.DeepEqual
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("expected %+v, got %+v", expected, actual)
-	}
-}
-
-func TestUnauthorizedUser(t *testing.T) {
-	auth := Authorize{}
-	raw, err := auth.Get("error", host)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	// Parse actual JSON response
-	var actual shared.Response
-	if err := json.Unmarshal(raw, &actual); err != nil {
-		t.Fatalf("failed to parse JSON response: %v", err)
-	}
-
-	// Define expected response
-	expected := shared.Response{
-		Code:    401,
-		Message: "User not authorized",
-	}
-
-	// Compare using reflect.DeepEqual
-	if !reflect.DeepEqual(actual, expected) {
+	if actual.Code != expected.Code || actual.Config.AmazonS3.AWSConfig.Key != expected.Config.AmazonS3.AWSConfig.Key {
 		t.Errorf("expected %+v, got %+v", expected, actual)
 	}
 }

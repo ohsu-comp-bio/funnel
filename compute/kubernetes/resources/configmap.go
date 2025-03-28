@@ -55,12 +55,12 @@ func CreateConfigMap(taskId string, namespace string, conf config.Config, tpl st
 	return nil
 }
 
-func DeleteConfigMap(taskId string, namespace string, client *kubernetes.Clientset) error {
+func DeleteConfigMap(ctx context.Context, taskId string, namespace string, client kubernetes.Interface) error {
 	name := fmt.Sprintf("funnel-worker-%s", taskId)
-	err := client.CoreV1().ConfigMaps(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err := client.CoreV1().ConfigMaps(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 
 	if err != nil {
-		fmt.Errorf("deleting ConfigMap: %v", err)
+		return fmt.Errorf("deleting ConfigMap: %v", err)
 	}
 
 	return nil

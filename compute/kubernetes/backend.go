@@ -226,7 +226,7 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	}
 
 	// Create ConfigMap
-	err = resources.DeleteConfigMap(taskId, b.namespace, b.client)
+	err = resources.DeleteConfigMap(ctx, taskId, b.namespace, b.client)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting ConfigMap: %v", err)

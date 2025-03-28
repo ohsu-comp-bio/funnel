@@ -8,7 +8,9 @@ metadata:
     app: funnel-worker
     task-id: {{.TaskId}}
     # Custom Labels support
-    {{- include ".extraLabels" . | nindent 8 }}
+    {{- range $key, $value := .ExtraLabels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
 spec: 
   backoffLimit: 10
   completions: 1

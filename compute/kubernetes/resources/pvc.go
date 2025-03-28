@@ -47,7 +47,7 @@ func CreatePVC(taskId string, namespace string, bucket string, region string, tp
 }
 
 // Add this helper function for PVC cleanup
-func DeletePVC(ctx context.Context, taskID string, namespace string, client *kubernetes.Clientset) error {
+func DeletePVC(ctx context.Context, taskID string, namespace string, client kubernetes.Interface) error {
 	name := fmt.Sprintf("funnel-pvc-%s", taskID)
 	err := client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 

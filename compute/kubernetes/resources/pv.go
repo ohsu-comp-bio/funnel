@@ -46,7 +46,7 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 }
 
 // Add this helper function for PV cleanup
-func DeletePV(ctx context.Context, taskID string, client *kubernetes.Clientset) error {
+func DeletePV(ctx context.Context, taskID string, client kubernetes.Interface) error {
 	name := fmt.Sprintf("funnel-pv-%s", taskID)
 	err := client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
 

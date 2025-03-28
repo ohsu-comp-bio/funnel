@@ -4,11 +4,11 @@
 name: S3 Integration Test
 
 on:
-  push:
+  pull_request:
     branches:
       - main
       - master
-  pull_request:
+      - develop
 
 jobs:
   build:

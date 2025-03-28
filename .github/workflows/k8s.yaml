@@ -11,8 +11,11 @@
 name: K8s Test
 
 on:
-  push:
   pull_request:
+    branches:
+      - main
+      - master
+      - develop
 
 jobs:
   build:
@@ -45,6 +48,9 @@ jobs:
 
           # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Submit Task
         run: |

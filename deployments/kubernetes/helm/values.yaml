@@ -3,8 +3,8 @@ replicaCount: 1
 
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  tag: development
-  pullPolicy: IfNotPresent
+  tag: testing
+  pullPolicy: Always
 
 labels:
   app: funnel
@@ -30,20 +30,23 @@ serviceAccount:
   name: funnel-sa
 
 storage:
-  className: gp2
-  provisioner: kubernetes.io/aws-ebs
-  enabled: true
-  size: 10Gi
-  path: /mnt/data
-  pv:
-    enabled: false
+  driver: local-path
+  size: 1Gi
+  accessMode: ReadWriteOnce
+  className: local-path
+  provisioner: rancher.io/local-path
+  createStorageClass: false  # Don't create one if using built-in "local-path"
+  pvc:
+    name: funnel-server-pvc
     reclaimPolicy: Retain
+  pv:
+    enabled: false  # Disable manual PV when using dynamic provisioning
 
 taskStorage:
   className: gp2
   provisioner: kubernetes.io/aws-ebs
   enabled: true
-  size: 1Gi
+  size: 1Mi
 
 # Funnel Default Settings
 # Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml

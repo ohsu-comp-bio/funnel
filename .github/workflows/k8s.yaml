@@ -40,7 +40,7 @@ jobs:
           helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
           
           # 'local-path' is a k3d specific storage class used to automatically create a PersistentVolume
-          # - Ref: https://k3d.io/v5.7.4/usage/k3s/#local-path-provisioner
+          # ref: https://k3d.io/v5.7.4/usage/k3s/#local-path-provisioner
           helm upgrade --install funnel ohsu/funnel --set storage.className=local-path --set storage.provisioner=local-path
           
           # Wait for the Deployment to be available

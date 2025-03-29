@@ -1,4 +1,3 @@
-{{- if .Values.storage.createStorageClass }}
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -11,7 +10,6 @@ metadata:
   annotations:
     meta.helm.sh/release-name: {{ .Release.Name }}
     meta.helm.sh/release-namespace: {{ .Release.Namespace }}
-provisioner: {{ .Values.storage.provisioner | quote }}
+provisioner: {{ .Values.storage.provisioner | quote | default "kubernetes.io/no-provisioner" }}
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
-{{- end }}

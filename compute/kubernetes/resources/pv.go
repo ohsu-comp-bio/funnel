@@ -32,6 +32,8 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 		return fmt.Errorf("executing PV template: %v", err)
 	}
 
+	fmt.Println("DEBUG: buf.String() = ", buf.String())
+
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
@@ -47,7 +49,7 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 
 // Add this helper function for PV cleanup
 func DeletePV(ctx context.Context, taskID string, client kubernetes.Interface) error {
-	name := fmt.Sprintf("funnel-pv-%s", taskID)
+	name := fmt.Sprintf("funnel-worker-pv-%s", taskID)
 	err := client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
 
 	if err != nil {

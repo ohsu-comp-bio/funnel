@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.storage.pvc.name | default "funnel-server-pvc" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+  annotations:
+    "helm.sh/resource-policy": "keep"
+spec:
+  accessModes:
+    - {{ .Values.storage.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.size | default "10Mi" }}
+  storageClassName: {{ .Values.storage.className | quote }}

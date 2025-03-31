@@ -14,7 +14,7 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(taskId string, namespace string, bucket string, region string, tpl string) error {
+func CreatePVC(taskId string, namespace string, bucket string, region string, tpl string, client kubernetes.Interface) error {
 	// Load templates
 	t, err := template.New(taskId).Parse(tpl)
 	if err != nil {

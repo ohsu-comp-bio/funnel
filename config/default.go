@@ -172,7 +172,6 @@ func DefaultConfig() Config {
 	executorTemplate := "/etc/funnel/templates/executor-job.yaml"
 	pvTemplate := "/etc/funnel/templates/pv.yaml"
 	pvcTemplate := "/etc/funnel/templates/pvc.yaml"
-	configTemplate := "/etc/funnel/templates/config.yaml"
 
 	c.Kubernetes.Executor = "docker"
 	c.Kubernetes.Namespace = "default"

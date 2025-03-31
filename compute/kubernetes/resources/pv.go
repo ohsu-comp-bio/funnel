@@ -13,8 +13,7 @@ import (
 )
 
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
-// TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePV(taskId string, namespace string, bucket string, region string, tpl string) error {
+func CreatePV(taskId string, namespace string, bucket string, region string, tpl string, client kubernetes.Interface) error {
 	// Load templates
 	t, err := template.New(taskId).Parse(tpl)
 	if err != nil {
@@ -32,18 +31,22 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 		return fmt.Errorf("executing PV template: %v", err)
 	}
 
-	fmt.Println("DEBUG: buf.String() = ", buf.String())
-
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
 		return fmt.Errorf("decoding PV spec: %v", err)
 	}
 
-	_, ok := obj.(*corev1.PersistentVolume)
+	pv, ok := obj.(*corev1.PersistentVolume)
 	if !ok {
 		return fmt.Errorf("failed to decode PV spec")
 	}
+
+	_, err = client.CoreV1().PersistentVolumes().Create(context.Background(), pv, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("creating PV: %v", err)
+	}
+
 	return nil
 }
 

@@ -9,13 +9,14 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tes"
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 )
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(task *tes.Task, namespace string, tpl string) error {
+func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.Interface) error {
 	// Parse Worker Template
 	t, err := template.New(task.Id).Parse(tpl)
 	if err != nil {
@@ -45,10 +46,16 @@ func CreateJob(task *tes.Task, namespace string, tpl string) error {
 		return err
 	}
 
-	_, ok := obj.(*v1.Job)
+	job, ok := obj.(*v1.Job)
 	if !ok {
 		return fmt.Errorf("failed to decode job spec")
 	}
+
+	_, err = client.BatchV1().Jobs(namespace).Create(context.Background(), job, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("creating job: %v", err)
+	}
+
 	return nil
 }
 

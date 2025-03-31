@@ -26,7 +26,7 @@ import (
 type Backend struct {
 	bucket            string
 	region            string
-	client            *kubernetes.Clientset
+	client            kubernetes.Interface
 	namespace         string
 	template          string
 	pvTemplate        string
@@ -41,7 +41,7 @@ type Backend struct {
 	events.Computer
 }
 
-// NewBackend returns a new local Backend instance.
+// NewBackend returns a new K8s Backend instance.
 func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
 	if conf.Kubernetes.TemplateFile != "" {
 		content, err := os.ReadFile(conf.Kubernetes.TemplateFile)
@@ -182,25 +182,25 @@ func (b *Backend) createResources(task *tes.Task) error {
 	// e.g. `if len(task.Inputs) > 0 || len(task.Outputs) > 0 {}`
 
 	// Create PV
-	err := resources.CreatePV(task.Id, b.namespace, b.bucket, b.region, b.pvTemplate)
+	err := resources.CreatePV(task.Id, b.namespace, b.bucket, b.region, b.pvTemplate, b.client)
 	if err != nil {
 		return fmt.Errorf("creating job: %v", err)
 	}
 
 	// Create PVC
-	err = resources.CreatePVC(task.Id, b.namespace, b.bucket, b.region, b.pvcTemplate)
+	err = resources.CreatePVC(task.Id, b.namespace, b.bucket, b.region, b.pvcTemplate, b.client)
 	if err != nil {
 		return fmt.Errorf("creating PVC: %v", err)
 	}
 
 	// Create ConfigMap
-	err = resources.CreateConfigMap(task.Id, b.namespace, b.conf, b.configMapTemplate)
+	err = resources.CreateConfigMap(task.Id, b.namespace, b.conf, b.client)
 	if err != nil {
 		return fmt.Errorf("creating ConfigMap: %v", err)
 	}
 
 	// Create Job
-	err = resources.CreateJob(task, b.namespace, b.template)
+	err = resources.CreateJob(task, b.namespace, b.template, b.client)
 	if err != nil {
 		return fmt.Errorf("creating job Job: %v", err)
 	}

@@ -1,0 +1,18 @@
+# This is the config containing the templates used by the Funnel Worker
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-worker-templates
+  namespace: {{ .Release.Namespace }} 
+  
+data:
+
+{{- if .Values.storage.pv.enabled }}
+{{ (.Files.Glob "files/worker-pv.yaml").AsConfig | indent 2 }}
+{{- end }}
+  
+{{ (.Files.Glob "files/worker-pvc.yaml").AsConfig | indent 2 }}
+
+{{ (.Files.Glob "files/worker-job.yaml").AsConfig | indent 2 }}
+
+{{ (.Files.Glob "files/executor-job.yaml").AsConfig | indent 2 }}

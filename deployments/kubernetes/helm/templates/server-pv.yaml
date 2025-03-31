@@ -1,0 +1,20 @@
+{{- if and .Values.storage.pv.enabled (ne .Values.storage.driver "local-path") }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.storage.pv.name | default "funnel-server-pv" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: funnel
+    app.kubernetes.io/instance: funnel
+spec:
+  capacity:
+    storage: {{ .Values.storage.size }}
+  accessModes:
+    - {{ .Values.storage.accessMode }}
+  storageClassName: {{ .Values.storage.className }}
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: {{ .Values.storage.pv.reclaimPolicy | default "Retain" }}
+  hostPath:
+    path: {{ .Values.storage.path | default "/mnt/data" }}
+{{- end }}

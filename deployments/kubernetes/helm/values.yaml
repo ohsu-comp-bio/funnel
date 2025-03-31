@@ -31,7 +31,7 @@ serviceAccount:
 
 storage:
   driver: local-path
-  size: 1Gi
+  size: 10Mi
   accessMode: ReadWriteOnce
   className: local-path
   provisioner: rancher.io/local-path

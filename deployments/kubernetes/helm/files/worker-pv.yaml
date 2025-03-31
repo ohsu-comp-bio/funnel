@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: funnel-worker-pv-{{.TaskId}}
+  labels:
+    app: funnel
+    taskId: {{.TaskId}}
+spec:
+  capacity:
+    storage: {{ .Values.storage.size | default "1Gi" }}
+  accessModes:
+    - {{ .Values.storage.accessMode | default "ReadWriteOnce" }}
+  persistentVolumeReclaimPolicy: Retain
+
+  {{- if eq .Values.storage.driver "aws-s3" }}
+  mountOptions:
+    - allow-delete
+    - allow-overwrite
+    - region={{.Region}}
+    - file-mode=0755
+  csi:
+    driver: s3.csi.aws.com
+    volumeHandle: s3-csi-{{.TaskId}}
+    volumeAttributes:
+      bucketName: {{.Bucket}}
+  {{- else }}
+  hostPath:
+    path: /mnt/data/funnel/{{.TaskId}}
+    type: DirectoryOrCreate
+  {{- end }}
+
+  claimRef:
+    namespace: {{.Namespace}}
+    name: funnel-worker-pvc-{{.TaskId}}

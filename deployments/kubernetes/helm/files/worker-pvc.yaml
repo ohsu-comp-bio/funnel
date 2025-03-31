@@ -1,0 +1,16 @@
+# Worker/Executor PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: funnel-worker-pvc-{{.TaskId}}
+  namespace: {{ .Namespace }}
+  labels:
+    app: funnel
+    taskId: {{.TaskId}}
+spec:
+  accessModes:
+    - {{ .Values.storage.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: funnel-worker-pv-{{.TaskId}}

@@ -1,81 +1,136 @@
+// Package kubernetes contains code for accessing compute resources via the Kubernetes v1 Batch API.
 package kubernetes
 
 import (
-	"fmt"
-	"os"
+	"context"
 	"testing"
 
-	"github.com/ohsu-comp-bio/funnel/compute/kubernetes/resources"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
-func TestCreateJob(t *testing.T) {
-	conf := config.DefaultConfig().Kubernetes
+func TestTaskSubmission(t *testing.T) {
+	// Create a fake Kubernetes client
+	fakeClient := fake.NewSimpleClientset()
 
-	content, err := os.ReadFile("../../config/kubernetes-template.yaml")
-	if err != nil {
-		t.Fatal(fmt.Errorf("reading template: %v", err))
-	}
+	// Create a mock configuration
+	conf := config.DefaultConfig()
+	conf.Kubernetes.Namespace = "test-namespace"
+	conf.Kubernetes.Template = `
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: funnel-{{.TaskId}}
+  namespace: {{.Namespace}}
+spec:
+  template:
+    spec:
+      containers:
+      - name: task
+        image: alpine
+        command: ["echo", "hello world"]
+        resources:
+          requests:
+            cpu: "{{.Cpus}}"
+            memory: "{{.RamGb}}Gi"
+            ephemeral-storage: "{{.DiskGb}}Gi"
+`
 
-	conf.Template = string(content)
-
+	// Create a logger
 	log := logger.NewLogger("test", logger.DefaultConfig())
 
-	b := &Backend{
-		client:    nil,
-		namespace: conf.Namespace,
-		template:  conf.Template,
-		event:     nil,
-		database:  nil,
-		log:       log,
+	// Create the Kubernetes backend
+	backend, err := NewBackend(context.Background(), conf, nil, nil, log)
+	if err != nil {
+		t.Fatalf("failed to create backend: %v", err)
 	}
 
-	t.Run("SuccessfulJobCreation", func(t *testing.T) {
-		task := &tes.Task{
-			Id: "task1",
-			Executors: []*tes.Executor{
-				{
-					Image:   "alpine",
-					Command: []string{"echo", "hello world"},
-				},
+	// Replace the real client with the fake client for testing
+	backend.client = fakeClient
+
+	// Define a test task
+	task := &tes.Task{
+		Id: "test-task",
+		Resources: &tes.Resources{
+			CpuCores: 1,
+			RamGb:    1.0,
+			DiskGb:   10.0,
+		},
+		Executors: []*tes.Executor{
+			{
+				Image:   "alpine",
+				Command: []string{"echo", "hello world"},
 			},
-		}
+		},
+	}
 
-		err := resources.CreateJob(task, b.namespace, b.template)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-	})
+	// Submit the task to the backend
+	err = backend.Submit(context.Background(), task)
+	if err != nil {
+		t.Fatalf("failed to submit task: %v", err)
+	}
 
-	t.Run("MissingTemplate", func(t *testing.T) {
-		b.template = ""
-		task := &tes.Task{
-			Id: "task2",
-			Executors: []*tes.Executor{
-				{
-					Image:   "alpine",
-					Command: []string{"echo", "hello world"},
-				},
-			},
-		}
+	// Verify that the Job was created
+	job, err := fakeClient.BatchV1().Jobs(conf.Kubernetes.Namespace).Get(context.Background(), "funnel-"+task.Id, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("failed to get Job: %v", err)
+	}
 
-		err := resources.CreateJob(task, b.namespace, b.template)
-		if err == nil {
-			t.Fatal("expected error for missing template, got none")
-		}
-	})
+	if job.Name != "funnel-"+task.Id {
+		t.Errorf("expected Job name 'funnel-%s', got '%s'", task.Id, job.Name)
+	}
 
-	t.Run("InvalidTaskDefinition", func(t *testing.T) {
-		task := &tes.Task{
-			Id:        "task3",
-			Executors: []*tes.Executor{}, // No executors defined
-		}
+	// Verify that the ConfigMap was created
+	configMapName := "funnel-worker-config-" + task.Id
+	_, err = fakeClient.CoreV1().ConfigMaps(conf.Kubernetes.Namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("failed to get ConfigMap: %v", err)
+	}
 
-		err := resources.CreateJob(task, b.namespace, b.template)
-		if err == nil {
-			t.Fatal("expected error for invalid task definition, got none")
-		}
-	})
+	// Verify that the PersistentVolumeClaim was created
+	pvcName := "funnel-worker-pvc-" + task.Id
+	_, err = fakeClient.CoreV1().PersistentVolumeClaims(conf.Kubernetes.Namespace).Get(context.Background(), pvcName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("failed to get PersistentVolumeClaim: %v", err)
+	}
+
+	// Verify that the PersistentVolume was created
+	pvName := "funnel-worker-pv-" + task.Id
+	_, err = fakeClient.CoreV1().PersistentVolumes().Get(context.Background(), pvName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("failed to get PersistentVolume: %v", err)
+	}
+
+	// Clean up resources
+	err = backend.cleanResources(context.Background(), task.Id)
+	if err != nil {
+		t.Fatalf("failed to clean resources: %v", err)
+	}
+
+	// Verify that the Job was deleted
+	_, err = fakeClient.BatchV1().Jobs(conf.Kubernetes.Namespace).Get(context.Background(), "funnel-"+task.Id, metav1.GetOptions{})
+	if err == nil {
+		t.Error("expected Job to be deleted, but it still exists")
+	}
+
+	// Verify that the ConfigMap was deleted
+	_, err = fakeClient.CoreV1().ConfigMaps(conf.Kubernetes.Namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("expected ConfigMap to be deleted, but it still exists")
+	}
+
+	// Verify that the PersistentVolumeClaim was deleted
+	_, err = fakeClient.CoreV1().PersistentVolumeClaims(conf.Kubernetes.Namespace).Get(context.Background(), pvcName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("expected PersistentVolumeClaim to be deleted, but it still exists")
+	}
+
+	// Verify that the PersistentVolume was deleted
+	_, err = fakeClient.CoreV1().PersistentVolumes().Get(context.Background(), pvName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("expected PersistentVolume to be deleted, but it still exists")
+	}
 }

@@ -6,13 +6,12 @@ metadata:
     app: funnel
     taskId: {{.TaskId}}
 spec:
+  storageClassName: "" # Required for static provisioning
   capacity:
-    storage: {{ .Values.storage.size | default "1Gi" }}
+    storage: "10Mi"
   accessModes:
-    - {{ .Values.storage.accessMode | default "ReadWriteOnce" }}
+    - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-
-  {{- if eq .Values.storage.driver "aws-s3" }}
   mountOptions:
     - allow-delete
     - allow-overwrite
@@ -23,12 +22,6 @@ spec:
     volumeHandle: s3-csi-{{.TaskId}}
     volumeAttributes:
       bucketName: {{.Bucket}}
-  {{- else }}
-  hostPath:
-    path: /mnt/data/funnel/{{.TaskId}}
-    type: DirectoryOrCreate
-  {{- end }}
-
   claimRef:
     namespace: {{.Namespace}}
     name: funnel-worker-pvc-{{.TaskId}}

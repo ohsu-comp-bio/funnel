@@ -8,9 +8,10 @@ metadata:
     app: funnel
     taskId: {{.TaskId}}
 spec:
+  storageClassName: "" # Required for static provisioning
   accessModes:
-    - {{ .Values.storage.accessMode | default "ReadWriteOnce" }}
+    - ReadWriteMany
   resources:
     requests:
-      storage: 1Gi
+      storage: 10Mi
   volumeName: funnel-worker-pv-{{.TaskId}}

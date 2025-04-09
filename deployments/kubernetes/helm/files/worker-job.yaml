@@ -12,7 +12,7 @@ metadata:
     {{ $key }}: {{ $value }}
     {{- end }}
 spec:
-  backoffLimit: 5
+  backoffLimit: 1
   completions: 1
   template:
     metadata:

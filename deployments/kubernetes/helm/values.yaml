@@ -30,17 +30,22 @@ serviceAccount:
   name: funnel-sa
 
 storage:
-  driver: local-path
+  driver: aws-s3
   size: 10Mi
-  accessMode: ReadWriteOnce
-  className: local-path
-  provisioner: rancher.io/local-path
-  createStorageClass: false  # Don't create one if using built-in "local-path"
+  accessMode: ReadWriteMany
+  className: s3-csi-sc
+  provisioner: s3.csi.aws.com
+  createStorageClass: true
+  aws:
+    bucket: funnel-testing
+    region: us-west-2
   pvc:
     name: funnel-server-pvc
     reclaimPolicy: Retain
   pv:
-    enabled: false  # Disable manual PV when using dynamic provisioning
+    enabled: true
+    name: funnel-server-pv
+    reclaimPolicy: Retain
 
 taskStorage:
   className: gp2
@@ -73,7 +78,7 @@ Logger:
 
 Server:
   # Hostname of the Funnel server.
-  HostName: localhost
+  HostName: funnel.funnel.svc.cluster.local
 
   # Port used for HTTP communication and the web dashboard.
   HTTPPort: 8000

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,9 +14,14 @@ import (
 )
 
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
-func CreatePV(taskId string, namespace string, bucket string, region string, tpl string, client kubernetes.Interface) error {
+func CreatePV(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface) error {
+	tpl, err := os.ReadFile(tplFile)
+	if err != nil {
+		return fmt.Errorf("reading template: %v", err)
+	}
+
 	// Load templates
-	t, err := template.New(taskId).Parse(tpl)
+	t, err := template.New(taskId).Parse(string(tpl))
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -23,6 +29,7 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 	// Template parameters
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
+		"TaskId":    taskId,
 		"Namespace": namespace,
 		"Bucket":    bucket,
 		"Region":    region,

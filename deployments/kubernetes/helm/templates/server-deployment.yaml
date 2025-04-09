@@ -29,9 +29,12 @@ spec:
           image: "quay.io/ohsu-comp-bio/funnel-plugins:latest"
           volumeMounts:
           - name: plugin-volume
+            # Funnel Server location
             mountPath: /opt/funnel/plugin-binaries
           command: ["/bin/sh", "-c"]
           args:
+            # Based on Plugin Dockerfile
+            # ref: https://github.com/ohsu-comp-bio/funnel-plugins/blob/main/Dockerfile
             - "cp /app/build/plugins/authorizer /opt/funnel/plugin-binaries/auth-plugin"
 
       containers:
@@ -44,7 +47,6 @@ spec:
             - 'run'
             - '--config'
             - '/etc/config/funnel-server.yaml'
-            # Keep it simple — just mount the plugin via local volume
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
@@ -101,3 +103,4 @@ spec:
             
         - name: plugin-volume
           emptyDir: {}  # Shared volume
+        

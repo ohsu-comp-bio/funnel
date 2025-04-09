@@ -13,5 +13,5 @@ metadata:
     meta.helm.sh/release-namespace: {{ .Release.Namespace }}
 provisioner: {{ .Values.storage.provisioner }}
 reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
+volumeBindingMode: Immediate
 {{- end }}

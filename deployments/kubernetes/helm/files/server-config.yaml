@@ -5,6 +5,7 @@ Kubernetes:
   DisableReconciler: {{ .Values.Kubernetes.DisableReconciler }}
   ReconcileRate: {{ .Values.Kubernetes.ReconcileRate }}
   Namespace: {{ .Release.Namespace }}
+  # JobsNamespace: {{ .Values.Kubernetes.JobsNamespace }}
   ServiceAccount: {{ .Values.Kubernetes.ServiceAccount }}
   Bucket: {{ .Values.Kubernetes.Bucket }}
   Region: {{ .Values.Kubernetes.Region }}
@@ -31,7 +32,7 @@ Logger:
   OutputFile: {{ .Values.Logger.OutputFile }}
 
 Server:
-  HostName: {{ .Values.Server.Hostname }}
+  HostName: {{ .Values.Server.HostName }}
   HTTPPort: {{ .Values.Server.HttpPort }}
   RPCPort: {{ .Values.Server.RpcPort }}
   DisableHTTPCache: {{ .Values.Server.DisableHttpCache }}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,9 +15,14 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(taskId string, namespace string, bucket string, region string, tpl string, client kubernetes.Interface) error {
+func CreatePVC(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface) error {
+	tpl, err := os.ReadFile(tplFile)
+	if err != nil {
+		return fmt.Errorf("reading template: %v", err)
+	}
+
 	// Load templates
-	t, err := template.New(taskId).Parse(tpl)
+	t, err := template.New(taskId).Parse(string(tpl))
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -39,10 +45,16 @@ func CreatePVC(taskId string, namespace string, bucket string, region string, tp
 		return fmt.Errorf("decoding PVC spec: %v", err)
 	}
 
-	_, ok := obj.(*corev1.PersistentVolumeClaim)
+	pvc, ok := obj.(*corev1.PersistentVolumeClaim)
 	if !ok {
 		return fmt.Errorf("failed to decode PVC spec")
 	}
+
+	_, err = client.CoreV1().PersistentVolumeClaims(namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("creating PVC: %v", err)
+	}
+
 	return nil
 }
 

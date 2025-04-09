@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,13 +16,13 @@ import (
 var fun *tests.Funnel
 var clusterName string
 
-// checkDependencies checks if the required dependencies (kind and helm) are installed.
-// Kind: https://kind.sigs.k8s.io/
+// checkDependencies checks if the required dependencies (k3d and helm) are installed.
+// K3d: https://k3d.io/
 // Helm: https://helm.sh/
 func checkDependencies() error {
-	cmd := exec.Command("kind", "version")
+	cmd := exec.Command("k3d", "version")
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("kind command not found: %v", err)
+		return fmt.Errorf("k3d command not found: %v", err)
 	}
 
 	cmd = exec.Command("helm", "version")
@@ -48,33 +49,56 @@ func TestMain(m *testing.M) {
 	// Set the cluster name
 	clusterName = "funnel-test-cluster-" + tests.RandomString(6)
 
-	// Set the kubeconfig file path
-	kubeconfig := filepath.Join(os.TempDir(), "funnel", fmt.Sprintf("%s-kubeconfig.yaml", clusterName))
-	conf.Kubernetes.ConfigFile = kubeconfig
-
 	// TODO: This pattern is used when running tests from the Makefile (e.g. `make test-slurm`)
-	// We don't have any `test-k8s` target, but can add one if needed.
+	// We don't have any `test-K8s` target, but can add one if needed.
 	// Currently, we'r running theese tests directly either in VS Code or `go test ./tests/kubernetes`
 	if conf.Compute != "kubernetes" {
 		logger.Debug("Skipping kubernetes e2e tests...")
 		os.Exit(0)
 	}
 
-	err := StartK8sCluster(clusterName, kubeconfig)
+	// Create the K8s cluster
+	err := StartK8sCluster(clusterName)
 	if err != nil {
-		logger.Debug("failed to start Kind cluster:", err)
+		logger.Debug("failed to start K8s cluster:", err)
 		os.Exit(1)
 	}
 
-	err = StartServerInK8s(clusterName, "../../deployments/kubernetes/helm/")
+	kubeconfig := filepath.Join(os.TempDir(),
+		"funnel",
+		fmt.Sprintf("%s-kubeconfig.yaml", clusterName),
+	)
+
+	// Write the kubeconfig to a temporary file
+	err = WriteKubeconfig(clusterName, kubeconfig)
 	if err != nil {
-		logger.Debug("failed to start funnel server in k8s:", err)
+		logger.Debug("failed to get kubeconfig:", err)
 		os.Exit(1)
 	}
+
+	// Set the kubeconfig file path
+	conf.Kubernetes.ConfigFile = kubeconfig
+
+	// Start the Funnel server in the K8s cluster using the Helm charts in the K8s deployments directory
+	err = StartServerInK8s(clusterName, "../../deployments/kubernetes/helm/")
+	if err != nil {
+		logger.Debug("failed to start funnel server in K8s:", err)
+		os.Exit(1)
+	}
+
+	// Create a Funnel instance with a K8s client
+	conf.Server.RPCPort = "9090"
+	conf.Server.HTTPPort = "8080"
+	fun = tests.NewFunnel(conf)
+	fun.StartServer()
 
 	exit := 0
 	defer func() {
-		DeleteK8sCluster(clusterName, kubeconfig)
+		// Cleanup the test K8s cluster
+		err = DeleteK8sCluster(clusterName, kubeconfig)
+		if err != nil {
+			logger.Debug("failed to delete K8s cluster:", err)
+		}
 		os.Exit(exit)
 	}()
 
@@ -82,39 +106,56 @@ func TestMain(m *testing.M) {
 	return
 }
 
-// StartK8sCluster creates a kind cluster for integration tests.
-func StartK8sCluster(clusterName string, kubeconfig string) error {
-	cmd := exec.Command("kind", "create", "cluster",
-		"--name", clusterName,
-		"--kubeconfig", kubeconfig,
-	)
+// StartK8sCluster creates a K8s cluster for integration tests.
+func StartK8sCluster(clusterName string) error {
+	cmd := exec.Command("k3d", "cluster", "create", clusterName)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to create Kind cluster: %v", err)
+		return fmt.Errorf("failed to create K8s cluster: %v", err)
 	}
 
-	// Wait a bit for the API server to settle
-	logger.Debug("Kind cluster %q created with kubeconfig at: %s", clusterName, kubeconfig)
+	logger.Debug("K8s cluster created successfully", "Cluster Name", clusterName)
 
 	return nil
 }
 
-// DeleteK8sCluster tears down the test Kind cluster.
+// WriteKubeconfig retrieves the kubeconfig for the K8s cluster.
+// Example: `/tmp/funnel/funnel-test-cluster-abc123-kubeconfig.yaml`
+func WriteKubeconfig(clusterName string, kubeconfig string) error {
+	cmd := exec.Command("k3d", "kubeconfig", "get", clusterName)
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to get kubeconfig for K8s cluster: %v", err)
+	}
+
+	err = os.MkdirAll(filepath.Dir(kubeconfig), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create directory for kubeconfig: %v", err)
+	}
+
+	err = os.WriteFile(kubeconfig, output, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write kubeconfig to file: %v", err)
+	}
+
+	return nil
+}
+
+// DeleteK8sCluster tears down the test K8s cluster.
 func DeleteK8sCluster(clusterName string, kubeconfig string) error {
-	cmd := exec.Command("kind", "delete", "cluster",
-		"--name", clusterName,
-		"--kubeconfig", kubeconfig,
-	)
+	cmd := exec.Command("k3d", "delete", "cluster", clusterName, "--config", kubeconfig)
 
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("failed to delete Kind cluster: %v", err)
+		return fmt.Errorf("failed to delete K8s cluster: %v", err)
 	}
 
 	return nil
 }
 
-// StartServerInK8s deploys the Funnel server in the Kind cluster using Helm.
+// StartServerInK8s deploys the Funnel server in the K8s cluster using Helm.
 func StartServerInK8s(clusterName string, chartPath string) error {
 	cmd := exec.Command("helm", "upgrade", "--install", "funnel", chartPath)
 	cmd.Stdout = os.Stdout
@@ -124,14 +165,45 @@ func StartServerInK8s(clusterName string, chartPath string) error {
 		return fmt.Errorf("failed to deploy Funnel with Helm: %v", err)
 	}
 
+	// Wait until the Funnel server is ready
+	cmd = exec.CommandContext(context.Background(), "kubectl", "rollout", "status", "deployment/funnel-server", "--timeout", "180s")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to wait for Funnel server to be ready: %v", err)
+	}
+
+	logger.Debug("Funnel server deployed successfully in K8s cluster", "Cluster Name", clusterName)
+
 	return nil
+}
+
+func PortForwardFunnel(t *testing.T, namespace, svcName string, ports ...string) *exec.Cmd {
+	args := []string{"port-forward", "svc/funnel"}
+	args = append(args, ports...)
+
+	cmd := exec.Command("kubectl", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("failed to start port-forward: %v", err)
+	}
+
+	return cmd
 }
 
 // TestHelloWorld runs a simple hello world task in the Kubernetes cluster.
 func TestHelloWorld(t *testing.T) {
-	id := fun.Run(`
+	id, err := fun.RunE(`
     --sh 'echo hello world'
-  `)
+    `)
+
+	if err != nil {
+		t.Fatal("failed to run task:", err)
+	}
+
 	task := fun.Wait(id)
 
 	if task.State != tes.State_COMPLETE {

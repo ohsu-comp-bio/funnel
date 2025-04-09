@@ -26,9 +26,11 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/dockerutil"
+	"github.com/ohsu-comp-bio/funnel/util/k8sutil"
 	"github.com/ohsu-comp-bio/funnel/util/rpc"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/kubernetes"
 )
 
 var log = logger.NewLogger("e2e", LogConfig())
@@ -40,9 +42,10 @@ func init() {
 // Funnel provides a test server and RPC/HTTP clients
 type Funnel struct {
 	// Clients
-	RPC    tes.TaskServiceClient
-	HTTP   *tes.Client
-	Docker *docker.Client
+	RPC        tes.TaskServiceClient
+	HTTP       *tes.Client
+	Docker     *docker.Client
+	Kubernetes *kubernetes.Clientset
 
 	// Config
 	Conf       config.Config
@@ -72,6 +75,11 @@ func NewFunnel(conf config.Config) *Funnel {
 		panic(derr)
 	}
 
+	kcli, kerr := k8sutil.NewK8sClient(conf)
+	if kerr != nil {
+		panic(kerr)
+	}
+
 	srv, err := servercmd.NewServer(context.Background(), conf, log)
 	if err != nil {
 		panic(err)
@@ -80,6 +88,7 @@ func NewFunnel(conf config.Config) *Funnel {
 	return &Funnel{
 		HTTP:       cli,
 		Docker:     dcli,
+		Kubernetes: kcli,
 		Conf:       conf,
 		StorageDir: conf.LocalStorage.AllowedDirs[0],
 		Server:     srv.Server,

@@ -11,8 +11,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/ohsu-comp-bio/funnel/compute/kubernetes/resources"
@@ -20,6 +18,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
+	"github.com/ohsu-comp-bio/funnel/util/k8sutil"
 )
 
 // Backend represents the K8s backend.
@@ -28,6 +27,7 @@ type Backend struct {
 	region            string
 	client            kubernetes.Interface
 	namespace         string
+	jobsNamespace     string
 	template          string
 	pvTemplate        string
 	pvcTemplate       string
@@ -36,7 +36,6 @@ type Backend struct {
 	database          tes.ReadOnlyServer
 	log               *logger.Logger
 	backendParameters map[string]string
-	kubeconfig        *rest.Config  // Kubernetes client config
 	conf              config.Config // Funnel configuration
 	events.Computer
 }
@@ -57,27 +56,9 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes namespace")
 	}
 
-	var kubeconfig *rest.Config
-	var err error
-
-	if conf.Kubernetes.ConfigFile != "" {
-		// use the current context in kubeconfig
-		kubeconfig, err = clientcmd.BuildConfigFromFlags("", conf.Kubernetes.ConfigFile)
-		if err != nil {
-			return nil, fmt.Errorf("building kubeconfig: %v", err)
-		}
-	} else {
-		// creates the in-cluster config
-		kubeconfig, err = rest.InClusterConfig()
-		if err != nil {
-			return nil, fmt.Errorf("building in-cluster kubeconfig: %v", err)
-		}
-	}
-
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(kubeconfig)
+	clientset, err := k8sutil.NewK8sClient(conf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating kubernetes client: %v", err)
 	}
 
 	b := &Backend{
@@ -85,6 +66,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		region:            conf.Kubernetes.Region,
 		client:            clientset,
 		namespace:         conf.Kubernetes.Namespace,
+		jobsNamespace:     conf.Kubernetes.JobsNamespace,
 		template:          conf.Kubernetes.Template,
 		pvTemplate:        conf.Kubernetes.PVTemplate,
 		pvcTemplate:       conf.Kubernetes.PVCTemplate,
@@ -92,8 +74,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		event:             writer,
 		database:          reader,
 		log:               log,
-		kubeconfig:        kubeconfig, // Kubernetes client config
-		conf:              conf,       // Funnel configuration
+		conf:              conf, // Funnel configuration
 	}
 
 	if !conf.Kubernetes.DisableReconciler {
@@ -179,30 +160,34 @@ func (b *Backend) createResources(task *tes.Task) error {
 	// TODO: Update this so that a PVC/PV is only created if the task has inputs or outputs
 	// If the task has either inputs or outputs, then create a PVC
 	// shared between the Funnel Worker and the Executor
-	// e.g. `if len(task.Inputs) > 0 || len(task.Outputs) > 0 {}`
+	// e.g. `if len(task.Inputs) > 0 || len(task.Outputs) > 0 {...}`
 
 	// Create PV
+	b.log.Debug("creating PV", "taskID", task.Id)
 	err := resources.CreatePV(task.Id, b.namespace, b.bucket, b.region, b.pvTemplate, b.client)
 	if err != nil {
-		return fmt.Errorf("creating job: %v", err)
+		return fmt.Errorf("creating PV: %v", err)
 	}
 
 	// Create PVC
+	b.log.Debug("creating PVC", "taskID", task.Id)
 	err = resources.CreatePVC(task.Id, b.namespace, b.bucket, b.region, b.pvcTemplate, b.client)
 	if err != nil {
 		return fmt.Errorf("creating PVC: %v", err)
 	}
 
 	// Create ConfigMap
+	b.log.Debug("creating ConfigMap", "taskID", task.Id)
 	err = resources.CreateConfigMap(task.Id, b.namespace, b.conf, b.client)
 	if err != nil {
 		return fmt.Errorf("creating ConfigMap: %v", err)
 	}
 
-	// Create Job
+	// Create Worker Job
+	b.log.Debug("creating Job", "taskID", task.Id)
 	err = resources.CreateJob(task, b.namespace, b.template, b.client)
 	if err != nil {
-		return fmt.Errorf("creating job Job: %v", err)
+		return fmt.Errorf("creating Job: %v", err)
 	}
 
 	return nil
@@ -211,21 +196,24 @@ func (b *Backend) createResources(task *tes.Task) error {
 func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
 
-	// Create PV
+	// Delete PV
+	b.log.Debug("deleting PV", "taskID", taskId)
 	err := resources.DeletePV(ctx, taskId, b.client)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting PV: %v", err)
 	}
 
-	// Create PVC
+	// Delete PVC
+	b.log.Debug("deleting PVC", "taskID", taskId)
 	err = resources.DeletePVC(ctx, taskId, b.namespace, b.client)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting PVC: %v", err)
 	}
 
-	// Create ConfigMap
+	// Delete ConfigMap
+	b.log.Debug("deleting ConfigMap", "taskID", taskId)
 	err = resources.DeleteConfigMap(ctx, taskId, b.namespace, b.client)
 	if err != nil {
 		errs = multierror.Append(errs, err)

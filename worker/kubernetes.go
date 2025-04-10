@@ -27,6 +27,7 @@ type KubernetesCommand struct {
 	StdinFile      string
 	TaskTemplate   string
 	Namespace      string
+	JobsNamespace  string
 	Resources      *tes.Resources
 	ServiceAccount string
 	Clientset      kubernetes.Interface
@@ -57,7 +58,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	err = tpl.Execute(&buf, map[string]interface{}{
 		"TaskId":         taskId,
 		"JobId":          kcmd.JobId,
-		"Namespace":      kcmd.Namespace,
+		"Namespace":      kcmd.JobsNamespace,
 		"Command":        command,
 		"Workdir":        kcmd.Workdir,
 		"Volumes":        kcmd.Volumes,

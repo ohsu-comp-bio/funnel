@@ -170,11 +170,12 @@ func DefaultConfig() Config {
 	// via the `funnel-worker-config` ConfigMap.
 	kubernetesTemplate := "/etc/funnel/templates/worker-job.yaml"
 	executorTemplate := "/etc/funnel/templates/executor-job.yaml"
-	pvTemplate := "/etc/funnel/templates/pv.yaml"
-	pvcTemplate := "/etc/funnel/templates/pvc.yaml"
+	pvTemplate := "/etc/funnel/templates/worker-pv.yaml"
+	pvcTemplate := "/etc/funnel/templates/worker-pvc.yaml"
 
 	c.Kubernetes.Executor = "docker"
 	c.Kubernetes.Namespace = "default"
+	c.Kubernetes.JobsNamespace = c.Kubernetes.Namespace
 	c.Kubernetes.ServiceAccount = "funnel-sa"
 	c.Kubernetes.Template = string(kubernetesTemplate)
 	c.Kubernetes.ExecutorTemplate = string(executorTemplate)

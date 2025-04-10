@@ -479,8 +479,10 @@ type Kubernetes struct {
 	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
 	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
 	ConfigFile string
-	// Namespace to spawn jobs within
+	// Namespace to run the Funnel Server in
 	Namespace string
+	// Namespace to spawn jobs within (defaults to the Server Namespace if not set)
+	JobsNamespace string
 	// ServiceAccount is the name of the service account to use when running tasks.
 	ServiceAccount string
 }

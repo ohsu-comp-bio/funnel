@@ -5,6 +5,14 @@ image:
   repository: quay.io/ohsu-comp-bio/funnel
   tag: testing
   pullPolicy: Always
+  initContainer:
+    image: quay.io/ohsu-comp-bio/funnel-plugins
+    tag: latest
+    pullPolicy: Always
+    command:
+      - cp
+      - /app/build/plugins/authorizer
+      - /opt/funnel/plugin-binaries/auth-plugin
 
 labels:
   app: funnel
@@ -452,8 +460,12 @@ FTPStorage:
   Password: "anonymous"
 
 Plugins:
-  Disabled: true
-  Dir: plugin-binaries/
-  Plugin: auth
-  Host: http://test-server:8080/token?user=
+  Disabled: false
+  Dir: plugin-binaries
+  Plugin: auth-plugin
   Input: user
+  # Worker will have the S3 bucket configuration (including region and AWS credentials) from here:
+  # https://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/gen3-workflow/master/docs/openapi.yaml#/Storage/get_storage_info
+  # Host: http://gen3-workflow.svc.local/s3/storage/info
+  Host: http://funnel-plugin-test-server:8080/token?user=
+  # TODO: Add type of plugin here (e.g. Auth, System)

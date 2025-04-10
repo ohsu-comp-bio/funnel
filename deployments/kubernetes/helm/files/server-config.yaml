@@ -5,7 +5,7 @@ Kubernetes:
   DisableReconciler: {{ .Values.Kubernetes.DisableReconciler }}
   ReconcileRate: {{ .Values.Kubernetes.ReconcileRate }}
   Namespace: {{ .Release.Namespace }}
-  # JobsNamespace: {{ .Values.Kubernetes.JobsNamespace }}
+  JobsNamespace: {{ .Values.Kubernetes.JobsNamespace }}
   ServiceAccount: {{ .Values.Kubernetes.ServiceAccount }}
   Bucket: {{ .Values.Kubernetes.Bucket }}
   Region: {{ .Values.Kubernetes.Region }}

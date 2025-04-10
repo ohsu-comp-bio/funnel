@@ -24,19 +24,17 @@ spec:
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
       serviceAccountName: {{ include "funnel.serviceAccountName" . }}
+      {{ if .Values.image.initContainer }}
       initContainers:
-        - name: plugin
-          image: "quay.io/ohsu-comp-bio/funnel-plugins:latest"
+        - name: plugins
+          image: {{ .Values.image.initContainer.image }}
           volumeMounts:
           - name: plugin-volume
-            # Funnel Server location
             mountPath: /opt/funnel/plugin-binaries
-          command: ["/bin/sh", "-c"]
-          args:
-            # Based on Plugin Dockerfile
-            # ref: https://github.com/ohsu-comp-bio/funnel-plugins/blob/main/Dockerfile
-            - "cp /app/build/plugins/authorizer /opt/funnel/plugin-binaries/auth-plugin"
-
+          command: {{- range .Values.image.initContainer.command }}
+            - {{ . }}
+          {{- end }}
+      {{ end }}
       containers:
         - name: funnel
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

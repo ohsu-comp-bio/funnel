@@ -351,8 +351,10 @@ Kubernetes:
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
   ReconcileRate: 10m
-  # Kubernetes Namespace to spawn jobs within
+  # Namespace to run the Funnel Server in
   Namespace: "default"
+  # Namespace to spawn jobs within (defaults to the Server Namespace if not set)
+  JobsNamespace: "default"
   # Kubernetes ServiceAccount to use for the job
   ServiceAccount: "funnel-sa"
   # Master batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch

@@ -52,7 +52,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 	if conf.Kubernetes.Template == "" {
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes job template")
 	}
-	if conf.Kubernetes.Namespace == "" {
+	if conf.Kubernetes.JobsNamespace == "" {
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes namespace")
 	}
 
@@ -65,8 +65,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		bucket:            conf.Kubernetes.Bucket,
 		region:            conf.Kubernetes.Region,
 		client:            clientset,
-		namespace:         conf.Kubernetes.Namespace,
-		jobsNamespace:     conf.Kubernetes.JobsNamespace,
+		namespace:         conf.Kubernetes.JobsNamespace,
 		template:          conf.Kubernetes.Template,
 		pvTemplate:        conf.Kubernetes.PVTemplate,
 		pvcTemplate:       conf.Kubernetes.PVCTemplate,
@@ -156,6 +155,7 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 	return b.cleanResources(ctx, taskID)
 }
 
+// createResources creates the resources needed for a task.
 func (b *Backend) createResources(task *tes.Task) error {
 	// TODO: Update this so that a PVC/PV is only created if the task has inputs or outputs
 	// If the task has either inputs or outputs, then create a PVC
@@ -193,6 +193,7 @@ func (b *Backend) createResources(task *tes.Task) error {
 	return nil
 }
 
+// cleanResources deletes the resources created for a task.
 func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
 

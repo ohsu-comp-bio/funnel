@@ -460,7 +460,7 @@ FTPStorage:
   Password: "anonymous"
 
 Plugins:
-  Disabled: false
+  Disabled: true
   Dir: plugin-binaries
   Plugin: auth-plugin
   Input: user

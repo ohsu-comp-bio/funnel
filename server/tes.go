@@ -84,8 +84,6 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 			return nil, fmt.Errorf("Error loading plugins: %v", err)
 		}
 
-		// TODO: Validate response (against schema or config?)
-		ts.Log.Info("plugin response", "response", pluginResponse)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 	}
 

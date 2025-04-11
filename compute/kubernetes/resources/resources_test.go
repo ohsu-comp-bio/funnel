@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	batchv1 "k8s.io/api/batch/v1"
@@ -18,9 +19,11 @@ const (
 	testTaskID    = "test-task-id"
 )
 
+var l = logger.NewLogger("test", logger.DefaultConfig())
+
 func TestCreateConfigMap(t *testing.T) {
 	conf := config.Config{}
-	err := CreateConfigMap(testTaskID, testNamespace, conf, fake.NewSimpleClientset())
+	err := CreateConfigMap(testTaskID, testNamespace, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
 	}
@@ -41,7 +44,7 @@ func TestDeleteConfigMap(t *testing.T) {
 		t.Fatalf("Failed to create test ConfigMap: %v", err)
 	}
 
-	err = DeleteConfigMap(context.Background(), testTaskID, testNamespace, fakeClient)
+	err = DeleteConfigMap(context.Background(), testTaskID, testNamespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteConfigMap failed: %v", err)
 	}
@@ -81,7 +84,7 @@ spec:
             ephemeral-storage: "{{.DiskGb}}Gi"
 `
 
-	err := CreateJob(task, testNamespace, tpl, fake.NewSimpleClientset())
+	err := CreateJob(task, testNamespace, tpl, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed: %v", err)
 	}
@@ -102,7 +105,7 @@ func TestDeleteJob(t *testing.T) {
 		t.Fatalf("Failed to create test Job: %v", err)
 	}
 
-	err = DeleteJob(context.Background(), testTaskID, fakeClient.BatchV1().Jobs(testNamespace))
+	err = DeleteJob(context.Background(), testTaskID, fakeClient.BatchV1().Jobs(testNamespace), l)
 	if err != nil {
 		t.Errorf("DeleteJob failed: %v", err)
 	}
@@ -130,7 +133,7 @@ spec:
     fsType: ext4
 `
 
-	err := CreatePV(testTaskID, testNamespace, "test-bucket", "test-region", tpl, fake.NewSimpleClientset())
+	err := CreatePV(testTaskID, testNamespace, "test-bucket", "test-region", tpl, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePV failed: %v", err)
 	}
@@ -150,7 +153,7 @@ func TestDeletePV(t *testing.T) {
 		t.Fatalf("Failed to create test PV: %v", err)
 	}
 
-	err = DeletePV(context.Background(), testTaskID, fakeClient)
+	err = DeletePV(context.Background(), testTaskID, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeletePV failed: %v", err)
 	}
@@ -177,7 +180,7 @@ spec:
       storage: 10Gi
 `
 
-	err := CreatePVC(testTaskID, testNamespace, "test-bucket", "test-region", tpl, fake.NewSimpleClientset())
+	err := CreatePVC(testTaskID, testNamespace, "test-bucket", "test-region", tpl, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePVC failed: %v", err)
 	}
@@ -198,7 +201,7 @@ func TestDeletePVC(t *testing.T) {
 		t.Fatalf("Failed to create test PVC: %v", err)
 	}
 
-	err = DeletePVC(context.Background(), testTaskID, testNamespace, fakeClient)
+	err = DeletePVC(context.Background(), testTaskID, testNamespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeletePVC failed: %v", err)
 	}
@@ -234,7 +237,7 @@ spec:
             ephemeral-storage: "{{.DiskGb}}Gi"
 `
 
-	err := CreateJob(task, testNamespace, tpl, fake.NewSimpleClientset())
+	err := CreateJob(task, testNamespace, tpl, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed with nil resources: %v", err)
 	}
@@ -246,21 +249,21 @@ func TestDeleteNonExistentResources(t *testing.T) {
 
 	// Test deleting non-existent resources
 	t.Run("ConfigMap", func(t *testing.T) {
-		err := DeleteConfigMap(context.Background(), nonExistentID, testNamespace, fakeClient)
+		err := DeleteConfigMap(context.Background(), nonExistentID, testNamespace, fakeClient, l)
 		if err == nil {
 			t.Error("Expected error when deleting non-existent ConfigMap")
 		}
 	})
 
 	t.Run("PV", func(t *testing.T) {
-		err := DeletePV(context.Background(), nonExistentID, fakeClient)
+		err := DeletePV(context.Background(), nonExistentID, fakeClient, l)
 		if err == nil {
 			t.Error("Expected error when deleting non-existent PV")
 		}
 	})
 
 	t.Run("PVC", func(t *testing.T) {
-		err := DeletePVC(context.Background(), nonExistentID, testNamespace, fakeClient)
+		err := DeletePVC(context.Background(), nonExistentID, testNamespace, fakeClient, l)
 		if err == nil {
 			t.Error("Expected error when deleting non-existent PVC")
 		}

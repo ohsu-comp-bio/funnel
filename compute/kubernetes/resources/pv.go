@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/ohsu-comp-bio/funnel/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -14,7 +15,7 @@ import (
 )
 
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
-func CreatePV(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface) error {
+func CreatePV(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface, log *logger.Logger) error {
 	tpl, err := os.ReadFile(tplFile)
 	if err != nil {
 		return fmt.Errorf("reading template: %v", err)
@@ -35,13 +36,13 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 		"Region":    region,
 	})
 	if err != nil {
-		return fmt.Errorf("executing PV template: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return fmt.Errorf("decoding PV spec: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	pv, ok := obj.(*corev1.PersistentVolume)
@@ -51,19 +52,19 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 
 	_, err = client.CoreV1().PersistentVolumes().Create(context.Background(), pv, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("creating PV: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
 // Add this helper function for PV cleanup
-func DeletePV(ctx context.Context, taskID string, client kubernetes.Interface) error {
+func DeletePV(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pv-%s", taskID)
 	err := client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
 
 	if err != nil {
-		return fmt.Errorf("deleting shared PV: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil

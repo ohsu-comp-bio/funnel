@@ -174,9 +174,6 @@ func DefaultConfig() Config {
 	pvcTemplate := "/etc/funnel/templates/worker-pvc.yaml"
 
 	c.Kubernetes.Executor = "docker"
-	c.Kubernetes.Namespace = "default"
-	c.Kubernetes.JobsNamespace = c.Kubernetes.Namespace
-	c.Kubernetes.ServiceAccount = "funnel-sa"
 	c.Kubernetes.Template = string(kubernetesTemplate)
 	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
 	c.Kubernetes.Bucket = ""

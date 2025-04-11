@@ -1,12 +1,19 @@
+{{- if .Values.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ .Release.Namespace }}-{{ .Release.Name }}-clusterrolebinding
+  name: funnel-cluster-rolebinding
 subjects:
-- kind: ServiceAccount
-  name: funnel-sa
-  namespace: {{ .Release.Namespace }}
+  - kind: ServiceAccount
+    name: funnel-sa
+    namespace: {{ .Release.Namespace }}
+  {{- if and .Values.Kubernetes.JobsNamespace (ne .Values.Kubernetes.JobsNamespace .Values.Kubernetes.Namespace) }}
+  - kind: ServiceAccount
+    name: funnel-sa
+    namespace: {{ .Values.Kubernetes.JobsNamespace }}
+  {{- end }}
 roleRef:
   kind: ClusterRole
-  name: {{ .Release.Namespace }}-{{ .Release.Name }}-clusterrole
+  name: funnel-cluster-role
   apiGroup: rbac.authorization.k8s.io
+{{- end }}

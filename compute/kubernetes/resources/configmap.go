@@ -6,13 +6,14 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateConfigMap(taskId string, namespace string, conf config.Config, client kubernetes.Interface) error {
+func CreateConfigMap(taskId string, namespace string, conf config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	configBytes, err := config.ToYaml(conf)
 	if err != nil {
 		return fmt.Errorf("marshaling config to ConfigMap: %v", err)
@@ -31,18 +32,18 @@ func CreateConfigMap(taskId string, namespace string, conf config.Config, client
 
 	_, err = client.CoreV1().ConfigMaps(namespace).Create(context.Background(), cm, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("creating ConfigMap: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
-func DeleteConfigMap(ctx context.Context, taskId string, namespace string, client kubernetes.Interface) error {
+func DeleteConfigMap(ctx context.Context, taskId string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-config-%s", taskId)
 	err := client.CoreV1().ConfigMaps(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 
 	if err != nil {
-		return fmt.Errorf("deleting ConfigMap: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
@@ -58,7 +59,7 @@ func UpdateConfig(ctx context.Context, dst *config.Config) error {
 	if resp.Config != nil {
 		err := MergeConfigs(dst, resp.Config)
 		if err != nil {
-			return fmt.Errorf("error merging configs from plugin %v", err)
+			return fmt.Errorf("%v", err)
 		}
 	}
 
@@ -68,7 +69,7 @@ func UpdateConfig(ctx context.Context, dst *config.Config) error {
 func MergeConfigs(dst *config.Config, src *config.Config) error {
 	err := mergo.MergeWithOverwrite(dst, src)
 	if err != nil {
-		return fmt.Errorf("error merging configs: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil

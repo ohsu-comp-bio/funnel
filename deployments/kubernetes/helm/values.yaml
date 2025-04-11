@@ -374,9 +374,11 @@ Kubernetes:
   # to those reported by the backend
   ReconcileRate: 10m
   # Kubernetes Namespace to spawn jobs within
-  Namespace: "default"
+  Namespace: ""
+  # Kubernetes Namespace to spawn jobs within
+  JobsNamespace: ""
   # Kubernetes ServiceAccount to use for the job
-  ServiceAccount: "funnel-sa"
+  ServiceAccount: ""
   # Master batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
   Template: ""
   # TemplateFile is the path to the master job template.

@@ -22,16 +22,14 @@ func NewK8sClient(conf config.Config) (*kubernetes.Clientset, error) {
 		if err != nil {
 			return nil, fmt.Errorf("building kubeconfig: %v", err)
 		}
-
-		// Case 2: Fall back to KUBECONFIG env var or default kubeconfig
 	} else if configPath := os.Getenv("KUBECONFIG"); configPath != "" {
+		// Case 2: Fall back to KUBECONFIG env var or default kubeconfig
 		kubeconfig, err = clientcmd.BuildConfigFromFlags("", configPath)
 		if err != nil {
 			return nil, fmt.Errorf("building kubeconfig from env: %v", err)
 		}
-
-		// Case 3: Fall back to in-cluster config
 	} else {
+		// Case 3: Fall back to in-cluster config
 		// creates the in-cluster config
 		kubeconfig, err = rest.InClusterConfig()
 		if err != nil {

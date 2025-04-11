@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/ohsu-comp-bio/funnel/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -15,7 +16,7 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface) error {
+func CreatePVC(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface, log *logger.Logger) error {
 	tpl, err := os.ReadFile(tplFile)
 	if err != nil {
 		return fmt.Errorf("reading template: %v", err)
@@ -36,13 +37,13 @@ func CreatePVC(taskId string, namespace string, bucket string, region string, tp
 		"Region":    region,
 	})
 	if err != nil {
-		return fmt.Errorf("executing PVC template: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return fmt.Errorf("decoding PVC spec: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	pvc, ok := obj.(*corev1.PersistentVolumeClaim)
@@ -52,14 +53,14 @@ func CreatePVC(taskId string, namespace string, bucket string, region string, tp
 
 	_, err = client.CoreV1().PersistentVolumeClaims(namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("creating PVC: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
 // Add this helper function for PVC cleanup
-func DeletePVC(ctx context.Context, taskID string, namespace string, client kubernetes.Interface) error {
+func DeletePVC(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pvc-%s", taskID)
 	err := client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 

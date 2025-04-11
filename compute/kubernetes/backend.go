@@ -52,8 +52,15 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 	if conf.Kubernetes.Template == "" {
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes job template")
 	}
-	if conf.Kubernetes.JobsNamespace == "" {
+
+	// Funnel Server Namespace
+	if conf.Kubernetes.Namespace == "" {
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes namespace")
+	}
+
+	// Funnel Worker + Executor Namespace
+	if conf.Kubernetes.JobsNamespace == "" {
+		conf.Kubernetes.JobsNamespace = conf.Kubernetes.Namespace
 	}
 
 	clientset, err := k8sutil.NewK8sClient(conf)
@@ -132,7 +139,7 @@ func (b *Backend) Close() {
 func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
 	err := b.createResources(task)
 	if err != nil {
-		return fmt.Errorf("creating resources: %v", err)
+		return fmt.Errorf("creating Worker resources: %v", err)
 	}
 
 	return nil
@@ -163,31 +170,31 @@ func (b *Backend) createResources(task *tes.Task) error {
 	// e.g. `if len(task.Inputs) > 0 || len(task.Outputs) > 0 {...}`
 
 	// Create PV
-	b.log.Debug("creating PV", "taskID", task.Id)
-	err := resources.CreatePV(task.Id, b.namespace, b.bucket, b.region, b.pvTemplate, b.client)
+	b.log.Debug("creating Worker PV", "taskID", task.Id)
+	err := resources.CreatePV(task.Id, b.namespace, b.bucket, b.region, b.pvTemplate, b.client, b.log)
 	if err != nil {
-		return fmt.Errorf("creating PV: %v", err)
+		return fmt.Errorf("creating Worker PV: %v", err)
 	}
 
 	// Create PVC
-	b.log.Debug("creating PVC", "taskID", task.Id)
-	err = resources.CreatePVC(task.Id, b.namespace, b.bucket, b.region, b.pvcTemplate, b.client)
+	b.log.Debug("creating Worker PVC", "taskID", task.Id)
+	err = resources.CreatePVC(task.Id, b.namespace, b.bucket, b.region, b.pvcTemplate, b.client, b.log)
 	if err != nil {
-		return fmt.Errorf("creating PVC: %v", err)
+		return fmt.Errorf("creating Worker PVC: %v", err)
 	}
 
 	// Create ConfigMap
-	b.log.Debug("creating ConfigMap", "taskID", task.Id)
-	err = resources.CreateConfigMap(task.Id, b.namespace, b.conf, b.client)
+	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+	err = resources.CreateConfigMap(task.Id, b.namespace, b.conf, b.client, b.log)
 	if err != nil {
-		return fmt.Errorf("creating ConfigMap: %v", err)
+		return fmt.Errorf("creating Worker ConfigMap: %v", err)
 	}
 
 	// Create Worker Job
-	b.log.Debug("creating Job", "taskID", task.Id)
-	err = resources.CreateJob(task, b.namespace, b.template, b.client)
+	b.log.Debug("creating Worker Job", "taskID", task.Id)
+	err = resources.CreateJob(task, b.namespace, b.template, b.client, b.log)
 	if err != nil {
-		return fmt.Errorf("creating Job: %v", err)
+		return fmt.Errorf("creating Worker Job: %v", err)
 	}
 
 	return nil
@@ -198,27 +205,27 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
 
 	// Delete PV
-	b.log.Debug("deleting PV", "taskID", taskId)
-	err := resources.DeletePV(ctx, taskId, b.client)
+	b.log.Debug("deleting Worker PV", "taskID", taskId)
+	err := resources.DeletePV(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting PV: %v", err)
+		b.log.Error("deleting Worker PV: %v", err)
 	}
 
 	// Delete PVC
-	b.log.Debug("deleting PVC", "taskID", taskId)
-	err = resources.DeletePVC(ctx, taskId, b.namespace, b.client)
+	b.log.Debug("deleting Worker PVC", "taskID", taskId)
+	err = resources.DeletePVC(ctx, taskId, b.namespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting PVC: %v", err)
+		b.log.Error("deleting Worker PVC: %v", err)
 	}
 
 	// Delete ConfigMap
-	b.log.Debug("deleting ConfigMap", "taskID", taskId)
-	err = resources.DeleteConfigMap(ctx, taskId, b.namespace, b.client)
+	b.log.Debug("deleting Worker ConfigMap", "taskID", taskId)
+	err = resources.DeleteConfigMap(ctx, taskId, b.namespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting ConfigMap: %v", err)
+		b.log.Error("deleting Worker ConfigMap: %v", err)
 	}
 
 	return errs

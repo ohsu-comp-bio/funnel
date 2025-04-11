@@ -42,14 +42,20 @@ spec:
 	// Create a logger
 	log := logger.NewLogger("test", logger.DefaultConfig())
 
-	// Create the Kubernetes backend
-	backend, err := NewBackend(context.Background(), conf, nil, nil, log)
-	if err != nil {
-		t.Fatalf("failed to create backend: %v", err)
+	backend := &Backend{
+		bucket:            conf.Kubernetes.Bucket,
+		region:            conf.Kubernetes.Region,
+		client:            fakeClient,
+		namespace:         conf.Kubernetes.JobsNamespace,
+		template:          conf.Kubernetes.Template,
+		pvTemplate:        conf.Kubernetes.PVTemplate,
+		pvcTemplate:       conf.Kubernetes.PVCTemplate,
+		configMapTemplate: conf.Kubernetes.ConfigMapTemplate,
+		event:             nil,
+		database:          nil,
+		log:               log,
+		conf:              conf, // Funnel configuration
 	}
-
-	// Replace the real client with the fake client for testing
-	backend.client = fakeClient
 
 	// Define a test task
 	task := &tes.Task{
@@ -68,7 +74,7 @@ spec:
 	}
 
 	// Submit the task to the backend
-	err = backend.Submit(context.Background(), task)
+	err := backend.Submit(context.Background(), task)
 	if err != nil {
 		t.Fatalf("failed to submit task: %v", err)
 	}

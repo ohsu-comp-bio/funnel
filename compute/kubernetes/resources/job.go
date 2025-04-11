@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,11 +17,12 @@ import (
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.Interface) error {
+func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.Interface, log *logger.Logger) error {
 	// Parse Worker Template
+	log.Debug("Creating job from template", "template", tpl)
 	t, err := template.New(task.Id).Parse(tpl)
 	if err != nil {
-		return fmt.Errorf("parsing template: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	res := task.GetResources()
@@ -37,9 +39,10 @@ func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.I
 		"DiskGb":    res.GetDiskGb(),
 	})
 	if err != nil {
-		return fmt.Errorf("executing Worker template: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
+	log.Debug("Job template: %s", buf.String())
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
@@ -51,16 +54,17 @@ func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.I
 		return fmt.Errorf("failed to decode job spec")
 	}
 
+	log.Debug("Creating job", "Job", job.Name, "Namespace", namespace)
 	_, err = client.BatchV1().Jobs(namespace).Create(context.Background(), job, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("creating job: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil
 }
 
 // deleteJob removes deletes a kubernetes v1/batch job.
-func DeleteJob(ctx context.Context, taskID string, client batchv1.JobInterface) error {
+func DeleteJob(ctx context.Context, taskID string, client batchv1.JobInterface, log *logger.Logger) error {
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
 
@@ -70,7 +74,7 @@ func DeleteJob(ctx context.Context, taskID string, client batchv1.JobInterface) 
 	})
 
 	if err != nil {
-		return fmt.Errorf("deleting job: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
 	return nil

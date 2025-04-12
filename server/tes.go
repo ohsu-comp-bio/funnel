@@ -41,7 +41,7 @@ func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
 	defer m.Close()
 
 	ts.Log.Info("getting plugin client", "dir", ts.Config.Plugins.Dir)
-	plugin, err := m.Client(ts.Config.Plugins.Dir)
+	plugin, err := m.Client(ts.Config.Plugins.Plugin, ts.Config.Plugins.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin client: %w", err)
 	}
@@ -82,6 +82,14 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		pluginResponse, err := ts.LoadPlugins(task)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading plugins: %v", err)
+		}
+
+		if pluginResponse.Code != 200 {
+			return nil, fmt.Errorf("Plugin returned error code %d", pluginResponse.Code)
+		}
+
+		if pluginResponse.Config == nil {
+			return nil, fmt.Errorf("Plugin returned empty config")
 		}
 
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)

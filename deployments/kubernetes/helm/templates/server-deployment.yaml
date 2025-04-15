@@ -24,7 +24,7 @@ spec:
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
       serviceAccountName: {{ include "funnel.serviceAccountName" . }}
-      {{ if .Values.image.initContainer }}
+      {{ if eq .Values.Plugins.disabled "false" }}
       initContainers:
         - name: plugins
           image: {{ .Values.image.initContainer.image }}
@@ -89,7 +89,7 @@ spec:
       volumes:
         - name: funnel-deployment-storage
           persistentVolumeClaim:
-            claimName: funnel-server-pvc
+            claimName: funnel-server-pvc-{{ .Release.Namespace }}
 
         - name: config-volume
           configMap:

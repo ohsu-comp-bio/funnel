@@ -86,7 +86,7 @@ Logger:
 
 Server:
   # Hostname of the Funnel server.
-  HostName: funnel.funnel.svc.cluster.local
+  HostName: funnel
 
   # Port used for HTTP communication and the web dashboard.
   HTTPPort: 8000

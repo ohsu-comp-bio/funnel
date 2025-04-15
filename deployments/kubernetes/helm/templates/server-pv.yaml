@@ -2,8 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: funnel-server-pv
-  namespace: {{ .Release.Namespace }} 
+  name: funnel-server-pv-{{ .Release.Namespace }} 
   labels:
     app.kubernetes.io/name: funnel
     app.kubernetes.io/instance: funnel

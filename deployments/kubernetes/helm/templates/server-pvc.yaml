@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: "funnel-server-pvc"
+  name: funnel-server-pvc-{{ .Release.Namespace }}
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Chart.Name }}

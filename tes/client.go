@@ -80,7 +80,10 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	// Build url query parameters
 	v := url.Values{}
 	addInt32(v, "page_size", req.GetPageSize())
-	addString(v, "page_token", req.GetPageToken())
+	pageToken := req.GetPageToken()
+	if pageToken != "" {
+		addString(v, "page_token", req.GetPageToken())
+	}
 	addString(v, "view", req.GetView())
 	addString(v, "name_prefix", req.GetNamePrefix())
 

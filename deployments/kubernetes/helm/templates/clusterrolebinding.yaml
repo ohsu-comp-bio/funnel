@@ -5,11 +5,11 @@ metadata:
   name: funnel-cluster-rolebinding-{{ .Release.Namespace }}
 subjects:
   - kind: ServiceAccount
-    name: funnel-sa
+    name: funnel-sa-{{ .Release.Namespace }}
     namespace: {{ .Release.Namespace }}
   {{- if and .Values.Kubernetes.JobsNamespace (ne .Values.Kubernetes.JobsNamespace .Values.Kubernetes.Namespace) }}
   - kind: ServiceAccount
-    name: funnel-sa
+    name: funnel-sa-{{ .Release.Namespace }}
     namespace: {{ .Values.Kubernetes.JobsNamespace }}
   {{- end }}
 roleRef:

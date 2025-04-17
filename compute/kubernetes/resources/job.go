@@ -17,7 +17,7 @@ import (
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.Interface, log *logger.Logger) error {
+func CreateJob(task *tes.Task, namespace string, jobsNamespace string, tpl string, client kubernetes.Interface, log *logger.Logger) error {
 	// Parse Worker Template
 	log.Debug("Creating job from template", "template", tpl)
 	t, err := template.New(task.Id).Parse(tpl)
@@ -32,11 +32,12 @@ func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.I
 
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
-		"TaskId":    task.Id,
-		"Namespace": namespace,
-		"Cpus":      res.GetCpuCores(),
-		"RamGb":     res.GetRamGb(),
-		"DiskGb":    res.GetDiskGb(),
+		"TaskId":        task.Id,
+		"Namespace":     namespace,
+		"JobsNamespace": jobsNamespace,
+		"Cpus":          res.GetCpuCores(),
+		"RamGb":         res.GetRamGb(),
+		"DiskGb":        res.GetDiskGb(),
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -54,8 +55,8 @@ func CreateJob(task *tes.Task, namespace string, tpl string, client kubernetes.I
 		return fmt.Errorf("failed to decode job spec")
 	}
 
-	log.Debug("Creating job", "Job", job.Name, "Namespace", namespace)
-	_, err = client.BatchV1().Jobs(namespace).Create(context.Background(), job, metav1.CreateOptions{})
+	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", jobsNamespace)
+	_, err = client.BatchV1().Jobs(jobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

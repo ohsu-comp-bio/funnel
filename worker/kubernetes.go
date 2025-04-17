@@ -26,6 +26,7 @@ type KubernetesCommand struct {
 	JobId          int
 	StdinFile      string
 	TaskTemplate   string
+	Namespace      string // Funnel Server Namespace
 	JobsNamespace  string // Funnel Worker + Executor Namespace (default: Namespace)
 	Resources      *tes.Resources
 	ServiceAccount string
@@ -57,7 +58,8 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	err = tpl.Execute(&buf, map[string]interface{}{
 		"TaskId":         taskId,
 		"JobId":          kcmd.JobId,
-		"Namespace":      kcmd.JobsNamespace,
+		"Namespace":      kcmd.Namespace,
+		"JobsNamespace":  kcmd.JobsNamespace,
 		"Command":        command,
 		"Workdir":        kcmd.Workdir,
 		"Volumes":        kcmd.Volumes,

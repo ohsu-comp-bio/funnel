@@ -3,7 +3,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{.TaskId}}
-  namespace: {{.Namespace}}
+  namespace: {{.JobsNamespace}}
   labels:
     app: funnel-worker
     task-id: {{.TaskId}}
@@ -20,7 +20,7 @@ spec:
         app: funnel-worker
         task-id: {{.TaskId}}
     spec:
-      serviceAccountName: funnel-sa
+      serviceAccountName: funnel-sa-{{.Namespace}}
       restartPolicy: OnFailure
       containers:
         - name: funnel-worker-{{.TaskId}}

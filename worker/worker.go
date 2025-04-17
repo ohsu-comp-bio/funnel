@@ -202,6 +202,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					JobId:         i,
 					StdinFile:     d.Stdin,
 					TaskTemplate:  r.Executor.Template,
+					Namespace:     r.Executor.Namespace,
 					JobsNamespace: r.Executor.JobsNamespace,
 					Resources:     resources,
 					Command:       command,

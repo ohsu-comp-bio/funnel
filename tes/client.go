@@ -81,10 +81,14 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	v := url.Values{}
 	addInt32(v, "page_size", req.GetPageSize())
 	pageToken := req.GetPageToken()
+
+	// If pageToken is empty, don't add it to the URL
+	// ref: https://github.com/ga4gh/task-execution-schemas/blob/v1.1/openapi/task_execution_service.openapi.yaml#L506-L510
 	if pageToken != "" {
 		addString(v, "page_token", req.GetPageToken())
 	}
 	addString(v, "view", req.GetView())
+
 	addString(v, "name_prefix", req.GetNamePrefix())
 
 	if req.GetState() != Unknown {

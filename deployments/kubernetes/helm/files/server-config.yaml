@@ -93,9 +93,13 @@ Datastore:
 
 MongoDB:
   Addrs:
-  {{- range .Values.MongoDB.Addrs }}
-  - {{ . }}
-  {{- end }}
+    {{- if .Values.MongoDB.Addrs }}
+      {{- range .Values.MongoDB.Addrs }}
+    - {{ . }}
+      {{- end }}
+    {{- else }}
+    - {{ .Release.Name }}-mongodb.{{ .Release.Namespace }}.svc.cluster.local
+    {{- end }}
   Database: {{ .Values.MongoDB.Database }}
   Timeout: {{ .Values.MongoDB.Timeout }}
   Username: {{ .Values.MongoDB.Username }}

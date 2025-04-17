@@ -72,7 +72,8 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 		bucket:            conf.Kubernetes.Bucket,
 		region:            conf.Kubernetes.Region,
 		client:            clientset,
-		namespace:         conf.Kubernetes.JobsNamespace,
+		namespace:         conf.Kubernetes.Namespace,
+		jobsNamespace:     conf.Kubernetes.JobsNamespace,
 		template:          conf.Kubernetes.Template,
 		pvTemplate:        conf.Kubernetes.PVTemplate,
 		pvcTemplate:       conf.Kubernetes.PVCTemplate,
@@ -171,28 +172,28 @@ func (b *Backend) createResources(task *tes.Task) error {
 
 	// Create PV
 	b.log.Debug("creating Worker PV", "taskID", task.Id)
-	err := resources.CreatePV(task.Id, b.namespace, b.bucket, b.region, b.pvTemplate, b.client, b.log)
+	err := resources.CreatePV(task.Id, b.jobsNamespace, b.bucket, b.region, b.pvTemplate, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker PV: %v", err)
 	}
 
 	// Create PVC
 	b.log.Debug("creating Worker PVC", "taskID", task.Id)
-	err = resources.CreatePVC(task.Id, b.namespace, b.bucket, b.region, b.pvcTemplate, b.client, b.log)
+	err = resources.CreatePVC(task.Id, b.jobsNamespace, b.bucket, b.region, b.pvcTemplate, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker PVC: %v", err)
 	}
 
 	// Create ConfigMap
 	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err = resources.CreateConfigMap(task.Id, b.namespace, b.conf, b.client, b.log)
+	err = resources.CreateConfigMap(task.Id, b.jobsNamespace, b.conf, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker ConfigMap: %v", err)
 	}
 
 	// Create Worker Job
 	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err = resources.CreateJob(task, b.namespace, b.template, b.client, b.log)
+	err = resources.CreateJob(task, b.namespace, b.jobsNamespace, b.template, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker Job: %v", err)
 	}
@@ -214,7 +215,7 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 
 	// Delete PVC
 	b.log.Debug("deleting Worker PVC", "taskID", taskId)
-	err = resources.DeletePVC(ctx, taskId, b.namespace, b.client, b.log)
+	err = resources.DeletePVC(ctx, taskId, b.jobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker PVC: %v", err)
@@ -222,7 +223,7 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 
 	// Delete ConfigMap
 	b.log.Debug("deleting Worker ConfigMap", "taskID", taskId)
-	err = resources.DeleteConfigMap(ctx, taskId, b.namespace, b.client, b.log)
+	err = resources.DeleteConfigMap(ctx, taskId, b.jobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker ConfigMap: %v", err)
@@ -256,7 +257,7 @@ ReconcileLoop:
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			jobs, err := b.client.BatchV1().Jobs(b.namespace).List(ctx, metav1.ListOptions{})
+			jobs, err := b.client.BatchV1().Jobs(b.jobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
 				continue ReconcileLoop

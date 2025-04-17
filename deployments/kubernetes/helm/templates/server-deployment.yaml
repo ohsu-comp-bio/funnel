@@ -23,7 +23,7 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/server-configmap.yaml") . | sha256sum }}
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
-      serviceAccountName: {{ include "funnel.serviceAccountName" . }}
+      serviceAccountName: funnel-sa-{{ .Release.Namespace }}
       {{ if eq .Values.Plugins.disabled "false" }}
       initContainers:
         - name: plugins
@@ -74,9 +74,6 @@ spec:
             failureThreshold: 3
 
           volumeMounts:
-            - name: funnel-deployment-storage
-              mountPath: /opt/funnel/funnel-work-dir
-            
             - name: config-volume
               mountPath: /etc/config
             
@@ -87,10 +84,6 @@ spec:
               mountPath: /opt/funnel/plugin-binaries
 
       volumes:
-        - name: funnel-deployment-storage
-          persistentVolumeClaim:
-            claimName: funnel-server-pvc-{{ .Release.Namespace }}
-
         - name: config-volume
           configMap:
             name: funnel-server-config

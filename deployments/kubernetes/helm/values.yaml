@@ -5,6 +5,7 @@ image:
   repository: quay.io/ohsu-comp-bio/funnel
   tag: testing
   pullPolicy: Always
+  # Plugin Init Container
   initContainer:
     image: quay.io/ohsu-comp-bio/funnel-plugins
     tag: latest
@@ -16,6 +17,17 @@ image:
 
 labels:
   app: funnel
+
+# Funnel Server (Task Database)
+mongodb:
+  architecture: standalone
+  auth:
+    enabled: true
+    rootUser: example
+    rootPassword: example
+  persistence:
+    enabled: false
+    size: 1Gi
 
 rbac:
   create: true
@@ -33,10 +45,7 @@ service:
   httpPort: 8000
   rpcPort: 9090
 
-serviceAccount:
-  create: true
-  name: funnel-sa
-
+# Funnel Worker + Executor storage (S3 bucket)
 storage:
   driver: aws-s3
   size: 10Mi
@@ -44,29 +53,16 @@ storage:
   className: s3-csi-sc
   provisioner: s3.csi.aws.com
   createStorageClass: true
-  aws:
-    bucket: funnel-testing
-    region: us-west-2
-  pvc:
-    name: funnel-server-pvc
-    reclaimPolicy: Retain
-  pv:
-    enabled: true
-    name: funnel-server-pv
-    reclaimPolicy: Retain
 
-taskStorage:
-  className: gp2
-  provisioner: kubernetes.io/aws-ebs
-  enabled: true
-  size: 1Mi
-
-# Funnel Default Settings
-# Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
+# Funnel Default Settings (with BoltDB replaced with MongoDB)
+# 
+# These are passed into `files/server-config.yaml` and made available to the deployment via `server-configmap.yaml`
+#
+# - Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
 
 # The name of the active server database backend
 # Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb
-Database: boltdb
+Database: mongodb
 
 # The name of the active compute backend
 # Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch, kubernetes
@@ -75,7 +71,7 @@ Compute: kubernetes
 # The name of the active event writer backend(s).
 # Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
 EventWriters:
-  - boltdb
+  - mongodb
   - log
 
 Logger:
@@ -218,8 +214,9 @@ Datastore:
 
 MongoDB:
   # Addrs holds the addresses for the seed servers.
-  Addrs:
-    - mongodb://localhost
+  # K8s Note: These are computed dynamically in templates (in `server-configmap.yaml`) so that users
+  # don't have to manually set them.
+  Addrs: []
   # Database is the database name used within MongoDB to store funnel data.
   Database: funnel
   # Timeout is the amount of time to wait for a server to respond when
@@ -229,8 +226,8 @@ MongoDB:
   Timeout: 5m
   # Username and Password inform the credentials for the initial authentication
   # done on the database defined by the Database field.
-  Username: ""
-  Password: ""
+  Username: example
+  Password: example
 
 Kafka:
   Servers:

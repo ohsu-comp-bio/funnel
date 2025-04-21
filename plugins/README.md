@@ -6,9 +6,7 @@
 > [!NOTE]
 > Adapted from [gRPC go-plugin example](https://github.com/hashicorp/go-plugin/tree/main/examples/grpc#updating-the-protocol) from Hashicorp
 
-Updates to the protocol are managed by [`buf`](https://github.com/bufbuild/buf)
-
-## 1. Install `buf`
+## 1. Install [`buf`](https://github.com/bufbuild/buf)
 
 ```sh
 brew install bufbuild/buf/buf

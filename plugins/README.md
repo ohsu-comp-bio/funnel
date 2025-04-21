@@ -1,4 +1,4 @@
-> ![WARNING]
+> [!WARNING]
 > Files in this directory are in active development and will be moved to a separate public repository (e.g. https://github.com/ohsu-comp-bio/funnel-example-plugin) in the near future 🔮
 
 # Updating the Protocol

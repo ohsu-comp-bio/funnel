@@ -24,10 +24,11 @@ spec:
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
       serviceAccountName: funnel-sa-{{ .Release.Namespace }}
-      {{ if eq .Values.Plugins.disabled "false" }}
+      {{ if not .Values.Plugins.disabled }}
       initContainers:
         - name: plugins
-          image: {{ .Values.image.initContainer.image }}
+          image: {{ .Values.image.initContainer.image }}:{{ .Values.image.initContainer.tag }}
+          imagePullPolicy: Always
           volumeMounts:
           - name: plugin-volume
             mountPath: /opt/funnel/plugin-binaries

@@ -14,8 +14,8 @@ import (
 	"text/template"
 	"time"
 
-	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	dockerTypes "github.com/docker/docker/api/types/events"
 	dockerFilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	runlib "github.com/ohsu-comp-bio/funnel/cmd/run"
@@ -174,7 +174,7 @@ func (f *Funnel) WaitForDockerDestroy(id string) {
 	fil.Add("container", id)
 	fil.Add("event", "destroy")
 
-	s, err := f.Docker.Events(context.Background(), dockerTypes.EventsOptions{
+	s, err := f.Docker.Events(context.Background(), dockerTypes.ListOptions{
 		Since:   string(f.startTime),
 		Filters: fil,
 	})

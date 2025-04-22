@@ -52,16 +52,14 @@ type Config struct {
 	// TODO: Interface passed back will need to have enough configuration to update these fields (e.g. GenericS3 Storage with User Keys)
 	// Currently we're not updating the Worker config and only relying on the Server to authenticate the user
 	// plugins
-	Plugins Plugins
+	Plugins *Plugins
 }
 
 // Plugins describes which plugins to use and where to find them.
 type Plugins struct {
-	Disabled bool
 	Dir      string
 	Plugin   string
 	Host     string
-	Input    string
 	Response plugins.Response
 }
 

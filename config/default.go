@@ -91,10 +91,8 @@ func DefaultConfig() Config {
 				StopCommand: "rm -f {{.Name}}",
 			},
 		},
-		Plugins: Plugins{
-			Disabled: true,
-		},
-		Logger: logger.DefaultConfig(),
+		Plugins: nil,
+		Logger:  logger.DefaultConfig(),
 		// databases / event handlers
 		BoltDB: BoltDB{
 			Path: path.Join(workDir, "funnel.db"),

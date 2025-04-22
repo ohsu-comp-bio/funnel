@@ -112,7 +112,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
-	if !b.conf.Plugins.Disabled {
+	if b.conf.Plugins != nil {
 		err := resources.UpdateConfig(ctx, &b.conf)
 		if err != nil {
 			return fmt.Errorf("error updating config from plugin response: %v", err)

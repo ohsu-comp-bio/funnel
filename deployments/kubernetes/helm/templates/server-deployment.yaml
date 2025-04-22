@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.name | default "funnel-server" }}
-  namespace: {{ .Release.Namespace }} 
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "funnel.labels" . | nindent 4 }}
 spec:
@@ -24,7 +24,7 @@ spec:
         checksum/values: {{ .Values | quote | sha256sum }}
     spec:
       serviceAccountName: funnel-sa-{{ .Release.Namespace }}
-      {{ if not .Values.Plugins.disabled }}
+      {{ if .Values.Plugins }}
       initContainers:
         - name: plugins
           image: {{ .Values.image.initContainer.image }}:{{ .Values.image.initContainer.tag }}
@@ -77,10 +77,10 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /etc/config
-            
+
             - name: worker-templates-volume
               mountPath: /etc/funnel/templates
-            
+
             - name: plugin-volume
               mountPath: /opt/funnel/plugin-binaries
 
@@ -92,7 +92,6 @@ spec:
         - name: worker-templates-volume
           configMap:
             name: funnel-worker-templates
-            
+
         - name: plugin-volume
           emptyDir: {}  # Shared volume
-        

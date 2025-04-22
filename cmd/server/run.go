@@ -281,7 +281,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			},
 			Events:  &events.Service{Writer: writer},
 			Nodes:   nodes,
-			Plugins: conf.Plugins,
+			Plugins: *conf.Plugins,
 		},
 		Scheduler: sched,
 	}, nil

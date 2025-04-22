@@ -41,26 +41,17 @@ func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
 	defer m.Close()
 
 	ts.Log.Info("getting plugin client", "dir", ts.Config.Plugins.Dir)
-	plugin, err := m.Client(ts.Config.Plugins.Plugin, ts.Config.Plugins.Dir)
+	plugin, err := m.Client(ts.Config.Plugins.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin client: %w", err)
 	}
 
-	// TODO: Check if "overloading" the task tag is an acceptable way to pass plugin inputs
-	ts.Log.Info("loading plugins", "task.Tags", ts.Config.Plugins.Input)
-	user := task.Tags[ts.Config.Plugins.Input]
-	if user == "" {
-		return nil, fmt.Errorf("task tags must contain a '%v' field", ts.Config.Plugins.Input)
-	}
-
-	// Hardcoding the hostname for now, this should be configurable (based on Plugin config?)
 	host := ts.Config.Plugins.Host
-
 	ts.Log.Info("plugin host", "host", host)
-	ts.Log.Info("plugin user", "user", user)
-	rawResp, err := plugin.Get(user, host)
+	ts.Log.Info("plugin user", "user", "")
+	rawResp, err := plugin.Get("", host)
 	if err != nil {
-		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", user, err)
+		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", "", err)
 	}
 
 	// Unmarshal the response
@@ -77,7 +68,8 @@ func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-	if !ts.Config.Plugins.Disabled {
+	fmt.Printf("CONTEXT: %#v\n", GetUser(ctx))
+	if ts.Config.Plugins != nil {
 		ts.Log.Info("loading plugins")
 		pluginResponse, err := ts.LoadPlugins(task)
 		if err != nil {

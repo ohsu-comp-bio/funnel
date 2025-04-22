@@ -69,42 +69,52 @@ func ParseFile(relpath string, conf *Config) error {
 	return nil
 }
 
-func getKeys(obj interface{}) []string {
-	keys := []string{}
-
+func getKeys(obj any) []string {
+	var keys []string
 	v := reflect.ValueOf(obj)
+
+	// Dereference pointer if needed
 	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return keys
+		}
 		v = v.Elem()
 	}
 
 	switch v.Kind() {
 	case reflect.Struct:
 		for i := 0; i < v.NumField(); i++ {
+			fieldType := v.Type().Field(i)
 			field := v.Field(i)
-			embedded := v.Type().Field(i).Anonymous
-			name := v.Type().Field(i).Name
+			name := fieldType.Name
 			keys = append(keys, name)
 
-			valKeys := getKeys(field.Interface())
-			vk := []string{}
-			for _, v := range valKeys {
-				if embedded {
-					vk = append(vk, v)
+			// Handle nested structs (including pointers)
+			if (field.Kind() == reflect.Ptr && !field.IsNil() && field.Type().Elem().Kind() == reflect.Struct) ||
+				field.Kind() == reflect.Struct {
+				nestedKeys := getKeys(field.Interface())
+				for _, key := range nestedKeys {
+					if fieldType.Anonymous {
+						keys = append(keys, key)
+					}
+					keys = append(keys, name+"."+key)
 				}
-				vk = append(vk, name+"."+v)
 			}
-			keys = append(keys, vk...)
 		}
 	case reflect.Map:
 		for _, key := range v.MapKeys() {
 			name := key.String()
-			keys = append(keys, key.String())
+			keys = append(keys, name)
 
-			valKeys := getKeys(v.MapIndex(key).Interface())
-			for i, v := range valKeys {
-				valKeys[i] = name + "." + v
+			val := v.MapIndex(key)
+			// Handle nested structs in map values
+			if (val.Kind() == reflect.Ptr && !val.IsNil() && val.Type().Elem().Kind() == reflect.Struct) ||
+				val.Kind() == reflect.Struct {
+				nestedKeys := getKeys(val.Interface())
+				for _, nestedKey := range nestedKeys {
+					keys = append(keys, name+"."+nestedKey)
+				}
 			}
-			keys = append(keys, valKeys...)
 		}
 	}
 

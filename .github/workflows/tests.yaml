@@ -11,7 +11,7 @@ on:
     branches:
       - main
       - master
-      - develop
+      # - develop
 
 # Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
 concurrency:

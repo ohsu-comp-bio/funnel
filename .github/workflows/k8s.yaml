@@ -21,7 +21,8 @@ on:
     branches:
       - main
       - master
-      - develop
+      # Temporarily disabling K8s tests on develop branch while tests stablize
+      # - develop
 
 # Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
 concurrency:

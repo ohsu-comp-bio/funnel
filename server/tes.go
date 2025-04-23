@@ -41,7 +41,7 @@ func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
 	defer m.Close()
 
 	ts.Log.Info("getting plugin client", "dir", ts.Config.Plugins.Dir)
-	plugin, err := m.Client(ts.Config.Plugins.Plugin, ts.Config.Plugins.Dir)
+	plugin, err := m.Client(ts.Config.Plugins.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin client: %w", err)
 	}

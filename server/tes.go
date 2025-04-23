@@ -53,12 +53,13 @@ func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
 		return nil, fmt.Errorf("task tags must contain a '%v' field", ts.Config.Plugins.Input)
 	}
 
-	// Hardcoding the hostname for now, this should be configurable (based on Plugin config?)
 	host := ts.Config.Plugins.Host
+	jsonConfig := ts.Config.Plugins.JsonConfig
 
 	ts.Log.Info("plugin host", "host", host)
 	ts.Log.Info("plugin user", "user", user)
-	rawResp, err := plugin.Get(user, host)
+	ts.Log.Info("plugin jsonConfig", "jsonConfig", jsonConfig)
+	rawResp, err := plugin.Get(user, host, jsonConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", user, err)
 	}

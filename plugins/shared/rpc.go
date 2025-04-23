@@ -8,9 +8,9 @@ import (
 // RPCClient is an implementation of Authorization that talks over RPC.
 type RPCClient struct{ client *rpc.Client }
 
-func (m *RPCClient) Get(user string, host string) ([]byte, error) {
+func (m *RPCClient) Get(user string, host string, jsonConfig string) ([]byte, error) {
 	var resp []byte
-	err := m.client.Call("Plugin.Get", []string{user, host}, &resp)
+	err := m.client.Call("Plugin.Get", []string{user, host, jsonConfig}, &resp)
 	return resp, err
 }
 
@@ -22,11 +22,11 @@ type RPCServer struct {
 }
 
 func (m *RPCServer) Get(args []string, resp *[]byte) error {
-	if len(args) != 2 {
-		return fmt.Errorf("expected 2 arguments, got %d", len(args))
+	if len(args) != 3 {
+		return fmt.Errorf("expected 3 arguments, got %d", len(args))
 	}
-	user, host := args[0], args[1]
-	v, err := m.Impl.Get(user, host)
+	user, host, jsonConfig := args[0], args[1], args[2]
+	v, err := m.Impl.Get(user, host, jsonConfig)
 	*resp = v
 	return err
 }

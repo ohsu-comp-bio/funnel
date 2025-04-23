@@ -30,6 +30,6 @@ type GRPCServer struct {
 func (m *GRPCServer) Get(
 	ctx context.Context,
 	req *proto.GetRequest) (*proto.GetResponse, error) {
-	v, err := m.Impl.Get(req.User, req.Host)
+	v, err := m.Impl.Get(req.User, req.Host, req.JsonConfig)
 	return &proto.GetResponse{Value: v}, err
 }

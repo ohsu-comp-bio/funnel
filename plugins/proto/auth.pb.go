@@ -25,6 +25,7 @@ type GetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	User          string                 `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	Host          string                 `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	JsonConfig    string                 `protobuf:"bytes,3,opt,name=jsonConfig,proto3" json:"jsonConfig,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -69,6 +70,13 @@ func (x *GetRequest) GetUser() string {
 func (x *GetRequest) GetHost() string {
 	if x != nil {
 		return x.Host
+	}
+	return ""
+}
+
+func (x *GetRequest) GetJsonConfig() string {
+	if x != nil {
+		return x.JsonConfig
 	}
 	return ""
 }
@@ -157,11 +165,14 @@ var File_proto_auth_proto protoreflect.FileDescriptor
 
 const file_proto_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x10proto/auth.proto\x12\x05proto\"4\n" +
+	"\x10proto/auth.proto\x12\x05proto\"T\n" +
 	"\n" +
 	"GetRequest\x12\x12\n" +
 	"\x04user\x18\x01 \x01(\tR\x04user\x12\x12\n" +
-	"\x04host\x18\x02 \x01(\tR\x04host\"#\n" +
+	"\x04host\x18\x02 \x01(\tR\x04host\x12\x1e\n" +
+	"\n" +
+	"jsonConfig\x18\x03 \x01(\tR\n" +
+	"jsonConfig\"#\n" +
 	"\vGetResponse\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\fR\x05value\"\a\n" +
 	"\x05Empty29\n" +

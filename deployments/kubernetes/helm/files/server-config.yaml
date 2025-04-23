@@ -118,3 +118,4 @@ Plugins:
   Plugin: {{ .Values.Plugins.Plugin }}
   Host: {{ .Values.Plugins.Host }}
   Input: {{ .Values.Plugins.Input }}
+  JsonConfig: {{ .Values.Plugins.JsonConfig | quote }}

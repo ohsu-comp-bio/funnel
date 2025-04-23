@@ -1,7 +1,8 @@
 module github.com/ohsu-comp-bio/funnel
 
-go 1.22
-toolchain go1.23.1
+go 1.23.0
+
+toolchain go1.24.1
 
 require (
 	cloud.google.com/go/datastore v1.15.0

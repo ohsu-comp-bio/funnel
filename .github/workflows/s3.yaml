@@ -4,11 +4,22 @@
 name: S3 Integration Test
 
 on:
+  # Run on push to main/master/develop (e.g. after PR is merged)
+  push:
+    branches:
+      - main
+      - master
+  # Run on PR to main/master/develop
   pull_request:
     branches:
       - main
       - master
       - develop
+
+# Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

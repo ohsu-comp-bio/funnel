@@ -34,13 +34,13 @@ var createCmd = &cobra.Command{
 	Use:   "create-all-resources",
 	Short: "Create a compute environment, job queue and job definition in a specified region",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log := logger.NewLogger("batch-create-all-resources", logger.DefaultConfig())
+		log := logger.NewLogger("batch-create-all-resources", *logger.DefaultConfig())
 
 		if conf.Region == "" {
 			return fmt.Errorf("error must provide a region")
 		}
 
-		conf.Funnel.DynamoDB.Region = conf.Region
+		conf.Funnel.DynamoDB.AWSConfig.Region = conf.Region
 
 		if funnelConfigFile != "" {
 			funnelConf := config.Config{}

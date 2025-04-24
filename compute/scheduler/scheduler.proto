@@ -1,10 +1,10 @@
 syntax = "proto3";
 
+import "google/api/annotations.proto";
+
 option go_package = "github.com/ohsu-comp-bio/funnel/compute/scheduler";
 
 package scheduler;
-
-import "google/api/annotations.proto";
 
 message Resources {
   uint32 cpus = 1;

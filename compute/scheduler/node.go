@@ -18,7 +18,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
-	cli, err := NewClient(ctx, conf.RPCClient)
+	cli, err := NewClient(ctx, *conf.RPCClient)
 	if err != nil {
 		return nil, err
 	}
@@ -29,12 +29,12 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 	}
 
 	// Detect available resources at startup
-	res, derr := detectResources(conf.Node, conf.Worker.WorkDir)
+	res, derr := detectResources(*conf.Node, conf.Worker.WorkDir)
 	if derr != nil {
 		log.Error("error detecting resources", "error", derr)
 	}
 
-	timeout := util.NewIdleTimeout(time.Duration(conf.Node.Timeout))
+	timeout := util.NewIdleTimeout(conf.Node.Timeout.AsDuration())
 	state := NodeState_UNINITIALIZED
 
 	return &NodeProcess{
@@ -74,7 +74,7 @@ func (n *NodeProcess) Run(ctx context.Context) error {
 	n.checkConnection(ctx)
 	n.sync(ctx)
 
-	ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
+	ticker := time.NewTicker(n.conf.Node.UpdateRate.AsDuration())
 	defer ticker.Stop()
 
 	for {
@@ -154,7 +154,7 @@ func (n *NodeProcess) sync(ctx context.Context) {
 
 	// Node data has been updated. Send back to server for database update.
 	var derr error
-	n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
+	n.resources, derr = detectResources(*n.conf.Node, n.conf.Worker.WorkDir)
 	if derr != nil {
 		n.log.Error("error detecting resources", "error", derr)
 	}
@@ -191,7 +191,7 @@ func (n *NodeProcess) runTask(ctx context.Context, id string) {
 		// task cannot fully complete until it has successfully removed the
 		// assigned ID from the node database. this helps prevent tasks from
 		// running multiple times.
-		ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
+		ticker := time.NewTicker(n.conf.Node.UpdateRate.AsDuration())
 		defer ticker.Stop()
 		for {
 			select {

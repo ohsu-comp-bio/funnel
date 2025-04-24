@@ -373,7 +373,7 @@ func (b *batchsvc) CreateJobDefinition(overwrite bool) (*batch.JobDefinition, er
 				aws.String("--Database"),
 				aws.String(b.conf.Funnel.Database),
 				aws.String("--DynamoDB.Region"),
-				aws.String(b.conf.Funnel.DynamoDB.Region),
+				aws.String(b.conf.Funnel.DynamoDB.AWSConfig.Region),
 				aws.String("--DynamoDB.TableBasename"),
 				aws.String(b.conf.Funnel.DynamoDB.TableBasename),
 				aws.String("--taskID"),

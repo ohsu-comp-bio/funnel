@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 // Config represents configuration of the AWS proxy, including
@@ -168,9 +169,9 @@ func DefaultConfig() Config {
 	c.Funnel.Database = "dynamodb"
 	c.Funnel.EventWriters = []string{"dynamodb", "log"}
 	c.Funnel.DynamoDB.TableBasename = "funnel"
-	c.Funnel.DynamoDB.Region = ""
+	c.Funnel.DynamoDB.AWSConfig.Region = ""
 	c.Funnel.Worker.WorkDir = "/opt/funnel-work-dir"
-	c.Funnel.Worker.LogUpdateRate = config.Duration(time.Minute * 5)
+	c.Funnel.Worker.LogUpdateRate = durationpb.New(time.Minute * 5)
 	c.Funnel.Worker.LogTailSize = 10000
 
 	return c

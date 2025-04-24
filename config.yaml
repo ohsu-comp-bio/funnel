@@ -1,0 +1,6 @@
+Plugins:
+  Disabled: false
+  Dir: build/plugins
+  Plugin: authorizer
+  Input: user
+  Host: http://localhost:8080/token?user=

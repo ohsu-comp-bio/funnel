@@ -66,7 +66,7 @@ func NewSwiftRetrier(conf config.SwiftStorage) (*Retrier, error) {
 	return &Retrier{
 		Backend: b,
 		Retrier: &util.Retrier{
-			MaxTries:            conf.MaxRetries,
+			MaxTries:            int(conf.MaxRetries),
 			InitialInterval:     500 * time.Millisecond,
 			MaxInterval:         5 * time.Minute,
 			Multiplier:          2.0,

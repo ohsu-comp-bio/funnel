@@ -34,7 +34,7 @@ func NewAWSSession(conf config.AWSConfig) (*session.Session, error) {
 	}
 
 	if conf.MaxRetries > 0 {
-		awsConf.WithMaxRetries(conf.MaxRetries)
+		awsConf.WithMaxRetries(int(conf.MaxRetries))
 	}
 
 	if conf.Key != "" && conf.Secret != "" {

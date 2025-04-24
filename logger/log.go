@@ -25,11 +25,11 @@ const (
 type Formatter logrus.Formatter
 
 // NewLogger returns a new Logger instance.
-func NewLogger(ns string, conf Config) *Logger {
+func NewLogger(ns string, conf LoggerConfig) *Logger {
 	log := logrus.New()
 	base := log.WithFields(map[string]interface{}{"ns": ns})
 	l := &Logger{log, base}
-	l.Configure(conf)
+	l.Configure(&conf)
 	return l
 }
 

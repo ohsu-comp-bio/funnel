@@ -20,8 +20,8 @@ func TestAuthorizedUser(t *testing.T) {
 			resp := shared.Response{
 				Code: 200,
 				Config: &config.Config{
-					AmazonS3: config.AmazonS3Storage{
-						AWSConfig: config.AWSConfig{
+					AmazonS3: &config.AmazonS3Storage{
+						AWSConfig: &config.AWSConfig{
 							Key:    "key1",
 							Secret: "secret1",
 						},
@@ -53,8 +53,8 @@ func TestAuthorizedUser(t *testing.T) {
 	expected := shared.Response{
 		Code: 200,
 		Config: &config.Config{
-			AmazonS3: config.AmazonS3Storage{
-				AWSConfig: config.AWSConfig{
+			AmazonS3: &config.AmazonS3Storage{
+				AWSConfig: &config.AWSConfig{
 					Key:    "key1",
 					Secret: "secret1",
 				},

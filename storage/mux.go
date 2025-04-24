@@ -31,7 +31,7 @@ type Mux struct {
 }
 
 // NewMux returns a new Mux instance with the given additional configuration.
-func NewMux(conf config.Config) (*Mux, error) {
+func NewMux(conf *config.Config) (*Mux, error) {
 	mux := &Mux{}
 
 	if conf.LocalStorage.Valid() {

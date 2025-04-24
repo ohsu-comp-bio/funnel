@@ -20,7 +20,7 @@ func (e errResourceExists) Error() string {
 	return "resource exists"
 }
 
-func newBatchSvc(conf Config) (*batchsvc, error) {
+func newBatchSvc(conf *Config) (*batchsvc, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating aws session: %v", err)
@@ -33,7 +33,7 @@ func newBatchSvc(conf Config) (*batchsvc, error) {
 
 type batchsvc struct {
 	sess *session.Session
-	conf Config
+	conf *Config
 }
 
 func (b *batchsvc) CreateComputeEnvironment() (*batch.ComputeEnvironmentDetail, error) {

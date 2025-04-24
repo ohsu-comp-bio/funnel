@@ -11,7 +11,7 @@ import (
 )
 
 // NewK8sClient returns a new Kubernetes client.
-func NewK8sClient(conf config.Config) (*kubernetes.Clientset, error) {
+func NewK8sClient(conf *config.Config) (*kubernetes.Clientset, error) {
 	var kubeconfig *rest.Config
 	var err error
 

@@ -48,7 +48,7 @@ type Funnel struct {
 	Kubernetes *kubernetes.Clientset
 
 	// Config
-	Conf       config.Config
+	Conf       *config.Config
 	StorageDir string
 
 	// Components
@@ -64,7 +64,7 @@ type Funnel struct {
 
 // NewFunnel creates a new funnel test server with some test
 // configuration automatically set: random ports, temp work dir, etc.
-func NewFunnel(conf config.Config) *Funnel {
+func NewFunnel(conf *config.Config) *Funnel {
 	cli, err := tes.NewClient(conf.Server.HTTPAddress())
 	if err != nil {
 		panic(err)
@@ -161,9 +161,9 @@ func (f *Funnel) PollForServerStart() error {
 func (f *Funnel) SwitchUser(username string) {
 	for _, cred := range f.Conf.Server.BasicAuth {
 		if cred.User == username {
-			if f.Conf.RPCClient.User != username {
-				f.Conf.RPCClient.User = cred.User
-				f.Conf.RPCClient.Password = cred.Password
+			if f.Conf.RPCClient.Credential.User != username {
+				f.Conf.RPCClient.Credential.User = cred.User
+				f.Conf.RPCClient.Credential.Password = cred.Password
 				f.addRPCClient()
 			}
 			return

@@ -18,7 +18,7 @@ import (
 
 var log = logger.NewLogger("storage", logger.DefaultConfig())
 
-func newStorage(conf config.Config) (storage.Storage, error) {
+func newStorage(conf *config.Config) (storage.Storage, error) {
 	store, err := storage.NewMux(conf)
 	if err != nil {
 		return nil, err
@@ -31,8 +31,8 @@ func newStorage(conf config.Config) (storage.Storage, error) {
 func NewCommand() *cobra.Command {
 
 	configFile := ""
-	conf := config.Config{}
-	flagConf := config.Config{}
+	conf := &config.Config{}
+	flagConf := &config.Config{}
 
 	cmd := &cobra.Command{
 		Use:   "storage",

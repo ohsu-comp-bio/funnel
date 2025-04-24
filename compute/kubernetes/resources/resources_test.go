@@ -23,7 +23,7 @@ const (
 var l = logger.NewLogger("test", logger.DefaultConfig())
 
 func TestCreateConfigMap(t *testing.T) {
-	conf := config.Config{}
+	conf := &config.Config{}
 	err := CreateConfigMap(testTaskID, namespace, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
@@ -274,7 +274,7 @@ func TestDeleteNonExistentResources(t *testing.T) {
 func TestUpdateConfig(t *testing.T) {
 	ctx := context.Background()
 	dst := &config.Config{
-		Kubernetes: config.Kubernetes{
+		Kubernetes: &config.Kubernetes{
 			Namespace: "original-namespace",
 		},
 	}
@@ -291,7 +291,7 @@ func TestUpdateConfig(t *testing.T) {
 	t.Run("ValidMerge", func(t *testing.T) {
 		pluginResp := &shared.Response{
 			Config: &config.Config{
-				Kubernetes: config.Kubernetes{
+				Kubernetes: &config.Kubernetes{
 					Namespace: "new-namespace",
 				},
 			},

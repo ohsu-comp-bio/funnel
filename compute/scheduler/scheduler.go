@@ -19,7 +19,7 @@ type TaskQueue interface {
 
 // Scheduler handles scheduling tasks to nodes and support many backends.
 type Scheduler struct {
-	Conf  config.Scheduler
+	Conf  *config.Scheduler
 	Log   *logger.Logger
 	Nodes SchedulerServiceServer
 	Queue TaskQueue

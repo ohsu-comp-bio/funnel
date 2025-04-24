@@ -32,7 +32,7 @@ type TaskService struct {
 	Compute events.Computer
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
-	Config  config.Config
+	Config  *config.Config
 }
 
 // LoadPlugins loads plugins for a task.

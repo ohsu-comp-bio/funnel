@@ -25,6 +25,7 @@ func (m *GRPCClient) Get(user string, host string) ([]byte, error) {
 type GRPCServer struct {
 	// This is the real implementation
 	Impl Authorize
+	proto.UnimplementedAuthorizeServer
 }
 
 func (m *GRPCServer) Get(

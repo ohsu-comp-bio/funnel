@@ -36,12 +36,12 @@ type Backend struct {
 	database          tes.ReadOnlyServer
 	log               *logger.Logger
 	backendParameters map[string]string
-	conf              config.Config // Funnel configuration
+	conf              *config.Config // Funnel configuration
 	events.Computer
 }
 
 // NewBackend returns a new K8s Backend instance.
-func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
+func NewBackend(ctx context.Context, conf *config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
 	if conf.Kubernetes.TemplateFile != "" {
 		content, err := os.ReadFile(conf.Kubernetes.TemplateFile)
 		if err != nil {
@@ -85,7 +85,7 @@ func NewBackend(ctx context.Context, conf config.Config, reader tes.ReadOnlyServ
 	}
 
 	if !conf.Kubernetes.DisableReconciler {
-		rate := time.Duration(conf.Kubernetes.ReconcileRate)
+		rate := conf.Kubernetes.ReconcileRate.AsDuration()
 		go b.reconcile(ctx, rate, conf.Kubernetes.DisableJobCleanup)
 	}
 
@@ -113,7 +113,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
 	if b.conf.Plugins != nil {
-		err := resources.UpdateConfig(ctx, &b.conf)
+		err := resources.UpdateConfig(ctx, b.conf)
 		if err != nil {
 			return fmt.Errorf("error updating config from plugin response: %v", err)
 		}

@@ -13,7 +13,7 @@ import (
 )
 
 // DefaultConfig returns configuration with simple defaults.
-func DefaultConfig() Config {
+func DefaultConfig() *Config {
 	cwd, _ := os.Getwd()
 	workDir := path.Join(cwd, "funnel-work-dir")
 
@@ -34,7 +34,7 @@ func DefaultConfig() Config {
 		TaskAccess:       "All",
 	}
 
-	c := Config{
+	c := &Config{
 		Compute:      "local",
 		Database:     "boltdb",
 		EventWriters: []string{"log"},

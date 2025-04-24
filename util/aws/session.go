@@ -11,7 +11,7 @@ import (
 )
 
 // NewAWSSession returns a new session.Session instance.
-func NewAWSSession(conf config.AWSConfig) (*session.Session, error) {
+func NewAWSSession(conf *config.AWSConfig) (*session.Session, error) {
 	awsConf := aws.NewConfig()
 
 	if conf.DisableAutoCredentialLoad {

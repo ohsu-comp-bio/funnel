@@ -17,7 +17,7 @@ func NewCommand() *cobra.Command {
 }
 
 type hooks struct {
-	Run func(ctx context.Context, conf config.Config, log *logger.Logger) error
+	Run func(ctx context.Context, conf *config.Config, log *logger.Logger) error
 }
 
 func newCommandHooks() (*cobra.Command, *hooks) {
@@ -27,8 +27,8 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 
 	var (
 		configFile string
-		conf       config.Config
-		flagConf   config.Config
+		conf       *config.Config
+		flagConf   *config.Config
 	)
 
 	cmd := &cobra.Command{
@@ -47,7 +47,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		},
 	}
 
-	nodeFlags := cmdutil.NodeFlags(&flagConf, &configFile)
+	nodeFlags := cmdutil.NodeFlags(flagConf, &configFile)
 	cmd.SetGlobalNormalizationFunc(cmdutil.NormalizeFlags)
 	f := cmd.PersistentFlags()
 	f.AddFlagSet(nodeFlags)

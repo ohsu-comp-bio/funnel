@@ -26,15 +26,15 @@ func (l *Logger) Configure(conf *LoggerConfig) {
 	switch conf.Formatter {
 	case "json":
 		l.SetFormatter(&jsonFormatter{
-			conf: *conf.JsonFormat,
+			conf: conf.JsonFormat,
 		})
 
 	// Default to text
 	default:
 		l.SetFormatter(&textFormatter{
-			*conf.TextFormat,
+			conf.TextFormat,
 			jsonFormatter{
-				conf: *conf.JsonFormat,
+				conf: conf.JsonFormat,
 			},
 		})
 	}

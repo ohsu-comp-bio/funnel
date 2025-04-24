@@ -12,12 +12,12 @@ import (
 )
 
 // ToYaml formats the configuration into YAML and returns the bytes.
-func ToYaml(c Config) ([]byte, error) {
+func ToYaml(c *Config) ([]byte, error) {
 	return yaml.Marshal(c)
 }
 
 // ToYamlFile writes the configuration to a YAML file.
-func ToYamlFile(c Config, path string) error {
+func ToYamlFile(c *Config, path string) error {
 	b, err := ToYaml(c)
 	if err != nil {
 		return err

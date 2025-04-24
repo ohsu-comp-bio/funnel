@@ -234,6 +234,106 @@ func (x *CancelTaskRequest) GetId() string {
 	return ""
 }
 
+type ExecutorBasic struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Command       []string               `protobuf:"bytes,1,rep,name=command,proto3" json:"command,omitempty"`
+	Env           map[string]string      `protobuf:"bytes,2,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	IgnoreError   bool                   `protobuf:"varint,3,opt,name=ignore_error,json=ignoreError,proto3" json:"ignore_error,omitempty"`
+	Image         string                 `protobuf:"bytes,4,opt,name=image,proto3" json:"image,omitempty"`
+	Stderr        string                 `protobuf:"bytes,5,opt,name=stderr,proto3" json:"stderr,omitempty"`
+	Stdin         string                 `protobuf:"bytes,6,opt,name=stdin,proto3" json:"stdin,omitempty"`
+	Stdout        string                 `protobuf:"bytes,7,opt,name=stdout,proto3" json:"stdout,omitempty"`
+	Workdir       string                 `protobuf:"bytes,8,opt,name=workdir,proto3" json:"workdir,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecutorBasic) Reset() {
+	*x = ExecutorBasic{}
+	mi := &file_tes_tes_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecutorBasic) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutorBasic) ProtoMessage() {}
+
+func (x *ExecutorBasic) ProtoReflect() protoreflect.Message {
+	mi := &file_tes_tes_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutorBasic.ProtoReflect.Descriptor instead.
+func (*ExecutorBasic) Descriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ExecutorBasic) GetCommand() []string {
+	if x != nil {
+		return x.Command
+	}
+	return nil
+}
+
+func (x *ExecutorBasic) GetEnv() map[string]string {
+	if x != nil {
+		return x.Env
+	}
+	return nil
+}
+
+func (x *ExecutorBasic) GetIgnoreError() bool {
+	if x != nil {
+		return x.IgnoreError
+	}
+	return false
+}
+
+func (x *ExecutorBasic) GetImage() string {
+	if x != nil {
+		return x.Image
+	}
+	return ""
+}
+
+func (x *ExecutorBasic) GetStderr() string {
+	if x != nil {
+		return x.Stderr
+	}
+	return ""
+}
+
+func (x *ExecutorBasic) GetStdin() string {
+	if x != nil {
+		return x.Stdin
+	}
+	return ""
+}
+
+func (x *ExecutorBasic) GetStdout() string {
+	if x != nil {
+		return x.Stdout
+	}
+	return ""
+}
+
+func (x *ExecutorBasic) GetWorkdir() string {
+	if x != nil {
+		return x.Workdir
+	}
+	return ""
+}
+
 type GetServiceInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -242,7 +342,7 @@ type GetServiceInfoRequest struct {
 
 func (x *GetServiceInfoRequest) Reset() {
 	*x = GetServiceInfoRequest{}
-	mi := &file_tes_tes_proto_msgTypes[1]
+	mi := &file_tes_tes_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -254,7 +354,7 @@ func (x *GetServiceInfoRequest) String() string {
 func (*GetServiceInfoRequest) ProtoMessage() {}
 
 func (x *GetServiceInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[1]
+	mi := &file_tes_tes_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -267,7 +367,7 @@ func (x *GetServiceInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetServiceInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetServiceInfoRequest) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{1}
+	return file_tes_tes_proto_rawDescGZIP(), []int{2}
 }
 
 type GetTaskRequest struct {
@@ -280,7 +380,7 @@ type GetTaskRequest struct {
 
 func (x *GetTaskRequest) Reset() {
 	*x = GetTaskRequest{}
-	mi := &file_tes_tes_proto_msgTypes[2]
+	mi := &file_tes_tes_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -292,7 +392,7 @@ func (x *GetTaskRequest) String() string {
 func (*GetTaskRequest) ProtoMessage() {}
 
 func (x *GetTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[2]
+	mi := &file_tes_tes_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -305,7 +405,7 @@ func (x *GetTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaskRequest.ProtoReflect.Descriptor instead.
 func (*GetTaskRequest) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{2}
+	return file_tes_tes_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetTaskRequest) GetId() string {
@@ -318,6 +418,98 @@ func (x *GetTaskRequest) GetId() string {
 func (x *GetTaskRequest) GetView() string {
 	if x != nil {
 		return x.View
+	}
+	return ""
+}
+
+type InputBasic struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Path          string                 `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
+	Streamable    bool                   `protobuf:"varint,5,opt,name=streamable,proto3" json:"streamable,omitempty"`
+	Type          FileType               `protobuf:"varint,6,opt,name=type,proto3,enum=tes.FileType" json:"type,omitempty"`
+	Url           string                 `protobuf:"bytes,7,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InputBasic) Reset() {
+	*x = InputBasic{}
+	mi := &file_tes_tes_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InputBasic) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InputBasic) ProtoMessage() {}
+
+func (x *InputBasic) ProtoReflect() protoreflect.Message {
+	mi := &file_tes_tes_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InputBasic.ProtoReflect.Descriptor instead.
+func (*InputBasic) Descriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *InputBasic) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *InputBasic) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *InputBasic) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *InputBasic) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *InputBasic) GetStreamable() bool {
+	if x != nil {
+		return x.Streamable
+	}
+	return false
+}
+
+func (x *InputBasic) GetType() FileType {
+	if x != nil {
+		return x.Type
+	}
+	return FileType_FILE
+}
+
+func (x *InputBasic) GetUrl() string {
+	if x != nil {
+		return x.Url
 	}
 	return ""
 }
@@ -337,7 +529,7 @@ type ListTasksRequest struct {
 
 func (x *ListTasksRequest) Reset() {
 	*x = ListTasksRequest{}
-	mi := &file_tes_tes_proto_msgTypes[3]
+	mi := &file_tes_tes_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +541,7 @@ func (x *ListTasksRequest) String() string {
 func (*ListTasksRequest) ProtoMessage() {}
 
 func (x *ListTasksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[3]
+	mi := &file_tes_tes_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +554,7 @@ func (x *ListTasksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTasksRequest.ProtoReflect.Descriptor instead.
 func (*ListTasksRequest) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{3}
+	return file_tes_tes_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListTasksRequest) GetNamePrefix() string {
@@ -414,6 +606,458 @@ func (x *ListTasksRequest) GetView() string {
 	return ""
 }
 
+type ListTasksResponseBasic struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NextPageToken string                 `protobuf:"bytes,1,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	Tasks         []*TaskBasic           `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTasksResponseBasic) Reset() {
+	*x = ListTasksResponseBasic{}
+	mi := &file_tes_tes_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTasksResponseBasic) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTasksResponseBasic) ProtoMessage() {}
+
+func (x *ListTasksResponseBasic) ProtoReflect() protoreflect.Message {
+	mi := &file_tes_tes_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTasksResponseBasic.ProtoReflect.Descriptor instead.
+func (*ListTasksResponseBasic) Descriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListTasksResponseBasic) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+func (x *ListTasksResponseBasic) GetTasks() []*TaskBasic {
+	if x != nil {
+		return x.Tasks
+	}
+	return nil
+}
+
+type ListTasksResponseMin struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NextPageToken string                 `protobuf:"bytes,1,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	Tasks         []*TaskMin             `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTasksResponseMin) Reset() {
+	*x = ListTasksResponseMin{}
+	mi := &file_tes_tes_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTasksResponseMin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTasksResponseMin) ProtoMessage() {}
+
+func (x *ListTasksResponseMin) ProtoReflect() protoreflect.Message {
+	mi := &file_tes_tes_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTasksResponseMin.ProtoReflect.Descriptor instead.
+func (*ListTasksResponseMin) Descriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListTasksResponseMin) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+func (x *ListTasksResponseMin) GetTasks() []*TaskMin {
+	if x != nil {
+		return x.Tasks
+	}
+	return nil
+}
+
+type TaskBasic struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CreationTime  string                 `protobuf:"bytes,1,opt,name=creation_time,json=creationTime,proto3" json:"creation_time,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Executors     []*ExecutorBasic       `protobuf:"bytes,3,rep,name=executors,proto3" json:"executors,omitempty"`
+	Id            string                 `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	Inputs        []*InputBasic          `protobuf:"bytes,5,rep,name=inputs,proto3" json:"inputs,omitempty"`
+	Logs          []*TaskLogBasic        `protobuf:"bytes,6,rep,name=logs,proto3" json:"logs,omitempty"`
+	Name          string                 `protobuf:"bytes,7,opt,name=name,proto3" json:"name,omitempty"`
+	Outputs       []*Output              `protobuf:"bytes,8,rep,name=outputs,proto3" json:"outputs,omitempty"`
+	Resources     *Resources             `protobuf:"bytes,9,opt,name=resources,proto3" json:"resources,omitempty"`
+	State         State                  `protobuf:"varint,10,opt,name=state,proto3,enum=tes.State" json:"state,omitempty"`
+	Tags          map[string]string      `protobuf:"bytes,11,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Volumes       []string               `protobuf:"bytes,12,rep,name=volumes,proto3" json:"volumes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskBasic) Reset() {
+	*x = TaskBasic{}
+	mi := &file_tes_tes_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskBasic) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskBasic) ProtoMessage() {}
+
+func (x *TaskBasic) ProtoReflect() protoreflect.Message {
+	mi := &file_tes_tes_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskBasic.ProtoReflect.Descriptor instead.
+func (*TaskBasic) Descriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *TaskBasic) GetCreationTime() string {
+	if x != nil {
+		return x.CreationTime
+	}
+	return ""
+}
+
+func (x *TaskBasic) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *TaskBasic) GetExecutors() []*ExecutorBasic {
+	if x != nil {
+		return x.Executors
+	}
+	return nil
+}
+
+func (x *TaskBasic) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *TaskBasic) GetInputs() []*InputBasic {
+	if x != nil {
+		return x.Inputs
+	}
+	return nil
+}
+
+func (x *TaskBasic) GetLogs() []*TaskLogBasic {
+	if x != nil {
+		return x.Logs
+	}
+	return nil
+}
+
+func (x *TaskBasic) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TaskBasic) GetOutputs() []*Output {
+	if x != nil {
+		return x.Outputs
+	}
+	return nil
+}
+
+func (x *TaskBasic) GetResources() *Resources {
+	if x != nil {
+		return x.Resources
+	}
+	return nil
+}
+
+func (x *TaskBasic) GetState() State {
+	if x != nil {
+		return x.State
+	}
+	return State_UNKNOWN
+}
+
+func (x *TaskBasic) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *TaskBasic) GetVolumes() []string {
+	if x != nil {
+		return x.Volumes
+	}
+	return nil
+}
+
+type TaskLogBasic struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EndTime       string                 `protobuf:"bytes,1,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	Logs          []*ExecutorLog         `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,3,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Outputs       []*OutputFileLog       `protobuf:"bytes,4,rep,name=outputs,proto3" json:"outputs,omitempty"`
+	StartTime     string                 `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	SystemLogs    []string               `protobuf:"bytes,6,rep,name=system_logs,json=systemLogs,proto3" json:"system_logs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskLogBasic) Reset() {
+	*x = TaskLogBasic{}
+	mi := &file_tes_tes_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskLogBasic) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskLogBasic) ProtoMessage() {}
+
+func (x *TaskLogBasic) ProtoReflect() protoreflect.Message {
+	mi := &file_tes_tes_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskLogBasic.ProtoReflect.Descriptor instead.
+func (*TaskLogBasic) Descriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *TaskLogBasic) GetEndTime() string {
+	if x != nil {
+		return x.EndTime
+	}
+	return ""
+}
+
+func (x *TaskLogBasic) GetLogs() []*ExecutorLog {
+	if x != nil {
+		return x.Logs
+	}
+	return nil
+}
+
+func (x *TaskLogBasic) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *TaskLogBasic) GetOutputs() []*OutputFileLog {
+	if x != nil {
+		return x.Outputs
+	}
+	return nil
+}
+
+func (x *TaskLogBasic) GetStartTime() string {
+	if x != nil {
+		return x.StartTime
+	}
+	return ""
+}
+
+func (x *TaskLogBasic) GetSystemLogs() []string {
+	if x != nil {
+		return x.SystemLogs
+	}
+	return nil
+}
+
+type TaskMin struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CreationTime  string                 `protobuf:"bytes,1,opt,name=creation_time,json=creationTime,proto3" json:"creation_time,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Executors     []*Executor            `protobuf:"bytes,3,rep,name=executors,proto3" json:"executors,omitempty"`
+	Id            string                 `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	Inputs        []*Input               `protobuf:"bytes,5,rep,name=inputs,proto3" json:"inputs,omitempty"`
+	Logs          []*TaskLog             `protobuf:"bytes,6,rep,name=logs,proto3" json:"logs,omitempty"`
+	Name          string                 `protobuf:"bytes,7,opt,name=name,proto3" json:"name,omitempty"`
+	Outputs       []*Output              `protobuf:"bytes,8,rep,name=outputs,proto3" json:"outputs,omitempty"`
+	Resources     *Resources             `protobuf:"bytes,9,opt,name=resources,proto3" json:"resources,omitempty"`
+	State         State                  `protobuf:"varint,10,opt,name=state,proto3,enum=tes.State" json:"state,omitempty"`
+	Tags          map[string]string      `protobuf:"bytes,11,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Volumes       []string               `protobuf:"bytes,12,rep,name=volumes,proto3" json:"volumes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskMin) Reset() {
+	*x = TaskMin{}
+	mi := &file_tes_tes_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskMin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskMin) ProtoMessage() {}
+
+func (x *TaskMin) ProtoReflect() protoreflect.Message {
+	mi := &file_tes_tes_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskMin.ProtoReflect.Descriptor instead.
+func (*TaskMin) Descriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *TaskMin) GetCreationTime() string {
+	if x != nil {
+		return x.CreationTime
+	}
+	return ""
+}
+
+func (x *TaskMin) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *TaskMin) GetExecutors() []*Executor {
+	if x != nil {
+		return x.Executors
+	}
+	return nil
+}
+
+func (x *TaskMin) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *TaskMin) GetInputs() []*Input {
+	if x != nil {
+		return x.Inputs
+	}
+	return nil
+}
+
+func (x *TaskMin) GetLogs() []*TaskLog {
+	if x != nil {
+		return x.Logs
+	}
+	return nil
+}
+
+func (x *TaskMin) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TaskMin) GetOutputs() []*Output {
+	if x != nil {
+		return x.Outputs
+	}
+	return nil
+}
+
+func (x *TaskMin) GetResources() *Resources {
+	if x != nil {
+		return x.Resources
+	}
+	return nil
+}
+
+func (x *TaskMin) GetState() State {
+	if x != nil {
+		return x.State
+	}
+	return State_UNKNOWN
+}
+
+func (x *TaskMin) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *TaskMin) GetVolumes() []string {
+	if x != nil {
+		return x.Volumes
+	}
+	return nil
+}
+
 type CancelTaskResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -422,7 +1066,7 @@ type CancelTaskResponse struct {
 
 func (x *CancelTaskResponse) Reset() {
 	*x = CancelTaskResponse{}
-	mi := &file_tes_tes_proto_msgTypes[4]
+	mi := &file_tes_tes_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -434,7 +1078,7 @@ func (x *CancelTaskResponse) String() string {
 func (*CancelTaskResponse) ProtoMessage() {}
 
 func (x *CancelTaskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[4]
+	mi := &file_tes_tes_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -447,7 +1091,7 @@ func (x *CancelTaskResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelTaskResponse.ProtoReflect.Descriptor instead.
 func (*CancelTaskResponse) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{4}
+	return file_tes_tes_proto_rawDescGZIP(), []int{11}
 }
 
 type CreateTaskResponse struct {
@@ -459,7 +1103,7 @@ type CreateTaskResponse struct {
 
 func (x *CreateTaskResponse) Reset() {
 	*x = CreateTaskResponse{}
-	mi := &file_tes_tes_proto_msgTypes[5]
+	mi := &file_tes_tes_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -471,7 +1115,7 @@ func (x *CreateTaskResponse) String() string {
 func (*CreateTaskResponse) ProtoMessage() {}
 
 func (x *CreateTaskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[5]
+	mi := &file_tes_tes_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -484,7 +1128,7 @@ func (x *CreateTaskResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTaskResponse.ProtoReflect.Descriptor instead.
 func (*CreateTaskResponse) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{5}
+	return file_tes_tes_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *CreateTaskResponse) GetId() string {
@@ -510,7 +1154,7 @@ type Executor struct {
 
 func (x *Executor) Reset() {
 	*x = Executor{}
-	mi := &file_tes_tes_proto_msgTypes[6]
+	mi := &file_tes_tes_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -522,7 +1166,7 @@ func (x *Executor) String() string {
 func (*Executor) ProtoMessage() {}
 
 func (x *Executor) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[6]
+	mi := &file_tes_tes_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -535,7 +1179,7 @@ func (x *Executor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Executor.ProtoReflect.Descriptor instead.
 func (*Executor) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{6}
+	return file_tes_tes_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Executor) GetCommand() []string {
@@ -607,7 +1251,7 @@ type ExecutorLog struct {
 
 func (x *ExecutorLog) Reset() {
 	*x = ExecutorLog{}
-	mi := &file_tes_tes_proto_msgTypes[7]
+	mi := &file_tes_tes_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -619,7 +1263,7 @@ func (x *ExecutorLog) String() string {
 func (*ExecutorLog) ProtoMessage() {}
 
 func (x *ExecutorLog) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[7]
+	mi := &file_tes_tes_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -632,7 +1276,7 @@ func (x *ExecutorLog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecutorLog.ProtoReflect.Descriptor instead.
 func (*ExecutorLog) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{7}
+	return file_tes_tes_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ExecutorLog) GetEndTime() string {
@@ -685,7 +1329,7 @@ type Input struct {
 
 func (x *Input) Reset() {
 	*x = Input{}
-	mi := &file_tes_tes_proto_msgTypes[8]
+	mi := &file_tes_tes_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -697,7 +1341,7 @@ func (x *Input) String() string {
 func (*Input) ProtoMessage() {}
 
 func (x *Input) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[8]
+	mi := &file_tes_tes_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -710,7 +1354,7 @@ func (x *Input) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Input.ProtoReflect.Descriptor instead.
 func (*Input) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{8}
+	return file_tes_tes_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Input) GetContent() string {
@@ -772,7 +1416,7 @@ type ListTasksResponse struct {
 
 func (x *ListTasksResponse) Reset() {
 	*x = ListTasksResponse{}
-	mi := &file_tes_tes_proto_msgTypes[9]
+	mi := &file_tes_tes_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -784,7 +1428,7 @@ func (x *ListTasksResponse) String() string {
 func (*ListTasksResponse) ProtoMessage() {}
 
 func (x *ListTasksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[9]
+	mi := &file_tes_tes_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -797,7 +1441,7 @@ func (x *ListTasksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTasksResponse.ProtoReflect.Descriptor instead.
 func (*ListTasksResponse) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{9}
+	return file_tes_tes_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListTasksResponse) GetNextPageToken() string {
@@ -828,7 +1472,7 @@ type Output struct {
 
 func (x *Output) Reset() {
 	*x = Output{}
-	mi := &file_tes_tes_proto_msgTypes[10]
+	mi := &file_tes_tes_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -840,7 +1484,7 @@ func (x *Output) String() string {
 func (*Output) ProtoMessage() {}
 
 func (x *Output) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[10]
+	mi := &file_tes_tes_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -853,7 +1497,7 @@ func (x *Output) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Output.ProtoReflect.Descriptor instead.
 func (*Output) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{10}
+	return file_tes_tes_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *Output) GetDescription() string {
@@ -909,7 +1553,7 @@ type OutputFileLog struct {
 
 func (x *OutputFileLog) Reset() {
 	*x = OutputFileLog{}
-	mi := &file_tes_tes_proto_msgTypes[11]
+	mi := &file_tes_tes_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -921,7 +1565,7 @@ func (x *OutputFileLog) String() string {
 func (*OutputFileLog) ProtoMessage() {}
 
 func (x *OutputFileLog) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[11]
+	mi := &file_tes_tes_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -934,7 +1578,7 @@ func (x *OutputFileLog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutputFileLog.ProtoReflect.Descriptor instead.
 func (*OutputFileLog) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{11}
+	return file_tes_tes_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *OutputFileLog) GetPath() string {
@@ -973,7 +1617,7 @@ type Resources struct {
 
 func (x *Resources) Reset() {
 	*x = Resources{}
-	mi := &file_tes_tes_proto_msgTypes[12]
+	mi := &file_tes_tes_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -985,7 +1629,7 @@ func (x *Resources) String() string {
 func (*Resources) ProtoMessage() {}
 
 func (x *Resources) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[12]
+	mi := &file_tes_tes_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -998,7 +1642,7 @@ func (x *Resources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resources.ProtoReflect.Descriptor instead.
 func (*Resources) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{12}
+	return file_tes_tes_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *Resources) GetBackendParameters() map[string]string {
@@ -1071,7 +1715,7 @@ type ServiceInfo struct {
 
 func (x *ServiceInfo) Reset() {
 	*x = ServiceInfo{}
-	mi := &file_tes_tes_proto_msgTypes[13]
+	mi := &file_tes_tes_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1083,7 +1727,7 @@ func (x *ServiceInfo) String() string {
 func (*ServiceInfo) ProtoMessage() {}
 
 func (x *ServiceInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[13]
+	mi := &file_tes_tes_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1096,7 +1740,7 @@ func (x *ServiceInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceInfo.ProtoReflect.Descriptor instead.
 func (*ServiceInfo) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{13}
+	return file_tes_tes_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ServiceInfo) GetContactUrl() string {
@@ -1201,7 +1845,7 @@ type ServiceType struct {
 
 func (x *ServiceType) Reset() {
 	*x = ServiceType{}
-	mi := &file_tes_tes_proto_msgTypes[14]
+	mi := &file_tes_tes_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1213,7 +1857,7 @@ func (x *ServiceType) String() string {
 func (*ServiceType) ProtoMessage() {}
 
 func (x *ServiceType) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[14]
+	mi := &file_tes_tes_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1226,7 +1870,7 @@ func (x *ServiceType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceType.ProtoReflect.Descriptor instead.
 func (*ServiceType) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{14}
+	return file_tes_tes_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ServiceType) GetArtifact() string {
@@ -1270,7 +1914,7 @@ type Task struct {
 
 func (x *Task) Reset() {
 	*x = Task{}
-	mi := &file_tes_tes_proto_msgTypes[15]
+	mi := &file_tes_tes_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1282,7 +1926,7 @@ func (x *Task) String() string {
 func (*Task) ProtoMessage() {}
 
 func (x *Task) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[15]
+	mi := &file_tes_tes_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1295,7 +1939,7 @@ func (x *Task) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task.ProtoReflect.Descriptor instead.
 func (*Task) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{15}
+	return file_tes_tes_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Task) GetCreationTime() string {
@@ -1396,7 +2040,7 @@ type TaskLog struct {
 
 func (x *TaskLog) Reset() {
 	*x = TaskLog{}
-	mi := &file_tes_tes_proto_msgTypes[16]
+	mi := &file_tes_tes_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1408,7 +2052,7 @@ func (x *TaskLog) String() string {
 func (*TaskLog) ProtoMessage() {}
 
 func (x *TaskLog) ProtoReflect() protoreflect.Message {
-	mi := &file_tes_tes_proto_msgTypes[16]
+	mi := &file_tes_tes_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1421,7 +2065,7 @@ func (x *TaskLog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskLog.ProtoReflect.Descriptor instead.
 func (*TaskLog) Descriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{16}
+	return file_tes_tes_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *TaskLog) GetEndTime() string {
@@ -1472,11 +2116,34 @@ const file_tes_tes_proto_rawDesc = "" +
 	"\n" +
 	"\rtes/tes.proto\x12\x03tes\x1a\x1cgoogle/api/annotations.proto\"#\n" +
 	"\x11CancelTaskRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x17\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xa9\x02\n" +
+	"\rExecutorBasic\x12\x18\n" +
+	"\acommand\x18\x01 \x03(\tR\acommand\x12-\n" +
+	"\x03env\x18\x02 \x03(\v2\x1b.tes.ExecutorBasic.EnvEntryR\x03env\x12!\n" +
+	"\fignore_error\x18\x03 \x01(\bR\vignoreError\x12\x14\n" +
+	"\x05image\x18\x04 \x01(\tR\x05image\x12\x16\n" +
+	"\x06stderr\x18\x05 \x01(\tR\x06stderr\x12\x14\n" +
+	"\x05stdin\x18\x06 \x01(\tR\x05stdin\x12\x16\n" +
+	"\x06stdout\x18\a \x01(\tR\x06stdout\x12\x18\n" +
+	"\aworkdir\x18\b \x01(\tR\aworkdir\x1a6\n" +
+	"\bEnvEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x17\n" +
 	"\x15GetServiceInfoRequest\"4\n" +
 	"\x0eGetTaskRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04view\x18\x02 \x01(\tR\x04view\"\xdb\x01\n" +
+	"\x04view\x18\x02 \x01(\tR\x04view\"\xc5\x01\n" +
+	"\n" +
+	"InputBasic\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x12\n" +
+	"\x04path\x18\x04 \x01(\tR\x04path\x12\x1e\n" +
+	"\n" +
+	"streamable\x18\x05 \x01(\bR\n" +
+	"streamable\x12!\n" +
+	"\x04type\x18\x06 \x01(\x0e2\r.tes.FileTypeR\x04type\x12\x10\n" +
+	"\x03url\x18\a \x01(\tR\x03url\"\xdb\x01\n" +
 	"\x10ListTasksRequest\x12\x1f\n" +
 	"\vname_prefix\x18\x01 \x01(\tR\n" +
 	"namePrefix\x12 \n" +
@@ -1487,7 +2154,62 @@ const file_tes_tes_proto_rawDesc = "" +
 	"\tpage_size\x18\x05 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\x12\x12\n" +
-	"\x04view\x18\a \x01(\tR\x04view\"\x14\n" +
+	"\x04view\x18\a \x01(\tR\x04view\"f\n" +
+	"\x16ListTasksResponseBasic\x12&\n" +
+	"\x0fnext_page_token\x18\x01 \x01(\tR\rnextPageToken\x12$\n" +
+	"\x05tasks\x18\x02 \x03(\v2\x0e.tes.TaskBasicR\x05tasks\"b\n" +
+	"\x14ListTasksResponseMin\x12&\n" +
+	"\x0fnext_page_token\x18\x01 \x01(\tR\rnextPageToken\x12\"\n" +
+	"\x05tasks\x18\x02 \x03(\v2\f.tes.TaskMinR\x05tasks\"\xf0\x03\n" +
+	"\tTaskBasic\x12#\n" +
+	"\rcreation_time\x18\x01 \x01(\tR\fcreationTime\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x120\n" +
+	"\texecutors\x18\x03 \x03(\v2\x12.tes.ExecutorBasicR\texecutors\x12\x0e\n" +
+	"\x02id\x18\x04 \x01(\tR\x02id\x12'\n" +
+	"\x06inputs\x18\x05 \x03(\v2\x0f.tes.InputBasicR\x06inputs\x12%\n" +
+	"\x04logs\x18\x06 \x03(\v2\x11.tes.TaskLogBasicR\x04logs\x12\x12\n" +
+	"\x04name\x18\a \x01(\tR\x04name\x12%\n" +
+	"\aoutputs\x18\b \x03(\v2\v.tes.OutputR\aoutputs\x12,\n" +
+	"\tresources\x18\t \x01(\v2\x0e.tes.ResourcesR\tresources\x12 \n" +
+	"\x05state\x18\n" +
+	" \x01(\x0e2\n" +
+	".tes.StateR\x05state\x12,\n" +
+	"\x04tags\x18\v \x03(\v2\x18.tes.TaskBasic.TagsEntryR\x04tags\x12\x18\n" +
+	"\avolumes\x18\f \x03(\tR\avolumes\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb7\x02\n" +
+	"\fTaskLogBasic\x12\x19\n" +
+	"\bend_time\x18\x01 \x01(\tR\aendTime\x12$\n" +
+	"\x04logs\x18\x02 \x03(\v2\x10.tes.ExecutorLogR\x04logs\x12;\n" +
+	"\bmetadata\x18\x03 \x03(\v2\x1f.tes.TaskLogBasic.MetadataEntryR\bmetadata\x12,\n" +
+	"\aoutputs\x18\x04 \x03(\v2\x12.tes.OutputFileLogR\aoutputs\x12\x1d\n" +
+	"\n" +
+	"start_time\x18\x05 \x01(\tR\tstartTime\x12\x1f\n" +
+	"\vsystem_logs\x18\x06 \x03(\tR\n" +
+	"systemLogs\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xdd\x03\n" +
+	"\aTaskMin\x12#\n" +
+	"\rcreation_time\x18\x01 \x01(\tR\fcreationTime\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12+\n" +
+	"\texecutors\x18\x03 \x03(\v2\r.tes.ExecutorR\texecutors\x12\x0e\n" +
+	"\x02id\x18\x04 \x01(\tR\x02id\x12\"\n" +
+	"\x06inputs\x18\x05 \x03(\v2\n" +
+	".tes.InputR\x06inputs\x12 \n" +
+	"\x04logs\x18\x06 \x03(\v2\f.tes.TaskLogR\x04logs\x12\x12\n" +
+	"\x04name\x18\a \x01(\tR\x04name\x12%\n" +
+	"\aoutputs\x18\b \x03(\v2\v.tes.OutputR\aoutputs\x12,\n" +
+	"\tresources\x18\t \x01(\v2\x0e.tes.ResourcesR\tresources\x12 \n" +
+	"\x05state\x18\n" +
+	" \x01(\x0e2\n" +
+	".tes.StateR\x05state\x12*\n" +
+	"\x04tags\x18\v \x03(\v2\x16.tes.TaskMin.TagsEntryR\x04tags\x12\x18\n" +
+	"\avolumes\x18\f \x03(\tR\avolumes\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x14\n" +
 	"\x12CancelTaskResponse\"$\n" +
 	"\x12CreateTaskResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x9f\x02\n" +
@@ -1624,14 +2346,14 @@ const file_tes_tes_proto_rawDesc = "" +
 	"\aMINIMAL\x10\x00\x12\t\n" +
 	"\x05BASIC\x10\x01\x12\b\n" +
 	"\x04FULL\x10\x022\x85\x05\n" +
-	"\vTaskService\x12\x9e\x01\n" +
-	"\n" +
-	"CancelTask\x12\x16.tes.CancelTaskRequest\x1a\x17.tes.CancelTaskResponse\"_\x82\xd3\xe4\x93\x02Y:\x01*Z\x1a:\x01*\"\x15/v1/tasks/{id}:cancelZ$:\x01*\"\x1f/ga4gh/tes/v1/tasks/{id}:cancel\"\x12/tasks/{id}:cancel\x12\x87\x01\n" +
-	"\x0eGetServiceInfo\x12\x1a.tes.GetServiceInfoRequest\x1a\x10.tes.ServiceInfo\"G\x82\xd3\xe4\x93\x02AZ\x12\x12\x10/v1/service-infoZ\x1c\x12\x1a/ga4gh/tes/v1/service-info\x12\r/service-info\x12n\n" +
+	"\vTaskService\x12n\n" +
 	"\tListTasks\x12\x15.tes.ListTasksRequest\x1a\x16.tes.ListTasksResponse\"2\x82\xd3\xe4\x93\x02,Z\v\x12\t/v1/tasksZ\x15\x12\x13/ga4gh/tes/v1/tasks\x12\x06/tasks\x12m\n" +
 	"\n" +
 	"CreateTask\x12\t.tes.Task\x1a\x17.tes.CreateTaskResponse\";\x82\xd3\xe4\x93\x025:\x01*Z\x0e:\x01*\"\t/v1/tasksZ\x18:\x01*\"\x13/ga4gh/tes/v1/tasks\"\x06/tasks\x12l\n" +
-	"\aGetTask\x12\x13.tes.GetTaskRequest\x1a\t.tes.Task\"A\x82\xd3\xe4\x93\x02;Z\x10\x12\x0e/v1/tasks/{id}Z\x1a\x12\x18/ga4gh/tes/v1/tasks/{id}\x12\v/tasks/{id}B%Z#github.com/ohsu-comp-bio/funnel/tesb\x06proto3"
+	"\aGetTask\x12\x13.tes.GetTaskRequest\x1a\t.tes.Task\"A\x82\xd3\xe4\x93\x02;Z\x10\x12\x0e/v1/tasks/{id}Z\x1a\x12\x18/ga4gh/tes/v1/tasks/{id}\x12\v/tasks/{id}\x12\x9e\x01\n" +
+	"\n" +
+	"CancelTask\x12\x16.tes.CancelTaskRequest\x1a\x17.tes.CancelTaskResponse\"_\x82\xd3\xe4\x93\x02Y:\x01*Z\x1a:\x01*\"\x15/v1/tasks/{id}:cancelZ$:\x01*\"\x1f/ga4gh/tes/v1/tasks/{id}:cancel\"\x12/tasks/{id}:cancel\x12\x87\x01\n" +
+	"\x0eGetServiceInfo\x12\x1a.tes.GetServiceInfoRequest\x1a\x10.tes.ServiceInfo\"G\x82\xd3\xe4\x93\x02AZ\x12\x12\x10/v1/service-infoZ\x1c\x12\x1a/ga4gh/tes/v1/service-info\x12\r/service-infoB%Z#github.com/ohsu-comp-bio/funnel/tesb\x06proto3"
 
 var (
 	file_tes_tes_proto_rawDescOnce sync.Once
@@ -1646,68 +2368,100 @@ func file_tes_tes_proto_rawDescGZIP() []byte {
 }
 
 var file_tes_tes_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_tes_tes_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_tes_tes_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_tes_tes_proto_goTypes = []any{
-	(State)(0),                    // 0: tes.State
-	(FileType)(0),                 // 1: tes.FileType
-	(View)(0),                     // 2: tes.view
-	(*CancelTaskRequest)(nil),     // 3: tes.CancelTaskRequest
-	(*GetServiceInfoRequest)(nil), // 4: tes.GetServiceInfoRequest
-	(*GetTaskRequest)(nil),        // 5: tes.GetTaskRequest
-	(*ListTasksRequest)(nil),      // 6: tes.ListTasksRequest
-	(*CancelTaskResponse)(nil),    // 7: tes.CancelTaskResponse
-	(*CreateTaskResponse)(nil),    // 8: tes.CreateTaskResponse
-	(*Executor)(nil),              // 9: tes.Executor
-	(*ExecutorLog)(nil),           // 10: tes.ExecutorLog
-	(*Input)(nil),                 // 11: tes.Input
-	(*ListTasksResponse)(nil),     // 12: tes.ListTasksResponse
-	(*Output)(nil),                // 13: tes.Output
-	(*OutputFileLog)(nil),         // 14: tes.OutputFileLog
-	(*Resources)(nil),             // 15: tes.Resources
-	(*ServiceInfo)(nil),           // 16: tes.ServiceInfo
-	(*ServiceType)(nil),           // 17: tes.ServiceType
-	(*Task)(nil),                  // 18: tes.Task
-	(*TaskLog)(nil),               // 19: tes.TaskLog
-	nil,                           // 20: tes.Executor.EnvEntry
-	nil,                           // 21: tes.Resources.BackendParametersEntry
-	nil,                           // 22: tes.ServiceInfo.OrganizationEntry
-	nil,                           // 23: tes.Task.TagsEntry
-	nil,                           // 24: tes.TaskLog.MetadataEntry
+	(State)(0),                     // 0: tes.State
+	(FileType)(0),                  // 1: tes.FileType
+	(View)(0),                      // 2: tes.view
+	(*CancelTaskRequest)(nil),      // 3: tes.CancelTaskRequest
+	(*ExecutorBasic)(nil),          // 4: tes.ExecutorBasic
+	(*GetServiceInfoRequest)(nil),  // 5: tes.GetServiceInfoRequest
+	(*GetTaskRequest)(nil),         // 6: tes.GetTaskRequest
+	(*InputBasic)(nil),             // 7: tes.InputBasic
+	(*ListTasksRequest)(nil),       // 8: tes.ListTasksRequest
+	(*ListTasksResponseBasic)(nil), // 9: tes.ListTasksResponseBasic
+	(*ListTasksResponseMin)(nil),   // 10: tes.ListTasksResponseMin
+	(*TaskBasic)(nil),              // 11: tes.TaskBasic
+	(*TaskLogBasic)(nil),           // 12: tes.TaskLogBasic
+	(*TaskMin)(nil),                // 13: tes.TaskMin
+	(*CancelTaskResponse)(nil),     // 14: tes.CancelTaskResponse
+	(*CreateTaskResponse)(nil),     // 15: tes.CreateTaskResponse
+	(*Executor)(nil),               // 16: tes.Executor
+	(*ExecutorLog)(nil),            // 17: tes.ExecutorLog
+	(*Input)(nil),                  // 18: tes.Input
+	(*ListTasksResponse)(nil),      // 19: tes.ListTasksResponse
+	(*Output)(nil),                 // 20: tes.Output
+	(*OutputFileLog)(nil),          // 21: tes.OutputFileLog
+	(*Resources)(nil),              // 22: tes.Resources
+	(*ServiceInfo)(nil),            // 23: tes.ServiceInfo
+	(*ServiceType)(nil),            // 24: tes.ServiceType
+	(*Task)(nil),                   // 25: tes.Task
+	(*TaskLog)(nil),                // 26: tes.TaskLog
+	nil,                            // 27: tes.ExecutorBasic.EnvEntry
+	nil,                            // 28: tes.TaskBasic.TagsEntry
+	nil,                            // 29: tes.TaskLogBasic.MetadataEntry
+	nil,                            // 30: tes.TaskMin.TagsEntry
+	nil,                            // 31: tes.Executor.EnvEntry
+	nil,                            // 32: tes.Resources.BackendParametersEntry
+	nil,                            // 33: tes.ServiceInfo.OrganizationEntry
+	nil,                            // 34: tes.Task.TagsEntry
+	nil,                            // 35: tes.TaskLog.MetadataEntry
 }
 var file_tes_tes_proto_depIdxs = []int32{
-	0,  // 0: tes.ListTasksRequest.state:type_name -> tes.State
-	20, // 1: tes.Executor.env:type_name -> tes.Executor.EnvEntry
-	1,  // 2: tes.Input.type:type_name -> tes.FileType
-	18, // 3: tes.ListTasksResponse.tasks:type_name -> tes.Task
-	1,  // 4: tes.Output.type:type_name -> tes.FileType
-	21, // 5: tes.Resources.backend_parameters:type_name -> tes.Resources.BackendParametersEntry
-	22, // 6: tes.ServiceInfo.organization:type_name -> tes.ServiceInfo.OrganizationEntry
-	17, // 7: tes.ServiceInfo.type:type_name -> tes.ServiceType
-	9,  // 8: tes.Task.executors:type_name -> tes.Executor
-	11, // 9: tes.Task.inputs:type_name -> tes.Input
-	19, // 10: tes.Task.logs:type_name -> tes.TaskLog
-	13, // 11: tes.Task.outputs:type_name -> tes.Output
-	15, // 12: tes.Task.resources:type_name -> tes.Resources
-	0,  // 13: tes.Task.state:type_name -> tes.State
-	23, // 14: tes.Task.tags:type_name -> tes.Task.TagsEntry
-	10, // 15: tes.TaskLog.logs:type_name -> tes.ExecutorLog
-	24, // 16: tes.TaskLog.metadata:type_name -> tes.TaskLog.MetadataEntry
-	14, // 17: tes.TaskLog.outputs:type_name -> tes.OutputFileLog
-	3,  // 18: tes.TaskService.CancelTask:input_type -> tes.CancelTaskRequest
-	4,  // 19: tes.TaskService.GetServiceInfo:input_type -> tes.GetServiceInfoRequest
-	6,  // 20: tes.TaskService.ListTasks:input_type -> tes.ListTasksRequest
-	18, // 21: tes.TaskService.CreateTask:input_type -> tes.Task
-	5,  // 22: tes.TaskService.GetTask:input_type -> tes.GetTaskRequest
-	7,  // 23: tes.TaskService.CancelTask:output_type -> tes.CancelTaskResponse
-	16, // 24: tes.TaskService.GetServiceInfo:output_type -> tes.ServiceInfo
-	12, // 25: tes.TaskService.ListTasks:output_type -> tes.ListTasksResponse
-	8,  // 26: tes.TaskService.CreateTask:output_type -> tes.CreateTaskResponse
-	18, // 27: tes.TaskService.GetTask:output_type -> tes.Task
-	23, // [23:28] is the sub-list for method output_type
-	18, // [18:23] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	27, // 0: tes.ExecutorBasic.env:type_name -> tes.ExecutorBasic.EnvEntry
+	1,  // 1: tes.InputBasic.type:type_name -> tes.FileType
+	0,  // 2: tes.ListTasksRequest.state:type_name -> tes.State
+	11, // 3: tes.ListTasksResponseBasic.tasks:type_name -> tes.TaskBasic
+	13, // 4: tes.ListTasksResponseMin.tasks:type_name -> tes.TaskMin
+	4,  // 5: tes.TaskBasic.executors:type_name -> tes.ExecutorBasic
+	7,  // 6: tes.TaskBasic.inputs:type_name -> tes.InputBasic
+	12, // 7: tes.TaskBasic.logs:type_name -> tes.TaskLogBasic
+	20, // 8: tes.TaskBasic.outputs:type_name -> tes.Output
+	22, // 9: tes.TaskBasic.resources:type_name -> tes.Resources
+	0,  // 10: tes.TaskBasic.state:type_name -> tes.State
+	28, // 11: tes.TaskBasic.tags:type_name -> tes.TaskBasic.TagsEntry
+	17, // 12: tes.TaskLogBasic.logs:type_name -> tes.ExecutorLog
+	29, // 13: tes.TaskLogBasic.metadata:type_name -> tes.TaskLogBasic.MetadataEntry
+	21, // 14: tes.TaskLogBasic.outputs:type_name -> tes.OutputFileLog
+	16, // 15: tes.TaskMin.executors:type_name -> tes.Executor
+	18, // 16: tes.TaskMin.inputs:type_name -> tes.Input
+	26, // 17: tes.TaskMin.logs:type_name -> tes.TaskLog
+	20, // 18: tes.TaskMin.outputs:type_name -> tes.Output
+	22, // 19: tes.TaskMin.resources:type_name -> tes.Resources
+	0,  // 20: tes.TaskMin.state:type_name -> tes.State
+	30, // 21: tes.TaskMin.tags:type_name -> tes.TaskMin.TagsEntry
+	31, // 22: tes.Executor.env:type_name -> tes.Executor.EnvEntry
+	1,  // 23: tes.Input.type:type_name -> tes.FileType
+	25, // 24: tes.ListTasksResponse.tasks:type_name -> tes.Task
+	1,  // 25: tes.Output.type:type_name -> tes.FileType
+	32, // 26: tes.Resources.backend_parameters:type_name -> tes.Resources.BackendParametersEntry
+	33, // 27: tes.ServiceInfo.organization:type_name -> tes.ServiceInfo.OrganizationEntry
+	24, // 28: tes.ServiceInfo.type:type_name -> tes.ServiceType
+	16, // 29: tes.Task.executors:type_name -> tes.Executor
+	18, // 30: tes.Task.inputs:type_name -> tes.Input
+	26, // 31: tes.Task.logs:type_name -> tes.TaskLog
+	20, // 32: tes.Task.outputs:type_name -> tes.Output
+	22, // 33: tes.Task.resources:type_name -> tes.Resources
+	0,  // 34: tes.Task.state:type_name -> tes.State
+	34, // 35: tes.Task.tags:type_name -> tes.Task.TagsEntry
+	17, // 36: tes.TaskLog.logs:type_name -> tes.ExecutorLog
+	35, // 37: tes.TaskLog.metadata:type_name -> tes.TaskLog.MetadataEntry
+	21, // 38: tes.TaskLog.outputs:type_name -> tes.OutputFileLog
+	8,  // 39: tes.TaskService.ListTasks:input_type -> tes.ListTasksRequest
+	25, // 40: tes.TaskService.CreateTask:input_type -> tes.Task
+	6,  // 41: tes.TaskService.GetTask:input_type -> tes.GetTaskRequest
+	3,  // 42: tes.TaskService.CancelTask:input_type -> tes.CancelTaskRequest
+	5,  // 43: tes.TaskService.GetServiceInfo:input_type -> tes.GetServiceInfoRequest
+	19, // 44: tes.TaskService.ListTasks:output_type -> tes.ListTasksResponse
+	15, // 45: tes.TaskService.CreateTask:output_type -> tes.CreateTaskResponse
+	25, // 46: tes.TaskService.GetTask:output_type -> tes.Task
+	14, // 47: tes.TaskService.CancelTask:output_type -> tes.CancelTaskResponse
+	23, // 48: tes.TaskService.GetServiceInfo:output_type -> tes.ServiceInfo
+	44, // [44:49] is the sub-list for method output_type
+	39, // [39:44] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_tes_tes_proto_init() }
@@ -1721,7 +2475,7 @@ func file_tes_tes_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tes_tes_proto_rawDesc), len(file_tes_tes_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   22,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

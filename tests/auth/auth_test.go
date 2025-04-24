@@ -24,7 +24,7 @@ func TestBasicAuthFail(t *testing.T) {
 	tests.ParseConfig()
 	ctx := context.Background()
 	conf := tests.DefaultConfig()
-	conf.Server.BasicAuth = []config.BasicCredential{{User: "funnel", Password: "abc123"}}
+	conf.Server.BasicAuth = []*config.BasicCredential{{User: "funnel", Password: "abc123"}}
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
 
@@ -93,9 +93,9 @@ func TestBasicAuthed(t *testing.T) {
 	defer os.Unsetenv("FUNNEL_SERVER_PASSWORD")
 
 	conf := tests.DefaultConfig()
-	conf.Server.BasicAuth = []config.BasicCredential{{User: "funnel", Password: "abc123"}}
-	conf.RPCClient.User = "funnel"
-	conf.RPCClient.Password = "abc123"
+	conf.Server.BasicAuth = []*config.BasicCredential{{User: "funnel", Password: "abc123"}}
+	conf.RPCClient.Credential.User = "funnel"
+	conf.RPCClient.Credential.Password = "abc123"
 	fun := tests.NewFunnel(conf)
 	fun.StartServer()
 

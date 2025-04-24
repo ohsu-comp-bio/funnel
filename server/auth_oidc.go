@@ -36,14 +36,14 @@ type IntrospectionResponse struct {
 
 // OIDC configuration structure used for validating input from request.
 type OidcConfig struct {
-	local  config.OidcAuth
+	local  *config.OidcAuth
 	admins map[string]bool
 	remote OidcRemoteConfig
-	oauth2 oauth2.Config
+	oauth2 *oauth2.Config
 	jwks   jwk.Cache
 }
 
-func initOidcConfig(config config.OidcAuth) *OidcConfig {
+func initOidcConfig(config *config.OidcAuth) *OidcConfig {
 	if config.ServiceConfigURL == "" {
 		return nil
 	} else if config.ClientId == "" {

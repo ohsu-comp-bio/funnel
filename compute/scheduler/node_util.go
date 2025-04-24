@@ -95,7 +95,7 @@ func AvailableResources(tasks []*tes.Task, res *Resources) *Resources {
 
 // UpdateNodeState checks whether a node is dead/gone based on the last
 // time it pinged.
-func UpdateNodeState(nodes []*Node, conf config.Scheduler) []*Node {
+func UpdateNodeState(nodes []*Node, conf *config.Scheduler) []*Node {
 	var updated []*Node
 	for _, node := range nodes {
 		prevState := node.State

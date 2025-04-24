@@ -8,8 +8,8 @@ func Debug(msg string, args ...interface{}) {
 }
 
 // DebugConfig returns a Config instance with default values useful for testing/debugging.
-func DebugConfig() LoggerConfig {
-	return LoggerConfig{
+func DebugConfig() *LoggerConfig {
+	return &LoggerConfig{
 		Level:     "debug",
 		Formatter: "text",
 		TextFormat: &TextFormatConfig{

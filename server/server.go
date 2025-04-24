@@ -30,15 +30,15 @@ import (
 type Server struct {
 	RPCAddress       string
 	HTTPPort         string
-	BasicAuth        []config.BasicCredential
-	OidcAuth         config.OidcAuth
+	BasicAuth        []*config.BasicCredential
+	OidcAuth         *config.OidcAuth
 	TaskAccess       string
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
 	Nodes            scheduler.SchedulerServiceServer
 	DisableHTTPCache bool
 	Log              *logger.Logger
-	Plugins          config.Plugins
+	Plugins          *config.Plugins
 }
 
 // Return a new interceptor function that logs all requests at the Debug level

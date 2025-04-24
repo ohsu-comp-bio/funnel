@@ -25,7 +25,7 @@ var jsonmar = jsonpb.Marshaler{
 }
 
 type textFormatter struct {
-	TextFormatConfig
+	*TextFormatConfig
 	json jsonFormatter
 }
 

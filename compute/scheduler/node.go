@@ -14,11 +14,11 @@ import (
 )
 
 // NewNodeProcess returns a new Node instance
-func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
+func NewNodeProcess(ctx context.Context, conf *config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
-	cli, err := NewClient(ctx, *conf.RPCClient)
+	cli, err := NewClient(ctx, conf.RPCClient)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 	}
 
 	// Detect available resources at startup
-	res, derr := detectResources(*conf.Node, conf.Worker.WorkDir)
+	res, derr := detectResources(conf.Node, conf.Worker.WorkDir)
 	if derr != nil {
 		log.Error("error detecting resources", "error", derr)
 	}
@@ -52,7 +52,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 
 // NodeProcess is a structure used for tracking available resources on a compute resource.
 type NodeProcess struct {
-	conf      config.Config
+	conf      *config.Config
 	client    Client
 	log       *logger.Logger
 	resources *Resources
@@ -154,7 +154,7 @@ func (n *NodeProcess) sync(ctx context.Context) {
 
 	// Node data has been updated. Send back to server for database update.
 	var derr error
-	n.resources, derr = detectResources(*n.conf.Node, n.conf.Worker.WorkDir)
+	n.resources, derr = detectResources(n.conf.Node, n.conf.Worker.WorkDir)
 	if derr != nil {
 		n.log.Error("error detecting resources", "error", derr)
 	}

@@ -10,12 +10,12 @@ import (
 // Config represents configuration of the AWS proxy, including
 // the compute environment, job queue, and base job definition.
 type Config struct {
-	config.AWSConfig
-	ComputeEnv ComputeEnvConfig
-	JobQueue   JobQueueConfig
-	JobDef     JobDefinitionConfig
-	JobRole    JobRoleConfig
-	Funnel     config.Config
+	*config.AWSConfig
+	ComputeEnv *ComputeEnvConfig
+	JobQueue   *JobQueueConfig
+	JobDef     *JobDefinitionConfig
+	JobRole    *JobRoleConfig
+	Funnel     *config.Config
 }
 
 // ComputeEnvConfig represents configuration of the AWS Batch
@@ -91,10 +91,10 @@ type JobRoleConfig struct {
 }
 
 // DefaultConfig returns default configuration of for AWS Batch resource creation.
-func DefaultConfig() Config {
-	c := Config{
-		AWSConfig: config.AWSConfig{},
-		ComputeEnv: ComputeEnvConfig{
+func DefaultConfig() *Config {
+	c := &Config{
+		AWSConfig: &config.AWSConfig{},
+		ComputeEnv: &ComputeEnvConfig{
 			Name:          "funnel-compute-environment",
 			InstanceTypes: []string{"optimal"},
 			MinVCPUs:      0,
@@ -103,19 +103,19 @@ func DefaultConfig() Config {
 				"Name": "Funnel",
 			},
 		},
-		JobQueue: JobQueueConfig{
+		JobQueue: &JobQueueConfig{
 			Name:     "funnel-job-queue",
 			Priority: 1,
 			ComputeEnvs: []string{
 				"funnel-compute-environment",
 			},
 		},
-		JobRole: JobRoleConfig{
+		JobRole: &JobRoleConfig{
 			RoleName:           "FunnelEcsTaskRole",
 			DynamoDBPolicyName: "FunnelDynamoDB",
 			S3PolicyName:       "FunnelS3",
 		},
-		JobDef: JobDefinitionConfig{
+		JobDef: &JobDefinitionConfig{
 			Name:      "funnel-job-def",
 			Image:     "quay.io/ohsu-comp-bio/funnel:latest",
 			VCPUs:     1,

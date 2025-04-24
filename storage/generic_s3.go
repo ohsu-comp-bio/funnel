@@ -19,7 +19,7 @@ type GenericS3 struct {
 
 // NewGenericS3 creates a new GenericS3 instance, given an endpoint URL
 // and a set of authentication credentials.
-func NewGenericS3(conf config.GenericS3Storage) (*GenericS3, error) {
+func NewGenericS3(conf *config.GenericS3Storage) (*GenericS3, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
 	endpoint := endpointRE.ReplaceAllString(conf.Endpoint, "$2")
 	client, err := minio.NewV2(endpoint, conf.Key, conf.Secret, ssl)

@@ -93,6 +93,7 @@ type JobRoleConfig struct {
 // DefaultConfig returns default configuration of for AWS Batch resource creation.
 func DefaultConfig() *Config {
 	c := &Config{
+		Funnel:    config.DefaultConfig(),
 		AWSConfig: &config.AWSConfig{},
 		ComputeEnv: &ComputeEnvConfig{
 			Name:          "funnel-compute-environment",

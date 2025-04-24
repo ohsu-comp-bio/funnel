@@ -47,9 +47,7 @@ func WorkerFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 // NodeFlags returns a new flag set for configuring a Funnel node
 func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
 	f.StringVarP(configFile, "config", "c", *configFile, "Config File")
-
 	f.AddFlagSet(selectorFlags(flagConf))
 	f.AddFlagSet(serverFlags(flagConf))
 	f.AddFlagSet(rpcClientFlags(flagConf))
@@ -58,13 +56,11 @@ func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 	f.AddFlagSet(dbFlags(flagConf))
 	f.AddFlagSet(storageFlags(flagConf))
 	f.AddFlagSet(loggerFlags(flagConf))
-
 	return f
 }
 
 func selectorFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
-
 	f.StringVar(&flagConf.Compute, "Compute", flagConf.Compute, "Name of compute backed to use")
 	f.StringVar(&flagConf.Database, "Database", flagConf.Database, "Name of database backed to use")
 	f.StringSliceVar(&flagConf.EventWriters, "EventWriters", flagConf.EventWriters, "Name of an event writer backend to use. This flag can be used multiple times")
@@ -76,7 +72,7 @@ func rpcClientFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
 	f.StringVar(&flagConf.RPCClient.ServerAddress, "RPCClient.ServerAddress", flagConf.RPCClient.ServerAddress, "RPC server address")
-	f.Var(&DurationValue{flagConf.RPCClient.Timeout}, "RPCClient.Timeout", "Request timeout for RPC client connections")
+	f.Var(&DurationValue{&flagConf.RPCClient.Timeout}, "RPCClient.Timeout", "Request timeout for RPC client connections")
 	f.Uint32Var(&flagConf.RPCClient.MaxRetries, "RPCClient.MaxRetries", flagConf.RPCClient.MaxRetries, "Maximum number of times that a request will be retried for failures")
 
 	return f
@@ -98,8 +94,8 @@ func workerFlags(flagConf *config.Config) *pflag.FlagSet {
 
 	f.Int64Var(&flagConf.Worker.LogTailSize, "Worker.LogTailSize", flagConf.Worker.LogTailSize, "Max bytes to store for stdout/stderr")
 
-	f.Var(&DurationValue{D: flagConf.Worker.LogUpdateRate}, "Worker.LogUpdateRate", "How often to send stdout/stderr log updates")
-	f.Var(&DurationValue{D: flagConf.Worker.PollingRate}, "Worker.PollingRate", "How often to poll for cancel signals")
+	f.Var(&DurationValue{D: &flagConf.Worker.LogUpdateRate}, "Worker.LogUpdateRate", "How often to send stdout/stderr log updates")
+	f.Var(&DurationValue{D: &flagConf.Worker.PollingRate}, "Worker.PollingRate", "How often to poll for cancel signals")
 	f.StringVar(&flagConf.Worker.WorkDir, "Worker.WorkDir", flagConf.Worker.WorkDir, "Working directory")
 	f.StringVar(&flagConf.Worker.ScratchPath, "Worker.ScratchPath", flagConf.Worker.ScratchPath, "Scratch directory")
 	f.BoolVar(&flagConf.Worker.LeaveWorkDir, "Worker.LeaveWorkDir", flagConf.Worker.LeaveWorkDir, "Leave working directory after execution")
@@ -114,8 +110,8 @@ func nodeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Uint32Var(&flagConf.Node.Resources.Cpus, "Node.Resources.Cpus", flagConf.Node.Resources.Cpus, "Cpus available to Node")
 	f.Float64Var(&flagConf.Node.Resources.RamGb, "Node.Resources.RamGb", flagConf.Node.Resources.RamGb, "Ram (GB) available to Node")
 	f.Float64Var(&flagConf.Node.Resources.DiskGb, "Node.Resources.DiskGb", flagConf.Node.Resources.DiskGb, "Free disk (GB) available to Node")
-	f.Var(&DurationValue{D: flagConf.Node.Timeout}, "Node.Timeout", "Node timeout in seconds")
-	f.Var(&DurationValue{D: flagConf.Node.UpdateRate}, "Node.UpdateRate", "Node update rate")
+	f.Var(&DurationValue{D: &flagConf.Node.Timeout}, "Node.Timeout", "Node timeout in seconds")
+	f.Var(&DurationValue{D: &flagConf.Node.UpdateRate}, "Node.UpdateRate", "Node update rate")
 	// TODO Metadata
 
 	return f
@@ -156,7 +152,7 @@ func dbFlags(flagConf *config.Config) *pflag.FlagSet {
 	// mongodb
 	f.StringSliceVar(&flagConf.MongoDB.Addrs, "MongoDB.Addrs", flagConf.MongoDB.Addrs, "Address of a MongoDB seed server. This flag can be used multiple times")
 	f.StringVar(&flagConf.MongoDB.Database, "MongoDB.Database", flagConf.MongoDB.Database, "Database name in MongoDB")
-	f.Var(&DurationValue{D: flagConf.MongoDB.Timeout}, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
+	f.Var(&DurationValue{D: &flagConf.MongoDB.Timeout}, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
 
 	return f
 }
@@ -182,11 +178,11 @@ func storageFlags(flagConf *config.Config) *pflag.FlagSet {
 
 	// HTTP storage
 	f.BoolVar(&flagConf.HTTPStorage.Disabled, "HTTPStorage.Disabled", flagConf.HTTPStorage.Disabled, "Disable storage backend")
-	f.Var(&DurationValue{flagConf.HTTPStorage.Timeout}, "HTTPStorage.Timeout", "Timeout in seconds for request")
+	f.Var(&DurationValue{&flagConf.HTTPStorage.Timeout}, "HTTPStorage.Timeout", "Timeout in seconds for request")
 
 	// FTP storage
 	f.BoolVar(&flagConf.FTPStorage.Disabled, "FTPStorage.Disabled", flagConf.FTPStorage.Disabled, "Disable storage backend")
-	f.Var(&DurationValue{flagConf.FTPStorage.Timeout}, "FTPStorage.Timeout", "Timeout in seconds for request")
+	f.Var(&DurationValue{&flagConf.FTPStorage.Timeout}, "FTPStorage.Timeout", "Timeout in seconds for request")
 
 	return f
 }
@@ -200,7 +196,7 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.AWSBatch.JobQueue, "AWSBatch.JobQueue", flagConf.AWSBatch.JobQueue, "AWS Batch job queue name or ARN")
 	f.Int32Var(&flagConf.AWSBatch.AWSConfig.MaxRetries, "AWSBatch.MaxRetries", flagConf.AWSBatch.AWSConfig.MaxRetries, "Maximum number of times that a request will be retried for failures")
 	f.BoolVar(&flagConf.AWSBatch.DisableReconciler, "AWSBatch.DisableReconciler", flagConf.AWSBatch.DisableReconciler, "Disable the state reconciler")
-	f.Var(&DurationValue{flagConf.AWSBatch.ReconcileRate}, "AWSBatch.ReconcileRate", "How often to run the reconciler")
+	f.Var(&DurationValue{&flagConf.AWSBatch.ReconcileRate}, "AWSBatch.ReconcileRate", "How often to run the reconciler")
 
 	// GridEngine
 	f.StringVar(&flagConf.GridEngine.TemplateFile, "GridEngine.TemplateFile", flagConf.GridEngine.TemplateFile, "Path to template submit file")
@@ -208,24 +204,24 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	// HTCondor
 	f.StringVar(&flagConf.HTCondor.TemplateFile, "HTCondor.TemplateFile", flagConf.HTCondor.TemplateFile, "Path to template submit file")
 	f.BoolVar(&flagConf.HTCondor.DisableReconciler, "HTCondor.DisableReconciler", flagConf.HTCondor.DisableReconciler, "Disable the state reconciler")
-	f.Var(&DurationValue{flagConf.HTCondor.ReconcileRate}, "HTCondor.ReconcileRate", "How often to run the reconciler")
+	f.Var(&DurationValue{&flagConf.HTCondor.ReconcileRate}, "HTCondor.ReconcileRate", "How often to run the reconciler")
 
 	// PBS/Torque
 	f.StringVar(&flagConf.PBS.TemplateFile, "PBS.TemplateFile", flagConf.PBS.TemplateFile, "Path to template submit file")
 	f.BoolVar(&flagConf.PBS.DisableReconciler, "PBS.DisableReconciler", flagConf.PBS.DisableReconciler, "Disable the state reconciler")
-	f.Var(&DurationValue{flagConf.PBS.ReconcileRate}, "PBS.ReconcileRate", "How often to run the reconciler")
+	f.Var(&DurationValue{&flagConf.PBS.ReconcileRate}, "PBS.ReconcileRate", "How often to run the reconciler")
 
 	// Slurm
 	f.StringVar(&flagConf.Slurm.TemplateFile, "Slurm.TemplateFile", flagConf.Slurm.TemplateFile, "Path to template submit file")
 	f.BoolVar(&flagConf.Slurm.DisableReconciler, "Slurm.DisableReconciler", flagConf.Slurm.DisableReconciler, "Disable the state reconciler")
-	f.Var(&DurationValue{flagConf.Slurm.ReconcileRate}, "Slurm.ReconcileRate", "How often to run the reconciler")
+	f.Var(&DurationValue{&flagConf.Slurm.ReconcileRate}, "Slurm.ReconcileRate", "How often to run the reconciler")
 
 	// Scheduler
-	f.Var(&DurationValue{flagConf.Scheduler.ScheduleRate}, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
+	f.Var(&DurationValue{&flagConf.Scheduler.ScheduleRate}, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
 	f.Int32Var(&flagConf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", flagConf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration")
-	f.Var(&DurationValue{flagConf.Scheduler.NodePingTimeout}, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
-	f.Var(&DurationValue{flagConf.Scheduler.NodeInitTimeout}, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
-	f.Var(&DurationValue{flagConf.Scheduler.NodeDeadTimeout}, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
+	f.Var(&DurationValue{&flagConf.Scheduler.NodePingTimeout}, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
+	f.Var(&DurationValue{&flagConf.Scheduler.NodeInitTimeout}, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
+	f.Var(&DurationValue{&flagConf.Scheduler.NodeDeadTimeout}, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
 	// Kubernetes
 	f.StringVar(&flagConf.Kubernetes.Executor, "Kubernetes.Executor", flagConf.Kubernetes.Executor, "Executor to use for executing tasks (docker or kubernetes)")
@@ -234,7 +230,7 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.Kubernetes.Namespace, "Kubernetes.Namespace", flagConf.Kubernetes.Namespace, "Namespace to spawn jobs within")
 	f.StringVar(&flagConf.Kubernetes.ConfigFile, "Kubernetes.ConfigFile", flagConf.Kubernetes.ConfigFile, "Path to kubernetes config file")
 	f.BoolVar(&flagConf.Kubernetes.DisableReconciler, "Kubernetes.DisableReconciler", flagConf.Kubernetes.DisableReconciler, "Disable the state reconciler")
-	f.Var(&DurationValue{flagConf.Kubernetes.ReconcileRate}, "Kubernetes.ReconcileRate", "How often to run the reconciler")
+	f.Var(&DurationValue{&flagConf.Kubernetes.ReconcileRate}, "Kubernetes.ReconcileRate", "How often to run the reconciler")
 
 	return f
 }

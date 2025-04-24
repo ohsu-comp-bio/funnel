@@ -44,6 +44,7 @@ func DefaultConfig() *Config {
 			ServerAddress: server.RPCAddress(),
 			Timeout:       durationpb.New(time.Second * 60),
 			MaxRetries:    10,
+			Credential:    &BasicCredential{},
 		},
 		Scheduler: &Scheduler{
 			ScheduleRate:    durationpb.New(time.Second),
@@ -56,6 +57,7 @@ func DefaultConfig() *Config {
 			Timeout:    durationpb.New(-1),
 			UpdateRate: durationpb.New(time.Second * 5),
 			Metadata:   map[string]string{},
+			Resources:  &Resources{},
 		},
 		Worker: &Worker{
 			WorkDir:              workDir,
@@ -103,6 +105,7 @@ func DefaultConfig() *Config {
 		},
 		DynamoDB: &DynamoDB{
 			TableBasename: "funnel",
+			AWSConfig:     &AWSConfig{},
 		},
 		Elastic: &Elastic{
 			URL:         "http://localhost:9200",
@@ -129,6 +132,7 @@ func DefaultConfig() *Config {
 			Password: "anonymous",
 		},
 		AmazonS3: &AmazonS3Storage{
+			SSE: &SSE{},
 			AWSConfig: &AWSConfig{
 				MaxRetries: 10,
 			},
@@ -137,6 +141,16 @@ func DefaultConfig() *Config {
 			MaxRetries:     20,
 			ChunkSizeBytes: int64(500 * units.MB),
 		},
+		HTCondor:      &HPCBackend{},
+		Slurm:         &HPCBackend{},
+		PBS:           &HPCBackend{},
+		GridEngine:    &GridEngine{},
+		AWSBatch:      &AWSBatch{AWSConfig: &AWSConfig{}},
+		Kubernetes:    &Kubernetes{},
+		GoogleStorage: &GoogleCloudStorage{},
+		PubSub:        &PubSub{},
+		Datastore:     &Datastore{},
+		GenericS3:     []*GenericS3Storage{},
 	}
 
 	// compute

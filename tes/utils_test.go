@@ -26,8 +26,9 @@ func TestBase64Encode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if encoded != expected || encoded != expected_alt {
+	if encoded != expected && encoded != expected_alt {
 		t.Logf("expected: %+v", expected)
+		t.Logf("expected_alt: %+v", expected_alt)
 		t.Logf("actual: %+v", encoded)
 		t.Fatal("unexpected value returned from Base64Encode")
 	}

@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/cat/plugins"
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
@@ -57,12 +56,12 @@ type Config struct {
 
 // Plugins describes which plugins to use and where to find them.
 type Plugins struct {
-	Disabled bool
-	Dir      string
-	Plugin   string
-	Host     string
-	Input    string
-	Response plugins.Response
+	Disabled   bool
+	Dir        string
+	Plugin     string
+	Host       string
+	Input      string
+	JsonConfig string // TODO: Is string the best type for this?
 }
 
 // BasicCredential describes a username and password for use with Funnel's basic auth.

@@ -16,9 +16,17 @@ func TestBase64Encode(t *testing.T) {
 		},
 	}
 
+	expected := "ewogICJleGVjdXRvcnMiOiAgWwogICAgewogICAgICAiY29tbWFuZCI6ICBbCiAgICAgICAgImVjaG8iLAogICAgICAgICJoZWxsbyB3b3JsZCIKICAgICAgXSwKICAgICAgImltYWdlIjogICJhbHBpbmUiCiAgICB9CiAgXSwKICAiaWQiOiAgInRhc2sxIgp9"
+
 	encoded, err := Base64Encode(task)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if encoded != expected {
+		t.Logf("expected: %+v", expected)
+		t.Logf("actual: %+v", encoded)
+		t.Fatal("unexpected value returned from Base64Encode")
 	}
 
 	decoded, err := Base64Decode(encoded)

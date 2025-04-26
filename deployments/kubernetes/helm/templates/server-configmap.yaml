@@ -1,0 +1,15 @@
+# This is the config for the Funnel Server
+#
+# The Worker config uses the template in `config/kubernetes-configmap-template.yaml`
+# to dynamically create a new ConfigMap for each task (in `compute/kubernetes/backend.go`).
+#
+# This is done to support per-user task configurations (e.g. S3 credentials).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-server-config
+  namespace: {{ .Release.Namespace }} 
+  
+data:
+  funnel-server.yaml: |-
+{{ tpl (.Files.Get "files/server-config.yaml") . | indent 4 }}

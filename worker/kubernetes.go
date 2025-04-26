@@ -26,7 +26,8 @@ type KubernetesCommand struct {
 	JobId          int
 	StdinFile      string
 	TaskTemplate   string
-	Namespace      string
+	Namespace      string // Funnel Server Namespace
+	JobsNamespace  string // Funnel Worker + Executor Namespace (default: Namespace)
 	Resources      *tes.Resources
 	ServiceAccount string
 	Clientset      kubernetes.Interface
@@ -34,7 +35,7 @@ type KubernetesCommand struct {
 }
 
 // Create the Executor K8s job from kubernetes-executor-template.yaml
-// Funnel Worker job is created in compute/kubernetes/backend.go#createJob
+// Funnel Worker job is created in compute/kubernetes/backend.go#CreateResources
 func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var taskId = kcmd.TaskId
 	tpl, err := template.New(taskId).Parse(kcmd.TaskTemplate)
@@ -58,6 +59,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"TaskId":         taskId,
 		"JobId":          kcmd.JobId,
 		"Namespace":      kcmd.Namespace,
+		"JobsNamespace":  kcmd.JobsNamespace,
 		"Command":        command,
 		"Workdir":        kcmd.Workdir,
 		"Volumes":        kcmd.Volumes,
@@ -92,7 +94,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		}
 	}
 
-	var client = clientset.BatchV1().Jobs(kcmd.Namespace)
+	var client = clientset.BatchV1().Jobs(kcmd.JobsNamespace)
 
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 
@@ -119,20 +121,20 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	defer watcher.Stop()
 	waitForJobFinish(ctx, watcher)
 
-	pods, err := clientset.CoreV1().Pods(kcmd.Namespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
+	pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	if err != nil {
 		return err
 	}
 
 	for _, v := range pods.Items {
 		// Wait for the pod to reach Running state
-		pod, err := waitForPodRunning(ctx, kcmd.Namespace, v.Name, 5*time.Minute)
+		pod, err := waitForPodRunning(ctx, kcmd.JobsNamespace, v.Name, 5*time.Minute)
 		if err != nil {
 			log.Fatalf("Error waiting for pod: %v", err)
 		}
 
 		// Stream logs from the running pod
-		err = streamPodLogs(ctx, kcmd.Namespace, pod.Name, kcmd.Stdout)
+		err = streamPodLogs(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout)
 		if err != nil {
 			log.Fatalf("Error streaming logs: %v", err)
 		}
@@ -194,7 +196,7 @@ func (kcmd KubernetesCommand) Stop() error {
 	jobName := fmt.Sprintf("%s-%d", kcmd.TaskId, kcmd.JobId)
 
 	backgroundDeletion := metav1.DeletePropagationBackground
-	err = clientset.BatchV1().Jobs(kcmd.Namespace).Delete(context.TODO(), jobName, metav1.DeleteOptions{
+	err = clientset.BatchV1().Jobs(kcmd.JobsNamespace).Delete(context.TODO(), jobName, metav1.DeleteOptions{
 		PropagationPolicy: &backgroundDeletion,
 	})
 

@@ -179,9 +179,19 @@ func (db *MongoDB) findTaskStateAndVersion(ctx context.Context, taskId string) (
 		return tes.State_UNKNOWN, nil, err
 	}
 
+	// Check if "owner" is nil
+	if props["owner"] == nil {
+		return tes.State_UNKNOWN, nil, fmt.Errorf("owner field is missing in task properties")
+	}
+
 	taskOwner := props["owner"].(string)
 	if !server.GetUser(ctx).IsAccessible(taskOwner) {
 		return tes.State_UNKNOWN, nil, tes.ErrNotPermitted
+	}
+
+	// Check if "state" is nil
+	if props["state"] == nil {
+		return tes.State_UNKNOWN, nil, fmt.Errorf("state field is missing in task properties")
 	}
 
 	state := tes.State(props["state"].(int32))

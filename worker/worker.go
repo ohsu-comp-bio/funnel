@@ -38,8 +38,10 @@ type Executor struct {
 	PVTemplate string
 	// Kubernetes persistent volume claim template
 	PVCTemplate string
-	// Kubernetes namespace
+	// Funnel Server namespace
 	Namespace string
+	// Funnel Worker + Executor namespace
+	JobsNamespace string
 	// Kubernetes service account name
 	ServiceAccount string
 }
@@ -196,13 +198,14 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 			if r.Executor.Backend == "kubernetes" {
 				taskCommand = &KubernetesCommand{
-					TaskId:       task.Id,
-					JobId:        i,
-					StdinFile:    d.Stdin,
-					TaskTemplate: r.Executor.Template,
-					Namespace:    r.Executor.Namespace,
-					Resources:    resources,
-					Command:      command,
+					TaskId:        task.Id,
+					JobId:         i,
+					StdinFile:     d.Stdin,
+					TaskTemplate:  r.Executor.Template,
+					Namespace:     r.Executor.Namespace,
+					JobsNamespace: r.Executor.JobsNamespace,
+					Resources:     resources,
+					Command:       command,
 				}
 			} else {
 				taskCommand = &DockerCommand{
@@ -219,7 +222,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					Command:         command,
 				}
 
-				// Hide this behind explicit flag/option in configuration
+				// TODO: Hide this behind explicit flag/option in configuration
 				// if r.Conf.Container.EnableTags {
 				// 	for k, v := range task.Tags {
 				// 		safeTag := r.sanitizeValues(v)

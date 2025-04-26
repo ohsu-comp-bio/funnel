@@ -3,11 +3,33 @@ replicaCount: 1
 
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  tag: development
-  pullPolicy: IfNotPresent
+  tag: testing
+  pullPolicy: Always
+  # Plugin Init Container
+  initContainer:
+    image: quay.io/ohsu-comp-bio/funnel-plugins
+    tag: latest
+    pullPolicy: Always
+    command:
+      - cp
+      - /app/build/plugins/authorizer
+      - /opt/funnel/plugin-binaries/auth-plugin
 
 labels:
   app: funnel
+
+# Funnel Server (Task Database)
+mongodb:
+  image: 
+    registry: public.ecr.aws
+  architecture: standalone
+  auth:
+    enabled: true
+    rootUser: example
+    rootPassword: example
+  persistence:
+    enabled: false
+    size: 1Gi
 
 rbac:
   create: true
@@ -25,32 +47,24 @@ service:
   httpPort: 8000
   rpcPort: 9090
 
-serviceAccount:
-  create: true
-  name: funnel-sa
-
+# Funnel Worker + Executor storage (S3 bucket)
 storage:
-  className: gp2
-  provisioner: kubernetes.io/aws-ebs
-  enabled: true
-  size: 10Gi
-  path: /mnt/data
-  pv:
-    enabled: false
-    reclaimPolicy: Retain
+  driver: aws-s3
+  size: 10Mi
+  accessMode: ReadWriteMany
+  className: s3-csi-sc
+  provisioner: s3.csi.aws.com
+  createStorageClass: true
 
-taskStorage:
-  className: gp2
-  provisioner: kubernetes.io/aws-ebs
-  enabled: true
-  size: 1Gi
-
-# Funnel Default Settings
-# Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
+# Funnel Default Settings (with BoltDB replaced with MongoDB)
+# 
+# These are passed into `files/server-config.yaml` and made available to the deployment via `server-configmap.yaml`
+#
+# - Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
 
 # The name of the active server database backend
 # Available backends: boltdb, badger, datastore, dynamodb, elastic, mongodb
-Database: boltdb
+Database: mongodb
 
 # The name of the active compute backend
 # Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch, kubernetes
@@ -59,7 +73,7 @@ Compute: kubernetes
 # The name of the active event writer backend(s).
 # Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
 EventWriters:
-  - boltdb
+  - mongodb
   - log
 
 Logger:
@@ -70,7 +84,7 @@ Logger:
 
 Server:
   # Hostname of the Funnel server.
-  HostName: localhost
+  HostName: funnel
 
   # Port used for HTTP communication and the web dashboard.
   HTTPPort: 8000
@@ -202,8 +216,9 @@ Datastore:
 
 MongoDB:
   # Addrs holds the addresses for the seed servers.
-  Addrs:
-    - mongodb://localhost
+  # K8s Note: These are computed dynamically in templates (in `server-configmap.yaml`) so that users
+  # don't have to manually set them.
+  Addrs: []
   # Database is the database name used within MongoDB to store funnel data.
   Database: funnel
   # Timeout is the amount of time to wait for a server to respond when
@@ -213,8 +228,8 @@ MongoDB:
   Timeout: 5m
   # Username and Password inform the credentials for the initial authentication
   # done on the database defined by the Database field.
-  Username: ""
-  Password: ""
+  Username: example
+  Password: example
 
 Kafka:
   Servers:
@@ -358,9 +373,11 @@ Kubernetes:
   # to those reported by the backend
   ReconcileRate: 10m
   # Kubernetes Namespace to spawn jobs within
-  Namespace: "default"
+  Namespace: ""
+  # Kubernetes Namespace to spawn jobs within
+  JobsNamespace: ""
   # Kubernetes ServiceAccount to use for the job
-  ServiceAccount: "funnel-sa"
+  ServiceAccount: ""
   # Master batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
   Template: ""
   # TemplateFile is the path to the master job template.
@@ -442,3 +459,14 @@ FTPStorage:
   Timeout: 10s
   User: "anonymous"
   Password: "anonymous"
+
+Plugins:
+  Disabled: true
+  Dir: plugin-binaries
+  Plugin: auth-plugin
+  Input: user
+  # Worker will have the S3 bucket configuration (including region and AWS credentials) from here:
+  # https://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/gen3-workflow/master/docs/openapi.yaml#/Storage/get_storage_info
+  # Host: http://gen3-workflow.svc.local/s3/storage/info
+  Host: http://funnel-plugin-test-server:8080/token?user=
+  # TODO: Add type of plugin here (e.g. Auth, System)

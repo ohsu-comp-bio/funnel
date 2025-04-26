@@ -1,0 +1,17 @@
+version: v1
+plugins:
+  # Go (Protobuf) — proto/auth.pb.go
+  - plugin: buf.build/protocolbuffers/go
+    out: plugin-go
+
+  # Go (gRPC) — proto/auth_grpc.pb.go
+  - plugin: buf.build/grpc/go:v1.3.0
+    out: plugin-go
+
+  # Python (Protobuf) — plugin-python/auth_pb2.py
+  - plugin: buf.build/protocolbuffers/python:v24.4
+    out: plugin-python
+
+  # Python (gRPC) — plugin-python/auth_pb2_grpc.py
+  - plugin: buf.build/grpc/python:v1.58.1
+    out: plugin-python

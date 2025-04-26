@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: funnel-plugin-test-server
+  namespace: {{ .Release.Namespace }} 
+  labels:
+    app: funnel-plugin-test-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: funnel-plugin-test-server
+  template:
+    metadata:
+      labels:
+        app: funnel-plugin-test-server
+    spec:
+      containers:
+        - name: test-server
+          image: quay.io/ohsu-comp-bio/funnel-plugins-test-server
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: funnel-plugin-test-users
+              mountPath: /app/example-users.csv
+              subPath: example-users.csv
+      volumes:
+        - name: funnel-plugin-test-users
+          configMap:
+            name: funnel-plugin-test-users
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: funnel-plugin-test-server
+  namespace: {{ .Release.Namespace }} 
+spec:
+  selector:
+    app: funnel-plugin-test-server
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-plugin-test-users
+  namespace: {{ .Release.Namespace }} 
+data:
+  example-users.csv: |-
+    user,key,secret
+    example,key1,secret1
+    foo,key2,secret2
+    bar,key3,secret3
+    foobar,key4,secret4

@@ -24,7 +24,7 @@ func NewMarshaler() runtime.Marshaler {
 		m: &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				Indent:          "  ",
-				EmitUnpopulated: true,
+				EmitUnpopulated: false,
 				UseProtoNames:   true,
 			},
 			UnmarshalOptions: protojson.UnmarshalOptions{},

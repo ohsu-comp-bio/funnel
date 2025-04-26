@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 
 	// TODO: This pattern is used when running tests from the Makefile (e.g. `make test-slurm`)
 	// We don't have any `test-K8s` target, but can add one if needed.
-	// Currently, we'r running theese tests directly either in VS Code or `go test ./tests/kubernetes`
+	// Currently, we'r running these tests directly either in VS Code or `go test ./tests/kubernetes`
 	if conf.Compute != "kubernetes" {
 		logger.Debug("Skipping kubernetes e2e tests...")
 		os.Exit(0)

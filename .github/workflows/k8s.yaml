@@ -47,8 +47,19 @@ jobs:
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
           k3d cluster create test-cluster
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      - name: Install S3 CSI Driver
+        run: |
+          # Install the S3 CSI Driver
+          # ref: https://github.com/awslabs/mountpoint-s3-csi-driver/blob/main/docs/install.md
+          helm repo add aws-mountpoint-s3-csi-driver https://awslabs.github.io/mountpoint-s3-csi-driver
+          helm repo update
+
+          helm upgrade --install aws-mountpoint-s3-csi-driver \
+              --namespace kube-system \
+              aws-mountpoint-s3-csi-driver/aws-mountpoint-s3-csi-driver
+
+          # Wait for the S3 CSI Driver to be available
+          kubectl wait --for=condition=Ready pod -l app=s3-csi-node -n kube-system --timeout=120s
 
       - name: Deploy Funnel
         run: |

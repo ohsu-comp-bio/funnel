@@ -33,27 +33,27 @@ func TestBasicAuthFail(t *testing.T) {
 		Id:   "1",
 		View: tes.View_MINIMAL.String(),
 	})
-	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 401") {
+		t.Fatal("expected error", err)
 	}
 
 	_, err = fun.HTTP.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.View_MINIMAL.String(),
 	})
-	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 401") {
+		t.Fatal("expected error", err)
 	}
 
 	_, err = fun.HTTP.CreateTask(ctx, extask)
-	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 401") {
+		t.Fatal("expected error", err)
 	}
 
 	_, err = fun.HTTP.CancelTask(ctx, &tes.CancelTaskRequest{
 		Id: "1",
 	})
-	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 403") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "STATUS CODE - 401") {
+		t.Fatal("expected error", err)
 	}
 
 	// RPC client
@@ -61,27 +61,27 @@ func TestBasicAuthFail(t *testing.T) {
 		Id:   "1",
 		View: tes.View_MINIMAL.String(),
 	})
-	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "Unauthenticated") {
+		t.Fatal("expected error", err)
 	}
 
 	_, err = fun.RPC.ListTasks(ctx, &tes.ListTasksRequest{
 		View: tes.View_MINIMAL.String(),
 	})
-	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "Unauthenticated") {
+		t.Fatal("expected error", err)
 	}
 
 	_, err = fun.RPC.CreateTask(ctx, tests.HelloWorld())
-	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "Unauthenticated") {
+		t.Fatal("expected error", err)
 	}
 
 	_, err = fun.RPC.CancelTask(ctx, &tes.CancelTaskRequest{
 		Id: "1",
 	})
-	if err == nil || !strings.Contains(err.Error(), "PermissionDenied") {
-		t.Fatal("expected error")
+	if err == nil || !strings.Contains(err.Error(), "Unauthenticated") {
+		t.Fatal("expected error", err)
 	}
 
 }

@@ -2,6 +2,7 @@
 package config
 
 import (
+	"io"
 	"os"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -53,6 +54,17 @@ type Config struct {
 type BasicCredential struct {
 	User     string
 	Password string
+	Admin    bool
+}
+
+type OidcAuth struct {
+	ServiceConfigURL string
+	ClientId         string
+	ClientSecret     string
+	RedirectURL      string
+	RequireScope     string
+	RequireAudience  string
+	Admins           []string
 }
 
 // RPCClient describes configuration for gRPC clients
@@ -76,7 +88,14 @@ type Server struct {
 	HTTPPort         string
 	RPCPort          string
 	BasicAuth        []BasicCredential
+	OidcAuth         OidcAuth
 	DisableHTTPCache bool
+
+	// Defines task access and visibility by options:
+	// "All" (default) – all tasks are visible to everyone
+	// "Owner" - tasks are visible to the users who created them
+	// "OwnerOrAdmin" - extends "Owner" by allowing Admin-users see everything
+	TaskAccess string
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort
@@ -137,6 +156,8 @@ type Node struct {
 type Worker struct {
 	// Directory to write task files to
 	WorkDir string
+	// Additional directory to symlink to the working directory.
+	ScratchPath string
 	// How often the worker should poll for cancel signals
 	PollingRate Duration
 	// How often to update stdout/stderr log fields.
@@ -151,6 +172,30 @@ type Worker struct {
 	LeaveWorkDir bool
 	// Limit the number of concurrent downloads/uploads
 	MaxParallelTransfers int
+	// Container engine to use for executing tasks.
+	Container ContainerConfig
+	// Command to use for the container engine.
+	// This can be used to override the default command used to run containers.
+	DriverCommand string
+}
+
+type ContainerConfig struct {
+	Id              string
+	Image           string
+	Name            string
+	Command         []string
+	Workdir         string
+	RemoveContainer bool
+	Env             map[string]string
+	Stdin           io.Reader
+	Stdout          io.Writer
+	Stderr          io.Writer
+	DriverCommand   string
+	RunCommand      string // template string
+	PullCommand     string // template string
+	StopCommand     string // template string
+	EnableTags      bool
+	Tags            map[string]string
 }
 
 // HPCBackend describes the configuration for a HPC scheduler backend such as
@@ -199,8 +244,13 @@ type MongoDB struct {
 
 // Elastic configures access to an Elasticsearch database.
 type Elastic struct {
-	IndexPrefix string
-	URL         string
+	IndexPrefix  string
+	URL          string
+	Username     string
+	Password     string
+	CloudID      string
+	APIKey       string
+	ServiceToken string
 }
 
 // Kafka configure access to a Kafka topic for task event reading/writing.
@@ -382,6 +432,12 @@ func (h FTPStorage) Valid() bool {
 
 // Kubernetes describes the configuration for the Kubernetes compute backend.
 type Kubernetes struct {
+	// The bucket to use for the task's Working Directory
+	Bucket string
+	// The region to use for the task's Bucket
+	Region string
+	// The executor used to execute tasks. Available executors: docker, kubernetes
+	Executor string
 	// Turn off task state reconciler. When enabled, Funnel communicates with Kuberenetes
 	// to find tasks that are stuck in a queued state or errored and updates the task state
 	// accordingly.
@@ -395,9 +451,19 @@ type Kubernetes struct {
 	Template string
 	// TemplateFile is the path to the job template.
 	TemplateFile string
+	// Job template used for executing the tasks.
+	ExecutorTemplate string
+	// ExecutorTemplateFile is the path to the executor template.
+	ExecutorTemplateFile string
+	// Worker/Executor PV job template.
+	PVTemplate string
+	// Worker/Executor PVC job template.
+	PVCTemplate string
 	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
 	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
 	ConfigFile string
 	// Namespace to spawn jobs within
 	Namespace string
+	// ServiceAccount is the name of the service account to use when running tasks.
+	ServiceAccount string
 }

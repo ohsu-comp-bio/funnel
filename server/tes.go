@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -29,6 +30,7 @@ type TaskService struct {
 	Compute events.Computer
 	Read    tes.ReadOnlyServer
 	Log     *logger.Logger
+	Config  config.Config
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -44,6 +46,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		return nil, fmt.Errorf("error from backend: %s", err)
 	}
 
+	ctx = context.WithValue(ctx, "Config", ts.Config)
 	if err := ts.Event.WriteEvent(ctx, events.NewTaskCreated(task)); err != nil {
 		return nil, fmt.Errorf("error creating task: %s", err)
 	}
@@ -76,18 +79,25 @@ func (ts *TaskService) ListTasks(ctx context.Context, req *tes.ListTasksRequest)
 
 // CancelTask cancels a task
 func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
+	result := &tes.CancelTaskResponse{}
+
+	// updated database and other event streams (includes access-checking)
+	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	if err == tes.ErrNotFound {
+		return result, status.Errorf(codes.NotFound, "%v: taskID: %s", err.Error(), req.Id)
+	} else if err == tes.ErrNotPermitted {
+		return result, status.Errorf(codes.PermissionDenied, "%v: taskID: %s", err.Error(), req.Id)
+	} else if err != nil {
+		return result, err
+	}
+
 	// dispatch to compute backend
-	err := ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	err = ts.Compute.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
 	if err != nil {
 		ts.Log.Error("compute backend failed to cancel task", "taskID", req.Id, "error", err)
 	}
 
-	// updated database and other event streams
-	err = ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
-	if err == tes.ErrNotFound {
-		err = status.Errorf(codes.NotFound, "%v: taskID: %s", err.Error(), req.Id)
-	}
-	return &tes.CancelTaskResponse{}, err
+	return result, err
 }
 
 // GetServiceInfo returns service metadata.

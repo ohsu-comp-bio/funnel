@@ -24,14 +24,14 @@ these services without using nodes or the scheduler.
 ### Usage
 
 Nodes are available via the `funnel node` command. To start a node, run
-```
+```sh
 funnel node run --config node.config.yml
 ```
 
 To activate the Funnel scheduler, use the `manual` backend in the config.
 
 The available scheduler and node config:
-```
+```yaml
 # Activate the Funnel scheduler.
 Compute: manual
 

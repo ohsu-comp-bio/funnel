@@ -8,6 +8,7 @@ import (
 	"github.com/boltdb/bolt"
 	proto "github.com/golang/protobuf/proto"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -38,6 +39,7 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			tx.Bucket(TaskBucket).Put(idBytes, taskString)
 			tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
+			tx.Bucket(TaskOwner).Put(idBytes, []byte(server.GetUsername(ctx)))
 			return nil
 		})
 		if err != nil {
@@ -52,7 +54,7 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 
 	// Check that the task exists
 	err = taskBolt.db.View(func(tx *bolt.Tx) error {
-		_, err := getTaskView(tx, req.Id, tes.View_MINIMAL)
+		_, err := getTaskView(tx, req.Id, tes.View_MINIMAL, nil)
 		return err
 	})
 	if err != nil {
@@ -65,6 +67,9 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 	switch req.Type {
 	case events.Type_TASK_STATE:
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+			if err := checkOwner(tx, req.Id, ctx); err != nil {
+				return err
+			}
 			return transitionTaskState(tx, req.Id, req.GetState())
 		})
 
@@ -146,6 +151,9 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 			tx.Bucket(SysLogs).Put(idBytes, logbytes)
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return err

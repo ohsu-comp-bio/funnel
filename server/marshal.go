@@ -77,6 +77,7 @@ func (mclean *CustomMarshal) MarshalList(list *tes.ListTasksResponse) ([]byte, e
 		for _, task := range list.Tasks {
 			minTask := mclean.TranslateTask(task, view).(*tes.TaskMin)
 			minList.Tasks = append(minList.Tasks, minTask)
+			minList.NextPageToken = list.NextPageToken
 		}
 		return mclean.m.Marshal(minList)
 	}
@@ -86,6 +87,7 @@ func (mclean *CustomMarshal) MarshalList(list *tes.ListTasksResponse) ([]byte, e
 		for _, task := range list.Tasks {
 			basicTask := mclean.TranslateTask(task, view).(*tes.TaskBasic)
 			basicList.Tasks = append(basicList.Tasks, basicTask)
+			basicList.NextPageToken = list.NextPageToken
 		}
 		return mclean.m.Marshal(basicList)
 	}

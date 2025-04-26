@@ -1,9 +1,22 @@
 name: Nextflow Test
 
 on:
+  # Run on push to main/master/develop (e.g. after PR is merged)
   push:
+    branches:
+      - main
+      - master
+  # Run on PR to main/master/develop
   pull_request:
+    branches:
+      - main
+      - master
+      - develop
 
+# Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     uses: ./.github/workflows/build.yml
@@ -30,9 +43,25 @@ jobs:
 
     - name: Install Nextflow
       run: |
-        git clone https://github.com/nextflow-io/nextflow
-        cd nextflow
-        make compile
+        echo "Installing Nextflow: https://www.nextflow.io/docs/latest/install.html"
+
+        # Install Java 17
+        curl -s https://get.sdkman.io | bash
+        source "/home/runner/.sdkman/bin/sdkman-init.sh"
+        sdk install java 17.0.10-tem
+        java -version
+
+        # Install Nextflow
+        curl -s https://get.nextflow.io | bash
+        chmod +x nextflow
+        mkdir -p $HOME/.local/bin/
+        mv nextflow $HOME/.local/bin/
+
+        # Ensure Nextflow is in PATH
+        export PATH=$HOME/.local/bin:$PATH
+        echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+
+        nextflow info
 
     - name: Install nf-canary and GA4GH-TES plugin
       run: |
@@ -48,4 +77,4 @@ jobs:
 
     - name: Run nf-canary tests
       run: |
-        ./nextflow/nextflow run nf-canary/main.nf
+        nextflow run nf-canary/main.nf

@@ -9,25 +9,25 @@ menu:
 # AWS Batch
 
 This guide covers deploying a Funnel server that leverages [DynamoDB][0] for storage
-and [AWS Batch][1] for task execution. 
+and [AWS Batch][1] for task execution.
 
 ## Setup
 
-Get started by creating a compute environment, job queue and job definition using either 
-the Funnel CLI or the AWS Batch web console. To manage the permissions of instanced 
-AWS Batch jobs create a new IAM role. For the Funnel configuration outlined 
+Get started by creating a compute environment, job queue and job definition using either
+the Funnel CLI or the AWS Batch web console. To manage the permissions of instanced
+AWS Batch jobs create a new IAM role. For the Funnel configuration outlined
 in this document, this role will need to provide read and write access to both S3 and DynamoDB.
 
-_Note_: We recommend creating the Job Definition with Funnel by running: `funnel aws batch create-job-definition`. 
-Funnel expects the JobDefinition to start a Funnel worker process with a specific configuration. 
-Only advanced users should consider making any substantial changes to this Job Definition. 
+_Note_: We recommend creating the Job Definition with Funnel by running: `funnel aws batch create-job-definition`.
+Funnel expects the JobDefinition to start a Funnel worker process with a specific configuration.
+Only advanced users should consider making any substantial changes to this Job Definition.
 
-AWS Batch tasks, by default, launch the ECS Optimized AMI which includes 
-an 8GB volume for the operating system and a 22GB volume for Docker image and metadata 
-storage. The default Docker configuration allocates up to 10GB of this storage to 
+AWS Batch tasks, by default, launch the ECS Optimized AMI which includes
+an 8GB volume for the operating system and a 22GB volume for Docker image and metadata
+storage. The default Docker configuration allocates up to 10GB of this storage to
 each container instance. [Read more about the default AMI][8]. Due to these limitations, we
-recommend [creating a custom AMI][7]. Because AWS Batch has the same requirements for your 
-AMI as Amazon ECS, use the default Amazon ECS-optimized Amazon Linux AMI as a base and change it 
+recommend [creating a custom AMI][7]. Because AWS Batch has the same requirements for your
+AMI as Amazon ECS, use the default Amazon ECS-optimized Amazon Linux AMI as a base and change it
 to better suit your tasks.
 
 ### Steps
@@ -37,7 +37,7 @@ to better suit your tasks.
 * [Create an EC2ContainerTaskRole with policies for managing access to S3 and DynamoDB][5]
 * [Create a Job Definition][6]
 
-For more information check out AWS Batch's [getting started guide][2]. 
+For more information check out AWS Batch's [getting started guide][2].
 
 ### Quickstart
 
@@ -51,8 +51,8 @@ This command will create a compute environment, job queue, IAM role and job defi
 ## Configuring the Funnel Server
 
 Below is an example configuration. Note that the `Key`
-and `Secret` fields are left blank in the configuration of the components. This is because 
-Funnel will, by default, try to will try to automatically load credentials from the environment. 
+and `Secret` fields are left blank in the configuration of the components. This is because
+Funnel will, by default, try to automatically load credentials from the environment.
 Alternatively, you may explicitly set the credentials in the config.
 
 ```YAML
@@ -69,11 +69,11 @@ Dynamodb:
 
 Batch:
   JobDefinition: "funnel-job-def"
-  JobQueue: "funnel-job-queue" 
+  JobQueue: "funnel-job-queue"
   Region: "us-west-2"
   Key: ""
   Secret: ""
-          
+
 AmazonS3:
   Key: ""
   Secret: ""
@@ -81,7 +81,7 @@ AmazonS3:
 
 ### Start the server
 
-```
+```sh
 funnel server run --config /path/to/config.yaml
 ```
 

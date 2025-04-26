@@ -3,12 +3,12 @@
 Database: boltdb
 
 # The name of the active compute backend
-# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch
+# Available backends: local, htcondor, slurm, pbs, gridengine, manual, aws-batch, kubernetes
 Compute: local
 
 # The name of the active event writer backend(s).
 # Available backends: log, boltdb, badger, datastore, dynamodb, elastic, mongodb, kafka
-EventWriters: 
+EventWriters:
   - boltdb
   - log
 
@@ -32,17 +32,48 @@ Server:
   # If used, make sure to properly restrict access to the config file
   # (e.g. chmod 600 funnel.config.yml)
   # BasicAuth:
+  #   - User: admin
+  #     Password: oejf023moq
+  #     Admin: true
   #   - User: user1
   #     Password: abc123
   #   - User: user2
   #     Password: foobar
 
+  # Require Bearer JWT authentication for the server APIs.
+  # Server won't launch when configuration URL cannot be loaded.
+  # OidcAuth:
+  #   # URL of the OIDC service configuration (activates OIDC configuration):
+  #   # Example: https://example.org/oidc/.well-knwon/openid-configuration
+  #   ServiceConfigURL:
+  #   # Client ID and secret are sent with the token introspection request
+  #   ClientId:
+  #   ClientSecret:
+  #   # The URL where OIDC should redirect after login (keep the path '/login')
+  #   RedirectURL: "http://localhost:8000/login"
+  #   # Optional: if specified, this scope value must be in the token:
+  #   RequireScope:
+  #   # Optional: if specified, this audience value must be in the token:
+  #   RequireAudience:
+  #   # List of usernames (JWT sub-claim) to be granted Admin-role:
+  #   Admins:
+  #     - admin.username.one@example.org
+  #     - admin.username.two@example.org
+
   # Include a "Cache-Control: no-store" HTTP header in Get/List responses
   # to prevent caching by intermediary services.
   DisableHTTPCache: true
 
+  # Defines task access and visibility by options:
+  # "All" (default) - all tasks are visible to everyone
+  # "Owner" - tasks are visible to the users who created them
+  # "OwnerOrAdmin" - extends "Owner" by allowing Admin-users see everything
+  # Owner is the username associated with the task.
+  # Owners (usernames) were not recorded to tasks before Funnel 0.11.1.
+  TaskAccess: All
+
 RPCClient:
-  # RPC server address 
+  # RPC server address
   ServerAddress: localhost:9090
 
   # Credentials for Basic authentication for the server APIs using a password.
@@ -59,7 +90,7 @@ RPCClient:
   # up to 1 minute
   MaxRetries: 10
 
-# The scheduler is used for the Manual compute backend. 
+# The scheduler is used for the Manual compute backend.
 Scheduler:
   # How often to run a scheduler iteration.
   ScheduleRate: 1s
@@ -78,7 +109,7 @@ Node:
   # -1 means there is no timeout. 0 means timeout immediately after the first task.
   Timeout: -1s
 
-  # A Node will automatically try to detect what resources are available to it. 
+  # A Node will automatically try to detect what resources are available to it.
   # Defining Resources in the Node configuration overrides this behavior.
   Resources:
     # CPUs available.
@@ -141,6 +172,16 @@ Elastic:
   IndexPrefix: funnel
   # URL of the elasticsearch server.
   URL: http://localhost:9200
+  # Optional. Username for HTTP Basic Authentication.
+  Username:
+  # Optional. Password for HTTP Basic Authentication.
+  Password:
+  # Optional. Endpoint for the Elastic Service (https://elastic.co/cloud).
+  CloudID:
+  # Optional. Base64-encoded token for authorization; if set, overrides username/password and service token.
+  APIKey:
+  # Optional. Service token for authorization; if set, overrides username/password.
+  ServiceToken:
 
 # Google Cloud Datastore task database.
 Datastore:
@@ -149,11 +190,11 @@ Datastore:
   # Optional. If possible, credentials will be automatically discovered
   # from the environment.
   CredentialsFile: ""
-  
+
 MongoDB:
   # Addrs holds the addresses for the seed servers.
   Addrs:
-    - mongodb://localhost
+    - localhost
   # Database is the database name used within MongoDB to store funnel data.
   Database: funnel
   # Timeout is the amount of time to wait for a server to respond when
@@ -298,6 +339,8 @@ AWSBatch:
 
 # Kubernetes describes the configuration for the Kubernetes compute backend.
 Kubernetes:
+  # The executor used to execute tasks. Available executors: docker, kubernetes
+  Executor: "docker"
   # Turn off task state reconciler. When enabled, Funnel communicates with Kubernetes
   # to find tasks that are stuck in a queued state or errored and
   # updates the task state accordingly.
@@ -306,11 +349,20 @@ Kubernetes:
   # to those reported by the backend
   ReconcileRate: 10m
   # Kubernetes Namespace to spawn jobs within
-  Namespace: ""
-  # Batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
+  Namespace: "default"
+  # Kubernetes ServiceAccount to use for the job
+  ServiceAccount: "funnel-sa"
+  # Master batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
   Template: ""
-  # TemplateFile is the path to the job template.
+  # TemplateFile is the path to the master job template.
   TemplateFile: ""
+
+  # Configuration of the Kubernetes executor.
+
+  # Job template used for executing the tasks.
+  ExecutorTemplate: ""
+  # ExecutorTemplateFile is the path to the executor template.
+  ExecutorTemplateFile: ""
 
 #-------------------------------------------------------------------------------
 # Storage
@@ -338,6 +390,14 @@ AmazonS3:
   Key: ""
   # AWS Secret Access Key
   Secret: ""
+  # Server Side Encryption (SSE) settings
+  SSE:
+    # Customer Provided Key
+    # ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html
+    CustomerKeyFile: ""
+    # KMS Key
+    # ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html
+    KMSKey: ""
 
 # Configure storage backends for S3 providers such as Minio and/or Ceph
 # GenericS3:

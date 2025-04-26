@@ -5,9 +5,9 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/tes"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,12 +15,22 @@ import (
 
 // ReadQueue returns a slice of queued Tasks. Up to "n" tasks are returned.
 func (db *MongoDB) ReadQueue(n int) []*tes.Task {
-	fmt.Println("Reading queue!")
-	var tasks []*tes.Task
-	opts := options.Find().SetSort(bson.M{"creationtime": 1}).SetLimit(int64(n))
-	cursor, err := db.tasks(db.client).Find(context.TODO(), bson.M{"state": tes.State_QUEUED}, opts)
+	ctx, cancel := db.context()
+	defer cancel()
 
-	err = cursor.All(context.TODO(), &tasks)
+	fmt.Println("Reading queue!")
+	opts := options.Find().SetSort(bson.M{"creationtime": 1}).SetLimit(int64(n))
+	cursor, err := db.tasks().Find(ctx, bson.M{"state": tes.State_QUEUED}, opts)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	ctx, cancel = db.context()
+	defer cancel()
+
+	var tasks []*tes.Task
+	err = cursor.All(ctx, &tasks)
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -33,7 +43,7 @@ func (db *MongoDB) ReadQueue(n int) []*tes.Task {
 // and status updates, such as completed tasks. The server responds with updated
 // information for the node, such as canceled tasks.
 func (db *MongoDB) PutNode(ctx context.Context, node *scheduler.Node) (*scheduler.PutNodeResponse, error) {
-	nodes := db.nodes(db.client)
+	nodes := db.nodes()
 
 	q := bson.M{"id": node.Id}
 
@@ -41,30 +51,42 @@ func (db *MongoDB) PutNode(ctx context.Context, node *scheduler.Node) (*schedule
 		q["version"] = node.GetVersion()
 	}
 
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
 	var existing scheduler.Node
-	err := nodes.FindOne(context.TODO(), bson.M{"id": node.Id}).Decode(&existing)
+	err := nodes.FindOne(mctx, bson.M{"id": node.Id}).Decode(&existing)
 	if err != nil {
 		return nil, err
 	}
 
+	mctx, cancel = db.wrap(ctx)
+	defer cancel()
+
 	db.GetTask(ctx, &tes.GetTaskRequest{Id: "foo"})
-	err = scheduler.UpdateNode(ctx, db, node, &existing)
+	err = scheduler.UpdateNode(mctx, db, node, &existing)
 	if err != nil {
 		return nil, err
 	}
 
 	node.Version = node.GetVersion() + 1
 
-	opts := options.Update().SetUpsert(true)
-	_, err = nodes.UpdateOne(context.TODO(), q, node, opts)
+	mctx, cancel = db.wrap(ctx)
+	defer cancel()
+
+	opts := options.UpdateOne().SetUpsert(true)
+	_, err = nodes.UpdateOne(mctx, q, node, opts)
 
 	return &scheduler.PutNodeResponse{}, err
 }
 
 // GetNode gets a node
 func (db *MongoDB) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (*scheduler.Node, error) {
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
 	var node scheduler.Node
-	err := db.nodes(db.client).FindOne(context.TODO(), bson.M{"id": req.Id}).Decode(&node)
+	err := db.nodes().FindOne(mctx, bson.M{"id": req.Id}).Decode(&node)
 	if err == mongo.ErrNoDocuments {
 		return nil, status.Errorf(codes.NotFound, "%v: nodeID: %s", err, req.Id)
 	}
@@ -74,8 +96,11 @@ func (db *MongoDB) GetNode(ctx context.Context, req *scheduler.GetNodeRequest) (
 
 // DeleteNode deletes a node
 func (db *MongoDB) DeleteNode(ctx context.Context, req *scheduler.Node) (*scheduler.DeleteNodeResponse, error) {
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
 	fmt.Println("DeleteNode", req.Id)
-	_, err := db.nodes(db.client).DeleteOne(context.TODO(), bson.M{"id": req.Id})
+	_, err := db.nodes().DeleteOne(mctx, bson.M{"id": req.Id})
 	fmt.Println("DeleteNode", req.Id, err)
 	if err == mongo.ErrNoDocuments {
 		return nil, status.Errorf(codes.NotFound, "%v: nodeID: %s", err, req.Id)
@@ -85,13 +110,16 @@ func (db *MongoDB) DeleteNode(ctx context.Context, req *scheduler.Node) (*schedu
 
 // ListNodes is an API endpoint that returns a list of nodes.
 func (db *MongoDB) ListNodes(ctx context.Context, req *scheduler.ListNodesRequest) (*scheduler.ListNodesResponse, error) {
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
 	var nodes []*scheduler.Node
-	cursor, err := db.nodes(db.client).Find(context.TODO(), nil)
+	cursor, err := db.nodes().Find(mctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	err = cursor.All(context.TODO(), &nodes)
+	err = cursor.All(mctx, &nodes)
 	if err != nil {
 		return nil, err
 	}

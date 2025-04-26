@@ -6,15 +6,17 @@ import (
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // WriteEvent creates an event for the server to handle.
 func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
-	tasks := db.tasks(db.client)
+	tasks := db.tasks()
 
 	update := bson.M{}
 	selector := bson.M{"id": req.Id}
@@ -29,36 +31,36 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 				SystemLogs: []string{},
 			},
 		}
-		_, err := tasks.InsertOne(context.TODO(), &task)
-		return err
+		return db.insertTask(ctx, task)
 
 	case events.Type_TASK_STATE:
 		retrier := util.NewRetrier()
 		retrier.ShouldRetry = func(err error) bool {
-			return err == tes.ErrConcurrentStateChange
+			_, isTransitionError := err.(*tes.TransitionError)
+			return !isTransitionError && err != tes.ErrNotFound && err != tes.ErrNotPermitted
 		}
 
 		return retrier.Retry(ctx, func() error {
 			// get current state & version
-			current := make(map[string]interface{})
-			opts := options.FindOne().SetProjection(bson.M{"state": 1, "version": 1})
-			err := tasks.FindOne(context.TODO(), bson.M{"id": req.Id}, opts).Decode(&current)
+			state, version, err := db.findTaskStateAndVersion(ctx, req.Id)
 			if err != nil {
-				return tes.ErrNotFound
+				return err
 			}
 
 			// validate state transition
-			from := tes.State(current["state"].(int32))
 			to := req.GetState()
-			if err = tes.ValidateTransition(from, to); err != nil {
+			if err = tes.ValidateTransition(state, to); err != nil {
 				return err
 			}
 
 			// apply version restriction and set update
-			selector["version"] = current["version"]
+			selector["version"] = version
 			update = bson.M{"$set": bson.M{"state": to, "version": time.Now().UnixNano()}}
 
-			result, err := tasks.UpdateOne(context.TODO(), selector, update)
+			mctx, cancel := db.wrap(ctx)
+			defer cancel()
+
+			result, err := tasks.UpdateOne(mctx, selector, update)
 			if result.MatchedCount == 0 {
 				return tes.ErrConcurrentStateChange
 			}
@@ -137,7 +139,52 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 		}
 	}
 
-	opts := options.Update().SetUpsert(true)
-	_, err := tasks.UpdateOne(context.TODO(), selector, update, opts)
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	opts := options.UpdateOne().SetUpsert(true)
+	_, err := tasks.UpdateOne(mctx, selector, update, opts)
 	return err
+}
+
+func (db *MongoDB) insertTask(ctx context.Context, task *tes.Task) error {
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	tasks := db.tasks()
+	result, err := tasks.InsertOne(mctx, &task)
+
+	if err == nil {
+		mctx, cancel := db.wrap(ctx)
+		defer cancel()
+
+		updateOwner := bson.M{"$set": bson.M{"owner": server.GetUsername(ctx)}}
+		_, err = tasks.UpdateOne(mctx, bson.M{"_id": result.InsertedID}, updateOwner)
+	}
+
+	return err
+}
+
+func (db *MongoDB) findTaskStateAndVersion(ctx context.Context, taskId string) (tes.State, interface{}, error) {
+	mctx, cancel := db.wrap(ctx)
+	defer cancel()
+
+	props := make(map[string]interface{})
+	opts := options.FindOne().SetProjection(bson.M{"state": 1, "version": 1, "owner": 1})
+	err := db.tasks().FindOne(mctx, bson.M{"id": taskId}, opts).Decode(&props)
+
+	if err == mongo.ErrNoDocuments {
+		return tes.State_UNKNOWN, nil, tes.ErrNotFound
+	} else if err != nil {
+		return tes.State_UNKNOWN, nil, err
+	}
+
+	taskOwner := props["owner"].(string)
+	if !server.GetUser(ctx).IsAccessible(taskOwner) {
+		return tes.State_UNKNOWN, nil, tes.ErrNotPermitted
+	}
+
+	state := tes.State(props["state"].(int32))
+	version := props["version"]
+	return state, version, nil
 }

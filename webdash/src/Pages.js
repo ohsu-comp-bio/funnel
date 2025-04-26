@@ -54,32 +54,30 @@ function TaskList({pageToken, setPageToken,
     params.set("pageSize", pageSize);
     if (stateFilter !== "") {
       params.set("state", stateFilter);
-    };
+    }
     for (var i = 0; i < tagsFilter.length; i++) {
       var tag = tagsFilter[i];
       if (tag.key !== "") {
         params.set("tag_key", tag.key);
-      };
+      }
       if (tag.value !== "") {
         params.set("tag_value", tag.value);
-      };
-    };
+      }
+    }
     if (pageToken !== "") {
       params.set("pageToken", pageToken);
-    };
-    fetch(url.toString())
-      .then(response => response.json())
+    }
+    get(url)
       .then(
         (result) => {
-          //console.log("listTasks result:", result);
           var tasks = [];
           if (result.tasks !== undefined) {
             tasks = result.tasks;
-          };
+          }
           var nextPageToken = "";
           if (result.nextPageToken !== undefined) {
             nextPageToken = result.nextPageToken;
-          };          
+          }
           setTasks(tasks);
           setNextPageToken(nextPageToken);
         },
@@ -129,10 +127,10 @@ function TaskList({pageToken, setPageToken,
                 rowsPerPage={pageSize}
                 onChangeRowsPerPage={(event) => setPageSize(event.target.value)}
                 ActionsComponent={
-                  (actions) => { 
+                  (actions) => {
                     return (
                       <div style={{flexShrink: 0}}>
-                        <IconButton 
+                        <IconButton
                           onClick={(event) => prevPage()}
                           disabled={prevPageToken.length === 0}
                           aria-label="Previous Page"
@@ -140,7 +138,7 @@ function TaskList({pageToken, setPageToken,
                           <KeyboardArrowLeft />
                         </IconButton>
                         <IconButton
-                          onClick={(event) => nextPage()} 
+                          onClick={(event) => nextPage()}
                           disabled={nextPageToken === ""}
                           aria-label="Next Page"
                         >
@@ -184,10 +182,7 @@ function NodeList() {
   };
 
   React.useEffect(() => {
-    var url = new URL("/v1/nodes", window.location.origin);
-    // console.log("listNodes url:", url);
-    fetch(url.toString())
-      .then(response => response.json())
+    get(new URL("/v1/nodes", window.location.origin))
       .then(
         (result) => {
           if (result.nodes !== undefined) {
@@ -235,7 +230,7 @@ function Task() {
   let { task_id } = useParams();
   const [task, setTask] = React.useState({});
   //const [task, setTask] = React.useState(example_task);
-  
+
   React.useEffect(() => {
     var url = new URL("/v1/tasks/" + task_id, window.location.origin);
     get(url).then(
@@ -315,14 +310,12 @@ function ServiceInfo() {
 
   React.useEffect(() => {
     var url = new URL("/v1/service-info", window.location.origin);
-    console.log("DEBUG: ServiceInfo url:", url);
     get(url).then(
       (info) => {
-        console.log("DEBUG: ServiceInfo info:", info);
         setInfo(info);
       });
   }, []);
-  
+
   const json = (
     <ReactJson
       src={info}

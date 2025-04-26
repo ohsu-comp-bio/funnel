@@ -13,19 +13,28 @@
 # output a ssh address associated with the Github action worker. Helpful for debugging build steps and
 # and intermediary files/artifacts.
 #
-# - name: "Debug: Package dependancies for tmate (CentOS)"
-#   run: |
-#     yum install -y xz
-#     ln -s /bin/true /bin/apt-get
-#
 # - name: Setup tmate session
 #   uses: mxschmitt/action-tmate@v3
 
 name: Compliance Test
 
 on:
+  # Run on push to main/master/develop (e.g. after PR is merged)
   push:
+    branches:
+      - main
+      - master
+  # Run on PR to main/master/develop
   pull_request:
+    branches:
+      - main
+      - master
+      - develop
+
+# Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -37,7 +46,9 @@ jobs:
       matrix:
         version: [1.0.0, 1.1.0]
         db: ["boltdb", "mongodb"]
-        compute: ["local", "kubernetes"]
+        # Temporary: Only test local compute backend until we bring up a K8s cluster in Github Actions
+        # compute: ["local", "kubernetes"]
+        compute: ["local"]
         storage: ["local", "s3"]
     needs: build
     runs-on: ubuntu-latest
@@ -70,6 +81,11 @@ jobs:
             cat `pwd`/tests/s3.config.yml >> config.yml
           fi
 
+          if [ ${{ matrix.compute }} = "kubernetes" ]; then
+            kubectl apply -f tests/k8s
+            cat `pwd`/tests/k8s.config.yml >> config.yml
+          fi
+
           chmod +x funnel
           ./funnel server run --config `pwd`/config.yml &> funnel.logs &
 
@@ -82,4 +98,3 @@ jobs:
           pip install -r requirements.txt
           python setup.py install  
           openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
-

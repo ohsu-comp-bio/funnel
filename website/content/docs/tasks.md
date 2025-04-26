@@ -49,7 +49,7 @@ Tasks have multiple "executors"; containers and commands run in a sequence.
 Funnel runs executors via Docker.
 
 Tasks also have state and logs:
-```JSON
+```
 {
   "id": "b85khc2rl6qkqbhg8vig",
   "state": "COMPLETE",

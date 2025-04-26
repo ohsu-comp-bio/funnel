@@ -13,7 +13,7 @@ and scheduler data. This is great for development and a simple server without
 external dependencies, but it doesn't scale well to larger clusters.
 
 Available config:
-```
+```yaml
 Database: boltdb
 
 BoltDB:

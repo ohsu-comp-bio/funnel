@@ -233,6 +233,31 @@ func TestLocalPutPath(t *testing.T) {
 	}
 }
 
+func TestProcessFile(t *testing.T) {
+	ctx := context.Background()
+	tmp, err := os.MkdirTemp("", "funnel-test-local-storage")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cp := path.Join(tmp, "input.txt")
+	op := path.Join(tmp, "output.txt")
+	os.WriteFile(cp, []byte("foo"), os.ModePerm)
+
+	err = processFile(ctx, cp, op)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(op)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "foo" {
+		t.Fatal("Unexpected content")
+	}
+}
+
 // Tests Put when source and dest reference the same file (inode)
 // Since Local storage hard-links files when possible we need to protect
 // against the case where the same path is 'Put' twice

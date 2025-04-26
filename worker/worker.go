@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -19,10 +20,28 @@ import (
 // sequential process of task initialization, execution, finalization,
 // and logging.
 type DefaultWorker struct {
+	Executor    Executor
 	Conf        config.Worker
 	Store       storage.Storage
 	TaskReader  TaskReader
 	EventWriter events.Writer
+	Command
+}
+
+// Configuration of the task executor.
+type Executor struct {
+	// "docker" or "kubernetes"
+	Backend string
+	// Kubernetes executor template
+	Template string
+	// Kubernetes persistent volume template
+	PVTemplate string
+	// Kubernetes persistent volume claim template
+	PVCTemplate string
+	// Kubernetes namespace
+	Namespace string
+	// Kubernetes service account name
+	ServiceAccount string
 }
 
 // Run runs the Worker.
@@ -59,6 +78,13 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// set up task specific utilities
 	event = events.NewTaskWriter(task.GetId(), 0, r.EventWriter)
 	mapper = NewFileMapper(filepath.Join(r.Conf.WorkDir, task.GetId()))
+	if r.Conf.ScratchPath != "" {
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		mapper.ScratchDir = filepath.Join(scratchAbsDir, filepath.Join(r.Conf.WorkDir, task.GetId()))
+	}
 
 	event.Info("Version", version.LogFields()...)
 	event.State(tes.State_INITIALIZING)
@@ -129,24 +155,83 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		event.State(tes.State_RUNNING)
 	}
 
+	// Create symlinks between the working directory and the Scratch Directory
+	if run.ok() && r.Conf.ScratchPath != "" {
+		err := mapper.CopyInputsToScratch(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		// Get the absolute path of the scratch directory
+		scratchAbsDir, err := filepath.Abs(r.Conf.ScratchPath)
+		if err != nil {
+			return err
+		}
+		// For every volume in mapper, add the Scratch Path prefix to the host path
+		for idx, v := range mapper.Volumes {
+			v.HostPath = filepath.Join(scratchAbsDir, v.HostPath)
+			mapper.Volumes[idx] = v
+		}
+
+	}
+
 	// Run steps
 	if run.ok() {
+		var resources = task.GetResources()
+		if resources == nil {
+			resources = &tes.Resources{}
+		}
+
 		ignoreError := false
 		for i, d := range task.GetExecutors() {
-			s := &stepWorker{
-				Conf:  r.Conf,
-				Event: event.NewExecutorWriter(uint32(i)),
-				Command: &DockerCommand{
-					Image:         d.Image,
-					Command:       d.Command,
-					Env:           d.Env,
-					Volumes:       mapper.Volumes,
-					Workdir:       d.Workdir,
-					ContainerName: fmt.Sprintf("%s-%d", task.Id, i),
+			var command = Command{
+				Image:        d.Image,
+				ShellCommand: d.Command,
+				Volumes:      mapper.Volumes,
+				Workdir:      d.Workdir,
+				Env:          d.Env,
+				Event:        event.NewExecutorWriter(uint32(i)),
+			}
+
+			var taskCommand TaskCommand
+
+			if r.Executor.Backend == "kubernetes" {
+				taskCommand = &KubernetesCommand{
+					TaskId:       task.Id,
+					JobId:        i,
+					StdinFile:    d.Stdin,
+					TaskTemplate: r.Executor.Template,
+					Namespace:    r.Executor.Namespace,
+					Resources:    resources,
+					Command:      command,
+				}
+			} else {
+				taskCommand = &DockerCommand{
+					Volumes: mapper.Volumes,
+					Workdir: d.Workdir,
+					Name:    fmt.Sprintf("%s-%d", task.Id, i),
 					// TODO make RemoveContainer configurable
 					RemoveContainer: true,
 					Event:           event.NewExecutorWriter(uint32(i)),
-				},
+					DriverCommand:   r.Conf.Container.DriverCommand,
+					RunCommand:      r.Conf.Container.RunCommand,
+					PullCommand:     r.Conf.Container.PullCommand,
+					StopCommand:     r.Conf.Container.StopCommand,
+					Command:         command,
+				}
+
+				// Hide this behind explicit flag/option in configuration
+				// if r.Conf.Container.EnableTags {
+				// 	for k, v := range task.Tags {
+				// 		safeTag := r.sanitizeValues(v)
+				// 		taskCommand.Tags[k] = safeTag
+				// 	}
+				// }
+			}
+
+			s := &stepWorker{
+				Conf:    r.Conf,
+				Event:   event.NewExecutorWriter(uint32(i)),
+				Command: taskCommand,
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
@@ -167,6 +252,15 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 		for _, output := range mapper.Outputs {
 			fixLinks(mapper, output.Path)
 		}
+	}
+
+	if run.ok() {
+		// Resolve wildcards in the output paths
+		resolveWildcards(mapper)
+	}
+
+	if run.ok() && r.Conf.ScratchPath != "" {
+		mapper.CopyOutputsToWorkDir(r.Conf.ScratchPath)
 	}
 
 	// Upload outputs
@@ -195,10 +289,15 @@ func (r *DefaultWorker) Close() {
 // openLogs opens/creates the logs files for a step and updates those fields.
 func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.Executor) error {
 
-	// Find the path for task stdin
+	var stdin *os.File
+	var stdout *os.File
+	var stderr *os.File
 	var err error
+
+	// Find the path for task stdin
 	if d.Stdin != "" {
-		s.Command.Stdin, err = mapper.OpenHostFile(d.Stdin)
+		stdin, err = mapper.CreateHostFile(d.Stdin)
+		s.Command.SetStdin(stdin)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -207,7 +306,8 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stdout
 	if d.Stdout != "" {
-		s.Command.Stdout, err = mapper.CreateHostFile(d.Stdout)
+		stdout, err = mapper.CreateHostFile(d.Stdout)
+		s.Command.SetStdout(stdout)
 		if err != nil {
 			s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -216,7 +316,8 @@ func (r *DefaultWorker) openStepLogs(mapper *FileMapper, s *stepWorker, d *tes.E
 
 	// Create file for task stderr
 	if d.Stderr != "" {
-		s.Command.Stderr, err = mapper.CreateHostFile(d.Stderr)
+		stderr, err = mapper.CreateHostFile(d.Stderr)
+		s.Command.SetStderr(stderr)
 		if err != nil {
 			_ = s.Event.Error("Couldn't prepare log files", err)
 			return err
@@ -242,6 +343,14 @@ func (r *DefaultWorker) validate(mapper *FileMapper) error {
 		}
 	}
 	return nil
+}
+
+// Sanitizes the input string to avoid command injection.
+// Only allows alphanumeric characters, dashes, underscores, and dots.
+func (r *DefaultWorker) sanitizeValues(value string) string {
+	// Replace anything that is not an alphanumeric character, dash, underscore, or dot
+	re := regexp.MustCompile(`[^a-zA-Z0-9-_\.]`)
+	return re.ReplaceAllString(value, "")
 }
 
 func (r *DefaultWorker) pollForCancel(pctx context.Context, cancelCallback func()) context.Context {

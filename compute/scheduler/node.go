@@ -34,7 +34,7 @@ func NewNodeProcess(ctx context.Context, conf *config.Config, factory Worker, lo
 		log.Error("error detecting resources", "error", derr)
 	}
 
-	timeout := util.NewIdleTimeout(conf.Node.Timeout.AsDuration())
+	timeout := util.NewIdleTimeout(conf.Node.Timeout.GetDuration().AsDuration())
 	state := NodeState_UNINITIALIZED
 
 	return &NodeProcess{

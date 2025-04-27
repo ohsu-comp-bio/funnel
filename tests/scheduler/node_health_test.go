@@ -29,7 +29,7 @@ func TestNodeDead(t *testing.T) {
 	// Some databases need time to sync the PutNode.
 	time.Sleep(time.Millisecond * 100)
 	// Wait for node to ping timeout.
-	time.Sleep(conf.Scheduler.NodePingTimeout.AsDuration())
+	time.Sleep(conf.Scheduler.NodePingTimeout.GetDuration().AsDuration())
 	// Should mark node as dead.
 	err = srv.Scheduler.CheckNodes()
 	if err != nil {
@@ -67,7 +67,7 @@ func TestNodeInitFail(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(conf.Scheduler.NodeInitTimeout.AsDuration())
+	time.Sleep(conf.Scheduler.NodeInitTimeout.GetDuration().AsDuration())
 	srv.Scheduler.CheckNodes()
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
@@ -102,7 +102,7 @@ func TestNodeDeadTimeout(t *testing.T) {
 
 	srv.Scheduler.CheckNodes()
 
-	time.Sleep(conf.Scheduler.NodeDeadTimeout.AsDuration())
+	time.Sleep(conf.Scheduler.NodeDeadTimeout.GetDuration().AsDuration())
 	srv.Scheduler.CheckNodes()
 
 	resp, err := srv.Scheduler.Nodes.ListNodes(ctx, &scheduler.ListNodesRequest{})
@@ -119,8 +119,20 @@ func TestNodeDeadTimeout(t *testing.T) {
 
 func nodeTestConfig(conf *config.Config) *config.Config {
 	conf.Compute = "manual"
-	conf.Scheduler.NodePingTimeout = durationpb.New(time.Millisecond * 300)
-	conf.Scheduler.NodeInitTimeout = durationpb.New(time.Millisecond * 300)
-	conf.Scheduler.NodeDeadTimeout = durationpb.New(time.Millisecond * 300)
+	conf.Scheduler.NodePingTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Millisecond * 300),
+		},
+	}
+	conf.Scheduler.NodeInitTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Millisecond * 300),
+		},
+	}
+	conf.Scheduler.NodeDeadTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Millisecond * 300),
+		},
+	}
 	return conf
 }

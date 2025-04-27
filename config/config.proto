@@ -84,11 +84,18 @@ message OidcAuth {
   repeated string Admins = 7;
 }
 
+message TimeoutConfig {
+  oneof timeout_option {
+    google.protobuf.Duration duration = 1;
+    bool disabled = 2; // Represents an infinite or disabled timeout
+  }
+}
+
 // RPCClient describes configuration for gRPC clients.
 message RPCClient {
   BasicCredential Credential = 1;
   string ServerAddress = 2;
-  google.protobuf.Duration Timeout = 3;
+  TimeoutConfig Timeout = 3;
   uint32 MaxRetries = 4;
 }
 
@@ -108,9 +115,9 @@ message Server {
 message Scheduler {
   google.protobuf.Duration ScheduleRate = 1;
   int32 ScheduleChunk = 2;
-  google.protobuf.Duration NodePingTimeout = 3;
-  google.protobuf.Duration NodeInitTimeout = 4;
-  google.protobuf.Duration NodeDeadTimeout = 5;
+  TimeoutConfig NodePingTimeout = 3;
+  TimeoutConfig NodeInitTimeout = 4;
+  TimeoutConfig NodeDeadTimeout = 5;
 }
 
 message Resources {
@@ -123,7 +130,7 @@ message Resources {
 message Node {
   string ID = 1;
   Resources Resources = 2;
-  google.protobuf.Duration Timeout = 3;
+  TimeoutConfig Timeout = 3;
   google.protobuf.Duration UpdateRate = 4;
   map<string, string> Metadata = 5;
 }
@@ -183,7 +190,7 @@ message Badger {
 message MongoDB {
   repeated string Addrs = 1;
   string Database = 2;
-  google.protobuf.Duration Timeout = 3;
+  TimeoutConfig Timeout = 3;
   string Username = 4;
   string Password = 5;
 }
@@ -291,13 +298,13 @@ message SwiftStorage {
 // HTTPStorage configures the HTTP storage backend.
 message HTTPStorage {
   bool Disabled = 1;
-  google.protobuf.Duration Timeout = 2;
+  TimeoutConfig Timeout = 2;
 }
 
 // FTPStorage configures the FTP storage backend.
 message FTPStorage {
   bool Disabled = 1;
-  google.protobuf.Duration Timeout = 2;
+  TimeoutConfig Timeout = 2;
   string User = 3;
   string Password = 4;
 }

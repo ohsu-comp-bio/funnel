@@ -51,7 +51,7 @@ func (db *MongoDB) context() (context.Context, context.CancelFunc) {
 }
 
 func (db *MongoDB) wrap(ctx context.Context) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(ctx, db.conf.Timeout.AsDuration())
+	return context.WithTimeout(ctx, db.conf.Timeout.GetDuration().AsDuration())
 }
 
 func (db *MongoDB) collection(name string) *mongo.Collection {

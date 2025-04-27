@@ -47,7 +47,12 @@ func TestGetNodeFail(t *testing.T) {
 // Test the flow of a node completing a task then timing out
 func TestNodeTimeout(t *testing.T) {
 	conf := config.DefaultConfig()
-	conf.Node.Timeout = durationpb.New(time.Millisecond)
+	conf.Node.Timeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Millisecond),
+		},
+	}
+	durationpb.New(time.Millisecond)
 	conf.Node.UpdateRate = durationpb.New(time.Millisecond * 2)
 
 	n := newTestNode(conf, t)
@@ -63,7 +68,7 @@ func TestNodeTimeout(t *testing.T) {
 	n.Start()
 
 	// Fail if this test doesn't complete in the given time.
-	cleanup := timeLimit(t, conf.Node.Timeout.AsDuration()*500)
+	cleanup := timeLimit(t, conf.Node.Timeout.GetDuration().AsDuration()*500)
 	defer cleanup()
 
 	// Wait for the node to exit

@@ -21,7 +21,7 @@ type HTTP struct {
 // NewHTTP creates a new HTTP instance.
 func NewHTTP(conf *config.HTTPStorage) (*HTTP, error) {
 	client := &http.Client{
-		Timeout: conf.Timeout.AsDuration(),
+		Timeout: conf.Timeout.GetDuration().AsDuration(),
 	}
 	return &HTTP{client}, nil
 }

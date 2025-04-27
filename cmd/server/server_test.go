@@ -27,10 +27,10 @@ func TestPersistentPreRun(t *testing.T) {
 		if conf.Server.HTTPPort != fileConf.Server.HTTPPort {
 			t.Fatal("unexpected http port in server config")
 		}
-		if conf.RPCClient.Timeout.AsDuration() != 1000000000 {
+		if conf.RPCClient.Timeout.GetDuration().AsDuration() != 1000000000 {
 			t.Fatal("unexpected rpc client timeout in server config")
 		}
-		if conf.Scheduler.NodePingTimeout.AsDuration() != 60000000000 {
+		if conf.Scheduler.NodePingTimeout.GetDuration().AsDuration() != 60000000000 {
 			t.Fatal("unexpected node ping timeout in scheduler config")
 		}
 		if conf.Compute != backend {

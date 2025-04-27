@@ -31,7 +31,8 @@ func TestPersistentPreRun(t *testing.T) {
 		if conf.Server.RPCPort != rpcport {
 			t.Fatal("unexpected Server.RPCAddress in config", conf.Server.RPCPort)
 		}
-		if conf.RPCClient.Timeout.AsDuration() != 10000000 {
+		t.Log(conf.RPCClient.Timeout.GetDuration().AsDuration())
+		if conf.RPCClient.Timeout.GetDuration().AsDuration() != 10000000 {
 			t.Fatal("unexpected rpc client timeout in config")
 		}
 		if conf.Worker.WorkDir != workDir {

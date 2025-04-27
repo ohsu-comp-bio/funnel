@@ -42,19 +42,39 @@ func DefaultConfig() *Config {
 		Server: server,
 		RPCClient: &RPCClient{
 			ServerAddress: server.RPCAddress(),
-			Timeout:       durationpb.New(time.Second * 60),
-			MaxRetries:    10,
-			Credential:    &BasicCredential{},
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Second * 60),
+				},
+			},
+			MaxRetries: 10,
+			Credential: &BasicCredential{},
 		},
 		Scheduler: &Scheduler{
-			ScheduleRate:    durationpb.New(time.Second),
-			ScheduleChunk:   10,
-			NodePingTimeout: durationpb.New(time.Minute),
-			NodeInitTimeout: durationpb.New(time.Minute * 5),
-			NodeDeadTimeout: durationpb.New(time.Minute * 5),
+			ScheduleRate:  durationpb.New(time.Second),
+			ScheduleChunk: 10,
+			NodePingTimeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute),
+				},
+			},
+			NodeInitTimeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute * 5),
+				},
+			},
+			NodeDeadTimeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute * 5),
+				},
+			},
 		},
 		Node: &Node{
-			Timeout:    durationpb.New(-1),
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Disabled{
+					Disabled: true,
+				},
+			},
 			UpdateRate: durationpb.New(time.Second * 5),
 			Metadata:   map[string]string{},
 			Resources:  &Resources{},
@@ -112,8 +132,12 @@ func DefaultConfig() *Config {
 			IndexPrefix: "funnel",
 		},
 		MongoDB: &MongoDB{
-			Addrs:    []string{"localhost"},
-			Timeout:  durationpb.New(time.Minute * 5),
+			Addrs: []string{"localhost"},
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute * 5),
+				},
+			},
 			Database: "funnel",
 		},
 		Kafka: &Kafka{
@@ -124,10 +148,18 @@ func DefaultConfig() *Config {
 			AllowedDirs: allowedDirs,
 		},
 		HTTPStorage: &HTTPStorage{
-			Timeout: durationpb.New(time.Second * 60),
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Second * 60),
+				},
+			},
 		},
 		FTPStorage: &FTPStorage{
-			Timeout:  durationpb.New(time.Second * 10),
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Second * 10),
+				},
+			},
 			User:     "anonymous",
 			Password: "anonymous",
 		},

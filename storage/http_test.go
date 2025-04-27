@@ -11,7 +11,11 @@ import (
 
 func TestHTTP(t *testing.T) {
 	store, err := NewHTTP(&config.HTTPStorage{
-		Timeout: durationpb.New(2 * time.Second),
+		Timeout: &config.TimeoutConfig{
+			TimeoutOption: &config.TimeoutConfig_Duration{
+				Duration: durationpb.New(time.Second * 2),
+			},
+		},
 	})
 	if err != nil {
 		t.Fatal("Error creating HTTP backend:", err)

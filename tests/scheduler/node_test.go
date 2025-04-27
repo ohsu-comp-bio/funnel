@@ -7,6 +7,7 @@ import (
 
 	workercmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -20,9 +21,21 @@ import (
 func TestNodeGoneOnCanceledContext(t *testing.T) {
 	conf := tests.DefaultConfig()
 	conf.Compute = "manual"
-	conf.Scheduler.NodeInitTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodePingTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodeDeadTimeout = durationpb.New(time.Second * 10)
+	conf.Scheduler.NodeInitTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodePingTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodeDeadTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
 
 	bg := context.Background()
 	log := logger.NewLogger("node", tests.LogConfig())
@@ -71,9 +84,21 @@ func TestNodeGoneOnCanceledContext(t *testing.T) {
 func TestManualBackend(t *testing.T) {
 	conf := tests.DefaultConfig()
 	conf.Compute = "manual"
-	conf.Scheduler.NodeInitTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodePingTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodeDeadTimeout = durationpb.New(time.Second * 10)
+	conf.Scheduler.NodeInitTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodePingTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodeDeadTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
 
 	log := logger.NewLogger("node", tests.LogConfig())
 	tests.SetLogOutput(log, t)
@@ -126,9 +151,21 @@ func TestManualBackend(t *testing.T) {
 func TestDeadNodeTaskCleanup(t *testing.T) {
 	conf := tests.DefaultConfig()
 	conf.Compute = "manual"
-	conf.Scheduler.NodeInitTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodePingTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodeDeadTimeout = durationpb.New(time.Second * 10)
+	conf.Scheduler.NodeInitTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodePingTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodeDeadTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
 
 	log := logger.NewLogger("node", tests.LogConfig())
 	tests.SetLogOutput(log, t)
@@ -262,9 +299,21 @@ func TestNodeCleanup(t *testing.T) {
 func TestNodeDrain(t *testing.T) {
 	conf := tests.DefaultConfig()
 	conf.Compute = "manual"
-	conf.Scheduler.NodeInitTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodePingTimeout = durationpb.New(time.Second * 10)
-	conf.Scheduler.NodeDeadTimeout = durationpb.New(time.Second * 10)
+	conf.Scheduler.NodeInitTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodePingTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
+	conf.Scheduler.NodeDeadTimeout = &config.TimeoutConfig{
+		TimeoutOption: &config.TimeoutConfig_Duration{
+			Duration: durationpb.New(time.Second * 10),
+		},
+	}
 
 	bg := context.Background()
 	log := logger.NewLogger("node", tests.LogConfig())

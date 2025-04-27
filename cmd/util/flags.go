@@ -72,7 +72,7 @@ func rpcClientFlags(flagConf *config.Config) *pflag.FlagSet {
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 
 	f.StringVar(&flagConf.RPCClient.ServerAddress, "RPCClient.ServerAddress", flagConf.RPCClient.ServerAddress, "RPC server address")
-	f.Var(&DurationValue{&flagConf.RPCClient.Timeout}, "RPCClient.Timeout", "Request timeout for RPC client connections")
+	f.Var(&TimeoutConfigValue{&flagConf.RPCClient.Timeout}, "RPCClient.Timeout", "Request timeout for RPC client connections")
 	f.Uint32Var(&flagConf.RPCClient.MaxRetries, "RPCClient.MaxRetries", flagConf.RPCClient.MaxRetries, "Maximum number of times that a request will be retried for failures")
 
 	return f
@@ -110,7 +110,7 @@ func nodeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.Uint32Var(&flagConf.Node.Resources.Cpus, "Node.Resources.Cpus", flagConf.Node.Resources.Cpus, "Cpus available to Node")
 	f.Float64Var(&flagConf.Node.Resources.RamGb, "Node.Resources.RamGb", flagConf.Node.Resources.RamGb, "Ram (GB) available to Node")
 	f.Float64Var(&flagConf.Node.Resources.DiskGb, "Node.Resources.DiskGb", flagConf.Node.Resources.DiskGb, "Free disk (GB) available to Node")
-	f.Var(&DurationValue{D: &flagConf.Node.Timeout}, "Node.Timeout", "Node timeout in seconds")
+	f.Var(&TimeoutConfigValue{&flagConf.Node.Timeout}, "Node.Timeout", "Node timeout in seconds")
 	f.Var(&DurationValue{D: &flagConf.Node.UpdateRate}, "Node.UpdateRate", "Node update rate")
 	// TODO Metadata
 
@@ -152,7 +152,7 @@ func dbFlags(flagConf *config.Config) *pflag.FlagSet {
 	// mongodb
 	f.StringSliceVar(&flagConf.MongoDB.Addrs, "MongoDB.Addrs", flagConf.MongoDB.Addrs, "Address of a MongoDB seed server. This flag can be used multiple times")
 	f.StringVar(&flagConf.MongoDB.Database, "MongoDB.Database", flagConf.MongoDB.Database, "Database name in MongoDB")
-	f.Var(&DurationValue{D: &flagConf.MongoDB.Timeout}, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
+	f.Var(&TimeoutConfigValue{&flagConf.MongoDB.Timeout}, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
 
 	return f
 }
@@ -178,11 +178,11 @@ func storageFlags(flagConf *config.Config) *pflag.FlagSet {
 
 	// HTTP storage
 	f.BoolVar(&flagConf.HTTPStorage.Disabled, "HTTPStorage.Disabled", flagConf.HTTPStorage.Disabled, "Disable storage backend")
-	f.Var(&DurationValue{&flagConf.HTTPStorage.Timeout}, "HTTPStorage.Timeout", "Timeout in seconds for request")
+	f.Var(&TimeoutConfigValue{&flagConf.HTTPStorage.Timeout}, "HTTPStorage.Timeout", "Timeout in seconds for request")
 
 	// FTP storage
 	f.BoolVar(&flagConf.FTPStorage.Disabled, "FTPStorage.Disabled", flagConf.FTPStorage.Disabled, "Disable storage backend")
-	f.Var(&DurationValue{&flagConf.FTPStorage.Timeout}, "FTPStorage.Timeout", "Timeout in seconds for request")
+	f.Var(&TimeoutConfigValue{&flagConf.FTPStorage.Timeout}, "FTPStorage.Timeout", "Timeout in seconds for request")
 
 	return f
 }
@@ -219,9 +219,9 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	// Scheduler
 	f.Var(&DurationValue{&flagConf.Scheduler.ScheduleRate}, "Scheduler.ScheduleRate", "How often to run a scheduler iteration")
 	f.Int32Var(&flagConf.Scheduler.ScheduleChunk, "Scheduler.ScheduleChunk", flagConf.Scheduler.ScheduleChunk, "How many tasks to schedule in one iteration")
-	f.Var(&DurationValue{&flagConf.Scheduler.NodePingTimeout}, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
-	f.Var(&DurationValue{&flagConf.Scheduler.NodeInitTimeout}, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
-	f.Var(&DurationValue{&flagConf.Scheduler.NodeDeadTimeout}, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
+	f.Var(&TimeoutConfigValue{&flagConf.Scheduler.NodePingTimeout}, "Scheduler.NodePingTimeout", "How long to wait for a node ping before marking it as dead")
+	f.Var(&TimeoutConfigValue{&flagConf.Scheduler.NodeInitTimeout}, "Scheduler.NodeInitTimeout", "How long to wait for node initialization before marking it dead")
+	f.Var(&TimeoutConfigValue{&flagConf.Scheduler.NodeDeadTimeout}, "Scheduler.NodeDeadTimeout", "How long to wait before deleting a dead node from the DB")
 
 	// Kubernetes
 	f.StringVar(&flagConf.Kubernetes.Executor, "Kubernetes.Executor", flagConf.Kubernetes.Executor, "Executor to use for executing tasks (docker or kubernetes)")

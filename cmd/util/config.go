@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -55,13 +56,11 @@ func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Con
 	if err != nil {
 		return conf, err
 	}
+	fmt.Println("CONFIG: ", conf.RPCClient.Timeout.GetDuration())
 
 	// file vals <- cli val
 	proto.Merge(conf, flagConf)
 	mergeDurations(conf, flagConf)
-	if err != nil {
-		return conf, err
-	}
 
 	defaults := config.DefaultConfig()
 	if conf.Server.RPCAddress() != defaults.Server.RPCAddress() {
@@ -83,6 +82,7 @@ func TempConfigFile(c *config.Config, name string) (path string, cleanup func())
 		panic(err)
 	}
 
+	fmt.Println("DIR: ", tmpdir)
 	cleanup = func() {
 		os.RemoveAll(tmpdir)
 	}

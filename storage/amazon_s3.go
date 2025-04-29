@@ -16,9 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/ohsu-comp-bio/funnel/config"
 	util "github.com/ohsu-comp-bio/funnel/util/aws"
+	s3util "github.com/ohsu-comp-bio/funnel/util/s3"
 )
-
-var endpointRE = regexp.MustCompile("^(http[s]?://)?(.[^/]+)(.+)?$")
 
 // s3Protocol defines the s3 URL protocol
 const s3Protocol = "s3://"
@@ -43,7 +42,7 @@ func NewAmazonS3(conf config.AmazonS3Storage) (*AmazonS3, error) {
 
 	var endpoint string
 	if conf.Endpoint != "" {
-		endpoint = endpointRE.ReplaceAllString(conf.Endpoint, "$2/")
+		endpoint = s3util.ParseEndpoint(conf.Endpoint)
 	}
 
 	// handle SSE config

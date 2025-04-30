@@ -98,11 +98,6 @@ jobs:
           gunzip -c amd64.tar.gz | docker load
           gunzip -c arm64.tar.gz | docker load
 
-      - name: Push architecture-specific images
-        run: |
-          docker push $REPO:$BRANCH_TAG-amd64
-          docker push $REPO:$BRANCH_TAG-arm64
-
       - name: Create and push multi-arch manifest
         run: |
           docker manifest create $REPO:$BRANCH_TAG \

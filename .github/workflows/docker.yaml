@@ -21,7 +21,7 @@ jobs:
       - id: set-tag
         run: |
           RAW_REF="${GITHUB_REF#refs/*/}"
-          SAFE_TAG=$(echo "$RAW_REF" | tr '/-' '__')
+          SAFE_TAG=$(echo "$RAW_REF" | tr '/' '_')
           echo "Sanitized tag: $SAFE_TAG"
           echo "branch_tag=$SAFE_TAG" >> $GITHUB_OUTPUT
 
@@ -48,7 +48,7 @@ jobs:
 
   build-arm64:
     needs: set-tag
-    runs-on: ubuntu-arm64
+    runs-on: ubuntu-24.04-arm
     env:
       REPO: quay.io/ohsu-comp-bio/funnel
       BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}

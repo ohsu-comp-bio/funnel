@@ -1,114 +1,111 @@
-name: Build and Publish Multi-Arch Docker Image
+name: build
 
 on:
   push:
-    branches:
-      - main
-      - master
-      - feature/*
-      - fix/*
+  pull_request:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+env:
+  QUAY_REPO: quay.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
 
 jobs:
-  set-tag:
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.set-tag.outputs.branch_tag }}
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-22.04
+          - platform: linux/arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner || 'ubuntu-22.04' }}
     steps:
-      - id: set-tag
+      - name: Prepare
         run: |
-          RAW_REF="${GITHUB_REF#refs/*/}"
-          SAFE_TAG=$(echo "$RAW_REF" | tr '/' '_')
-          echo "Sanitized tag: $SAFE_TAG"
-          echo "branch_tag=$SAFE_TAG" >> $GITHUB_OUTPUT
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV          
 
-  build-amd64:
-    needs: set-tag
-    runs-on: ubuntu-latest
-    env:
-      REPO: quay.io/ohsu-comp-bio/funnel
-      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Build Docker image (amd64)
-        run: |
-          docker build -t $REPO:$BRANCH_TAG-amd64 .
-          docker save $REPO:$BRANCH_TAG-amd64 | gzip > amd64.tar.gz
-
-      - name: Upload image artifact (amd64)
-        uses: actions/upload-artifact@v4
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          name: amd64-image
-          path: amd64.tar.gz
-
-  build-arm64:
-    needs: set-tag
-    runs-on: ubuntu-24.04-arm
-    env:
-      REPO: quay.io/ohsu-comp-bio/funnel
-      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Build Docker image (arm64)
-        run: |
-          docker build -t $REPO:$BRANCH_TAG-arm64 .
-          docker save $REPO:$BRANCH_TAG-arm64 | gzip > arm64.tar.gz
-
-      - name: Upload image artifact (arm64)
-        uses: actions/upload-artifact@v4
-        with:
-          name: arm64-image
-          path: arm64.tar.gz
-
-  push-multiarch:
-    needs: [set-tag, build-amd64, build-arm64]
-    runs-on: ubuntu-latest
-    env:
-      REPO: quay.io/ohsu-comp-bio/funnel
-      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
-    steps:
-      - name: Download amd64 image
-        uses: actions/download-artifact@v4
-        with:
-          name: amd64-image
-          path: .
-
-      - name: Download arm64 image
-        uses: actions/download-artifact@v4
-        with:
-          name: arm64-image
-          path: .
+          images: |
+            ${{ env.QUAY_REPO }}
 
       - name: Login to Quay.io
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_ROBOT_TOKEN }}
+          password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Load Docker images
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ env.QUAY_REPO }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
         run: |
-          gunzip -c amd64.tar.gz | docker load
-          gunzip -c arm64.tar.gz | docker load
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"          
 
-      - name: Create and push multi-arch manifest
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.QUAY_REPO }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
         run: |
-          docker manifest create $REPO:$BRANCH_TAG \
-            $REPO:$BRANCH_TAG-amd64 \
-            $REPO:$BRANCH_TAG-arm64
-          docker manifest push $REPO:$BRANCH_TAG
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.QUAY_REPO }}@sha256:%s ' *)          
 
-          # Also push as latest if on main
-          if [[ "$BRANCH_TAG" == "main" ]]; then
-            docker manifest create $REPO:latest \
-              $REPO:main-amd64 \
-              $REPO:main-arm64
-            docker manifest push $REPO:latest
-          fi
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.QUAY_REPO }}:${{ steps.meta.outputs.version }}

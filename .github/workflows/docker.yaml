@@ -1,0 +1,49 @@
+# The release workflow builds, tags, and pushes the Funnel Docker image to Quay.io
+
+on:
+  # Run on push to main/master/develop (e.g. after PR is merged)
+  push:
+    branches:
+      - main
+      - master
+      - feature/*
+      - fix/*
+
+# Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Login to Quay.io
+      uses: docker/login-action@v2
+      with:
+        registry: quay.io
+        username: ${{ secrets.QUAY_USERNAME }}
+        password: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+    - name: Build + Push Docker image 
+      run: |
+        # Set Image tag to the branch name
+        BRANCH=$(echo ${GITHUB_REF#refs/*/} | tr / _)
+        REPO=quay.io/ohsu-comp-bio/aced-etl
+        echo "Setting image tag to $REPO:$BRANCH"
+
+        # Login to Quay.io and build image
+        docker login quay.io
+        docker build -t $REPO:$BRANCH ./etl-job
+        
+        # Add 'latest' tag to 'main' image
+        if [[ $BRANCH == 'main' ]]; then
+          docker image tag $REPO:main $REPO:latest
+        fi
+
+        # Push the tagged image to Quay.io
+        docker push --all-tags $REPO

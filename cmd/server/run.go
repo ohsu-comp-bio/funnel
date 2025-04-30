@@ -29,7 +29,7 @@ import (
 )
 
 // Run runs the "server run" command.
-func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
+func Run(ctx context.Context, conf *config.Config, log *logger.Logger) error {
 	s, err := NewServer(ctx, conf, log)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ type Database interface {
 }
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
-func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Server, error) {
+func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*Server, error) {
 	log.Debug("NewServer", "config", conf)
 
 	var database Database

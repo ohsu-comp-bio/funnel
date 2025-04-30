@@ -113,7 +113,7 @@ Kafka:
   Topic: {{ .Values.Kafka.Topic }}
 
 Plugins:
-  Disabled: {{ .Values.Plugins.Disabled }}
+  Enabled: {{ .Values.Plugins }}
   Dir: {{ .Values.Plugins.Dir }}
   Plugin: {{ .Values.Plugins.Plugin }}
   Host: {{ .Values.Plugins.Host }}

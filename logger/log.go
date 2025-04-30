@@ -25,9 +25,9 @@ const (
 type Formatter logrus.Formatter
 
 // NewLogger returns a new Logger instance.
-func NewLogger(ns string, conf Config) *Logger {
+func NewLogger(ns string, conf *LoggerConfig) *Logger {
 	log := logrus.New()
-	base := log.WithFields(map[string]interface{}{"ns": ns})
+	base := log.WithFields(map[string]any{"ns": ns})
 	l := &Logger{log, base}
 	l.Configure(conf)
 	return l
@@ -81,7 +81,7 @@ func (l *Logger) Discard() {
 // After the first argument, arguments are key-value pairs which are written as structured logs.
 //
 //	log.Debug("Some message here", "key1", value1, "key2", value2)
-func (l *Logger) Debug(msg string, args ...interface{}) {
+func (l *Logger) Debug(msg string, args ...any) {
 	if l == nil {
 		return
 	}
@@ -95,7 +95,7 @@ func (l *Logger) Debug(msg string, args ...interface{}) {
 // After the first argument, arguments are key-value pairs which are written as structured logs.
 //
 //	log.Info("Some message here", "key1", value1, "key2", value2)
-func (l *Logger) Info(msg string, args ...interface{}) {
+func (l *Logger) Info(msg string, args ...any) {
 	if l == nil {
 		return
 	}
@@ -114,12 +114,12 @@ func (l *Logger) Info(msg string, args ...interface{}) {
 //
 //	err := startServer()
 //	log.Error("Couldn't start server", err)
-func (l *Logger) Error(msg string, args ...interface{}) {
+func (l *Logger) Error(msg string, args ...any) {
 	if l == nil {
 		return
 	}
 	defer recoverLogErr()
-	var f map[string]interface{}
+	var f map[string]any
 	if len(args) == 1 {
 		f = util.ArgListToMap("error", args[0])
 	} else {
@@ -141,7 +141,7 @@ func (l *Logger) Error(msg string, args ...interface{}) {
 // After the first argument, arguments are key-value pairs which are written as structured logs.
 //
 //	log.Info("Some message here", "key1", value1, "key2", value2)
-func (l *Logger) Warn(msg string, args ...interface{}) {
+func (l *Logger) Warn(msg string, args ...any) {
 	if l == nil {
 		return
 	}
@@ -151,7 +151,7 @@ func (l *Logger) Warn(msg string, args ...interface{}) {
 }
 
 // WithFields returns a new Logger instance with the given fields added to all log messages.
-func (l *Logger) WithFields(args ...interface{}) *Logger {
+func (l *Logger) WithFields(args ...any) *Logger {
 	if l == nil {
 		return l
 	}

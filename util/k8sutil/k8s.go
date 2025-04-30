@@ -11,12 +11,12 @@ import (
 )
 
 // NewK8sClient returns a new Kubernetes client.
-func NewK8sClient(conf config.Config) (*kubernetes.Clientset, error) {
+func NewK8sClient(conf *config.Config) (*kubernetes.Clientset, error) {
 	var kubeconfig *rest.Config
 	var err error
 
 	// Case 1: Use provided kubeconfig	 file
-	if conf.Kubernetes.ConfigFile != "" {
+	if conf.Kubernetes != nil && conf.Kubernetes.ConfigFile != "" {
 		// use the current context in kubeconfig
 		kubeconfig, err = clientcmd.BuildConfigFromFlags("", conf.Kubernetes.ConfigFile)
 		if err != nil {

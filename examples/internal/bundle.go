@@ -12,6 +12,7 @@
 // examples/s3.json (532B)
 // examples/plugin-authd.json (225B)
 // examples/full-hello.json (577B)
+// examples/plugin-test.json (243B)
 
 package examples
 
@@ -319,6 +320,26 @@ func examplesFullHelloJson() (*asset, error) {
 	return a, nil
 }
 
+var _examplesPluginTestJson = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x4c\x8e\x3d\x6e\xc3\x30\x0c\x85\x77\x9d\xe2\x81\x73\xd0\x03\x64\xee\xd0\x3b\x14\x19\x18\x99\x89\x85\x4a\x62\x20\xd2\x68\x01\xc3\x77\x2f\x28\x77\xe8\xc2\xe1\xfd\x7c\x8f\x7b\x02\xa8\x73\x13\xba\x82\x3e\xa4\x56\xc5\xb7\x8e\xba\xd0\x25\x8c\x45\x2c\x8f\xf2\xf2\xa2\x3d\xfc\x77\x69\xda\xcd\x07\xbb\x18\x7c\x15\x34\x35\xc7\x9d\xad\x64\x48\x5e\x15\xce\xf6\xf5\x76\x56\xe5\x47\xf2\xe6\x3a\x8c\xae\xf8\x4c\x00\xb0\xcf\x0b\x50\x69\xfc\x9c\x7b\x5c\x5f\xa5\xcb\xcc\x4f\x23\x6b\x6b\xdc\x97\x68\x50\xf0\xe8\x02\x5a\xff\xfd\x74\x9b\xc1\x23\x01\xb7\xb9\xe1\xfc\x0c\xfc\x09\xa6\x87\x6a\x40\xef\x3c\xfe\x88\xb4\x99\x8c\x90\x1e\xaa\xa1\xa6\xe8\x1e\xe9\x37\x00\x00\xff\xff\x45\x22\xd9\x9c\xf3\x00\x00\x00")
+
+func examplesPluginTestJsonBytes() ([]byte, error) {
+	return bindataRead(
+		_examplesPluginTestJson,
+		"examples/plugin-test.json",
+	)
+}
+
+func examplesPluginTestJson() (*asset, error) {
+	bytes, err := examplesPluginTestJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "examples/plugin-test.json", size: 243, mode: os.FileMode(0640), modTime: time.Unix(1742341267, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xb1, 0xc1, 0xc1, 0x7d, 0x99, 0xfa, 0x2a, 0xdc, 0x8, 0x56, 0xeb, 0x61, 0xe9, 0x83, 0x5f, 0xab, 0xaf, 0x1f, 0xcd, 0xdb, 0x50, 0x87, 0x32, 0xd5, 0x34, 0x31, 0xf0, 0x64, 0xdc, 0xd8, 0x42, 0xc5}}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -422,6 +443,7 @@ var _bindata = map[string]func() (*asset, error){
 	"examples/s3.json":                    examplesS3Json,
 	"examples/plugin-authd.json":          examplesPluginAuthdJson,
 	"examples/full-hello.json":            examplesFullHelloJson,
+	"examples/plugin-test.json":           examplesPluginTestJson,
 }
 
 // AssetDebug is true if the assets were built with the debug flag enabled.

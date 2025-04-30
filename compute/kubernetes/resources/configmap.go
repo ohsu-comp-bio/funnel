@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateConfigMap(taskId string, namespace string, conf config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateConfigMap(taskId string, namespace string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	configBytes, err := config.ToYaml(conf)
 	if err != nil {
 		return fmt.Errorf("marshaling config to ConfigMap: %v", err)

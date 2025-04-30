@@ -20,7 +20,7 @@ type GenericS3 struct {
 
 // NewGenericS3 creates a new GenericS3 instance, given an endpoint URL
 // and a set of authentication credentials.
-func NewGenericS3(conf config.GenericS3Storage) (*GenericS3, error) {
+func NewGenericS3(conf *config.GenericS3Storage) (*GenericS3, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
 
 	var endpoint string

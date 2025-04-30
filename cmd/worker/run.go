@@ -20,7 +20,7 @@ import (
 )
 
 // Run runs the "worker run" command.
-func Run(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) error {
+func Run(ctx context.Context, conf *config.Config, log *logger.Logger, opts *Options) error {
 	w, err := NewWorker(ctx, conf, log, opts)
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func Run(ctx context.Context, conf config.Config, log *logger.Logger, opts *Opti
 }
 
 // NewWorker returns a new Funnel worker based on the given config.
-func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts *Options) (*worker.DefaultWorker, error) {
+func NewWorker(ctx context.Context, conf *config.Config, log *logger.Logger, opts *Options) (*worker.DefaultWorker, error) {
 	log.Debug("NewWorker", "config", conf)
 
 	err := validateConfig(conf, opts)
@@ -103,7 +103,7 @@ func NewWorker(ctx context.Context, conf config.Config, log *logger.Logger, opts
 
 // newTaskReader finds a TaskReader implementation that matches the config
 // and commandline options.
-func newTaskReader(ctx context.Context, conf config.Config, opts *Options) (worker.TaskReader, error) {
+func newTaskReader(ctx context.Context, conf *config.Config, opts *Options) (worker.TaskReader, error) {
 
 	switch {
 	// These readers are used to read a local task from a file, cli arg, etc.
@@ -165,7 +165,7 @@ func (e *eventWriterBuilder) Writer() (events.Writer, error) {
 }
 
 // Add creates a new event writer by name and adds it to the builder.
-func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf config.Config, log *logger.Logger) {
+func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf *config.Config, log *logger.Logger) {
 	if name == "" {
 		return
 	}
@@ -211,7 +211,7 @@ func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf config.C
 	}
 }
 
-func validateConfig(conf config.Config, opts *Options) error {
+func validateConfig(conf *config.Config, opts *Options) error {
 	// If the task reader is a file or string,
 	// only a subset of event writers are supported.
 	if opts.TaskFile != "" || opts.TaskBase64 != "" {

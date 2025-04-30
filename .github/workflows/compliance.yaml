@@ -19,6 +19,13 @@
 name: Compliance Test
 
 on:
+<<<<<<< HEAD
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+=======
   # Run on push to main/master/develop (e.g. after PR is merged)
   push:
     branches:
@@ -35,6 +42,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+>>>>>>> feature/plugins
 
 jobs:
   build:

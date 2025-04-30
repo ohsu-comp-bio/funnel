@@ -9,10 +9,11 @@ import (
 	"github.com/alecthomas/units"
 	intern "github.com/ohsu-comp-bio/funnel/config/internal"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 // DefaultConfig returns configuration with simple defaults.
-func DefaultConfig() Config {
+func DefaultConfig() *Config {
 	cwd, _ := os.Getwd()
 	workDir := path.Join(cwd, "funnel-work-dir")
 
@@ -24,7 +25,7 @@ func DefaultConfig() Config {
 		allowedDirs = append(allowedDirs, os.Getenv("TMPDIR"))
 	}
 
-	server := Server{
+	server := &Server{
 		HostName:         "localhost",
 		HTTPPort:         "8000",
 		RPCPort:          "9090",
@@ -33,38 +34,60 @@ func DefaultConfig() Config {
 		TaskAccess:       "All",
 	}
 
-	c := Config{
+	c := &Config{
 		Compute:      "local",
 		Database:     "boltdb",
 		EventWriters: []string{"log"},
 		// funnel components
 		Server: server,
-		RPCClient: RPCClient{
+		RPCClient: &RPCClient{
 			ServerAddress: server.RPCAddress(),
-			Timeout:       Duration(time.Second * 60),
-			MaxRetries:    10,
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Second * 60),
+				},
+			},
+			MaxRetries: 10,
+			Credential: &BasicCredential{},
 		},
-		Scheduler: Scheduler{
-			ScheduleRate:    Duration(time.Second),
-			ScheduleChunk:   10,
-			NodePingTimeout: Duration(time.Minute),
-			NodeInitTimeout: Duration(time.Minute * 5),
-			NodeDeadTimeout: Duration(time.Minute * 5),
+		Scheduler: &Scheduler{
+			ScheduleRate:  durationpb.New(time.Second),
+			ScheduleChunk: 10,
+			NodePingTimeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute),
+				},
+			},
+			NodeInitTimeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute * 5),
+				},
+			},
+			NodeDeadTimeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute * 5),
+				},
+			},
 		},
-		Node: Node{
-			Timeout:    -1,
-			UpdateRate: Duration(time.Second * 5),
+		Node: &Node{
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Disabled{
+					Disabled: true,
+				},
+			},
+			UpdateRate: durationpb.New(time.Second * 5),
 			Metadata:   map[string]string{},
+			Resources:  &Resources{},
 		},
-		Worker: Worker{
+		Worker: &Worker{
 			WorkDir:              workDir,
-			PollingRate:          Duration(time.Second * 5),
-			LogUpdateRate:        Duration(time.Second * 5),
+			PollingRate:          durationpb.New(time.Second * 5),
+			LogUpdateRate:        durationpb.New(time.Second * 5),
 			LogTailSize:          10000,
 			MaxParallelTransfers: 10,
 			// `docker run` command flags
 			// https://docs.docker.com/reference/cli/docker/container/run/
-			Container: ContainerConfig{
+			Container: &ContainerConfig{
 				DriverCommand: "docker",
 				RunCommand: "run -i --read-only " +
 					// Remove container after it exits
@@ -91,57 +114,79 @@ func DefaultConfig() Config {
 				StopCommand: "rm -f {{.Name}}",
 			},
 		},
-		Plugins: Plugins{
-			Disabled: true,
-		},
-		Logger: logger.DefaultConfig(),
+		Plugins: nil,
+		Logger:  logger.DefaultConfig(),
 		// databases / event handlers
-		BoltDB: BoltDB{
+		BoltDB: &BoltDB{
 			Path: path.Join(workDir, "funnel.db"),
 		},
-		Badger: Badger{
+		Badger: &Badger{
 			Path: path.Join(workDir, "funnel.badger.db"),
 		},
-		DynamoDB: DynamoDB{
+		DynamoDB: &DynamoDB{
 			TableBasename: "funnel",
+			AWSConfig:     &AWSConfig{},
 		},
-		Elastic: Elastic{
+		Elastic: &Elastic{
 			URL:         "http://localhost:9200",
 			IndexPrefix: "funnel",
 		},
-		MongoDB: MongoDB{
-			Addrs:    []string{"localhost"},
-			Timeout:  Duration(time.Minute * 5),
+		MongoDB: &MongoDB{
+			Addrs: []string{"localhost"},
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Minute * 5),
+				},
+			},
 			Database: "funnel",
 		},
-		Kafka: Kafka{
+		Kafka: &Kafka{
 			Topic: "funnel",
 		},
 		// storage
-		LocalStorage: LocalStorage{
+		LocalStorage: &LocalStorage{
 			AllowedDirs: allowedDirs,
 		},
-		HTTPStorage: HTTPStorage{
-			Timeout: Duration(time.Second * 60),
+		HTTPStorage: &HTTPStorage{
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Second * 60),
+				},
+			},
 		},
-		FTPStorage: FTPStorage{
-			Timeout:  Duration(time.Second * 10),
+		FTPStorage: &FTPStorage{
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Second * 10),
+				},
+			},
 			User:     "anonymous",
 			Password: "anonymous",
 		},
-		AmazonS3: AmazonS3Storage{
-			AWSConfig: AWSConfig{
+		AmazonS3: &AmazonS3Storage{
+			SSE: &SSE{},
+			AWSConfig: &AWSConfig{
 				MaxRetries: 10,
 			},
 		},
-		Swift: SwiftStorage{
+		Swift: &SwiftStorage{
 			MaxRetries:     20,
 			ChunkSizeBytes: int64(500 * units.MB),
 		},
+		HTCondor:      &HPCBackend{},
+		Slurm:         &HPCBackend{},
+		PBS:           &HPCBackend{},
+		GridEngine:    &GridEngine{},
+		AWSBatch:      &AWSBatch{AWSConfig: &AWSConfig{}},
+		Kubernetes:    &Kubernetes{},
+		GoogleStorage: &GoogleCloudStorage{},
+		PubSub:        &PubSub{},
+		Datastore:     &Datastore{},
+		GenericS3:     []*GenericS3Storage{},
 	}
 
 	// compute
-	reconcile := Duration(time.Minute * 10)
+	reconcile := durationpb.New(time.Minute * 10)
 
 	htcondorTemplate := intern.MustAsset("config/htcondor-template.txt")
 	c.HTCondor.Template = string(htcondorTemplate)

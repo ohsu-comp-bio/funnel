@@ -62,8 +62,8 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 	if found {
 		// User found (OK: 200)
 		c := config.Config{}
-		c.AmazonS3.AWSConfig.Key = token.AmazonS3.Key
-		c.AmazonS3.AWSConfig.Secret = token.AmazonS3.Secret
+		c.AmazonS3.AWSConfig.Key = token.AmazonS3.AWSConfig.Key
+		c.AmazonS3.AWSConfig.Secret = token.AmazonS3.AWSConfig.Secret
 
 		resp := shared.Response{
 			Code:   http.StatusOK,
@@ -81,7 +81,7 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Load user tokens from the CSV file
-func loadUsers(filename string) (map[string]config.Config, error) {
+func loadUsers(filename string) (map[string]*config.Config, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -94,16 +94,16 @@ func loadUsers(filename string) (map[string]config.Config, error) {
 		return nil, fmt.Errorf("failed to read CSV: %w", err)
 	}
 
-	userDB := make(map[string]config.Config)
+	userDB := make(map[string]*config.Config)
 	mutex := sync.RWMutex{}
 	for i, row := range records {
 		if i == 0 {
 			continue // Skip header
 		}
 		mutex.Lock()
-		userDB[row[0]] = config.Config{
-			AmazonS3: config.AmazonS3Storage{
-				AWSConfig: config.AWSConfig{
+		userDB[row[0]] = &config.Config{
+			AmazonS3: &config.AmazonS3Storage{
+				AWSConfig: &config.AWSConfig{
 					Key:    row[1],
 					Secret: row[2],
 				},

@@ -3,8 +3,6 @@ SHELL := /bin/bash
 
 TESTS=$(shell go list ./... | grep -v /vendor/ | grep -v github-release-notes)
 
-PROTO_INC=-I ./ -I $(shell pwd)/util/proto/
-
 git_commit := $(shell git rev-parse --short HEAD)
 git_branch := $(shell git symbolic-ref -q --short HEAD)
 git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git symbolic-ref -q --short HEAD).remote) 2> /dev/null)
@@ -41,55 +39,26 @@ debug:
 	@go install -gcflags=all="-N -l"
 	@funnel server run
 
-# Generate the protobuf/gRPC code
+# Generate the protobuf/gRPC code using Buf
 proto:
-	@cd tes && protoc \
-		$(PROTO_INC) \
-		--go_out ./ \
-  		--go_opt paths=source_relative \
-		--go-grpc_out ./ \
-		--go-grpc_opt paths=source_relative \
-		--grpc-gateway_out ./ \
-		--grpc-gateway_opt logtostderr=true \
-		--grpc-gateway_opt paths=source_relative \
-		tes.proto
-	@cd compute/scheduler && protoc \
-		$(PROTO_INC) \
-		--go_out ./ \
-  		--go_opt paths=source_relative \
-		--go-grpc_out ./ \
-		--go-grpc_opt paths=source_relative \
-		--grpc-gateway_out ./ \
-		--grpc-gateway_opt logtostderr=true \
-		--grpc-gateway_opt paths=source_relative \
-		scheduler.proto
-	@cd events && protoc \
-		$(PROTO_INC) \
-		-I ../tes \
-		--go_out ./ \
-  		--go_opt paths=source_relative \
-		--go-grpc_out ./ \
-		--go-grpc_opt paths=source_relative \
-		--grpc-gateway_out ./ \
-		--grpc-gateway_opt logtostderr=true \
-		--grpc-gateway_opt paths=source_relative \
-		events.proto
+	@go run ./util/openapi2proto/main.go ./tes/task-execution-schemas/openapi/task_execution_service.openapi.yaml > tes/tes.proto
+	@buf generate
 
-
+# Install Buf and dependencies
 proto-depends:
-	@git submodule update --init --recursive
-	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.11.1
-	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.11.1
-	@go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
-	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@go install github.com/ckaznocha/protoc-gen-lint@v0.2.4
+#	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.11.1
+	@go install github.com/bufbuild/buf/cmd/buf@latest
+
+# Lint Protobuf files
+proto-lint:
+	@buf lint
 
 # Start API reference doc server
 serve-doc:
 	@go get golang.org/x/tools/cmd/godoc
 	godoc --http=:6060
 
-# Automatially update code formatting
+# Automatically update code formatting
 tidy:
 	@go get golang.org/x/tools/cmd/goimports
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs goimports -w
@@ -224,7 +193,7 @@ snapshot: release-dep
 		--clean \
 		--snapshot
 
-# build a docker container locally
+# Build a docker container locally
 docker:
 	docker build -t quay.io/ohsu-comp-bio/funnel:latest ./
 
@@ -237,8 +206,8 @@ release:
 
 # Install dependencies for release
 release-dep:
-	@go get github.com/goreleaser/goreleaser
-	@go get github.com/buchanae/github-release-notes
+	@go install github.com/goreleaser/goreleaser
+	@go install github.com/buchanae/github-release-notes
 
 # Generate mocks for testing.
 gen-mocks:
@@ -270,4 +239,4 @@ website-dev: website
 clean:
 	@rm -rf ./bin ./pkg ./test_tmp ./build ./buildtools
 
-.PHONY: proto website docker webdash build debug
+.PHONY: proto proto-lint website docker webdash build debug

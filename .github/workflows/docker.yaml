@@ -29,12 +29,12 @@ jobs:
       run: |
         # Set Image tag to the branch name
         BRANCH=$(echo ${GITHUB_REF#refs/*/} | tr / _)
-        REPO=quay.io/ohsu-comp-bio/aced-etl
+        REPO=quay.io/ohsu-comp-bio/funnel
         echo "Setting image tag to $REPO:$BRANCH"
 
         # Login to Quay.io and build image
         docker login quay.io
-        docker build -t $REPO:$BRANCH ./etl-job
+        docker build -t $REPO:$BRANCH .
         
         # Add 'latest' tag to 'main' image
         if [[ $BRANCH == 'main' ]]; then

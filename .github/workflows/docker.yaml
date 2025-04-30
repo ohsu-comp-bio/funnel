@@ -1,4 +1,3 @@
-# The release workflow builds, tags, and pushes the Funnel Docker image to Quay.io
 name: Build and Publish Multi-Arch Docker Image
 
 on:
@@ -13,23 +12,28 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  REPO: quay.io/ohsu-comp-bio/funnel
-  BRANCH_TAG: ${{ github.ref_name }}
-
 jobs:
-  build-amd64:
+  set-tag:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set-tag.outputs.branch_tag }}
+    steps:
+      - id: set-tag
+        run: |
+          RAW_REF="${GITHUB_REF#refs/*/}"
+          SAFE_TAG=$(echo "$RAW_REF" | tr '/-' '__')
+          echo "Sanitized tag: $SAFE_TAG"
+          echo "branch_tag=$SAFE_TAG" >> $GITHUB_OUTPUT
+
+  build-amd64:
+    needs: set-tag
+    runs-on: ubuntu-latest
+    env:
+      REPO: quay.io/ohsu-comp-bio/funnel
+      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
     steps:
       - name: Check out code
         uses: actions/checkout@v2
-
-      - name: Login to Quay.io
-        uses: docker/login-action@v2
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
       - name: Build Docker image (amd64)
         run: |
@@ -43,7 +47,11 @@ jobs:
           path: amd64.tar.gz
 
   build-arm64:
+    needs: set-tag
     runs-on: ubuntu-arm64
+    env:
+      REPO: quay.io/ohsu-comp-bio/funnel
+      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -60,8 +68,11 @@ jobs:
           path: arm64.tar.gz
 
   push-multiarch:
-    needs: [build-amd64, build-arm64]
+    needs: [set-tag, build-amd64, build-arm64]
     runs-on: ubuntu-latest
+    env:
+      REPO: quay.io/ohsu-comp-bio/funnel
+      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
     steps:
       - name: Download amd64 image
         uses: actions/download-artifact@v4
@@ -74,6 +85,13 @@ jobs:
         with:
           name: arm64-image
           path: .
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v2
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
       - name: Load Docker images
         run: |
@@ -90,13 +108,12 @@ jobs:
           docker manifest create $REPO:$BRANCH_TAG \
             $REPO:$BRANCH_TAG-amd64 \
             $REPO:$BRANCH_TAG-arm64
-
           docker manifest push $REPO:$BRANCH_TAG
 
-          # Tag as latest if on main
+          # Also push as latest if on main
           if [[ "$BRANCH_TAG" == "main" ]]; then
             docker manifest create $REPO:latest \
-              $REPO:$BRANCH_TAG-amd64 \
-              $REPO:$BRANCH_TAG-arm64
+              $REPO:main-amd64 \
+              $REPO:main-arm64
             docker manifest push $REPO:latest
           fi

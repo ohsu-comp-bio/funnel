@@ -19,13 +19,6 @@
 name: Compliance Test
 
 on:
-<<<<<<< HEAD
-  pull_request:
-    branches:
-      - main
-      - master
-      - develop
-=======
   # Run on push to main/master/develop (e.g. after PR is merged)
   push:
     branches:
@@ -42,7 +35,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
->>>>>>> feature/plugins
 
 jobs:
   build:
@@ -104,5 +96,5 @@ jobs:
           python3 -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
-          python setup.py install  
+          python setup.py install
           openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"

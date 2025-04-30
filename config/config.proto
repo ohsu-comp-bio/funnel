@@ -59,7 +59,8 @@ message Plugins {
   string Plugin = 2;
   string Host = 3;
   string JsonConfig  = 4;
-  PluginsResponse Response = 5; // Placeholder for plugins.Response
+  string Input = 5;
+  PluginsResponse Response = 6; // Placeholder for plugins.Response
 }
 
 // Placeholder for plugins.Response

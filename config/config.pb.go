@@ -373,7 +373,8 @@ type Plugins struct {
 	Plugin        string                 `protobuf:"bytes,2,opt,name=Plugin,proto3" json:"Plugin,omitempty"`
 	Host          string                 `protobuf:"bytes,3,opt,name=Host,proto3" json:"Host,omitempty"`
 	JsonConfig    string                 `protobuf:"bytes,4,opt,name=JsonConfig,proto3" json:"JsonConfig,omitempty"`
-	Response      *PluginsResponse       `protobuf:"bytes,5,opt,name=Response,proto3" json:"Response,omitempty"` // Placeholder for plugins.Response
+	Input         string                 `protobuf:"bytes,5,opt,name=Input,proto3" json:"Input,omitempty"`
+	Response      *PluginsResponse       `protobuf:"bytes,6,opt,name=Response,proto3" json:"Response,omitempty"` // Placeholder for plugins.Response
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -432,6 +433,13 @@ func (x *Plugins) GetHost() string {
 func (x *Plugins) GetJsonConfig() string {
 	if x != nil {
 		return x.JsonConfig
+	}
+	return ""
+}
+
+func (x *Plugins) GetInput() string {
+	if x != nil {
+		return x.Input
 	}
 	return ""
 }
@@ -2801,15 +2809,16 @@ const file_config_config_proto_rawDesc = "" +
 	"\n" +
 	"FTPStorage\x18\x1e \x01(\v2\x12.config.FTPStorageR\n" +
 	"FTPStorage\x12)\n" +
-	"\aPlugins\x18\x1f \x01(\v2\x0f.config.PluginsR\aPlugins\"\x9c\x01\n" +
+	"\aPlugins\x18\x1f \x01(\v2\x0f.config.PluginsR\aPlugins\"\xb2\x01\n" +
 	"\aPlugins\x12\x10\n" +
 	"\x03Dir\x18\x01 \x01(\tR\x03Dir\x12\x16\n" +
 	"\x06Plugin\x18\x02 \x01(\tR\x06Plugin\x12\x12\n" +
 	"\x04Host\x18\x03 \x01(\tR\x04Host\x12\x1e\n" +
 	"\n" +
 	"JsonConfig\x18\x04 \x01(\tR\n" +
-	"JsonConfig\x123\n" +
-	"\bResponse\x18\x05 \x01(\v2\x17.config.PluginsResponseR\bResponse\"\x11\n" +
+	"JsonConfig\x12\x14\n" +
+	"\x05Input\x18\x05 \x01(\tR\x05Input\x123\n" +
+	"\bResponse\x18\x06 \x01(\v2\x17.config.PluginsResponseR\bResponse\"\x11\n" +
 	"\x0fPluginsResponse\"W\n" +
 	"\x0fBasicCredential\x12\x12\n" +
 	"\x04User\x18\x01 \x01(\tR\x04User\x12\x1a\n" +

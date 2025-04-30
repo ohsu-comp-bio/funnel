@@ -3,56 +3,10 @@ package util
 import (
 	"os"
 	"path/filepath"
-	"reflect"
-	"time"
 
 	"dario.cat/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
-
-/*
-The proto merge function merges but does not replace durationpb values,
-but the original intent of MergeConfigFile function is in places where both
-configs are populated the new config replaces the value of the default config
-so this function recursively traverses the config structures replacing the durationpb values.
-*/
-func mergeDurations(base, override proto.Message) {
-	if base == nil || override == nil {
-		return
-	}
-	bv := reflect.ValueOf(base).Elem()
-	ov := reflect.ValueOf(override).Elem()
-	for i := 0; i < bv.NumField(); i++ {
-		bf := bv.Field(i)
-		of := ov.Field(i)
-		// Only work with pointer fields
-		if of.Kind() == reflect.Ptr && !of.IsNil() {
-			switch bf.Type().String() {
-			case "*durationpb.Duration":
-				overrideDur := of.Interface().(*durationpb.Duration)
-				if overrideDur != nil && overrideDur.AsDuration() != time.Duration(0) {
-					// Set base field to the override value
-					bf.Set(reflect.ValueOf(overrideDur))
-				}
-			default:
-				// Recurse into nested messages if both base and override are proto messages
-				if bf.Type().Implements(reflect.TypeOf((*proto.Message)(nil)).Elem()) &&
-					of.Type().Implements(reflect.TypeOf((*proto.Message)(nil)).Elem()) {
-
-					if bf.IsNil() {
-						// If base field is nil but override is not, make a new instance
-						newField := reflect.New(bf.Type().Elem())
-						bf.Set(newField)
-					}
-
-					mergeDurations(bf.Interface().(proto.Message), of.Interface().(proto.Message))
-				}
-			}
-		}
-	}
-}
 
 // MergeConfigFileWithFlags is a util used by server commands that use flags to set
 // Funnel config values. These commands can also take in the path to a Funnel config file.

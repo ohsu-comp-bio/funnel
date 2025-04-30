@@ -75,9 +75,13 @@ func NewFunnel(conf *config.Config) *Funnel {
 		panic(derr)
 	}
 
-	kcli, kerr := k8sutil.NewK8sClient(conf)
-	if kerr != nil {
-		panic(kerr)
+	var kcli *kubernetes.Clientset
+	var kerr error
+	if conf.Compute == "kubernetes" {
+		kcli, kerr = k8sutil.NewK8sClient(conf)
+		if kerr != nil {
+			panic(kerr)
+		}
 	}
 
 	srv, err := servercmd.NewServer(context.Background(), conf, log)

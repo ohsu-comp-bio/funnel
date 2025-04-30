@@ -1,4 +1,4 @@
-package plugin
+package main
 
 import (
 	"fmt"
@@ -12,13 +12,15 @@ import (
 // Here is a real implementation of Authorize that retrieves a "Secret" value for a user
 type Authorize struct{}
 
-func (Authorize) Get(user string, host string) ([]byte, error) {
+func (Authorize) Get(user string, host string, jsonConfig string) ([]byte, error) {
 	if user == "" {
 		return nil, fmt.Errorf("user is required (e.g. ./authorize <USER> <HOST>)")
 	}
 
-	shared.Logger.Info("Get", "user", user, "host", host)
-	resp, err := http.Get(host + user)
+	shared.Logger.Info("Get", "user", user, "host", host, "jsonConfig", jsonConfig)
+
+	// TODO: Change this to POST
+	resp, err := http.Get(host + "/" + user)
 	if err != nil {
 		return nil, fmt.Errorf("error making request: %w", err)
 	}
@@ -34,6 +36,8 @@ func (Authorize) Get(user string, host string) ([]byte, error) {
 	return body, nil
 }
 
+// TODO: Why is Plugin config in Funnel Server (should be able to pass in own config, or ENV VAR)
+// Check Hashicorp's example for how to do so
 func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: shared.Handshake,

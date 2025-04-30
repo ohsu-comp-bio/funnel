@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.name | default "funnel-server" }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ .Release.Namespace }} 
   labels:
     {{- include "funnel.labels" . | nindent 4 }}
 spec:

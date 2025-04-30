@@ -65,6 +65,46 @@ func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
 	return &resp, nil
 }
 
+// LoadPlugins loads plugins for a task.
+func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
+	m := &shared.Manager{}
+	defer m.Close()
+
+	ts.Log.Info("getting plugin client", "dir", ts.Config.Plugins.Dir)
+	plugin, err := m.Client(ts.Config.Plugins.Dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plugin client: %w", err)
+	}
+
+	// TODO: Check if "overloading" the task tag is an acceptable way to pass plugin inputs
+	ts.Log.Info("loading plugins", "task.Tags", ts.Config.Plugins.Input)
+	user := task.Tags[ts.Config.Plugins.Input]
+	if user == "" {
+		return nil, fmt.Errorf("task tags must contain a '%v' field", ts.Config.Plugins.Input)
+	}
+
+	host := ts.Config.Plugins.Host
+	jsonConfig := ts.Config.Plugins.JsonConfig
+
+	ts.Log.Info("plugin host", "host", host)
+	ts.Log.Info("plugin user", "user", user)
+	ts.Log.Info("plugin jsonConfig", "jsonConfig", jsonConfig)
+	rawResp, err := plugin.Get(user, host, jsonConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", user, err)
+	}
+
+	// Unmarshal the response
+	ts.Log.Info("parsing plugin response")
+	var resp shared.Response
+	err = json.Unmarshal([]byte(rawResp), &resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse plugin response: %w", err)
+	}
+
+	return &resp, nil
+}
+
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {

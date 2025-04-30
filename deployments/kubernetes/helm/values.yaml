@@ -20,6 +20,8 @@ labels:
 
 # Funnel Server (Task Database)
 mongodb:
+  image: 
+    registry: public.ecr.aws
   architecture: standalone
   auth:
     enabled: true

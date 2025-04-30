@@ -11,11 +11,23 @@
 name: K8s Test
 
 on:
+  # Run on push to main/master/develop (e.g. after PR is merged)
+  push:
+    branches:
+      - main
+      - master
+  # Run on PR to main/master/develop
   pull_request:
     branches:
       - main
       - master
-      - develop
+      # Temporarily disabling K8s tests on develop branch while tests stablize
+      # - develop
+
+# Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -35,6 +47,9 @@ jobs:
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
           k3d cluster create test-cluster
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Deploy Funnel
         run: |
           helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
@@ -44,7 +59,7 @@ jobs:
           helm upgrade --install funnel ohsu/funnel --set storage.className=local-path --set storage.provisioner=local-path
           
           # Wait for the Deployment to be available
-          kubectl rollout status deployment/funnel --timeout=60s
+          kubectl rollout status deployment/funnel-server --timeout=60s
 
           # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &

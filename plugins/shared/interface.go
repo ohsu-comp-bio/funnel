@@ -1,4 +1,3 @@
-// 'shared' package contains shared data between the host and plugins.
 package shared
 
 import (
@@ -41,7 +40,7 @@ var PluginMap = map[string]plugin.Plugin{
 
 // Authorize is the interface that we're exposing as a plugin.
 type Authorize interface {
-	Get(user string, host string) ([]byte, error)
+	Get(user string, host string, jsonConfig string) ([]byte, error)
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this.

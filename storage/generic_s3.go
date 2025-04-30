@@ -9,6 +9,7 @@ import (
 
 	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	s3util "github.com/ohsu-comp-bio/funnel/util/s3"
 )
 
@@ -28,7 +29,8 @@ func NewGenericS3(conf *config.GenericS3Storage) (*GenericS3, error) {
 		endpoint = s3util.ParseEndpoint(conf.Endpoint)
 	}
 
-	fmt.Println("DEBUG: endpoint:", endpoint)
+	logger := logger.NewLogger("GenericS3", logger.DefaultConfig())
+	logger.Debug("generics3: endpoint:", endpoint)
 
 	client, err := minio.NewV2(endpoint, conf.Key, conf.Secret, ssl)
 	if err != nil {
@@ -69,14 +71,17 @@ func isDir(minioClient *minio.Client, bucketName, objectName string) (bool, erro
 
 // Stat returns information about the object at the given storage URL.
 func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
+	logger := logger.NewLogger("GenericS3", logger.DefaultConfig())
 	u, err := s3.parse(url)
 	if err != nil {
 		return nil, err
 	}
 
 	opts := minio.GetObjectOptions{}
+	// TODO Add debug log
 	obj, err := s3.client.GetObjectWithContext(ctx, u.bucket, u.path, opts)
 	if err != nil {
+		logger.Debug("genericS3: getting object %s: %v", url, err)
 		return nil, fmt.Errorf("genericS3: getting object: %s", err)
 	}
 
@@ -135,6 +140,10 @@ func (s3 *GenericS3) List(ctx context.Context, url string) ([]*Object, error) {
 
 // Get copies an object from S3 to the host path.
 func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error) {
+	logger := logger.NewLogger("GenericS3", logger.DefaultConfig())
+	logger.Debug("genericS3: url: %v", url)
+	logger.Debug("genericS3: path: %v", path)
+
 	obj, err := s3.Stat(ctx, url)
 	if err != nil {
 		return nil, err
@@ -147,6 +156,8 @@ func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error)
 
 	isDir, err := isDir(s3.client, u.bucket, u.path)
 	if err != nil {
+		logger.Debug("genericS3: u.bucket: %v", u.bucket)
+		logger.Debug("genericS3: u.path: %v", u.path)
 		return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
 	}
 	if isDir {

@@ -37,12 +37,12 @@ type AmazonS3 struct {
 func NewAmazonS3(conf *config.AmazonS3Storage) (*AmazonS3, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("error creating amazon s3 backend: %v", err)
 	}
 
 	var endpoint string
 	if conf.AWSConfig.Endpoint != "" {
-		endpoint = endpointRE.ReplaceAllString(conf.AWSConfig.Endpoint, "$2/")
+		endpoint = s3util.ParseEndpoint(conf.AWSConfig.Endpoint)
 	}
 
 	// handle SSE config

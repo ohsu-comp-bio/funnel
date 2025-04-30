@@ -47,9 +47,11 @@ func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
 	}
 
 	host := ts.Config.Plugins.Host
+	jsonConfig := ts.Config.Plugins.JsonConfig
+
 	ts.Log.Info("plugin host", "host", host)
 	ts.Log.Info("plugin user", "user", "")
-	rawResp, err := plugin.Get("", host)
+	rawResp, err := plugin.Get("", host, jsonConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", "", err)
 	}

@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -12,6 +13,9 @@ import (
 
 // NewAWSSession returns a new session.Session instance.
 func NewAWSSession(conf *config.AWSConfig) (*session.Session, error) {
+	if conf == nil {
+		return nil, fmt.Errorf("Config provided is nil")
+	}
 	awsConf := aws.NewConfig()
 
 	if conf.DisableAutoCredentialLoad {

@@ -38,7 +38,7 @@ func (g *GoogleCloudStorage) Valid() bool {
 
 // Valid validates the AmazonS3Storage configuration
 func (s *AmazonS3Storage) Valid() bool {
-	creds := (s.AWSConfig.Key != "" && s.AWSConfig.Secret != "") || (s.AWSConfig.Key == "" && s.AWSConfig.Secret == "")
+	creds := s.AWSConfig == nil || (s.AWSConfig.Key != "" && s.AWSConfig.Secret != "") || (s.AWSConfig.Key == "" && s.AWSConfig.Secret == "")
 	return !s.Disabled && creds
 }
 

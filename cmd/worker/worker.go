@@ -47,7 +47,6 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		Short: "Funnel worker commands.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-
 			conf, err = cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
 			if err != nil {
 				return fmt.Errorf("error processing config: %v", err)

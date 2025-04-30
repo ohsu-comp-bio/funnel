@@ -38,7 +38,7 @@ type AmazonS3 struct {
 func NewAmazonS3(conf *config.AmazonS3Storage) (*AmazonS3, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error creating amazon s3 backend: %v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
 
 	var endpoint string
@@ -53,11 +53,11 @@ func NewAmazonS3(conf *config.AmazonS3Storage) (*AmazonS3, error) {
 	var kmsKeyID *string
 	var serverSideEncryption *string
 
-	if conf.SSE.CustomerKeyFile != "" && conf.SSE.KMSKey != "" {
+	if conf.SSE != nil && conf.SSE.CustomerKeyFile != "" && conf.SSE.KMSKey != "" {
 		return nil, fmt.Errorf("invalid SSE config: can't provide both Customer and KMS keys")
 	}
 
-	if conf.SSE.CustomerKeyFile != "" {
+	if conf.SSE != nil && conf.SSE.CustomerKeyFile != "" {
 		key, err := os.ReadFile(conf.SSE.CustomerKeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("error reading sse-c file: %v", err)
@@ -69,7 +69,7 @@ func NewAmazonS3(conf *config.AmazonS3Storage) (*AmazonS3, error) {
 		customerKeyMD5 = aws.String(base64.StdEncoding.EncodeToString(b[:]))
 	}
 
-	if conf.SSE.KMSKey != "" {
+	if conf.SSE != nil && conf.SSE.KMSKey != "" {
 		serverSideEncryption = aws.String(s3.ServerSideEncryptionAwsKms)
 		kmsKeyID = aws.String(conf.SSE.KMSKey)
 	}

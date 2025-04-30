@@ -43,7 +43,7 @@ func (tcv *TimeoutConfigValue) Set(s string) error {
 	}
 	dur, err := time.ParseDuration(s)
 	if err != nil {
-		// Attempt to parse as just a number of seconds (for backwards compatibility?)
+		// fallback to int seconds
 		if seconds, err := strconv.ParseInt(s, 10, 64); err == nil {
 			dur = time.Duration(seconds) * time.Second
 		} else {

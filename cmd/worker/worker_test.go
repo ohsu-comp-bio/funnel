@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -31,9 +32,8 @@ func TestPersistentPreRun(t *testing.T) {
 		if conf.Server.RPCPort != rpcport {
 			t.Fatal("unexpected Server.RPCAddress in config", conf.Server.RPCPort)
 		}
-		t.Log(conf.RPCClient.Timeout.GetDuration().AsDuration())
-		if conf.RPCClient.Timeout.GetDuration().AsDuration() != 10000000 {
-			t.Fatal("unexpected rpc client timeout in config")
+		if duration := conf.RPCClient.Timeout.GetDuration(); duration == nil || duration.AsDuration() != 10*time.Millisecond {
+			t.Fatalf("unexpected rpc client timeout in server config: got %v, want 10ms", duration)
 		}
 		if conf.Worker.WorkDir != workDir {
 			t.Fatal("unexpected Worker.WorkDir in config", conf.Worker.WorkDir)

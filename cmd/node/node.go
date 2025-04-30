@@ -38,6 +38,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
+			fmt.Println("FLAG CONF BEFORE MERGE CALL: ", flagConf.RPCClient.Timeout)
 			conf, err = cmdutil.MergeConfigFileWithFlags(configFile, flagConf)
 			if err != nil {
 				return fmt.Errorf("error processing config: %v", err)

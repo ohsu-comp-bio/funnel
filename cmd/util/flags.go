@@ -60,6 +60,8 @@ func NodeFlags(flagConf *config.Config, configFile *string) *pflag.FlagSet {
 }
 
 func selectorFlags(flagConf *config.Config) *pflag.FlagSet {
+	//fmt.Println("COMPUTE: ", flagConf.RPCClient.Timeout.GetDuration())
+
 	f := pflag.NewFlagSet("", pflag.ContinueOnError)
 	f.StringVar(&flagConf.Compute, "Compute", flagConf.Compute, "Name of compute backed to use")
 	f.StringVar(&flagConf.Database, "Database", flagConf.Database, "Name of database backed to use")

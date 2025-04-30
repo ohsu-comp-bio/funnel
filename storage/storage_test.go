@@ -65,11 +65,13 @@ func TestStorageWithConfig(t *testing.T) {
 			RegionName: "fakeregion",
 		},
 		HTTPStorage: &config.HTTPStorage{Disabled: false},
+		FTPStorage:  &config.FTPStorage{Disabled: false},
 	}
 	sc, err = NewMux(c)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(sc.Backends) != 7 {
 		t.Fatal("unexpected number of Storage backends")
 	}
@@ -128,7 +130,7 @@ func TestUrlParsing(t *testing.T) {
 	}
 
 	// Amazon S3
-	ab, err := NewAmazonS3(&config.AmazonS3Storage{})
+	ab, err := NewAmazonS3(&config.AmazonS3Storage{AWSConfig: &config.AWSConfig{}})
 	if err != nil {
 		t.Error("Error creating amazon S3 backend:", err)
 	}

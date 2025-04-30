@@ -9,6 +9,7 @@ import (
 
 	"github.com/minio/minio-go"
 	"github.com/ohsu-comp-bio/funnel/config"
+	s3util "github.com/ohsu-comp-bio/funnel/util/s3"
 )
 
 // GenericS3 provides access to an S3 object store.
@@ -21,7 +22,14 @@ type GenericS3 struct {
 // and a set of authentication credentials.
 func NewGenericS3(conf *config.GenericS3Storage) (*GenericS3, error) {
 	ssl := strings.HasPrefix(conf.Endpoint, "https")
-	endpoint := endpointRE.ReplaceAllString(conf.Endpoint, "$2")
+
+	var endpoint string
+	if conf.Endpoint != "" {
+		endpoint = s3util.ParseEndpoint(conf.Endpoint)
+	}
+
+	fmt.Println("DEBUG: endpoint:", endpoint)
+
 	client, err := minio.NewV2(endpoint, conf.Key, conf.Secret, ssl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating generic s3 backend: %v", err)

@@ -1,0 +1,114 @@
+name: Build and Publish Multi-Arch Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - feature/*
+      - fix/*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  set-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set-tag.outputs.branch_tag }}
+    steps:
+      - id: set-tag
+        run: |
+          RAW_REF="${GITHUB_REF#refs/*/}"
+          SAFE_TAG=$(echo "$RAW_REF" | tr '/' '_')
+          echo "Sanitized tag: $SAFE_TAG"
+          echo "branch_tag=$SAFE_TAG" >> $GITHUB_OUTPUT
+
+  build-amd64:
+    needs: set-tag
+    runs-on: ubuntu-latest
+    env:
+      REPO: quay.io/ohsu-comp-bio/funnel
+      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build Docker image (amd64)
+        run: |
+          docker build -t $REPO:$BRANCH_TAG-amd64 .
+          docker save $REPO:$BRANCH_TAG-amd64 | gzip > amd64.tar.gz
+
+      - name: Upload image artifact (amd64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: amd64-image
+          path: amd64.tar.gz
+
+  build-arm64:
+    needs: set-tag
+    runs-on: ubuntu-24.04-arm
+    env:
+      REPO: quay.io/ohsu-comp-bio/funnel
+      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build Docker image (arm64)
+        run: |
+          docker build -t $REPO:$BRANCH_TAG-arm64 .
+          docker save $REPO:$BRANCH_TAG-arm64 | gzip > arm64.tar.gz
+
+      - name: Upload image artifact (arm64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-image
+          path: arm64.tar.gz
+
+  push-multiarch:
+    needs: [set-tag, build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    env:
+      REPO: quay.io/ohsu-comp-bio/funnel
+      BRANCH_TAG: ${{ needs.set-tag.outputs.tag }}
+    steps:
+      - name: Download amd64 image
+        uses: actions/download-artifact@v4
+        with:
+          name: amd64-image
+          path: .
+
+      - name: Download arm64 image
+        uses: actions/download-artifact@v4
+        with:
+          name: arm64-image
+          path: .
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v2
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Load Docker images
+        run: |
+          gunzip -c amd64.tar.gz | docker load
+          gunzip -c arm64.tar.gz | docker load
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker manifest create $REPO:$BRANCH_TAG \
+            $REPO:$BRANCH_TAG-amd64 \
+            $REPO:$BRANCH_TAG-arm64
+          docker manifest push $REPO:$BRANCH_TAG
+
+          # Also push as latest if on main
+          if [[ "$BRANCH_TAG" == "main" ]]; then
+            docker manifest create $REPO:latest \
+              $REPO:main-amd64 \
+              $REPO:main-arm64
+            docker manifest push $REPO:latest
+          fi

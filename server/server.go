@@ -176,7 +176,7 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 		// TODO this doesnt handle all routes
-		if s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
+		if s.OidcAuth != nil && s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
 		}
 		switch negotiate(req) {

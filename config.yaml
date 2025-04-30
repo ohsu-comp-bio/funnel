@@ -1,5 +1,4 @@
 Plugins:
-  Disabled: false
   Dir: build/plugins
   Plugin: authorizer
   Input: user

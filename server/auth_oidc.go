@@ -44,7 +44,7 @@ type OidcConfig struct {
 }
 
 func initOidcConfig(config *config.OidcAuth) *OidcConfig {
-	if config.ServiceConfigURL == "" {
+	if config == nil || config.ServiceConfigURL == "" {
 		return nil
 	} else if config.ClientId == "" {
 		fmt.Printf("[ERROR] Missing configuration value [Server.OidcAuth.ClientId]")

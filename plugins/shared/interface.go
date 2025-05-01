@@ -1,14 +1,11 @@
 package shared
 
 import (
-	"context"
 	"net/rpc"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/plugins/proto"
-	"google.golang.org/grpc"
 )
 
 // Define a struct that matches the expected JSON response
@@ -65,13 +62,4 @@ type AuthorizeGRPCPlugin struct {
 	// Concrete implementation, written in Go. This is only used for plugins
 	// that are written in Go.
 	Impl Authorize
-}
-
-func (p *AuthorizeGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	proto.RegisterAuthorizeServer(s, &GRPCServer{Impl: p.Impl})
-	return nil
-}
-
-func (p *AuthorizeGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
-	return &GRPCClient{client: proto.NewAuthorizeClient(c)}, nil
 }

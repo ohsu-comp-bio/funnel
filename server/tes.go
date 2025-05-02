@@ -8,6 +8,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/version"
@@ -36,22 +37,30 @@ type TaskService struct {
 }
 
 // LoadPlugins loads plugins for a task.
-func (ts *TaskService) LoadPlugins(task *tes.Task) (*shared.Response, error) {
+func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*shared.Response, error) {
 	m := &shared.Manager{}
 	defer m.Close()
 
-	ts.Log.Info("getting plugin client", "dir", ts.Config.Plugins.Dir)
-	plugin, err := m.Client(ts.Config.Plugins.Dir)
+	ts.Log.Info("getting plugin client", "path", ts.Config.Plugins.Path)
+	plugin, err := m.Client(ts.Config.Plugins.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin client: %w", err)
 	}
 
-	host := ts.Config.Plugins.Host
-	jsonConfig := ts.Config.Plugins.JsonConfig
+	ts.Log.Info("plugin params", "params", ts.Config.Plugins.Params)
 
-	ts.Log.Info("plugin host", "host", host)
-	ts.Log.Info("plugin user", "user", "")
-	rawResp, err := plugin.Get("", host, jsonConfig)
+	header := map[string]*proto.StringList{}
+	if ctx.Value("HEADER") != nil {
+		sourceHeader, ok := ctx.Value("HEADER").(map[string][]string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected header return type for header: %v", sourceHeader)
+		}
+		for k, v := range sourceHeader {
+			header[k] = &proto.StringList{Values: v}
+		}
+	}
+
+	rawResp, err := plugin.Get(ts.Config.Plugins.Params, header, ts.Config, task)
 	if err != nil {
 		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", "", err)
 	}
@@ -73,7 +82,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	fmt.Printf("CONTEXT: %#v\n", GetUser(ctx))
 	if ts.Config.Plugins != nil {
 		ts.Log.Info("loading plugins")
-		pluginResponse, err := ts.LoadPlugins(task)
+		pluginResponse, err := ts.LoadPlugins(ctx, task)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading plugins: %v", err)
 		}

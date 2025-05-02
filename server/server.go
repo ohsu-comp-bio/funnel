@@ -2,6 +2,7 @@
 package server
 
 import (
+	httpCtx "context"
 	"net"
 	"net/http"
 	"strings"
@@ -120,6 +121,8 @@ func (s *Server) Serve(pctx context.Context) error {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
 
+	httpContext := httpCtx.Background()
+
 	// Open TCP connection for RPC
 	lis, err := net.Listen("tcp", s.RPCAddress)
 	if err != nil {
@@ -175,6 +178,8 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.HandleFunc("/login/token", auth.EchoTokenHandler)
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+		httpCtx.WithValue(httpContext, "HEADER", req.Header)
+
 		// TODO this doesnt handle all routes
 		if s.OidcAuth != nil && s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")

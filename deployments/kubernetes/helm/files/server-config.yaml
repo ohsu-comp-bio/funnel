@@ -113,9 +113,5 @@ Kafka:
   Topic: {{ .Values.Kafka.Topic }}
 
 Plugins:
-  Enabled: {{ .Values.Plugins }}
-  Dir: {{ .Values.Plugins.Dir }}
-  Plugin: {{ .Values.Plugins.Plugin }}
-  Host: {{ .Values.Plugins.Host }}
-  Input: {{ .Values.Plugins.Input }}
-  JsonConfig: {{ .Values.Plugins.JsonConfig | quote }}
+  Path: {{ .Values.Plugins.Path }}
+  Params: {{ .Values.Plugins.Params }}

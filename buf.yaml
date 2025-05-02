@@ -1,5 +1,5 @@
 version: v1
-name: github.com/ohsu-comp-bio/funnel
+name: buf.build/calypr/funnel
 deps:
   - buf.build/googleapis/googleapis
 lint:

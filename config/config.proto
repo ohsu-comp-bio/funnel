@@ -53,19 +53,10 @@ message Config {
   Plugins Plugins = 31;
 }
 
-// Plugins describes which plugins to use and where to find them.
+// This config matches the funnel plugins repo protobuf
 message Plugins {
-  string Dir = 1;
-  string Plugin = 2;
-  string Host = 3;
-  string JsonConfig  = 4;
-  string Input = 5;
-  PluginsResponse Response = 6; // Placeholder for plugins.Response
-}
-
-// Placeholder for plugins.Response
-message PluginsResponse {
-  // Add fields as needed based on the actual plugins.Response type
+  string                  Path     = 1;
+  map<string, string>     Params  = 2;
 }
 
 // BasicCredential describes a username and password for use with Funnel's basic auth.

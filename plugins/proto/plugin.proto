@@ -1,0 +1,25 @@
+syntax = "proto3";
+package proto;
+option go_package = "./proto";
+import "config/config.proto";
+import "tes/tes.proto";
+
+message StringList {
+  repeated string values = 1;
+}
+message GetRequest {
+    map<string, StringList> headers = 1;
+    map<string, string>     params  = 2;
+    config.Config           config  = 3;
+    tes.Task                task    = 4;
+}
+
+message GetResponse {
+    bytes value = 1;
+}
+
+message Empty {}
+
+service Authorize {
+    rpc Get(GetRequest) returns (GetResponse);
+}

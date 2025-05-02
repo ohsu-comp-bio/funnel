@@ -164,13 +164,38 @@ func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error)
 		}
 	} else {
 		opts := minio.GetObjectOptions{}
-		err = s3.client.FGetObjectWithContext(ctx, u.bucket, u.path, path, opts)
+		// err = s3.client.FGetObjectWithContext(ctx, u.bucket, u.path, path, opts)
+		err = download(ctx, s3.client, u.bucket, u.path, path, opts)
 		if err != nil {
 			return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
 		}
 	}
 
 	return obj, nil
+}
+
+// download streams an object to a file without using os.Rename
+func download(ctx context.Context, client *minio.Client, bucket, objectPath, filePath string, opts minio.GetObjectOptions) error {
+	// Step 1: Get the object stream
+	obj, err := client.GetObjectWithContext(ctx, bucket, objectPath, opts)
+	if err != nil {
+		return fmt.Errorf("getting object from S3: %w", err)
+	}
+	defer obj.Close()
+
+	// Step 2: Create the local file (overwrite if exists)
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("creating file: %w", err)
+	}
+	defer outFile.Close()
+
+	// Step 3: Copy the contents
+	if _, err := io.Copy(outFile, obj); err != nil {
+		return fmt.Errorf("writing file: %w", err)
+	}
+
+	return nil
 }
 
 // Put copies an object (file) from the host path to S3.

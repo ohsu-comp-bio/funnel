@@ -7,7 +7,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/plugins/shared"
+	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -50,7 +50,7 @@ func DeleteConfigMap(ctx context.Context, taskId string, namespace string, clien
 }
 
 func UpdateConfig(ctx context.Context, dst *config.Config) error {
-	resp, ok := ctx.Value("pluginResponse").(*shared.Response)
+	resp, ok := ctx.Value("pluginResponse").(*proto.GetResponse)
 	if !ok {
 		return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 	}

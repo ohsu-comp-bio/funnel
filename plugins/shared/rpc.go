@@ -19,9 +19,8 @@ type RPCServer struct {
 	Impl Authorize
 }
 
-func (m *RPCClient) Get(params map[string]string, headers map[string]*proto.StringList, config *funnelConfig.Config, task *tes.Task) ([]byte, error) {
-	var resp []byte
-
+func (m *RPCClient) Get(params map[string]string, headers map[string]*proto.StringList, config *funnelConfig.Config, task *tes.Task) (*proto.GetResponse, error) {
+	var resp proto.GetResponse
 	err := m.client.Call("Plugin.Get", &proto.GetRequest{
 		Params:  params,
 		Headers: headers,
@@ -31,15 +30,16 @@ func (m *RPCClient) Get(params map[string]string, headers map[string]*proto.Stri
 	if err != nil {
 		return nil, fmt.Errorf("PLUGIN RPC Get call failed: %w", err)
 	}
-	return resp, nil
+	return &resp, nil
 }
 
-func (m *RPCServer) Get(args *proto.GetRequest, resp *[]byte) error {
+func (m *RPCServer) Get(args *proto.GetRequest, resp *proto.GetResponse) error {
 	// Call the implementation's Get method with the arguments
 	v, err := m.Impl.Get(args.Params, args.Headers, args.Config, args.Task)
-	*resp = v
 	if err != nil {
 		return fmt.Errorf("authorize implementation failed: %w", err)
 	}
+	*resp = *v
+
 	return nil
 }

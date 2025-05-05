@@ -11,7 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/plugins/shared"
+	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
@@ -64,7 +64,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 }
 
 func (b *Backend) UpdateConfig(ctx context.Context) error {
-	resp, ok := ctx.Value("pluginResponse").(*shared.Response)
+	resp, ok := ctx.Value("pluginResponse").(*proto.GetResponse)
 	if !ok {
 		return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 	}
@@ -81,7 +81,7 @@ func (b *Backend) UpdateConfig(ctx context.Context) error {
 }
 
 func (b *Backend) MergeConfigs(c *config.Config) error {
-	err := mergo.MergeWithOverwrite(&b.conf, c)
+	err := mergo.MergeWithOverwrite(b.conf, c)
 	if err != nil {
 		return fmt.Errorf("error merging configs: %v", err)
 	}

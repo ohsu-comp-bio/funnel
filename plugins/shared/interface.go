@@ -12,14 +12,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Define a struct that matches the expected JSON response
-type Response struct {
-	Code    int            `json:"code,omitempty"`
-	Message string         `json:"message,omitempty"`
-	Config  *config.Config `json:"config,omitempty"`
-	Task    *tes.Task      `json:"task,omitempty"`
-}
-
 // Handshake is a common handshake that is shared by plugin and host.
 var Handshake = plugin.HandshakeConfig{
 	// This isn't required when using VersionedPlugins
@@ -42,7 +34,7 @@ var PluginMap = map[string]plugin.Plugin{
 
 // Authorize is the interface that we're exposing as a plugin.
 type Authorize interface {
-	Get(params map[string]string, headers map[string]*proto.StringList, config *config.Config, task *tes.Task) ([]byte, error)
+	Get(params map[string]string, headers map[string]*proto.StringList, config *config.Config, task *tes.Task) (*proto.GetResponse, error)
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this.

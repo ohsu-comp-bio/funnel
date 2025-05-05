@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -38,7 +37,7 @@ type TaskService struct {
 }
 
 // LoadPlugins loads plugins for a task.
-func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*shared.Response, error) {
+func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*proto.GetResponse, error) {
 	gob.Register(&config.TimeoutConfig_Duration{})
 	gob.Register(&config.TimeoutConfig_Disabled{})
 
@@ -64,20 +63,11 @@ func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*shared
 		}
 	}
 
-	rawResp, err := plugin.Get(ts.Config.Plugins.Params, header, ts.Config, task)
+	resp, err := plugin.Get(ts.Config.Plugins.Params, header, ts.Config, task)
 	if err != nil {
 		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", "", err)
 	}
-
-	// Unmarshal the response
-	ts.Log.Info("parsing plugin response")
-	var resp shared.Response
-	err = json.Unmarshal([]byte(rawResp), &resp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse plugin response: %w", err)
-	}
-
-	return &resp, nil
+	return resp, nil
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
@@ -91,14 +81,13 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		if err != nil {
 			return nil, fmt.Errorf("Error loading plugins: %v", err)
 		}
-
 		if pluginResponse.Code != 200 {
 			return nil, fmt.Errorf("Plugin returned error code %d", pluginResponse.Code)
 		}
-
 		if pluginResponse.Config == nil {
 			return nil, fmt.Errorf("Plugin returned empty config")
 		}
+		ts.Log.Debug("Plugin Response: ", pluginResponse)
 
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 	}

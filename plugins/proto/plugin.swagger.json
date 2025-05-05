@@ -859,9 +859,18 @@
     "protoGetResponse": {
       "type": "object",
       "properties": {
-        "value": {
+        "code": {
           "type": "string",
-          "format": "byte"
+          "format": "int64"
+        },
+        "message": {
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/definitions/configConfig"
+        },
+        "task": {
+          "$ref": "#/definitions/tesTask"
         }
       }
     },

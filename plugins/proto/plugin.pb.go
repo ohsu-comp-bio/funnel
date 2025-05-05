@@ -137,7 +137,10 @@ func (x *GetRequest) GetTask() *tes.Task {
 
 type GetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         []byte                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	Code          int64                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Config        *config.Config         `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
+	Task          *tes.Task              `protobuf:"bytes,4,opt,name=task,proto3" json:"task,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -172,9 +175,30 @@ func (*GetResponse) Descriptor() ([]byte, []int) {
 	return file_plugins_proto_plugin_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetResponse) GetValue() []byte {
+func (x *GetResponse) GetCode() int64 {
 	if x != nil {
-		return x.Value
+		return x.Code
+	}
+	return 0
+}
+
+func (x *GetResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetResponse) GetConfig() *config.Config {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *GetResponse) GetTask() *tes.Task {
+	if x != nil {
+		return x.Task
 	}
 	return nil
 }
@@ -234,9 +258,12 @@ const file_plugins_proto_plugin_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x11.proto.StringListR\x05value:\x028\x01\x1a9\n" +
 	"\vParamsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"#\n" +
-	"\vGetResponse\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\fR\x05value\"\a\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x82\x01\n" +
+	"\vGetResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\x03R\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12&\n" +
+	"\x06config\x18\x03 \x01(\v2\x0e.config.ConfigR\x06config\x12\x1d\n" +
+	"\x04task\x18\x04 \x01(\v2\t.tes.TaskR\x04task\"\a\n" +
 	"\x05Empty29\n" +
 	"\tAuthorize\x12,\n" +
 	"\x03Get\x12\x11.proto.GetRequest\x1a\x12.proto.GetResponseB\tZ\a./protob\x06proto3"
@@ -269,14 +296,16 @@ var file_plugins_proto_plugin_proto_depIdxs = []int32{
 	5, // 1: proto.GetRequest.params:type_name -> proto.GetRequest.ParamsEntry
 	6, // 2: proto.GetRequest.config:type_name -> config.Config
 	7, // 3: proto.GetRequest.task:type_name -> tes.Task
-	0, // 4: proto.GetRequest.HeadersEntry.value:type_name -> proto.StringList
-	1, // 5: proto.Authorize.Get:input_type -> proto.GetRequest
-	2, // 6: proto.Authorize.Get:output_type -> proto.GetResponse
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	6, // 4: proto.GetResponse.config:type_name -> config.Config
+	7, // 5: proto.GetResponse.task:type_name -> tes.Task
+	0, // 6: proto.GetRequest.HeadersEntry.value:type_name -> proto.StringList
+	1, // 7: proto.Authorize.Get:input_type -> proto.GetRequest
+	2, // 8: proto.Authorize.Get:output_type -> proto.GetResponse
+	8, // [8:9] is the sub-list for method output_type
+	7, // [7:8] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_plugins_proto_plugin_proto_init() }

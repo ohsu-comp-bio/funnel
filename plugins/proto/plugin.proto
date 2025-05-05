@@ -13,13 +13,14 @@ message GetRequest {
     config.Config           config  = 3;
     tes.Task                task    = 4;
 }
-
 message GetResponse {
-    bytes value = 1;
+    int64                 code    = 1;
+    string              message = 2;
+    config.Config       config  = 3;
+    tes.Task            task    = 4;
 }
 
 message Empty {}
-
 service Authorize {
     rpc Get(GetRequest) returns (GetResponse);
 }

@@ -26,7 +26,7 @@ func WithMetadataConfig(conf *config.Config, meta *Metadata) (*config.Config, er
 		if err != nil {
 			return conf, err
 		}
-		err = mergo.MergeWithOverwrite(&conf, mconf)
+		err = mergo.MergeWithOverwrite(conf, mconf)
 		if err != nil {
 			return conf, err
 		}

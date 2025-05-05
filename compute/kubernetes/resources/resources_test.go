@@ -6,7 +6,7 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/plugins/shared"
+	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -289,7 +289,7 @@ func TestUpdateConfig(t *testing.T) {
 
 	// Test with valid config merge
 	t.Run("ValidMerge", func(t *testing.T) {
-		pluginResp := &shared.Response{
+		pluginResp := &proto.GetResponse{
 			Config: &config.Config{
 				Kubernetes: &config.Kubernetes{
 					Namespace: "new-namespace",

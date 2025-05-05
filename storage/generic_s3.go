@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -77,12 +78,12 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 	opts := minio.GetObjectOptions{}
 	obj, err := s3.client.GetObjectWithContext(ctx, u.bucket, u.path, opts)
 	if err != nil {
-		return nil, fmt.Errorf("genericS3: getting object: %s", err)
+		return nil, fmt.Errorf("genericS3: getting object %s in bucket %s: %s", u.path, u.bucket, err)
 	}
 
 	isDir, err := isDir(s3.client, u.bucket, u.path)
 	if err != nil {
-		return nil, fmt.Errorf("genericS3: stat object: %s", err)
+		return nil, fmt.Errorf("genericS3: stat object %s in bucket %s: %s", u.path, u.bucket, err)
 	}
 	if isDir {
 		return &Object{
@@ -94,7 +95,7 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 
 	info, err := obj.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("genericS3: stat object: %s", err)
+		return nil, fmt.Errorf("genericS3: stat object %s in bucket %s: %s", u.path, u.bucket, err)
 	}
 
 	return &Object{

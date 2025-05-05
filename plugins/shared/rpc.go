@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/rpc"
 
-	"github.com/ohsu-comp-bio/funnel/config"
+	funnelConfig "github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
@@ -19,8 +19,9 @@ type RPCServer struct {
 	Impl Authorize
 }
 
-func (m *RPCClient) Get(params map[string]string, headers map[string]*proto.StringList, config *config.Config, task *tes.Task) ([]byte, error) {
+func (m *RPCClient) Get(params map[string]string, headers map[string]*proto.StringList, config *funnelConfig.Config, task *tes.Task) ([]byte, error) {
 	var resp []byte
+
 	err := m.client.Call("Plugin.Get", &proto.GetRequest{
 		Params:  params,
 		Headers: headers,

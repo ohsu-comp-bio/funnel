@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -38,6 +39,9 @@ type TaskService struct {
 
 // LoadPlugins loads plugins for a task.
 func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*shared.Response, error) {
+	gob.Register(&config.TimeoutConfig_Duration{})
+	gob.Register(&config.TimeoutConfig_Disabled{})
+
 	m := &shared.Manager{}
 	defer m.Close()
 
@@ -79,6 +83,7 @@ func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*shared
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
+
 	fmt.Printf("CONTEXT: %#v\n", GetUser(ctx))
 	if ts.Config.Plugins != nil {
 		ts.Log.Info("loading plugins")

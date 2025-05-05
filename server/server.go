@@ -2,13 +2,13 @@
 package server
 
 import (
-	httpCtx "context"
 	"net"
 	"net/http"
 	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/golang/gddo/httputil"
@@ -121,8 +121,6 @@ func (s *Server) Serve(pctx context.Context) error {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
 
-	httpContext := httpCtx.Background()
-
 	// Open TCP connection for RPC
 	lis, err := net.Listen("tcp", s.RPCAddress)
 	if err != nil {
@@ -178,8 +176,11 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.HandleFunc("/login/token", auth.EchoTokenHandler)
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-		httpCtx.WithValue(httpContext, "HEADER", req.Header)
 
+		// Pass header to plugin if plugin is enabled
+		if s.Plugins != nil {
+			s.addHeadertoCtx(req)
+		}
 		// TODO this doesnt handle all routes
 		if s.OidcAuth != nil && s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
@@ -252,6 +253,20 @@ func (s *Server) Serve(pctx context.Context) error {
 	httpServer.Shutdown(context.TODO())
 
 	return srverr
+}
+
+func (s *Server) addHeadertoCtx(req *http.Request) *http.Request {
+	md := metadata.New(nil)
+	ctxWithMetadata := req.Context() // Start with the request's context
+	for key, values := range req.Header {
+		for _, value := range values {
+			md.Append(key, value)
+		}
+		ctxWithMetadata = context.WithValue(ctxWithMetadata, key, values)
+
+	}
+	ctxWithMetadata = metadata.NewOutgoingContext(ctxWithMetadata, md) // Create context with metadata
+	return req.WithContext(ctxWithMetadata)
 }
 
 // handleError handles errors in the HTTP stack, logging errors, stack traces,

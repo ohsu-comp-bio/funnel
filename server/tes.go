@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/gob"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -14,6 +15,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/version"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -53,12 +55,13 @@ func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*proto.
 	ts.Log.Info("plugin params", "params", ts.Config.Plugins.Params)
 
 	header := map[string]*proto.StringList{}
-	if ctx.Value("HEADER") != nil {
-		sourceHeader, ok := ctx.Value("HEADER").(map[string][]string)
-		if !ok {
-			return nil, fmt.Errorf("unexpected header return type for header: %v", sourceHeader)
-		}
-		for k, v := range sourceHeader {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("Headers not passed from context")
+	}
+	for k, v := range md {
+		// Some special headers start with ':' and cause downstream errors if kept
+		if !strings.HasPrefix(k, ":") {
 			header[k] = &proto.StringList{Values: v}
 		}
 	}

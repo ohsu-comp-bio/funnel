@@ -28,8 +28,8 @@ EventWriters:
   {{- end }}
 
 Logger:
-  Level: {{ .Values.Logger.Level }}
-  OutputFile: {{ .Values.Logger.OutputFile }}
+  level: {{ .Values.Logger.level }}
+  outputFile: {{ .Values.Logger.outputFile }}
 
 Server:
   HostName: {{ .Values.Server.HostName }}
@@ -39,18 +39,22 @@ Server:
 
 RPCClient:
   ServerAddress: {{ .Values.RPCClient.ServerAddress }}
-  Timeout: {{ .Values.RPCClient.Timeout }}
+  Timeout: 
+    duration: {{ .Values.RPCClient.Timeout.duration }}
   MaxRetries: {{ .Values.RPCClient.MaxRetries }}
 
 Scheduler:
   ScheduleRate: {{ .Values.Scheduler.ScheduleRate }}
   ScheduleChunk: {{ .Values.Scheduler.ScheduleChunk }}
-  NodePingTimeout: {{ .Values.Scheduler.NodePingTimeout }}
-  NodeInitTimeout: {{ .Values.Scheduler.NodeInitTimeout }}
+  NodePingTimeout: 
+    duration: {{ .Values.Scheduler.NodePingTimeout.duration }}
+  NodeInitTimeout: 
+    duration: {{ .Values.Scheduler.NodeInitTimeout.duration }}
 
 Node:
   ID: {{ .Values.Node.Id }}
-  Timeout: {{ .Values.Node.Timeout }}
+  Timeout:
+    disabled: {{ .Values.Node.Timeout.disabled }}
   UpdateRate: {{ .Values.Node.UpdateRate }}
   Resources:
     Cpus: {{ .Values.Node.Resources.cpus }}
@@ -70,18 +74,20 @@ BoltDB:
 
 AmazonS3:
   Disabled: {{ .Values.AmazonS3.Disabled }}
-  MaxRetries: {{ .Values.AmazonS3.MaxRetries }}
-  Key: {{ .Values.AmazonS3.Key }}
-  Secret: {{ .Values.AmazonS3.Secret }}
+  AWSConfig:
+    MaxRetries: {{ .Values.AmazonS3.AWSConfig.MaxRetries }}
+    Key: {{ .Values.AmazonS3.AWSConfig.Key }}
+    Secret: {{ .Values.AmazonS3.AWSConfig.Secret }}
   SSE:
     CustomerKeyFile: {{ .Values.AmazonS3.SSE.CustomerKeyFile }}
     KMSKey: {{ .Values.AmazonS3.SSE.KMSKey }}
 
 DynamoDB:
   TableBasename: {{ .Values.DynamoDB.TableBasename }}
-  Region: {{ .Values.DynamoDB.Region }}
-  Key: {{ .Values.DynamoDB.Key }}
-  Secret: {{ .Values.DynamoDB.Secret }}
+  AWSConfig:
+    Region: {{ .Values.DynamoDB.AWSConfig.Region }}
+    Key: {{ .Values.DynamoDB.AWSConfig.Key }}
+    Secret: {{ .Values.DynamoDB.AWSConfig.Secret }}
 
 Elastic:
   IndexPrefix: {{ .Values.Elastic.IndexPrefix }}
@@ -101,17 +107,27 @@ MongoDB:
     - {{ .Release.Name }}-mongodb.{{ .Release.Namespace }}.svc.cluster.local
     {{- end }}
   Database: {{ .Values.MongoDB.Database }}
-  Timeout: {{ .Values.MongoDB.Timeout }}
+  Timeout:
+    duration: {{ .Values.MongoDB.Timeout.duration }}
   Username: {{ .Values.MongoDB.Username }}
   Password: {{ .Values.MongoDB.Password }}
 
 Kafka:
   Servers:
+  {{- if .Values.Kafka.Servers }}
   {{- range .Values.Kafka.Servers }}
   - {{ . }}
+  {{- end }}
+  {{- else }}
+  - ""
   {{- end }}
   Topic: {{ .Values.Kafka.Topic }}
 
 Plugins:
   Path: {{ .Values.Plugins.Path }}
-  Params: {{ .Values.Plugins.Params }}
+  Params:
+  {{- if .Values.Plugins.Params }}
+  {{- range $key, $value := .Values.Plugins.Params }}
+    {{ $key }}: {{ $value }}
+  {{- end }}
+  {{- end }}

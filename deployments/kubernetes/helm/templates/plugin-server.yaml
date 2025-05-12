@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: funnel-plugin-test-server
-  namespace: {{ .Release.Namespace }} 
+  namespace: {{ .Release.Namespace }}
   labels:
     app: funnel-plugin-test-server
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: test-server
-          image: quay.io/ohsu-comp-bio/funnel-plugins-test-server
+          image: quay.io/ohsu-comp-bio/funnel-plugins-test-server:testing
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -25,6 +25,8 @@ spec:
             - name: funnel-plugin-test-users
               mountPath: /app/example-users.csv
               subPath: example-users.csv
+          command: ["/bin/sh", "-c"]
+          args: ["while true; do sleep 3600; done"]
       volumes:
         - name: funnel-plugin-test-users
           configMap:
@@ -35,7 +37,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: funnel-plugin-test-server
-  namespace: {{ .Release.Namespace }} 
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     app: funnel-plugin-test-server
@@ -48,11 +50,15 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: funnel-plugin-test-users
-  namespace: {{ .Release.Namespace }} 
+  namespace: {{ .Release.Namespace }}
 data:
   example-users.csv: |-
-    user,key,secret
-    example,key1,secret1
-    foo,key2,secret2
-    bar,key3,secret3
-    foobar,key4,secret4
+    user,key,secret,GET,PUT,DELETE
+    example,key1,secret1,1,1,1
+    foo,key2,secret2,1,0,1
+    bar,key3,secret3,0,0,0
+    foobar,key4,secret4,0,1,1
+    alpha,key5,secret5,1,1,0
+    beta,key6,secret6,1,0,0
+    gamma,key7,secret7,0,1,0
+    delta,key8,secret8,0,0,1

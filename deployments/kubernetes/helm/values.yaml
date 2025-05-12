@@ -3,12 +3,12 @@ replicaCount: 1
 
 image:
   repository: quay.io/ohsu-comp-bio/funnel
-  tag: testing
+  tag: feature-plugins
   pullPolicy: Always
   # Plugin Init Container
   initContainer:
     image: quay.io/ohsu-comp-bio/funnel-plugins
-    tag: latest
+    tag: pr-1
     pullPolicy: Always
     command:
       - cp
@@ -20,7 +20,7 @@ labels:
 
 # Funnel Server (Task Database)
 mongodb:
-  image: 
+  image:
     registry: public.ecr.aws
   architecture: standalone
   auth:
@@ -78,9 +78,9 @@ EventWriters:
 
 Logger:
   # Logging levels: debug, info, error
-  Level: info
+  level: debug
   # Write logs to this path. If empty, logs are written to stderr.
-  OutputFile: ""
+  outputFile: ""
 
 Server:
   # Hostname of the Funnel server.
@@ -116,7 +116,8 @@ RPCClient:
   # Password: abc123
 
   # connection timeout.
-  Timeout: 60s
+  Timeout:
+    duration: 60s
 
   # The maximum number of times that a request will be retried for failures.
   # Time between retries follows an exponential backoff starting at 5 seconds
@@ -130,9 +131,11 @@ Scheduler:
   # How many tasks to schedule in one iteration.
   ScheduleChunk: 10
   # How long to wait between updates before marking a node dead.
-  NodePingTimeout: 1m
+  NodePingTimeout:
+    duration: 60s
   # How long to wait for a node to start, before marking the node dead.
-  NodeInitTimeout: 5m
+  NodeInitTimeout:
+    duration: 300s
 
 Node:
   # If empty, a node ID will be automatically generated.
@@ -140,7 +143,8 @@ Node:
 
   # If the node has been idle for longer than the timeout, it will shut down.
   # -1 means there is no timeout. 0 means timeout immediately after the first task.
-  Timeout: -1s
+  Timeout:
+    disabled: true
 
   # A Node will automatically try to detect what resources are available to it.
   # Defining Resources in the Node configuration overrides this behavior.
@@ -193,12 +197,13 @@ BoltDB:
 DynamoDB:
   # Basename to use for dynamodb tables
   TableBasename: funnel
-  # AWS region
-  Region: ""
-  # AWS Access key ID
-  Key: ""
-  # AWS Secret Access Key
-  Secret: ""
+  AWSConfig:
+    # AWS region
+    Region: ""
+    # AWS Access key ID
+    Key: ""
+    # AWS Secret Access Key
+    Secret: ""
 
 Elastic:
   # Prefix to use for indexes (task, events, nodes)
@@ -225,15 +230,14 @@ MongoDB:
   # first connecting and on follow up operations in the session. If
   # timeout is zero, the call may block forever waiting for a connection
   # to be established.
-  Timeout: 5m
+  Timeout:
+    duration: 300s
   # Username and Password inform the credentials for the initial authentication
   # done on the database defined by the Database field.
   Username: example
   Password: example
 
 Kafka:
-  Servers:
-    - ""
   Topic: funnel
 
 #-------------------------------------------------------------------------------
@@ -247,7 +251,7 @@ HTCondor:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 10m
+  ReconcileRate: 600s
   TemplateFile: ""
   Template: |
     universe = vanilla
@@ -278,7 +282,7 @@ PBS:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 10m
+  ReconcileRate: 600s
   TemplateFile: ""
   Template: |
     #!bin/bash
@@ -324,7 +328,7 @@ Slurm:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 10m
+  ReconcileRate: 600s
   TemplateFile: ""
   Template: |
     #!/bin/bash
@@ -351,7 +355,7 @@ AWSBatch:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by AWS Batch
-  ReconcileRate: 10m
+  ReconcileRate: 600s
   # JobDefinition can be either a name or the Amazon Resource Name (ARN).
   JobDefinition: "funnel-job-def"
   # JobQueue can be either a name or the Amazon Resource Name (ARN).
@@ -371,7 +375,7 @@ Kubernetes:
   DisableReconciler: true
   # ReconcileRate is how often the compute backend compares states in Funnel's backend
   # to those reported by the backend
-  ReconcileRate: 10m
+  ReconcileRate: 600s
   # Kubernetes Namespace to spawn jobs within
   Namespace: ""
   # Kubernetes Namespace to spawn jobs within
@@ -415,11 +419,12 @@ HTTPStorage:
 AmazonS3:
   Disabled: false
   # The maximum number of times that a request will be retried for failures.
-  MaxRetries: 10
-  # AWS Access key ID
-  Key: ""
-  # AWS Secret Access Key
-  Secret: ""
+  AWSConfig:
+    MaxRetries: 10
+    # AWS Access key ID
+    Key: ""
+    # AWS Secret Access Key
+    Secret: ""
   # Server Side Encryption (SSE) settings
   SSE:
     # Customer Provided Key
@@ -459,14 +464,3 @@ FTPStorage:
   Timeout: 10s
   User: "anonymous"
   Password: "anonymous"
-
-Plugins:
-  Disabled: true
-  Dir: plugin-binaries
-  Plugin: auth-plugin
-  Input: user
-  # Worker will have the S3 bucket configuration (including region and AWS credentials) from here:
-  # https://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/gen3-workflow/master/docs/openapi.yaml#/Storage/get_storage_info
-  # Host: http://gen3-workflow.svc.local/s3/storage/info
-  Host: http://funnel-plugin-test-server:8080/token?user=
-  # TODO: Add type of plugin here (e.g. Auth, System)

@@ -856,7 +856,7 @@
         }
       }
     },
-    "protoGetResponse": {
+    "protoJobResponse": {
       "type": "object",
       "properties": {
         "code": {
@@ -871,6 +871,9 @@
         },
         "task": {
           "$ref": "#/definitions/tesTask"
+        },
+        "userId": {
+          "type": "string"
         }
       }
     },
@@ -884,6 +887,15 @@
           }
         }
       }
+    },
+    "protoType": {
+      "type": "string",
+      "enum": [
+        "CREATE",
+        "GET",
+        "CANCEL"
+      ],
+      "default": "CREATE"
     },
     "protobufAny": {
       "type": "object",

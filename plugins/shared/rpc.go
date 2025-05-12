@@ -19,13 +19,14 @@ type RPCServer struct {
 	Impl Authorize
 }
 
-func (m *RPCClient) Get(params map[string]string, headers map[string]*proto.StringList, config *funnelConfig.Config, task *tes.Task) (*proto.GetResponse, error) {
-	var resp proto.GetResponse
-	err := m.client.Call("Plugin.Get", &proto.GetRequest{
+func (m *RPCClient) PluginAction(params map[string]string, headers map[string]*proto.StringList, config *funnelConfig.Config, task *tes.Task, actionType proto.Type) (*proto.JobResponse, error) {
+	var resp proto.JobResponse
+	err := m.client.Call("Plugin.PluginAction", &proto.Job{
 		Params:  params,
 		Headers: headers,
 		Config:  config,
 		Task:    task,
+		Type:    actionType,
 	}, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("PLUGIN RPC Get call failed: %w", err)
@@ -33,9 +34,9 @@ func (m *RPCClient) Get(params map[string]string, headers map[string]*proto.Stri
 	return &resp, nil
 }
 
-func (m *RPCServer) Get(args *proto.GetRequest, resp *proto.GetResponse) error {
+func (m *RPCServer) PluginAction(args *proto.Job, resp *proto.JobResponse) error {
 	// Call the implementation's Get method with the arguments
-	v, err := m.Impl.Get(args.Params, args.Headers, args.Config, args.Task)
+	v, err := m.Impl.PluginAction(args.Params, args.Headers, args.Config, args.Task, args.Type)
 	if err != nil {
 		return fmt.Errorf("authorize implementation failed: %w", err)
 	}

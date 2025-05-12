@@ -30,30 +30,21 @@ import (
 // GetServiceInfo, etc.
 type TaskService struct {
 	tes.UnimplementedTaskServiceServer
-	Name    string
-	Event   events.Writer
-	Compute events.Computer
-	Read    tes.ReadOnlyServer
-	Log     *logger.Logger
-	Config  *config.Config
+	Name          string
+	Event         events.Writer
+	Compute       events.Computer
+	Read          tes.ReadOnlyServer
+	Log           *logger.Logger
+	Config        *config.Config
+	Plugin        shared.Authorize
+	PluginManager *shared.Manager
 }
+type contextKey string
+
+const InternalCallKey contextKey = "internalCall"
 
 // LoadPlugins loads plugins for a task.
-func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*proto.GetResponse, error) {
-	gob.Register(&config.TimeoutConfig_Duration{})
-	gob.Register(&config.TimeoutConfig_Disabled{})
-
-	m := &shared.Manager{}
-	defer m.Close()
-
-	ts.Log.Info("getting plugin client", "path", ts.Config.Plugins.Path)
-	plugin, err := m.Client(ts.Config.Plugins.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get plugin client: %w", err)
-	}
-
-	ts.Log.Info("plugin params", "params", ts.Config.Plugins.Params)
-
+func (ts *TaskService) DoPluginAction(ctx context.Context, task *tes.Task, taskType proto.Type) (*proto.JobResponse, error) {
 	header := map[string]*proto.StringList{}
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -65,33 +56,39 @@ func (ts *TaskService) LoadPlugins(ctx context.Context, task *tes.Task) (*proto.
 			header[k] = &proto.StringList{Values: v}
 		}
 	}
-
-	resp, err := plugin.Get(ts.Config.Plugins.Params, header, ts.Config, task)
+	resp, err := ts.Plugin.PluginAction(ts.Config.Plugins.Params, header, ts.Config, task, taskType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", "", err)
 	}
 	return resp, nil
 }
 
+func (ts *TaskService) HandleDoPluginAction(ctx context.Context, task *tes.Task, taskType proto.Type) (*proto.JobResponse, error) {
+	gob.Register(&config.TimeoutConfig_Duration{})
+	gob.Register(&config.TimeoutConfig_Disabled{})
+
+	pluginResponse, err := ts.DoPluginAction(ctx, task, taskType)
+	if err != nil {
+		return pluginResponse, fmt.Errorf("Error loading plugins: %v", err)
+	}
+	if pluginResponse.Code != 200 {
+		return pluginResponse, fmt.Errorf("Plugin returned error code %d", pluginResponse.Code)
+	}
+	if pluginResponse.Config == nil {
+		return pluginResponse, fmt.Errorf("Plugin returned empty config")
+	}
+	return pluginResponse, nil
+}
+
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.
 // This is part of the TES implementation.
 func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.CreateTaskResponse, error) {
-
-	fmt.Printf("CONTEXT: %#v\n", GetUser(ctx))
 	if ts.Config.Plugins != nil {
-		ts.Log.Info("loading plugins")
-		pluginResponse, err := ts.LoadPlugins(ctx, task)
+		pluginResponse, err := ts.HandleDoPluginAction(ctx, task, proto.Type_CREATE)
 		if err != nil {
-			return nil, fmt.Errorf("Error loading plugins: %v", err)
-		}
-		if pluginResponse.Code != 200 {
-			return nil, fmt.Errorf("Plugin returned error code %d", pluginResponse.Code)
-		}
-		if pluginResponse.Config == nil {
-			return nil, fmt.Errorf("Plugin returned empty config")
+			return nil, err
 		}
 		ts.Log.Debug("Plugin Response: ", pluginResponse)
-
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 	}
 
@@ -123,6 +120,25 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 // GetTask calls GetTask on the underlying tes.ReadOnlyServer. If the underlying server
 // returns tes.ErrNotFound, TaskService will handle returning the appropriate gRPC error.
 func (ts *TaskService) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
+	/*
+			This function gets called internally via the GRPC client in many places.
+			To make this work, would have to reconfigure the code to bipass the client
+			and talk directly to the underlying dbs.
+
+		if ts.Config.Plugins != nil {
+			ts.Log.Info("External GetTask request", "taskID", req.Id)
+			pluginResponse, err := ts.HandleDoPluginAction(ctx, &tes.Task{Id: req.Id}, proto.Type_GET)
+			if err != nil {
+				ts.Log.Error("Plugin authorization failed", "taskID", req.Id, "error", err)
+				return nil, err
+			}
+			ts.Log.Debug("Get Task Response: ", pluginResponse)
+			ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
+		} else {
+			ts.Log.Debug("Internal GetTask request, skipping plugin authorization", "taskID", req.Id)
+		}
+	*/
+
 	task, err := ts.Read.GetTask(ctx, req)
 	if err == tes.ErrNotFound {
 		err = status.Errorf(codes.NotFound, "%v: taskID: %s", err.Error(), req.Id)
@@ -138,6 +154,14 @@ func (ts *TaskService) ListTasks(ctx context.Context, req *tes.ListTasksRequest)
 // CancelTask cancels a task
 func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskRequest) (*tes.CancelTaskResponse, error) {
 	result := &tes.CancelTaskResponse{}
+	if ts.Config.Plugins != nil {
+		pluginResponse, err := ts.HandleDoPluginAction(ctx, nil, proto.Type_CANCEL)
+		if err != nil {
+			return nil, err
+		}
+		ts.Log.Debug("Plugin Response: ", pluginResponse)
+		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
+	}
 
 	// updated database and other event streams (includes access-checking)
 	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))

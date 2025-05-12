@@ -23,6 +23,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Type int32
+
+const (
+	Type_CREATE Type = 0
+	Type_GET    Type = 1
+	Type_CANCEL Type = 2
+)
+
+// Enum value maps for Type.
+var (
+	Type_name = map[int32]string{
+		0: "CREATE",
+		1: "GET",
+		2: "CANCEL",
+	}
+	Type_value = map[string]int32{
+		"CREATE": 0,
+		"GET":    1,
+		"CANCEL": 2,
+	}
+)
+
+func (x Type) Enum() *Type {
+	p := new(Type)
+	*p = x
+	return p
+}
+
+func (x Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_plugins_proto_plugin_proto_enumTypes[0].Descriptor()
+}
+
+func (Type) Type() protoreflect.EnumType {
+	return &file_plugins_proto_plugin_proto_enumTypes[0]
+}
+
+func (x Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Type.Descriptor instead.
+func (Type) EnumDescriptor() ([]byte, []int) {
+	return file_plugins_proto_plugin_proto_rawDescGZIP(), []int{0}
+}
+
 type StringList struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Values        []string               `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
@@ -67,30 +116,31 @@ func (x *StringList) GetValues() []string {
 	return nil
 }
 
-type GetRequest struct {
+type Job struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Headers       map[string]*StringList `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Params        map[string]string      `protobuf:"bytes,2,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Config        *config.Config         `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
 	Task          *tes.Task              `protobuf:"bytes,4,opt,name=task,proto3" json:"task,omitempty"`
+	Type          Type                   `protobuf:"varint,5,opt,name=type,proto3,enum=proto.Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetRequest) Reset() {
-	*x = GetRequest{}
+func (x *Job) Reset() {
+	*x = Job{}
 	mi := &file_plugins_proto_plugin_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetRequest) String() string {
+func (x *Job) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetRequest) ProtoMessage() {}
+func (*Job) ProtoMessage() {}
 
-func (x *GetRequest) ProtoReflect() protoreflect.Message {
+func (x *Job) ProtoReflect() protoreflect.Message {
 	mi := &file_plugins_proto_plugin_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -102,63 +152,71 @@ func (x *GetRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
-func (*GetRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use Job.ProtoReflect.Descriptor instead.
+func (*Job) Descriptor() ([]byte, []int) {
 	return file_plugins_proto_plugin_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetRequest) GetHeaders() map[string]*StringList {
+func (x *Job) GetHeaders() map[string]*StringList {
 	if x != nil {
 		return x.Headers
 	}
 	return nil
 }
 
-func (x *GetRequest) GetParams() map[string]string {
+func (x *Job) GetParams() map[string]string {
 	if x != nil {
 		return x.Params
 	}
 	return nil
 }
 
-func (x *GetRequest) GetConfig() *config.Config {
+func (x *Job) GetConfig() *config.Config {
 	if x != nil {
 		return x.Config
 	}
 	return nil
 }
 
-func (x *GetRequest) GetTask() *tes.Task {
+func (x *Job) GetTask() *tes.Task {
 	if x != nil {
 		return x.Task
 	}
 	return nil
 }
 
-type GetResponse struct {
+func (x *Job) GetType() Type {
+	if x != nil {
+		return x.Type
+	}
+	return Type_CREATE
+}
+
+type JobResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          int64                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	Config        *config.Config         `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
 	Task          *tes.Task              `protobuf:"bytes,4,opt,name=task,proto3" json:"task,omitempty"`
+	UserId        string                 `protobuf:"bytes,7,opt,name=userId,proto3" json:"userId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetResponse) Reset() {
-	*x = GetResponse{}
+func (x *JobResponse) Reset() {
+	*x = JobResponse{}
 	mi := &file_plugins_proto_plugin_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetResponse) String() string {
+func (x *JobResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetResponse) ProtoMessage() {}
+func (*JobResponse) ProtoMessage() {}
 
-func (x *GetResponse) ProtoReflect() protoreflect.Message {
+func (x *JobResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_plugins_proto_plugin_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -170,37 +228,44 @@ func (x *GetResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
-func (*GetResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use JobResponse.ProtoReflect.Descriptor instead.
+func (*JobResponse) Descriptor() ([]byte, []int) {
 	return file_plugins_proto_plugin_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetResponse) GetCode() int64 {
+func (x *JobResponse) GetCode() int64 {
 	if x != nil {
 		return x.Code
 	}
 	return 0
 }
 
-func (x *GetResponse) GetMessage() string {
+func (x *JobResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
 }
 
-func (x *GetResponse) GetConfig() *config.Config {
+func (x *JobResponse) GetConfig() *config.Config {
 	if x != nil {
 		return x.Config
 	}
 	return nil
 }
 
-func (x *GetResponse) GetTask() *tes.Task {
+func (x *JobResponse) GetTask() *tes.Task {
 	if x != nil {
 		return x.Task
 	}
 	return nil
+}
+
+func (x *JobResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
 }
 
 type Empty struct {
@@ -246,27 +311,35 @@ const file_plugins_proto_plugin_proto_rawDesc = "" +
 	"\x1aplugins/proto/plugin.proto\x12\x05proto\x1a\x13config/config.proto\x1a\rtes/tes.proto\"$\n" +
 	"\n" +
 	"StringList\x12\x16\n" +
-	"\x06values\x18\x01 \x03(\tR\x06values\"\xce\x02\n" +
-	"\n" +
-	"GetRequest\x128\n" +
-	"\aheaders\x18\x01 \x03(\v2\x1e.proto.GetRequest.HeadersEntryR\aheaders\x125\n" +
-	"\x06params\x18\x02 \x03(\v2\x1d.proto.GetRequest.ParamsEntryR\x06params\x12&\n" +
+	"\x06values\x18\x01 \x03(\tR\x06values\"\xda\x02\n" +
+	"\x03Job\x121\n" +
+	"\aheaders\x18\x01 \x03(\v2\x17.proto.Job.HeadersEntryR\aheaders\x12.\n" +
+	"\x06params\x18\x02 \x03(\v2\x16.proto.Job.ParamsEntryR\x06params\x12&\n" +
 	"\x06config\x18\x03 \x01(\v2\x0e.config.ConfigR\x06config\x12\x1d\n" +
-	"\x04task\x18\x04 \x01(\v2\t.tes.TaskR\x04task\x1aM\n" +
+	"\x04task\x18\x04 \x01(\v2\t.tes.TaskR\x04task\x12\x1f\n" +
+	"\x04type\x18\x05 \x01(\x0e2\v.proto.TypeR\x04type\x1aM\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12'\n" +
 	"\x05value\x18\x02 \x01(\v2\x11.proto.StringListR\x05value:\x028\x01\x1a9\n" +
 	"\vParamsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x82\x01\n" +
-	"\vGetResponse\x12\x12\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x01\n" +
+	"\vJobResponse\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x03R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12&\n" +
 	"\x06config\x18\x03 \x01(\v2\x0e.config.ConfigR\x06config\x12\x1d\n" +
-	"\x04task\x18\x04 \x01(\v2\t.tes.TaskR\x04task\"\a\n" +
-	"\x05Empty29\n" +
-	"\tAuthorize\x12,\n" +
-	"\x03Get\x12\x11.proto.GetRequest\x1a\x12.proto.GetResponseB\tZ\a./protob\x06proto3"
+	"\x04task\x18\x04 \x01(\v2\t.tes.TaskR\x04task\x12\x16\n" +
+	"\x06userId\x18\a \x01(\tR\x06userId\"\a\n" +
+	"\x05Empty*'\n" +
+	"\x04Type\x12\n" +
+	"\n" +
+	"\x06CREATE\x10\x00\x12\a\n" +
+	"\x03GET\x10\x01\x12\n" +
+	"\n" +
+	"\x06CANCEL\x10\x022;\n" +
+	"\tAuthorize\x12.\n" +
+	"\fPluginAction\x12\n" +
+	".proto.Job\x1a\x12.proto.JobResponseB\tZ\a./protob\x06proto3"
 
 var (
 	file_plugins_proto_plugin_proto_rawDescOnce sync.Once
@@ -280,32 +353,35 @@ func file_plugins_proto_plugin_proto_rawDescGZIP() []byte {
 	return file_plugins_proto_plugin_proto_rawDescData
 }
 
+var file_plugins_proto_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_plugins_proto_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_plugins_proto_plugin_proto_goTypes = []any{
-	(*StringList)(nil),    // 0: proto.StringList
-	(*GetRequest)(nil),    // 1: proto.GetRequest
-	(*GetResponse)(nil),   // 2: proto.GetResponse
-	(*Empty)(nil),         // 3: proto.Empty
-	nil,                   // 4: proto.GetRequest.HeadersEntry
-	nil,                   // 5: proto.GetRequest.ParamsEntry
-	(*config.Config)(nil), // 6: config.Config
-	(*tes.Task)(nil),      // 7: tes.Task
+	(Type)(0),             // 0: proto.Type
+	(*StringList)(nil),    // 1: proto.StringList
+	(*Job)(nil),           // 2: proto.Job
+	(*JobResponse)(nil),   // 3: proto.JobResponse
+	(*Empty)(nil),         // 4: proto.Empty
+	nil,                   // 5: proto.Job.HeadersEntry
+	nil,                   // 6: proto.Job.ParamsEntry
+	(*config.Config)(nil), // 7: config.Config
+	(*tes.Task)(nil),      // 8: tes.Task
 }
 var file_plugins_proto_plugin_proto_depIdxs = []int32{
-	4, // 0: proto.GetRequest.headers:type_name -> proto.GetRequest.HeadersEntry
-	5, // 1: proto.GetRequest.params:type_name -> proto.GetRequest.ParamsEntry
-	6, // 2: proto.GetRequest.config:type_name -> config.Config
-	7, // 3: proto.GetRequest.task:type_name -> tes.Task
-	6, // 4: proto.GetResponse.config:type_name -> config.Config
-	7, // 5: proto.GetResponse.task:type_name -> tes.Task
-	0, // 6: proto.GetRequest.HeadersEntry.value:type_name -> proto.StringList
-	1, // 7: proto.Authorize.Get:input_type -> proto.GetRequest
-	2, // 8: proto.Authorize.Get:output_type -> proto.GetResponse
-	8, // [8:9] is the sub-list for method output_type
-	7, // [7:8] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	5, // 0: proto.Job.headers:type_name -> proto.Job.HeadersEntry
+	6, // 1: proto.Job.params:type_name -> proto.Job.ParamsEntry
+	7, // 2: proto.Job.config:type_name -> config.Config
+	8, // 3: proto.Job.task:type_name -> tes.Task
+	0, // 4: proto.Job.type:type_name -> proto.Type
+	7, // 5: proto.JobResponse.config:type_name -> config.Config
+	8, // 6: proto.JobResponse.task:type_name -> tes.Task
+	1, // 7: proto.Job.HeadersEntry.value:type_name -> proto.StringList
+	2, // 8: proto.Authorize.PluginAction:input_type -> proto.Job
+	3, // 9: proto.Authorize.PluginAction:output_type -> proto.JobResponse
+	9, // [9:10] is the sub-list for method output_type
+	8, // [8:9] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_plugins_proto_plugin_proto_init() }
@@ -318,13 +394,14 @@ func file_plugins_proto_plugin_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plugins_proto_plugin_proto_rawDesc), len(file_plugins_proto_plugin_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_plugins_proto_plugin_proto_goTypes,
 		DependencyIndexes: file_plugins_proto_plugin_proto_depIdxs,
+		EnumInfos:         file_plugins_proto_plugin_proto_enumTypes,
 		MessageInfos:      file_plugins_proto_plugin_proto_msgTypes,
 	}.Build()
 	File_plugins_proto_plugin_proto = out.File

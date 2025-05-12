@@ -58,13 +58,14 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
+		b.log.Info("COMPUTE/LOCAL/BACKEND WRITE EVENT: +++++++++++++++++++++++++++++++++++")
 		return b.Submit(ev.GetTask())
 	}
 	return nil
 }
 
 func (b *Backend) UpdateConfig(ctx context.Context) error {
-	resp, ok := ctx.Value("pluginResponse").(*proto.GetResponse)
+	resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 	if !ok {
 		return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 	}

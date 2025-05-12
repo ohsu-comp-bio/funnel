@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"log"
+
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"golang.org/x/net/context"
 )
@@ -20,6 +22,7 @@ func NewGenericTaskReader(get func(ctx context.Context, in *tes.GetTaskRequest) 
 
 // Task returns the task descriptor.
 func (r *GenericTaskReader) Task(ctx context.Context) (*tes.Task, error) {
+	log.Println("ENTERING R.GET INSIDE GENERIC TASK READER TASK FUNC +++++++++++++++++++++")
 	return r.get(ctx, &tes.GetTaskRequest{
 		Id:   r.taskID,
 		View: tes.View_FULL.String(),

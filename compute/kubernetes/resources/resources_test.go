@@ -289,7 +289,7 @@ func TestUpdateConfig(t *testing.T) {
 
 	// Test with valid config merge
 	t.Run("ValidMerge", func(t *testing.T) {
-		pluginResp := &proto.GetResponse{
+		pluginResp := &proto.JobResponse{
 			Config: &config.Config{
 				Kubernetes: &config.Kubernetes{
 					Namespace: "new-namespace",

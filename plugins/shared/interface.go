@@ -34,7 +34,7 @@ var PluginMap = map[string]plugin.Plugin{
 
 // Authorize is the interface that we're exposing as a plugin.
 type Authorize interface {
-	Get(params map[string]string, headers map[string]*proto.StringList, config *config.Config, task *tes.Task) (*proto.GetResponse, error)
+	PluginAction(params map[string]string, headers map[string]*proto.StringList, config *config.Config, task *tes.Task, actionType proto.Type) (*proto.JobResponse, error)
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this.

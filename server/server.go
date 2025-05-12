@@ -20,6 +20,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/webdash"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -120,6 +121,9 @@ type JSONError struct {
 func (s *Server) Serve(pctx context.Context) error {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
+	if s.Tasks.(*TaskService).PluginManager != nil {
+		defer s.Tasks.(*TaskService).PluginManager.Close()
+	}
 
 	// Open TCP connection for RPC
 	lis, err := net.Listen("tcp", s.RPCAddress)

@@ -50,7 +50,7 @@ func DeleteConfigMap(ctx context.Context, taskId string, namespace string, clien
 }
 
 func UpdateConfig(ctx context.Context, dst *config.Config) error {
-	resp, ok := ctx.Value("pluginResponse").(*proto.GetResponse)
+	resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 	if !ok {
 		return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 	}

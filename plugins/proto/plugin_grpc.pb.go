@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Authorize_Get_FullMethodName = "/proto.Authorize/Get"
+	Authorize_PluginAction_FullMethodName = "/proto.Authorize/PluginAction"
 )
 
 // AuthorizeClient is the client API for Authorize service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthorizeClient interface {
-	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	PluginAction(ctx context.Context, in *Job, opts ...grpc.CallOption) (*JobResponse, error)
 }
 
 type authorizeClient struct {
@@ -37,9 +37,9 @@ func NewAuthorizeClient(cc grpc.ClientConnInterface) AuthorizeClient {
 	return &authorizeClient{cc}
 }
 
-func (c *authorizeClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
-	out := new(GetResponse)
-	err := c.cc.Invoke(ctx, Authorize_Get_FullMethodName, in, out, opts...)
+func (c *authorizeClient) PluginAction(ctx context.Context, in *Job, opts ...grpc.CallOption) (*JobResponse, error) {
+	out := new(JobResponse)
+	err := c.cc.Invoke(ctx, Authorize_PluginAction_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,15 +50,15 @@ func (c *authorizeClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.
 // All implementations should embed UnimplementedAuthorizeServer
 // for forward compatibility
 type AuthorizeServer interface {
-	Get(context.Context, *GetRequest) (*GetResponse, error)
+	PluginAction(context.Context, *Job) (*JobResponse, error)
 }
 
 // UnimplementedAuthorizeServer should be embedded to have forward compatible implementations.
 type UnimplementedAuthorizeServer struct {
 }
 
-func (UnimplementedAuthorizeServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedAuthorizeServer) PluginAction(context.Context, *Job) (*JobResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PluginAction not implemented")
 }
 
 // UnsafeAuthorizeServer may be embedded to opt out of forward compatibility for this service.
@@ -72,20 +72,20 @@ func RegisterAuthorizeServer(s grpc.ServiceRegistrar, srv AuthorizeServer) {
 	s.RegisterService(&Authorize_ServiceDesc, srv)
 }
 
-func _Authorize_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRequest)
+func _Authorize_PluginAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Job)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthorizeServer).Get(ctx, in)
+		return srv.(AuthorizeServer).PluginAction(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Authorize_Get_FullMethodName,
+		FullMethod: Authorize_PluginAction_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthorizeServer).Get(ctx, req.(*GetRequest))
+		return srv.(AuthorizeServer).PluginAction(ctx, req.(*Job))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -98,8 +98,8 @@ var Authorize_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthorizeServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Get",
-			Handler:    _Authorize_Get_Handler,
+			MethodName: "PluginAction",
+			Handler:    _Authorize_PluginAction_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

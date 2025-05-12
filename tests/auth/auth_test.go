@@ -83,7 +83,6 @@ func TestBasicAuthFail(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "Unauthenticated") {
 		t.Fatal("expected error", err)
 	}
-
 }
 
 func TestBasicAuthed(t *testing.T) {

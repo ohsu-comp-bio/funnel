@@ -11,12 +11,18 @@ import (
 // GRPCClient is an implementation of KV that talks over RPC.
 type GRPCClient struct{ client proto.AuthorizeClient }
 
-func (m *GRPCClient) Get(headers map[string]*proto.StringList, params map[string]string, config *config.Config, task *tes.Task) (*proto.GetResponse, error) {
-	resp, err := m.client.Get(context.Background(), &proto.GetRequest{
+type GRPCServer struct {
+	// This is the real implementation
+	Impl Authorize
+}
+
+func (m *GRPCClient) PluginAction(headers map[string]*proto.StringList, params map[string]string, config *config.Config, task *tes.Task, actionType proto.Type) (*proto.JobResponse, error) {
+	resp, err := m.client.PluginAction(context.Background(), &proto.Job{
 		Headers: headers,
 		Params:  params,
 		Config:  config,
 		Task:    task,
+		Type:    actionType,
 	})
 	if err != nil {
 		return nil, err
@@ -25,17 +31,13 @@ func (m *GRPCClient) Get(headers map[string]*proto.StringList, params map[string
 	return resp, nil
 }
 
-type GRPCServer struct {
-	// This is the real implementation
-	Impl Authorize
-}
-
-func (m *GRPCServer) Get(
+func (m *GRPCServer) PluginAction(
 	ctx context.Context,
-	req *proto.GetRequest) (*proto.GetResponse, error) {
-	v, err := m.Impl.Get(req.Params, req.Headers, req.Config, req.Task)
-	return &proto.GetResponse{Config: v.Config,
+	req *proto.Job) (*proto.JobResponse, error) {
+	v, err := m.Impl.PluginAction(req.Params, req.Headers, req.Config, req.Task, req.Type)
+	return &proto.JobResponse{Config: v.Config,
 		Code:    v.Code,
 		Message: v.Message,
-		Task:    v.Task}, err
+		Task:    v.Task,
+		UserId:  v.UserId}, err
 }

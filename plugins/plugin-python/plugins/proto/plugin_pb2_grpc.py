@@ -14,17 +14,17 @@ class AuthorizeStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Get = channel.unary_unary(
-                '/proto.Authorize/Get',
-                request_serializer=plugins_dot_proto_dot_plugin__pb2.GetRequest.SerializeToString,
-                response_deserializer=plugins_dot_proto_dot_plugin__pb2.GetResponse.FromString,
+        self.PluginAction = channel.unary_unary(
+                '/proto.Authorize/PluginAction',
+                request_serializer=plugins_dot_proto_dot_plugin__pb2.Job.SerializeToString,
+                response_deserializer=plugins_dot_proto_dot_plugin__pb2.JobResponse.FromString,
                 )
 
 
 class AuthorizeServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Get(self, request, context):
+    def PluginAction(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -33,10 +33,10 @@ class AuthorizeServicer(object):
 
 def add_AuthorizeServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Get': grpc.unary_unary_rpc_method_handler(
-                    servicer.Get,
-                    request_deserializer=plugins_dot_proto_dot_plugin__pb2.GetRequest.FromString,
-                    response_serializer=plugins_dot_proto_dot_plugin__pb2.GetResponse.SerializeToString,
+            'PluginAction': grpc.unary_unary_rpc_method_handler(
+                    servicer.PluginAction,
+                    request_deserializer=plugins_dot_proto_dot_plugin__pb2.Job.FromString,
+                    response_serializer=plugins_dot_proto_dot_plugin__pb2.JobResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -49,7 +49,7 @@ class Authorize(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Get(request,
+    def PluginAction(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +59,8 @@ class Authorize(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/proto.Authorize/Get',
-            plugins_dot_proto_dot_plugin__pb2.GetRequest.SerializeToString,
-            plugins_dot_proto_dot_plugin__pb2.GetResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/proto.Authorize/PluginAction',
+            plugins_dot_proto_dot_plugin__pb2.Job.SerializeToString,
+            plugins_dot_proto_dot_plugin__pb2.JobResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

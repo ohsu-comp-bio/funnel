@@ -27,7 +27,7 @@ type Manager struct {
 // are plugin binaries. It runs all these binaries in sub-processes,
 // establishes RPC communication with the plugins, and registers them for
 // the hooks they declare to support.
-func (m *Manager) LoadPlugins(path string) error {
+func (m *Manager) LoadPlugin(path string) error {
 	binaries, err := goplugin.Discover("*", filepath.Dir(path))
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (m *Manager) LoadPlugins(path string) error {
 }
 
 func (m *Manager) Client(path string) (Authorize, error) {
-	if err := m.LoadPlugins(path); err != nil {
+	if err := m.LoadPlugin(path); err != nil {
 		return nil, fmt.Errorf("failed to load plugins: %w", err)
 	}
 
@@ -79,6 +79,7 @@ func (m *Manager) Client(path string) (Authorize, error) {
 }
 
 func (m *Manager) Close() {
+	fmt.Printf("------------------------------------------- CLOSING PLUGIN MANAGER")
 	for _, client := range m.pluginClients {
 		client.Kill()
 	}

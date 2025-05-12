@@ -22,6 +22,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type FileType int32
+
+const (
+	FileType_FILE      FileType = 0
+	FileType_DIRECTORY FileType = 1
+)
+
+// Enum value maps for FileType.
+var (
+	FileType_name = map[int32]string{
+		0: "FILE",
+		1: "DIRECTORY",
+	}
+	FileType_value = map[string]int32{
+		"FILE":      0,
+		"DIRECTORY": 1,
+	}
+)
+
+func (x FileType) Enum() *FileType {
+	p := new(FileType)
+	*p = x
+	return p
+}
+
+func (x FileType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FileType) Descriptor() protoreflect.EnumDescriptor {
+	return file_tes_tes_proto_enumTypes[0].Descriptor()
+}
+
+func (FileType) Type() protoreflect.EnumType {
+	return &file_tes_tes_proto_enumTypes[0]
+}
+
+func (x FileType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FileType.Descriptor instead.
+func (FileType) EnumDescriptor() ([]byte, []int) {
+	return file_tes_tes_proto_rawDescGZIP(), []int{0}
+}
+
 type State int32
 
 const (
@@ -79,11 +125,11 @@ func (x State) String() string {
 }
 
 func (State) Descriptor() protoreflect.EnumDescriptor {
-	return file_tes_tes_proto_enumTypes[0].Descriptor()
+	return file_tes_tes_proto_enumTypes[1].Descriptor()
 }
 
 func (State) Type() protoreflect.EnumType {
-	return &file_tes_tes_proto_enumTypes[0]
+	return &file_tes_tes_proto_enumTypes[1]
 }
 
 func (x State) Number() protoreflect.EnumNumber {
@@ -92,52 +138,6 @@ func (x State) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use State.Descriptor instead.
 func (State) EnumDescriptor() ([]byte, []int) {
-	return file_tes_tes_proto_rawDescGZIP(), []int{0}
-}
-
-type FileType int32
-
-const (
-	FileType_FILE      FileType = 0
-	FileType_DIRECTORY FileType = 1
-)
-
-// Enum value maps for FileType.
-var (
-	FileType_name = map[int32]string{
-		0: "FILE",
-		1: "DIRECTORY",
-	}
-	FileType_value = map[string]int32{
-		"FILE":      0,
-		"DIRECTORY": 1,
-	}
-)
-
-func (x FileType) Enum() *FileType {
-	p := new(FileType)
-	*p = x
-	return p
-}
-
-func (x FileType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (FileType) Descriptor() protoreflect.EnumDescriptor {
-	return file_tes_tes_proto_enumTypes[1].Descriptor()
-}
-
-func (FileType) Type() protoreflect.EnumType {
-	return &file_tes_tes_proto_enumTypes[1]
-}
-
-func (x FileType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use FileType.Descriptor instead.
-func (FileType) EnumDescriptor() ([]byte, []int) {
 	return file_tes_tes_proto_rawDescGZIP(), []int{1}
 }
 
@@ -2323,7 +2323,10 @@ const file_tes_tes_proto_rawDesc = "" +
 	"systemLogs\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xab\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*#\n" +
+	"\bFileType\x12\b\n" +
+	"\x04FILE\x10\x00\x12\r\n" +
+	"\tDIRECTORY\x10\x01*\xab\x01\n" +
 	"\x05State\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\n" +
 	"\n" +
@@ -2338,10 +2341,7 @@ const file_tes_tes_proto_rawDesc = "" +
 	"\bCANCELED\x10\b\x12\r\n" +
 	"\tPREEMPTED\x10\t\x12\r\n" +
 	"\tCANCELING\x10\n" +
-	"*#\n" +
-	"\bFileType\x12\b\n" +
-	"\x04FILE\x10\x00\x12\r\n" +
-	"\tDIRECTORY\x10\x01*(\n" +
+	"*(\n" +
 	"\x04view\x12\v\n" +
 	"\aMINIMAL\x10\x00\x12\t\n" +
 	"\x05BASIC\x10\x01\x12\b\n" +
@@ -2370,8 +2370,8 @@ func file_tes_tes_proto_rawDescGZIP() []byte {
 var file_tes_tes_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_tes_tes_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_tes_tes_proto_goTypes = []any{
-	(State)(0),                     // 0: tes.State
-	(FileType)(0),                  // 1: tes.FileType
+	(FileType)(0),                  // 0: tes.FileType
+	(State)(0),                     // 1: tes.State
 	(View)(0),                      // 2: tes.view
 	(*CancelTaskRequest)(nil),      // 3: tes.CancelTaskRequest
 	(*ExecutorBasic)(nil),          // 4: tes.ExecutorBasic
@@ -2409,8 +2409,8 @@ var file_tes_tes_proto_goTypes = []any{
 }
 var file_tes_tes_proto_depIdxs = []int32{
 	27, // 0: tes.ExecutorBasic.env:type_name -> tes.ExecutorBasic.EnvEntry
-	1,  // 1: tes.InputBasic.type:type_name -> tes.FileType
-	0,  // 2: tes.ListTasksRequest.state:type_name -> tes.State
+	0,  // 1: tes.InputBasic.type:type_name -> tes.FileType
+	1,  // 2: tes.ListTasksRequest.state:type_name -> tes.State
 	11, // 3: tes.ListTasksResponseBasic.tasks:type_name -> tes.TaskBasic
 	13, // 4: tes.ListTasksResponseMin.tasks:type_name -> tes.TaskMin
 	4,  // 5: tes.TaskBasic.executors:type_name -> tes.ExecutorBasic
@@ -2418,7 +2418,7 @@ var file_tes_tes_proto_depIdxs = []int32{
 	12, // 7: tes.TaskBasic.logs:type_name -> tes.TaskLogBasic
 	20, // 8: tes.TaskBasic.outputs:type_name -> tes.Output
 	22, // 9: tes.TaskBasic.resources:type_name -> tes.Resources
-	0,  // 10: tes.TaskBasic.state:type_name -> tes.State
+	1,  // 10: tes.TaskBasic.state:type_name -> tes.State
 	28, // 11: tes.TaskBasic.tags:type_name -> tes.TaskBasic.TagsEntry
 	17, // 12: tes.TaskLogBasic.logs:type_name -> tes.ExecutorLog
 	29, // 13: tes.TaskLogBasic.metadata:type_name -> tes.TaskLogBasic.MetadataEntry
@@ -2428,12 +2428,12 @@ var file_tes_tes_proto_depIdxs = []int32{
 	26, // 17: tes.TaskMin.logs:type_name -> tes.TaskLog
 	20, // 18: tes.TaskMin.outputs:type_name -> tes.Output
 	22, // 19: tes.TaskMin.resources:type_name -> tes.Resources
-	0,  // 20: tes.TaskMin.state:type_name -> tes.State
+	1,  // 20: tes.TaskMin.state:type_name -> tes.State
 	30, // 21: tes.TaskMin.tags:type_name -> tes.TaskMin.TagsEntry
 	31, // 22: tes.Executor.env:type_name -> tes.Executor.EnvEntry
-	1,  // 23: tes.Input.type:type_name -> tes.FileType
+	0,  // 23: tes.Input.type:type_name -> tes.FileType
 	25, // 24: tes.ListTasksResponse.tasks:type_name -> tes.Task
-	1,  // 25: tes.Output.type:type_name -> tes.FileType
+	0,  // 25: tes.Output.type:type_name -> tes.FileType
 	32, // 26: tes.Resources.backend_parameters:type_name -> tes.Resources.BackendParametersEntry
 	33, // 27: tes.ServiceInfo.organization:type_name -> tes.ServiceInfo.OrganizationEntry
 	24, // 28: tes.ServiceInfo.type:type_name -> tes.ServiceType
@@ -2442,7 +2442,7 @@ var file_tes_tes_proto_depIdxs = []int32{
 	26, // 31: tes.Task.logs:type_name -> tes.TaskLog
 	20, // 32: tes.Task.outputs:type_name -> tes.Output
 	22, // 33: tes.Task.resources:type_name -> tes.Resources
-	0,  // 34: tes.Task.state:type_name -> tes.State
+	1,  // 34: tes.Task.state:type_name -> tes.State
 	34, // 35: tes.Task.tags:type_name -> tes.Task.TagsEntry
 	17, // 36: tes.TaskLog.logs:type_name -> tes.ExecutorLog
 	35, // 37: tes.TaskLog.metadata:type_name -> tes.TaskLog.MetadataEntry

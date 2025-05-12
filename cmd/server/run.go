@@ -24,6 +24,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/metrics"
+	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
@@ -262,7 +263,7 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 		go metrics.WatchNodes(ctx, nodes)
 	}
 
-	return &Server{
+	serverConf := &Server{
 		Server: &server.Server{
 			RPCAddress:       ":" + conf.Server.RPCPort,
 			HTTPPort:         conf.Server.HTTPPort,
@@ -284,7 +285,19 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 			Plugins: conf.Plugins,
 		},
 		Scheduler: sched,
-	}, nil
+	}
+
+	if conf.Plugins != nil {
+		serverConf.Server.Tasks.(*server.TaskService).PluginManager = &shared.Manager{}
+		log.Info("getting plugin client", "path", conf.Plugins.Path)
+		plugin, err := serverConf.Server.Tasks.(*server.TaskService).PluginManager.Client(conf.Plugins.Path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get plugin client: %w", err)
+		}
+		serverConf.Server.Tasks.(*server.TaskService).Plugin = plugin
+	}
+
+	return serverConf, nil
 }
 
 // Run runs a default Funnel server.

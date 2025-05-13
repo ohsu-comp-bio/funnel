@@ -7,7 +7,7 @@ import (
 )
 
 func TestMergeConfigFileWithFlags(t *testing.T) {
-	fileConfig := config.DefaultConfig()
+	fileConfig := config.EmptyConfig()
 	flagConf := &config.Config{
 		Server: &config.Server{
 			HostName: "test",

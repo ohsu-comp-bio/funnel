@@ -18,7 +18,7 @@ func TestPersistentPreRun(t *testing.T) {
 	cwd, _ := os.Getwd()
 	workDir := path.Join(cwd, "funnel-work-dir")
 
-	fileConf := config.DefaultConfig()
+	fileConf := config.EmptyConfig()
 	tmp, cleanup := util.TempConfigFile(fileConf, "testconfig.yaml")
 	defer cleanup()
 

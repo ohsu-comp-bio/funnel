@@ -7,7 +7,9 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -15,8 +17,9 @@ import (
 )
 
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
-func CreatePV(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface, log *logger.Logger) error {
-	tpl, err := os.ReadFile(tplFile)
+func CreatePV(taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+
+	tpl, err := os.ReadFile(config.Kubernetes.PVTemplate)
 	if err != nil {
 		return fmt.Errorf("reading template: %v", err)
 	}
@@ -31,9 +34,9 @@ func CreatePV(taskId string, namespace string, bucket string, region string, tpl
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
-		"Namespace": namespace,
-		"Bucket":    bucket,
-		"Region":    region,
+		"Namespace": config.Kubernetes.JobsNamespace,
+		"Bucket":    config.GenericS3[0].Bucket,
+		"Region":    config.GenericS3[0].Region,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

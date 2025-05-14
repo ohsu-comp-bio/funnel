@@ -75,9 +75,6 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	// Set the kubeconfig file path
-	conf.Kubernetes.ConfigFile = kubeconfig
-
 	// Start the Funnel server in the K8s cluster using the Helm charts in the K8s deployments directory
 	err = StartServerInK8s(clusterName, "../../deployments/kubernetes/helm/")
 	if err != nil {

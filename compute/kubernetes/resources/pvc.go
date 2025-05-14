@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"os"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,8 +17,11 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(taskId string, namespace string, bucket string, region string, tplFile string, client kubernetes.Interface, log *logger.Logger) error {
-	tpl, err := os.ReadFile(tplFile)
+func CreatePVC(taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+
+	jobNamespace := config.Kubernetes.JobsNamespace
+
+	tpl, err := os.ReadFile(config.Kubernetes.PVCTemplate)
 	if err != nil {
 		return fmt.Errorf("reading template: %v", err)
 	}
@@ -32,9 +36,9 @@ func CreatePVC(taskId string, namespace string, bucket string, region string, tp
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
-		"Namespace": namespace,
-		"Bucket":    bucket,
-		"Region":    region,
+		"Namespace": jobNamespace,
+		"Bucket":    config.GenericS3[0].Bucket,
+		"Region":    config.GenericS3[0].Region,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -51,7 +55,7 @@ func CreatePVC(taskId string, namespace string, bucket string, region string, tp
 		return fmt.Errorf("failed to decode PVC spec")
 	}
 
-	_, err = client.CoreV1().PersistentVolumeClaims(namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
+	_, err = client.CoreV1().PersistentVolumeClaims(jobNamespace).Create(context.Background(), pvc, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

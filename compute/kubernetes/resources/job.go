@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	v1 "k8s.io/api/batch/v1"
@@ -17,10 +18,12 @@ import (
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(task *tes.Task, namespace string, jobsNamespace string, tpl string, client kubernetes.Interface, log *logger.Logger) error {
+func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	// Parse Worker Template
-	log.Debug("Creating job from template", "template", tpl)
-	t, err := template.New(task.Id).Parse(tpl)
+
+	jobsNamespace := config.Kubernetes.JobsNamespace
+	log.Debug("Creating job from template", "template", config.Kubernetes.WorkerTemplate)
+	t, err := template.New(task.Id).Parse(config.Kubernetes.WorkerTemplate)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -33,7 +36,7 @@ func CreateJob(task *tes.Task, namespace string, jobsNamespace string, tpl strin
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":        task.Id,
-		"Namespace":     namespace,
+		"Namespace":     config.Kubernetes.Namespace,
 		"JobsNamespace": jobsNamespace,
 		"Cpus":          res.GetCpuCores(),
 		"RamGb":         res.GetRamGb(),

@@ -227,10 +227,7 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 
 	// Kubernetes
 	f.StringVar(&flagConf.Kubernetes.Executor, "Kubernetes.Executor", flagConf.Kubernetes.Executor, "Executor to use for executing tasks (docker or kubernetes)")
-	f.StringVar(&flagConf.Kubernetes.ExecutorTemplateFile, "Kubernetes.ExecutorTemplateFile", flagConf.Kubernetes.ExecutorTemplateFile, "Path to executor job template file")
-	f.StringVar(&flagConf.Kubernetes.TemplateFile, "Kubernetes.TemplateFile", flagConf.Kubernetes.TemplateFile, "Path to job template file")
 	f.StringVar(&flagConf.Kubernetes.Namespace, "Kubernetes.Namespace", flagConf.Kubernetes.Namespace, "Namespace to spawn jobs within")
-	f.StringVar(&flagConf.Kubernetes.ConfigFile, "Kubernetes.ConfigFile", flagConf.Kubernetes.ConfigFile, "Path to kubernetes config file")
 	f.BoolVar(&flagConf.Kubernetes.DisableReconciler, "Kubernetes.DisableReconciler", flagConf.Kubernetes.DisableReconciler, "Disable the state reconciler")
 	f.Var(&DurationValue{&flagConf.Kubernetes.ReconcileRate}, "Kubernetes.ReconcileRate", "How often to run the reconciler")
 

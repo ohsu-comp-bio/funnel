@@ -224,10 +224,8 @@ func DefaultConfig() *Config {
 	pvcTemplate := filepath.Join(repoRoot, "templates/worker-pvc.yaml")
 
 	c.Kubernetes.Executor = "docker"
-	c.Kubernetes.Template = string(kubernetesTemplate)
+	c.Kubernetes.WorkerTemplate = kubernetesTemplate
 	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
-	c.Kubernetes.Bucket = ""
-	c.Kubernetes.Region = ""
 	c.Kubernetes.PVTemplate = string(pvTemplate)
 	c.Kubernetes.PVCTemplate = string(pvcTemplate)
 	c.Kubernetes.ReconcileRate = reconcile

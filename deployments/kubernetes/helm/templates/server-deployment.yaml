@@ -40,12 +40,8 @@ spec:
         - name: funnel
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: Always
-          command:
-            - 'funnel'
-            - 'server'
-            - 'run'
-            - '--config'
-            - '/etc/config/funnel-server.yaml'
+          command: ["/bin/sh", "-c"]
+          args: ["while true; do sleep 3600; done"]
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
@@ -59,17 +55,15 @@ spec:
             - name: rpc
               containerPort: 9090
           readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8000
+            exec:
+              command: ["/bin/sh", "-c", "ls /"]
             periodSeconds: 10
             timeoutSeconds: 3
             successThreshold: 1
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 8000
+            exec:
+              command: ["/bin/sh", "-c", "ls /"]
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 3

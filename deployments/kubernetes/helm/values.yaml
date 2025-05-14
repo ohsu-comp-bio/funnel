@@ -21,7 +21,8 @@ labels:
 # Funnel Server (Task Database)
 mongodb:
   image:
-    registry: public.ecr.aws
+    repository: dlavrenuek/bitnami-mongodb-arm #public.ecr.aws
+    tag: 8.0.4 # no tag listed before
   architecture: standalone
   auth:
     enabled: true
@@ -36,11 +37,11 @@ rbac:
 
 resources:
   requests:
-    cpu: 100m
-    memory: 100Mi
+    cpu: 0
+    memory: 0
   limits:
-    cpu: 1000m
-    memory: 1Gi
+    cpu: 0
+    memory: 0
 
 service:
   type: ClusterIP
@@ -57,7 +58,7 @@ storage:
   createStorageClass: true
 
 # Funnel Default Settings (with BoltDB replaced with MongoDB)
-# 
+#
 # These are passed into `files/server-config.yaml` and made available to the deployment via `server-configmap.yaml`
 #
 # - Ref: https://github.com/ohsu-comp-bio/funnel/blob/master/config/default-config.yaml
@@ -383,20 +384,13 @@ Kubernetes:
   # Kubernetes ServiceAccount to use for the job
   ServiceAccount: ""
   # Master batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
-  Template: ""
-  # TemplateFile is the path to the master job template.
-  TemplateFile: ""
-  # The bucket to use for the task's Working Directory
-  Bucket: ""
-  # The region to use for the task's Bucket
-  Region: ""
+  WorkerTemplate: ""
 
-  # Configuration of the Kubernetes executor.
 
   # Job template used for executing the tasks.
   ExecutorTemplate: ""
-  # ExecutorTemplateFile is the path to the executor template.
-  ExecutorTemplateFile: ""
+
+  PVTemplate: ""
 
 #-------------------------------------------------------------------------------
 # Storage

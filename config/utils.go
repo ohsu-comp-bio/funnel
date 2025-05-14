@@ -37,10 +37,6 @@ func Parse(raw []byte, conf *Config) error {
 		return fmt.Errorf("failed to convert YAML to JSON: %w", err)
 	}
 
-	/*err = os.WriteFile("debug.json", jsonBytes, 0644)
-	if err != nil {
-		fmt.Printf("Failed to write debug.json: %v\n", err)
-		}*/
 	if err := protojson.Unmarshal(jsonBytes, conf); err != nil {
 		return fmt.Errorf("failed to unmarshal JSON with protojson: %w", err)
 	}
@@ -73,7 +69,7 @@ func ParseFile(relpath string, conf *Config) error {
 	// Parse file
 	err = Parse(source, conf)
 	if err != nil {
-		return fmt.Errorf("failed to parse config at path %s: \n%v", path, err)
+		return fmt.Errorf("failed to parse config at path %s: errs: %v", path, err)
 	}
 	return nil
 }

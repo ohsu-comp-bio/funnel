@@ -43,7 +43,7 @@ var createCmd = &cobra.Command{
 		conf.Funnel.DynamoDB.AWSConfig.Region = conf.Region
 
 		if funnelConfigFile != "" {
-			funnelConf := &config.Config{}
+			funnelConf := config.EmptyConfig()
 			config.ParseFile(funnelConfigFile, funnelConf)
 			conf.Funnel = funnelConf
 		}

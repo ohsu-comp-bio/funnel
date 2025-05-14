@@ -25,7 +25,7 @@ spec:
       containers:
         - name: funnel-worker-{{.TaskId}}
           # TODO: Make the image + tag configurable
-          image: quay.io/ohsu-comp-bio/funnel:testing
+          image: quay.io/ohsu-comp-bio/funnel:feature-plugins
           imagePullPolicy: Always
           args:
             - "worker"

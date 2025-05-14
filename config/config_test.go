@@ -27,7 +27,7 @@ Node:
 }
 
 func TestConfigParsing(t *testing.T) {
-	conf := &Config{}
+	conf := EmptyConfig()
 	err := ParseFile("./default-config.yaml", conf)
 	if err != nil {
 		t.Error("unexpected error:", err)

@@ -28,6 +28,13 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		return fmt.Errorf("%v", err)
 	}
 
+	pods, err := client.CoreV1().Pods(config.Kubernetes.JobsNamespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "app=funnel", // Match the label used in your Helm deployment
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list pods: %v", err)
+	}
+
 	res := task.GetResources()
 	if res == nil {
 		res = &tes.Resources{}
@@ -41,6 +48,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		"Cpus":          res.GetCpuCores(),
 		"RamGb":         res.GetRamGb(),
 		"DiskGb":        res.GetDiskGb(),
+		"Image":         pods.Items[0].Spec.Containers[0].Image,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

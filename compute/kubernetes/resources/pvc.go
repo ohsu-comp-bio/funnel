@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"os"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -21,13 +20,8 @@ func CreatePVC(taskId string, config *config.Config, client kubernetes.Interface
 
 	jobNamespace := config.Kubernetes.JobsNamespace
 
-	tpl, err := os.ReadFile(config.Kubernetes.PVCTemplate)
-	if err != nil {
-		return fmt.Errorf("reading template: %v", err)
-	}
-
 	// Load templates
-	t, err := template.New(taskId).Parse(string(tpl))
+	t, err := template.New(taskId).Parse(config.Kubernetes.PVCTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}

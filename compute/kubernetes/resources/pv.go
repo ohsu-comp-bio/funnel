@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"os"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -19,13 +18,8 @@ import (
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
 func CreatePV(taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
-	tpl, err := os.ReadFile(config.Kubernetes.PVTemplate)
-	if err != nil {
-		return fmt.Errorf("reading template: %v", err)
-	}
-
 	// Load templates
-	t, err := template.New(taskId).Parse(string(tpl))
+	t, err := template.New(taskId).Parse(config.Kubernetes.PVTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}

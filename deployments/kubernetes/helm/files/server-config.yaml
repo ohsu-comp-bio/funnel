@@ -128,6 +128,16 @@ Kafka:
   {{- end }}
   Topic: {{ .Values.Kafka.Topic }}
 
+GenericS3:
+  {{- range .Values.GenericS3 }}
+  - Disabled: {{ .Disabled }}
+    Endpoint: {{ .Endpoint }}
+    Key: {{ .Key }}
+    Secret: {{ .Secret }}
+    Bucket: {{ .Bucket }}
+    Region: {{ .Region }}
+  {{- end }}
+
 Plugins:
   Path: {{ .Values.Plugins.Path }}
   Params:

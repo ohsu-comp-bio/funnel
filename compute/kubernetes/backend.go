@@ -141,45 +141,42 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 // createResources creates the resources needed for a task.
 func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
-	// TODO: Update this so that a PVC/PV is only created if the task has inputs or outputs
-	// If the task has either inputs or outputs, then create a PVC
-	// shared between the Funnel Worker and the Executor
-	// e.g. `if len(task.Inputs) > 0 || len(task.Outputs) > 0 {...}`
-
 	b.log.Info("Backend.createResources Task.Inputs: ", task.Inputs)
 	b.log.Info("Backend.createResources Task.Outputs: ", task.Outputs)
 
-	b.log.Debug("creating Worker PV", "taskID", task.Id)
+	// If the task has inputs or outputs that must be taken care of create a PVC
+	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
+		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
-	// Check to make sure required configs are present
-	if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
-		config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
-		return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
+		// Check to make sure required configs are present
+		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
+			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
+			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
+		}
+
+		// Create PV
+		err := resources.CreatePV(task.Id,
+			config,
+			b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker PV: %v", err)
+		}
+
+		// Create PVC
+		b.log.Debug("creating Worker PVC", "taskID", task.Id)
+		err = resources.CreatePVC(task.Id, config, b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker PVC: %v", err)
+		}
+
+		// Create ConfigMap
+		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+		err = resources.CreateConfigMap(task.Id,
+			config, b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker ConfigMap: %v", err)
+		}
 	}
-
-	// Create PV
-	err := resources.CreatePV(task.Id,
-		config,
-		b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker PV: %v", err)
-	}
-
-	// Create PVC
-	b.log.Debug("creating Worker PVC", "taskID", task.Id)
-	err = resources.CreatePVC(task.Id, config, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker PVC: %v", err)
-	}
-
-	// Create ConfigMap
-	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err = resources.CreateConfigMap(task.Id,
-		config, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker ConfigMap: %v", err)
-	}
-
 	// Create Worker Job
 	b.log.Debug("creating Worker Job", "taskID", task.Id)
 	err = resources.CreateJob(task, config, b.client, b.log)

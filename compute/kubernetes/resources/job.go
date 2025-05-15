@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 )
 
 // Create the Funnel Worker job from kubernetes-template.yaml
@@ -28,8 +27,8 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		return fmt.Errorf("%v", err)
 	}
 
-	pods, err := client.CoreV1().Pods(config.Kubernetes.JobsNamespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "app=funnel", // Match the label used in your Helm deployment
+	pods, err := client.CoreV1().Pods(config.Kubernetes.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "app=funnel",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to list pods: %v", err)
@@ -76,11 +75,14 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 }
 
 // deleteJob removes deletes a kubernetes v1/batch job.
-func DeleteJob(ctx context.Context, taskID string, client batchv1.JobInterface, log *logger.Logger) error {
+func DeleteJob(ctx context.Context, conf *config.Config, taskID string, client kubernetes.Interface, log *logger.Logger) error {
+
+	jobsInterface := client.BatchV1().Jobs(conf.Kubernetes.JobsNamespace)
+
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
 
-	err := client.Delete(ctx, taskID, metav1.DeleteOptions{
+	err := jobsInterface.Delete(ctx, taskID, metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &prop,
 	})

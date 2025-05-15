@@ -41,6 +41,7 @@ func NewBackend(ctx context.Context, conf *config.Config, reader tes.ReadOnlySer
 	if conf.Kubernetes.Namespace == "" {
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes namespace")
 	}
+
 	// Funnel Worker + Executor Namespace
 	if conf.Kubernetes.JobsNamespace == "" {
 		conf.Kubernetes.JobsNamespace = conf.Kubernetes.Namespace
@@ -179,7 +180,7 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 	}
 	// Create Worker Job
 	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err = resources.CreateJob(task, config, b.client, b.log)
+	err := resources.CreateJob(task, config, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker Job: %v", err)
 	}
@@ -215,6 +216,14 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker ConfigMap: %v", err)
 	}
 
+	//Delete Job
+	b.log.Debug("deleting Job", "taskID", taskId)
+	err = resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Job: %v", err)
+	}
+
 	return errs
 }
 
@@ -236,6 +245,24 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 //
 // This loop is also used to cleanup successful jobs.
 func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableCleanup bool) {
+	// Clears all resources that still exist from jobs that have run before it
+	if !disableCleanup {
+		jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			b.log.Error("backlog cleanup: listing jobs", err)
+		} else {
+			for _, j := range jobs.Items {
+				s := j.Status
+				if s.Succeeded > 0 || s.Failed > 0 {
+					b.log.Debug("backlog cleanup: deleting job", "taskID", j.Name)
+					if err := b.cleanResources(ctx, j.Name); err != nil {
+						b.log.Error("backlog cleanup: failed to clean resources", "taskID", j.Name, "error", err)
+					}
+				}
+			}
+		}
+	}
+
 	ticker := time.NewTicker(rate)
 ReconcileLoop:
 	for {
@@ -257,7 +284,7 @@ ReconcileLoop:
 					}
 					b.log.Debug("reconcile: cleanuping up successful job", "taskID", j.Name)
 
-					// Delete Worker PVC
+					// Delete resources
 					if err := b.cleanResources(ctx, j.Name); err != nil {
 						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)
 						continue ReconcileLoop

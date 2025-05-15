@@ -38,8 +38,8 @@ Logger:
 
 Server:
   HostName: {{ .Values.Server.HostName }}
-  HTTPPort: {{ .Values.Server.HttpPort }}
-  RPCPort: {{ .Values.Server.RpcPort }}
+  HTTPPort: {{ .Values.Server.HTTPPort }}
+  RPCPort: {{ .Values.Server.RPCPort }}
   DisableHTTPCache: {{ .Values.Server.DisableHttpCache }}
 
 RPCClient:

@@ -2226,6 +2226,8 @@ type GenericS3Storage struct {
 	Endpoint      string                 `protobuf:"bytes,2,opt,name=Endpoint,proto3" json:"Endpoint,omitempty"`
 	Key           string                 `protobuf:"bytes,3,opt,name=Key,proto3" json:"Key,omitempty"`
 	Secret        string                 `protobuf:"bytes,4,opt,name=Secret,proto3" json:"Secret,omitempty"`
+	Region        string                 `protobuf:"bytes,5,opt,name=Region,proto3" json:"Region,omitempty"`
+	Bucket        string                 `protobuf:"bytes,6,opt,name=Bucket,proto3" json:"Bucket,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2284,6 +2286,20 @@ func (x *GenericS3Storage) GetKey() string {
 func (x *GenericS3Storage) GetSecret() string {
 	if x != nil {
 		return x.Secret
+	}
+	return ""
+}
+
+func (x *GenericS3Storage) GetRegion() string {
+	if x != nil {
+		return x.Region
+	}
+	return ""
+}
+
+func (x *GenericS3Storage) GetBucket() string {
+	if x != nil {
+		return x.Bucket
 	}
 	return ""
 }
@@ -2521,26 +2537,21 @@ func (x *FTPStorage) GetPassword() string {
 
 // Kubernetes describes the configuration for the Kubernetes compute backend.
 type Kubernetes struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	Bucket               string                 `protobuf:"bytes,1,opt,name=Bucket,proto3" json:"Bucket,omitempty"`
-	Region               string                 `protobuf:"bytes,2,opt,name=Region,proto3" json:"Region,omitempty"`
-	Executor             string                 `protobuf:"bytes,3,opt,name=Executor,proto3" json:"Executor,omitempty"`
-	DisableReconciler    bool                   `protobuf:"varint,4,opt,name=DisableReconciler,proto3" json:"DisableReconciler,omitempty"`
-	ReconcileRate        *durationpb.Duration   `protobuf:"bytes,5,opt,name=ReconcileRate,proto3" json:"ReconcileRate,omitempty"`
-	DisableJobCleanup    bool                   `protobuf:"varint,6,opt,name=DisableJobCleanup,proto3" json:"DisableJobCleanup,omitempty"`
-	Template             string                 `protobuf:"bytes,7,opt,name=Template,proto3" json:"Template,omitempty"`
-	TemplateFile         string                 `protobuf:"bytes,8,opt,name=TemplateFile,proto3" json:"TemplateFile,omitempty"`
-	ExecutorTemplate     string                 `protobuf:"bytes,9,opt,name=ExecutorTemplate,proto3" json:"ExecutorTemplate,omitempty"`
-	ExecutorTemplateFile string                 `protobuf:"bytes,10,opt,name=ExecutorTemplateFile,proto3" json:"ExecutorTemplateFile,omitempty"`
-	PVTemplate           string                 `protobuf:"bytes,11,opt,name=PVTemplate,proto3" json:"PVTemplate,omitempty"`
-	PVCTemplate          string                 `protobuf:"bytes,12,opt,name=PVCTemplate,proto3" json:"PVCTemplate,omitempty"`
-	ConfigMapTemplate    string                 `protobuf:"bytes,13,opt,name=ConfigMapTemplate,proto3" json:"ConfigMapTemplate,omitempty"`
-	ConfigFile           string                 `protobuf:"bytes,14,opt,name=ConfigFile,proto3" json:"ConfigFile,omitempty"`
-	Namespace            string                 `protobuf:"bytes,15,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
-	JobsNamespace        string                 `protobuf:"bytes,16,opt,name=JobsNamespace,proto3" json:"JobsNamespace,omitempty"`
-	ServiceAccount       string                 `protobuf:"bytes,17,opt,name=ServiceAccount,proto3" json:"ServiceAccount,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Executor          string                 `protobuf:"bytes,1,opt,name=Executor,proto3" json:"Executor,omitempty"`
+	WorkerTemplate    string                 `protobuf:"bytes,2,opt,name=WorkerTemplate,proto3" json:"WorkerTemplate,omitempty"`
+	ExecutorTemplate  string                 `protobuf:"bytes,3,opt,name=ExecutorTemplate,proto3" json:"ExecutorTemplate,omitempty"`
+	PVTemplate        string                 `protobuf:"bytes,4,opt,name=PVTemplate,proto3" json:"PVTemplate,omitempty"`
+	PVCTemplate       string                 `protobuf:"bytes,5,opt,name=PVCTemplate,proto3" json:"PVCTemplate,omitempty"`
+	ConfigMapTemplate string                 `protobuf:"bytes,6,opt,name=ConfigMapTemplate,proto3" json:"ConfigMapTemplate,omitempty"`
+	Namespace         string                 `protobuf:"bytes,7,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	JobsNamespace     string                 `protobuf:"bytes,8,opt,name=JobsNamespace,proto3" json:"JobsNamespace,omitempty"`
+	ServiceAccount    string                 `protobuf:"bytes,9,opt,name=ServiceAccount,proto3" json:"ServiceAccount,omitempty"`
+	DisableReconciler bool                   `protobuf:"varint,10,opt,name=DisableReconciler,proto3" json:"DisableReconciler,omitempty"`
+	ReconcileRate     *durationpb.Duration   `protobuf:"bytes,11,opt,name=ReconcileRate,proto3" json:"ReconcileRate,omitempty"`
+	DisableJobCleanup bool                   `protobuf:"varint,12,opt,name=DisableJobCleanup,proto3" json:"DisableJobCleanup,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Kubernetes) Reset() {
@@ -2573,20 +2584,6 @@ func (*Kubernetes) Descriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{32}
 }
 
-func (x *Kubernetes) GetBucket() string {
-	if x != nil {
-		return x.Bucket
-	}
-	return ""
-}
-
-func (x *Kubernetes) GetRegion() string {
-	if x != nil {
-		return x.Region
-	}
-	return ""
-}
-
 func (x *Kubernetes) GetExecutor() string {
 	if x != nil {
 		return x.Executor
@@ -2594,37 +2591,9 @@ func (x *Kubernetes) GetExecutor() string {
 	return ""
 }
 
-func (x *Kubernetes) GetDisableReconciler() bool {
+func (x *Kubernetes) GetWorkerTemplate() string {
 	if x != nil {
-		return x.DisableReconciler
-	}
-	return false
-}
-
-func (x *Kubernetes) GetReconcileRate() *durationpb.Duration {
-	if x != nil {
-		return x.ReconcileRate
-	}
-	return nil
-}
-
-func (x *Kubernetes) GetDisableJobCleanup() bool {
-	if x != nil {
-		return x.DisableJobCleanup
-	}
-	return false
-}
-
-func (x *Kubernetes) GetTemplate() string {
-	if x != nil {
-		return x.Template
-	}
-	return ""
-}
-
-func (x *Kubernetes) GetTemplateFile() string {
-	if x != nil {
-		return x.TemplateFile
+		return x.WorkerTemplate
 	}
 	return ""
 }
@@ -2632,13 +2601,6 @@ func (x *Kubernetes) GetTemplateFile() string {
 func (x *Kubernetes) GetExecutorTemplate() string {
 	if x != nil {
 		return x.ExecutorTemplate
-	}
-	return ""
-}
-
-func (x *Kubernetes) GetExecutorTemplateFile() string {
-	if x != nil {
-		return x.ExecutorTemplateFile
 	}
 	return ""
 }
@@ -2664,13 +2626,6 @@ func (x *Kubernetes) GetConfigMapTemplate() string {
 	return ""
 }
 
-func (x *Kubernetes) GetConfigFile() string {
-	if x != nil {
-		return x.ConfigFile
-	}
-	return ""
-}
-
 func (x *Kubernetes) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
@@ -2690,6 +2645,27 @@ func (x *Kubernetes) GetServiceAccount() string {
 		return x.ServiceAccount
 	}
 	return ""
+}
+
+func (x *Kubernetes) GetDisableReconciler() bool {
+	if x != nil {
+		return x.DisableReconciler
+	}
+	return false
+}
+
+func (x *Kubernetes) GetReconcileRate() *durationpb.Duration {
+	if x != nil {
+		return x.ReconcileRate
+	}
+	return nil
+}
+
+func (x *Kubernetes) GetDisableJobCleanup() bool {
+	if x != nil {
+		return x.DisableJobCleanup
+	}
+	return false
 }
 
 var File_config_config_proto protoreflect.FileDescriptor
@@ -2903,12 +2879,14 @@ const file_config_config_proto_rawDesc = "" +
 	"\x0fAmazonS3Storage\x12\x1a\n" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12\x1d\n" +
 	"\x03SSE\x18\x02 \x01(\v2\v.config.SSER\x03SSE\x12/\n" +
-	"\tAWSConfig\x18\x03 \x01(\v2\x11.config.AWSConfigR\tAWSConfig\"t\n" +
+	"\tAWSConfig\x18\x03 \x01(\v2\x11.config.AWSConfigR\tAWSConfig\"\xa4\x01\n" +
 	"\x10GenericS3Storage\x12\x1a\n" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12\x1a\n" +
 	"\bEndpoint\x18\x02 \x01(\tR\bEndpoint\x12\x10\n" +
 	"\x03Key\x18\x03 \x01(\tR\x03Key\x12\x16\n" +
-	"\x06Secret\x18\x04 \x01(\tR\x06Secret\"\xa0\x02\n" +
+	"\x06Secret\x18\x04 \x01(\tR\x06Secret\x12\x16\n" +
+	"\x06Region\x18\x05 \x01(\tR\x06Region\x12\x16\n" +
+	"\x06Bucket\x18\x06 \x01(\tR\x06Bucket\"\xa0\x02\n" +
 	"\fSwiftStorage\x12\x1a\n" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12\x1a\n" +
 	"\bUserName\x18\x02 \x01(\tR\bUserName\x12\x1a\n" +
@@ -2933,31 +2911,24 @@ const file_config_config_proto_rawDesc = "" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12/\n" +
 	"\aTimeout\x18\x02 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\x12\x12\n" +
 	"\x04User\x18\x03 \x01(\tR\x04User\x12\x1a\n" +
-	"\bPassword\x18\x04 \x01(\tR\bPassword\"\x91\x05\n" +
+	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xf5\x03\n" +
 	"\n" +
-	"Kubernetes\x12\x16\n" +
-	"\x06Bucket\x18\x01 \x01(\tR\x06Bucket\x12\x16\n" +
-	"\x06Region\x18\x02 \x01(\tR\x06Region\x12\x1a\n" +
-	"\bExecutor\x18\x03 \x01(\tR\bExecutor\x12,\n" +
-	"\x11DisableReconciler\x18\x04 \x01(\bR\x11DisableReconciler\x12?\n" +
-	"\rReconcileRate\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\rReconcileRate\x12,\n" +
-	"\x11DisableJobCleanup\x18\x06 \x01(\bR\x11DisableJobCleanup\x12\x1a\n" +
-	"\bTemplate\x18\a \x01(\tR\bTemplate\x12\"\n" +
-	"\fTemplateFile\x18\b \x01(\tR\fTemplateFile\x12*\n" +
-	"\x10ExecutorTemplate\x18\t \x01(\tR\x10ExecutorTemplate\x122\n" +
-	"\x14ExecutorTemplateFile\x18\n" +
-	" \x01(\tR\x14ExecutorTemplateFile\x12\x1e\n" +
+	"Kubernetes\x12\x1a\n" +
+	"\bExecutor\x18\x01 \x01(\tR\bExecutor\x12&\n" +
+	"\x0eWorkerTemplate\x18\x02 \x01(\tR\x0eWorkerTemplate\x12*\n" +
+	"\x10ExecutorTemplate\x18\x03 \x01(\tR\x10ExecutorTemplate\x12\x1e\n" +
 	"\n" +
-	"PVTemplate\x18\v \x01(\tR\n" +
+	"PVTemplate\x18\x04 \x01(\tR\n" +
 	"PVTemplate\x12 \n" +
-	"\vPVCTemplate\x18\f \x01(\tR\vPVCTemplate\x12,\n" +
-	"\x11ConfigMapTemplate\x18\r \x01(\tR\x11ConfigMapTemplate\x12\x1e\n" +
-	"\n" +
-	"ConfigFile\x18\x0e \x01(\tR\n" +
-	"ConfigFile\x12\x1c\n" +
-	"\tNamespace\x18\x0f \x01(\tR\tNamespace\x12$\n" +
-	"\rJobsNamespace\x18\x10 \x01(\tR\rJobsNamespace\x12&\n" +
-	"\x0eServiceAccount\x18\x11 \x01(\tR\x0eServiceAccountB(Z&github.com/ohsu-comp-bio/funnel/configb\x06proto3"
+	"\vPVCTemplate\x18\x05 \x01(\tR\vPVCTemplate\x12,\n" +
+	"\x11ConfigMapTemplate\x18\x06 \x01(\tR\x11ConfigMapTemplate\x12\x1c\n" +
+	"\tNamespace\x18\a \x01(\tR\tNamespace\x12$\n" +
+	"\rJobsNamespace\x18\b \x01(\tR\rJobsNamespace\x12&\n" +
+	"\x0eServiceAccount\x18\t \x01(\tR\x0eServiceAccount\x12,\n" +
+	"\x11DisableReconciler\x18\n" +
+	" \x01(\bR\x11DisableReconciler\x12?\n" +
+	"\rReconcileRate\x18\v \x01(\v2\x19.google.protobuf.DurationR\rReconcileRate\x12,\n" +
+	"\x11DisableJobCleanup\x18\f \x01(\bR\x11DisableJobCleanupB(Z&github.com/ohsu-comp-bio/funnel/configb\x06proto3"
 
 var (
 	file_config_config_proto_rawDescOnce sync.Once

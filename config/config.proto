@@ -273,6 +273,8 @@ message GenericS3Storage {
   string Endpoint = 2;
   string Key = 3;
   string Secret = 4;
+  string Region = 5;
+  string Bucket = 6;
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.
@@ -304,21 +306,16 @@ message FTPStorage {
 
 // Kubernetes describes the configuration for the Kubernetes compute backend.
 message Kubernetes {
-  string Bucket = 1;
-  string Region = 2;
-  string Executor = 3;
-  bool DisableReconciler = 4;
-  google.protobuf.Duration ReconcileRate = 5;
-  bool DisableJobCleanup = 6;
-  string Template = 7;
-  string TemplateFile = 8;
-  string ExecutorTemplate = 9;
-  string ExecutorTemplateFile = 10;
-  string PVTemplate = 11;
-  string PVCTemplate = 12;
-  string ConfigMapTemplate = 13;
-  string ConfigFile = 14;
-  string Namespace = 15;
-  string JobsNamespace = 16;
-  string ServiceAccount = 17;
+  string Executor = 1;
+  string WorkerTemplate = 2;
+  string ExecutorTemplate = 3;
+  string PVTemplate = 4;
+  string PVCTemplate = 5;
+  string ConfigMapTemplate = 6;
+  string Namespace = 7;
+  string JobsNamespace = 8;
+  string ServiceAccount = 9;
+  bool DisableReconciler = 10;
+  google.protobuf.Duration ReconcileRate = 11;
+  bool DisableJobCleanup = 12;
 }

@@ -19,7 +19,7 @@ func TestTaskSubmission(t *testing.T) {
 	// Create a mock configuration
 	conf := config.DefaultConfig()
 	conf.Kubernetes.Namespace = "test-namespace"
-	conf.Kubernetes.Template = `
+	conf.Kubernetes.WorkerTemplate = `
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -43,18 +43,11 @@ spec:
 	log := logger.NewLogger("test", logger.DefaultConfig())
 
 	backend := &Backend{
-		bucket:            conf.Kubernetes.Bucket,
-		region:            conf.Kubernetes.Region,
-		client:            fakeClient,
-		namespace:         conf.Kubernetes.JobsNamespace,
-		template:          conf.Kubernetes.Template,
-		pvTemplate:        conf.Kubernetes.PVTemplate,
-		pvcTemplate:       conf.Kubernetes.PVCTemplate,
-		configMapTemplate: conf.Kubernetes.ConfigMapTemplate,
-		event:             nil,
-		database:          nil,
-		log:               log,
-		conf:              conf, // Funnel configuration
+		client:   fakeClient,
+		event:    nil,
+		database: nil,
+		log:      log,
+		conf:     conf, // Funnel configuration
 	}
 
 	// Define a test task

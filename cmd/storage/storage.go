@@ -7,13 +7,13 @@ import (
 	"io"
 	"os"
 
-	"github.com/golang/protobuf/jsonpb"
 	cmdutil "github.com/ohsu-comp-bio/funnel/cmd/util"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var log = logger.NewLogger("storage", logger.DefaultConfig())
@@ -99,10 +99,17 @@ func NewCommand() *cobra.Command {
 			dec := json.NewDecoder(f)
 			for {
 				task := &tes.Task{}
-				err := jsonpb.UnmarshalNext(dec, task)
+				var jsonData json.RawMessage
+				err := dec.Decode(&jsonData)
 				if err == io.EOF {
 					break
 				}
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error: %s\n", err)
+					continue
+				}
+
+				err = protojson.Unmarshal(jsonData, task)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %s\n", err)
 					continue

@@ -90,6 +90,11 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		}
 		ts.Log.Debug("Plugin Response: ", pluginResponse)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
+
+		// If using plugin, replace existing task with returned task from plugin
+		if pluginResponse.Task != nil {
+			task = pluginResponse.Task
+		}
 	}
 
 	if err := tes.InitTask(task, true); err != nil {
@@ -121,8 +126,8 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 // returns tes.ErrNotFound, TaskService will handle returning the appropriate gRPC error.
 func (ts *TaskService) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.Task, error) {
 	/*
-			This function gets called internally via the GRPC client in many places.
-			To make this work, would have to reconfigure the code to bipass the client
+			TODO: This function gets called internally via the GRPC client in many places.
+			To make this work with the plugin, would have to reconfigure the code to bipass the client
 			and talk directly to the underlying dbs.
 
 		if ts.Config.Plugins != nil {

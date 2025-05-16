@@ -80,11 +80,11 @@ proto: proto-depends
 
 proto-depends:
 	@git submodule update --init --recursive
-	@go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.11.1
-	@go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.11.1
-	@go get google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
-	@go get google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@go get github.com/ckaznocha/protoc-gen-lint@v0.2.4
+	@go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+	@go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+	@go get google.golang.org/protobuf/cmd/protoc-gen-go
+	@go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	@go get github.com/ckaznocha/protoc-gen-lint
 
 # Start API reference doc server
 serve-doc:

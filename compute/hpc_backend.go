@@ -157,7 +157,7 @@ ReconcileLoop:
 						b.Log.Error("Calling ListTasks", err)
 						continue ReconcileLoop
 					}
-					if lresp != nil {
+					if lresp.NextPageToken != nil {
 						pageToken = *lresp.NextPageToken
 					}
 

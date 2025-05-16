@@ -48,6 +48,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		"RamGb":         res.GetRamGb(),
 		"DiskGb":        res.GetDiskGb(),
 		"Image":         pods.Items[0].Spec.Containers[0].Image,
+		"NeedsPVC":      len(task.Inputs) > 0 || len(task.Outputs) > 0,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

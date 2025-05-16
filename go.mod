@@ -29,7 +29,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-test/deep v1.1.1
 	github.com/golang/gddo v0.0.0-20210115222349-20d68f94ee1f
-	github.com/golang/protobuf v1.5.4
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/imdario/mergo v0.3.16
 	github.com/jlaffaye/ftp v0.2.0
@@ -41,7 +41,6 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/ncw/swift v1.0.53
-	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/common v0.63.0
 	github.com/rs/xid v1.6.0
@@ -50,7 +49,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/crypto v0.37.0
+	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0
 	golang.org/x/oauth2 v0.29.0
 	golang.org/x/time v0.11.0
@@ -67,13 +66,14 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/goccy/go-yaml v1.17.1
-	github.com/gogo/protobuf v1.3.2
+	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.6.3
 	github.com/lestrrat-go/jwx/v2 v2.1.4
 	go.mongodb.org/mongo-driver/v2 v2.1.0
+	golang.org/x/term v0.31.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb
 	google.golang.org/protobuf v1.36.6
 )
@@ -114,11 +114,11 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -190,7 +190,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250414145226-207652e42e2e // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect

@@ -169,18 +169,19 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		if err != nil {
 			return fmt.Errorf("creating Worker PVC: %v", err)
 		}
-
-		// Create ConfigMap
-		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-		err = resources.CreateConfigMap(task.Id,
-			config, b.client, b.log)
-		if err != nil {
-			return fmt.Errorf("creating Worker ConfigMap: %v", err)
-		}
 	}
+
+	// Create ConfigMap
+	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+	err := resources.CreateConfigMap(task.Id,
+		config, b.client, b.log)
+	if err != nil {
+		return fmt.Errorf("creating Worker ConfigMap: %v", err)
+	}
+
 	// Create Worker Job
 	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err := resources.CreateJob(task, config, b.client, b.log)
+	err = resources.CreateJob(task, config, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker Job: %v", err)
 	}
@@ -193,7 +194,6 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
 
 	// Delete PV
-	b.log.Debug("deleting Worker PV", "taskID", taskId)
 	err := resources.DeletePV(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
@@ -201,7 +201,6 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	}
 
 	// Delete PVC
-	b.log.Debug("deleting Worker PVC", "taskID", taskId)
 	err = resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
@@ -209,7 +208,6 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	}
 
 	// Delete ConfigMap
-	b.log.Debug("deleting Worker ConfigMap", "taskID", taskId)
 	err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)

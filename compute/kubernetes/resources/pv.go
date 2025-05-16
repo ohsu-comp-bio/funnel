@@ -58,11 +58,14 @@ func CreatePV(taskId string, config *config.Config, client kubernetes.Interface,
 // Add this helper function for PV cleanup
 func DeletePV(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pv-%s", taskID)
-	err := client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
-
-	if err != nil {
-		return fmt.Errorf("%v", err)
+	// The PV may not have been made. Some jobs with no I/O don't need a PV or it may have already been deleted.
+	pv, _ := client.CoreV1().PersistentVolumes().Get(ctx, name, metav1.GetOptions{})
+	if pv != nil {
+		log.Debug("deleting Worker PV", "taskID", taskID)
+		err := client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
+		if err != nil {
+			return fmt.Errorf("%v", err)
+		}
 	}
-
 	return nil
 }

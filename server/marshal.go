@@ -41,61 +41,61 @@ func (marshal *CustomMarshal) ContentType(i interface{}) string {
 // type `proto.Message` the then field "result" is extracted and returned by
 // itself. This is mainly to get around a weird behavior of the GRPC gateway
 // streaming output
-func (mclean *CustomMarshal) Marshal(v interface{}) ([]byte, error) {
+func (c *CustomMarshal) Marshal(v interface{}) ([]byte, error) {
 
 	list, ok := v.(*tes.ListTasksResponse)
 	if ok {
 		// v is of type *tes.ListTasksResponse
-		return mclean.MarshalList(list)
+		return c.MarshalList(list)
 	}
 
 	task, ok := v.(*tes.Task)
 	if ok {
 		// v is of type *tes.Task
-		return mclean.MarshalTask(task)
+		return c.MarshalTask(task)
 	}
 
-	return mclean.m.Marshal(v)
+	return c.m.Marshal(v)
 }
 
-func (mclean *CustomMarshal) MarshalTask(task *tes.Task) ([]byte, error) {
-	view, _ := mclean.DetectView(task)
-	newTask := mclean.TranslateTask(task, view)
-	return mclean.m.Marshal(newTask)
+func (c *CustomMarshal) MarshalTask(task *tes.Task) ([]byte, error) {
+	view, _ := c.DetectView(task)
+	newTask := c.TranslateTask(task, view)
+	return c.m.Marshal(newTask)
 }
 
-func (mclean *CustomMarshal) MarshalList(list *tes.ListTasksResponse) ([]byte, error) {
+func (c *CustomMarshal) MarshalList(list *tes.ListTasksResponse) ([]byte, error) {
 	if len(list.Tasks) == 0 {
-		return mclean.m.Marshal(list)
+		return c.m.Marshal(list)
 	}
 
 	task := list.Tasks[0]
-	view, _ := mclean.DetectView(task)
+	view, _ := c.DetectView(task)
 
 	if view == tes.View_MINIMAL {
 		minList := &tes.ListTasksResponseMin{}
 		for _, task := range list.Tasks {
-			minTask := mclean.TranslateTask(task, view).(*tes.TaskMin)
+			minTask := c.TranslateTask(task, view).(*tes.TaskMin)
 			minList.Tasks = append(minList.Tasks, minTask)
 			minList.NextPageToken = list.NextPageToken
 		}
-		return mclean.m.Marshal(minList)
+		return c.m.Marshal(minList)
 	}
 
 	if view == tes.View_BASIC {
 		basicList := &tes.ListTasksResponseBasic{}
 		for _, task := range list.Tasks {
-			basicTask := mclean.TranslateTask(task, view).(*tes.TaskBasic)
+			basicTask := c.TranslateTask(task, view).(*tes.TaskBasic)
 			basicList.Tasks = append(basicList.Tasks, basicTask)
 			basicList.NextPageToken = list.NextPageToken
 		}
-		return mclean.m.Marshal(basicList)
+		return c.m.Marshal(basicList)
 	}
 
-	return mclean.m.Marshal(list)
+	return c.m.Marshal(list)
 }
 
-func (mclean *CustomMarshal) DetectView(task *tes.Task) (tes.View, error) {
+func (c *CustomMarshal) DetectView(task *tes.Task) (tes.View, error) {
 	if task.CreationTime == "" {
 		// return a MINIMAL view
 		return tes.View_MINIMAL, nil
@@ -109,7 +109,7 @@ func (mclean *CustomMarshal) DetectView(task *tes.Task) (tes.View, error) {
 	return tes.View_FULL, nil
 }
 
-func (mclean *CustomMarshal) TranslateTask(task *tes.Task, view tes.View) interface{} {
+func (c *CustomMarshal) TranslateTask(task *tes.Task, view tes.View) interface{} {
 	// view = "MINIMAL"
 	if view == tes.View_MINIMAL {
 		min := &tes.TaskMin{
@@ -179,16 +179,16 @@ func (mclean *CustomMarshal) TranslateTask(task *tes.Task, view tes.View) interf
 }
 
 // NewDecoder shims runtime.Marshaler.NewDecoder
-func (mclean *CustomMarshal) NewDecoder(r io.Reader) runtime.Decoder {
-	return mclean.m.NewDecoder(r)
+func (c *CustomMarshal) NewDecoder(r io.Reader) runtime.Decoder {
+	return c.m.NewDecoder(r)
 }
 
 // NewEncoder shims runtime.Marshaler.NewEncoder
-func (mclean *CustomMarshal) NewEncoder(w io.Writer) runtime.Encoder {
-	return mclean.m.NewEncoder(w)
+func (c *CustomMarshal) NewEncoder(w io.Writer) runtime.Encoder {
+	return c.m.NewEncoder(w)
 }
 
 // Unmarshal shims runtime.Marshaler.Unmarshal
-func (mclean *CustomMarshal) Unmarshal(data []byte, v interface{}) error {
-	return mclean.m.Unmarshal(data, v)
+func (c *CustomMarshal) Unmarshal(data []byte, v interface{}) error {
+	return c.m.Unmarshal(data, v)
 }

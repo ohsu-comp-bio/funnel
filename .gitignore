@@ -22,3 +22,7 @@ deployments/kubernetes/**/funnel
 deployments/kubernetes/**/*.json
 dist/
 .vscode
+
+# Auto-generated gRPC files
+*pb.go
+*pb.gw.go

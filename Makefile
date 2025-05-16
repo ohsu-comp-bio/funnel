@@ -26,18 +26,18 @@ VERSION_LDFLAGS=\
 export CGO_ENABLED=0
 
 # Build the code
-install:
+install: proto
 	@touch version/version.go
 	@go install -ldflags '$(VERSION_LDFLAGS)' .
 
 # Build the code
-build:
+build: proto
 	@touch version/version.go
 	@go build -ldflags '$(VERSION_LDFLAGS)' -buildvcs=false .
 
 # Build an unoptimized version of the code for use during debugging
 # https://go.dev/doc/gdb
-debug:
+debug: proto
 	@go install -gcflags=all="-N -l"
 	@funnel server run
 

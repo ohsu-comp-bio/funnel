@@ -80,11 +80,11 @@ proto: proto-depends
 
 proto-depends:
 	@git submodule update --init --recursive
-	@go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
-	@go get github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
-	@go get google.golang.org/protobuf/cmd/protoc-gen-go
-	@go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
-	@go get github.com/ckaznocha/protoc-gen-lint
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	@go install github.com/ckaznocha/protoc-gen-lint
 
 # Start API reference doc server
 serve-doc:
@@ -98,8 +98,8 @@ tidy:
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
 lint-depends:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
-	go get golang.org/x/tools/cmd/goimports
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	go install golang.org/x/tools/cmd/goimports
 
 # Run code style and other checks
 lint: lint-depends

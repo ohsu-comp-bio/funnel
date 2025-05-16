@@ -157,7 +157,7 @@ ReconcileLoop:
 						b.Log.Error("Calling ListTasks", err)
 						continue ReconcileLoop
 					}
-					pageToken = lresp.NextPageToken
+					pageToken = *lresp.NextPageToken
 
 					tmap := make(map[string]*tes.Task)
 					ids := []string{}

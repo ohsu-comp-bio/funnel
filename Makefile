@@ -43,6 +43,8 @@ debug:
 
 # Generate the protobuf/gRPC code
 proto:
+# TODO: Re-enable this when VIEW differences are resolvedin server/marshal.go (with optional/pointers?)
+#	@go run ./util/openapi2proto/main.go ./tes/task-execution-schemas/openapi/task_execution_service.openapi.yaml > tes/tes.proto
 	@cd tes && protoc \
 		$(PROTO_INC) \
 		--go_out ./ \

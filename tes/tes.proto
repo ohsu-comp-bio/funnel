@@ -8,11 +8,6 @@ package tes;
 import "google/api/annotations.proto";
 
 
-enum FileType { 
-	FILE = 0;
-	DIRECTORY = 1;
-}
-
 enum State { 
 	UNKNOWN = 0;
 	QUEUED = 1;
@@ -25,6 +20,11 @@ enum State {
 	CANCELED = 8;
 	PREEMPTED = 9;
 	CANCELING = 10;
+}
+
+enum FileType { 
+	FILE = 0;
+	DIRECTORY = 1;
 }
 
 enum view { 
@@ -241,6 +241,21 @@ message TaskLog {
 
 service TaskService {
 
+    rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {
+      option (google.api.http) = {
+        post: "/tasks/{id}:cancel"
+		additional_bindings {
+			post: "/v1/tasks/{id}:cancel"
+			body: "*"
+		}
+		additional_bindings {
+			post: "/ga4gh/tes/v1/tasks/{id}:cancel"
+			body: "*"
+		}
+		body: "*"
+      };
+    }
+
     rpc GetServiceInfo(GetServiceInfoRequest) returns (ServiceInfo) {
       option (google.api.http) = {
         get: "/service-info"
@@ -289,21 +304,6 @@ service TaskService {
 		additional_bindings {
 			get: "/ga4gh/tes/v1/tasks/{id}"
 		}
-      };
-    }
-
-    rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {
-      option (google.api.http) = {
-        post: "/tasks/{id}:cancel"
-		additional_bindings {
-			post: "/v1/tasks/{id}:cancel"
-			body: "*"
-		}
-		additional_bindings {
-			post: "/ga4gh/tes/v1/tasks/{id}:cancel"
-			body: "*"
-		}
-		body: "*"
       };
     }
 

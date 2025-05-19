@@ -362,6 +362,12 @@
         },
         "Secret": {
           "type": "string"
+        },
+        "Region": {
+          "type": "string"
+        },
+        "Bucket": {
+          "type": "string"
         }
       },
       "description": "GenericS3Storage describes the configuration for the Generic S3 storage backend."
@@ -437,34 +443,13 @@
     "configKubernetes": {
       "type": "object",
       "properties": {
-        "Bucket": {
-          "type": "string"
-        },
-        "Region": {
-          "type": "string"
-        },
         "Executor": {
           "type": "string"
         },
-        "DisableReconciler": {
-          "type": "boolean"
-        },
-        "ReconcileRate": {
-          "type": "string"
-        },
-        "DisableJobCleanup": {
-          "type": "boolean"
-        },
-        "Template": {
-          "type": "string"
-        },
-        "TemplateFile": {
+        "WorkerTemplate": {
           "type": "string"
         },
         "ExecutorTemplate": {
-          "type": "string"
-        },
-        "ExecutorTemplateFile": {
           "type": "string"
         },
         "PVTemplate": {
@@ -476,9 +461,6 @@
         "ConfigMapTemplate": {
           "type": "string"
         },
-        "ConfigFile": {
-          "type": "string"
-        },
         "Namespace": {
           "type": "string"
         },
@@ -487,6 +469,15 @@
         },
         "ServiceAccount": {
           "type": "string"
+        },
+        "DisableReconciler": {
+          "type": "boolean"
+        },
+        "ReconcileRate": {
+          "type": "string"
+        },
+        "DisableJobCleanup": {
+          "type": "boolean"
         }
       },
       "description": "Kubernetes describes the configuration for the Kubernetes compute backend."

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,21 +16,14 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/k8sutil"
 )
 
 // Backend represents the K8s backend.
 type Backend struct {
-	bucket            string
-	region            string
 	client            kubernetes.Interface
-	namespace         string
-	jobsNamespace     string
-	template          string
-	pvTemplate        string
-	pvcTemplate       string
-	configMapTemplate string
 	event             events.Writer
 	database          tes.ReadOnlyServer
 	log               *logger.Logger
@@ -42,17 +34,9 @@ type Backend struct {
 
 // NewBackend returns a new K8s Backend instance.
 func NewBackend(ctx context.Context, conf *config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
-	if conf.Kubernetes.TemplateFile != "" {
-		content, err := os.ReadFile(conf.Kubernetes.TemplateFile)
-		if err != nil {
-			return nil, fmt.Errorf("reading template: %v", err)
-		}
-		conf.Kubernetes.Template = string(content)
-	}
-	if conf.Kubernetes.Template == "" {
+	if conf.Kubernetes.WorkerTemplate == "" {
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes job template")
 	}
-
 	// Funnel Server Namespace
 	if conf.Kubernetes.Namespace == "" {
 		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes namespace")
@@ -69,19 +53,11 @@ func NewBackend(ctx context.Context, conf *config.Config, reader tes.ReadOnlySer
 	}
 
 	b := &Backend{
-		bucket:            conf.Kubernetes.Bucket,
-		region:            conf.Kubernetes.Region,
-		client:            clientset,
-		namespace:         conf.Kubernetes.Namespace,
-		jobsNamespace:     conf.Kubernetes.JobsNamespace,
-		template:          conf.Kubernetes.Template,
-		pvTemplate:        conf.Kubernetes.PVTemplate,
-		pvcTemplate:       conf.Kubernetes.PVCTemplate,
-		configMapTemplate: conf.Kubernetes.ConfigMapTemplate,
-		event:             writer,
-		database:          reader,
-		log:               log,
-		conf:              conf, // Funnel configuration
+		client:   clientset,
+		event:    writer,
+		database: reader,
+		log:      log,
+		conf:     conf,
 	}
 
 	if !conf.Kubernetes.DisableReconciler {
@@ -112,18 +88,19 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
+
+	var taskConfig *config.Config = b.conf
 	if b.conf.Plugins != nil {
-		err := resources.UpdateConfig(ctx, b.conf)
-		if err != nil {
-			return fmt.Errorf("error updating config from plugin response: %v", err)
+		resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
+		if !ok {
+			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
+		taskConfig = resp.Config
 	}
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-
-		return b.Submit(ctx, ev.GetTask())
-
+		return b.Submit(ctx, ev.GetTask(), taskConfig)
 	case events.Type_TASK_STATE:
 		if ev.GetState() == tes.State_CANCELED {
 			return b.Cancel(ctx, ev.Id)
@@ -137,8 +114,8 @@ func (b *Backend) Close() {
 }
 
 // Submit creates both the PVC and the worker job with better error handling
-func (b *Backend) Submit(ctx context.Context, task *tes.Task) error {
-	err := b.createResources(task)
+func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
+	err := b.createResources(task, config)
 	if err != nil {
 		return fmt.Errorf("creating Worker resources: %v", err)
 	}
@@ -164,36 +141,47 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 }
 
 // createResources creates the resources needed for a task.
-func (b *Backend) createResources(task *tes.Task) error {
-	// TODO: Update this so that a PVC/PV is only created if the task has inputs or outputs
-	// If the task has either inputs or outputs, then create a PVC
-	// shared between the Funnel Worker and the Executor
-	// e.g. `if len(task.Inputs) > 0 || len(task.Outputs) > 0 {...}`
+func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
+	b.log.Info("Backend.createResources Task.Inputs: ", task.Inputs)
+	b.log.Info("Backend.createResources Task.Outputs: ", task.Outputs)
 
-	// Create PV
-	b.log.Debug("creating Worker PV", "taskID", task.Id)
-	err := resources.CreatePV(task.Id, b.jobsNamespace, b.bucket, b.region, b.pvTemplate, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker PV: %v", err)
-	}
+	// If the task has inputs or outputs that must be taken care of create a PVC
+	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
+		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
-	// Create PVC
-	b.log.Debug("creating Worker PVC", "taskID", task.Id)
-	err = resources.CreatePVC(task.Id, b.jobsNamespace, b.bucket, b.region, b.pvcTemplate, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker PVC: %v", err)
+		// Check to make sure required configs are present
+		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
+			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
+			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
+		}
+
+		// Create PV
+		err := resources.CreatePV(task.Id,
+			config,
+			b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker PV: %v", err)
+		}
+
+		// Create PVC
+		b.log.Debug("creating Worker PVC", "taskID", task.Id)
+		err = resources.CreatePVC(task.Id, config, b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker PVC: %v", err)
+		}
 	}
 
 	// Create ConfigMap
 	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err = resources.CreateConfigMap(task.Id, b.jobsNamespace, b.conf, b.client, b.log)
+	err := resources.CreateConfigMap(task.Id,
+		config, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker ConfigMap: %v", err)
 	}
 
 	// Create Worker Job
 	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err = resources.CreateJob(task, b.namespace, b.jobsNamespace, b.template, b.client, b.log)
+	err = resources.CreateJob(task, config, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker Job: %v", err)
 	}
@@ -206,7 +194,6 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
 
 	// Delete PV
-	b.log.Debug("deleting Worker PV", "taskID", taskId)
 	err := resources.DeletePV(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
@@ -214,19 +201,25 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	}
 
 	// Delete PVC
-	b.log.Debug("deleting Worker PVC", "taskID", taskId)
-	err = resources.DeletePVC(ctx, taskId, b.jobsNamespace, b.client, b.log)
+	err = resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker PVC: %v", err)
 	}
 
 	// Delete ConfigMap
-	b.log.Debug("deleting Worker ConfigMap", "taskID", taskId)
-	err = resources.DeleteConfigMap(ctx, taskId, b.jobsNamespace, b.client, b.log)
+	err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker ConfigMap: %v", err)
+	}
+
+	//Delete Job
+	b.log.Debug("deleting Job", "taskID", taskId)
+	err = resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Job: %v", err)
 	}
 
 	return errs
@@ -250,14 +243,35 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 //
 // This loop is also used to cleanup successful jobs.
 func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableCleanup bool) {
+	// Clears all resources that still exist from jobs that have run before it
+	if !disableCleanup {
+		jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			b.log.Error("backlog cleanup: listing jobs", err)
+		} else {
+			for _, j := range jobs.Items {
+				s := j.Status
+				if s.Succeeded > 0 || s.Failed > 0 {
+					b.log.Debug("backlog cleanup: deleting job", "taskID", j.Name)
+					if err := b.cleanResources(ctx, j.Name); err != nil {
+						b.log.Error("backlog cleanup: failed to clean resources", "taskID", j.Name, "error", err)
+					}
+				}
+			}
+		}
+	}
+
 	ticker := time.NewTicker(rate)
+	failedJobEvents := make(map[string]int)
 ReconcileLoop:
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			jobs, err := b.client.BatchV1().Jobs(b.jobsNamespace).List(ctx, metav1.ListOptions{})
+			const maxErrEventWrites = 2
+
+			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
 				continue ReconcileLoop
@@ -265,19 +279,25 @@ ReconcileLoop:
 			for _, j := range jobs.Items {
 				s := j.Status
 				switch {
+				case s.Active > 0:
+					continue ReconcileLoop
 				case s.Succeeded > 0:
 					if disableCleanup {
 						continue ReconcileLoop
 					}
-					b.log.Debug("reconcile: cleanuping up successful job", "taskID", j.Name)
+					b.log.Debug("reconcile: cleaning up successful job", "taskID", j.Name)
 
-					// Delete Worker PVC
+					// Delete resources
 					if err := b.cleanResources(ctx, j.Name); err != nil {
 						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)
 						continue ReconcileLoop
 					}
 				case s.Failed > 0:
-					b.log.Debug("reconcile: cleaning up failed job", "taskID", j.Name)
+					if count, exists := failedJobEvents[j.Name]; exists && count >= maxErrEventWrites {
+						continue
+					}
+
+					b.log.Debug("reconcile: gathering failed k8s job conditions", "taskID", j.Name)
 					conds, err := json.Marshal(s.Conditions)
 					if err != nil {
 						b.log.Error("reconcile: marshal failed job conditions", "taskID", j.Name, "error", err)
@@ -291,10 +311,13 @@ ReconcileLoop:
 							map[string]string{"error": string(conds)},
 						),
 					)
+
+					failedJobEvents[j.Name]++
 					if disableCleanup {
 						continue ReconcileLoop
 					}
 
+					b.log.Debug("reconcile: cleaning up failed job", "taskID", j.Name)
 					if err := b.cleanResources(ctx, j.Name); err != nil {
 						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)
 						continue ReconcileLoop

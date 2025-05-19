@@ -30,6 +30,7 @@ type KubernetesCommand struct {
 	JobsNamespace  string // Funnel Worker + Executor Namespace (default: Namespace)
 	Resources      *tes.Resources
 	ServiceAccount string
+	NeedsPVC       bool
 	Clientset      kubernetes.Interface
 	Command
 }
@@ -68,6 +69,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"DiskGb":         kcmd.Resources.DiskGb,
 		"ServiceAccount": kcmd.ServiceAccount,
 		"Image":          kcmd.Image,
+		"NeedsPVC":       kcmd.NeedsPVC,
 	})
 
 	if err != nil {

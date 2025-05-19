@@ -262,12 +262,15 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 	}
 
 	ticker := time.NewTicker(rate)
+	failedJobEvents := make(map[string]int)
 ReconcileLoop:
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			const maxErrEventWrites = 2
+
 			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
@@ -276,11 +279,13 @@ ReconcileLoop:
 			for _, j := range jobs.Items {
 				s := j.Status
 				switch {
+				case s.Active > 0:
+					continue ReconcileLoop
 				case s.Succeeded > 0:
 					if disableCleanup {
 						continue ReconcileLoop
 					}
-					b.log.Debug("reconcile: cleanuping up successful job", "taskID", j.Name)
+					b.log.Debug("reconcile: cleaning up successful job", "taskID", j.Name)
 
 					// Delete resources
 					if err := b.cleanResources(ctx, j.Name); err != nil {
@@ -288,7 +293,11 @@ ReconcileLoop:
 						continue ReconcileLoop
 					}
 				case s.Failed > 0:
-					b.log.Debug("reconcile: cleaning up failed job", "taskID", j.Name)
+					if count, exists := failedJobEvents[j.Name]; exists && count >= maxErrEventWrites {
+						continue
+					}
+
+					b.log.Debug("reconcile: gathering failed k8s job conditions", "taskID", j.Name)
 					conds, err := json.Marshal(s.Conditions)
 					if err != nil {
 						b.log.Error("reconcile: marshal failed job conditions", "taskID", j.Name, "error", err)
@@ -302,10 +311,13 @@ ReconcileLoop:
 							map[string]string{"error": string(conds)},
 						),
 					)
+
+					failedJobEvents[j.Name]++
 					if disableCleanup {
 						continue ReconcileLoop
 					}
 
+					b.log.Debug("reconcile: cleaning up failed job", "taskID", j.Name)
 					if err := b.cleanResources(ctx, j.Name); err != nil {
 						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)
 						continue ReconcileLoop

@@ -60,8 +60,8 @@ func CreatePVC(taskId string, config *config.Config, client kubernetes.Interface
 // Add this helper function for PVC cleanup
 func DeletePVC(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pvc-%s", taskID)
-	pvc, _ := client.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
-	if pvc != nil {
+	_, err := client.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err == nil {
 		log.Debug("deleting Worker PVC", "taskID", taskID)
 		err := client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 		if err != nil {

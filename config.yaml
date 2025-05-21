@@ -1,6 +1,0 @@
-Plugins:
-  Path: build/plugins/authorizer
-  Params:
-    Input: user
-    Host: http://localhost:8080/token?user=
-

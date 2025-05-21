@@ -142,9 +142,6 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 // createResources creates the resources needed for a task.
 func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
-	b.log.Info("Backend.createResources Task.Inputs: ", task.Inputs)
-	b.log.Info("Backend.createResources Task.Outputs: ", task.Outputs)
-
 	// If the task has inputs or outputs that must be taken care of create a PVC
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)

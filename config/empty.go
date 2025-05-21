@@ -34,7 +34,6 @@ func EmptyConfig() *Config {
 		Datastore:     &Datastore{},
 		GenericS3:     []*GenericS3Storage{},
 		Server:        &Server{BasicAuth: []*BasicCredential{}, OidcAuth: &OidcAuth{}},
-		Plugins:       &Plugins{Params: map[string]string{}},
 		EventWriters:  []string{},
 	}
 }

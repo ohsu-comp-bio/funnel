@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/util/server"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/plugins/proto"
@@ -86,7 +87,8 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	if ts.Config.Plugins != nil {
 		pluginResponse, err := ts.HandleDoPluginAction(ctx, task, proto.Type_CREATE)
 		if err != nil {
-			return nil, err
+			fmt.Println("CODE:::::::::::::::::::::::::::::::::::::::::::::::", pluginResponse.Code)
+			return nil, status.Errorf(server.GRPCCodeFromHTTPStatus(int(pluginResponse.Code)), err.Error())
 		}
 		ts.Log.Debug("Plugin Response: ", pluginResponse)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
@@ -162,7 +164,7 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 	if ts.Config.Plugins != nil {
 		pluginResponse, err := ts.HandleDoPluginAction(ctx, nil, proto.Type_CANCEL)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(server.GRPCCodeFromHTTPStatus(int(pluginResponse.Code)), err.Error())
 		}
 		ts.Log.Debug("Plugin Response: ", pluginResponse)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)

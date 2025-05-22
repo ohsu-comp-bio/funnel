@@ -75,9 +75,10 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.Write([]byte(fallback))
 		return
 	}
-
-	// Map specific gRPC error codes to HTTP status codes
-	switch st.Code() {
+	
+	switch st.Code(){
+	case codes.InvalidArgument, codes.FailedPrecondition, codes.OutOfRange: // 400
+         w.WriteHeader(http.StatusBadRequest)
 	case codes.Unauthenticated:
 		w.WriteHeader(http.StatusUnauthorized) // 401
 	case codes.PermissionDenied:
@@ -89,6 +90,15 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		} else {
 			w.WriteHeader(http.StatusNotFound) // 404
 		}
+	case codes.AlreadyExists, codes.Aborted: // 409
+		w.WriteHeader(http.StatusConflict)
+	case codes.Canceled:
+		w.WriteHeader(499)
+	case codes.DeadlineExceeded: // 504
+		w.WriteHeader(http.StatusGatewayTimeout)
+	
+	
+	
 	default:
 		if strings.Contains(st.Message(), "backend parameters not supported") {
 			w.WriteHeader(http.StatusBadRequest) // 400

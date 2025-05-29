@@ -59,7 +59,7 @@ func (ts *TaskService) DoPluginAction(ctx context.Context, task *tes.Task, taskT
 	}
 	resp, err := ts.Plugin.PluginAction(ts.Config.Plugins.Params, header, ts.Config, task, taskType)
 	if err != nil {
-		return nil, fmt.Errorf("failed to authorize '%s' via plugin: %w", "", err)
+		return nil, fmt.Errorf("DoPluginAction: PluginAction failed: %w", err)
 	}
 	return resp, nil
 }
@@ -78,7 +78,7 @@ func (ts *TaskService) HandleDoPluginAction(ctx context.Context, task *tes.Task,
 	if pluginResponse.Config == nil {
 		return pluginResponse, fmt.Errorf("Plugin returned empty config")
 	}
-	return pluginResponse, nil
+	return pluginResponse, err
 }
 
 // CreateTask provides an HTTP/gRPC endpoint for creating a task.

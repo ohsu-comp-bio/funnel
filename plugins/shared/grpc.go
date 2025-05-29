@@ -17,27 +17,15 @@ type GRPCServer struct {
 }
 
 func (m *GRPCClient) PluginAction(headers map[string]*proto.StringList, params map[string]string, config *config.Config, task *tes.Task, actionType proto.Type) (*proto.JobResponse, error) {
-	resp, err := m.client.PluginAction(context.Background(), &proto.Job{
+	return m.client.PluginAction(context.Background(), &proto.Job{
 		Headers: headers,
 		Params:  params,
 		Config:  config,
 		Task:    task,
 		Type:    actionType,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }
 
-func (m *GRPCServer) PluginAction(
-	ctx context.Context,
-	req *proto.Job) (*proto.JobResponse, error) {
-	v, err := m.Impl.PluginAction(req.Params, req.Headers, req.Config, req.Task, req.Type)
-	return &proto.JobResponse{Config: v.Config,
-		Code:    v.Code,
-		Message: v.Message,
-		Task:    v.Task,
-		UserId:  v.UserId}, err
+func (m *GRPCServer) PluginAction(ctx context.Context, req *proto.Job) (*proto.JobResponse, error) {
+	return m.Impl.PluginAction(req.Params, req.Headers, req.Config, req.Task, req.Type)
 }

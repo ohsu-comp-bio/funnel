@@ -28,10 +28,7 @@ func (m *RPCClient) PluginAction(params map[string]string, headers map[string]*p
 		Task:    task,
 		Type:    actionType,
 	}, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("PLUGIN RPC Get call failed: %w", err)
-	}
-	return &resp, nil
+	return &resp, err
 }
 
 func (m *RPCServer) PluginAction(args *proto.Job, resp *proto.JobResponse) error {
@@ -41,6 +38,5 @@ func (m *RPCServer) PluginAction(args *proto.Job, resp *proto.JobResponse) error
 		return fmt.Errorf("authorize implementation failed: %w", err)
 	}
 	*resp = *v
-
 	return nil
 }

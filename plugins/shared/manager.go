@@ -79,7 +79,6 @@ func (m *Manager) Client(path string) (Authorize, error) {
 }
 
 func (m *Manager) Close() {
-	fmt.Printf("------------------------------------------- CLOSING PLUGIN MANAGER")
 	for _, client := range m.pluginClients {
 		client.Kill()
 	}

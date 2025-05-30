@@ -21,7 +21,7 @@
 [docker]: https://quay.io/repository/ohsu-comp-bio/funnel?tab=tags&tag=latest
 
 [helm-badge]: https://img.shields.io/badge/Helm-0F1689?logo=helm&logoColor=fff
-[helm]: https://ohsu-comp-bio.github.io/helm-charts/
+[helm]: https://github.com/ohsu-comp-bio/helm-charts
 
 <a title="Funnel Homepage" href="https://ohsu-comp-bio.github.io/funnel">
   <img title="Funnel Logo" src="https://github.com/user-attachments/assets/f51cf06b-d802-4e20-bde1-bcd1fc5657e6" />

@@ -64,13 +64,10 @@ jobs:
         run: |
           make website
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./website/public
+          path: ./docs
 
   # Deployment job
   deploy:

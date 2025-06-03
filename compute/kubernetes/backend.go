@@ -274,6 +274,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 			}
 			for _, j := range jobs.Items {
 				s := j.Status
+				jobName := j.Name
 				switch {
 				case s.Active > 0:
 					continue
@@ -281,43 +282,43 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 					if disableCleanup {
 						continue
 					}
-					b.log.Debug("reconcile: cleaning up successful job", "taskID", j.Name)
+					b.log.Debug("reconcile: cleaning up successful job", "taskID", jobName)
 
 					// Delete resources
-					if err := b.cleanResources(ctx, j.Name); err != nil {
-						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)
+					if err := b.cleanResources(ctx, jobName); err != nil {
+						b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
 						continue
 					}
 					delete(failedJobEvents, jobName)
 
 				case s.Failed > 0:
-					if count, exists := failedJobEvents[j.Name]; exists && count >= maxErrEventWrites {
+					if count, exists := failedJobEvents[jobName]; exists && count >= maxErrEventWrites {
 						continue
 					}
 
-					b.log.Debug("reconcile: gathering failed k8s job conditions", "taskID", j.Name)
+					b.log.Debug("reconcile: gathering failed k8s job conditions", "taskID", jobName)
 					conds, err := json.Marshal(s.Conditions)
 					if err != nil {
-						b.log.Error("reconcile: marshal failed job conditions", "taskID", j.Name, "error", err)
+						b.log.Error("reconcile: marshal failed job conditions", "taskID", jobName, "error", err)
 					}
-					b.event.WriteEvent(ctx, events.NewState(j.Name, tes.SystemError))
+					b.event.WriteEvent(ctx, events.NewState(jobName, tes.SystemError))
 					b.event.WriteEvent(
 						ctx,
 						events.NewSystemLog(
-							j.Name, 0, 0, "error",
+							jobName, 0, 0, "error",
 							"Kubernetes job in FAILED state",
 							map[string]string{"error": string(conds)},
 						),
 					)
 
-					failedJobEvents[j.Name]++
+					failedJobEvents[jobName]++
 					if disableCleanup {
 						continue
 					}
 
-					b.log.Debug("reconcile: cleaning up failed job", "taskID", j.Name)
-					if err := b.cleanResources(ctx, j.Name); err != nil {
-						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)
+					b.log.Debug("reconcile: cleaning up failed job", "taskID", jobName)
+					if err := b.cleanResources(ctx, jobName); err != nil {
+						b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
 						continue
 					}
 					delete(failedJobEvents, jobName)

@@ -59,7 +59,7 @@ func (ts *TaskService) DoPluginAction(ctx context.Context, task *tes.Task, taskT
 	}
 	resp, err := ts.Plugin.PluginAction(ts.Config.Plugins.Params, header, ts.Config, task, taskType)
 	if err != nil {
-		return nil, fmt.Errorf("DoPluginAction: PluginAction failed: %w", err)
+		return resp, fmt.Errorf("DoPluginAction: PluginAction failed: %w", err)
 	}
 	return resp, nil
 }

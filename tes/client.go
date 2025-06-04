@@ -198,6 +198,9 @@ func (c *Client) WaitForTask(ctx context.Context, taskIDs ...string) error {
 				return err
 			}
 			switch r.State {
+			// Only really needed for K8s
+			case State_INITIALIZING:
+				// TODO: Implement exponential backoff
 			case State_COMPLETE:
 				done = true
 			case State_EXECUTOR_ERROR, State_SYSTEM_ERROR, State_CANCELED:

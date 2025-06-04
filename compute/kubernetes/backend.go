@@ -268,16 +268,28 @@ ReconcileLoop:
 		case <-ticker.C:
 			const maxErrEventWrites = 2
 
+			// Get a lst of all currently submitted jobs
 			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
 				continue ReconcileLoop
 			}
 			for _, j := range jobs.Items {
+
+				// K8s Job Statuses: https://pkg.go.dev/k8s.io/api/batch/v1#JobStatus
+				// Active
+				// Succeeded
+				// Failed
+				// Terminating
+				// Ready
 				s := j.Status
 				switch {
+
+				// Job is pending or running
 				case s.Active > 0:
 					continue ReconcileLoop
+
+				// Job completed successfully
 				case s.Succeeded > 0:
 					if disableCleanup {
 						continue ReconcileLoop
@@ -289,17 +301,24 @@ ReconcileLoop:
 						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)
 						continue ReconcileLoop
 					}
+
+				// Job failed
 				case s.Failed > 0:
 					if count, exists := failedJobEvents[j.Name]; exists && count >= maxErrEventWrites {
 						continue
 					}
 
+					// Get details of the job failure state
 					b.log.Debug("reconcile: gathering failed k8s job conditions", "taskID", j.Name)
 					conds, err := json.Marshal(s.Conditions)
 					if err != nil {
 						b.log.Error("reconcile: marshal failed job conditions", "taskID", j.Name, "error", err)
 					}
+
+					// SystemError
 					b.event.WriteEvent(ctx, events.NewState(j.Name, tes.SystemError))
+
+					// SystemLog
 					b.event.WriteEvent(
 						ctx,
 						events.NewSystemLog(
@@ -314,6 +333,7 @@ ReconcileLoop:
 						continue ReconcileLoop
 					}
 
+					// Clean up resources for failed job
 					b.log.Debug("reconcile: cleaning up failed job", "taskID", j.Name)
 					if err := b.cleanResources(ctx, j.Name); err != nil {
 						b.log.Error("failed to clean resources", "taskID", j.Name, "error", err)

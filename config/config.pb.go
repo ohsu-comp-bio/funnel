@@ -2228,6 +2228,7 @@ type GenericS3Storage struct {
 	Secret        string                 `protobuf:"bytes,4,opt,name=Secret,proto3" json:"Secret,omitempty"`
 	Region        string                 `protobuf:"bytes,5,opt,name=Region,proto3" json:"Region,omitempty"`
 	Bucket        string                 `protobuf:"bytes,6,opt,name=Bucket,proto3" json:"Bucket,omitempty"`
+	KmsKeyID      string                 `protobuf:"bytes,7,opt,name=kmsKeyID,proto3" json:"kmsKeyID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2300,6 +2301,13 @@ func (x *GenericS3Storage) GetRegion() string {
 func (x *GenericS3Storage) GetBucket() string {
 	if x != nil {
 		return x.Bucket
+	}
+	return ""
+}
+
+func (x *GenericS3Storage) GetKmsKeyID() string {
+	if x != nil {
+		return x.KmsKeyID
 	}
 	return ""
 }
@@ -2879,14 +2887,15 @@ const file_config_config_proto_rawDesc = "" +
 	"\x0fAmazonS3Storage\x12\x1a\n" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12\x1d\n" +
 	"\x03SSE\x18\x02 \x01(\v2\v.config.SSER\x03SSE\x12/\n" +
-	"\tAWSConfig\x18\x03 \x01(\v2\x11.config.AWSConfigR\tAWSConfig\"\xa4\x01\n" +
+	"\tAWSConfig\x18\x03 \x01(\v2\x11.config.AWSConfigR\tAWSConfig\"\xc0\x01\n" +
 	"\x10GenericS3Storage\x12\x1a\n" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12\x1a\n" +
 	"\bEndpoint\x18\x02 \x01(\tR\bEndpoint\x12\x10\n" +
 	"\x03Key\x18\x03 \x01(\tR\x03Key\x12\x16\n" +
 	"\x06Secret\x18\x04 \x01(\tR\x06Secret\x12\x16\n" +
 	"\x06Region\x18\x05 \x01(\tR\x06Region\x12\x16\n" +
-	"\x06Bucket\x18\x06 \x01(\tR\x06Bucket\"\xa0\x02\n" +
+	"\x06Bucket\x18\x06 \x01(\tR\x06Bucket\x12\x1a\n" +
+	"\bkmsKeyID\x18\a \x01(\tR\bkmsKeyID\"\xa0\x02\n" +
 	"\fSwiftStorage\x12\x1a\n" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12\x1a\n" +
 	"\bUserName\x18\x02 \x01(\tR\bUserName\x12\x1a\n" +

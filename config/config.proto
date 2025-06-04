@@ -275,6 +275,7 @@ message GenericS3Storage {
   string Secret = 4;
   string Region = 5;
   string Bucket = 6;
+  string kmsKeyID = 7;
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.

@@ -206,7 +206,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					JobsNamespace: r.Executor.JobsNamespace,
 					Resources:     resources,
 					Command:       command,
-					NeedsPVC:      len(task.Inputs) > 0 || len(task.Outputs) > 0,
+					NeedsPVC:      len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
 				}
 			} else {
 				taskCommand = &DockerCommand{

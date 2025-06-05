@@ -112,17 +112,17 @@ message InputBasic {
 
 
 message ListTasksResponse { 
-	string next_page_token = 1;
+	optional string next_page_token = 1;
 	repeated Task tasks = 2;
 }
 
 message ListTasksResponseMin { 
-	string next_page_token = 1;
+	optional string next_page_token = 1;
 	repeated TaskMin tasks = 2;
 }
 
 message ListTasksResponseBasic { 
-	string next_page_token = 1;
+	optional string next_page_token = 1;
 	repeated TaskBasic tasks = 2;
 }
 

@@ -26,23 +26,25 @@ VERSION_LDFLAGS=\
 export CGO_ENABLED=0
 
 # Build the code
-install:
+install: proto
 	@touch version/version.go
 	@go install -ldflags '$(VERSION_LDFLAGS)' .
 
 # Build the code
-build:
+build: proto
 	@touch version/version.go
 	@go build -ldflags '$(VERSION_LDFLAGS)' -buildvcs=false .
 
 # Build an unoptimized version of the code for use during debugging
 # https://go.dev/doc/gdb
-debug:
+debug: proto
 	@go install -gcflags=all="-N -l"
 	@funnel server run
 
 # Generate the protobuf/gRPC code
-proto:
+proto: proto-depends
+# TODO: Re-enable this when VIEW differences are resolvedin server/marshal.go (with optional/pointers?)
+#	@go run ./util/openapi2proto/main.go ./tes/task-execution-schemas/openapi/task_execution_service.openapi.yaml > tes/tes.proto
 	@cd tes && protoc \
 		$(PROTO_INC) \
 		--go_out ./ \
@@ -78,11 +80,11 @@ proto:
 
 proto-depends:
 	@git submodule update --init --recursive
-	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.11.1
-	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.11.1
-	@go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@go install github.com/ckaznocha/protoc-gen-lint@v0.2.4
+	@go install github.com/ckaznocha/protoc-gen-lint@latest
 
 # Start API reference doc server
 serve-doc:
@@ -96,11 +98,11 @@ tidy:
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
 lint-depends:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
-	go install golang.org/x/tools/cmd/goimports
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install golang.org/x/tools/cmd/goimports@latest
 
 # Run code style and other checks
-lint:
+lint: lint-depends
 	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
 		--skip-dirs "vendor" \
 		--skip-dirs "webdash" \

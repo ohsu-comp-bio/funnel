@@ -68,7 +68,7 @@ func (ts *TaskSource) listTasks(previous, next bool) (TaskWidgets, error) {
 		return tasks, err
 	}
 
-	ts.nPage = resp.NextPageToken
+	ts.nPage = *resp.NextPageToken
 
 	for _, t := range resp.Tasks {
 		tasks = append(tasks, NewTaskWidget(t))

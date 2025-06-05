@@ -766,17 +766,17 @@ func TestPagination(t *testing.T) {
 		t.Error("wrong requested page size")
 	}
 
-	if r4.NextPageToken == "" {
+	if r4.NextPageToken == nil {
 		t.Error("expected next page token")
 	}
 
 	// Get all pages
 	var tasks []*tes.Task
 	tasks = append(tasks, r4.Tasks...)
-	for r4.NextPageToken != "" {
+	for r4.NextPageToken != nil {
 		r4, _ = f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
 			PageSize:  500,
-			PageToken: r4.NextPageToken,
+			PageToken: *r4.NextPageToken,
 		})
 		tasks = append(tasks, r4.Tasks...)
 	}
@@ -827,10 +827,10 @@ func TestSmallPaginationAndSortOrder(t *testing.T) {
 	// Get all pages
 	var tasks []*tes.Task
 	tasks = append(tasks, r4.Tasks...)
-	for r4.NextPageToken != "" {
+	for r4.NextPageToken != nil {
 		r4, err = f.RPC.ListTasks(ctx, &tes.ListTasksRequest{
 			PageSize:  50,
-			PageToken: r4.NextPageToken,
+			PageToken: *r4.NextPageToken,
 		})
 		if err != nil {
 			t.Fatal(err)

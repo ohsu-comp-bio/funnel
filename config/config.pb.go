@@ -2228,7 +2228,7 @@ type GenericS3Storage struct {
 	Secret        string                 `protobuf:"bytes,4,opt,name=Secret,proto3" json:"Secret,omitempty"`
 	Region        string                 `protobuf:"bytes,5,opt,name=Region,proto3" json:"Region,omitempty"`
 	Bucket        string                 `protobuf:"bytes,6,opt,name=Bucket,proto3" json:"Bucket,omitempty"`
-	KmsKeyID      string                 `protobuf:"bytes,7,opt,name=kmsKeyID,proto3" json:"kmsKeyID,omitempty"`
+	KmsKeyID      string                 `protobuf:"bytes,7,opt,name=KmsKeyID,proto3" json:"KmsKeyID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2895,7 +2895,7 @@ const file_config_config_proto_rawDesc = "" +
 	"\x06Secret\x18\x04 \x01(\tR\x06Secret\x12\x16\n" +
 	"\x06Region\x18\x05 \x01(\tR\x06Region\x12\x16\n" +
 	"\x06Bucket\x18\x06 \x01(\tR\x06Bucket\x12\x1a\n" +
-	"\bkmsKeyID\x18\a \x01(\tR\bkmsKeyID\"\xa0\x02\n" +
+	"\bKmsKeyID\x18\a \x01(\tR\bKmsKeyID\"\xa0\x02\n" +
 	"\fSwiftStorage\x12\x1a\n" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12\x1a\n" +
 	"\bUserName\x18\x02 \x01(\tR\bUserName\x12\x1a\n" +

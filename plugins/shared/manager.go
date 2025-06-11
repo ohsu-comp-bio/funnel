@@ -8,6 +8,7 @@ package shared
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/hashicorp/go-plugin"
 	goplugin "github.com/hashicorp/go-plugin"
@@ -26,8 +27,8 @@ type Manager struct {
 // are plugin binaries. It runs all these binaries in sub-processes,
 // establishes RPC communication with the plugins, and registers them for
 // the hooks they declare to support.
-func (m *Manager) LoadPlugins(path string) error {
-	binaries, err := goplugin.Discover("*", path)
+func (m *Manager) LoadPlugin(path string) error {
+	binaries, err := goplugin.Discover("*", filepath.Dir(path))
 	if err != nil {
 		return err
 	}
@@ -47,8 +48,8 @@ func (m *Manager) LoadPlugins(path string) error {
 	return nil
 }
 
-func (m *Manager) Client(dir string) (Authorize, error) {
-	if err := m.LoadPlugins(dir); err != nil {
+func (m *Manager) Client(path string) (Authorize, error) {
+	if err := m.LoadPlugin(path); err != nil {
 		return nil, fmt.Errorf("failed to load plugins: %w", err)
 	}
 

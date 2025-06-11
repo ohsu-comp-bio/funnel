@@ -5,7 +5,7 @@ import (
 )
 
 type jsonFormatter struct {
-	conf JSONFormatConfig
+	conf *JSONFormatConfig
 	fmt  *logrus.JSONFormatter
 }
 

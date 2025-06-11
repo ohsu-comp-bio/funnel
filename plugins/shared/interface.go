@@ -8,15 +8,9 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/plugins/proto"
+	"github.com/ohsu-comp-bio/funnel/tes"
 	"google.golang.org/grpc"
 )
-
-// Define a struct that matches the expected JSON response
-type Response struct {
-	Code    int            `json:"code,omitempty"`
-	Message string         `json:"message,omitempty"`
-	Config  *config.Config `json:"config,omitempty"`
-}
 
 // Handshake is a common handshake that is shared by plugin and host.
 var Handshake = plugin.HandshakeConfig{
@@ -40,7 +34,7 @@ var PluginMap = map[string]plugin.Plugin{
 
 // Authorize is the interface that we're exposing as a plugin.
 type Authorize interface {
-	Get(user string, host string, jsonConfig string) ([]byte, error)
+	PluginAction(params map[string]string, headers map[string]*proto.StringList, config *config.Config, task *tes.Task, actionType proto.Type) (*proto.JobResponse, error)
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this.
@@ -50,11 +44,11 @@ type AuthorizePlugin struct {
 	Impl Authorize
 }
 
-func (p *AuthorizePlugin) Server(*plugin.MuxBroker) (interface{}, error) {
+func (p *AuthorizePlugin) Server(*plugin.MuxBroker) (any, error) {
 	return &RPCServer{Impl: p.Impl}, nil
 }
 
-func (*AuthorizePlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
+func (*AuthorizePlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (any, error) {
 	return &RPCClient{client: c}, nil
 }
 
@@ -72,6 +66,6 @@ func (p *AuthorizeGRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Serv
 	return nil
 }
 
-func (p *AuthorizeGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+func (p *AuthorizeGRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (any, error) {
 	return &GRPCClient{client: proto.NewAuthorizeClient(c)}, nil
 }

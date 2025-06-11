@@ -24,12 +24,13 @@ import (
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/metrics"
+	"github.com/ohsu-comp-bio/funnel/plugins/shared"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // Run runs the "server run" command.
-func Run(ctx context.Context, conf config.Config, log *logger.Logger) error {
+func Run(ctx context.Context, conf *config.Config, log *logger.Logger) error {
 	s, err := NewServer(ctx, conf, log)
 	if err != nil {
 		return err
@@ -51,7 +52,7 @@ type Database interface {
 }
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
-func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Server, error) {
+func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*Server, error) {
 	log.Debug("NewServer", "config", conf)
 
 	var database Database
@@ -262,7 +263,7 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		go metrics.WatchNodes(ctx, nodes)
 	}
 
-	return &Server{
+	serverConf := &Server{
 		Server: &server.Server{
 			RPCAddress:       ":" + conf.Server.RPCPort,
 			HTTPPort:         conf.Server.HTTPPort,
@@ -284,7 +285,22 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 			Plugins: conf.Plugins,
 		},
 		Scheduler: sched,
-	}, nil
+	}
+
+	if conf.Plugins != nil {
+		if conf.Plugins.Path == "" {
+			return nil, fmt.Errorf("Plugin config is set but required plugin field 'Path' is not found")
+		}
+		serverConf.Server.Tasks.(*server.TaskService).PluginManager = &shared.Manager{}
+		log.Info("getting plugin client", "path", conf.Plugins.Path)
+		plugin, err := serverConf.Server.Tasks.(*server.TaskService).PluginManager.Client(conf.Plugins.Path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get plugin client: %w", err)
+		}
+		serverConf.Server.Tasks.(*server.TaskService).Plugin = plugin
+	}
+
+	return serverConf, nil
 }
 
 // Run runs a default Funnel server.

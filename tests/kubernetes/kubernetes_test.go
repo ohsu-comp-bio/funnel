@@ -51,7 +51,6 @@ func TestMain(m *testing.M) {
 
 	// TODO: This pattern is used when running tests from the Makefile (e.g. `make test-slurm`)
 	// We don't have any `test-K8s` target, but can add one if needed.
-	// Currently, we'r running these tests directly either in VS Code or `go test ./tests/kubernetes`
 	if conf.Compute != "kubernetes" {
 		logger.Debug("Skipping kubernetes e2e tests...")
 		os.Exit(0)
@@ -75,9 +74,6 @@ func TestMain(m *testing.M) {
 		logger.Debug("failed to get kubeconfig:", err)
 		os.Exit(1)
 	}
-
-	// Set the kubeconfig file path
-	conf.Kubernetes.ConfigFile = kubeconfig
 
 	// Start the Funnel server in the K8s cluster using the Helm charts in the K8s deployments directory
 	err = StartServerInK8s(clusterName, "../../deployments/kubernetes/helm/")

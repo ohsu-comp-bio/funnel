@@ -11,19 +11,19 @@ import (
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/plugins/shared"
+	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(ctx context.Context, conf config.Config, log *logger.Logger) (*Backend, error) {
+func NewBackend(ctx context.Context, conf *config.Config, log *logger.Logger) (*Backend, error) {
 	// Using nil for the backendParameters here until those are specified
 	return &Backend{conf, log, nil, nil}, nil
 }
 
 // Backend represents the local backend.
 type Backend struct {
-	conf              config.Config
+	conf              *config.Config
 	log               *logger.Logger
 	backendParameters map[string]string
 	events.Computer
@@ -49,7 +49,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
-	if !b.conf.Plugins.Disabled {
+	if b.conf.Plugins != nil {
 		err := b.UpdateConfig(ctx)
 		if err != nil {
 			return fmt.Errorf("error updating config from plugin response: %v", err)
@@ -58,20 +58,21 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
+		b.log.Info("COMPUTE/LOCAL/BACKEND WRITE EVENT: +++++++++++++++++++++++++++++++++++")
 		return b.Submit(ev.GetTask())
 	}
 	return nil
 }
 
 func (b *Backend) UpdateConfig(ctx context.Context) error {
-	resp, ok := ctx.Value("pluginResponse").(*shared.Response)
+	resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 	if !ok {
 		return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 	}
 
 	// TODO: Review all security implications of merging configs (injections, shared state, etc.)
 	if resp.Config != nil {
-		err := b.MergeConfigs(*resp.Config)
+		err := b.MergeConfigs(resp.Config)
 		if err != nil {
 			b.log.Error("error merging configs from plugin", "error", err)
 		}
@@ -80,8 +81,8 @@ func (b *Backend) UpdateConfig(ctx context.Context) error {
 	return nil
 }
 
-func (b *Backend) MergeConfigs(c config.Config) error {
-	err := mergo.MergeWithOverwrite(&b.conf, c)
+func (b *Backend) MergeConfigs(c *config.Config) error {
+	err := mergo.MergeWithOverwrite(b.conf, c)
 	if err != nil {
 		return fmt.Errorf("error merging configs: %v", err)
 	}

@@ -14,7 +14,7 @@ import (
 )
 
 // NewNodeProcess returns a new Node instance
-func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
+func NewNodeProcess(ctx context.Context, conf *config.Config, factory Worker, log *logger.Logger) (*NodeProcess, error) {
 	log = log.WithFields("nodeID", conf.Node.ID)
 	log.Debug("NewNode", "config", conf)
 
@@ -34,7 +34,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 		log.Error("error detecting resources", "error", derr)
 	}
 
-	timeout := util.NewIdleTimeout(time.Duration(conf.Node.Timeout))
+	timeout := util.NewIdleTimeout(conf.Node.Timeout.GetDuration().AsDuration())
 	state := NodeState_UNINITIALIZED
 
 	return &NodeProcess{
@@ -52,7 +52,7 @@ func NewNodeProcess(ctx context.Context, conf config.Config, factory Worker, log
 
 // NodeProcess is a structure used for tracking available resources on a compute resource.
 type NodeProcess struct {
-	conf      config.Config
+	conf      *config.Config
 	client    Client
 	log       *logger.Logger
 	resources *Resources
@@ -74,7 +74,7 @@ func (n *NodeProcess) Run(ctx context.Context) error {
 	n.checkConnection(ctx)
 	n.sync(ctx)
 
-	ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
+	ticker := time.NewTicker(n.conf.Node.UpdateRate.AsDuration())
 	defer ticker.Stop()
 
 	for {
@@ -191,7 +191,7 @@ func (n *NodeProcess) runTask(ctx context.Context, id string) {
 		// task cannot fully complete until it has successfully removed the
 		// assigned ID from the node database. this helps prevent tasks from
 		// running multiple times.
-		ticker := time.NewTicker(time.Duration(n.conf.Node.UpdateRate))
+		ticker := time.NewTicker(n.conf.Node.UpdateRate.AsDuration())
 		defer ticker.Stop()
 		for {
 			select {

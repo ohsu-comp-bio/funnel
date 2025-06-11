@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/golang/gddo/httputil"
@@ -19,6 +20,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/webdash"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -30,15 +32,15 @@ import (
 type Server struct {
 	RPCAddress       string
 	HTTPPort         string
-	BasicAuth        []config.BasicCredential
-	OidcAuth         config.OidcAuth
+	BasicAuth        []*config.BasicCredential
+	OidcAuth         *config.OidcAuth
 	TaskAccess       string
 	Tasks            tes.TaskServiceServer
 	Events           events.EventServiceServer
 	Nodes            scheduler.SchedulerServiceServer
 	DisableHTTPCache bool
 	Log              *logger.Logger
-	Plugins          config.Plugins
+	Plugins          *config.Plugins
 }
 
 // Return a new interceptor function that logs all requests at the Debug level
@@ -73,9 +75,10 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.Write([]byte(fallback))
 		return
 	}
-
-	// Map specific gRPC error codes to HTTP status codes
-	switch st.Code() {
+	
+	switch st.Code(){
+	case codes.InvalidArgument, codes.FailedPrecondition, codes.OutOfRange: // 400
+         w.WriteHeader(http.StatusBadRequest)
 	case codes.Unauthenticated:
 		w.WriteHeader(http.StatusUnauthorized) // 401
 	case codes.PermissionDenied:
@@ -87,6 +90,15 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		} else {
 			w.WriteHeader(http.StatusNotFound) // 404
 		}
+	case codes.AlreadyExists, codes.Aborted: // 409
+		w.WriteHeader(http.StatusConflict)
+	case codes.Canceled:
+		w.WriteHeader(499)
+	case codes.DeadlineExceeded: // 504
+		w.WriteHeader(http.StatusGatewayTimeout)
+	
+	
+	
 	default:
 		if strings.Contains(st.Message(), "backend parameters not supported") {
 			w.WriteHeader(http.StatusBadRequest) // 400
@@ -119,6 +131,9 @@ type JSONError struct {
 func (s *Server) Serve(pctx context.Context) error {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
+	if s.Tasks.(*TaskService).PluginManager != nil {
+		defer s.Tasks.(*TaskService).PluginManager.Close()
+	}
 
 	// Open TCP connection for RPC
 	lis, err := net.Listen("tcp", s.RPCAddress)
@@ -175,8 +190,13 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.HandleFunc("/login/token", auth.EchoTokenHandler)
 
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+
+		// Pass header to plugin if plugin is enabled
+		if s.Plugins != nil {
+			s.addHeadertoCtx(req)
+		}
 		// TODO this doesnt handle all routes
-		if s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
+		if s.OidcAuth != nil && s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
 		}
 		switch negotiate(req) {
@@ -247,6 +267,20 @@ func (s *Server) Serve(pctx context.Context) error {
 	httpServer.Shutdown(context.TODO())
 
 	return srverr
+}
+
+func (s *Server) addHeadertoCtx(req *http.Request) *http.Request {
+	md := metadata.New(nil)
+	ctxWithMetadata := req.Context() // Start with the request's context
+	for key, values := range req.Header {
+		for _, value := range values {
+			md.Append(key, value)
+		}
+		ctxWithMetadata = context.WithValue(ctxWithMetadata, key, values)
+
+	}
+	ctxWithMetadata = metadata.NewOutgoingContext(ctxWithMetadata, md) // Create context with metadata
+	return req.WithContext(ctxWithMetadata)
 }
 
 // handleError handles errors in the HTTP stack, logging errors, stack traces,

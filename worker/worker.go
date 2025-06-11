@@ -21,7 +21,7 @@ import (
 // and logging.
 type DefaultWorker struct {
 	Executor    Executor
-	Conf        config.Worker
+	Conf        *config.Worker
 	Store       storage.Storage
 	TaskReader  TaskReader
 	EventWriter events.Writer
@@ -150,7 +150,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Download inputs
 	if run.ok() {
-		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event, r.Conf.MaxParallelTransfers)
+		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event, int(r.Conf.MaxParallelTransfers))
 	}
 
 	if run.ok() {
@@ -206,6 +206,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					JobsNamespace: r.Executor.JobsNamespace,
 					Resources:     resources,
 					Command:       command,
+					NeedsPVC:      len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
 				}
 			} else {
 				taskCommand = &DockerCommand{
@@ -269,7 +270,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// Upload outputs
 	var outputLog []*tes.OutputFileLog
 	if run.ok() {
-		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event, r.Conf.MaxParallelTransfers)
+		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event, int(r.Conf.MaxParallelTransfers))
 	}
 
 	// unmap paths for OutputFileLog
@@ -362,7 +363,7 @@ func (r *DefaultWorker) pollForCancel(pctx context.Context, cancelCallback func(
 	// Start a goroutine that polls the server to watch for a canceled state.
 	// If a cancel state is found, "taskctx" is canceled.
 	go func() {
-		ticker := time.NewTicker(time.Duration(r.Conf.PollingRate))
+		ticker := time.NewTicker(r.Conf.PollingRate.AsDuration())
 		defer ticker.Stop()
 
 		for {

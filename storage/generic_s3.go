@@ -201,14 +201,14 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 		opts.ServerSideEncryption = SSEKMS
 	}
 
-  // Step 1: Get the object stream
-	obj, err := client.GetObjectWithContext(ctx, bucket, objectPath, opts)
+	// Step 1: Get the object stream
+	obj, err := client.GetObject(ctx, bucket, objectPath, opts)
 	if err != nil {
 		return fmt.Errorf("failed getting object from S3: %w", err)
 	}
 	defer obj.Close()
-  
-  // Step 2: Create the local file (overwrite if exists)
+
+	// Step 2: Create the local file (overwrite if exists)
 	outFile, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed creating file: %w", err)
@@ -219,7 +219,7 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 	if _, err := io.Copy(outFile, obj); err != nil {
 		return fmt.Errorf("failed writing file: %w", err)
 	}
-  
+
 	return nil
 }
 

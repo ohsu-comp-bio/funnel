@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -87,12 +88,12 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 	obj, err := s3.client.GetObject(ctx, u.bucket, u.path, opts)
 	if err != nil {
 		logger.Debug("genericS3: getting object %s: %v", url, err)
-		return nil, fmt.Errorf("genericS3: getting object: %s", err)
+		return nil, fmt.Errorf("genericS3: getting object %s in bucket %s: %s", u.path, u.bucket, err)
 	}
 
 	isDir, err := isDir(ctx, s3.client, u.bucket, u.path)
 	if err != nil {
-		return nil, fmt.Errorf("genericS3: stat object: %s", err)
+		return nil, fmt.Errorf("genericS3: stat object %s in bucket %s: %s", u.path, u.bucket, err)
 	}
 	if isDir {
 		return &Object{
@@ -104,7 +105,7 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 
 	info, err := obj.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("genericS3: stat object: %s", err)
+		return nil, fmt.Errorf("genericS3: stat object %s in bucket %s: %s", u.path, u.bucket, err)
 	}
 
 	return &Object{
@@ -199,10 +200,26 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 		}
 		opts.ServerSideEncryption = SSEKMS
 	}
-	err := client.FGetObject(ctx, bucket, objectPath, filePath, opts)
+
+  // Step 1: Get the object stream
+	obj, err := client.GetObjectWithContext(ctx, bucket, objectPath, opts)
 	if err != nil {
-		return fmt.Errorf("failed to download and decrypt object: %w", err)
+		return fmt.Errorf("failed getting object from S3: %w", err)
 	}
+	defer obj.Close()
+  
+  // Step 2: Create the local file (overwrite if exists)
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed creating file: %w", err)
+	}
+	defer outFile.Close()
+
+	// Step 3: Copy the contents
+	if _, err := io.Copy(outFile, obj); err != nil {
+		return fmt.Errorf("failed writing file: %w", err)
+	}
+  
 	return nil
 }
 

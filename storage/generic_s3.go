@@ -85,9 +85,10 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 
 	opts := minio.GetObjectOptions{}
 	// TODO Add debug log
+	logger.Debug("genericS3: s3.client.GetObject: bucket: %s, path: %s", u.bucket, u.path)
 	obj, err := s3.client.GetObject(ctx, u.bucket, u.path, opts)
 	if err != nil {
-		logger.Debug("genericS3: getting object %s: %v", url, err)
+		logger.Debug("genericS3: getting object from s3.client.GetObject %s: %v", url, err)
 		return nil, fmt.Errorf("genericS3: getting object %s in bucket %s: %s", u.path, u.bucket, err)
 	}
 
@@ -164,7 +165,7 @@ func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error)
 	if err != nil {
 		logger.Debug("genericS3: u.bucket: %v", u.bucket)
 		logger.Debug("genericS3: u.path: %v", u.path)
-		return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
+		return nil, fmt.Errorf("genericS3: getting object from isDir %s: %v", url, err)
 	}
 	if isDir {
 		objects, err := s3.List(ctx, url)
@@ -182,7 +183,7 @@ func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error)
 	} else {
 		err = download(ctx, s3.client, u.bucket, u.path, path, s3.kmskeyId)
 		if err != nil {
-			return nil, fmt.Errorf("genericS3: getting object %s: %v", url, err)
+			return nil, fmt.Errorf("genericS3: getting object from download %s: %v", url, err)
 		}
 	}
 
@@ -201,6 +202,7 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 		opts.ServerSideEncryption = SSEKMS
 	}
 
+	logger.Debug("genericS3: client.GetObject: bucket: %s, objectPath: %s, filePath: %s", bucket, objectPath, filePath)
 	// Step 1: Get the object stream
 	obj, err := client.GetObject(ctx, bucket, objectPath, opts)
 	if err != nil {
@@ -209,6 +211,7 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 	defer obj.Close()
 
 	// Step 2: Create the local file (overwrite if exists)
+	logger.Debug("genericS3: os.Create: filePath: %s", filePath)
 	outFile, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed creating file: %w", err)
@@ -216,6 +219,7 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 	defer outFile.Close()
 
 	// Step 3: Copy the contents
+	logger.Debug("genericS3: io.Copy: outFile: %s, obj: %v", filePath, obj)
 	if _, err := io.Copy(outFile, obj); err != nil {
 		return fmt.Errorf("failed writing file: %w", err)
 	}

@@ -73,7 +73,13 @@ func (ts *TaskService) HandleDoPluginAction(ctx context.Context, task *tes.Task,
 		return pluginResponse, fmt.Errorf("Error loading plugins: %v", err)
 	}
 	if pluginResponse.Code != 200 {
-		return pluginResponse, fmt.Errorf("Plugin returned error code %d", pluginResponse.Code)
+		return pluginResponse, fmt.Errorf(
+			"Plugin returned error: code: %d, message: %s, user: %s, task: %v",
+			pluginResponse.Code,
+			pluginResponse.Message,
+			pluginResponse.UserId,
+			pluginResponse.Task,
+		)
 	}
 	if pluginResponse.Config == nil {
 		return pluginResponse, fmt.Errorf("Plugin returned empty config")

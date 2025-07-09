@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"strings"
 
 	"github.com/logrusorgru/aurora"
@@ -176,5 +177,8 @@ func PrintSimpleError(err error) {
 func recoverLogErr() {
 	if r := recover(); r != nil {
 		fmt.Println("Recovered from logging panic", r)
+		// Print the stack trace to stderr
+		fmt.Println("Stack trace:")
+		debug.PrintStack()
 	}
 }

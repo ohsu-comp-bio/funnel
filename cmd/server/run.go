@@ -292,6 +292,12 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 			return nil, fmt.Errorf("Plugin config is set but required plugin field 'Path' is not found")
 		}
 		serverConf.Server.Tasks.(*server.TaskService).PluginManager = &shared.Manager{}
+		if conf.Plugins == nil {
+			return nil, fmt.Errorf("Plugin config is set but no plugins are defined")
+		}
+		if conf.Plugins.Path == "" {
+			return nil, fmt.Errorf("Plugin config is set but required plugin field 'Path' is not found")
+		}
 		log.Info("getting plugin client", "path", conf.Plugins.Path)
 		plugin, err := serverConf.Server.Tasks.(*server.TaskService).PluginManager.Client(conf.Plugins.Path)
 		if err != nil {

@@ -1,10 +1,10 @@
 package logger
 
-var debug = NewLogger("debug", DebugConfig())
+var debug_logger = NewLogger("debug", DebugConfig())
 
 // Debug logs debug messages to a global logger.
 func Debug(msg string, args ...interface{}) {
-	debug.Debug(msg, args...)
+	debug_logger.Debug(msg, args...)
 }
 
 // DebugConfig returns a Config instance with default values useful for testing/debugging.

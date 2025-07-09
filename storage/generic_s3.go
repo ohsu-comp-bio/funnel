@@ -84,7 +84,6 @@ func (s3 *GenericS3) Stat(ctx context.Context, url string) (*Object, error) {
 	}
 
 	opts := minio.GetObjectOptions{}
-	// TODO Add debug log
 	logger.Debug("genericS3: s3.client.GetObject: bucket: %s, path: %s", u.bucket, u.path)
 	obj, err := s3.client.GetObject(ctx, u.bucket, u.path, opts)
 	if err != nil {

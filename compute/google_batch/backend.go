@@ -19,7 +19,7 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
+func NewBackend(ctx context.Context, conf config.GoogleBatch, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
@@ -43,7 +43,7 @@ func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlySe
 // Backend represents the local backend.
 type Backend struct {
 	client   *batch.Batch
-	conf     config.AWSBatch
+	conf     config.GoogleBatch
 	event    events.Writer
 	database tes.ReadOnlyServer
 	log      *logger.Logger

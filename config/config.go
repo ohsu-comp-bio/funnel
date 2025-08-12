@@ -307,8 +307,8 @@ type AWSBatch struct {
 
 // Initial pass at Google Batch configuration (relying on existing AWS config as much as possible).
 type GoogleBatch struct {
-	JobTemplate       string
-	JobTemplateFile   string
+	JobDefinition     string
+	JobQueue          string
 	DisableReconciler bool
 	ReconcileRate     Duration
 	AWSConfig

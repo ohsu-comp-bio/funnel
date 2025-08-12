@@ -311,6 +311,10 @@ type GCPBatch struct {
 	JobQueue          string
 	DisableReconciler bool
 	ReconcileRate     Duration
+	// Required fields for GCP Batch Jobs (as "Parent") → projects/{project}/locations/{location}
+	// https://pkg.go.dev/cloud.google.com/go/batch/apiv1/batchpb#CreateJobRequest
+	Project  string
+	Location string
 	AWSConfig
 }
 

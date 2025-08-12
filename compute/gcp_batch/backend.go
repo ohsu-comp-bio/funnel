@@ -1,10 +1,11 @@
 // Package gcp_batch contains code for accessing compute resources via Google Batch.
 // ref: https://cloud.google.com/batch/docs
-// ref: https://pkg.go.dev/cloud.google.com/go/batch/apiv1#hdr-Using_the_Client
+// ref: https://cloud.google.com/batch/docs/reference/rest
 package gcp_batch
 
 import (
 	"context"
+	"fmt"
 
 	batch "cloud.google.com/go/batch/apiv1"
 	"cloud.google.com/go/batch/apiv1/batchpb"
@@ -15,7 +16,7 @@ import (
 )
 
 type Backend struct {
-	client   *batch.Client
+	client   client
 	conf     config.GCPBatch
 	event    events.Writer
 	database tes.ReadOnlyServer
@@ -66,7 +67,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()
 
 	req := &batchpb.CreateJobRequest{
-		Parent: "projects/my-project/locations/us-west1", // TODO: get from config
+		Parent: fmt.Sprintf("projects/%s/locations/%s", b.conf.Project, b.conf.Location),
 		JobId:  task.Id,
 		Job: &batchpb.Job{
 			Name: task.Id,

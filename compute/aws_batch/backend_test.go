@@ -26,8 +26,8 @@ func TestCreateJobc(t *testing.T) {
 		},
 	}
 
-	err = b.Submit(task)
-	if er:r != nil {
+	err := b.Submit(task)
+	if err != nil {
 		t.Fatal(err)
 	}
 }

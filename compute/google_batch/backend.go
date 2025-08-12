@@ -1,5 +1,5 @@
 // Package batch contains code for accessing compute resources via Google Batch.
-package google
+package google_batch
 
 import (
 	"context"

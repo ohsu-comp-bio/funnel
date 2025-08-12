@@ -39,7 +39,7 @@ type Config struct {
 		TemplateFile string
 	}
 	AWSBatch    AWSBatch
-	GoogleBatch GoogleBatch
+	GoogleBatch GCPBatch
 	Kubernetes  Kubernetes
 	// storage
 	LocalStorage  LocalStorage
@@ -306,7 +306,7 @@ type AWSBatch struct {
 }
 
 // Initial pass at Google Batch configuration (relying on existing AWS config as much as possible).
-type GoogleBatch struct {
+type GCPBatch struct {
 	JobDefinition     string
 	JobQueue          string
 	DisableReconciler bool

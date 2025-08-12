@@ -1,4 +1,4 @@
-package google_batch
+package gcp_batch
 
 import (
 	"testing"

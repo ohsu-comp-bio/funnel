@@ -1,5 +1,5 @@
-// Package batch contains code for accessing compute resources via AWS Batch.
-package batch
+// Package batch contains code for accessing compute resources via Google Batch.
+package google
 
 import (
 	"context"

@@ -38,8 +38,9 @@ type Config struct {
 		Template     string
 		TemplateFile string
 	}
-	AWSBatch   AWSBatch
-	Kubernetes Kubernetes
+	AWSBatch    AWSBatch
+	GoogleBatch GoogleBatch
+	Kubernetes  Kubernetes
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage
@@ -301,6 +302,15 @@ type AWSBatch struct {
 	// ReconcileRate is how often the compute backend compares states in Funnel's backend
 	// to those reported by AWS Batch
 	ReconcileRate Duration
+	AWSConfig
+}
+
+// Initial pass at Google Batch configuration (relying on existing AWS config as much as possible).
+type GoogleBatch struct {
+	JobTemplate       string
+	JobTemplateFile   string
+	DisableReconciler bool
+	ReconcileRate     Duration
 	AWSConfig
 }
 

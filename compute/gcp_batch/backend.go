@@ -1,5 +1,6 @@
 // Package gcp_batch contains code for accessing compute resources via Google Batch.
 // ref: https://cloud.google.com/batch/docs
+// ref: https://pkg.go.dev/cloud.google.com/go/batch/apiv1#hdr-Using_the_Client
 package gcp_batch
 
 import (
@@ -64,43 +65,21 @@ func (b *Backend) Close() {
 func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()
 
-	// TODO: Implement proper Google Batch job creation
-	// This is a placeholder implementation that needs to be completed
-	// with proper Google Batch API structures
-
-	// TODO: The GoogleBatch config needs a Parent field for the project/location
-	// For now using a placeholder value
-	parent := "projects/my-project/locations/us-central1" // TODO: get from config
-
 	req := &batchpb.CreateJobRequest{
-		Parent: parent,
+		Parent: "projects/my-project/locations/us-west1", // TODO: get from config
 		JobId:  task.Id,
-		Job:    &batchpb.Job{
-			// TODO: Configure the job properly based on the TES task
-			// This would include:
-			// - TaskGroups with TaskSpecs containing Runnables
-			// - AllocationPolicy for compute resources
-			// - LogsPolicy for output handling
+		Job: &batchpb.Job{
+			Name: task.Id,
+			Uid:  task.Id,
 		},
 	}
 
-	resp, err := b.client.CreateJob(ctx, req)
+	_, err := b.client.CreateJob(ctx, req)
 	if err != nil {
-		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-		b.event.WriteEvent(
-			ctx,
-			events.NewSystemLog(
-				task.Id, 0, 0, "error",
-				"error submitting task to Google Batch",
-				map[string]string{"error": err.Error()},
-			),
-		)
 		return err
 	}
 
-	return b.event.WriteEvent(
-		ctx, events.NewMetadata(task.Id, 0, map[string]string{"gcp_batch_id": resp.GetName()}),
-	)
+	return nil
 }
 
 func (b *Backend) Cancel(ctx context.Context, taskID string) error {

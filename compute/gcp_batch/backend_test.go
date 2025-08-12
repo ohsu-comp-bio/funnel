@@ -1,19 +1,22 @@
 package gcp_batch
 
 import (
+	"context"
 	"testing"
 
+	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
 
 func TestCreateJobc(t *testing.T) {
 	log := logger.NewLogger("test", logger.DefaultConfig())
-	b := &Backend{
-		client:   nil,
-		event:    nil,
-		database: nil,
-		log:      log,
+
+	conf := config.DefaultConfig()
+
+	compute, err := NewBackend(context.Background(), conf.GCPBatch, nil, nil, log.Sub("gcp-batch"))
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	task := &tes.Task{
@@ -26,7 +29,7 @@ func TestCreateJobc(t *testing.T) {
 		},
 	}
 
-	err := b.Submit(task)
+	err = compute.Submit(task)
 	if err != nil {
 		t.Fatal(err)
 	}

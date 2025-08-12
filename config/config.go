@@ -38,9 +38,9 @@ type Config struct {
 		Template     string
 		TemplateFile string
 	}
-	AWSBatch    AWSBatch
-	GoogleBatch GCPBatch
-	Kubernetes  Kubernetes
+	AWSBatch   AWSBatch
+	GCPBatch   GCPBatch
+	Kubernetes Kubernetes
 	// storage
 	LocalStorage  LocalStorage
 	AmazonS3      AmazonS3Storage

@@ -1,4 +1,5 @@
-// Package batch contains code for accessing compute resources via Google Batch.
+// Package google_batch contains code for accessing compute resources via Google Batch.
+// ref: https://cloud.google.com/batch/docs
 package google_batch
 
 import (

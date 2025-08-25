@@ -1,5 +1,6 @@
-// Package batch contains code for accessing compute resources via AWS Batch.
-package batch
+// Package aws_batch contains code for accessing compute resources via AWS Batch.
+// ref: https://aws.amazon.com/batch
+package aws_batch
 
 import (
 	"context"

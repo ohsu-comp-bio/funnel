@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ohsu-comp-bio/funnel/compute/batch"
+	"github.com/ohsu-comp-bio/funnel/compute/aws_batch"
+	"github.com/ohsu-comp-bio/funnel/compute/gcp_batch"
 	"github.com/ohsu-comp-bio/funnel/compute/gridengine"
 	"github.com/ohsu-comp-bio/funnel/compute/htcondor"
 	"github.com/ohsu-comp-bio/funnel/compute/kubernetes"
@@ -204,7 +205,13 @@ func NewServer(ctx context.Context, conf config.Config, log *logger.Logger) (*Se
 		compute = events.Backend{}
 
 	case "aws-batch":
-		compute, err = batch.NewBackend(ctx, conf.AWSBatch, reader, writer, log.Sub("aws-batch"))
+		compute, err = aws_batch.NewBackend(ctx, conf.AWSBatch, reader, writer, log.Sub("aws-batch"))
+		if err != nil {
+			return nil, err
+		}
+
+	case "gcp-batch":
+		compute, err = gcp_batch.NewBackend(ctx, conf.GCPBatch, reader, writer, log.Sub("gcp-batch"))
 		if err != nil {
 			return nil, err
 		}

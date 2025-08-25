@@ -272,6 +272,8 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 				b.log.Error("reconcile: listing jobs", err)
 				continue
 			}
+
+			// TODO: Check for 'error submitting task to compute backend' message error
 			for _, j := range jobs.Items {
 				s := j.Status
 				jobName := j.Name

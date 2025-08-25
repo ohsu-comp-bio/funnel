@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - feature/plugins
   workflow_dispatch:
 
 permissions:

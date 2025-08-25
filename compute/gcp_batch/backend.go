@@ -5,6 +5,8 @@ package gcp_batch
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	batch "cloud.google.com/go/batch/apiv1"
@@ -16,11 +18,12 @@ import (
 )
 
 type Backend struct {
-	client   client
-	conf     config.GCPBatch
-	event    events.Writer
-	database tes.ReadOnlyServer
-	log      *logger.Logger
+	client            client
+	conf              config.GCPBatch
+	event             events.Writer
+	database          tes.ReadOnlyServer
+	log               *logger.Logger
+	backendParameters map[string]string
 	events.Computer
 }
 
@@ -64,7 +67,13 @@ func (b *Backend) Close() {
 }
 
 func (b *Backend) Submit(task *tes.Task) error {
-	ctx := context.Background()
+
+	// Pretty print the TES Task for debugging
+	if taskJSON, err := json.MarshalIndent(task, "", "  "); err == nil {
+		fmt.Printf("TES Task:\n%s\n", string(taskJSON))
+	} else {
+		fmt.Printf("TES Task: %+v\n", task)
+	}
 
 	req := &batchpb.CreateJobRequest{
 		Parent: fmt.Sprintf("projects/%s/locations/%s", b.conf.Project, b.conf.Location),
@@ -75,10 +84,18 @@ func (b *Backend) Submit(task *tes.Task) error {
 		},
 	}
 
-	_, err := b.client.CreateJob(ctx, req)
-	if err != nil {
-		return err
+	// Pretty print the GCP Batch Job request for debugging
+	if reqJSON, err := json.MarshalIndent(req, "", "  "); err == nil {
+		fmt.Printf("GCP Batch Job Request:\n%s\n", string(reqJSON))
+	} else {
+		fmt.Printf("GCP Batch Job Request: %+v\n", req)
 	}
+
+	// Uncomment to submit the Job to GCP Batch
+	// _, err := b.client.CreateJob(context.Background(), req)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -90,4 +107,21 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 func (b *Backend) reconcile(ctx context.Context) {
 	// TODO: Implement this
+}
+
+// TODO: Why isn't this function being picked up in events/computer.go?
+func (b *Backend) CheckBackendParameterSupport(task *tes.Task) error {
+	if !task.Resources.GetBackendParametersStrict() {
+		return nil
+	}
+
+	taskBackendParameters := task.Resources.GetBackendParameters()
+	for k := range taskBackendParameters {
+		_, ok := b.backendParameters[k]
+		if !ok {
+			return errors.New("backend parameters not supported")
+		}
+	}
+
+	return nil
 }

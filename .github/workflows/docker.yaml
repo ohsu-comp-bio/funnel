@@ -6,7 +6,9 @@ name: build
 
 on:
   push:
-  pull_request:
+    branches:
+      - main
+      - master
 
 env:
   QUAY_REPO: quay.io/${{ github.repository_owner }}/${{ github.event.repository.name }}

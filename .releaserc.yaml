@@ -11,3 +11,4 @@ branches:
   - "main"
   - "master"
   - "feature/plugins"
+  - "feature/semver-release"

@@ -7,7 +7,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
-// https://github.com/ohsu-comp-bio/funnel
 func main() {
 	if err := cmd.RootCmd.Execute(); err != nil {
 		logger.PrintSimpleError(err)

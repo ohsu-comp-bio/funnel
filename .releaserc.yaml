@@ -12,3 +12,6 @@ branches:
   - "master"
   - "feature/plugins"
   - "feature/semver-release"
+# Remove 'v' prefix from tags (to match existing releases)
+# e.g. v0.1.0 → 0.1.0
+tagFormat: ${version}

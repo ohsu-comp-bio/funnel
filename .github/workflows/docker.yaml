@@ -6,9 +6,6 @@ name: build
 
 on:
   push:
-    branches:
-      - main
-      - master
 
 env:
   QUAY_REPO: quay.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
@@ -105,6 +102,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests

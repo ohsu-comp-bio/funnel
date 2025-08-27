@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-      - feature/plugins
+      - master
   workflow_dispatch:
 
 permissions:

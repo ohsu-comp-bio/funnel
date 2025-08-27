@@ -67,7 +67,7 @@ spec:
 	}
 
 	// Submit the task to the backend
-	err := backend.Submit(context.Background(), task)
+	err := backend.Submit(context.Background(), task, conf)
 	if err != nil {
 		t.Fatalf("failed to submit task: %v", err)
 	}

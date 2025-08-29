@@ -39,7 +39,7 @@ func NewGenericS3(conf *config.GenericS3Storage) (*GenericS3, error) {
 		endpoint,
 		&minio.Options{
 			Creds:  credentials.NewStaticV4(conf.Key, conf.Secret, ""),
-			Secure: true,
+			Secure: strings.HasPrefix(conf.Endpoint, "https"),
 			Region: conf.Region,
 		},
 	)

@@ -13,13 +13,11 @@ var (
 	Version     = "unknown"
 )
 
-var tpl = `
-git commit   → %s
+var tpl = `git commit   → %s
 git branch   → %s
 git upstream → %s
 build date   → %s
-version      → %s
-`
+version      → %s`
 
 // String formats a string with version details.
 func String() string {

@@ -19,7 +19,7 @@ export LAST_PR_NUMBER = 716
 
 VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.BuildDate=$(shell date)" \
- -X "github.com/ohsu-comp-bio/funnel/version.GitCommit= $(git_commit)" \
+ -X "github.com/ohsu-comp-bio/funnel/version.GitCommit=$(git_commit)" \
  -X "github.com/ohsu-comp-bio/funnel/version.GitBranch=$(git_branch)" \
  -X "github.com/ohsu-comp-bio/funnel/version.GitUpstream=$(git_upstream)"
 

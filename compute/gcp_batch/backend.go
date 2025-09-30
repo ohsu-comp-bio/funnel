@@ -75,16 +75,45 @@ func (b *Backend) Submit(task *tes.Task) error {
 		fmt.Printf("TES Task: %+v\n", task)
 	}
 
+	b.conf.Project = "tes-batch-integration-test" // TODO: Remove hardcoding
+	b.conf.Location = "us-central1"               // TODO: Remove hardcoding
+
+	fmt.Printf("DEBUG: b.conf.Project: %s\n", b.conf.Project)
+	fmt.Printf("DEBUG: b.conf.Location: %s\n", b.conf.Location)
+
+	runnable := &batchpb.Runnable{
+		Executable: &batchpb.Runnable_Script_{
+			Script: &batchpb.Runnable_Script{
+				Command: &batchpb.Runnable_Script_Text{
+					Text: "echo Hello, world!",
+				},
+			},
+		},
+	}
+
+	// 2. Create the TaskSpec with the runnable(s)
+	taskSpec := &batchpb.TaskSpec{
+		Runnables: []*batchpb.Runnable{runnable},
+		// Add compute requirements, environment variables, etc., if needed
+	}
+
+	// Create a minimal TaskGroup to satisfy GCP Batch API requirements
+	taskGroup := &batchpb.TaskGroup{
+		TaskCount: 1,
+		TaskSpec:  taskSpec,
+	}
+
 	req := &batchpb.CreateJobRequest{
 		Parent: fmt.Sprintf("projects/%s/locations/%s", b.conf.Project, b.conf.Location),
 		JobId:  task.Id,
 		Job: &batchpb.Job{
-			Name: task.Id,
-			Uid:  task.Id,
+			Name:       task.Id,
+			Uid:        task.Id,
+			TaskGroups: []*batchpb.TaskGroup{taskGroup},
 		},
 	}
 
-	// Pretty print the GCP Batch Job request for debugging
+	// DEBUG: Print the GCP Batch Job request for debugging
 	if reqJSON, err := json.MarshalIndent(req, "", "  "); err == nil {
 		fmt.Printf("GCP Batch Job Request:\n%s\n", string(reqJSON))
 	} else {
@@ -92,10 +121,13 @@ func (b *Backend) Submit(task *tes.Task) error {
 	}
 
 	// Uncomment to submit the Job to GCP Batch
-	// _, err := b.client.CreateJob(context.Background(), req)
-	// if err != nil {
-	// 	return err
-	// }
+	fmt.Println("Submitting GCP Batch Job...")
+	_, err := b.client.CreateJob(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Error submitting GCP Batch Job: %v\n", err)
+		return err
+	}
+	fmt.Println("GCP Batch Job submitted successfully.")
 
 	return nil
 }

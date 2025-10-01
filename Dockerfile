@@ -15,6 +15,7 @@ FROM alpine
 WORKDIR /opt/funnel
 EXPOSE 8000 9090
 ENV PATH="/app:${PATH}"
-COPY --from=build-env  /go/src/github.com/ohsu-comp-bio/funnel/funnel /app/
+COPY --from=build-env /go/src/github.com/ohsu-comp-bio/funnel/funnel /app/
+COPY --from=build-env /go/src/github.com/ohsu-comp-bio/funnel /funnel/
 
 ENTRYPOINT ["/app/funnel"]

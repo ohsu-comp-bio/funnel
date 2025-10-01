@@ -31,7 +31,7 @@ func CreatePV(taskId string, config *config.Config, client kubernetes.Interface,
 		"Namespace": config.Kubernetes.JobsNamespace,
 		"Bucket":    config.GenericS3[0].Bucket,
 		"Region":    config.GenericS3[0].Region,
-		"KMSKeyID":  config.GenericS3[0].KmsKeyID,
+		"KmsKeyID":  config.GenericS3[0].KmsKeyID,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

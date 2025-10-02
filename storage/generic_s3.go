@@ -196,13 +196,14 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 		logger.Debug("genericS3: kmskeyId: %s", kmskeyId)
 		SSEKMS, err := encrypt.NewSSEKMS(kmskeyId, ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("genericS3: download(): creating SSEKMS: %v", err)
 		}
 		opts.ServerSideEncryption = SSEKMS
 	}
 
 	logger.Debug("genericS3: client.GetObject: bucket: %s, objectPath: %s, filePath: %s", bucket, objectPath, filePath)
 	// Step 1: Get the object stream
+	// TODO: Add logging with file contents here...
 	obj, err := client.GetObject(ctx, bucket, objectPath, opts)
 	if err != nil {
 		return fmt.Errorf("failed getting object from S3: %w", err)
@@ -210,15 +211,37 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 	defer obj.Close()
 
 	// Step 2: Create the local file (overwrite if exists)
-	logger.Debug("genericS3: os.Create: filePath: %s", filePath)
+	logger.Debug("genericS3: os.Create: filePath:", filePath)
 	outFile, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed creating file: %w", err)
 	}
 	defer outFile.Close()
 
+	// Output the downloaded file contents for debugging
+	content, err := os.ReadFile(outFile.Name())
+	if err != nil {
+		logger.Debug("Error reading file A:", err)
+	}
+	logger.Debug("genericS3: file contents A:", string(content))
+
+	// Write the content to the file
+	err = os.WriteFile(outFile.Name(), []byte("Hello, Go file writing!"), 0644)
+	if err != nil {
+		logger.Debug("Error writing to file:", err)
+	}
+
+	// Output the downloaded file contents for debugging
+	content, err = os.ReadFile(outFile.Name())
+	if err != nil {
+		logger.Debug("Error reading file B:", err)
+	}
+	logger.Debug("genericS3: file contents B:", string(content))
+
 	// Step 3: Copy the contents
-	logger.Debug("genericS3: io.Copy: outFile: %s, obj: %v", filePath, obj)
+	// TODO: Add stack trace (or simply more verbose logging) here...
+	// Can we add stack traces for all errors in Funnel?
+	logger.Debug("genericS3: io.Copy: outFile:", filePath, "obj:", obj)
 	if _, err := io.Copy(outFile, obj); err != nil {
 		return fmt.Errorf("failed writing file: %w", err)
 	}
@@ -235,6 +258,14 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 	}
 
 	opts := minio.PutObjectOptions{}
+	if s3.kmskeyId != "" {
+		logger.Debug("genericS3: kmskeyId: %s", s3.kmskeyId)
+		SSEKMS, err := encrypt.NewSSEKMS(s3.kmskeyId, ctx)
+		if err != nil {
+			return nil, fmt.Errorf("genericS3: Put(): creating SSEKMS: %v", err)
+		}
+		opts.ServerSideEncryption = SSEKMS
+	}
 
 	// Check if the path is a directory
 	fileInfo, err := os.Stat(path)

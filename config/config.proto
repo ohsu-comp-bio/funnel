@@ -276,6 +276,9 @@ message GenericS3Storage {
   string Region = 5;
   string Bucket = 6;
   string KmsKeyID = 7;
+  // AWS Account ID, needed for S3 CSI Driver
+  // https://github.com/awslabs/mountpoint-s3/blob/v1.20.0/doc/CONFIGURATION.md#data-encryption
+  string AccountID = 8;
 }
 
 // SwiftStorage configures the OpenStack Swift object storage backend.
@@ -319,4 +322,7 @@ message Kubernetes {
   bool DisableReconciler = 10;
   google.protobuf.Duration ReconcileRate = 11;
   bool DisableJobCleanup = 12;
+  // 18: NodeSelector for scheduling jobs onto specific nodes
+  // TODO: Change this to map<string, string> to match Helm Chart
+  map<string, string> NodeSelector = 13;
 }

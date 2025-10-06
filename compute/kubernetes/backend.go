@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"text/template"
@@ -90,35 +89,18 @@ func NewBackend(ctx context.Context, conf config.Kubernetes, reader tes.ReadOnly
 
 // Backend represents the local backend.
 type Backend struct {
-	bucket            string
-	region            string
-	client            batchv1.JobInterface
-	namespace         string
-	template          string
-	pvTemplate        string
-	pvcTemplate       string
-	event             events.Writer
-	database          tes.ReadOnlyServer
-	log               *logger.Logger
-	backendParameters map[string]string
-	config            *rest.Config
-	events.Computer
-}
-
-func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
-	if !task.Resources.GetBackendParametersStrict() {
-		return nil
-	}
-
-	taskBackendParameters := task.Resources.GetBackendParameters()
-	for k := range taskBackendParameters {
-		_, ok := b.backendParameters[k]
-		if !ok {
-			return errors.New("backend parameters not supported")
-		}
-	}
-
-	return nil
+	bucket      string
+	region      string
+	client      batchv1.JobInterface
+	namespace   string
+	template    string
+	pvTemplate  string
+	pvcTemplate string
+	event       events.Writer
+	database    tes.ReadOnlyServer
+	log         *logger.Logger
+	config      *rest.Config
+	events.Backend
 }
 
 // WriteEvent writes an event to the compute backend.

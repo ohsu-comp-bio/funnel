@@ -47,7 +47,7 @@ type Backend struct {
 	event    events.Writer
 	database tes.ReadOnlyServer
 	log      *logger.Logger
-	events.Computer
+	events.Backend
 }
 
 // WriteEvent writes an event to the compute backend.

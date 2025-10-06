@@ -140,7 +140,7 @@ func checkForUnknownKeys(jsonStr []byte, obj interface{}) error {
 			path := parts[:len(parts)-1]
 			errs = append(
 				errs,
-				fmt.Sprintf("\t field %s not found in %s", field, strings.Join(path, ".")),
+                fmt.Sprintf("\t Unknown/Unexpected field %s found in %s", field, strings.Join(path, "."))
 			)
 		}
 		return fmt.Errorf("%v", strings.Join(errs, "\n"))

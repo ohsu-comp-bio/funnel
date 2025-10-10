@@ -322,7 +322,19 @@ message Kubernetes {
   bool DisableReconciler = 10;
   google.protobuf.Duration ReconcileRate = 11;
   bool DisableJobCleanup = 12;
-  // 18: NodeSelector for scheduling jobs onto specific nodes
-  // TODO: Change this to map<string, string> to match Helm Chart
+
+  // NodeSelector + Tolerations for scheduling jobs onto specific nodes
+  // https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node
   map<string, string> NodeSelector = 13;
+  repeated Toleration Tolerations = 14;
+}
+
+// Kubernetes toleration
+// https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+message Toleration {
+  string key = 1;
+  string operator = 2;        // "Equal" or "Exists"
+  string value = 3;           // Required when operator is "Equal"
+  string effect = 4;          // "NoSchedule", "PreferNoSchedule", or "NoExecute"
+  optional int64 tolerationSeconds = 5;  // Only used with "NoExecute" effect
 }

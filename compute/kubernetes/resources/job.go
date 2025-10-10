@@ -50,6 +50,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		"Image":         pods.Items[0].Spec.Containers[0].Image,
 		"NeedsPVC":      len(task.Inputs) > 0 || len(task.Outputs) > 0,
 		"NodeSelector":  config.Kubernetes.NodeSelector,
+		"Tolerations":   config.Kubernetes.Tolerations,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

@@ -368,6 +368,13 @@
         },
         "Bucket": {
           "type": "string"
+        },
+        "KmsKeyID": {
+          "type": "string"
+        },
+        "AccountID": {
+          "type": "string",
+          "title": "AWS Account ID, needed for S3 CSI Driver\nhttps://github.com/awslabs/mountpoint-s3/blob/v1.20.0/doc/CONFIGURATION.md#data-encryption"
         }
       },
       "description": "GenericS3Storage describes the configuration for the Generic S3 storage backend."
@@ -478,6 +485,20 @@
         },
         "DisableJobCleanup": {
           "type": "boolean"
+        },
+        "NodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "NodeSelector + Tolerations for scheduling jobs onto specific nodes\nhttps://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node"
+        },
+        "Tolerations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/configToleration"
+          }
         }
       },
       "description": "Kubernetes describes the configuration for the Kubernetes compute backend."
@@ -754,6 +775,32 @@
           "title": "Represents an infinite or disabled timeout"
         }
       }
+    },
+    "configToleration": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string",
+          "title": "\"Equal\" or \"Exists\""
+        },
+        "value": {
+          "type": "string",
+          "title": "Required when operator is \"Equal\""
+        },
+        "effect": {
+          "type": "string",
+          "title": "\"NoSchedule\", \"PreferNoSchedule\", or \"NoExecute\""
+        },
+        "tolerationSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Only used with \"NoExecute\" effect"
+        }
+      },
+      "title": "Kubernetes toleration\nhttps://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/"
     },
     "configWorker": {
       "type": "object",

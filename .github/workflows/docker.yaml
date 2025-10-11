@@ -100,9 +100,11 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=
+            type=sha,prefix={{branch}}-,format=short
+            type=sha,format=short
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests

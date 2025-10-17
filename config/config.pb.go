@@ -2708,11 +2708,11 @@ func (x *Kubernetes) GetTolerations() []*Toleration {
 // https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
 type Toleration struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Key               string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Operator          string                 `protobuf:"bytes,2,opt,name=operator,proto3" json:"operator,omitempty"`                          // "Equal" or "Exists"
-	Value             string                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`                                // Required when operator is "Equal"
-	Effect            string                 `protobuf:"bytes,4,opt,name=effect,proto3" json:"effect,omitempty"`                              // "NoSchedule", "PreferNoSchedule", or "NoExecute"
-	TolerationSeconds *int64                 `protobuf:"varint,5,opt,name=tolerationSeconds,proto3,oneof" json:"tolerationSeconds,omitempty"` // Only used with "NoExecute" effect
+	Key               string                 `protobuf:"bytes,1,opt,name=Key,proto3" json:"Key,omitempty"`
+	Operator          string                 `protobuf:"bytes,2,opt,name=Operator,proto3" json:"Operator,omitempty"`                          // "Equal" or "Exists"
+	Value             string                 `protobuf:"bytes,3,opt,name=Value,proto3" json:"Value,omitempty"`                                // Required when operator is "Equal"
+	Effect            string                 `protobuf:"bytes,4,opt,name=Effect,proto3" json:"Effect,omitempty"`                              // "NoSchedule", "PreferNoSchedule", or "NoExecute"
+	TolerationSeconds *int64                 `protobuf:"varint,5,opt,name=TolerationSeconds,proto3,oneof" json:"TolerationSeconds,omitempty"` // Only used with "NoExecute" effect
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3052,12 +3052,12 @@ const file_config_config_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x01\n" +
 	"\n" +
 	"Toleration\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1a\n" +
-	"\boperator\x18\x02 \x01(\tR\boperator\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\x12\x16\n" +
-	"\x06effect\x18\x04 \x01(\tR\x06effect\x121\n" +
-	"\x11tolerationSeconds\x18\x05 \x01(\x03H\x00R\x11tolerationSeconds\x88\x01\x01B\x14\n" +
-	"\x12_tolerationSecondsB(Z&github.com/ohsu-comp-bio/funnel/configb\x06proto3"
+	"\x03Key\x18\x01 \x01(\tR\x03Key\x12\x1a\n" +
+	"\bOperator\x18\x02 \x01(\tR\bOperator\x12\x14\n" +
+	"\x05Value\x18\x03 \x01(\tR\x05Value\x12\x16\n" +
+	"\x06Effect\x18\x04 \x01(\tR\x06Effect\x121\n" +
+	"\x11TolerationSeconds\x18\x05 \x01(\x03H\x00R\x11TolerationSeconds\x88\x01\x01B\x14\n" +
+	"\x12_TolerationSecondsB(Z&github.com/ohsu-comp-bio/funnel/configb\x06proto3"
 
 var (
 	file_config_config_proto_rawDescOnce sync.Once

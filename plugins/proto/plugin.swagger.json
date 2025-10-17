@@ -779,22 +779,22 @@
     "configToleration": {
       "type": "object",
       "properties": {
-        "key": {
+        "Key": {
           "type": "string"
         },
-        "operator": {
+        "Operator": {
           "type": "string",
           "title": "\"Equal\" or \"Exists\""
         },
-        "value": {
+        "Value": {
           "type": "string",
           "title": "Required when operator is \"Equal\""
         },
-        "effect": {
+        "Effect": {
           "type": "string",
           "title": "\"NoSchedule\", \"PreferNoSchedule\", or \"NoExecute\""
         },
-        "tolerationSeconds": {
+        "TolerationSeconds": {
           "type": "string",
           "format": "int64",
           "title": "Only used with \"NoExecute\" effect"

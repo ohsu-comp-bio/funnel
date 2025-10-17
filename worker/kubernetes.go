@@ -28,6 +28,8 @@ type KubernetesCommand struct {
 	TaskTemplate   string
 	Namespace      string // Funnel Server Namespace
 	JobsNamespace  string // Funnel Worker + Executor Namespace (default: Namespace)
+	NodeSelector   map[string]string
+	Tolerations    []map[string]interface{}
 	Resources      *tes.Resources
 	ServiceAccount string
 	NeedsPVC       bool

@@ -44,6 +44,10 @@ type Executor struct {
 	JobsNamespace string
 	// Kubernetes service account name
 	ServiceAccount string
+	// NodeSelector for scheduling jobs onto specific nodes
+	NodeSelector map[string]string
+	// Tolerations for scheduling jobs onto specific nodes
+	Tolerations []map[string]interface{}
 }
 
 // Run runs the Worker.
@@ -207,6 +211,8 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					Resources:     resources,
 					Command:       command,
 					NeedsPVC:      len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
+					NodeSelector:  r.Executor.NodeSelector,
+					Tolerations:   r.Executor.Tolerations,
 				}
 			} else {
 				taskCommand = &DockerCommand{

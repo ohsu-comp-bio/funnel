@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"dario.cat/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -95,7 +96,11 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 		if !ok {
 			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
-		taskConfig = resp.Config
+		// If you want Go syntax, use fmt.Sprintf with %#v:
+		err := mergo.Merge(taskConfig, resp.Config)
+		if err != nil {
+			return fmt.Errorf("Failed to merge plugin config %v", err)
+		}
 	}
 
 	switch ev.Type {

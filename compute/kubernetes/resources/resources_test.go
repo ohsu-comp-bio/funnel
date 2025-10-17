@@ -6,7 +6,6 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,7 +23,7 @@ var l = logger.NewLogger("test", logger.DefaultConfig())
 
 func TestCreateConfigMap(t *testing.T) {
 	conf := &config.Config{}
-	err := CreateConfigMap(testTaskID, namespace, conf, fake.NewSimpleClientset(), l)
+	err := CreateConfigMap(testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
 	}
@@ -67,25 +66,8 @@ func TestCreateJob(t *testing.T) {
 		},
 	}
 
-	tpl := `
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: funnel-{{.TaskId}}
-  namespace: {{.Namespace}}
-spec:
-  template:
-    spec:
-      containers:
-      - name: task
-        resources:
-          requests:
-            cpu: "{{.Cpus}}"
-            memory: "{{.RamGb}}Gi"
-            ephemeral-storage: "{{.DiskGb}}Gi"
-`
-
-	err := CreateJob(task, namespace, jobsNamespace, tpl, fake.NewSimpleClientset(), l)
+	conf := &config.Config{}
+	err := CreateJob(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed: %v", err)
 	}
@@ -106,7 +88,8 @@ func TestDeleteJob(t *testing.T) {
 		t.Fatalf("Failed to create test Job: %v", err)
 	}
 
-	err = DeleteJob(context.Background(), testTaskID, fakeClient.BatchV1().Jobs(namespace), l)
+	conf := &config.Config{}
+	err = DeleteJob(context.Background(), conf, testTaskID, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteJob failed: %v", err)
 	}
@@ -119,22 +102,8 @@ func TestDeleteJob(t *testing.T) {
 }
 
 func TestCreatePV(t *testing.T) {
-	tpl := `
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: funnel-worker-pv-{{.TaskId}}
-spec:
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteOnce
-  awsElasticBlockStore:
-    volumeID: {{.Bucket}}
-    fsType: ext4
-`
-
-	err := CreatePV(testTaskID, namespace, "test-bucket", "test-region", tpl, fake.NewSimpleClientset(), l)
+	conf := &config.Config{}
+	err := CreatePV(testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePV failed: %v", err)
 	}
@@ -167,21 +136,8 @@ func TestDeletePV(t *testing.T) {
 }
 
 func TestCreatePVC(t *testing.T) {
-	tpl := `
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: funnel-worker-pvc-{{.TaskId}}
-  namespace: {{.Namespace}}
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
-`
-
-	err := CreatePVC(testTaskID, namespace, "test-bucket", "test-region", tpl, fake.NewSimpleClientset(), l)
+	conf := &config.Config{}
+	err := CreatePVC(testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePVC failed: %v", err)
 	}
@@ -220,25 +176,8 @@ func TestCreateJobWithNoResources(t *testing.T) {
 		// Intentionally omit Resources to test default handling
 	}
 
-	tpl := `
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: funnel-{{.TaskId}}
-  namespace: {{.Namespace}}
-spec:
-  template:
-    spec:
-      containers:
-      - name: task
-        resources:
-          requests:
-            cpu: "{{.Cpus}}"
-            memory: "{{.RamGb}}Gi"
-            ephemeral-storage: "{{.DiskGb}}Gi"
-`
-
-	err := CreateJob(task, namespace, jobsNamespace, tpl, fake.NewSimpleClientset(), l)
+	conf := &config.Config{}
+	err := CreateJob(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed with nil resources: %v", err)
 	}
@@ -267,43 +206,6 @@ func TestDeleteNonExistentResources(t *testing.T) {
 		err := DeletePVC(context.Background(), nonExistentID, namespace, fakeClient, l)
 		if err == nil {
 			t.Error("Expected error when deleting non-existent PVC")
-		}
-	})
-}
-
-func TestUpdateConfig(t *testing.T) {
-	ctx := context.Background()
-	dst := &config.Config{
-		Kubernetes: &config.Kubernetes{
-			Namespace: "original-namespace",
-		},
-	}
-
-	// Test with nil response in context
-	t.Run("NilResponse", func(t *testing.T) {
-		err := UpdateConfig(ctx, dst)
-		if err == nil {
-			t.Error("Expected error with nil response in context")
-		}
-	})
-
-	// Test with valid config merge
-	t.Run("ValidMerge", func(t *testing.T) {
-		pluginResp := &proto.JobResponse{
-			Config: &config.Config{
-				Kubernetes: &config.Kubernetes{
-					Namespace: "new-namespace",
-				},
-			},
-		}
-		ctxWithResp := context.WithValue(ctx, "pluginResponse", pluginResp)
-
-		err := UpdateConfig(ctxWithResp, dst)
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		}
-		if dst.Kubernetes.Namespace != "new-namespace" {
-			t.Errorf("Expected namespace to be updated to 'new-namespace', got %s", dst.Kubernetes.Namespace)
 		}
 	})
 }

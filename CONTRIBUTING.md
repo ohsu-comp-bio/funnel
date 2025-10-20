@@ -1,17 +1,35 @@
-# CONTRIBUTING
+# Contributing 🤝
 
 This project is developed by the [Ellrott Lab](https://ellrottlab.org/) at the [Knight Cancer Institute](https://www.ohsu.edu/knight-cancer-institute) in [PDX, Oregon](https://www.travelportland.com/).
 
-# Releases
+# Releases 🚀
 
-## Docker Images (Quay.io)
+## Docker Images (Quay.io) 🐳
 
-> [!NOTE]
-> For every release that's triggered, the following resources will be created:
-> - [Tag](https://github.com/ohsu-comp-bio/funnel/tags)
-> - [Docker image](https://quay.io/repository/ohsu-comp-bio/funnel)
-> - [GitHub Release](https://github.com/ohsu-comp-bio/funnel/releases)
-> TODO: Add example of commit and image here...
+For every release that's triggered, the following resources will be created:
+
+| Resource                     | Example                                              |
+|------------------------------|------------------------------------------------------|
+| [Tag][tags]                  | [v0.11.6][tag-example]                               |
+| [Docker image][quay]         | [quay.io/ohsu-comp-bio/funnel:v0.11.6][quay-example] |
+| [GitHub Release][releases]   | [v0.11.6][release-example]                           |
+| [Homebrew Package][homebrew] | [Funnel@v0.11.6][homebrew-example]                   |
+
+
+[tags]: https://github.com/ohsu-comp-bio/funnel/tags
+[tag-example]: https://github.com/ohsu-comp-bio/funnel/commit/046db6f1ecc4eb2445f0cbe8511f516f74060b9b
+
+[quay]: https://quay.io/repository/ohsu-comp-bio/funnel
+[quay-example]: https://quay.io/repository/ohsu-comp-bio/funnel?tab=tags&tag=v0.11.6
+
+[releases]: https://github.com/ohsu-comp-bio/funnel/releases
+[release-example]: https://github.com/ohsu-comp-bio/funnel/releases/tag/v0.11.6
+
+[homebrew]: https://github.com/ohsu-comp-bio/homebrew-formula/tree/master
+[homebrew-example]: https://github.com/ohsu-comp-bio/homebrew-formula/blob/master/Formula/funnel.rb
+
+[gopkg]: https://pkg.go.dev/github.com/ohsu-comp-bio/funnel
+[gopkg-example]: https://pkg.go.dev/github.com/ohsu-comp-bio/funnel@v0.11.6
 
 ```mermaid
 sequenceDiagram
@@ -29,7 +47,7 @@ sequenceDiagram
   </a>
 </p>
 
-## Commits to `main`
+## Commits
 
 Funnel releases follow [semantic versioning](https://semver.org/) and are automatically built using the [Semantic Version](https://github.com/semantic-release/semantic-release) package and it's [GitHub Action](https://github.com/PaulHatch/semantic-version) via [`release.yaml`](./.github/workflows/release.yaml).
 

@@ -4,17 +4,16 @@ This project is developed by the [Ellrott Lab](https://ellrottlab.org/) at the [
 
 # Releases 🚀
 
-## Docker Images (Quay.io) 🐳
+## Tagged Releases
 
-For every release that's triggered, the following resources will be created:
-
-| Resource                     | Example                                              |
-|------------------------------|------------------------------------------------------|
-| [Tag][tags]                  | [v0.11.6][tag-example]                               |
-| [Docker image][quay]         | [quay.io/ohsu-comp-bio/funnel:v0.11.6][quay-example] |
-| [GitHub Release][releases]   | [v0.11.6][release-example]                           |
-| [Homebrew Package][homebrew] | [Funnel@v0.11.6][homebrew-example]                   |
-
+The following resources will be created for every tag pushed to GitHub:
+    
+| Resource                     | *Example*                                              |
+|------------------------------|--------------------------------------------------------|
+| [Tag][tags]                  | [*v0.11.6*][tag-example]                               |
+| [Docker image][quay]         | [*quay.io/ohsu-comp-bio/funnel:v0.11.6*][quay-example] |
+| [GitHub Release][releases]   | [*v0.11.6*][release-example]                           |
+| [Homebrew Package][homebrew] | [*Funnel@v0.11.6*][homebrew-example]                   |
 
 [tags]: https://github.com/ohsu-comp-bio/funnel/tags
 [tag-example]: https://github.com/ohsu-comp-bio/funnel/commit/046db6f1ecc4eb2445f0cbe8511f516f74060b9b
@@ -35,15 +34,19 @@ For every release that's triggered, the following resources will be created:
 sequenceDiagram
     participant dev as Developer
     participant gh as GitHub
-    participant quay as Quay
+    participant quay as Docker (Quay.io)
+    participant hb as Homebrew
+    participant go as pkg.go.dev
     dev->>gh: git push origin <TAG>
-    gh->>quay: tag
-    gh->>quay: commit
+    gh-->>quay: tag
+    gh-->>quay: commit
+    gh-->>hb: tag
+    gh-->>go: tag
 ```
 
 <p align="center">
   <a href="https://quay.io/repository/ohsu-comp-bio/funnel?tab=tags">
-    <img width="900" alt="Funnel Docker Tags example on Quay.io" src="https://github.com/user-attachments/assets/d7038f95-1973-4ffb-a7dc-628d95400ba6" />
+    <img width="900" alt="Funnel Docker Tags example on Quay.io" src="https://github.com/user-attachments/assets/61066b28-5ac9-405c-b464-775f170100df" />
   </a>
 </p>
 

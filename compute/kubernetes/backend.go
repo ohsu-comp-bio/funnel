@@ -89,19 +89,20 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 // Currently, only TASK_CREATED is handled, which calls Submit.
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
-
 	var taskConfig *config.Config = b.conf
+	fmt.Println("DEBUG: taskConfig before plugin", taskConfig)
 	if b.conf.Plugins != nil {
 		resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 		if !ok {
 			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
-		// If you want Go syntax, use fmt.Sprintf with %#v:
+
 		err := mergo.Merge(taskConfig, resp.Config)
 		if err != nil {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
 		}
 	}
+	fmt.Println("DEBUG: taskConfig after plugin", taskConfig)
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:

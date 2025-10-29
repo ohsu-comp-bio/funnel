@@ -1,0 +1,60 @@
+package resources
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"html/template"
+
+	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/logger"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+)
+
+// Create the Worker/Executor ServiceAccount from config/kubernetes-serviceaccount.yaml
+func CreateServiceAccount(taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+
+	// Load templates
+	t, err := template.New(taskId).Parse(config.Kubernetes.ServiceAccountTemplate)
+	if err != nil {
+		return fmt.Errorf("parsing template: %v", err)
+	}
+
+	// Template parameters
+	var buf bytes.Buffer
+	err = t.Execute(&buf, map[string]interface{}{
+		"TaskId":    taskId,
+		"Namespace": config.Kubernetes.JobsNamespace,
+	})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, _, err := decode(buf.Bytes(), nil, nil)
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	sa, ok := obj.(*corev1.ServiceAccount)
+	if !ok {
+		return fmt.Errorf("failed to decode PV spec")
+	}
+
+	_, err = client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Create(context.Background(), sa, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+}
+
+// Add this helper function for ServiceAccount cleanup
+func DeleteServiceAccount(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
+	// TODO: Implement deletion of ServiceAccounts
+	return nil
+}

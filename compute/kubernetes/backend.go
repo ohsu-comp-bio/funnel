@@ -148,11 +148,14 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 // createResources creates the resources needed for a task.
 func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
+	fmt.Println("DEBUG: createResources config", config)
+
 	// If the task has inputs or outputs that must be taken care of create a PVC
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
 		// Check to make sure required configs are present
+		fmt.Println("DEBUG: createResources GenericS3 config", config.GenericS3)
 		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
 			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
 			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)

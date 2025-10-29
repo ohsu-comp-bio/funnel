@@ -14,6 +14,11 @@ class TaskServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.GetServiceInfo = channel.unary_unary(
+                '/tes.TaskService/GetServiceInfo',
+                request_serializer=tes_dot_tes__pb2.GetServiceInfoRequest.SerializeToString,
+                response_deserializer=tes_dot_tes__pb2.ServiceInfo.FromString,
+                )
         self.ListTasks = channel.unary_unary(
                 '/tes.TaskService/ListTasks',
                 request_serializer=tes_dot_tes__pb2.ListTasksRequest.SerializeToString,
@@ -34,15 +39,16 @@ class TaskServiceStub(object):
                 request_serializer=tes_dot_tes__pb2.CancelTaskRequest.SerializeToString,
                 response_deserializer=tes_dot_tes__pb2.CancelTaskResponse.FromString,
                 )
-        self.GetServiceInfo = channel.unary_unary(
-                '/tes.TaskService/GetServiceInfo',
-                request_serializer=tes_dot_tes__pb2.GetServiceInfoRequest.SerializeToString,
-                response_deserializer=tes_dot_tes__pb2.ServiceInfo.FromString,
-                )
 
 
 class TaskServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def GetServiceInfo(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def ListTasks(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -68,15 +74,14 @@ class TaskServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetServiceInfo(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_TaskServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetServiceInfo': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetServiceInfo,
+                    request_deserializer=tes_dot_tes__pb2.GetServiceInfoRequest.FromString,
+                    response_serializer=tes_dot_tes__pb2.ServiceInfo.SerializeToString,
+            ),
             'ListTasks': grpc.unary_unary_rpc_method_handler(
                     servicer.ListTasks,
                     request_deserializer=tes_dot_tes__pb2.ListTasksRequest.FromString,
@@ -97,11 +102,6 @@ def add_TaskServiceServicer_to_server(servicer, server):
                     request_deserializer=tes_dot_tes__pb2.CancelTaskRequest.FromString,
                     response_serializer=tes_dot_tes__pb2.CancelTaskResponse.SerializeToString,
             ),
-            'GetServiceInfo': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetServiceInfo,
-                    request_deserializer=tes_dot_tes__pb2.GetServiceInfoRequest.FromString,
-                    response_serializer=tes_dot_tes__pb2.ServiceInfo.SerializeToString,
-            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'tes.TaskService', rpc_method_handlers)
@@ -111,6 +111,23 @@ def add_TaskServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class TaskService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def GetServiceInfo(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tes.TaskService/GetServiceInfo',
+            tes_dot_tes__pb2.GetServiceInfoRequest.SerializeToString,
+            tes_dot_tes__pb2.ServiceInfo.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def ListTasks(request,
@@ -177,22 +194,5 @@ class TaskService(object):
         return grpc.experimental.unary_unary(request, target, '/tes.TaskService/CancelTask',
             tes_dot_tes__pb2.CancelTaskRequest.SerializeToString,
             tes_dot_tes__pb2.CancelTaskResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def GetServiceInfo(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/tes.TaskService/GetServiceInfo',
-            tes_dot_tes__pb2.GetServiceInfoRequest.SerializeToString,
-            tes_dot_tes__pb2.ServiceInfo.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

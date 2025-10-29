@@ -477,6 +477,9 @@
         "ServiceAccount": {
           "type": "string"
         },
+        "ServiceAccountTemplate": {
+          "type": "string"
+        },
         "DisableReconciler": {
           "type": "boolean"
         },

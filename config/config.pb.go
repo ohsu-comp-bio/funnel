@@ -7,13 +7,14 @@
 package config
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	logger "github.com/ohsu-comp-bio/funnel/logger"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -2555,23 +2556,24 @@ func (x *FTPStorage) GetPassword() string {
 
 // Kubernetes describes the configuration for the Kubernetes compute backend.
 type Kubernetes struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Executor          string                 `protobuf:"bytes,1,opt,name=Executor,proto3" json:"Executor,omitempty"`
-	WorkerTemplate    string                 `protobuf:"bytes,2,opt,name=WorkerTemplate,proto3" json:"WorkerTemplate,omitempty"`
-	ExecutorTemplate  string                 `protobuf:"bytes,3,opt,name=ExecutorTemplate,proto3" json:"ExecutorTemplate,omitempty"`
-	PVTemplate        string                 `protobuf:"bytes,4,opt,name=PVTemplate,proto3" json:"PVTemplate,omitempty"`
-	PVCTemplate       string                 `protobuf:"bytes,5,opt,name=PVCTemplate,proto3" json:"PVCTemplate,omitempty"`
-	ConfigMapTemplate string                 `protobuf:"bytes,6,opt,name=ConfigMapTemplate,proto3" json:"ConfigMapTemplate,omitempty"`
-	Namespace         string                 `protobuf:"bytes,7,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
-	JobsNamespace     string                 `protobuf:"bytes,8,opt,name=JobsNamespace,proto3" json:"JobsNamespace,omitempty"`
-	ServiceAccount    string                 `protobuf:"bytes,9,opt,name=ServiceAccount,proto3" json:"ServiceAccount,omitempty"`
-	DisableReconciler bool                   `protobuf:"varint,10,opt,name=DisableReconciler,proto3" json:"DisableReconciler,omitempty"`
-	ReconcileRate     *durationpb.Duration   `protobuf:"bytes,11,opt,name=ReconcileRate,proto3" json:"ReconcileRate,omitempty"`
-	DisableJobCleanup bool                   `protobuf:"varint,12,opt,name=DisableJobCleanup,proto3" json:"DisableJobCleanup,omitempty"`
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	Executor               string                 `protobuf:"bytes,1,opt,name=Executor,proto3" json:"Executor,omitempty"`
+	WorkerTemplate         string                 `protobuf:"bytes,2,opt,name=WorkerTemplate,proto3" json:"WorkerTemplate,omitempty"`
+	ExecutorTemplate       string                 `protobuf:"bytes,3,opt,name=ExecutorTemplate,proto3" json:"ExecutorTemplate,omitempty"`
+	PVTemplate             string                 `protobuf:"bytes,4,opt,name=PVTemplate,proto3" json:"PVTemplate,omitempty"`
+	PVCTemplate            string                 `protobuf:"bytes,5,opt,name=PVCTemplate,proto3" json:"PVCTemplate,omitempty"`
+	ConfigMapTemplate      string                 `protobuf:"bytes,6,opt,name=ConfigMapTemplate,proto3" json:"ConfigMapTemplate,omitempty"`
+	Namespace              string                 `protobuf:"bytes,7,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	JobsNamespace          string                 `protobuf:"bytes,8,opt,name=JobsNamespace,proto3" json:"JobsNamespace,omitempty"`
+	ServiceAccount         string                 `protobuf:"bytes,9,opt,name=ServiceAccount,proto3" json:"ServiceAccount,omitempty"`
+	ServiceAccountTemplate string                 `protobuf:"bytes,10,opt,name=ServiceAccountTemplate,proto3" json:"ServiceAccountTemplate,omitempty"`
+	DisableReconciler      bool                   `protobuf:"varint,11,opt,name=DisableReconciler,proto3" json:"DisableReconciler,omitempty"`
+	ReconcileRate          *durationpb.Duration   `protobuf:"bytes,12,opt,name=ReconcileRate,proto3" json:"ReconcileRate,omitempty"`
+	DisableJobCleanup      bool                   `protobuf:"varint,13,opt,name=DisableJobCleanup,proto3" json:"DisableJobCleanup,omitempty"`
 	// NodeSelector + Tolerations for scheduling jobs onto specific nodes
 	// https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node
-	NodeSelector  map[string]string `protobuf:"bytes,13,rep,name=NodeSelector,proto3" json:"NodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Tolerations   []*Toleration     `protobuf:"bytes,14,rep,name=Tolerations,proto3" json:"Tolerations,omitempty"`
+	NodeSelector  map[string]string `protobuf:"bytes,14,rep,name=NodeSelector,proto3" json:"NodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Tolerations   []*Toleration     `protobuf:"bytes,15,rep,name=Tolerations,proto3" json:"Tolerations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2665,6 +2667,13 @@ func (x *Kubernetes) GetJobsNamespace() string {
 func (x *Kubernetes) GetServiceAccount() string {
 	if x != nil {
 		return x.ServiceAccount
+	}
+	return ""
+}
+
+func (x *Kubernetes) GetServiceAccountTemplate() string {
+	if x != nil {
+		return x.ServiceAccountTemplate
 	}
 	return ""
 }
@@ -3027,7 +3036,7 @@ const file_config_config_proto_rawDesc = "" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12/\n" +
 	"\aTimeout\x18\x02 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\x12\x12\n" +
 	"\x04User\x18\x03 \x01(\tR\x04User\x12\x1a\n" +
-	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xb6\x05\n" +
+	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xee\x05\n" +
 	"\n" +
 	"Kubernetes\x12\x1a\n" +
 	"\bExecutor\x18\x01 \x01(\tR\bExecutor\x12&\n" +
@@ -3040,13 +3049,14 @@ const file_config_config_proto_rawDesc = "" +
 	"\x11ConfigMapTemplate\x18\x06 \x01(\tR\x11ConfigMapTemplate\x12\x1c\n" +
 	"\tNamespace\x18\a \x01(\tR\tNamespace\x12$\n" +
 	"\rJobsNamespace\x18\b \x01(\tR\rJobsNamespace\x12&\n" +
-	"\x0eServiceAccount\x18\t \x01(\tR\x0eServiceAccount\x12,\n" +
-	"\x11DisableReconciler\x18\n" +
-	" \x01(\bR\x11DisableReconciler\x12?\n" +
-	"\rReconcileRate\x18\v \x01(\v2\x19.google.protobuf.DurationR\rReconcileRate\x12,\n" +
-	"\x11DisableJobCleanup\x18\f \x01(\bR\x11DisableJobCleanup\x12H\n" +
-	"\fNodeSelector\x18\r \x03(\v2$.config.Kubernetes.NodeSelectorEntryR\fNodeSelector\x124\n" +
-	"\vTolerations\x18\x0e \x03(\v2\x12.config.TolerationR\vTolerations\x1a?\n" +
+	"\x0eServiceAccount\x18\t \x01(\tR\x0eServiceAccount\x126\n" +
+	"\x16ServiceAccountTemplate\x18\n" +
+	" \x01(\tR\x16ServiceAccountTemplate\x12,\n" +
+	"\x11DisableReconciler\x18\v \x01(\bR\x11DisableReconciler\x12?\n" +
+	"\rReconcileRate\x18\f \x01(\v2\x19.google.protobuf.DurationR\rReconcileRate\x12,\n" +
+	"\x11DisableJobCleanup\x18\r \x01(\bR\x11DisableJobCleanup\x12H\n" +
+	"\fNodeSelector\x18\x0e \x03(\v2$.config.Kubernetes.NodeSelectorEntryR\fNodeSelector\x124\n" +
+	"\vTolerations\x18\x0f \x03(\v2\x12.config.TolerationR\vTolerations\x1a?\n" +
 	"\x11NodeSelectorEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x01\n" +

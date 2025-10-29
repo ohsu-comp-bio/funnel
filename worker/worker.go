@@ -44,6 +44,8 @@ type Executor struct {
 	JobsNamespace string
 	// Kubernetes service account name
 	ServiceAccount string
+	// Kubernetes service account template
+	ServiceAccountTemplate string
 	// NodeSelector for scheduling jobs onto specific nodes
 	NodeSelector map[string]string
 	// Tolerations for scheduling jobs onto specific nodes

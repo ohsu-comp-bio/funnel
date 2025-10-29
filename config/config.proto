@@ -319,14 +319,15 @@ message Kubernetes {
   string Namespace = 7;
   string JobsNamespace = 8;
   string ServiceAccount = 9;
-  bool DisableReconciler = 10;
-  google.protobuf.Duration ReconcileRate = 11;
-  bool DisableJobCleanup = 12;
+  string ServiceAccountTemplate = 10;
+  bool DisableReconciler = 11;
+  google.protobuf.Duration ReconcileRate = 12;
+  bool DisableJobCleanup = 13;
 
   // NodeSelector + Tolerations for scheduling jobs onto specific nodes
   // https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node
-  map<string, string> NodeSelector = 13;
-  repeated Toleration Tolerations = 14;
+  map<string, string> NodeSelector = 14;
+  repeated Toleration Tolerations = 15;
 }
 
 // Kubernetes toleration

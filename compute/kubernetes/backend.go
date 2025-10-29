@@ -188,6 +188,13 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		return fmt.Errorf("creating Worker Job: %v", err)
 	}
 
+	// Create ServiceAccount
+	b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
+	err = resources.CreateServiceAccount(task.Id, config, b.client, b.log)
+	if err != nil {
+		return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+	}
+
 	return nil
 }
 
@@ -216,12 +223,19 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker ConfigMap: %v", err)
 	}
 
-	//Delete Job
+	// Delete Job
 	b.log.Debug("deleting Job", "taskID", taskId)
 	err = resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Job: %v", err)
+	}
+
+	// Delete ServiceAccount
+	err = resources.DeleteServiceAccount(ctx, taskId, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Worker ServiceAccount: %v", err)
 	}
 
 	return errs

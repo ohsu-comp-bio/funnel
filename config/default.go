@@ -219,15 +219,17 @@ func DefaultConfig() *Config {
 	repoRoot := fsutil.FindRepoRoot()
 
 	kubernetesTemplate := filepath.Join(repoRoot, "templates/worker-job.yaml")
-	executorTemplate := filepath.Join(repoRoot, "templates/executor-job.yaml")
+	serviceAccountTemplate := filepath.Join(repoRoot, "templates/serviceaccount.yaml")
 	pvTemplate := filepath.Join(repoRoot, "templates/worker-pv.yaml")
 	pvcTemplate := filepath.Join(repoRoot, "templates/worker-pvc.yaml")
+	executorTemplate := filepath.Join(repoRoot, "templates/executor-job.yaml")
 
 	c.Kubernetes.Executor = "docker"
 	c.Kubernetes.WorkerTemplate = kubernetesTemplate
 	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
 	c.Kubernetes.PVTemplate = string(pvTemplate)
 	c.Kubernetes.PVCTemplate = string(pvcTemplate)
+	c.Kubernetes.ServiceAccountTemplate = string(serviceAccountTemplate)
 	c.Kubernetes.ReconcileRate = reconcile
 
 	return c

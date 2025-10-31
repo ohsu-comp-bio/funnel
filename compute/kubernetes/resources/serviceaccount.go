@@ -37,17 +37,17 @@ func CreateServiceAccount(taskId string, config *config.Config, client kubernete
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("failed to decode ServiceAccount spec: %v", err)
 	}
 
 	sa, ok := obj.(*corev1.ServiceAccount)
 	if !ok {
-		return fmt.Errorf("failed to decode PV spec")
+		return fmt.Errorf("failed to decode ServiceAccount spec")
 	}
 
 	_, err = client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Create(context.Background(), sa, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("failed to create ServiceAccount: %v", err)
 	}
 
 	return nil

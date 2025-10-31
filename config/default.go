@@ -3,14 +3,12 @@ package config
 import (
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/alecthomas/units"
 	intern "github.com/ohsu-comp-bio/funnel/config/internal"
 	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/util/fsutil"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -213,24 +211,31 @@ func DefaultConfig() *Config {
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
 
-	// These files are managed by Helm and made available to the Funnel Worker and Executor
-	// via the `funnel-worker-config` ConfigMap.
+	// The following K8s templates reflect the latest "default" templates in the Funnel Helm Charts repo:
+	// Ref: https://github.com/ohsu-comp-bio/helm-charts/tree/funnel-0.1.60/charts/funnel/files
 
-	repoRoot := fsutil.FindRepoRoot()
+	// Funnel Worker Job
+	kubernetesTemplate := intern.MustAsset("config/kubernetes/worker-job.yaml")
+	c.Kubernetes.WorkerTemplate = string(kubernetesTemplate)
 
-	kubernetesTemplate := filepath.Join(repoRoot, "templates/worker-job.yaml")
-	serviceAccountTemplate := filepath.Join(repoRoot, "templates/serviceaccount.yaml")
-	pvTemplate := filepath.Join(repoRoot, "templates/worker-pv.yaml")
-	pvcTemplate := filepath.Join(repoRoot, "templates/worker-pvc.yaml")
-	executorTemplate := filepath.Join(repoRoot, "templates/executor-job.yaml")
-
-	c.Kubernetes.Executor = "docker"
-	c.Kubernetes.WorkerTemplate = kubernetesTemplate
+	// Executor Job
+	executorTemplate := intern.MustAsset("config/kubernetes/executor-job.yaml")
 	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
+
+	// Funnel Worker + Executor Persistent Volume
+	pvTemplate := intern.MustAsset("config/kubernetes/worker-pv.yaml")
 	c.Kubernetes.PVTemplate = string(pvTemplate)
+
+	// Funnel Worker + Executor Persistent Volume Claim
+	pvcTemplate := intern.MustAsset("config/kubernetes/worker-pvc.yaml")
 	c.Kubernetes.PVCTemplate = string(pvcTemplate)
+
+	// Funnel Worker + Executor Service Account
+	serviceAccountTemplate := intern.MustAsset("config/kubernetes/serviceaccount.yaml")
 	c.Kubernetes.ServiceAccountTemplate = string(serviceAccountTemplate)
+
 	c.Kubernetes.ReconcileRate = reconcile
+	c.Kubernetes.Executor = "kubernetes"
 
 	return c
 }

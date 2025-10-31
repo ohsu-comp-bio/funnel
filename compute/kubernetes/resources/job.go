@@ -20,7 +20,6 @@ import (
 func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	// Parse Worker Template
 
-	jobsNamespace := config.Kubernetes.JobsNamespace
 	log.Debug("Creating job from template", "template", config.Kubernetes.WorkerTemplate)
 	t, err := template.New(task.Id).Parse(config.Kubernetes.WorkerTemplate)
 	if err != nil {
@@ -43,7 +42,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":        task.Id,
 		"Namespace":     config.Kubernetes.Namespace,
-		"JobsNamespace": jobsNamespace,
+		"JobsNamespace": config.Kubernetes.JobsNamespace,
 		"Cpus":          res.GetCpuCores(),
 		"RamGb":         res.GetRamGb(),
 		"DiskGb":        res.GetDiskGb(),
@@ -68,8 +67,8 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		return fmt.Errorf("failed to decode job spec")
 	}
 
-	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", jobsNamespace)
-	_, err = client.BatchV1().Jobs(jobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
+	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", config.Kubernetes.JobsNamespace)
+	_, err = client.BatchV1().Jobs(config.Kubernetes.JobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

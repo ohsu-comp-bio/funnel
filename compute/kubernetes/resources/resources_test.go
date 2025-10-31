@@ -209,3 +209,31 @@ func TestDeleteNonExistentResources(t *testing.T) {
 		}
 	})
 }
+
+func TestCreateServiceAccount(t *testing.T) {
+	conf := config.DefaultConfig()
+	err := CreateServiceAccount(testTaskID, conf, fake.NewSimpleClientset(), l)
+	if err != nil {
+		t.Errorf("CreateServiceAccount failed: %v", err)
+	}
+}
+
+func TestDeleteServiceAccount(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset()
+
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "funnel-worker-sa-" + testTaskID,
+			Namespace: namespace,
+		},
+	}
+	_, err := fakeClient.CoreV1().ServiceAccounts(namespace).Create(context.Background(), sa, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test ServiceAccount: %v", err)
+	}
+
+	err = DeleteServiceAccount(context.Background(), testTaskID, fakeClient, l)
+	if err != nil {
+		t.Errorf("DeleteServiceAccount failed: %v", err)
+	}
+}

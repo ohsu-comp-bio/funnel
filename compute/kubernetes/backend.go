@@ -123,6 +123,7 @@ func (b *Backend) Close() {
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
 	err := b.createResources(task, config)
 	if err != nil {
+		// TODO: Send event that task submission failed
 		return fmt.Errorf("creating Worker resources: %v", err)
 	}
 

@@ -195,7 +195,7 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 
 	// Create ServiceAccount
 	b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
-	err = resources.CreateServiceAccount(task.Id, config, b.client, b.log)
+	err = resources.CreateServiceAccount(task, config, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
+	"github.com/ohsu-comp-bio/funnel/tes"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,19 +17,21 @@ import (
 )
 
 // Create the Worker/Executor ServiceAccount from config/kubernetes-serviceaccount.yaml
-func CreateServiceAccount(taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateServiceAccount(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
-	t, err := template.New(taskId).Parse(config.Kubernetes.ServiceAccountTemplate)
+	t, err := template.New(task.Id).Parse(config.Kubernetes.ServiceAccountTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
 
 	// Template parameters
+	// TODO: Handle cases where values/tags below are not supplied
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
-		"TaskId":    taskId,
-		"Namespace": config.Kubernetes.JobsNamespace,
+		"TaskId":     task.Id,
+		"Namespace":  config.Kubernetes.JobsNamespace,
+		"IamRoleArn": task.Tags["funnel_worker_role_arn"],
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

@@ -211,8 +211,15 @@ func TestDeleteNonExistentResources(t *testing.T) {
 }
 
 func TestCreateServiceAccount(t *testing.T) {
+	task := &tes.Task{
+		Id: testTaskID,
+		Tags: map[string]string{
+			"funnel_worker_role_arn": "arn:aws:iam::123456789012:role/funnel-worker-role",
+		},
+	}
+
 	conf := config.DefaultConfig()
-	err := CreateServiceAccount(testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreateServiceAccount(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateServiceAccount failed: %v", err)
 	}

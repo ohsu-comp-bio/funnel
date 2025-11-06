@@ -36,15 +36,17 @@ func CreateRole(task *tes.Task, config *config.Config, client kubernetes.Interfa
 		return fmt.Errorf("%v", err)
 	}
 
+	fmt.Println("DEBUG: role buf.String():", buf.String())
+
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to decode Role spec: %v", err)
 	}
 
-	role, ok := obj.(*rbacv1.Role) // Change from corev1.Role to rbacv1.Role
+	role, ok := obj.(*rbacv1.Role)
 	if !ok {
-		return fmt.Errorf("failed to decode Role spec")
+		return fmt.Errorf("failed to verify Role spec")
 	}
 
 	_, err = client.RbacV1().Roles(config.Kubernetes.JobsNamespace).Create(context.Background(), role, metav1.CreateOptions{})

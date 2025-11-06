@@ -186,13 +186,6 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		return fmt.Errorf("creating Worker ConfigMap: %v", err)
 	}
 
-	// Create Worker Job
-	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err = resources.CreateJob(task, config, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker Job: %v", err)
-	}
-
 	// Create ServiceAccount
 	b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
 	err = resources.CreateServiceAccount(task, config, b.client, b.log)
@@ -212,6 +205,13 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 	err = resources.CreateRoleBinding(task, config, b.client, b.log)
 	if err != nil {
 		return fmt.Errorf("creating Worker RoleBinding: %v", err)
+	}
+
+	// Create Worker Job
+	b.log.Debug("creating Worker Job", "taskID", task.Id)
+	err = resources.CreateJob(task, config, b.client, b.log)
+	if err != nil {
+		return fmt.Errorf("creating Worker Job: %v", err)
 	}
 
 	return nil

@@ -46,6 +46,10 @@ type Executor struct {
 	ServiceAccount string
 	// Kubernetes service account template
 	ServiceAccountTemplate string
+	// Kubernetes role template
+	RoleTemplate string
+	// Kubernetes role binding template
+	RoleBindingTemplate string
 	// NodeSelector for scheduling jobs onto specific nodes
 	NodeSelector map[string]string
 	// Tolerations for scheduling jobs onto specific nodes

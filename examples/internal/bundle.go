@@ -16,6 +16,7 @@
 // examples/s3.json (540B)
 // examples/full-hello.json (577B)
 // examples/s3-kms-gen3wf.json (402B)
+// examples/tags-arn.json (382B)
 
 package examples
 
@@ -138,7 +139,7 @@ func examplesGoogleStorageJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/google-storage.json", size: 462, mode: os.FileMode(0640), modTime: time.Unix(1706586712, 0)}
+	info := bindataFileInfo{name: "examples/google-storage.json", size: 462, mode: os.FileMode(0644), modTime: time.Unix(1762394494, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x3b, 0x28, 0x52, 0xb5, 0x1b, 0x70, 0x7b, 0xa1, 0x77, 0xb8, 0x17, 0x96, 0xc6, 0x3, 0xd8, 0xa0, 0x46, 0x5d, 0xe7, 0x44, 0x62, 0x78, 0xce, 0xec, 0x46, 0x20, 0x25, 0x74, 0xf3, 0xb6, 0xaf, 0x42}}
 	return a, nil
 }
@@ -198,7 +199,7 @@ func examplesHelloWorldJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/hello-world.json", size: 187, mode: os.FileMode(0644), modTime: time.Unix(1759269913, 0)}
+	info := bindataFileInfo{name: "examples/hello-world.json", size: 187, mode: os.FileMode(0644), modTime: time.Unix(1762394494, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x5f, 0x7f, 0x2d, 0x92, 0x82, 0x32, 0xc2, 0x3a, 0xc8, 0x1d, 0x60, 0x4d, 0xdc, 0x56, 0xfc, 0xf8, 0x75, 0x64, 0x9d, 0xa3, 0x9e, 0x45, 0x16, 0x97, 0xca, 0xc4, 0x1b, 0x81, 0xc3, 0x8c, 0xb6, 0x7}}
 	return a, nil
 }
@@ -358,7 +359,7 @@ func examplesS3Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/s3.json", size: 540, mode: os.FileMode(0644), modTime: time.Unix(1760574972, 0)}
+	info := bindataFileInfo{name: "examples/s3.json", size: 540, mode: os.FileMode(0644), modTime: time.Unix(1762394497, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x32, 0x6c, 0xc9, 0x90, 0xa0, 0xa7, 0xff, 0x98, 0x9d, 0x69, 0x45, 0x46, 0x2a, 0xba, 0x73, 0xce, 0x9f, 0xd6, 0xb5, 0x8c, 0x3c, 0x44, 0xc1, 0xa4, 0xcb, 0xeb, 0xaa, 0x8c, 0x20, 0xbb, 0xde, 0x87}}
 	return a, nil
 }
@@ -400,6 +401,26 @@ func examplesS3KmsGen3wfJson() (*asset, error) {
 
 	info := bindataFileInfo{name: "examples/s3-kms-gen3wf.json", size: 402, mode: os.FileMode(0644), modTime: time.Unix(1757372213, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xad, 0x47, 0x53, 0xc1, 0x7, 0xb5, 0x6, 0x3a, 0xdd, 0xd, 0x9b, 0xb1, 0xac, 0x66, 0xd5, 0x5c, 0xe, 0xd1, 0x4e, 0x58, 0x74, 0xe4, 0xc3, 0xe0, 0xbe, 0xa2, 0x72, 0x27, 0x32, 0xe5, 0x27, 0xba}}
+	return a, nil
+}
+
+var _examplesTagsArnJson = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x8c\x8e\xbd\x6a\xc4\x30\x10\x84\x6b\xeb\x29\x96\xad\xad\xfc\x90\xc0\x81\xea\x14\x79\x87\x70\x98\x8d\xbd\x67\x8b\xd3\x8f\xd1\xca\xd8\x60\xfc\xee\x41\xf2\x15\x29\x6f\x8b\x6d\x66\xe6\x9b\xd9\x15\x00\x06\xf2\x8c\x06\xf0\x9b\x9d\x8b\xb0\xc6\xe4\x06\x6c\x8b\x30\xb0\xf4\xc9\xce\xd9\xc6\x50\xf4\x2f\xf6\x31\x48\x4e\x94\x59\x20\x4f\x0c\x3e\x4a\x86\x5f\x12\xdb\x03\xf7\x53\x84\x4c\x72\x7f\x39\xa3\xbc\x71\xbf\xe4\x98\x04\x0d\xfc\x28\x00\x80\xbd\x7e\x00\xb4\x9e\xc6\xda\x47\x6e\xb6\x81\xab\xbf\x0a\x7d\xf4\x9e\xc2\x50\x12\x58\x78\xd8\x02\x4e\xff\x36\x5d\xab\xf1\x50\x00\xd7\x56\x61\xa6\xb1\xc0\x77\xd5\x34\x78\x5b\x42\x60\xd7\xad\x31\xdd\x39\x75\x29\x3a\xee\x28\xd5\xcd\x94\x82\xa1\x55\x8c\x25\x6f\xcc\xe5\x6d\x3b\xef\x62\x8a\xe7\x75\xe4\xf0\xb1\xde\xb4\x90\xd5\xb3\xa3\xb0\x95\xaf\x03\x67\xbd\x88\x5e\x59\xb2\x7e\xd7\x9f\xfa\x64\xeb\x93\xad\x4b\x0e\xdb\xd2\xf9\x28\x13\x2a\x35\x4f\x91\x1e\x08\x21\x54\xcd\xa1\x0e\xa5\xfe\x02\x00\x00\xff\xff\xc8\x7f\xcf\x9c\x7e\x01\x00\x00")
+
+func examplesTagsArnJsonBytes() ([]byte, error) {
+	return bindataRead(
+		_examplesTagsArnJson,
+		"examples/tags-arn.json",
+	)
+}
+
+func examplesTagsArnJson() (*asset, error) {
+	bytes, err := examplesTagsArnJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "examples/tags-arn.json", size: 382, mode: os.FileMode(0644), modTime: time.Unix(1762211717, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x46, 0xa6, 0xf6, 0x54, 0x66, 0xca, 0x29, 0xf3, 0x1e, 0x95, 0x75, 0x4c, 0x99, 0x1b, 0x3f, 0x72, 0x34, 0x82, 0xc4, 0x28, 0x2, 0x97, 0xad, 0xbb, 0x8b, 0xa7, 0xe5, 0x26, 0x62, 0xb0, 0x2f, 0xf3}}
 	return a, nil
 }
 
@@ -510,6 +531,7 @@ var _bindata = map[string]func() (*asset, error){
 	"examples/s3.json":                    examplesS3Json,
 	"examples/full-hello.json":            examplesFullHelloJson,
 	"examples/s3-kms-gen3wf.json":         examplesS3KmsGen3wfJson,
+	"examples/tags-arn.json":              examplesTagsArnJson,
 }
 
 // AssetDebug is true if the assets were built with the debug flag enabled.
@@ -575,6 +597,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"s3-useast1.json":            {examplesS3Useast1Json, map[string]*bintree{}},
 		"s3.json":                    {examplesS3Json, map[string]*bintree{}},
 		"sleep.json":                 {examplesSleepJson, map[string]*bintree{}},
+		"tags-arn.json":              {examplesTagsArnJson, map[string]*bintree{}},
 	}},
 }}
 

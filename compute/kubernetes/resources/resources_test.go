@@ -244,3 +244,67 @@ func TestDeleteServiceAccount(t *testing.T) {
 		t.Errorf("DeleteServiceAccount failed: %v", err)
 	}
 }
+
+func TestCreateRole(t *testing.T) {
+	task := &tes.Task{
+		Id: testTaskID,
+	}
+
+	conf := config.DefaultConfig()
+	err := CreateRole(task, conf, fake.NewSimpleClientset(), l)
+	if err != nil {
+		t.Errorf("CreateRole failed: %v", err)
+	}
+}
+
+func TestDeleteRole(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset()
+
+	role := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "funnel-worker-role-" + testTaskID,
+			Namespace: namespace,
+		},
+	}
+	_, err := fakeClient.CoreV1().ServiceAccounts(namespace).Create(context.Background(), role, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test Role: %v", err)
+	}
+
+	err = DeleteRole(context.Background(), testTaskID, fakeClient, l)
+	if err != nil {
+		t.Errorf("DeleteRole failed: %v", err)
+	}
+}
+
+func TestCreateRoleBinding(t *testing.T) {
+	task := &tes.Task{
+		Id: testTaskID,
+	}
+
+	conf := config.DefaultConfig()
+	err := CreateRoleBinding(task, conf, fake.NewSimpleClientset(), l)
+	if err != nil {
+		t.Errorf("CreateRoleBinding failed: %v", err)
+	}
+}
+
+func TestDeleteRoleBinding(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset()
+
+	roleBinding := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "funnel-worker-rolebinding-" + testTaskID,
+			Namespace: namespace,
+		},
+	}
+	_, err := fakeClient.CoreV1().ServiceAccounts(namespace).Create(context.Background(), roleBinding, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test RoleBinding: %v", err)
+	}
+
+	err = DeleteRoleBinding(context.Background(), testTaskID, fakeClient, l)
+	if err != nil {
+		t.Errorf("DeleteRoleBinding failed: %v", err)
+	}
+}

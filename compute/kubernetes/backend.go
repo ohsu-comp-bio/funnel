@@ -200,6 +200,20 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 	}
 
+	// Create Role
+	b.log.Debug("creating Worker Role", "taskID", task.Id)
+	err = resources.CreateRole(task, config, b.client, b.log)
+	if err != nil {
+		return fmt.Errorf("creating Worker Role: %v", err)
+	}
+
+	// Create RoleBinding
+	b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
+	err = resources.CreateRoleBinding(task, config, b.client, b.log)
+	if err != nil {
+		return fmt.Errorf("creating Worker RoleBinding: %v", err)
+	}
+
 	return nil
 }
 
@@ -241,6 +255,20 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker ServiceAccount: %v", err)
+	}
+
+	// Delete Role
+	err = resources.DeleteRole(ctx, taskId, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Worker Role: %v", err)
+	}
+
+	// Delete RoleBinding
+	err = resources.DeleteRoleBinding(ctx, taskId, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Worker RoleBinding: %v", err)
 	}
 
 	return errs

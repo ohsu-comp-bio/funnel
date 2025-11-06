@@ -320,14 +320,16 @@ message Kubernetes {
   string JobsNamespace = 8;
   string ServiceAccount = 9;
   string ServiceAccountTemplate = 10;
-  bool DisableReconciler = 11;
-  google.protobuf.Duration ReconcileRate = 12;
-  bool DisableJobCleanup = 13;
+  string RoleTemplate = 11;
+  string RoleBindingTemplate = 12;
+  bool DisableReconciler = 13;
+  google.protobuf.Duration ReconcileRate = 14;
+  bool DisableJobCleanup = 15;
 
   // NodeSelector + Tolerations for scheduling jobs onto specific nodes
   // https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node
-  map<string, string> NodeSelector = 14;
-  repeated Toleration Tolerations = 15;
+  map<string, string> NodeSelector = 16;
+  repeated Toleration Tolerations = 17;
 }
 
 // Kubernetes toleration

@@ -480,6 +480,12 @@
         "ServiceAccountTemplate": {
           "type": "string"
         },
+        "RoleTemplate": {
+          "type": "string"
+        },
+        "RoleBindingTemplate": {
+          "type": "string"
+        },
         "DisableReconciler": {
           "type": "boolean"
         },

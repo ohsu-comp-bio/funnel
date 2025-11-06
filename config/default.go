@@ -222,17 +222,25 @@ func DefaultConfig() *Config {
 	executorTemplate := intern.MustAsset("config/kubernetes/executor-job.yaml")
 	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
 
-	// Funnel Worker + Executor Persistent Volume
+	// Worker Persistent Volume
 	pvTemplate := intern.MustAsset("config/kubernetes/worker-pv.yaml")
 	c.Kubernetes.PVTemplate = string(pvTemplate)
 
-	// Funnel Worker + Executor Persistent Volume Claim
+	// Worker Persistent Volume Claim
 	pvcTemplate := intern.MustAsset("config/kubernetes/worker-pvc.yaml")
 	c.Kubernetes.PVCTemplate = string(pvcTemplate)
 
-	// Funnel Worker + Executor Service Account
+	// Worker Service Account
 	serviceAccountTemplate := intern.MustAsset("config/kubernetes/serviceaccount.yaml")
 	c.Kubernetes.ServiceAccountTemplate = string(serviceAccountTemplate)
+
+	// Worker Role
+	roleTemplate := intern.MustAsset("config/kubernetes/role.yaml")
+	c.Kubernetes.RoleTemplate = string(roleTemplate)
+
+	// Worker Role Binding
+	roleBindingTemplate := intern.MustAsset("config/kubernetes/rolebinding.yaml")
+	c.Kubernetes.RoleBindingTemplate = string(roleBindingTemplate)
 
 	c.Kubernetes.ReconcileRate = reconcile
 	c.Kubernetes.Executor = "kubernetes"

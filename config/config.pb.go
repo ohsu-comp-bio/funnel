@@ -7,14 +7,13 @@
 package config
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	logger "github.com/ohsu-comp-bio/funnel/logger"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -2567,13 +2566,15 @@ type Kubernetes struct {
 	JobsNamespace          string                 `protobuf:"bytes,8,opt,name=JobsNamespace,proto3" json:"JobsNamespace,omitempty"`
 	ServiceAccount         string                 `protobuf:"bytes,9,opt,name=ServiceAccount,proto3" json:"ServiceAccount,omitempty"`
 	ServiceAccountTemplate string                 `protobuf:"bytes,10,opt,name=ServiceAccountTemplate,proto3" json:"ServiceAccountTemplate,omitempty"`
-	DisableReconciler      bool                   `protobuf:"varint,11,opt,name=DisableReconciler,proto3" json:"DisableReconciler,omitempty"`
-	ReconcileRate          *durationpb.Duration   `protobuf:"bytes,12,opt,name=ReconcileRate,proto3" json:"ReconcileRate,omitempty"`
-	DisableJobCleanup      bool                   `protobuf:"varint,13,opt,name=DisableJobCleanup,proto3" json:"DisableJobCleanup,omitempty"`
+	RoleTemplate           string                 `protobuf:"bytes,11,opt,name=RoleTemplate,proto3" json:"RoleTemplate,omitempty"`
+	RoleBindingTemplate    string                 `protobuf:"bytes,12,opt,name=RoleBindingTemplate,proto3" json:"RoleBindingTemplate,omitempty"`
+	DisableReconciler      bool                   `protobuf:"varint,13,opt,name=DisableReconciler,proto3" json:"DisableReconciler,omitempty"`
+	ReconcileRate          *durationpb.Duration   `protobuf:"bytes,14,opt,name=ReconcileRate,proto3" json:"ReconcileRate,omitempty"`
+	DisableJobCleanup      bool                   `protobuf:"varint,15,opt,name=DisableJobCleanup,proto3" json:"DisableJobCleanup,omitempty"`
 	// NodeSelector + Tolerations for scheduling jobs onto specific nodes
 	// https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node
-	NodeSelector  map[string]string `protobuf:"bytes,14,rep,name=NodeSelector,proto3" json:"NodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Tolerations   []*Toleration     `protobuf:"bytes,15,rep,name=Tolerations,proto3" json:"Tolerations,omitempty"`
+	NodeSelector  map[string]string `protobuf:"bytes,16,rep,name=NodeSelector,proto3" json:"NodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Tolerations   []*Toleration     `protobuf:"bytes,17,rep,name=Tolerations,proto3" json:"Tolerations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2674,6 +2675,20 @@ func (x *Kubernetes) GetServiceAccount() string {
 func (x *Kubernetes) GetServiceAccountTemplate() string {
 	if x != nil {
 		return x.ServiceAccountTemplate
+	}
+	return ""
+}
+
+func (x *Kubernetes) GetRoleTemplate() string {
+	if x != nil {
+		return x.RoleTemplate
+	}
+	return ""
+}
+
+func (x *Kubernetes) GetRoleBindingTemplate() string {
+	if x != nil {
+		return x.RoleBindingTemplate
 	}
 	return ""
 }
@@ -3036,7 +3051,7 @@ const file_config_config_proto_rawDesc = "" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12/\n" +
 	"\aTimeout\x18\x02 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\x12\x12\n" +
 	"\x04User\x18\x03 \x01(\tR\x04User\x12\x1a\n" +
-	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xee\x05\n" +
+	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xc4\x06\n" +
 	"\n" +
 	"Kubernetes\x12\x1a\n" +
 	"\bExecutor\x18\x01 \x01(\tR\bExecutor\x12&\n" +
@@ -3051,12 +3066,14 @@ const file_config_config_proto_rawDesc = "" +
 	"\rJobsNamespace\x18\b \x01(\tR\rJobsNamespace\x12&\n" +
 	"\x0eServiceAccount\x18\t \x01(\tR\x0eServiceAccount\x126\n" +
 	"\x16ServiceAccountTemplate\x18\n" +
-	" \x01(\tR\x16ServiceAccountTemplate\x12,\n" +
-	"\x11DisableReconciler\x18\v \x01(\bR\x11DisableReconciler\x12?\n" +
-	"\rReconcileRate\x18\f \x01(\v2\x19.google.protobuf.DurationR\rReconcileRate\x12,\n" +
-	"\x11DisableJobCleanup\x18\r \x01(\bR\x11DisableJobCleanup\x12H\n" +
-	"\fNodeSelector\x18\x0e \x03(\v2$.config.Kubernetes.NodeSelectorEntryR\fNodeSelector\x124\n" +
-	"\vTolerations\x18\x0f \x03(\v2\x12.config.TolerationR\vTolerations\x1a?\n" +
+	" \x01(\tR\x16ServiceAccountTemplate\x12\"\n" +
+	"\fRoleTemplate\x18\v \x01(\tR\fRoleTemplate\x120\n" +
+	"\x13RoleBindingTemplate\x18\f \x01(\tR\x13RoleBindingTemplate\x12,\n" +
+	"\x11DisableReconciler\x18\r \x01(\bR\x11DisableReconciler\x12?\n" +
+	"\rReconcileRate\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\rReconcileRate\x12,\n" +
+	"\x11DisableJobCleanup\x18\x0f \x01(\bR\x11DisableJobCleanup\x12H\n" +
+	"\fNodeSelector\x18\x10 \x03(\v2$.config.Kubernetes.NodeSelectorEntryR\fNodeSelector\x124\n" +
+	"\vTolerations\x18\x11 \x03(\v2\x12.config.TolerationR\vTolerations\x1a?\n" +
 	"\x11NodeSelectorEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x01\n" +

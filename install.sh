@@ -23,6 +23,7 @@ RELEASE_URL=""
 if [ -z "$VERSION_TAG" ]; then
     echo "No version specified. Fetching the latest release..."
     RELEASE_URL=$(get_latest_release_url)
+    VERSION_TAG=$(curl -s $RELEASE_URL | grep '"tag_name":' | cut -d '"' -f 4)
 else
     echo "Fetching release for version $VERSION_TAG..."
     RELEASE_URL=$(get_tag_release_url $VERSION_TAG)
@@ -49,14 +50,14 @@ CHECKSUM_FILE="funnel_${VERSION_TAG}_checksums.txt"
 ASSETS=$(curl -s $RELEASE_URL | grep "browser_download_url" | cut -d '"' -f 4)
 
 # Download the tar.gz file and checksums.txt for the detected OS and Arch
-echo "Downloading Funnel for $OS $ARCH..."
+echo "Downloading Funnel $VERSION_TAG for $OS $ARCH..."
 for asset in $ASSETS; do
     if [[ $asset == *"${OS}-${ARCH}"* && $asset == *".tar.gz"* ]]; then
         TAR_URL=$asset
         TAR_NAME=$(basename $asset)
-        curl -LsO $TAR_URL
+        curl -L --progress-bar -o $TAR_NAME $TAR_URL
     elif [[ $asset == *"$CHECKSUM_FILE"* ]]; then
-        curl -o $CHECKSUM_FILE -LsO $asset
+        curl -L --progress-bar -o $CHECKSUM_FILE $asset
     fi
 done
 

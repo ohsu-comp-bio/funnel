@@ -48,26 +48,15 @@ allowing Funnel to automatically load credentials from the environment using
 Application Default Credentials.
 
 ```yaml
-Database: "boltdb"  # or datastore, mongodb, etc.
 Compute: "gcp-batch"
-EventWriters:
-  - "log"
-  - "boltdb"
 
 GCPBatch:
-  # GCP project ID where Batch jobs will be created
-  Project: "my-project-id"
-  # GCP region for job execution
+  Project: "example-project-id"
   Location: "us-central1"
-  # Turn off task state reconciler to disable automatic state checking
-  DisableReconciler: false
-  # How often to reconcile task states with GCP Batch
-  ReconcileRate: 10m
 
-# Optional: Use Google Cloud Datastore for storage
-# Datastore:
-#   Project: "my-project-id"
-#   CredentialsFile: "/path/to/credentials.json"
+  # Reconciler for task reporting
+  DisableReconciler: false
+  ReconcileRate: 10m
 
 # Google Cloud Storage configuration
 GoogleStorage:

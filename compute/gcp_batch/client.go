@@ -8,11 +8,10 @@ import (
 	"github.com/googleapis/gax-go/v2"
 )
 
-// client defines the subset of batch.Client methods our backend uses.
-// This makes it easy to mock for testing.
 type client interface {
 	CreateJob(ctx context.Context, req *batchpb.CreateJobRequest, opts ...gax.CallOption) (*batchpb.Job, error)
+	GetJob(ctx context.Context, req *batchpb.GetJobRequest, opts ...gax.CallOption) (*batchpb.Job, error)
+	ListJobs(ctx context.Context, req *batchpb.ListJobsRequest, opts ...gax.CallOption) *batch.JobIterator
 }
 
-// Ensure the real client satisfies our interface.
 var _ client = (*batch.Client)(nil)

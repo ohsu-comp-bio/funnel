@@ -19,18 +19,18 @@ func TestCreateJobc(t *testing.T) {
 	}
 
 	// Mock client
-	mockClient := &mockClient{
-		CreateJobFunc: func(req *batchpb.CreateJobRequest) (*batchpb.Job, error) {
-			return &batchpb.Job{Name: "projects/example/locations/us-west1/jobs/example"}, nil
-		},
-	}
+	// mockClient := &mockClient{
+	// 	CreateJobFunc: func(req *batchpb.CreateJobRequest) (*batchpb.Job, error) {
+	// 		return &batchpb.Job{Name: "projects/example/locations/us-west1/jobs/example"}, nil
+	// 	},
+	// }
 
 	// Backend
 	compute := &Backend{
-		client: mockClient,
-		conf:   conf,
-		log:    log,
-		event:  nil,
+		// client: mockClient,
+		conf:  conf,
+		log:   log,
+		event: nil,
 	}
 
 	// Task

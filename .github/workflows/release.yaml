@@ -4,12 +4,14 @@
 name: Release
 on:
   push:
-    branches:
-      - main
-      - master
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -25,10 +27,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set Git environment variables
+        run: |
+          echo "GIT_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          echo "GIT_UPSTREAM=origin" >> $GITHUB_ENV
+
       - name: Release
         uses: goreleaser/goreleaser-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_BRANCH: ${{ env.GIT_BRANCH }}
+          GIT_UPSTREAM: ${{ env.GIT_UPSTREAM }}
         with:
           distribution: goreleaser
           version: 'latest'

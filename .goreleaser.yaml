@@ -1,4 +1,5 @@
-# .goreleaser.yaml
+version: 2
+
 builds:
   - binary: funnel
     goos:
@@ -16,14 +17,14 @@ builds:
       -X github.com/ohsu-comp-bio/funnel/version.GitUpstream={{.Env.GIT_UPSTREAM}}
       -X github.com/ohsu-comp-bio/funnel/version.Version={{.Version}}
 
-prebuilt:
-  - path: dist/funnel-{{ .Os }}_{{ .Arch }}/funnel
-    goos: 
-      - darwin
-      - linux
-    goarch:
-      - amd64
-      - arm64
+    prebuilt:
+      - path: dist/funnel-{{ .Os }}_{{ .Arch }}/funnel
+        goos: 
+          - darwin
+          - linux
+        goarch:
+          - amd64
+          - arm64
 
 dist: dist
 

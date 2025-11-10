@@ -66,8 +66,8 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: build/release/
+          name: funnel-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/
 
   release:
     name: Create Release
@@ -83,7 +83,8 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: build/release/
+          path: dist/ 
+          merge-multiple: true
 
       - name: Create Release
         uses: goreleaser/goreleaser-action@v6
@@ -92,4 +93,4 @@ jobs:
         with:
           distribution: goreleaser
           version: 'latest'
-          args: release --skip-build
+          args: release --clean

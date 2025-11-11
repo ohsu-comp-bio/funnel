@@ -12,6 +12,11 @@ on:
         description: 'Tag to release (e.g. v1.0.0)'
         required: true
         type: string
+      branch:
+        description: 'Branch the tag exists on'
+        required: false
+        type: string
+        default: 'main'
 
 permissions:
   contents: write
@@ -25,6 +30,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Set Git environment variables

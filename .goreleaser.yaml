@@ -23,9 +23,8 @@ release:
   draft: false
   prerelease: auto
 
-# Remove env_files section since we're using environment variables
-# env_files:
-#   github_token: .github_token
+checksum:
+  name_template: "funnel-{{.Tag}}-checksums.txt"
 
 archives:
   - formats:
@@ -44,17 +43,3 @@ changelog:
       - '^docs:'
       - '^test:'
       - '^ci:'
-
-# brews:
-#   - repository:
-#       owner: ohsu-comp-bio
-#       name: homebrew-formula
-#     directory: Formula
-#     skip_upload: false  # Enable if you want Homebrew integration
-#     description: "distributed task execution toolkit"
-#     homepage: "https://ohsu-comp-bio.github.io/funnel/"
-#     license: "Apache-2.0"  # Add license
-#     install: |
-#       bin.install "funnel"
-#     test: |
-#       system "#{bin}/funnel", "version"

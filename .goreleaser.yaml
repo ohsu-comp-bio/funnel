@@ -13,8 +13,8 @@ builds:
     ldflags: >
       -X github.com/ohsu-comp-bio/funnel/version.BuildDate={{.Date}}
       -X github.com/ohsu-comp-bio/funnel/version.GitCommit={{.ShortCommit}}
-      -X github.com/ohsu-comp-bio/funnel/version.GitBranch={{.Env.GIT_BRANCH}}
-      -X github.com/ohsu-comp-bio/funnel/version.GitUpstream={{.Env.GIT_UPSTREAM}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitBranch={{.Branch}}
+      -X github.com/ohsu-comp-bio/funnel/version.GitUpstream={{.GitURL}}
       -X github.com/ohsu-comp-bio/funnel/version.Version={{.Version}}
 
 dist: build/release

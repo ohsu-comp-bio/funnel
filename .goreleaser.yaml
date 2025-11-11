@@ -17,16 +17,7 @@ builds:
       -X github.com/ohsu-comp-bio/funnel/version.GitUpstream={{.Env.GIT_UPSTREAM}}
       -X github.com/ohsu-comp-bio/funnel/version.Version={{.Version}}
 
-    prebuilt:
-      - path: dist/funnel-{{ .Os }}_{{ .Arch }}/funnel
-        goos: 
-          - darwin
-          - linux
-        goarch:
-          - amd64
-          - arm64
-
-dist: dist
+dist: build/release
 
 release:
   draft: false
@@ -37,7 +28,8 @@ release:
 #   github_token: .github_token
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     name_template: "{{.ProjectName}}-{{.Os}}-{{.Arch}}-{{.Tag}}"
     files:
       - LICENSE*

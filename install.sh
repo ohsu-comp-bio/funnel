@@ -44,7 +44,7 @@ fi
 
 # Define the tar file based on OS and Architecture
 TAR_FILE="funnel-${OS}-${ARCH}*.tar.gz"
-CHECKSUM_FILE="funnel_${VERSION_TAG}_checksums.txt"
+CHECKSUM_FILE="funnel-${VERSION_TAG}-checksums.txt"
 
 # Fetch the release assets URLs
 ASSETS=$(curl -s $RELEASE_URL | grep "browser_download_url" | cut -d '"' -f 4)

@@ -208,17 +208,18 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 			if r.Executor.Backend == "kubernetes" {
 				taskCommand = &KubernetesCommand{
-					TaskId:        task.Id,
-					JobId:         i,
-					StdinFile:     d.Stdin,
-					TaskTemplate:  r.Executor.Template,
-					Namespace:     r.Executor.Namespace,
-					JobsNamespace: r.Executor.JobsNamespace,
-					Resources:     resources,
-					Command:       command,
-					NeedsPVC:      len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
-					NodeSelector:  r.Executor.NodeSelector,
-					Tolerations:   r.Executor.Tolerations,
+					TaskId:         task.Id,
+					JobId:          i,
+					StdinFile:      d.Stdin,
+					TaskTemplate:   r.Executor.Template,
+					Namespace:      r.Executor.Namespace,
+					JobsNamespace:  r.Executor.JobsNamespace,
+					Resources:      resources,
+					Command:        command,
+					NeedsPVC:       len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
+					NodeSelector:   r.Executor.NodeSelector,
+					Tolerations:    r.Executor.Tolerations,
+					ServiceAccount: task.Tags["_WORKER_SA"],
 				}
 			} else {
 				taskCommand = &DockerCommand{

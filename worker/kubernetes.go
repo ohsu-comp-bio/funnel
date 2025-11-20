@@ -59,19 +59,21 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	var buf bytes.Buffer
 	err = tpl.Execute(&buf, map[string]interface{}{
-		"TaskId":         taskId,
-		"JobId":          kcmd.JobId,
-		"Namespace":      kcmd.Namespace,
-		"JobsNamespace":  kcmd.JobsNamespace,
-		"Command":        command,
-		"Workdir":        kcmd.Workdir,
-		"Volumes":        kcmd.Volumes,
-		"Cpus":           kcmd.Resources.CpuCores,
-		"RamGb":          kcmd.Resources.RamGb,
-		"DiskGb":         kcmd.Resources.DiskGb,
-		"ServiceAccount": kcmd.ServiceAccount,
-		"Image":          kcmd.Image,
-		"NeedsPVC":       kcmd.NeedsPVC,
+		"TaskId":        taskId,
+		"JobId":         kcmd.JobId,
+		"Namespace":     kcmd.Namespace,
+		"JobsNamespace": kcmd.JobsNamespace,
+		"Command":       command,
+		"Workdir":       kcmd.Workdir,
+		"Volumes":       kcmd.Volumes,
+		"Cpus":          kcmd.Resources.CpuCores,
+		"RamGb":         kcmd.Resources.RamGb,
+		"DiskGb":        kcmd.Resources.DiskGb,
+		// TODO: OK to remove (deprecated template value)?
+		// TODO: Review any side-effects
+		"ServiceAccountName": kcmd.ServiceAccount,
+		"Image":              kcmd.Image,
+		"NeedsPVC":           kcmd.NeedsPVC,
 	})
 
 	if err != nil {

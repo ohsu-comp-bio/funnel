@@ -31,8 +31,8 @@ func CreateServiceAccount(task *tes.Task, config *config.Config, client kubernet
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":             task.Id,
 		"Namespace":          config.Kubernetes.JobsNamespace,
-		"IamRoleArn":         task.Tags["FUNNEL_WORKER_ROLE_ARN"],
-		"ServiceAccountName": task.Tags["WORKER_SA"], // TODO: Are we doing anything else with this tag?
+		"IamRoleArn":         task.Tags["_FUNNEL_WORKER_ROLE_ARN"],
+		"ServiceAccountName": task.Tags["_WORKER_SA"],
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

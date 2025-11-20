@@ -97,7 +97,8 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
 
-		err := mergo.Merge(taskConfig, resp.Config)
+		// TODO: Test that plugin reponse is being correctly set in taskConfig after this merge
+		err := mergo.Merge(taskConfig, resp.Config, mergo.WithOverride)
 		if err != nil {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
 		}
@@ -123,7 +124,17 @@ func (b *Backend) Close() {
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
 	err := b.createResources(task, config)
 	if err != nil {
-		// TODO: Send event that task submission failed
+		// TODO: #3: Send event that task submission failed
+		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+		b.event.WriteEvent(
+			ctx,
+			events.NewSystemLog(
+				task.Id, 0, 0, "error",
+				"Kubernetes job in FAILED state",
+				map[string]string{"error": err.Error()},
+			),
+		)
+
 		return fmt.Errorf("creating Worker resources: %v", err)
 	}
 
@@ -187,6 +198,9 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 	}
 
 	// Create ServiceAccount
+	// TODO: What is the default name if no Name is provided in Task Tags?
+	// This should only be created if no such ServiceAccount with the same name exists
+	// ServiceAccount will still always need to be added to Worker Job and Executor
 	b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
 	err = resources.CreateServiceAccount(task, config, b.client, b.log)
 	if err != nil {

@@ -28,12 +28,24 @@ func CreateServiceAccount(task *tes.Task, config *config.Config, client kubernet
 	// Template parameters
 	// TODO: Handle cases where values/tags below are not supplied
 	var buf bytes.Buffer
-	err = t.Execute(&buf, map[string]interface{}{
-		"TaskId":             task.Id,
-		"Namespace":          config.Kubernetes.JobsNamespace,
-		"IamRoleArn":         task.Tags["_FUNNEL_WORKER_ROLE_ARN"],
-		"ServiceAccountName": task.Tags["_WORKER_SA"],
-	})
+	templateData := map[string]interface{}{
+		"TaskId":    task.Id,
+		"Namespace": config.Kubernetes.JobsNamespace,
+	}
+
+	// Set ServiceAccountName with default if not provided
+	if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
+		templateData["ServiceAccountName"] = saName
+	} else {
+		templateData["ServiceAccountName"] = fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
+	}
+
+	// Only include IamRoleArn if provided
+	if roleArn, exists := task.Tags["_FUNNEL_WORKER_ROLE_ARN"]; exists && roleArn != "" {
+		templateData["IamRoleArn"] = roleArn
+	}
+
+	err = t.Execute(&buf, templateData)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

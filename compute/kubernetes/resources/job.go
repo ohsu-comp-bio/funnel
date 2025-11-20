@@ -38,8 +38,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		res = &tes.Resources{}
 	}
 
-	var buf bytes.Buffer
-	err = t.Execute(&buf, map[string]interface{}{
+	templateData := map[string]interface{}{
 		"TaskId":        task.Id,
 		"Namespace":     config.Kubernetes.Namespace,
 		"JobsNamespace": config.Kubernetes.JobsNamespace,
@@ -50,9 +49,17 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		"NeedsPVC":      len(task.Inputs) > 0 || len(task.Outputs) > 0,
 		"NodeSelector":  config.Kubernetes.NodeSelector,
 		"Tolerations":   config.Kubernetes.Tolerations,
-		// TODO: Add support for ServiceAccount not being passed (i.e. default values)
-		"ServiceAccountName": task.Tags["_WORKER_SA"],
-	})
+	}
+
+	// Set ServiceAccountName with default if not provided
+	if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
+		templateData["ServiceAccountName"] = saName
+	} else {
+		templateData["ServiceAccountName"] = fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
+	}
+
+	var buf bytes.Buffer
+	err = t.Execute(&buf, templateData)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

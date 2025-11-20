@@ -17,8 +17,10 @@ spec:
     - allow-overwrite
     - region={{.Region}}
     - file-mode=0755
+    {{- if .KmsKeyID }}
     - sse aws:kms
     - sse-kms-key-id={{.KmsKeyID}}
+    {{- end }}
   csi:
     driver: s3.csi.aws.com
     volumeHandle: s3-csi-{{.TaskId}}

@@ -23,6 +23,7 @@ var l = logger.NewLogger("test", logger.DefaultConfig())
 
 func TestCreateConfigMap(t *testing.T) {
 	conf := &config.Config{}
+	conf.Kubernetes.JobsNamespace = jobsNamespace
 	err := CreateConfigMap(testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)

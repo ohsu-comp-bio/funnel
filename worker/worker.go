@@ -207,15 +207,6 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			var taskCommand TaskCommand
 
 			if r.Executor.Backend == "kubernetes" {
-
-				serviceAccountName := ""
-				// Set ServiceAccountName with default if not provided
-				if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
-					serviceAccountName = saName
-				} else {
-					serviceAccountName = fmt.Sprintf("funnel-worker-sa-%s-%s", r.Executor.JobsNamespace, task.Id)
-				}
-
 				taskCommand = &KubernetesCommand{
 					TaskId:         task.Id,
 					JobId:          i,
@@ -228,8 +219,14 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					NeedsPVC:       len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
 					NodeSelector:   r.Executor.NodeSelector,
 					Tolerations:    r.Executor.Tolerations,
-					ServiceAccount: serviceAccountName,
+					ServiceAccount: fmt.Sprintf("funnel-worker-sa-%s-%s", r.Executor.JobsNamespace, task.Id),
 				}
+
+				// Override ServiceAccountName if provided in Task Tags
+				if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
+					taskCommand.(*KubernetesCommand).ServiceAccount = saName
+				}
+
 			} else {
 				taskCommand = &DockerCommand{
 					Volumes: mapper.Volumes,

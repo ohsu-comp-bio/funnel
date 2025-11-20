@@ -39,23 +39,22 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 	}
 
 	templateData := map[string]interface{}{
-		"TaskId":        task.Id,
-		"Namespace":     config.Kubernetes.Namespace,
-		"JobsNamespace": config.Kubernetes.JobsNamespace,
-		"Cpus":          res.GetCpuCores(),
-		"RamGb":         res.GetRamGb(),
-		"DiskGb":        res.GetDiskGb(),
-		"Image":         pods.Items[0].Spec.Containers[0].Image,
-		"NeedsPVC":      len(task.Inputs) > 0 || len(task.Outputs) > 0,
-		"NodeSelector":  config.Kubernetes.NodeSelector,
-		"Tolerations":   config.Kubernetes.Tolerations,
+		"TaskId":             task.Id,
+		"Namespace":          config.Kubernetes.Namespace,
+		"JobsNamespace":      config.Kubernetes.JobsNamespace,
+		"Cpus":               res.GetCpuCores(),
+		"RamGb":              res.GetRamGb(),
+		"DiskGb":             res.GetDiskGb(),
+		"Image":              pods.Items[0].Spec.Containers[0].Image,
+		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0,
+		"NodeSelector":       config.Kubernetes.NodeSelector,
+		"Tolerations":        config.Kubernetes.Tolerations,
+		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id),
 	}
 
-	// Set ServiceAccountName with default if not provided
+	// Override ServiceAccountName if provided in Task Tags
 	if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
 		templateData["ServiceAccountName"] = saName
-	} else {
-		templateData["ServiceAccountName"] = fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
 	}
 
 	var buf bytes.Buffer

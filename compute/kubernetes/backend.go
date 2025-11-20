@@ -197,14 +197,26 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		return fmt.Errorf("creating Worker ConfigMap: %v", err)
 	}
 
-	// Create ServiceAccount
-	// TODO: What is the default name if no Name is provided in Task Tags?
-	// This should only be created if no such ServiceAccount with the same name exists
-	// ServiceAccount will still always need to be added to Worker Job and Executor
-	b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
-	err = resources.CreateServiceAccount(task, config, b.client, b.log)
+	// Create ServiceAccount:
+	// - This should only be created if no such ServiceAccount with the same name exists
+	// - ServiceAccount will still always need to be added to Worker Job and Executor
+	saName := "funnel-worker-sa-%s-%s"
+	saName = fmt.Sprintf(saName, config.Kubernetes.JobsNamespace, task.Id)
+	if _, exists := task.Tags["_WORKER_SA"]; exists {
+		saName = task.Tags["_WORKER_SA"]
+	}
+
+	// TODO: Add error handler to handle case where Get fails for reasons other than NotFound
+	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
+
 	if err != nil {
-		return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+		b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
+		err = resources.CreateServiceAccount(task, config, b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+		}
+	} else {
+		b.log.Debug("Error getting ServiceAccount %s", saName, "taskID", task.Id)
 	}
 
 	// Create Role

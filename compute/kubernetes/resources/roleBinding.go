@@ -27,11 +27,19 @@ func CreateRoleBinding(task *tes.Task, config *config.Config, client kubernetes.
 
 	// Template parameters
 	// TODO: Handle cases where values/tags below are not supplied
+	templateData := map[string]interface{}{
+		"TaskId":             task.Id,
+		"Namespace":          config.Kubernetes.JobsNamespace,
+		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id),
+	}
+
+	// Override ServiceAccountName if provided in Task Tags
+	if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
+		templateData["ServiceAccountName"] = saName
+	}
+
 	var buf bytes.Buffer
-	err = t.Execute(&buf, map[string]interface{}{
-		"TaskId":    task.Id,
-		"Namespace": config.Kubernetes.JobsNamespace,
-	})
+	err = t.Execute(&buf, templateData)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

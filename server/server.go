@@ -161,20 +161,26 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
+	// Web dashboard
 	dashmux := http.NewServeMux()
 	dashmux.Handle("/", webdash.RootHandler())
 	dashfs := webdash.FileServer()
 	mux.Handle("/favicon.ico", dashfs)
 	mux.Handle("/manifest.json", dashfs)
+
+	// Health and metrics
 	mux.Handle("/health.html", dashfs)
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
+
+	// Login
 	mux.HandleFunc("/login", auth.LoginHandler)
 	mux.HandleFunc("/login/token", auth.EchoTokenHandler)
 
+	// Root
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-		// TODO this doesnt handle all routes
+		// TODO: this doesnt handle all routes
 		if s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
 		}

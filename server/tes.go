@@ -126,10 +126,10 @@ func (ts *TaskService) GetServiceInfo(ctx context.Context, info *tes.GetServiceI
 		Type: &tes.ServiceType{
 			Artifact: "tes",
 			Group:    "org.ga4gh",
-			Version:  version.String(),
+			Version:  version.Version,
 		},
 		UpdatedAt: time.Now().Format(time.RFC3339),
-		Version:   version.String(),
+		Version:   version.Version,
 	}
 
 	/*

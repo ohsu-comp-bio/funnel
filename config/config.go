@@ -39,6 +39,7 @@ type Config struct {
 		TemplateFile string
 	}
 	AWSBatch   AWSBatch
+	GCPBatch   GCPBatch
 	Kubernetes Kubernetes
 	// storage
 	LocalStorage  LocalStorage
@@ -301,6 +302,19 @@ type AWSBatch struct {
 	// ReconcileRate is how often the compute backend compares states in Funnel's backend
 	// to those reported by AWS Batch
 	ReconcileRate Duration
+	AWSConfig
+}
+
+// Initial pass at Google Batch configuration (relying on existing AWS config as much as possible).
+type GCPBatch struct {
+	JobDefinition     string
+	JobQueue          string
+	DisableReconciler bool
+	ReconcileRate     Duration
+	// Required fields for GCP Batch Jobs (as "Parent") → projects/{project}/locations/{location}
+	// https://pkg.go.dev/cloud.google.com/go/batch/apiv1/batchpb#CreateJobRequest
+	Project  string
+	Location string
 	AWSConfig
 }
 

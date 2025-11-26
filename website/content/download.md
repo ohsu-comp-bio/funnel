@@ -9,7 +9,7 @@ menu:
 
 Funnel is a single binary.  
 Funnel requires [Docker][docker].  
-Funnel is beta quality. APIs might break, bugs exist, data might be lost.  
+Funnel is beta quality. APIs might break, bugs exist, data might be lost!
 
 ### Homebrew
 

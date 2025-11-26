@@ -20,7 +20,6 @@
   <link rel="stylesheet" href="{{ .Site.BaseURL }}css/syntax.css">
   <link rel="stylesheet" href="{{ .Site.BaseURL }}css/theme.css">
   <link rel="stylesheet" href="{{ .Site.BaseURL }}css/funnel.css">
-  <link rel="stylesheet" href="{{ .Site.BaseURL }}css/search.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700">
 
   <!-- Icons -->
@@ -32,85 +31,6 @@
 
   <!-- Copy button -->
   <script src="{{ .Site.BaseURL }}js/copybutton.js"></script>
-
-  <!-- Search Bar -->
-  <link href="/pagefind/pagefind-ui.css" rel="stylesheet">
-  <script src="/pagefind/pagefind-ui.js"></script>
-  <script>
-      window.addEventListener('DOMContentLoaded', (event) => {
-        
-        const dialog = document.querySelector('dialog');
-        const openBtn = document.querySelector('button[data-open-modal]');
-        const closeBtn = document.querySelector('button[data-close-modal]');
-
-        console.log("DEBUG: openBtn:", openBtn);
-        const openModal = (event) => {
-          console.log("DEBUG: openBtn clicked!");
-            dialog.showModal();
-            document.body.toggleAttribute('data-search-modal-open', true);
-            event?.stopPropagation();
-            window.addEventListener('click', onClick);
-            // Since autofocus: true is set on PagefindUI, focus is often automatic.
-            // A short delay can ensure the input is ready to be focused.
-            setTimeout(() => {
-                const searchInput = dialog.querySelector('input');
-                if (searchInput) {
-                    searchInput.focus(); 
-                }
-            }, 100);
-        };
-
-        const closeModal = () => dialog.close();
-
-        const onClick = (event) => {
-            // Close the modal if the click is on the backdrop
-            const dialogFrame = dialog.querySelector('.dialog-frame');
-            if (dialogFrame && document.body.contains(event.target) && !dialogFrame.contains(event.target)) {
-                closeModal();
-            }
-        };
-
-        // --- Event Listeners and Setup ---
-        if (openBtn && dialog) {
-            openBtn.addEventListener('click', openModal);
-            openBtn.disabled = false;
-            
-            // The close button inside the dialog content
-            if (closeBtn) {
-                closeBtn.addEventListener('click', closeModal);
-            }
-
-            dialog.addEventListener('close', () => {
-                document.body.toggleAttribute('data-search-modal-open', false);
-                window.removeEventListener('click', onClick);
-            });
-
-            // Keyboard shortcuts: Ctrl+K or Cmd+K
-            window.addEventListener('keydown', (e) => {
-                if ((e.metaKey === true || e.ctrlKey === true) && e.key === 'k') {
-                    dialog.open ? closeModal() : openModal();
-                    e.preventDefault();
-                }
-            });
-
-            // Update keyboard shortcut for Mac/iOS (Cmd+K) and show the shortcut element
-            const shortcutDisplay = openBtn.querySelector('span[data-kbd-shortcut]');
-            if (openBtn && shortcutDisplay) {
-                const platformKey = shortcutDisplay.querySelector('kbd');
-                // Use navigator.platform for OS detection
-                if (platformKey && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform)) {
-                    platformKey.textContent = '⌘';
-                    openBtn.setAttribute('aria-keyshortcuts', 'Meta+K');
-                }
-                // Make the shortcut visible by removing style="display: none;"
-                shortcutDisplay.style.display = 'flex';
-            }
-        }
-
-        new PagefindUI({ element: "#search", showSubResults: true, autofocus: true });
-      });
-  </script>
-
 </head>
 <body>
 
@@ -125,11 +45,10 @@
         <li><a href="https://github.com/ohsu-comp-bio/funnel">GitHub</a></li>
         <li><a href="https://ohsu-comp-bio.github.io/funnel-compliance/">Compliance</a></li>
 
-        <div class="global-header-search">
+        <div class="search-btn-container">
           <button class="search-btn" data-open-modal>
-            <svg aria-hidden="true" class="astro-gkc36pom astro-lq7oo3uf" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21.71 20.29 18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"></path></svg>
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21.71 20.29 18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"></path></svg>
             <span class="search-text">Search</span>
-            <!-- <kbd>⌘</kbd><kbd>K</kbd> -->
           </button>
         </div> 
       </ul>

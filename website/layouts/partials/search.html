@@ -30,3 +30,162 @@
     </div>
   </div>
 </dialog>
+
+<link href="/pagefind/pagefind-ui.css" rel="stylesheet">
+<script src="/pagefind/pagefind-ui.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+
+const dialog = document.querySelector('dialog');
+const openBtn = document.querySelector('button[data-open-modal]');
+const closeBtn = document.querySelector('button[data-close-modal]');
+
+console.log("DEBUG: openBtn:", openBtn);
+const openModal = (event) => {
+    console.log("DEBUG: openBtn clicked!");
+    dialog.showModal();
+    document.body.toggleAttribute('data-search-modal-open', true);
+    event?.stopPropagation();
+    window.addEventListener('click', onClick);
+    // Since autofocus: true is set on PagefindUI, focus is often automatic.
+    // A short delay can ensure the input is ready to be focused.
+    setTimeout(() => {
+        const searchInput = dialog.querySelector('input');
+        if (searchInput) {
+            searchInput.focus(); 
+        }
+    }, 100);
+};
+
+const closeModal = () => dialog.close();
+
+const onClick = (event) => {
+    // Close the modal if the click is on the backdrop
+    const dialogFrame = dialog.querySelector('.dialog-frame');
+    if (dialogFrame && document.body.contains(event.target) && !dialogFrame.contains(event.target)) {
+        closeModal();
+    }
+};
+
+// --- Event Listeners and Setup ---
+if (openBtn && dialog) {
+    openBtn.addEventListener('click', openModal);
+    openBtn.disabled = false;
+    
+    // The close button inside the dialog content
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    dialog.addEventListener('close', () => {
+        document.body.toggleAttribute('data-search-modal-open', false);
+        window.removeEventListener('click', onClick);
+    });
+
+    // Keyboard shortcuts: Ctrl+K or Cmd+K
+    window.addEventListener('keydown', (e) => {
+        if ((e.metaKey === true || e.ctrlKey === true) && e.key === 'k') {
+            dialog.open ? closeModal() : openModal();
+            e.preventDefault();
+        }
+    });
+
+    // Update keyboard shortcut for Mac/iOS (Cmd+K) and show the shortcut element
+    const shortcutDisplay = openBtn.querySelector('span[data-kbd-shortcut]');
+    if (openBtn && shortcutDisplay) {
+        const platformKey = shortcutDisplay.querySelector('kbd');
+        // Use navigator.platform for OS detection
+        if (platformKey && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform)) {
+            platformKey.textContent = '⌘';
+            openBtn.setAttribute('aria-keyshortcuts', 'Meta+K');
+        }
+        // Make the shortcut visible by removing style="display: none;"
+        shortcutDisplay.style.display = 'flex';
+        }
+    }
+
+    new PagefindUI({ element: "#search", showSubResults: true, autofocus: true });
+    });
+</script>
+
+<style>
+dialog {
+  margin: 4rem auto auto;
+  border-radius: .5rem;
+  width: 90%;
+  max-width: 40rem;
+  min-height: 10rem;
+  max-height: calc(100% - 8rem);
+  border: 2px solid black;
+}
+
+dialog::backdrop {
+  background-color: hsla(223, 13%, 10%, .66);
+  -webkit-backdrop-filter:blur(.25rem);
+  backdrop-filter:blur(.25rem)
+}
+
+.search-btn-container {
+  flex-grow: 1;
+  margin-left: 1em;
+  margin-right: 1em;
+  width: 30%;
+}
+
+.search-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 0.3em;
+  color: white;
+  height: 2em;
+  text-align: left;
+  font-size: smaller;
+  font-family: "PT Sans", Helvetica, Arial, sans-serif;
+}
+
+.search-btn:hover {
+  outline: 2px solid #268bd2;
+  cursor: pointer;
+}
+
+.search-text {
+  margin-left: 0.5em;
+}
+
+#search {
+  padding: 0em 2em 0em 2em;
+}
+
+.search-quick-links {
+    margin-top: 2rem;
+    padding: 1rem 1.5rem;
+}
+
+.search-quick-links-title {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.quick-links-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.quick-links-list li {
+    padding: 0.25rem 0;
+}
+
+.quick-links-list a {
+    display: block;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    color: #333;
+}
+
+.quick-links-list a:hover {
+    outline: 2px solid #034AD8;
+}
+</style>

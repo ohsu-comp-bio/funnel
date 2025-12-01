@@ -43,8 +43,9 @@ else
 fi
 
 # Define the tar file based on OS and Architecture
-TAR_FILE="funnel-${OS}-${ARCH}*.tar.gz"
-CHECKSUM_FILE="funnel-${VERSION_TAG}-checksums.txt"
+TAR_FILE="funnel-${OS}-${ARCH}"
+CHECKSUM_CANDIDATES=("funnel-${VERSION_TAG}-checksums.txt" "funnel_${VERSION_TAG}_checksums.txt")
+CHECKSUM_FILE=""
 
 # Fetch the release assets URLs
 ASSETS=$(curl -s $RELEASE_URL | grep "browser_download_url" | cut -d '"' -f 4)
@@ -52,12 +53,20 @@ ASSETS=$(curl -s $RELEASE_URL | grep "browser_download_url" | cut -d '"' -f 4)
 # Download the tar.gz file and checksums.txt for the detected OS and Arch
 echo "Downloading Funnel $VERSION_TAG for $OS $ARCH..."
 for asset in $ASSETS; do
-    if [[ $asset == *"${OS}-${ARCH}"* && $asset == *".tar.gz"* ]]; then
-        TAR_URL=$asset
-        TAR_NAME=$(basename $asset)
-        curl -L --progress-bar -o $TAR_NAME $TAR_URL
-    elif [[ $asset == *"$CHECKSUM_FILE"* ]]; then
-        curl -L --progress-bar -o $CHECKSUM_FILE $asset
+    asset_name=$(basename "$asset")
+    
+    # Binary (tar.gz)
+    if [[ "$asset" == *"${TAR_FILE}"* && "$asset" == *.tar.gz ]]; then
+        TAR_URL="$asset"
+        TAR_NAME="$asset_name"
+        echo " ➜ $TAR_NAME"
+        curl -L --progress-bar -o "$TAR_NAME" "$TAR_URL"
+
+    # Checksums
+    elif [[ "$asset_name" == *checksums* ]]; then
+        CHECKSUM_FILE="$asset_name"
+        echo " ➜ $CHECKSUM_FILE"
+        curl -L --progress-bar -o "$CHECKSUM_FILE" "$asset"
     fi
 done
 

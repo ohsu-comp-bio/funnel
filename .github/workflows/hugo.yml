@@ -50,6 +50,12 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Install Node.js dependencies
         run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
+
+      - name: Initialize Hugo modules
+        working-directory: ./website
+        run: |
+          hugo mod init github.com/ohsu-comp-bio/funnel
+          hugo mod tidy
       - name: Build with Hugo
         env:
           # For maximum backward compatibility with Hugo modules

@@ -106,7 +106,6 @@ get_os_arch() {
 
 get_assets() {
 	# Fetch the release assets URLs
-	echo "DEBUG: RELEASE_URL: $RELEASE_URL"
 	RELEASE_JSON=$(curl -s $RELEASE_URL)
 
 	if echo "$RELEASE_JSON" | grep -q '"status": "404"'; then

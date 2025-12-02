@@ -33,7 +33,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: 0.124.1
+      HUGO_VERSION: 0.140.0
     steps:
       - name: Install Hugo CLI
         run: |
@@ -51,15 +51,10 @@ jobs:
       - name: Install Node.js dependencies
         run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Initialize Hugo modules
         working-directory: ./website
         run: |
           hugo mod init example.com
-          echo '{module: imports: [path: github.com/KKKZOZ/hugo-admonitions]}' >> config.yaml
-          hugo mod get -u
           hugo mod tidy
       - name: Build with Hugo
         env:

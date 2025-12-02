@@ -57,23 +57,13 @@ jobs:
           hugo mod init example.com
           hugo mod tidy
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
       - name: Build with Hugo
         env:
           # For maximum backward compatibility with Hugo modules
           HUGO_ENVIRONMENT: production
           HUGO_ENV: production
         run: |
-          hugo \
-            --minify \
-            --baseURL "${{ steps.pages.outputs.base_url }}/" \
-            --source website \
-            --destination docs
-
-          # Run pagefind to add search functionality
-          # Reference: https://pagefind.app/docs/
-          npx -y pagefind --site docs
+          make website
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

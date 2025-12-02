@@ -57,6 +57,24 @@ while [[ $# -gt 0 ]]; do
 		shift
 		shift
 		;;
+	-*)
+        echo "Unknown option: $1"
+        show_help
+        exit 1
+        ;;
+    *)
+        # Handle positional arguments
+        if [ -z "$VERSION" ]; then
+            VERSION="$1"
+        elif [ -z "$DEST" ]; then
+            DEST="$1"
+        else
+            echo "Too many arguments: $1"
+            show_help
+            exit 1
+        fi
+        shift
+        ;;
 	esac
 done
 
@@ -88,9 +106,10 @@ get_os_arch() {
 
 get_assets() {
 	# Fetch the release assets URLs
+	echo "DEBUG: RELEASE_URL: $RELEASE_URL"
 	RELEASE_JSON=$(curl -s $RELEASE_URL)
 
-	if echo "$RELEASE_JSON" | grep -q '404'; then
+	if echo "$RELEASE_JSON" | grep -q '"status": "404"'; then
 		echo "Release $VERSION not found."
 		echo
 		echo "Available versions:"

@@ -57,7 +57,9 @@ jobs:
       - name: Initialize Hugo modules
         working-directory: ./website
         run: |
-          hugo mod init github.com/ohsu-comp-bio/funnel
+          hugo mod init example.com
+          echo '{module: imports: [path: github.com/KKKZOZ/hugo-admonitions]}' >> config.yaml
+          hugo mod get -u
           hugo mod tidy
       - name: Build with Hugo
         env:

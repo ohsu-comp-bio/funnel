@@ -56,6 +56,9 @@ jobs:
         run: |
           hugo mod init example.com
           hugo mod tidy
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Build with Hugo
         env:
           # For maximum backward compatibility with Hugo modules

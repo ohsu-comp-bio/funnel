@@ -1,94 +1,177 @@
 #!/bin/bash
+set -euo pipefail
 
-echo "Installing Funnel..."
+# Debugging output
+# set -x
 
-# Define the base repository URL
-REPO="ohsu-comp-bio/funnel"
-
-# Function to get the latest release URL if no version is provided
-get_latest_release_url() {
-    echo "https://api.github.com/repos/$REPO/releases/latest"
+show_help() {
+	echo "Funnel Installation Script"
+	echo
+	echo "Usage:"
+	echo "  $0 [version] [install_path]  # Install Funnel (default: latest version to \$HOME/.local/bin)"
+	echo "  $0 --list                    # List available versions"
+	echo "  $0 --help                    # Show this help"
 }
 
-# Function to get the release URL for a specific tag
-get_tag_release_url() {
-    echo "https://api.github.com/repos/$REPO/releases/tags/$1"
+list_tags() {
+	RELEASES_URL="https://api.github.com/repos/ohsu-comp-bio/funnel/releases"
+
+	# Get all releases and extract tag names
+	RELEASES_JSON=$(curl -s "$RELEASES_URL")
+
+	echo "$RELEASES_JSON" | grep '"tag_name":' | cut -d '"' -f 4 | head -20 | while read -r tag; do
+		echo "$tag"
+	done
 }
 
-# Parse version tag argument
-VERSION_TAG=$1
-
-# Determine the release URL based on whether a version tag was provided
+# Global variables
+# TODO: Move to respective functions?
+VERSION=""
 RELEASE_URL=""
-if [ -z "$VERSION_TAG" ]; then
-    echo "No version specified. Fetching the latest release..."
-    RELEASE_URL=$(get_latest_release_url)
-    VERSION_TAG=$(curl -s $RELEASE_URL | grep '"tag_name":' | cut -d '"' -f 4)
-else
-    echo "Fetching release for version $VERSION_TAG..."
-    RELEASE_URL=$(get_tag_release_url $VERSION_TAG)
-fi
+ASSETS=""
+OS=""
+ARCH=""
+TAR_FILE=""
+CHECKSUM_FILE=""
+DEST=""
 
-# Determine OS and Architecture
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
-
-if [ "$ARCH" == "x86_64" ]; then
-  ARCH="amd64"
-elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-  ARCH="arm64"
-else
-  echo "Unsupported architecture: $ARCH"
-  exit 1
-fi
-
-# Define the tar file based on OS and Architecture
-TAR_FILE="funnel-${OS}-${ARCH}*.tar.gz"
-CHECKSUM_FILE="funnel-${VERSION_TAG}-checksums.txt"
-
-# Fetch the release assets URLs
-ASSETS=$(curl -s $RELEASE_URL | grep "browser_download_url" | cut -d '"' -f 4)
-
-# Download the tar.gz file and checksums.txt for the detected OS and Arch
-echo "Downloading Funnel $VERSION_TAG for $OS $ARCH..."
-for asset in $ASSETS; do
-    if [[ $asset == *"${OS}-${ARCH}"* && $asset == *".tar.gz"* ]]; then
-        TAR_URL=$asset
-        TAR_NAME=$(basename $asset)
-        curl -L --progress-bar -o $TAR_NAME $TAR_URL
-    elif [[ $asset == *"$CHECKSUM_FILE"* ]]; then
-        curl -L --progress-bar -o $CHECKSUM_FILE $asset
-    fi
+# Arguments
+while [[ $# -gt 0 ]]; do
+	case $1 in
+	--list | -l)
+		list_tags
+		exit 0
+		;;
+	--help | -h)
+		show_help
+		exit 0
+		;;
+	--version | -v)
+		VERSION="$2"
+		shift
+		shift
+		;;
+	--dest | -d)
+		# Deprecated flag
+		DEST="$2"
+		shift
+		shift
+		;;
+	esac
 done
 
-# Verify checksum
-echo "Verifying checksum..."
-CHECKSUM_EXPECTED=$(grep $TAR_NAME $CHECKSUM_FILE | awk '{print $1}')
-CHECKSUM_ACTUAL=$(shasum -a 256 $TAR_NAME | awk '{print $1}')
+get_release_url() {
+	if [ -z "$VERSION" ]; then
+		echo "No version specified. Fetching the latest release..."
+		RELEASE_URL="https://api.github.com/repos/ohsu-comp-bio/funnel/releases/latest"
+		VERSION=$(curl -s $RELEASE_URL | grep '"tag_name":' | cut -d '"' -f 4)
+	else
+		echo "Fetching release for version $VERSION..."
+		RELEASE_URL="https://api.github.com/repos/ohsu-comp-bio/funnel/releases/tags/$VERSION"
+	fi
+}
 
-if [ "$CHECKSUM_EXPECTED" != "$CHECKSUM_ACTUAL" ]; then
-    echo "Checksum verification failed for $TAR_NAME. Exiting..."
-    exit 1
-fi
+get_os_arch() {
+	# OS/Arch
+	OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+	ARCH=$(uname -m)
 
-# Extract and install the package
-echo "Extracting the package..."
-tar -xzf $TAR_NAME
+	if [ "$ARCH" == "x86_64" ]; then
+		ARCH="amd64"
+	elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
+		ARCH="arm64"
+	else
+		echo "Unsupported architecture: $ARCH"
+		exit 1
+	fi
+}
 
-# Parse installation destination
-DEST=$2
+get_assets() {
+	# Fetch the release assets URLs
+	RELEASE_JSON=$(curl -s $RELEASE_URL)
 
-# Determine where to install the Funnel binary
-if [ -z "$DEST" ]; then
-    DEST=$HOME/.local/bin
-fi
-echo "Installing Funnel to $DEST..."
-mkdir -p $DEST
-mv funnel $DEST
+	if echo "$RELEASE_JSON" | grep -q '404'; then
+		echo "Release $VERSION not found."
+		echo
+		echo "Available versions:"
+		list_tags
+		exit 1
+	fi
 
-# Clean up
-rm $TAR_NAME $CHECKSUM_FILE
+	ASSETS=$(echo "$RELEASE_JSON" | grep "browser_download_url" | cut -d '"' -f 4)
 
-echo "Installation successful: $DEST/funnel"; echo
-$DEST/funnel version
-echo; echo "Run 'funnel --help' for more info"
+	if [ -z "$ASSETS" ]; then
+		echo "No assets found for release $VERSION. Exiting..."
+		exit 1
+	fi
+}
+
+download() {
+	TAR_FILE="funnel-${OS}-${ARCH}"
+
+	# Download the tar.gz file and checksums.txt for the detected OS and Arch
+	echo "Downloading Funnel $VERSION for $OS $ARCH..."
+	for asset in $ASSETS; do
+		asset_name=$(basename "$asset")
+
+		# Binary (tar.gz)
+		if [[ "$asset" == *"${TAR_FILE}"* && "$asset" == *.tar.gz ]]; then
+			TAR_URL="$asset"
+			TAR_NAME="$asset_name"
+			echo " ➜ $TAR_NAME"
+			curl -L --progress-bar -o "$TAR_NAME" "$TAR_URL"
+
+		# Checksums
+		elif [[ "$asset_name" == *checksums* ]]; then
+			CHECKSUM_FILE="$asset_name"
+			echo " ➜ $CHECKSUM_FILE"
+			curl -L --progress-bar -o "$CHECKSUM_FILE" "$asset"
+		fi
+	done
+}
+
+verify() {
+	# Verify checksum
+	echo "Verifying checksum..."
+	CHECKSUM_EXPECTED=$(grep $TAR_NAME $CHECKSUM_FILE | awk '{print $1}')
+	CHECKSUM_ACTUAL=$(shasum -a 256 $TAR_NAME | awk '{print $1}')
+
+	if [ "$CHECKSUM_EXPECTED" != "$CHECKSUM_ACTUAL" ]; then
+		echo "Checksum verification failed for $TAR_NAME. Exiting..."
+		exit 1
+	fi
+}
+
+install() {
+	# Extract and install the package
+	echo "Extracting the package..."
+	tar -xzf $TAR_NAME
+
+	# Determine where to install the Funnel binary
+	if [ -z "$DEST" ]; then
+		DEST=$HOME/.local/bin
+	fi
+	echo "Installing Funnel to $DEST..."
+	mkdir -p $DEST
+	mv funnel $DEST
+
+	# Clean up
+	rm $TAR_NAME $CHECKSUM_FILE
+
+	echo "Installation successful: $DEST/funnel"
+	echo
+	$DEST/funnel version
+	echo
+	echo "Run '$DEST/funnel --help' for more info"
+}
+
+main() {
+	get_release_url
+	get_os_arch
+	get_assets
+	download
+	verify
+	install
+}
+
+main

@@ -47,7 +47,7 @@ func (docker DockerCommand) Run(ctx context.Context) error {
 
 	err = docker.executeCommand(ctx, docker.PullCommand, false)
 	if err != nil {
-		docker.Event.Error("failed to pull docker image", err)
+		docker.Event.Error("failed to pull docker image using command", err, docker.PullCommand)
 	}
 
 	err = docker.executeCommand(ctx, docker.RunCommand, true)

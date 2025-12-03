@@ -19,7 +19,7 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
+func NewBackend(ctx context.Context, conf *config.AWSBatch, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
 	sess, err := util.NewAWSSession(conf.AWSConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred creating batch client: %v", err)
@@ -43,7 +43,7 @@ func NewBackend(ctx context.Context, conf config.AWSBatch, reader tes.ReadOnlySe
 // Backend represents the local backend.
 type Backend struct {
 	client   *batch.Batch
-	conf     config.AWSBatch
+	conf     *config.AWSBatch
 	event    events.Writer
 	database tes.ReadOnlyServer
 	log      *logger.Logger
@@ -167,7 +167,7 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 // In this context a "FAILED" state is being used as a generic term that captures
 // one or more terminal states for the backend.
 func (b *Backend) reconcile(ctx context.Context) {
-	ticker := time.NewTicker(time.Duration(b.conf.ReconcileRate))
+	ticker := time.NewTicker(b.conf.ReconcileRate.AsDuration())
 
 ReconcileLoop:
 	for {

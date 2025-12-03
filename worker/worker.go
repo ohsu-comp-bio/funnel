@@ -21,7 +21,7 @@ import (
 // and logging.
 type DefaultWorker struct {
 	Executor    Executor
-	Conf        config.Worker
+	Conf        *config.Worker
 	Store       storage.Storage
 	TaskReader  TaskReader
 	EventWriter events.Writer
@@ -38,10 +38,22 @@ type Executor struct {
 	PVTemplate string
 	// Kubernetes persistent volume claim template
 	PVCTemplate string
-	// Kubernetes namespace
+	// Funnel Server namespace
 	Namespace string
+	// Funnel Worker + Executor namespace
+	JobsNamespace string
 	// Kubernetes service account name
 	ServiceAccount string
+	// Kubernetes service account template
+	ServiceAccountTemplate string
+	// Kubernetes role template
+	RoleTemplate string
+	// Kubernetes role binding template
+	RoleBindingTemplate string
+	// NodeSelector for scheduling jobs onto specific nodes
+	NodeSelector map[string]string
+	// Tolerations for scheduling jobs onto specific nodes
+	Tolerations []map[string]interface{}
 }
 
 // Run runs the Worker.
@@ -148,7 +160,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 	// Download inputs
 	if run.ok() {
-		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event, r.Conf.MaxParallelTransfers)
+		run.syserr = DownloadInputs(ctx, mapper.Inputs, r.Store, event, int(r.Conf.MaxParallelTransfers))
 	}
 
 	if run.ok() {
@@ -196,14 +208,25 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 			if r.Executor.Backend == "kubernetes" {
 				taskCommand = &KubernetesCommand{
-					TaskId:       task.Id,
-					JobId:        i,
-					StdinFile:    d.Stdin,
-					TaskTemplate: r.Executor.Template,
-					Namespace:    r.Executor.Namespace,
-					Resources:    resources,
-					Command:      command,
+					TaskId:         task.Id,
+					JobId:          i,
+					StdinFile:      d.Stdin,
+					TaskTemplate:   r.Executor.Template,
+					Namespace:      r.Executor.Namespace,
+					JobsNamespace:  r.Executor.JobsNamespace,
+					Resources:      resources,
+					Command:        command,
+					NeedsPVC:       len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
+					NodeSelector:   r.Executor.NodeSelector,
+					Tolerations:    r.Executor.Tolerations,
+					ServiceAccount: fmt.Sprintf("funnel-worker-sa-%s-%s", r.Executor.JobsNamespace, task.Id),
 				}
+
+				// Override ServiceAccountName if provided in Task Tags
+				if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
+					taskCommand.(*KubernetesCommand).ServiceAccount = saName
+				}
+
 			} else {
 				taskCommand = &DockerCommand{
 					Volumes: mapper.Volumes,
@@ -219,7 +242,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					Command:         command,
 				}
 
-				// Hide this behind explicit flag/option in configuration
+				// TODO: Hide this behind explicit flag/option in configuration
 				// if r.Conf.Container.EnableTags {
 				// 	for k, v := range task.Tags {
 				// 		safeTag := r.sanitizeValues(v)
@@ -266,7 +289,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	// Upload outputs
 	var outputLog []*tes.OutputFileLog
 	if run.ok() {
-		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event, r.Conf.MaxParallelTransfers)
+		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event, int(r.Conf.MaxParallelTransfers))
 	}
 
 	// unmap paths for OutputFileLog
@@ -359,7 +382,7 @@ func (r *DefaultWorker) pollForCancel(pctx context.Context, cancelCallback func(
 	// Start a goroutine that polls the server to watch for a canceled state.
 	// If a cancel state is found, "taskctx" is canceled.
 	go func() {
-		ticker := time.NewTicker(time.Duration(r.Conf.PollingRate))
+		ticker := time.NewTicker(r.Conf.PollingRate.AsDuration())
 		defer ticker.Stop()
 
 		for {

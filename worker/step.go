@@ -12,7 +12,7 @@ import (
 )
 
 type stepWorker struct {
-	Conf    config.Worker
+	Conf    *config.Worker
 	Command TaskCommand
 	Event   *events.ExecutorWriter
 	IP      string
@@ -35,8 +35,8 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 	// Tail the stdout/err log streams.
 	if s.Conf.LogTailSize > 0 {
-		if s.Conf.LogUpdateRate > 0 {
-			stdout, stderr = s.Event.StreamLogTail(subctx, s.Conf.LogTailSize, time.Duration(s.Conf.LogUpdateRate), &wg)
+		if s.Conf.LogUpdateRate != nil && s.Conf.LogUpdateRate.AsDuration() > 0 {
+			stdout, stderr = s.Event.StreamLogTail(subctx, s.Conf.LogTailSize, s.Conf.LogUpdateRate.AsDuration(), &wg)
 		} else {
 			stdout, stderr = s.Event.LogTail(subctx, s.Conf.LogTailSize)
 		}
@@ -72,6 +72,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 
 		case result := <-done:
 			s.Event.EndTime(time.Now())
+			s.Event.Debug("Executor done", "result", result)
 			s.Event.ExitCode(getExitCode(result))
 			return result
 		}

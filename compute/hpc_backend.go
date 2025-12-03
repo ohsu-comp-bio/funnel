@@ -24,7 +24,7 @@ type HPCBackend struct {
 	SubmitCmd string
 	CancelCmd string
 	Template  string
-	Conf      config.Config
+	Conf      *config.Config
 	Event     events.Writer
 	Database  tes.ReadOnlyServer
 	// ExtractID is responsible for extracting the task id from the response
@@ -257,7 +257,7 @@ func (b *HPCBackend) setupTemplatedHPCSubmit(ctx context.Context, task *tes.Task
 
 	var args string
 	if ctx.Value("Config") != nil {
-		conf := ctx.Value("Config").(config.Config)
+		conf := ctx.Value("Config").(*config.Config)
 		configFile := filepath.Join(workdir, "config.yaml")
 		err = config.ToYamlFile(conf, configFile)
 		if err != nil {

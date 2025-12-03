@@ -17,7 +17,7 @@ func TestFormatNilProtoField(t *testing.T) {
 	tf := &textFormatter{
 		c.TextFormat,
 		jsonFormatter{
-			conf: c.JSONFormat,
+			conf: c.JsonFormat,
 		},
 	}
 

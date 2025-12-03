@@ -2,10 +2,7 @@
 package config
 
 import (
-	"io"
 	"os"
-
-	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
 // Config describes configuration for Funnel.
@@ -100,7 +97,7 @@ type Server struct {
 }
 
 // HTTPAddress returns the HTTP address based on HostName and HTTPPort
-func (c Server) HTTPAddress() string {
+func (c *Server) HTTPAddress() string {
 	http := ""
 	if c.HostName != "" {
 		http = "http://" + c.HostName
@@ -340,72 +337,28 @@ type LocalStorage struct {
 }
 
 // Valid validates the LocalStorage configuration
-func (l LocalStorage) Valid() bool {
+func (l *LocalStorage) Valid() bool {
 	return !l.Disabled && len(l.AllowedDirs) > 0
 }
 
-// GoogleCloudStorage describes configuration for the Google Cloud storage backend.
-type GoogleCloudStorage struct {
-	Disabled bool
-	// If no account file is provided then Funnel will try to use Google Application
-	// Default Credentials to authorize and authenticate the client.
-	CredentialsFile string
-}
-
 // Valid validates the Storage configuration.
-func (g GoogleCloudStorage) Valid() bool {
+func (g *GoogleCloudStorage) Valid() bool {
 	return !g.Disabled
 }
 
-// AmazonS3Storage describes the configuration for the Amazon S3 storage backend.
-type AmazonS3Storage struct {
-	Disabled bool
-	SSE      struct {
-		CustomerKeyFile string
-		KMSKey          string
-	}
-	AWSConfig
-}
-
 // Valid validates the AmazonS3Storage configuration
-func (s AmazonS3Storage) Valid() bool {
-	creds := (s.Key != "" && s.Secret != "") || (s.Key == "" && s.Secret == "")
+func (s *AmazonS3Storage) Valid() bool {
+	creds := s.AWSConfig == nil || (s.AWSConfig.Key != "" && s.AWSConfig.Secret != "") || (s.AWSConfig.Key == "" && s.AWSConfig.Secret == "")
 	return !s.Disabled && creds
 }
 
-// GenericS3Storage describes the configuration for the Generic S3 storage backend.
-type GenericS3Storage struct {
-	Disabled bool
-	Endpoint string
-	Key      string
-	Secret   string
-}
-
 // Valid validates the S3Storage configuration
-func (s GenericS3Storage) Valid() bool {
+func (s *GenericS3Storage) Valid() bool {
 	return !s.Disabled && s.Key != "" && s.Secret != "" && s.Endpoint != ""
 }
 
-// SwiftStorage configures the OpenStack Swift object storage backend.
-type SwiftStorage struct {
-	Disabled   bool
-	UserName   string
-	Password   string
-	AuthURL    string
-	TenantName string
-	TenantID   string
-	RegionName string
-	// Size of chunks to use for large object creation.
-	// Defaults to 500 MB if not set or set below 10 MB.
-	// The max number of chunks for a single object is 1000.
-	ChunkSizeBytes int64
-	// The maximum number of times to retry on error.
-	// Defaults to 3.
-	MaxRetries int
-}
-
 // Valid validates the SwiftStorage configuration.
-func (s SwiftStorage) Valid() bool {
+func (s *SwiftStorage) Valid() bool {
 	user := s.UserName != "" || os.Getenv("OS_USERNAME") != ""
 	password := s.Password != "" || os.Getenv("OS_PASSWORD") != ""
 	authURL := s.AuthURL != "" || os.Getenv("OS_AUTH_URL") != ""
@@ -418,66 +371,12 @@ func (s SwiftStorage) Valid() bool {
 	return !s.Disabled && valid
 }
 
-// HTTPStorage configures the http storage backend.
-type HTTPStorage struct {
-	Disabled bool
-	// Timeout duration for http GET calls
-	Timeout Duration
-}
-
 // Valid validates the HTTPStorage configuration.
-func (h HTTPStorage) Valid() bool {
+func (h *HTTPStorage) Valid() bool {
 	return !h.Disabled
-}
-
-// FTPStorage configures the http storage backend.
-type FTPStorage struct {
-	Disabled bool
-	// Timeout duration for http GET calls
-	Timeout  Duration
-	User     string
-	Password string
 }
 
 // Valid validates the FTPStorage configuration.
-func (h FTPStorage) Valid() bool {
+func (h *FTPStorage) Valid() bool {
 	return !h.Disabled
-}
-
-// Kubernetes describes the configuration for the Kubernetes compute backend.
-type Kubernetes struct {
-	// The bucket to use for the task's Working Directory
-	Bucket string
-	// The region to use for the task's Bucket
-	Region string
-	// The executor used to execute tasks. Available executors: docker, kubernetes
-	Executor string
-	// Turn off task state reconciler. When enabled, Funnel communicates with Kuberenetes
-	// to find tasks that are stuck in a queued state or errored and updates the task state
-	// accordingly.
-	DisableReconciler bool
-	// ReconcileRate is how often the compute backend compares states in Funnel's backend
-	// to those reported by the backend
-	ReconcileRate Duration
-	// Disable cleanup of complete/failed jobs. Cleanup is run during reconcile loop.
-	DisableJobCleanup bool
-	// Batch job template. See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#job-v1-batch
-	Template string
-	// TemplateFile is the path to the job template.
-	TemplateFile string
-	// Job template used for executing the tasks.
-	ExecutorTemplate string
-	// ExecutorTemplateFile is the path to the executor template.
-	ExecutorTemplateFile string
-	// Worker/Executor PV job template.
-	PVTemplate string
-	// Worker/Executor PVC job template.
-	PVCTemplate string
-	// Path to the Kubernetes configuration file, otherwise assumes the Funnel server is running in a pod and
-	// attempts to use https://godoc.org/k8s.io/client-go/rest#InClusterConfig to infer configuration.
-	ConfigFile string
-	// Namespace to spawn jobs within
-	Namespace string
-	// ServiceAccount is the name of the service account to use when running tasks.
-	ServiceAccount string
 }

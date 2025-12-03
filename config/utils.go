@@ -1,23 +1,28 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
-	"strings"
 
-	"github.com/ghodss/yaml"
+	"github.com/go-playground/validator/v10"
+	"github.com/goccy/go-yaml"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // ToYaml formats the configuration into YAML and returns the bytes.
-func ToYaml(c Config) ([]byte, error) {
-	return yaml.Marshal(c)
+func ToYaml(c *Config) ([]byte, error) {
+	jsonBytes, err := protojson.Marshal(c)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal proto to JSON: %w", err)
+	}
+
+	// Then, convert the JSON to YAML
+	return yaml.JSONToYAML(jsonBytes)
 }
 
 // ToYamlFile writes the configuration to a YAML file.
-func ToYamlFile(c Config, path string) error {
+func ToYamlFile(c *Config, path string) error {
 	b, err := ToYaml(c)
 	if err != nil {
 		return err
@@ -27,17 +32,17 @@ func ToYamlFile(c Config, path string) error {
 
 // Parse parses a YAML doc into the given Config instance.
 func Parse(raw []byte, conf *Config) error {
-	j, err := yaml.YAMLToJSON(raw)
+	jsonBytes, err := yaml.YAMLToJSON(raw)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert YAML to JSON: %w", err)
 	}
-	err = checkForUnknownKeys(j, conf)
-	if err != nil {
-		return err
+
+	if err := protojson.Unmarshal(jsonBytes, conf); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON with protojson: %w", err)
 	}
-	err = yaml.Unmarshal(raw, conf)
-	if err != nil {
-		return err
+	validate := validator.New()
+	if err := validate.Struct(conf); err != nil {
+		return fmt.Errorf("config validation failed: %w", err)
 	}
 	return nil
 }
@@ -64,7 +69,7 @@ func ParseFile(relpath string, conf *Config) error {
 	// Parse file
 	err = Parse(source, conf)
 	if err != nil {
-		return fmt.Errorf("failed to parse config at path %s: \n%v", path, err)
+		return fmt.Errorf("failed to parse config at path %s: errs: %v", path, err)
 	}
 	return nil
 }

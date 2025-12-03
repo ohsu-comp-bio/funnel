@@ -85,11 +85,11 @@ func (x Type) String() string {
 }
 
 func (Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_events_proto_enumTypes[0].Descriptor()
+	return file_events_events_proto_enumTypes[0].Descriptor()
 }
 
 func (Type) Type() protoreflect.EnumType {
-	return &file_events_proto_enumTypes[0]
+	return &file_events_events_proto_enumTypes[0]
 }
 
 func (x Type) Number() protoreflect.EnumNumber {
@@ -98,7 +98,7 @@ func (x Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Type.Descriptor instead.
 func (Type) EnumDescriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{0}
+	return file_events_events_proto_rawDescGZIP(), []int{0}
 }
 
 type Metadata struct {
@@ -135,7 +135,7 @@ func (x *Metadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metadata.ProtoReflect.Descriptor instead.
 func (*Metadata) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{0}
+	return file_events_events_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Metadata) GetValue() map[string]string {
@@ -179,7 +179,7 @@ func (x *Outputs) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Outputs.ProtoReflect.Descriptor instead.
 func (*Outputs) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{1}
+	return file_events_events_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Outputs) GetValue() []*tes.OutputFileLog {
@@ -225,7 +225,7 @@ func (x *SystemLog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemLog.ProtoReflect.Descriptor instead.
 func (*SystemLog) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{2}
+	return file_events_events_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SystemLog) GetMsg() string {
@@ -300,7 +300,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{3}
+	return file_events_events_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Event) GetId() string {
@@ -532,10 +532,10 @@ func (x *WriteEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WriteEventResponse.ProtoReflect.Descriptor instead.
 func (*WriteEventResponse) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{4}
+	return file_events_events_proto_rawDescGZIP(), []int{4}
 }
 
-var File_events_proto protoreflect.FileDescriptor
+var File_events_events_proto protoreflect.FileDescriptor
 
 const file_events_proto_rawDesc = "" +
 	"\n" +
@@ -606,7 +606,7 @@ func file_events_proto_rawDescGZIP() []byte {
 	file_events_proto_rawDescOnce.Do(func() {
 		file_events_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_events_proto_rawDesc), len(file_events_proto_rawDesc)))
 	})
-	return file_events_proto_rawDescData
+	return file_events_events_proto_rawDescData
 }
 
 var file_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
@@ -624,7 +624,7 @@ var file_events_proto_goTypes = []any{
 	(tes.State)(0),             // 9: tes.State
 	(*tes.Task)(nil),           // 10: tes.Task
 }
-var file_events_proto_depIdxs = []int32{
+var file_events_events_proto_depIdxs = []int32{
 	6,  // 0: events.Metadata.value:type_name -> events.Metadata.ValueEntry
 	8,  // 1: events.Outputs.value:type_name -> tes.OutputFileLog
 	7,  // 2: events.SystemLog.fields:type_name -> events.SystemLog.FieldsEntry
@@ -643,9 +643,9 @@ var file_events_proto_depIdxs = []int32{
 	0,  // [0:9] is the sub-list for field type_name
 }
 
-func init() { file_events_proto_init() }
-func file_events_proto_init() {
-	if File_events_proto != nil {
+func init() { file_events_events_proto_init() }
+func file_events_events_proto_init() {
+	if File_events_events_proto != nil {
 		return
 	}
 	file_events_proto_msgTypes[3].OneofWrappers = []any{
@@ -670,10 +670,10 @@ func file_events_proto_init() {
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_events_proto_goTypes,
-		DependencyIndexes: file_events_proto_depIdxs,
-		EnumInfos:         file_events_proto_enumTypes,
-		MessageInfos:      file_events_proto_msgTypes,
+		GoTypes:           file_events_events_proto_goTypes,
+		DependencyIndexes: file_events_events_proto_depIdxs,
+		EnumInfos:         file_events_events_proto_enumTypes,
+		MessageInfos:      file_events_events_proto_msgTypes,
 	}.Build()
 	File_events_proto = out.File
 	file_events_proto_goTypes = nil

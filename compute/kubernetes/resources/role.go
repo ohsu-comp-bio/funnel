@@ -36,8 +36,6 @@ func CreateRole(task *tes.Task, config *config.Config, client kubernetes.Interfa
 		return fmt.Errorf("%v", err)
 	}
 
-	fmt.Println("DEBUG: role buf.String():", buf.String())
-
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {

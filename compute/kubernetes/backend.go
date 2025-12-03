@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"dario.cat/mergo"
+	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -107,7 +108,8 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		return b.Submit(ctx, ev.GetTask(), taskConfig)
+		res := b.Submit(ctx, ev.GetTask(), taskConfig)
+		return res
 	case events.Type_TASK_STATE:
 		if ev.GetState() == tes.State_CANCELED {
 			return b.Cancel(ctx, ev.Id)
@@ -123,6 +125,7 @@ func (b *Backend) Close() {
 // Submit creates both the PVC and the worker job with better error handling
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
 	err := b.createResources(task, config)
+	b.log.Debug("Error creating resources", "error", err, "task ID", task.Id)
 	if err != nil {
 		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
 		b.event.WriteEvent(
@@ -337,76 +340,129 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 
 	ticker := time.NewTicker(rate)
 	failedJobEvents := make(map[string]int)
+	const maxErrEventWrites = 2
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			const maxErrEventWrites = 2
 
+			// List ALL current Kubernetes Jobs
 			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
 				continue
 			}
 
-			// TODO: Check for 'error submitting task to compute backend' message error
-			// Iterate over all K8s jobs
-			for _, j := range jobs.Items {
-				s := j.Status
-				jobName := j.Name
-				b.log.Debug("reconcile: checking job status", "taskID", jobName, "status", s)
+			k8sJobs := make(map[string]*v1.Job)
+			for i := range jobs.Items {
+				k8sJobs[jobs.Items[i].Name] = &jobs.Items[i]
+			}
 
-				switch {
-				case s.Active > 0:
-					continue
-				case s.Succeeded > 0:
-					if disableCleanup {
-						continue
-					}
-					b.log.Debug("reconcile: cleaning up successful job", "taskID", jobName)
-
-					// Delete resources
-					if err := b.cleanResources(ctx, jobName); err != nil {
-						b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
-						continue
-					}
-					delete(failedJobEvents, jobName)
-
-				// If any Jobs failed
-				case s.Failed > 0:
-					if count, exists := failedJobEvents[jobName]; exists && count >= maxErrEventWrites {
-						continue
-					}
-
-					b.log.Debug("reconcile: gathering failed k8s job conditions", "taskID", jobName)
-					conds, err := json.Marshal(s.Conditions)
+			// List non-terminal tasks from Funnel's database
+			states := []tes.State{tes.State_QUEUED, tes.State_INITIALIZING, tes.State_RUNNING}
+			for _, s := range states {
+				pageToken := ""
+				for {
+					lresp, err := b.database.ListTasks(ctx, &tes.ListTasksRequest{
+						State:     s,
+						PageSize:  100,
+						PageToken: pageToken,
+					})
 					if err != nil {
-						b.log.Error("reconcile: marshal failed job conditions", "taskID", jobName, "error", err)
+						b.log.Error("reconcile: listing non-terminal tasks from Funnel DB", err)
+						break
+					}
+					pageToken = lresp.NextPageToken
+
+					// Compare Funnel Tasks against K8s Jobs
+					for _, task := range lresp.Tasks {
+						taskID := task.Id
+
+						// Check for Orphaned Task (Job Missing)
+						if _, exists := k8sJobs[taskID]; !exists {
+
+							b.log.Debug("reconcile: orphaned task found, marking as SYSTEM_ERROR", "taskID", taskID)
+
+							b.event.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
+
+							b.event.WriteEvent(
+								ctx,
+								events.NewSystemLog(
+									taskID, 0, 0, "error",
+									"Kubernetes Worker Job not found. Submission failed or external deletion.",
+									nil,
+								),
+							)
+							continue
+						}
+
+						// If the job exists, check its current status (Active, Succeeded, Failed)
+						j := k8sJobs[taskID]
+
+						// Remove from map to ensure only orphaned checks are done above
+						delete(k8sJobs, taskID)
+
+						jobName := j.Name
+						status := j.Status
+
+						switch {
+						case status.Active > 0:
+							continue
+						case status.Succeeded > 0:
+							if disableCleanup {
+								continue
+							}
+							b.log.Debug("reconcile: cleaning up successful job", "taskID", jobName)
+
+							// Delete resources
+							if err := b.cleanResources(ctx, jobName); err != nil {
+								b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
+								continue
+							}
+							delete(failedJobEvents, jobName)
+
+						case status.Failed > 0:
+							if count, exists := failedJobEvents[jobName]; exists && count >= maxErrEventWrites {
+								continue
+							}
+
+							b.log.Debug("reconcile: writing system error event for failed job", "taskID", jobName)
+							conds, err := json.Marshal(status.Conditions)
+							if err != nil {
+								b.log.Error("reconcile: marshal failed job conditions", "taskID", jobName, "error", err)
+							}
+
+							b.event.WriteEvent(ctx, events.NewState(jobName, tes.SystemError))
+							b.event.WriteEvent(
+								ctx,
+								events.NewSystemLog(
+									jobName, 0, 0, "error",
+									"Kubernetes job in FAILED state",
+									map[string]string{"error": string(conds)},
+								),
+							)
+
+							failedJobEvents[jobName]++
+							if disableCleanup {
+								continue
+							}
+
+							b.log.Debug("reconcile: cleaning up failed job", "taskID", jobName)
+							if err := b.cleanResources(ctx, jobName); err != nil {
+								b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
+								continue
+							}
+							delete(failedJobEvents, jobName)
+						}
 					}
 
-					b.log.Debug("reconcile: writing system error event for failed job", "taskID", jobName)
-					b.event.WriteEvent(ctx, events.NewState(jobName, tes.SystemError))
-					b.event.WriteEvent(
-						ctx,
-						events.NewSystemLog(
-							jobName, 0, 0, "error",
-							"Kubernetes job in FAILED state",
-							map[string]string{"error": string(conds)},
-						),
-					)
-
-					failedJobEvents[jobName]++
-					if disableCleanup {
-						continue
+					// Continue to next page from ListTasks if a token exists
+					if pageToken == "" {
+						break
 					}
-
-					b.log.Debug("reconcile: cleaning up failed job", "taskID", jobName)
-					if err := b.cleanResources(ctx, jobName); err != nil {
-						b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
-						continue
-					}
-					delete(failedJobEvents, jobName)
+					time.Sleep(time.Millisecond * 100)
 				}
 			}
 		}

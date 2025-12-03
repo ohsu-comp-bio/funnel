@@ -4,7 +4,6 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -25,65 +24,18 @@ import (
 
 // Backend represents the K8s backend.
 type Backend struct {
-	client            kubernetes.Interface
-	event             events.Writer
-	database          tes.ReadOnlyServer
-	log               *logger.Logger
-	backendParameters map[string]string
-	conf              *config.Config // Funnel configuration
-	events.Computer
-}
-
-// NewBackend returns a new K8s Backend instance.
-func NewBackend(ctx context.Context, conf *config.Config, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
-	if conf.Kubernetes.WorkerTemplate == "" {
-		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes job template")
-	}
-	// Funnel Server Namespace
-	if conf.Kubernetes.Namespace == "" {
-		return nil, fmt.Errorf("invalid configuration; must provide a kubernetes namespace")
-	}
-
-	// Funnel Worker + Executor Namespace
-	if conf.Kubernetes.JobsNamespace == "" {
-		conf.Kubernetes.JobsNamespace = conf.Kubernetes.Namespace
-	}
-
-	clientset, err := k8sutil.NewK8sClient(conf)
-	if err != nil {
-		return nil, fmt.Errorf("creating kubernetes client: %v", err)
-	}
-
-	b := &Backend{
-		client:   clientset,
-		event:    writer,
-		database: reader,
-		log:      log,
-		conf:     conf,
-	}
-
-	if !conf.Kubernetes.DisableReconciler {
-		rate := conf.Kubernetes.ReconcileRate.AsDuration()
-		go b.reconcile(ctx, rate, conf.Kubernetes.DisableJobCleanup)
-	}
-
-	return b, nil
-}
-
-func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
-	if !task.Resources.GetBackendParametersStrict() {
-		return nil
-	}
-
-	taskBackendParameters := task.Resources.GetBackendParameters()
-	for k := range taskBackendParameters {
-		_, ok := b.backendParameters[k]
-		if !ok {
-			return errors.New("backend parameters not supported")
-		}
-	}
-
-	return nil
+	bucket      string
+	region      string
+	client      batchv1.JobInterface
+	namespace   string
+	template    string
+	pvTemplate  string
+	pvcTemplate string
+	event       events.Writer
+	database    tes.ReadOnlyServer
+	log         *logger.Logger
+	config      *rest.Config
+	events.Backend
 }
 
 // WriteEvent writes an event to the compute backend.

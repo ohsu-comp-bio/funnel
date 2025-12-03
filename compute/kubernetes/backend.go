@@ -90,7 +90,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
 	var taskConfig *config.Config = b.conf
-	fmt.Println("DEBUG: taskConfig before plugin", taskConfig)
+	b.log.Debug("taskConfig before plugin", taskConfig)
 	if b.conf.Plugins != nil {
 		resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 		if !ok {
@@ -103,7 +103,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
 		}
 	}
-	fmt.Println("DEBUG: taskConfig after plugin", taskConfig)
+	b.log.Debug("taskConfig after plugin", taskConfig)
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
@@ -124,7 +124,6 @@ func (b *Backend) Close() {
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
 	err := b.createResources(task, config)
 	if err != nil {
-		// TODO: #3: Send event that task submission failed
 		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
 		b.event.WriteEvent(
 			ctx,
@@ -160,14 +159,14 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 // createResources creates the resources needed for a task.
 func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
-	fmt.Println("DEBUG: createResources config", config)
+	b.log.Debug("createResources config", config)
 
 	// If the task has inputs or outputs that must be taken care of create a PVC
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
 		// Check to make sure required configs are present
-		fmt.Println("DEBUG: createResources GenericS3 config", config.GenericS3)
+		b.log.Debug("createResources GenericS3 config", config.GenericS3)
 		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
 			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
 			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
@@ -352,9 +351,12 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 			}
 
 			// TODO: Check for 'error submitting task to compute backend' message error
+			// Iterate over all K8s jobs
 			for _, j := range jobs.Items {
 				s := j.Status
 				jobName := j.Name
+				b.log.Debug("reconcile: checking job status", "taskID", jobName, "status", s)
+
 				switch {
 				case s.Active > 0:
 					continue
@@ -371,6 +373,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 					}
 					delete(failedJobEvents, jobName)
 
+				// If any Jobs failed
 				case s.Failed > 0:
 					if count, exists := failedJobEvents[jobName]; exists && count >= maxErrEventWrites {
 						continue
@@ -381,6 +384,8 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 					if err != nil {
 						b.log.Error("reconcile: marshal failed job conditions", "taskID", jobName, "error", err)
 					}
+
+					b.log.Debug("reconcile: writing system error event for failed job", "taskID", jobName)
 					b.event.WriteEvent(ctx, events.NewState(jobName, tes.SystemError))
 					b.event.WriteEvent(
 						ctx,

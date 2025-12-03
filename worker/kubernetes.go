@@ -77,26 +77,27 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	err = tpl.Execute(&buf, templateData)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("Funnel Worker: failed to execute job template: %v", err)
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("Funnel Worker: failed to decode job template: %v", err)
 	}
 
 	job, ok := obj.(*v1.Job)
 	if !ok {
-		return err
+		return fmt.Errorf("Funnel Worker: decoded object is not a Job")
 	}
 
 	clientset := kcmd.Clientset
 	if clientset == nil {
 		var err error
+
 		clientset, err = getKubernetesClientset()
 		if err != nil {
-			return err
+			return fmt.Errorf("Funnel Worker: failed to get Kubernetes clientset: %v", err)
 		}
 	}
 
@@ -104,10 +105,12 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 
+	// TODO: move maxRetries (and interval duration) to config
 	var maxRetries = 5
+	var interval = 2 * time.Second
 
+	// Retry creating the Executor Pod on failure
 	if err != nil {
-		// Retry creating the Executor Pod on failure
 		var retryCount int
 		for retryCount < maxRetries {
 			_, err = client.Create(ctx, job, metav1.CreateOptions{})
@@ -115,21 +118,17 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 				break
 			}
 			retryCount++
-			time.Sleep(2 * time.Second)
+			time.Sleep(interval)
 		}
 		if retryCount == maxRetries {
 			return fmt.Errorf("Funnel Worker: Failed to create Executor Job after %v attempts: %v", maxRetries, err)
 		}
 	}
 
-	// Wait until the job finishes
-	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
-	defer watcher.Stop()
-	waitForJobFinish(ctx, watcher)
-
+	// Get Executor Pod name in order to stream logs from Executor to Worker stdout
 	pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list pods for executor job: %v", err)
 	}
 
 	for _, v := range pods.Items {
@@ -144,6 +143,22 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		if err != nil {
 			log.Fatalf("Error streaming logs: %v", err)
 		}
+	}
+
+	// Wait until the job finishes
+	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
+	defer watcher.Stop()
+	waitForJobFinish(ctx, watcher)
+
+	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
+
+	j, err := client.Get(ctx, jobName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to retrieve final status for executor job %s: %v", jobName, err)
+	}
+
+	if j.Status.Failed > 0 {
+		return fmt.Errorf("executor job %s failed with %d failures", jobName, j.Status.Failed)
 	}
 
 	return nil

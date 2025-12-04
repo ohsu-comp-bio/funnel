@@ -227,6 +227,7 @@ full: proto install tidy lint test website webdash
 
 # Build the website
 website:
+	cd website && hugo mod init example.com && hugo mod tidy && cd -
 	@cp ./config/*.txt ./website/static/funnel-config-examples/
 	@cp ./config/default-config.yaml ./website/static/funnel-config-examples/
 	hugo --source ./website

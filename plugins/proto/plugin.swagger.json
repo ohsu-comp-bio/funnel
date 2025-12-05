@@ -191,6 +191,9 @@
         "Kubernetes": {
           "$ref": "#/definitions/configKubernetes"
         },
+        "GCPBatch": {
+          "$ref": "#/definitions/configGCPBatch"
+        },
         "LocalStorage": {
           "$ref": "#/definitions/configLocalStorage",
           "title": "Storage"
@@ -347,6 +350,30 @@
         }
       },
       "description": "FTPStorage configures the FTP storage backend."
+    },
+    "configGCPBatch": {
+      "type": "object",
+      "properties": {
+        "Location": {
+          "type": "string"
+        },
+        "GoogleStorage": {
+          "type": "string"
+        },
+        "Project": {
+          "type": "string"
+        },
+        "DisableReconciler": {
+          "type": "boolean"
+        },
+        "ReconcileRate": {
+          "type": "string"
+        },
+        "GCPBatch": {
+          "$ref": "#/definitions/configGCPBatch"
+        }
+      },
+      "description": "GCPBatch describes the configuration for the GCP Batch compute backend."
     },
     "configGenericS3Storage": {
       "type": "object",

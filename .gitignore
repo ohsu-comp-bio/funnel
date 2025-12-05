@@ -20,7 +20,7 @@ deployments/kubernetes/**/*.json
 deployments/kubernetes/**/funnel
 dist/
 docker/funnel
-docs/
+/docs/
 funnel-work-dir
 node_modules
 storage/_test_download
@@ -28,3 +28,4 @@ test_tmp
 website/go.mod
 website/go.sum
 website/resources
+

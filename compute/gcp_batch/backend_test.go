@@ -13,7 +13,7 @@ import (
 
 func TestCreateJobc(t *testing.T) {
 	log := logger.NewLogger("test", logger.DefaultConfig())
-	conf := config.GCPBatch{
+	conf := &config.GCPBatch{
 		Project:  "example-project",
 		Location: "us-west1",
 	}

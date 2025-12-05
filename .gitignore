@@ -1,9 +1,11 @@
+*.DS_Store
 *.pyc
 *.sw[opn]
 .env
 .github_token
 .idea
 .sass-cache/
+.vscode
 .vscode
 /bin
 /build
@@ -18,12 +20,12 @@ deployments/kubernetes/**/*.json
 deployments/kubernetes/**/funnel
 dist/
 docker/funnel
-docs/
+/docs/
 funnel-work-dir
 node_modules
 storage/_test_download
 test_tmp
-website/resources
-website/go.sum
 website/go.mod
+website/go.sum
+website/resources
 

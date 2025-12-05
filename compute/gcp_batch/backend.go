@@ -21,14 +21,14 @@ import (
 
 type Backend struct {
 	client   client
-	conf     config.GCPBatch
+	conf     *config.GCPBatch
 	event    events.Writer
 	database tes.ReadOnlyServer
 	log      *logger.Logger
 	events.Backend
 }
 
-func NewBackend(ctx context.Context, conf config.GCPBatch, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
+func NewBackend(ctx context.Context, conf *config.GCPBatch, reader tes.ReadOnlyServer, writer events.Writer, log *logger.Logger) (*Backend, error) {
 	client, err := batch.NewClient(ctx)
 	if err != nil {
 		return nil, err
@@ -235,7 +235,7 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 // In this context a "FAILED" state is being used as a generic term that captures
 // one or more terminal states for the backend.
 func (b *Backend) reconcile(ctx context.Context) {
-	ticker := time.NewTicker(time.Duration(b.conf.ReconcileRate))
+	ticker := time.NewTicker(b.conf.ReconcileRate.AsDuration())
 
 ReconcileLoop:
 	for {

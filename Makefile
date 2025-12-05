@@ -9,7 +9,7 @@ git_upstream := $(shell git remote get-url $(shell git config branch.$(shell git
 export GIT_BRANCH = $(git_branch)
 export GIT_UPSTREAM = $(git_upstream)
 
-export FUNNEL_VERSION=0.11.1-rc.5
+export FUNNEL_VERSION=$(shell git describe --tags --dirty --always)
 
 # LAST_PR_NUMBER is used by the release notes builder to generate notes
 # based on pull requests (PR) up until the last release.
@@ -17,9 +17,10 @@ export LAST_PR_NUMBER = 716
 
 VERSION_LDFLAGS=\
  -X "github.com/ohsu-comp-bio/funnel/version.BuildDate=$(shell date)" \
- -X "github.com/ohsu-comp-bio/funnel/version.GitCommit= $(git_commit)" \
+ -X "github.com/ohsu-comp-bio/funnel/version.GitCommit=$(git_commit)" \
  -X "github.com/ohsu-comp-bio/funnel/version.GitBranch=$(git_branch)" \
- -X "github.com/ohsu-comp-bio/funnel/version.GitUpstream=$(git_upstream)"
+ -X "github.com/ohsu-comp-bio/funnel/version.GitUpstream=$(git_upstream)" \
+ -X "github.com/ohsu-comp-bio/funnel/version.Version=$(FUNNEL_VERSION)"
 
 export CGO_ENABLED=0
 
@@ -226,6 +227,7 @@ full: proto install tidy lint test website webdash
 
 # Build the website
 website:
+    @cd website && hugo mod init example.com && hugo mod tidy && cd -
 	@cp ./config/*.txt ./website/static/funnel-config-examples/
 	@cp ./config/default-config.yaml ./website/static/funnel-config-examples/
 	hugo --source ./website

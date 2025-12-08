@@ -6,6 +6,12 @@ menu:
     weight: 20
 ---
 
+> [!WARNING]
+>
+> GCP Batch support is in early development.
+>
+> Production deployments are recommended to use the alternative compute backends available, such as AWS Batch, Kubernetes, Slurm, etc.
+
 # Overview
 
 Following are the steps to install, configure, and start the Funnel server and submit an example task.

@@ -227,9 +227,9 @@ full: proto install tidy lint test website webdash
 
 hugo-deps:
 	@cd website && \
-    hugo mod init github.com/ohsu-comp-bio/funnel/website && \
-    hugo mod get -u && \
-    hugo mod tidy
+	([ -f go.mod ] || hugo mod init github.com/ohsu-comp-bio/funnel/website) && \
+	hugo mod get -u && \
+	hugo mod tidy
 
 # Build the website
 website: hugo-deps

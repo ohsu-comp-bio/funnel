@@ -46,21 +46,25 @@ menu:
 - [ ] Test against multiple buckets ([Issue](https://github.com/ohsu-comp-bio/funnel/issues/1272))
 - [ ] Verify Compliance Tests ([Issue](https://github.com/ohsu-comp-bio/funnel/issues/1273))
 
+---
+
 # Overview
 
 Following are the steps to install, configure, and start the Funnel server and submit an example task.
 
 # Quick Start
 
-## Install Funnel
+## 1. Install Funnel
 
 ```sh
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohsu-comp-bio/funnel/refs/heads/develop/install.sh)" -- v0.11.7-rc.10
 ```
 
-## Configure Server
+## 2. Start Server
 
-`config.yaml`
+<details>
+  <summary><code>config.yaml</code></summary>
+
 ```yaml
 Compute: gcp-batch
 
@@ -74,15 +78,17 @@ GoogleStorage:
   Disabled: false
 ```
 
-## Start Server
+</details>
 
 ```sh
 funnel server run --config config.yaml
 ```
 
-## Submit Task
+## 3. Submit Task
 
-`gcp-example.json`
+<details>
+  <summary><code>gcp-example.json</code></summary>
+
 ```json
 {
   "name": "Input/Output Test",
@@ -110,8 +116,17 @@ funnel server run --config config.yaml
 }
 ```
 
+</details>
+
 ```sh
 funnel task create gcp-example.json
+<TASK ID>
+```
+
+## 4. Query Task
+
+```
+funnel task get <TASK ID>
 ```
 
 # Additional Resources

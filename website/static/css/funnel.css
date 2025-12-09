@@ -264,3 +264,8 @@ pre {
 .copy-code-button:focus {
   outline: none;
 }
+
+summary {
+  padding-bottom: 1em;
+  padding-left: 0.5em;
+}

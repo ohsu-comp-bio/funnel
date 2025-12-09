@@ -41,16 +41,17 @@ message Config {
   GridEngine GridEngine = 21;
   AWSBatch AWSBatch = 22;
   Kubernetes Kubernetes = 23;
+  GCPBatch GCPBatch = 24;
   // Storage
-  LocalStorage LocalStorage = 24;
-  AmazonS3Storage AmazonS3 = 25;
-  repeated GenericS3Storage GenericS3 = 26;
-  GoogleCloudStorage GoogleStorage = 27;
-  SwiftStorage Swift = 28;
-  HTTPStorage HTTPStorage = 29;
-  FTPStorage FTPStorage = 30;
+  LocalStorage LocalStorage = 25;
+  AmazonS3Storage AmazonS3 = 26;
+  repeated GenericS3Storage GenericS3 = 27;
+  GoogleCloudStorage GoogleStorage = 28;
+  SwiftStorage Swift = 29;
+  HTTPStorage HTTPStorage = 30;
+  FTPStorage FTPStorage = 31;
   // Plugins
-  Plugins Plugins = 31;
+  Plugins Plugins = 32;
 }
 
 // This config matches the funnel plugins repo protobuf
@@ -229,6 +230,16 @@ message AWSBatch {
   bool DisableReconciler = 3;
   google.protobuf.Duration ReconcileRate = 4;
   AWSConfig AWSConfig = 5;
+}
+
+// GCPBatch describes the configuration for the GCP Batch compute backend.
+message GCPBatch {
+  string Location = 1;
+  string GoogleStorage = 2;
+  string Project = 3;
+  bool DisableReconciler = 4;
+  google.protobuf.Duration ReconcileRate = 5;
+  GCPBatch GCPBatch = 6;
 }
 
 // Datastore configures access to a Google Cloud Datastore database backend.

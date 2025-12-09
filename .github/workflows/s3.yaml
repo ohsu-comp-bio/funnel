@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build.yaml
   
   s3Test:
     needs: build

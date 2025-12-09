@@ -241,21 +241,6 @@ message TaskLog {
 
 service TaskService {
 
-    rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {
-      option (google.api.http) = {
-        post: "/tasks/{id}:cancel"
-		additional_bindings {
-			post: "/v1/tasks/{id}:cancel"
-			body: "*"
-		}
-		additional_bindings {
-			post: "/ga4gh/tes/v1/tasks/{id}:cancel"
-			body: "*"
-		}
-		body: "*"
-      };
-    }
-
     rpc GetServiceInfo(GetServiceInfoRequest) returns (ServiceInfo) {
       option (google.api.http) = {
         get: "/service-info"
@@ -304,6 +289,21 @@ service TaskService {
 		additional_bindings {
 			get: "/ga4gh/tes/v1/tasks/{id}"
 		}
+      };
+    }
+
+    rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {
+      option (google.api.http) = {
+        post: "/tasks/{id}:cancel"
+		additional_bindings {
+			post: "/v1/tasks/{id}:cancel"
+			body: "*"
+		}
+		additional_bindings {
+			post: "/ga4gh/tes/v1/tasks/{id}:cancel"
+			body: "*"
+		}
+		body: "*"
       };
     }
 

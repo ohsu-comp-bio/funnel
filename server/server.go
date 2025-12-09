@@ -75,10 +75,10 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.Write([]byte(fallback))
 		return
 	}
-	
-	switch st.Code(){
+
+	switch st.Code() {
 	case codes.InvalidArgument, codes.FailedPrecondition, codes.OutOfRange: // 400
-         w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 	case codes.Unauthenticated:
 		w.WriteHeader(http.StatusUnauthorized) // 401
 	case codes.PermissionDenied:
@@ -96,9 +96,7 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.WriteHeader(499)
 	case codes.DeadlineExceeded: // 504
 		w.WriteHeader(http.StatusGatewayTimeout)
-	
-	
-	
+
 	default:
 		if strings.Contains(st.Message(), "backend parameters not supported") {
 			w.WriteHeader(http.StatusBadRequest) // 400
@@ -196,8 +194,13 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	// Root
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-		// TODO: this doesnt handle all routes
-		if s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
+
+		// Pass header to plugin if plugin is enabled
+		if s.Plugins != nil {
+			s.addHeadertoCtx(req)
+		}
+		// TODO this doesnt handle all routes
+		if s.OidcAuth != nil && s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
 			resp.Header().Set("WWW-Authenticate", "Basic")
 		}
 		switch negotiate(req) {

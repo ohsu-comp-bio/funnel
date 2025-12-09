@@ -21,7 +21,7 @@ Following are the steps to install, configure, and start the Funnel server and s
 ## Install Funnel
 
 ```sh
-➜ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohsu-comp-bio/funnel/refs/heads/develop/install.sh)" -- v0.11.7-rc.10
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohsu-comp-bio/funnel/refs/heads/develop/install.sh)" -- v0.11.7-rc.10
 ```
 
 ## Configure Server
@@ -43,7 +43,7 @@ GoogleStorage:
 ## Start Server
 
 ```sh
-➜ funnel server run --config config.yaml
+funnel server run --config config.yaml
 ```
 
 ## Submit Task
@@ -77,7 +77,7 @@ GoogleStorage:
 ```
 
 ```sh
-➜ funnel task create gcp-example.json
+funnel task create gcp-example.json
 ```
 
 # Additional Resources

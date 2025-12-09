@@ -225,17 +225,20 @@ bundle-examples:
 # Make everything usually needed to prepare for a pull request
 full: proto install tidy lint test website webdash
 
-# Build the website
-website:
-	cd website && hugo mod init example.com && hugo mod tidy && cd -
-	@cp ./config/*.txt ./website/static/funnel-config-examples/
-	@cp ./config/default-config.yaml ./website/static/funnel-config-examples/
-	hugo --source ./website
-	npx -y pagefind --site docs
+hugo-deps:
+	@cd website && \
+	([ -f go.mod ] || hugo mod init github.com/ohsu-comp-bio/funnel/website) && \
+	hugo mod get -u && \
+	hugo mod tidy
 
-# Serve the Funnel website on localhost:1313
+# Build the website
+website: hugo-deps
+	@hugo --source ./website
+	@npx -y pagefind --site docs
+
+# Serve the Funnel website on http://localhost:1313
 website-dev: website
-	hugo --source ./website --watch server
+	@hugo --source ./website --watch server
 
 # Remove build/development files.
 clean:

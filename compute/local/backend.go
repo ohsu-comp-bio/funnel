@@ -3,6 +3,8 @@ package local
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/imdario/mergo"
 	workerCmd "github.com/ohsu-comp-bio/funnel/cmd/worker"
@@ -14,15 +16,33 @@ import (
 )
 
 // NewBackend returns a new local Backend instance.
-func NewBackend(ctx context.Context, conf config.Config, log *logger.Logger) (*Backend, error) {
-	return &Backend{conf, log, events.Backend{}}, nil
+func NewBackend(ctx context.Context, conf *config.Config, log *logger.Logger) (*Backend, error) {
+	// Using nil for the backendParameters here until those are specified
+	return &Backend{conf, log, nil, nil}, nil
 }
 
 // Backend represents the local backend.
 type Backend struct {
-	conf config.Config
-	log  *logger.Logger
-	events.Backend
+	conf              *config.Config
+	log               *logger.Logger
+	backendParameters map[string]string
+	events.Computer
+}
+
+func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
+	if !task.Resources.GetBackendParametersStrict() {
+		return nil
+	}
+
+	taskBackendParameters := task.Resources.GetBackendParameters()
+	for k := range taskBackendParameters {
+		_, ok := b.backendParameters[k]
+		if !ok {
+			return errors.New("backend parameters not supported")
+		}
+	}
+
+	return nil
 }
 
 // WriteEvent writes an event to the compute backend.

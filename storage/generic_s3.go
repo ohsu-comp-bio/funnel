@@ -285,6 +285,14 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 					return err
 				}
 				uploadPath := filepath.Join(u.path, relativePath)
+
+				logger.Debug("genericS3: (dir) uploading '%s'. File contents:", filePath)
+				content, err := os.ReadFile(filePath)
+				if err != nil {
+					return fmt.Errorf("Error reading file: %v", err)
+				}
+				logger.Debug(string(content))
+
 				_, err = s3.client.FPutObject(ctx, u.bucket, uploadPath, filePath, opts)
 				if err != nil {
 					return fmt.Errorf("genericS3: putting object %s: %v", url, err)
@@ -297,6 +305,13 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 		}
 	} else {
 		// Upload the file directly
+		logger.Debug("genericS3: (file) uploading '%s'. File contents:", path)
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("Error reading file: %v", err)
+		}
+		logger.Debug(string(content))
+
 		_, err = s3.client.FPutObject(ctx, u.bucket, u.path, path, opts)
 		if err != nil {
 			return nil, fmt.Errorf("genericS3: putting object %s: %v", url, err)

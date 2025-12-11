@@ -30,7 +30,7 @@ function addCopyButtonToCodeBlocks() {
         // Add a click event listener to the copy button
         copyButton.addEventListener("click", () => {
             // Copy the code inside the code block to the clipboard
-            const codeToCopy = codeBlock.innerText;
+            const codeToCopy = codeBlock.textContent;
             navigator.clipboard.writeText(codeToCopy);
 
             // Update the copy button text to indicate that the code has been copied

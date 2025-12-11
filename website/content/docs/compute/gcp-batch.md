@@ -63,25 +63,20 @@ Following are the steps to install, configure, and start the Funnel server and s
 ## 2. Start Server
 
 <details>
-  <summary><code>config.yaml</code></summary>
+  <summary><code>Config Example</code></summary>
 
 ```yaml
 Compute: gcp-batch
 
 GCPBatch:
-  DisableReconciler: True
-  ReconcileRate: 10s
-  Project: tes-batch-integration-test
+  Project: example-project
   Location: us-central1
-
-GoogleStorage:
-  Disabled: false
 ```
 
 </details>
 
 ```sh
-funnel server run --config config.yaml
+funnel server run --Compute "gcp-batch" --GCPBatch.Project "example-project" --GCPBatch.Location "us-central1"
 ```
 
 ## 3. Submit Task

@@ -117,6 +117,7 @@ func (b *Backend) Submit(task *tes.Task) error {
 
 	// Runnables
 	var runnables []*batchpb.Runnable
+
 	for _, executor := range task.Executors {
 		cmd := strings.Join(executor.Command, " ")
 

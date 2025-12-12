@@ -14,7 +14,7 @@ import (
 // the provided config file.
 func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Config, error) {
 	// parse config file if it exists
-	conf := config.EmptyConfig()
+	conf := config.DefaultConfig()
 	err := config.ParseFile(file, conf)
 	if err != nil {
 		return conf, err

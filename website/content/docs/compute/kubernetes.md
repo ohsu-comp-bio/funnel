@@ -6,6 +6,36 @@ menu:
     weight: 20
 ---
 
+# Testing Steps
+
+> [!IMPORTANT]
+>
+> Remove upon resolution (before release)
+
+- Checked out funnel to `0.1.68`
+
+- Updated `funnel/files/worker-pv.yaml` and introduced a slight indentation error — in order to trigger an error during task creation
+
+- Updated helm dependencies and ensured this updated file is reflected in funnel-server pod’s `/etc/config/funnel-server.yaml`
+
+- Created a POST request with a tes task with inputs and outputs
+
+- TES returned a `200` with a valid task ID
+
+- However, in TES logs, the task creation failed with this error
+{
+    "error": "creating Worker resources: creating Worker PV: yaml: line 18: could not find expected ':'",
+    "level": "error",
+    "msg": "error submitting task to compute backend",
+    "ns": "server",
+    "src": "tes.go:github.com/ohsu-comp-bio/funnel/server.(*TaskService).CreateTask.func1:129",
+    "taskID": "<TASK ID>",
+} 
+
+- But when I try to do a GET request with the given task ID, I see the task stuck in status QUEUED
+
+---
+
 > Funnel on Kubernetes is in active development and may involve frequent updates 🚧
 
 # Quick Start

@@ -7,7 +7,7 @@
 // config/default-config.yaml (12.835kB)
 // config/htcondor-template.txt (505B)
 // config/kubernetes/role.yaml (1.09kB)
-// config/kubernetes/worker-pv.yaml (706B)
+// config/kubernetes/worker-pv.yaml (667B)
 // config/kubernetes/worker-job.yaml (3.359kB)
 // config/kubernetes/worker-pvc.yaml (382B)
 // config/kubernetes/serviceaccount.yaml (477B)
@@ -175,7 +175,7 @@ func configDefaultConfigYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/default-config.yaml", size: 12835, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
+	info := bindataFileInfo{name: "config/default-config.yaml", size: 12835, mode: os.FileMode(0644), modTime: time.Unix(1762394497, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa, 0x10, 0xea, 0x99, 0x75, 0xd3, 0x32, 0xb2, 0xf0, 0x81, 0x58, 0x25, 0x61, 0x4f, 0x1b, 0x49, 0x4b, 0x4f, 0x4, 0x88, 0x60, 0xd3, 0xb7, 0xc4, 0x12, 0xbe, 0x18, 0xe5, 0x1a, 0x19, 0xcb, 0x8d}}
 	return a, nil
 }
@@ -215,12 +215,12 @@ func configKubernetesRoleYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/kubernetes/role.yaml", size: 1090, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
+	info := bindataFileInfo{name: "config/kubernetes/role.yaml", size: 1090, mode: os.FileMode(0644), modTime: time.Unix(1762395493, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x7f, 0x5, 0xca, 0x1b, 0xb2, 0x90, 0x1e, 0x43, 0xd0, 0x6d, 0xfd, 0xb8, 0xe2, 0x88, 0xcd, 0x60, 0x98, 0xac, 0x27, 0xf8, 0x36, 0xc8, 0x25, 0xfb, 0xc5, 0xa1, 0xda, 0x86, 0xef, 0x45, 0xcb, 0xce}}
 	return a, nil
 }
 
-var _configKubernetesWorkerPvYaml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x92\x4b\x6b\xdd\x30\x10\x85\xf7\xfe\x15\xc3\xed\x5a\x26\xa1\x84\x82\x21\x8b\x3e\x16\x0d\x21\x69\x30\x25\x5d\xcf\x95\xc6\x97\xc1\x7a\x55\x23\xdb\x18\x93\xff\x5e\xe4\x47\xda\x84\xee\x3c\x47\xdf\x9c\x19\x1f\x09\x23\x3f\x53\x12\x0e\xbe\x81\xf1\xba\xea\xd9\x9b\x06\x9e\x8a\x22\x99\x7c\x7e\x0e\x76\x70\x54\x39\xca\x68\x30\x63\x53\x01\x78\x74\xd4\x40\x37\x78\x4f\x56\x4d\x21\xf5\x94\x54\x1c\xd5\xb2\xd4\x3f\x51\xfa\x3b\xf3\xf2\x52\x01\x58\x3c\x93\x95\x82\x03\x60\x8c\x07\xbf\xd6\x79\xc5\x1a\xf8\xb7\x43\x22\xe9\x42\x4b\x0e\x09\x2f\xf4\xd5\xa2\xc8\xe3\x3a\xe8\x74\x82\x0f\xd0\xd2\xef\x81\x13\x19\xe8\x42\x02\xc9\x98\x59\x43\x4c\x61\xe4\xb2\x38\xfb\x4b\x05\xa0\x31\xa2\xe6\x3c\x6f\x33\x77\x9f\x06\x4e\xd7\x57\x0f\x7c\xaa\x00\x50\x6b\x12\x79\x08\x86\xf6\xb5\x14\xb4\x84\xe6\x57\xe2\x4c\x0f\xe8\xe7\x0a\x20\xbe\xfb\xed\x96\xb4\x45\x76\x4f\xc1\xb2\x9e\x1b\x68\x29\x23\xfb\x0a\xc0\x85\xc1\xe7\x1f\x31\x73\xf0\xaf\x5e\x68\x6d\x98\x94\x21\x4b\x99\xde\x48\x61\xa4\x34\x95\x21\xbb\x9a\xe8\xc2\xc1\xdf\x2e\x4b\xdd\xae\x5f\x6b\x5c\xe5\xa0\x63\x4b\xca\x05\x43\xb7\x57\x9f\x6e\x6e\x56\x71\x59\x14\x70\x07\xf5\xbd\x93\x7b\x9a\xef\xbe\xc1\x2b\x2c\x42\x80\x93\x34\xbd\x93\xbf\x8a\xea\x9d\xa8\x9e\x66\xc5\xa6\xf8\x1f\x5d\x7b\x53\x31\x23\x6f\x36\x0f\x2d\xbc\x6d\x6e\x12\x8f\x94\x1a\x90\x8f\xb5\x16\xae\x71\x92\x5a\x07\xb7\x1e\x8d\x6b\x08\xdf\xd1\x1b\x4b\x05\x50\x5a\xf8\xdd\x35\x1f\xd0\xe7\x9c\x13\x9f\x87\x7c\x64\x0b\x70\x1e\x74\x4f\x79\xbb\xc2\x65\xa9\xbf\xac\xe5\x36\xba\x64\xda\x52\xb7\x91\xe5\x35\x49\x44\xbd\x61\x8f\x47\xb5\xbb\xff\xff\xad\xe9\x37\x5b\xfc\x09\x00\x00\xff\xff\x3c\xe3\x9a\xc5\xc2\x02\x00\x00")
+var _configKubernetesWorkerPvYaml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x92\x4d\x6b\xdc\x3e\x10\xc6\xef\xfe\x14\xc3\xfe\xcf\x32\x09\x7f\x42\xc1\x90\x43\x5f\x0e\x0d\x61\xd3\x60\x4a\x7a\x9e\x95\x66\x97\xc1\x7a\xab\x46\xb6\x31\x26\xdf\xbd\x48\xf6\xb6\x4d\xe8\xcd\xf3\xe8\xe7\x67\x1e\x8d\x06\x23\xbf\x50\x12\x0e\xbe\x83\xe9\xb6\x19\xd8\x9b\x0e\x9e\x8b\x22\x99\x7c\x7e\x09\x76\x74\xd4\x38\xca\x68\x30\x63\xd7\x00\x78\x74\xd4\xc1\x79\xf4\x9e\xac\x9a\x43\x1a\x28\xa9\x38\xa9\x75\x6d\xbf\xa3\x0c\x0f\xe6\xf5\xb5\x01\xb0\x78\x22\x2b\x05\x07\xc0\x18\xaf\x7c\xad\x73\xc5\x3a\xf8\xfb\x0f\x89\xa4\x0b\x2d\x39\x24\xbc\xd0\x67\x8b\x22\x4f\xb5\xd1\xe1\x00\xff\x41\x4f\x3f\x47\x4e\x64\xe0\x1c\x12\x48\xc6\xcc\x1a\x62\x0a\x13\x97\xe0\xec\x2f\x0d\x80\xc6\x88\x9a\xf3\xb2\xf5\xdc\x7d\x3a\x38\xdc\xde\x1c\xf9\xd0\x00\xa0\xd6\x24\x72\x0c\x86\xf6\x58\x0a\x7a\x42\xf3\x23\x71\xa6\x23\xfa\xa5\x01\x88\xef\xae\xdd\x93\xb6\xc8\xee\x39\x58\xd6\x4b\x07\x3d\x65\x64\xdf\x00\xb8\x30\xfa\xfc\x2d\x66\x0e\xfe\xb7\x17\x5a\x1b\x66\x65\xc8\x52\xa6\x37\x52\x98\x28\xcd\xa5\xc9\xae\x26\xba\x70\xf0\xf7\xeb\xda\xf6\xf5\xab\x8e\xab\x1c\x9c\xd9\x92\x72\xc1\xd0\xfd\xcd\x87\xbb\xbb\x5d\x14\x21\xc0\x59\xba\xc1\xc9\x1f\x45\x0d\x4e\xd4\x40\x8b\x62\x53\x7c\x1e\x9d\x3c\xd2\xf2\xf0\xa5\x3a\x69\xe1\x2d\x92\x49\x3c\x51\xea\x40\xfe\x6f\xb5\x70\x8b\xb3\xb4\x3a\xb8\x7a\x34\xd5\xdb\x7d\x45\x6f\x2c\x15\x40\x69\xe1\x77\xef\x77\x85\x3e\xe6\x9c\xf8\x34\xe6\xeb\xd0\x00\x4e\xa3\x1e\x28\x6f\x6f\xb3\xae\xed\xa7\x5a\x6e\xad\xcb\xb0\x7a\x3a\x6f\x64\x59\x13\x89\xa8\x37\xec\xe9\x5a\xed\xee\xff\x5e\x22\xfd\x26\xc5\xaf\x00\x00\x00\xff\xff\xfc\x53\x89\xc7\x9b\x02\x00\x00")
 
 func configKubernetesWorkerPvYamlBytes() ([]byte, error) {
 	return bindataRead(
@@ -235,8 +235,8 @@ func configKubernetesWorkerPvYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/kubernetes/worker-pv.yaml", size: 706, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
-	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xb2, 0xbf, 0x5a, 0xa7, 0xf, 0xbe, 0x82, 0x11, 0x8b, 0x3, 0xdd, 0x87, 0x3d, 0x1b, 0xa4, 0xc9, 0x18, 0x73, 0xfe, 0xed, 0xd8, 0xdb, 0x2b, 0xd7, 0x86, 0x6, 0x14, 0xc7, 0x37, 0x44, 0x57, 0x91}}
+	info := bindataFileInfo{name: "config/kubernetes/worker-pv.yaml", size: 667, mode: os.FileMode(0644), modTime: time.Unix(1761941729, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6, 0xc0, 0xe1, 0xc6, 0x39, 0x3, 0x6d, 0xdc, 0xae, 0xde, 0xf4, 0xf5, 0xf7, 0xb0, 0x7, 0xf, 0x30, 0x25, 0x9c, 0xf9, 0xa3, 0xb0, 0x61, 0xe, 0x28, 0xab, 0x2, 0x89, 0xc4, 0xa3, 0x55, 0xed}}
 	return a, nil
 }
 
@@ -255,7 +255,7 @@ func configKubernetesWorkerJobYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/kubernetes/worker-job.yaml", size: 3359, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
+	info := bindataFileInfo{name: "config/kubernetes/worker-job.yaml", size: 3359, mode: os.FileMode(0644), modTime: time.Unix(1761941729, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa1, 0x87, 0x85, 0xc9, 0xc9, 0xa8, 0xb1, 0x61, 0x80, 0xcd, 0xe0, 0x31, 0xfd, 0x70, 0xe7, 0x60, 0x3b, 0x39, 0x70, 0x71, 0x47, 0x7c, 0x3f, 0xa2, 0x8b, 0xa2, 0xab, 0x37, 0x6f, 0xe4, 0xa5, 0xa1}}
 	return a, nil
 }
@@ -275,7 +275,7 @@ func configKubernetesWorkerPvcYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/kubernetes/worker-pvc.yaml", size: 382, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
+	info := bindataFileInfo{name: "config/kubernetes/worker-pvc.yaml", size: 382, mode: os.FileMode(0644), modTime: time.Unix(1761941729, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa2, 0x11, 0xac, 0xb3, 0x2b, 0x67, 0xe2, 0xae, 0x11, 0x4d, 0xb8, 0x9d, 0x4e, 0xc2, 0xfc, 0xc3, 0xe3, 0x6e, 0x9d, 0xfd, 0x9f, 0xa9, 0x1b, 0x74, 0xe5, 0x24, 0xa5, 0xbd, 0x86, 0x53, 0xf0, 0x71}}
 	return a, nil
 }
@@ -295,7 +295,7 @@ func configKubernetesServiceaccountYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/kubernetes/serviceaccount.yaml", size: 477, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
+	info := bindataFileInfo{name: "config/kubernetes/serviceaccount.yaml", size: 477, mode: os.FileMode(0644), modTime: time.Unix(1762395413, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xf3, 0xd0, 0x6, 0xa6, 0x26, 0xbb, 0x2c, 0x1a, 0x31, 0x39, 0x47, 0x6e, 0x40, 0x19, 0x1d, 0x91, 0xc0, 0xa8, 0xad, 0xfb, 0x8b, 0x40, 0xbc, 0x62, 0x97, 0xf6, 0xc2, 0xb2, 0x76, 0xf6, 0x95, 0x5f}}
 	return a, nil
 }
@@ -315,7 +315,7 @@ func configKubernetesExecutorJobYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/kubernetes/executor-job.yaml", size: 2408, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
+	info := bindataFileInfo{name: "config/kubernetes/executor-job.yaml", size: 2408, mode: os.FileMode(0644), modTime: time.Unix(1761941729, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x6a, 0x4, 0x9b, 0xbe, 0x30, 0xb9, 0x99, 0xf4, 0xde, 0xb8, 0x10, 0x87, 0x1c, 0x5d, 0xf1, 0x31, 0xfe, 0xce, 0xa0, 0x3d, 0xfe, 0xbd, 0xc1, 0x9f, 0x9f, 0x54, 0x95, 0x8c, 0x4f, 0xb, 0xdd, 0x10}}
 	return a, nil
 }
@@ -335,7 +335,7 @@ func configKubernetesRolebindingYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "config/kubernetes/rolebinding.yaml", size: 437, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
+	info := bindataFileInfo{name: "config/kubernetes/rolebinding.yaml", size: 437, mode: os.FileMode(0644), modTime: time.Unix(1762395479, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xb4, 0xd7, 0x1a, 0x22, 0x75, 0xec, 0x1a, 0xc6, 0xc4, 0x85, 0x30, 0x38, 0x18, 0x63, 0x2e, 0xa4, 0xc, 0x92, 0xfb, 0x1c, 0xe3, 0x19, 0x8b, 0x9, 0x48, 0x78, 0x9a, 0x4c, 0xfe, 0xb6, 0x63, 0x5b}}
 	return a, nil
 }

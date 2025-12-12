@@ -75,10 +75,10 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.Write([]byte(fallback))
 		return
 	}
-	
-	switch st.Code(){
+
+	switch st.Code() {
 	case codes.InvalidArgument, codes.FailedPrecondition, codes.OutOfRange: // 400
-         w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 	case codes.Unauthenticated:
 		w.WriteHeader(http.StatusUnauthorized) // 401
 	case codes.PermissionDenied:
@@ -96,9 +96,6 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.WriteHeader(499)
 	case codes.DeadlineExceeded: // 504
 		w.WriteHeader(http.StatusGatewayTimeout)
-	
-	
-	
 	default:
 		if strings.Contains(st.Message(), "backend parameters not supported") {
 			w.WriteHeader(http.StatusBadRequest) // 400
@@ -177,18 +174,24 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	//runtime.OtherErrorHandler = s.handleError //TODO: Review effects
 
+	// Web dashboard
 	dashmux := http.NewServeMux()
 	dashmux.Handle("/", webdash.RootHandler())
 	dashfs := webdash.FileServer()
 	mux.Handle("/favicon.ico", dashfs)
 	mux.Handle("/manifest.json", dashfs)
+
+	// Health and metrics
 	mux.Handle("/health.html", dashfs)
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
+
+	// Login
 	mux.HandleFunc("/login", auth.LoginHandler)
 	mux.HandleFunc("/login/token", auth.EchoTokenHandler)
 
+	// Root
 	mux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 
 		// Pass header to plugin if plugin is enabled

@@ -2,14 +2,14 @@
   "name": "GCP Batch Task Example",
   "inputs": [
     {
-      "url": "gs://tes-batch-integration/inputs/README.md",
-      "path": "/mnt/disks/tes-batch-integration/inputsREADME.md"
+      "url": "gs://tes-batch-integration/README.md",
+      "path": "/mnt/disks/tes-batch-integration/README.md"
     }
   ],
   "outputs": [
     {
-      "url": "gs://tes-batch-integration/outputs/README.md.sha256",
-      "path": "/mnt/disks/tes-batch-integration/outputs/README.md.sha256"
+      "url": "gs://tes-batch-integration/README.md.sha256",
+      "path": "/mnt/disks/tes-batch-integration/README.md.sha256"
     }
   ],
   "executors": [
@@ -17,7 +17,7 @@
       "image": "alpine",
       "command": [
         "sha256sum",
-        "/mnt/disks/tes-batch-integration/inputs/README.md | tee /mnt/disks/tes-batch-integration/outputs/README.md.sha256"
+        "/mnt/disks/tes-batch-integration/README.md | tee /mnt/disks/tes-batch-integration/README.md.sha256"
       ]
     }
   ]

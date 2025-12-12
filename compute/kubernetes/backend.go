@@ -119,14 +119,16 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 }
 
 func (b *Backend) Close() {
-	//TODO: close database?
+	// TODO: Close database or clean resources?
 }
 
 // Submit creates both the PVC and the worker job with better error handling
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
 	err := b.createResources(task, config)
 	b.log.Debug("Error creating resources", "error", err, "task ID", task.Id)
+
 	if err != nil {
+		b.log.Error("Error creating resources, writing SystemError event", "error", err, "task ID", task.Id)
 		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
 		b.event.WriteEvent(
 			ctx,

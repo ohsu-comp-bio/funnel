@@ -11,6 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/database/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/database/elastic"
 	"github.com/ohsu-comp-bio/funnel/database/mongodb"
+	"github.com/ohsu-comp-bio/funnel/database/postgres"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/storage"
@@ -131,6 +132,10 @@ func newTaskReader(ctx context.Context, conf config.Config, opts *Options) (work
 		db, err := mongodb.NewMongoDB(conf.MongoDB)
 		return newDatabaseTaskReader(opts.TaskID, db, err)
 
+	case "postgresql":
+		db, err := postgres.NewPostgreSQL(conf.PostgreSQL)
+		return newDatabaseTaskReader(opts.TaskID, db, err)
+
 		// These readers connect via RPC (because the database is embedded in the server).
 		// case "boltdb", "badger":
 		// Default to asking the server for the task.
@@ -199,6 +204,8 @@ func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf config.C
 		writer, err = events.NewPubSubWriter(ctx, conf.PubSub)
 	case "mongodb":
 		writer, err = mongodb.NewMongoDB(conf.MongoDB)
+	case "postgresql":
+		writer, err = postgres.NewPostgreSQL(conf.PostgreSQL)
 	default:
 		err = fmt.Errorf("unknown event writer: %s", name)
 	}

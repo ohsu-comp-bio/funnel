@@ -58,7 +58,6 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
-		b.log.Info("COMPUTE/LOCAL/BACKEND WRITE EVENT: +++++++++++++++++++++++++++++++++++")
 		return b.Submit(ev.GetTask())
 	}
 	return nil

@@ -75,7 +75,7 @@ func NewWorker(ctx context.Context, conf *config.Config, log *logger.Logger, opt
 		Backend: "docker",
 	}
 
-	if conf.Kubernetes.Executor == "kubernetes" {
+	if conf.Compute == "kubernetes" {
 		executor.Backend = "kubernetes"
 		executor.Template = conf.Kubernetes.ExecutorTemplate
 		executor.Namespace = conf.Kubernetes.Namespace

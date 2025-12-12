@@ -64,15 +64,15 @@ func (db *PostgreSQL) ListTasks(ctx context.Context, req *tes.ListTasksRequest) 
 		argIdx++
 	}
 
-	// Add pagination
+	// Add pagination using ID comparison (consistent with MongoDB)
 	if req.PageToken != "" {
-		query += fmt.Sprintf(" AND created_at < (SELECT created_at FROM tasks WHERE id = $%d)", argIdx)
+		query += fmt.Sprintf(" AND id < $%d", argIdx)
 		args = append(args, req.PageToken)
 		argIdx++
 	}
 
-	// Order by created_at descending (most recent first)
-	query += " ORDER BY created_at DESC"
+	// Order by id descending (most recent first, assuming IDs are monotonically increasing)
+	query += " ORDER BY id DESC"
 
 	// Limit results
 	query += fmt.Sprintf(" LIMIT $%d", argIdx)

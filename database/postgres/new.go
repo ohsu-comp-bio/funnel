@@ -46,6 +46,8 @@ func NewPostgreSQL(conf config.PostgreSQL) (*PostgreSQL, error) {
 }
 
 // Init creates the required database schema for PostgreSQL.
+// This method must be called after NewPostgreSQL() to ensure proper
+// database schema initialization before any database operations.
 func (db *PostgreSQL) Init() error {
 	// Create tasks table
 	_, err := db.db.Exec(`

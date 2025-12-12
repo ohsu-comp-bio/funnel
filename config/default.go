@@ -111,6 +111,16 @@ func DefaultConfig() Config {
 			Timeout:  Duration(time.Minute * 5),
 			Database: "funnel",
 		},
+		PostgreSQL: PostgreSQL{
+			Host:         "localhost",
+			Port:         5432,
+			Database:     "funnel",
+			Username:     "funnel",
+			Password:     "",
+			SSLMode:      "disable",
+			MaxOpenConns: 25,
+			MaxIdleConns: 5,
+		},
 		Kafka: Kafka{
 			Topic: "funnel",
 		},

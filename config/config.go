@@ -27,6 +27,7 @@ type Config struct {
 	DynamoDB  DynamoDB
 	Elastic   Elastic
 	MongoDB   MongoDB
+	PostgreSQL PostgreSQL
 	Kafka     Kafka
 	PubSub    PubSub
 	Datastore Datastore
@@ -240,6 +241,25 @@ type MongoDB struct {
 	// done on the database defined by the Database field.
 	Username string
 	Password string
+}
+
+// PostgreSQL configures access to a PostgreSQL database.
+type PostgreSQL struct {
+	// Host is the hostname or IP address of the PostgreSQL server.
+	Host string
+	// Port is the PostgreSQL server port. Default is 5432.
+	Port int
+	// Database is the database name used within PostgreSQL to store funnel data.
+	Database string
+	// Username and Password inform the credentials for authentication.
+	Username string
+	Password string
+	// SSLMode determines the SSL connection mode. Options: disable, require, verify-ca, verify-full
+	SSLMode string
+	// MaxOpenConns sets the maximum number of open connections to the database.
+	MaxOpenConns int
+	// MaxIdleConns sets the maximum number of connections in the idle connection pool.
+	MaxIdleConns int
 }
 
 // Elastic configures access to an Elasticsearch database.

@@ -69,6 +69,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/lestrrat-go/jwx/v2 v2.1.5
+	github.com/lib/pq v1.10.9
 	go.mongodb.org/mongo-driver/v2 v2.2.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250313205543-e70fdf4c4cb4
 	google.golang.org/protobuf v1.36.6

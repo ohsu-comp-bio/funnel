@@ -25,4 +25,4 @@ dist/
 
 # Auto-generated gRPC files
 *pb.go
-*pb.gw.go
+*pb.gw.go/funnel

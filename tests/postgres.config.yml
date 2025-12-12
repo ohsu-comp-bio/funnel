@@ -1,0 +1,12 @@
+Database: postgresql
+
+EventWriters:
+  - log
+
+PostgreSQL:
+  Host: localhost
+  Port: 5432
+  Database: funnel_test
+  Username: funnel
+  Password: funnel
+  SSLMode: disable

@@ -122,14 +122,26 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		return nil, fmt.Errorf("error creating task: %s", err)
 	}
 
+	pluginResponse := ctx.Value("pluginResponse")
+	conf := ctx.Value("Config")
+
 	// dispatch to compute backend
 	go func() {
-		err := ts.Compute.WriteEvent(ctx, events.NewTaskCreated(task))
+		workerCtx := context.Background()
+
+		if pluginResponse != nil {
+			workerCtx = context.WithValue(workerCtx, "pluginResponse", pluginResponse)
+		}
+		if conf != nil {
+			workerCtx = context.WithValue(workerCtx, "Config", conf)
+		}
+
+		err := ts.Compute.WriteEvent(workerCtx, events.NewTaskCreated(task))
 		ts.Log.Debug("submitted task to compute backend", "taskID", task.Id, "error", err)
 
 		if err != nil {
 			ts.Log.Debug("writing SystemError event for task", "taskID", task.Id)
-			err = ts.Event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+			err = ts.Event.WriteEvent(workerCtx, events.NewState(task.Id, tes.SystemError))
 
 			if err != nil {
 				ts.Log.Error("error writing SystemError event after compute backend submission failure", "taskID", task.Id, "error", err)

@@ -129,9 +129,9 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Con
 
 	if err != nil {
 		b.log.Error("Error creating resources, writing SystemError event", "error", err, "task ID", task.Id)
-		b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-		b.event.WriteEvent(
-			ctx,
+		_ = b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+		_ = b.event.WriteEvent(
+			context.Background(),
 			events.NewSystemLog(
 				task.Id, 0, 0, "error",
 				"Kubernetes job in FAILED state",

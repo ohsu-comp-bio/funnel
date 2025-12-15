@@ -1,11 +1,7 @@
 name: Go Tests
 
 on:
-  # Run on push to main/master/develop (e.g. after PR is merged)
   push:
-    branches:
-      - main
-      - master
 
 # Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
 concurrency:

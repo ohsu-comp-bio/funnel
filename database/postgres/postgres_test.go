@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log"
 	"testing"
 	"time"
 
@@ -52,6 +51,10 @@ func TestNewPostgres(t *testing.T) {
 	if !db.active {
 		t.Errorf("Expected database to be active")
 	}
+
+	if err := db.Init(); err != nil {
+		t.Fatalf("error creating database resources: %v", err)
+	}
 }
 
 func newTestPostgres(conf *config.Postgres) (string, testcontainers.Container, error) {
@@ -64,11 +67,7 @@ func newTestPostgres(conf *config.Postgres) (string, testcontainers.Container, e
 		postgres.WithPassword(conf.Password),
 		postgres.BasicWaitStrategies(),
 	)
-	defer func() {
-		if err := testcontainers.TerminateContainer(postgresContainer); err != nil {
-			log.Printf("failed to terminate container: %s", err)
-		}
-	}()
+
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to start postgres container: %w", err)
 	}
@@ -78,8 +77,10 @@ func newTestPostgres(conf *config.Postgres) (string, testcontainers.Container, e
 		return "", nil, fmt.Errorf("failed to get mapped port: %w", err)
 	}
 
+	conf.Host = "localhost:" + port.Port()
+
 	// Construct the connection string
-	connStr := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable",
+	connStr := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s",
 		conf.User,
 		conf.Password,
 		port.Port(),

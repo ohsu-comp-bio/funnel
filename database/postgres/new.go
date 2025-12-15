@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
 )
@@ -17,26 +18,76 @@ type Postgres struct {
 	active bool
 }
 
-func getConnectionString(conf config.Postgres) string {
-	// Build the PostgreSQL connection string
+func getConnString(conf config.Postgres, db string) string {
 	return fmt.Sprintf("postgres://%s:%s@%s/%s",
 		conf.User,
 		conf.Password,
 		conf.Host,
-		conf.Database,
+		db,
 	)
 }
 
-func NewPostgres(conf *config.Postgres) (*Postgres, error) {
-	// Create a connection pool
-	poolConfig, err := pgxpool.ParseConfig(getConnectionString(*conf))
+func getDefaultConnString(conf config.Postgres) string {
+	return getConnString(conf, conf.Database)
+}
+
+func ensureDatabaseExists(ctx context.Context, conf *config.Postgres) error {
+	connStr := getConnString(*conf, "postgres")
+
+	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to connect to administrative database 'postgres': %w", err)
+	}
+	defer conn.Close(ctx)
+
+	createDBSQL := fmt.Sprintf("CREATE DATABASE %s OWNER %s", conf.Database, conf.User)
+
+	_, err = conn.Exec(ctx, createDBSQL)
+	if err != nil {
+		checkDBSQL := fmt.Sprintf("SELECT 1 FROM pg_database WHERE datname='%s'", conf.Database)
+		var exists int
+		err = conn.QueryRow(ctx, checkDBSQL).Scan(&exists)
+
+		if err != nil && err != pgx.ErrNoRows {
+			return fmt.Errorf("failed to query database existence: %w", err)
+		}
+
+		if err == pgx.ErrNoRows {
+			_, err = conn.Exec(ctx, createDBSQL)
+			if err != nil {
+				return fmt.Errorf("failed to create database '%s' using SQL '%s': %w", conf.Database, createDBSQL, err)
+			}
+		}
 	}
 
-	pool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
+	grantSchemaSQL := "GRANT CREATE ON SCHEMA public TO " + conf.User
+	if _, err := conn.Exec(ctx, grantSchemaSQL); err != nil {
+		return fmt.Errorf("failed to grant schema permissions: %w", err)
+	}
+
+	return nil
+}
+
+func NewPostgres(conf *config.Postgres) (*Postgres, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), conf.Timeout.GetDuration().AsDuration())
+	defer cancel()
+
+	err := ensureDatabaseExists(ctx, conf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error connecting to or creating database resources: %w", err)
+	}
+
+	connString := getDefaultConnString(*conf)
+	fmt.Println("DEBUG: connString:", connString)
+
+	poolConf, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Postgres connection string: %w", err)
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolConf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to Postgres: %w", err)
 	}
 
 	return &Postgres{
@@ -66,14 +117,15 @@ func (db *Postgres) Init() error {
 	ctx, cancel := db.context()
 	defer cancel()
 
+	// Tasks
 	tasks := `
     CREATE TABLE IF NOT EXISTS tasks (
-        id VARCHAR(255) PRIMARY KEY,
-        state VARCHAR(50) NOT NULL,
-        user_id VARCHAR(255),
-        creation_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        -- Store the full task object as JSONB for flexible schema updates
-        data JSONB
+		id VARCHAR(255) PRIMARY KEY,
+		state VARCHAR(50) NOT NULL,
+		owner VARCHAR(255),
+		creation_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		version BIGINT DEFAULT 0 NOT NULL,
+		data JSONB
     );
     `
 
@@ -81,13 +133,28 @@ func (db *Postgres) Init() error {
 		return fmt.Errorf("failed to create 'tasks' table: %w", err)
 	}
 
-	// TODO: Add Node Table?
+	// Nodes
+	nodes := `
+    CREATE TABLE IF NOT EXISTS nodes (
+		id VARCHAR(255) PRIMARY KEY,
+		state VARCHAR(50) NOT NULL,
+		owner VARCHAR(255),
+		version BIGINT DEFAULT 0 NOT NULL,
+		last_heartbeat TIMESTAMP WITH TIME ZONE,
+		data JSONB
+    );
+    `
+
+	if _, err := db.client.Exec(ctx, nodes); err != nil {
+		return fmt.Errorf("failed to create 'nodes' table: %w", err)
+	}
 
 	indices := []string{
 		"CREATE INDEX IF NOT EXISTS idx_tasks_state ON tasks (state);",
-		"CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks (user_id);",
+		"CREATE INDEX IF NOT EXISTS idx_tasks_owner ON tasks (owner);",
 		"CREATE INDEX IF NOT EXISTS idx_tasks_creation_time ON tasks (creation_time DESC);",
 		"CREATE INDEX IF NOT EXISTS idx_nodes_state ON nodes (state);",
+		"CREATE INDEX IF NOT EXISTS idx_nodes_owner ON nodes (owner);",
 	}
 
 	for _, query := range indices {

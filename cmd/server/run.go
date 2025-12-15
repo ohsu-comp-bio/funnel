@@ -180,6 +180,8 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 			writer, err = events.NewPubSubWriter(ctx, conf.PubSub)
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
+		case "postgres", "psql":
+			writer, err = postgres.NewPostgres(conf.Postgres)
 		default:
 			return nil, fmt.Errorf("unknown event writer: '%s'", e)
 		}

@@ -14,16 +14,6 @@ class TaskServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.GetTask = channel.unary_unary(
-                '/tes.TaskService/GetTask',
-                request_serializer=tes_dot_tes__pb2.GetTaskRequest.SerializeToString,
-                response_deserializer=tes_dot_tes__pb2.Task.FromString,
-                )
-        self.CancelTask = channel.unary_unary(
-                '/tes.TaskService/CancelTask',
-                request_serializer=tes_dot_tes__pb2.CancelTaskRequest.SerializeToString,
-                response_deserializer=tes_dot_tes__pb2.CancelTaskResponse.FromString,
-                )
         self.GetServiceInfo = channel.unary_unary(
                 '/tes.TaskService/GetServiceInfo',
                 request_serializer=tes_dot_tes__pb2.GetServiceInfoRequest.SerializeToString,
@@ -39,22 +29,20 @@ class TaskServiceStub(object):
                 request_serializer=tes_dot_tes__pb2.Task.SerializeToString,
                 response_deserializer=tes_dot_tes__pb2.CreateTaskResponse.FromString,
                 )
+        self.GetTask = channel.unary_unary(
+                '/tes.TaskService/GetTask',
+                request_serializer=tes_dot_tes__pb2.GetTaskRequest.SerializeToString,
+                response_deserializer=tes_dot_tes__pb2.Task.FromString,
+                )
+        self.CancelTask = channel.unary_unary(
+                '/tes.TaskService/CancelTask',
+                request_serializer=tes_dot_tes__pb2.CancelTaskRequest.SerializeToString,
+                response_deserializer=tes_dot_tes__pb2.CancelTaskResponse.FromString,
+                )
 
 
 class TaskServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
-
-    def GetTask(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def CancelTask(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
 
     def GetServiceInfo(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -74,19 +62,21 @@ class TaskServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetTask(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CancelTask(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TaskServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetTask': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetTask,
-                    request_deserializer=tes_dot_tes__pb2.GetTaskRequest.FromString,
-                    response_serializer=tes_dot_tes__pb2.Task.SerializeToString,
-            ),
-            'CancelTask': grpc.unary_unary_rpc_method_handler(
-                    servicer.CancelTask,
-                    request_deserializer=tes_dot_tes__pb2.CancelTaskRequest.FromString,
-                    response_serializer=tes_dot_tes__pb2.CancelTaskResponse.SerializeToString,
-            ),
             'GetServiceInfo': grpc.unary_unary_rpc_method_handler(
                     servicer.GetServiceInfo,
                     request_deserializer=tes_dot_tes__pb2.GetServiceInfoRequest.FromString,
@@ -102,6 +92,16 @@ def add_TaskServiceServicer_to_server(servicer, server):
                     request_deserializer=tes_dot_tes__pb2.Task.FromString,
                     response_serializer=tes_dot_tes__pb2.CreateTaskResponse.SerializeToString,
             ),
+            'GetTask': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetTask,
+                    request_deserializer=tes_dot_tes__pb2.GetTaskRequest.FromString,
+                    response_serializer=tes_dot_tes__pb2.Task.SerializeToString,
+            ),
+            'CancelTask': grpc.unary_unary_rpc_method_handler(
+                    servicer.CancelTask,
+                    request_deserializer=tes_dot_tes__pb2.CancelTaskRequest.FromString,
+                    response_serializer=tes_dot_tes__pb2.CancelTaskResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'tes.TaskService', rpc_method_handlers)
@@ -111,40 +111,6 @@ def add_TaskServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class TaskService(object):
     """Missing associated documentation comment in .proto file."""
-
-    @staticmethod
-    def GetTask(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/tes.TaskService/GetTask',
-            tes_dot_tes__pb2.GetTaskRequest.SerializeToString,
-            tes_dot_tes__pb2.Task.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def CancelTask(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/tes.TaskService/CancelTask',
-            tes_dot_tes__pb2.CancelTaskRequest.SerializeToString,
-            tes_dot_tes__pb2.CancelTaskResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def GetServiceInfo(request,
@@ -194,5 +160,39 @@ class TaskService(object):
         return grpc.experimental.unary_unary(request, target, '/tes.TaskService/CreateTask',
             tes_dot_tes__pb2.Task.SerializeToString,
             tes_dot_tes__pb2.CreateTaskResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetTask(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tes.TaskService/GetTask',
+            tes_dot_tes__pb2.GetTaskRequest.SerializeToString,
+            tes_dot_tes__pb2.Task.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CancelTask(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/tes.TaskService/CancelTask',
+            tes_dot_tes__pb2.CancelTaskRequest.SerializeToString,
+            tes_dot_tes__pb2.CancelTaskResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

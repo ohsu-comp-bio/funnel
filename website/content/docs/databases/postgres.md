@@ -25,3 +25,19 @@ Postgres:
   Username: ""
   Password: ""
 ```
+
+## Default Values
+
+```go
+		Postgres: &Postgres{
+			Host:     "localhost:5432",
+			Database: "funnel",
+			User:     "funnel",
+			Password: "example",
+			Timeout: &TimeoutConfig{
+				TimeoutOption: &TimeoutConfig_Duration{
+					Duration: durationpb.New(time.Second * 30),
+				},
+			},
+		},
+```

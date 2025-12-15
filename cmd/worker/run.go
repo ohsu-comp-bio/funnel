@@ -76,7 +76,7 @@ func NewWorker(ctx context.Context, conf *config.Config, log *logger.Logger, opt
 		Backend: "docker",
 	}
 
-	if conf.Kubernetes.Executor == "kubernetes" {
+	if conf.Compute == "kubernetes" {
 		executor.Backend = "kubernetes"
 		executor.Template = conf.Kubernetes.ExecutorTemplate
 		executor.Namespace = conf.Kubernetes.Namespace
@@ -197,6 +197,8 @@ func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf *config.
 		writer, err = events.NewPubSubWriter(ctx, conf.PubSub)
 	case "mongodb":
 		writer, err = mongodb.NewMongoDB(conf.MongoDB)
+	case "postgres", "psql":
+		writer, err = postgres.NewPostgres(conf.Postgres)
 	default:
 		err = fmt.Errorf("unknown event writer: %s", name)
 	}

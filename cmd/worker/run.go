@@ -10,6 +10,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/database/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/database/elastic"
 	"github.com/ohsu-comp-bio/funnel/database/mongodb"
+	"github.com/ohsu-comp-bio/funnel/database/postgres"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/storage"
@@ -123,9 +124,14 @@ func newTaskReader(ctx context.Context, conf *config.Config, opts *Options) (wor
 		db, err := mongodb.NewMongoDB(conf.MongoDB)
 		return newDatabaseTaskReader(opts.TaskID, db, err)
 
-		// These readers connect via RPC (because the database is embedded in the server).
-		// case "boltdb", "badger":
-		// Default to asking the server for the task.
+	case "postgres":
+		db, err := postgres.NewPostgres(conf.Postgres)
+		return newDatabaseTaskReader(opts.TaskID, db, err)
+
+	// These readers connect via RPC (because the database is embedded in the server).
+	// case "boltdb", "badger":
+	// Default to asking the server for the task.
+
 	default:
 		return worker.NewRPCTaskReader(ctx, conf.RPCClient, opts.TaskID)
 	}

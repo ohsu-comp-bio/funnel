@@ -34,6 +34,7 @@ message Config {
   Kafka Kafka = 15;
   PubSub PubSub = 16;
   Datastore Datastore = 17;
+  Postgres Postgres = 33;
   // Compute
   HPCBackend HTCondor = 18;
   HPCBackend Slurm = 19;
@@ -187,6 +188,15 @@ message MongoDB {
   TimeoutConfig Timeout = 3;
   string Username = 4;
   string Password = 5;
+}
+
+// Postgres configures access to a PostgreSQL database.
+message Postgres {
+  string Host = 1;
+  string Database = 2;
+  string User = 3;
+  string Password = 4;
+  TimeoutConfig Timeout = 5;
 }
 
 // Elastic configures access to an Elasticsearch database.

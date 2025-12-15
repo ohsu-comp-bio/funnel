@@ -156,6 +156,12 @@ func dbFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.StringVar(&flagConf.MongoDB.Database, "MongoDB.Database", flagConf.MongoDB.Database, "Database name in MongoDB")
 	f.Var(&TimeoutConfigValue{&flagConf.MongoDB.Timeout}, "MongoDB.Timeout", "Timeout in seconds for initial connection and follow up operations")
 
+	// postgres
+	f.StringVar(&flagConf.Postgres.Host, "Postgres.Host", flagConf.Postgres.Host, "Address of Postgres server")
+	f.StringVar(&flagConf.Postgres.Database, "Postgres.Database", flagConf.Postgres.Database, "Database name in Postgres")
+	f.StringVar(&flagConf.Postgres.User, "Postgres.User", flagConf.Postgres.User, "User name for Postgres authentication")
+	f.StringVar(&flagConf.Postgres.Password, "Postgres.Password", flagConf.Postgres.Password, "Password for Postgres authentication")
+
 	return f
 }
 

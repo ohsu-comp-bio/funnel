@@ -172,6 +172,9 @@
         "Datastore": {
           "$ref": "#/definitions/configDatastore"
         },
+        "Postgres": {
+          "$ref": "#/definitions/configPostgres"
+        },
         "HTCondor": {
           "$ref": "#/definitions/configHPCBackend",
           "title": "Compute"
@@ -646,6 +649,27 @@
         }
       },
       "title": "This config matches the funnel plugins repo protobuf"
+    },
+    "configPostgres": {
+      "type": "object",
+      "properties": {
+        "Host": {
+          "type": "string"
+        },
+        "Database": {
+          "type": "string"
+        },
+        "User": {
+          "type": "string"
+        },
+        "Password": {
+          "type": "string"
+        },
+        "Timeout": {
+          "$ref": "#/definitions/configTimeoutConfig"
+        }
+      },
+      "description": "Postgres configures access to a PostgreSQL database."
     },
     "configPubSub": {
       "type": "object",

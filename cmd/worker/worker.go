@@ -38,7 +38,7 @@ func newCommandHooks() (*cobra.Command, *hooks) {
 	var (
 		configFile string
 		conf       *config.Config
-		flagConf   *config.Config = config.EmptyConfig()
+		flagConf   *config.Config = config.DefaultConfig()
 	)
 	opts := &Options{}
 

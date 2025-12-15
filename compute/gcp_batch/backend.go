@@ -12,6 +12,7 @@ import (
 	batch "cloud.google.com/go/batch/apiv1"
 	"cloud.google.com/go/batch/apiv1/batchpb"
 	"github.com/aws/aws-sdk-go/aws"
+	shellquote "github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -77,31 +78,141 @@ func (b *Backend) NewStorage(conf config.Config) (*storage.GoogleCloud, error) {
 	return gs, nil
 }
 
+// extractBucketName extracts the bucket name from a gs:// URL
+func extractBucketName(url string) string {
+	if strings.HasPrefix(url, "gs://") {
+		parts := strings.SplitN(strings.TrimPrefix(url, "gs://"), "/", 2)
+		return parts[0]
+	}
+	return ""
+}
+
+// extractGCSPath extracts bucket and object path from a gs:// URL
+func extractGCSPath(url string) (bucket string, objectPath string) {
+	if strings.HasPrefix(url, "gs://") {
+		urlPath := strings.TrimPrefix(url, "gs://")
+		parts := strings.SplitN(urlPath, "/", 2)
+		bucket = parts[0]
+		if len(parts) > 1 {
+			objectPath = parts[1]
+		}
+	}
+	return bucket, objectPath
+}
+
+// validatePath checks if a path is safe to use in shell commands
+func validatePath(path string) error {
+	if path == "" {
+		return nil // Empty paths are handled elsewhere
+	}
+
+	// Check for dangerous shell metacharacters
+	dangerousChars := ";|&$`\n\r<>()"
+	if strings.ContainsAny(path, dangerousChars) {
+		return fmt.Errorf("path contains dangerous shell metacharacters: %s", path)
+	}
+
+	// Ensure path is absolute (starts with /)
+	if !strings.HasPrefix(path, "/") {
+		return fmt.Errorf("path must be absolute (start with /): %s", path)
+	}
+
+	return nil
+}
+
+// detectPathCollisions checks for multiple inputs/outputs using the same path
+func detectPathCollisions(inputs []*tes.Input, outputs []*tes.Output) error {
+	seen := make(map[string]string) // path -> url
+
+	for _, input := range inputs {
+		if input.Path == "" {
+			continue
+		}
+		if existingURL, exists := seen[input.Path]; exists && existingURL != input.Url {
+			return fmt.Errorf("path collision detected: %s used by both %s and %s",
+				input.Path, existingURL, input.Url)
+		}
+		seen[input.Path] = input.Url
+	}
+
+	for _, output := range outputs {
+		if output.Path == "" {
+			continue
+		}
+		if existingURL, exists := seen[output.Path]; exists && existingURL != output.Url {
+			return fmt.Errorf("path collision detected: %s used by both %s and %s",
+				output.Path, existingURL, output.Url)
+		}
+		seen[output.Path] = output.Url
+	}
+
+	return nil
+}
+
+// checkMixedStorageBackends warns if task contains both GCS and non-GCS URLs
+func checkMixedStorageBackends(task *tes.Task, log *logger.Logger) {
+	hasGCS := false
+	hasNonGCS := false
+
+	for _, input := range task.Inputs {
+		if hasGCS && hasNonGCS {
+			break
+		}
+		if input.Url == "" {
+			continue
+		}
+		if strings.HasPrefix(input.Url, "gs://") {
+			hasGCS = true
+		} else {
+			hasNonGCS = true
+		}
+	}
+
+	for _, output := range task.Outputs {
+		if hasGCS && hasNonGCS {
+			break
+		}
+		if output.Url == "" {
+			continue
+		}
+		if strings.HasPrefix(output.Url, "gs://") {
+			hasGCS = true
+		} else {
+			hasNonGCS = true
+		}
+	}
+
+	if hasGCS && hasNonGCS {
+		log.Warn("Task contains mixed storage backends. Non-GCS URLs will be ignored by GCP Batch symlink mapping.",
+			"taskID", task.Id)
+	}
+}
+
 func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()
 
-	// 1. Identify all unique buckets used by the task
-	buckets := make(map[string]bool)
-	extractBucketName := func(url string) string {
-		if strings.HasPrefix(url, "gs://") {
-			parts := strings.SplitN(strings.TrimPrefix(url, "gs://"), "/", 2)
-			return parts[0]
+	// Validate all input and output paths
+	for _, input := range task.Inputs {
+		if err := validatePath(input.Path); err != nil {
+			return fmt.Errorf("invalid input path: %w", err)
 		}
-		return ""
+	}
+	for _, output := range task.Outputs {
+		if err := validatePath(output.Path); err != nil {
+			return fmt.Errorf("invalid output path: %w", err)
+		}
 	}
 
-	// Helper to extract bucket and object path from gs:// URL
-	extractGCSPath := func(url string) (bucket string, objectPath string) {
-		if strings.HasPrefix(url, "gs://") {
-			urlPath := strings.TrimPrefix(url, "gs://")
-			parts := strings.SplitN(urlPath, "/", 2)
-			bucket = parts[0]
-			if len(parts) > 1 {
-				objectPath = parts[1]
-			}
-		}
-		return bucket, objectPath
+	// Check for path collisions
+	if err := detectPathCollisions(task.Inputs, task.Outputs); err != nil {
+		return fmt.Errorf("path collision error: %w", err)
 	}
+
+	// Warn about mixed storage backends
+	checkMixedStorageBackends(task, b.log)
+
+	// 1. Identify all unique buckets used by the task
+	buckets := make(map[string]bool)
 
 	for _, input := range task.Inputs {
 		if bucket := extractBucketName(input.Url); bucket != "" {
@@ -143,9 +254,13 @@ func (b *Backend) Submit(task *tes.Task) error {
 			}
 
 			mountPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
+			// Shell-escape paths for safety
+			escapedInputPath := shellquote.Join(input.Path)
+			escapedMountPath := shellquote.Join(mountPath)
+
 			// Create parent directory and symlink
-			inputCmds = append(inputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", input.Path))
-			inputCmds = append(inputCmds, fmt.Sprintf("ln -sf %s %s", mountPath, input.Path))
+			inputCmds = append(inputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", escapedInputPath))
+			inputCmds = append(inputCmds, fmt.Sprintf("ln -sf %s %s", escapedMountPath, escapedInputPath))
 		}
 
 		// Build output symlink commands
@@ -160,10 +275,14 @@ func (b *Backend) Submit(task *tes.Task) error {
 			}
 
 			mountPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
+			// Shell-escape paths for safety
+			escapedOutputPath := shellquote.Join(output.Path)
+			escapedMountPath := shellquote.Join(mountPath)
+
 			// Create parent directory in mount and symlink output path to it
-			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", mountPath))
-			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", output.Path))
-			outputCmds = append(outputCmds, fmt.Sprintf("ln -sf %s %s", mountPath, output.Path))
+			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", escapedMountPath))
+			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", escapedOutputPath))
+			outputCmds = append(outputCmds, fmt.Sprintf("ln -sf %s %s", escapedMountPath, escapedOutputPath))
 		}
 
 		// Build the full command - executor.Command is already a proper command array

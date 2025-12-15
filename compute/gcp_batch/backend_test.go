@@ -482,3 +482,56 @@ func (n *noopEventWriter) WriteEvent(ctx context.Context, ev *events.Event) erro
 }
 
 func (n *noopEventWriter) Close() {}
+
+// Test command construction with proper shell quoting
+func TestSubmit_CommandConstruction(t *testing.T) {
+	log := logger.NewLogger("test", logger.DefaultConfig())
+
+	var capturedReq *batchpb.CreateJobRequest
+	mockClient := &mockClient{
+		CreateJobFunc: func(req *batchpb.CreateJobRequest) (*batchpb.Job, error) {
+			capturedReq = req
+			return &batchpb.Job{Name: "test-job", Uid: "test-uid"}, nil
+		},
+	}
+
+	backend := &Backend{
+		client: mockClient,
+		conf:   &config.GCPBatch{Project: "test-project", Location: "us-west1"},
+		log:    log,
+		event:  &noopEventWriter{},
+	}
+
+	// Test with command that has spaces and quotes
+	task := &tes.Task{
+		Id: "task1",
+		Executors: []*tes.Executor{
+			{
+				Image: "python:3.9",
+				Command: []string{
+					"python",
+					"-c",
+					"import sys; print('Hello World'); print(sys.argv)",
+				},
+			},
+		},
+	}
+
+	err := backend.Submit(task)
+	if err != nil {
+		t.Fatalf("Submit failed: %v", err)
+	}
+
+	// Verify the command was properly quoted
+	cmd := capturedReq.Job.TaskGroups[0].TaskSpec.Runnables[0].GetContainer().Commands[2]
+
+	// Should contain properly escaped quotes, not broken by spaces
+	if !strings.Contains(cmd, "python -c") {
+		t.Errorf("Command should contain 'python -c', got: %s", cmd)
+	}
+
+	// The entire python script should be treated as one argument to -c
+	if strings.Contains(cmd, "python -c import sys;") {
+		t.Errorf("Command incorrectly split - 'import sys;' should be quoted as single arg to -c")
+	}
+}

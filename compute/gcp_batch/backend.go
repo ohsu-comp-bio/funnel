@@ -289,8 +289,8 @@ func (b *Backend) Submit(task *tes.Task) error {
 		// We need to wrap it as a subshell to execute properly
 		var executorCmd string
 		if len(executor.Command) > 0 {
-			// Join the command array into a single string for execution
-			executorCmd = strings.Join(executor.Command, " ")
+			// Use shellquote.Join to properly escape arguments with spaces/quotes
+			executorCmd = shellquote.Join(executor.Command...)
 		}
 
 		if executor.Stdout != "" {

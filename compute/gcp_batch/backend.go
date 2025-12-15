@@ -90,6 +90,19 @@ func (b *Backend) Submit(task *tes.Task) error {
 		return ""
 	}
 
+	// Helper to extract bucket and object path from gs:// URL
+	extractGCSPath := func(url string) (bucket string, objectPath string) {
+		if strings.HasPrefix(url, "gs://") {
+			urlPath := strings.TrimPrefix(url, "gs://")
+			parts := strings.SplitN(urlPath, "/", 2)
+			bucket = parts[0]
+			if len(parts) > 1 {
+				objectPath = parts[1]
+			}
+		}
+		return bucket, objectPath
+	}
+
 	for _, input := range task.Inputs {
 		if bucket := extractBucketName(input.Url); bucket != "" {
 			buckets[bucket] = true
@@ -118,18 +131,81 @@ func (b *Backend) Submit(task *tes.Task) error {
 	// Runnables
 	var runnables []*batchpb.Runnable
 	for _, executor := range task.Executors {
-		cmd := strings.Join(executor.Command, " ")
+		// Build input symlink commands
+		var inputCmds []string
+		for _, input := range task.Inputs {
+			if input.Url == "" || input.Path == "" {
+				continue
+			}
+			bucket, objectPath := extractGCSPath(input.Url)
+			if bucket == "" {
+				continue // Skip non-GCS URLs
+			}
+
+			mountPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
+			// Create parent directory and symlink
+			inputCmds = append(inputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", input.Path))
+			inputCmds = append(inputCmds, fmt.Sprintf("ln -sf %s %s", mountPath, input.Path))
+		}
+
+		// Build output symlink commands
+		var outputCmds []string
+		for _, output := range task.Outputs {
+			if output.Url == "" || output.Path == "" {
+				continue
+			}
+			bucket, objectPath := extractGCSPath(output.Url)
+			if bucket == "" {
+				continue // Skip non-GCS URLs
+			}
+
+			mountPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
+			// Create parent directory in mount and symlink output path to it
+			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", mountPath))
+			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", output.Path))
+			outputCmds = append(outputCmds, fmt.Sprintf("ln -sf %s %s", mountPath, output.Path))
+		}
+
+		// Build the full command - executor.Command is already a proper command array
+		// We need to wrap it as a subshell to execute properly
+		var executorCmd string
+		if len(executor.Command) > 0 {
+			// Join the command array into a single string for execution
+			executorCmd = strings.Join(executor.Command, " ")
+		}
 
 		if executor.Stdout != "" {
 			// Redirect command output to the specified file path
-			cmd = fmt.Sprintf("%s | tee %s", cmd, executor.Stdout)
+			executorCmd = fmt.Sprintf("(%s) | tee %s", executorCmd, executor.Stdout)
+		} else {
+			// Wrap in subshell for proper execution
+			executorCmd = fmt.Sprintf("(%s)", executorCmd)
 		}
+
+		// Combine: input setup + output setup + executor command
+		var fullCmd string
+		allCmds := []string{"set -ex"}
+
+		if len(inputCmds) > 0 {
+			allCmds = append(allCmds, "echo '=== Setting up input symlinks ==='")
+			allCmds = append(allCmds, inputCmds...)
+		}
+
+		if len(outputCmds) > 0 {
+			allCmds = append(allCmds, "echo '=== Setting up output symlinks ==='")
+			allCmds = append(allCmds, outputCmds...)
+		}
+
+		allCmds = append(allCmds, "echo '=== Running executor command ==='")
+		allCmds = append(allCmds, executorCmd)
+
+		fullCmd = strings.Join(allCmds, " && ")
 
 		runnable := &batchpb.Runnable{
 			Executable: &batchpb.Runnable_Container_{
 				Container: &batchpb.Runnable_Container{
 					ImageUri: executor.Image,
-					Commands: []string{"sh", "-c", cmd},
+					Commands: []string{"sh", "-c", fullCmd},
 				},
 			},
 		}

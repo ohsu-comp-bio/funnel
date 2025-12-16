@@ -59,7 +59,7 @@ jobs:
       run: make test-verbose
 
   build:
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build.yaml
 
   mongoTest:
     runs-on: ubuntu-latest

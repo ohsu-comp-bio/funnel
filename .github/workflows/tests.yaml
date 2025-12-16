@@ -9,40 +9,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+  # lint:
+  #   name: lint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out code
+  #       uses: actions/checkout@v4
 
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
+  #     - name: Set up Go 1.x
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version-file: go.mod
 
-      # - name: golangci-lint
-      #   uses: golangci/golangci-lint-action@v3
-      #   with:
-      #     version: latest
-      #     # Matches the "primary" golangci-lint command in the Makefile
-      #     args: |
-      #         --timeout 3m --disable-all --enable=govet --enable=gofmt --enable=goimports --enable=misspell \
-      #         --skip-dirs "vendor" \
-      #         --skip-dirs "webdash" \
-      #         --skip-dirs "cmd/webdash" \
-      #         --skip-dirs "funnel-work-dir" \
-      #         -e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
-      #         ./...
-
-      # - name: golangci-lint
-      #   uses: golangci/golangci-lint-action@v3
-      #   with:
-      #     version: latest
-      #     # Matches the "termdash" golangci-lint command in the Makefile
-      #     args: |
-      #         --timeout 3m --disable-all --enable=vet --enable=gofmt --enable=goimports --enable=misspell \
-      #         ./cmd/termdash/...
+  #     - name: golangci-lint
+  #       uses: golangci/golangci-lint-action@v3
+  #       with:
+  #         version: latest
+  #         # Matches the "primary" golangci-lint command in the Makefile
+  #         args: |
+  #             --timeout 3m --disable-all --enable=govet --enable=gofmt --enable=goimports --enable=misspell \
+  #             --skip-dirs "vendor" \
+  #             --skip-dirs "webdash" \
+  #             --skip-dirs "cmd/webdash" \
+  #             --skip-dirs "funnel-work-dir" \
+  #             -e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
+  #             ./...
 
   unitTest:
     runs-on: ubuntu-latest

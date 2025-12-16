@@ -58,7 +58,7 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 			// Validate state transition
 			to := req.GetState()
 			if err = tes.ValidateTransition(state, to); err != nil {
-				eventLogger.Debug("postgres: invalid state transition", "taskID", req.Id, "from", state, "to", to, "error", err)
+				logger.Debug("postgres: invalid state transition", "taskID", req.Id, "from", state, "to", to, "error", err)
 				return err
 			}
 

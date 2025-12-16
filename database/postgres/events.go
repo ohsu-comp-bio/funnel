@@ -13,16 +13,16 @@ import (
 	"github.com/ohsu-comp-bio/funnel/util"
 )
 
-var eventLogger = logger.NewLogger("postgres", logger.DefaultConfig())
-
 // WriteEvent creates an event for the server to handle.
 func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
+	logger := logger.NewLogger("postgres", logger.DefaultConfig())
+
 	ctx, cancel := db.context()
 	defer cancel()
 
 	selector := req.Id
 
-	fmt.Println("DEBUG: WriteEvent called with event:", req)
+	logger.Debug("WriteEvent request:", req)
 	switch req.Type {
 
 	// Task Created
@@ -98,7 +98,6 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 	case events.Type_TASK_START_TIME, events.Type_TASK_END_TIME, events.Type_TASK_OUTPUTS, events.Type_TASK_METADATA,
 		events.Type_EXECUTOR_START_TIME, events.Type_EXECUTOR_END_TIME, events.Type_EXECUTOR_EXIT_CODE,
 		events.Type_EXECUTOR_STDOUT, events.Type_EXECUTOR_STDERR:
-		fmt.Println("DEBUG: Task/Executor Event req:", req)
 
 		var jsonPath string
 		var jsonValue interface{}

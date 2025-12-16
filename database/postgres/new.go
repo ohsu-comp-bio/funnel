@@ -78,7 +78,6 @@ func NewPostgres(conf *config.Postgres) (*Postgres, error) {
 	}
 
 	connString := getDefaultConnString(*conf)
-	fmt.Println("DEBUG: connString:", connString)
 
 	poolConf, err := pgxpool.ParseConfig(connString)
 	if err != nil {

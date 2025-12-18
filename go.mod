@@ -54,19 +54,19 @@ require (
 	google.golang.org/api v0.257.0
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.77.0
-	k8s.io/api v0.34.3
-	k8s.io/apimachinery v0.34.3
-	k8s.io/client-go v0.34.3
+	k8s.io/api v0.35.0
+	k8s.io/apimachinery v0.35.0
+	k8s.io/client-go v0.35.0
 )
 
 require (
 	cloud.google.com/go/batch v1.14.0
 	dario.cat/mergo v1.0.2
-	github.com/elastic/go-elasticsearch/v8 v8.19.0
-	github.com/go-playground/validator/v10 v10.28.0
-	github.com/goccy/go-yaml v1.19.0
+	github.com/elastic/go-elasticsearch/v8 v8.19.1
+	github.com/go-playground/validator/v10 v10.29.0
+	github.com/goccy/go-yaml v1.19.1
 	github.com/google/uuid v1.6.0
-	github.com/googleapis/gax-go/v2 v2.15.0
+	github.com/googleapis/gax-go/v2 v2.16.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
@@ -132,7 +132,6 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect

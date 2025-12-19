@@ -665,6 +665,12 @@
         "Password": {
           "type": "string"
         },
+        "AdminUser": {
+          "type": "string"
+        },
+        "AdminPassword": {
+          "type": "string"
+        },
         "Timeout": {
           "$ref": "#/definitions/configTimeoutConfig"
         }

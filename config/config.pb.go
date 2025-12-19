@@ -1548,7 +1548,9 @@ type Postgres struct {
 	Database      string                 `protobuf:"bytes,2,opt,name=Database,proto3" json:"Database,omitempty"`
 	User          string                 `protobuf:"bytes,3,opt,name=User,proto3" json:"User,omitempty"`
 	Password      string                 `protobuf:"bytes,4,opt,name=Password,proto3" json:"Password,omitempty"`
-	Timeout       *TimeoutConfig         `protobuf:"bytes,5,opt,name=Timeout,proto3" json:"Timeout,omitempty"`
+	AdminUser     string                 `protobuf:"bytes,5,opt,name=AdminUser,proto3" json:"AdminUser,omitempty"`
+	AdminPassword string                 `protobuf:"bytes,6,opt,name=AdminPassword,proto3" json:"AdminPassword,omitempty"`
+	Timeout       *TimeoutConfig         `protobuf:"bytes,7,opt,name=Timeout,proto3" json:"Timeout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1607,6 +1609,20 @@ func (x *Postgres) GetUser() string {
 func (x *Postgres) GetPassword() string {
 	if x != nil {
 		return x.Password
+	}
+	return ""
+}
+
+func (x *Postgres) GetAdminUser() string {
+	if x != nil {
+		return x.AdminUser
+	}
+	return ""
+}
+
+func (x *Postgres) GetAdminPassword() string {
+	if x != nil {
+		return x.AdminPassword
 	}
 	return ""
 }
@@ -3147,13 +3163,15 @@ const file_config_config_proto_rawDesc = "" +
 	"\bDatabase\x18\x02 \x01(\tR\bDatabase\x12/\n" +
 	"\aTimeout\x18\x03 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\x12\x1a\n" +
 	"\bUsername\x18\x04 \x01(\tR\bUsername\x12\x1a\n" +
-	"\bPassword\x18\x05 \x01(\tR\bPassword\"\x9b\x01\n" +
+	"\bPassword\x18\x05 \x01(\tR\bPassword\"\xdf\x01\n" +
 	"\bPostgres\x12\x12\n" +
 	"\x04Host\x18\x01 \x01(\tR\x04Host\x12\x1a\n" +
 	"\bDatabase\x18\x02 \x01(\tR\bDatabase\x12\x12\n" +
 	"\x04User\x18\x03 \x01(\tR\x04User\x12\x1a\n" +
-	"\bPassword\x18\x04 \x01(\tR\bPassword\x12/\n" +
-	"\aTimeout\x18\x05 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\"\xcb\x01\n" +
+	"\bPassword\x18\x04 \x01(\tR\bPassword\x12\x1c\n" +
+	"\tAdminUser\x18\x05 \x01(\tR\tAdminUser\x12$\n" +
+	"\rAdminPassword\x18\x06 \x01(\tR\rAdminPassword\x12/\n" +
+	"\aTimeout\x18\a \x01(\v2\x15.config.TimeoutConfigR\aTimeout\"\xcb\x01\n" +
 	"\aElastic\x12 \n" +
 	"\vIndexPrefix\x18\x01 \x01(\tR\vIndexPrefix\x12\x10\n" +
 	"\x03URL\x18\x02 \x01(\tR\x03URL\x12\x1a\n" +

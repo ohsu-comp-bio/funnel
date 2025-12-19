@@ -19,11 +19,10 @@ menu:
 Database: postgres
 
 Postgres:
-  Addrs:
-    - "localhost"
-  Database: "funnel"
-  Username: ""
-  Password: ""
+  Host: localhost
+  Database: funnel
+  User: funnel
+  Password: example
 ```
 
 ## Default Values

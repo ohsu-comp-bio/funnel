@@ -214,6 +214,16 @@ MongoDB:
   Username: ""
   Password: ""
 
+Postgres:
+  Host: localhost
+  Database: funnel
+  User: funnel
+  Password: example
+  AdminUser: postgres
+  AdminPassword: example
+  Timeout:
+    duration: 300s
+
 Kafka:
   Servers:
     - ""

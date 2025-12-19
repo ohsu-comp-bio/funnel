@@ -141,10 +141,12 @@ func DefaultConfig() *Config {
 			Database: "funnel",
 		},
 		Postgres: &Postgres{
-			Host:     "localhost:5432",
-			Database: "funnel",
-			User:     "funnel",
-			Password: "example",
+			Host:          "localhost:5432",
+			Database:      "funnel",
+			User:          "funnel",
+			Password:      "example",
+			AdminUser:     "postgres",
+			AdminPassword: "example",
 			Timeout: &TimeoutConfig{
 				TimeoutOption: &TimeoutConfig_Duration{
 					Duration: durationpb.New(time.Second * 30),

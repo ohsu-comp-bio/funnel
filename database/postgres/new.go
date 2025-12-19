@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,56 +14,82 @@ import (
 // Postgres provides a PostgreSQL database server backend.
 type Postgres struct {
 	scheduler.UnimplementedSchedulerServiceServer
-	client *pgxpool.Pool // Use a connection pool for managing multiple connections
+	client *pgxpool.Pool
 	conf   config.Postgres
 	active bool
 }
 
-func getConnString(conf config.Postgres, db string) string {
-	return fmt.Sprintf("postgres://%s:%s@%s/%s",
-		conf.User,
-		conf.Password,
-		conf.Host,
-		db,
-	)
+func getConnStr(conf config.Postgres) string {
+	u := url.UserPassword(conf.User, conf.Password)
+
+	connURL := url.URL{
+		Scheme: "postgres",
+		User:   u,
+		Host:   conf.Host,
+		Path:   conf.Database,
+	}
+
+	return connURL.String()
 }
 
-func getDefaultConnString(conf config.Postgres) string {
-	return getConnString(conf, conf.Database)
+func getAdminConnStr(conf config.Postgres) string {
+	conf.User = conf.AdminUser
+	conf.Password = conf.AdminPassword
+	return getConnStr(conf)
 }
 
-func ensureDatabaseExists(ctx context.Context, conf *config.Postgres) error {
-	connStr := getConnString(*conf, "postgres")
+func ensureDatabaseExists(ctx context.Context, conf config.Postgres) error {
+	// First check that we even need to connect as an "admin" in order to create the Funnel Role + DB
+	connStr := getConnStr(conf)
+	probeConn, err := pgx.Connect(ctx, connStr)
+	if err == nil {
+		defer probeConn.Close(ctx)
+		var hasFullAccess bool
+		checkSQL := `
+			SELECT EXISTS (
+				SELECT 1 FROM pg_database d
+				WHERE d.datname = $1 
+				AND has_database_privilege($2, $1, 'CONNECT')
+				AND has_schema_privilege($2, 'public', 'CREATE')
+			)`
 
+		err = probeConn.QueryRow(ctx, checkSQL, conf.Database, conf.User).Scan(&hasFullAccess)
+
+		// Role + DB already exist, no need to try connecting as admin
+		if err == nil && hasFullAccess {
+			return nil
+		}
+	}
+
+	return createResources(ctx, conf)
+}
+
+func createResources(ctx context.Context, conf config.Postgres) error {
+	connStr := getAdminConnStr(conf)
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
-		return fmt.Errorf("failed to connect to administrative database 'postgres': %w", err)
+		return fmt.Errorf("failed to connect as admin for bootstrap: %w", err)
 	}
 	defer conn.Close(ctx)
 
-	createDBSQL := fmt.Sprintf("CREATE DATABASE %s OWNER %s", conf.Database, conf.User)
-
-	_, err = conn.Exec(ctx, createDBSQL)
-	if err != nil {
-		checkDBSQL := fmt.Sprintf("SELECT 1 FROM pg_database WHERE datname='%s'", conf.Database)
-		var exists int
-		err = conn.QueryRow(ctx, checkDBSQL).Scan(&exists)
-
-		if err != nil && err != pgx.ErrNoRows {
-			return fmt.Errorf("failed to query database existence: %w", err)
-		}
-
-		if err == pgx.ErrNoRows {
-			_, err = conn.Exec(ctx, createDBSQL)
-			if err != nil {
-				return fmt.Errorf("failed to create database '%s' using SQL '%s': %w", conf.Database, createDBSQL, err)
-			}
-		}
+	// Role
+	createUser := fmt.Sprintf(
+		"DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '%s') "+
+			"THEN CREATE ROLE %s WITH LOGIN PASSWORD '%s'; END IF; END $$",
+		conf.User, conf.User, conf.Password,
+	)
+	if _, err := conn.Exec(ctx, createUser); err != nil {
+		return fmt.Errorf("failed to ensure role exists: %w", err)
 	}
 
-	grantSchemaSQL := "GRANT CREATE ON SCHEMA public TO " + conf.User
-	if _, err := conn.Exec(ctx, grantSchemaSQL); err != nil {
-		return fmt.Errorf("failed to grant schema permissions: %w", err)
+	// Database
+	createDB := fmt.Sprintf("CREATE DATABASE %s OWNER %s", conf.Database, conf.User)
+	var dbExists int
+	conn.QueryRow(ctx, "SELECT 1 FROM pg_database WHERE datname=$1", conf.Database).Scan(&dbExists)
+	if dbExists != 1 {
+		if _, err := conn.Exec(ctx, createDB); err != nil {
+			return fmt.Errorf("failed to create app database: %w", err)
+		}
 	}
 
 	return nil
@@ -72,12 +99,12 @@ func NewPostgres(conf *config.Postgres) (*Postgres, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), conf.Timeout.GetDuration().AsDuration())
 	defer cancel()
 
-	err := ensureDatabaseExists(ctx, conf)
+	err := ensureDatabaseExists(ctx, *conf)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to or creating database resources: %w", err)
 	}
 
-	connString := getDefaultConnString(*conf)
+	connString := getConnStr(*conf)
 
 	poolConf, err := pgxpool.ParseConfig(connString)
 	if err != nil {
@@ -99,16 +126,6 @@ func NewPostgres(conf *config.Postgres) (*Postgres, error) {
 func (db *Postgres) context() (context.Context, context.CancelFunc) {
 	// Use a timeout from the configuration
 	return context.WithTimeout(context.Background(), db.conf.Timeout.GetDuration().AsDuration())
-}
-
-func (db *Postgres) wrap(ctx context.Context) (context.Context, context.CancelFunc) {
-	// TODO: Implement
-
-	return nil, nil
-}
-
-func (db *Postgres) tasks() {
-	// TODO: Implement
 }
 
 // Init creates required tables and indexes in Postgres
@@ -167,5 +184,8 @@ func (db *Postgres) Init() error {
 
 // Close closes the database session.
 func (db *Postgres) Close() {
-	// TODO: Implement
+	if db.active {
+		db.client.Close()
+		db.active = false
+	}
 }

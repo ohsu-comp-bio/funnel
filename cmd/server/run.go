@@ -143,6 +143,7 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 	}
 
 	// Initialize the Database
+	// Note: This is where Funnel waits until the given database is ready to accept requests.
 	if err := database.Init(); err != nil {
 		return nil, fmt.Errorf("error creating database resources: %v", err)
 	}

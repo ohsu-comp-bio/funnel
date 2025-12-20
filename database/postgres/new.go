@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ohsu-comp-bio/funnel/compute/scheduler"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/util"
 )
 
 // Postgres provides a PostgreSQL database server backend.
@@ -17,6 +19,44 @@ type Postgres struct {
 	client *pgxpool.Pool
 	conf   config.Postgres
 	active bool
+}
+
+func NewPostgres(conf *config.Postgres) (*Postgres, error) {
+	return &Postgres{
+		conf:   *conf,
+		active: true,
+	}, nil
+}
+
+func (db *Postgres) Init() error {
+	ctx := context.Background()
+
+	retrier := util.NewRetrier()
+	retrier.MaxElapsedTime = time.Second * 300
+
+	return retrier.Retry(ctx, func() error {
+		// Check/create resources (Roles/DBs)
+		if err := ensureDatabaseExists(ctx, db.conf); err != nil {
+			return err
+		}
+
+		// Initialize the connection pool
+		if db.client == nil {
+			pool, err := pgxpool.New(ctx, getConnStr(db.conf))
+			if err != nil {
+				return err
+			}
+			db.client = pool
+		}
+
+		// Create Tables and Indices
+		return db.createTables(ctx)
+	})
+}
+
+func (db *Postgres) context() (context.Context, context.CancelFunc) {
+	// Use a timeout from the configuration
+	return context.WithTimeout(context.Background(), db.conf.Timeout.GetDuration().AsDuration())
 }
 
 func getConnStr(conf config.Postgres) string {
@@ -95,44 +135,7 @@ func createResources(ctx context.Context, conf config.Postgres) error {
 	return nil
 }
 
-func NewPostgres(conf *config.Postgres) (*Postgres, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), conf.Timeout.GetDuration().AsDuration())
-	defer cancel()
-
-	err := ensureDatabaseExists(ctx, *conf)
-	if err != nil {
-		return nil, fmt.Errorf("error connecting to or creating database resources: %w", err)
-	}
-
-	connString := getConnStr(*conf)
-
-	poolConf, err := pgxpool.ParseConfig(connString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse Postgres connection string: %w", err)
-	}
-
-	pool, err := pgxpool.NewWithConfig(ctx, poolConf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Postgres: %w", err)
-	}
-
-	return &Postgres{
-		client: pool,
-		conf:   *conf,
-		active: true,
-	}, nil
-}
-
-func (db *Postgres) context() (context.Context, context.CancelFunc) {
-	// Use a timeout from the configuration
-	return context.WithTimeout(context.Background(), db.conf.Timeout.GetDuration().AsDuration())
-}
-
-// Init creates required tables and indexes in Postgres
-func (db *Postgres) Init() error {
-	ctx, cancel := db.context()
-	defer cancel()
-
+func (db *Postgres) createTables(ctx context.Context) error {
 	// Tasks
 	tasks := `
     CREATE TABLE IF NOT EXISTS tasks (

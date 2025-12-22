@@ -37,6 +37,9 @@ func (db *MongoDB) WriteEvent(ctx context.Context, req *events.Event) error {
 
 	case events.Type_TASK_STATE:
 		retrier := util.NewRetrier()
+		// TODO: This could be where the invalid state transition errors are originating from (credit @Sai)
+		// Check how this interacts with K8s BackoffLimit on Job spec
+		// Ideally we would have users be able to control their own retry policies outside of internal Funnel's logic
 		retrier.ShouldRetry = func(err error) bool {
 			_, isTransitionError := err.(*tes.TransitionError)
 			return !isTransitionError && err != tes.ErrNotFound && err != tes.ErrNotPermitted

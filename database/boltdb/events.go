@@ -173,6 +173,9 @@ func transitionTaskState(tx *bolt.Tx, id string, target tes.State) error {
 		return fmt.Errorf("Won't switch between two terminal states: %s -> %s",
 			current, target)
 
+	// In case where restarts of executor are allowed, this line should not be encountered
+	// e.g. Accessing invalid object shpuld be SYSTEM_ERROR every time,
+	// but if a retry mechanism would work (e.g. unavailable for a few seconds), then Task Worker should allow Executor to restart as expected.
 	case tes.TerminalState(current) && !tes.TerminalState(target):
 		// Error when trying to switch out of a terminal state to a non-terminal one.
 		return fmt.Errorf("Unexpected transition from %s to %s", current.String(), target.String())

@@ -96,7 +96,6 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 		w.WriteHeader(499)
 	case codes.DeadlineExceeded: // 504
 		w.WriteHeader(http.StatusGatewayTimeout)
-
 	default:
 		if strings.Contains(st.Message(), "backend parameters not supported") {
 			w.WriteHeader(http.StatusBadRequest) // 400

@@ -90,7 +90,14 @@ func (docker DockerCommand) executeCommand(ctx context.Context, commandTemplate 
 	cmdParts := strings.Fields(cmdBuffer.String())
 	if usingCommand {
 		go docker.InspectContainer(ctx)
-		cmdParts = append(cmdParts, docker.Command.ShellCommand...)
+
+		commandToExecute := docker.Command.ShellCommand
+		if len(commandToExecute) == 1 {
+			cmdString := commandToExecute[0]
+			commandToExecute = []string{"/bin/sh", "-c", cmdString}
+		}
+
+		cmdParts = append(cmdParts, commandToExecute...)
 	}
 
 	driverCmd := strings.Fields(docker.DriverCommand)

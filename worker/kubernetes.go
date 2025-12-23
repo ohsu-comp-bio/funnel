@@ -3,6 +3,7 @@ package worker
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -47,14 +48,22 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		return err
 	}
 
-	var command = kcmd.ShellCommand
-	if kcmd.StdinFile != "" {
-		command = append(command, "<", kcmd.StdinFile)
+	var cmd = kcmd.ShellCommand
+	if len(cmd) == 0 {
+		return fmt.Errorf("Funnel Worker: No command specified for Executor.")
 	}
-	for i, v := range command {
-		if strings.Contains(v, " ") {
-			command[i] = fmt.Sprintf("'%s'", v)
-		}
+
+	fullCmd := strings.Join(cmd, " ")
+
+	if kcmd.StdinFile != "" {
+		fullCmd = fmt.Sprintf("%s < %s", fullCmd, kcmd.StdinFile)
+	}
+
+	finalCmd := []string{"/bin/sh", "-c", fullCmd}
+
+	marshaledCmd, err := json.Marshal(finalCmd)
+	if err != nil {
+		return fmt.Errorf("Funnel Worker: failed to marshal command array to JSON: %w", err)
 	}
 
 	templateData := map[string]interface{}{
@@ -62,7 +71,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"JobId":              kcmd.JobId,
 		"Namespace":          kcmd.Namespace,
 		"JobsNamespace":      kcmd.JobsNamespace,
-		"Command":            command,
+		"Command":            string(marshaledCmd),
 		"Workdir":            kcmd.Workdir,
 		"Volumes":            kcmd.Volumes,
 		"Cpus":               kcmd.Resources.CpuCores,

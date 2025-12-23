@@ -191,12 +191,9 @@
         "Kubernetes": {
           "$ref": "#/definitions/configKubernetes"
         },
-<<<<<<< HEAD
-=======
         "GCPBatch": {
           "$ref": "#/definitions/configGCPBatch"
         },
->>>>>>> origin/develop
         "LocalStorage": {
           "$ref": "#/definitions/configLocalStorage",
           "title": "Storage"
@@ -354,8 +351,6 @@
       },
       "description": "FTPStorage configures the FTP storage backend."
     },
-<<<<<<< HEAD
-=======
     "configGCPBatch": {
       "type": "object",
       "properties": {
@@ -380,7 +375,6 @@
       },
       "description": "GCPBatch describes the configuration for the GCP Batch compute backend."
     },
->>>>>>> origin/develop
     "configGenericS3Storage": {
       "type": "object",
       "properties": {

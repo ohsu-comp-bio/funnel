@@ -22,9 +22,18 @@ type Postgres struct {
 }
 
 func NewPostgres(conf *config.Postgres) (*Postgres, error) {
+	ctx := context.Background()
+
+	// Initialize the connection pool
+	pool, err := pgxpool.New(ctx, getConnStr(*conf))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Postgres{
 		conf:   *conf,
 		active: true,
+		client: pool,
 	}, nil
 }
 
@@ -38,15 +47,6 @@ func (db *Postgres) Init() error {
 		// Check/create resources (Roles/DBs)
 		if err := ensureDatabaseExists(ctx, db.conf); err != nil {
 			return err
-		}
-
-		// Initialize the connection pool
-		if db.client == nil {
-			pool, err := pgxpool.New(ctx, getConnStr(db.conf))
-			if err != nil {
-				return err
-			}
-			db.client = pool
 		}
 
 		// Create Tables and Indices

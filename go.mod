@@ -63,7 +63,7 @@ require (
 	cloud.google.com/go/batch v1.14.0
 	dario.cat/mergo v1.0.2
 	github.com/elastic/go-elasticsearch/v8 v8.19.1
-	github.com/go-playground/validator/v10 v10.30.0
+	github.com/go-playground/validator/v10 v10.30.1
 	github.com/goccy/go-yaml v1.19.1
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.16.0

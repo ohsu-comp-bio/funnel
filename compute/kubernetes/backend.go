@@ -383,22 +383,22 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						taskID := task.Id
 
 						// Check for Orphaned Task (Job Missing)
-						if _, exists := k8sJobs[taskID]; !exists {
+						// if _, exists := k8sJobs[taskID]; !exists {
 
-							b.log.Debug("reconcile: orphaned task found, marking as SYSTEM_ERROR", "taskID", taskID)
+						// 	b.log.Debug("reconcile: orphaned task found, marking as SYSTEM_ERROR", "taskID", taskID)
 
-							b.event.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
+						// 	b.event.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
 
-							b.event.WriteEvent(
-								ctx,
-								events.NewSystemLog(
-									taskID, 0, 0, "error",
-									"Kubernetes Worker Job not found. Submission failed or external deletion.",
-									nil,
-								),
-							)
-							continue
-						}
+						// 	b.event.WriteEvent(
+						// 		ctx,
+						// 		events.NewSystemLog(
+						// 			taskID, 0, 0, "error",
+						// 			"Kubernetes Worker Job not found. Submission failed or external deletion.",
+						// 			nil,
+						// 		),
+						// 	)
+						// 	continue
+						// }
 
 						// If the job exists, check its current status (Active, Succeeded, Failed)
 						j := k8sJobs[taskID]

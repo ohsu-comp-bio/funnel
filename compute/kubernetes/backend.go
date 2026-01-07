@@ -220,6 +220,7 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 		}
 	} else {
+		fmt.Println("DEBUG: ServiceAccount err:", err)
 		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
 		return fmt.Errorf("error getting ServiceAccount %s for task %s: %v", saName, task.Id, err)
 	}

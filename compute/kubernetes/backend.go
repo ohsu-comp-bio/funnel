@@ -351,6 +351,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 		case <-ticker.C:
 
 			// List ALL current Kubernetes Jobs
+			// Bug: If K8s Job is not created by the time reconciler runs, then the TES Task itself will be prematurely marked as SYSTEM_ERROR
 			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
@@ -404,7 +405,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						j := k8sJobs[taskID]
 
 						// Remove from map to ensure only orphaned checks are done above
-						delete(k8sJobs, taskID)
+						// delete(k8sJobs, taskID)
 
 						jobName := j.Name
 						status := j.Status

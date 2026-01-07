@@ -407,6 +407,10 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						// Remove from map to ensure only orphaned checks are done above
 						// delete(k8sJobs, taskID)
 
+						if j == nil {
+							continue
+						}
+
 						jobName := j.Name
 						status := j.Status
 

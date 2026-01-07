@@ -210,19 +210,19 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		saName = task.Tags["_WORKER_SA"]
 	}
 
-	// TODO: Add error handler to handle case where Get fails for reasons other than NotFound
+	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
+	// e.g. network issues, permission issues, etc.
 	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
 
 	if err != nil {
-		b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
-		err = resources.CreateServiceAccount(task, config, b.client, b.log)
-		if err != nil {
-			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
-		}
-	} else {
-		fmt.Println("DEBUG: ServiceAccount err:", err)
 		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
 		return fmt.Errorf("error getting ServiceAccount %s for task %s: %v", saName, task.Id, err)
+	}
+
+	b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
+	err = resources.CreateServiceAccount(task, config, b.client, b.log)
+	if err != nil {
+		return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 	}
 
 	// Create Role

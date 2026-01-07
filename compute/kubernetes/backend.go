@@ -214,15 +214,14 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 	// e.g. network issues, permission issues, etc.
 	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
 
+	// ServiceAccount does not exist, create it
 	if err != nil {
 		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
-		return fmt.Errorf("error getting ServiceAccount %s for task %s: %v", saName, task.Id, err)
-	}
-
-	b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
-	err = resources.CreateServiceAccount(task, config, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
+		err = resources.CreateServiceAccount(task, config, b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+		}
 	}
 
 	// Create Role

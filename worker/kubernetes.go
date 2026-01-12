@@ -134,6 +134,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		}
 	}
 
+	// Wait until the job finishes
+	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
+	defer watcher.Stop()
+	waitForJobFinish(ctx, watcher)
+
 	// Get Executor Pod name in order to stream logs from Executor to Worker stdout
 	pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	if err != nil {
@@ -153,11 +158,6 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 			log.Fatalf("Error streaming logs: %v", err)
 		}
 	}
-
-	// Wait until the job finishes
-	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
-	defer watcher.Stop()
-	waitForJobFinish(ctx, watcher)
 
 	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
 

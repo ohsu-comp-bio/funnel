@@ -37,7 +37,7 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 'v0.152.2'
+          hugo-version: '0.152.2'
           extended: true
 
       - name: Checkout

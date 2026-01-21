@@ -2,6 +2,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"strings"
@@ -115,8 +116,21 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	// Include logging metrics in health check
+	stdoutDropped, stderrDropped, total := events.GetLogEventStats()
+
+	health := map[string]interface{}{
+		"status": "OK",
+		"log_metrics": map[string]int64{
+			"stdout_events_dropped": stdoutDropped,
+			"stderr_events_dropped": stderrDropped,
+			"total_events":          total,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	json.NewEncoder(w).Encode(health)
 }
 
 type JSONError struct {

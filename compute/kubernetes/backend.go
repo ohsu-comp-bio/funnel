@@ -91,7 +91,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
 	var taskConfig *config.Config = b.conf
-	b.log.Debug("taskConfig before plugin", taskConfig)
+	b.log.Debug("taskConfig", "before plugin", taskConfig)
 	if b.conf.Plugins != nil {
 		resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 		if !ok {
@@ -104,7 +104,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
 		}
 	}
-	b.log.Debug("taskConfig after plugin", taskConfig)
+	b.log.Debug("taskConfig", "after plugin", taskConfig)
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
@@ -164,18 +164,19 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 // createResources creates the resources needed for a task.
 func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
-	b.log.Debug("createResources config", config)
+	b.log.Debug("createResources", "config", config)
 
 	// If the task has inputs or outputs that must be taken care of create a PVC
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
 		// Check to make sure required configs are present
-		b.log.Debug("createResources GenericS3 config", config.GenericS3)
+		b.log.Debug("createResources", "conf", config.GenericS3)
 		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
 			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
 			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
 		}
+		b.log.Debug("createResources GenericS3 config", "GenericS3", config.GenericS3)
 
 		// Create PV
 		err := resources.CreatePV(task.Id,
@@ -198,6 +199,7 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 	err := resources.CreateConfigMap(task.Id,
 		config, b.client, b.log)
 	if err != nil {
+		b.log.Error("creating Worker ConfigMap", "error", err)
 		return fmt.Errorf("creating Worker ConfigMap: %v", err)
 	}
 
@@ -220,7 +222,7 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 		}
 	} else {
-		b.log.Debug("Error getting ServiceAccount %s", saName, "taskID", task.Id)
+		b.log.Error("Error getting ServiceAccount", "serviceAccount", saName, "taskID", task.Id, "error", err)
 	}
 
 	// Create Role
@@ -255,21 +257,21 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	err := resources.DeletePV(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker PV: %v", err)
+		b.log.Error("deleting Worker PV", "error", err)
 	}
 
 	// Delete PVC
 	err = resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker PVC: %v", err)
+		b.log.Error("deleting Worker PVC", "error", err)
 	}
 
 	// Delete ConfigMap
 	err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker ConfigMap: %v", err)
+		b.log.Error("deleting Worker ConfigMap", "error", err)
 	}
 
 	// Delete Job
@@ -277,28 +279,28 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	err = resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Job: %v", err)
+		b.log.Error("deleting Job", "error", err)
 	}
 
 	// Delete ServiceAccount
 	err = resources.DeleteServiceAccount(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker ServiceAccount: %v", err)
+		b.log.Error("deleting Worker ServiceAccount", "error", err)
 	}
 
 	// Delete Role
 	err = resources.DeleteRole(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker Role: %v", err)
+		b.log.Error("deleting Worker Role", "error", err)
 	}
 
 	// Delete RoleBinding
 	err = resources.DeleteRoleBinding(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker RoleBinding: %v", err)
+		b.log.Error("deleting Worker RoleBinding", "error", err)
 	}
 
 	return errs

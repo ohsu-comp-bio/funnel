@@ -28,13 +28,30 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 	// Task Created
 	case events.Type_TASK_CREATED:
 		task := req.GetTask()
-		task.Logs = []*tes.TaskLog{
-			{
-				Logs:       []*tes.ExecutorLog{},
-				Metadata:   map[string]string{},
-				SystemLogs: []string{},
-			},
+		if task.Logs == nil || len(task.Logs) == 0 {
+			executorLogs := make([]*tes.ExecutorLog, len(task.Executors))
+			for i := range executorLogs {
+				executorLogs[i] = &tes.ExecutorLog{
+					StartTime: "",
+					EndTime:   "",
+					Stdout:    "",
+					Stderr:    "",
+					ExitCode:  0,
+				}
+			}
+
+			task.Logs = []*tes.TaskLog{
+				{
+					StartTime:  "",
+					EndTime:    "",
+					Logs:       executorLogs,
+					Metadata:   map[string]string{},
+					SystemLogs: []string{},
+					Outputs:    []*tes.OutputFileLog{},
+				},
+			}
 		}
+
 		return db.insertTask(ctx, task, server.GetUsername(ctx))
 
 	// Task State change
@@ -73,6 +90,7 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 			newStateValue := int32(to)
 			newStateJSON, _ := json.Marshal(newStateValue)
 
+			// Working SQL Statement
 			tag, err := db.client.Exec(
 				ctx,
 				updateSQL,

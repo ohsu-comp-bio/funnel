@@ -36,7 +36,7 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 					EndTime:   "",
 					Stdout:    "",
 					Stderr:    "",
-					ExitCode:  0,
+					ExitCode:  -1,
 				}
 			}
 
@@ -191,6 +191,8 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		jsonVal, _ := json.Marshal(jsonValue)
 		fmt.Println("DEBUG: jsonVal:", string(jsonVal))
 		_, err := db.client.Exec(ctx, updateSQL, jsonPath, jsonVal, selector)
+
+		// Run
 
 		// Log error
 		logger.Error("Postgres WriteEvent", "Error", err)

@@ -22,7 +22,7 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 
 	selector := req.Id
 
-	logger.Debug("WriteEvent request:", req)
+	logger.Debug("Postgres", "WriteEvent request:", req)
 	switch req.Type {
 
 	// Task Created
@@ -171,6 +171,7 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		fmt.Println("DEBUG: jsonValue:", jsonValue)
 		fmt.Println("DEBUG: updateSQL:", updateSQL)
 		jsonVal, _ := json.Marshal(jsonValue)
+		fmt.Println("DEBUG: jsonVal:", string(jsonVal))
 		_, err := db.client.Exec(ctx, updateSQL, jsonPath, jsonVal, selector)
 
 		// Log error

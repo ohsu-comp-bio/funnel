@@ -398,7 +398,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						// 		ctx,
 						// 		events.NewSystemLog(
 						// 			taskID, 0, 0, "error",
-						// 			"Kubernetes Worker Job not found. Submission failed or external deletion.",
+						// 			"DEBUG: Kubernetes Worker Job not found! Submission failed or external deletion.",
 						// 			nil,
 						// 		),
 						// 	)

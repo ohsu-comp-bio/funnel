@@ -167,9 +167,15 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 			SET data = jsonb_set(data, $1::text[], $2::jsonb, true)
 			WHERE id = $3
 		`
-
+		fmt.Println("DEBUG: jsonPath:", jsonPath)
+		fmt.Println("DEBUG: jsonValue:", jsonValue)
+		fmt.Println("DEBUG: updateSQL:", updateSQL)
 		jsonVal, _ := json.Marshal(jsonValue)
 		_, err := db.client.Exec(ctx, updateSQL, jsonPath, jsonVal, selector)
+
+		// Log error
+		logger.Error("Postgres WriteEvent", "Error", err)
+		fmt.Println("DEBUG: Postgres WriteEvent error:", err)
 		return err
 
 	// System Log

@@ -59,9 +59,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		fullCmd = fmt.Sprintf("%s < %s", fullCmd, kcmd.StdinFile)
 	}
 
-	finalCmd := []string{"/bin/sh", "-c", fullCmd}
-
-	marshaledCmd, err := json.Marshal(finalCmd)
+	marshaledCmd, err := json.Marshal(fullCmd)
 	if err != nil {
 		return fmt.Errorf("Funnel Worker: failed to marshal command array to JSON: %w", err)
 	}
@@ -147,6 +145,9 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	for _, v := range pods.Items {
 		// Wait for the pod to reach Running state
+		// If an executor finishes by the time this is hit, currently Funnel is throwing `Error waiting for pod`
+		// as Executor Error.
+		// This is incorrect, with the expected behavior being Funnel "fetching" Executor state
 		pod, err := waitForPodRunning(ctx, kcmd.JobsNamespace, v.Name, 5*time.Minute)
 		if err != nil {
 			log.Fatalf("Error waiting for pod: %v", err)

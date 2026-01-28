@@ -28,13 +28,18 @@ type KubernetesCommand struct {
 	TaskTemplate   string
 	Namespace      string // Funnel Server Namespace
 	JobsNamespace  string // Funnel Worker + Executor Namespace (default: Namespace)
-	NodeSelector   map[string]string
-	Tolerations    []map[string]interface{}
 	Resources      *tes.Resources
 	ServiceAccount string
 	NeedsPVC       bool
 	Clientset      kubernetes.Interface
 	Command
+}
+
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // Create the Executor K8s job from kubernetes-executor-template.yaml
@@ -47,66 +52,54 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		return err
 	}
 
-	var cmd = kcmd.ShellCommand
-	if len(cmd) == 0 {
-		return fmt.Errorf("Funnel Worker: No command specified for Executor.")
-	}
-
+	var command = kcmd.ShellCommand
 	if kcmd.StdinFile != "" {
-		cmd = append(cmd, "<", kcmd.StdinFile)
+		command = append(command, "<", kcmd.StdinFile)
 	}
-
 	for i, v := range cmd {
 		if strings.Contains(v, " ") {
-			cmd[i] = fmt.Sprintf("'%s'", v)
+			cmd[i] = shellQuote(v)
 		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to marshal command array to JSON: %w", err)
-	}
-
-	templateData := map[string]interface{}{
-		"TaskId":             taskId,
-		"JobId":              kcmd.JobId,
-		"Namespace":          kcmd.Namespace,
-		"JobsNamespace":      kcmd.JobsNamespace,
-		"Command":            cmd,
-		"Workdir":            kcmd.Workdir,
-		"Volumes":            kcmd.Volumes,
-		"Cpus":               kcmd.Resources.CpuCores,
-		"RamGb":              kcmd.Resources.RamGb,
-		"DiskGb":             kcmd.Resources.DiskGb,
-		"Image":              kcmd.Image,
-		"NeedsPVC":           kcmd.NeedsPVC,
-		"ServiceAccountName": kcmd.ServiceAccount,
-	}
-
 	var buf bytes.Buffer
-	err = tpl.Execute(&buf, templateData)
+	err = tpl.Execute(&buf, map[string]interface{}{
+		"TaskId":         taskId,
+		"JobId":          kcmd.JobId,
+		"Namespace":      kcmd.Namespace,
+		"JobsNamespace":  kcmd.JobsNamespace,
+		"Command":        command,
+		"Workdir":        kcmd.Workdir,
+		"Volumes":        kcmd.Volumes,
+		"Cpus":           kcmd.Resources.CpuCores,
+		"RamGb":          kcmd.Resources.RamGb,
+		"DiskGb":         kcmd.Resources.DiskGb,
+		"ServiceAccount": kcmd.ServiceAccount,
+		"Image":          kcmd.Image,
+		"NeedsPVC":       kcmd.NeedsPVC,
+	})
 
 	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to execute job template: %v", err)
+		return err
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to decode job template: %v", err)
+		return err
 	}
 
 	job, ok := obj.(*v1.Job)
 	if !ok {
-		return fmt.Errorf("Funnel Worker: decoded object is not a Job")
+		return err
 	}
 
 	clientset := kcmd.Clientset
 	if clientset == nil {
 		var err error
-
 		clientset, err = getKubernetesClientset()
 		if err != nil {
-			return fmt.Errorf("Funnel Worker: failed to get Kubernetes clientset: %v", err)
+			return err
 		}
 	}
 
@@ -114,12 +107,10 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 
-	// TODO: move maxRetries (and interval duration) to config
 	var maxRetries = 5
-	var interval = 2 * time.Second
 
-	// Retry creating the Executor Pod on failure
 	if err != nil {
+		// Retry creating the Executor Pod on failure
 		var retryCount int
 		for retryCount < maxRetries {
 			_, err = client.Create(ctx, job, metav1.CreateOptions{})
@@ -127,7 +118,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 				break
 			}
 			retryCount++
-			time.Sleep(interval)
+			time.Sleep(2 * time.Second)
 		}
 		if retryCount == maxRetries {
 			return fmt.Errorf("Funnel Worker: Failed to create Executor Job after %v attempts: %v", maxRetries, err)
@@ -139,17 +130,13 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	defer watcher.Stop()
 	waitForJobFinish(ctx, watcher)
 
-	// Get Executor Pod name in order to stream logs from Executor to Worker stdout
 	pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	if err != nil {
-		return fmt.Errorf("failed to list pods for executor job: %v", err)
+		return err
 	}
 
 	for _, v := range pods.Items {
 		// Wait for the pod to reach Running state
-		// If an executor finishes by the time this is hit, currently Funnel is throwing `Error waiting for pod`
-		// as Executor Error.
-		// This is incorrect, with the expected behavior being Funnel "fetching" Executor state
 		pod, err := waitForPodRunning(ctx, kcmd.JobsNamespace, v.Name, 5*time.Minute)
 		if err != nil {
 			log.Fatalf("Error waiting for pod: %v", err)
@@ -160,17 +147,6 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		if err != nil {
 			log.Fatalf("Error streaming logs: %v", err)
 		}
-	}
-
-	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
-
-	j, err := client.Get(ctx, jobName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to retrieve final status for executor job %s: %v", jobName, err)
-	}
-
-	if j.Status.Failed > 0 {
-		return fmt.Errorf("executor job %s failed with %d failures", jobName, j.Status.Failed)
 	}
 
 	return nil

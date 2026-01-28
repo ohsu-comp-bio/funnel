@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"text/template"
 	"time"
 
@@ -49,6 +50,16 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var cmd = kcmd.ShellCommand
 	if len(cmd) == 0 {
 		return fmt.Errorf("Funnel Worker: No command specified for Executor.")
+	}
+
+	if kcmd.StdinFile != "" {
+		cmd = append(cmd, "<", kcmd.StdinFile)
+	}
+
+	for i, v := range cmd {
+		if strings.Contains(v, " ") {
+			cmd[i] = fmt.Sprintf("'%s'", v)
+		}
 	}
 
 	if err != nil {

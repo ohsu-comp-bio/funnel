@@ -94,7 +94,8 @@ spec:
       containers:
       - name: task
         image: {{.Image}}
-        command: {{.Command}}
+        command: ["/bin/sh", "-c"]
+        args: {{.Command}}
         resources:
           requests:
             cpu: "{{.Cpus}}"

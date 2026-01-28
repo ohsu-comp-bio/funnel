@@ -42,7 +42,7 @@ func shellQuote(s string) string {
 	if s == "" {
 		return "''"
 	}
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+	return "'" + strings.ReplaceAll(s, "'", `\'`) + "'"
 }
 
 // Create the Executor K8s job from kubernetes-executor-template.yaml

@@ -71,9 +71,6 @@ func (s *stepWorker) Run(ctx context.Context) error {
 			return ctx.Err()
 
 		case result := <-done:
-			// STDOUT event not being passed to user
-			// Was working in 0.1.58, definitely broken by 0.1.78
-			// Breaks Nextflow tasks (blocker + high priority)
 			s.Event.EndTime(time.Now())
 			s.Event.Debug("Executor done", "result", result)
 			s.Event.ExitCode(getExitCode(result))

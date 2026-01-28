@@ -125,6 +125,7 @@ func (b *Backend) Close() {
 // Submit creates both the PVC and the worker job with better error handling
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
 	err := b.createResources(task, config)
+	b.log.Debug("Error creating resources", "error", err, "task ID", task.Id)
 
 	if err != nil {
 		b.log.Error("Error creating resources, writing SystemError event", "error", err, "task ID", task.Id)
@@ -224,7 +225,7 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 		}
 	} else {
-		b.log.Error("ServiceAccount already exists", "serviceAccount", saName, "taskID", task.Id)
+		b.log.Error("Error getting ServiceAccount", "serviceAccount", saName, "taskID", task.Id, "error", err)
 	}
 
 	// Create Role

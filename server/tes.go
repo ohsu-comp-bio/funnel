@@ -137,7 +137,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		}
 
 		err := ts.Compute.WriteEvent(workerCtx, events.NewTaskCreated(task))
-		ts.Log.Debug("submitted task to compute backend", "taskID", task.Id)
+		ts.Log.Debug("submitted task to compute backend", "taskID", task.Id, "error", err)
 
 		if err != nil {
 			ts.Log.Debug("writing SystemError event for task", "taskID", task.Id, "error", err)

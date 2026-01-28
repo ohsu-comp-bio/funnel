@@ -1,5 +1,5 @@
 # Sample workflow for building and deploying a Hugo site to GitHub Pages
-name: Deploy Hugo site to Pages
+name: hugo.yaml
 
 on:
   # Runs on pushes targeting the default branch
@@ -37,7 +37,7 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 'latest'
+          hugo-version: '0.152.2'
           extended: true
 
       - name: Checkout
@@ -48,7 +48,7 @@ jobs:
       - name: Initialize Hugo modules
         working-directory: website
         run: |
-          hugo mod init example.com
+          hugo mod init github.com/ohsu-comp-bio/funnel/website
           hugo mod tidy
 
       - name: Build site with Hugo

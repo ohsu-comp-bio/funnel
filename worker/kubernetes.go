@@ -55,6 +55,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		return err
 	}
 
+	fmt.Println("DEBUG: kcmd.ShellCommand:", kcmd.ShellCommand)
 	var cmd = kcmd.ShellCommand
 	if len(cmd) == 0 {
 		return fmt.Errorf("Funnel Worker: No command specified for Executor.")
@@ -64,11 +65,13 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		cmd = append(cmd, "<", kcmd.StdinFile)
 	}
 
+	fmt.Println("DEBUG: cmd A:", cmd)
 	for i, v := range cmd {
 		if strings.Contains(v, " ") {
 			cmd[i] = shellQuote(v)
 		}
 	}
+	fmt.Println("DEBUG: cmd B:", cmd)
 
 	if err != nil {
 		return fmt.Errorf("Funnel Worker: failed to marshal command array to JSON: %w", err)
@@ -90,6 +93,8 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"ServiceAccountName": kcmd.ServiceAccount,
 	}
 
+	fmt.Println("DEBUG: cmd:", cmd)
+
 	var buf bytes.Buffer
 	err = tpl.Execute(&buf, templateData)
 
@@ -100,6 +105,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
+		fmt.Println("DEBUG Job Template:", buf.String())
 		return fmt.Errorf("Funnel Worker: failed to decode job template: %v", err)
 	}
 

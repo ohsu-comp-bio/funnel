@@ -33,7 +33,7 @@ func NewGenericS3(conf *config.GenericS3Storage) (*GenericS3, error) {
 	}
 
 	logger := logger.NewLogger("GenericS3", logger.DefaultConfig())
-	logger.Debug("generics3: connecting to endpoint:", "endpoint", endpoint)
+	logger.Debug("generics3: connecting to endpoint", "endpoint", endpoint)
 
 	client, err := minio.New(
 		endpoint,
@@ -232,14 +232,14 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 	// Output the downloaded file contents for debugging
 	content, err = os.ReadFile(outFile.Name())
 	if err != nil {
-		logger.Debug("Error reading file:", "filePath", outFile.Name(), "error", err)
+		logger.Debug("Error reading file", "filePath", outFile.Name(), "error", err)
 	}
 	logger.Debug("genericS3: file contents", "filePath", outFile.Name(), "content", string(content))
 
 	// Step 3: Copy the contents
 	// TODO: Add stack trace (or simply more verbose logging) here...
 	// Can we add stack traces for all errors in Funnel?
-	logger.Debug("genericS3: io.Copy:", "outFile", outFile.Name(), "obj", obj)
+	logger.Debug("genericS3: io.Copy", "outFile", outFile.Name(), "obj", obj)
 	if _, err := io.Copy(outFile, obj); err != nil {
 		return fmt.Errorf("failed writing file: %w", err)
 	}
@@ -252,6 +252,7 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error) {
 	u, err := s3.parse(url)
 	if err != nil {
+		fmt.Println("DEBUG: error parsing URL:", err)
 		return nil, err
 	}
 
@@ -260,20 +261,25 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 		logger.Debug("genericS3: using KMS encryption for upload", "kmsKeyId", s3.kmskeyId)
 		SSEKMS, err := encrypt.NewSSEKMS(s3.kmskeyId, ctx)
 		if err != nil {
+			fmt.Println("DEBUG: error creating SSEKMS:", err)
 			return nil, fmt.Errorf("genericS3: Put(): creating SSEKMS: %v", err)
 		}
 		opts.ServerSideEncryption = SSEKMS
 	}
 
 	// Check if the path is a directory
+	fmt.Println("DEBUG: path", path)
 	fileInfo, err := os.Stat(path)
 	if err != nil {
+		fmt.Println("DEBUG: error stating path:", err)
 		return nil, err
 	}
+	fmt.Printf("DEBUG: Path %s is a directory\n", path)
 	if fileInfo.IsDir() {
 		// Walk the directory and upload all files and subdirectories
 		err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 			if err != nil {
+				fmt.Println("DEBUG: error walking filepath:", err)
 				return err
 			}
 			if !info.IsDir() {
@@ -283,25 +289,42 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 					return err
 				}
 				uploadPath := filepath.Join(u.path, relativePath)
+				fmt.Println("DEBUG: u.bucket:", u.bucket)
+				fmt.Println("DEBUG: uploadPath:", uploadPath)
+				fmt.Println("DEBUG: filePath:", filePath)
 				_, err = s3.client.FPutObject(ctx, u.bucket, uploadPath, filePath, opts)
 				if err != nil {
+					fmt.Println("DEBUG: error putting object:", err)
 					return fmt.Errorf("genericS3: putting object %s: %v", url, err)
 				}
 			}
+			fmt.Println("DEBUG: finished walking directory...")
 			return nil
 		})
 		if err != nil {
+			fmt.Println("DEBUG: error walking directory:", err)
 			return nil, err
 		}
 	} else {
 		// Upload the file directly
+		fmt.Println("DEBUG: Uploading file directly")
+		fmt.Println("DEBUG: u.bucket:", u.bucket)
+		fmt.Println("DEBUG: u.path:", u.path)
+		fmt.Println("DEBUG: path:", path)
 		_, err = s3.client.FPutObject(ctx, u.bucket, u.path, path, opts)
 		if err != nil {
+			fmt.Println("DEBUG: error putting object directly:", err)
 			return nil, fmt.Errorf("genericS3: putting object %s: %v", url, err)
 		}
 	}
 
-	return s3.Stat(ctx, url)
+	fmt.Println("DEBUG: url:", url)
+	fmt.Println("DEBUG: url:", url)
+	obj, err := s3.Stat(ctx, url)
+	fmt.Println("DEBUG: obj:", obj)
+	fmt.Println("DEBUG: err:", err)
+
+	return obj, err
 }
 
 // Join joins the given URL with the given subpath.

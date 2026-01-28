@@ -37,6 +37,14 @@ type KubernetesCommand struct {
 	Command
 }
 
+// Utility function to correctly handle tasks with o/quotes in commands
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 // Create the Executor K8s job from kubernetes-executor-template.yaml
 // Funnel Worker job is created in compute/kubernetes/backend.go#CreateResources
 func (kcmd KubernetesCommand) Run(ctx context.Context) error {
@@ -58,7 +66,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	for i, v := range cmd {
 		if strings.Contains(v, " ") {
-			cmd[i] = fmt.Sprintf("'%s'", v)
+			cmd[i] = shellQuote(v)
 		}
 	}
 

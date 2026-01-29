@@ -11,7 +11,9 @@ import (
 
 	batch "cloud.google.com/go/batch/apiv1"
 	"cloud.google.com/go/batch/apiv1/batchpb"
+	"cloud.google.com/go/logging/logadmin"
 	"github.com/aws/aws-sdk-go/aws"
+	"google.golang.org/api/iterator"
 	shellquote "github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -405,6 +407,58 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 	return nil
 }
 
+// fetchJobLogs retrieves logs for a GCP Batch job from Cloud Logging and writes them as system log events
+func (b *Backend) fetchJobLogs(ctx context.Context, taskID string, jobUID string) error {
+	// Create the logadmin client for Cloud Logging
+	adminClient, err := logadmin.NewClient(ctx, b.conf.Project)
+	if err != nil {
+		return fmt.Errorf("failed to create logadmin client: %w", err)
+	}
+	defer adminClient.Close()
+
+	// Query for batch_task_logs - these contain stdout/stderr from the task
+	// Ref: https://cloud.google.com/batch/docs/analyze-job-using-logs
+	filter := fmt.Sprintf(
+		`logName = "projects/%s/logs/batch_task_logs" AND labels.job_uid=%s`,
+		b.conf.Project, jobUID,
+	)
+
+	iter := adminClient.Entries(ctx, logadmin.Filter(filter))
+	
+	logCount := 0
+	for {
+		logEntry, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("unable to fetch log entry: %w", err)
+		}
+
+		// Extract log message from payload
+		var msg string
+		if payload, ok := logEntry.Payload.(string); ok {
+			msg = payload
+		} else {
+			msg = fmt.Sprintf("%v", logEntry.Payload)
+		}
+
+		// Write as system log event
+		b.event.WriteEvent(ctx, events.NewSystemLog(
+			taskID, 0, 0, "info",
+			msg,
+			map[string]string{
+				"timestamp": logEntry.Timestamp.Format(time.RFC3339Nano),
+				"severity":  logEntry.Severity.String(),
+			},
+		))
+		logCount++
+	}
+
+	b.log.Debug("Fetched logs for task", "taskID", taskID, "jobUID", jobUID, "count", logCount)
+	return nil
+}
+
 // Reconciler adapted from aws_batch/backend.go
 //
 // Currently the logic is to:
@@ -498,27 +552,47 @@ ReconcileLoop:
 						}
 
 						// If Job is in our list
-						if _, ok := tmap[j.Uid]; !ok {
+						task, ok := tmap[j.Uid]
+						if !ok {
 							continue
 						}
 
 						fmt.Println("DEBUG: j:", j)
 
-						// task := tmap[*j.JobId]
-						// jstate := *j.Status
+						// Handle different job states
+						jstate := j.Status.State
 
-						// // Failed Jobs
-						// if jstate == "FAILED" {
-						// 	b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-						// 	b.event.WriteEvent(
-						// 		ctx,
-						// 		events.NewSystemLog(
-						// 			task.Id, 0, 0, "error",
-						// 			"GCP Batch job in FAILED state",
-						// 			map[string]string{"error": *j.StatusReason, "gcpbatch_id": *j.JobId},
-						// 		),
-						// 	)
-						// }
+						// Failed Jobs - update to SYSTEM_ERROR
+						if jstate == batchpb.JobStatus_FAILED {
+							b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+							
+							// Fetch and write logs
+							if err := b.fetchJobLogs(ctx, task.Id, j.Uid); err != nil {
+								b.log.Error("Failed to fetch logs for failed job", "taskID", task.Id, "jobUID", j.Uid, "error", err)
+							}
+							
+							// Write error event
+							statusMsg := "GCP Batch job in FAILED state"
+							if len(j.Status.StatusEvents) > 0 {
+								// Use the last status event message if available
+								lastEvent := j.Status.StatusEvents[len(j.Status.StatusEvents)-1]
+								statusMsg = lastEvent.Description
+							}
+							
+							b.event.WriteEvent(
+								ctx,
+								events.NewSystemLog(
+									task.Id, 0, 0, "error",
+									statusMsg,
+									map[string]string{"gcpbatch_uid": j.Uid},
+								),
+							)
+						} else if jstate == batchpb.JobStatus_SUCCEEDED {
+							// Fetch logs for successfully completed jobs
+							if err := b.fetchJobLogs(ctx, task.Id, j.Uid); err != nil {
+								b.log.Error("Failed to fetch logs for succeeded job", "taskID", task.Id, "jobUID", j.Uid, "error", err)
+							}
+						}
 					}
 
 					// continue to next page from ListTasks or break

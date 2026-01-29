@@ -1,3 +1,4 @@
+# TODO: Remove all K8s artifacts in favor of Helm configs (confusing to have both)
 # Task Executor
 apiVersion: batch/v1
 kind: Job

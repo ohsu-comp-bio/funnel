@@ -21,6 +21,7 @@ type TransitionError struct {
 }
 
 func (te *TransitionError) Error() string {
+	// TODO: This error is being thrown after valid worker restarts (e.g. K8s)
 	return fmt.Sprintf("invalid state transition from %s to %s",
 		te.From.String(), te.To.String())
 }

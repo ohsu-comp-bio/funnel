@@ -588,6 +588,9 @@ ReconcileLoop:
 								),
 							)
 						} else if jstate == batchpb.JobStatus_SUCCEEDED {
+							// Update task to COMPLETE and fetch logs
+							b.event.WriteEvent(ctx, events.NewState(task.Id, tes.Complete))
+							
 							// Fetch logs for successfully completed jobs
 							if err := b.fetchJobLogs(ctx, task.Id, j.Uid); err != nil {
 								b.log.Error("Failed to fetch logs for succeeded job", "taskID", task.Id, "jobUID", j.Uid, "error", err)

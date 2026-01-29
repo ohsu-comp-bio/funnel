@@ -11,7 +11,6 @@ import (
 
 	batch "cloud.google.com/go/batch/apiv1"
 	"cloud.google.com/go/batch/apiv1/batchpb"
-	"github.com/aws/aws-sdk-go/aws"
 	shellquote "github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
@@ -407,29 +406,25 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 // Reconciler adapted from aws_batch/backend.go
 //
-// Currently the logic is to:
+// The reconciler syncs task states between Funnel and GCP Batch:
 //  1. List all tasks in QUEUED, INITIALIZING, RUNNING states from the Funnel Database
-//  2. Map all TES Task IDs to GCP Job IDs
-//  3. List all GCP Jobs that have FAILED
-//  4. Update the TES Task in the Funnel Database to SYSTEM_ERROR
+//  2. For each task, fetch the corresponding GCP Batch Job details
+//  3. Extract the dominant task state from the Job's task group status
+//  4. Map the GCP Batch task state to the corresponding TES state
+//  5. Update the task state in the Funnel Database if it has changed
 //
-// NOTE: Successful Jobs will be handled
-//
-// Reconcile loops through tasks and checks the status from Funnel's database
-// against the status reported by GCP Batch. This allows the backend to report
-// system error's that prevented the worker process from running.
-//
-// Currently this handles a narrow set of cases:
-//
-// |---------------------|-----------------|--------------------|
-// |    Funnel State     |  Backend State  |  Reconciled State  |
-// |---------------------|-----------------|--------------------|
-// |        QUEUED       |     FAILED      |    SYSTEM_ERROR    |
-// |  INITIALIZING       |     FAILED      |    SYSTEM_ERROR    |
-// |       RUNNING       |     FAILED      |    SYSTEM_ERROR    |
-//
-// In this context a "FAILED" state is being used as a generic term that captures
-// one or more terminal states for the backend.
+// State mapping:
+// |----------------------|---------------------|
+// | GCP Batch State      | TES State           |
+// |----------------------|---------------------|
+// | STATE_UNSPECIFIED    | UNKNOWN             |
+// | PENDING              | QUEUED              |
+// | ASSIGNED             | INITIALIZING        |
+// | RUNNING              | RUNNING             |
+// | FAILED               | EXECUTOR_ERROR      |
+// | SUCCEEDED            | COMPLETE            |
+// | UNEXECUTED           | PREEMPTED           |
+// |----------------------|---------------------|
 func (b *Backend) reconcile(ctx context.Context) {
 	ticker := time.NewTicker(b.conf.ReconcileRate.AsDuration())
 
@@ -446,8 +441,6 @@ ReconcileLoop:
 			// For all Task states in QUEUED, INITIALIZING, RUNNING
 			for _, s := range states {
 				for {
-					fmt.Println("DEBUG: s:", s)
-
 					// List Tasks from Funnel Database
 					lresp, err := b.database.ListTasks(ctx, &tes.ListTasksRequest{
 						View:      tes.View_BASIC.String(),
@@ -461,64 +454,53 @@ ReconcileLoop:
 					}
 					pageToken = lresp.NextPageToken
 
-					fmt.Println("DEBUG: lresp:", lresp)
-
-					// Map TES Task ID → GCP Batch Job ID
-					tmap := make(map[string]*tes.Task)
-					var jobs []*string
-					for _, t := range lresp.Tasks {
-						jobid := getTaskID(t)
-						if jobid != "" {
-							tmap[jobid] = t
-							jobs = append(jobs, aws.String(jobid))
-						}
-					}
-
-					// Last page of jobs from the Funnel Database
-					if len(jobs) == 0 {
-						if pageToken == "" {
-							break
-						}
-						continue
-					}
-
-					// List jobs from GCP Batch
-					req := &batchpb.ListJobsRequest{
-						Parent: fmt.Sprintf("projects/%s/locations/%s", b.conf.Project, b.conf.Location),
-					}
-
-					// Using an iterator here to page through GCP Batch jobs
-					// Ref: https://pkg.go.dev/cloud.google.com/go/batch@v1.13.0/apiv1#example-Client.ListJobs
-					it := b.client.ListJobs(ctx, req)
-
-					for {
-						j, err := it.Next()
-						if err != nil {
-							break
-						}
-
-						// If Job is in our list
-						if _, ok := tmap[j.Uid]; !ok {
+					// Process each task
+					for _, task := range lresp.Tasks {
+						// Get GCP Batch Job UID from task metadata
+						jobUID := getTaskID(task)
+						if jobUID == "" {
 							continue
 						}
 
-						fmt.Println("DEBUG: j:", j)
+						// Construct the full job name
+						jobName := fmt.Sprintf("projects/%s/locations/%s/jobs/%s",
+							b.conf.Project, b.conf.Location, task.Id)
 
-						// task := tmap[*j.JobId]
-						// jstate := *j.Status
+						// Fetch job details from GCP Batch
+						job, err := b.client.GetJob(ctx, &batchpb.GetJobRequest{
+							Name: jobName,
+						})
+						if err != nil {
+							b.log.Error("Calling GetJob",
+								"taskID", task.Id,
+								"jobName", jobName,
+								"error", err)
+							continue
+						}
 
-						// // Failed Jobs
-						// if jstate == "FAILED" {
-						// 	b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-						// 	b.event.WriteEvent(
-						// 		ctx,
-						// 		events.NewSystemLog(
-						// 			task.Id, 0, 0, "error",
-						// 			"GCP Batch job in FAILED state",
-						// 			map[string]string{"error": *j.StatusReason, "gcpbatch_id": *j.JobId},
-						// 		),
-						// 	)
-						// }
+						// Get the dominant task state from the job
+						gcpTaskState := getDominantTaskState(job)
+
+						// Map GCP Batch task state to TES state
+						tesState := mapTaskStateToTES(gcpTaskState)
+
+						// Only update if the state has changed
+						if tesState != task.State && tesState != tes.Unknown {
+							b.log.Info("Updating task state",
+								"taskID", task.Id,
+								"oldState", task.State,
+								"newState", tesState,
+								"gcpTaskState", gcpTaskState)
+
+							// Write state change event
+							err = b.event.WriteEvent(ctx, events.NewState(task.Id, tesState))
+							if err != nil {
+								b.log.Error("Writing state event",
+									"taskID", task.Id,
+									"state", tesState,
+									"error", err)
+							}
+						}
 					}
 
 					// continue to next page from ListTasks or break
@@ -542,4 +524,78 @@ func getTaskID(task *tes.Task) string {
 		}
 	}
 	return ""
+}
+
+// mapTaskStateToTES maps GCP Batch TaskStatus states to TES states
+// according to the mapping defined in the issue:
+// https://github.com/ohsu-comp-bio/funnel/issues/XXX
+func mapTaskStateToTES(gcpState batchpb.TaskStatus_State) tes.State {
+	switch gcpState {
+	case batchpb.TaskStatus_STATE_UNSPECIFIED:
+		return tes.Unknown
+	case batchpb.TaskStatus_PENDING:
+		return tes.Queued
+	case batchpb.TaskStatus_ASSIGNED:
+		return tes.Initializing
+	case batchpb.TaskStatus_RUNNING:
+		return tes.Running
+	case batchpb.TaskStatus_FAILED:
+		return tes.ExecutorError
+	case batchpb.TaskStatus_SUCCEEDED:
+		return tes.Complete
+	case batchpb.TaskStatus_UNEXECUTED:
+		return tes.State_PREEMPTED
+	default:
+		return tes.Unknown
+	}
+}
+
+// getDominantTaskState determines the most relevant task state from GCP Batch job status.
+// It prioritizes states in the following order: FAILED > SUCCEEDED > RUNNING > ASSIGNED > PENDING > UNEXECUTED
+// This ensures that terminal states (FAILED, SUCCEEDED) are reported before in-progress states.
+func getDominantTaskState(job *batchpb.Job) batchpb.TaskStatus_State {
+	if job.Status == nil || len(job.Status.TaskGroups) == 0 {
+		return batchpb.TaskStatus_STATE_UNSPECIFIED
+	}
+
+	// Get counts from the first task group (typically there's only one)
+	var counts map[string]int64
+	for _, tgStatus := range job.Status.TaskGroups {
+		counts = tgStatus.Counts
+		break
+	}
+
+	if counts == nil || len(counts) == 0 {
+		return batchpb.TaskStatus_STATE_UNSPECIFIED
+	}
+
+	// Priority order: terminal states first, then active states
+	// Check for FAILED first
+	if counts["FAILED"] > 0 {
+		return batchpb.TaskStatus_FAILED
+	}
+
+	// Check for SUCCEEDED
+	if counts["SUCCEEDED"] > 0 {
+		return batchpb.TaskStatus_SUCCEEDED
+	}
+
+	// Check for active states
+	if counts["RUNNING"] > 0 {
+		return batchpb.TaskStatus_RUNNING
+	}
+
+	if counts["ASSIGNED"] > 0 {
+		return batchpb.TaskStatus_ASSIGNED
+	}
+
+	if counts["PENDING"] > 0 {
+		return batchpb.TaskStatus_PENDING
+	}
+
+	if counts["UNEXECUTED"] > 0 {
+		return batchpb.TaskStatus_UNEXECUTED
+	}
+
+	return batchpb.TaskStatus_STATE_UNSPECIFIED
 }

@@ -535,3 +535,202 @@ func TestSubmit_CommandConstruction(t *testing.T) {
 		t.Errorf("Command incorrectly split - 'import sys;' should be quoted as single arg to -c")
 	}
 }
+
+// Test state mapping from GCP Batch to TES
+func TestMapTaskStateToTES(t *testing.T) {
+	tests := []struct {
+		name      string
+		gcpState  batchpb.TaskStatus_State
+		wantState tes.State
+	}{
+		{
+			name:      "STATE_UNSPECIFIED maps to UNKNOWN",
+			gcpState:  batchpb.TaskStatus_STATE_UNSPECIFIED,
+			wantState: tes.Unknown,
+		},
+		{
+			name:      "PENDING maps to QUEUED",
+			gcpState:  batchpb.TaskStatus_PENDING,
+			wantState: tes.Queued,
+		},
+		{
+			name:      "ASSIGNED maps to INITIALIZING",
+			gcpState:  batchpb.TaskStatus_ASSIGNED,
+			wantState: tes.Initializing,
+		},
+		{
+			name:      "RUNNING maps to RUNNING",
+			gcpState:  batchpb.TaskStatus_RUNNING,
+			wantState: tes.Running,
+		},
+		{
+			name:      "FAILED maps to EXECUTOR_ERROR",
+			gcpState:  batchpb.TaskStatus_FAILED,
+			wantState: tes.ExecutorError,
+		},
+		{
+			name:      "SUCCEEDED maps to COMPLETE",
+			gcpState:  batchpb.TaskStatus_SUCCEEDED,
+			wantState: tes.Complete,
+		},
+		{
+			name:      "UNEXECUTED maps to PREEMPTED",
+			gcpState:  batchpb.TaskStatus_UNEXECUTED,
+			wantState: tes.State_PREEMPTED,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapTaskStateToTES(tt.gcpState)
+			if got != tt.wantState {
+				t.Errorf("mapTaskStateToTES(%v) = %v, want %v", tt.gcpState, got, tt.wantState)
+			}
+		})
+	}
+}
+
+// Test getDominantTaskState
+func TestGetDominantTaskState(t *testing.T) {
+	tests := []struct {
+		name      string
+		job       *batchpb.Job
+		wantState batchpb.TaskStatus_State
+	}{
+		{
+			name: "FAILED takes priority",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{
+						"group0": {
+							Counts: map[string]int64{
+								"RUNNING":   2,
+								"FAILED":    1,
+								"SUCCEEDED": 3,
+							},
+						},
+					},
+				},
+			},
+			wantState: batchpb.TaskStatus_FAILED,
+		},
+		{
+			name: "SUCCEEDED takes priority when no FAILED",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{
+						"group0": {
+							Counts: map[string]int64{
+								"RUNNING":   2,
+								"SUCCEEDED": 3,
+								"PENDING":   1,
+							},
+						},
+					},
+				},
+			},
+			wantState: batchpb.TaskStatus_SUCCEEDED,
+		},
+		{
+			name: "RUNNING takes priority when no terminal states",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{
+						"group0": {
+							Counts: map[string]int64{
+								"RUNNING":  2,
+								"PENDING":  1,
+								"ASSIGNED": 1,
+							},
+						},
+					},
+				},
+			},
+			wantState: batchpb.TaskStatus_RUNNING,
+		},
+		{
+			name: "ASSIGNED when only ASSIGNED and PENDING",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{
+						"group0": {
+							Counts: map[string]int64{
+								"PENDING":  1,
+								"ASSIGNED": 2,
+							},
+						},
+					},
+				},
+			},
+			wantState: batchpb.TaskStatus_ASSIGNED,
+		},
+		{
+			name: "PENDING when only PENDING",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{
+						"group0": {
+							Counts: map[string]int64{
+								"PENDING": 5,
+							},
+						},
+					},
+				},
+			},
+			wantState: batchpb.TaskStatus_PENDING,
+		},
+		{
+			name: "UNEXECUTED when present",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{
+						"group0": {
+							Counts: map[string]int64{
+								"UNEXECUTED": 1,
+							},
+						},
+					},
+				},
+			},
+			wantState: batchpb.TaskStatus_UNEXECUTED,
+		},
+		{
+			name: "STATE_UNSPECIFIED when no status",
+			job: &batchpb.Job{
+				Status: nil,
+			},
+			wantState: batchpb.TaskStatus_STATE_UNSPECIFIED,
+		},
+		{
+			name: "STATE_UNSPECIFIED when no task groups",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{},
+				},
+			},
+			wantState: batchpb.TaskStatus_STATE_UNSPECIFIED,
+		},
+		{
+			name: "STATE_UNSPECIFIED when no counts",
+			job: &batchpb.Job{
+				Status: &batchpb.JobStatus{
+					TaskGroups: map[string]*batchpb.JobStatus_TaskGroupStatus{
+						"group0": {
+							Counts: map[string]int64{},
+						},
+					},
+				},
+			},
+			wantState: batchpb.TaskStatus_STATE_UNSPECIFIED,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getDominantTaskState(tt.job)
+			if got != tt.wantState {
+				t.Errorf("getDominantTaskState() = %v, want %v", got, tt.wantState)
+			}
+		})
+	}
+}

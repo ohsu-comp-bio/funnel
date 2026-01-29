@@ -99,7 +99,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 				return nil, err
 			}
 		}
-		ts.Log.Debug("Plugin Response: ", pluginResponse)
+		ts.Log.Debug("Plugin", "Response", pluginResponse)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 
 		// If using plugin, replace existing task with returned task from plugin
@@ -140,7 +140,7 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		ts.Log.Debug("submitted task to compute backend", "taskID", task.Id, "error", err)
 
 		if err != nil {
-			ts.Log.Debug("writing SystemError event for task", "taskID", task.Id)
+			ts.Log.Debug("writing SystemError event for task", "taskID", task.Id, "error", err)
 			err = ts.Event.WriteEvent(workerCtx, events.NewState(task.Id, tes.SystemError))
 
 			if err != nil {
@@ -198,7 +198,7 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 				return nil, err
 			}
 		}
-		ts.Log.Debug("Plugin Response: ", pluginResponse)
+		ts.Log.Debug("Plugin", "Response", pluginResponse)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 	}
 

@@ -63,7 +63,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		return fmt.Errorf("%v", err)
 	}
 
-	log.Debug("Job template: %s", buf.String())
+	log.Debug("Job template", "template", buf.String())
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {

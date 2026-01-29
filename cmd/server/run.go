@@ -22,6 +22,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/database/dynamodb"
 	"github.com/ohsu-comp-bio/funnel/database/elastic"
 	"github.com/ohsu-comp-bio/funnel/database/mongodb"
+	"github.com/ohsu-comp-bio/funnel/database/postgres"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/metrics"
@@ -126,11 +127,23 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 		queue = m
 		writers = append(writers, m)
 
+	case "postgres", "psql":
+		p, err := postgres.NewPostgres(conf.Postgres)
+		if err != nil {
+			return nil, dberr(err)
+		}
+		database = p
+		reader = p
+		nodes = p
+		queue = p
+		writers = append(writers, p)
+
 	default:
 		return nil, fmt.Errorf("unknown database: '%s'", conf.Database)
 	}
 
 	// Initialize the Database
+	// Note: This is where Funnel waits until the given database is ready to accept requests.
 	if err := database.Init(); err != nil {
 		return nil, fmt.Errorf("error creating database resources: %v", err)
 	}
@@ -168,6 +181,8 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 			writer, err = events.NewPubSubWriter(ctx, conf.PubSub)
 		case "mongodb":
 			writer, err = mongodb.NewMongoDB(conf.MongoDB)
+		case "postgres", "psql":
+			writer, err = postgres.NewPostgres(conf.Postgres)
 		default:
 			return nil, fmt.Errorf("unknown event writer: '%s'", e)
 		}

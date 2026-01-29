@@ -94,7 +94,7 @@ func examplesCaptureStdoutStderrJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/capture-stdout-stderr.json", size: 995, mode: os.FileMode(0640), modTime: time.Unix(1706586712, 0)}
+	info := bindataFileInfo{name: "examples/capture-stdout-stderr.json", size: 995, mode: os.FileMode(0640), modTime: time.Unix(1765923761, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xc1, 0x51, 0xcf, 0xff, 0x9e, 0x30, 0x6e, 0xd6, 0x85, 0x28, 0xb5, 0x98, 0x44, 0xa1, 0x6b, 0x5c, 0x28, 0xb4, 0xba, 0x3e, 0x40, 0x82, 0x3, 0x58, 0x1b, 0x89, 0xca, 0xf7, 0xc0, 0x29, 0x58, 0x96}}
 	return a, nil
 }

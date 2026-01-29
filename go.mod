@@ -40,18 +40,18 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/ncw/swift v1.0.53
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/common v0.67.4
+	github.com/prometheus/common v0.67.5
 	github.com/rs/xid v1.6.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/net v0.48.0
+	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/net v0.49.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/time v0.14.0
-	google.golang.org/api v0.258.0
+	google.golang.org/api v0.264.0
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.78.0
 	k8s.io/api v0.35.0
@@ -63,22 +63,22 @@ require (
 	cloud.google.com/go/batch v1.14.0
 	dario.cat/mergo v1.0.2
 	github.com/elastic/go-elasticsearch/v8 v8.19.1
-	github.com/go-playground/validator/v10 v10.30.0
-	github.com/goccy/go-yaml v1.19.1
+	github.com/go-playground/validator/v10 v10.30.1
+	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.16.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.6
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.7.0
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.8.0
 	github.com/lestrrat-go/jwx/v2 v2.1.6
-	github.com/minio/minio-go/v7 v7.0.97
+	github.com/minio/minio-go/v7 v7.0.98
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0
-	go.mongodb.org/mongo-driver/v2 v2.4.1
-	golang.org/x/term v0.38.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20251213004720-97cd9d5aeac2
+	go.mongodb.org/mongo-driver/v2 v2.5.0
+	golang.org/x/term v0.39.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -110,7 +110,7 @@ require (
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	cloud.google.com/go/auth v0.18.0 // indirect
+	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
@@ -164,7 +164,7 @@ require (
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.7 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
@@ -241,9 +241,9 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251213004720-97cd9d5aeac2 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

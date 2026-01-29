@@ -212,11 +212,14 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		saName = task.Tags["_WORKER_SA"]
 	}
 
-	// TODO: Add error handler to handle case where Get fails for reasons other than NotFound
+	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
+	// e.g. network issues, permission issues, etc.
 	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
 
+	// ServiceAccount does not exist, create it
 	if err != nil {
-		b.log.Debug("creating Worker ServiceAccount", "taskID", task.Id)
+		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
+		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
 		err = resources.CreateServiceAccount(task, config, b.client, b.log)
 		if err != nil {
 			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
@@ -353,6 +356,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 		case <-ticker.C:
 
 			// List ALL current Kubernetes Jobs
+			// Bug: If K8s Job is not created by the time reconciler runs, then the TES Task itself will be prematurely marked as SYSTEM_ERROR
 			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
@@ -385,28 +389,32 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						taskID := task.Id
 
 						// Check for Orphaned Task (Job Missing)
-						if _, exists := k8sJobs[taskID]; !exists {
+						// if _, exists := k8sJobs[taskID]; !exists {
 
-							b.log.Debug("reconcile: orphaned task found, marking as SYSTEM_ERROR", "taskID", taskID)
+						// 	b.log.Debug("reconcile: orphaned task found, marking as SYSTEM_ERROR", "taskID", taskID)
 
-							b.event.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
+						// 	b.event.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
 
-							b.event.WriteEvent(
-								ctx,
-								events.NewSystemLog(
-									taskID, 0, 0, "error",
-									"Kubernetes Worker Job not found. Submission failed or external deletion.",
-									nil,
-								),
-							)
-							continue
-						}
+						// 	b.event.WriteEvent(
+						// 		ctx,
+						// 		events.NewSystemLog(
+						// 			taskID, 0, 0, "error",
+						// 			"DEBUG: Kubernetes Worker Job not found! Submission failed or external deletion.",
+						// 			nil,
+						// 		),
+						// 	)
+						// 	continue
+						// }
 
 						// If the job exists, check its current status (Active, Succeeded, Failed)
 						j := k8sJobs[taskID]
 
 						// Remove from map to ensure only orphaned checks are done above
-						delete(k8sJobs, taskID)
+						// delete(k8sJobs, taskID)
+
+						if j == nil {
+							continue
+						}
 
 						jobName := j.Name
 						status := j.Status

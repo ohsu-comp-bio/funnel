@@ -3,7 +3,6 @@ package worker
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -38,6 +37,14 @@ type KubernetesCommand struct {
 	Command
 }
 
+// Utility function to correctly handle tasks with o/quotes in commands
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	return "\"" + strings.ReplaceAll(s, "'", `\\'`) + "\""
+}
+
 // Create the Executor K8s job from kubernetes-executor-template.yaml
 // Funnel Worker job is created in compute/kubernetes/backend.go#CreateResources
 func (kcmd KubernetesCommand) Run(ctx context.Context) error {
@@ -53,17 +60,14 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		return fmt.Errorf("Funnel Worker: No command specified for Executor.")
 	}
 
-	fullCmd := strings.Join(cmd, " ")
-
 	if kcmd.StdinFile != "" {
-		fullCmd = fmt.Sprintf("%s < %s", fullCmd, kcmd.StdinFile)
+		cmd = append(cmd, "<", kcmd.StdinFile)
 	}
 
-	finalCmd := []string{"/bin/sh", "-c", fullCmd}
-
-	marshaledCmd, err := json.Marshal(finalCmd)
-	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to marshal command array to JSON: %w", err)
+	for i, v := range cmd {
+		if strings.Contains(v, " ") {
+			cmd[i] = shellQuote(v)
+		}
 	}
 
 	templateData := map[string]interface{}{
@@ -71,7 +75,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"JobId":              kcmd.JobId,
 		"Namespace":          kcmd.Namespace,
 		"JobsNamespace":      kcmd.JobsNamespace,
-		"Command":            string(marshaledCmd),
+		"Command":            cmd,
 		"Workdir":            kcmd.Workdir,
 		"Volumes":            kcmd.Volumes,
 		"Cpus":               kcmd.Resources.CpuCores,
@@ -134,6 +138,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		}
 	}
 
+	// Wait until the job finishes
+	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
+	defer watcher.Stop()
+	waitForJobFinish(ctx, watcher)
+
 	// Get Executor Pod name in order to stream logs from Executor to Worker stdout
 	pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
 	if err != nil {
@@ -142,6 +151,9 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	for _, v := range pods.Items {
 		// Wait for the pod to reach Running state
+		// If an executor finishes by the time this is hit, currently Funnel is throwing `Error waiting for pod`
+		// as Executor Error.
+		// This is incorrect, with the expected behavior being Funnel "fetching" Executor state
 		pod, err := waitForPodRunning(ctx, kcmd.JobsNamespace, v.Name, 5*time.Minute)
 		if err != nil {
 			log.Fatalf("Error waiting for pod: %v", err)
@@ -153,11 +165,6 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 			log.Fatalf("Error streaming logs: %v", err)
 		}
 	}
-
-	// Wait until the job finishes
-	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
-	defer watcher.Stop()
-	waitForJobFinish(ctx, watcher)
 
 	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
 

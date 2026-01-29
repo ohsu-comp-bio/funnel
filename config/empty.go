@@ -17,6 +17,7 @@ func EmptyConfig() *Config {
 		DynamoDB:      &DynamoDB{AWSConfig: &AWSConfig{}},
 		Elastic:       &Elastic{},
 		MongoDB:       &MongoDB{Timeout: &TimeoutConfig{}},
+		Postgres:      &Postgres{Timeout: &TimeoutConfig{}},
 		Kafka:         &Kafka{},
 		LocalStorage:  &LocalStorage{},
 		HTTPStorage:   &HTTPStorage{Timeout: &TimeoutConfig{}},

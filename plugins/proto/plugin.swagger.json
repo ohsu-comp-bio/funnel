@@ -172,6 +172,9 @@
         "Datastore": {
           "$ref": "#/definitions/configDatastore"
         },
+        "Postgres": {
+          "$ref": "#/definitions/configPostgres"
+        },
         "HTCondor": {
           "$ref": "#/definitions/configHPCBackend",
           "title": "Compute"
@@ -191,9 +194,12 @@
         "Kubernetes": {
           "$ref": "#/definitions/configKubernetes"
         },
+<<<<<<< HEAD
+=======
         "GCPBatch": {
           "$ref": "#/definitions/configGCPBatch"
         },
+>>>>>>> origin/develop
         "LocalStorage": {
           "$ref": "#/definitions/configLocalStorage",
           "title": "Storage"
@@ -351,6 +357,8 @@
       },
       "description": "FTPStorage configures the FTP storage backend."
     },
+<<<<<<< HEAD
+=======
     "configGCPBatch": {
       "type": "object",
       "properties": {
@@ -375,6 +383,7 @@
       },
       "description": "GCPBatch describes the configuration for the GCP Batch compute backend."
     },
+>>>>>>> origin/develop
     "configGenericS3Storage": {
       "type": "object",
       "properties": {
@@ -646,6 +655,33 @@
         }
       },
       "title": "This config matches the funnel plugins repo protobuf"
+    },
+    "configPostgres": {
+      "type": "object",
+      "properties": {
+        "Host": {
+          "type": "string"
+        },
+        "Database": {
+          "type": "string"
+        },
+        "User": {
+          "type": "string"
+        },
+        "Password": {
+          "type": "string"
+        },
+        "AdminUser": {
+          "type": "string"
+        },
+        "AdminPassword": {
+          "type": "string"
+        },
+        "Timeout": {
+          "$ref": "#/definitions/configTimeoutConfig"
+        }
+      },
+      "description": "Postgres configures access to a PostgreSQL database."
     },
     "configPubSub": {
       "type": "object",

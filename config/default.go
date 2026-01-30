@@ -192,6 +192,7 @@ func DefaultConfig() *Config {
 		PBS:           &HPCBackend{},
 		GridEngine:    &GridEngine{},
 		AWSBatch:      &AWSBatch{AWSConfig: &AWSConfig{}},
+		GCPBatch:      &GCPBatch{},
 		Kubernetes:    &Kubernetes{},
 		GoogleStorage: &GoogleCloudStorage{},
 		PubSub:        &PubSub{},
@@ -224,6 +225,9 @@ func DefaultConfig() *Config {
 	c.AWSBatch.JobQueue = "funnel-job-queue"
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
+
+	c.GCPBatch.ReconcileRate = reconcile
+	c.GCPBatch.DisableReconciler = true
 
 	// The following K8s templates reflect the latest "default" templates in the Funnel Helm Charts repo:
 	// Ref: https://github.com/ohsu-comp-bio/helm-charts/tree/funnel-0.1.60/charts/funnel/files

@@ -220,13 +220,13 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 		}
 		compute = events.Backend{}
 
-	case "aws-batch":
+	case "aws-batch", "aws", "amazon":
 		compute, err = aws_batch.NewBackend(ctx, conf.AWSBatch, reader, writer, log.Sub("aws-batch"))
 		if err != nil {
 			return nil, err
 		}
 
-	case "gcp-batch":
+	case "gcp-batch", "gcp", "google":
 		compute, err = gcp_batch.NewBackend(ctx, conf.GCPBatch, reader, writer, log.Sub("gcp-batch"))
 		if err != nil {
 			return nil, err

@@ -3,6 +3,7 @@
 // examples/capture-stdout-stderr.json (995B)
 // examples/google-storage.json (486B)
 // examples/resource-request.json (299B)
+// examples/error.json (206B)
 // examples/input-content.json (736B)
 // examples/hello-world.json (187B)
 // examples/log-streaming.json (304B)
@@ -10,6 +11,7 @@
 // examples/nextflow.json (551B)
 // examples/s3.json (540B)
 // examples/full-hello.json (577B)
+// examples/gcp-batch.json (556B)
 
 package examples
 
@@ -112,7 +114,7 @@ func examplesGoogleStorageJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/google-storage.json", size: 486, mode: os.FileMode(0644), modTime: time.Unix(1765577061, 0)}
+	info := bindataFileInfo{name: "examples/google-storage.json", size: 486, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xc8, 0x36, 0x9b, 0xd5, 0x7b, 0xd1, 0x61, 0x57, 0x26, 0x4b, 0x34, 0x17, 0xc2, 0xb5, 0x57, 0x67, 0x96, 0x6a, 0x65, 0xc0, 0xc7, 0xf6, 0x27, 0x21, 0x6c, 0x97, 0xb, 0x48, 0x3c, 0x2a, 0xec, 0xe0}}
 	return a, nil
 }
@@ -134,6 +136,26 @@ func examplesResourceRequestJson() (*asset, error) {
 
 	info := bindataFileInfo{name: "examples/resource-request.json", size: 299, mode: os.FileMode(0640), modTime: time.Unix(1706586712, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa5, 0x4a, 0x7f, 0x6d, 0xd4, 0x38, 0x22, 0xf1, 0x24, 0xb5, 0xc6, 0x61, 0xce, 0x9c, 0x40, 0xc9, 0x6, 0x44, 0xc8, 0x46, 0xd0, 0xd5, 0x88, 0x95, 0x76, 0x48, 0x8b, 0xa1, 0x33, 0x39, 0xbd, 0xc1}}
+	return a, nil
+}
+
+var _examplesErrorJson = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x24\x8d\xcd\x8a\x85\x30\x0c\x85\xf7\x7d\x8a\x33\x59\xc8\x0c\xb8\x71\xeb\xde\xa7\x18\x5c\x84\x9a\x19\xcb\xb5\xad\xb4\xb9\x50\x10\xdf\xfd\xd2\xb8\xc9\x0f\x5f\xbe\x9c\xcb\x01\x94\x38\x0a\xcd\xa0\xa5\x94\x5c\xb0\x34\x8e\xe7\x21\x34\x76\xb4\x49\xf5\x25\x9c\x1a\x72\xb2\x8b\x87\x21\xff\x81\xc1\x50\xae\x2f\xe8\xce\x0a\xe9\x6a\xc5\xb7\xb4\xa0\x98\x7e\x1e\x59\x9a\xf8\xb7\xe6\x52\x69\xc6\xaf\x03\x80\xcb\x2a\x40\x21\xf2\xbf\x65\xf2\x71\x86\xf4\x84\x19\xf0\x39\x46\x4e\x5b\x37\x48\xfc\x9e\x69\x04\xd9\xf3\xaf\x3e\x0d\x83\xed\x2d\x68\xef\x13\xad\xa6\xdd\x0e\x58\xdd\xed\xdc\x27\x00\x00\xff\xff\x70\x16\x1b\x20\xce\x00\x00\x00")
+
+func examplesErrorJsonBytes() ([]byte, error) {
+	return bindataRead(
+		_examplesErrorJson,
+		"examples/error.json",
+	)
+}
+
+func examplesErrorJson() (*asset, error) {
+	bytes, err := examplesErrorJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "examples/error.json", size: 206, mode: os.FileMode(0644), modTime: time.Unix(1765499260, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xc, 0xfa, 0xc, 0x5c, 0xf4, 0x9f, 0xc3, 0xbf, 0x35, 0x77, 0xf0, 0xb5, 0x7d, 0x94, 0x40, 0xb, 0x8e, 0x36, 0x23, 0x95, 0x9e, 0x5, 0xb9, 0xc6, 0x50, 0xab, 0xfe, 0x9f, 0x6c, 0xca, 0x3c, 0xaa}}
 	return a, nil
 }
 
@@ -252,7 +274,7 @@ func examplesS3Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "examples/s3.json", size: 540, mode: os.FileMode(0644), modTime: time.Unix(1765851854, 0)}
+	info := bindataFileInfo{name: "examples/s3.json", size: 540, mode: os.FileMode(0644), modTime: time.Unix(1765237647, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x32, 0x6c, 0xc9, 0x90, 0xa0, 0xa7, 0xff, 0x98, 0x9d, 0x69, 0x45, 0x46, 0x2a, 0xba, 0x73, 0xce, 0x9f, 0xd6, 0xb5, 0x8c, 0x3c, 0x44, 0xc1, 0xa4, 0xcb, 0xeb, 0xaa, 0x8c, 0x20, 0xbb, 0xde, 0x87}}
 	return a, nil
 }
@@ -274,6 +296,26 @@ func examplesFullHelloJson() (*asset, error) {
 
 	info := bindataFileInfo{name: "examples/full-hello.json", size: 577, mode: os.FileMode(0640), modTime: time.Unix(1706586712, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa8, 0x44, 0x5c, 0x19, 0x7f, 0x64, 0x5f, 0xb2, 0x73, 0x48, 0x9f, 0x84, 0xc6, 0x2f, 0x14, 0x90, 0x37, 0xa0, 0x36, 0x7e, 0x8e, 0xff, 0x99, 0x31, 0xe7, 0xc4, 0xb9, 0xe, 0x7e, 0xdb, 0x3, 0x16}}
+	return a, nil
+}
+
+var _examplesGcpBatchJson = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xa4\x90\x4f\x4b\xc4\x30\x10\xc5\xef\xf9\x14\x8f\x9c\xdd\x0d\x08\x7a\xe8\xcd\x3f\xc5\x93\x20\xe2\x4d\xf6\x30\xb6\x43\x1b\xb6\x93\x96\xce\x04\x16\xd6\xfd\xee\xd2\x88\xbb\x20\x82\xe8\x5e\x72\x08\xef\xf7\xf2\x7b\xd9\x3b\xc0\x27\x12\xf6\x15\xfc\xc3\xdd\x13\x6e\xc9\x9a\x1e\x2f\xa4\x5b\xd4\x3b\x92\x69\x60\x7f\xb1\x64\x62\x9a\xb2\xa9\xaf\xf0\xea\x00\x60\x5f\x4e\xc0\xe7\x79\x58\xd0\x4e\xab\x10\x8c\x75\xf5\xb6\xf0\xab\x98\x8c\xbb\x99\x2c\x8e\x29\x3c\xd7\x37\xf7\x8f\xf5\x5a\xda\x52\x54\xa0\x89\xac\x5f\xa8\x20\xc9\x42\x1b\x75\xab\xbf\xb2\x05\x3d\x38\x60\x53\x74\xc6\x6c\x67\xfb\xac\xb5\xa7\xcb\xab\xeb\x73\xb4\xbe\x2a\xbe\xd9\xf1\x8e\x9b\x6c\xe3\xfc\x83\x5f\x14\xea\xca\x67\xd3\x30\xc5\xc4\xa7\xc7\x9b\x51\x84\x52\x7b\x24\xca\xe5\x67\xbd\x66\x39\xe6\xf0\x17\x3d\xbc\xc3\x98\xf1\xcf\x3d\xc0\xe6\xb4\xcb\x1d\xdc\x47\x00\x00\x00\xff\xff\xc4\x83\x15\x25\x2c\x02\x00\x00")
+
+func examplesGcpBatchJsonBytes() ([]byte, error) {
+	return bindataRead(
+		_examplesGcpBatchJson,
+		"examples/gcp-batch.json",
+	)
+}
+
+func examplesGcpBatchJson() (*asset, error) {
+	bytes, err := examplesGcpBatchJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "examples/gcp-batch.json", size: 556, mode: os.FileMode(0644), modTime: time.Unix(1765499929, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xf9, 0x83, 0xf3, 0x9c, 0xf3, 0xcf, 0x7b, 0x73, 0x29, 0x8a, 0xb0, 0x77, 0xc8, 0xa, 0x25, 0x9a, 0x4a, 0xa4, 0xcf, 0x87, 0xe2, 0x2a, 0x4d, 0xb2, 0x70, 0x12, 0x98, 0x13, 0xe3, 0x8d, 0x77, 0x44}}
 	return a, nil
 }
 
@@ -371,6 +413,7 @@ var _bindata = map[string]func() (*asset, error){
 	"examples/capture-stdout-stderr.json": examplesCaptureStdoutStderrJson,
 	"examples/google-storage.json":        examplesGoogleStorageJson,
 	"examples/resource-request.json":      examplesResourceRequestJson,
+	"examples/error.json":                 examplesErrorJson,
 	"examples/input-content.json":         examplesInputContentJson,
 	"examples/hello-world.json":           examplesHelloWorldJson,
 	"examples/log-streaming.json":         examplesLogStreamingJson,
@@ -378,6 +421,7 @@ var _bindata = map[string]func() (*asset, error){
 	"examples/nextflow.json":              examplesNextflowJson,
 	"examples/s3.json":                    examplesS3Json,
 	"examples/full-hello.json":            examplesFullHelloJson,
+	"examples/gcp-batch.json":             examplesGcpBatchJson,
 }
 
 // AssetDebug is true if the assets were built with the debug flag enabled.
@@ -428,7 +472,9 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"examples": {nil, map[string]*bintree{
 		"capture-stdout-stderr.json": {examplesCaptureStdoutStderrJson, map[string]*bintree{}},
+		"error.json":                 {examplesErrorJson, map[string]*bintree{}},
 		"full-hello.json":            {examplesFullHelloJson, map[string]*bintree{}},
+		"gcp-batch.json":             {examplesGcpBatchJson, map[string]*bintree{}},
 		"google-storage.json":        {examplesGoogleStorageJson, map[string]*bintree{}},
 		"hello-world.json":           {examplesHelloWorldJson, map[string]*bintree{}},
 		"input-content.json":         {examplesInputContentJson, map[string]*bintree{}},

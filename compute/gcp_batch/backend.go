@@ -11,6 +11,7 @@ import (
 
 	batch "cloud.google.com/go/batch/apiv1"
 	"cloud.google.com/go/batch/apiv1/batchpb"
+	"cloud.google.com/go/logging"
 	"github.com/aws/aws-sdk-go/aws"
 	shellquote "github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -21,11 +22,12 @@ import (
 )
 
 type Backend struct {
-	client   client
-	conf     *config.GCPBatch
-	event    events.Writer
-	database tes.ReadOnlyServer
-	log      *logger.Logger
+	client        client
+	conf          *config.GCPBatch
+	event         events.Writer
+	database      tes.ReadOnlyServer
+	log           *logger.Logger
+	loggingClient *logging.Client
 	events.Backend
 }
 
@@ -35,12 +37,21 @@ func NewBackend(ctx context.Context, conf *config.GCPBatch, reader tes.ReadOnlyS
 		return nil, err
 	}
 
+	// Initialize Cloud Logging client for log retrieval
+	loggingClient, err := logging.NewClient(ctx, conf.Project)
+	if err != nil {
+		log.Warn("Failed to initialize Cloud Logging client, log retrieval will be disabled", "error", err)
+		// Continue without logging client - other functionality will still work
+		loggingClient = nil
+	}
+
 	b := &Backend{
-		client:   client,
-		conf:     conf,
-		event:    writer,
-		database: reader,
-		log:      log,
+		client:        client,
+		conf:          conf,
+		event:         writer,
+		database:      reader,
+		log:           log,
+		loggingClient: loggingClient,
 	}
 
 	if !conf.DisableReconciler {
@@ -63,7 +74,22 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	return nil
 }
 
+// retrieveLogsFromCloudLogging attempts to fetch logs from Google Cloud Logging for a GCP Batch job
+func (b *Backend) retrieveLogsFromCloudLogging(ctx context.Context, taskID, gcpJobName string) ([]*events.SystemLog, error) {
+	if b.loggingClient == nil {
+		return nil, fmt.Errorf("Cloud Logging client not initialized - logs can be found in GCP Console")
+	}
+
+	// TODO: Implement full log retrieval using Cloud Logging API
+	// For now, this provides the framework for fetching logs from Cloud Logging
+	// The logs are being sent to Cloud Logging as configured in the job
+	return nil, fmt.Errorf("Log retrieval not fully implemented yet - check GCP Console: https://console.cloud.google.com/logs")
+}
+
 func (b *Backend) Close() {
+	if b.loggingClient != nil {
+		b.loggingClient.Close()
+	}
 	b.database.Close()
 	b.event.Close()
 }
@@ -446,7 +472,6 @@ ReconcileLoop:
 			// For all Task states in QUEUED, INITIALIZING, RUNNING
 			for _, s := range states {
 				for {
-					fmt.Println("DEBUG: s:", s)
 
 					// List Tasks from Funnel Database
 					lresp, err := b.database.ListTasks(ctx, &tes.ListTasksRequest{
@@ -460,8 +485,6 @@ ReconcileLoop:
 						continue ReconcileLoop
 					}
 					pageToken = lresp.NextPageToken
-
-					fmt.Println("DEBUG: lresp:", lresp)
 
 					// Map TES Task ID → GCP Batch Job ID
 					tmap := make(map[string]*tes.Task)
@@ -498,27 +521,58 @@ ReconcileLoop:
 						}
 
 						// If Job is in our list
-						if _, ok := tmap[j.Uid]; !ok {
+						task, ok := tmap[j.Uid]
+						if !ok {
 							continue
 						}
 
-						fmt.Println("DEBUG: j:", j)
+						// Handle FAILED jobs for now - basic state syncing
+						if j.Status.State == batchpb.JobStatus_FAILED {
+							if task.State != tes.ExecutorError {
+								b.event.WriteEvent(ctx, events.NewState(task.Id, tes.ExecutorError))
 
-						// task := tmap[*j.JobId]
-						// jstate := *j.Status
+								// Get failure reason from status events if available
+								var failureReason string
+								if j.Status != nil && len(j.Status.StatusEvents) > 0 {
+									for _, event := range j.Status.StatusEvents {
+										if event.Description != "" {
+											failureReason = event.Description
+											break
+										}
+									}
+								}
+								if failureReason == "" {
+									failureReason = "GCP Batch job in FAILED state"
+								}
 
-						// // Failed Jobs
-						// if jstate == "FAILED" {
-						// 	b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-						// 	b.event.WriteEvent(
-						// 		ctx,
-						// 		events.NewSystemLog(
-						// 			task.Id, 0, 0, "error",
-						// 			"GCP Batch job in FAILED state",
-						// 			map[string]string{"error": *j.StatusReason, "gcpbatch_id": *j.JobId},
-						// 		),
-						// 	)
-						// }
+								b.event.WriteEvent(
+									ctx,
+									events.NewSystemLog(
+										task.Id, 0, 0, "error",
+										failureReason,
+										map[string]string{
+											"gcpbatch_id":    j.Uid,
+											"gcpbatch_name":  j.Name,
+											"gcpbatch_state": j.Status.State.String(),
+										},
+									),
+								)
+							}
+						}
+
+						// Handle SUCCEEDED jobs
+						if j.Status.State == batchpb.JobStatus_SUCCEEDED {
+							if task.State != tes.Complete {
+								b.event.WriteEvent(ctx, events.NewState(task.Id, tes.Complete))
+							}
+						}
+
+						// Handle RUNNING jobs
+						if j.Status.State == batchpb.JobStatus_RUNNING {
+							if task.State != tes.Running {
+								b.event.WriteEvent(ctx, events.NewState(task.Id, tes.Running))
+							}
+						}
 					}
 
 					// continue to next page from ListTasks or break

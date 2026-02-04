@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"text/template"
 	"time"
@@ -116,54 +115,105 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	var client = clientset.BatchV1().Jobs(kcmd.JobsNamespace)
 
-	_, err = client.Create(ctx, job, metav1.CreateOptions{})
+	ret, err := client.Create(ctx, job, metav1.CreateOptions{})
+	fmt.Println("DEBUG: Create returned:", ret)
+	fmt.Println("DEBUG: Create err:", err)
 
-	// TODO: move maxRetries (and interval duration) to config
-	var maxRetries = 5
-	var interval = 2 * time.Second
+	// Start log streaming and job completion monitoring in parallel
+	errChan := make(chan error, 2)
 
-	// Retry creating the Executor Pod on failure
-	if err != nil {
-		var retryCount int
-		for retryCount < maxRetries {
-			_, err = client.Create(ctx, job, metav1.CreateOptions{})
-			if err == nil {
+	// Goroutine to handle log streaming
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				errChan <- fmt.Errorf("panic in log streaming: %v", r)
+			}
+		}()
+
+		// Try to get logs from executor pods
+		logsRetrieved := false
+		maxRetries := 10
+		retryInterval := 2 * time.Second
+
+		for i := 0; i < maxRetries && !logsRetrieved; i++ {
+			// List pods for this job
+			pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId),
+			})
+
+			if err != nil {
+				errChan <- fmt.Errorf("failed to list pods for executor job: %v", err)
+				return
+			}
+
+			// Try to stream logs from each pod
+			for _, pod := range pods.Items {
+				fmt.Printf("DEBUG: Attempting to stream logs from pod %s\n", pod.Name)
+				// Stream logs from any pod state (Running, Succeeded, Failed)
+				// Kubernetes API supports fetching logs from terminated pods if they haven't been cleaned up yet
+				err := streamPodLogsFromAnyState(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout)
+				if err != nil {
+					fmt.Printf("DEBUG: Failed to stream logs from pod %s: %v\n", pod.Name, err)
+					// If streaming fails, continue to next pod or retry
+					continue
+				}
+				fmt.Printf("DEBUG: Successfully streamed logs from pod %s\n", pod.Name)
+				logsRetrieved = true
 				break
 			}
-			retryCount++
-			time.Sleep(interval)
+
+			if !logsRetrieved {
+				time.Sleep(retryInterval)
+			}
 		}
-		if retryCount == maxRetries {
-			return fmt.Errorf("Funnel Worker: Failed to create Executor Job after %v attempts: %v", maxRetries, err)
+
+		if !logsRetrieved {
+			errChan <- fmt.Errorf("failed to retrieve logs from executor pods after %d attempts", maxRetries)
+		} else {
+			errChan <- nil
+		}
+	}()
+
+	// Goroutine to wait for job completion
+	go func() {
+		watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
+		if err != nil {
+			errChan <- fmt.Errorf("failed to create job watcher: %v", err)
+			return
+		}
+		defer watcher.Stop()
+
+		waitForJobFinish(ctx, watcher)
+		errChan <- nil
+	}()
+
+	// Wait for both log streaming and job completion
+	var logErr, jobErr error
+	completed := 0
+	for completed < 2 {
+		select {
+		case err := <-errChan:
+			if completed == 0 {
+				logErr = err
+			} else {
+				jobErr = err
+			}
+			completed++
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 
-	// Wait until the job finishes
-	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
-	defer watcher.Stop()
-	waitForJobFinish(ctx, watcher)
-
-	// Get Executor Pod name in order to stream logs from Executor to Worker stdout
-	pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
-	if err != nil {
-		return fmt.Errorf("failed to list pods for executor job: %v", err)
+	// If log streaming failed but job completed, continue with job completion check
+	// Log failure shouldn't prevent us from getting exit codes
+	if logErr != nil && jobErr == nil {
+		fmt.Printf("Warning: %v\n", logErr)
+	} else if logErr != nil {
+		return logErr
 	}
 
-	for _, v := range pods.Items {
-		// Wait for the pod to reach Running state
-		// If an executor finishes by the time this is hit, currently Funnel is throwing `Error waiting for pod`
-		// as Executor Error.
-		// This is incorrect, with the expected behavior being Funnel "fetching" Executor state
-		pod, err := waitForPodRunning(ctx, kcmd.JobsNamespace, v.Name, 5*time.Minute)
-		if err != nil {
-			log.Fatalf("Error waiting for pod: %v", err)
-		}
-
-		// Stream logs from the running pod
-		err = streamPodLogs(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout)
-		if err != nil {
-			log.Fatalf("Error streaming logs: %v", err)
-		}
+	if jobErr != nil {
+		return jobErr
 	}
 
 	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
@@ -174,6 +224,45 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	}
 
 	if j.Status.Failed > 0 {
+		fmt.Printf("DEBUG: Job %s failed with %d failures, inspecting container status\n", jobName, j.Status.Failed)
+		// Re-fetch pods to get final container state for actual exit codes and error details
+		finalPods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId),
+		})
+
+		fmt.Printf("DEBUG: Found %d pods for job %s\n", len(finalPods.Items), jobName)
+		if err != nil {
+			fmt.Printf("DEBUG: Error listing pods: %v\n", err)
+		}
+
+		if err == nil && len(finalPods.Items) > 0 {
+			pod := finalPods.Items[0]
+			fmt.Printf("DEBUG: Pod %s phase: %s, containers: %d\n", pod.Name, pod.Status.Phase, len(pod.Status.ContainerStatuses))
+			if len(pod.Status.ContainerStatuses) > 0 {
+				cStatus := pod.Status.ContainerStatuses[0]
+				fmt.Printf("DEBUG: Container state - Terminated: %v\n", cStatus.State.Terminated != nil)
+				if cStatus.State.Terminated != nil {
+					exitCode := int(cStatus.State.Terminated.ExitCode)
+					message := cStatus.State.Terminated.Message
+					reason := cStatus.State.Terminated.Reason
+					fmt.Printf("DEBUG: Container terminated - ExitCode: %d, Reason: %s, Message: %s\n", exitCode, reason, message)
+
+					// Include stderr if available from termination message
+					if message != "" {
+						return fmt.Errorf("executor job %s failed with exit code %d (%s): %s",
+							jobName, exitCode, reason, message)
+					}
+					return fmt.Errorf("executor job %s failed with exit code %d (%s)",
+						jobName, exitCode, reason)
+				}
+			} else {
+				fmt.Printf("DEBUG: No container statuses found for pod %s\n", pod.Name)
+			}
+		} else {
+			fmt.Printf("DEBUG: No pods found for job %s, err: %v\n", jobName, err)
+		}
+
+		// Fallback to original message if container inspection fails
 		return fmt.Errorf("executor job %s failed with %d failures", jobName, j.Status.Failed)
 	}
 
@@ -212,10 +301,34 @@ func streamPodLogs(ctx context.Context, namespace string, podName string, stdout
 		return fmt.Errorf("getting kubernetes clientset: %v", err)
 	}
 
+	// Stream stdout logs
 	req := clientset.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{})
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
-		return fmt.Errorf("streaming logs: %v", err)
+		return fmt.Errorf("streaming stdout logs: %v", err)
+	}
+	defer podLogs.Close()
+
+	_, err = io.Copy(stdout, podLogs)
+	return err
+}
+
+// streamPodLogsFromAnyState streams logs from a pod regardless of its state
+// This works for Running, Succeeded, and Failed pods (as long as they haven't been deleted)
+func streamPodLogsFromAnyState(ctx context.Context, namespace string, podName string, stdout io.Writer) error {
+	clientset, err := getKubernetesClientset()
+	if err != nil {
+		return fmt.Errorf("getting kubernetes clientset: %v", err)
+	}
+
+	// Get logs from any pod state - Kubernetes API supports fetching logs from terminated pods
+	req := clientset.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{
+		// Don't set Follow=true, we want to fetch all available logs, not stream live logs
+	})
+
+	podLogs, err := req.Stream(ctx)
+	if err != nil {
+		return fmt.Errorf("streaming logs from pod %s: %v", podName, err)
 	}
 	defer podLogs.Close()
 

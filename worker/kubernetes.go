@@ -119,101 +119,61 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	fmt.Println("DEBUG: Create returned:", ret)
 	fmt.Println("DEBUG: Create err:", err)
 
-	// Start log streaming and job completion monitoring in parallel
-	errChan := make(chan error, 2)
+	// Wait for job completion first, then stream logs
+	// This ensures we get complete logs and proper exit codes
+	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
+	if err != nil {
+		return fmt.Errorf("failed to create job watcher: %v", err)
+	}
+	defer watcher.Stop()
 
-	// Goroutine to handle log streaming
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				errChan <- fmt.Errorf("panic in log streaming: %v", r)
-			}
-		}()
+	fmt.Printf("DEBUG: Waiting for job %s-%d to complete...\n", taskId, kcmd.JobId)
+	waitForJobFinish(ctx, watcher)
+	fmt.Printf("DEBUG: Job %s-%d completed, now streaming logs\n", taskId, kcmd.JobId)
 
-		// Try to get logs from executor pods
-		logsRetrieved := false
-		maxRetries := 10
-		retryInterval := 2 * time.Second
+	// After job completes, stream logs from all pods
+	// This ensures we get complete output from both long-running and quick tasks
+	logsRetrieved := false
+	maxRetries := 5
+	retryInterval := 2 * time.Second
 
-		for i := 0; i < maxRetries && !logsRetrieved; i++ {
-			// List pods for this job
-			pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId),
-			})
+	for i := 0; i < maxRetries && !logsRetrieved; i++ {
+		fmt.Printf("DEBUG: Attempt %d to retrieve logs from completed job\n", i+1)
 
-			if err != nil {
-				errChan <- fmt.Errorf("failed to list pods for executor job: %v", err)
-				return
-			}
+		// List pods for this job
+		pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId),
+		})
 
-			// Try to stream logs from each pod
+		if err != nil {
+			return fmt.Errorf("failed to list pods for executor job: %v", err)
+		}
+
+		if len(pods.Items) > 0 {
+			// Stream logs from all pods for this job
 			for _, pod := range pods.Items {
+				fmt.Printf("DEBUG: Found pod %s, phase: %s\n", pod.Name, pod.Status.Phase)
+
 				fmt.Printf("DEBUG: Attempting to stream logs from pod %s\n", pod.Name)
-				// Stream logs from any pod state (Running, Succeeded, Failed)
-				// Kubernetes API supports fetching logs from terminated pods if they haven't been cleaned up yet
-				err := streamPodLogsFromAnyState(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout)
+				err = streamPodLogsFromAnyState(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout)
 				if err != nil {
 					fmt.Printf("DEBUG: Failed to stream logs from pod %s: %v\n", pod.Name, err)
-					// If streaming fails, continue to next pod or retry
-					continue
+					continue // Try next pod or retry
 				}
 				fmt.Printf("DEBUG: Successfully streamed logs from pod %s\n", pod.Name)
 				logsRetrieved = true
 				break
 			}
-
-			if !logsRetrieved {
-				time.Sleep(retryInterval)
-			}
 		}
 
 		if !logsRetrieved {
-			errChan <- fmt.Errorf("failed to retrieve logs from executor pods after %d attempts", maxRetries)
-		} else {
-			errChan <- nil
-		}
-	}()
-
-	// Goroutine to wait for job completion
-	go func() {
-		watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
-		if err != nil {
-			errChan <- fmt.Errorf("failed to create job watcher: %v", err)
-			return
-		}
-		defer watcher.Stop()
-
-		waitForJobFinish(ctx, watcher)
-		errChan <- nil
-	}()
-
-	// Wait for both log streaming and job completion
-	var logErr, jobErr error
-	completed := 0
-	for completed < 2 {
-		select {
-		case err := <-errChan:
-			if completed == 0 {
-				logErr = err
-			} else {
-				jobErr = err
-			}
-			completed++
-		case <-ctx.Done():
-			return ctx.Err()
+			fmt.Printf("DEBUG: Logs not retrieved, waiting %v before retry\n", retryInterval)
+			time.Sleep(retryInterval)
 		}
 	}
 
-	// If log streaming failed but job completed, continue with job completion check
-	// Log failure shouldn't prevent us from getting exit codes
-	if logErr != nil && jobErr == nil {
-		fmt.Printf("Warning: %v\n", logErr)
-	} else if logErr != nil {
-		return logErr
-	}
-
-	if jobErr != nil {
-		return jobErr
+	if !logsRetrieved {
+		fmt.Printf("DEBUG: Warning: Failed to retrieve logs from executor pods after %d attempts\n", maxRetries)
 	}
 
 	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)

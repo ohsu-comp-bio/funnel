@@ -36,7 +36,6 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 					EndTime:   "",
 					Stdout:    "",
 					Stderr:    "",
-					ExitCode:  -1,
 				}
 			}
 

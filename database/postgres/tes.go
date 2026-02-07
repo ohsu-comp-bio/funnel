@@ -62,17 +62,6 @@ func (db *Postgres) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 	task.State = tes.State(tes.State_value[stateStr])
 	// task.Owner = core.Owner
 
-	// Filter out placeholder exit code (-1) when task is still running
-	if task.State == tes.State_RUNNING || task.State == tes.State_INITIALIZING || task.State == tes.State_QUEUED {
-		for _, taskLog := range task.Logs {
-			for _, executorLog := range taskLog.Logs {
-				if executorLog.ExitCode == -1 {
-					executorLog.ExitCode = 0 // Don't show placeholder exit code for running tasks
-				}
-			}
-		}
-	}
-
 	switch req.View {
 	case tes.View_BASIC.String():
 		// task.Logs = tes.FilterLogs(task.Logs, tes.FilterBasic)

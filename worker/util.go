@@ -11,24 +11,23 @@ import (
 // getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
 // The exit code is zero if the command completed without error.
 func getExitCode(err error) int {
-	fmt.Println("DEBUG: error", err)
-	if err != nil {
-		fmt.Printf("DEBUG: getExitCode err '%s'\n", err)
-		// Check for Kubernetes error first
-		if k8sErr, ok := err.(*KubernetesExitError); ok {
-			return k8sErr.ExitCode
-		}
+	// The error is nil, the command returned successfully, so exit status is 0.
+	if err == nil {
+		return 0
+	}
 
-		if exiterr, exitOk := err.(*exec.ExitError); exitOk {
-			if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
-				return status.ExitStatus()
-			}
-		} else {
-			return -999 // could not get exit code, un-spec'd value that could break downstream
+	// Check for Kubernetes error first
+	if k8sErr, ok := err.(*KubernetesExitError); ok {
+		return k8sErr.ExitCode
+	}
+
+	if exiterr, exitOk := err.(*exec.ExitError); exitOk {
+		if status, statusOk := exiterr.Sys().(syscall.WaitStatus); statusOk {
+			return status.ExitStatus()
 		}
 	}
-	// The error is nil, the command returned successfully, so exit status is 0.
-	return 0
+
+	return -999 // could not get exit code, un-spec'd value that could break downstream
 }
 
 // recover from panic and call "cb" with an error value.

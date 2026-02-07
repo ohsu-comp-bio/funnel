@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -74,7 +73,6 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		case result := <-done:
 			s.Event.EndTime(time.Now())
 			s.Event.Debug("Executor done", "result", result)
-			fmt.Println("DEBUG: executor done result", result)
 			s.Event.ExitCode(getExitCode(result))
 			return result
 		}

@@ -331,14 +331,14 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 	if !disableCleanup {
 		jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
-			b.log.Error("backlog cleanup: listing jobs", err)
+			b.log.Error("Reconciler", "backlog cleanup listing jobs", err)
 		} else {
 			for _, j := range jobs.Items {
 				s := j.Status
 				if s.Succeeded > 0 || s.Failed > 0 {
-					b.log.Debug("backlog cleanup: deleting job", "taskID", j.Name)
+					b.log.Debug("Reconciler", "cleaning resources from completed task", "taskID", j.Name)
 					if err := b.cleanResources(ctx, j.Name); err != nil {
-						b.log.Error("backlog cleanup: failed to clean resources", "taskID", j.Name, "error", err)
+						b.log.Error("Reconciler", "failed to clean resources", "taskID", j.Name, "error", err)
 					}
 				}
 			}
@@ -354,15 +354,17 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			b.log.Debug("Reconciler", "Starting loop")
 
 			// List ALL current Kubernetes Jobs
 			// Bug: If K8s Job is not created by the time reconciler runs, then the TES Task itself will be prematurely marked as SYSTEM_ERROR
 			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
-				b.log.Error("reconcile: listing jobs", err)
+				b.log.Error("Reconciler", "listing jobs error", err)
 				continue
 			}
 
+			b.log.Debug("Reconciler", "Number of K8s Jobs", len(jobs.Items))
 			k8sJobs := make(map[string]*v1.Job)
 			for i := range jobs.Items {
 				k8sJobs[jobs.Items[i].Name] = &jobs.Items[i]
@@ -371,6 +373,8 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 			// List non-terminal tasks from Funnel's database
 			states := []tes.State{tes.State_QUEUED, tes.State_INITIALIZING, tes.State_RUNNING}
 			for _, s := range states {
+				b.log.Debug("Reconciler", "State", s.String())
+
 				pageToken := ""
 				for {
 					lresp, err := b.database.ListTasks(ctx, &tes.ListTasksRequest{
@@ -379,19 +383,20 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						PageToken: pageToken,
 					})
 					if err != nil {
-						b.log.Error("reconcile: listing non-terminal tasks from Funnel DB", err)
+						b.log.Error("Reconciler", "listing non-terminal tasks from Funnel DB", err)
 						break
 					}
 					pageToken = lresp.NextPageToken
 
 					// Compare Funnel Tasks against K8s Jobs
+					b.log.Debug("Reconciler", "Checking for tasks without jobs", "Funnel Tasks", len(lresp.Tasks), "K8s Jobs", len(k8sJobs))
 					for _, task := range lresp.Tasks {
 						taskID := task.Id
 
 						// Check for Orphaned Task (Job Missing)
 						if _, exists := k8sJobs[taskID]; !exists {
 
-							b.log.Debug("reconcile: orphaned task found, marking as SYSTEM_ERROR", "taskID", taskID)
+							b.log.Debug("TES Task not found in K8s Jobs, updating to SYSTEM_ERROR", "taskID", taskID, "Current state", task.State.String())
 
 							b.event.WriteEvent(ctx, events.NewState(taskID, tes.SystemError))
 
@@ -410,7 +415,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						j := k8sJobs[taskID]
 
 						// Remove from map to ensure only orphaned checks are done above
-						// delete(k8sJobs, taskID)
+						delete(k8sJobs, taskID)
 
 						if j == nil {
 							continue
@@ -426,7 +431,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 							if disableCleanup {
 								continue
 							}
-							b.log.Debug("reconcile: cleaning up successful job", "taskID", jobName)
+							b.log.Debug("Reconciler", "Cleaning up successful job", "taskID", jobName)
 
 							// Delete resources
 							if err := b.cleanResources(ctx, jobName); err != nil {
@@ -440,10 +445,10 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 								continue
 							}
 
-							b.log.Debug("reconcile: writing system error event for failed job", "taskID", jobName)
+							b.log.Debug("Reconciler", "Writing system error event for failed job", "taskID", jobName)
 							conds, err := json.Marshal(status.Conditions)
 							if err != nil {
-								b.log.Error("reconcile: marshal failed job conditions", "taskID", jobName, "error", err)
+								b.log.Error("Reconciler", "marshal failed job conditions", "taskID", jobName, "error", err)
 							}
 
 							b.event.WriteEvent(ctx, events.NewState(jobName, tes.SystemError))
@@ -461,9 +466,9 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 								continue
 							}
 
-							b.log.Debug("reconcile: cleaning up failed job", "taskID", jobName)
+							b.log.Debug("Reconciler", "Cleaning up failed job", "taskID", jobName)
 							if err := b.cleanResources(ctx, jobName); err != nil {
-								b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
+								b.log.Error("Reconciler", "failed to clean resources", "taskID", jobName, "error", err)
 								continue
 							}
 							delete(failedJobEvents, jobName)

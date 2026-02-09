@@ -86,6 +86,13 @@ func (db *Postgres) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 	var whereClauses []string
 	paramCount := 1
 
+	// State filter
+	if req.State != tes.State_UNKNOWN {
+		whereClauses = append(whereClauses, fmt.Sprintf("state = $%d", paramCount))
+		args = append(args, req.State.String())
+		paramCount++
+	}
+
 	// Name prefix filter
 	if req.NamePrefix != "" {
 		whereClauses = append(whereClauses, fmt.Sprintf("data ->> 'name' LIKE $%d", paramCount))
@@ -107,7 +114,7 @@ func (db *Postgres) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 			whereClauses = append(whereClauses, fmt.Sprintf("data -> 'tags' ? $%d", paramCount))
 			args = append(args, k)
 		} else {
-			// Check if tag value equals: `data -> 'tags' ->> 'key' = 'value'`
+			// Check if tag key equals value: `data -> 'tags' ->> 'key' = 'value'`
 			whereClauses = append(whereClauses, fmt.Sprintf("data -> 'tags' ->> $%d = $%d", paramCount, paramCount+1))
 			args = append(args, k, v)
 			paramCount++
@@ -122,16 +129,16 @@ func (db *Postgres) ListTasks(ctx context.Context, req *tes.ListTasksRequest) (*
 		paramCount++
 	}
 
-	whereClause := ""
+	where := ""
 	if len(whereClauses) > 0 {
-		whereClause = "WHERE " + strings.Join(whereClauses, " AND ")
+		where = "WHERE " + strings.Join(whereClauses, " AND ")
 	}
 
-	orderByClause := "ORDER BY creation_time DESC, id DESC"
-	limitClause := fmt.Sprintf("LIMIT $%d", paramCount)
+	order := "ORDER BY creation_time DESC, id DESC"
+	limit := fmt.Sprintf("LIMIT $%d", paramCount)
 	args = append(args, pageSize)
 
-	selectSQL := fmt.Sprintf("SELECT data FROM tasks %s %s %s", whereClause, orderByClause, limitClause)
+	selectSQL := fmt.Sprintf("SELECT data FROM tasks %s %s %s", where, order, limit)
 
 	rows, err := db.client.Query(ctx, selectSQL, args...)
 	if err != nil {

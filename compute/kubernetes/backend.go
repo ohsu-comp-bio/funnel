@@ -125,7 +125,6 @@ func (b *Backend) Close() {
 // Submit creates both the PVC and the worker job with better error handling
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
 	err := b.createResources(task, config)
-	b.log.Debug("Error creating resources", "error", err, "task ID", task.Id)
 
 	if err != nil {
 		b.log.Error("Error creating resources, writing SystemError event", "error", err, "task ID", task.Id)
@@ -354,17 +353,15 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			b.log.Debug("Reconciler", "Starting loop")
-
 			// List ALL current Kubernetes Jobs
 			// Bug: If K8s Job is not created by the time reconciler runs, then the TES Task itself will be prematurely marked as SYSTEM_ERROR
 			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
-				b.log.Error("Reconciler", "listing jobs error", err)
+				b.log.Error("listing jobs error", "error", err)
 				continue
 			}
 
-			b.log.Debug("Reconciler", "Number of K8s Jobs", len(jobs.Items))
+			b.log.Debug("Number of K8s Jobs", len(jobs.Items))
 			k8sJobs := make(map[string]*v1.Job)
 			for i := range jobs.Items {
 				k8sJobs[jobs.Items[i].Name] = &jobs.Items[i]
@@ -373,8 +370,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 			// List non-terminal tasks from Funnel's database
 			states := []tes.State{tes.State_QUEUED, tes.State_INITIALIZING, tes.State_RUNNING}
 			for _, s := range states {
-				b.log.Debug("Reconciler", "State", s.String())
-
+				b.log.Debug("State", s.String())
 				pageToken := ""
 				for {
 					lresp, err := b.database.ListTasks(ctx, &tes.ListTasksRequest{
@@ -383,13 +379,12 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						PageToken: pageToken,
 					})
 					if err != nil {
-						b.log.Error("Reconciler", "listing non-terminal tasks from Funnel DB", err)
+						b.log.Error("listing non-terminal tasks from Funnel DB", "error", err)
 						break
 					}
 					pageToken = lresp.NextPageToken
 
 					// Compare Funnel Tasks against K8s Jobs
-					b.log.Debug("Reconciler", "Checking for tasks without jobs", "Funnel Tasks", len(lresp.Tasks), "K8s Jobs", len(k8sJobs))
 					for _, task := range lresp.Tasks {
 						taskID := task.Id
 

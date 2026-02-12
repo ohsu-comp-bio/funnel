@@ -197,11 +197,18 @@ func waitForPodRunning(ctx context.Context, namespace string, podName string, ti
 			return nil, fmt.Errorf("timed out waiting for pod %s to be in running state", podName)
 		case <-ticker.C:
 			pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+
 			if err != nil {
-				return nil, fmt.Errorf("getting pod %s: %v", podName, err)
+				log.Printf("Still waiting for pod %s to be created... (error: %v)", podName, err)
+				continue
 			}
 
-			return pod, nil
+			if pod.Status.Phase == corev1.PodRunning ||
+				pod.Status.Phase == corev1.PodSucceeded ||
+				pod.Status.Phase == corev1.PodFailed {
+				return pod, nil
+			}
+			log.Printf("Pod %s exists but is in phase %s, waiting...", podName, pod.Status.Phase)
 		}
 	}
 }

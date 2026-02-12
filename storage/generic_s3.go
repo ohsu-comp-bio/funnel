@@ -216,26 +216,6 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 	}
 	defer outFile.Close()
 
-	// Output the downloaded file contents for debugging
-	content, err := os.ReadFile(outFile.Name())
-	if err != nil {
-		logger.Debug("Error reading file", "filePath", outFile.Name(), "error", err)
-	}
-	logger.Debug("genericS3: file contents", "filePath", outFile.Name(), "content", string(content))
-
-	// Write the content to the file
-	err = os.WriteFile(outFile.Name(), []byte("Hello, Go file writing!"), 0644)
-	if err != nil {
-		logger.Debug("Error writing to file", "filePath", outFile.Name(), "error", err)
-	}
-
-	// Output the downloaded file contents for debugging
-	content, err = os.ReadFile(outFile.Name())
-	if err != nil {
-		logger.Debug("Error reading file", "filePath", outFile.Name(), "error", err)
-	}
-	logger.Debug("genericS3: file contents", "filePath", outFile.Name(), "content", string(content))
-
 	// Step 3: Copy the contents
 	// TODO: Add stack trace (or simply more verbose logging) here...
 	// Can we add stack traces for all errors in Funnel?

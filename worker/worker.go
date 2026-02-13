@@ -3,6 +3,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -263,7 +264,18 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			}
 
 			if run.ok() || ignoreError {
-				run.execerr = s.Run(ctx)
+				err := s.Run(ctx)
+
+				if err != nil {
+					// Check if it's a Kubernetes system error
+					var k8sSystemErr *K8sSystemErr
+					if errors.As(err, &k8sSystemErr) {
+						run.syserr = err
+					} else {
+						// Otherwise it's an executor error (including KubernetesExitError)
+						run.execerr = err
+					}
+				}
 			}
 
 			ignoreError = d.GetIgnoreError()

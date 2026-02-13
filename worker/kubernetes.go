@@ -44,16 +44,34 @@ func shellQuote(s string) string {
 	return "\"" + strings.ReplaceAll(s, "'", `\\'`) + "\""
 }
 
-type KubernetesExitError struct {
+type K8sExecutorErr struct {
 	ExitCode int
 	Reason   string
 	Message  string
 	JobName  string
 }
 
-func (e *KubernetesExitError) Error() string {
+type K8sSystemErr struct {
+	Reason  string
+	Message string
+	Err     error
+	error
+}
+
+func (e *K8sExecutorErr) Error() string {
 	return fmt.Sprintf("executor job %s failed with exit code %d (%s): %s",
 		e.JobName, e.ExitCode, e.Reason, e.Message)
+}
+
+func (e *K8sSystemErr) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("kubernetes system error (%s): %s: %v", e.Reason, e.Message, e.Err)
+	}
+	return fmt.Sprintf("kubernetes system error (%s): %s", e.Reason, e.Message)
+}
+
+func (e *K8sSystemErr) Unwrap() error {
+	return e.Err
 }
 
 // Create the Executor K8s job from kubernetes-executor-template.yaml
@@ -63,7 +81,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	tpl, err := template.New(taskId).Parse(kcmd.TaskTemplate)
 
 	if err != nil {
-		return err
+		return &K8sSystemErr{
+			Reason:  "TemplateParsingFailed",
+			Message: "Failed to parse task template",
+			Err:     err,
+		}
 	}
 
 	var cmd = kcmd.ShellCommand
@@ -98,19 +120,31 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var buf bytes.Buffer
 	err = tpl.Execute(&buf, templateData)
 	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to execute job template: %v", err)
+		return &K8sSystemErr{
+			Reason:  "TemplateExecutionFailed",
+			Message: "Failed to execute task template",
+			Err:     err,
+		}
 	}
 
 	logger.Debug("Decoding job template", "template", buf.String())
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to decode job template: %v", err)
+		return &K8sSystemErr{
+			Reason:  "JobCreationFailed",
+			Message: "Failed to create Kubernetes job (check templates, RBAC, resources)",
+			Err:     err,
+		}
 	}
 
 	job, ok := obj.(*v1.Job)
 	if !ok {
-		return fmt.Errorf("Funnel Worker: decoded object is not a Job")
+		return &K8sSystemErr{
+			Reason:  "JobCreationFailed",
+			Message: "Decoded object is not a Job",
+			Err:     fmt.Errorf("decoded object is not a Job"),
+		}
 	}
 
 	logger.Debug("Creating Kubernetes clientset", "clientset", kcmd.Clientset)
@@ -121,7 +155,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 		clientset, err = getKubernetesClientset()
 		if err != nil {
-			return fmt.Errorf("Funnel Worker: failed to get Kubernetes clientset: %v", err)
+			return &K8sSystemErr{
+				Reason:  "ClientsetCreationFailed",
+				Message: "Failed to get Kubernetes clientset",
+				Err:     err,
+			}
 		}
 	}
 
@@ -129,7 +167,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var client = clientset.BatchV1().Jobs(kcmd.JobsNamespace)
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to create job: %v", err)
+		return &K8sSystemErr{
+			Reason:  "JobCreationFailed",
+			Message: "Failed to create Kubernetes job",
+			Err:     err,
+		}
 	}
 
 	logger.Debug("Job created successfully, waiting for pod to be running", "jobName", job.Name)
@@ -137,34 +179,50 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create pod watcher: %v", err)
+		return &K8sSystemErr{
+			Reason:  "PodWatcherCreationFailed",
+			Message: "Failed to create pod watcher",
+			Err:     err,
+		}
 	}
 	defer podWatcher.Stop()
 
 	logger.Debug("Waiting for pod to finish", "jobName", job.Name)
 	pod, err := waitForPodFinish(ctx, podWatcher)
 	if err != nil {
-		return fmt.Errorf("error waiting for pod to finish: %v", err)
+		return &K8sSystemErr{
+			Reason:  "PodWaitFailed",
+			Message: "Error waiting for pod to finish",
+			Err:     err,
+		}
 	}
 
 	logger.Debug("Streaming pod logs", "podName", pod.Name)
 	err = streamPodLogs(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout, kcmd.Stderr)
 	if err != nil {
-		return fmt.Errorf("Failed to stream logs from pod %s: %v\n", pod.Name, err)
+		return &K8sSystemErr{
+			Reason:  "LogStreamingFailed",
+			Message: fmt.Sprintf("Failed to stream logs from pod %s", pod.Name),
+			Err:     err,
+		}
 	}
 
 	if len(pod.Status.ContainerStatuses) == 0 {
-		return fmt.Errorf("executor job %s completed but no container statuses were found (during exit code retrieval)", job.Name)
-	}
-
-	if len(pod.Status.ContainerStatuses) == 0 {
-		return fmt.Errorf("No container statuses found for pod %s\n", pod.Name)
+		return &K8sSystemErr{
+			Reason:  "NoContainerStatuses",
+			Message: fmt.Sprintf("No container statuses found for pod %s", pod.Name),
+			Err:     fmt.Errorf("no container statuses found"),
+		}
 	}
 
 	// TODO: Review effects (e.g. does this cover all Executors?)
 	cStatus := pod.Status.ContainerStatuses[0]
 	if cStatus.State.Terminated == nil {
-		return fmt.Errorf("executor job %s: container not in terminated state", job.Name)
+		return &K8sSystemErr{
+			Reason:  "ContainerNotTerminated",
+			Message: fmt.Sprintf("executor job %s: container not in terminated state", job.Name),
+			Err:     fmt.Errorf("container not in terminated state"),
+		}
 	}
 
 	exitCode := int(cStatus.State.Terminated.ExitCode)
@@ -173,7 +231,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	if exitCode != 0 {
 		jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
-		return &KubernetesExitError{
+		return &K8sExecutorErr{
 			ExitCode: exitCode,
 			Reason:   reason,
 			Message:  message,

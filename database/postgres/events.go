@@ -191,8 +191,6 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		fmt.Println("DEBUG: jsonVal:", string(jsonVal))
 		_, err := db.client.Exec(ctx, updateSQL, jsonPath, jsonVal, selector)
 
-		// Run
-
 		// Log error
 		logger.Error("Postgres WriteEvent", "Error", err)
 		fmt.Println("DEBUG: Postgres WriteEvent error:", err)

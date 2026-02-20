@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 )
@@ -41,11 +40,8 @@ func (db *Postgres) GetTask(ctx context.Context, req *tes.GetTaskRequest) (*tes.
 
 	err := db.client.QueryRow(ctx, selectSQL, req.Id).Scan(&core.ID, &core.Owner, &stateStr, &core.DataJSON)
 
-	if err == pgx.ErrNoRows {
-		return nil, tes.ErrNotFound
-	}
 	if err != nil {
-		return nil, err
+		return nil, tes.ErrNotFound
 	}
 
 	// Authorization Check

@@ -7,14 +7,13 @@
 package config
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	logger "github.com/ohsu-comp-bio/funnel/logger"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -919,9 +918,10 @@ func (x *Scheduler) GetNodeDeadTimeout() *TimeoutConfig {
 	return nil
 }
 
+// Resources describes the CPU, RAM, and disk resources required by a task.
 type Resources struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cpus          uint32                 `protobuf:"varint,1,opt,name=Cpus,proto3" json:"Cpus,omitempty"`
+	Cpus          float64                `protobuf:"fixed64,1,opt,name=Cpus,proto3" json:"Cpus,omitempty"`
 	RamGb         float64                `protobuf:"fixed64,2,opt,name=RamGb,proto3" json:"RamGb,omitempty"`
 	DiskGb        float64                `protobuf:"fixed64,3,opt,name=DiskGb,proto3" json:"DiskGb,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -958,7 +958,7 @@ func (*Resources) Descriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *Resources) GetCpus() uint32 {
+func (x *Resources) GetCpus() float64 {
 	if x != nil {
 		return x.Cpus
 	}
@@ -2768,8 +2768,10 @@ type Kubernetes struct {
 	DisableJobCleanup      bool                   `protobuf:"varint,15,opt,name=DisableJobCleanup,proto3" json:"DisableJobCleanup,omitempty"`
 	// NodeSelector + Tolerations for scheduling jobs onto specific nodes
 	// https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node
-	NodeSelector  map[string]string `protobuf:"bytes,16,rep,name=NodeSelector,proto3" json:"NodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Tolerations   []*Toleration     `protobuf:"bytes,17,rep,name=Tolerations,proto3" json:"Tolerations,omitempty"`
+	NodeSelector map[string]string `protobuf:"bytes,16,rep,name=NodeSelector,proto3" json:"NodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Tolerations  []*Toleration     `protobuf:"bytes,17,rep,name=Tolerations,proto3" json:"Tolerations,omitempty"`
+	// Optional Kubernetes resource defaults and limits for tasks running on the Kubernetes backend.
+	Resources     *KubernetesResources `protobuf:"bytes,18,opt,name=Resources,proto3" json:"Resources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2923,6 +2925,188 @@ func (x *Kubernetes) GetTolerations() []*Toleration {
 	return nil
 }
 
+func (x *Kubernetes) GetResources() *KubernetesResources {
+	if x != nil {
+		return x.Resources
+	}
+	return nil
+}
+
+// KubernetesResources describes default and maximum resource limits for Kubernetes tasks.
+type KubernetesResources struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Defaults      *ResourceDefaults      `protobuf:"bytes,1,opt,name=Defaults,proto3" json:"Defaults,omitempty"`
+	Limits        *ResourceLimits        `protobuf:"bytes,2,opt,name=Limits,proto3" json:"Limits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KubernetesResources) Reset() {
+	*x = KubernetesResources{}
+	mi := &file_config_config_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KubernetesResources) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KubernetesResources) ProtoMessage() {}
+
+func (x *KubernetesResources) ProtoReflect() protoreflect.Message {
+	mi := &file_config_config_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KubernetesResources.ProtoReflect.Descriptor instead.
+func (*KubernetesResources) Descriptor() ([]byte, []int) {
+	return file_config_config_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *KubernetesResources) GetDefaults() *ResourceDefaults {
+	if x != nil {
+		return x.Defaults
+	}
+	return nil
+}
+
+func (x *KubernetesResources) GetLimits() *ResourceLimits {
+	if x != nil {
+		return x.Limits
+	}
+	return nil
+}
+
+// ResourceDefaults describes default and maximum resource limits for tasks.
+type ResourceDefaults struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cpus          string                 `protobuf:"bytes,1,opt,name=Cpus,proto3" json:"Cpus,omitempty"`
+	RamGb         string                 `protobuf:"bytes,2,opt,name=RamGb,proto3" json:"RamGb,omitempty"`
+	DiskGb        string                 `protobuf:"bytes,3,opt,name=DiskGb,proto3" json:"DiskGb,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceDefaults) Reset() {
+	*x = ResourceDefaults{}
+	mi := &file_config_config_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceDefaults) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceDefaults) ProtoMessage() {}
+
+func (x *ResourceDefaults) ProtoReflect() protoreflect.Message {
+	mi := &file_config_config_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceDefaults.ProtoReflect.Descriptor instead.
+func (*ResourceDefaults) Descriptor() ([]byte, []int) {
+	return file_config_config_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *ResourceDefaults) GetCpus() string {
+	if x != nil {
+		return x.Cpus
+	}
+	return ""
+}
+
+func (x *ResourceDefaults) GetRamGb() string {
+	if x != nil {
+		return x.RamGb
+	}
+	return ""
+}
+
+func (x *ResourceDefaults) GetDiskGb() string {
+	if x != nil {
+		return x.DiskGb
+	}
+	return ""
+}
+
+// ResourceLimits describes maximum resource limits for tasks.
+type ResourceLimits struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cpus          string                 `protobuf:"bytes,1,opt,name=Cpus,proto3" json:"Cpus,omitempty"`
+	RamGb         string                 `protobuf:"bytes,2,opt,name=RamGb,proto3" json:"RamGb,omitempty"`
+	DiskGb        string                 `protobuf:"bytes,3,opt,name=DiskGb,proto3" json:"DiskGb,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceLimits) Reset() {
+	*x = ResourceLimits{}
+	mi := &file_config_config_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceLimits) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceLimits) ProtoMessage() {}
+
+func (x *ResourceLimits) ProtoReflect() protoreflect.Message {
+	mi := &file_config_config_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceLimits.ProtoReflect.Descriptor instead.
+func (*ResourceLimits) Descriptor() ([]byte, []int) {
+	return file_config_config_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ResourceLimits) GetCpus() string {
+	if x != nil {
+		return x.Cpus
+	}
+	return ""
+}
+
+func (x *ResourceLimits) GetRamGb() string {
+	if x != nil {
+		return x.RamGb
+	}
+	return ""
+}
+
+func (x *ResourceLimits) GetDiskGb() string {
+	if x != nil {
+		return x.DiskGb
+	}
+	return ""
+}
+
 // Kubernetes toleration
 // https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
 type Toleration struct {
@@ -2938,7 +3122,7 @@ type Toleration struct {
 
 func (x *Toleration) Reset() {
 	*x = Toleration{}
-	mi := &file_config_config_proto_msgTypes[35]
+	mi := &file_config_config_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2950,7 +3134,7 @@ func (x *Toleration) String() string {
 func (*Toleration) ProtoMessage() {}
 
 func (x *Toleration) ProtoReflect() protoreflect.Message {
-	mi := &file_config_config_proto_msgTypes[35]
+	mi := &file_config_config_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2963,7 +3147,7 @@ func (x *Toleration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Toleration.ProtoReflect.Descriptor instead.
 func (*Toleration) Descriptor() ([]byte, []int) {
-	return file_config_config_proto_rawDescGZIP(), []int{35}
+	return file_config_config_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *Toleration) GetKey() string {
@@ -3100,7 +3284,7 @@ const file_config_config_proto_rawDesc = "" +
 	"\x0fNodeInitTimeout\x18\x04 \x01(\v2\x15.config.TimeoutConfigR\x0fNodeInitTimeout\x12?\n" +
 	"\x0fNodeDeadTimeout\x18\x05 \x01(\v2\x15.config.TimeoutConfigR\x0fNodeDeadTimeout\"M\n" +
 	"\tResources\x12\x12\n" +
-	"\x04Cpus\x18\x01 \x01(\rR\x04Cpus\x12\x14\n" +
+	"\x04Cpus\x18\x01 \x01(\x01R\x04Cpus\x12\x14\n" +
 	"\x05RamGb\x18\x02 \x01(\x01R\x05RamGb\x12\x16\n" +
 	"\x06DiskGb\x18\x03 \x01(\x01R\x06DiskGb\"\xa8\x02\n" +
 	"\x04Node\x12\x0e\n" +
@@ -3262,7 +3446,7 @@ const file_config_config_proto_rawDesc = "" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12/\n" +
 	"\aTimeout\x18\x02 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\x12\x12\n" +
 	"\x04User\x18\x03 \x01(\tR\x04User\x12\x1a\n" +
-	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xc4\x06\n" +
+	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xff\x06\n" +
 	"\n" +
 	"Kubernetes\x12\x1a\n" +
 	"\bExecutor\x18\x01 \x01(\tR\bExecutor\x12&\n" +
@@ -3284,10 +3468,22 @@ const file_config_config_proto_rawDesc = "" +
 	"\rReconcileRate\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\rReconcileRate\x12,\n" +
 	"\x11DisableJobCleanup\x18\x0f \x01(\bR\x11DisableJobCleanup\x12H\n" +
 	"\fNodeSelector\x18\x10 \x03(\v2$.config.Kubernetes.NodeSelectorEntryR\fNodeSelector\x124\n" +
-	"\vTolerations\x18\x11 \x03(\v2\x12.config.TolerationR\vTolerations\x1a?\n" +
+	"\vTolerations\x18\x11 \x03(\v2\x12.config.TolerationR\vTolerations\x129\n" +
+	"\tResources\x18\x12 \x01(\v2\x1b.config.KubernetesResourcesR\tResources\x1a?\n" +
 	"\x11NodeSelectorEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"{\n" +
+	"\x13KubernetesResources\x124\n" +
+	"\bDefaults\x18\x01 \x01(\v2\x18.config.ResourceDefaultsR\bDefaults\x12.\n" +
+	"\x06Limits\x18\x02 \x01(\v2\x16.config.ResourceLimitsR\x06Limits\"T\n" +
+	"\x10ResourceDefaults\x12\x12\n" +
+	"\x04Cpus\x18\x01 \x01(\tR\x04Cpus\x12\x14\n" +
+	"\x05RamGb\x18\x02 \x01(\tR\x05RamGb\x12\x16\n" +
+	"\x06DiskGb\x18\x03 \x01(\tR\x06DiskGb\"R\n" +
+	"\x0eResourceLimits\x12\x12\n" +
+	"\x04Cpus\x18\x01 \x01(\tR\x04Cpus\x12\x14\n" +
+	"\x05RamGb\x18\x02 \x01(\tR\x05RamGb\x12\x16\n" +
+	"\x06DiskGb\x18\x03 \x01(\tR\x06DiskGb\"\xb1\x01\n" +
 	"\n" +
 	"Toleration\x12\x10\n" +
 	"\x03Key\x18\x01 \x01(\tR\x03Key\x12\x1a\n" +
@@ -3309,7 +3505,7 @@ func file_config_config_proto_rawDescGZIP() []byte {
 	return file_config_config_proto_rawDescData
 }
 
-var file_config_config_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
+var file_config_config_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
 var file_config_config_proto_goTypes = []any{
 	(*GridEngine)(nil),          // 0: config.GridEngine
 	(*Config)(nil),              // 1: config.Config
@@ -3346,14 +3542,17 @@ var file_config_config_proto_goTypes = []any{
 	(*HTTPStorage)(nil),         // 32: config.HTTPStorage
 	(*FTPStorage)(nil),          // 33: config.FTPStorage
 	(*Kubernetes)(nil),          // 34: config.Kubernetes
-	(*Toleration)(nil),          // 35: config.Toleration
-	nil,                         // 36: config.Plugins.ParamsEntry
-	nil,                         // 37: config.Node.MetadataEntry
-	nil,                         // 38: config.ContainerConfig.EnvEntry
-	nil,                         // 39: config.ContainerConfig.TagsEntry
-	nil,                         // 40: config.Kubernetes.NodeSelectorEntry
-	(*logger.LoggerConfig)(nil), // 41: logger.LoggerConfig
-	(*durationpb.Duration)(nil), // 42: google.protobuf.Duration
+	(*KubernetesResources)(nil), // 35: config.KubernetesResources
+	(*ResourceDefaults)(nil),    // 36: config.ResourceDefaults
+	(*ResourceLimits)(nil),      // 37: config.ResourceLimits
+	(*Toleration)(nil),          // 38: config.Toleration
+	nil,                         // 39: config.Plugins.ParamsEntry
+	nil,                         // 40: config.Node.MetadataEntry
+	nil,                         // 41: config.ContainerConfig.EnvEntry
+	nil,                         // 42: config.ContainerConfig.TagsEntry
+	nil,                         // 43: config.Kubernetes.NodeSelectorEntry
+	(*logger.LoggerConfig)(nil), // 44: logger.LoggerConfig
+	(*durationpb.Duration)(nil), // 45: google.protobuf.Duration
 }
 var file_config_config_proto_depIdxs = []int32{
 	7,  // 0: config.Config.Server:type_name -> config.Server
@@ -3361,7 +3560,7 @@ var file_config_config_proto_depIdxs = []int32{
 	8,  // 2: config.Config.Scheduler:type_name -> config.Scheduler
 	10, // 3: config.Config.Node:type_name -> config.Node
 	11, // 4: config.Config.Worker:type_name -> config.Worker
-	41, // 5: config.Config.Logger:type_name -> logger.LoggerConfig
+	44, // 5: config.Config.Logger:type_name -> logger.LoggerConfig
 	14, // 6: config.Config.BoltDB:type_name -> config.BoltDB
 	15, // 7: config.Config.Badger:type_name -> config.Badger
 	25, // 8: config.Config.DynamoDB:type_name -> config.DynamoDB
@@ -3386,45 +3585,48 @@ var file_config_config_proto_depIdxs = []int32{
 	32, // 27: config.Config.HTTPStorage:type_name -> config.HTTPStorage
 	33, // 28: config.Config.FTPStorage:type_name -> config.FTPStorage
 	2,  // 29: config.Config.Plugins:type_name -> config.Plugins
-	36, // 30: config.Plugins.Params:type_name -> config.Plugins.ParamsEntry
-	42, // 31: config.TimeoutConfig.duration:type_name -> google.protobuf.Duration
+	39, // 30: config.Plugins.Params:type_name -> config.Plugins.ParamsEntry
+	45, // 31: config.TimeoutConfig.duration:type_name -> google.protobuf.Duration
 	3,  // 32: config.RPCClient.Credential:type_name -> config.BasicCredential
 	5,  // 33: config.RPCClient.Timeout:type_name -> config.TimeoutConfig
 	3,  // 34: config.Server.BasicAuth:type_name -> config.BasicCredential
 	4,  // 35: config.Server.OidcAuth:type_name -> config.OidcAuth
-	42, // 36: config.Scheduler.ScheduleRate:type_name -> google.protobuf.Duration
+	45, // 36: config.Scheduler.ScheduleRate:type_name -> google.protobuf.Duration
 	5,  // 37: config.Scheduler.NodePingTimeout:type_name -> config.TimeoutConfig
 	5,  // 38: config.Scheduler.NodeInitTimeout:type_name -> config.TimeoutConfig
 	5,  // 39: config.Scheduler.NodeDeadTimeout:type_name -> config.TimeoutConfig
 	9,  // 40: config.Node.Resources:type_name -> config.Resources
 	5,  // 41: config.Node.Timeout:type_name -> config.TimeoutConfig
-	42, // 42: config.Node.UpdateRate:type_name -> google.protobuf.Duration
-	37, // 43: config.Node.Metadata:type_name -> config.Node.MetadataEntry
-	42, // 44: config.Worker.PollingRate:type_name -> google.protobuf.Duration
-	42, // 45: config.Worker.LogUpdateRate:type_name -> google.protobuf.Duration
+	45, // 42: config.Node.UpdateRate:type_name -> google.protobuf.Duration
+	40, // 43: config.Node.Metadata:type_name -> config.Node.MetadataEntry
+	45, // 44: config.Worker.PollingRate:type_name -> google.protobuf.Duration
+	45, // 45: config.Worker.LogUpdateRate:type_name -> google.protobuf.Duration
 	12, // 46: config.Worker.Container:type_name -> config.ContainerConfig
-	38, // 47: config.ContainerConfig.Env:type_name -> config.ContainerConfig.EnvEntry
-	39, // 48: config.ContainerConfig.Tags:type_name -> config.ContainerConfig.TagsEntry
-	42, // 49: config.HPCBackend.ReconcileRate:type_name -> google.protobuf.Duration
+	41, // 47: config.ContainerConfig.Env:type_name -> config.ContainerConfig.EnvEntry
+	42, // 48: config.ContainerConfig.Tags:type_name -> config.ContainerConfig.TagsEntry
+	45, // 49: config.HPCBackend.ReconcileRate:type_name -> google.protobuf.Duration
 	5,  // 50: config.MongoDB.Timeout:type_name -> config.TimeoutConfig
 	5,  // 51: config.Postgres.Timeout:type_name -> config.TimeoutConfig
-	42, // 52: config.AWSBatch.ReconcileRate:type_name -> google.protobuf.Duration
+	45, // 52: config.AWSBatch.ReconcileRate:type_name -> google.protobuf.Duration
 	21, // 53: config.AWSBatch.AWSConfig:type_name -> config.AWSConfig
-	42, // 54: config.GCPBatch.ReconcileRate:type_name -> google.protobuf.Duration
+	45, // 54: config.GCPBatch.ReconcileRate:type_name -> google.protobuf.Duration
 	23, // 55: config.GCPBatch.GCPBatch:type_name -> config.GCPBatch
 	21, // 56: config.DynamoDB.AWSConfig:type_name -> config.AWSConfig
 	28, // 57: config.AmazonS3Storage.SSE:type_name -> config.SSE
 	21, // 58: config.AmazonS3Storage.AWSConfig:type_name -> config.AWSConfig
 	5,  // 59: config.HTTPStorage.Timeout:type_name -> config.TimeoutConfig
 	5,  // 60: config.FTPStorage.Timeout:type_name -> config.TimeoutConfig
-	42, // 61: config.Kubernetes.ReconcileRate:type_name -> google.protobuf.Duration
-	40, // 62: config.Kubernetes.NodeSelector:type_name -> config.Kubernetes.NodeSelectorEntry
-	35, // 63: config.Kubernetes.Tolerations:type_name -> config.Toleration
-	64, // [64:64] is the sub-list for method output_type
-	64, // [64:64] is the sub-list for method input_type
-	64, // [64:64] is the sub-list for extension type_name
-	64, // [64:64] is the sub-list for extension extendee
-	0,  // [0:64] is the sub-list for field type_name
+	45, // 61: config.Kubernetes.ReconcileRate:type_name -> google.protobuf.Duration
+	43, // 62: config.Kubernetes.NodeSelector:type_name -> config.Kubernetes.NodeSelectorEntry
+	38, // 63: config.Kubernetes.Tolerations:type_name -> config.Toleration
+	35, // 64: config.Kubernetes.Resources:type_name -> config.KubernetesResources
+	36, // 65: config.KubernetesResources.Defaults:type_name -> config.ResourceDefaults
+	37, // 66: config.KubernetesResources.Limits:type_name -> config.ResourceLimits
+	67, // [67:67] is the sub-list for method output_type
+	67, // [67:67] is the sub-list for method input_type
+	67, // [67:67] is the sub-list for extension type_name
+	67, // [67:67] is the sub-list for extension extendee
+	0,  // [0:67] is the sub-list for field type_name
 }
 
 func init() { file_config_config_proto_init() }
@@ -3436,14 +3638,14 @@ func file_config_config_proto_init() {
 		(*TimeoutConfig_Duration)(nil),
 		(*TimeoutConfig_Disabled)(nil),
 	}
-	file_config_config_proto_msgTypes[35].OneofWrappers = []any{}
+	file_config_config_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_config_config_proto_rawDesc), len(file_config_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   41,
+			NumMessages:   44,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

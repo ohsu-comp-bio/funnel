@@ -55,6 +55,8 @@ type Executor struct {
 	NodeSelector map[string]string
 	// Tolerations for scheduling jobs onto specific nodes
 	Tolerations []map[string]interface{}
+	// Resources specifies the default resource requirements for Kubernetes jobs.
+	Resources *config.KubernetesResources
 }
 
 // Run runs the Worker.
@@ -208,6 +210,9 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			var taskCommand TaskCommand
 
 			if r.Executor.Backend == "kubernetes" {
+				resources = config.ApplyDefaultResources(resources, r.Executor.Resources)
+				resourceLimits := config.GetResourceLimits(r.Executor.Resources)
+
 				taskCommand = &KubernetesCommand{
 					TaskId:         task.Id,
 					JobId:          i,
@@ -216,6 +221,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					Namespace:      r.Executor.Namespace,
 					JobsNamespace:  r.Executor.JobsNamespace,
 					Resources:      resources,
+					ResourceLimits: resourceLimits,
 					Command:        command,
 					NeedsPVC:       len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
 					NodeSelector:   r.Executor.NodeSelector,
@@ -268,11 +274,19 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 
 				if err != nil {
 					// Check if it's a Kubernetes system error
+					// TODO: Change this to check the exit code
 					var k8sSystemErr *K8sSystemErr
-					if errors.As(err, &k8sSystemErr) {
+					var execErr *K8sExecutorErr
+
+					switch {
+					// K8s System error
+					case errors.As(err, &k8sSystemErr):
 						run.syserr = err
-					} else {
-						// Otherwise it's an executor error (including KubernetesExitError)
+					// K8s Executor error
+					case errors.As(err, &execErr):
+						run.execerr = err
+					// Local (Docker) Executor error
+					default:
 						run.execerr = err
 					}
 				}

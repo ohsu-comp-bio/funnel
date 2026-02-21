@@ -30,6 +30,7 @@ type KubernetesCommand struct {
 	NodeSelector   map[string]string
 	Tolerations    []map[string]interface{}
 	Resources      *tes.Resources
+	ResourceLimits *tes.Resources
 	ServiceAccount string
 	NeedsPVC       bool
 	Clientset      kubernetes.Interface
@@ -111,6 +112,9 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"Cpus":               kcmd.Resources.CpuCores,
 		"RamGb":              kcmd.Resources.RamGb,
 		"DiskGb":             kcmd.Resources.DiskGb,
+		"CpusLimit":          kcmd.ResourceLimits.CpuCores,
+		"RamGbLimit":         kcmd.ResourceLimits.RamGb,
+		"DiskGbLimit":        kcmd.ResourceLimits.DiskGb,
 		"Image":              kcmd.Image,
 		"NeedsPVC":           kcmd.NeedsPVC,
 		"ServiceAccountName": kcmd.ServiceAccount,
@@ -228,6 +232,12 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	exitCode := int(cStatus.State.Terminated.ExitCode)
 	reason := cStatus.State.Terminated.Reason
 	message := cStatus.State.Terminated.Message
+
+	logger.Debug("Container terminated",
+		"exitCode", exitCode,
+		"reason", reason,
+		"message", message,
+		"jobName", job.Name)
 
 	if exitCode != 0 {
 		jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)

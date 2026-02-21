@@ -115,8 +115,9 @@ message Scheduler {
   TimeoutConfig NodeDeadTimeout = 5;
 }
 
+// Resources describes the CPU, RAM, and disk resources required by a task.
 message Resources {
-    uint32 Cpus = 1;
+    double Cpus = 1;
     double RamGb = 2;
     double DiskGb = 3;
 }
@@ -353,6 +354,29 @@ message Kubernetes {
   // https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes/#create-a-pod-that-gets-scheduled-to-your-chosen-node
   map<string, string> NodeSelector = 16;
   repeated Toleration Tolerations = 17;
+
+  // Optional Kubernetes resource defaults and limits for tasks running on the Kubernetes backend.
+  KubernetesResources Resources = 18;
+}
+
+// KubernetesResources describes default and maximum resource limits for Kubernetes tasks.
+message KubernetesResources {
+  ResourceDefaults Defaults = 1;
+  ResourceLimits Limits = 2;
+}
+
+// ResourceDefaults describes default and maximum resource limits for tasks.
+message ResourceDefaults {
+    string Cpus = 1;
+    string RamGb = 2;
+    string DiskGb = 3;
+}
+
+// ResourceLimits describes maximum resource limits for tasks.
+message ResourceLimits {
+    string Cpus = 1;
+    string RamGb = 2;
+    string DiskGb = 3;
 }
 
 // Kubernetes toleration

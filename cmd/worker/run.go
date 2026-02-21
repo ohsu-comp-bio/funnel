@@ -30,8 +30,6 @@ func Run(ctx context.Context, conf *config.Config, log *logger.Logger, opts *Opt
 
 // NewWorker returns a new Funnel worker based on the given config.
 func NewWorker(ctx context.Context, conf *config.Config, log *logger.Logger, opts *Options) (*worker.DefaultWorker, error) {
-	log.Debug("NewWorker", "config", conf)
-
 	err := validateConfig(conf, opts)
 	if err != nil {
 		return nil, fmt.Errorf("validating config: %v", err)
@@ -82,6 +80,7 @@ func NewWorker(ctx context.Context, conf *config.Config, log *logger.Logger, opt
 		executor.Namespace = conf.Kubernetes.Namespace
 		executor.JobsNamespace = conf.Kubernetes.JobsNamespace
 		executor.ServiceAccount = conf.Kubernetes.ServiceAccount
+		executor.Resources = conf.Kubernetes.Resources
 	}
 
 	return &worker.DefaultWorker{

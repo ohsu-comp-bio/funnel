@@ -860,8 +860,8 @@
           "type": "boolean"
         },
         "cpuCores": {
-          "type": "integer",
-          "format": "int32"
+          "type": "number",
+          "format": "double"
         },
         "diskGb": {
           "type": "number",

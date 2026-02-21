@@ -194,12 +194,9 @@
         "Kubernetes": {
           "$ref": "#/definitions/configKubernetes"
         },
-<<<<<<< HEAD
-=======
         "GCPBatch": {
           "$ref": "#/definitions/configGCPBatch"
         },
->>>>>>> origin/develop
         "LocalStorage": {
           "$ref": "#/definitions/configLocalStorage",
           "title": "Storage"
@@ -357,8 +354,6 @@
       },
       "description": "FTPStorage configures the FTP storage backend."
     },
-<<<<<<< HEAD
-=======
     "configGCPBatch": {
       "type": "object",
       "properties": {
@@ -383,7 +378,6 @@
       },
       "description": "GCPBatch describes the configuration for the GCP Batch compute backend."
     },
->>>>>>> origin/develop
     "configGenericS3Storage": {
       "type": "object",
       "properties": {
@@ -544,9 +538,25 @@
             "type": "object",
             "$ref": "#/definitions/configToleration"
           }
+        },
+        "Resources": {
+          "$ref": "#/definitions/configKubernetesResources",
+          "description": "Optional Kubernetes resource defaults and limits for tasks running on the Kubernetes backend."
         }
       },
       "description": "Kubernetes describes the configuration for the Kubernetes compute backend."
+    },
+    "configKubernetesResources": {
+      "type": "object",
+      "properties": {
+        "Defaults": {
+          "$ref": "#/definitions/configResourceDefaults"
+        },
+        "Limits": {
+          "$ref": "#/definitions/configResourceLimits"
+        }
+      },
+      "description": "KubernetesResources describes default and maximum resource limits for Kubernetes tasks."
     },
     "configLocalStorage": {
       "type": "object",
@@ -717,12 +727,42 @@
       },
       "description": "RPCClient describes configuration for gRPC clients."
     },
+    "configResourceDefaults": {
+      "type": "object",
+      "properties": {
+        "Cpus": {
+          "type": "string"
+        },
+        "RamGb": {
+          "type": "string"
+        },
+        "DiskGb": {
+          "type": "string"
+        }
+      },
+      "description": "ResourceDefaults describes default and maximum resource limits for tasks."
+    },
+    "configResourceLimits": {
+      "type": "object",
+      "properties": {
+        "Cpus": {
+          "type": "string"
+        },
+        "RamGb": {
+          "type": "string"
+        },
+        "DiskGb": {
+          "type": "string"
+        }
+      },
+      "description": "ResourceLimits describes maximum resource limits for tasks."
+    },
     "configResources": {
       "type": "object",
       "properties": {
         "Cpus": {
-          "type": "integer",
-          "format": "int64"
+          "type": "number",
+          "format": "double"
         },
         "RamGb": {
           "type": "number",
@@ -732,7 +772,8 @@
           "type": "number",
           "format": "double"
         }
-      }
+      },
+      "description": "Resources describes the CPU, RAM, and disk resources required by a task."
     },
     "configSSE": {
       "type": "object",
@@ -1175,8 +1216,8 @@
           "type": "boolean"
         },
         "cpuCores": {
-          "type": "integer",
-          "format": "int32"
+          "type": "number",
+          "format": "double"
         },
         "diskGb": {
           "type": "number",

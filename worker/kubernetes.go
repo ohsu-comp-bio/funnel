@@ -5,11 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"text/template"
-	"time"
 
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +30,7 @@ type KubernetesCommand struct {
 	NodeSelector   map[string]string
 	Tolerations    []map[string]interface{}
 	Resources      *tes.Resources
+	ResourceLimits *tes.Resources
 	ServiceAccount string
 	NeedsPVC       bool
 	Clientset      kubernetes.Interface
@@ -45,6 +45,36 @@ func shellQuote(s string) string {
 	return "\"" + strings.ReplaceAll(s, "'", `\\'`) + "\""
 }
 
+type K8sExecutorErr struct {
+	ExitCode int
+	Reason   string
+	Message  string
+	JobName  string
+}
+
+type K8sSystemErr struct {
+	Reason  string
+	Message string
+	Err     error
+	error
+}
+
+func (e *K8sExecutorErr) Error() string {
+	return fmt.Sprintf("executor job %s failed with exit code %d (%s): %s",
+		e.JobName, e.ExitCode, e.Reason, e.Message)
+}
+
+func (e *K8sSystemErr) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("kubernetes system error (%s): %s: %v", e.Reason, e.Message, e.Err)
+	}
+	return fmt.Sprintf("kubernetes system error (%s): %s", e.Reason, e.Message)
+}
+
+func (e *K8sSystemErr) Unwrap() error {
+	return e.Err
+}
+
 // Create the Executor K8s job from kubernetes-executor-template.yaml
 // Funnel Worker job is created in compute/kubernetes/backend.go#CreateResources
 func (kcmd KubernetesCommand) Run(ctx context.Context) error {
@@ -52,13 +82,14 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	tpl, err := template.New(taskId).Parse(kcmd.TaskTemplate)
 
 	if err != nil {
-		return err
+		return &K8sSystemErr{
+			Reason:  "TemplateParsingFailed",
+			Message: "Failed to parse task template",
+			Err:     err,
+		}
 	}
 
 	var cmd = kcmd.ShellCommand
-	if len(cmd) == 0 {
-		return fmt.Errorf("Funnel Worker: No command specified for Executor.")
-	}
 
 	if kcmd.StdinFile != "" {
 		cmd = append(cmd, "<", kcmd.StdinFile)
@@ -81,144 +112,172 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"Cpus":               kcmd.Resources.CpuCores,
 		"RamGb":              kcmd.Resources.RamGb,
 		"DiskGb":             kcmd.Resources.DiskGb,
+		"CpusLimit":          kcmd.ResourceLimits.CpuCores,
+		"RamGbLimit":         kcmd.ResourceLimits.RamGb,
+		"DiskGbLimit":        kcmd.ResourceLimits.DiskGb,
 		"Image":              kcmd.Image,
 		"NeedsPVC":           kcmd.NeedsPVC,
 		"ServiceAccountName": kcmd.ServiceAccount,
 	}
 
+	logger.Debug("Creating executor job from template", "template", kcmd.TaskTemplate, "data", templateData)
 	var buf bytes.Buffer
 	err = tpl.Execute(&buf, templateData)
-
 	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to execute job template: %v", err)
+		return &K8sSystemErr{
+			Reason:  "TemplateExecutionFailed",
+			Message: "Failed to execute task template",
+			Err:     err,
+		}
 	}
 
+	logger.Debug("Decoding job template", "template", buf.String())
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return fmt.Errorf("Funnel Worker: failed to decode job template: %v", err)
+		return &K8sSystemErr{
+			Reason:  "JobCreationFailed",
+			Message: "Failed to create Kubernetes job (check templates, RBAC, resources)",
+			Err:     err,
+		}
 	}
 
 	job, ok := obj.(*v1.Job)
 	if !ok {
-		return fmt.Errorf("Funnel Worker: decoded object is not a Job")
+		return &K8sSystemErr{
+			Reason:  "JobCreationFailed",
+			Message: "Decoded object is not a Job",
+			Err:     fmt.Errorf("decoded object is not a Job"),
+		}
 	}
 
+	logger.Debug("Creating Kubernetes clientset", "clientset", kcmd.Clientset)
 	clientset := kcmd.Clientset
 	if clientset == nil {
+		logger.Debug("No Kubernetes clientset provided, creating in-cluster clientset")
 		var err error
 
 		clientset, err = getKubernetesClientset()
 		if err != nil {
-			return fmt.Errorf("Funnel Worker: failed to get Kubernetes clientset: %v", err)
-		}
-	}
-
-	var client = clientset.BatchV1().Jobs(kcmd.JobsNamespace)
-
-	_, err = client.Create(ctx, job, metav1.CreateOptions{})
-
-	// TODO: move maxRetries (and interval duration) to config
-	var maxRetries = 5
-	var interval = 2 * time.Second
-
-	// Retry creating the Executor Pod on failure
-	if err != nil {
-		var retryCount int
-		for retryCount < maxRetries {
-			_, err = client.Create(ctx, job, metav1.CreateOptions{})
-			if err == nil {
-				break
+			return &K8sSystemErr{
+				Reason:  "ClientsetCreationFailed",
+				Message: "Failed to get Kubernetes clientset",
+				Err:     err,
 			}
-			retryCount++
-			time.Sleep(interval)
-		}
-		if retryCount == maxRetries {
-			return fmt.Errorf("Funnel Worker: Failed to create Executor Job after %v attempts: %v", maxRetries, err)
 		}
 	}
 
-	// Wait until the job finishes
-	watcher, err := client.Watch(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
-	defer watcher.Stop()
-	waitForJobFinish(ctx, watcher)
-
-	// Get Executor Pod name in order to stream logs from Executor to Worker stdout
-	pods, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId)})
+	logger.Debug("Creating Kubernetes job", "jobName", job.Name, "namespace", kcmd.JobsNamespace)
+	var client = clientset.BatchV1().Jobs(kcmd.JobsNamespace)
+	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to list pods for executor job: %v", err)
-	}
-
-	for _, v := range pods.Items {
-		// Wait for the pod to reach Running state
-		// If an executor finishes by the time this is hit, currently Funnel is throwing `Error waiting for pod`
-		// as Executor Error.
-		// This is incorrect, with the expected behavior being Funnel "fetching" Executor state
-		pod, err := waitForPodRunning(ctx, kcmd.JobsNamespace, v.Name, 5*time.Minute)
-		if err != nil {
-			log.Fatalf("Error waiting for pod: %v", err)
-		}
-
-		// Stream logs from the running pod
-		err = streamPodLogs(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout)
-		if err != nil {
-			log.Fatalf("Error streaming logs: %v", err)
+		return &K8sSystemErr{
+			Reason:  "JobCreationFailed",
+			Message: "Failed to create Kubernetes job",
+			Err:     err,
 		}
 	}
 
-	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
-
-	j, err := client.Get(ctx, jobName, metav1.GetOptions{})
+	logger.Debug("Job created successfully, waiting for pod to be running", "jobName", job.Name)
+	podWatcher, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).Watch(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId),
+	})
 	if err != nil {
-		return fmt.Errorf("failed to retrieve final status for executor job %s: %v", jobName, err)
+		return &K8sSystemErr{
+			Reason:  "PodWatcherCreationFailed",
+			Message: "Failed to create pod watcher",
+			Err:     err,
+		}
+	}
+	defer podWatcher.Stop()
+
+	logger.Debug("Waiting for pod to finish", "jobName", job.Name)
+	pod, err := waitForPodFinish(ctx, podWatcher)
+	if err != nil {
+		return &K8sSystemErr{
+			Reason:  "PodWaitFailed",
+			Message: "Error waiting for pod to finish",
+			Err:     err,
+		}
 	}
 
-	if j.Status.Failed > 0 {
-		return fmt.Errorf("executor job %s failed with %d failures", jobName, j.Status.Failed)
+	logger.Debug("Streaming pod logs", "podName", pod.Name)
+	err = streamPodLogs(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout, kcmd.Stderr)
+	if err != nil {
+		return &K8sSystemErr{
+			Reason:  "LogStreamingFailed",
+			Message: fmt.Sprintf("Failed to stream logs from pod %s", pod.Name),
+			Err:     err,
+		}
+	}
+
+	if len(pod.Status.ContainerStatuses) == 0 {
+		return &K8sSystemErr{
+			Reason:  "NoContainerStatuses",
+			Message: fmt.Sprintf("No container statuses found for pod %s", pod.Name),
+			Err:     fmt.Errorf("no container statuses found"),
+		}
+	}
+
+	// TODO: Review effects (e.g. does this cover all Executors?)
+	cStatus := pod.Status.ContainerStatuses[0]
+	if cStatus.State.Terminated == nil {
+		return &K8sSystemErr{
+			Reason:  "ContainerNotTerminated",
+			Message: fmt.Sprintf("executor job %s: container not in terminated state", job.Name),
+			Err:     fmt.Errorf("container not in terminated state"),
+		}
+	}
+
+	exitCode := int(cStatus.State.Terminated.ExitCode)
+	reason := cStatus.State.Terminated.Reason
+	message := cStatus.State.Terminated.Message
+
+	logger.Debug("Container terminated",
+		"exitCode", exitCode,
+		"reason", reason,
+		"message", message,
+		"jobName", job.Name)
+
+	if exitCode != 0 {
+		jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
+		return &K8sExecutorErr{
+			ExitCode: exitCode,
+			Reason:   reason,
+			Message:  message,
+			JobName:  jobName,
+		}
 	}
 
 	return nil
 }
 
-func waitForPodRunning(ctx context.Context, namespace string, podName string, timeout time.Duration) (*corev1.Pod, error) {
-	clientset, err := getKubernetesClientset()
-	if err != nil {
-		return nil, fmt.Errorf("failed getting kubernetes clientset: %v", err)
-	}
-
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	timeoutCh := time.After(timeout)
-
-	for {
-		select {
-		case <-timeoutCh:
-			return nil, fmt.Errorf("timed out waiting for pod %s to be in running state", podName)
-		case <-ticker.C:
-			pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
-			if err != nil {
-				return nil, fmt.Errorf("getting pod %s: %v", podName, err)
-			}
-
-			return pod, nil
-		}
-	}
-}
-
-func streamPodLogs(ctx context.Context, namespace string, podName string, stdout io.Writer) error {
+// streamPodLogs streams logs from a pod regardless of its state
+// This works for Running, Succeeded, and Failed pods (as long as they haven't been deleted)
+func streamPodLogs(ctx context.Context, namespace string, podName string, stdout io.Writer, stderr io.Writer) error {
 	clientset, err := getKubernetesClientset()
 	if err != nil {
 		return fmt.Errorf("getting kubernetes clientset: %v", err)
 	}
 
-	req := clientset.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{})
+	// Get logs from any pod state - Kubernetes API supports fetching logs from terminated pods
+	// Follow=true ensures we stream logs until the pod completely finishes (closes the stream),
+	// catching the final error logs that might be missed due to race conditions.
+	req := clientset.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{
+		Follow: true,
+	})
+
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
-		return fmt.Errorf("streaming logs: %v", err)
+		return fmt.Errorf("streaming logs from pod %s: %v", podName, err)
 	}
 	defer podLogs.Close()
 
+	// K8s merges stdout and stderr in the stream unless specialized handling is used.
+	// We write everything to stdout for now, as separating them reliably requires handling the Docker log format
+	// or similar, which might depend on the runtime.
+	// If the user provided a stderr writer, we could write to it, but writing the whole merged stream to both
+	// would likely be duplicated or confusing.
 	_, err = io.Copy(stdout, podLogs)
 	return err
 }
@@ -253,20 +312,34 @@ func (kcmd KubernetesCommand) GetStderr() io.Writer {
 }
 
 // Waits until the job finishes
-func waitForJobFinish(ctx context.Context, watcher watch.Interface) {
+func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod, error) {
 	for {
 		select {
 		case event := <-watcher.ResultChan():
-			job := event.Object.(*v1.Job)
+			if event.Object == nil {
+				return nil, fmt.Errorf("received nil pod object from watcher")
+			}
 
-			if job.Status.Succeeded > 0 || job.Status.Failed > 0 {
-				return
-			} else if event.Type == watch.Deleted {
-				return
+			pod, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				continue
+			}
+
+			// Check if container is terminated
+			if len(pod.Status.ContainerStatuses) > 0 {
+				cStatus := pod.Status.ContainerStatuses[0]
+				if cStatus.State.Terminated != nil {
+					return pod, nil
+				}
+			}
+
+			// Handle pod deletion
+			if event.Type == watch.Deleted {
+				return nil, fmt.Errorf("pod was deleted before container terminated")
 			}
 
 		case <-ctx.Done():
-			return
+			return nil, fmt.Errorf("context cancelled while waiting for pod termination")
 		}
 	}
 }

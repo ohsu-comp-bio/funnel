@@ -96,7 +96,6 @@ func (b *Backend) Close() {}
 func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()
 
-	// TODO: b.conf will need to be updated after authentication
 	w, err := workerCmd.NewWorker(ctx, b.conf, b.log, &workerCmd.Options{
 		TaskID: task.Id,
 	})

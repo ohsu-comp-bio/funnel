@@ -82,7 +82,7 @@ func (NodeState) EnumDescriptor() ([]byte, []int) {
 
 type Resources struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Cpus  uint32                 `protobuf:"varint,1,opt,name=cpus,proto3" json:"cpus,omitempty"`
+	Cpus  float64                `protobuf:"fixed64,1,opt,name=cpus,proto3" json:"cpus,omitempty"`
 	// In GB
 	RamGb float64 `protobuf:"fixed64,2,opt,name=ram_gb,json=ramGb,proto3" json:"ram_gb,omitempty"`
 	// In GB
@@ -121,7 +121,7 @@ func (*Resources) Descriptor() ([]byte, []int) {
 	return file_compute_scheduler_scheduler_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Resources) GetCpus() uint32 {
+func (x *Resources) GetCpus() float64 {
 	if x != nil {
 		return x.Cpus
 	}
@@ -469,7 +469,7 @@ const file_compute_scheduler_scheduler_proto_rawDesc = "" +
 	"\n" +
 	"!compute/scheduler/scheduler.proto\x12\tscheduler\x1a\x1cgoogle/api/annotations.proto\"O\n" +
 	"\tResources\x12\x12\n" +
-	"\x04cpus\x18\x01 \x01(\rR\x04cpus\x12\x15\n" +
+	"\x04cpus\x18\x01 \x01(\x01R\x04cpus\x12\x15\n" +
 	"\x06ram_gb\x18\x02 \x01(\x01R\x05ramGb\x12\x17\n" +
 	"\adisk_gb\x18\x03 \x01(\x01R\x06diskGb\"\xc6\x03\n" +
 	"\x04Node\x12\x0e\n" +

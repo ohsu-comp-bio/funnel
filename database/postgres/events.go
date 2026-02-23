@@ -36,7 +36,6 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 					EndTime:   "",
 					Stdout:    "",
 					Stderr:    "",
-					ExitCode:  -1,
 				}
 			}
 
@@ -192,8 +191,6 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		fmt.Println("DEBUG: jsonVal:", string(jsonVal))
 		_, err := db.client.Exec(ctx, updateSQL, jsonPath, jsonVal, selector)
 
-		// Run
-
 		// Log error
 		logger.Error("Postgres WriteEvent", "Error", err)
 		fmt.Println("DEBUG: Postgres WriteEvent error:", err)
@@ -205,12 +202,12 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		logValue := req.SysLogString()
 
 		selectSQL := `
-            SELECT data -> $1 -> 'system_logs' 
+            SELECT data #> '{logs,0,system_logs}' 
             FROM tasks
-            WHERE id = $2
+            WHERE id = $1
         `
 		var currentLogsJSON []byte
-		err := db.client.QueryRow(ctx, selectSQL, "logs", selector).Scan(&currentLogsJSON)
+		err := db.client.QueryRow(ctx, selectSQL, selector).Scan(&currentLogsJSON)
 		if err != nil {
 			return fmt.Errorf("failed to read current system logs for task %s: %w", selector, err)
 		}
@@ -223,8 +220,10 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		}
 
 		currentLogs = append(currentLogs, logValue)
+		fmt.Printf("DEBUG: System logs for task %s: adding '%s', total count: %d\n", selector, logValue, len(currentLogs))
 
 		newLogsJSON, _ := json.Marshal(currentLogs)
+		fmt.Printf("DEBUG: Updated system logs JSON: %s\n", string(newLogsJSON))
 
 		updateSQL := `
             UPDATE tasks

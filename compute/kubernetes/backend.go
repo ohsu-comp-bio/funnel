@@ -91,7 +91,6 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
 	var taskConfig *config.Config = b.conf
-	b.log.Debug("taskConfig", "before plugin", taskConfig)
 	if b.conf.Plugins != nil {
 		resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 		if !ok {
@@ -104,7 +103,6 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
 		}
 	}
-	b.log.Debug("taskConfig", "after plugin", taskConfig)
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:
@@ -164,19 +162,15 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 
 // createResources creates the resources needed for a task.
 func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
-	b.log.Debug("createResources", "config", config)
-
 	// If the task has inputs or outputs that must be taken care of create a PVC
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
 		// Check to make sure required configs are present
-		b.log.Debug("createResources", "conf", config.GenericS3)
 		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
 			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
 			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
 		}
-		b.log.Debug("createResources GenericS3 config", "GenericS3", config.GenericS3)
 
 		// Create PV
 		err := resources.CreatePV(task.Id,

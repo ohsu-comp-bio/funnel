@@ -56,7 +56,7 @@ func SubtractResources(t *tes.Task, in *Resources) *Resources {
 
 	// Cpus are represented by an unsigned int, and if we blindly
 	// subtract it will rollover to a very large number. So check first.
-	rcpus := float64(tres.GetCpuCores())
+	rcpus := uint32(tres.GetCpuCores())
 	if rcpus >= out.Cpus {
 		out.Cpus = 0
 	} else {

@@ -921,7 +921,7 @@ func (x *Scheduler) GetNodeDeadTimeout() *TimeoutConfig {
 // Resources describes the CPU, RAM, and disk resources required by a task.
 type Resources struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cpus          float64                `protobuf:"fixed64,1,opt,name=Cpus,proto3" json:"Cpus,omitempty"`
+	Cpus          uint32                 `protobuf:"varint,1,opt,name=Cpus,proto3" json:"Cpus,omitempty"`
 	RamGb         float64                `protobuf:"fixed64,2,opt,name=RamGb,proto3" json:"RamGb,omitempty"`
 	DiskGb        float64                `protobuf:"fixed64,3,opt,name=DiskGb,proto3" json:"DiskGb,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -958,7 +958,7 @@ func (*Resources) Descriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *Resources) GetCpus() float64 {
+func (x *Resources) GetCpus() uint32 {
 	if x != nil {
 		return x.Cpus
 	}
@@ -3284,7 +3284,7 @@ const file_config_config_proto_rawDesc = "" +
 	"\x0fNodeInitTimeout\x18\x04 \x01(\v2\x15.config.TimeoutConfigR\x0fNodeInitTimeout\x12?\n" +
 	"\x0fNodeDeadTimeout\x18\x05 \x01(\v2\x15.config.TimeoutConfigR\x0fNodeDeadTimeout\"M\n" +
 	"\tResources\x12\x12\n" +
-	"\x04Cpus\x18\x01 \x01(\x01R\x04Cpus\x12\x14\n" +
+	"\x04Cpus\x18\x01 \x01(\rR\x04Cpus\x12\x14\n" +
 	"\x05RamGb\x18\x02 \x01(\x01R\x05RamGb\x12\x16\n" +
 	"\x06DiskGb\x18\x03 \x01(\x01R\x06DiskGb\"\xa8\x02\n" +
 	"\x04Node\x12\x0e\n" +

@@ -761,8 +761,8 @@
       "type": "object",
       "properties": {
         "Cpus": {
-          "type": "number",
-          "format": "double"
+          "type": "integer",
+          "format": "int64"
         },
         "RamGb": {
           "type": "number",
@@ -1216,8 +1216,8 @@
           "type": "boolean"
         },
         "cpuCores": {
-          "type": "number",
-          "format": "double"
+          "type": "integer",
+          "format": "int32"
         },
         "diskGb": {
           "type": "number",

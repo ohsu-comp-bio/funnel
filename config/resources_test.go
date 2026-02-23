@@ -15,13 +15,13 @@ func almostEqual(a, b float64) bool {
 func TestParseCpus(t *testing.T) {
 	tests := []struct {
 		input   string
-		want    float64
+		want    int32
 		wantErr bool
 	}{
 		{"", 0, false},
-		{"100m", 0.1, false},
-		{"500m", 0.5, false},
-		{"1.5", 1.5, false},
+		{"100m", 1, false},
+		{"500m", 1, false},
+		{"1.5", 2, false},
 		{"2", 2, false},
 		{"1e3", 1000, false}, // Scientific notation support
 		{"invalid", 0, true},
@@ -34,7 +34,7 @@ func TestParseCpus(t *testing.T) {
 				t.Errorf("ParseCpus(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 				return
 			}
-			if !almostEqual(got, tt.want) {
+			if got != tt.want {
 				t.Errorf("ParseCpus(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
@@ -65,7 +65,7 @@ func TestParseMemory(t *testing.T) {
 				t.Errorf("ParseMemory(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 				return
 			}
-			if !almostEqual(got, tt.want) {
+			if got != tt.want {
 				t.Errorf("ParseMemory(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
@@ -92,15 +92,15 @@ func TestApplyDefaultResources(t *testing.T) {
 		}
 		got := ApplyDefaultResources(task, k8sMilli)
 
-		// 500m should be 0.5 cores
-		if !almostEqual(got.CpuCores, 0.5) {
-			t.Errorf("CpuCores = %v, want 0.5", got.CpuCores)
+		// 500m should be 1 core
+		if got.CpuCores != 1 {
+			t.Errorf("CpuCores = %v, want 1", got.CpuCores)
 		}
-		// 512Mi should be 0.5 GB
-		if !almostEqual(got.RamGb, 0.5) {
-			t.Errorf("RamGb = %v, want 0.5", got.RamGb)
+		// 512Mi should be 1 GB
+		if got.RamGb != 1 {
+			t.Errorf("RamGb = %v, want 1", got.RamGb)
 		}
-		if !almostEqual(got.DiskGb, 1.0) {
+		if got.DiskGb != 1 {
 			t.Errorf("DiskGb = %v, want 1", got.DiskGb)
 		}
 	})

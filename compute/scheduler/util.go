@@ -48,7 +48,7 @@ func detectResources(conf *config.Node, workdir string) (*Resources, error) {
 		//      runtime.NumCPU() and pscpu.Counts() return 8
 		//      on my 4-core mac laptop
 		for _, cpu := range cpuinfo {
-			res.Cpus += float64(cpu.Cores)
+			res.Cpus += uint32(cpu.Cores)
 		}
 	}
 

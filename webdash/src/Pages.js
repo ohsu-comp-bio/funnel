@@ -325,6 +325,13 @@ function ServiceInfo() {
       displayDataTypes={false}
       enableClipboard={true}
       collapsed={false}
+      shouldCollapse={(field) => {
+        // Collapse executors.*.env fields
+        if (field.name === "env" && field.namespace.includes("executors")) {
+          return true;
+        }
+        return false;
+      }}
     />
   );
 

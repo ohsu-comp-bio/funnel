@@ -14,7 +14,6 @@ import (
 	"cloud.google.com/go/logging"
 	logadmin "cloud.google.com/go/logging/apiv2"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	shellquote "github.com/kballard/go-shellquote"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -177,25 +176,15 @@ func detectPathCollisions(inputs []*tes.Input, outputs []*tes.Output) error {
 func (b *Backend) Submit(task *tes.Task) error {
 	ctx := context.Background()
 
-	// Validate all input and output paths
-	for _, input := range task.Inputs {
-		if err := validatePath(input.Path); err != nil {
-			return fmt.Errorf("invalid input path: %w", err)
-		}
-	}
-	for _, output := range task.Outputs {
-		if err := validatePath(output.Path); err != nil {
-			return fmt.Errorf("invalid output path: %w", err)
-		}
-	}
-
-	// Check for path collisions
-	if err := detectPathCollisions(task.Inputs, task.Outputs); err != nil {
-		return fmt.Errorf("path collision error: %w", err)
-	}
-
 	// 1. Identify all unique buckets used by the task
 	buckets := make(map[string]bool)
+	extractBucketName := func(url string) string {
+		if strings.HasPrefix(url, "gs://") {
+			parts := strings.SplitN(strings.TrimPrefix(url, "gs://"), "/", 2)
+			return parts[0]
+		}
+		return ""
+	}
 
 	for _, input := range task.Inputs {
 		if bucket := extractBucketName(input.Url); bucket != "" {
@@ -226,88 +215,18 @@ func (b *Backend) Submit(task *tes.Task) error {
 	var runnables []*batchpb.Runnable
 
 	for _, executor := range task.Executors {
-		// Build input symlink commands
-		var inputCmds []string
-		for _, input := range task.Inputs {
-			if input.Url == "" || input.Path == "" {
-				continue
-			}
-			bucket, objectPath := extractGCSPath(input.Url)
-			if bucket == "" {
-				continue // Skip non-GCS URLs
-			}
-
-			mountPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
-			// Shell-escape paths for safety
-			escapedInputPath := shellquote.Join(input.Path)
-			escapedMountPath := shellquote.Join(mountPath)
-
-			// Create parent directory and symlink
-			inputCmds = append(inputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", escapedInputPath))
-			inputCmds = append(inputCmds, fmt.Sprintf("ln -sf %s %s", escapedMountPath, escapedInputPath))
-		}
-
-		// Build output symlink commands
-		var outputCmds []string
-		for _, output := range task.Outputs {
-			if output.Url == "" || output.Path == "" {
-				continue
-			}
-			bucket, objectPath := extractGCSPath(output.Url)
-			if bucket == "" {
-				continue // Skip non-GCS URLs
-			}
-
-			mountPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
-			// Shell-escape paths for safety
-			escapedOutputPath := shellquote.Join(output.Path)
-			escapedMountPath := shellquote.Join(mountPath)
-
-			// Create parent directory in mount and symlink output path to it
-			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", escapedMountPath))
-			outputCmds = append(outputCmds, fmt.Sprintf("mkdir -p $(dirname %s)", escapedOutputPath))
-			outputCmds = append(outputCmds, fmt.Sprintf("ln -sf %s %s", escapedMountPath, escapedOutputPath))
-		}
-
-		// Build the full command - executor.Command is already a proper command array
-		// We need to wrap it as a subshell to execute properly
-		var executorCmd string
-		if len(executor.Command) > 0 {
-			// Use shellquote.Join to properly escape arguments with spaces/quotes
-			executorCmd = shellquote.Join(executor.Command...)
-		}
+		cmd := strings.Join(executor.Command, " ")
 
 		if executor.Stdout != "" {
 			// Redirect command output to the specified file path
-			executorCmd = fmt.Sprintf("(%s) | tee %s", executorCmd, executor.Stdout)
-		} else {
-			// Wrap in subshell for proper execution
-			executorCmd = fmt.Sprintf("(%s)", executorCmd)
+			cmd = fmt.Sprintf("%s | tee %s", cmd, executor.Stdout)
 		}
-
-		// Combine: input setup + output setup + executor command
-		var fullCmd string
-		allCmds := []string{}
-
-		if len(inputCmds) > 0 {
-			allCmds = append(allCmds, "echo '=== Setting up input symlinks ==='")
-			allCmds = append(allCmds, inputCmds...)
-		}
-
-		if len(outputCmds) > 0 {
-			allCmds = append(allCmds, "echo '=== Setting up output symlinks ==='")
-			allCmds = append(allCmds, outputCmds...)
-		}
-
-		allCmds = append(allCmds, executorCmd)
-
-		fullCmd = strings.Join(allCmds, " && ")
 
 		runnable := &batchpb.Runnable{
 			Executable: &batchpb.Runnable_Container_{
 				Container: &batchpb.Runnable_Container{
 					ImageUri: executor.Image,
-					Commands: []string{"sh", "-c", fullCmd},
+					Commands: []string{"sh", "-c", cmd},
 				},
 			},
 		}

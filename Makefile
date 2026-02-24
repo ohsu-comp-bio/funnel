@@ -233,12 +233,12 @@ hugo-deps:
 
 # Build the website
 website: hugo-deps
-	@hugo --source ./website
+	@hugo --source ./website --minify
 	@npx -y pagefind --site docs
 
 # Serve the Funnel website on http://localhost:1313
 website-dev: website
-	@hugo --source ./website --watch server
+	@hugo --source ./website --watch server --baseURL http://localhost:1313/
 
 # Remove build/development files.
 clean:

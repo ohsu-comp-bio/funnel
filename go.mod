@@ -61,6 +61,7 @@ require (
 
 require (
 	cloud.google.com/go/batch v1.14.0
+	cloud.google.com/go/logging v1.13.1
 	dario.cat/mergo v1.0.2
 	github.com/elastic/go-elasticsearch/v8 v8.19.1
 	github.com/go-playground/validator/v10 v10.30.1
@@ -83,6 +84,7 @@ require (
 )
 
 require (
+	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
@@ -118,6 +120,7 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.3.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

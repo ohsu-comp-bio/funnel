@@ -159,11 +159,11 @@ Worker:
     RunCommand: |
       run -i --read-only
       {{if .RemoveContainer}}--rm{{end}}
-      {{range $k, $v := .Env}}--env {{$k}}={{$v}} {{end}}
-      {{range $k, $v := .Tags}}--label {{$k}}={{$v}} {{end}}
-      {{if .Name}}--name {{.Name}}{{end}}
-      {{if .Workdir}}--workdir {{.Workdir}}{{end}}
-      {{range .Volumes}}--volume {{.HostPath}}:{{.ContainerPath}}:{{if .Readonly}}ro{{else}}rw{{end}} {{end}}
+      {{.GetEnvArgs}}
+      {{range $k, $v := .Tags}}--label "{{$k}}={{$v}}" {{end}}
+      {{if .Name}}--name "{{.Name}}"{{end}}
+      {{if .Workdir}}--workdir "{{.Workdir}}"{{end}}
+      {{range .Volumes}}--volume "{{.HostPath}}:{{.ContainerPath}}:{{if .Readonly}}ro{{else}}rw{{end}}" {{end}}
       {{.Image}} {{.Command}}
 
     PullCommand: pull {{.Image}}

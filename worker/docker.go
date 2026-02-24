@@ -12,6 +12,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/google/shlex"
 	"github.com/ohsu-comp-bio/funnel/events"
 )
 
@@ -87,7 +88,11 @@ func (docker DockerCommand) executeCommand(ctx context.Context, commandTemplate 
 		return fmt.Errorf("failed to execute template for command: %w", err)
 	}
 
-	cmdParts := strings.Fields(cmdBuffer.String())
+	cmdParts, err := shlex.Split(cmdBuffer.String())
+	if err != nil {
+		return fmt.Errorf("failed to parse command: %w", err)
+	}
+
 	if usingCommand {
 		go docker.InspectContainer(ctx)
 
@@ -134,6 +139,21 @@ func formatVolumeArg(v Volume) string {
 		mode = "ro"
 	}
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
+}
+
+func formatEnvVars(env map[string]string) []string {
+	var result []string
+	for k, v := range env {
+		if strings.Contains(v, " ") {
+			v = `"` + v + `"`
+		}
+		result = append(result, fmt.Sprintf("--env %s=%s", k, v))
+	}
+	return result
+}
+
+func (docker DockerCommand) GetEnvArgs() string {
+	return strings.Join(formatEnvVars(docker.Env), " ")
 }
 
 func (docker DockerCommand) GetImage() string {

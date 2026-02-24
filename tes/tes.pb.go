@@ -1606,7 +1606,7 @@ type Resources struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	BackendParameters       map[string]string      `protobuf:"bytes,1,rep,name=backend_parameters,json=backendParameters,proto3" json:"backend_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	BackendParametersStrict bool                   `protobuf:"varint,2,opt,name=backend_parameters_strict,json=backendParametersStrict,proto3" json:"backend_parameters_strict,omitempty"`
-	CpuCores                float64                `protobuf:"fixed64,3,opt,name=cpu_cores,json=cpuCores,proto3" json:"cpu_cores,omitempty"`
+	CpuCores                int32                  `protobuf:"varint,3,opt,name=cpu_cores,json=cpuCores,proto3" json:"cpu_cores,omitempty"`
 	DiskGb                  float64                `protobuf:"fixed64,4,opt,name=disk_gb,json=diskGb,proto3" json:"disk_gb,omitempty"`
 	Preemptible             bool                   `protobuf:"varint,5,opt,name=preemptible,proto3" json:"preemptible,omitempty"`
 	RamGb                   float64                `protobuf:"fixed64,6,opt,name=ram_gb,json=ramGb,proto3" json:"ram_gb,omitempty"`
@@ -1659,7 +1659,7 @@ func (x *Resources) GetBackendParametersStrict() bool {
 	return false
 }
 
-func (x *Resources) GetCpuCores() float64 {
+func (x *Resources) GetCpuCores() int32 {
 	if x != nil {
 		return x.CpuCores
 	}
@@ -2261,7 +2261,7 @@ const file_tes_tes_proto_rawDesc = "" +
 	"\tResources\x12T\n" +
 	"\x12backend_parameters\x18\x01 \x03(\v2%.tes.Resources.BackendParametersEntryR\x11backendParameters\x12:\n" +
 	"\x19backend_parameters_strict\x18\x02 \x01(\bR\x17backendParametersStrict\x12\x1b\n" +
-	"\tcpu_cores\x18\x03 \x01(\x01R\bcpuCores\x12\x17\n" +
+	"\tcpu_cores\x18\x03 \x01(\x05R\bcpuCores\x12\x17\n" +
 	"\adisk_gb\x18\x04 \x01(\x01R\x06diskGb\x12 \n" +
 	"\vpreemptible\x18\x05 \x01(\bR\vpreemptible\x12\x15\n" +
 	"\x06ram_gb\x18\x06 \x01(\x01R\x05ramGb\x12\x14\n" +
@@ -2346,14 +2346,14 @@ const file_tes_tes_proto_rawDesc = "" +
 	"\aMINIMAL\x10\x00\x12\t\n" +
 	"\x05BASIC\x10\x01\x12\b\n" +
 	"\x04FULL\x10\x022\x85\x05\n" +
-	"\vTaskService\x12\x87\x01\n" +
+	"\vTaskService\x12\x9e\x01\n" +
+	"\n" +
+	"CancelTask\x12\x16.tes.CancelTaskRequest\x1a\x17.tes.CancelTaskResponse\"_\x82\xd3\xe4\x93\x02Y:\x01*Z\x1a:\x01*\"\x15/v1/tasks/{id}:cancelZ$:\x01*\"\x1f/ga4gh/tes/v1/tasks/{id}:cancel\"\x12/tasks/{id}:cancel\x12\x87\x01\n" +
 	"\x0eGetServiceInfo\x12\x1a.tes.GetServiceInfoRequest\x1a\x10.tes.ServiceInfo\"G\x82\xd3\xe4\x93\x02AZ\x12\x12\x10/v1/service-infoZ\x1c\x12\x1a/ga4gh/tes/v1/service-info\x12\r/service-info\x12n\n" +
 	"\tListTasks\x12\x15.tes.ListTasksRequest\x1a\x16.tes.ListTasksResponse\"2\x82\xd3\xe4\x93\x02,Z\v\x12\t/v1/tasksZ\x15\x12\x13/ga4gh/tes/v1/tasks\x12\x06/tasks\x12m\n" +
 	"\n" +
 	"CreateTask\x12\t.tes.Task\x1a\x17.tes.CreateTaskResponse\";\x82\xd3\xe4\x93\x025:\x01*Z\x0e:\x01*\"\t/v1/tasksZ\x18:\x01*\"\x13/ga4gh/tes/v1/tasks\"\x06/tasks\x12l\n" +
-	"\aGetTask\x12\x13.tes.GetTaskRequest\x1a\t.tes.Task\"A\x82\xd3\xe4\x93\x02;Z\x10\x12\x0e/v1/tasks/{id}Z\x1a\x12\x18/ga4gh/tes/v1/tasks/{id}\x12\v/tasks/{id}\x12\x9e\x01\n" +
-	"\n" +
-	"CancelTask\x12\x16.tes.CancelTaskRequest\x1a\x17.tes.CancelTaskResponse\"_\x82\xd3\xe4\x93\x02Y:\x01*Z\x1a:\x01*\"\x15/v1/tasks/{id}:cancelZ$:\x01*\"\x1f/ga4gh/tes/v1/tasks/{id}:cancel\"\x12/tasks/{id}:cancelB%Z#github.com/ohsu-comp-bio/funnel/tesb\x06proto3"
+	"\aGetTask\x12\x13.tes.GetTaskRequest\x1a\t.tes.Task\"A\x82\xd3\xe4\x93\x02;Z\x10\x12\x0e/v1/tasks/{id}Z\x1a\x12\x18/ga4gh/tes/v1/tasks/{id}\x12\v/tasks/{id}B%Z#github.com/ohsu-comp-bio/funnel/tesb\x06proto3"
 
 var (
 	file_tes_tes_proto_rawDescOnce sync.Once
@@ -2447,16 +2447,16 @@ var file_tes_tes_proto_depIdxs = []int32{
 	17, // 36: tes.TaskLog.logs:type_name -> tes.ExecutorLog
 	35, // 37: tes.TaskLog.metadata:type_name -> tes.TaskLog.MetadataEntry
 	21, // 38: tes.TaskLog.outputs:type_name -> tes.OutputFileLog
-	5,  // 39: tes.TaskService.GetServiceInfo:input_type -> tes.GetServiceInfoRequest
-	8,  // 40: tes.TaskService.ListTasks:input_type -> tes.ListTasksRequest
-	25, // 41: tes.TaskService.CreateTask:input_type -> tes.Task
-	6,  // 42: tes.TaskService.GetTask:input_type -> tes.GetTaskRequest
-	3,  // 43: tes.TaskService.CancelTask:input_type -> tes.CancelTaskRequest
-	23, // 44: tes.TaskService.GetServiceInfo:output_type -> tes.ServiceInfo
-	19, // 45: tes.TaskService.ListTasks:output_type -> tes.ListTasksResponse
-	15, // 46: tes.TaskService.CreateTask:output_type -> tes.CreateTaskResponse
-	25, // 47: tes.TaskService.GetTask:output_type -> tes.Task
-	14, // 48: tes.TaskService.CancelTask:output_type -> tes.CancelTaskResponse
+	3,  // 39: tes.TaskService.CancelTask:input_type -> tes.CancelTaskRequest
+	5,  // 40: tes.TaskService.GetServiceInfo:input_type -> tes.GetServiceInfoRequest
+	8,  // 41: tes.TaskService.ListTasks:input_type -> tes.ListTasksRequest
+	25, // 42: tes.TaskService.CreateTask:input_type -> tes.Task
+	6,  // 43: tes.TaskService.GetTask:input_type -> tes.GetTaskRequest
+	14, // 44: tes.TaskService.CancelTask:output_type -> tes.CancelTaskResponse
+	23, // 45: tes.TaskService.GetServiceInfo:output_type -> tes.ServiceInfo
+	19, // 46: tes.TaskService.ListTasks:output_type -> tes.ListTasksResponse
+	15, // 47: tes.TaskService.CreateTask:output_type -> tes.CreateTaskResponse
+	25, // 48: tes.TaskService.GetTask:output_type -> tes.Task
 	44, // [44:49] is the sub-list for method output_type
 	39, // [39:44] is the sub-list for method input_type
 	39, // [39:39] is the sub-list for extension type_name

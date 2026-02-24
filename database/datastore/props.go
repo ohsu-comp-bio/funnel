@@ -108,7 +108,7 @@ type tasklog struct {
 }
 
 type resources struct {
-	CpuCores      float64  `datastore:",noindex,omitempty"` // nolint
+	CpuCores      int32    `datastore:",noindex,omitempty"` // nolint
 	RamGb, DiskGb float64  `datastore:",noindex,omitempty"` // nolint
 	Preemptible   bool     `datastore:",noindex,omitempty"`
 	Zones         []string `datastore:",noindex,omitempty"`

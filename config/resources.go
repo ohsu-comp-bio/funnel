@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -70,7 +71,8 @@ func GetResourceLimits(k8s *KubernetesResources) *tes.Resources {
 
 // ParseCPU parses Kubernetes-style CPU values (e.g., "100m", "0.5", "2")
 // ParseCpus handles both CPU (m) and RAM/Disk (Mi, Gi)
-func ParseCpus(s string) (float64, error) {
+// Keeping as int32 (whole integer) to follow TES 1.1 spec (may be changed to double/float64 in TES 1.2+)
+func ParseCpus(s string) (int32, error) {
 	if s == "" {
 		return 0, nil
 	}
@@ -81,9 +83,11 @@ func ParseCpus(s string) (float64, error) {
 		return 0, fmt.Errorf("invalid resource value %q: %v", s, err)
 	}
 
-	// For CPU, we usually want a float (e.g., "500m" -> 0.5)
+	// For CPU, convert to a float and then round up to whole cores (e.g., "500m" -> 1).
 	// AsApproximateFloat64 is safe for these resource ranges.
-	return q.AsApproximateFloat64(), nil
+	cpuFloat := q.AsApproximateFloat64()
+
+	return int32(math.Ceil(cpuFloat)), nil
 }
 
 // ParseMemory parses Kubernetes-style memory values (e.g., "512Mi", "1Gi", "1000")

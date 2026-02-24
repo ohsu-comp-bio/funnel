@@ -96,9 +96,9 @@ func TestApplyDefaultResources(t *testing.T) {
 		if got.CpuCores != 1 {
 			t.Errorf("CpuCores = %v, want 1", got.CpuCores)
 		}
-		// 512Mi should be 1 GB
-		if got.RamGb != 1 {
-			t.Errorf("RamGb = %v, want 1", got.RamGb)
+		// 512Mi should be 0.5 GiB
+		if got.RamGb != 0.5 {
+			t.Errorf("RamGb = %v, want 0.5", got.RamGb)
 		}
 		if got.DiskGb != 1 {
 			t.Errorf("DiskGb = %v, want 1", got.DiskGb)

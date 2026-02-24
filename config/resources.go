@@ -83,7 +83,7 @@ func ParseCpus(s string) (int32, error) {
 		return 0, fmt.Errorf("invalid resource value %q: %v", s, err)
 	}
 
-	// For CPU, we usually want a float (e.g., "500m" -> 0.5)
+	// For CPU, convert to a float and then round up to whole cores (e.g., "500m" -> 1).
 	// AsApproximateFloat64 is safe for these resource ranges.
 	cpuFloat := q.AsApproximateFloat64()
 

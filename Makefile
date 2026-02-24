@@ -185,7 +185,7 @@ test-ftp:
 # Build the web dashboard
 webdash:
 	@go get -u github.com/go-bindata/go-bindata/...
-	@cd webdash && yarn build
+	@cd webdash && npm run build
 	@go-bindata -pkg webdash -prefix "webdash/build" -o webdash/web.go webdash/build/...
 
 # Build binaries for all OS/Architectures

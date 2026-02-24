@@ -94,7 +94,7 @@ func DefaultConfig() *Config {
 					"{{if .RemoveContainer}}--rm{{end}} " +
 
 					// Environment variables
-					"{{range $k, $v := .Env}}--env {{$k}}={{$v}} {{end}} " +
+					"{{.GetEnvArgs}} " +
 
 					// Tags/Labels
 					"{{range $k, $v := .Tags}}--label {{$k}}={{$v}} {{end}} " +
@@ -226,42 +226,12 @@ func DefaultConfig() *Config {
 	c.AWSBatch.ReconcileRate = reconcile
 	c.AWSBatch.DisableReconciler = true
 
-	c.GCPBatch.ReconcileRate = reconcile
-	c.GCPBatch.DisableReconciler = true
-
-	// The following K8s templates reflect the latest "default" templates in the Funnel Helm Charts repo:
-	// Ref: https://github.com/ohsu-comp-bio/helm-charts/tree/funnel-0.1.60/charts/funnel/files
-
-	// Funnel Worker Job
-	kubernetesTemplate := intern.MustAsset("config/kubernetes/worker-job.yaml")
-	c.Kubernetes.WorkerTemplate = string(kubernetesTemplate)
-
-	// Executor Job
-	executorTemplate := intern.MustAsset("config/kubernetes/executor-job.yaml")
-	c.Kubernetes.ExecutorTemplate = string(executorTemplate)
-
-	// Worker Persistent Volume
-	pvTemplate := intern.MustAsset("config/kubernetes/worker-pv.yaml")
-	c.Kubernetes.PVTemplate = string(pvTemplate)
-
-	// Worker Persistent Volume Claim
-	pvcTemplate := intern.MustAsset("config/kubernetes/worker-pvc.yaml")
-	c.Kubernetes.PVCTemplate = string(pvcTemplate)
-
-	// Worker Service Account
-	serviceAccountTemplate := intern.MustAsset("config/kubernetes/serviceaccount.yaml")
-	c.Kubernetes.ServiceAccountTemplate = string(serviceAccountTemplate)
-
-	// Worker Role
-	roleTemplate := intern.MustAsset("config/kubernetes/role.yaml")
-	c.Kubernetes.RoleTemplate = string(roleTemplate)
-
-	// Worker Role Binding
-	roleBindingTemplate := intern.MustAsset("config/kubernetes/rolebinding.yaml")
-	c.Kubernetes.RoleBindingTemplate = string(roleBindingTemplate)
-
+	// Kubernetes Configs moved to Helm Charts:
+	// https://github.com/ohsu-comp-bio/helm-charts/tree/main/charts/funnel
+	// DefaultConfig disables the Kubernetes reconciler and requires templates
+	// and any Kubernetes-specific settings to be provided via config/Helm.
 	c.Kubernetes.ReconcileRate = reconcile
-	c.Kubernetes.Executor = "kubernetes"
+	c.Kubernetes.DisableReconciler = true
 
 	return c
 }

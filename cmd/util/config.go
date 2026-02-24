@@ -33,6 +33,7 @@ func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Con
 		}
 	}
 
+
 	return conf, nil
 }
 

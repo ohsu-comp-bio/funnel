@@ -1,7 +1,5 @@
-# Publishes releases with semantic versioning
-# - https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/ci-configurations/github-actions.md
-# - https://goreleaser.com/cookbooks/semantic-release/#example-semantic-release
-# - https://semver.org
+# Publishes releases to GitHub when a new semver tag is pushed
+# Ref: https://semver.org
 
 name: Release
 on:
@@ -9,8 +7,12 @@ on:
     tags:
       - 'v*.*.*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
-  contents: read # for checkout
+  contents: read
 
 jobs:
   release:
@@ -18,25 +20,33 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # to be able to publish a GitHub release
-      issues: write # to be able to comment on released issues
-      pull-requests: write # to be able to comment on released pull requests
-      id-token: write # to enable use of OIDC for npm provenance
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Cache Go modules
+        uses: actions/cache@v4
         with:
-          node-version: "lts/*"
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm install semantic-release/changelog semantic-release/git semantic-release/exec
-          npx semantic-release
+          export PATH="$HOME/go/bin:$PATH"
+          make release

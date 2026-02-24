@@ -6,42 +6,49 @@ menu:
     weight: 20
 ---
 
+> [!WARNING]
+>
+> GCP Batch support is in early development.
+>
+> Production deployments are recommended to use the alternative compute backends available, such as AWS Batch, Kubernetes, Slurm, etc.
+
 # Overview
 
-The following steps illustrate how to run a TES tasks via GCP Batch utilizing Google Storage Buckets.
+Following are the steps to install, configure, and start the Funnel server and submit an example task.
 
 # Quick Start
 
-## 1. Install Funnel
+## Install Funnel
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohsu-comp-bio/funnel/refs/heads/develop/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohsu-comp-bio/funnel/refs/heads/develop/install.sh)" -- v0.11.7-rc.10
 ```
 
-## 2. Start Server
+## Configure Server
 
-<details>
-  <summary><code>Config Example</code></summary>
-
+`config.yaml`
 ```yaml
 Compute: gcp-batch
 
 GCPBatch:
-  Project: example-project
+  DisableReconciler: True
+  ReconcileRate: 10s
+  Project: tes-batch-integration-test
   Location: us-central1
+
+GoogleStorage:
+  Disabled: false
 ```
 
-</details>
+## Start Server
 
 ```sh
-funnel server run --Compute "gcp-batch" --GCPBatch.Project "example-project" --GCPBatch.Location "us-central1"
+funnel server run --config config.yaml
 ```
 
-## 3. Submit Task
+## Submit Task
 
-<details>
-  <summary><code>gcp-example.json</code></summary>
-
+`gcp-example.json`
 ```json
 {
   "name": "Input/Output Test",
@@ -69,53 +76,8 @@ funnel server run --Compute "gcp-batch" --GCPBatch.Project "example-project" --G
 }
 ```
 
-</details>
-
 ```sh
 funnel task create gcp-example.json
-<TASK ID>
-```
-
-## 4. Query Task
-
-```sh
-funnel task get <TASK ID>
-```
-
-```json
-{
-  "executors": [
-    {
-      "command": [
-        "sha256sum",
-        "/mnt/disks/tes-batch-integration/README.md | tee /mnt/disks/tes-batch-integration/README.md.sha256"
-      ],
-      "image": "alpine"
-    }
-  ],
-  "id": "d6f0tgpurbu7o23pgj20",
-  "inputs": [
-    {
-      "path": "/mnt/disks/tes-batch-integration/README.md",
-      "url": "gs://tes-batch-integration/README.md"
-    }
-  ],
-  "name": "GCP Batch Task Example",
-  "outputs": [
-    {
-      "path": "/mnt/disks/tes-batch-integration/README.md.sha256",
-      "url": "gs://tes-batch-integration/README.md.sha256"
-    }
-  ],
-  "state": "COMPLETE"
-}
-```
-
-## 5. Verify Outputs
-
-```sh
-gsutil cat gs://tes-batch-integration/README.md.sha256
-9b9916cea5348edd6ad78893231edb81fc96772d1dd99fae9c2a64f84646cb1c  /mnt/disks/tes-batch-integration/README.md
 ```
 
 # Additional Resources

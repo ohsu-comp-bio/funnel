@@ -10,7 +10,7 @@
       <ul class="quick-links-list">
         <!-- Download -->
         <li>
-          <a href="/download/">
+          <a href="{{ .Site.BaseURL }}download/">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -34,7 +34,7 @@
 
         <!-- Docs -->
         <li>
-          <a href="/docs/">
+          <a href="{{ .Site.BaseURL }}docs/">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -172,7 +172,6 @@
         element: "#search",
         showSubResults: true,
         autofocus: true,
-        showImages: false,
       });
     }
   });

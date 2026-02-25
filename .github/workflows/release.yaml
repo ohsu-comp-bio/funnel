@@ -29,10 +29,16 @@ jobs:
       
       - name: Set up Go
         uses: actions/setup-go@v5
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
         with:
-          cache: true
-          go-version-file: 'go.mod'
-          cache-dependency-path: go.sum
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Release
         env:

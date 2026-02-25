@@ -200,7 +200,7 @@ docker:
 	docker build -t quay.io/ohsu-comp-bio/funnel:latest ./
 
 # Create a release on Github using GoReleaser
-release:
+release: release-dep
 	@goreleaser --clean
 
 # Install dependencies for release

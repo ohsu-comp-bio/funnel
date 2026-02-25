@@ -47,7 +47,6 @@ jobs:
         go-version-file: go.mod
 
     - name: Unit Tests
-    # run: make test-verbose
       run: |
         go test -v ./database/postgres
 

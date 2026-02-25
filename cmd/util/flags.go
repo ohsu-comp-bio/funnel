@@ -206,6 +206,12 @@ func computeFlags(flagConf *config.Config) *pflag.FlagSet {
 	f.BoolVar(&flagConf.AWSBatch.DisableReconciler, "AWSBatch.DisableReconciler", flagConf.AWSBatch.DisableReconciler, "Disable the state reconciler")
 	f.Var(&DurationValue{&flagConf.AWSBatch.ReconcileRate}, "AWSBatch.ReconcileRate", "How often to run the reconciler")
 
+	// GCP Batch
+	f.StringVar(&flagConf.GCPBatch.Project, "GCPBatch.Project", flagConf.GCPBatch.Project, "GCP Project ID")
+	f.StringVar(&flagConf.GCPBatch.Location, "GCPBatch.Location", flagConf.GCPBatch.Location, "GCP Location for Batch jobs")
+	f.BoolVar(&flagConf.GCPBatch.DisableReconciler, "GCPBatch.DisableReconciler", flagConf.GCPBatch.DisableReconciler, "Disable the state reconciler")
+	f.Var(&DurationValue{&flagConf.GCPBatch.ReconcileRate}, "GCPBatch.ReconcileRate", "How often to run the reconciler")
+
 	// GridEngine
 	f.StringVar(&flagConf.GridEngine.TemplateFile, "GridEngine.TemplateFile", flagConf.GridEngine.TemplateFile, "Path to template submit file")
 

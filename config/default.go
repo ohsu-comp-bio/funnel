@@ -192,6 +192,7 @@ func DefaultConfig() *Config {
 		PBS:           &HPCBackend{},
 		GridEngine:    &GridEngine{},
 		AWSBatch:      &AWSBatch{AWSConfig: &AWSConfig{}},
+		GCPBatch:      &GCPBatch{},
 		Kubernetes:    &Kubernetes{},
 		GoogleStorage: &GoogleCloudStorage{},
 		PubSub:        &PubSub{},
@@ -227,6 +228,7 @@ func DefaultConfig() *Config {
 
 	// Kubernetes Configs moved to Helm Charts:
 	// https://github.com/ohsu-comp-bio/helm-charts/tree/main/charts/funnel
+
 	// DefaultConfig disables the Kubernetes reconciler and requires templates
 	// and any Kubernetes-specific settings to be provided via config/Helm.
 	c.Kubernetes.ReconcileRate = reconcile

@@ -215,7 +215,6 @@ gen-mocks: gen-mocks-deps
 gen-mocks-deps:
 	@go install github.com/vektra/mockery/v2@v2.20.0
 
-
 # Bundle example task messages into Go code.
 bundle-examples: bundle-examples-deps
 	@go-bindata -pkg examples -o examples/internal/bundle.go $(shell find examples/ -name '*.json')

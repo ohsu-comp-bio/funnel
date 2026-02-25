@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
       
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -39,6 +41,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+          GIT_BRANCH: ${{ github.ref_name }}
         run: |
           export PATH="$HOME/go/bin:$PATH"
           make release

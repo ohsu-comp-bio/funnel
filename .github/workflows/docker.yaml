@@ -2,7 +2,7 @@
 # Adapted from actions-arm64-native_example by @gartnera
 # ref: https://github.com/gartnera/actions-arm64-native_example/blob/main/.github/workflows/build.yml
 
-name: build
+name: Publish Docker Image
 
 on:
   push:

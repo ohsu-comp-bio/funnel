@@ -38,6 +38,7 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
         run: |
           export PATH="$HOME/go/bin:$PATH"
           make release

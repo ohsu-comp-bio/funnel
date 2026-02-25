@@ -32,6 +32,12 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 0
 
+      # Add Tmate step
+      - name: Setup Tmate Session
+        uses: mxschmitt/action-tmate@v3          
+        env:
+          REF: ${{ github.ref }}
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:

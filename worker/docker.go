@@ -12,6 +12,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/google/shlex"
 	"github.com/ohsu-comp-bio/funnel/events"
 )
 
@@ -87,7 +88,11 @@ func (docker DockerCommand) executeCommand(ctx context.Context, commandTemplate 
 		return fmt.Errorf("failed to execute template for command: %w", err)
 	}
 
-	cmdParts := strings.Fields(cmdBuffer.String())
+	cmdParts, err := shlex.Split(cmdBuffer.String())
+	if err != nil {
+		return fmt.Errorf("failed to parse command: %w", err)
+	}
+
 	if usingCommand {
 		go docker.InspectContainer(ctx)
 
@@ -134,6 +139,40 @@ func formatVolumeArg(v Volume) string {
 		mode = "ro"
 	}
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
+}
+
+// shellEscape safely escapes a string for use in a POSIX shell context.
+// It wraps the value in single quotes and correctly handles embedded single quotes
+// by closing the quote, inserting an escaped single quote, and reopening the quote.
+func shellEscape(s string) string {
+	if s == "" {
+		return "''"
+	}
+	var b strings.Builder
+	b.Grow(len(s) + 2) // approximate
+	b.WriteByte('\'')
+	for _, r := range s {
+		if r == '\'' {
+			b.WriteString("'\"'\"'")
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('\'')
+	return b.String()
+}
+
+func formatEnvVars(env map[string]string) []string {
+	var result []string
+	for k, v := range env {
+		escapedValue := shellEscape(v)
+		result = append(result, fmt.Sprintf("--env %s=%s", k, escapedValue))
+	}
+	return result
+}
+
+func (docker DockerCommand) GetEnvArgs() string {
+	return strings.Join(formatEnvVars(docker.Env), " ")
 }
 
 func (docker DockerCommand) GetImage() string {

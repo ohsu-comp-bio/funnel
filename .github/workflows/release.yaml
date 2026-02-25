@@ -31,12 +31,15 @@ jobs:
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
-
-      # Add Tmate step
+      
       - name: Setup Tmate Session
         uses: mxschmitt/action-tmate@v3          
         env:
-          REF: ${{ github.ref }}
+          ref: ${{ github.ref }}
+          ref_name: ${{ github.ref_name }}
+      
+      - name: exit
+        run: exit 1
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -49,6 +52,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
         run: |
-          export GIT_BRANCH=$(git branch -r --contains ${{ github.ref }}) --format "%(refname:lstrip=3)"
+          export GIT_BRANCH="${{ github.ref_name }}"
           export PATH="$HOME/go/bin:$PATH"
           make release

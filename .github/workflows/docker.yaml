@@ -1,11 +1,15 @@
 # This workflow builds and pushes a multi-arch image to Quay.io
-# Adapted from actions-arm64-native-example by @gartnera
-# ref: https://github.com/gartnera/actions-arm64-native-example/blob/main/.github/workflows/build.yml
+# Adapted from actions-arm64-native_example by @gartnera
+# ref: https://github.com/gartnera/actions-arm64-native_example/blob/main/.github/workflows/build.yml
 
 name: build
 
 on:
   push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   QUAY_REPO: quay.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
@@ -54,6 +58,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.QUAY_REPO }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Export digest
         run: |

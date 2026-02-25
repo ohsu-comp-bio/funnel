@@ -200,16 +200,12 @@ docker:
 	docker build -t quay.io/ohsu-comp-bio/funnel:latest ./
 
 # Create a release on Github using GoReleaser
-release:
-	@go get github.com/buchanae/github-release-notes
-	@goreleaser \
-		--clean \
-		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at ${LAST_PR_NUMBER})
+release: release-dep
+	@goreleaser --clean
 
 # Install dependencies for release
 release-dep:
 	@go install github.com/goreleaser/goreleaser/v2@latest
-	@go install github.com/buchanae/github-release-notes@v0.2.0
 
 # Generate mocks for testing.
 gen-mocks: gen-mocks-deps

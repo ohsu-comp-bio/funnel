@@ -38,4 +38,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          make release
+          npm install semantic-release/changelog semantic-release/git semantic-release/exec
+          npx semantic-release

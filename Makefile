@@ -206,7 +206,6 @@ release: release-dep
 # Install dependencies for release
 release-dep:
 	@go install github.com/goreleaser/goreleaser/v2@latest
-	@go install github.com/buchanae/github-release-notes@v0.2.0
 
 # Generate mocks for testing.
 gen-mocks: gen-mocks-deps

@@ -33,11 +33,6 @@ func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Con
 		}
 	}
 
-	// Merge in any missing default values (without overwriting any values already set by the user)
-	err = mergo.Merge(conf, defaults)
-	if err != nil {
-		return conf, err
-	}
 
 	return conf, nil
 }

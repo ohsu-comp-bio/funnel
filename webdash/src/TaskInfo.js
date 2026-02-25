@@ -184,6 +184,7 @@ function TaskInfoRaw(props) {
                         checked={showEnv}
                         onChange={() => setShowEnv(!showEnv)}
                         color="primary"
+                        inputProps={{ 'aria-label': 'Show environment variables' }}
                       />
                     </Tooltip>
                   </TableCell>

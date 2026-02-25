@@ -141,13 +141,32 @@ func formatVolumeArg(v Volume) string {
 	return fmt.Sprintf("%s:%s:%s", v.HostPath, v.ContainerPath, mode)
 }
 
+// shellEscape safely escapes a string for use in a POSIX shell context.
+// It wraps the value in single quotes and correctly handles embedded single quotes
+// by closing the quote, inserting an escaped single quote, and reopening the quote.
+func shellEscape(s string) string {
+	if s == "" {
+		return "''"
+	}
+	var b strings.Builder
+	b.Grow(len(s) + 2) // approximate
+	b.WriteByte('\'')
+	for _, r := range s {
+		if r == '\'' {
+			b.WriteString("'\"'\"'")
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('\'')
+	return b.String()
+}
+
 func formatEnvVars(env map[string]string) []string {
 	var result []string
 	for k, v := range env {
-		if strings.Contains(v, " ") {
-			v = `"` + v + `"`
-		}
-		result = append(result, fmt.Sprintf("--env %s=%s", k, v))
+		escapedValue := shellEscape(v)
+		result = append(result, fmt.Sprintf("--env %s=%s", k, escapedValue))
 	}
 	return result
 }

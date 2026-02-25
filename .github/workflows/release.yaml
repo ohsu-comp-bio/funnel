@@ -1,7 +1,5 @@
-# Publishes releases with semantic versioning
-# - https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/ci-configurations/github-actions.md
-# - https://goreleaser.com/cookbooks/semantic-release/#example-semantic-release
-# - https://semver.org
+# Publishes releases to GitHub when a new semver tag is pushed
+# Ref: https://semver.org
 
 name: Release
 on:
@@ -10,7 +8,7 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: read # for checkout
+  contents: read
 
 jobs:
   release:
@@ -18,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # to be able to publish a GitHub release
-      issues: write # to be able to comment on released issues
-      pull-requests: write # to be able to comment on released pull requests
-      id-token: write # to enable use of OIDC for npm provenance
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout
@@ -38,5 +36,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm install semantic-release/changelog semantic-release/git semantic-release/exec
-          npx semantic-release
+          make release

@@ -201,10 +201,7 @@ docker:
 
 # Create a release on Github using GoReleaser
 release:
-	@go get github.com/buchanae/github-release-notes
-	@goreleaser \
-		--clean \
-		--release-notes <(github-release-notes -org ohsu-comp-bio -repo funnel -stop-at ${LAST_PR_NUMBER})
+	@goreleaser --clean
 
 # Install dependencies for release
 release-dep:

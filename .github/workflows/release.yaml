@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.ref }}
       
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -47,6 +48,7 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
         run: |
           export PATH="$HOME/go/bin:$PATH"
-          make release
+          goreleaser release --clean

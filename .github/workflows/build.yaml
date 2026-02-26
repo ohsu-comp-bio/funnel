@@ -1,7 +1,11 @@
-name: Funnel Build and Cache
+name: Build Funnel
 
 on:
   workflow_call:
+    inputs:
+      cache:
+        type: boolean
+        default: true
 
 jobs:
   build:

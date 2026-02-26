@@ -33,6 +33,10 @@ func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Con
 		}
 	}
 
+	err = mergo.Merge(conf, defaults, mergo.WithoutDereference)
+	if err != nil {
+		return conf, err
+	}
 
 	return conf, nil
 }

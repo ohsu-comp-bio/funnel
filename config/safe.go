@@ -68,6 +68,9 @@ func (c *Config) Safe() *Config {
 
 	if safe.GenericS3 != nil {
 		for i, s3 := range safe.GenericS3 {
+			if s3 == nil {
+				continue
+			}
 			gs3 := *s3
 			gs3.Key = redact(gs3.Key)
 			gs3.Secret = redact(gs3.Secret)
@@ -99,6 +102,9 @@ func (c *Config) Safe() *Config {
 
 		if s.BasicAuth != nil {
 			for i, cred := range s.BasicAuth {
+				if cred == nil {
+					continue
+				}
 				bc := *cred
 				bc.Password = redact(bc.Password)
 				s.BasicAuth[i] = &bc
@@ -135,7 +141,7 @@ func (c *Config) Safe() *Config {
 		safe.FTPStorage = &ftp
 	}
 
-	return &safe
+	return safe
 }
 
 func redact(s string) string {

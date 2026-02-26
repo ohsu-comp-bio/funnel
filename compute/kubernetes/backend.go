@@ -91,6 +91,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 	// TODO: Should this be moved to the switch statement so it's only run on TASK_CREATED?
 	var taskConfig *config.Config = b.conf
+	b.log.Debug("taskConfig", "before plugin", taskConfig.Safe())
 	if b.conf.Plugins != nil {
 		resp, ok := ctx.Value("pluginResponse").(*proto.JobResponse)
 		if !ok {
@@ -103,6 +104,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
 		}
 	}
+	b.log.Debug("taskConfig", "after plugin", taskConfig.Safe())
 
 	switch ev.Type {
 	case events.Type_TASK_CREATED:

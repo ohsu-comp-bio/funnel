@@ -55,6 +55,8 @@ type Database interface {
 
 // NewServer returns a new Funnel server + scheduler based on the given config.
 func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*Server, error) {
+	log.Debug("NewServer", "config", conf.Safe())
+
 	var database Database
 	var reader tes.ReadOnlyServer
 	var nodes scheduler.SchedulerServiceServer

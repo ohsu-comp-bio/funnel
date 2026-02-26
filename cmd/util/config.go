@@ -13,7 +13,7 @@ import (
 // This function ensures that the config gets set up properly. Flag values override values in
 // the provided config file.
 func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Config, error) {
-	conf := config.EmptyConfig()
+	conf := config.DefaultConfig()
 
 	// Only parse file if it exists
 	if file != "" {

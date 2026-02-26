@@ -13,29 +13,29 @@ import (
 // This function ensures that the config gets set up properly. Flag values override values in
 // the provided config file.
 func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Config, error) {
-	// parse config file if it exists
 	conf := config.EmptyConfig()
 	err := config.ParseFile(file, conf)
 	if err != nil {
 		return conf, err
 	}
 
-	// file vals <- cli val
-	err = mergo.MergeWithOverwrite(conf, flagConf)
+	// Merge defaults into file config (file values take priority, including false values)
+	defaults := config.DefaultConfig()
+	err = mergo.Merge(conf, defaults, mergo.WithoutDereference)
 	if err != nil {
 		return conf, err
 	}
 
-	defaults := config.DefaultConfig()
+	// Merge flags into result (flags take priority over everything)
+	err = mergo.Merge(conf, flagConf, mergo.WithOverride)
+	if err != nil {
+		return conf, err
+	}
+
 	if conf.Server.RPCAddress() != defaults.Server.RPCAddress() {
 		if conf.Server.RPCAddress() != conf.RPCClient.ServerAddress {
 			conf.RPCClient.ServerAddress = conf.Server.RPCAddress()
 		}
-	}
-
-	err = mergo.Merge(conf, defaults, mergo.WithoutDereference)
-	if err != nil {
-		return conf, err
 	}
 
 	return conf, nil

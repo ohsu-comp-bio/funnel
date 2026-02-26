@@ -14,14 +14,18 @@ import (
 // the provided config file.
 func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Config, error) {
 	conf := config.EmptyConfig()
-	err := config.ParseFile(file, conf)
-	if err != nil {
-		return conf, err
+
+	// Only parse file if it exists
+	if file != "" {
+		err := config.ParseFile(file, conf)
+		if err != nil {
+			return conf, err
+		}
 	}
 
 	// Merge defaults into file config (file values take priority, including false values)
 	defaults := config.DefaultConfig()
-	err = mergo.Merge(conf, defaults, mergo.WithoutDereference)
+	err := mergo.Merge(conf, defaults, mergo.WithoutDereference)
 	if err != nil {
 		return conf, err
 	}

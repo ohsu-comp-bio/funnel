@@ -29,6 +29,7 @@ func EmptyConfig() *Config {
 		PBS:           &HPCBackend{ReconcileRate: &durationpb.Duration{}},
 		GridEngine:    &GridEngine{},
 		AWSBatch:      &AWSBatch{AWSConfig: &AWSConfig{}, ReconcileRate: &durationpb.Duration{}},
+		GCPBatch:      &GCPBatch{Project: "", Location: "", ReconcileRate: &durationpb.Duration{}},
 		Kubernetes:    &Kubernetes{ReconcileRate: &durationpb.Duration{}},
 		GoogleStorage: &GoogleCloudStorage{},
 		PubSub:        &PubSub{},

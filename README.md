@@ -34,4 +34,3 @@ Funnel is an implementation of the [GA4GH Task Execution Schemas](https://github
 Funnel provides an API server, multiple storage backends (local FS, S3, Google Bucket, etc.), multiple compute backends (local, HTCondor, Google Cloud, etc.), and a web dashboard.
 
 https://ohsu-comp-bio.github.io/funnel/
-

@@ -139,5 +139,8 @@ func (c *Config) Safe() *Config {
 }
 
 func redact(s string) string {
+	if s == "" {
+		return ""
+	}
 	return "***"
 }

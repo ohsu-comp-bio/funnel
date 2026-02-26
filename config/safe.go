@@ -1,12 +1,20 @@
 package config
 
+import "google.golang.org/protobuf/proto"
+
 // Safe returns a copy of the config with sensitive fields redacted
 func (c *Config) Safe() *Config {
 	if c == nil {
 		return nil
 	}
 
-	safe := *c
+	cloned := proto.Clone(c)
+	safe, ok := cloned.(*Config)
+	if !ok {
+		// Fallback: if cloning fails for some unexpected reason, avoid redacting the live config.
+		copy := *c
+		safe = &copy
+	}
 
 	// Database credentials
 	if safe.MongoDB != nil {

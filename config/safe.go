@@ -25,7 +25,9 @@ func (c *Config) Safe() *Config {
 
 	if safe.Postgres != nil {
 		p := *safe.Postgres
+		p.User = redact(p.User)
 		p.Password = redact(p.Password)
+		p.AdminUser = redact(p.AdminUser)
 		p.AdminPassword = redact(p.AdminPassword)
 		safe.Postgres = &p
 	}
@@ -144,8 +146,8 @@ func (c *Config) Safe() *Config {
 	return safe
 }
 
-func redact(s string) string {
-	if s == "" {
+func redact(str string) string {
+	if str == "" {
 		return ""
 	}
 	return "***"

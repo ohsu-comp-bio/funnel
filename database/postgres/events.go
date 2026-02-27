@@ -58,14 +58,17 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		retrier := util.NewRetrier()
 		retrier.ShouldRetry = func(err error) bool {
 			_, isTransitionError := err.(*tes.TransitionError)
-			return !isTransitionError && err != tes.ErrNotFound && err != tes.ErrNotPermitted
+			shouldRetry := !isTransitionError &&
+				err != tes.ErrNotFound &&
+				err != tes.ErrNotPermitted
+			return shouldRetry
 		}
 
 		return retrier.Retry(ctx, func() error {
 			// Get current state & version
 			state, oldVersion, owner, err := db.findTaskStateAndVersion(ctx, req.Id)
 			if err != nil {
-				return fmt.Errorf("postgres: failed to find task state of task: %v", req.Id)
+				return tes.ErrNotFound
 			}
 			if !server.GetUser(ctx).IsAccessible(owner) {
 				return tes.ErrNotPermitted

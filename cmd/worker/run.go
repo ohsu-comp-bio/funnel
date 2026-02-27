@@ -181,7 +181,7 @@ func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf *config.
 	var err error
 	var writer events.Writer
 
-	switch name {
+	switch strings.ToLower(name) {
 	case "log":
 		writer = &events.Logger{Log: log}
 	case "boltdb", "badger", "grpc", "rpc":
@@ -216,7 +216,7 @@ func validateConfig(conf *config.Config, opts *Options) error {
 	// only a subset of event writers are supported.
 	if opts.TaskFile != "" || opts.TaskBase64 != "" {
 		for _, e := range conf.EventWriters {
-			if e != "log" && e != "kafka" && e != "pubsub" {
+			if strings.ToLower(e) != "log" && strings.ToLower(e) != "kafka" && strings.ToLower(e) != "pubsub" {
 				return fmt.Errorf("event writer %q is not supported with a task file/string reader", e)
 			}
 		}

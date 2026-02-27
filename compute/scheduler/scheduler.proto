@@ -7,7 +7,7 @@ option go_package = "github.com/ohsu-comp-bio/funnel/compute/scheduler";
 package scheduler;
 
 message Resources {
-  double cpus = 1;
+  uint32 cpus = 1;
   // In GB
   double ram_gb = 2;
   // In GB

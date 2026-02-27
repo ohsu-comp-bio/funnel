@@ -179,8 +179,8 @@
       "type": "object",
       "properties": {
         "cpus": {
-          "type": "number",
-          "format": "double"
+          "type": "integer",
+          "format": "int64"
         },
         "ramGb": {
           "type": "number",

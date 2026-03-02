@@ -222,8 +222,9 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 
 		// Return success with informational message via metadata
 		msg := fmt.Sprintf("Task is already in %s state, no action needed", task.State)
-		grpc.SetHeader(ctx, metadata.Pairs("X-Funnel-Message", msg))
-
+		if err := grpc.SetHeader(ctx, metadata.Pairs("X-Funnel-Message", msg)); err != nil {
+			ts.Log.Error("Failed to set gRPC header", "error", err)
+		}
 		return result, nil
 	}
 

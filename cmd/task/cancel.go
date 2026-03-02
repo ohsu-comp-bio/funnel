@@ -20,7 +20,7 @@ func Cancel(server string, ids []string, writer io.Writer) error {
 	res := []string{}
 
 	for _, taskID := range ids {
-		result, err := cli.CancelTask(context.Background(), &tes.CancelTaskRequest{Id: taskID})
+		result, err := cli.CancelTaskWithMessage(context.Background(), &tes.CancelTaskRequest{Id: taskID})
 		if err != nil {
 			return err
 		}

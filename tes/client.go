@@ -61,7 +61,7 @@ func (c *Client) GetTask(ctx context.Context, req *GetTaskRequest) (*Task, error
 	// Send request
 	u := c.address + "/v1/tasks/" + req.Id + "?view=" + req.View
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
@@ -97,7 +97,7 @@ func (c *Client) ListTasks(ctx context.Context, req *ListTasksRequest) (*ListTas
 	// Send request
 	u := c.address + "/v1/tasks?" + v.Encode()
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {
@@ -127,7 +127,7 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 	// Send request
 	u := c.address + "/v1/tasks"
 	hreq, _ := http.NewRequest("POST", u, bytes.NewReader(b))
-	// hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
@@ -144,17 +144,26 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 	return resp, nil
 }
 
+// CancelTask POSTs to /v1/tasks/{id}:cancel
+func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResponse, error) {
+	result, err := c.CancelTaskWithMessage(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return result.Response, nil
+}
+
 // CancelTaskResult wraps the response with optional metadata
 type CancelTaskResult struct {
 	Response *CancelTaskResponse
 	Message  string // Informational message from server
 }
 
-// CancelTask POSTs to /v1/tasks/{id}:cancel
-func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResult, error) {
+// CancelTaskWithMessage POSTs to /v1/tasks/{id}:cancel and returns any informational message
+func (c *Client) CancelTaskWithMessage(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResult, error) {
 	u := c.address + "/v1/tasks/" + req.Id + ":cancel"
 	hreq, _ := http.NewRequest("POST", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
 
@@ -202,7 +211,7 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 func (c *Client) GetServiceInfo(ctx context.Context, req *GetServiceInfoRequest) (*ServiceInfo, error) {
 	u := c.address + "/v1/service-info"
 	hreq, _ := http.NewRequest("GET", u, nil)
-	hreq.WithContext(ctx)
+	hreq = hreq.WithContext(ctx)
 	hreq.SetBasicAuth(c.User, c.Password)
 	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
 	if err != nil {

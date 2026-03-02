@@ -4,7 +4,6 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -21,6 +20,9 @@ import (
 	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/k8sutil"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Backend represents the K8s backend.
@@ -79,7 +81,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 	for k := range taskBackendParameters {
 		_, ok := b.backendParameters[k]
 		if !ok {
-			return errors.New("backend parameters not supported")
+			return status.Errorf(codes.InvalidArgument, "backend parameters not supported: %s", k)
 		}
 	}
 

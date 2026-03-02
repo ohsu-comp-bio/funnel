@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -93,11 +92,7 @@ func customErrorHandler(ctx context.Context, mux *runtime.ServeMux, marshaler ru
 	case codes.DeadlineExceeded: // 504
 		w.WriteHeader(http.StatusGatewayTimeout)
 	default:
-		if strings.Contains(st.Message(), "backend parameters not supported") {
-			w.WriteHeader(http.StatusBadRequest) // 400
-		} else {
-			w.WriteHeader(http.StatusInternalServerError) // 500
-		}
+		w.WriteHeader(http.StatusInternalServerError) // 500
 	}
 
 	// Write the error message

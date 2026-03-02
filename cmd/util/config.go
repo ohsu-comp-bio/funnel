@@ -6,6 +6,7 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/ohsu-comp-bio/funnel/config"
+	"google.golang.org/protobuf/proto"
 )
 
 // MergeConfigFileWithFlags is a util used by server commands that use flags to set
@@ -17,10 +18,14 @@ func MergeConfigFileWithFlags(file string, flagConf *config.Config) (*config.Con
 
 	// Only parse file if it exists
 	if file != "" {
-		err := config.ParseFile(file, conf)
+		fileConf := config.EmptyConfig()
+		err := config.ParseFile(file, fileConf)
 		if err != nil {
 			return conf, err
 		}
+
+		// Use proto.Merge to properly merge nested fields
+		proto.Merge(conf, fileConf)
 	}
 
 	// Merge defaults into file config (file values take priority, including false values)

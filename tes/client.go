@@ -2,6 +2,7 @@ package tes
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -169,20 +170,32 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 		return nil, err
 	}
 
-	// Parse response
+	// Check if the response contains a message field (from middleware)
+	var rawResponse map[string]interface{}
+	if err := json.Unmarshal(body, &rawResponse); err == nil {
+		if msg, ok := rawResponse["message"].(string); ok {
+			// This is a message response, not a protobuf response
+			return &CancelTaskResult{
+				Response: &CancelTaskResponse{},
+				Message:  msg,
+			}, nil
+		}
+	}
+
+	// Parse as normal protobuf response
 	resp := &CancelTaskResponse{}
 	err = protojson.Unmarshal(body, resp)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check for informational message in HTTP header
-	result := &CancelTaskResult{
-		Response: resp,
-		Message:  httpResp.Header.Get("Grpc-Metadata-X-Funnel-Message"),
-	}
+	// Check for message in header (fallback for direct gRPC)
+	message := httpResp.Header.Get("Grpc-Metadata-X-Funnel-Message")
 
-	return result, nil
+	return &CancelTaskResult{
+		Response: resp,
+		Message:  message,
+	}, nil
 }
 
 // GetServiceInfo returns result of GET /v1/service-info

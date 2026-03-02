@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -163,7 +165,9 @@ func (s *Server) Serve(pctx context.Context) error {
 
 	marsh := NewMarshaler()
 	grpcMux := runtime.NewServeMux(
-		runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh), runtime.WithErrorHandler(customErrorHandler))
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, marsh),
+		runtime.WithErrorHandler(customErrorHandler),
+	)
 
 	// m := protojson.MarshalOptions{
 	// 	Indent:          "  ",
@@ -200,7 +204,7 @@ func (s *Server) Serve(pctx context.Context) error {
 
 		// Pass header to plugin if plugin is enabled
 		if s.Plugins != nil {
-			s.addHeadertoCtx(req)
+			req = s.addHeadertoCtx(req)
 		}
 		// TODO this doesnt handle all routes
 		if s.OidcAuth != nil && s.OidcAuth.ServiceConfigURL == "" && len(s.BasicAuth) > 0 {
@@ -218,7 +222,8 @@ func (s *Server) Serve(pctx context.Context) error {
 				resp.Header().Set("Cache-Control", "no-store")
 			}
 
-			grpcMux.ServeHTTP(resp, req)
+			// Apply message middleware to grpcMux
+			messageHandler(grpcMux).ServeHTTP(resp, req)
 		}
 	})
 
@@ -319,4 +324,37 @@ func negotiate(req *http.Request) string {
 	default:
 		return "json"
 	}
+}
+
+// Wrap the grpcMux with middleware that intercepts responses with custom messages
+func messageHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Create a response recorder to capture the response
+		rec := httptest.NewRecorder()
+		next.ServeHTTP(rec, r)
+
+		// Check for the message header in ANY response
+		if msg := rec.Header().Get("Grpc-Metadata-X-Funnel-Message"); msg != "" {
+			// Write the message as JSON
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", rec.Header().Get("Cache-Control"))
+			for k, v := range rec.Header() {
+				// Copy headers except the gRPC metadata one
+				if !strings.HasPrefix(k, "Grpc-Metadata-") {
+					w.Header()[k] = v
+				}
+			}
+			w.WriteHeader(rec.Code)
+			response := map[string]string{"message": msg}
+			json.NewEncoder(w).Encode(response)
+			return // Important: return here to prevent writing the original response
+		}
+
+		// No message - copy the original response as-is
+		for k, v := range rec.Header() {
+			w.Header()[k] = v
+		}
+		w.WriteHeader(rec.Code)
+		w.Write(rec.Body.Bytes())
+	})
 }

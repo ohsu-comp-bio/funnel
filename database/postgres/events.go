@@ -87,8 +87,11 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 			// Validate state transition
 			to := req.GetState()
 			if err = tes.ValidateTransition(state, to); err != nil {
-				logger.Debug("postgres:", err.Error())
-				return status.Error(codes.InvalidArgument, err.Error())
+				logger.Info("postgres: ignoring transition request for task in terminal state",
+					"taskId", req.Id,
+					"currentState", state,
+					"requestedState", to)
+				return nil // No-op on invalid transition)
 			}
 
 			newVersion := time.Now().UnixNano()

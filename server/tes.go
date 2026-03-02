@@ -18,6 +18,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	"google.golang.org/grpc"
 )
 
 // TaskService is a wrapper which handles common TES Task Service operations,
@@ -202,8 +204,31 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 	}
 
+	// Get current task state to check if it's already terminal
+	task, err := ts.Read.GetTask(ctx, &tes.GetTaskRequest{
+		Id: req.Id,
+	})
+	if err == tes.ErrNotFound {
+		return result, status.Errorf(codes.NotFound, "%v: taskID: %s", err.Error(), req.Id)
+	} else if err != nil {
+		return result, err
+	}
+
+	// Check if task is already in a terminal state
+	if tes.TerminalState(task.State) {
+		ts.Log.Info("Task already in terminal state, skipping cancel",
+			"taskId", req.Id,
+			"state", task.State)
+
+		// Return success with informational message via metadata
+		msg := fmt.Sprintf("Task is already in %s state, no action needed", task.State)
+		grpc.SetHeader(ctx, metadata.Pairs("X-Funnel-Message", msg))
+
+		return result, nil
+	}
+
 	// updated database and other event streams (includes access-checking)
-	err := ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
+	err = ts.Event.WriteEvent(ctx, events.NewState(req.Id, tes.Canceled))
 	if err == tes.ErrNotFound {
 		return result, status.Errorf(codes.NotFound, "%v: taskID: %s", err.Error(), req.Id)
 	} else if err == tes.ErrNotPermitted {

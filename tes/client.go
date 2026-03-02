@@ -143,14 +143,28 @@ func (c *Client) CreateTask(ctx context.Context, task *Task) (*CreateTaskRespons
 	return resp, nil
 }
 
+// CancelTaskResult wraps the response with optional metadata
+type CancelTaskResult struct {
+	Response *CancelTaskResponse
+	Message  string // Informational message from server
+}
+
 // CancelTask POSTs to /v1/tasks/{id}:cancel
-func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResponse, error) {
+func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*CancelTaskResult, error) {
 	u := c.address + "/v1/tasks/" + req.Id + ":cancel"
 	hreq, _ := http.NewRequest("POST", u, nil)
 	hreq.WithContext(ctx)
 	hreq.Header.Add("Content-Type", "application/json")
 	hreq.SetBasicAuth(c.User, c.Password)
-	body, err := util.CheckHTTPResponse(c.client.Do(hreq))
+
+	// Execute request and capture response
+	httpResp, err := c.client.Do(hreq)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	body, err := util.CheckHTTPResponse(httpResp, err)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +175,14 @@ func (c *Client) CancelTask(ctx context.Context, req *CancelTaskRequest) (*Cance
 	if err != nil {
 		return nil, err
 	}
-	return resp, nil
+
+	// Check for informational message in HTTP header
+	result := &CancelTaskResult{
+		Response: resp,
+		Message:  httpResp.Header.Get("Grpc-Metadata-X-Funnel-Message"),
+	}
+
+	return result, nil
 }
 
 // GetServiceInfo returns result of GET /v1/service-info

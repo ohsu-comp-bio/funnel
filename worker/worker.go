@@ -210,7 +210,15 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			var taskCommand TaskCommand
 
 			if r.Executor.Backend == "kubernetes" {
-				resources = config.ApplyDefaultResources(resources, r.Executor.Resources)
+				var err error
+				resources, err = config.ApplyDefaultsAndLimits(resources, r.Executor.Resources)
+				if err != nil {
+					return err
+				}
+
+				// Store the effective resources back to the task
+				task.Resources = resources
+
 				resourceLimits := config.GetResourceLimits(r.Executor.Resources)
 
 				taskCommand = &KubernetesCommand{
@@ -293,6 +301,14 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			}
 
 			ignoreError = d.GetIgnoreError()
+		}
+
+		if r.Executor.Backend == "kubernetes" && resources != nil {
+			event.Metadata(map[string]string{
+				"effective_cpu_cores": fmt.Sprintf("%d", resources.CpuCores),
+				"effective_ram_gb":    fmt.Sprintf("%.2f", resources.RamGb),
+				"effective_disk_gb":   fmt.Sprintf("%.2f", resources.DiskGb),
+			})
 		}
 	}
 

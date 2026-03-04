@@ -16,7 +16,7 @@ import (
 )
 
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
-func CreatePV(taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreatePV(ctx context.Context, taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
 	t, err := template.New(taskId).Parse(config.Kubernetes.PVTemplate)
@@ -48,7 +48,7 @@ func CreatePV(taskId string, config *config.Config, client kubernetes.Interface,
 		return fmt.Errorf("failed to decode PV spec")
 	}
 
-	_, err = client.CoreV1().PersistentVolumes().Create(context.Background(), pv, metav1.CreateOptions{})
+	_, err = client.CoreV1().PersistentVolumes().Create(ctx, pv, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

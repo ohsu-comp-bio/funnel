@@ -17,7 +17,7 @@ import (
 )
 
 // Create the Worker/Executor RoleBinding from config/kubernetes-rolebinding.yaml
-func CreateRoleBinding(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateRoleBinding(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
 	t, err := template.New(task.Id).Parse(config.Kubernetes.RoleBindingTemplate)
@@ -55,7 +55,7 @@ func CreateRoleBinding(task *tes.Task, config *config.Config, client kubernetes.
 		return fmt.Errorf("failed to decode RoleBinding spec")
 	}
 
-	_, err = client.RbacV1().RoleBindings(config.Kubernetes.JobsNamespace).Create(context.Background(), roleBinding, metav1.CreateOptions{})
+	_, err = client.RbacV1().RoleBindings(config.Kubernetes.JobsNamespace).Create(ctx, roleBinding, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create RoleBinding: %v", err)
 	}

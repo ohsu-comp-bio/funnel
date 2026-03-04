@@ -17,7 +17,7 @@ import (
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	// Parse Worker Template
 
 	log.Debug("Creating job from template", "template", config.Kubernetes.WorkerTemplate)
@@ -26,7 +26,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		return fmt.Errorf("%v", err)
 	}
 
-	pods, err := client.CoreV1().Pods(config.Kubernetes.Namespace).List(context.Background(), metav1.ListOptions{
+	pods, err := client.CoreV1().Pods(config.Kubernetes.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "app=funnel",
 	})
 	if err != nil {
@@ -76,7 +76,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 	}
 
 	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", config.Kubernetes.JobsNamespace)
-	_, err = client.BatchV1().Jobs(config.Kubernetes.JobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
+	_, err = client.BatchV1().Jobs(config.Kubernetes.JobsNamespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

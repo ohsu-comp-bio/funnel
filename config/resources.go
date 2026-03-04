@@ -20,6 +20,9 @@ func ApplyDefaultResources(res *tes.Resources, k8s *KubernetesResources) *tes.Re
 	if res == nil {
 		res = &tes.Resources{}
 	}
+	if k8s == nil || k8s.Defaults == nil {
+		return res
+	}
 	var err error
 
 	// Apply defaults if not specified
@@ -52,6 +55,9 @@ func ApplyDefaultResources(res *tes.Resources, k8s *KubernetesResources) *tes.Re
 
 func GetResourceLimits(k8s *KubernetesResources) *tes.Resources {
 	res := &tes.Resources{}
+	if k8s == nil || k8s.Limits == nil {
+		return res
+	}
 	var err error
 	res.CpuCores, err = ParseCpus(k8s.Limits.Cpus)
 	if err != nil {
@@ -67,6 +73,33 @@ func GetResourceLimits(k8s *KubernetesResources) *tes.Resources {
 	}
 
 	return res
+}
+
+type ResourceValidationError struct {
+	Field     string
+	Requested float64
+	Limit     float64
+}
+
+func (e *ResourceValidationError) Error() string {
+	return fmt.Sprintf("requested %s %.2f exceeds limit %.2f", e.Field, e.Requested, e.Limit)
+}
+
+func ApplyDefaultsAndLimits(res *tes.Resources, k8s *KubernetesResources) (*tes.Resources, error) {
+	res = ApplyDefaultResources(res, k8s)
+	limits := GetResourceLimits(k8s)
+
+	if limits.CpuCores > 0 && res.CpuCores > limits.CpuCores {
+		return nil, &ResourceValidationError{Field: "cpu_cores", Requested: float64(res.CpuCores), Limit: float64(limits.CpuCores)}
+	}
+	if limits.RamGb > 0 && res.RamGb > limits.RamGb {
+		return nil, &ResourceValidationError{Field: "ram_gb", Requested: res.RamGb, Limit: limits.RamGb}
+	}
+	if limits.DiskGb > 0 && res.DiskGb > limits.DiskGb {
+		return nil, &ResourceValidationError{Field: "disk_gb", Requested: res.DiskGb, Limit: limits.DiskGb}
+	}
+
+	return res, nil
 }
 
 // ParseCPU parses Kubernetes-style CPU values (e.g., "100m", "0.5", "2")

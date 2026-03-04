@@ -154,6 +154,33 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 		if err != nil {
 			return err
 		}
+
+	case events.Type_TASK_RESOURCES:
+		r := req.GetResources()
+		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
+			if err := checkOwner(tx, req.Id, ctx); err != nil {
+				return err
+			}
+			task := &tes.Task{}
+			if err := loadTask(tx, req.Id, task, ctx); err != nil {
+				return err
+			}
+			if task.Resources == nil {
+				task.Resources = &tes.Resources{}
+			}
+			task.Resources.CpuCores = r.CpuCores
+			task.Resources.RamGb = r.RamGb
+			task.Resources.DiskGb = r.DiskGb
+			task.Resources.Preemptible = r.Preemptible
+			task.Resources.BackendParameters = r.BackendParameters
+			task.Resources.Zones = r.Zones
+			taskBytes, merr := proto.Marshal(task)
+			if merr != nil {
+				return merr
+			}
+			tx.Bucket(TaskBucket).Put([]byte(req.Id), taskBytes)
+			return nil
+		})
 	}
 
 	return err

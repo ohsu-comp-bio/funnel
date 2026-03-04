@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateConfigMap(taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	configBytes, err := config.ToYaml(conf)
 	if err != nil {
 		return fmt.Errorf("marshaling config to ConfigMap: %v", err)
@@ -28,7 +28,7 @@ func CreateConfigMap(taskId string, conf *config.Config, client kubernetes.Inter
 		},
 	}
 
-	_, err = client.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Create(context.Background(), cm, metav1.CreateOptions{})
+	_, err = client.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Create(ctx, cm, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

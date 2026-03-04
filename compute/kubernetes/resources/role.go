@@ -17,7 +17,7 @@ import (
 )
 
 // Create the Worker/Executor Role from config/kubernetes-role.yaml
-func CreateRole(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateRole(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
 	t, err := template.New(task.Id).Parse(config.Kubernetes.RoleTemplate)
@@ -47,7 +47,7 @@ func CreateRole(task *tes.Task, config *config.Config, client kubernetes.Interfa
 		return fmt.Errorf("failed to verify Role spec")
 	}
 
-	_, err = client.RbacV1().Roles(config.Kubernetes.JobsNamespace).Create(context.Background(), role, metav1.CreateOptions{})
+	_, err = client.RbacV1().Roles(config.Kubernetes.JobsNamespace).Create(ctx, role, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create Role: %v", err)
 	}

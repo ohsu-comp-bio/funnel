@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -196,6 +197,9 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 			Err:     err,
 		}
 	}
+
+	// TODO: Small sleep to ensure logs are ready
+	time.Sleep(120 * time.Second)
 
 	logger.Debug("Streaming pod logs", "podName", pod.Name)
 	err = streamPodLogs(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout, kcmd.Stderr)

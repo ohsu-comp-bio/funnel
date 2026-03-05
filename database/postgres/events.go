@@ -76,7 +76,7 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 
 		return retrier.Retry(ctx, func() error {
 			// Get current state & version
-			state, oldVersion, owner, err := db.findTaskStateAndVersion(ctx, req.Id)
+			_, oldVersion, owner, err := db.findTaskStateAndVersion(ctx, req.Id)
 			if err != nil {
 				return tes.ErrNotFound
 			}
@@ -85,17 +85,17 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 			}
 
 			// Validate state transition
-			to := req.GetState()
-			if err = tes.ValidateTransition(state, to); err != nil {
-				if tes.TerminalState(state) {
-					logger.Info("postgres: ignoring transition request for task in terminal state",
-						"taskId", req.Id,
-						"currentState", state,
-						"requestedState", to)
-					return nil // No-op on transition from terminal state
-				}
-				return err
-			}
+			// to := req.GetState()
+			// if err = tes.ValidateTransition(state, to); err != nil {
+			// 	if tes.TerminalState(state) {
+			// 		logger.Info("postgres: ignoring transition request for task in terminal state",
+			// 			"taskId", req.Id,
+			// 			"currentState", state,
+			// 			"requestedState", to)
+			// 		return nil // No-op on transition from terminal state
+			// 	}
+			// 	return err
+			// }
 
 			newVersion := time.Now().UnixNano()
 

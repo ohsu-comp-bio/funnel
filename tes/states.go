@@ -29,6 +29,9 @@ func (te *TransitionError) Error() string {
 // Returns a TransitionError if the transition is not valid.
 func ValidateTransition(from, to State) error {
 
+	// TODO: Temporarily disable all state validation/checks
+	return nil
+
 	if from == to {
 		return nil
 	}

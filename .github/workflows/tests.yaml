@@ -1,6 +1,7 @@
 name: Go Tests
 
 on:
+  # Run on push to main/master/develop (e.g. after PR is merged)
   push:
 
 # Cancel redundant jobs (if a new job is triggered for the same workflow and ref)
@@ -45,6 +46,16 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     - name: Unit Tests
       run: |

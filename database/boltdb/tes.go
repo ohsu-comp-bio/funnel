@@ -226,7 +226,7 @@ func (taskBolt *BoltDB) ListTasks(ctx context.Context, req *tes.ListTasksRequest
 	}
 
 	if len(tasks) == pageSize {
-		out.NextPageToken = tasks[len(tasks)-1].Id
+		out.NextPageToken = &tasks[len(tasks)-1].Id
 	}
 
 	return &out, nil

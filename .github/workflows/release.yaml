@@ -45,4 +45,4 @@ jobs:
           BRANCH: ${{ github.ref_name }}
         run: |
           export PATH="$HOME/go/bin:$PATH"
-          make release
+          goreleaser release --clean

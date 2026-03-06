@@ -9,6 +9,8 @@ import (
 
 	"dario.cat/mergo"
 	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -82,6 +84,22 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 		_, ok := b.backendParameters[k]
 		if !ok {
 			return status.Errorf(codes.InvalidArgument, "backend parameters not supported: %s", k)
+		}
+	}
+
+	return nil
+}
+
+func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
+	if !task.Resources.GetBackendParametersStrict() {
+		return nil
+	}
+
+	taskBackendParameters := task.Resources.GetBackendParameters()
+	for k := range taskBackendParameters {
+		_, ok := b.backendParameters[k]
+		if !ok {
+			return errors.New("backend parameters not supported")
 		}
 	}
 

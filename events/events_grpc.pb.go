@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.64.0 or later.
+const _ = grpc.SupportPackageIsVersion9
 
 const (
 	EventService_WriteEvent_FullMethodName = "/events.EventService/WriteEvent"
@@ -25,6 +25,9 @@ const (
 // EventServiceClient is the client API for EventService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// *
+// Event Service
 type EventServiceClient interface {
 	WriteEvent(ctx context.Context, in *Event, opts ...grpc.CallOption) (*WriteEventResponse, error)
 }
@@ -38,8 +41,9 @@ func NewEventServiceClient(cc grpc.ClientConnInterface) EventServiceClient {
 }
 
 func (c *eventServiceClient) WriteEvent(ctx context.Context, in *Event, opts ...grpc.CallOption) (*WriteEventResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WriteEventResponse)
-	err := c.cc.Invoke(ctx, EventService_WriteEvent_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, EventService_WriteEvent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +73,13 @@ type UnsafeEventServiceServer interface {
 }
 
 func RegisterEventServiceServer(s grpc.ServiceRegistrar, srv EventServiceServer) {
+	// If the following call pancis, it indicates UnimplementedEventServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
 	s.RegisterService(&EventService_ServiceDesc, srv)
 }
 

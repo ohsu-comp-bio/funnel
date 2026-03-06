@@ -1445,8 +1445,8 @@ func (*ListTasksResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTasksResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
+	if x != nil && x.NextPageToken != nil {
+		return *x.NextPageToken
 	}
 	return ""
 }

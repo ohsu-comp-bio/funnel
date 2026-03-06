@@ -163,7 +163,7 @@ message Input {
 }
 
 message ListTasksResponse { 
-	string next_page_token = 1;
+	optional string next_page_token = 1;
 	repeated Task tasks = 2;
 }
 

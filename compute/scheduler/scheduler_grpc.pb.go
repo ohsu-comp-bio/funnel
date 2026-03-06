@@ -15,8 +15,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
-const _ = grpc.SupportPackageIsVersion7
+// Requires gRPC-Go v1.64.0 or later.
+const _ = grpc.SupportPackageIsVersion9
 
 const (
 	SchedulerService_PutNode_FullMethodName    = "/scheduler.SchedulerService/PutNode"
@@ -28,6 +28,9 @@ const (
 // SchedulerServiceClient is the client API for SchedulerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// *
+// Scheduler Service
 type SchedulerServiceClient interface {
 	PutNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*PutNodeResponse, error)
 	DeleteNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*DeleteNodeResponse, error)
@@ -44,8 +47,9 @@ func NewSchedulerServiceClient(cc grpc.ClientConnInterface) SchedulerServiceClie
 }
 
 func (c *schedulerServiceClient) PutNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*PutNodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PutNodeResponse)
-	err := c.cc.Invoke(ctx, SchedulerService_PutNode_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, SchedulerService_PutNode_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +57,9 @@ func (c *schedulerServiceClient) PutNode(ctx context.Context, in *Node, opts ...
 }
 
 func (c *schedulerServiceClient) DeleteNode(ctx context.Context, in *Node, opts ...grpc.CallOption) (*DeleteNodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteNodeResponse)
-	err := c.cc.Invoke(ctx, SchedulerService_DeleteNode_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, SchedulerService_DeleteNode_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +67,9 @@ func (c *schedulerServiceClient) DeleteNode(ctx context.Context, in *Node, opts 
 }
 
 func (c *schedulerServiceClient) ListNodes(ctx context.Context, in *ListNodesRequest, opts ...grpc.CallOption) (*ListNodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListNodesResponse)
-	err := c.cc.Invoke(ctx, SchedulerService_ListNodes_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, SchedulerService_ListNodes_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +77,9 @@ func (c *schedulerServiceClient) ListNodes(ctx context.Context, in *ListNodesReq
 }
 
 func (c *schedulerServiceClient) GetNode(ctx context.Context, in *GetNodeRequest, opts ...grpc.CallOption) (*Node, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Node)
-	err := c.cc.Invoke(ctx, SchedulerService_GetNode_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, SchedulerService_GetNode_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +121,13 @@ type UnsafeSchedulerServiceServer interface {
 }
 
 func RegisterSchedulerServiceServer(s grpc.ServiceRegistrar, srv SchedulerServiceServer) {
+	// If the following call pancis, it indicates UnimplementedSchedulerServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
 	s.RegisterService(&SchedulerService_ServiceDesc, srv)
 }
 

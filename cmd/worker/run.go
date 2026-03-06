@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/ohsu-comp-bio/funnel/config"

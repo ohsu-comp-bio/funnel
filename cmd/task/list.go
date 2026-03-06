@@ -60,7 +60,7 @@ func List(server, taskView, pageToken, stateFilter string, tagsFilter []string, 
 
 		output.Tasks = append(output.Tasks, resp.Tasks...)
 		output.NextPageToken = resp.NextPageToken
-		pageToken = resp.NextPageToken
+		pageToken = *resp.NextPageToken
 
 		if !all || (all && pageToken == "") {
 			break

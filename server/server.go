@@ -194,6 +194,8 @@ func (s *Server) Serve(pctx context.Context) error {
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.Handle("/static/", dashfs)
 	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/login", auth.LoginHandler)
+	mux.HandleFunc("/login/token", auth.EchoTokenHandler)
 
 	// Login
 	mux.HandleFunc("/login", auth.LoginHandler)

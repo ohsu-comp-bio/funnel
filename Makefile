@@ -25,18 +25,18 @@ VERSION_LDFLAGS=\
 export CGO_ENABLED=0
 
 # Build the code
-install:
+install: proto
 	@touch version/version.go
 	@go install -ldflags '$(VERSION_LDFLAGS)' .
 
 # Build the code
-build:
+build: proto
 	@touch version/version.go
 	@go build -ldflags '$(VERSION_LDFLAGS)' -buildvcs=false .
 
 # Build an unoptimized version of the code for use during debugging
 # https://go.dev/doc/gdb
-debug:
+debug: proto
 	@go install -gcflags=all="-N -l"
 	@funnel server run
 
@@ -65,11 +65,11 @@ tidy:
 	@find . \( -path ./vendor -o -path ./webdash/node_modules -o -path ./venv -o -path ./.git \) -prune -o -type f -print | grep -v "\.pb\." | grep -v "web.go" | grep -E '.*\.go$$' | xargs gofmt -w -s
 
 lint-depends:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
-	go install golang.org/x/tools/cmd/goimports
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install golang.org/x/tools/cmd/goimports@latest
 
 # Run code style and other checks
-lint:
+lint: lint-depends
 	@golangci-lint run --timeout 3m --disable-all --enable=vet --enable=golint --enable=gofmt --enable=goimports --enable=misspell \
 		--skip-dirs "vendor" \
 		--skip-dirs "webdash" \

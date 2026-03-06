@@ -1,0 +1,20 @@
+{{- if .Values.storage.pv.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: funnel-pv
+  namespace: {{ .Release.Namespace }} 
+  labels:
+    app.kubernetes.io/name: funnel
+    app.kubernetes.io/instance: funnel
+spec:
+  capacity:
+    storage: {{ .Values.storage.size }}
+  accessModes: 
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storage.className }}
+  volumeMode: {{ .Values.storage.volumeMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.storage.pv.reclaimPolicy }}
+  hostPath:
+    path: {{ .Values.storage.path | default "/mnt/data" }}
+{{- end }}

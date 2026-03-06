@@ -105,7 +105,14 @@ func ensureDatabaseExists(ctx context.Context, conf config.Postgres) error {
 }
 
 func createResources(ctx context.Context, conf config.Postgres) error {
-	connStr := getAdminConnStr(conf)
+	adminConf := config.Postgres{
+		Host:     conf.Host,
+		User:     conf.AdminUser,
+		Password: conf.AdminPassword,
+		Database: "postgres",
+	}
+
+	connStr := getConnStr(adminConf)
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
 		return fmt.Errorf("failed to connect as admin for bootstrap: %w", err)
@@ -130,6 +137,20 @@ func createResources(ctx context.Context, conf config.Postgres) error {
 		if _, err := conn.Exec(ctx, createDB); err != nil {
 			return fmt.Errorf("failed to create app database: %w", err)
 		}
+	}
+
+	// Now reconnect to the funnel database to grant schema permissions
+	adminConf.Database = conf.Database // Now connect to funnel DB
+	funnelConnStr := getConnStr(adminConf)
+	funnelConn, err := pgx.Connect(ctx, funnelConnStr)
+	if err != nil {
+		return fmt.Errorf("failed to connect to funnel database: %w", err)
+	}
+	defer funnelConn.Close(ctx)
+
+	grantSchema := fmt.Sprintf("GRANT ALL ON SCHEMA public TO %s", conf.User)
+	if _, err := funnelConn.Exec(ctx, grantSchema); err != nil {
+		return fmt.Errorf("failed to grant schema privileges: %w", err)
 	}
 
 	return nil

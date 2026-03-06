@@ -11,6 +11,9 @@ import (
 	"github.com/ohsu-comp-bio/funnel/server"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // WriteEvent creates an event for the server to handle.
@@ -57,15 +60,25 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 	case events.Type_TASK_STATE:
 		retrier := util.NewRetrier()
 		retrier.ShouldRetry = func(err error) bool {
+			// Check if it's an InvalidArgument (400) gRPC error
+			if st, ok := status.FromError(err); ok {
+				if st.Code() == codes.InvalidArgument {
+					return false
+				}
+			}
+
 			_, isTransitionError := err.(*tes.TransitionError)
-			return !isTransitionError && err != tes.ErrNotFound && err != tes.ErrNotPermitted
+			shouldRetry := !isTransitionError &&
+				err != tes.ErrNotFound &&
+				err != tes.ErrNotPermitted
+			return shouldRetry
 		}
 
 		return retrier.Retry(ctx, func() error {
 			// Get current state & version
 			state, oldVersion, owner, err := db.findTaskStateAndVersion(ctx, req.Id)
 			if err != nil {
-				return fmt.Errorf("postgres: failed to find task state of task: %v", req.Id)
+				return tes.ErrNotFound
 			}
 			if !server.GetUser(ctx).IsAccessible(owner) {
 				return tes.ErrNotPermitted
@@ -74,7 +87,13 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 			// Validate state transition
 			to := req.GetState()
 			if err = tes.ValidateTransition(state, to); err != nil {
-				logger.Debug("postgres: invalid state transition", "taskID", req.Id, "from", state, "to", to, "error", err)
+				if tes.TerminalState(state) {
+					logger.Info("postgres: ignoring transition request for task in terminal state",
+						"taskId", req.Id,
+						"currentState", state,
+						"requestedState", to)
+					return nil // No-op on transition from terminal state
+				}
 				return err
 			}
 
@@ -184,16 +203,10 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 			SET data = jsonb_set(data, $1::text[], $2::jsonb, true)
 			WHERE id = $3
 		`
-		fmt.Println("DEBUG: jsonPath:", jsonPath)
-		fmt.Println("DEBUG: jsonValue:", jsonValue)
-		fmt.Println("DEBUG: updateSQL:", updateSQL)
 		jsonVal, _ := json.Marshal(jsonValue)
-		fmt.Println("DEBUG: jsonVal:", string(jsonVal))
 		_, err := db.client.Exec(ctx, updateSQL, jsonPath, jsonVal, selector)
 
 		// Log error
-		logger.Error("Postgres WriteEvent", "Error", err)
-		fmt.Println("DEBUG: Postgres WriteEvent error:", err)
 		return err
 
 	// System Log
@@ -220,10 +233,8 @@ func (db *Postgres) WriteEvent(ctx context.Context, req *events.Event) error {
 		}
 
 		currentLogs = append(currentLogs, logValue)
-		fmt.Printf("DEBUG: System logs for task %s: adding '%s', total count: %d\n", selector, logValue, len(currentLogs))
 
 		newLogsJSON, _ := json.Marshal(currentLogs)
-		fmt.Printf("DEBUG: Updated system logs JSON: %s\n", string(newLogsJSON))
 
 		updateSQL := `
             UPDATE tasks

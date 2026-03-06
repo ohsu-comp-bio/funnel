@@ -31,6 +31,8 @@ func Run(ctx context.Context, conf *config.Config, log *logger.Logger, opts *Opt
 
 // NewWorker returns a new Funnel worker based on the given config.
 func NewWorker(ctx context.Context, conf *config.Config, log *logger.Logger, opts *Options) (*worker.DefaultWorker, error) {
+	log.Debug("NewWorker", "config", conf.Safe())
+
 	err := validateConfig(conf, opts)
 	if err != nil {
 		return nil, fmt.Errorf("validating config: %v", err)
@@ -180,7 +182,7 @@ func (e *eventWriterBuilder) Add(ctx context.Context, name string, conf *config.
 	var err error
 	var writer events.Writer
 
-	switch name {
+	switch strings.ToLower(name) {
 	case "log":
 		writer = &events.Logger{Log: log}
 	case "boltdb", "badger", "grpc", "rpc":
@@ -215,7 +217,7 @@ func validateConfig(conf *config.Config, opts *Options) error {
 	// only a subset of event writers are supported.
 	if opts.TaskFile != "" || opts.TaskBase64 != "" {
 		for _, e := range conf.EventWriters {
-			if e != "log" && e != "kafka" && e != "pubsub" {
+			if strings.ToLower(e) != "log" && strings.ToLower(e) != "kafka" && strings.ToLower(e) != "pubsub" {
 				return fmt.Errorf("event writer %q is not supported with a task file/string reader", e)
 			}
 		}

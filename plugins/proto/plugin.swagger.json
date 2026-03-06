@@ -762,7 +762,7 @@
       "properties": {
         "Cpus": {
           "type": "integer",
-          "format": "int32"
+          "format": "int64"
         },
         "RamGb": {
           "type": "number",
@@ -953,10 +953,10 @@
     "loggerJSONFormatConfig": {
       "type": "object",
       "properties": {
-        "disableTimestamp": {
+        "DisableTimestamp": {
           "type": "boolean"
         },
-        "timestampFormat": {
+        "TimestampFormat": {
           "type": "string"
         }
       }
@@ -964,19 +964,19 @@
     "loggerLoggerConfig": {
       "type": "object",
       "properties": {
-        "level": {
+        "Level": {
           "type": "string"
         },
-        "formatter": {
+        "Formatter": {
           "type": "string"
         },
-        "outputFile": {
+        "OutputFile": {
           "type": "string"
         },
-        "jsonFormat": {
+        "JsonFormat": {
           "$ref": "#/definitions/loggerJSONFormatConfig"
         },
-        "textFormat": {
+        "TextFormat": {
           "$ref": "#/definitions/loggerTextFormatConfig"
         }
       }
@@ -984,25 +984,25 @@
     "loggerTextFormatConfig": {
       "type": "object",
       "properties": {
-        "forceColors": {
+        "ForceColors": {
           "type": "boolean"
         },
-        "disableColors": {
+        "DisableColors": {
           "type": "boolean"
         },
-        "disableTimestamp": {
+        "DisableTimestamp": {
           "type": "boolean"
         },
-        "fullTimestamp": {
+        "FullTimestamp": {
           "type": "boolean"
         },
-        "timestampFormat": {
+        "TimestampFormat": {
           "type": "string"
         },
-        "disableSorting": {
+        "DisableSorting": {
           "type": "boolean"
         },
-        "indent": {
+        "Indent": {
           "type": "string"
         }
       }

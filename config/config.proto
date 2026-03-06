@@ -117,7 +117,7 @@ message Scheduler {
 
 // Resources describes the CPU, RAM, and disk resources required by a task.
 message Resources {
-    int32 Cpus = 1;
+    uint32 Cpus = 1;
     double RamGb = 2;
     double DiskGb = 3;
 }

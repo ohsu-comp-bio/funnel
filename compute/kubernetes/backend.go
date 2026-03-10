@@ -170,12 +170,6 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
-		// Check to make sure required configs are present
-		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
-			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
-			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
-		}
-
 		// Create PV
 		err := resources.CreatePV(task.Id,
 			config,

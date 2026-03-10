@@ -15,7 +15,12 @@ echo ""
 
 # ── Registry login ─────────────────────────────────────────────────────────────
 echo "=== Logging in to Docker Hub ==="
-docker login docker.io
+# Reads DOCKERHUB_USER / DOCKERHUB_PASS from env, or falls back to interactive.
+if [[ -n "${DOCKERHUB_USER:-}" && -n "${DOCKERHUB_PASS:-}" ]]; then
+  echo "$DOCKERHUB_PASS" | docker login docker.io -u "$DOCKERHUB_USER" --password-stdin
+else
+  docker login docker.io
+fi
 
 echo "=== Logging in to ECR ==="
 aws ecr get-login-password --region eu-west-1 | \

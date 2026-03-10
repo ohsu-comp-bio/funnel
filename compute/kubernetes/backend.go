@@ -201,43 +201,42 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		return fmt.Errorf("creating Worker ConfigMap: %v", err)
 	}
 
-	// Create ServiceAccount:
-	// - This should only be created if no such ServiceAccount with the same name exists
-	// - ServiceAccount will still always need to be added to Worker Job and Executor
-	saName := "funnel-worker-sa-%s-%s"
-	saName = fmt.Sprintf(saName, config.Kubernetes.JobsNamespace, task.Id)
-	if _, exists := task.Tags["_WORKER_SA"]; exists {
-		saName = task.Tags["_WORKER_SA"]
-	}
-
-	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
-	// e.g. network issues, permission issues, etc.
-	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
-
-	// ServiceAccount does not exist, create it
-	if err != nil {
-		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
-		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-		err = resources.CreateServiceAccount(task, config, b.client, b.log)
-		if err != nil {
-			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+	// Create ServiceAccount, Role, and RoleBinding only if templates are configured.
+	// These are optional — useful for per-task cloud credentials (e.g. OVH),
+	// but not needed when workers already run under a shared ServiceAccount (e.g. AWS IRSA).
+	if config.Kubernetes.ServiceAccountTemplate != "" {
+		saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
+		if _, exists := task.Tags["_WORKER_SA"]; exists {
+			saName = task.Tags["_WORKER_SA"]
 		}
-	} else {
-		b.log.Error("Error getting ServiceAccount", "serviceAccount", saName, "taskID", task.Id, "error", err)
+
+		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
+		if err != nil {
+			// ServiceAccount does not exist, create it
+			b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
+			err = resources.CreateServiceAccount(task, config, b.client, b.log)
+			if err != nil {
+				return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+			}
+		}
 	}
 
-	// Create Role
-	b.log.Debug("creating Worker Role", "taskID", task.Id)
-	err = resources.CreateRole(task, config, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker Role: %v", err)
+	if config.Kubernetes.RoleTemplate != "" {
+		// Create Role
+		b.log.Debug("creating Worker Role", "taskID", task.Id)
+		err = resources.CreateRole(task, config, b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker Role: %v", err)
+		}
 	}
 
-	// Create RoleBinding
-	b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-	err = resources.CreateRoleBinding(task, config, b.client, b.log)
-	if err != nil {
-		return fmt.Errorf("creating Worker RoleBinding: %v", err)
+	if config.Kubernetes.RoleBindingTemplate != "" {
+		// Create RoleBinding
+		b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
+		err = resources.CreateRoleBinding(task, config, b.client, b.log)
+		if err != nil {
+			return fmt.Errorf("creating Worker RoleBinding: %v", err)
+		}
 	}
 
 	// Create Worker Job

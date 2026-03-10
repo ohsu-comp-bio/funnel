@@ -8,8 +8,11 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	"time"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
@@ -147,6 +150,10 @@ func (s *Server) Serve(pctx context.Context) error {
 	auth := NewAuthentication(s.BasicAuth, s.OidcAuth, s.TaskAccess)
 
 	grpcServer := grpc.NewServer(
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             10 * time.Second, // min interval between client pings
+			PermitWithoutStream: true,             // allow pings when no active RPCs
+		}),
 		grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(
 				// API auth check.
@@ -156,8 +163,34 @@ func (s *Server) Serve(pctx context.Context) error {
 		),
 	)
 
+	// Retry service config: transparently retry transient gRPC stream errors
+	// (e.g. UNAVAILABLE after idle connection is closed by the server).
+	// This prevents grpc-gateway from dropping the HTTP connection on the first
+	// failed attempt when the internal gRPC connection has gone idle.
+	const grpcServiceConfig = `{
+		"methodConfig": [{
+			"name": [{"service": ""}],
+			"retryPolicy": {
+				"maxAttempts": 4,
+				"initialBackoff": "0.1s",
+				"maxBackoff": "1s",
+				"backoffMultiplier": 2,
+				"retryableStatusCodes": ["UNAVAILABLE", "RESOURCE_EXHAUSTED"]
+			}
+		}]
+	}`
+
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		// Keep the internal gateway→gRPC connection alive so idle periods
+		// don't cause the server to send GOAWAY and drop the next request.
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                20 * time.Second, // send pings every 20s if idle
+			Timeout:             5 * time.Second,  // wait 5s for ping ack
+			PermitWithoutStream: true,             // ping even with no active RPCs
+		}),
+		// Retry on transient errors at the gRPC level before surfacing to HTTP.
+		grpc.WithDefaultServiceConfig(grpcServiceConfig),
 	}
 
 	// Set up HTTP proxy of gRPC API

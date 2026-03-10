@@ -94,6 +94,12 @@ func (mapper *FileMapper) MapTask(task *tes.Task) error {
 		}
 	}
 
+	// Consolidate read-only input volumes into the fewest possible ancestor
+	// directory mounts. This eliminates file-level bind mounts (which cause
+	// EBUSY when a task script calls mv/unlink on a mounted file path) and
+	// shrinks the nerdctl/mounts container label.
+	mapper.consolidateVolumes()
+
 	return nil
 }
 
@@ -263,6 +269,16 @@ func (mapper *FileMapper) AddVolume(hostPath string, mountPoint string, readonly
 				return nil
 			} else if mapper.IsSubpath(v.ContainerPath, vol.ContainerPath) {
 				mapper.Volumes[i] = vol
+				return nil
+			}
+		}
+
+		// If the proposed readonly volume (e.g. an input file) is a subpath of an
+		// existing RW volume, the file is already accessible through the parent
+		// directory mount. Skip it to avoid creating overlapping bind mounts which
+		// cause containerd to present the path as a directory instead of a file.
+		if vol.Readonly && !v.Readonly {
+			if mapper.IsSubpath(vol.ContainerPath, v.ContainerPath) {
 				return nil
 			}
 		}
@@ -454,6 +470,116 @@ func (mapper *FileMapper) ContainerPath(src string) string {
 	p := strings.TrimPrefix(src, mapper.WorkDir)
 	p = path.Clean("/" + p)
 	return p
+}
+
+// consolidateVolumes collapses all read-only (input) volumes into the fewest
+// possible ancestor directory mounts, eliminating file-level bind mounts.
+//
+// File-level bind mounts cause EBUSY when a task script calls mv or unlink on
+// a mounted path (the kernel refuses to unlink a bind-mount point). Mounting
+// the common ancestor directory instead avoids this entirely, and also reduces
+// the total number of --volume flags (shrinking the nerdctl/mounts label).
+//
+// All volumes in mapper.Volumes are guaranteed to be under mapper.WorkDir
+// (enforced by HostPath()). WorkDir is ephemeral scratch, so consolidated
+// mounts are emitted as Readonly=false — the task may freely mv/ln inputs.
+//
+// Algorithm:
+//  1. Separate Readonly (input) volumes from writable (tmp/output) volumes.
+//  2. Find the deepest common directory ancestor of all input container paths.
+//  3. Replace the entire input set with one mount at that ancestor.
+//  4. Fall back to per-volume parent-dir promotion when inputs span disjoint
+//     subtrees and the ancestor collapses to root.
+func (mapper *FileMapper) consolidateVolumes() {
+	var roVols, rwVols []Volume
+	for _, v := range mapper.Volumes {
+		if v.Readonly {
+			roVols = append(roVols, v)
+		} else {
+			rwVols = append(rwVols, v)
+		}
+	}
+
+	if len(roVols) == 0 {
+		return
+	}
+
+	// Find the deepest common directory ancestor of all input container paths.
+	contPaths := make([]string, len(roVols))
+	for i, v := range roVols {
+		contPaths[i] = v.ContainerPath
+	}
+	ancestor := volumeCommonDirAncestor(contPaths)
+
+	if ancestor != "" && ancestor != "/" && ancestor != "." {
+		// All inputs share a common ancestor — one mount covers them all.
+		// WorkDir+ancestor is valid by the HostPath() construction invariant
+		// (every input host path == WorkDir + container path).
+		rwVols = append(rwVols, Volume{
+			HostPath:      filepath.Join(mapper.WorkDir, ancestor),
+			ContainerPath: ancestor,
+			Readonly:      false,
+		})
+	} else {
+		// Inputs span disjoint subtrees; fall back to promoting each to its
+		// immediate parent directory to at least eliminate file-level mounts.
+		seen := map[string]bool{}
+		for _, v := range roVols {
+			contParent := filepath.Dir(v.ContainerPath)
+			hostParent := filepath.Dir(v.HostPath)
+			key := hostParent + ":" + contParent
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			rwVols = append(rwVols, Volume{
+				HostPath:      hostParent,
+				ContainerPath: contParent,
+				Readonly:      false,
+			})
+		}
+	}
+	mapper.Volumes = rwVols
+}
+
+// volumeCommonDirAncestor returns the deepest directory that is a common
+// ancestor of the parent directories of all given paths.
+// For a single path it returns filepath.Dir of that path (promoting a lone
+// file to its containing directory).
+func volumeCommonDirAncestor(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+	ancestor := filepath.Dir(paths[0])
+	for _, p := range paths[1:] {
+		ancestor = volumeCommonPathPrefix(ancestor, filepath.Dir(p))
+		if ancestor == "/" || ancestor == "." {
+			break
+		}
+	}
+	return ancestor
+}
+
+// volumeCommonPathPrefix returns the longest common directory-component prefix
+// of two absolute paths (e.g. "/a/b/c" and "/a/b/d" → "/a/b").
+func volumeCommonPathPrefix(a, b string) string {
+	aParts := strings.Split(strings.TrimPrefix(a, "/"), "/")
+	bParts := strings.Split(strings.TrimPrefix(b, "/"), "/")
+	n := len(aParts)
+	if len(bParts) < n {
+		n = len(bParts)
+	}
+	var common []string
+	for i := 0; i < n; i++ {
+		if aParts[i] != bParts[i] {
+			break
+		}
+		common = append(common, aParts[i])
+	}
+	if len(common) == 0 {
+		return "/"
+	}
+	return "/" + strings.Join(common, "/")
 }
 
 // Cleanup deletes the working directory.

@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"regexp"
+	"strconv"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -14,6 +16,21 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 )
+
+// sanitizeLabelValue converts an arbitrary string into a valid Kubernetes label
+// value: replaces any character outside [A-Za-z0-9._-] with '-', strips
+// leading/trailing non-alphanumeric characters, and truncates to 63 chars.
+var labelInvalidChars = regexp.MustCompile(`[^A-Za-z0-9._-]`)
+var labelEdgeTrim = regexp.MustCompile(`^[^A-Za-z0-9]+|[^A-Za-z0-9]+$`)
+
+func sanitizeLabelValue(s string) string {
+	s = labelInvalidChars.ReplaceAllString(s, "-")
+	if len(s) > 63 {
+		s = s[:63]
+	}
+	s = labelEdgeTrim.ReplaceAllString(s, "")
+	return s
+}
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
@@ -38,13 +55,26 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		res = &tes.Resources{}
 	}
 
+	// Resolve BackoffLimit: prefer backend_parameters["backoff_limit"], else default 10.
+	backoffLimit := 10
+	if bp := res.GetBackendParameters(); bp != nil {
+		if v, ok := bp["backoff_limit"]; ok && v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+				backoffLimit = n
+			}
+		}
+	}
+
 	templateData := map[string]interface{}{
 		"TaskId":             task.Id,
+		"TaskName":           task.Name,
+		"TaskNameLabel":      sanitizeLabelValue(task.Name),
 		"Namespace":          config.Kubernetes.Namespace,
 		"JobsNamespace":      config.Kubernetes.JobsNamespace,
 		"Cpus":               res.GetCpuCores(),
 		"RamGb":              res.GetRamGb(),
 		"DiskGb":             res.GetDiskGb(),
+		"BackoffLimit":       backoffLimit,
 		"Image":              pods.Items[0].Spec.Containers[0].Image,
 		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0,
 		"NodeSelector":       config.Kubernetes.NodeSelector,

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/ohsu-comp-bio/funnel/events"
+	tes "github.com/ohsu-comp-bio/funnel/tes"
 )
 
 // DockerCommand is responsible for configuring and running a docker container.
@@ -30,7 +32,18 @@ type DockerCommand struct {
 	StopCommand     string // template string
 	EnableTags      bool
 	Tags            map[string]string
+	Resources       *tes.Resources
 	Command
+}
+
+// MemoryMB returns the task's requested RAM as an integer megabyte value
+// suitable for passing to nerdctl/docker --memory flag (e.g. "2048m").
+// Returns 0 if no memory limit is set.
+func (docker DockerCommand) MemoryMB() int64 {
+	if docker.Resources == nil || docker.Resources.RamGb <= 0 {
+		return 0
+	}
+	return int64(math.Round(docker.Resources.RamGb * 1024))
 }
 
 type DockerVersion struct {

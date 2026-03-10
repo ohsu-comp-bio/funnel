@@ -36,18 +36,17 @@ func (taskBolt *BoltDB) WriteEvent(ctx context.Context, req *events.Event) error
 		if err != nil {
 			return err
 		}
+		// Combine task storage and queueing into single transaction to avoid BoltDB write lock contention
 		err = taskBolt.db.Update(func(tx *bolt.Tx) error {
 			tx.Bucket(TaskBucket).Put(idBytes, taskString)
 			tx.Bucket(TaskState).Put(idBytes, []byte(tes.State_QUEUED.String()))
 			tx.Bucket(TaskOwner).Put(idBytes, []byte(server.GetUsername(ctx)))
+			// Queue task in same transaction to avoid double-locking
+			tx.Bucket(TasksQueued).Put(idBytes, []byte{})
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("error storing task in database: %s", err)
-		}
-		err = taskBolt.queueTask(task)
-		if err != nil {
-			return fmt.Errorf("error queueing task in database: %s", err)
+			return fmt.Errorf("error storing and queueing task: %s", err)
 		}
 		return nil
 	}

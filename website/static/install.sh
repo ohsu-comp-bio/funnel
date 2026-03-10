@@ -151,9 +151,19 @@ download() {
 verify() {
 	# Verify checksum
 	echo "Verifying checksum..."
-	CHECKSUM_EXPECTED=$(grep $TAR_NAME $CHECKSUM_FILE | awk '{print $1}')
-	CHECKSUM_ACTUAL=$(shasum -a 256 $TAR_NAME | awk '{print $1}')
+	CHECKSUM_EXPECTED=$(grep "$TAR_NAME" "$CHECKSUM_FILE" | awk '{print $1}')
 
+	if command -v sha256sum >/dev/null 2>&1; then
+		CHECKSUM_ACTUAL=$(sha256sum "$TAR_NAME" | awk '{print $1}')
+	elif command -v shasum >/dev/null 2>&1; then
+		CHECKSUM_ACTUAL=$(shasum -a 256 "$TAR_NAME" | awk '{print $1}')
+	elif command -v openssl >/dev/null 2>&1; then
+		# openssl dgst -sha256 outputs: "SHA256(filename)= <hash>"
+		CHECKSUM_ACTUAL=$(openssl dgst -sha256 "$TAR_NAME" | awk '{print $2}')
+	else
+		echo "No SHA-256 checksum tool found (tried: sha256sum, shasum, openssl). Exiting..."
+		exit 1
+	fi
 	if [ "$CHECKSUM_EXPECTED" != "$CHECKSUM_ACTUAL" ]; then
 		echo "Checksum verification failed for $TAR_NAME. Exiting..."
 		exit 1

@@ -186,13 +186,28 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		}
 	}
 
-	// Create ConfigMap
-	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err := resources.CreateConfigMap(task.Id,
-		config, b.client, b.log)
-	if err != nil {
-		b.log.Error("creating Worker ConfigMap", "error", err)
-		return fmt.Errorf("creating Worker ConfigMap: %v", err)
+	// err is declared here for use across all conditional resource-creation
+	// blocks below (ConfigMap, ServiceAccount, Role, RoleBinding, Job).
+	var err error
+
+	// Create a per-task ConfigMap only when ConfigMapTemplate is configured.
+	// Most deployments mount the static funnel-config ConfigMap (shared across
+	// all tasks) via the WorkerTemplate volume spec — they do not need a
+	// per-task copy and should leave ConfigMapTemplate empty.
+	// A per-task ConfigMap is only required when the job template references
+	// {{.TaskId}}-suffixed ConfigMap names (e.g. funnel-worker-config-{{.TaskId}}),
+	// such as the upstream S3 CSI setup that injects per-task worker config.
+	// Skipping creation when unconfigured avoids unnecessary etcd writes,
+	// redundant duplication of the full config (including secrets) once per
+	// task, and eliminates the need for configmaps RBAC on clusters that use
+	// the static shared ConfigMap approach.
+	if config.Kubernetes.ConfigMapTemplate != "" {
+		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+		err = resources.CreateConfigMap(task.Id, config, b.client, b.log)
+		if err != nil {
+			b.log.Error("creating Worker ConfigMap", "error", err)
+			return fmt.Errorf("creating Worker ConfigMap: %v", err)
+		}
 	}
 
 	// Create ServiceAccount, Role, and RoleBinding only if templates are configured.
@@ -261,11 +276,13 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker PVC", "error", err)
 	}
 
-	// Delete ConfigMap
-	err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker ConfigMap", "error", err)
+	// Delete per-task ConfigMap only if ConfigMapTemplate was configured
+	if b.conf.Kubernetes.ConfigMapTemplate != "" {
+		err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			b.log.Error("deleting Worker ConfigMap", "error", err)
+		}
 	}
 
 	// Delete Job

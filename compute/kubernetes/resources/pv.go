@@ -25,13 +25,21 @@ func CreatePV(taskId string, config *config.Config, client kubernetes.Interface,
 	}
 
 	// Template parameters
+	// GenericS3 is optional; only S3 CSI PVTemplates reference these fields.
+	// Deployments using hostPath or other non-S3 PVTemplates leave them empty.
+	s3Bucket, s3Region, s3KmsKeyID := "", "", ""
+	if len(config.GenericS3) > 0 {
+		s3Bucket = config.GenericS3[0].Bucket
+		s3Region = config.GenericS3[0].Region
+		s3KmsKeyID = config.GenericS3[0].KmsKeyID
+	}
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
 		"Namespace": config.Kubernetes.JobsNamespace,
-		"Bucket":    config.GenericS3[0].Bucket,
-		"Region":    config.GenericS3[0].Region,
-		"KmsKeyID":  config.GenericS3[0].KmsKeyID,
+		"Bucket":    s3Bucket,
+		"Region":    s3Region,
+		"KmsKeyID":  s3KmsKeyID,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

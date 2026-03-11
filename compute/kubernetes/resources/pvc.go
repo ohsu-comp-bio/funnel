@@ -27,12 +27,19 @@ func CreatePVC(taskId string, config *config.Config, client kubernetes.Interface
 	}
 
 	// Template parameters
+	// GenericS3 is optional; only S3 CSI PVCTemplates reference these fields.
+	// Deployments using hostPath or other non-S3 PVCTemplates leave them empty.
+	s3Bucket, s3Region := "", ""
+	if len(config.GenericS3) > 0 {
+		s3Bucket = config.GenericS3[0].Bucket
+		s3Region = config.GenericS3[0].Region
+	}
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
 		"Namespace": jobNamespace,
-		"Bucket":    config.GenericS3[0].Bucket,
-		"Region":    config.GenericS3[0].Region,
+		"Bucket":    s3Bucket,
+		"Region":    s3Region,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

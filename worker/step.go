@@ -75,9 +75,8 @@ func (s *stepWorker) Run(ctx context.Context) error {
 			exitcode, err := getExitCode(result)
 			if err != nil {
 				s.Event.Error(err.Error())
-			} else {
-				s.Event.ExitCode(exitcode)
 			}
+			s.Event.ExitCode(exitcode)
 			return result
 		}
 	}

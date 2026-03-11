@@ -24,20 +24,14 @@ func CreatePV(taskId string, config *config.Config, client kubernetes.Interface,
 		return fmt.Errorf("parsing template: %v", err)
 	}
 
-	// Template parameters — GenericS3 fields are optional (e.g. when using hostPath PVs)
-	s3Bucket, s3Region, s3KmsKeyID := "", "", ""
-	if len(config.GenericS3) > 0 {
-		s3Bucket = config.GenericS3[0].Bucket
-		s3Region = config.GenericS3[0].Region
-		s3KmsKeyID = config.GenericS3[0].KmsKeyID
-	}
+	// Template parameters
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
 		"Namespace": config.Kubernetes.JobsNamespace,
-		"Bucket":    s3Bucket,
-		"Region":    s3Region,
-		"KmsKeyID":  s3KmsKeyID,
+		"Bucket":    config.GenericS3[0].Bucket,
+		"Region":    config.GenericS3[0].Region,
+		"KmsKeyID":  config.GenericS3[0].KmsKeyID,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

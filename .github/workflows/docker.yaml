@@ -108,7 +108,7 @@ jobs:
           tags: |
             # Semver tag
             # Ref: https://github.com/docker/metadata-action/tree/v5#typesemver
-            type=semver,pattern={{version}},value=${{ github.ref_name }}
+            type=semver,pattern={{version}},value=${{ github.ref_name }}, latest=true
 
             # Branch
             type=ref,event=branch

@@ -8,73 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func K8sConfigToTesResources(cpu, ram, disk string) *tes.Resources {
-	tr := &tes.Resources{}
-	tr.CpuCores, _ = ParseCpus(cpu)
-	tr.RamGb, _ = ParseMemory(ram)
-	tr.DiskGb, _ = ParseMemory(disk)
-	return tr
-}
-
-func ApplyDefaultResources(res *tes.Resources, k8s *KubernetesResources) *tes.Resources {
-	if res == nil {
-		res = &tes.Resources{}
-	}
-	if k8s == nil || k8s.Defaults == nil {
-		return res
-	}
-	var err error
-
-	// Apply defaults if not specified
-	// CPU Default
-	if res.CpuCores == 0 {
-		res.CpuCores, err = ParseCpus(k8s.Defaults.Cpus)
-		if err != nil {
-			res.CpuCores = 0
-		}
-	}
-
-	// Ram Default
-	if res.RamGb == 0 {
-		res.RamGb, err = ParseMemory(k8s.Defaults.RamGb)
-		if err != nil {
-			res.RamGb = 0
-		}
-	}
-
-	// Disk Default
-	if res.DiskGb == 0 {
-		res.DiskGb, err = ParseMemory(k8s.Defaults.DiskGb)
-		if err != nil {
-			res.DiskGb = 0
-		}
-	}
-
-	return res
-}
-
-func GetResourceLimits(k8s *KubernetesResources) *tes.Resources {
-	res := &tes.Resources{}
-	if k8s == nil || k8s.Limits == nil {
-		return res
-	}
-	var err error
-	res.CpuCores, err = ParseCpus(k8s.Limits.Cpus)
-	if err != nil {
-		res.CpuCores = 0
-	}
-	res.RamGb, err = ParseMemory(k8s.Limits.RamGb)
-	if err != nil {
-		res.RamGb = 0
-	}
-	res.DiskGb, err = ParseMemory(k8s.Limits.DiskGb)
-	if err != nil {
-		res.DiskGb = 0
-	}
-
-	return res
-}
-
 type ResourceValidationError struct {
 	Field     string
 	Requested float64
@@ -85,8 +18,8 @@ func (e *ResourceValidationError) Error() string {
 	return fmt.Sprintf("requested %s %.2f exceeds limit %.2f", e.Field, e.Requested, e.Limit)
 }
 
-func ApplyDefaultsAndLimits(res *tes.Resources, k8s *KubernetesResources) (*tes.Resources, error) {
-	res = ApplyDefaultResources(res, k8s)
+func ValidateResources(res *tes.Resources, k8s *KubernetesResources) (*tes.Resources, error) {
+	res = applyDefaults(res, k8s)
 	limits := GetResourceLimits(k8s)
 
 	if limits.CpuCores > 0 && res.CpuCores > limits.CpuCores {
@@ -102,10 +35,68 @@ func ApplyDefaultsAndLimits(res *tes.Resources, k8s *KubernetesResources) (*tes.
 	return res, nil
 }
 
-// ParseCPU parses Kubernetes-style CPU values (e.g., "100m", "0.5", "2")
-// ParseCpus handles both CPU (m) and RAM/Disk (Mi, Gi)
+func GetResourceLimits(k8s *KubernetesResources) *tes.Resources {
+	res := &tes.Resources{}
+	if k8s == nil || k8s.Limits == nil {
+		return res
+	}
+	var err error
+	res.CpuCores, err = parseCpus(k8s.Limits.Cpus)
+	if err != nil {
+		res.CpuCores = 0
+	}
+	res.RamGb, err = parseMemory(k8s.Limits.RamGb)
+	if err != nil {
+		res.RamGb = 0
+	}
+	res.DiskGb, err = parseMemory(k8s.Limits.DiskGb)
+	if err != nil {
+		res.DiskGb = 0
+	}
+
+	return res
+}
+
+func applyDefaults(res *tes.Resources, k8s *KubernetesResources) *tes.Resources {
+	if res == nil {
+		res = &tes.Resources{}
+	}
+	if k8s == nil || k8s.Defaults == nil {
+		return res
+	}
+	var err error
+
+	// Apply defaults if not specified
+	// CPU Default
+	if res.CpuCores == 0 {
+		res.CpuCores, err = parseCpus(k8s.Defaults.Cpus)
+		if err != nil {
+			res.CpuCores = 0
+		}
+	}
+
+	// Ram Default
+	if res.RamGb == 0 {
+		res.RamGb, err = parseMemory(k8s.Defaults.RamGb)
+		if err != nil {
+			res.RamGb = 0
+		}
+	}
+
+	// Disk Default
+	if res.DiskGb == 0 {
+		res.DiskGb, err = parseMemory(k8s.Defaults.DiskGb)
+		if err != nil {
+			res.DiskGb = 0
+		}
+	}
+
+	return res
+}
+
+// parseCpus handles both CPU (m) and RAM/Disk (Mi, Gi)
 // Keeping as int32 (whole integer) to follow TES 1.1 spec (may be changed to double/float64 in TES 1.2+)
-func ParseCpus(s string) (int32, error) {
+func parseCpus(s string) (int32, error) {
 	if s == "" {
 		return 0, nil
 	}
@@ -123,9 +114,9 @@ func ParseCpus(s string) (int32, error) {
 	return int32(math.Ceil(cpuFloat)), nil
 }
 
-// ParseMemory parses Kubernetes-style memory values (e.g., "512Mi", "1Gi", "1000")
+// parseMemory parses Kubernetes-style memory values (e.g., "512Mi", "1Gi", "1000")
 // and returns the value in Gigabytes (float64).
-func ParseMemory(s string) (float64, error) {
+func parseMemory(s string) (float64, error) {
 	if s == "" {
 		return 0, nil
 	}

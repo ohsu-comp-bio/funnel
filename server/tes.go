@@ -120,6 +120,15 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 	}
 
 	ctx = context.WithValue(ctx, "Config", ts.Config)
+
+	if ts.Config.Compute == "kubernetes" {
+		task.Resources, err = config.ValidateResources(task.Resources, ts.Config.Kubernetes.Resources)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid resources: %v", err)
+		}
+		ts.Log.Debug("DEBUG: task.Resources in CreateTask:", "resources", task.Resources)
+	}
+
 	if err := ts.Event.WriteEvent(ctx, events.NewTaskCreated(task)); err != nil {
 		return nil, fmt.Errorf("error creating task: %s", err)
 	}

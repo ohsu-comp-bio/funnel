@@ -210,16 +210,23 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			var taskCommand TaskCommand
 
 			if r.Executor.Backend == "kubernetes" {
-				var err error
-				resources, err = config.ApplyDefaultsAndLimits(resources, r.Executor.Resources)
+				resources, err := config.ValidateResources(resources, r.Executor.Resources)
 				if err != nil {
 					return err
 				}
 
 				// Store the effective resources back to the task
+				fmt.Println("DEBUG: task.Resources in DefaultWorker.Run A:", task.Resources)
 				task.Resources = resources
+				fmt.Println("DEBUG: task.Resources in DefaultWorker.Run B:", task.Resources)
 
 				resourceLimits := config.GetResourceLimits(r.Executor.Resources)
+
+				err = r.EventWriter.WriteEvent(pctx, events.NewResources(task.Id, task.Resources))
+				if err != nil {
+					// TODO: Handle this error properly...
+					// return fmt.Errorf("error writing resources event for task %s: %v", task.Id, err)
+				}
 
 				taskCommand = &KubernetesCommand{
 					TaskId:         task.Id,
@@ -301,14 +308,6 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			}
 
 			ignoreError = d.GetIgnoreError()
-		}
-
-		if r.Executor.Backend == "kubernetes" && resources != nil {
-			event.Metadata(map[string]string{
-				"effective_cpu_cores": fmt.Sprintf("%d", resources.CpuCores),
-				"effective_ram_gb":    fmt.Sprintf("%.2f", resources.RamGb),
-				"effective_disk_gb":   fmt.Sprintf("%.2f", resources.DiskGb),
-			})
 		}
 	}
 

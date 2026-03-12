@@ -103,10 +103,23 @@ jobs:
         with:
           images: |
             ${{ env.QUAY_REPO }}
+          flavor: |
+            latest=false
           tags: |
+            # Semver tag
+            # Ref: https://github.com/docker/metadata-action/tree/v5#typesemver
+            type=semver,pattern={{version}},value=${{ github.ref_name }}
+
+            # Branch
             type=ref,event=branch
+
+            # PR
             type=ref,event=pr
+
+            # Git tag
             type=ref,event=tag
+
+            # SHA
             type=sha,prefix=
 
       - name: Create manifest list and push

@@ -121,7 +121,7 @@ jobs:
             type=ref,event=tag,latest=false
 
             # SHA
-            type=sha,prefix='',latest=false
+            type=sha,prefix=,latest=false
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests

@@ -104,10 +104,24 @@ jobs:
           images: |
             ${{ env.QUAY_REPO }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=ref,event=tag
-            type=sha,prefix=
+            # Semver tag
+            # Ref: https://github.com/docker/metadata-action/tree/v5#typesemver
+            type=semver,pattern={{version}},value=${{ github.ref_name }}
+
+            # Latest tag
+            type=raw,value=latest,enable=${{ github.ref_name != '' && !contains(github.ref_name, '-') }}
+
+            # Branch
+            type=ref,event=branch,latest=false
+
+            # PR
+            type=ref,event=pr,latest=false
+
+            # Git tag
+            type=ref,event=tag,latest=false
+
+            # SHA
+            type=sha,prefix=,latest=false
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests

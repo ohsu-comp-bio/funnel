@@ -19,6 +19,10 @@ menu:
 [releases]: https://github.com/ohsu-comp-bio/funnel/releases/latest
 [windows]: https://github.com/ohsu-comp-bio/funnel/issues/1258
 
+> [!NOTE]
+>
+>Funnel requires that [Docker](https://docker.io) be installed in order to run commands within a sandboxed environment.
+
 # Install Options
 
 - [Quick Start (curl one-liner)](#quick-start)
@@ -30,12 +34,10 @@ menu:
 
 ## 1. Quick Start
 
-The following command will automatically download and verify the latest version of Funnel for your operating system.
+The following [install script](https://github.com/ohsu-comp-bio/funnel/blob/develop/website/static/install.sh) will automatically download and verify the latest version of Funnel for your operating system:
 
-Funnel requires that [Docker](https://docker.io) be installed in order to run commands within a sandboxed environment.
-
-```shell
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohsu-comp-bio/funnel/refs/heads/develop/install.sh)"
+```sh
+/bin/bash -c "$(curl -fsSL https://ohsu-comp-bio.github.io/funnel/install.sh)"
 
 funnel server run
 ```
@@ -44,23 +46,12 @@ funnel server run
 
 The following commands show examples of running Funnel via Docker, Podman, and Singularity.
 
-Each command demonstrates how to mount an optional example config (`example.yaml`) for use by the Funnel Server.
+Each command demonstrates how to mount an optional example config (`config.yaml`) for use by the Funnel Server.
 
-```yaml
-# example.yaml ➜ local Funnel Server config
-Database: boltdb
-
-Compute: local
-
-Logger:
-  Level: debug
-```
-
-> [!WARNING]
+> [!TIP]
 > When given no config, Funnel will simply run in the default "local" mode.
 > 
 > This can be helpful for testing and development, but production deployments are recommended to use the more robust database and compute backends available.
-
 
 ### Docker
 
@@ -68,15 +59,15 @@ Logger:
 >
 > Docker Image → [quay.io/repository/ohsu-comp-bio/funnel:latest](https://quay.io/repository/ohsu-comp-bio/funnel?tab=tags&tag=testing)
 
-```shell
-docker run -p 8000:8000 -v example.yaml:/example.yaml quay.io/ohsu-comp-bio/funnel:latest server run --config /example.yaml
+```sh
+docker run -p 8000:8000 quay.io/ohsu-comp-bio/funnel:latest server run
+```
 
-curl localhost:8000/service-info
-# {
-#   "description": "Funnel is a toolkit for distributed task execution via a simple, standard API.",
-#   "documentationUrl": "https://ohsu-comp-bio.github.io/funnel/",
-#   ...
-# }
+To run Funnel with a custom config file (e.g. `config.yaml`), pass it via a Docker volume:
+
+```sh
+docker run -p 8000:8000 -v ./config.yaml:/config.yaml \
+    quay.io/ohsu-comp-bio/funnel:latest server run --config /config.yaml
 ```
 
 ### Podman
@@ -85,14 +76,14 @@ curl localhost:8000/service-info
 >
 > [Podman: Running a container](https://podman.io/docs#running-a-container)
 
-```shell
+```sh
 podman machine init
 # Machine init complete
 
 podman machine start
 # Machine "podman-machine-default" started successfully
 
-podman run -p 8000:8000 -v ./example.yaml:/example.yaml quay.io/ohsu-comp-bio/funnel:latest server run --config /example.yaml
+podman run -p 8000:8000 -v ./config.yaml:/config.yaml quay.io/ohsu-comp-bio/funnel:latest server run --config /config.yaml
 # {"httpPort": "8000", "msg": "Server listening", "rpcAddress": ":9090"}
 ```
 
@@ -102,8 +93,8 @@ podman run -p 8000:8000 -v ./example.yaml:/example.yaml quay.io/ohsu-comp-bio/fu
 >
 > [Singularity and Docker](https://docs.sylabs.io/guides/2.6/user-guide/singularity_and_docker.html)
 
-```shell
-singularity run --bind example.yaml:/example.yaml docker://quay.io/ohsu-comp-bio/funnel:latest server run --config /example.yaml
+```sh
+singularity run --bind config.yaml:/config.yaml docker://quay.io/ohsu-comp-bio/funnel:latest server run --config /config.yaml
 # INFO:    Converting OCI blobs to SIF format
 # INFO:    Starting build...
 # INFO:    Creating SIF file...
@@ -118,7 +109,7 @@ singularity run --bind example.yaml:/example.yaml docker://quay.io/ohsu-comp-bio
 >
 > Homebrew formula source available at [github.com/ohsu-comp-bio/homebrew-formula](https://github.com/ohsu-comp-bio/homebrew-formula)
 
-```shell
+```sh
 brew tap ohsu-comp-bio/formula
 
 brew install funnel
@@ -130,7 +121,7 @@ brew install funnel
 >
 > Funnel requires a recent version of Go. See [development docs](../development/developers/) for more detail.
 
-```shell
+```sh
 git clone https://github.com/ohsu-comp-bio/funnel.git
 
 cd funnel

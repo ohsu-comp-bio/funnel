@@ -54,7 +54,7 @@ while [[ $# -gt 0 ]]; do
 		shift
 		;;
 	--dest | -d)
-		# Deprecated flag
+		# Set installation destination path
 		DEST="$2"
 		shift
 		shift

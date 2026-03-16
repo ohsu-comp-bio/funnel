@@ -1,4 +1,4 @@
-name: Publish Docker Image to GHCR
+name: Publish Docker Image to Quay.io
 
 on:
   push:

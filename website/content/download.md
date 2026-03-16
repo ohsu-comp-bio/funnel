@@ -21,7 +21,7 @@ menu:
 
 > [!NOTE]
 >
->Funnel requires that [Docker](https://docker.io) be installed in order to run commands within a sandboxed environment.
+> Funnel requires that [Docker](https://docker.io) be installed in order to run commands within a sandboxed environment.
 
 # Install Options
 

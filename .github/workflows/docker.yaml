@@ -1,8 +1,4 @@
-# This workflow builds and pushes a multi-arch image to Quay.io
-# Adapted from actions-arm64-native_example by @gartnera
-# ref: https://github.com/gartnera/actions-arm64-native_example/blob/main/.github/workflows/build.yml
-
-name: Publish Docker Image
+name: Publish Docker Image to Quay.io
 
 on:
   push:
@@ -101,15 +97,15 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.QUAY_REPO }}
+          images: ${{ env.QUAY_REPO }}
+          flavor: |
+            latest=false
           tags: |
-            # Semver tag
-            # Ref: https://github.com/docker/metadata-action/tree/v5#typesemver
+            # Semver
             type=semver,pattern={{version}},value=${{ github.ref_name }}
 
-            # Latest tag
-            type=raw,value=latest,enable=${{ github.ref_name != '' && !contains(github.ref_name, '-') }}
+            # Latest
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-') }}
 
             # Branch
             type=ref,event=branch,latest=false

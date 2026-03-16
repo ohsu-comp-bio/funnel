@@ -1,4 +1,8 @@
-name: Publish Docker Image to Quay.io
+# This workflow builds and pushes a multi-arch image to Quay.io
+# Adapted from actions-arm64-native_example by @gartnera
+# ref: https://github.com/gartnera/actions-arm64-native_example/blob/main/.github/workflows/build.yml
+
+name: Build + Push Docker Image
 
 on:
   push:
@@ -101,20 +105,23 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            # Stable semver tags only
+            # Semver
             type=semver,pattern={{version}},value=${{ github.ref_name }}
 
-            # latest only for stable vX.Y.Z tags
+            # Latest
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-') }}
 
             # Branch pushes
-            type=ref,event=branch
+            type=ref,event=branch,latest=false
 
             # PR pushes
-            type=ref,event=pr
+            type=ref,event=pr,latest=false
+
+            # Git Tag
+            type=ref,event=tag,latest=false
 
             # Commit SHA
-            type=sha,prefix=
+            type=sha,prefix=,latest=false
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests

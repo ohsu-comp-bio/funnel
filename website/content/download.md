@@ -34,7 +34,7 @@ menu:
 
 ## 1. Quick Start
 
-The following [install script](https://github.com/ohsu-comp-bio/funnel/blob/develop/website/static/install.sh) will automatically download and verify the latest version of Funnel for your operating system:
+The following [install script](https://github.com/ohsu-comp-bio/funnel/blob/develop/install.sh) will automatically download and verify the latest version of Funnel for your operating system:
 
 ```sh
 /bin/bash -c "$(curl -fsSL https://ohsu-comp-bio.github.io/funnel/install.sh)"

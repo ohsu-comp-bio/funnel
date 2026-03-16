@@ -101,23 +101,20 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            # Semver
+            # Stable semver tags only
             type=semver,pattern={{version}},value=${{ github.ref_name }}
 
-            # Latest
+            # latest only for stable vX.Y.Z tags
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-') }}
 
-            # Branch
-            type=ref,event=branch,latest=false
+            # Branch pushes
+            type=ref,event=branch
 
-            # PR
-            type=ref,event=pr,latest=false
+            # PR pushes
+            type=ref,event=pr
 
-            # Git tag
-            type=ref,event=tag,latest=false
-
-            # SHA
-            type=sha,prefix=,latest=false
+            # Commit SHA
+            type=sha,prefix=
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests

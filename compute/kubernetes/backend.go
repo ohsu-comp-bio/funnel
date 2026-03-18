@@ -126,7 +126,7 @@ func (b *Backend) Close() {
 
 // Submit creates both the PVC and the worker job with better error handling
 func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Config) error {
-	err := b.createResources(task, config)
+	err := b.createResources(ctx, task, config)
 	b.log.Debug("Error creating resources", "error", err, "task ID", task.Id)
 
 	if err != nil {
@@ -165,12 +165,17 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 }
 
 // createResources creates the resources needed for a task.
-func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
+func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *config.Config) error {
 	// Create context with optional timeout
-	ctx := context.Background()
-	if config.Kubernetes.Timeout != nil && config.Kubernetes.Timeout.GetDuration() != nil {
+	fmt.Println("DEBUG: Kubernetes Timeout config:", config.Kubernetes.Timeout)
+	fmt.Println("DEBUG: Kubernetes Timeout duration:", config.Kubernetes.Timeout.GetDuration())
+	var timeoutCtx context.Context = ctx
+	var timeout time.Duration
+	if config != nil && config.Kubernetes != nil && config.Kubernetes.Timeout != nil && config.Kubernetes.Timeout.GetDuration() != nil {
+		timeout = config.Kubernetes.Timeout.GetDuration().AsDuration()
+
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), config.Kubernetes.Timeout.GetDuration().AsDuration())
+		timeoutCtx, cancel = context.WithTimeout(ctx, timeout) // derive from parent ctx
 		defer cancel()
 	}
 
@@ -185,28 +190,31 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 		}
 
 		// Create PV
-		err := resources.CreatePV(ctx, task.Id,
+		err := resources.CreatePV(timeoutCtx, task.Id,
 			config,
 			b.client, b.log)
 		if err != nil {
-			return fmt.Errorf("creating Worker PV: %v", err)
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker PV: %w", err)
 		}
 
 		// Create PVC
 		b.log.Debug("creating Worker PVC", "taskID", task.Id)
-		err = resources.CreatePVC(ctx, task.Id, config, b.client, b.log)
+		err = resources.CreatePVC(timeoutCtx, task.Id, config, b.client, b.log)
 		if err != nil {
-			return fmt.Errorf("creating Worker PVC: %v", err)
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker PVC: %w", err)
 		}
 	}
 
 	// Create ConfigMap
 	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err := resources.CreateConfigMap(ctx, task.Id,
+	err := resources.CreateConfigMap(timeoutCtx, task.Id,
 		config, b.client, b.log)
 	if err != nil {
-		b.log.Error("creating Worker ConfigMap", "error", err)
-		return fmt.Errorf("creating Worker ConfigMap: %v", err)
+		_ = b.Cancel(context.Background(), task.Id)
+		b.log.Debug("creating Worker ConfigMap", "error", err)
+		return fmt.Errorf("creating Worker ConfigMap: %w", err)
 	}
 
 	// Create ServiceAccount:
@@ -220,39 +228,43 @@ func (b *Backend) createResources(task *tes.Task, config *config.Config) error {
 
 	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
 	// e.g. network issues, permission issues, etc.
-	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(ctx, saName, metav1.GetOptions{})
+	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
 
 	// ServiceAccount does not exist, create it
 	if err != nil {
 		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
 		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-		err = resources.CreateServiceAccount(ctx, task, config, b.client, b.log)
+		err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log)
 		if err != nil {
-			return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker ServiceAccount: %w", err)
 		}
 	} else {
-		b.log.Error("Error getting ServiceAccount", "serviceAccount", saName, "taskID", task.Id, "error", err)
+		b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
 	}
 
 	// Create Role
 	b.log.Debug("creating Worker Role", "taskID", task.Id)
-	err = resources.CreateRole(ctx, task, config, b.client, b.log)
+	err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log)
 	if err != nil {
-		return fmt.Errorf("creating Worker Role: %v", err)
+		_ = b.Cancel(context.Background(), task.Id)
+		return fmt.Errorf("creating Worker Role: %w", err)
 	}
 
 	// Create RoleBinding
 	b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-	err = resources.CreateRoleBinding(ctx, task, config, b.client, b.log)
+	err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log)
 	if err != nil {
-		return fmt.Errorf("creating Worker RoleBinding: %v", err)
+		_ = b.Cancel(context.Background(), task.Id)
+		return fmt.Errorf("creating Worker RoleBinding: %w", err)
 	}
 
 	// Create Worker Job
 	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err = resources.CreateJob(ctx, task, config, b.client, b.log)
+	err = resources.CreateJob(timeoutCtx, task, config, b.client, b.log)
 	if err != nil {
-		return fmt.Errorf("creating Worker Job: %v", err)
+		_ = b.Cancel(context.Background(), task.Id)
+		return fmt.Errorf("creating Worker Job: %w", err)
 	}
 
 	return nil

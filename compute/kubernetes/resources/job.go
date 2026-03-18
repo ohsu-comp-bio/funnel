@@ -105,6 +105,14 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		return fmt.Errorf("failed to decode job spec")
 	}
 
+	// Ensure completed jobs are garbage-collected by the Kubernetes TTL Controller
+	// so that Succeeded/Failed pods don't accumulate on nodes and block Karpenter
+	// consolidation. Funnel's own reconciler only handles non-terminal tasks.
+	if job.Spec.TTLSecondsAfterFinished == nil {
+		var ttl int32 = 300
+		job.Spec.TTLSecondsAfterFinished = &ttl
+	}
+
 	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", config.Kubernetes.JobsNamespace)
 	_, err = client.BatchV1().Jobs(config.Kubernetes.JobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
 	if err != nil {

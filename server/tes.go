@@ -101,7 +101,12 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 				return nil, err
 			}
 		}
-		ts.Log.Debug("Plugin", "Response", pluginResponse)
+		ts.Log.Debug("Plugin", "Response Code", pluginResponse.Code,
+			"Message", pluginResponse.Message,
+			"User", pluginResponse.UserId,
+			"Task", pluginResponse.Task,
+			"Config", pluginResponse.Config.Safe(),
+		)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 
 		// If using plugin, replace existing task with returned task from plugin
@@ -209,7 +214,12 @@ func (ts *TaskService) CancelTask(ctx context.Context, req *tes.CancelTaskReques
 				return nil, err
 			}
 		}
-		ts.Log.Debug("Plugin", "Response", pluginResponse)
+		ts.Log.Debug("Plugin", "Response Code", pluginResponse.Code,
+			"Message", pluginResponse.Message,
+			"User", pluginResponse.UserId,
+			"Task", pluginResponse.Task,
+			"Config", pluginResponse.Config.Safe(),
+		)
 		ctx = context.WithValue(ctx, "pluginResponse", pluginResponse)
 	}
 

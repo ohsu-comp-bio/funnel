@@ -91,6 +91,8 @@ func TestMapTask(t *testing.T) {
 		},
 	}
 
+	// consolidateVolumes() collapses the three input files under
+	// /inputs/testdata into one read-write ancestor directory mount.
 	ev := []Volume{
 		{
 			HostPath:      tmp + "/volone",
@@ -108,24 +110,30 @@ func TestMapTask(t *testing.T) {
 			Readonly:      false,
 		},
 		{
+			HostPath:      tmp + "/outputs",
+			ContainerPath: "/outputs",
+			Readonly:      false,
+		},
+		{
+			HostPath:      tmp + "/inputs/testdata",
+			ContainerPath: "/inputs/testdata",
+			Readonly:      false,
+		},
+	}
+
+	// InputVolumes tracks each individual input volume before consolidation.
+	eiv := []Volume{
+		{
 			HostPath:      tmp + "/inputs/testdata/f1.txt",
 			ContainerPath: "/inputs/testdata/f1.txt",
-			Readonly:      true,
 		},
 		{
 			HostPath:      tmp + "/inputs/testdata/f4",
 			ContainerPath: "/inputs/testdata/f4",
-			Readonly:      true,
 		},
 		{
 			HostPath:      tmp + "/inputs/testdata/contents.txt",
 			ContainerPath: "/inputs/testdata/contents.txt",
-			Readonly:      true,
-		},
-		{
-			HostPath:      tmp + "/outputs",
-			ContainerPath: "/outputs",
-			Readonly:      false,
 		},
 	}
 
@@ -162,6 +170,15 @@ func TestMapTask(t *testing.T) {
 			t.Log("Diff", d)
 		}
 		t.Fatal("unexpected mapper volumes")
+	}
+
+	if diff := deep.Equal(f.InputVolumes, eiv); diff != nil {
+		t.Log("Expected", fmt.Sprintf("%+v", eiv))
+		t.Log("Actual", fmt.Sprintf("%+v", f.InputVolumes))
+		for _, d := range diff {
+			t.Log("Diff", d)
+		}
+		t.Fatal("unexpected mapper input volumes")
 	}
 
 	if f.ContainerPath(f.Outputs[0].Path) != task.Outputs[0].Path {

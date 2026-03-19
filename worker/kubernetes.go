@@ -117,6 +117,8 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"DiskGbLimit":        kcmd.ResourceLimits.DiskGb,
 		"Image":              kcmd.Image,
 		"NeedsPVC":           kcmd.NeedsPVC,
+		"NodeSelector":       kcmd.NodeSelector,
+		"Tolerations":        kcmd.Tolerations,
 		"ServiceAccountName": kcmd.ServiceAccount,
 	}
 

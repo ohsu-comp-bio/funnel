@@ -83,6 +83,8 @@ func NewWorker(ctx context.Context, conf *config.Config, log *logger.Logger, opt
 		executor.JobsNamespace = conf.Kubernetes.JobsNamespace
 		executor.ServiceAccount = conf.Kubernetes.ServiceAccount
 		executor.Resources = conf.Kubernetes.Resources
+		executor.NodeSelector = conf.Kubernetes.NodeSelector
+		executor.Tolerations = convertK8sTolerations(conf.Kubernetes.Tolerations)
 	}
 
 	return &worker.DefaultWorker{
@@ -222,4 +224,35 @@ func validateConfig(conf *config.Config, opts *Options) error {
 		}
 	}
 	return nil
+}
+
+func convertK8sTolerations(in []*config.Toleration) []map[string]interface{} {
+	if len(in) == 0 {
+		return nil
+	}
+
+	out := make([]map[string]interface{}, 0, len(in))
+	for _, t := range in {
+		if t == nil {
+			continue
+		}
+
+		m := map[string]interface{}{
+			"Key":      t.Key,
+			"Operator": t.Operator,
+			"Effect":   t.Effect,
+		}
+		if t.Value != "" {
+			m["Value"] = t.Value
+		}
+		if t.TolerationSeconds != nil {
+			m["TolerationSeconds"] = *t.TolerationSeconds
+		}
+		out = append(out, m)
+	}
+
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }

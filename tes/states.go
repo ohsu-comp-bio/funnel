@@ -6,13 +6,13 @@ import "fmt"
 const (
 	Unknown       = State_UNKNOWN
 	Queued        = State_QUEUED
+	Initializing  = State_INITIALIZING
 	Running       = State_RUNNING
-	Paused        = State_PAUSED
 	Complete      = State_COMPLETE
 	ExecutorError = State_EXECUTOR_ERROR
 	SystemError   = State_SYSTEM_ERROR
 	Canceled      = State_CANCELED
-	Initializing  = State_INITIALIZING
+	Paused        = State_PAUSED
 )
 
 // TransitionError describes an invalid state transition.
@@ -54,26 +54,28 @@ func ValidateTransition(from, to State) error {
 		switch to {
 		case Unknown, Queued:
 			return &TransitionError{from, to}
-		case Running, ExecutorError, SystemError, Canceled:
-			return nil
 		}
+		return nil
 
 	case Running:
 
 		switch to {
-		case Unknown, Queued:
-			return &TransitionError{from, to}
 		case Complete, ExecutorError, SystemError, Canceled:
 			return nil
 		}
+		return &TransitionError{from, to}
 
 	case ExecutorError, SystemError, Canceled, Complete:
-		// May not transition out of terminal state.
+		// May not transition out of terminal state, except in the case of a retry.
+		// TODO configure if retries are allowed: maybe just check `Values.backoffLimit` > 0? nvm that only makes sense in k8s
+		switch to {
+		case Queued, Initializing:
+			return nil
+		}
 		return &TransitionError{from, to}
 
-	default:
-		return &TransitionError{from, to}
 	}
+
 	// Shouldn't be reaching this point, but just in case.
 	return &TransitionError{from, to}
 }

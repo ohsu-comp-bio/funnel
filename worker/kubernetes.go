@@ -173,10 +173,14 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var client = clientset.BatchV1().Jobs(kcmd.JobsNamespace)
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
-		return &K8sSystemErr{
-			Reason:  "JobCreationFailed",
-			Message: "Failed to create Kubernetes job",
-			Err:     err,
+		// if the job already exists, ignore the error and proceed: executor jobs may be restarted
+		// through kubernetes restarts
+		if err.Error() != "jobs.batch \""+job.Name+"\" already exists" {
+			return &K8sSystemErr{
+				Reason:  "JobCreationFailed",
+				Message: "Failed to create Kubernetes job",
+				Err:     err,
+			}
 		}
 	}
 

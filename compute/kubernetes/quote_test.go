@@ -214,6 +214,31 @@ spec:
 			t.Logf("Task with shell command submitted successfully")
 		}
 	})
+
+	// Test task with curl command with headers (the GDC use case)
+	curlTask := &tes.Task{
+		Id: "test-curl-with-headers",
+		Resources: &tes.Resources{
+			CpuCores: 1,
+			RamGb:    1.0,
+			DiskGb:   10.0,
+		},
+		Executors: []*tes.Executor{
+			{
+				Image:   "curlimages/curl",
+				Command: []string{"curl", "-s", "https://api.github.com/zen", "-H", "Accept: application/json,text/event-stream"},
+			},
+		},
+	}
+
+	t.Run("curl-with-headers", func(t *testing.T) {
+		err := backend.Submit(context.Background(), curlTask, conf)
+		if err != nil {
+			t.Logf("Task submission failed (this may be expected): %v", err)
+		} else {
+			t.Logf("Task with curl command submitted successfully")
+		}
+	})
 }
 
 // mockEventWriter is a simple mock event writer for testing

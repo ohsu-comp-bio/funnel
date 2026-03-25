@@ -37,12 +37,16 @@ type KubernetesCommand struct {
 	Command
 }
 
-// Utility function to correctly handle tasks with o/quotes in commands
+// Utility function to correctly handle tasks with quotes in commands
+// Escapes backslashes and double quotes for YAML/JSON output
 func shellQuote(s string) string {
 	if s == "" {
 		return "''"
 	}
-	return "\"" + strings.ReplaceAll(s, "'", `\\'`) + "\""
+	// Escape backslashes first, then double quotes (for YAML/JSON)
+	escaped := strings.ReplaceAll(s, "\\", "\\\\")
+	escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
+	return "\"" + escaped + "\""
 }
 
 type K8sExecutorErr struct {

@@ -86,12 +86,13 @@ func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, clien
 
 // deleteJob removes deletes a kubernetes v1/batch job.
 func DeleteJob(ctx context.Context, conf *config.Config, taskID string, client kubernetes.Interface, log *logger.Logger) error {
-
+	fmt.Println("DEBUG: DeleteJob taskID", taskID)
 	jobsInterface := client.BatchV1().Jobs(conf.Kubernetes.JobsNamespace)
 
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
 
+	// TODO: Regex match Task ID to ensure Executor Jobs are deleted
 	err := jobsInterface.Delete(ctx, taskID, metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &prop,

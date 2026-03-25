@@ -274,18 +274,18 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
 
-	// Delete PV
-	err := resources.DeletePV(ctx, taskId, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker PV", "error", err)
-	}
-
 	// Delete PVC
-	err = resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
+	err := resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker PVC", "error", err)
+	}
+
+	// Delete PV
+	err = resources.DeletePV(ctx, taskId, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Worker PV", "error", err)
 	}
 
 	// Delete ConfigMap
@@ -346,6 +346,8 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 // This loop is also used to cleanup successful jobs.
 func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableCleanup bool) {
 	// Clears all resources that still exist from jobs that have run before it
+	fmt.Println("DEBUG: disableCleanup", disableCleanup)
+	fmt.Println("DEBUG: rate", rate)
 	if !disableCleanup {
 		jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -418,6 +420,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 
 						jobName := j.Name
 						status := j.Status
+						fmt.Println("DEBUG: reconcile loop", "taskID", taskID, "jobName", jobName, "active", status.Active, "succeeded", status.Succeeded, "failed", status.Failed)
 
 						switch {
 						case status.Active > 0:

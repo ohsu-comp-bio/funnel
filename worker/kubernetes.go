@@ -109,6 +109,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"Command":            cmd,
 		"Workdir":            kcmd.Workdir,
 		"Volumes":            kcmd.Volumes,
+		"Env":                kcmd.Env,
 		"Cpus":               kcmd.Resources.CpuCores,
 		"RamGb":              kcmd.Resources.RamGb,
 		"DiskGb":             kcmd.Resources.DiskGb,

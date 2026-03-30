@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"dario.cat/mergo"
-	v1 "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -327,6 +328,37 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	return errs
 }
 
+// isJobSchedulingTimedOut returns true if all pods for the given job have been
+// stuck in Pending (with a scheduling condition) for longer than timeout.
+// It returns false if any pod has been scheduled, or if pod status cannot be determined.
+func (b *Backend) isJobSchedulingTimedOut(ctx context.Context, jobName string, timeout time.Duration) bool {
+	pods, err := b.client.CoreV1().Pods(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("job-name=%s", jobName),
+	})
+	if err != nil {
+		b.log.Error("reconcile: listing pods for job", "taskID", jobName, "error", err)
+		return false
+	}
+	if len(pods.Items) == 0 {
+		return false
+	}
+	now := time.Now()
+	for _, pod := range pods.Items {
+		if pod.Status.Phase != corev1.PodPending {
+			return false
+		}
+		// Find the most recent scheduling condition transition time
+		for _, cond := range pod.Status.Conditions {
+			if cond.Type == corev1.PodScheduled && cond.Status == corev1.ConditionFalse {
+				if now.Sub(cond.LastTransitionTime.Time) >= timeout {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // Reconcile loops through tasks and checks the status from Funnel's database
 // against the status reported by Kubernetes. This allows the backend to report
 // system error's that prevented the worker process from running.
@@ -383,7 +415,7 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 				continue
 			}
 
-			k8sJobs := make(map[string]*v1.Job)
+			k8sJobs := make(map[string]*batchv1.Job)
 			for i := range jobs.Items {
 				k8sJobs[jobs.Items[i].Name] = &jobs.Items[i]
 			}
@@ -424,6 +456,28 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 
 						switch {
 						case status.Active > 0:
+							// If a scheduling timeout is configured, check whether the worker
+							// pod has been stuck in Pending beyond that duration. This catches
+							// scheduling failures (bad NodeSelector, insufficient resources, etc.)
+							// that the context timeout cannot detect because the Job API call
+							// itself succeeds immediately.
+							if b.conf.Kubernetes.Timeout.GetDuration() != nil {
+								timeout := b.conf.Kubernetes.Timeout.GetDuration().AsDuration()
+								if b.isJobSchedulingTimedOut(ctx, jobName, timeout) {
+									b.log.Debug("reconcile: worker pod scheduling timed out", "taskID", jobName)
+									b.event.WriteEvent(ctx, events.NewState(jobName, tes.SystemError))
+									b.event.WriteEvent(ctx, events.NewSystemLog(
+										jobName, 0, 0, "error",
+										"Kubernetes job in FAILED state",
+										map[string]string{"error": "worker pod scheduling timed out"},
+									))
+									if !disableCleanup {
+										if err := b.cleanResources(ctx, jobName); err != nil {
+											b.log.Error("failed to clean resources", "taskID", jobName, "error", err)
+										}
+									}
+								}
+							}
 							continue
 						case status.Succeeded > 0:
 							if disableCleanup {

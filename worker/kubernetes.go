@@ -257,15 +257,15 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"message", message,
 		"jobName", job.Name)
 
-	if exitCode != 0 {
-		jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
-		return &K8sExecutorErr{
-			ExitCode: exitCode,
-			Reason:   reason,
-			Message:  message,
-			JobName:  jobName,
-		}
-	}
+	// if exitCode != 0 {
+	// 	jobName := fmt.Sprintf("%s-%d", taskId, kcmd.JobId)
+	// 	return &K8sExecutorErr{
+	// 		ExitCode: exitCode,
+	// 		Reason:   reason,
+	// 		Message:  message,
+	// 		JobName:  jobName,
+	// 	}
+	// }
 
 	return nil
 }

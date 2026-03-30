@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"math"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -73,6 +74,15 @@ func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, clien
 	job, ok := obj.(*v1.Job)
 	if !ok {
 		return fmt.Errorf("failed to decode job spec")
+	}
+
+	// Set activeDeadlineSeconds so K8s fails the job (and its pending pods) if
+	// it doesn't complete within the configured timeout. This covers scheduling
+	// failures (e.g. non-existent node selector) that the context timeout cannot
+	// detect because the Job API call itself succeeds immediately.
+	if config.Kubernetes.Timeout.GetDuration() != nil {
+		secs := int64(math.Ceil(config.Kubernetes.Timeout.GetDuration().AsDuration().Seconds()))
+		job.Spec.ActiveDeadlineSeconds = &secs
 	}
 
 	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", config.Kubernetes.JobsNamespace)

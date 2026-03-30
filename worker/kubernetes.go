@@ -37,13 +37,12 @@ type KubernetesCommand struct {
 	Command
 }
 
-// Utility function to correctly handle tasks with quotes in commands
-// Escapes backslashes and double quotes for YAML/JSON output
-func shellQuote(s string) string {
-	if s == "" {
-		return "''"
-	}
-	// Escape backslashes first, then double quotes (for YAML/JSON)
+// yamlQuote wraps a string in double quotes safe for YAML scalar values.
+// It escapes backslashes and double quotes so the result is valid inside
+// a YAML double-quoted scalar, handling both single-quote and double-quote
+// characters in the original command element.
+func yamlQuote(s string) string {
+	// Escape backslashes first, then double quotes.
 	escaped := strings.ReplaceAll(s, "\\", "\\\\")
 	escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
 	return "\"" + escaped + "\""
@@ -99,10 +98,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		cmd = append(cmd, "<", kcmd.StdinFile)
 	}
 
+	// Always quote every element so that spaces, single quotes, double quotes,
+	// and other shell-special characters are preserved correctly when the
+	// rendered YAML sequence is passed to /bin/sh -c.
 	for i, v := range cmd {
-		if strings.Contains(v, " ") {
-			cmd[i] = shellQuote(v)
-		}
+		cmd[i] = yamlQuote(v)
 	}
 
 	templateData := map[string]interface{}{

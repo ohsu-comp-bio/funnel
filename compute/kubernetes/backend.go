@@ -167,8 +167,6 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 // createResources creates the resources needed for a task.
 func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *config.Config) error {
 	// Create context with optional timeout
-	fmt.Println("DEBUG: Kubernetes Timeout config:", config.Kubernetes.Timeout)
-	fmt.Println("DEBUG: Kubernetes Timeout duration:", config.Kubernetes.Timeout.GetDuration())
 	var timeoutCtx context.Context = ctx
 	var timeout time.Duration
 	if config != nil && config.Kubernetes != nil && config.Kubernetes.Timeout != nil && config.Kubernetes.Timeout.GetDuration() != nil {
@@ -346,8 +344,6 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 // This loop is also used to cleanup successful jobs.
 func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableCleanup bool) {
 	// Clears all resources that still exist from jobs that have run before it
-	fmt.Println("DEBUG: disableCleanup", disableCleanup)
-	fmt.Println("DEBUG: rate", rate)
 	if !disableCleanup {
 		jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -420,8 +416,6 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 
 						jobName := j.Name
 						status := j.Status
-						fmt.Println("DEBUG: reconcile loop", "taskID", taskID, "jobName", jobName, "active", status.Active, "succeeded", status.Succeeded, "failed", status.Failed)
-
 						switch {
 						case status.Active > 0:
 							continue

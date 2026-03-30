@@ -60,16 +60,24 @@ func CreatePVC(ctx context.Context, taskId string, config *config.Config, client
 // Add this helper function for PVC cleanup
 func DeletePVC(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pvc-%s", taskID)
-	fmt.Println("DEBUG: checking for Worker PVC", "name", name, "namespace", namespace)
 	pvc, err := client.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
-	fmt.Println("DEBUG: Get PV error", "error", err)
-	fmt.Println("DEBUG: Get PV result", "pv", pvc)
-	if err == nil {
-		log.Debug("deleting Worker PVC", "taskID", taskID)
-		err := client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		return nil
+	}
+
+	// Remove the pvc-protection finalizer so Kubernetes allows deletion
+	if len(pvc.Finalizers) > 0 {
+		pvc.Finalizers = nil
+		_, err = client.CoreV1().PersistentVolumeClaims(namespace).Update(ctx, pvc, metav1.UpdateOptions{})
 		if err != nil {
-			return fmt.Errorf("deleting shared PVC: %v", err)
+			return fmt.Errorf("removing finalizers from PVC %s: %v", name, err)
 		}
+	}
+
+	log.Debug("deleting Worker PVC", "taskID", taskID)
+	err = client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("deleting shared PVC: %v", err)
 	}
 
 	return nil

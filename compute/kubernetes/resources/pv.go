@@ -59,17 +59,25 @@ func CreatePV(ctx context.Context, taskId string, config *config.Config, client 
 // Add this helper function for PV cleanup
 func DeletePV(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pv-%s", taskID)
-	fmt.Println("DEBUG: checking for Worker PV", "name", name)
 	// The PV may not have been made. Some jobs with no I/O don't need a PV or it may have already been deleted.
 	pv, err := client.CoreV1().PersistentVolumes().Get(ctx, name, metav1.GetOptions{})
-	fmt.Println("DEBUG: Get PV error", "error", err)
-	fmt.Println("DEBUG: Get PV result", "pv", pv)
-	if err == nil {
-		log.Debug("deleting Worker PV", "taskID", taskID)
-		err := client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		return nil
+	}
+
+	// Remove the pv-protection finalizer so Kubernetes allows deletion
+	if len(pv.Finalizers) > 0 {
+		pv.Finalizers = nil
+		_, err = client.CoreV1().PersistentVolumes().Update(ctx, pv, metav1.UpdateOptions{})
 		if err != nil {
-			return fmt.Errorf("%v", err)
+			return fmt.Errorf("removing finalizers from PV %s: %v", name, err)
 		}
+	}
+
+	log.Debug("deleting Worker PV", "taskID", taskID)
+	err = client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("%v", err)
 	}
 	return nil
 }

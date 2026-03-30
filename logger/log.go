@@ -164,7 +164,7 @@ func (l *Logger) WithFields(args ...any) *Logger {
 
 // PrintSimpleError prints out an error message with a red "ERROR:" prefix.
 func PrintSimpleError(err error) {
-	e := "Error:"
+	e := "[PrintSimpleError] Error:"
 	if isColorTerminal(os.Stderr) {
 		e = aurora.Red(e).String()
 	}

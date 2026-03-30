@@ -12,6 +12,7 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/storage"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/version"
@@ -304,12 +305,14 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					default:
 						run.execerr = err
 					}
+					logger.Debug("worker.go: err is not nil")
 				}
 			}
 
 			ignoreError = d.GetIgnoreError()
 		}
 	}
+	logger.Debug("worker.go:", "run.syserr", run.syserr, "run.execerr", run.execerr)
 
 	// Try to fix symlinks broken by docker filesystems.
 	if run.ok() {

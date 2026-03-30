@@ -9,6 +9,7 @@ import (
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
+	"github.com/ohsu-comp-bio/funnel/logger"
 )
 
 type stepWorker struct {
@@ -73,6 +74,7 @@ func (s *stepWorker) Run(ctx context.Context) error {
 		case result := <-done:
 			s.Event.EndTime(time.Now())
 			exitcode, err := getExitCode(result)
+			logger.Debug("step.go:", "exitcode", exitcode, "err", err)
 			if err != nil {
 				s.Event.Error(err.Error())
 			} else {

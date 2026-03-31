@@ -8,11 +8,11 @@ const (
 	Queued        = State_QUEUED
 	Initializing  = State_INITIALIZING
 	Running       = State_RUNNING
+	Paused        = State_PAUSED
 	Complete      = State_COMPLETE
 	ExecutorError = State_EXECUTOR_ERROR
 	SystemError   = State_SYSTEM_ERROR
 	Canceled      = State_CANCELED
-	Paused        = State_PAUSED
 )
 
 // TransitionError describes an invalid state transition.
@@ -67,7 +67,7 @@ func ValidateTransition(from, to State) error {
 
 	case ExecutorError, SystemError, Canceled, Complete:
 		// May not transition out of terminal state, except in the case of a retry.
-		// TODO configure if retries are allowed: maybe just check `Values.backoffLimit` > 0? nvm that only makes sense in k8s
+		// Whether to allow retries could be made into a configuration if needed
 		switch to {
 		case Queued, Initializing:
 			return nil

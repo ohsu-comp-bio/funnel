@@ -353,7 +353,6 @@ func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod
 
 			pod, ok := event.Object.(*corev1.Pod)
 			if !ok {
-				logger.Debug("Failed to get pod", "ok", ok)
 				continue
 			}
 
@@ -389,8 +388,9 @@ func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod
 	}
 }
 
-// Deletes a job and wait for it to be deleted
+// Deletes a job and waits for it to be deleted
 func deleteJob(ctx context.Context, clientset kubernetes.Interface, client batchv1.JobInterface, jobName, namespace string) error {
+	// delete the job
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
 	err := client.Delete(ctx, jobName, metav1.DeleteOptions{
@@ -405,7 +405,7 @@ func deleteJob(ctx context.Context, clientset kubernetes.Interface, client batch
 		}
 	}
 
-	// Wait for a DELETED event
+	// wait for a "deleted" event
 	watcher, err := clientset.BatchV1().Jobs(namespace).Watch(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", jobName),
 	})
@@ -415,8 +415,8 @@ func deleteJob(ctx context.Context, clientset kubernetes.Interface, client batch
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
 		if event.Type == watch.Deleted {
-			fmt.Printf("Job %s has been deleted", jobName)
-			return nil // Job is gone
+			logger.Debug("Job deleted successfully", "jobName", jobName)
+			return nil
 		}
 	}
 

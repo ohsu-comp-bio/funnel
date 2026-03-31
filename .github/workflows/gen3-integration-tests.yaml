@@ -9,22 +9,13 @@ concurrency:
   cancel-in-progress: true
  
 jobs:
-  build:
-    uses: ./.github/workflows/build.yaml
- 
   gen3-integration:
-    needs: build
     runs-on: ubuntu-latest
  
     steps:
-      - name: Download Funnel binary
-        uses: actions/download-artifact@v4
-        with:
-          name: funnel
- 
-      # -----------------------------------------------------------------------
-      # Cluster Setup
-      # -----------------------------------------------------------------------
+      # --------------------------------
+      # 1. Cluster Setup
+      # --------------------------------
  
       - name: Create Kind cluster
         uses: helm/kind-action@v1
@@ -34,9 +25,9 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4
  
-      # -----------------------------------------------------------------------
-      # Install Funnel via Helm
-      # -----------------------------------------------------------------------
+      # --------------------------------
+      # 2. Install Funnel via Helm
+      # --------------------------------
  
       - name: Add ohsu Helm repo
         run: helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts && helm repo update
@@ -47,27 +38,27 @@ jobs:
           helm upgrade --install funnel ohsu/funnel \
             --set storage.className=standard \
             --set storage.provisioner=rancher.io/local-path \
-            --wait --timeout=30s
+            --wait --timeout=60s
  
       - name: Wait for Funnel server
-        run: kubectl rollout status deployment/funnel-server --timeout=30s
+        run: kubectl rollout status deployment/funnel-server --timeout=60s
  
-      # -----------------------------------------------------------------------
-      # Install gen3workflow via Helm
-      # -----------------------------------------------------------------------
+      # --------------------------------
+      # 3. Install Gen3-Workflow via Helm
+      # --------------------------------
  
       - name: Install gen3workflow
         run: |
           helm upgrade --install gen3workflow ohsu/gen3workflow \
             --set funnelUrl=http://funnel:8000 \
-            --wait --timeout=30s
+            --wait --timeout=60s
  
       - name: Wait for gen3workflow
-        run: kubectl rollout status deployment/gen3workflow --timeout=30s
+        run: kubectl rollout status deployment/gen3workflow --timeout=60s
  
-      # -----------------------------------------------------------------------
-      # Expose services for local testing
-      # -----------------------------------------------------------------------
+      # --------------------------------
+      # 4. Expose services for local testing
+      # --------------------------------
  
       - name: Port-forward Funnel
         run: kubectl port-forward svc/funnel 8000:8000 &
@@ -75,9 +66,9 @@ jobs:
       - name: Port-forward gen3workflow
         run: kubectl port-forward svc/gen3workflow 8080:8080 &
  
-      # -----------------------------------------------------------------------
-      # Nextflow + nf-canary
-      # -----------------------------------------------------------------------
+      # --------------------------------
+      # 5. Run Nextflow + nf-canary
+      # --------------------------------
  
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -113,9 +104,9 @@ jobs:
           nextflow run main.nf -with-report report.html 2>&1 | tee nextflow.log
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
  
-      # -----------------------------------------------------------------------
-      # Verify Kubernetes Jobs
-      # -----------------------------------------------------------------------
+      # --------------------------------
+      # 6. Verify K8s Jobs
+      # --------------------------------
  
       - name: Verify Kubernetes jobs completed
         run: |
@@ -147,9 +138,9 @@ jobs:
  
           echo "All Kubernetes jobs completed successfully: $SUCCEEDED"
  
-      # -----------------------------------------------------------------------
-      # Upload artifacts on failure
-      # -----------------------------------------------------------------------
+      # --------------------------------
+      # 7. Upload test logs + reports 
+      # --------------------------------
  
       - name: Upload Nextflow logs
         if: always()

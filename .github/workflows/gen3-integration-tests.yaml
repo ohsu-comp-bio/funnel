@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
  
     steps:
-      # --------------------------------
+      # -----------------
       # 1. Cluster Setup
-      # --------------------------------
+      # -----------------
  
       - name: Create Kind cluster
         uses: helm/kind-action@v1
@@ -25,9 +25,9 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4
  
-      # --------------------------------
+      # ---------------------------
       # 2. Install Funnel via Helm
-      # --------------------------------
+      # ---------------------------
  
       - name: Add ohsu Helm repo
         run: helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts && helm repo update
@@ -43,9 +43,9 @@ jobs:
       - name: Wait for Funnel server
         run: kubectl rollout status deployment/funnel-server --timeout=60s
  
-      # --------------------------------
+      # ----------------------------------
       # 3. Install Gen3-Workflow via Helm
-      # --------------------------------
+      # ----------------------------------
  
       - name: Install gen3workflow
         run: |
@@ -56,9 +56,9 @@ jobs:
       - name: Wait for gen3workflow
         run: kubectl rollout status deployment/gen3workflow --timeout=60s
  
-      # --------------------------------
+      # -------------------------------------
       # 4. Expose services for local testing
-      # --------------------------------
+      # -------------------------------------
  
       - name: Port-forward Funnel
         run: kubectl port-forward svc/funnel 8000:8000 &
@@ -66,9 +66,9 @@ jobs:
       - name: Port-forward gen3workflow
         run: kubectl port-forward svc/gen3workflow 8080:8080 &
  
-      # --------------------------------
+      # ----------------------------
       # 5. Run Nextflow + nf-canary
-      # --------------------------------
+      # ----------------------------
  
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -104,9 +104,9 @@ jobs:
           nextflow run main.nf -with-report report.html 2>&1 | tee nextflow.log
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
  
-      # --------------------------------
+      # -------------------
       # 6. Verify K8s Jobs
-      # --------------------------------
+      # -------------------
  
       - name: Verify Kubernetes jobs completed
         run: |
@@ -138,9 +138,9 @@ jobs:
  
           echo "All Kubernetes jobs completed successfully: $SUCCEEDED"
  
-      # --------------------------------
+      # ------------------------------
       # 7. Upload test logs + reports 
-      # --------------------------------
+      # ------------------------------
  
       - name: Upload Nextflow logs
         if: always()

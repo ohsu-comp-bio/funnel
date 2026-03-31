@@ -2,10 +2,10 @@ package kubernetes
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 	"text/template"
 
+	"github.com/ohsu-comp-bio/funnel/worker"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -32,19 +32,12 @@ spec:
           {{- end}}
 `
 
-// yamlQuote mirrors the production helper in worker/kubernetes.go.
-func yamlQuote(s string) string {
-	escaped := strings.ReplaceAll(s, "\\", "\\\\")
-	escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
-	return "\"" + escaped + "\""
-}
-
 func renderArgs(t *testing.T, command []string) []string {
 	t.Helper()
 
 	quoted := make([]string, len(command))
 	for i, v := range command {
-		quoted[i] = yamlQuote(v)
+		quoted[i] = worker.YamlQuote(v)
 	}
 
 	tpl, err := template.New("exec").Parse(minimalExecutorTemplate)

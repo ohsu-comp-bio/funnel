@@ -273,6 +273,14 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
 
+	// Delete Job
+	b.log.Debug("deleting Job", "taskID", taskId)
+	err = resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Job", "error", err)
+	}
+
 	// Delete PVC
 	err := resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
@@ -294,19 +302,11 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker ConfigMap", "error", err)
 	}
 
-	// Delete Job
-	b.log.Debug("deleting Job", "taskID", taskId)
-	err = resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
+	// Delete RoleBinding
+	err = resources.DeleteRoleBinding(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Job", "error", err)
-	}
-
-	// Delete ServiceAccount
-	err = resources.DeleteServiceAccount(ctx, taskId, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker ServiceAccount", "error", err)
+		b.log.Error("deleting Worker RoleBinding", "error", err)
 	}
 
 	// Delete Role
@@ -316,11 +316,11 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker Role", "error", err)
 	}
 
-	// Delete RoleBinding
-	err = resources.DeleteRoleBinding(ctx, taskId, b.client, b.log)
+	// Delete ServiceAccount
+	err = resources.DeleteServiceAccount(ctx, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker RoleBinding", "error", err)
+		b.log.Error("deleting Worker ServiceAccount", "error", err)
 	}
 
 	return errs

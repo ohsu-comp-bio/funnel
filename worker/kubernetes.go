@@ -37,11 +37,11 @@ type KubernetesCommand struct {
 	Command
 }
 
-// yamlQuote wraps a string in double quotes safe for YAML scalar values.
+// YamlQuote wraps a string in double quotes safe for YAML scalar values.
 // It escapes backslashes and double quotes so the result is valid inside
 // a YAML double-quoted scalar, handling both single-quote and double-quote
 // characters in the original command element.
-func yamlQuote(s string) string {
+func YamlQuote(s string) string {
 	// Escape backslashes first, then double quotes.
 	escaped := strings.ReplaceAll(s, "\\", "\\\\")
 	escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
@@ -101,9 +101,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	// Always quote every element so that spaces, single quotes, double quotes,
 	// and other shell-special characters are preserved correctly when the
 	// rendered YAML sequence is passed to /bin/sh -c.
+	fmt.Println("DEBUG: cmd A:", cmd)
 	for i, v := range cmd {
-		cmd[i] = yamlQuote(v)
+		cmd[i] = YamlQuote(v)
 	}
+	fmt.Println("DEBUG: cmd B:", cmd)
 
 	templateData := map[string]interface{}{
 		"TaskId":             taskId,

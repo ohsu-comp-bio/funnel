@@ -100,14 +100,11 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		cmd = append(cmd, "<", kcmd.StdinFile)
 	}
 
-	// Always quote every element so that spaces, single quotes, double quotes,
-	// and other shell-special characters are preserved correctly when the
-	// rendered YAML sequence is passed to /bin/sh -c.
-	fmt.Println("DEBUG: cmd A:", cmd)
-	for i, v := range cmd {
-		cmd[i] = YamlQuote(v)
-	}
-	fmt.Println("DEBUG: cmd B:", cmd)
+	// Use a shell wrapper only when the command is a single element (i.e. a
+	// shell script string). When the caller provides multiple elements the
+	// array is passed directly as the container command+args so that spaces,
+	// quotes, and other special characters are preserved without any escaping.
+	useShell := len(cmd) == 1
 
 	templateData := map[string]interface{}{
 		"TaskId":             taskId,
@@ -115,6 +112,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		"Namespace":          kcmd.Namespace,
 		"JobsNamespace":      kcmd.JobsNamespace,
 		"Command":            cmd,
+		"UseShell":           useShell,
 		"Workdir":            kcmd.Workdir,
 		"Volumes":            kcmd.Volumes,
 		"Env":                kcmd.Env,

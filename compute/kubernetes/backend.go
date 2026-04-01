@@ -275,14 +275,14 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 
 	// Delete Job
 	b.log.Debug("deleting Job", "taskID", taskId)
-	err = resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
+	err := resources.DeleteJob(ctx, b.conf, taskId, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Job", "error", err)
 	}
 
 	// Delete PVC
-	err := resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
+	err = resources.DeletePVC(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker PVC", "error", err)

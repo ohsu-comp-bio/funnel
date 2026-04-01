@@ -50,28 +50,27 @@ func ValidateTransition(from, to State) error {
 		return nil
 
 	case Initializing:
-
-		switch to {
-		case Unknown, Queued:
+		if to == Unknown || to == Queued {
 			return &TransitionError{from, to}
 		}
 		return nil
 
 	case Running:
-
-		switch to {
-		case Complete, ExecutorError, SystemError, Canceled:
+		if to == Complete || to == ExecutorError || to == SystemError || to == Canceled {
 			return nil
 		}
 		return &TransitionError{from, to}
 
-	case ExecutorError, SystemError, Canceled, Complete:
-		// May not transition out of terminal state, except in the case of a retry.
+	case ExecutorError, SystemError:
+		// May not transition out of these terminal state, except in the case of a retry.
 		// Whether to allow retries could be made into a configuration if needed
-		switch to {
-		case Queued, Initializing:
+		if to == Queued || to == Initializing {
 			return nil
 		}
+		return &TransitionError{from, to}
+
+	case Complete, Canceled:
+		// May not transition out of these terminal states
 		return &TransitionError{from, to}
 
 	}

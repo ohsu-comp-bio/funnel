@@ -179,7 +179,7 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		// whole task in case of worker job error, even if the executor job is not configured to
 		// allow restarts.
 		if err.Error() == "jobs.batch \""+job.Name+"\" already exists" {
-			logger.Debug("Job already exists: recreating it", "jobName", job.Name)
+			logger.Debug("Executor job already exists: recreating it", "jobName", job.Name)
 			deleteJob(ctx, clientset, client, job.Name, kcmd.JobsNamespace)
 			_, err = client.Create(ctx, job, metav1.CreateOptions{})
 			if err != nil {
@@ -399,7 +399,7 @@ func deleteJob(ctx context.Context, clientset kubernetes.Interface, client batch
 	})
 	if err != nil {
 		return &K8sSystemErr{
-			Reason:  "JobCreationFailed",
+			Reason:  "JobDeletionFailed",
 			Message: "Failed to delete job",
 			Err:     err,
 		}

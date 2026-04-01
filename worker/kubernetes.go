@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -180,14 +182,30 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	var client = clientset.BatchV1().Jobs(kcmd.JobsNamespace)
 	_, err = client.Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
-		return &K8sSystemErr{
-			Reason:  "JobCreationFailed",
-			Message: "Failed to create Kubernetes job",
-			Err:     err,
+		// If the executor job already exists, delete and recreate it. This allows us to restart the
+		// whole task in case of worker job error, even if the executor job is not configured to
+		// allow restarts.
+		if err.Error() == "jobs.batch \""+job.Name+"\" already exists" {
+			logger.Debug("Executor job already exists: recreating it", "jobName", job.Name)
+			deleteJob(ctx, clientset, client, job.Name, kcmd.JobsNamespace)
+			_, err = client.Create(ctx, job, metav1.CreateOptions{})
+			if err != nil {
+				return &K8sSystemErr{
+					Reason:  "JobCreationFailed",
+					Message: "Failed to create Kubernetes job",
+					Err:     err,
+				}
+			}
+		} else {
+			return &K8sSystemErr{
+				Reason:  "JobCreationFailed",
+				Message: "Failed to create Kubernetes job",
+				Err:     err,
+			}
 		}
 	}
 
-	logger.Debug("Job created successfully, waiting for pod to be running", "jobName", job.Name)
+	logger.Debug("Job created successfully, waiting for pod to finish", "jobName", job.Name)
 	podWatcher, err := clientset.CoreV1().Pods(kcmd.JobsNamespace).Watch(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("job-name=%s-%d", taskId, kcmd.JobId),
 	})
@@ -199,8 +217,6 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 		}
 	}
 	defer podWatcher.Stop()
-
-	logger.Debug("Waiting for pod to finish", "jobName", job.Name)
 	pod, err := waitForPodFinish(ctx, podWatcher)
 	if err != nil {
 		return &K8sSystemErr{
@@ -322,11 +338,24 @@ func (kcmd KubernetesCommand) GetStderr() io.Writer {
 
 // Waits until the job finishes
 func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod, error) {
+	// wait up to 5 min for the pod to appear
+	appearanceTimer := time.NewTimer(5 * 60 * time.Second)
+	defer appearanceTimer.Stop()
+
 	for {
 		select {
 		case event := <-watcher.ResultChan():
-			if event.Object == nil {
-				return nil, fmt.Errorf("received nil pod object from watcher")
+			if event.Type == watch.Error {
+				if status, ok := event.Object.(*metav1.Status); ok {
+					return nil, fmt.Errorf("pod watch error: %s", status.Message)
+				}
+				return nil, fmt.Errorf("unknown pod watch error")
+			}
+
+			if event.Object == nil { // no pod; watcher times out
+				msg := "received nil pod object from watcher"
+				logger.Debug(msg)
+				return nil, fmt.Errorf(msg)
 			}
 
 			pod, ok := event.Object.(*corev1.Pod)
@@ -334,23 +363,71 @@ func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod
 				continue
 			}
 
+			// Pod exists: stop the appearance timer
+			appearanceTimer.Stop()
+
 			// Check if container is terminated
+			podPhase := pod.Status.Phase
+			logger.Debug("Pod status:", "podPhase", podPhase)
 			if len(pod.Status.ContainerStatuses) > 0 {
 				cStatus := pod.Status.ContainerStatuses[0]
 				if cStatus.State.Terminated != nil {
+					logger.Debug("Container has terminated")
 					return pod, nil
 				}
 			}
 
 			// Handle pod deletion
 			if event.Type == watch.Deleted {
-				return nil, fmt.Errorf("pod was deleted before container terminated")
+				msg := "pod was deleted before container terminated"
+				logger.Debug(msg)
+				return nil, fmt.Errorf(msg)
 			}
 
+		case <-appearanceTimer.C:
+			return nil, fmt.Errorf("timed out waiting for pod to appear")
+
 		case <-ctx.Done():
-			return nil, fmt.Errorf("context cancelled while waiting for pod termination")
+			msg := "context cancelled while waiting for pod termination"
+			logger.Debug(msg)
+			return nil, fmt.Errorf(msg)
 		}
 	}
+}
+
+// Deletes a job and waits for it to be deleted
+func deleteJob(ctx context.Context, clientset kubernetes.Interface, client batchv1.JobInterface, jobName, namespace string) error {
+	// delete the job
+	var gracePeriod int64 = 0
+	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
+	err := client.Delete(ctx, jobName, metav1.DeleteOptions{
+		GracePeriodSeconds: &gracePeriod,
+		PropagationPolicy:  &prop,
+	})
+	if err != nil {
+		return &K8sSystemErr{
+			Reason:  "JobDeletionFailed",
+			Message: "Failed to delete job",
+			Err:     err,
+		}
+	}
+
+	// wait for a "deleted" event
+	watcher, err := clientset.BatchV1().Jobs(namespace).Watch(ctx, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", jobName),
+	})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+	for event := range watcher.ResultChan() {
+		if event.Type == watch.Deleted {
+			logger.Debug("Job deleted successfully", "jobName", jobName)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("timed out waiting for job deletion")
 }
 
 func getKubernetesClientset() (*kubernetes.Clientset, error) {

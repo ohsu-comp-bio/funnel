@@ -16,13 +16,13 @@ import (
 const (
 	Unknown       = tes.State_UNKNOWN
 	Queued        = tes.State_QUEUED
+	Initializing  = tes.State_INITIALIZING
 	Running       = tes.State_RUNNING
 	Paused        = tes.State_PAUSED
 	Complete      = tes.State_COMPLETE
 	ExecutorError = tes.State_EXECUTOR_ERROR
 	SystemError   = tes.State_SYSTEM_ERROR
 	Canceled      = tes.State_CANCELED
-	Initializing  = tes.State_INITIALIZING
 )
 
 // WriteEvent creates an event for the server to handle.

@@ -1,0 +1,10 @@
+{
+  "name": "Multi-element exec — plain words",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": ["echo", "hello", "world"]
+    }
+  ],
+  "expected_stdout": "hello world\n"
+}

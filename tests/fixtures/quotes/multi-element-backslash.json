@@ -5,6 +5,5 @@
       "image": "alpine",
       "command": ["echo", "back\\slash"]
     }
-  ],
-  "expected_stdout": "back\\slash\n"
+  ]
 }

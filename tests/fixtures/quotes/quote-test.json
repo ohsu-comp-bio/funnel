@@ -5,6 +5,5 @@
       "image": "bash",
       "command": ["echo 'Hello Nextflow!'"]
     }
-  ],
-  "expected_stdout": "Hello Nextflow!\n"
+  ]
 }

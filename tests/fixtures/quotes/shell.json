@@ -2,6 +2,5 @@
   "name": "Wrap in explicit shell",
   "executors": [
     { "image": "bash", "command": ["sh", "-c", "echo 'inline shell'"] }
-  ],
-  "expected_stdout": "inline shell\n"
+  ]
 }

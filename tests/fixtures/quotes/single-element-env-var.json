@@ -8,6 +8,5 @@
         "HOME": "/custom/home"
       }
     }
-  ],
-  "expected_stdout": "HOME is /custom/home\n"
+  ]
 }

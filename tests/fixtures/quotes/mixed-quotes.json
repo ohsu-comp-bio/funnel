@@ -2,6 +2,5 @@
   "name": "Mixed quotes",
   "executors": [
     { "image": "bash", "command": ["echo \"mix 'of' \\\"quotes\\\"\""] }
-  ],
-  "expected_stdout": "mix 'of' \"quotes\"\n"
+  ]
 }

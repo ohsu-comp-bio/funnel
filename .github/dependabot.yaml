@@ -10,3 +10,13 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: "npm"
+    directory: "/webdash"
+    schedule:
+      interval: "daily"
+    target-branch: "develop"
+    groups:
+      npm-deps:
+        patterns:
+          - "*"
+

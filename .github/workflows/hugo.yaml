@@ -54,6 +54,7 @@ jobs:
       - name: Build site with Hugo
         run: |
           make website
+          cp install.sh ./docs/install.sh
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

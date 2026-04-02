@@ -303,21 +303,28 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	}
 
 	// Delete RoleBinding
-	err = resources.DeleteRoleBinding(ctx, taskId, b.client, b.log)
+	err = resources.DeleteRoleBinding(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker RoleBinding", "error", err)
+		b.log.Error("deleting Job", "error", err)
+	}
+
+	// Delete ServiceAccount
+	err = resources.DeleteServiceAccount(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+		b.log.Error("deleting Worker ServiceAccount", "error", err)
 	}
 
 	// Delete Role
-	err = resources.DeleteRole(ctx, taskId, b.client, b.log)
+	err = resources.DeleteRole(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker Role", "error", err)
 	}
 
-	// Delete ServiceAccount
-	err = resources.DeleteServiceAccount(ctx, taskId, b.client, b.log)
+	// Delete RoleBinding
+	err = resources.DeleteRoleBinding(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker ServiceAccount", "error", err)
@@ -414,11 +421,14 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 			}
 		}
 
-		// Clean up orphaned PVs/PVCs — resources whose task no longer exists in the DB.
-		// These can be left behind if the server crashed after creating the PV/PVC but
-		// before creating the Job, or if a prior cleanup attempt only partially succeeded.
+		// Clean up all orphaned Funnel-managed resources whose task no longer exists in
+		// the DB. These can be left behind by server crashes or partial cleanup failures.
 		b.cleanOrphanedPVCs(ctx)
 		b.cleanOrphanedPVs(ctx)
+		b.cleanOrphanedConfigMaps(ctx)
+		b.cleanOrphanedServiceAccounts(ctx)
+		b.cleanOrphanedRoles(ctx)
+		b.cleanOrphanedRoleBindings(ctx)
 	}
 
 	ticker := time.NewTicker(rate)
@@ -624,6 +634,110 @@ func (b *Backend) cleanOrphanedPVs(ctx context.Context) {
 			b.log.Info("backlog cleanup: deleting orphaned PV with no matching task", "pv", pv.Name, "taskID", taskID)
 			if err := resources.DeletePV(ctx, taskID, b.client, b.log); err != nil {
 				b.log.Error("backlog cleanup: failed to delete orphaned PV", "pv", pv.Name, "taskID", taskID, "error", err)
+			}
+		}
+	}
+}
+
+// cleanOrphanedConfigMaps lists all Funnel-managed ConfigMaps and deletes any whose task
+// no longer exists in the Funnel DB.
+func (b *Backend) cleanOrphanedConfigMaps(ctx context.Context) {
+	cms, err := b.client.CoreV1().ConfigMaps(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=funnel",
+	})
+	if err != nil {
+		b.log.Error("backlog cleanup: listing ConfigMaps", err)
+		return
+	}
+
+	for _, cm := range cms.Items {
+		taskID, ok := cm.Labels["taskId"]
+		if !ok {
+			continue
+		}
+		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+		if err != nil {
+			b.log.Info("backlog cleanup: deleting orphaned ConfigMap with no matching task", "configmap", cm.Name, "taskID", taskID)
+			if err := resources.DeleteConfigMap(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
+				b.log.Error("backlog cleanup: failed to delete orphaned ConfigMap", "configmap", cm.Name, "taskID", taskID, "error", err)
+			}
+		}
+	}
+}
+
+// cleanOrphanedServiceAccounts lists all Funnel-managed ServiceAccounts and deletes any
+// whose task no longer exists in the Funnel DB.
+func (b *Backend) cleanOrphanedServiceAccounts(ctx context.Context) {
+	sas, err := b.client.CoreV1().ServiceAccounts(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=funnel",
+	})
+	if err != nil {
+		b.log.Error("backlog cleanup: listing ServiceAccounts", err)
+		return
+	}
+
+	for _, sa := range sas.Items {
+		taskID, ok := sa.Labels["taskId"]
+		if !ok {
+			continue
+		}
+		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+		if err != nil {
+			b.log.Info("backlog cleanup: deleting orphaned ServiceAccount with no matching task", "serviceaccount", sa.Name, "taskID", taskID)
+			if err := resources.DeleteServiceAccount(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
+				b.log.Error("backlog cleanup: failed to delete orphaned ServiceAccount", "serviceaccount", sa.Name, "taskID", taskID, "error", err)
+			}
+		}
+	}
+}
+
+// cleanOrphanedRoles lists all Funnel-managed Roles and deletes any whose task no longer
+// exists in the Funnel DB.
+func (b *Backend) cleanOrphanedRoles(ctx context.Context) {
+	roles, err := b.client.RbacV1().Roles(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=funnel",
+	})
+	if err != nil {
+		b.log.Error("backlog cleanup: listing Roles", err)
+		return
+	}
+
+	for _, role := range roles.Items {
+		taskID, ok := role.Labels["taskId"]
+		if !ok {
+			continue
+		}
+		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+		if err != nil {
+			b.log.Info("backlog cleanup: deleting orphaned Role with no matching task", "role", role.Name, "taskID", taskID)
+			if err := resources.DeleteRole(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
+				b.log.Error("backlog cleanup: failed to delete orphaned Role", "role", role.Name, "taskID", taskID, "error", err)
+			}
+		}
+	}
+}
+
+// cleanOrphanedRoleBindings lists all Funnel-managed RoleBindings and deletes any whose
+// task no longer exists in the Funnel DB.
+func (b *Backend) cleanOrphanedRoleBindings(ctx context.Context) {
+	rbs, err := b.client.RbacV1().RoleBindings(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=funnel",
+	})
+	if err != nil {
+		b.log.Error("backlog cleanup: listing RoleBindings", err)
+		return
+	}
+
+	for _, rb := range rbs.Items {
+		taskID, ok := rb.Labels["taskId"]
+		if !ok {
+			continue
+		}
+		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+		if err != nil {
+			b.log.Info("backlog cleanup: deleting orphaned RoleBinding with no matching task", "rolebinding", rb.Name, "taskID", taskID)
+			if err := resources.DeleteRoleBinding(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
+				b.log.Error("backlog cleanup: failed to delete orphaned RoleBinding", "rolebinding", rb.Name, "taskID", taskID, "error", err)
 			}
 		}
 	}

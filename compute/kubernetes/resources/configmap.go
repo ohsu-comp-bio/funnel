@@ -22,6 +22,10 @@ func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, cl
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("funnel-worker-config-%s", taskId),
 			Namespace: conf.Kubernetes.JobsNamespace,
+			Labels: map[string]string{
+				"app":    "funnel",
+				"taskId": taskId,
+			},
 		},
 		Data: map[string]string{
 			"funnel-worker.yaml": string(configBytes),

@@ -55,8 +55,19 @@ func CreateRole(ctx context.Context, task *tes.Task, config *config.Config, clie
 	return nil
 }
 
-// Add this helper function for Role cleanup
-func DeleteRole(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
-	// TODO: Implement deletion of Roles
+// DeleteRole deletes the Role created for a task.
+func DeleteRole(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
+	roles, err := client.RbacV1().Roles(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=funnel,taskId=%s", taskID),
+	})
+	if err != nil {
+		return fmt.Errorf("listing Roles for task %s: %v", taskID, err)
+	}
+	for _, role := range roles.Items {
+		log.Debug("deleting Worker Role", "name", role.Name, "taskID", taskID)
+		if err := client.RbacV1().Roles(namespace).Delete(ctx, role.Name, metav1.DeleteOptions{}); err != nil {
+			return fmt.Errorf("deleting Role %s: %v", role.Name, err)
+		}
+	}
 	return nil
 }

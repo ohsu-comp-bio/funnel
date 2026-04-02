@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"dario.cat/mergo"
-	batchv1 "k8s.io/api/batch/v1"
+	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -375,22 +375,50 @@ func (b *Backend) isJobSchedulingTimedOut(ctx context.Context, jobName string, t
 //
 // This loop is also used to cleanup successful jobs.
 func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableCleanup bool) {
-	// Clears all resources that still exist from jobs that have run before it
+	// Clears all resources that still exist from jobs that have run before this server started.
+	// This handles two cases:
+	//   1. Completed jobs (Succeeded/Failed) that were not cleaned up before the server restarted.
+	//   2. Orphaned jobs (Active) whose task no longer exists in the Funnel DB — left over from
+	//      a previous deployment or server crash.
 	if !disableCleanup {
-		jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
+		jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: "app=funnel-worker",
+		})
 		if err != nil {
 			b.log.Error("backlog cleanup: listing jobs", err)
 		} else {
 			for _, j := range jobs.Items {
 				s := j.Status
+				taskID := j.Name
+
+				// Always clean up completed jobs from prior runs.
 				if s.Succeeded > 0 || s.Failed > 0 {
-					b.log.Debug("backlog cleanup: deleting job", "taskID", j.Name)
-					if err := b.cleanResources(ctx, j.Name); err != nil {
-						b.log.Error("backlog cleanup: failed to clean resources", "taskID", j.Name, "error", err)
+					b.log.Debug("backlog cleanup: deleting completed job", "taskID", taskID)
+					if err := b.cleanResources(ctx, taskID); err != nil {
+						b.log.Error("backlog cleanup: failed to clean resources", "taskID", taskID, "error", err)
+					}
+					continue
+				}
+
+				// For active jobs, check whether the task still exists in the DB.
+				// If it doesn't, the job is orphaned from a previous deployment.
+				if s.Active > 0 {
+					_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+					if err != nil {
+						b.log.Info("backlog cleanup: deleting orphaned active job with no matching task", "taskID", taskID)
+						if err := b.cleanResources(ctx, taskID); err != nil {
+							b.log.Error("backlog cleanup: failed to clean orphaned resources", "taskID", taskID, "error", err)
+						}
 					}
 				}
 			}
 		}
+
+		// Clean up orphaned PVs/PVCs — resources whose task no longer exists in the DB.
+		// These can be left behind if the server crashed after creating the PV/PVC but
+		// before creating the Job, or if a prior cleanup attempt only partially succeeded.
+		b.cleanOrphanedPVCs(ctx)
+		b.cleanOrphanedPVs(ctx)
 	}
 
 	ticker := time.NewTicker(rate)
@@ -403,15 +431,19 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 			return
 		case <-ticker.C:
 
-			// List ALL current Kubernetes Jobs
+			// List worker jobs only (label selector excludes executor jobs and unrelated jobs).
 			// Bug: If K8s Job is not created by the time reconciler runs, then the TES Task itself will be prematurely marked as SYSTEM_ERROR
-			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{})
+			jobs, err := b.client.BatchV1().Jobs(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+				LabelSelector: "app=funnel-worker",
+			})
 			if err != nil {
 				b.log.Error("reconcile: listing jobs", err)
 				continue
 			}
 
-			k8sJobs := make(map[string]*batchv1.Job)
+			// Index worker jobs by task ID. We use a label selector to avoid
+			// picking up executor jobs (app=funnel-executor) or unrelated jobs.
+			k8sJobs := make(map[string]*v1.Job)
 			for i := range jobs.Items {
 				k8sJobs[jobs.Items[i].Name] = &jobs.Items[i]
 			}
@@ -439,8 +471,9 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 						// If the job exists, check its current status (Active, Succeeded, Failed)
 						j := k8sJobs[taskID]
 
-						// Remove from map to ensure only orphaned checks are done above
-						// delete(k8sJobs, taskID)
+						// Remove matched jobs so that any remaining entries after this
+						// loop represent orphaned K8s jobs with no Funnel task.
+						delete(k8sJobs, taskID)
 
 						if j == nil {
 							continue
@@ -527,6 +560,70 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 					}
 					time.Sleep(time.Millisecond * 100)
 				}
+			}
+
+			// Any jobs remaining in k8sJobs were not matched to a Funnel task —
+			// they are orphaned and should be cleaned up.
+			if !disableCleanup {
+				for taskID := range k8sJobs {
+					b.log.Info("reconcile: cleaning up orphaned job with no matching Funnel task", "taskID", taskID)
+					if err := b.cleanResources(ctx, taskID); err != nil {
+						b.log.Error("reconcile: failed to clean orphaned resources", "taskID", taskID, "error", err)
+					}
+					delete(failedJobEvents, taskID)
+				}
+			}
+		}
+	}
+}
+
+// cleanOrphanedPVCs lists all Funnel-managed PVCs and deletes any whose task no longer
+// exists in the Funnel DB. This catches PVCs left behind by server crashes or partial cleanups.
+func (b *Backend) cleanOrphanedPVCs(ctx context.Context) {
+	pvcs, err := b.client.CoreV1().PersistentVolumeClaims(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=funnel",
+	})
+	if err != nil {
+		b.log.Error("backlog cleanup: listing PVCs", err)
+		return
+	}
+
+	for _, pvc := range pvcs.Items {
+		taskID, ok := pvc.Labels["taskId"]
+		if !ok {
+			continue
+		}
+		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+		if err != nil {
+			b.log.Info("backlog cleanup: deleting orphaned PVC with no matching task", "pvc", pvc.Name, "taskID", taskID)
+			if err := resources.DeletePVC(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
+				b.log.Error("backlog cleanup: failed to delete orphaned PVC", "pvc", pvc.Name, "taskID", taskID, "error", err)
+			}
+		}
+	}
+}
+
+// cleanOrphanedPVs lists all Funnel-managed PVs and deletes any whose task no longer
+// exists in the Funnel DB. This catches PVs left behind by server crashes or partial cleanups.
+func (b *Backend) cleanOrphanedPVs(ctx context.Context) {
+	pvs, err := b.client.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{
+		LabelSelector: "app=funnel",
+	})
+	if err != nil {
+		b.log.Error("backlog cleanup: listing PVs", err)
+		return
+	}
+
+	for _, pv := range pvs.Items {
+		taskID, ok := pv.Labels["taskId"]
+		if !ok {
+			continue
+		}
+		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+		if err != nil {
+			b.log.Info("backlog cleanup: deleting orphaned PV with no matching task", "pv", pv.Name, "taskID", taskID)
+			if err := resources.DeletePV(ctx, taskID, b.client, b.log); err != nil {
+				b.log.Error("backlog cleanup: failed to delete orphaned PV", "pv", pv.Name, "taskID", taskID, "error", err)
 			}
 		}
 	}

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-const redacted = "***"
+var redacted = redact("example")
 
 // TestSafeNilConfig verifies that Safe() on a nil config returns nil.
 func TestSafeNilConfig(t *testing.T) {

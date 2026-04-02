@@ -68,8 +68,20 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, config *config.Co
 	return nil
 }
 
-// Add this helper function for ServiceAccount cleanup
-func DeleteServiceAccount(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
-	// TODO: Implement deletion of ServiceAccounts
+// DeleteServiceAccount deletes the ServiceAccount created for a task.
+func DeleteServiceAccount(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
+	// ServiceAccount names are not available here without config, so we list by label.
+	sas, err := client.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=funnel,taskId=%s", taskID),
+	})
+	if err != nil {
+		return fmt.Errorf("listing ServiceAccounts for task %s: %v", taskID, err)
+	}
+	for _, sa := range sas.Items {
+		log.Debug("deleting Worker ServiceAccount", "name", sa.Name, "taskID", taskID)
+		if err := client.CoreV1().ServiceAccounts(namespace).Delete(ctx, sa.Name, metav1.DeleteOptions{}); err != nil {
+			return fmt.Errorf("deleting ServiceAccount %s: %v", sa.Name, err)
+		}
+	}
 	return nil
 }

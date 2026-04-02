@@ -241,7 +241,7 @@ func TestDeleteServiceAccount(t *testing.T) {
 		t.Fatalf("Failed to create test ServiceAccount: %v", err)
 	}
 
-	err = DeleteServiceAccount(context.Background(), testTaskID, fakeClient, l)
+	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteServiceAccount failed: %v", err)
 	}
@@ -273,7 +273,7 @@ func TestDeleteRole(t *testing.T) {
 		t.Fatalf("Failed to create test Role: %v", err)
 	}
 
-	err = DeleteRole(context.Background(), testTaskID, fakeClient, l)
+	err = DeleteRole(context.Background(), testTaskID, namespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteRole failed: %v", err)
 	}
@@ -305,7 +305,7 @@ func TestDeleteRoleBinding(t *testing.T) {
 		t.Fatalf("Failed to create test RoleBinding: %v", err)
 	}
 
-	err = DeleteRoleBinding(context.Background(), testTaskID, fakeClient, l)
+	err = DeleteRoleBinding(context.Background(), testTaskID, namespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteRoleBinding failed: %v", err)
 	}

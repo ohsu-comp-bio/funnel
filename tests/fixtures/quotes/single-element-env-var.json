@@ -1,0 +1,13 @@
+{
+  "name": "Single-element shell script — environment variable expansion",
+  "executors": [
+    {
+      "image": "bash",
+      "command": ["echo \"HOME is $HOME\""],
+      "env": {
+        "HOME": "/custom/home"
+      }
+    }
+  ],
+  "expected_stdout": "HOME is /custom/home\n"
+}

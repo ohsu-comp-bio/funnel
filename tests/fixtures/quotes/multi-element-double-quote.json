@@ -1,0 +1,10 @@
+{
+  "name": "Multi-element exec — double quote in argument",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": ["echo", "\"double quoted value\""]
+    }
+  ],
+  "expected_stdout": "\"double quoted value\"\n"
+}

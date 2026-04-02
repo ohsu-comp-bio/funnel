@@ -1,0 +1,9 @@
+{
+  "name": "Multi-element exec — curl with header containing comma and colon",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": ["curl", "-s", "https://httpbin.org/get", "-H", "Accept: application/json,text/plain"]
+    }
+  ]
+}

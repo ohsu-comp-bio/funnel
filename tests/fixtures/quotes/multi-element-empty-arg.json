@@ -1,0 +1,10 @@
+{
+  "name": "Multi-element exec — empty argument preserved",
+  "executors": [
+    {
+      "image": "alpine",
+      "command": ["echo", ""]
+    }
+  ],
+  "expected_stdout": "\n"
+}

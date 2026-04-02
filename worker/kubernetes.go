@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 	"text/template"
 	"time"
 
@@ -39,16 +38,6 @@ type KubernetesCommand struct {
 	Command
 }
 
-// YamlQuote wraps a string in double quotes safe for YAML scalar values.
-// It escapes backslashes and double quotes so the result is valid inside
-// a YAML double-quoted scalar, handling both single-quote and double-quote
-// characters in the original command element.
-func YamlQuote(s string) string {
-	// Escape backslashes first, then double quotes.
-	escaped := strings.ReplaceAll(s, "\\", "\\\\")
-	escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
-	return "\"" + escaped + "\""
-}
 
 type K8sExecutorErr struct {
 	ExitCode int

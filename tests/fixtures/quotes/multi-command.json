@@ -2,5 +2,6 @@
   "name": "Multi-command shell",
   "executors": [
     { "image": "bash", "command": ["echo start && echo \"inner 'quotes'\" && echo end"] }
-  ]
+  ],
+  "expected_stdout": "start\ninner 'quotes'\nend\n"
 }

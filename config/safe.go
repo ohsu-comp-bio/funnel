@@ -92,8 +92,8 @@ func (c *Config) Safe() *Config {
 	}
 
 	if safe.Plugins != nil && safe.Plugins.Params != nil {
-		for i, param := range safe.Plugins.Params {
-			safe.Plugins.Params[i] = redact(param)
+		for key, param := range safe.Plugins.Params {
+			safe.Plugins.Params[key] = redact(param)
 		}
 	}
 

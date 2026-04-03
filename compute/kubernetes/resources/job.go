@@ -46,7 +46,7 @@ func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, clien
 		"RamGb":              res.GetRamGb(),
 		"DiskGb":             res.GetDiskGb(),
 		"Image":              pods.Items[0].Spec.Containers[0].Image,
-		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0,
+		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0,
 		"NodeSelector":       config.Kubernetes.NodeSelector,
 		"Tolerations":        config.Kubernetes.Tolerations,
 		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id),

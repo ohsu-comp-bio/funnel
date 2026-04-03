@@ -7,13 +7,14 @@
 package config
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	logger "github.com/ohsu-comp-bio/funnel/logger"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -2771,7 +2772,9 @@ type Kubernetes struct {
 	NodeSelector map[string]string `protobuf:"bytes,16,rep,name=NodeSelector,proto3" json:"NodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Tolerations  []*Toleration     `protobuf:"bytes,17,rep,name=Tolerations,proto3" json:"Tolerations,omitempty"`
 	// Optional Kubernetes resource defaults and limits for tasks running on the Kubernetes backend.
-	Resources     *KubernetesResources `protobuf:"bytes,18,opt,name=Resources,proto3" json:"Resources,omitempty"`
+	Resources *KubernetesResources `protobuf:"bytes,18,opt,name=Resources,proto3" json:"Resources,omitempty"`
+	// Timeout for creating Kubernetes resources (PV, PVC, Job, etc.)
+	Timeout       *TimeoutConfig `protobuf:"bytes,19,opt,name=Timeout,proto3" json:"Timeout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2928,6 +2931,13 @@ func (x *Kubernetes) GetTolerations() []*Toleration {
 func (x *Kubernetes) GetResources() *KubernetesResources {
 	if x != nil {
 		return x.Resources
+	}
+	return nil
+}
+
+func (x *Kubernetes) GetTimeout() *TimeoutConfig {
+	if x != nil {
+		return x.Timeout
 	}
 	return nil
 }
@@ -3446,7 +3456,7 @@ const file_config_config_proto_rawDesc = "" +
 	"\bDisabled\x18\x01 \x01(\bR\bDisabled\x12/\n" +
 	"\aTimeout\x18\x02 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\x12\x12\n" +
 	"\x04User\x18\x03 \x01(\tR\x04User\x12\x1a\n" +
-	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xff\x06\n" +
+	"\bPassword\x18\x04 \x01(\tR\bPassword\"\xb0\a\n" +
 	"\n" +
 	"Kubernetes\x12\x1a\n" +
 	"\bExecutor\x18\x01 \x01(\tR\bExecutor\x12&\n" +
@@ -3469,7 +3479,8 @@ const file_config_config_proto_rawDesc = "" +
 	"\x11DisableJobCleanup\x18\x0f \x01(\bR\x11DisableJobCleanup\x12H\n" +
 	"\fNodeSelector\x18\x10 \x03(\v2$.config.Kubernetes.NodeSelectorEntryR\fNodeSelector\x124\n" +
 	"\vTolerations\x18\x11 \x03(\v2\x12.config.TolerationR\vTolerations\x129\n" +
-	"\tResources\x18\x12 \x01(\v2\x1b.config.KubernetesResourcesR\tResources\x1a?\n" +
+	"\tResources\x18\x12 \x01(\v2\x1b.config.KubernetesResourcesR\tResources\x12/\n" +
+	"\aTimeout\x18\x13 \x01(\v2\x15.config.TimeoutConfigR\aTimeout\x1a?\n" +
 	"\x11NodeSelectorEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"{\n" +
@@ -3620,13 +3631,14 @@ var file_config_config_proto_depIdxs = []int32{
 	43, // 62: config.Kubernetes.NodeSelector:type_name -> config.Kubernetes.NodeSelectorEntry
 	38, // 63: config.Kubernetes.Tolerations:type_name -> config.Toleration
 	35, // 64: config.Kubernetes.Resources:type_name -> config.KubernetesResources
-	36, // 65: config.KubernetesResources.Defaults:type_name -> config.ResourceDefaults
-	37, // 66: config.KubernetesResources.Limits:type_name -> config.ResourceLimits
-	67, // [67:67] is the sub-list for method output_type
-	67, // [67:67] is the sub-list for method input_type
-	67, // [67:67] is the sub-list for extension type_name
-	67, // [67:67] is the sub-list for extension extendee
-	0,  // [0:67] is the sub-list for field type_name
+	5,  // 65: config.Kubernetes.Timeout:type_name -> config.TimeoutConfig
+	36, // 66: config.KubernetesResources.Defaults:type_name -> config.ResourceDefaults
+	37, // 67: config.KubernetesResources.Limits:type_name -> config.ResourceLimits
+	68, // [68:68] is the sub-list for method output_type
+	68, // [68:68] is the sub-list for method input_type
+	68, // [68:68] is the sub-list for extension type_name
+	68, // [68:68] is the sub-list for extension extendee
+	0,  // [0:68] is the sub-list for field type_name
 }
 
 func init() { file_config_config_proto_init() }

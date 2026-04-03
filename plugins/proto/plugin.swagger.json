@@ -542,6 +542,10 @@
         "Resources": {
           "$ref": "#/definitions/configKubernetesResources",
           "description": "Optional Kubernetes resource defaults and limits for tasks running on the Kubernetes backend."
+        },
+        "Timeout": {
+          "$ref": "#/definitions/configTimeoutConfig",
+          "title": "Timeout for creating Kubernetes resources (PV, PVC, Job, etc.)"
         }
       },
       "description": "Kubernetes describes the configuration for the Kubernetes compute backend."

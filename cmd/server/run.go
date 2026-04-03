@@ -244,7 +244,7 @@ func NewServer(ctx context.Context, conf *config.Config, log *logger.Logger) (*S
 			return nil, err
 		}
 
-	case "kubernetes":
+	case "kubernetes", "k8s":
 		compute, err = kubernetes.NewBackend(ctx, conf, reader, writer, log.Sub("kubernetes"))
 		if err != nil {
 			return nil, err

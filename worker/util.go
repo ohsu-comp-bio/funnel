@@ -27,7 +27,8 @@ func getExitCode(err error) (int, error) {
 		}
 	}
 
-	return -1, fmt.Errorf("failed to get exit code: %w", err)
+	// Default to exit code 1 for any other errors.
+	return 1, fmt.Errorf("failed to get exit code: %w", err)
 }
 
 // recover from panic and call "cb" with an error value.

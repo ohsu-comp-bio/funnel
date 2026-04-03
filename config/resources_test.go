@@ -29,7 +29,7 @@ func TestParseCpus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			got, err := ParseCpus(tt.input)
+			got, err := parseCpus(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseCpus(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 				return
@@ -60,7 +60,7 @@ func TestParseMemory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			got, err := ParseMemory(tt.input)
+			got, err := parseMemory(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseMemory(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 				return
@@ -90,7 +90,7 @@ func TestApplyDefaultResources(t *testing.T) {
 				DiskGb: "1Gi",
 			},
 		}
-		got := ApplyDefaultResources(task, k8sMilli)
+		got := applyDefaults(task, k8sMilli)
 
 		// 500m should be 1 core
 		if got.CpuCores != 1 {
@@ -110,7 +110,7 @@ func TestApplyDefaultResources(t *testing.T) {
 		task := &tes.Resources{
 			RamGb: 16,
 		}
-		got := ApplyDefaultResources(task, k8s)
+		got := applyDefaults(task, k8s)
 		if got.CpuCores != 2 {
 			t.Errorf("CpuCores = %v, want 2", got.CpuCores)
 		}
@@ -119,6 +119,91 @@ func TestApplyDefaultResources(t *testing.T) {
 		}
 		if got.DiskGb != 100 {
 			t.Errorf("DiskGb = %v, want 100", got.DiskGb)
+		}
+	})
+}
+
+func TestApplyDefaultsAndLimits(t *testing.T) {
+	k8s := &KubernetesResources{
+		Defaults: &ResourceDefaults{
+			Cpus:   "2",
+			RamGb:  "4Gi",
+			DiskGb: "100Gi",
+		},
+		Limits: &ResourceLimits{
+			Cpus:   "4",
+			RamGb:  "8Gi",
+			DiskGb: "200Gi",
+		},
+	}
+
+	t.Run("applies defaults and respects limits", func(t *testing.T) {
+		task := &tes.Resources{}
+		got, err := ValidateResources(task, k8s)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if got.CpuCores != 2 {
+			t.Errorf("CpuCores = %v, want 2", got.CpuCores)
+		}
+		if got.RamGb != 4 {
+			t.Errorf("RamGb = %v, want 4", got.RamGb)
+		}
+		if got.DiskGb != 100 {
+			t.Errorf("DiskGb = %v, want 100", got.DiskGb)
+		}
+	})
+
+	t.Run("returns error when cpu exceeds limit", func(t *testing.T) {
+		task := &tes.Resources{CpuCores: 10}
+		_, err := ValidateResources(task, k8s)
+		if err == nil {
+			t.Error("expected error for cpu exceeding limit")
+		}
+	})
+
+	t.Run("returns error when ram exceeds limit", func(t *testing.T) {
+		task := &tes.Resources{RamGb: 16}
+		_, err := ValidateResources(task, k8s)
+		if err == nil {
+			t.Error("expected error for ram exceeding limit")
+		}
+	})
+
+	t.Run("returns error when disk exceeds limit", func(t *testing.T) {
+		task := &tes.Resources{DiskGb: 300}
+		_, err := ValidateResources(task, k8s)
+		if err == nil {
+			t.Error("expected error for disk exceeding limit")
+		}
+	})
+
+	t.Run("allows values at limit", func(t *testing.T) {
+		task := &tes.Resources{CpuCores: 4, RamGb: 8, DiskGb: 200}
+		got, err := ValidateResources(task, k8s)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if got.CpuCores != 4 || got.RamGb != 8 || got.DiskGb != 200 {
+			t.Errorf("values at limit should be allowed")
+		}
+	})
+
+	t.Run("no limits configured allows any value", func(t *testing.T) {
+		k8sNoLimits := &KubernetesResources{
+			Defaults: &ResourceDefaults{
+				Cpus:   "2",
+				RamGb:  "4Gi",
+				DiskGb: "100Gi",
+			},
+		}
+		task := &tes.Resources{CpuCores: 100, RamGb: 1000, DiskGb: 1000}
+		got, err := ValidateResources(task, k8sNoLimits)
+		if err != nil {
+			t.Errorf("unexpected error when no limits: %v", err)
+		}
+		if got.CpuCores != 100 || got.RamGb != 1000 || got.DiskGb != 1000 {
+			t.Errorf("values should be preserved when no limits")
 		}
 	})
 }

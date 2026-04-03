@@ -20,11 +20,12 @@ const (
 )
 
 var l = logger.NewLogger("test", logger.DefaultConfig())
+var ctx = context.Background()
 
 func TestCreateConfigMap(t *testing.T) {
 	conf := &config.Config{}
 	conf.Kubernetes.JobsNamespace = jobsNamespace
-	err := CreateConfigMap(testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreateConfigMap(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
 	}
@@ -68,7 +69,7 @@ func TestCreateJob(t *testing.T) {
 	}
 
 	conf := &config.Config{}
-	err := CreateJob(task, conf, fake.NewSimpleClientset(), l)
+	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed: %v", err)
 	}
@@ -104,7 +105,7 @@ func TestDeleteJob(t *testing.T) {
 
 func TestCreatePV(t *testing.T) {
 	conf := &config.Config{}
-	err := CreatePV(testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreatePV(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePV failed: %v", err)
 	}
@@ -138,7 +139,7 @@ func TestDeletePV(t *testing.T) {
 
 func TestCreatePVC(t *testing.T) {
 	conf := &config.Config{}
-	err := CreatePVC(testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreatePVC(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePVC failed: %v", err)
 	}
@@ -178,7 +179,7 @@ func TestCreateJobWithNoResources(t *testing.T) {
 	}
 
 	conf := &config.Config{}
-	err := CreateJob(task, conf, fake.NewSimpleClientset(), l)
+	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed with nil resources: %v", err)
 	}
@@ -220,7 +221,7 @@ func TestCreateServiceAccount(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
-	err := CreateServiceAccount(task, conf, fake.NewSimpleClientset(), l)
+	err := CreateServiceAccount(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateServiceAccount failed: %v", err)
 	}
@@ -240,7 +241,7 @@ func TestDeleteServiceAccount(t *testing.T) {
 		t.Fatalf("Failed to create test ServiceAccount: %v", err)
 	}
 
-	err = DeleteServiceAccount(context.Background(), testTaskID, fakeClient, l)
+	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteServiceAccount failed: %v", err)
 	}
@@ -252,7 +253,7 @@ func TestCreateRole(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
-	err := CreateRole(task, conf, fake.NewSimpleClientset(), l)
+	err := CreateRole(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateRole failed: %v", err)
 	}
@@ -272,7 +273,7 @@ func TestDeleteRole(t *testing.T) {
 		t.Fatalf("Failed to create test Role: %v", err)
 	}
 
-	err = DeleteRole(context.Background(), testTaskID, fakeClient, l)
+	err = DeleteRole(context.Background(), testTaskID, namespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteRole failed: %v", err)
 	}
@@ -284,7 +285,7 @@ func TestCreateRoleBinding(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
-	err := CreateRoleBinding(task, conf, fake.NewSimpleClientset(), l)
+	err := CreateRoleBinding(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateRoleBinding failed: %v", err)
 	}
@@ -304,7 +305,7 @@ func TestDeleteRoleBinding(t *testing.T) {
 		t.Fatalf("Failed to create test RoleBinding: %v", err)
 	}
 
-	err = DeleteRoleBinding(context.Background(), testTaskID, fakeClient, l)
+	err = DeleteRoleBinding(context.Background(), testTaskID, namespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteRoleBinding failed: %v", err)
 	}

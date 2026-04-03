@@ -11,6 +11,8 @@ show_help() {
 	echo "  $0 [version] [install_path]  # Install Funnel (default: latest version to \$HOME/.local/bin)"
 	echo "  $0 --list                    # List available versions"
 	echo "  $0 --help                    # Show this help"
+	echo "  $0 --version <version>       # Specify version to install"
+	echo "  $0 --dest <install_path>     # Specify installation path (default: \$HOME/.local/bin)"
 }
 
 list_tags() {
@@ -52,7 +54,7 @@ while [[ $# -gt 0 ]]; do
 		shift
 		;;
 	--dest | -d)
-		# Deprecated flag
+		# Set installation destination path
 		DEST="$2"
 		shift
 		shift

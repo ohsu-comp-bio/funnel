@@ -50,8 +50,16 @@ spec:
       - name: funnel-worker-{{.TaskId}}
         image: {{.Image}}
         imagePullPolicy: Always
+        {{- if .UseShell}}
         command: ["/bin/sh", "-c"]
-        args: {{.Command}}
+        args:
+          - {{printf "%q" (index .Command 0)}}
+        {{- else}}
+        command:
+          {{- range .Command}}
+          - {{printf "%q" .}}
+          {{- end}}
+        {{- end}}
         workingDir: {{.Workdir}}
         resources:
           requests:

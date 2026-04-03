@@ -16,7 +16,7 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreatePVC(ctx context.Context, taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	jobNamespace := config.Kubernetes.JobsNamespace
 
@@ -56,7 +56,7 @@ func CreatePVC(taskId string, config *config.Config, client kubernetes.Interface
 		return fmt.Errorf("failed to decode PVC spec")
 	}
 
-	_, err = client.CoreV1().PersistentVolumeClaims(jobNamespace).Create(context.Background(), pvc, metav1.CreateOptions{})
+	_, err = client.CoreV1().PersistentVolumeClaims(jobNamespace).Create(ctx, pvc, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -67,13 +67,24 @@ func CreatePVC(taskId string, config *config.Config, client kubernetes.Interface
 // Add this helper function for PVC cleanup
 func DeletePVC(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pvc-%s", taskID)
-	_, err := client.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
-	if err == nil {
-		log.Debug("deleting Worker PVC", "taskID", taskID)
-		err := client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	pvc, err := client.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil
+	}
+
+	// Remove the pvc-protection finalizer so Kubernetes allows deletion
+	if len(pvc.Finalizers) > 0 {
+		pvc.Finalizers = nil
+		_, err = client.CoreV1().PersistentVolumeClaims(namespace).Update(ctx, pvc, metav1.UpdateOptions{})
 		if err != nil {
-			return fmt.Errorf("deleting shared PVC: %v", err)
+			return fmt.Errorf("removing finalizers from PVC %s: %v", name, err)
 		}
+	}
+
+	log.Debug("deleting Worker PVC", "taskID", taskID)
+	err = client.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("deleting shared PVC: %v", err)
 	}
 
 	return nil

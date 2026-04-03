@@ -2,7 +2,7 @@
 # Adapted from actions-arm64-native_example by @gartnera
 # ref: https://github.com/gartnera/actions-arm64-native_example/blob/main/.github/workflows/build.yml
 
-name: Publish Docker Image
+name: Build + Push Docker Image
 
 on:
   push:
@@ -101,13 +101,27 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.QUAY_REPO }}
+          images: ${{ env.QUAY_REPO }}
+          flavor: |
+            latest=false
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=ref,event=tag
-            type=sha,prefix=
+            # Semver
+            type=semver,pattern={{version}},value=${{ github.ref_name }}
+
+            # Latest
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-') }}
+
+            # Branch pushes
+            type=ref,event=branch,latest=false
+
+            # PR pushes
+            type=ref,event=pr,latest=false
+
+            # Git Tag
+            type=ref,event=tag,latest=false
+
+            # Commit SHA
+            type=sha,prefix=,latest=false
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests

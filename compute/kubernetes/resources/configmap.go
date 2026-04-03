@@ -20,7 +20,7 @@ import (
 // This function is only called when ConfigMapTemplate is non-empty; deployments
 // that mount a static shared ConfigMap (e.g. "funnel-config") via the
 // WorkerTemplate volume spec should leave ConfigMapTemplate empty.
-func CreateConfigMap(taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	t, err := template.New(taskId).Parse(conf.Kubernetes.ConfigMapTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing ConfigMapTemplate: %v", err)
@@ -52,7 +52,7 @@ func CreateConfigMap(taskId string, conf *config.Config, client kubernetes.Inter
 		return fmt.Errorf("ConfigMapTemplate did not produce a ConfigMap object")
 	}
 
-	_, err = client.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Create(context.Background(), cm, metav1.CreateOptions{})
+	_, err = client.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Create(ctx, cm, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}

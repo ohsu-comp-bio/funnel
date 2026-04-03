@@ -1,228 +1,200 @@
 package kubernetes
 
 import (
-	"context"
+	"bytes"
 	"testing"
+	"text/template"
 
-	"github.com/ohsu-comp-bio/funnel/config"
-	"github.com/ohsu-comp-bio/funnel/events"
-	"github.com/ohsu-comp-bio/funnel/logger"
-	"github.com/ohsu-comp-bio/funnel/tes"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
+	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
-// TestQuoteHandling tests that the K8s backend can handle tasks with quotes in their commands
-func TestQuoteHandling(t *testing.T) {
-	// Create a fake Kubernetes client
-	fakeClient := fake.NewSimpleClientset()
-
-	// Add a fake funnel pod so that CreateJob can find the container image
-	funnelPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "funnel-server",
-			Namespace: "test-namespace",
-			Labels: map[string]string{
-				"app": "funnel",
-			},
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:  "funnel",
-					Image: "alpine",
-				},
-			},
-		},
-	}
-	_, err := fakeClient.CoreV1().Pods("test-namespace").Create(context.Background(), funnelPod, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("Failed to create fake funnel pod: %v", err)
-	}
-
-	// Create a mock configuration
-	conf := config.DefaultConfig()
-	conf.Compute = "kubernetes"
-	conf.Kubernetes.Namespace = "test-namespace"
-	conf.Kubernetes.WorkerTemplate = `
+// minimalExecutorTemplate mirrors the command/args section of executor-job.yaml
+// so that quote-handling can be tested without a live cluster.
+const minimalExecutorTemplate = `
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: funnel-{{.TaskId}}
-  namespace: {{.Namespace}}
+  name: {{.TaskId}}-{{.JobId}}
+  namespace: default
 spec:
   template:
     spec:
-      containers:
-      - name: worker
-        image: alpine
-        command: ["/bin/sh", "-c", "echo 'test worker started'"]
-        resources:
-          requests:
-            cpu: "{{.Cpus}}"
-            memory: "{{.RamGb}}Gi"
-            ephemeral-storage: "{{.DiskGb}}Gi"
       restartPolicy: Never
+      containers:
+      - name: exec
+        image: alpine
+        {{- if .UseShell}}
+        command: ["/bin/sh", "-c"]
+        args:
+          - {{printf "%q" (index .Command 0)}}
+        {{- else}}
+        command:
+          {{- range .Command}}
+          - {{printf "%q" .}}
+          {{- end}}
+        {{- end}}
 `
 
-	// Create a logger
-	log := logger.NewLogger("test", logger.DefaultConfig())
+func renderArgs(t *testing.T, command []string) ([]string, []string) {
+	t.Helper()
 
-	// Create a mock event writer
-	mockEventWriter := &mockEventWriter{}
+	useShell := len(command) == 1
 
-	// Create backend with fake client
-	backend := &Backend{
-		client:   fakeClient,
-		event:    mockEventWriter,
-		database: nil,
-		log:      log,
-		conf:     conf,
+	tpl, err := template.New("exec").Parse(minimalExecutorTemplate)
+	if err != nil {
+		t.Fatalf("parse template: %v", err)
 	}
 
-	// Test task with single quotes in the command
-	singleQuoteTask := &tes.Task{
-		Id: "test-single-quotes",
-		Resources: &tes.Resources{
-			CpuCores: 1,
-			RamGb:    1.0,
-			DiskGb:   10.0,
-		},
-		Executors: []*tes.Executor{
-			{
-				Image:   "bash",
-				Command: []string{"echo", "'Hello Nextflow!'"},
-			},
-		},
+	data := map[string]interface{}{
+		"TaskId":   "task-1",
+		"JobId":    0,
+		"Command":  command,
+		"UseShell": useShell,
 	}
 
-	t.Run("single-quotes", func(t *testing.T) {
-		// The main goal of this test is to verify that tasks with quotes
-		// can be processed by the backend without panicking or failing
-		// during the initial processing steps
-
-		// We test that the task can be submitted without immediate errors
-		// related to quote parsing/handling
-		err := backend.Submit(context.Background(), singleQuoteTask, conf)
-		if err != nil {
-			t.Logf("Task submission failed (this may be expected): %v", err)
-			// We don't fail the test here because the Submit may fail due to
-			// missing dependencies (like PV/PVC creation), but the quote
-			// handling should work correctly
-		} else {
-			t.Logf("Task with single quotes submitted successfully")
-		}
-	})
-
-	// Test task with double quotes in the command
-	doubleQuoteTask := &tes.Task{
-		Id: "test-double-quotes",
-		Resources: &tes.Resources{
-			CpuCores: 1,
-			RamGb:    1.0,
-			DiskGb:   10.0,
-		},
-		Executors: []*tes.Executor{
-			{
-				Image:   "bash",
-				Command: []string{"echo", "\"double quoted value\""},
-			},
-		},
+	var buf bytes.Buffer
+	if err := tpl.Execute(&buf, data); err != nil {
+		t.Fatalf("execute template: %v", err)
 	}
 
-	t.Run("double-quotes", func(t *testing.T) {
-		err := backend.Submit(context.Background(), doubleQuoteTask, conf)
-		if err != nil {
-			t.Logf("Task submission failed (this may be expected): %v", err)
-		} else {
-			t.Logf("Task with double quotes submitted successfully")
-		}
-	})
-
-	// Test task with mixed quotes
-	mixedQuoteTask := &tes.Task{
-		Id: "test-mixed-quotes",
-		Resources: &tes.Resources{
-			CpuCores: 1,
-			RamGb:    1.0,
-			DiskGb:   10.0,
-		},
-		Executors: []*tes.Executor{
-			{
-				Image:   "bash",
-				Command: []string{"echo", "\"mix 'of' quotes\""},
-			},
-		},
+	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(buf.Bytes(), nil, nil)
+	if err != nil {
+		t.Fatalf("decode rendered YAML: %v\n---\n%s", err, buf.String())
 	}
 
-	t.Run("mixed-quotes", func(t *testing.T) {
-		err := backend.Submit(context.Background(), mixedQuoteTask, conf)
-		if err != nil {
-			t.Logf("Task submission failed (this may be expected): %v", err)
-		} else {
-			t.Logf("Task with mixed quotes submitted successfully")
-		}
-	})
-
-	// Test task with backticks
-	backtickTask := &tes.Task{
-		Id: "test-backticks",
-		Resources: &tes.Resources{
-			CpuCores: 1,
-			RamGb:    1.0,
-			DiskGb:   10.0,
-		},
-		Executors: []*tes.Executor{
-			{
-				Image:   "bash",
-				Command: []string{"echo", "`uname -s`"},
-			},
-		},
+	job, ok := obj.(*batchv1.Job)
+	if !ok {
+		t.Fatalf("decoded object is not a Job: %T", obj)
 	}
 
-	t.Run("backticks", func(t *testing.T) {
-		err := backend.Submit(context.Background(), backtickTask, conf)
-		if err != nil {
-			t.Logf("Task submission failed (this may be expected): %v", err)
-		} else {
-			t.Logf("Task with backticks submitted successfully")
-		}
-	})
-
-	// Test task with complex shell command
-	shellTask := &tes.Task{
-		Id: "test-shell-command",
-		Resources: &tes.Resources{
-			CpuCores: 1,
-			RamGb:    1.0,
-			DiskGb:   10.0,
-		},
-		Executors: []*tes.Executor{
-			{
-				Image:   "bash",
-				Command: []string{"sh", "-c", "echo 'inline shell' && ls -1"},
-			},
-		},
+	containers := job.Spec.Template.Spec.Containers
+	if len(containers) == 0 {
+		t.Fatal("no containers in rendered job")
 	}
-
-	t.Run("shell-command", func(t *testing.T) {
-		err := backend.Submit(context.Background(), shellTask, conf)
-		if err != nil {
-			t.Logf("Task submission failed (this may be expected): %v", err)
-		} else {
-			t.Logf("Task with shell command submitted successfully")
-		}
-	})
+	return containers[0].Command, containers[0].Args
 }
 
-// mockEventWriter is a simple mock event writer for testing
-type mockEventWriter struct{}
+func TestQuoteHandling(t *testing.T) {
+	tests := []struct {
+		name        string
+		command     []string
+		wantCommand []string
+		wantArgs    []string
+	}{
+		{
+			name:        "multi-element exec — plain words",
+			command:     []string{"echo", "hello"},
+			wantCommand: []string{"echo", "hello"},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — space in argument",
+			command:     []string{"echo", "Hello World!"},
+			wantCommand: []string{"echo", "Hello World!"},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — single quote in argument",
+			command:     []string{"echo", "Hello O'hare!"},
+			wantCommand: []string{"echo", "Hello O'hare!"},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — double quote in argument",
+			command:     []string{"echo", `"double quoted"`},
+			wantCommand: []string{"echo", `"double quoted"`},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — mixed quotes",
+			command:     []string{"echo", `"mix 'of' quotes"`},
+			wantCommand: []string{"echo", `"mix 'of' quotes"`},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — backslash",
+			command:     []string{"echo", `back\slash`},
+			wantCommand: []string{"echo", `back\slash`},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — empty argument preserved",
+			command:     []string{"echo", ""},
+			wantCommand: []string{"echo", ""},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — curl with header",
+			command:     []string{"curl", "-s", "https://api.github.com/zen", "-H", "Accept: application/json,text/event-stream"},
+			wantCommand: []string{"curl", "-s", "https://api.github.com/zen", "-H", "Accept: application/json,text/event-stream"},
+			wantArgs:    nil,
+		},
+		{
+			name:        "multi-element exec — explicit sh -c",
+			command:     []string{"sh", "-c", "echo 'inline shell' && ls -1"},
+			wantCommand: []string{"sh", "-c", "echo 'inline shell' && ls -1"},
+			wantArgs:    nil,
+		},
+		{
+			name:        "single-element shell script — plain",
+			command:     []string{"echo hello"},
+			wantCommand: []string{"/bin/sh", "-c"},
+			wantArgs:    []string{"echo hello"},
+		},
+		{
+			name:        "single-element shell script — single quotes",
+			command:     []string{"echo 'Hello Nextflow!'"},
+			wantCommand: []string{"/bin/sh", "-c"},
+			wantArgs:    []string{"echo 'Hello Nextflow!'"},
+		},
+		{
+			name:        "single-element shell script — double quotes",
+			command:     []string{`echo "double quoted value"`},
+			wantCommand: []string{"/bin/sh", "-c"},
+			wantArgs:    []string{`echo "double quoted value"`},
+		},
+		{
+			name:        "single-element shell script — mixed quotes",
+			command:     []string{`echo "mix 'of' \"quotes\""`},
+			wantCommand: []string{"/bin/sh", "-c"},
+			wantArgs:    []string{`echo "mix 'of' \"quotes\""`},
+		},
+		{
+			name:        "single-element shell script — chained commands",
+			command:     []string{`echo start && echo "inner 'quotes'" && echo end`},
+			wantCommand: []string{"/bin/sh", "-c"},
+			wantArgs:    []string{`echo start && echo "inner 'quotes'" && echo end`},
+		},
+		{
+			name:        "single-element shell script — backtick substitution",
+			command:     []string{"echo `uname -s`"},
+			wantCommand: []string{"/bin/sh", "-c"},
+			wantArgs:    []string{"echo `uname -s`"},
+		},
+	}
 
-func (m *mockEventWriter) WriteEvent(ctx context.Context, ev *events.Event) error {
-	// Just discard events for testing
-	return nil
-}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotCommand, gotArgs := renderArgs(t, tc.command)
 
-func (m *mockEventWriter) Close() {
+			if len(gotCommand) != len(tc.wantCommand) {
+				t.Fatalf("command length mismatch: got %d (%v), want %d (%v)", len(gotCommand), gotCommand, len(tc.wantCommand), tc.wantCommand)
+			}
+			for i := range tc.wantCommand {
+				if gotCommand[i] != tc.wantCommand[i] {
+					t.Errorf("command[%d]: got %q, want %q", i, gotCommand[i], tc.wantCommand[i])
+				}
+			}
+
+			if len(gotArgs) != len(tc.wantArgs) {
+				t.Fatalf("args length mismatch: got %d (%v), want %d (%v)", len(gotArgs), gotArgs, len(tc.wantArgs), tc.wantArgs)
+			}
+			for i := range tc.wantArgs {
+				if gotArgs[i] != tc.wantArgs[i] {
+					t.Errorf("args[%d]: got %q, want %q", i, gotArgs[i], tc.wantArgs[i])
+				}
+			}
+		})
+	}
 }

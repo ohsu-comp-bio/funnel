@@ -17,7 +17,7 @@ import (
 )
 
 // Create the Worker/Executor ServiceAccount from config/kubernetes-serviceaccount.yaml
-func CreateServiceAccount(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateServiceAccount(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
 	t, err := template.New(task.Id).Parse(config.Kubernetes.ServiceAccountTemplate)
@@ -60,7 +60,7 @@ func CreateServiceAccount(task *tes.Task, config *config.Config, client kubernet
 		return fmt.Errorf("failed to decode ServiceAccount spec")
 	}
 
-	_, err = client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Create(context.Background(), sa, metav1.CreateOptions{})
+	_, err = client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Create(ctx, sa, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create ServiceAccount: %v", err)
 	}
@@ -68,8 +68,20 @@ func CreateServiceAccount(task *tes.Task, config *config.Config, client kubernet
 	return nil
 }
 
-// Add this helper function for ServiceAccount cleanup
-func DeleteServiceAccount(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
-	// TODO: Implement deletion of ServiceAccounts
+// DeleteServiceAccount deletes the ServiceAccount created for a task.
+func DeleteServiceAccount(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
+	// ServiceAccount names are not available here without config, so we list by label.
+	sas, err := client.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=funnel,taskId=%s", taskID),
+	})
+	if err != nil {
+		return fmt.Errorf("listing ServiceAccounts for task %s: %v", taskID, err)
+	}
+	for _, sa := range sas.Items {
+		log.Debug("deleting Worker ServiceAccount", "name", sa.Name, "taskID", taskID)
+		if err := client.CoreV1().ServiceAccounts(namespace).Delete(ctx, sa.Name, metav1.DeleteOptions{}); err != nil {
+			return fmt.Errorf("deleting ServiceAccount %s: %v", sa.Name, err)
+		}
+	}
 	return nil
 }

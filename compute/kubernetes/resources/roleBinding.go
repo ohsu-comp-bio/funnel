@@ -17,7 +17,7 @@ import (
 )
 
 // Create the Worker/Executor RoleBinding from config/kubernetes-rolebinding.yaml
-func CreateRoleBinding(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateRoleBinding(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
 	t, err := template.New(task.Id).Parse(config.Kubernetes.RoleBindingTemplate)
@@ -55,7 +55,7 @@ func CreateRoleBinding(task *tes.Task, config *config.Config, client kubernetes.
 		return fmt.Errorf("failed to decode RoleBinding spec")
 	}
 
-	_, err = client.RbacV1().RoleBindings(config.Kubernetes.JobsNamespace).Create(context.Background(), roleBinding, metav1.CreateOptions{})
+	_, err = client.RbacV1().RoleBindings(config.Kubernetes.JobsNamespace).Create(ctx, roleBinding, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create RoleBinding: %v", err)
 	}
@@ -63,8 +63,19 @@ func CreateRoleBinding(task *tes.Task, config *config.Config, client kubernetes.
 	return nil
 }
 
-// Add this helper function for RoleBinding cleanup
-func DeleteRoleBinding(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
-	// TODO: Implement deletion of RoleBindings
+// DeleteRoleBinding deletes the RoleBinding created for a task.
+func DeleteRoleBinding(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
+	rbs, err := client.RbacV1().RoleBindings(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=funnel,taskId=%s", taskID),
+	})
+	if err != nil {
+		return fmt.Errorf("listing RoleBindings for task %s: %v", taskID, err)
+	}
+	for _, rb := range rbs.Items {
+		log.Debug("deleting Worker RoleBinding", "name", rb.Name, "taskID", taskID)
+		if err := client.RbacV1().RoleBindings(namespace).Delete(ctx, rb.Name, metav1.DeleteOptions{}); err != nil {
+			return fmt.Errorf("deleting RoleBinding %s: %v", rb.Name, err)
+		}
+	}
 	return nil
 }

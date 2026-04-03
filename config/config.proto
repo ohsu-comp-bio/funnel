@@ -357,6 +357,9 @@ message Kubernetes {
 
   // Optional Kubernetes resource defaults and limits for tasks running on the Kubernetes backend.
   KubernetesResources Resources = 18;
+
+  // Timeout for creating Kubernetes resources (PV, PVC, Job, etc.)
+  TimeoutConfig Timeout = 19;
 }
 
 // KubernetesResources describes default and maximum resource limits for Kubernetes tasks.

@@ -34,7 +34,7 @@ func SanitizeLabelValue(s string) string {
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	// Parse Worker Template
 
 	log.Debug("Creating job from template", "template", config.Kubernetes.WorkerTemplate)
@@ -43,7 +43,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		return fmt.Errorf("%v", err)
 	}
 
-	pods, err := client.CoreV1().Pods(config.Kubernetes.Namespace).List(context.Background(), metav1.ListOptions{
+	pods, err := client.CoreV1().Pods(config.Kubernetes.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "app=funnel",
 	})
 	if err != nil {
@@ -114,7 +114,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 	}
 
 	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", config.Kubernetes.JobsNamespace)
-	_, err = client.BatchV1().Jobs(config.Kubernetes.JobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
+	_, err = client.BatchV1().Jobs(config.Kubernetes.JobsNamespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -122,22 +122,53 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 	return nil
 }
 
-// deleteJob removes deletes a kubernetes v1/batch job.
+// DeleteJob removes the worker job for a task and all associated executor jobs.
 func DeleteJob(ctx context.Context, conf *config.Config, taskID string, client kubernetes.Interface, log *logger.Logger) error {
-
 	jobsInterface := client.BatchV1().Jobs(conf.Kubernetes.JobsNamespace)
 
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
 
+	// Delete the worker job (named exactly as taskID)
 	err := jobsInterface.Delete(ctx, taskID, metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &prop,
 	})
-
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	return nil
+	// Delete executor jobs (named as {taskID}-{index})
+	return DeleteExecutorJobs(ctx, conf, taskID, client, log)
+}
+
+// DeleteExecutorJobs deletes all executor jobs associated with a task.
+// Executor jobs are named {taskID}-{index} and are created by the worker process.
+func DeleteExecutorJobs(ctx context.Context, conf *config.Config, taskID string, client kubernetes.Interface, log *logger.Logger) error {
+	jobsInterface := client.BatchV1().Jobs(conf.Kubernetes.JobsNamespace)
+
+	jobs, err := jobsInterface.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("listing jobs to find executor jobs for task %s: %v", taskID, err)
+	}
+
+	prefix := taskID + "-"
+	var errs error
+	var gracePeriod int64 = 0
+	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
+
+	for _, job := range jobs.Items {
+		if len(job.Name) > len(prefix) && job.Name[:len(prefix)] == prefix {
+			log.Debug("deleting executor job", "jobName", job.Name, "taskID", taskID)
+			delErr := jobsInterface.Delete(ctx, job.Name, metav1.DeleteOptions{
+				GracePeriodSeconds: &gracePeriod,
+				PropagationPolicy:  &prop,
+			})
+			if delErr != nil {
+				errs = fmt.Errorf("deleting executor job %s: %v", job.Name, delErr)
+			}
+		}
+	}
+
+	return errs
 }

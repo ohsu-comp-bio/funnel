@@ -8,139 +8,93 @@ func (c *Config) Safe() *Config {
 		return nil
 	}
 
-	cloned := proto.Clone(c)
-	safe, ok := cloned.(*Config)
-	if !ok {
-		// Fallback: if cloning fails for some unexpected reason, avoid redacting the live config.
-		copy := *c
-		safe = &copy
-	}
+	safe := proto.Clone(c).(*Config)
 
 	// Database credentials
 	if safe.MongoDB != nil {
-		m := *safe.MongoDB
-		m.Password = redact(m.Password)
-		safe.MongoDB = &m
+		safe.MongoDB.Password = redact(safe.MongoDB.Password)
 	}
 
 	if safe.Postgres != nil {
-		p := *safe.Postgres
-		p.User = redact(p.User)
-		p.Password = redact(p.Password)
-		p.AdminUser = redact(p.AdminUser)
-		p.AdminPassword = redact(p.AdminPassword)
-		safe.Postgres = &p
+		safe.Postgres.User = redact(safe.Postgres.User)
+		safe.Postgres.Password = redact(safe.Postgres.Password)
+		safe.Postgres.AdminUser = redact(safe.Postgres.AdminUser)
+		safe.Postgres.AdminPassword = redact(safe.Postgres.AdminPassword)
 	}
 
 	if safe.Elastic != nil {
-		e := *safe.Elastic
-		e.Password = redact(e.Password)
-		e.APIKey = redact(e.APIKey)
-		e.ServiceToken = redact(e.ServiceToken)
-		safe.Elastic = &e
+		safe.Elastic.Password = redact(safe.Elastic.Password)
+		safe.Elastic.APIKey = redact(safe.Elastic.APIKey)
+		safe.Elastic.ServiceToken = redact(safe.Elastic.ServiceToken)
 	}
 
 	// Cloud provider credentials
 	if safe.AWSBatch != nil && safe.AWSBatch.AWSConfig != nil {
-		ab := *safe.AWSBatch
-		ac := *ab.AWSConfig
-		ac.Key = redact(ac.Key)
-		ac.Secret = redact(ac.Secret)
-		ab.AWSConfig = &ac
-		safe.AWSBatch = &ab
+		safe.AWSBatch.AWSConfig.Key = redact(safe.AWSBatch.AWSConfig.Key)
+		safe.AWSBatch.AWSConfig.Secret = redact(safe.AWSBatch.AWSConfig.Secret)
 	}
 
 	if safe.DynamoDB != nil && safe.DynamoDB.AWSConfig != nil {
-		d := *safe.DynamoDB
-		ac := *d.AWSConfig
-		ac.Key = redact(ac.Key)
-		ac.Secret = redact(ac.Secret)
-		d.AWSConfig = &ac
-		safe.DynamoDB = &d
+		safe.DynamoDB.AWSConfig.Key = redact(safe.DynamoDB.AWSConfig.Key)
+		safe.DynamoDB.AWSConfig.Secret = redact(safe.DynamoDB.AWSConfig.Secret)
 	}
 
 	if safe.AmazonS3 != nil && safe.AmazonS3.AWSConfig != nil {
-		s3 := *safe.AmazonS3
-		ac := *s3.AWSConfig
-		ac.Key = redact(ac.Key)
-		ac.Secret = redact(ac.Secret)
-		s3.AWSConfig = &ac
-		safe.AmazonS3 = &s3
+		safe.AmazonS3.AWSConfig.Key = redact(safe.AmazonS3.AWSConfig.Key)
+		safe.AmazonS3.AWSConfig.Secret = redact(safe.AmazonS3.AWSConfig.Secret)
 	}
 
-	if safe.GenericS3 != nil {
-		for i, s3 := range safe.GenericS3 {
-			if s3 == nil {
-				continue
-			}
-			gs3 := *s3
-			gs3.Key = redact(gs3.Key)
-			gs3.Secret = redact(gs3.Secret)
-			safe.GenericS3[i] = &gs3
+	for _, s3 := range safe.GenericS3 {
+		if s3 == nil {
+			continue
 		}
+		s3.Key = redact(s3.Key)
+		s3.Secret = redact(s3.Secret)
 	}
 
 	if safe.PubSub != nil {
-		ps := *safe.PubSub
-		ps.CredentialsFile = redact(ps.CredentialsFile)
-		safe.PubSub = &ps
+		safe.PubSub.CredentialsFile = redact(safe.PubSub.CredentialsFile)
 	}
 
 	if safe.Datastore != nil {
-		ds := *safe.Datastore
-		ds.CredentialsFile = redact(ds.CredentialsFile)
-		safe.Datastore = &ds
+		safe.Datastore.CredentialsFile = redact(safe.Datastore.CredentialsFile)
 	}
 
 	if safe.GoogleStorage != nil {
-		gs := *safe.GoogleStorage
-		gs.CredentialsFile = redact(gs.CredentialsFile)
-		safe.GoogleStorage = &gs
+		safe.GoogleStorage.CredentialsFile = redact(safe.GoogleStorage.CredentialsFile)
 	}
 
 	// Auth credentials
 	if safe.Server != nil {
-		s := *safe.Server
-
-		if s.BasicAuth != nil {
-			for i, cred := range s.BasicAuth {
-				if cred == nil {
-					continue
-				}
-				bc := *cred
-				bc.Password = redact(bc.Password)
-				s.BasicAuth[i] = &bc
+		for _, cred := range safe.Server.BasicAuth {
+			if cred == nil {
+				continue
 			}
+			cred.Password = redact(cred.Password)
 		}
 
-		if s.OidcAuth != nil {
-			oa := *s.OidcAuth
-			oa.ClientSecret = redact(oa.ClientSecret)
-			s.OidcAuth = &oa
+		if safe.Server.OidcAuth != nil {
+			safe.Server.OidcAuth.ClientSecret = redact(safe.Server.OidcAuth.ClientSecret)
 		}
-
-		safe.Server = &s
 	}
 
 	if safe.RPCClient != nil && safe.RPCClient.Credential != nil {
-		rpc := *safe.RPCClient
-		cred := *rpc.Credential
-		cred.Password = redact(cred.Password)
-		rpc.Credential = &cred
-		safe.RPCClient = &rpc
+		safe.RPCClient.Credential.Password = redact(safe.RPCClient.Credential.Password)
 	}
 
 	// Storage credentials
 	if safe.Swift != nil {
-		sw := *safe.Swift
-		sw.Password = redact(sw.Password)
-		safe.Swift = &sw
+		safe.Swift.Password = redact(safe.Swift.Password)
 	}
 
 	if safe.FTPStorage != nil {
-		ftp := *safe.FTPStorage
-		ftp.Password = redact(ftp.Password)
-		safe.FTPStorage = &ftp
+		safe.FTPStorage.Password = redact(safe.FTPStorage.Password)
+	}
+
+	if safe.Plugins != nil && safe.Plugins.Params != nil {
+		for key, param := range safe.Plugins.Params {
+			safe.Plugins.Params[key] = redact(param)
+		}
 	}
 
 	return safe

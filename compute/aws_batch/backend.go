@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/batch"
+	"github.com/aws/aws-sdk-go/service/batch/batchiface"
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -42,7 +43,7 @@ func NewBackend(ctx context.Context, conf *config.AWSBatch, reader tes.ReadOnlyS
 
 // Backend represents the local backend.
 type Backend struct {
-	client   *batch.Batch
+	client   batchiface.BatchAPI
 	conf     *config.AWSBatch
 	event    events.Writer
 	database tes.ReadOnlyServer

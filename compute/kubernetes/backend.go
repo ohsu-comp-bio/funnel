@@ -20,9 +20,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	"github.com/ohsu-comp-bio/funnel/util/k8sutil"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // Backend represents the K8s backend.
@@ -81,7 +78,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 	for k := range taskBackendParameters {
 		_, ok := b.backendParameters[k]
 		if !ok {
-			return status.Errorf(codes.InvalidArgument, "backend parameters not supported: %s", k)
+			return fmt.Errorf("backend parameters not supported")
 		}
 	}
 
@@ -131,15 +128,17 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Con
 
 	if err != nil {
 		b.log.Error("Error creating resources, writing SystemError event", "error", err, "task ID", task.Id)
-		_ = b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
-		_ = b.event.WriteEvent(
-			context.Background(),
-			events.NewSystemLog(
-				task.Id, 0, 0, "error",
-				"Kubernetes job in FAILED state",
-				map[string]string{"error": err.Error()},
-			),
-		)
+		if b.event != nil {
+			_ = b.event.WriteEvent(ctx, events.NewState(task.Id, tes.SystemError))
+			_ = b.event.WriteEvent(
+				context.Background(),
+				events.NewSystemLog(
+					task.Id, 0, 0, "error",
+					"Kubernetes job in FAILED state",
+					map[string]string{"error": err.Error()},
+				),
+			)
+		}
 
 		return fmt.Errorf("creating Worker resources: %v", err)
 	}

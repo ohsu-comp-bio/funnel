@@ -8,6 +8,7 @@ import (
 
 func TestMergeConfigFileWithFlags(t *testing.T) {
 	fileConfig := config.EmptyConfig()
+	defaultConfig := config.DefaultConfig()
 	flagConf := &config.Config{
 		Server: &config.Server{
 			HostName: "test",
@@ -23,13 +24,13 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 	if result.Server.RPCAddress() != serverAddress {
 		t.Error("unexpected server address")
 	}
-	if result.Server.HTTPPort != fileConfig.Server.HTTPPort {
+	if result.Server.HTTPPort != defaultConfig.Server.HTTPPort {
 		t.Error("expected Config.Server.HTTPPort to equal the value from from config.DefaultValue()")
 	}
 	if result.RPCClient.ServerAddress != serverAddress {
 		t.Error("unexpected Config.RPCClient.ServerAddress")
 	}
-	if result.Compute != fileConfig.Compute {
+	if result.Compute != defaultConfig.Compute {
 		t.Error("expected Config.Compute to equal default value from config.DefaultValue()")
 	}
 
@@ -49,7 +50,7 @@ func TestMergeConfigFileWithFlags(t *testing.T) {
 	if result.Server.HTTPPort != fileConfig.Server.HTTPPort {
 		t.Error("expected Config.Server.HTTPPort to equal the value from the config file")
 	}
-	if result.Compute != fileConfig.Compute {
+	if result.Compute != defaultConfig.Compute {
 		t.Error("expected Config.Compute to equal default value from config.DefaultValue()")
 	}
 }

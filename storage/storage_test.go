@@ -137,7 +137,7 @@ func TestUrlParsing(t *testing.T) {
 
 	url, _, err = ab.parse("s3://s3.amazonaws.com/1000genomes/README.analysis_history")
 	if err != nil {
-		t.Error("unexpected error", err)
+		t.Fatal("unexpected error", err)
 	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
@@ -152,7 +152,7 @@ func TestUrlParsing(t *testing.T) {
 
 	url, _, err = ab.parse("s3://s3.us-west-2.amazonaws.com/1000genomes/README.analysis_history")
 	if err != nil {
-		t.Error("unexpected error", err)
+		t.Fatal("unexpected error", err)
 	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)
@@ -167,7 +167,7 @@ func TestUrlParsing(t *testing.T) {
 
 	url, _, err = ab.parse("s3://1000genomes/README.analysis_history")
 	if err != nil {
-		t.Error("unexpected error", err)
+		t.Fatal("unexpected error", err)
 	}
 	if url.bucket != expectedBucket {
 		t.Log("expected:", expectedBucket)

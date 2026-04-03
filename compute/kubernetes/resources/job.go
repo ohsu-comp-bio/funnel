@@ -38,6 +38,11 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		res = &tes.Resources{}
 	}
 
+	var funnelImage string
+	if len(pods.Items) > 0 && len(pods.Items[0].Spec.Containers) > 0 {
+		funnelImage = pods.Items[0].Spec.Containers[0].Image
+	}
+
 	templateData := map[string]interface{}{
 		"TaskId":             task.Id,
 		"Namespace":          config.Kubernetes.Namespace,
@@ -45,7 +50,7 @@ func CreateJob(task *tes.Task, config *config.Config, client kubernetes.Interfac
 		"Cpus":               res.GetCpuCores(),
 		"RamGb":              res.GetRamGb(),
 		"DiskGb":             res.GetDiskGb(),
-		"Image":              pods.Items[0].Spec.Containers[0].Image,
+		"Image":              funnelImage,
 		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0,
 		"NodeSelector":       config.Kubernetes.NodeSelector,
 		"Tolerations":        config.Kubernetes.Tolerations,
@@ -92,7 +97,7 @@ func DeleteJob(ctx context.Context, conf *config.Config, taskID string, client k
 	var gracePeriod int64 = 0
 	var prop metav1.DeletionPropagation = metav1.DeletePropagationForeground
 
-	err := jobsInterface.Delete(ctx, taskID, metav1.DeleteOptions{
+	err := jobsInterface.Delete(ctx, "funnel-"+taskID, metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &prop,
 	})

@@ -144,6 +144,26 @@ func validatePath(path string) error {
 	return nil
 }
 
+// shellQuote wraps a string in single quotes for safe use in shell commands
+// if it contains special characters or spaces. Simple alphanumeric strings
+// and common flags are returned as-is.
+func shellQuote(s string) string {
+	// If the string only contains safe characters, no quoting is needed
+	safe := true
+	for _, c := range s {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '-' || c == '_' || c == '/' || c == '.' || c == ':' || c == ',' || c == '=') {
+			safe = false
+			break
+		}
+	}
+	if safe {
+		return s
+	}
+	// Wrap in single quotes, escaping any existing single quotes
+	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
+}
+
 // detectPathCollisions checks for multiple inputs/outputs using the same path
 func detectPathCollisions(inputs []*tes.Input, outputs []*tes.Output) error {
 	seen := make(map[string]string) // path -> url
@@ -178,27 +198,20 @@ func (b *Backend) Submit(task *tes.Task) error {
 
 	// 1. Identify all unique buckets used by the task
 	buckets := make(map[string]bool)
-	extractBucketName := func(url string) string {
-		if strings.HasPrefix(url, "gs://") {
-			parts := strings.SplitN(strings.TrimPrefix(url, "gs://"), "/", 2)
-			return parts[0]
-		}
-		return ""
-	}
 
 	for _, input := range task.Inputs {
-		if bucket := extractBucketName(input.Url); bucket != "" {
+		if bucket, _ := extractGCSPath(input.Url); bucket != "" {
 			buckets[bucket] = true
 		}
 	}
 
 	for _, output := range task.Outputs {
-		if bucket := extractBucketName(output.Url); bucket != "" {
+		if bucket, _ := extractGCSPath(output.Url); bucket != "" {
 			buckets[bucket] = true
 		}
 	}
 
-	// Mount all buckets to `/mnt/share/<BUCKET>` as volumes in the GCP Job Request
+	// Mount all buckets to `/mnt/disks/<BUCKET>` as volumes in the GCP Job Request
 	var volumes []*batchpb.Volume
 	for bucketName := range buckets {
 		volumes = append(volumes, &batchpb.Volume{
@@ -211,15 +224,45 @@ func (b *Backend) Submit(task *tes.Task) error {
 		})
 	}
 
+	// Build symlink commands to map GCS-mounted paths to container paths
+	var symlinkCmds []string
+	for _, input := range task.Inputs {
+		bucket, objectPath := extractGCSPath(input.Url)
+		if bucket == "" || input.Path == "" {
+			continue
+		}
+		mountedPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
+		symlinkCmds = append(symlinkCmds, fmt.Sprintf("ln -sf %s %s", mountedPath, input.Path))
+	}
+	for _, output := range task.Outputs {
+		bucket, objectPath := extractGCSPath(output.Url)
+		if bucket == "" || output.Path == "" {
+			continue
+		}
+		mountedPath := fmt.Sprintf("/mnt/disks/%s/%s", bucket, objectPath)
+		symlinkCmds = append(symlinkCmds, fmt.Sprintf("ln -sf %s %s", mountedPath, output.Path))
+	}
+
 	// Runnables
 	var runnables []*batchpb.Runnable
 
 	for _, executor := range task.Executors {
-		cmd := strings.Join(executor.Command, " ")
+		// Shell-quote each argument and join them to form a safe command string
+		quotedArgs := make([]string, len(executor.Command))
+		for i, arg := range executor.Command {
+			quotedArgs[i] = shellQuote(arg)
+		}
+		cmd := strings.Join(quotedArgs, " ")
 
 		if executor.Stdout != "" {
 			// Redirect command output to the specified file path
 			cmd = fmt.Sprintf("%s | tee %s", cmd, executor.Stdout)
+		}
+
+		// Prepend symlink commands for inputs/outputs
+		if len(symlinkCmds) > 0 {
+			parts := append(symlinkCmds, cmd)
+			cmd = strings.Join(parts, " && ")
 		}
 
 		runnable := &batchpb.Runnable{

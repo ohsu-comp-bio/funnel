@@ -21,9 +21,95 @@ const (
 
 var l = logger.NewLogger("test", logger.DefaultConfig())
 
+// newTestConfig returns a Config with Kubernetes settings populated for testing.
+func newTestConfig() *config.Config {
+	return &config.Config{
+		Kubernetes: &config.Kubernetes{
+			Namespace:     namespace,
+			JobsNamespace: jobsNamespace,
+			WorkerTemplate: `apiVersion: batch/v1
+kind: Job
+metadata:
+  name: funnel-{{.TaskId}}
+  namespace: {{.JobsNamespace}}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: funnel-worker
+        image: ohsucompbio/funnel:latest
+        command: ["funnel", "worker", "run", "--task-id", "{{.TaskId}}"]
+`,
+			PVTemplate: `apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: funnel-worker-pv-{{.TaskId}}
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  hostPath:
+    path: /tmp/funnel-worker-{{.TaskId}}
+`,
+			PVCTemplate: `apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: funnel-worker-pvc-{{.TaskId}}
+  namespace: {{.Namespace}}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 10Gi
+`,
+			ServiceAccountTemplate: `apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{.ServiceAccountName}}
+  namespace: {{.Namespace}}
+`,
+			RoleTemplate: `apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: funnel-worker-role-{{.TaskId}}
+  namespace: {{.Namespace}}
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+`,
+			RoleBindingTemplate: `apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: funnel-worker-rolebinding-{{.TaskId}}
+  namespace: {{.Namespace}}
+subjects:
+- kind: ServiceAccount
+  name: {{.ServiceAccountName}}
+  namespace: {{.Namespace}}
+roleRef:
+  kind: Role
+  name: funnel-worker-role-{{.TaskId}}
+  apiGroup: rbac.authorization.k8s.io
+`,
+		},
+		GenericS3: []*config.GenericS3Storage{
+			{Bucket: "test-bucket", Region: "us-west-2"},
+		},
+	}
+}
+
 func TestCreateConfigMap(t *testing.T) {
-	conf := &config.Config{}
-	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf := &config.Config{
+		Kubernetes: &config.Kubernetes{
+			JobsNamespace: jobsNamespace,
+		},
+	}
 	err := CreateConfigMap(testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
@@ -67,7 +153,7 @@ func TestCreateJob(t *testing.T) {
 		},
 	}
 
-	conf := &config.Config{}
+	conf := newTestConfig()
 	err := CreateJob(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed: %v", err)
@@ -77,33 +163,33 @@ func TestCreateJob(t *testing.T) {
 func TestDeleteJob(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 
-	// Create a test Job first
+	// Create a test Job first (name must match funnel-{taskID} prefix used by CreateJob/DeleteJob)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      testTaskID,
-			Namespace: namespace,
+			Name:      "funnel-" + testTaskID,
+			Namespace: jobsNamespace,
 		},
 	}
-	_, err := fakeClient.BatchV1().Jobs(namespace).Create(context.Background(), job, metav1.CreateOptions{})
+	_, err := fakeClient.BatchV1().Jobs(jobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Failed to create test Job: %v", err)
 	}
 
-	conf := &config.Config{}
+	conf := newTestConfig()
 	err = DeleteJob(context.Background(), conf, testTaskID, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteJob failed: %v", err)
 	}
 
 	// Verify deletion
-	_, err = fakeClient.BatchV1().Jobs(namespace).Get(context.Background(), testTaskID, metav1.GetOptions{})
+	_, err = fakeClient.BatchV1().Jobs(jobsNamespace).Get(context.Background(), "funnel-"+testTaskID, metav1.GetOptions{})
 	if err == nil {
 		t.Error("Job was not deleted")
 	}
 }
 
 func TestCreatePV(t *testing.T) {
-	conf := &config.Config{}
+	conf := newTestConfig()
 	err := CreatePV(testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePV failed: %v", err)
@@ -137,7 +223,7 @@ func TestDeletePV(t *testing.T) {
 }
 
 func TestCreatePVC(t *testing.T) {
-	conf := &config.Config{}
+	conf := newTestConfig()
 	err := CreatePVC(testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePVC failed: %v", err)
@@ -177,7 +263,7 @@ func TestCreateJobWithNoResources(t *testing.T) {
 		// Intentionally omit Resources to test default handling
 	}
 
-	conf := &config.Config{}
+	conf := newTestConfig()
 	err := CreateJob(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed with nil resources: %v", err)
@@ -196,17 +282,19 @@ func TestDeleteNonExistentResources(t *testing.T) {
 		}
 	})
 
+	// DeletePV and DeletePVC are idempotent - they don't error on non-existent resources
+	// because PV/PVC may never have been created for tasks without I/O.
 	t.Run("PV", func(t *testing.T) {
 		err := DeletePV(context.Background(), nonExistentID, fakeClient, l)
-		if err == nil {
-			t.Error("Expected error when deleting non-existent PV")
+		if err != nil {
+			t.Errorf("Unexpected error when deleting non-existent PV: %v", err)
 		}
 	})
 
 	t.Run("PVC", func(t *testing.T) {
 		err := DeletePVC(context.Background(), nonExistentID, namespace, fakeClient, l)
-		if err == nil {
-			t.Error("Expected error when deleting non-existent PVC")
+		if err != nil {
+			t.Errorf("Unexpected error when deleting non-existent PVC: %v", err)
 		}
 	})
 }
@@ -219,7 +307,7 @@ func TestCreateServiceAccount(t *testing.T) {
 		},
 	}
 
-	conf := config.DefaultConfig()
+	conf := newTestConfig()
 	err := CreateServiceAccount(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateServiceAccount failed: %v", err)
@@ -251,7 +339,7 @@ func TestCreateRole(t *testing.T) {
 		Id: testTaskID,
 	}
 
-	conf := config.DefaultConfig()
+	conf := newTestConfig()
 	err := CreateRole(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateRole failed: %v", err)
@@ -283,7 +371,7 @@ func TestCreateRoleBinding(t *testing.T) {
 		Id: testTaskID,
 	}
 
-	conf := config.DefaultConfig()
+	conf := newTestConfig()
 	err := CreateRoleBinding(task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateRoleBinding failed: %v", err)

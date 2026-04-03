@@ -15,9 +15,9 @@ EventWriters:
 
 Logger:
   # Logging levels: debug, info, error
-  level: info
+  Level: info
   # Write logs to this path. If empty, logs are written to stderr.
-  outputFile: ""
+  OutputFile: ""
 
 Server:
   # Hostname of the Funnel server.

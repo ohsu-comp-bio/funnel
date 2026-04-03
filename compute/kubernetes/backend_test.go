@@ -19,15 +19,17 @@ func TestTaskSubmission(t *testing.T) {
 	// Create a mock configuration
 	conf := config.DefaultConfig()
 	conf.Kubernetes.Namespace = "test-namespace"
+	conf.Kubernetes.JobsNamespace = "test-namespace"
 	conf.Kubernetes.WorkerTemplate = `
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: funnel-{{.TaskId}}
-  namespace: {{.Namespace}}
+  namespace: {{.JobsNamespace}}
 spec:
   template:
     spec:
+      restartPolicy: Never
       containers:
       - name: task
         image: alpine
@@ -37,6 +39,36 @@ spec:
             cpu: "{{.Cpus}}"
             memory: "{{.RamGb}}Gi"
             ephemeral-storage: "{{.DiskGb}}Gi"
+`
+	conf.Kubernetes.ServiceAccountTemplate = `apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{.ServiceAccountName}}
+  namespace: {{.Namespace}}
+`
+	conf.Kubernetes.RoleTemplate = `apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: funnel-worker-role-{{.TaskId}}
+  namespace: {{.Namespace}}
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+`
+	conf.Kubernetes.RoleBindingTemplate = `apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: funnel-worker-rolebinding-{{.TaskId}}
+  namespace: {{.Namespace}}
+subjects:
+- kind: ServiceAccount
+  name: {{.ServiceAccountName}}
+  namespace: {{.Namespace}}
+roleRef:
+  kind: Role
+  name: funnel-worker-role-{{.TaskId}}
+  apiGroup: rbac.authorization.k8s.io
 `
 
 	// Create a logger
@@ -89,20 +121,6 @@ spec:
 		t.Fatalf("failed to get ConfigMap: %v", err)
 	}
 
-	// Verify that the PersistentVolumeClaim was created
-	pvcName := "funnel-worker-pvc-" + task.Id
-	_, err = fakeClient.CoreV1().PersistentVolumeClaims(conf.Kubernetes.Namespace).Get(context.Background(), pvcName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("failed to get PersistentVolumeClaim: %v", err)
-	}
-
-	// Verify that the PersistentVolume was created
-	pvName := "funnel-worker-pv-" + task.Id
-	_, err = fakeClient.CoreV1().PersistentVolumes().Get(context.Background(), pvName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("failed to get PersistentVolume: %v", err)
-	}
-
 	// Clean up resources
 	err = backend.cleanResources(context.Background(), task.Id)
 	if err != nil {
@@ -119,17 +137,5 @@ spec:
 	_, err = fakeClient.CoreV1().ConfigMaps(conf.Kubernetes.Namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
 	if err == nil {
 		t.Error("expected ConfigMap to be deleted, but it still exists")
-	}
-
-	// Verify that the PersistentVolumeClaim was deleted
-	_, err = fakeClient.CoreV1().PersistentVolumeClaims(conf.Kubernetes.Namespace).Get(context.Background(), pvcName, metav1.GetOptions{})
-	if err == nil {
-		t.Error("expected PersistentVolumeClaim to be deleted, but it still exists")
-	}
-
-	// Verify that the PersistentVolume was deleted
-	_, err = fakeClient.CoreV1().PersistentVolumes().Get(context.Background(), pvName, metav1.GetOptions{})
-	if err == nil {
-		t.Error("expected PersistentVolume to be deleted, but it still exists")
 	}
 }

@@ -12,9 +12,6 @@ import (
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/plugins/proto"
 	"github.com/ohsu-comp-bio/funnel/tes"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // NewBackend returns a new local Backend instance.
@@ -40,7 +37,7 @@ func (b Backend) CheckBackendParameterSupport(task *tes.Task) error {
 	for k := range taskBackendParameters {
 		_, ok := b.backendParameters[k]
 		if !ok {
-			return status.Errorf(codes.InvalidArgument, "backend parameters not supported: %s", k)
+			return fmt.Errorf("backend parameters not supported")
 		}
 	}
 

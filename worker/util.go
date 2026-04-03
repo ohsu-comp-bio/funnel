@@ -4,21 +4,36 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"runtime/debug"
+	"strconv"
 	"syscall"
 )
 
+// k8sExitCodeRegexp matches the exit code in Kubernetes executor error messages.
+// e.g. "executor job test-123-0 failed with exit code 127 (Error): command not found"
+var k8sExitCodeRegexp = regexp.MustCompile(`with exit code (\d+)`)
+
 // getExitCode gets the exit status (i.e. exit code) from the result of an executed command.
 // The exit code is zero if the command completed without error.
+// Returns -999 if the exit code cannot be determined.
 func getExitCode(err error) (int, error) {
 	// The error is nil, the command returned successfully, so exit status is 0.
 	if err == nil {
 		return 0, nil
 	}
 
-	// Check for Kubernetes error first
+	// Check for Kubernetes error type first
 	if k8sErr, ok := err.(*K8sExecutorErr); ok {
 		return k8sErr.ExitCode, nil
+	}
+
+	// Try to parse a Kubernetes-style error message string
+	// e.g. "executor job test-123-0 failed with exit code 127 (Error): command not found"
+	if matches := k8sExitCodeRegexp.FindStringSubmatch(err.Error()); len(matches) == 2 {
+		if code, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
+			return code, nil
+		}
 	}
 
 	if exiterr, exitOk := err.(*exec.ExitError); exitOk {
@@ -27,7 +42,7 @@ func getExitCode(err error) (int, error) {
 		}
 	}
 
-	return -1, fmt.Errorf("failed to get exit code: %w", err)
+	return -999, nil
 }
 
 // recover from panic and call "cb" with an error value.

@@ -16,10 +16,10 @@ import (
 )
 
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
-func CreatePV(ctx context.Context, taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreatePV(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
-	t, err := template.New(taskId).Parse(config.Kubernetes.PVTemplate)
+	t, err := template.New(taskId).Parse(conf.Kubernetes.PVTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -28,10 +28,10 @@ func CreatePV(ctx context.Context, taskId string, config *config.Config, client 
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
-		"Namespace": config.Kubernetes.JobsNamespace,
-		"Bucket":    config.GenericS3[0].Bucket,
-		"Region":    config.GenericS3[0].Region,
-		"KmsKeyID":  config.GenericS3[0].KmsKeyID,
+		"Namespace": conf.Kubernetes.JobsNamespace,
+		"Bucket":    conf.GenericS3[0].Bucket,
+		"Region":    conf.GenericS3[0].Region,
+		"KmsKeyID":  conf.GenericS3[0].KmsKeyID,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

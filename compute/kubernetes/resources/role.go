@@ -17,10 +17,10 @@ import (
 )
 
 // Create the Worker/Executor Role from config/kubernetes-role.yaml
-func CreateRole(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateRole(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
-	t, err := template.New(task.Id).Parse(config.Kubernetes.RoleTemplate)
+	t, err := template.New(task.Id).Parse(conf.Kubernetes.RoleTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -30,7 +30,7 @@ func CreateRole(ctx context.Context, task *tes.Task, config *config.Config, clie
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    task.Id,
-		"Namespace": config.Kubernetes.JobsNamespace,
+		"Namespace": conf.Kubernetes.JobsNamespace,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)
@@ -47,7 +47,7 @@ func CreateRole(ctx context.Context, task *tes.Task, config *config.Config, clie
 		return fmt.Errorf("failed to verify Role spec")
 	}
 
-	_, err = client.RbacV1().Roles(config.Kubernetes.JobsNamespace).Create(ctx, role, metav1.CreateOptions{})
+	_, err = client.RbacV1().Roles(conf.Kubernetes.JobsNamespace).Create(ctx, role, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create Role: %v", err)
 	}

@@ -17,10 +17,10 @@ import (
 )
 
 // Create the Worker/Executor ServiceAccount from config/kubernetes-serviceaccount.yaml
-func CreateServiceAccount(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
-	t, err := template.New(task.Id).Parse(config.Kubernetes.ServiceAccountTemplate)
+	t, err := template.New(task.Id).Parse(conf.Kubernetes.ServiceAccountTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -30,8 +30,8 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, config *config.Co
 	var buf bytes.Buffer
 	templateData := map[string]interface{}{
 		"TaskId":             task.Id,
-		"Namespace":          config.Kubernetes.JobsNamespace,
-		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id),
+		"Namespace":          conf.Kubernetes.JobsNamespace,
+		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", conf.Kubernetes.JobsNamespace, task.Id),
 	}
 
 	// Override ServiceAccountName if provided in Task Tags
@@ -60,7 +60,7 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, config *config.Co
 		return fmt.Errorf("failed to decode ServiceAccount spec")
 	}
 
-	_, err = client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Create(ctx, sa, metav1.CreateOptions{})
+	_, err = client.CoreV1().ServiceAccounts(conf.Kubernetes.JobsNamespace).Create(ctx, sa, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create ServiceAccount: %v", err)
 	}

@@ -23,8 +23,19 @@ var l = logger.NewLogger("test", logger.DefaultConfig())
 var ctx = context.Background()
 
 func TestCreateConfigMap(t *testing.T) {
-	conf := &config.Config{}
+	conf := config.DefaultConfig()
 	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.ConfigMapTemplate = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-worker-config-{{ .TaskId }}
+  namespace: {{ .Namespace }}
+  labels:
+    app: funnel
+data:
+  funnel-worker.yaml: |
+    placeholder`
+
 	err := CreateConfigMap(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
@@ -32,30 +43,61 @@ func TestCreateConfigMap(t *testing.T) {
 }
 
 func TestDeleteConfigMap(t *testing.T) {
-	fakeClient := fake.NewSimpleClientset()
+	cmName := "funnel-worker-config-" + testTaskID
 
-	// Create a test ConfigMap first
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "funnel-worker-config-" + testTaskID,
-			Namespace: namespace,
-		},
-	}
-	_, err := fakeClient.CoreV1().ConfigMaps(namespace).Create(context.Background(), cm, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("Failed to create test ConfigMap: %v", err)
-	}
+	t.Run("labeled", func(t *testing.T) {
+		fakeClient := fake.NewSimpleClientset()
 
-	err = DeleteConfigMap(context.Background(), testTaskID, namespace, fakeClient, l)
-	if err != nil {
-		t.Errorf("DeleteConfigMap failed: %v", err)
-	}
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cmName,
+				Namespace: namespace,
+				Labels: map[string]string{
+					"app":    "funnel",
+					"taskId": testTaskID,
+				},
+			},
+		}
+		_, err := fakeClient.CoreV1().ConfigMaps(namespace).Create(context.Background(), cm, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("Failed to create labeled ConfigMap: %v", err)
+		}
 
-	// Verify deletion
-	_, err = fakeClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), "funnel-worker-"+testTaskID, metav1.GetOptions{})
-	if err == nil {
-		t.Error("ConfigMap was not deleted")
-	}
+		err = DeleteConfigMap(context.Background(), testTaskID, namespace, fakeClient, l)
+		if err != nil {
+			t.Errorf("DeleteConfigMap failed: %v", err)
+		}
+
+		_, err = fakeClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), cmName, metav1.GetOptions{})
+		if err == nil {
+			t.Error("labeled ConfigMap was not deleted")
+		}
+	})
+
+	t.Run("unlabeled", func(t *testing.T) {
+		fakeClient := fake.NewSimpleClientset()
+
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cmName,
+				Namespace: namespace,
+			},
+		}
+		_, err := fakeClient.CoreV1().ConfigMaps(namespace).Create(context.Background(), cm, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("Failed to create unlabeled ConfigMap: %v", err)
+		}
+
+		err = DeleteConfigMap(context.Background(), testTaskID, namespace, fakeClient, l)
+		if err != nil {
+			t.Errorf("DeleteConfigMap failed: %v", err)
+		}
+
+		_, err = fakeClient.CoreV1().ConfigMaps(namespace).Get(context.Background(), cmName, metav1.GetOptions{})
+		if err == nil {
+			t.Error("unlabeled ConfigMap was not deleted")
+		}
+	})
 }
 
 func TestCreateJob(t *testing.T) {

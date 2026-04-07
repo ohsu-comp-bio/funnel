@@ -17,10 +17,10 @@ import (
 )
 
 // Create the Worker/Executor RoleBinding from config/kubernetes-rolebinding.yaml
-func CreateRoleBinding(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateRoleBinding(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
-	t, err := template.New(task.Id).Parse(config.Kubernetes.RoleBindingTemplate)
+	t, err := template.New(task.Id).Parse(conf.Kubernetes.RoleBindingTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -29,8 +29,8 @@ func CreateRoleBinding(ctx context.Context, task *tes.Task, config *config.Confi
 	// TODO: Handle cases where values/tags below are not supplied
 	templateData := map[string]interface{}{
 		"TaskId":             task.Id,
-		"Namespace":          config.Kubernetes.JobsNamespace,
-		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id),
+		"Namespace":          conf.Kubernetes.JobsNamespace,
+		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", conf.Kubernetes.JobsNamespace, task.Id),
 	}
 
 	// Override ServiceAccountName if provided in Task Tags
@@ -55,7 +55,7 @@ func CreateRoleBinding(ctx context.Context, task *tes.Task, config *config.Confi
 		return fmt.Errorf("failed to decode RoleBinding spec")
 	}
 
-	_, err = client.RbacV1().RoleBindings(config.Kubernetes.JobsNamespace).Create(ctx, roleBinding, metav1.CreateOptions{})
+	_, err = client.RbacV1().RoleBindings(conf.Kubernetes.JobsNamespace).Create(ctx, roleBinding, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create RoleBinding: %v", err)
 	}

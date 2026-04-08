@@ -1,7 +1,6 @@
 package events
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/tes"
@@ -182,7 +181,6 @@ func NewSystemLog(taskID string, attempt uint32, index uint32, lvl string, msg s
 
 // NewResources creates a resources update event.
 func NewResources(taskID string, r *tes.Resources) *Event {
-	fmt.Println("DEBUG: NewResources called with:", r)
 	if r == nil {
 		r = &tes.Resources{}
 	}

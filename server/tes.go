@@ -131,7 +131,6 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid resources: %v", err)
 		}
-		ts.Log.Debug("DEBUG: task.Resources in CreateTask:", "resources", task.Resources)
 	}
 
 	if err := ts.Event.WriteEvent(ctx, events.NewTaskCreated(task)); err != nil {

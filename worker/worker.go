@@ -216,9 +216,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 				}
 
 				// Store the effective resources back to the task
-				fmt.Println("DEBUG: task.Resources in DefaultWorker.Run A:", task.Resources)
 				task.Resources = resources
-				fmt.Println("DEBUG: task.Resources in DefaultWorker.Run B:", task.Resources)
 
 				resourceLimits := config.GetResourceLimits(r.Executor.Resources)
 

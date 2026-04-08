@@ -38,10 +38,6 @@ type Volume struct {
 	// The path in Docker.
 	ContainerPath string
 	Readonly      bool
-	// Tmp marks volumes declared in the TES task's `volumes` field (and /tmp).
-	// These are ephemeral scratch volumes shared between executors in the same
-	// task, backed by emptyDir on Kubernetes.
-	Tmp bool
 }
 
 // NewFileMapper returns a new FileMapper, which maps files into the given
@@ -366,15 +362,6 @@ func (mapper *FileMapper) AddTmpVolume(mountPoint string) error {
 	err = mapper.AddVolume(hostPath, mountPoint, false)
 	if err != nil {
 		return err
-	}
-
-	// Mark the volume as Tmp so Kubernetes can back it with an emptyDir
-	// rather than a PVC subpath.
-	for i, v := range mapper.Volumes {
-		if v.ContainerPath == mountPoint {
-			mapper.Volumes[i].Tmp = true
-			break
-		}
 	}
 	return nil
 }

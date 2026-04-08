@@ -63,33 +63,15 @@ spec:
             ephemeral-storage: {{.DiskGb}}
 
         volumeMounts:
-        # TES task.volumes — emptyDir mounts shared between executors in this task
-        {{- range $idx, $item := .Volumes}}
-        {{- if $item.Tmp}}
-          - name: tes-vol-{{$idx}}
-            mountPath: {{$item.ContainerPath}}
-        {{- end}}
-        {{- end}}
-        # Input/output volumes — backed by the task PVC
         {{- if .NeedsPVC }}
           {{- range $idx, $item := .Volumes}}
-          {{- if not $item.Tmp}}
           - name: funnel-storage-{{$.TaskId}}
             mountPath: {{$item.ContainerPath}}
             subPath: {{$.TaskId}}{{$item.ContainerPath}}
           {{- end}}
-          {{- end}}
         {{- end }}
 
       volumes:
-      # TES task.volumes — one emptyDir per declared volume path
-      {{- range $idx, $item := .Volumes}}
-      {{- if $item.Tmp}}
-      - name: tes-vol-{{$idx}}
-        emptyDir: {}
-      {{- end}}
-      {{- end}}
-      # Input/output storage — PVC backed by external storage
       {{- if .NeedsPVC }}
       - name: funnel-storage-{{.TaskId}}
         persistentVolumeClaim:

@@ -47,17 +47,10 @@ func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client 
 		"RamGb":              res.GetRamGb(),
 		"DiskGb":             res.GetDiskGb(),
 		"Image":              pods.Items[0].Spec.Containers[0].Image,
-<<<<<<< fix/resource-clean
-		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0,
+		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0,
 		"NodeSelector":       conf.Kubernetes.NodeSelector,
 		"Tolerations":        conf.Kubernetes.Tolerations,
 		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", conf.Kubernetes.JobsNamespace, task.Id),
-=======
-		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0,
-		"NodeSelector":       config.Kubernetes.NodeSelector,
-		"Tolerations":        config.Kubernetes.Tolerations,
-		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id),
->>>>>>> develop
 	}
 
 	// Override ServiceAccountName if provided in Task Tags

@@ -54,9 +54,12 @@ type helper struct {
 func (h *helper) ok() bool {
 	if h.ctx != nil {
 		// Check if the context is done, but don't block waiting on it.
+		// Do not set syserr on context cancellation — a canceled context
+		// means the task was canceled, not that a system error occurred.
+		// The taskCanceled flag handles that path in the deferred state logic.
 		select {
 		case <-h.ctx.Done():
-			h.syserr = h.ctx.Err()
+			return false
 		default:
 		}
 	}

@@ -158,12 +158,15 @@ func (b *Backend) Cancel(ctx context.Context, taskID string) error {
 		return err
 	}
 
-	// only cancel tasks in a QUEUED state
-	if task.State != tes.State_QUEUED {
+	// Clean up K8s resources for any non-terminal, non-canceled state.
+	// This covers QUEUED (worker pod not yet started), INITIALIZING, and RUNNING
+	// (worker pod active with potentially running executor jobs).
+	switch task.State {
+	case tes.State_QUEUED, tes.State_INITIALIZING, tes.State_RUNNING:
+		return b.cleanResources(ctx, taskID)
+	default:
 		return nil
 	}
-
-	return b.cleanResources(ctx, taskID)
 }
 
 // createResources creates the resources needed for a task.

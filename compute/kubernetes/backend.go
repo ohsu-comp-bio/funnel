@@ -179,8 +179,9 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		defer cancel()
 	}
 
-	// If the task has inputs or outputs that must be taken care of create a PVC
-	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
+	// If the task has inputs, outputs, or declared volumes, create a PVC so
+	// executor pods can share data via PVC subPath mounts.
+	if len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
 		// Check to make sure required configs are present

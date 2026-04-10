@@ -16,12 +16,12 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(ctx context.Context, taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreatePVC(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
-	jobNamespace := config.Kubernetes.JobsNamespace
+	jobNamespace := conf.Kubernetes.JobsNamespace
 
 	// Load templates
-	t, err := template.New(taskId).Parse(config.Kubernetes.PVCTemplate)
+	t, err := template.New(taskId).Parse(conf.Kubernetes.PVCTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -31,8 +31,8 @@ func CreatePVC(ctx context.Context, taskId string, config *config.Config, client
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
 		"Namespace": jobNamespace,
-		"Bucket":    config.GenericS3[0].Bucket,
-		"Region":    config.GenericS3[0].Region,
+		"Bucket":    conf.GenericS3[0].Bucket,
+		"Region":    conf.GenericS3[0].Region,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

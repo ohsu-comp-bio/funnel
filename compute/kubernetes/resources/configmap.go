@@ -1,14 +1,18 @@
 package resources
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"strings"
+	"text/template"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
@@ -17,19 +21,41 @@ func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, cl
 		return fmt.Errorf("marshaling config to ConfigMap: %v", err)
 	}
 
-	// Create the ConfigMap that will contain the Funnel Worker Config (`funnel-worker.yaml`)
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("funnel-worker-config-%s", taskId),
-			Namespace: conf.Kubernetes.JobsNamespace,
-			Labels: map[string]string{
-				"app":    "funnel",
-				"taskId": taskId,
-			},
-		},
-		Data: map[string]string{
-			"funnel-worker.yaml": string(configBytes),
-		},
+	indentFn := func(spaces int, s string) string {
+		pad := strings.Repeat(" ", spaces)
+		lines := strings.Split(s, "\n")
+		for i, line := range lines {
+			if line != "" {
+				lines[i] = pad + line
+			}
+		}
+		return strings.Join(lines, "\n")
+	}
+
+	t, err := template.New(taskId).Funcs(template.FuncMap{"indent": indentFn}).Parse(conf.Kubernetes.ConfigMapTemplate)
+	if err != nil {
+		return fmt.Errorf("parsing template: %v", err)
+	}
+
+	var buf bytes.Buffer
+	err = t.Execute(&buf, map[string]interface{}{
+		"TaskId":    taskId,
+		"Namespace": conf.Kubernetes.JobsNamespace,
+		"Data":      string(configBytes),
+	})
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, _, err := decode(buf.Bytes(), nil, nil)
+	if err != nil {
+		return fmt.Errorf("decoding ConfigMap spec: %v", err)
+	}
+
+	cm, ok := obj.(*corev1.ConfigMap)
+	if !ok {
+		return fmt.Errorf("failed to decode ConfigMap spec")
 	}
 
 	_, err = client.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Create(ctx, cm, metav1.CreateOptions{})

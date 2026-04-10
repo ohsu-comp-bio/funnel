@@ -573,18 +573,17 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 					}
 					delete(failedJobEvents, taskID)
 				}
-			}
 
-			// Clean up all orphaned Funnel-managed resources whose task no longer exists in
-			// the DB. These can be left behind by server crashes or partial cleanup failures.
-			b.cleanOrphanedResources(ctx)
+				// Clean up all orphaned Funnel-managed resources whose task no longer exists in
+				// the DB. These can be left behind by server crashes or partial cleanup failures.
+				b.cleanOrphanedResources(ctx)
+			}
 		}
 	}
 }
 
 // isResourceCleanupNeeded returns true when the task is confirmed gone (NotFound)
-// or in a terminal state. Returns false for transient DB errors to avoid
-// deleting resources of running tasks during a database restart.
+// or in a terminal state.
 func (b *Backend) isResourceCleanupNeeded(ctx context.Context, taskID string) (bool, error) {
 	task, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
 	if err != nil {
@@ -598,13 +597,20 @@ func (b *Backend) isResourceCleanupNeeded(ctx context.Context, taskID string) (b
 	}
 }
 
+// cleanOrphanedResources deletes any Funnel-managed Kubernetes resources that are not associated with an active task
+// in the database.
+//
+// This is a safety measure to prevent resource leaks from orphaned jobs whose tasks have been
+// deleted or completed, but whose resources were not cleaned up due to transient errors or server crashes.
 func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 	namespace := b.conf.Kubernetes.JobsNamespace
-	const cmPrefix = "funnel-worker-config-"
 	taskIDs := make(map[string]struct{})
 
 	// Collect task IDs from each resource type
 	if pvcs, err := b.client.CoreV1().PersistentVolumeClaims(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing PVCs", err)
+		}
 		for _, r := range pvcs.Items {
 			if id, ok := r.Labels["taskId"]; ok {
 				taskIDs[id] = struct{}{}
@@ -614,6 +620,9 @@ func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 
 	// PVs
 	if pvs, err := b.client.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing PVs", err)
+		}
 		for _, r := range pvs.Items {
 			if id, ok := r.Labels["taskId"]; ok {
 				taskIDs[id] = struct{}{}
@@ -622,7 +631,11 @@ func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 	}
 
 	// ConfigMaps
-	if cms, err := b.client.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{}); err == nil {
+	if cms, err := b.client.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing ConfigMaps", err)
+		}
+		const cmPrefix = "funnel-worker-config-"
 		for _, r := range cms.Items {
 			if id, ok := r.Labels["taskId"]; ok {
 				taskIDs[id] = struct{}{}
@@ -634,6 +647,9 @@ func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 
 	// ServiceAccounts
 	if sas, err := b.client.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing ServiceAccounts", err)
+		}
 		for _, r := range sas.Items {
 			if id, ok := r.Labels["taskId"]; ok {
 				taskIDs[id] = struct{}{}
@@ -643,6 +659,9 @@ func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 
 	// Roles
 	if roles, err := b.client.RbacV1().Roles(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing Roles", err)
+		}
 		for _, r := range roles.Items {
 			if id, ok := r.Labels["taskId"]; ok {
 				taskIDs[id] = struct{}{}
@@ -652,6 +671,9 @@ func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 
 	// RoleBindings
 	if rbs, err := b.client.RbacV1().RoleBindings(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing RoleBindings", err)
+		}
 		for _, r := range rbs.Items {
 			if id, ok := r.Labels["taskId"]; ok {
 				taskIDs[id] = struct{}{}

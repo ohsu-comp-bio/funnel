@@ -48,7 +48,6 @@ func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, cl
 	}
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
-	fmt.Println("DEBUG: ConfigMap YAML:\n", buf.String()) // Debugging line to print the generated YAML
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
 		return fmt.Errorf("decoding ConfigMap spec: %v", err)

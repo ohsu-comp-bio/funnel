@@ -151,22 +151,11 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Con
 
 // Cancel removes tasks that are pending kubernetes v1/batch jobs.
 func (b *Backend) Cancel(ctx context.Context, taskID string) error {
-	task, err := b.database.GetTask(
-		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()},
-	)
-	if err != nil {
-		return err
-	}
-
-	// Clean up K8s resources for any non-terminal, non-canceled state.
-	// This covers QUEUED (worker pod not yet started), INITIALIZING, and RUNNING
-	// (worker pod active with potentially running executor jobs).
-	switch task.State {
-	case tes.State_QUEUED, tes.State_INITIALIZING, tes.State_RUNNING:
-		return b.cleanResources(ctx, taskID)
-	default:
-		return nil
-	}
+	// Always attempt resource cleanup when a cancel is requested.
+	//
+	// cleanResources is idempotent — each individual delete either succeeds or
+	// ignores NotFound — so calling it on an already-clean task is safe.
+	return b.cleanResources(ctx, taskID)
 }
 
 // createResources creates the resources needed for a task.

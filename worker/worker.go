@@ -292,9 +292,6 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					var execErr *K8sExecutorErr
 
 					switch {
-					// Context cancellation means the task was canceled — not an error.
-					case errors.Is(err, context.Canceled):
-						// taskCanceled will be set by pollForCancel; nothing to do here.
 					// K8s System error
 					case errors.As(err, &k8sSystemErr):
 						run.syserr = err

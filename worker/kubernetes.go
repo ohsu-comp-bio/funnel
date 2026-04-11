@@ -3,7 +3,6 @@ package worker
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"text/template"
@@ -39,10 +38,6 @@ type KubernetesCommand struct {
 	Command
 }
 
-
-// errTaskCanceled is returned by waitForPodFinish when the task context is
-// canceled. It is not a system error — it signals a graceful cancellation.
-var errTaskCanceled = errors.New("task canceled")
 
 type K8sExecutorErr struct {
 	ExitCode int
@@ -211,11 +206,6 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	defer podWatcher.Stop()
 	pod, err := waitForPodFinish(ctx, podWatcher)
 	if err != nil {
-		// If the task was canceled, propagate the cancellation cleanly rather
-		// than treating it as a system error.
-		if errors.Is(err, errTaskCanceled) {
-			return ctx.Err()
-		}
 		return &K8sSystemErr{
 			Reason:  "PodWaitFailed",
 			Message: "Error waiting for pod to finish",
@@ -226,10 +216,6 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 	logger.Debug("Streaming pod logs", "podName", pod.Name)
 	err = streamPodLogs(ctx, kcmd.JobsNamespace, pod.Name, kcmd.Stdout, kcmd.Stderr)
 	if err != nil {
-		// Ignore log streaming errors caused by context cancellation.
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		return &K8sSystemErr{
 			Reason:  "LogStreamingFailed",
 			Message: fmt.Sprintf("Failed to stream logs from pod %s", pod.Name),
@@ -389,8 +375,9 @@ func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod
 			return nil, fmt.Errorf("timed out waiting for pod to appear")
 
 		case <-ctx.Done():
-			logger.Debug("context cancelled while waiting for pod termination")
-			return nil, errTaskCanceled
+			msg := "context cancelled while waiting for pod termination"
+			logger.Debug(msg)
+			return nil, fmt.Errorf(msg)
 		}
 	}
 }

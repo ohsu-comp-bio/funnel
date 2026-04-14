@@ -59,8 +59,8 @@ require (
 )
 
 require (
-	cloud.google.com/go/batch v1.16.0
-	cloud.google.com/go/logging v1.15.0
+	cloud.google.com/go/batch v1.17.0
+	cloud.google.com/go/logging v1.16.0
 	dario.cat/mergo v1.0.2
 	github.com/elastic/go-elasticsearch/v8 v8.19.3
 	github.com/go-playground/validator/v10 v10.30.2

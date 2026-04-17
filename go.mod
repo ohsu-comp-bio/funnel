@@ -62,7 +62,7 @@ require (
 	cloud.google.com/go/batch v1.17.0
 	cloud.google.com/go/logging v1.16.0
 	dario.cat/mergo v1.0.2
-	github.com/elastic/go-elasticsearch/v8 v8.19.3
+	github.com/elastic/go-elasticsearch/v8 v8.19.4
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510

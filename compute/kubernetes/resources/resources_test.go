@@ -283,7 +283,7 @@ func TestDeleteServiceAccount(t *testing.T) {
 		t.Fatalf("Failed to create test ServiceAccount: %v", err)
 	}
 
-	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l)
+	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l, false)
 	if err != nil {
 		t.Errorf("DeleteServiceAccount failed: %v", err)
 	}

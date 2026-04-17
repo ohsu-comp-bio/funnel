@@ -69,7 +69,14 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Conf
 }
 
 // DeleteServiceAccount deletes the ServiceAccount created for a task.
-func DeleteServiceAccount(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger) error {
+// If externalSA is true the ServiceAccount is externally managed (e.g. a
+// Gen3Workflow per-user SA supplied via the _WORKER_SA task tag) and must not
+// be deleted by Funnel.
+func DeleteServiceAccount(ctx context.Context, taskID string, namespace string, client kubernetes.Interface, log *logger.Logger, externalSA bool) error {
+	if externalSA {
+		log.Debug("skipping deletion of externally-managed ServiceAccount", "taskID", taskID)
+		return nil
+	}
 	// ServiceAccount names are not available here without config, so we list by label.
 	sas, err := client.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app=funnel,taskId=%s", taskID),

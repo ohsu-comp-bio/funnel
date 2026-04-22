@@ -16,12 +16,12 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(ctx context.Context, taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreatePVC(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
-	jobNamespace := config.Kubernetes.JobsNamespace
+	jobNamespace := conf.Kubernetes.JobsNamespace
 
 	// Load templates
-	t, err := template.New(taskId).Parse(config.Kubernetes.PVCTemplate)
+	t, err := template.New(taskId).Parse(conf.Kubernetes.PVCTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -30,9 +30,9 @@ func CreatePVC(ctx context.Context, taskId string, config *config.Config, client
 	// GenericS3 is optional; only S3 CSI PVCTemplates reference these fields.
 	// Deployments using hostPath or other non-S3 PVCTemplates leave them empty.
 	s3Bucket, s3Region := "", ""
-	if len(config.GenericS3) > 0 {
-		s3Bucket = config.GenericS3[0].Bucket
-		s3Region = config.GenericS3[0].Region
+	if len(conf.GenericS3) > 0 {
+		s3Bucket = conf.GenericS3[0].Bucket
+		s3Region = conf.GenericS3[0].Region
 	}
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{

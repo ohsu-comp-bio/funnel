@@ -216,9 +216,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 				}
 
 				// Store the effective resources back to the task
-				fmt.Println("DEBUG: task.Resources in DefaultWorker.Run A:", task.Resources)
 				task.Resources = resources
-				fmt.Println("DEBUG: task.Resources in DefaultWorker.Run B:", task.Resources)
 
 				resourceLimits := config.GetResourceLimits(r.Executor.Resources)
 
@@ -238,7 +236,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					Resources:      resources,
 					ResourceLimits: resourceLimits,
 					Command:        command,
-					NeedsPVC:       len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0,
+					NeedsPVC:       len(task.GetInputs()) > 0 || len(task.GetOutputs()) > 0 || len(task.GetVolumes()) > 0,
 					NodeSelector:   r.Executor.NodeSelector,
 					Tolerations:    r.Executor.Tolerations,
 					ServiceAccount: fmt.Sprintf("funnel-worker-sa-%s-%s", r.Executor.JobsNamespace, task.Id),

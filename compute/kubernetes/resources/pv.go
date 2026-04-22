@@ -16,10 +16,10 @@ import (
 )
 
 // Create the Worker/Executor PV from config/kubernetes-pv.yaml
-func CreatePV(ctx context.Context, taskId string, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreatePV(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 
 	// Load templates
-	t, err := template.New(taskId).Parse(config.Kubernetes.PVTemplate)
+	t, err := template.New(taskId).Parse(conf.Kubernetes.PVTemplate)
 	if err != nil {
 		return fmt.Errorf("parsing template: %v", err)
 	}
@@ -28,15 +28,15 @@ func CreatePV(ctx context.Context, taskId string, config *config.Config, client 
 	// GenericS3 is optional; only S3 CSI PVTemplates reference these fields.
 	// Deployments using hostPath or other non-S3 PVTemplates leave them empty.
 	s3Bucket, s3Region, s3KmsKeyID := "", "", ""
-	if len(config.GenericS3) > 0 {
-		s3Bucket = config.GenericS3[0].Bucket
-		s3Region = config.GenericS3[0].Region
-		s3KmsKeyID = config.GenericS3[0].KmsKeyID
+	if len(conf.GenericS3) > 0 {
+		s3Bucket = conf.GenericS3[0].Bucket
+		s3Region = conf.GenericS3[0].Region
+		s3KmsKeyID = conf.GenericS3[0].KmsKeyID
 	}
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
-		"Namespace": config.Kubernetes.JobsNamespace,
+		"Namespace": conf.Kubernetes.JobsNamespace,
 		"Bucket":    s3Bucket,
 		"Region":    s3Region,
 		"KmsKeyID":  s3KmsKeyID,

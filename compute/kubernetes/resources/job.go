@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"text/template"
 	"regexp"
 	"strconv"
+	"text/template"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	v1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -34,16 +35,16 @@ func SanitizeLabelValue(s string) string {
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
 	// Parse Worker Template
 
-	log.Debug("Creating job from template", "template", config.Kubernetes.WorkerTemplate)
-	t, err := template.New(task.Id).Parse(config.Kubernetes.WorkerTemplate)
+	log.Debug("Creating job from template", "template", conf.Kubernetes.WorkerTemplate)
+	t, err := template.New(task.Id).Parse(conf.Kubernetes.WorkerTemplate)
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
 
-	pods, err := client.CoreV1().Pods(config.Kubernetes.Namespace).List(ctx, metav1.ListOptions{
+	pods, err := client.CoreV1().Pods(conf.Kubernetes.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "app=funnel",
 	})
 	if err != nil {
@@ -69,17 +70,17 @@ func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, clien
 		"TaskId":             task.Id,
 		"TaskName":           task.Name,
 		"TaskNameLabel":      SanitizeLabelValue(task.Name),
-		"Namespace":          config.Kubernetes.Namespace,
-		"JobsNamespace":      config.Kubernetes.JobsNamespace,
+		"Namespace":          conf.Kubernetes.Namespace,
+		"JobsNamespace":      conf.Kubernetes.JobsNamespace,
 		"Cpus":               res.GetCpuCores(),
 		"RamGb":              res.GetRamGb(),
 		"DiskGb":             res.GetDiskGb(),
 		"BackoffLimit":       backoffLimit,
 		"Image":              pods.Items[0].Spec.Containers[0].Image,
-		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0,
-		"NodeSelector":       config.Kubernetes.NodeSelector,
-		"Tolerations":        config.Kubernetes.Tolerations,
-		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id),
+		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0,
+		"NodeSelector":       conf.Kubernetes.NodeSelector,
+		"Tolerations":        conf.Kubernetes.Tolerations,
+		"ServiceAccountName": fmt.Sprintf("funnel-worker-sa-%s-%s", conf.Kubernetes.JobsNamespace, task.Id),
 	}
 
 	// Override ServiceAccountName if provided in Task Tags
@@ -113,8 +114,8 @@ func CreateJob(ctx context.Context, task *tes.Task, config *config.Config, clien
 		job.Spec.TTLSecondsAfterFinished = &ttl
 	}
 
-	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", config.Kubernetes.JobsNamespace)
-	_, err = client.BatchV1().Jobs(config.Kubernetes.JobsNamespace).Create(ctx, job, metav1.CreateOptions{})
+	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", conf.Kubernetes.JobsNamespace)
+	_, err = client.BatchV1().Jobs(conf.Kubernetes.JobsNamespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("%v", err)
 	}
@@ -134,7 +135,7 @@ func DeleteJob(ctx context.Context, conf *config.Config, taskID string, client k
 		GracePeriodSeconds: &gracePeriod,
 		PropagationPolicy:  &prop,
 	})
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("%v", err)
 	}
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"dario.cat/mergo"
@@ -150,18 +151,10 @@ func (b *Backend) Submit(ctx context.Context, task *tes.Task, config *config.Con
 
 // Cancel removes tasks that are pending kubernetes v1/batch jobs.
 func (b *Backend) Cancel(ctx context.Context, taskID string) error {
-	task, err := b.database.GetTask(
-		ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()},
-	)
-	if err != nil {
-		return err
-	}
-
-	// only cancel tasks in a QUEUED state
-	if task.State != tes.State_QUEUED {
-		return nil
-	}
-
+	// Always attempt resource cleanup when a cancel is requested.
+	//
+	// cleanResources is idempotent — each individual delete either succeeds or
+	// ignores NotFound — so calling it on an already-clean task is safe.
 	return b.cleanResources(ctx, taskID)
 }
 
@@ -178,8 +171,9 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		defer cancel()
 	}
 
-	// If the task has inputs or outputs that must be taken care of create a PVC
-	if len(task.Inputs) > 0 || len(task.Outputs) > 0 {
+	// If the task has inputs, outputs, or declared volumes, create a PVC so
+	// executor pods can share data via PVC subPath mounts.
+	if len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
 		// Create PV
@@ -419,15 +413,6 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 				}
 			}
 		}
-
-		// Clean up all orphaned Funnel-managed resources whose task no longer exists in
-		// the DB. These can be left behind by server crashes or partial cleanup failures.
-		b.cleanOrphanedPVCs(ctx)
-		b.cleanOrphanedPVs(ctx)
-		b.cleanOrphanedConfigMaps(ctx)
-		b.cleanOrphanedServiceAccounts(ctx)
-		b.cleanOrphanedRoles(ctx)
-		b.cleanOrphanedRoleBindings(ctx)
 	}
 
 	ticker := time.NewTicker(rate)
@@ -581,163 +566,126 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 					}
 					delete(failedJobEvents, taskID)
 				}
+
+				// Clean up all orphaned Funnel-managed resources whose task no longer exists in
+				// the DB. These can be left behind by server crashes or partial cleanup failures.
+				b.cleanOrphanedResources(ctx)
 			}
 		}
 	}
 }
 
-// cleanOrphanedPVCs lists all Funnel-managed PVCs and deletes any whose task no longer
-// exists in the Funnel DB. This catches PVCs left behind by server crashes or partial cleanups.
-func (b *Backend) cleanOrphanedPVCs(ctx context.Context) {
-	pvcs, err := b.client.CoreV1().PersistentVolumeClaims(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
-		LabelSelector: "app=funnel",
-	})
+// isResourceCleanupNeeded returns true when the task is confirmed gone (NotFound)
+// or in a terminal state.
+func (b *Backend) isResourceCleanupNeeded(ctx context.Context, taskID string) (bool, error) {
+	task, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
 	if err != nil {
-		b.log.Error("backlog cleanup: listing PVCs", err)
-		return
+		return true, nil
 	}
-
-	for _, pvc := range pvcs.Items {
-		taskID, ok := pvc.Labels["taskId"]
-		if !ok {
-			continue
-		}
-		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
-		if err != nil {
-			b.log.Info("backlog cleanup: deleting orphaned PVC with no matching task", "pvc", pvc.Name, "taskID", taskID)
-			if err := resources.DeletePVC(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
-				b.log.Error("backlog cleanup: failed to delete orphaned PVC", "pvc", pvc.Name, "taskID", taskID, "error", err)
-			}
-		}
+	switch task.State {
+	case tes.State_COMPLETE, tes.State_EXECUTOR_ERROR, tes.State_SYSTEM_ERROR, tes.State_CANCELED:
+		return true, nil
+	default:
+		return false, nil
 	}
 }
 
-// cleanOrphanedPVs lists all Funnel-managed PVs and deletes any whose task no longer
-// exists in the Funnel DB. This catches PVs left behind by server crashes or partial cleanups.
-func (b *Backend) cleanOrphanedPVs(ctx context.Context) {
-	pvs, err := b.client.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{
-		LabelSelector: "app=funnel",
-	})
-	if err != nil {
-		b.log.Error("backlog cleanup: listing PVs", err)
-		return
-	}
+// cleanOrphanedResources deletes any Funnel-managed Kubernetes resources that are not associated with an active task
+// in the database.
+//
+// This is a safety measure to prevent resource leaks from orphaned jobs whose tasks have been
+// deleted or completed, but whose resources were not cleaned up due to transient errors or server crashes.
+func (b *Backend) cleanOrphanedResources(ctx context.Context) {
+	namespace := b.conf.Kubernetes.JobsNamespace
+	taskIDs := make(map[string]struct{})
 
-	for _, pv := range pvs.Items {
-		taskID, ok := pv.Labels["taskId"]
-		if !ok {
-			continue
-		}
-		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+	// Collect task IDs from each resource type
+	if pvcs, err := b.client.CoreV1().PersistentVolumeClaims(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
 		if err != nil {
-			b.log.Info("backlog cleanup: deleting orphaned PV with no matching task", "pv", pv.Name, "taskID", taskID)
-			if err := resources.DeletePV(ctx, taskID, b.client, b.log); err != nil {
-				b.log.Error("backlog cleanup: failed to delete orphaned PV", "pv", pv.Name, "taskID", taskID, "error", err)
+			b.log.Error("backlog cleanup: listing PVCs", err)
+		}
+		for _, r := range pvcs.Items {
+			if id, ok := r.Labels["taskId"]; ok {
+				taskIDs[id] = struct{}{}
 			}
 		}
 	}
-}
 
-// cleanOrphanedConfigMaps lists all Funnel-managed ConfigMaps and deletes any whose task
-// no longer exists in the Funnel DB.
-func (b *Backend) cleanOrphanedConfigMaps(ctx context.Context) {
-	cms, err := b.client.CoreV1().ConfigMaps(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
-		LabelSelector: "app=funnel",
-	})
-	if err != nil {
-		b.log.Error("backlog cleanup: listing ConfigMaps", err)
-		return
-	}
-
-	for _, cm := range cms.Items {
-		taskID, ok := cm.Labels["taskId"]
-		if !ok {
-			continue
-		}
-		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+	// PVs
+	if pvs, err := b.client.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
 		if err != nil {
-			b.log.Info("backlog cleanup: deleting orphaned ConfigMap with no matching task", "configmap", cm.Name, "taskID", taskID)
-			if err := resources.DeleteConfigMap(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
-				b.log.Error("backlog cleanup: failed to delete orphaned ConfigMap", "configmap", cm.Name, "taskID", taskID, "error", err)
+			b.log.Error("backlog cleanup: listing PVs", err)
+		}
+		for _, r := range pvs.Items {
+			if id, ok := r.Labels["taskId"]; ok {
+				taskIDs[id] = struct{}{}
 			}
 		}
 	}
-}
 
-// cleanOrphanedServiceAccounts lists all Funnel-managed ServiceAccounts and deletes any
-// whose task no longer exists in the Funnel DB.
-func (b *Backend) cleanOrphanedServiceAccounts(ctx context.Context) {
-	sas, err := b.client.CoreV1().ServiceAccounts(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
-		LabelSelector: "app=funnel",
-	})
-	if err != nil {
-		b.log.Error("backlog cleanup: listing ServiceAccounts", err)
-		return
-	}
-
-	for _, sa := range sas.Items {
-		taskID, ok := sa.Labels["taskId"]
-		if !ok {
-			continue
-		}
-		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+	// ConfigMaps
+	if cms, err := b.client.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
 		if err != nil {
-			b.log.Info("backlog cleanup: deleting orphaned ServiceAccount with no matching task", "serviceaccount", sa.Name, "taskID", taskID)
-			if err := resources.DeleteServiceAccount(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
-				b.log.Error("backlog cleanup: failed to delete orphaned ServiceAccount", "serviceaccount", sa.Name, "taskID", taskID, "error", err)
+			b.log.Error("backlog cleanup: listing ConfigMaps", err)
+		}
+		const cmPrefix = "funnel-worker-config-"
+		for _, r := range cms.Items {
+			if id, ok := r.Labels["taskId"]; ok {
+				taskIDs[id] = struct{}{}
+			} else if strings.HasPrefix(r.Name, cmPrefix) {
+				taskIDs[strings.TrimPrefix(r.Name, cmPrefix)] = struct{}{}
 			}
 		}
 	}
-}
 
-// cleanOrphanedRoles lists all Funnel-managed Roles and deletes any whose task no longer
-// exists in the Funnel DB.
-func (b *Backend) cleanOrphanedRoles(ctx context.Context) {
-	roles, err := b.client.RbacV1().Roles(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
-		LabelSelector: "app=funnel",
-	})
-	if err != nil {
-		b.log.Error("backlog cleanup: listing Roles", err)
-		return
-	}
-
-	for _, role := range roles.Items {
-		taskID, ok := role.Labels["taskId"]
-		if !ok {
-			continue
-		}
-		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
+	// ServiceAccounts
+	if sas, err := b.client.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
 		if err != nil {
-			b.log.Info("backlog cleanup: deleting orphaned Role with no matching task", "role", role.Name, "taskID", taskID)
-			if err := resources.DeleteRole(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
-				b.log.Error("backlog cleanup: failed to delete orphaned Role", "role", role.Name, "taskID", taskID, "error", err)
+			b.log.Error("backlog cleanup: listing ServiceAccounts", err)
+		}
+		for _, r := range sas.Items {
+			if id, ok := r.Labels["taskId"]; ok {
+				taskIDs[id] = struct{}{}
 			}
 		}
 	}
-}
 
-// cleanOrphanedRoleBindings lists all Funnel-managed RoleBindings and deletes any whose
-// task no longer exists in the Funnel DB.
-func (b *Backend) cleanOrphanedRoleBindings(ctx context.Context) {
-	rbs, err := b.client.RbacV1().RoleBindings(b.conf.Kubernetes.JobsNamespace).List(ctx, metav1.ListOptions{
-		LabelSelector: "app=funnel",
-	})
-	if err != nil {
-		b.log.Error("backlog cleanup: listing RoleBindings", err)
-		return
+	// Roles
+	if roles, err := b.client.RbacV1().Roles(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing Roles", err)
+		}
+		for _, r := range roles.Items {
+			if id, ok := r.Labels["taskId"]; ok {
+				taskIDs[id] = struct{}{}
+			}
+		}
 	}
 
-	for _, rb := range rbs.Items {
-		taskID, ok := rb.Labels["taskId"]
-		if !ok {
+	// RoleBindings
+	if rbs, err := b.client.RbacV1().RoleBindings(namespace).List(ctx, metav1.ListOptions{LabelSelector: "app=funnel"}); err == nil {
+		if err != nil {
+			b.log.Error("backlog cleanup: listing RoleBindings", err)
+		}
+		for _, r := range rbs.Items {
+			if id, ok := r.Labels["taskId"]; ok {
+				taskIDs[id] = struct{}{}
+			}
+		}
+	}
+
+	for taskID := range taskIDs {
+		clean, err := b.isResourceCleanupNeeded(ctx, taskID)
+		if err != nil {
+			b.log.Error("backlog cleanup: checking task state", "taskID", taskID, "error", err)
 			continue
 		}
-		_, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskID, View: tes.View_MINIMAL.String()})
-		if err != nil {
-			b.log.Info("backlog cleanup: deleting orphaned RoleBinding with no matching task", "rolebinding", rb.Name, "taskID", taskID)
-			if err := resources.DeleteRoleBinding(ctx, taskID, b.conf.Kubernetes.JobsNamespace, b.client, b.log); err != nil {
-				b.log.Error("backlog cleanup: failed to delete orphaned RoleBinding", "rolebinding", rb.Name, "taskID", taskID, "error", err)
-			}
+		if !clean {
+			continue
+		}
+		b.log.Info("backlog cleanup: cleaning up resources for task", "taskID", taskID)
+		if err := b.cleanResources(ctx, taskID); err != nil {
+			b.log.Error("backlog cleanup: failed to clean resources", "taskID", taskID, "error", err)
 		}
 	}
 }

@@ -276,6 +276,10 @@ func TestDeleteServiceAccount(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "funnel-worker-sa-" + testTaskID,
 			Namespace: namespace,
+			Labels: map[string]string{
+				"app":    "funnel",
+				"taskId": testTaskID,
+			},
 		},
 	}
 	_, err := fakeClient.CoreV1().ServiceAccounts(namespace).Create(context.Background(), sa, metav1.CreateOptions{})
@@ -286,6 +290,49 @@ func TestDeleteServiceAccount(t *testing.T) {
 	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteServiceAccount failed: %v", err)
+	}
+}
+
+func TestDeleteServiceAccountInUse(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset()
+
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "funnel-worker-sa-" + testTaskID,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"app":    "funnel",
+				"taskId": testTaskID,
+			},
+		},
+	}
+	_, err := fakeClient.CoreV1().ServiceAccounts(namespace).Create(context.Background(), sa, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test ServiceAccount: %v", err)
+	}
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: namespace,
+		},
+		Spec: corev1.PodSpec{
+			ServiceAccountName: sa.Name,
+		},
+	}
+	_, err = fakeClient.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test Pod: %v", err)
+	}
+
+	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l)
+	if err == nil {
+		t.Fatal("expected DeleteServiceAccount to fail when ServiceAccount is in use")
+	}
+
+	_, err = fakeClient.CoreV1().ServiceAccounts(namespace).Get(context.Background(), sa.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("expected ServiceAccount to remain after failed delete: %v", err)
 	}
 }
 

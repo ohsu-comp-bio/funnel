@@ -69,7 +69,7 @@ func NewBackend(ctx context.Context, conf *config.Config, reader tes.ReadOnlySer
 	if !conf.Kubernetes.DisableReconciler {
 		// Clean up all orphaned Funnel-managed resources whose task no longer exists in
 		// the DB. These can be left behind by server crashes or partial cleanup failures.
-		b.cleanOrphanedResources(ctx)
+		go b.cleanOrphanedResources(ctx)
 
 		rate := conf.Kubernetes.ReconcileRate.AsDuration()
 		go b.reconcile(ctx, rate, conf.Kubernetes.DisableJobCleanup)

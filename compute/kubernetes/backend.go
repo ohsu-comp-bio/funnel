@@ -217,7 +217,7 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 	// the static shared ConfigMap approach.
 	if config.Kubernetes.ConfigMapTemplate != "" {
 		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-		err = resources.CreateConfigMap(task.Id, config, b.client, b.log)
+		err = resources.CreateConfigMap(ctx, task.Id, config, b.client, b.log)
 		if err != nil {
 			b.log.Error("creating Worker ConfigMap", "error", err)
 			return fmt.Errorf("creating Worker ConfigMap: %v", err)
@@ -237,7 +237,7 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		if err != nil {
 			// ServiceAccount does not exist, create it
 			b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-			err = resources.CreateServiceAccount(task, config, b.client, b.log)
+			err = resources.CreateServiceAccount(ctx, task, config, b.client, b.log)
 			if err != nil {
 				return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 			}
@@ -247,7 +247,7 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 	if config.Kubernetes.RoleTemplate != "" {
 		// Create Role
 		b.log.Debug("creating Worker Role", "taskID", task.Id)
-		err = resources.CreateRole(task, config, b.client, b.log)
+		err = resources.CreateRole(ctx, task, config, b.client, b.log)
 		if err != nil {
 			return fmt.Errorf("creating Worker Role: %v", err)
 		}
@@ -256,7 +256,7 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 	if config.Kubernetes.RoleBindingTemplate != "" {
 		// Create RoleBinding
 		b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-		err = resources.CreateRoleBinding(task, config, b.client, b.log)
+		err = resources.CreateRoleBinding(ctx, task, config, b.client, b.log)
 		if err != nil {
 			return fmt.Errorf("creating Worker RoleBinding: %v", err)
 		}

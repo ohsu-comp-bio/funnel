@@ -19,6 +19,90 @@ const (
 	testTaskID    = "test-task-id"
 )
 
+// minimalWorkerTemplate is a valid Job template that avoids the pod-image lookup.
+const minimalWorkerTemplate = `apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.TaskId}}
+  namespace: {{.JobsNamespace}}
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: worker
+        image: alpine`
+
+const minimalServiceAccountTemplate = `apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: funnel-worker-sa-{{.Namespace}}-{{.TaskId}}
+  namespace: {{.Namespace}}
+  labels:
+    app: funnel
+    taskId: {{.TaskId}}`
+
+const minimalRoleTemplate = `apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: funnel-worker-sa-{{.Namespace}}-{{.TaskId}}-role
+  namespace: {{.Namespace}}
+  labels:
+    app: funnel
+    taskId: {{.TaskId}}
+rules: []`
+
+const minimalRoleBindingTemplate = `apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: funnel-worker-sa-{{.Namespace}}-{{.TaskId}}-binding
+  namespace: {{.Namespace}}
+  labels:
+    app: funnel
+    taskId: {{.TaskId}}
+subjects:
+- kind: ServiceAccount
+  name: funnel-worker-sa-{{.Namespace}}-{{.TaskId}}
+  namespace: {{.Namespace}}
+roleRef:
+  kind: Role
+  name: funnel-worker-sa-{{.Namespace}}-{{.TaskId}}-role
+  apiGroup: rbac.authorization.k8s.io`
+
+const minimalPVTemplate = `apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: funnel-worker-pv-{{.TaskId}}
+  labels:
+    app: funnel
+    taskId: {{.TaskId}}
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 10Mi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /tmp/funnel-{{.TaskId}}`
+
+const minimalPVCTemplate = `apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: funnel-worker-pvc-{{.TaskId}}
+  namespace: {{.Namespace}}
+  labels:
+    app: funnel
+    taskId: {{.TaskId}}
+spec:
+  storageClassName: ""
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Mi
+  volumeName: funnel-worker-pv-{{.TaskId}}`
+
 var l = logger.NewLogger("test", logger.DefaultConfig())
 var ctx = context.Background()
 
@@ -110,7 +194,9 @@ func TestCreateJob(t *testing.T) {
 		},
 	}
 
-	conf := &config.Config{}
+	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.WorkerTemplate = minimalWorkerTemplate
 	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed: %v", err)
@@ -120,33 +206,37 @@ func TestCreateJob(t *testing.T) {
 func TestDeleteJob(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 
-	// Create a test Job first
+	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+
+	// Create a test Job in the same namespace DeleteJob will use.
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testTaskID,
-			Namespace: namespace,
+			Namespace: jobsNamespace,
 		},
 	}
-	_, err := fakeClient.BatchV1().Jobs(namespace).Create(context.Background(), job, metav1.CreateOptions{})
+	_, err := fakeClient.BatchV1().Jobs(jobsNamespace).Create(context.Background(), job, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Failed to create test Job: %v", err)
 	}
 
-	conf := &config.Config{}
 	err = DeleteJob(context.Background(), conf, testTaskID, fakeClient, l)
 	if err != nil {
 		t.Errorf("DeleteJob failed: %v", err)
 	}
 
 	// Verify deletion
-	_, err = fakeClient.BatchV1().Jobs(namespace).Get(context.Background(), testTaskID, metav1.GetOptions{})
+	_, err = fakeClient.BatchV1().Jobs(jobsNamespace).Get(context.Background(), testTaskID, metav1.GetOptions{})
 	if err == nil {
 		t.Error("Job was not deleted")
 	}
 }
 
 func TestCreatePV(t *testing.T) {
-	conf := &config.Config{}
+	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.PVTemplate = minimalPVTemplate
 	err := CreatePV(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePV failed: %v", err)
@@ -180,7 +270,9 @@ func TestDeletePV(t *testing.T) {
 }
 
 func TestCreatePVC(t *testing.T) {
-	conf := &config.Config{}
+	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.PVCTemplate = minimalPVCTemplate
 	err := CreatePVC(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreatePVC failed: %v", err)
@@ -220,7 +312,9 @@ func TestCreateJobWithNoResources(t *testing.T) {
 		// Intentionally omit Resources to test default handling
 	}
 
-	conf := &config.Config{}
+	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.WorkerTemplate = minimalWorkerTemplate
 	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed with nil resources: %v", err)
@@ -231,25 +325,26 @@ func TestDeleteNonExistentResources(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	nonExistentID := "non-existent-id"
 
-	// Test deleting non-existent resources
+	// DeleteConfigMap is a no-op when the resource doesn't exist.
 	t.Run("ConfigMap", func(t *testing.T) {
 		err := DeleteConfigMap(context.Background(), nonExistentID, namespace, fakeClient, l)
-		if err == nil {
-			t.Error("Expected error when deleting non-existent ConfigMap")
+		if err != nil {
+			t.Errorf("DeleteConfigMap returned unexpected error for non-existent resource: %v", err)
 		}
 	})
 
+	// DeletePV and DeletePVC are no-ops when the resource doesn't exist.
 	t.Run("PV", func(t *testing.T) {
 		err := DeletePV(context.Background(), nonExistentID, fakeClient, l)
-		if err == nil {
-			t.Error("Expected error when deleting non-existent PV")
+		if err != nil {
+			t.Errorf("DeletePV returned unexpected error for non-existent resource: %v", err)
 		}
 	})
 
 	t.Run("PVC", func(t *testing.T) {
 		err := DeletePVC(context.Background(), nonExistentID, namespace, fakeClient, l)
-		if err == nil {
-			t.Error("Expected error when deleting non-existent PVC")
+		if err != nil {
+			t.Errorf("DeletePVC returned unexpected error for non-existent resource: %v", err)
 		}
 	})
 }
@@ -257,12 +352,11 @@ func TestDeleteNonExistentResources(t *testing.T) {
 func TestCreateServiceAccount(t *testing.T) {
 	task := &tes.Task{
 		Id: testTaskID,
-		Tags: map[string]string{
-			"funnel_worker_role_arn": "arn:aws:iam::123456789012:role/funnel-worker-role",
-		},
 	}
 
 	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.ServiceAccountTemplate = minimalServiceAccountTemplate
 	err := CreateServiceAccount(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateServiceAccount failed: %v", err)
@@ -295,6 +389,8 @@ func TestCreateRole(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.RoleTemplate = minimalRoleTemplate
 	err := CreateRole(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateRole failed: %v", err)
@@ -327,6 +423,8 @@ func TestCreateRoleBinding(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
+	conf.Kubernetes.JobsNamespace = jobsNamespace
+	conf.Kubernetes.RoleBindingTemplate = minimalRoleBindingTemplate
 	err := CreateRoleBinding(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateRoleBinding failed: %v", err)

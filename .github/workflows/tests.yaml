@@ -22,16 +22,16 @@ jobs:
           go-version-file: go.mod
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v6
         with:
           version: latest
           # Matches the "primary" golangci-lint command in the Makefile
           args: |
               --timeout 3m --disable-all --enable=govet --enable=gofmt --enable=goimports --enable=misspell \
-              --skip-dirs "vendor" \
-              --skip-dirs "webdash" \
-              --skip-dirs "cmd/webdash" \
-              --skip-dirs "funnel-work-dir" \
+              --exclude-dirs "vendor" \
+              --exclude-dirs "webdash" \
+              --exclude-dirs "cmd/webdash" \
+              --exclude-dirs "funnel-work-dir" \
               -e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
               ./...
 

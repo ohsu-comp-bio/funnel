@@ -7,12 +7,22 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
+
+// noopEventWriter implements events.Writer for testing.
+type noopEventWriter struct{}
+
+func (n *noopEventWriter) WriteEvent(ctx context.Context, ev *events.Event) error {
+	return nil
+}
+
+func (n *noopEventWriter) Close() {}
 
 func TestTaskSubmission(t *testing.T) {
 	// Create a fake Kubernetes client
@@ -46,7 +56,7 @@ spec:
 
 	backend := &Backend{
 		client:   fakeClient,
-		event:    nil,
+		event:    &noopEventWriter{},
 		database: nil,
 		log:      log,
 		conf:     conf, // Funnel configuration

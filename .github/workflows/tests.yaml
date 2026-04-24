@@ -26,15 +26,16 @@ jobs:
         with:
           # https://github.com/golangci/golangci-lint/releases/tag/v2.11.4
           version: v2.11.4
-          args: |
-              golangci-lint run \
-              --timeout 3m --disable-all --enable=govet --enable=gofmt --enable=goimports --enable=misspell \
-              --exclude-dirs "vendor" \
-              --exclude-dirs "webdash" \
-              --exclude-dirs "cmd/webdash" \
-              --exclude-dirs "funnel-work-dir" \
-              -e '.*bundle.go' -e ".*pb.go" -e ".*pb.gw.go" \
-              ./...
+          args: >-
+              --timeout 3m
+              --enable-only=govet,gofmt,goimports,misspell
+              --exclude-dirs=vendor
+              --exclude-dirs=webdash
+              --exclude-dirs=cmd/webdash
+              --exclude-dirs=funnel-work-dir
+              --exclude=.*bundle.go
+              --exclude=.*pb.go
+              --exclude=.*pb.gw.go
 
   # unitTest:
   #   runs-on: ubuntu-latest

@@ -102,7 +102,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
 
-		// TODO: Test that plugin reponse is being correctly set in taskConfig after this merge
+		// TODO: Test that plugin response is being correctly set in taskConfig after this merge
 		err := mergo.Merge(taskConfig, resp.Config, mergo.WithOverride)
 		if err != nil {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
@@ -198,61 +198,43 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 	// blocks below (ConfigMap, ServiceAccount, Role, RoleBinding, Job).
 	var err error
 
-	// Create a per-task ConfigMap only when ConfigMapTemplate is configured.
-	// Most deployments mount the static funnel-config ConfigMap (shared across
-	// all tasks) via the WorkerTemplate volume spec — they do not need a
-	// per-task copy and should leave ConfigMapTemplate empty.
-	// A per-task ConfigMap is only required when the job template references
-	// {{.TaskId}}-suffixed ConfigMap names (e.g. funnel-worker-config-{{.TaskId}}),
-	// such as the upstream S3 CSI setup that injects per-task worker config.
-	// Skipping creation when unconfigured avoids unnecessary etcd writes,
-	// redundant duplication of the full config (including secrets) once per
-	// task, and eliminates the need for configmaps RBAC on clusters that use
-	// the static shared ConfigMap approach.
-	if config.Kubernetes.ConfigMapTemplate != "" {
-		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-		err = resources.CreateConfigMap(ctx, task.Id, config, b.client, b.log)
-		if err != nil {
-			b.log.Error("creating Worker ConfigMap", "error", err)
-			return fmt.Errorf("creating Worker ConfigMap: %v", err)
-		}
-	}
-
-	// Create ServiceAccount, Role, and RoleBinding only if templates are configured.
-	// These are optional — useful for per-task cloud credentials (e.g. OVH),
-	// but not needed when workers already run under a shared ServiceAccount (e.g. AWS IRSA).
 	if config.Kubernetes.ServiceAccountTemplate != "" {
 		saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
 		if _, exists := task.Tags["_WORKER_SA"]; exists {
 			saName = task.Tags["_WORKER_SA"]
 		}
 
-		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
+		// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
+		// e.g. network issues, permission issues, etc.
+		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
 		if err != nil {
-			// ServiceAccount does not exist, create it
+			b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
 			b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-			err = resources.CreateServiceAccount(ctx, task, config, b.client, b.log)
+			err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log)
 			if err != nil {
-				return fmt.Errorf("creating Worker ServiceAccount: %v", err)
+				_ = b.Cancel(context.Background(), task.Id)
+				return fmt.Errorf("creating Worker ServiceAccount: %w", err)
 			}
+		} else {
+			b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
 		}
 	}
 
 	if config.Kubernetes.RoleTemplate != "" {
-		// Create Role
 		b.log.Debug("creating Worker Role", "taskID", task.Id)
-		err = resources.CreateRole(ctx, task, config, b.client, b.log)
+		err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log)
 		if err != nil {
-			return fmt.Errorf("creating Worker Role: %v", err)
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker Role: %w", err)
 		}
 	}
 
 	if config.Kubernetes.RoleBindingTemplate != "" {
-		// Create RoleBinding
 		b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-		err = resources.CreateRoleBinding(ctx, task, config, b.client, b.log)
+		err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log)
 		if err != nil {
-			return fmt.Errorf("creating Worker RoleBinding: %v", err)
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker RoleBinding: %w", err)
 		}
 	}
 

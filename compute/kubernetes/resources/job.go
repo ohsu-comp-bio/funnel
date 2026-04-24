@@ -51,6 +51,11 @@ func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client 
 		return fmt.Errorf("failed to list pods: %v", err)
 	}
 
+	var image string
+	if len(pods.Items) > 0 && len(pods.Items[0].Spec.Containers) > 0 {
+		image = pods.Items[0].Spec.Containers[0].Image
+	}
+
 	res := task.GetResources()
 	if res == nil {
 		res = &tes.Resources{}
@@ -75,8 +80,7 @@ func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client 
 		"Cpus":               res.GetCpuCores(),
 		"RamGb":              res.GetRamGb(),
 		"DiskGb":             res.GetDiskGb(),
-		"BackoffLimit":       backoffLimit,
-		"Image":              pods.Items[0].Spec.Containers[0].Image,
+		"Image":              image,
 		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0,
 		"NodeSelector":       conf.Kubernetes.NodeSelector,
 		"Tolerations":        conf.Kubernetes.Tolerations,

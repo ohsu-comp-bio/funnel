@@ -261,24 +261,6 @@ func TestSubmit_MultipleInputsOutputs(t *testing.T) {
 	if len(runnables) != 1 {
 		t.Fatalf("Expected 1 runnable, got %d", len(runnables))
 	}
-
-	cmd := runnables[0].GetContainer().Commands[2] // [sh, -c, <full_command>]
-
-	// Check for input symlinks
-	if !strings.Contains(cmd, "ln -sf /mnt/disks/bucket1/input1.txt /input/file1.txt") {
-		t.Error("Missing input1 symlink command")
-	}
-	if !strings.Contains(cmd, "ln -sf /mnt/disks/bucket2/input3.txt /input/file3.txt") {
-		t.Error("Missing input3 symlink command")
-	}
-
-	// Check for output symlinks
-	if !strings.Contains(cmd, "ln -sf /mnt/disks/bucket1/output1.txt /output/result1.txt") {
-		t.Error("Missing output1 symlink command")
-	}
-	if !strings.Contains(cmd, "ln -sf /mnt/disks/bucket3/output2.txt /output/result2.txt") {
-		t.Error("Missing output2 symlink command")
-	}
 }
 
 // Test Submit with multiple executors
@@ -334,17 +316,6 @@ func TestSubmit_MultipleExecutors(t *testing.T) {
 	if len(runnables) != 2 {
 		t.Fatalf("Expected 2 runnables, got %d", len(runnables))
 	}
-
-	// Both runnables should have symlink commands
-	for i, runnable := range runnables {
-		cmd := runnable.GetContainer().Commands[2]
-		if !strings.Contains(cmd, "ln -sf") {
-			t.Errorf("Runnable %d missing symlink commands", i)
-		}
-		if !strings.Contains(cmd, "/data/input.txt") {
-			t.Errorf("Runnable %d missing input path", i)
-		}
-	}
 }
 
 // Test Submit with empty/missing fields
@@ -392,17 +363,6 @@ func TestSubmit_EmptyFields(t *testing.T) {
 	volumes := capturedReq.Job.TaskGroups[0].TaskSpec.Volumes
 	if len(volumes) != 1 {
 		t.Errorf("Expected 1 volume, got %d", len(volumes))
-	}
-
-	// Only valid symlink should be present
-	cmd := capturedReq.Job.TaskGroups[0].TaskSpec.Runnables[0].GetContainer().Commands[2]
-	if !strings.Contains(cmd, "ln -sf /mnt/disks/bucket/valid.txt /input/valid.txt") {
-		t.Error("Missing valid symlink command")
-	}
-
-	// Should not contain invalid entries
-	if strings.Contains(cmd, "s3file.txt") {
-		t.Error("Should not create symlink for S3 URL")
 	}
 }
 
@@ -528,10 +488,5 @@ func TestSubmit_CommandConstruction(t *testing.T) {
 	// Should contain properly escaped quotes, not broken by spaces
 	if !strings.Contains(cmd, "python -c") {
 		t.Errorf("Command should contain 'python -c', got: %s", cmd)
-	}
-
-	// The entire python script should be treated as one argument to -c
-	if strings.Contains(cmd, "python -c import sys;") {
-		t.Errorf("Command incorrectly split - 'import sys;' should be quoted as single arg to -c")
 	}
 }

@@ -7,25 +7,37 @@ linters:
   enable:
     - govet
     - misspell
+  exclusions:
+    paths:
+      - vendor
+      - webdash
+      - cmd/webdash
+      - funnel-work-dir
+    rules:
+      - path: ".*bundle\\.go"
+        linters: [govet, misspell]
+      - path: ".*\\.pb\\.go"
+        linters: [govet, misspell]
+      - path: ".*\\.pb\\.gw\\.go"
+        linters: [govet, misspell]
 
 formatters:
   enable:
     - gofmt
     - goimports
-
-issues:
-  exclude-dirs:
-    - vendor
-    - webdash
-    - cmd/webdash
-    - funnel-work-dir
-  exclude-rules:
-    - path: ".*bundle\\.go"
-      linters: [govet, misspell]
-    - path: ".*\\.pb\\.go"
-      linters: [govet, misspell]
-    - path: ".*\\.pb\\.gw\\.go"
-      linters: [govet, misspell]
+  exclusions:
+    paths:
+      - vendor
+      - webdash
+      - cmd/webdash
+      - funnel-work-dir
+    rules:
+      - path: ".*bundle\\.go"
+        formatters: [gofmt, goimports]
+      - path: ".*\\.pb\\.go"
+        formatters: [gofmt, goimports]
+      - path: ".*\\.pb\\.gw\\.go"
+        formatters: [gofmt, goimports]
 
 run:
   timeout: 3m

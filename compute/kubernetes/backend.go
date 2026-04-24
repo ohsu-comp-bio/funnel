@@ -198,6 +198,15 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 	// blocks below (ConfigMap, ServiceAccount, Role, RoleBinding, Job).
 	var err error
 
+	if config.Kubernetes.ConfigMapTemplate != "" {
+		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+		err = resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log)
+		if err != nil {
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker ConfigMap: %w", err)
+		}
+	}
+
 	if config.Kubernetes.ServiceAccountTemplate != "" {
 		saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
 		if _, exists := task.Tags["_WORKER_SA"]; exists {

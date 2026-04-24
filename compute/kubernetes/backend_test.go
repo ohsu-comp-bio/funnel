@@ -52,6 +52,14 @@ spec:
             memory: "{{.RamGb}}Gi"
             ephemeral-storage: "{{.DiskGb}}Gi"
 `
+	conf.Kubernetes.ConfigMapTemplate = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-worker-config-{{.TaskId}}
+  namespace: {{.Namespace}}
+data:
+  config.yaml: "placeholder"
+`
 
 	// Create a logger
 	log := logger.NewLogger("test", logger.DefaultConfig())

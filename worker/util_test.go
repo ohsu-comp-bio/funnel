@@ -7,9 +7,10 @@ import (
 
 func TestGetExitCode(t *testing.T) {
 	tests := []struct {
-		name     string
-		err      error
-		expected int
+		name      string
+		err       error
+		expected  int
+		expectErr bool
 	}{
 		{
 			name:     "nil error returns 0",
@@ -17,24 +18,25 @@ func TestGetExitCode(t *testing.T) {
 			expected: 0,
 		},
 		{
-			name:     "generic error returns -999",
-			err:      fmt.Errorf("some generic error"),
-			expected: -999,
+			name:      "generic error returns 1",
+			err:       fmt.Errorf("some generic error"),
+			expected:  1,
+			expectErr: true,
 		},
 		{
 			name:     "kubernetes error with exit code 127",
-			err:      fmt.Errorf("executor job test-123-0 failed with exit code 127 (Error): command not found"),
+			err:      &K8sExecutorErr{ExitCode: 127, Reason: "Error", Message: "command not found", JobName: "test-123-0"},
 			expected: 127,
 		},
 		{
 			name:     "kubernetes error with exit code 1",
-			err:      fmt.Errorf("executor job test-123-0 failed with exit code 1 (Error): permission denied"),
+			err:      &K8sExecutorErr{ExitCode: 1, Reason: "Error", Message: "permission denied", JobName: "test-123-0"},
 			expected: 1,
 		},
 		{
 			name:     "kubernetes error without exit code",
-			err:      fmt.Errorf("executor job test-123-0 failed with some other message"),
-			expected: -999,
+			err:      &K8sExecutorErr{ExitCode: 0, Reason: "Error", Message: "some other message", JobName: "test-123-0"},
+			expected: 0,
 		},
 	}
 
@@ -42,7 +44,10 @@ func TestGetExitCode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := getExitCode(tt.err)
 
-			if err != nil {
+			if tt.expectErr && err == nil {
+				t.Errorf("getExitCode() expected an error but got nil")
+			}
+			if !tt.expectErr && err != nil {
 				t.Errorf("getExitCode() returned unexpected error: %v", err)
 			}
 

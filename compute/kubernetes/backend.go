@@ -102,7 +102,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
 
-		// TODO: Test that plugin reponse is being correctly set in taskConfig after this merge
+		// TODO: Test that plugin response is being correctly set in taskConfig after this merge
 		err := mergo.Merge(taskConfig, resp.Config, mergo.WithOverride)
 		if err != nil {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
@@ -209,46 +209,44 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		return fmt.Errorf("creating Worker ConfigMap: %w", err)
 	}
 
-	// Create ServiceAccount:
-	// - This should only be created if no such ServiceAccount with the same name exists
-	// - ServiceAccount will still always need to be added to Worker Job and Executor
-	saName := "funnel-worker-sa-%s-%s"
-	saName = fmt.Sprintf(saName, config.Kubernetes.JobsNamespace, task.Id)
-	if _, exists := task.Tags["_WORKER_SA"]; exists {
-		saName = task.Tags["_WORKER_SA"]
+	if config.Kubernetes.ServiceAccountTemplate != "" {
+		saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
+		if _, exists := task.Tags["_WORKER_SA"]; exists {
+			saName = task.Tags["_WORKER_SA"]
+		}
+
+		// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
+		// e.g. network issues, permission issues, etc.
+		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
+		if err != nil {
+			b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
+			b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
+			err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log)
+			if err != nil {
+				_ = b.Cancel(context.Background(), task.Id)
+				return fmt.Errorf("creating Worker ServiceAccount: %w", err)
+			}
+		} else {
+			b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
+		}
 	}
 
-	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
-	// e.g. network issues, permission issues, etc.
-	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
-
-	// ServiceAccount does not exist, create it
-	if err != nil {
-		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
-		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-		err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log)
+	if config.Kubernetes.RoleTemplate != "" {
+		b.log.Debug("creating Worker Role", "taskID", task.Id)
+		err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log)
 		if err != nil {
 			_ = b.Cancel(context.Background(), task.Id)
-			return fmt.Errorf("creating Worker ServiceAccount: %w", err)
+			return fmt.Errorf("creating Worker Role: %w", err)
 		}
-	} else {
-		b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
 	}
 
-	// Create Role
-	b.log.Debug("creating Worker Role", "taskID", task.Id)
-	err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker Role: %w", err)
-	}
-
-	// Create RoleBinding
-	b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-	err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker RoleBinding: %w", err)
+	if config.Kubernetes.RoleBindingTemplate != "" {
+		b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
+		err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log)
+		if err != nil {
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker RoleBinding: %w", err)
+		}
 	}
 
 	// Create Worker Job

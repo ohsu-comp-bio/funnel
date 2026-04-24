@@ -57,7 +57,7 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Conf
 
 	sa, ok := obj.(*corev1.ServiceAccount)
 	if !ok {
-		return fmt.Errorf("failed to decode ServiceAccount spec")
+		return fmt.Errorf("failed to cast to ServiceAccount spec")
 	}
 
 	_, err = client.CoreV1().ServiceAccounts(conf.Kubernetes.JobsNamespace).Create(ctx, sa, metav1.CreateOptions{})

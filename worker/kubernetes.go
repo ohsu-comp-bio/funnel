@@ -38,7 +38,6 @@ type KubernetesCommand struct {
 	Command
 }
 
-
 type K8sExecutorErr struct {
 	ExitCode int
 	Reason   string
@@ -340,9 +339,8 @@ func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod
 			}
 
 			if event.Object == nil { // no pod; watcher times out
-				msg := "received nil pod object from watcher"
-				logger.Debug(msg)
-				return nil, fmt.Errorf(msg)
+				logger.Debug("received nil pod object from watcher")
+				return nil, fmt.Errorf("received nil pod object from watcher")
 			}
 
 			pod, ok := event.Object.(*corev1.Pod)
@@ -366,18 +364,16 @@ func waitForPodFinish(ctx context.Context, watcher watch.Interface) (*corev1.Pod
 
 			// Handle pod deletion
 			if event.Type == watch.Deleted {
-				msg := "pod was deleted before container terminated"
-				logger.Debug(msg)
-				return nil, fmt.Errorf(msg)
+				logger.Debug("pod was deleted before container terminated")
+				return nil, fmt.Errorf("pod was deleted before container terminated")
 			}
 
 		case <-appearanceTimer.C:
 			return nil, fmt.Errorf("timed out waiting for pod to appear")
 
 		case <-ctx.Done():
-			msg := "context cancelled while waiting for pod termination"
-			logger.Debug(msg)
-			return nil, fmt.Errorf(msg)
+			logger.Debug("context cancelled while waiting for pod termination")
+			return nil, fmt.Errorf("context cancelled while waiting for pod termination")
 		}
 	}
 }

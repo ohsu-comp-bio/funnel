@@ -93,7 +93,7 @@ func (b *Backend) Close() {
 }
 
 // Example storage interface
-func (b *Backend) NewStorage(conf config.Config) (*storage.GoogleCloud, error) {
+func (b *Backend) NewStorage(conf *config.Config) (*storage.GoogleCloud, error) {
 	gs, nerr := storage.NewGoogleCloud(conf.GoogleStorage)
 	if nerr != nil {
 		return nil, fmt.Errorf("failed to configure Google Storage backend: %s", nerr)

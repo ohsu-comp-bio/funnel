@@ -60,7 +60,7 @@ func isDir(ctx context.Context, minioClient *minio.Client, bucketName, objectNam
 	// List objects with the prefix to see if there are multiple keys with the given prefix
 	// Recursively list all objects
 	recursive := true
-	for object := range minioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{Recursive: recursive}) {
+	for object := range minioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{Prefix: objectName, Recursive: recursive}) {
 		if object.Err != nil {
 			return false, object.Err
 		}
@@ -171,8 +171,11 @@ func (s3 *GenericS3) Get(ctx context.Context, url, path string) (*Object, error)
 		}
 
 		for _, obj := range objects {
-			// Recursively download files and subdirectories
-			_, err := s3.Get(ctx, obj.URL, filepath.Join(path, obj.Name))
+			relPath, err := filepath.Rel(u.path, obj.Name)
+			if err != nil {
+				return nil, fmt.Errorf("genericS3: computing relative path for %s: %v", obj.Name, err)
+			}
+			err = download(ctx, s3.client, u.bucket, obj.Name, filepath.Join(path, relPath), s3.kmskeyId)
 			if err != nil {
 				return nil, err
 			}
@@ -210,6 +213,12 @@ func download(ctx context.Context, client *minio.Client, bucket, objectPath, fil
 
 	// Step 2: Create the local file (overwrite if exists)
 	logger.Debug("genericS3: creating local file", "filePath", filePath)
+	dir := filepath.Dir(filePath)
+	err = os.MkdirAll(dir, 0755)
+	if err != nil {
+		return fmt.Errorf("failed creating directories: %w", err)
+	}
+
 	outFile, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed creating file: %w", err)

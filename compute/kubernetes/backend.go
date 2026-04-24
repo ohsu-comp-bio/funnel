@@ -102,7 +102,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
 
-		// TODO: Test that plugin reponse is being correctly set in taskConfig after this merge
+		// TODO: Test that plugin response is being correctly set in taskConfig after this merge
 		err := mergo.Merge(taskConfig, resp.Config, mergo.WithOverride)
 		if err != nil {
 			return fmt.Errorf("Failed to merge plugin config %v", err)

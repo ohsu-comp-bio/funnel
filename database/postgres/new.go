@@ -17,7 +17,7 @@ import (
 type Postgres struct {
 	scheduler.UnimplementedSchedulerServiceServer
 	client *pgxpool.Pool
-	conf   config.Postgres
+	conf   *config.Postgres
 	active bool
 }
 
@@ -25,13 +25,13 @@ func NewPostgres(conf *config.Postgres) (*Postgres, error) {
 	ctx := context.Background()
 
 	// Initialize the connection pool
-	pool, err := pgxpool.New(ctx, getConnStr(*conf))
+	pool, err := pgxpool.New(ctx, getConnStr(conf))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Postgres{
-		conf:   *conf,
+		conf:   conf,
 		active: true,
 		client: pool,
 	}, nil
@@ -56,29 +56,24 @@ func (db *Postgres) Init() error {
 
 func (db *Postgres) context() (context.Context, context.CancelFunc) {
 	// Use a timeout from the configuration
-	return context.WithTimeout(context.Background(), db.conf.Timeout.GetDuration().AsDuration())
+	return context.WithTimeout(context.Background(), db.conf.GetTimeout().GetDuration().AsDuration())
 }
 
-func getConnStr(conf config.Postgres) string {
-	u := url.UserPassword(conf.User, conf.Password)
-
+func buildConnStr(host, user, password, database string) string {
 	connURL := url.URL{
 		Scheme: "postgres",
-		User:   u,
-		Host:   conf.Host,
-		Path:   conf.Database,
+		User:   url.UserPassword(user, password),
+		Host:   host,
+		Path:   database,
 	}
-
 	return connURL.String()
 }
 
-func getAdminConnStr(conf config.Postgres) string {
-	conf.User = conf.AdminUser
-	conf.Password = conf.AdminPassword
-	return getConnStr(conf)
+func getConnStr(conf *config.Postgres) string {
+	return buildConnStr(conf.Host, conf.User, conf.Password, conf.Database)
 }
 
-func ensureDatabaseExists(ctx context.Context, conf config.Postgres) error {
+func ensureDatabaseExists(ctx context.Context, conf *config.Postgres) error {
 	// First check that we even need to connect as an "admin" in order to create the Funnel Role + DB
 	connStr := getConnStr(conf)
 	probeConn, err := pgx.Connect(ctx, connStr)
@@ -104,15 +99,8 @@ func ensureDatabaseExists(ctx context.Context, conf config.Postgres) error {
 	return createResources(ctx, conf)
 }
 
-func createResources(ctx context.Context, conf config.Postgres) error {
-	adminConf := config.Postgres{
-		Host:     conf.Host,
-		User:     conf.AdminUser,
-		Password: conf.AdminPassword,
-		Database: "postgres",
-	}
-
-	connStr := getConnStr(adminConf)
+func createResources(ctx context.Context, conf *config.Postgres) error {
+	connStr := buildConnStr(conf.Host, conf.AdminUser, conf.AdminPassword, "postgres")
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
 		return fmt.Errorf("failed to connect as admin for bootstrap: %w", err)
@@ -140,8 +128,7 @@ func createResources(ctx context.Context, conf config.Postgres) error {
 	}
 
 	// Now reconnect to the funnel database to grant schema permissions
-	adminConf.Database = conf.Database // Now connect to funnel DB
-	funnelConnStr := getConnStr(adminConf)
+	funnelConnStr := buildConnStr(conf.Host, conf.AdminUser, conf.AdminPassword, conf.Database)
 	funnelConn, err := pgx.Connect(ctx, funnelConnStr)
 	if err != nil {
 		return fmt.Errorf("failed to connect to funnel database: %w", err)

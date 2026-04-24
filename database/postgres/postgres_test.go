@@ -67,7 +67,7 @@ func getTestPostgres(t *testing.T) (*Postgres, testcontainers.Container) {
 		},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	postgresContainer, err := postgres.Run(ctx,

@@ -176,12 +176,6 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0 {
 		b.log.Debug("creating Worker PV", "taskID", task.Id)
 
-		// Check to make sure required configs are present
-		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
-			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
-			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
-		}
-
 		// Create PV
 		err := resources.CreatePV(timeoutCtx, task.Id,
 			config,
@@ -200,52 +194,65 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		}
 	}
 
-	// Create ConfigMap
-	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err := resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		b.log.Debug("creating Worker ConfigMap", "error", err)
-		return fmt.Errorf("creating Worker ConfigMap: %w", err)
+	// err is declared here for use across all conditional resource-creation
+	// blocks below (ConfigMap, ServiceAccount, Role, RoleBinding, Job).
+	var err error
+
+	// Create a per-task ConfigMap only when ConfigMapTemplate is configured.
+	// Most deployments mount the static funnel-config ConfigMap (shared across
+	// all tasks) via the WorkerTemplate volume spec — they do not need a
+	// per-task copy and should leave ConfigMapTemplate empty.
+	// A per-task ConfigMap is only required when the job template references
+	// {{.TaskId}}-suffixed ConfigMap names (e.g. funnel-worker-config-{{.TaskId}}),
+	// such as the upstream S3 CSI setup that injects per-task worker config.
+	// Skipping creation when unconfigured avoids unnecessary etcd writes,
+	// redundant duplication of the full config (including secrets) once per
+	// task, and eliminates the need for configmaps RBAC on clusters that use
+	// the static shared ConfigMap approach.
+	if config.Kubernetes.ConfigMapTemplate != "" {
+		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+		err = resources.CreateConfigMap(ctx, task.Id, config, b.client, b.log)
+		if err != nil {
+			b.log.Error("creating Worker ConfigMap", "error", err)
+			return fmt.Errorf("creating Worker ConfigMap: %v", err)
+		}
 	}
 
+	// Create ServiceAccount, Role, and RoleBinding only if templates are configured.
+	// These are optional — useful for per-task cloud credentials (e.g. OVH),
+	// but not needed when workers already run under a shared ServiceAccount (e.g. AWS IRSA).
 	if config.Kubernetes.ServiceAccountTemplate != "" {
 		saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
 		if _, exists := task.Tags["_WORKER_SA"]; exists {
 			saName = task.Tags["_WORKER_SA"]
 		}
 
-		// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
-		// e.g. network issues, permission issues, etc.
-		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
+		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(context.Background(), saName, metav1.GetOptions{})
 		if err != nil {
-			b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
+			// ServiceAccount does not exist, create it
 			b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-			err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log)
+			err = resources.CreateServiceAccount(ctx, task, config, b.client, b.log)
 			if err != nil {
-				_ = b.Cancel(context.Background(), task.Id)
-				return fmt.Errorf("creating Worker ServiceAccount: %w", err)
+				return fmt.Errorf("creating Worker ServiceAccount: %v", err)
 			}
-		} else {
-			b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
 		}
 	}
 
 	if config.Kubernetes.RoleTemplate != "" {
+		// Create Role
 		b.log.Debug("creating Worker Role", "taskID", task.Id)
-		err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log)
+		err = resources.CreateRole(ctx, task, config, b.client, b.log)
 		if err != nil {
-			_ = b.Cancel(context.Background(), task.Id)
-			return fmt.Errorf("creating Worker Role: %w", err)
+			return fmt.Errorf("creating Worker Role: %v", err)
 		}
 	}
 
 	if config.Kubernetes.RoleBindingTemplate != "" {
+		// Create RoleBinding
 		b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-		err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log)
+		err = resources.CreateRoleBinding(ctx, task, config, b.client, b.log)
 		if err != nil {
-			_ = b.Cancel(context.Background(), task.Id)
-			return fmt.Errorf("creating Worker RoleBinding: %w", err)
+			return fmt.Errorf("creating Worker RoleBinding: %v", err)
 		}
 	}
 
@@ -279,18 +286,13 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker PVC", "error", err)
 	}
 
-	// Delete PV
-	err = resources.DeletePV(ctx, taskId, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker PV", "error", err)
-	}
-
-	// Delete ConfigMap
-	err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker ConfigMap", "error", err)
+	// Delete per-task ConfigMap only if ConfigMapTemplate was configured
+	if b.conf.Kubernetes.ConfigMapTemplate != "" {
+		err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			b.log.Error("deleting Worker ConfigMap", "error", err)
+		}
 	}
 
 	// Delete RoleBinding

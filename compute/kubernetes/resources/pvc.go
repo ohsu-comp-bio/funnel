@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
+	"text/template"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -27,12 +27,13 @@ func CreatePVC(ctx context.Context, taskId string, conf *config.Config, client k
 	}
 
 	// Template parameters
-	var s3Bucket, s3Region string
+	// GenericS3 is optional; only S3 CSI PVCTemplates reference these fields.
+	// Deployments using hostPath or other non-S3 PVCTemplates leave them empty.
+	s3Bucket, s3Region := "", ""
 	if len(conf.GenericS3) > 0 {
 		s3Bucket = conf.GenericS3[0].Bucket
 		s3Region = conf.GenericS3[0].Region
 	}
-
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
+	"regexp"
+	"strconv"
+	"text/template"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -15,6 +17,21 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 )
+
+// SanitizeLabelValue converts an arbitrary string into a valid Kubernetes label
+// value: replaces any character outside [A-Za-z0-9._-] with '-', strips
+// leading/trailing non-alphanumeric characters, and truncates to 63 chars.
+var labelInvalidChars = regexp.MustCompile(`[^A-Za-z0-9._-]`)
+var labelEdgeTrim = regexp.MustCompile(`^[^A-Za-z0-9]+|[^A-Za-z0-9]+$`)
+
+func SanitizeLabelValue(s string) string {
+	s = labelInvalidChars.ReplaceAllString(s, "-")
+	if len(s) > 63 {
+		s = s[:63]
+	}
+	s = labelEdgeTrim.ReplaceAllString(s, "")
+	return s
+}
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
@@ -44,14 +61,27 @@ func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client 
 		res = &tes.Resources{}
 	}
 
+	// Resolve BackoffLimit: prefer backend_parameters["backoff_limit"], else default 10.
+	backoffLimit := 10
+	if bp := res.GetBackendParameters(); bp != nil {
+		if v, ok := bp["backoff_limit"]; ok && v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+				backoffLimit = n
+			}
+		}
+	}
+
 	templateData := map[string]interface{}{
 		"TaskId":             task.Id,
+		"TaskName":           task.Name,
+		"TaskNameLabel":      SanitizeLabelValue(task.Name),
 		"Namespace":          conf.Kubernetes.Namespace,
 		"JobsNamespace":      conf.Kubernetes.JobsNamespace,
 		"Cpus":               res.GetCpuCores(),
 		"RamGb":              res.GetRamGb(),
 		"DiskGb":             res.GetDiskGb(),
-		"Image":              image,
+		"BackoffLimit":       backoffLimit,
+		"Image":              pods.Items[0].Spec.Containers[0].Image,
 		"NeedsPVC":           len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0,
 		"NodeSelector":       conf.Kubernetes.NodeSelector,
 		"Tolerations":        conf.Kubernetes.Tolerations,
@@ -79,6 +109,14 @@ func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client 
 	job, ok := obj.(*v1.Job)
 	if !ok {
 		return fmt.Errorf("failed to decode job spec")
+	}
+
+	// Ensure completed jobs are garbage-collected by the Kubernetes TTL Controller
+	// so that Succeeded/Failed pods don't accumulate on nodes and block Karpenter
+	// consolidation. Funnel's own reconciler only handles non-terminal tasks.
+	if job.Spec.TTLSecondsAfterFinished == nil {
+		var ttl int32 = 300
+		job.Spec.TTLSecondsAfterFinished = &ttl
 	}
 
 	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", conf.Kubernetes.JobsNamespace)

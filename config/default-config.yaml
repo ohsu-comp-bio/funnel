@@ -399,6 +399,23 @@ Kubernetes:
   PVTemplate: ""
   PVCTemplate: ""
 
+  # Per-task ConfigMap template (optional).
+  #
+  # When empty (the default), no per-task ConfigMap is created. The worker job
+  # is expected to mount a pre-existing static ConfigMap — typically the same
+  # "funnel-config" ConfigMap used by the Funnel server — via a volume in
+  # WorkerTemplate. This is the recommended approach for the vast majority of
+  # deployments: the config is identical for all tasks, so duplicating it once
+  # per task wastes etcd storage, leaks credentials (the full config including
+  # storage keys is serialized), and requires extra configmaps RBAC.
+  #
+  # Set ConfigMapTemplate to a ConfigMap YAML template when the WorkerTemplate
+  # references a per-task ConfigMap name (e.g. funnel-worker-config-{{.TaskId}}).
+  # Available template variables: {{.TaskId}}, {{.Namespace}}, {{.Config}}
+  # where {{.Config}} is the full funnel worker config serialized to YAML.
+  # See config/kubernetes/worker-configmap.yaml for a reference template.
+  ConfigMapTemplate: ""
+
   # Resource Requests/Limits for Executor Jobs
   Resources:
     Defaults:

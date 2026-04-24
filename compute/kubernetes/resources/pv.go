@@ -25,14 +25,13 @@ func CreatePV(ctx context.Context, taskId string, conf *config.Config, client ku
 	}
 
 	// Template parameters
-	// GenericS3 is optional; only S3 CSI PVTemplates reference these fields.
-	// Deployments using hostPath or other non-S3 PVTemplates leave them empty.
-	s3Bucket, s3Region, s3KmsKeyID := "", "", ""
+	var s3Bucket, s3Region, s3KmsKeyID string
 	if len(conf.GenericS3) > 0 {
 		s3Bucket = conf.GenericS3[0].Bucket
 		s3Region = conf.GenericS3[0].Region
 		s3KmsKeyID = conf.GenericS3[0].KmsKeyID
 	}
+
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,

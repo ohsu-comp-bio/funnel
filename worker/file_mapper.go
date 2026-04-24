@@ -22,7 +22,7 @@ import (
 // manage all these paths.
 type FileMapper struct {
 	Volumes      []Volume
-	InputVolumes []Volume  // tracks volumes added via AddInput; used by consolidateVolumes
+	InputVolumes []Volume // tracks volumes added via AddInput; used by consolidateVolumes
 	Inputs       []*tes.Input
 	Outputs      []*tes.Output
 	WorkDir      string

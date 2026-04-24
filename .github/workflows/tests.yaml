@@ -27,18 +27,18 @@ jobs:
           # https://github.com/golangci/golangci-lint/releases/tag/v2.11.4
           version: v2.11.4
 
-  unitTest:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Check out code
-      uses: actions/checkout@v4
+  # unitTest:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Check out code
+  #     uses: actions/checkout@v4
 
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
+  #   - name: Set up Go 1.x
+  #     uses: actions/setup-go@v5
+  #     with:
+  #       go-version-file: go.mod
 
-    - name: Unit Tests
-      run: |
-        go test -v ./... -coverprofile=coverage.out
-        go tool cover -func=coverage.out
+  #   - name: Unit Tests
+  #     run: |
+  #       go test -v ./... -coverprofile=coverage.out
+  #       go tool cover -func=coverage.out

@@ -31,13 +31,9 @@ formatters:
       - webdash
       - cmd/webdash
       - funnel-work-dir
-    rules:
-      - path: ".*bundle\\.go"
-        formatters: [gofmt, goimports]
-      - path: ".*\\.pb\\.go"
-        formatters: [gofmt, goimports]
-      - path: ".*\\.pb\\.gw\\.go"
-        formatters: [gofmt, goimports]
+      - ".*bundle\\.go"
+      - ".*\\.pb\\.go"
+      - ".*\\.pb\\.gw\\.go"
 
 run:
   timeout: 3m

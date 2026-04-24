@@ -38,8 +38,7 @@ func fakeClientWithFunnelPod(ns string) *fake.Clientset {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "funnel-server",
 			Namespace: ns,
-			Labels:    map[string]string{"app": "funnel"},
-		},
+			Labels:    map[string]string{"app": "funnel"}},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{Name: "funnel", Image: "ohsucompbio/funnel:latest"},
@@ -359,7 +358,7 @@ func TestCreateJob_DefaultTTLIsSet(t *testing.T) {
 		Resources: &tes.Resources{CpuCores: 1, RamGb: 1.0},
 	}
 
-	if err := resources.CreateJob(task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
+	if err := resources.CreateJob(context.Background(), task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
@@ -384,7 +383,7 @@ func TestCreateJob_ExistingTTLIsPreserved(t *testing.T) {
 		Resources: &tes.Resources{CpuCores: 1, RamGb: 1.0},
 	}
 
-	if err := resources.CreateJob(task, baseJobConfig(jobTemplateWithTTL), client, unitTestLog); err != nil {
+	if err := resources.CreateJob(context.Background(), task, baseJobConfig(jobTemplateWithTTL), client, unitTestLog); err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
@@ -409,7 +408,7 @@ func TestCreateJob_DefaultBackoffLimit(t *testing.T) {
 		Resources: &tes.Resources{CpuCores: 1},
 	}
 
-	if err := resources.CreateJob(task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
+	if err := resources.CreateJob(context.Background(), task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
@@ -437,7 +436,7 @@ func TestCreateJob_BackoffLimitFromBackendParameters(t *testing.T) {
 		},
 	}
 
-	if err := resources.CreateJob(task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
+	if err := resources.CreateJob(context.Background(), task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
@@ -464,7 +463,7 @@ func TestCreateJob_BackoffLimitInvalidValueFallsBackToDefault(t *testing.T) {
 		},
 	}
 
-	if err := resources.CreateJob(task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
+	if err := resources.CreateJob(context.Background(), task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
@@ -491,7 +490,7 @@ func TestCreateJob_NegativeBackoffLimitFallsBackToDefault(t *testing.T) {
 		},
 	}
 
-	if err := resources.CreateJob(task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
+	if err := resources.CreateJob(context.Background(), task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
@@ -517,7 +516,7 @@ func TestCreateJob_TaskNameLabelIsSanitized(t *testing.T) {
 		Resources: &tes.Resources{CpuCores: 1},
 	}
 
-	if err := resources.CreateJob(task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
+	if err := resources.CreateJob(context.Background(), task, baseJobConfig(jobTemplateNoTTL), client, unitTestLog); err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
@@ -556,7 +555,7 @@ func TestCreateConfigMap_WithValidTemplate(t *testing.T) {
 	conf.Kubernetes.ConfigMapTemplate = validConfigMapTemplate
 
 	client := fake.NewSimpleClientset()
-	if err := resources.CreateConfigMap(unitTestTaskID, conf, client, unitTestLog); err != nil {
+	if err := resources.CreateConfigMap(context.Background(), unitTestTaskID, conf, client, unitTestLog); err != nil {
 		t.Fatalf("CreateConfigMap: %v", err)
 	}
 
@@ -575,7 +574,7 @@ func TestCreateConfigMap_InvalidTemplateSyntax(t *testing.T) {
 	conf.Kubernetes.JobsNamespace = unitTestJobsNS
 	conf.Kubernetes.ConfigMapTemplate = `{{.Unclosed`
 
-	err := resources.CreateConfigMap(unitTestTaskID, conf, fake.NewSimpleClientset(), unitTestLog)
+	err := resources.CreateConfigMap(context.Background(), unitTestTaskID, conf, fake.NewSimpleClientset(), unitTestLog)
 	if err == nil {
 		t.Error("expected error for malformed template syntax; got nil")
 	}
@@ -595,7 +594,7 @@ spec:
   - name: c
     image: alpine
 `
-	err := resources.CreateConfigMap(unitTestTaskID, conf, fake.NewSimpleClientset(), unitTestLog)
+	err := resources.CreateConfigMap(context.Background(), unitTestTaskID, conf, fake.NewSimpleClientset(), unitTestLog)
 	if err == nil {
 		t.Error("expected error when template produces a non-ConfigMap object; got nil")
 	}
@@ -640,7 +639,7 @@ func TestCreatePV_WithoutGenericS3DoesNotPanic(t *testing.T) {
 	conf.Kubernetes.PVTemplate = pvTemplateHostPath
 
 	client := fake.NewSimpleClientset()
-	if err := resources.CreatePV(unitTestTaskID, conf, client, unitTestLog); err != nil {
+	if err := resources.CreatePV(context.Background(), unitTestTaskID, conf, client, unitTestLog); err != nil {
 		t.Fatalf("CreatePV without GenericS3: %v", err)
 	}
 
@@ -659,7 +658,7 @@ func TestCreatePV_WithGenericS3FieldsArePassed(t *testing.T) {
 	}
 
 	client := fake.NewSimpleClientset()
-	if err := resources.CreatePV(unitTestTaskID, conf, client, unitTestLog); err != nil {
+	if err := resources.CreatePV(context.Background(), unitTestTaskID, conf, client, unitTestLog); err != nil {
 		t.Fatalf("CreatePV with GenericS3: %v", err)
 	}
 
@@ -690,7 +689,7 @@ func TestCreatePVC_WithoutGenericS3DoesNotPanic(t *testing.T) {
 	conf.Kubernetes.PVCTemplate = pvcTemplateHostPath
 
 	client := fake.NewSimpleClientset()
-	if err := resources.CreatePVC(unitTestTaskID, conf, client, unitTestLog); err != nil {
+	if err := resources.CreatePVC(context.Background(), unitTestTaskID, conf, client, unitTestLog); err != nil {
 		t.Fatalf("CreatePVC without GenericS3: %v", err)
 	}
 

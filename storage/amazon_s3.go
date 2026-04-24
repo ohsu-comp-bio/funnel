@@ -24,8 +24,8 @@ const s3Protocol = "s3://"
 
 // AmazonS3 provides access to an S3 object store.
 type AmazonS3 struct {
-	sess                 *session.Session
-	endpoint             string
+	sess     *session.Session
+	endpoint string
 	// region is the pre-configured AWS/S3-compatible region.  When set together
 	// with endpoint (non-AWS deployments), GetBucketRegion is skipped and this
 	// value is used directly.

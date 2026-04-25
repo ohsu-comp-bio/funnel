@@ -35,15 +35,15 @@ jobs:
       fail-fast: false
       matrix:
         version: [1.1.0]
-        db: ["boltdb"]
+        db: ["boltdb", "postgres"]
         # Temporary: Only test local compute backend until we bring up a K8s cluster in Github Actions
         # compute: ["local", "kubernetes"]
         compute: ["local"]
-        storage: ["local"]
+        storage: ["local", "s3"]
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # Required to access the 'tests/mongo.config.yml' file
+      # Required to access the tests config files (e.g. tests/postgres.config.yml)
       # Perhaps uploading it as an artifact would be more efficient?
       - name: Check out code
         uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
@@ -56,9 +56,9 @@ jobs:
         run: |
           touch config.yml
 
-          if [ ${{ matrix.db }} = "mongodb" ]; then
-            make start-mongodb
-            cat `pwd`/tests/mongo.config.yml >> config.yml
+          if [ ${{ matrix.db }} = "postgres" ]; then
+            make start-postgres
+            cat `pwd`/tests/postgres.config.yml >> config.yml
           fi
 
           if [ ${{ matrix.storage }} = "s3" ]; then

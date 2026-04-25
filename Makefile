@@ -103,6 +103,17 @@ test-mongodb:
 	@go test ./tests/core/ --funnel-config `pwd`/tests/mongo.config.yml
 	@go test ./tests/scheduler/ --funnel-config `pwd`/tests/mongo.config.yml
 
+start-postgres:
+	@docker rm -f funnel-postgres-test > /dev/null 2>&1 || echo
+	@docker run -d --name funnel-postgres-test -p 5432:5432 \
+		-e POSTGRES_PASSWORD=postgres \
+		docker.io/postgres > /dev/null
+
+test-postgres:
+	@go version
+	@go test ./tests/core/ --funnel-config `pwd`/tests/postgres.config.yml
+	@go test ./tests/scheduler/ --funnel-config `pwd`/tests/postgres.config.yml
+
 test-badger:
 	@go version
 	@go test ./tests/core/ -funnel-config `pwd`/tests/badger.config.yml

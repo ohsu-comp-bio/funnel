@@ -1,14 +1,11 @@
 name: Integration Tests
 
 on:
-  pull_request:
-    branches:
-      - main
-      - master
   push:
     branches:
       - main
       - master
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

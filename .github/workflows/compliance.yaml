@@ -79,6 +79,9 @@ jobs:
           chmod +x funnel
           ./funnel server run --config `pwd`/config.yml &> funnel.logs &
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Wait for Funnel to be ready
         run: |
           for i in $(seq 1 30); do

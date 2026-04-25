@@ -39,7 +39,7 @@ jobs:
         # Temporary: Only test local compute backend until we bring up a K8s cluster in Github Actions
         # compute: ["local", "kubernetes"]
         compute: ["local"]
-        storage: ["local"]
+        storage: ["local", "s3"]
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -63,12 +63,12 @@ jobs:
 
           if [ ${{ matrix.storage }} = "s3" ]; then
             docker run -d -p 9000:9000 --name minio \
-                       -e "MINIO_ROOT_USER=minioadmin" \
-                       -e "MINIO_ROOT_PASSWORD=minioadmin" \
+                       -e "MINIO_ROOT_USER=example-key" \
+                       -e "MINIO_ROOT_PASSWORD=example-secret" \
                        -v /tmp/data:/data \
                        -v /tmp/config:/root/.minio \
                        minio/minio server /data
-            cat `pwd`/tests/s3.config.yml >> config.yml
+            cat `pwd`/tests/minio-s3.config.yml >> config.yml
           fi
 
           if [ ${{ matrix.compute }} = "kubernetes" ]; then
@@ -78,6 +78,23 @@ jobs:
 
           chmod +x funnel
           ./funnel server run --config `pwd`/config.yml &> funnel.logs &
+          echo $! > funnel.pid
+
+      - name: Wait for Funnel to be ready
+        run: |
+          for i in $(seq 1 10); do
+            if ! kill -0 $(cat funnel.pid) 2>/dev/null; then
+              echo "Funnel process exited unexpectedly:"
+              cat funnel.logs
+              exit 1
+            fi
+            curl -sf http://localhost:8000/v1/service-info && exit 0
+            echo "Waiting for Funnel... ($i/10)"
+            sleep 1
+          done
+          echo "Funnel did not become ready in time:"
+          cat funnel.logs
+          exit 1
 
       - name: Run OpenAPI Test Runner
         run: |

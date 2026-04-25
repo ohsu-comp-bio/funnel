@@ -119,11 +119,11 @@ func (ts *TaskService) CreateTask(ctx context.Context, task *tes.Task) (*tes.Cre
 		return nil, status.Errorf(codes.InvalidArgument, "%v", err.Error())
 	}
 
-	err := ts.Compute.CheckBackendParameterSupport(task)
-	if err != nil {
-		return nil, fmt.Errorf("error from backend: %s", err)
+	if err := ts.Compute.CheckBackendParameterSupport(task); err != nil {
+		return nil, err
 	}
 
+	var err error
 	ctx = context.WithValue(ctx, "Config", ts.Config)
 
 	if ts.Config.Compute == "kubernetes" {

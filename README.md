@@ -1,9 +1,13 @@
+[![Tests][tests-badge]][tests]
 [![Compliance Tests Status][compliance-tests-badge]][compliance-tests]
 [![License: MIT][license-badge]][license]
 [![Godoc][godoc-badge]][godoc]
 [![GitHub Release][release-badge]][release]
 [![Docker][docker-badge]][docker]
 [![Helm][helm-badge]][helm]
+
+[tests-badge]: https://github.com/calypr/funnel/actions/workflows/tests.yaml/badge.svg
+[tests]: https://github.com/calypr/funnel/actions/workflows/tests.yaml
 
 [compliance-tests]: https://github.com/ohsu-comp-bio/funnel/actions/workflows/compliance.yaml
 [compliance-tests-badge]: https://img.shields.io/github/actions/workflow/status/ohsu-comp-bio/funnel/compliance.yaml?label=TES%20Compliance

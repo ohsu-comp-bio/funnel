@@ -79,6 +79,14 @@ jobs:
           chmod +x funnel
           ./funnel server run --config `pwd`/config.yml &> funnel.logs &
 
+      - name: Wait for Funnel to be ready
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/v1/service-info && break
+            echo "Waiting for Funnel... ($i/30)"
+            sleep 1
+          done
+
       - name: Run OpenAPI Test Runner
         run: |
           git clone https://github.com/elixir-cloud-aai/openapi-test-runner
@@ -87,4 +95,6 @@ jobs:
           source venv/bin/activate
           pip install -r requirements.txt
           python setup.py install
-          openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/"
+          output=$(openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/")
+          echo "$output"
+          echo "$output" | grep -q "Failed - 0" || { echo "Compliance tests failed"; exit 1; }

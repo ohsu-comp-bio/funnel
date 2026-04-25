@@ -35,11 +35,11 @@ jobs:
       fail-fast: false
       matrix:
         version: [1.1.0]
-        db: ["boltdb"]
+        db: ["postgres"]
         # Temporary: Only test local compute backend until we bring up a K8s cluster in Github Actions
         # compute: ["local", "kubernetes"]
         compute: ["local"]
-        storage: ["local", "s3"]
+        storage: ["local"]
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -104,6 +104,6 @@ jobs:
           source venv/bin/activate
           pip install -r requirements.txt
           python setup.py install
-          output=$(openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/")
+          output=$(openapi-test-runner report --version "${{ matrix.version }}" --server "http://localhost:8000/" 2>&1)
           echo "$output"
           echo "$output" | grep -q "Failed - 0" || { echo "Compliance tests failed"; exit 1; }

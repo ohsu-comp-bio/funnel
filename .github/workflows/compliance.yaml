@@ -58,6 +58,12 @@ jobs:
 
           if [ ${{ matrix.db }} = "postgres" ]; then
             make start-postgres
+            for i in $(seq 1 30); do
+              docker exec funnel-postgres-test pg_isready -U postgres && break
+              echo "Waiting for Postgres... ($i/30)"
+              sleep 1
+              [ $i -eq 30 ] && { echo "Postgres did not become ready in time"; exit 1; }
+            done
             cat `pwd`/tests/postgres.config.yml >> config.yml
           fi
 
@@ -95,6 +101,9 @@ jobs:
           echo "Funnel did not become ready in time:"
           cat funnel.logs
           exit 1
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run OpenAPI Test Runner
         run: |

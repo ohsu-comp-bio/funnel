@@ -68,19 +68,14 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Conf
 	return nil
 }
 
-func podsUsingServiceAccount(ctx context.Context, saName, namespace string, client kubernetes.Interface) ([]string, error) {
-	pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+func isServiceAccountAttachedToPods(ctx context.Context, saName, namespace string, client kubernetes.Interface) (bool, error) {
+	pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("spec.serviceAccountName=%s", saName),
+	})
 	if err != nil {
-		return nil, fmt.Errorf("listing pods using ServiceAccount %s: %v", saName, err)
+		return false, fmt.Errorf("listing pods using ServiceAccount %s: %v", saName, err)
 	}
-
-	var podNames []string
-	for _, pod := range pods.Items {
-		if pod.Spec.ServiceAccountName == saName {
-			podNames = append(podNames, pod.Name)
-		}
-	}
-	return podNames, nil
+	return len(pods.Items) > 0, nil
 }
 
 // DeleteServiceAccount deletes the ServiceAccount created for a task.
@@ -100,12 +95,12 @@ func DeleteServiceAccount(ctx context.Context, taskID string, namespace string, 
 		return fmt.Errorf("listing ServiceAccounts for task %s: %v", taskID, err)
 	}
 	for _, sa := range sas.Items {
-		podNames, err := podsUsingServiceAccount(ctx, sa.Name, namespace, client)
+		inUse, err := isServiceAccountAttachedToPods(ctx, sa.Name, namespace, client)
 		if err != nil {
 			return err
 		}
-		if len(podNames) > 0 {
-			return fmt.Errorf("serviceAccount %s is still in use by pod(s): %v", sa.Name, podNames)
+		if inUse {
+			return fmt.Errorf("serviceAccount %s is still in use by active pod(s)", sa.Name)
 		}
 
 		log.Debug("deleting Worker ServiceAccount", "name", sa.Name, "taskID", taskID)

@@ -325,7 +325,7 @@ func TestDeleteServiceAccountInUse(t *testing.T) {
 		t.Fatalf("Failed to create test Pod: %v", err)
 	}
 
-	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l)
+	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l, false)
 	if err == nil {
 		t.Fatal("expected DeleteServiceAccount to fail when ServiceAccount is in use")
 	}

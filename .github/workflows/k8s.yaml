@@ -41,9 +41,6 @@ jobs:
           wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
           k3d cluster create test-cluster
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3
-
       - name: Deploy Funnel
         run: |
           helm repo add ohsu https://ohsu-comp-bio.github.io/helm-charts
@@ -57,9 +54,6 @@ jobs:
 
           # Port-forward the service
           kubectl port-forward svc/funnel 8000:8000 &
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3
 
       - name: Submit Task
         run: |

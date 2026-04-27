@@ -15,12 +15,21 @@ jobs:
     - name: Check out code
       uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+    - name: Cache Funnel binary
+      id: binary-cache
+      uses: actions/cache@v4
+      with:
+        path: funnel
+        key: funnel-binary-${{ hashFiles('**/*.go', 'go.mod', 'go.sum') }}
+
     - name: Set up Go 1.x
+      if: steps.binary-cache.outputs.cache-hit != 'true'
       uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
       with:
         go-version-file: go.mod
 
     - name: Build Funnel
+      if: steps.binary-cache.outputs.cache-hit != 'true'
       run: make build
 
     - name: Upload Funnel binary as artifact

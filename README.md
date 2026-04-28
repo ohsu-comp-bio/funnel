@@ -27,7 +27,7 @@
 [helm-badge]: https://img.shields.io/badge/Helm-0F1689?logo=helm&logoColor=fff
 [helm]: https://github.com/ohsu-comp-bio/helm-charts
 
-<a title="Funnel Homepage" href="https://ohsu-comp-bio.github.io/funnel">
+<a title="Funnel Homepage" href="https://calypr.org/tools/funnel/">
   <img title="Funnel Logo" src="https://github.com/user-attachments/assets/f51cf06b-d802-4e20-bde1-bcd1fc5657e6" />
 </a>
 
@@ -37,4 +37,4 @@ Funnel is an implementation of the [GA4GH Task Execution Schemas](https://github
 
 Funnel provides an API server, multiple storage backends (local FS, S3, Google Bucket, etc.), multiple compute backends (local, HTCondor, Google Cloud, etc.), and a web dashboard.
 
-https://ohsu-comp-bio.github.io/funnel/
+https://calypr.org/tools/funnel/

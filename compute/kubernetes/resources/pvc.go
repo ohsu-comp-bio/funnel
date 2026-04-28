@@ -16,7 +16,7 @@ import (
 
 // Create the Worker/Executor PVC from config/kubernetes-pvc.yaml
 // TODO: Move this config file to Helm Charts so users can see/customize it
-func CreatePVC(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreatePVC(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger, ownerRef *metav1.OwnerReference) error {
 
 	jobNamespace := conf.Kubernetes.JobsNamespace
 
@@ -47,6 +47,10 @@ func CreatePVC(ctx context.Context, taskId string, conf *config.Config, client k
 	pvc, ok := obj.(*corev1.PersistentVolumeClaim)
 	if !ok {
 		return fmt.Errorf("failed to decode PVC spec")
+	}
+
+	if ownerRef != nil {
+		pvc.OwnerReferences = []metav1.OwnerReference{*ownerRef}
 	}
 
 	_, err = client.CoreV1().PersistentVolumeClaims(jobNamespace).Create(ctx, pvc, metav1.CreateOptions{})

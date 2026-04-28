@@ -175,6 +175,84 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		defer cancel()
 	}
 
+	// Create Worker Job first so its UID can be used as an owner reference on
+	// all subordinate namespaced resources, enabling automatic K8s GC cleanup.
+	b.log.Debug("creating Worker Job", "taskID", task.Id)
+	job, err := resources.CreateJob(timeoutCtx, task, config, b.client, b.log)
+	if err != nil {
+		_ = b.Cancel(context.Background(), task.Id)
+		return fmt.Errorf("creating Worker Job: %w", err)
+	}
+
+	blockOwnerDeletion := true
+	isController := true
+	ownerRef := &metav1.OwnerReference{
+		APIVersion:         "batch/v1",
+		Kind:               "Job",
+		Name:               job.Name,
+		UID:                job.UID,
+		BlockOwnerDeletion: &blockOwnerDeletion,
+		Controller:         &isController,
+	}
+
+	// Create ConfigMap
+	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+	err = resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log, ownerRef)
+	if err != nil {
+		_ = b.Cancel(context.Background(), task.Id)
+		b.log.Debug("creating Worker ConfigMap", "error", err)
+		return fmt.Errorf("creating Worker ConfigMap: %w", err)
+	}
+
+	// Create ServiceAccount:
+	// - This should only be created if no such ServiceAccount with the same name exists
+	// - ServiceAccount will still always need to be added to Worker Job and Executor
+	// - External (user-managed) SAs are not owned by the Job — they outlive individual tasks
+	saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
+	externalSA := false
+	if sa, exists := task.Tags["_WORKER_SA"]; exists && sa != "" {
+		saName = sa
+		externalSA = true
+	}
+
+	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
+	// e.g. network issues, permission issues, etc.
+	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
+
+	// ServiceAccount does not exist, create it
+	if err != nil {
+		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
+		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
+		// Only set the owner reference for task-level SAs; external SAs are shared and must not be GC'd with the job.
+		saOwnerRef := ownerRef
+		if externalSA {
+			saOwnerRef = nil
+		}
+		err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log, saOwnerRef)
+		if err != nil {
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker ServiceAccount: %w", err)
+		}
+	} else {
+		b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
+	}
+
+	// Create Role
+	b.log.Debug("creating Worker Role", "taskID", task.Id)
+	err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log, ownerRef)
+	if err != nil {
+		_ = b.Cancel(context.Background(), task.Id)
+		return fmt.Errorf("creating Worker Role: %w", err)
+	}
+
+	// Create RoleBinding
+	b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
+	err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log, ownerRef)
+	if err != nil {
+		_ = b.Cancel(context.Background(), task.Id)
+		return fmt.Errorf("creating Worker RoleBinding: %w", err)
+	}
+
 	// If the task has inputs, outputs, or declared volumes, create a PVC so
 	// executor pods can share data via PVC subPath mounts.
 	if len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0 {
@@ -186,10 +264,8 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
 		}
 
-		// Create PV
-		err := resources.CreatePV(timeoutCtx, task.Id,
-			config,
-			b.client, b.log)
+		// Create PV (cluster-scoped — cannot be owned by a namespaced Job)
+		err = resources.CreatePV(timeoutCtx, task.Id, config, b.client, b.log)
 		if err != nil {
 			_ = b.Cancel(context.Background(), task.Id)
 			return fmt.Errorf("creating Worker PV: %w", err)
@@ -197,70 +273,11 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 
 		// Create PVC
 		b.log.Debug("creating Worker PVC", "taskID", task.Id)
-		err = resources.CreatePVC(timeoutCtx, task.Id, config, b.client, b.log)
+		err = resources.CreatePVC(timeoutCtx, task.Id, config, b.client, b.log, ownerRef)
 		if err != nil {
 			_ = b.Cancel(context.Background(), task.Id)
 			return fmt.Errorf("creating Worker PVC: %w", err)
 		}
-	}
-
-	// Create ConfigMap
-	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err := resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		b.log.Debug("creating Worker ConfigMap", "error", err)
-		return fmt.Errorf("creating Worker ConfigMap: %w", err)
-	}
-
-	// Create ServiceAccount:
-	// - This should only be created if no such ServiceAccount with the same name exists
-	// - ServiceAccount will still always need to be added to Worker Job and Executor
-	saName := "funnel-worker-sa-%s-%s"
-	saName = fmt.Sprintf(saName, config.Kubernetes.JobsNamespace, task.Id)
-	if _, exists := task.Tags["_WORKER_SA"]; exists {
-		saName = task.Tags["_WORKER_SA"]
-	}
-
-	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
-	// e.g. network issues, permission issues, etc.
-	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
-
-	// ServiceAccount does not exist, create it
-	if err != nil {
-		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
-		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-		err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log)
-		if err != nil {
-			_ = b.Cancel(context.Background(), task.Id)
-			return fmt.Errorf("creating Worker ServiceAccount: %w", err)
-		}
-	} else {
-		b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
-	}
-
-	// Create Role
-	b.log.Debug("creating Worker Role", "taskID", task.Id)
-	err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker Role: %w", err)
-	}
-
-	// Create RoleBinding
-	b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-	err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker RoleBinding: %w", err)
-	}
-
-	// Create Worker Job
-	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err = resources.CreateJob(timeoutCtx, task, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker Job: %w", err)
 	}
 
 	return nil
@@ -697,5 +714,9 @@ func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 		if err := b.cleanResources(ctx, taskID); err != nil {
 			b.log.Error("backlog cleanup: failed to clean resources", "taskID", taskID, "error", err)
 		}
+
+		// Sleep briefly between deletions to avoid overwhelming the API server if there are many orphaned resources.
+		// Test this + see if better to sleep ~1 second for every 10 tasks...
+		time.Sleep(500 * time.Millisecond)
 	}
 }

@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, client kubernetes.Interface, log *logger.Logger, ownerRef *metav1.OwnerReference) error {
 	configBytes, err := config.ToYaml(conf)
 	if err != nil {
 		return fmt.Errorf("marshaling config to ConfigMap: %v", err)
@@ -30,6 +30,10 @@ func CreateConfigMap(ctx context.Context, taskId string, conf *config.Config, cl
 		Data: map[string]string{
 			"funnel-worker.yaml": string(configBytes),
 		},
+	}
+
+	if ownerRef != nil {
+		cm.OwnerReferences = []metav1.OwnerReference{*ownerRef}
 	}
 
 	_, err = client.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Create(ctx, cm, metav1.CreateOptions{})

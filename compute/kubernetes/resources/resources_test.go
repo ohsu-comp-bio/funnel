@@ -36,7 +36,7 @@ data:
   funnel-worker.yaml: |
     placeholder`
 
-	err := CreateConfigMap(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreateConfigMap(ctx, testTaskID, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestCreateJob(t *testing.T) {
 	}
 
 	conf := &config.Config{}
-	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
+	_, err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestDeletePV(t *testing.T) {
 
 func TestCreatePVC(t *testing.T) {
 	conf := &config.Config{}
-	err := CreatePVC(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreatePVC(ctx, testTaskID, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreatePVC failed: %v", err)
 	}
@@ -221,7 +221,7 @@ func TestCreateJobWithNoResources(t *testing.T) {
 	}
 
 	conf := &config.Config{}
-	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
+	_, err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed with nil resources: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestCreateServiceAccount(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
-	err := CreateServiceAccount(ctx, task, conf, fake.NewSimpleClientset(), l)
+	err := CreateServiceAccount(ctx, task, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateServiceAccount failed: %v", err)
 	}
@@ -342,7 +342,7 @@ func TestCreateRole(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
-	err := CreateRole(ctx, task, conf, fake.NewSimpleClientset(), l)
+	err := CreateRole(ctx, task, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateRole failed: %v", err)
 	}
@@ -374,7 +374,7 @@ func TestCreateRoleBinding(t *testing.T) {
 	}
 
 	conf := config.DefaultConfig()
-	err := CreateRoleBinding(ctx, task, conf, fake.NewSimpleClientset(), l)
+	err := CreateRoleBinding(ctx, task, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateRoleBinding failed: %v", err)
 	}

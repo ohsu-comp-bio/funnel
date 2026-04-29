@@ -17,7 +17,7 @@ import (
 )
 
 // Create the Worker/Executor ServiceAccount from config/kubernetes-serviceaccount.yaml
-func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger, ownerRef *metav1.OwnerReference) error {
 
 	// Load templates
 	t, err := template.New(task.Id).Parse(conf.Kubernetes.ServiceAccountTemplate)
@@ -58,6 +58,10 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Conf
 	sa, ok := obj.(*corev1.ServiceAccount)
 	if !ok {
 		return fmt.Errorf("failed to decode ServiceAccount spec")
+	}
+
+	if ownerRef != nil {
+		sa.OwnerReferences = []metav1.OwnerReference{*ownerRef}
 	}
 
 	_, err = client.CoreV1().ServiceAccounts(conf.Kubernetes.JobsNamespace).Create(ctx, sa, metav1.CreateOptions{})

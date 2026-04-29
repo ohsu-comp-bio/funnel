@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -56,28 +58,46 @@ func CreatePV(ctx context.Context, taskId string, conf *config.Config, client ku
 	return nil
 }
 
-// Add this helper function for PV cleanup
+// DeletePV removes the PV for a task, retrying on conflict errors that occur
+// when another process (e.g. reconciler + cancel running concurrently) modifies
+// the PV between our Get and Update calls.
 func DeletePV(ctx context.Context, taskID string, client kubernetes.Interface, log *logger.Logger) error {
 	name := fmt.Sprintf("funnel-worker-pv-%s", taskID)
-	// The PV may not have been made. Some jobs with no I/O don't need a PV or it may have already been deleted.
-	pv, err := client.CoreV1().PersistentVolumes().Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
+
+	const maxRetries = 5
+	delay := 100 * time.Millisecond
+	for i := range maxRetries {
+		// The PV may not exist (no I/O task, or already deleted).
+		pv, err := client.CoreV1().PersistentVolumes().Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return nil
+			}
+			return fmt.Errorf("getting PV %s: %v", name, err)
+		}
+
+		// Remove the pv-protection finalizer so Kubernetes allows deletion.
+		if len(pv.Finalizers) > 0 {
+			pv.Finalizers = nil
+			_, err = client.CoreV1().PersistentVolumes().Update(ctx, pv, metav1.UpdateOptions{})
+			if err != nil {
+				if errors.IsConflict(err) && i < maxRetries-1 {
+					log.Debug("conflict removing PV finalizers, retrying", "pv", name, "attempt", i+1)
+					time.Sleep(delay)
+					delay *= 2
+					continue
+				}
+				return fmt.Errorf("removing finalizers from PV %s: %v", name, err)
+			}
+		}
+
+		log.Debug("deleting Worker PV", "taskID", taskID)
+		err = client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("deleting PV %s: %v", name, err)
+		}
 		return nil
 	}
 
-	// Remove the pv-protection finalizer so Kubernetes allows deletion
-	if len(pv.Finalizers) > 0 {
-		pv.Finalizers = nil
-		_, err = client.CoreV1().PersistentVolumes().Update(ctx, pv, metav1.UpdateOptions{})
-		if err != nil {
-			return fmt.Errorf("removing finalizers from PV %s: %v", name, err)
-		}
-	}
-
-	log.Debug("deleting Worker PV", "taskID", taskID)
-	err = client.CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-	return nil
+	return fmt.Errorf("removing finalizers from PV %s: exceeded max retries", name)
 }

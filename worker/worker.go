@@ -316,24 +316,26 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 	}
 
 	// Try to fix symlinks broken by docker filesystems.
-	if run.ok() {
+	if run.syserr == nil {
 		for _, output := range mapper.Outputs {
 			fixLinks(mapper, output.Path)
 		}
 	}
 
-	if run.ok() {
+	if run.syserr == nil {
 		// Resolve wildcards in the output paths
 		resolveWildcards(mapper)
 	}
 
-	if run.ok() && r.Conf.ScratchPath != "" {
+	if run.syserr == nil && r.Conf.ScratchPath != "" {
 		mapper.CopyOutputsToWorkDir(r.Conf.ScratchPath)
 	}
 
-	// Upload outputs
+	// Upload outputs regardless of executor error — the user needs the output
+	// files (logs, stderr, etc.) to diagnose failures. Only skip on system errors
+	// where the worker itself is in a bad state.
 	var outputLog []*tes.OutputFileLog
-	if run.ok() {
+	if run.syserr == nil {
 		outputLog, run.syserr = UploadOutputs(ctx, mapper.Outputs, r.Store, event, int(r.Conf.MaxParallelTransfers))
 	}
 

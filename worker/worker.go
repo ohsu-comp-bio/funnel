@@ -230,6 +230,8 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					TaskId:         task.Id,
 					JobId:          i,
 					StdinFile:      d.Stdin,
+					StdoutFile:     d.Stdout,
+					StderrFile:     d.Stderr,
 					TaskTemplate:   r.Executor.Template,
 					Namespace:      r.Executor.Namespace,
 					JobsNamespace:  r.Executor.JobsNamespace,
@@ -278,7 +280,11 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 			}
 
 			// Opens stdin/out/err files and updates those fields on "cmd".
-			if run.ok() || ignoreError {
+			// Skip for Kubernetes: the executor runs in a separate pod and writes
+			// stdout/stderr directly via its PVC mount. Creating host files here
+			// would poison the Mountpoint inode, making the file unreadable by
+			// the worker's mount instance (EPERM).
+			if (run.ok() || ignoreError) && r.Executor.Backend != "kubernetes" {
 				run.syserr = r.openStepLogs(mapper, s, d)
 			}
 

@@ -261,6 +261,7 @@ func (r *DefaultWorker) Run(pctx context.Context) (runerr error) {
 					RunCommand:      r.Conf.Container.RunCommand,
 					PullCommand:     r.Conf.Container.PullCommand,
 					StopCommand:     r.Conf.Container.StopCommand,
+					Resources:       resources,
 					Command:         command,
 				}
 

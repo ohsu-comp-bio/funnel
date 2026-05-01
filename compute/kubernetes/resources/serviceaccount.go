@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
+	"text/template"
 
 	"github.com/ohsu-comp-bio/funnel/config"
 	"github.com/ohsu-comp-bio/funnel/logger"
@@ -57,7 +57,7 @@ func CreateServiceAccount(ctx context.Context, task *tes.Task, conf *config.Conf
 
 	sa, ok := obj.(*corev1.ServiceAccount)
 	if !ok {
-		return fmt.Errorf("failed to decode ServiceAccount spec")
+		return fmt.Errorf("failed to cast to ServiceAccount spec")
 	}
 
 	if ownerRef != nil {

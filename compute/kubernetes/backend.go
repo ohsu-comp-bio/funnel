@@ -102,7 +102,7 @@ func (b *Backend) WriteEvent(ctx context.Context, ev *events.Event) error {
 			return fmt.Errorf("Failed to unmarshal plugin response %v", ctx.Value("pluginResponse"))
 		}
 
-		// TODO: Test that plugin reponse is being correctly set in taskConfig after this merge
+		// TODO: Test that plugin response is being correctly set in taskConfig after this merge
 		err := mergo.Merge(taskConfig, resp.Config, mergo.WithOverride)
 		if err != nil {
 			return fmt.Errorf("Failed to merge plugin config %v", err)
@@ -308,18 +308,13 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker PVC", "error", err)
 	}
 
-	// Delete PV
-	err = resources.DeletePV(ctx, taskId, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker PV", "error", err)
-	}
-
-	// Delete ConfigMap
-	err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker ConfigMap", "error", err)
+	// Delete per-task ConfigMap only if ConfigMapTemplate was configured
+	if b.conf.Kubernetes.ConfigMapTemplate != "" {
+		err = resources.DeleteConfigMap(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			b.log.Error("deleting Worker ConfigMap", "error", err)
+		}
 	}
 
 	// Delete RoleBinding

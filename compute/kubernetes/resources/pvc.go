@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
+	"text/template"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -29,12 +29,18 @@ func CreatePVC(ctx context.Context, taskId string, conf *config.Config, client k
 	}
 
 	// Template parameters
+	var s3Bucket, s3Region string
+	if len(conf.GenericS3) > 0 {
+		s3Bucket = conf.GenericS3[0].Bucket
+		s3Region = conf.GenericS3[0].Region
+	}
+
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
 		"Namespace": jobNamespace,
-		"Bucket":    conf.GenericS3[0].Bucket,
-		"Region":    conf.GenericS3[0].Region,
+		"Bucket":    s3Bucket,
+		"Region":    s3Region,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

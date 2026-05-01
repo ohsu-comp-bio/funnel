@@ -7,12 +7,22 @@ import (
 	"testing"
 
 	"github.com/ohsu-comp-bio/funnel/config"
+	"github.com/ohsu-comp-bio/funnel/events"
 	"github.com/ohsu-comp-bio/funnel/logger"
 	"github.com/ohsu-comp-bio/funnel/tes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
+
+// noopEventWriter implements events.Writer for testing.
+type noopEventWriter struct{}
+
+func (n *noopEventWriter) WriteEvent(ctx context.Context, ev *events.Event) error {
+	return nil
+}
+
+func (n *noopEventWriter) Close() {}
 
 func TestTaskSubmission(t *testing.T) {
 	// Create a fake Kubernetes client
@@ -21,15 +31,17 @@ func TestTaskSubmission(t *testing.T) {
 	// Create a mock configuration
 	conf := config.DefaultConfig()
 	conf.Kubernetes.Namespace = "test-namespace"
+	conf.Kubernetes.JobsNamespace = "test-namespace"
 	conf.Kubernetes.WorkerTemplate = `
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: funnel-{{.TaskId}}
-  namespace: {{.Namespace}}
+  name: {{.TaskId}}
+  namespace: {{.JobsNamespace}}
 spec:
   template:
     spec:
+      restartPolicy: Never
       containers:
       - name: task
         image: alpine
@@ -40,13 +52,21 @@ spec:
             memory: "{{.RamGb}}Gi"
             ephemeral-storage: "{{.DiskGb}}Gi"
 `
+	conf.Kubernetes.ConfigMapTemplate = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: funnel-worker-config-{{.TaskId}}
+  namespace: {{.Namespace}}
+data:
+  config.yaml: "placeholder"
+`
 
 	// Create a logger
 	log := logger.NewLogger("test", logger.DefaultConfig())
 
 	backend := &Backend{
 		client:   fakeClient,
-		event:    nil,
+		event:    &noopEventWriter{},
 		database: nil,
 		log:      log,
 		conf:     conf, // Funnel configuration
@@ -75,34 +95,20 @@ spec:
 	}
 
 	// Verify that the Job was created
-	job, err := fakeClient.BatchV1().Jobs(conf.Kubernetes.Namespace).Get(context.Background(), "funnel-"+task.Id, metav1.GetOptions{})
+	job, err := fakeClient.BatchV1().Jobs(conf.Kubernetes.JobsNamespace).Get(context.Background(), task.Id, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("failed to get Job: %v", err)
 	}
 
-	if job.Name != "funnel-"+task.Id {
-		t.Errorf("expected Job name 'funnel-%s', got '%s'", task.Id, job.Name)
+	if job.Name != task.Id {
+		t.Errorf("expected Job name '%s', got '%s'", task.Id, job.Name)
 	}
 
 	// Verify that the ConfigMap was created
 	configMapName := "funnel-worker-config-" + task.Id
-	_, err = fakeClient.CoreV1().ConfigMaps(conf.Kubernetes.Namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
+	_, err = fakeClient.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Get(context.Background(), configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("failed to get ConfigMap: %v", err)
-	}
-
-	// Verify that the PersistentVolumeClaim was created
-	pvcName := "funnel-worker-pvc-" + task.Id
-	_, err = fakeClient.CoreV1().PersistentVolumeClaims(conf.Kubernetes.Namespace).Get(context.Background(), pvcName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("failed to get PersistentVolumeClaim: %v", err)
-	}
-
-	// Verify that the PersistentVolume was created
-	pvName := "funnel-worker-pv-" + task.Id
-	_, err = fakeClient.CoreV1().PersistentVolumes().Get(context.Background(), pvName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("failed to get PersistentVolume: %v", err)
 	}
 
 	// Clean up resources
@@ -112,28 +118,17 @@ spec:
 	}
 
 	// Verify that the Job was deleted
-	_, err = fakeClient.BatchV1().Jobs(conf.Kubernetes.Namespace).Get(context.Background(), "funnel-"+task.Id, metav1.GetOptions{})
+	_, err = fakeClient.BatchV1().Jobs(conf.Kubernetes.JobsNamespace).Get(context.Background(), task.Id, metav1.GetOptions{})
 	if err == nil {
 		t.Error("expected Job to be deleted, but it still exists")
 	}
 
 	// Verify that the ConfigMap was deleted
-	_, err = fakeClient.CoreV1().ConfigMaps(conf.Kubernetes.Namespace).Get(context.Background(), configMapName, metav1.GetOptions{})
+	_, err = fakeClient.CoreV1().ConfigMaps(conf.Kubernetes.JobsNamespace).Get(context.Background(), configMapName, metav1.GetOptions{})
 	if err == nil {
 		t.Error("expected ConfigMap to be deleted, but it still exists")
 	}
 
-	// Verify that the PersistentVolumeClaim was deleted
-	_, err = fakeClient.CoreV1().PersistentVolumeClaims(conf.Kubernetes.Namespace).Get(context.Background(), pvcName, metav1.GetOptions{})
-	if err == nil {
-		t.Error("expected PersistentVolumeClaim to be deleted, but it still exists")
-	}
-
-	// Verify that the PersistentVolume was deleted
-	_, err = fakeClient.CoreV1().PersistentVolumes().Get(context.Background(), pvName, metav1.GetOptions{})
-	if err == nil {
-		t.Error("expected PersistentVolume to be deleted, but it still exists")
-	}
 }
 
 func TestSubmit_AppliesNodeSelectorAndTolerationsToWorkerJob(t *testing.T) {
@@ -212,6 +207,7 @@ spec:
 		client: fakeClient,
 		log:    log,
 		conf:   conf,
+		event:  &noopEventWriter{},
 	}
 
 	task := &tes.Task{

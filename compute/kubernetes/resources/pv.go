@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
+	"text/template"
 	"time"
 
 	"github.com/ohsu-comp-bio/funnel/config"
@@ -27,13 +27,20 @@ func CreatePV(ctx context.Context, taskId string, conf *config.Config, client ku
 	}
 
 	// Template parameters
+	var s3Bucket, s3Region, s3KmsKeyID string
+	if len(conf.GenericS3) > 0 {
+		s3Bucket = conf.GenericS3[0].Bucket
+		s3Region = conf.GenericS3[0].Region
+		s3KmsKeyID = conf.GenericS3[0].KmsKeyID
+	}
+
 	var buf bytes.Buffer
 	err = t.Execute(&buf, map[string]interface{}{
 		"TaskId":    taskId,
 		"Namespace": conf.Kubernetes.JobsNamespace,
-		"Bucket":    conf.GenericS3[0].Bucket,
-		"Region":    conf.GenericS3[0].Region,
-		"KmsKeyID":  conf.GenericS3[0].KmsKeyID,
+		"Bucket":    s3Bucket,
+		"Region":    s3Region,
+		"KmsKeyID":  s3KmsKeyID,
 	})
 	if err != nil {
 		return fmt.Errorf("%v", err)

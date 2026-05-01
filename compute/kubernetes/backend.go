@@ -67,10 +67,6 @@ func NewBackend(ctx context.Context, conf *config.Config, reader tes.ReadOnlySer
 	}
 
 	if !conf.Kubernetes.DisableReconciler {
-		// Clean up all orphaned Funnel-managed resources whose task no longer exists in
-		// the DB. These can be left behind by server crashes or partial cleanup failures.
-		go b.cleanOrphanedResources(ctx)
-
 		rate := conf.Kubernetes.ReconcileRate.AsDuration()
 		go b.reconcile(ctx, rate, conf.Kubernetes.DisableJobCleanup)
 	}
@@ -617,12 +613,13 @@ func (b *Backend) isResourceCleanupNeeded(ctx context.Context, taskID string) (b
 	}
 }
 
-// cleanOrphanedResources deletes any Funnel-managed Kubernetes resources that are not associated with an active task
-// in the database.
+// CleanOrphanedResources deletes any Funnel-managed Kubernetes resources that are not associated
+// with an active task in the database.
 //
-// This is a safety measure to prevent resource leaks from orphaned jobs whose tasks have been
-// deleted or completed, but whose resources were not cleaned up due to transient errors or server crashes.
-func (b *Backend) cleanOrphanedResources(ctx context.Context) {
+// This is intended to be called as a one-shot operation (e.g. from a Kubernetes CronJob) rather
+// than as a long-running goroutine, so that cleanup is decoupled from the Funnel server lifecycle
+// and multiple server replicas do not race to clean the same resources simultaneously.
+func (b *Backend) CleanOrphanedResources(ctx context.Context) {
 	namespace := b.conf.Kubernetes.JobsNamespace
 	taskIDs := make(map[string]struct{})
 

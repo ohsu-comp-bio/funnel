@@ -191,62 +191,68 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		Controller:         &isController,
 	}
 
-	// Create ConfigMap
-	b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-	err = resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log, ownerRef)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		b.log.Debug("creating Worker ConfigMap", "error", err)
-		return fmt.Errorf("creating Worker ConfigMap: %w", err)
-	}
-
-	// Create ServiceAccount:
-	// - This should only be created if no such ServiceAccount with the same name exists
-	// - ServiceAccount will still always need to be added to Worker Job and Executor
-	// - External (user-managed) SAs are not owned by the Job — they outlive individual tasks
-	saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
-	externalSA := false
-	if sa, exists := task.Tags["_WORKER_SA"]; exists && sa != "" {
-		saName = sa
-		externalSA = true
-	}
-
-	// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
-	// e.g. network issues, permission issues, etc.
-	_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
-
-	// ServiceAccount does not exist, create it
-	if err != nil {
-		b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
-		b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-		// Only set the owner reference for task-level SAs; external SAs are shared and must not be GC'd with the job.
-		saOwnerRef := ownerRef
-		if externalSA {
-			saOwnerRef = nil
-		}
-		err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log, saOwnerRef)
+	// Create ConfigMap (only when a template is configured; deployments using a
+	// static shared ConfigMap via the WorkerTemplate volume spec skip this).
+	if config.Kubernetes.ConfigMapTemplate != "" {
+		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
+		err = resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log, ownerRef)
 		if err != nil {
 			_ = b.Cancel(context.Background(), task.Id)
-			return fmt.Errorf("creating Worker ServiceAccount: %w", err)
+			return fmt.Errorf("creating Worker ConfigMap: %w", err)
 		}
-	} else {
-		b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
 	}
 
-	// Create Role
-	b.log.Debug("creating Worker Role", "taskID", task.Id)
-	err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log, ownerRef)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker Role: %w", err)
+	// Create ServiceAccount, Role, and RoleBinding only when templates are
+	// configured. Deployments that supply a pre-existing shared SA (e.g. via
+	// _WORKER_SA tag or a static Helm-managed SA) skip these steps entirely.
+	// External (user-managed) SAs are not owned by the Job — they outlive tasks.
+	if config.Kubernetes.ServiceAccountTemplate != "" {
+		saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
+		externalSA := false
+		if sa, exists := task.Tags["_WORKER_SA"]; exists && sa != "" {
+			saName = sa
+			externalSA = true
+		}
+
+		// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
+		// e.g. network issues, permission issues, etc.
+		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
+
+		// ServiceAccount does not exist, create it
+		if err != nil {
+			b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
+			b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
+			// Only set the owner reference for task-level SAs; external SAs are shared and must not be GC'd with the job.
+			saOwnerRef := ownerRef
+			if externalSA {
+				saOwnerRef = nil
+			}
+			err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log, saOwnerRef)
+			if err != nil {
+				_ = b.Cancel(context.Background(), task.Id)
+				return fmt.Errorf("creating Worker ServiceAccount: %w", err)
+			}
+		} else {
+			b.log.Debug("ServiceAccount already exists, skipping creation", "ServiceAccount", saName, "taskID", task.Id)
+		}
 	}
 
-	// Create RoleBinding
-	b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-	err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log, ownerRef)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker RoleBinding: %w", err)
+	if config.Kubernetes.RoleTemplate != "" {
+		b.log.Debug("creating Worker Role", "taskID", task.Id)
+		err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log, ownerRef)
+		if err != nil {
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker Role: %w", err)
+		}
+	}
+
+	if config.Kubernetes.RoleBindingTemplate != "" {
+		b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
+		err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log, ownerRef)
+		if err != nil {
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker RoleBinding: %w", err)
+		}
 	}
 
 	// If the task has inputs, outputs, or declared volumes, create a PVC so
@@ -287,9 +293,11 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	// Gen3Workflow per-user SA supplied via _WORKER_SA tag). If so, skip SA
 	// deletion — the SA is shared across tasks and must not be torn down here.
 	externalSA := false
-	if task, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskId, View: tes.View_FULL.String()}); err == nil {
-		if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
-			externalSA = true
+	if b.database != nil {
+		if task, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskId, View: tes.View_FULL.String()}); err == nil {
+			if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
+				externalSA = true
+			}
 		}
 	}
 

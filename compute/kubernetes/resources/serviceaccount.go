@@ -100,7 +100,8 @@ func DeleteServiceAccount(ctx context.Context, taskID string, namespace string, 
 			return err
 		}
 		if inUse {
-			return fmt.Errorf("serviceAccount %s is still in use by active pod(s)", sa.Name)
+			log.Debug("skipping ServiceAccount deletion — still in use by active pod(s); reconciler will retry", "name", sa.Name, "taskID", taskID)
+			continue
 		}
 
 		log.Debug("deleting Worker ServiceAccount", "name", sa.Name, "taskID", taskID)

@@ -11,6 +11,7 @@ import (
 	"github.com/ohsu-comp-bio/funnel/tes"
 
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -77,7 +78,7 @@ func DeleteRoleBinding(ctx context.Context, taskID string, namespace string, cli
 	}
 	for _, rb := range rbs.Items {
 		log.Debug("deleting Worker RoleBinding", "name", rb.Name, "taskID", taskID)
-		if err := client.RbacV1().RoleBindings(namespace).Delete(ctx, rb.Name, metav1.DeleteOptions{}); err != nil {
+		if err := client.RbacV1().RoleBindings(namespace).Delete(ctx, rb.Name, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("deleting RoleBinding %s: %v", rb.Name, err)
 		}
 	}

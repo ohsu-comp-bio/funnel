@@ -346,13 +346,6 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 		b.log.Error("deleting Worker Role", "error", err)
 	}
 
-	// Delete RoleBinding
-	err = resources.DeleteRoleBinding(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-		b.log.Error("deleting Worker ServiceAccount", "error", err)
-	}
-
 	return errs
 }
 

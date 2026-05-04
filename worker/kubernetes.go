@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/template"
 	"time"
 
@@ -25,6 +26,8 @@ type KubernetesCommand struct {
 	TaskId         string
 	JobId          int
 	StdinFile      string
+	StdoutFile     string
+	StderrFile     string
 	TaskTemplate   string
 	Namespace      string // Funnel Server Namespace
 	JobsNamespace  string // Funnel Worker + Executor Namespace (default: Namespace)
@@ -84,15 +87,34 @@ func (kcmd KubernetesCommand) Run(ctx context.Context) error {
 
 	var cmd = kcmd.ShellCommand
 
-	if kcmd.StdinFile != "" {
-		cmd = append(cmd, "<", kcmd.StdinFile)
+	// When stdio redirects are present, collapse the command into a single
+	// shell string so the executor template's shell wrapper (which takes only
+	// index .Command 0) receives the full command including redirects.
+	hasRedirects := kcmd.StdinFile != "" || kcmd.StdoutFile != "" || kcmd.StderrFile != ""
+	if hasRedirects {
+		// Quote each argument to preserve spaces/special characters, then
+		// append the redirect operators (which must not be quoted).
+		parts := make([]string, len(cmd))
+		for i, arg := range cmd {
+			parts[i] = strings.ReplaceAll(arg, "'", "'\\''")
+			parts[i] = "'" + parts[i] + "'"
+		}
+		shellCmd := strings.Join(parts, " ")
+		if kcmd.StdinFile != "" {
+			shellCmd += " < " + kcmd.StdinFile
+		}
+		if kcmd.StdoutFile != "" {
+			shellCmd += " > " + kcmd.StdoutFile
+		}
+		if kcmd.StderrFile != "" {
+			shellCmd += " 2> " + kcmd.StderrFile
+		}
+		cmd = []string{shellCmd}
 	}
 
-	// Use a shell wrapper only when the command is a single element (i.e. a
-	// shell script string). When the caller provides multiple elements the
-	// array is passed directly as the container command+args so that spaces,
-	// quotes, and other special characters are preserved without any escaping.
-	useShell := len(cmd) == 1
+	// Use a shell wrapper when the command is a single element (a shell script
+	// string) or when stdio redirects are present.
+	useShell := len(cmd) == 1 || hasRedirects
 
 	templateData := map[string]interface{}{
 		"TaskId":             taskId,

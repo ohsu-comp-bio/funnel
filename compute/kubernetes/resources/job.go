@@ -35,20 +35,20 @@ func SanitizeLabelValue(s string) string {
 
 // Create the Funnel Worker job from kubernetes-template.yaml
 // Executor job is created in worker/kubernetes.go#Run
-func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) (*v1.Job, error) {
 	// Parse Worker Template
 
 	log.Debug("Creating job from template", "template", conf.Kubernetes.WorkerTemplate)
 	t, err := template.New(task.Id).Parse(conf.Kubernetes.WorkerTemplate)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
 
 	pods, err := client.CoreV1().Pods(conf.Kubernetes.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "app=funnel",
 	})
 	if err != nil {
-		return fmt.Errorf("failed to list pods: %v", err)
+		return nil, fmt.Errorf("failed to list pods: %v", err)
 	}
 
 	var image string
@@ -96,19 +96,19 @@ func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client 
 	var buf bytes.Buffer
 	err = t.Execute(&buf, templateData)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
 
 	log.Debug("Job template", "template", buf.String())
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 	obj, _, err := decode(buf.Bytes(), nil, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	job, ok := obj.(*v1.Job)
 	if !ok {
-		return fmt.Errorf("failed to decode job spec")
+		return nil, fmt.Errorf("failed to decode job spec")
 	}
 
 	// Ensure completed jobs are garbage-collected by the Kubernetes TTL Controller
@@ -120,12 +120,12 @@ func CreateJob(ctx context.Context, task *tes.Task, conf *config.Config, client 
 	}
 
 	log.Debug("Creating job", "Job", job.Name, "JobsNamespace", conf.Kubernetes.JobsNamespace)
-	_, err = client.BatchV1().Jobs(conf.Kubernetes.JobsNamespace).Create(ctx, job, metav1.CreateOptions{})
+	created, err := client.BatchV1().Jobs(conf.Kubernetes.JobsNamespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("%v", err)
 	}
 
-	return nil
+	return created, nil
 }
 
 // DeleteJob removes the worker job for a task and all associated executor jobs.

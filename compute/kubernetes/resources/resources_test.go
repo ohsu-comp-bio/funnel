@@ -120,7 +120,7 @@ data:
   funnel-worker.yaml: |
     placeholder`
 
-	err := CreateConfigMap(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreateConfigMap(ctx, testTaskID, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateConfigMap failed: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestCreateJob(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Kubernetes.JobsNamespace = jobsNamespace
 	conf.Kubernetes.WorkerTemplate = minimalWorkerTemplate
-	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
+	_, err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed: %v", err)
 	}
@@ -273,7 +273,7 @@ func TestCreatePVC(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Kubernetes.JobsNamespace = jobsNamespace
 	conf.Kubernetes.PVCTemplate = minimalPVCTemplate
-	err := CreatePVC(ctx, testTaskID, conf, fake.NewSimpleClientset(), l)
+	err := CreatePVC(ctx, testTaskID, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreatePVC failed: %v", err)
 	}
@@ -315,7 +315,7 @@ func TestCreateJobWithNoResources(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Kubernetes.JobsNamespace = jobsNamespace
 	conf.Kubernetes.WorkerTemplate = minimalWorkerTemplate
-	err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
+	_, err := CreateJob(ctx, task, conf, fake.NewSimpleClientset(), l)
 	if err != nil {
 		t.Errorf("CreateJob failed with nil resources: %v", err)
 	}
@@ -357,7 +357,7 @@ func TestCreateServiceAccount(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Kubernetes.JobsNamespace = jobsNamespace
 	conf.Kubernetes.ServiceAccountTemplate = minimalServiceAccountTemplate
-	err := CreateServiceAccount(ctx, task, conf, fake.NewSimpleClientset(), l)
+	err := CreateServiceAccount(ctx, task, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateServiceAccount failed: %v", err)
 	}
@@ -370,6 +370,10 @@ func TestDeleteServiceAccount(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "funnel-worker-sa-" + testTaskID,
 			Namespace: namespace,
+			Labels: map[string]string{
+				"app":    "funnel",
+				"taskId": testTaskID,
+			},
 		},
 	}
 	_, err := fakeClient.CoreV1().ServiceAccounts(namespace).Create(context.Background(), sa, metav1.CreateOptions{})
@@ -377,9 +381,52 @@ func TestDeleteServiceAccount(t *testing.T) {
 		t.Fatalf("Failed to create test ServiceAccount: %v", err)
 	}
 
-	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l)
+	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l, false)
 	if err != nil {
 		t.Errorf("DeleteServiceAccount failed: %v", err)
+	}
+}
+
+func TestDeleteServiceAccountInUse(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset()
+
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "funnel-worker-sa-" + testTaskID,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"app":    "funnel",
+				"taskId": testTaskID,
+			},
+		},
+	}
+	_, err := fakeClient.CoreV1().ServiceAccounts(namespace).Create(context.Background(), sa, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test ServiceAccount: %v", err)
+	}
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: namespace,
+		},
+		Spec: corev1.PodSpec{
+			ServiceAccountName: sa.Name,
+		},
+	}
+	_, err = fakeClient.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create test Pod: %v", err)
+	}
+
+	err = DeleteServiceAccount(context.Background(), testTaskID, namespace, fakeClient, l, false)
+	if err == nil {
+		t.Fatal("expected DeleteServiceAccount to fail when ServiceAccount is in use")
+	}
+
+	_, err = fakeClient.CoreV1().ServiceAccounts(namespace).Get(context.Background(), sa.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("expected ServiceAccount to remain after failed delete: %v", err)
 	}
 }
 
@@ -391,7 +438,7 @@ func TestCreateRole(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Kubernetes.JobsNamespace = jobsNamespace
 	conf.Kubernetes.RoleTemplate = minimalRoleTemplate
-	err := CreateRole(ctx, task, conf, fake.NewSimpleClientset(), l)
+	err := CreateRole(ctx, task, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateRole failed: %v", err)
 	}
@@ -425,7 +472,7 @@ func TestCreateRoleBinding(t *testing.T) {
 	conf := config.DefaultConfig()
 	conf.Kubernetes.JobsNamespace = jobsNamespace
 	conf.Kubernetes.RoleBindingTemplate = minimalRoleBindingTemplate
-	err := CreateRoleBinding(ctx, task, conf, fake.NewSimpleClientset(), l)
+	err := CreateRoleBinding(ctx, task, conf, fake.NewSimpleClientset(), l, nil)
 	if err != nil {
 		t.Errorf("CreateRoleBinding failed: %v", err)
 	}

@@ -171,55 +171,63 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 		defer cancel()
 	}
 
-	// If the task has inputs, outputs, or declared volumes, create a PVC so
-	// executor pods can share data via PVC subPath mounts.
-	if len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0 {
-		b.log.Debug("creating Worker PV", "taskID", task.Id)
-
-		// Create PV
-		err := resources.CreatePV(timeoutCtx, task.Id,
-			config,
-			b.client, b.log)
-		if err != nil {
-			_ = b.Cancel(context.Background(), task.Id)
-			return fmt.Errorf("creating Worker PV: %w", err)
-		}
-
-		// Create PVC
-		b.log.Debug("creating Worker PVC", "taskID", task.Id)
-		err = resources.CreatePVC(timeoutCtx, task.Id, config, b.client, b.log)
-		if err != nil {
-			_ = b.Cancel(context.Background(), task.Id)
-			return fmt.Errorf("creating Worker PVC: %w", err)
-		}
+	// Create Worker Job first so its UID can be used as an owner reference on
+	// all subordinate namespaced resources, enabling automatic K8s GC cleanup.
+	b.log.Debug("creating Worker Job", "taskID", task.Id)
+	job, err := resources.CreateJob(timeoutCtx, task, config, b.client, b.log)
+	if err != nil {
+		_ = b.Cancel(context.Background(), task.Id)
+		return fmt.Errorf("creating Worker Job: %w", err)
 	}
 
-	// err is declared here for use across all conditional resource-creation
-	// blocks below (ConfigMap, ServiceAccount, Role, RoleBinding, Job).
-	var err error
+	blockOwnerDeletion := true
+	isController := true
+	ownerRef := &metav1.OwnerReference{
+		APIVersion:         "batch/v1",
+		Kind:               "Job",
+		Name:               job.Name,
+		UID:                job.UID,
+		BlockOwnerDeletion: &blockOwnerDeletion,
+		Controller:         &isController,
+	}
 
+	// Create ConfigMap (only when a template is configured; deployments using a
+	// static shared ConfigMap via the WorkerTemplate volume spec skip this).
 	if config.Kubernetes.ConfigMapTemplate != "" {
 		b.log.Debug("creating Worker ConfigMap", "taskID", task.Id)
-		err = resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log)
+		err = resources.CreateConfigMap(timeoutCtx, task.Id, config, b.client, b.log, ownerRef)
 		if err != nil {
 			_ = b.Cancel(context.Background(), task.Id)
 			return fmt.Errorf("creating Worker ConfigMap: %w", err)
 		}
 	}
 
+	// Create ServiceAccount, Role, and RoleBinding only when templates are
+	// configured. Deployments that supply a pre-existing shared SA (e.g. via
+	// _WORKER_SA tag or a static Helm-managed SA) skip these steps entirely.
+	// External (user-managed) SAs are not owned by the Job — they outlive tasks.
 	if config.Kubernetes.ServiceAccountTemplate != "" {
 		saName := fmt.Sprintf("funnel-worker-sa-%s-%s", config.Kubernetes.JobsNamespace, task.Id)
-		if _, exists := task.Tags["_WORKER_SA"]; exists {
-			saName = task.Tags["_WORKER_SA"]
+		externalSA := false
+		if sa, exists := task.Tags["_WORKER_SA"]; exists && sa != "" {
+			saName = sa
+			externalSA = true
 		}
 
 		// TODO: Add error handler to handle case where Get fails for reasons other than `NotFound`
 		// e.g. network issues, permission issues, etc.
 		_, err = b.client.CoreV1().ServiceAccounts(config.Kubernetes.JobsNamespace).Get(timeoutCtx, saName, metav1.GetOptions{})
+
+		// ServiceAccount does not exist, create it
 		if err != nil {
 			b.log.Debug("Error getting ServiceAccount:", "ServiceAccount", saName, "taskID", task.Id, "error", err)
 			b.log.Debug("Creating Worker ServiceAccount", "taskID", task.Id)
-			err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log)
+			// Only set the owner reference for task-level SAs; external SAs are shared and must not be GC'd with the job.
+			saOwnerRef := ownerRef
+			if externalSA {
+				saOwnerRef = nil
+			}
+			err = resources.CreateServiceAccount(timeoutCtx, task, config, b.client, b.log, saOwnerRef)
 			if err != nil {
 				_ = b.Cancel(context.Background(), task.Id)
 				return fmt.Errorf("creating Worker ServiceAccount: %w", err)
@@ -231,7 +239,7 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 
 	if config.Kubernetes.RoleTemplate != "" {
 		b.log.Debug("creating Worker Role", "taskID", task.Id)
-		err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log)
+		err = resources.CreateRole(timeoutCtx, task, config, b.client, b.log, ownerRef)
 		if err != nil {
 			_ = b.Cancel(context.Background(), task.Id)
 			return fmt.Errorf("creating Worker Role: %w", err)
@@ -240,19 +248,38 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 
 	if config.Kubernetes.RoleBindingTemplate != "" {
 		b.log.Debug("creating Worker RoleBinding", "taskID", task.Id)
-		err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log)
+		err = resources.CreateRoleBinding(timeoutCtx, task, config, b.client, b.log, ownerRef)
 		if err != nil {
 			_ = b.Cancel(context.Background(), task.Id)
 			return fmt.Errorf("creating Worker RoleBinding: %w", err)
 		}
 	}
 
-	// Create Worker Job
-	b.log.Debug("creating Worker Job", "taskID", task.Id)
-	err = resources.CreateJob(timeoutCtx, task, config, b.client, b.log)
-	if err != nil {
-		_ = b.Cancel(context.Background(), task.Id)
-		return fmt.Errorf("creating Worker Job: %w", err)
+	// If the task has inputs, outputs, or declared volumes, create a PVC so
+	// executor pods can share data via PVC subPath mounts.
+	if len(task.Inputs) > 0 || len(task.Outputs) > 0 || len(task.Volumes) > 0 {
+		b.log.Debug("creating Worker PV", "taskID", task.Id)
+
+		// Check to make sure required configs are present
+		if config.GenericS3 == nil || len(config.GenericS3) == 0 ||
+			config.GenericS3[0].Bucket == "" || config.GenericS3[0].Region == "" {
+			return fmt.Errorf("Bucket or Region not found in GenericS3 config when attempting to create resources for task: %#v", task)
+		}
+
+		// Create PV (cluster-scoped — cannot be owned by a namespaced Job)
+		err = resources.CreatePV(timeoutCtx, task.Id, config, b.client, b.log)
+		if err != nil {
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker PV: %w", err)
+		}
+
+		// Create PVC
+		b.log.Debug("creating Worker PVC", "taskID", task.Id)
+		err = resources.CreatePVC(timeoutCtx, task.Id, config, b.client, b.log, ownerRef)
+		if err != nil {
+			_ = b.Cancel(context.Background(), task.Id)
+			return fmt.Errorf("creating Worker PVC: %w", err)
+		}
 	}
 
 	return nil
@@ -261,6 +288,18 @@ func (b *Backend) createResources(ctx context.Context, task *tes.Task, config *c
 // cleanResources deletes the resources created for a task.
 func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	var errs error
+
+	// Check whether this task used an externally-managed ServiceAccount (e.g.
+	// Gen3Workflow per-user SA supplied via _WORKER_SA tag). If so, skip SA
+	// deletion — the SA is shared across tasks and must not be torn down here.
+	externalSA := false
+	if b.database != nil {
+		if task, err := b.database.GetTask(ctx, &tes.GetTaskRequest{Id: taskId, View: tes.View_FULL.String()}); err == nil {
+			if saName, exists := task.Tags["_WORKER_SA"]; exists && saName != "" {
+				externalSA = true
+			}
+		}
+	}
 
 	// Delete Job
 	b.log.Debug("deleting Job", "taskID", taskId)
@@ -294,7 +333,7 @@ func (b *Backend) cleanResources(ctx context.Context, taskId string) error {
 	}
 
 	// Delete ServiceAccount
-	err = resources.DeleteServiceAccount(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log)
+	err = resources.DeleteServiceAccount(ctx, taskId, b.conf.Kubernetes.JobsNamespace, b.client, b.log, externalSA)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 		b.log.Error("deleting Worker ServiceAccount", "error", err)
@@ -557,10 +596,6 @@ func (b *Backend) reconcile(ctx context.Context, rate time.Duration, disableClea
 					}
 					delete(failedJobEvents, taskID)
 				}
-
-				// Clean up all orphaned Funnel-managed resources whose task no longer exists in
-				// the DB. These can be left behind by server crashes or partial cleanup failures.
-				b.cleanOrphanedResources(ctx)
 			}
 		}
 	}
@@ -581,12 +616,13 @@ func (b *Backend) isResourceCleanupNeeded(ctx context.Context, taskID string) (b
 	}
 }
 
-// cleanOrphanedResources deletes any Funnel-managed Kubernetes resources that are not associated with an active task
-// in the database.
+// CleanOrphanedResources deletes any Funnel-managed Kubernetes resources that are not associated
+// with an active task in the database.
 //
-// This is a safety measure to prevent resource leaks from orphaned jobs whose tasks have been
-// deleted or completed, but whose resources were not cleaned up due to transient errors or server crashes.
-func (b *Backend) cleanOrphanedResources(ctx context.Context) {
+// This is intended to be called as a one-shot operation (e.g. from a Kubernetes CronJob) rather
+// than as a long-running goroutine, so that cleanup is decoupled from the Funnel server lifecycle
+// and multiple server replicas do not race to clean the same resources simultaneously.
+func (b *Backend) CleanOrphanedResources(ctx context.Context) {
 	namespace := b.conf.Kubernetes.JobsNamespace
 	taskIDs := make(map[string]struct{})
 
@@ -678,5 +714,9 @@ func (b *Backend) cleanOrphanedResources(ctx context.Context) {
 		if err := b.cleanResources(ctx, taskID); err != nil {
 			b.log.Error("backlog cleanup: failed to clean resources", "taskID", taskID, "error", err)
 		}
+
+		// Sleep briefly between deletions to avoid overwhelming the API server if there are many orphaned resources.
+		// Test this + see if better to sleep ~1 second for every 10 tasks...
+		time.Sleep(500 * time.Millisecond)
 	}
 }

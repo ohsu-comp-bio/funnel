@@ -2,11 +2,14 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -268,11 +271,30 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 		opts.ServerSideEncryption = SSEKMS
 	}
 
-	// Check if the path is a directory
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return nil, err
+	// Wait for the local path to become readable. When the local path is on a
+	// Mountpoint-for-S3 backed filesystem and the file was written by another
+	// mount instance (the executor pod), os.Stat returns EPERM until Mountpoint
+	// finishes flushing the write to S3. Poll until the file is readable or the
+	// timeout expires.
+	const mountpointFlushTimeout = 30 * time.Second
+	const mountpointFlushInterval = 2 * time.Second
+	deadline := time.Now().Add(mountpointFlushTimeout)
+	var fileInfo os.FileInfo
+	for {
+		var err error
+		fileInfo, err = os.Stat(path)
+		if err == nil {
+			break
+		}
+		if time.Now().Before(deadline) && (errors.Is(err, syscall.EPERM) || errors.Is(err, os.ErrNotExist)) {
+			logger.Debug("genericS3: waiting for output file to become readable", "path", path, "error", err)
+			time.Sleep(mountpointFlushInterval)
+			continue
+		}
+		return nil, fmt.Errorf("genericS3: putting object %s: %v", url, err)
 	}
+
+	// Check if the path is a directory
 	if fileInfo.IsDir() {
 		// Walk the directory and upload all files and subdirectories
 		err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
@@ -288,7 +310,7 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 				uploadPath := filepath.Join(u.path, relativePath)
 				_, err = s3.client.FPutObject(ctx, u.bucket, uploadPath, filePath, opts)
 				if err != nil {
-					return fmt.Errorf("genericS3: putting object %s: %v", url, err)
+					return fmt.Errorf("genericS3: putting nested object %s: %v", url, err)
 				}
 			}
 			return nil
@@ -297,7 +319,6 @@ func (s3 *GenericS3) Put(ctx context.Context, url, path string) (*Object, error)
 			return nil, err
 		}
 	} else {
-		// Upload the file directly
 		_, err = s3.client.FPutObject(ctx, u.bucket, u.path, path, opts)
 		if err != nil {
 			return nil, fmt.Errorf("genericS3: putting object %s: %v", url, err)

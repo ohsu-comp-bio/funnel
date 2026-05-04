@@ -17,7 +17,7 @@ import (
 )
 
 // Create the Worker/Executor Role from config/kubernetes-role.yaml
-func CreateRole(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger) error {
+func CreateRole(ctx context.Context, task *tes.Task, conf *config.Config, client kubernetes.Interface, log *logger.Logger, ownerRef *metav1.OwnerReference) error {
 
 	// Load templates
 	t, err := template.New(task.Id).Parse(conf.Kubernetes.RoleTemplate)
@@ -45,6 +45,10 @@ func CreateRole(ctx context.Context, task *tes.Task, conf *config.Config, client
 	role, ok := obj.(*rbacv1.Role)
 	if !ok {
 		return fmt.Errorf("failed to verify Role spec")
+	}
+
+	if ownerRef != nil {
+		role.OwnerReferences = []metav1.OwnerReference{*ownerRef}
 	}
 
 	_, err = client.RbacV1().Roles(conf.Kubernetes.JobsNamespace).Create(ctx, role, metav1.CreateOptions{})
